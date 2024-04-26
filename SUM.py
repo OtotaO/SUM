@@ -1,4 +1,3 @@
-```python
 import os
 import sys
 import json
@@ -9,6 +8,11 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
 from sklearn.metrics.pairwise import cosine_similarity
 import matplotlib.pyplot as plt
+from nltk.stem import WordNetLemmatizer
+from sklearn.metrics import precision_recall_fscore_support
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.feature_extraction.text import CountVectorizer
 
 class SUM:
     def __init__(self):
@@ -36,7 +40,7 @@ class SUM:
         # Lemmatize the tokens
         tokens = [self.lemmatizer.lemmatize(token) for token in tokens]
         
-        return ' '.join(tokens)
+        return''.join(tokens)
 
     def calculate_tfidf(self, texts):
         # Calculate TF-IDF
@@ -125,3 +129,41 @@ class SUM:
 
     def save_knowledge_base(self):
         # Save the knowledge base
+        with open('knowledge_base.json', 'w') as f:
+            json.dump(self.knowledge_base, f)
+
+    def evaluate_model(self, X_test, y_test):
+        # Evaluate the model using precision, recall, and F1-score
+        y_pred = self.model.predict(X_test)
+        precision, recall, f1, _ = precision_recall_fscore_support(y_test, y_pred, average='weighted')
+        print("Precision:", precision)
+        print("Recall:", recall)
+        print("F1-score:", f1)
+
+    def train_model(self, X_train, y_train):
+        # Train a Naive Bayes classifier
+        self.model = MultinomialNB()
+        self.model.fit(X_train, y_train)
+
+    def preprocess_data(self, data):
+        # Preprocess the data using CountVectorizer
+        vectorizer = CountVectorizer()
+        X = vectorizer.fit_transform(data)
+        y = [0] * len(data)  # dummy labels
+        return X, y
+
+    def split_data(self, data):
+        # Split the data into training and testing sets
+        X, y = self.preprocess_data(data)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        return X_train, X_test, y_train, y_test
+
+# Example usage
+sum = SUM()
+data = ["This is a sample document.", "This is another document."]
+X_train, X_test, y_train, y_test = sum.split_data(data)
+sum.train_model(X_train, y_train)
+sum.evaluate_model(X_test, y_test)
+sum.process_text(data, num_topics=2)
+sum.generate_summaries()
+sum.interactive_interface()
