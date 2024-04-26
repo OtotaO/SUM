@@ -7,7 +7,7 @@
 =====================================================
 
 
-"Depending on the author, a million books can be distilled into a single sentence, and the opposite holds true also i.e a single sentence can conceal a million books, depending on the author." -Me
+"Depending on the author, a million books can be distilled into a single sentence, and a single sentence can conceal a million books, depending on the author." -Me
 
 **Mission Statement**
 SUM is a pioneering knowledge distillation platform that harnesses the power of AI, NLP, and ML to extract, analyze, and present insights from vast datasets in a structured, concise, and engaging manner. Our mission is to democratize access to knowledge, foster a culture of lifelong learning, and inspire innovation.
