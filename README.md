@@ -7,7 +7,7 @@
 
 ## Mission Statement
 
-**SUM** is a pioneering knowledge distillation platform that harnesses the power of AI, NLP, and ML to extract, analyze, and present insights from vast datasets in a structured, concise, and engaging manner. Our mission is to democratize access to knowledge, foster a culture of lifelong learning, and inspire innovation.
+**SUM** is a knowledge distillation platform that harnesses the power of AI, NLP, and ML to extract, analyze, and present insights from vast datasets in a structured, concise, and engaging manner. With succinct access to libraries of knowledge, the goal is to inspire innovation and drive acceleration.
 
 ### Benefits
 
