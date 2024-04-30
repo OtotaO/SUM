@@ -1,4 +1,3 @@
-import os
 import json
 import nltk
 from nltk.tokenize import word_tokenize
@@ -19,9 +18,6 @@ class SUM:
         self.data_sources = []
         self.stop_words = set(stopwords.words('english'))
         self.lemmatizer = WordNetLemmatizer()
-        nltk.download('punkt')
-        nltk.download('wordnet')
-        nltk.download('stopwords')
 
     def load_data(self, data_source):
         with open(data_source, 'r') as f:
@@ -32,7 +28,7 @@ class SUM:
         tokens = word_tokenize(text.lower())
         tokens = [token for token in tokens if token not in self.stop_words]
         tokens = [self.lemmatizer.lemmatize(token) for token in tokens]
-        return ''.join(tokens)
+        return ' '.join(tokens)  # Output joined by spaces
 
     def calculate_tfidf(self, texts):
         vectorizer = TfidfVectorizer()
@@ -63,7 +59,7 @@ class SUM:
     def generate_summaries(self, num_sentences=3):
         summaries = []
         for topic in self.knowledge_base['analyzed_data']:
-            summary = '.join([word for word, prob in topic])
+            summary = ' '.join([word for word, prob in topic[:num_sentences]])  # Limit to num_sentences
             summaries.append(summary)
         return summaries
 
@@ -98,7 +94,7 @@ class SUM:
 
             # Allow users to visualize the topic model
             visualize_topics = input("Do you want to visualize the topic model? (y/n): ")
-            if visualize_topics.lower() == 'y':
+            if visualize_tokens.lower() == 'y':
                 import matplotlib.pyplot as plt
                 plt.imshow(self.knowledge_base['similarity_matrix'], cmap='hot', interpolation='nearest')
                 plt.show()
@@ -139,3 +135,6 @@ sum.evaluate_model(X_test, y_test)
 sum.process_text(data, num_topics=2)
 sum.generate_summaries()
 sum.interactive_interface()
+
+if __name__ == "__main__":
+    main()
