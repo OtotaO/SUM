@@ -1,5 +1,4 @@
 import os
-import sys
 import json
 import nltk
 from nltk.tokenize import word_tokenize
@@ -25,64 +24,43 @@ class SUM:
         nltk.download('stopwords')
 
     def load_data(self, data_source):
-        # Load data from a JSON file
         with open(data_source, 'r') as f:
             self.knowledge_base.update(json.load(f))
             self.data_sources.append(data_source)
 
     def preprocess_text(self, text):
-        # Tokenize the text
         tokens = word_tokenize(text.lower())
-        
-        # Remove stop words
         tokens = [token for token in tokens if token not in self.stop_words]
-        
-        # Lemmatize the tokens
         tokens = [self.lemmatizer.lemmatize(token) for token in tokens]
-        
-        return''.join(tokens)
+        return ''.join(tokens)
 
     def calculate_tfidf(self, texts):
-        # Calculate TF-IDF
         vectorizer = TfidfVectorizer()
         tfidf = vectorizer.fit_transform(texts)
         return tfidf, vectorizer
 
     def calculate_lda(self, tfidf, num_topics):
-        # Calculate LDA
         lda = LatentDirichletAllocation(num_topics=num_topics, max_iter=5)
         lda_representation = lda.fit_transform(tfidf)
         return lda_representation
 
     def calculate_cosine_similarity(self, lda_representation):
-        # Calculate cosine similarity
         similarity = cosine_similarity(lda_representation)
         return similarity
 
     def visualize_similarity(self, similarity):
-        # Visualize the similarity matrix
         plt.imshow(similarity, interpolation='nearest')
         plt.colorbar()
         plt.show()
 
     def process_text(self, texts, num_topics):
-        # Preprocess the texts
         preprocessed_texts = [self.preprocess_text(text) for text in texts]
-        
-        # Calculate TF-IDF
         tfidf, vectorizer = self.calculate_tfidf(preprocessed_texts)
-        
-        # Calculate LDA
         lda_representation = self.calculate_lda(tfidf, num_topics)
-        
-        # Calculate cosine similarity
         similarity = self.calculate_cosine_similarity(lda_representation)
-        
-        # Visualize the similarity matrix
         self.visualize_similarity(similarity)
 
     def generate_summaries(self, num_sentences=3):
-        # Generate summaries using the analyzed data
         summaries = []
         for topic in self.knowledge_base['analyzed_data']:
             summary = '.join([word for word, prob in topic])
@@ -90,7 +68,6 @@ class SUM:
         return summaries
 
     def interactive_interface(self):
-        # Provide an interactive interface for users to explore and interact with the knowledge base
         print("Welcome to the SUM interactive interface!")
         while True:
             user_input = input("Enter a topic or keyword to explore: ")
@@ -128,12 +105,10 @@ class SUM:
                 print("Topic model visualized!")
 
     def save_knowledge_base(self):
-        # Save the knowledge base
         with open('knowledge_base.json', 'w') as f:
             json.dump(self.knowledge_base, f)
 
     def evaluate_model(self, X_test, y_test):
-        # Evaluate the model using precision, recall, and F1-score
         y_pred = self.model.predict(X_test)
         precision, recall, f1, _ = precision_recall_fscore_support(y_test, y_pred, average='weighted')
         print("Precision:", precision)
@@ -141,19 +116,16 @@ class SUM:
         print("F1-score:", f1)
 
     def train_model(self, X_train, y_train):
-        # Train a Naive Bayes classifier
         self.model = MultinomialNB()
         self.model.fit(X_train, y_train)
 
     def preprocess_data(self, data):
-        # Preprocess the data using CountVectorizer
         vectorizer = CountVectorizer()
         X = vectorizer.fit_transform(data)
         y = [0] * len(data)  # dummy labels
         return X, y
 
     def split_data(self, data):
-        # Split the data into training and testing sets
         X, y = self.preprocess_data(data)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
         return X_train, X_test, y_train, y_test
