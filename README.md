@@ -1,6 +1,6 @@
 <h1 align="center">
   <img src="https://github.com/OtotaO/SUM/assets/93845604/5749c582-725d-407c-ac6c-06fb8e90ed94" alt="SUM Logo">
-# SUM (Summarizer): The Ultimate Knowledge Distiller
+SUM (Summarizer): The Ultimate Knowledge Distiller
 
 
 ### "Depending on the author, a million books can be distilled into a single sentence, and a single sentence can conceal a million books, depending on the author." - Me
