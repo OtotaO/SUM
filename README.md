@@ -3,7 +3,7 @@
 SUM (Summarizer): The Ultimate Knowledge Distiller
 
 
-### "Depending on the author, a million books can be distilled into a single sentence, and a single sentence can conceal a million books, depending on the author." - Me
+### "Depending on the authors, a million books can be distilled into a single sentence, and a single sentence can conceal a million books, depending on the Author." - Me
 
 ## Mission Statement
 
