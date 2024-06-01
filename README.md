@@ -12,7 +12,7 @@ With access to potentially all kinds of knowledge, the goal is to summarize it i
 
 ## Benefits
 
-- **Time-Saving:** Quickly grasp the essence of vast datasets, saving hours of research and analysis.
+- **Time-Saving:** Quickly grasp the essence of tomes & vast datasets, saving hours of research and analysis.
 - **Deeper Understanding:** Uncover hidden patterns, relationships, and insights through SUM's advanced knowledge representation and visualization tools.
 - **Effortless Knowledge Sharing:** Generate summaries that are easy to understand, share, and discuss, facilitating collaboration and sparking meaningful conversations.
 - **Personalized Learning:** SUM's adaptive interface and tailored recommendations empower users to explore complex topics at their own pace and depth.
