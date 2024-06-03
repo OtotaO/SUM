@@ -10,44 +10,47 @@ SUM (Summarizer): The Ultimate Knowledge Distiller
 SUM is a knowledge distillation platform that harnesses the power of AI, NLP, and ML to extract, analyze, and present insights from vast datasets in a structured, concise, and engaging manner. 
 With access to potentially all kinds of knowledge, the goal is to summarize it into a succinct & dense human-readable form allowing one to "download" tomes quickly whilst doing away with the "fluff".
 
-## Benefits
+Here's the README formatted to be pasted into a GitHub repository's README file:
 
-- **Time-Saving:** Quickly grasp the essence of tomes & vast datasets, saving hours of research and analysis.
-- **Deeper Understanding:** Uncover hidden patterns, relationships, and insights through SUM's advanced knowledge representation and visualization tools.
-- **Effortless Knowledge Sharing:** Generate summaries that are easy to understand, share, and discuss, facilitating collaboration and sparking meaningful conversations.
-- **Personalized Learning:** SUM's adaptive interface and tailored recommendations empower users to explore complex topics at their own pace and depth.
-- **Poetic Summarization:** Generate concise, engaging, and memorable summaries, distilling wisdom from analyzed data and making complex information more accessible and enjoyable.
+```markdown
+# SUM: Knowledge Distillation Platform
+
+## Mission Statement
+SUM is a knowledge distillation platform that harnesses the power of AI, NLP, and ML to extract, analyze, and present insights from vast datasets in a structured, concise, and engaging manner. With access to potentially all kinds of knowledge, the goal is to summarize it into a succinct & dense human-readable form allowing one to "download" tomes quickly whilst doing away with the "fluff".
+
+## Benefits
+- **Time-Saving**: Quickly grasp the essence of tomes & vast datasets, saving hours of research and analysis.
+- **Deeper Understanding**: Uncover hidden patterns, relationships, and insights through SUM's advanced knowledge representation and visualization tools.
+- **Effortless Knowledge Sharing**: Generate summaries that are easy to understand, share, and discuss, facilitating collaboration and sparking meaningful conversations.
+- **Personalized Learning**: SUM's adaptive interface and tailored recommendations empower users to explore complex topics at their own pace and depth.
+- **Poetic Summarization**: Generate concise, engaging, and memorable summaries, distilling wisdom from analyzed data and making complex information more accessible and enjoyable.
 
 ## Core Features
-
-- **Omnidata Ingestion:** Ingests diverse datasets, including text, documents, databases, multimedia content, and APIs, to provide a comprehensive knowledge base.
-- **AI-Powered Insights:** Employs cutting-edge NLP, ML, and cognitive computing techniques to extract entities, sentiments, relationships, themes, and trends from textual data.
-- **Knowledge Cartography:** Structures distilled knowledge into interactive, hierarchical knowledge graphs, ontologies, mind maps, and concept networks, revealing complex relationships and patterns.
-- **Poetic Summarization:** Generates concise, engaging, and memorable summaries, distilling wisdom from analyzed data and making complex information more accessible and enjoyable.
-- **Immersive User Experience:** Provides an intuitive, interactive interface with features like text trees, visualizations, quote carousels, and interactive simulations, allowing users to explore distilled knowledge in a captivating and immersive environment.
+- **Omnidata Ingestion**: Ingests diverse datasets, including text, documents, databases, multimedia content, and APIs, to provide a comprehensive knowledge base.
+- **AI-Powered Insights**: Employs cutting-edge NLP, ML, and cognitive computing techniques to extract entities, sentiments, relationships, themes, and trends from textual data.
+- **Knowledge Cartography**: Structures distilled knowledge into interactive, hierarchical knowledge graphs, ontologies, mind maps, and concept networks, revealing complex relationships and patterns.
+- **Poetic Summarization**: Generates concise, engaging, and memorable summaries, distilling wisdom from analyzed data and making complex information more accessible and enjoyable.
+- **Immersive User Experience**: Provides an intuitive, interactive interface with features like text trees, visualizations, quote carousels, and interactive simulations, allowing users to explore distilled knowledge in a captivating and immersive environment.
+- **Running Total Summary**: Maintains a "running total" summary that continuously updates as data is processed, providing a concise and distilled representation of the entire dataset.
 
 ## What Sets SUM Apart
-
-- **Cognitive Insights:** SUM's AI-powered engine uncovers hidden patterns, relationships, and trends, providing users with a deeper understanding of complex knowledge domains.
-- **Poetic Summarization:** Generates concise, engaging, and memorable summaries, distilling wisdom from analyzed data and making complex information more accessible and enjoyable.
-- **Adaptive Learning:** SUM's machine learning algorithms continuously learn from user interactions, refining its understanding of knowledge domains and improving the accuracy of its summaries and recommendations.
+- **Cognitive Insights**: SUM's AI-powered engine uncovers hidden patterns, relationships, and trends, providing users with a deeper understanding of complex knowledge domains.
+- **Poetic Summarization**: Generates concise, engaging, and memorable summaries, distilling wisdom from analyzed data and making complex information more accessible and enjoyable.
+- **Adaptive Learning**: SUM's machine learning algorithms continuously learn from user interactions, refining its understanding of knowledge domains and improving the accuracy of its summaries and recommendations.
+- **Running Total Summary**: Maintains a "running total" summary that continuously updates as data is processed, providing a concise and distilled representation of the entire dataset.
 
 ## Future Development Roadmap
-
 ### Short-term Goals (Next 6 months)
-
-- **Enhance NLP and ML Capabilities:** Integrate new NLP and ML models to improve the accuracy and efficiency of data analysis.
-- **Expand Data Ingestion Sources:** Add support for new data formats and sources, including APIs, web scraping, and IoT devices.
-- **Refine User Interface:** Enhance the user interface to improve usability, accessibility, and overall user experience.
-- **Improve Poetic Summarization:** Explore advanced techniques to generate even more creative and personalized poetic summaries.
+- Enhance NLP and ML Capabilities: Integrate new NLP and ML models to improve the accuracy and efficiency of data analysis.
+- Expand Data Ingestion Sources: Add support for new data formats and sources, including APIs, web scraping, and IoT devices.
+- Refine User Interface: Enhance the user interface to improve usability, accessibility, and overall user experience.
+- Improve Poetic Summarization: Explore advanced techniques to generate even more creative and personalized poetic summaries.
 
 ### Long-term Goals (Next 12-18 months)
-
-- **Integrate with External Knowledge Graphs:** Develop integrations with external knowledge graphs to expand SUM's knowledge base and facilitate collaboration with other AI systems.
+- Integrate with External Knowledge Graphs: Develop integrations with external knowledge graphs to expand SUM's knowledge base and facilitate collaboration with other AI systems.
 
 ## SUM Class Integration
-
-The `SUM` class is an integral part of the SUM platform, responsible for text summarization, knowledge graph construction, and visualization. Below is a condensed version of the `SUM` class:
+The SUM class is an integral part of the SUM platform, responsible for text summarization, knowledge graph construction, and visualization. Below is a condensed version of the SUM class:
 
 ```python
 class SUM:
@@ -63,14 +66,8 @@ class SUM:
     def generate_summaries(self, texts, max_length=100, min_length=30):
         # Generate summaries
         
-    def generate_quote_summary(self, summary):
-        # Generate quote summary
-        
-    def generate_symbol_summary(self, summary):
-        # Generate symbol summary
-        
-    def generate_arrow_summary(self, summary):
-        # Generate arrow summary
+    def update_running_summary(self, summary):
+        # Update the running total summary
         
     def identify_entities(self, text):
         # Identify entities
@@ -98,7 +95,10 @@ class SUM:
         
     def run(self):
         # Run the SUM platform
+```
 
+The SUM class now includes the `update_running_summary` method, which continuously updates the "running total" summary as data is processed. The `run` method also includes a step to print the final running summary after all the data has been processed and the knowledge graph has been constructed.
 
+Some functions are left unimplemented (`identify_entities`, `identify_main_concept`, `identify_main_direction`, `calculate_similarity`, `process_knowledge_base`, `identify_topics`, `build_knowledge_graph`, and `visualize_knowledge_graph`), as their implementation would require additional libraries and techniques specific to the project's requirements.
 
->Feel free to customize and refine this README file to fit your project's specific needs. Good luck & drop us a star!
+Feel free to customize and refine this README file to fit your project's specific needs. Good luck & drop us a star!
