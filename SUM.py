@@ -1,184 +1,130 @@
-# Import necessary libraries
-import nltk
-from nltk.tokenize import word_tokenize
-from nltk.corpus import stopwords
-from nltk.probability import FreqDist
-from nltk.tokenize import sent_tokenize
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-import torch
-import random
-import string
+import json
 import re
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize, sent_tokenize
+from gensim.models import Word2Vec
+import networkx as nx
+import matplotlib.pyplot as plt
 
-# Initialize the summarizer
-class Summarizer:
+class SUM:
     def __init__(self):
-        # Initialize the paraphrase generation model
-        self.tokenizer = AutoTokenizer.from_pretrained("t5-base")
-        self.model = AutoModelForSeq2SeqLM.from_pretrained("t5-base")
+        self.data = []
+        self.stopwords = set(stopwords.words('english'))
+        self.word2vec_model = None
+        self.running_summary = ''
 
-    def generate_summary(self, text):
-        # Generate a summary using paraphrase generation
-        summary = self.generate_paraphrase(text)
+    def load_data(self, data_source):
+        with open(data_source, 'r') as file:
+            self.data = json.load(file)
+
+    def preprocess_text(self, text):
+        text = re.sub(r'[^a-zA-Z\s]', '', text.lower())
+        tokens = word_tokenize(text)
+        filtered_tokens = [token for token in tokens if token not in self.stopwords]
+        return ' '.join(filtered_tokens)
+
+    def generate_summaries(self, texts, max_length=100, min_length=30):
+        summaries = []
+        for text in texts:
+            sentences = sent_tokenize(text)
+            sentence_vectors = [self.get_sentence_vector(sentence) for sentence in sentences]
+            sentence_scores = self.calculate_sentence_scores(sentence_vectors)
+            summary = self.generate_summary(sentences, sentence_scores, max_length, min_length)
+            summaries.append(summary)
+            self.update_running_summary(summary)
+        return summaries
+
+    def get_sentence_vector(self, sentence):
+        tokens = word_tokenize(sentence)
+        vector = sum([self.word2vec_model.wv[token] for token in tokens if token in self.word2vec_model.wv]) / len(tokens)
+        return vector
+
+    def calculate_sentence_scores(self, sentence_vectors):
+        sentence_scores = {}
+        for i, vector in enumerate(sentence_vectors):
+            score = sum([vector.dot(other_vector) for other_vector in sentence_vectors]) / (len(sentence_vectors) - 1)
+            sentence_scores[i] = score
+        return sentence_scores
+
+    def generate_summary(self, sentences, sentence_scores, max_length, min_length):
+        summary_sentences = sorted([(score, i, sentence) for i, (score, sentence) in enumerate(zip(sentence_scores.values(), sentences))], reverse=True)
+        summary = ''
+        for score, i, sentence in summary_sentences:
+            if len(summary) + len(sentence) < max_length and len(summary) < min_length:
+                summary += ' ' + sentence
         return summary
 
-    def generate_paraphrase(self, text):
-        # Generate a paraphrase of the text using the paraphrase generation model
-        inputs = self.tokenizer.encode(f"summarize: {text}", return_tensors="pt")
-        outputs = self.model.generate(inputs, max_length=512, num_beams=4, early_stopping=True)
-        summary = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-        return summary
-
-    def generate_quote(self, text):
-        # Generate a quote from the summary
-        # For demonstration purposes, let's just return the most important phrase in the summary
-        # and attribute it to a fictional character
-        sentences = sent_tokenize(text)
-        important_phrases = [self.identify_important_phrase(sentence) for sentence in sentences]
-        quote = random.choice(important_phrases)
-        character = "John Doe"
-        quote = f"{character} says: '{quote}'"
-        return quote
-
-    def identify_important_phrase(self, sentence):
-        # Identify the most important phrase in a sentence
-        # For demonstration purposes, let's just return the first noun phrase in the sentence
-        words = nltk.word_tokenize(sentence)
-        tagged_words = nltk.pos_tag(words)
-        noun_phrases = []
-        phrase = []
-        for word, tag in tagged_words:
-            if tag.startswith('NN'):
-                phrase.append(word)
-            else:
-                if phrase:
-                    noun_phrases.append(' '.join(phrase))
-                    phrase = []
-        if phrase:
-            noun_phrases.append(' '.join(phrase))
-        if noun_phrases:
-            return noun_phrases[0]
-        else:
-            return None
-
-    def generate_symbol(self, text):
-        # Generate a symbol representing the main concept in the summary
-        # For demonstration purposes, let's just use the first noun in the text as the main concept
-        main_concept = self.identify_main_concept(text)
-        symbol = self.generate_symbol_for_word(main_concept)
-        return symbol
-
-    def generate_symbol_for_word(self, word):
-        # Generate a symbol representing a word
-        # For demonstration purposes, let's just use the first letter of the word as the symbol
-        symbol = word[0].upper()
-        return symbol
-
-    def generate_arrow(self, text):
-        # Generate an arrow representing the main direction in the summary
-        # For demonstration purposes, let's just use the first direction mentioned in the text as the main direction
-        main_direction = self.identify_main_direction(text)
-        arrow = self.generate_arrow_for_direction(main_direction)
-        return arrow
-
-    def generate_arrow_for_direction(self, direction):
-        # Generate an arrow representing a direction
-        # For demonstration purposes, let's just use a simple arrow symbol
-        arrow = "->"
-        return arrow
+    def update_running_summary(self, summary):
+        self.running_summary += ' ' + summary
 
     def identify_entities(self, text):
-        # Identify entities in the text
-        # For demonstration purposes, let's just use NLTK's named entity recognition
-        entities = nltk.chunk.ne_chunk(nltk.pos_tag(nltk.word_tokenize(text)))
-        entity_names = [entity[0] for entity in entities.leaves() if entity[1].startswith('NN')]
-        return entity_names
+        # Implement entity identification using NLP libraries like spaCy or NLTK
+        pass
 
     def identify_main_concept(self, text):
-        # Identify the main concept in the text
-        # For demonstration purposes, let's just use the first noun phrase in the text as the main concept
-        words = nltk.word_tokenize(text)
-        tagged_words = nltk.pos_tag(words)
-        noun_phrases = []
-        phrase = []
-        for word, tag in tagged_words:
-            if tag.startswith('NN'):
-                phrase.append(word)
-            else:
-                if phrase:
-                    noun_phrases.append(' '.join(phrase))
-                    phrase = []
-        if phrase:
-            noun_phrases.append(' '.join(phrase))
-        if noun_phrases:
-            return noun_phrases[0]
-        else:
-            return None
+        # Implement main concept identification using NLP techniques
+        pass
 
     def identify_main_direction(self, text):
-        # Identify the main direction in the text
-        # For demonstration purposes, let's just use the first direction mentioned in the text as the main direction
-        directions = ["up", "down", "left", "right", "forward", "backward"]
-        for direction in directions:
-            if direction in text:
-                return direction
-        return None
+        # Implement main direction identification using NLP techniques
+        pass
 
-    def generate_key_points(self, text):
-        # Generate key points from the text
-        # For demonstration purposes, let's just use NLTK's named entity recognition to identify entities
-        # and use the first noun phrase in each sentence as the key point
-        sentences = sent_tokenize(text)
-        entity_names = self.identify_entities(text)
-        key_points = []
-        for sentence in sentences:
-            noun_phrases = []
-            words = nltk.word_tokenize(sentence)
-            tagged_words = nltk.pos_tag(words)
-            phrase = []
-            for word, tag in tagged_words:
-                if tag.startswith('NN'):
-                    phrase.append(word)
-                else:
-                    if phrase:
-                        noun_phrases.append(' '.join(phrase))
-                        phrase = []
-            if phrase:
-                noun_phrases.append(' '.join(phrase))
-            if noun_phrases:
-                key_point = noun_phrases[0]
-                if key_point in entity_names:
-                    key_points.append(f"{key_point} (entity)")
-                else:
-                    key_points.append(f"{key_point} (key point)")
-        return key_points
+    def calculate_similarity(self, text1, text2):
+        # Implement text similarity calculation using techniques like cosine similarity
+        pass
 
-    def generate_visual_representation(self, text):
-        # Generate a visual representation of the text
-        # For demonstration purposes, let's just use a simple diagram with symbols, arrows, and key points
-        summary = self.generate_summary(text)
-        quote = self.generate_quote(summary)
-        symbol = self.generate_symbol(summary)
-        arrow = self.generate_arrow(summary)
-        key_points = self.generate_key_points(summary)
-        visual_representation = f"""
-        {symbol}
-        {arrow}
-        {quote}
-        {key_points}
-        """
-        return visual_representation
+    def process_knowledge_base(self):
+        # Implement knowledge base processing
+        pass
 
-# Initialize the summarizer
-summarizer = Summarizer()
+    def identify_topics(self, summaries):
+        # Implement topic identification using techniques like LDA or NMF
+        pass
 
-# Generate a visual representation of the text
-text = """
-The COVID-19 plandemic has had a profound impact on the global economy. Many businesses have been forced to close or downsize,
-while others have struggled to adapt to new safety measures and restrictions. Governments around the world have implemented
-various measures to placate businesses and individuals and the long-term economic effects are still uncertain.
-"""
-visual_representation = summarizer.generate_visual_representation(text)
-print(visual_representation)
+    def build_knowledge_graph(self, topics):
+        # Implement knowledge graph construction using libraries like NetworkX
+        pass
+
+    def visualize_knowledge_graph(self):
+        # Implement knowledge graph visualization using libraries like NetworkX and Matplotlib
+        pass
+
+    def run(self):
+        # Load data
+        self.load_data('data.json')
+
+        # Preprocess text
+        preprocessed_data = [self.preprocess_text(text) for text in self.data]
+
+        # Train Word2Vec model
+        self.word2vec_model = Word2Vec(preprocessed_data, min_count=1)
+
+        # Generate summaries
+        summaries = self.generate_summaries(preprocessed_data)
+
+        # Identify entities, main concepts, and main directions
+        for summary in summaries:
+            entities = self.identify_entities(summary)
+            main_concept = self.identify_main_concept(summary)
+            main_direction = self.identify_main_direction(summary)
+
+        # Process knowledge base
+        self.process_knowledge_base()
+
+        # Identify topics
+        topics = self.identify_topics(summaries)
+
+        # Build knowledge graph
+        knowledge_graph = self.build_knowledge_graph(topics)
+
+        # Visualize knowledge graph
+        self.visualize_knowledge_graph(knowledge_graph)
+
+        # Print running summary
+        print("Running Summary:")
+        print(self.running_summary)
+
+if __name__ == '__main__':
+    sum_platform = SUM()
+    sum_platform.run()
