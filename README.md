@@ -97,8 +97,8 @@ class SUM:
         # Run the SUM platform
 ```
 
-The SUM class now includes the `update_running_summary` method, which continuously updates the "running total" summary as data is processed. The `run` method also includes a step to print the final running summary after all the data has been processed and the knowledge graph has been constructed.
+The SUM class includes the `update_running_summary` method, which continuously updates the "running total" summary as data is processed. The `run` method also includes a step to print the final running summary after all the data has been processed and the knowledge graph has been constructed.
 
-Some functions are left unimplemented (`identify_entities`, `identify_main_concept`, `identify_main_direction`, `calculate_similarity`, `process_knowledge_base`, `identify_topics`, `build_knowledge_graph`, and `visualize_knowledge_graph`), as their implementation would require additional libraries and techniques specific to the project's requirements.
+Some functions that are to be implemented (`identify_entities`, `identify_main_concept`, `identify_main_direction`, `calculate_similarity`, `process_knowledge_base`, `identify_topics`, `build_knowledge_graph`, and `visualize_knowledge_graph`), as their implementation would require additional libraries and techniques specific to the project's requirements.
 
 Feel free to customize and refine this README file to fit your project's specific needs. Good luck & drop us a star!
