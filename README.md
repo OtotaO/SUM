@@ -10,8 +10,6 @@ SUM (Summarizer): The Ultimate Knowledge Distiller
 SUM is a knowledge distillation platform that harnesses the power of AI, NLP, and ML to extract, analyze, and present insights from vast datasets in a structured, concise, and engaging manner. 
 With access to potentially all kinds of knowledge, the goal is to summarize it into a succinct & dense human-readable form allowing one to "download" tomes quickly whilst doing away with the "fluff".
 
-Here's the README formatted to be pasted into a GitHub repository's README file:
-
 ```markdown
 # SUM: Knowledge Distillation Platform
 
