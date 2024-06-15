@@ -102,4 +102,4 @@ The SUM class includes the `update_running_summary` method, which continuously u
 Some functions that are yet to be implemented 
 (`identify_entities`, `identify_main_concept`, `identify_main_direction`, `calculate_similarity`, `process_knowledge_base`, `identify_topics`, `build_knowledge_graph`, and `visualize_knowledge_graph`)
 
-Feel free to customize and refine this README file to fit your project's specific needs. Good luck & drop us a star if you like what you see 😎!
+Feel free to customize or contribute to future developmemt. Good luck & drop us a star if you like what you see 😎!
