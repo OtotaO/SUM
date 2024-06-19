@@ -4,132 +4,115 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize, sent_tokenize
 from nltk.stem import WordNetLemmatizer
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
 import spacy
-from collections import Counter
-import networkx as nx
-import matplotlib.pyplot as plt
 
 class SUM:
-def __init__(self):
-self.stop_words = set(stopwords.words('english'))
-self.lemmatizer = WordNetLemmatizer()
-self.vectorizer = TfidfVectorizer()
-self.nlp = spacy.load('en_core_web_lg')
-self.running_summary = ""
+    def __init__(self):
+        # Download necessary NLTK resources
+        nltk.download('punkt')
+        nltk.download('stopwords')
+        nltk.download('wordnet')
+        
+        # Initialize the stop words, lemmatizer, vectorizer, and SpaCy model
+        self.stop_words = set(stopwords.words('english'))
+        self.lemmatizer = WordNetLemmatizer()
+        self.vectorizer = TfidfVectorizer()
+        self.nlp = spacy.load('en_core_web_lg')
+        
+        # Initialize the running summary and poetic summary
+        self.running_summary = ""
+        self.poetic_summary = ""
 
-def load_data(self, data_source):
-with open(data_source, 'r') as file:
-data = json.load(file)
-return data
+    def load_data(self, data_source):
+        """Load data from a JSON file."""
+        with open(data_source, 'r') as file:
+            data = json.load(file)
+        return data
 
-def preprocess_text(self, text):
-words = word_tokenize(text.lower())
-words = [self.lemmatizer.lemmatize(word) for word in words if word not in self.stop_words]
-preprocessed_text = ' '.join(words)
-return preprocessed_text
+    def preprocess_text(self, text):
+        """Preprocess text by tokenizing, removing stop words, and lemmatizing."""
+        words = word_tokenize(text.lower())
+        words = [self.lemmatizer.lemmatize(word) for word in words if word not in self.stop_words]
+        preprocessed_text = ' '.join(words)
+        return preprocessed_text
 
-def generate_summaries(self, texts, max_length=100, min_length=30):
-summaries = []
-for text in texts:
-sentences = sent_tokenize(text)
-sentence_scores = self.calculate_sentence_scores(sentences)
-summary = self.get_top_sentences(sentences, sentence_scores, max_length, min_length)
-summaries.append(summary)
-self.update_running_summary(summary)
-return summaries
+    def generate_summaries(self, texts, max_length=100, min_length=30):
+        """Generate summaries from a list of texts."""
+        summaries = []
+        for text in texts:
+            sentences = sent_tokenize(text)
+            sentence_scores = self.calculate_sentence_scores(sentences)
+            summary = self.get_top_sentences(sentences, sentence_scores, max_length, min_length)
+            summaries.append(summary)
+            self.update_running_summary(summary)
+            self.update_poetic_summary(summary)
+            print("Current Running Summary:")
+            print(self.running_summary)
+            print("\nCurrent Poetic Summary:")
+            print(self.poetic_summary)
+        return summaries
 
-def update_running_summary(self, summary):
-self.running_summary += summary + " "
+    def update_running_summary(self, summary):
+        """Update the running summary."""
+        self.running_summary += summary + " "
 
-def identify_entities(self, text):
-doc = self.nlp(text)
-entities = [(ent.text, ent.label_) for ent in doc.ents]
-return entities
+    def update_poetic_summary(self, summary):
+        """Update the poetic summary using poetic compression."""
+        poetic_lines = self.generate_poetic_compression(summary)
+        self.poetic_summary += "\n".join(poetic_lines) + "\n"
 
-def identify_main_concept(self, text):
-doc = self.nlp(text)
-noun_chunks = [chunk.text for chunk in doc.noun_chunks]
-main_concept = max(noun_chunks, key=noun_chunks.count)
-return main_concept
+    def generate_poetic_compression(self, text):
+        """Generate a poetic compression of the text."""
+        doc = self.nlp(text)
+        poetic_lines = []
+        for sent in doc.sents:
+            poetic_line = ' '.join([token.text for token in sent if token.pos_ in {'NOUN', 'VERB', 'ADJ', 'ADV'}])
+            poetic_lines.append(poetic_line)
+        return poetic_lines
 
-def identify_main_direction(self, text):
-doc = self.nlp(text)
-verbs = [token.lemma_ for token in doc if token.pos_ == 'VERB']
-main_direction = max(verbs, key=verbs.count)
-return main_direction
+    def identify_entities(self, text):
+        """Identify named entities in the text using SpaCy."""
+        doc = self.nlp(text)
+        entities = [(ent.text, ent.label_) for ent in doc.ents]
+        return entities
 
-def calculate_similarity(self, text1, text2):
-doc1 = self.nlp(text1)
-doc2 = self.nlp(text2)
-similarity = doc1.similarity(doc2)
-return similarity
+    def identify_main_concept(self, text):
+        """Identify the main concept in the text."""
+        doc = self.nlp(text)
+        noun_chunks = [chunk.text for chunk in doc.noun_chunks]
+        main_concept = max(noun_chunks, key=noun_chunks.count)
+        return main_concept
 
-def process_knowledge_base(self, knowledge_base):
-processed_kb = {}
-for concept, value in knowledge_base.items():
-processed_kb[concept] = self.preprocess_text(value)
-return processed_kb
+    def identify_main_direction(self, text):
+        """Identify the main verb (direction) in the text."""
+        doc = self.nlp(text)
+        verbs = [token.lemma_ for token in doc if token.pos_ == 'VERB']
+        main_direction = max(verbs, key=verbs.count)
+        return main_direction
 
-def identify_topics(self, summaries):
-topics = []
-for summary in summaries:
-doc = self.nlp(summary)
-topic = self.identify_main_concept(doc.text)
-topics.append(topic)
-return topics
+    def calculate_similarity(self, text1, text2):
+        """Calculate the similarity between two texts."""
+        doc1 = self.nlp(text1)
+        doc2 = self.nlp(text2)
+        similarity = doc1.similarity(doc2)
+        return similarity
 
-def build_knowledge_graph(self, topics):
-G = nx.Graph()
-for topic in topics:
-G.add_node(topic)
-for other_topic in topics:
-if topic != other_topic:
-similarity = self.calculate_similarity(topic, other_topic)
-if similarity > 0.5:
-G.add_edge(topic, other_topic, weight=similarity)
-return G
+    def process_knowledge_base(self, knowledge_base):
+        """Process a knowledge base for use in the knowledge graph."""
+        processed_kb = {}
+        for concept, value in knowledge_base.items():
+            processed_kb[concept] = self.preprocess_text(value)
+        return processed_kb
 
-def visualize_knowledge_graph(self, G):
-pos = nx.spring_layout(G)
-nx.draw(G, pos, with_labels=True, node_size=1000, font_size=12, edge_color='gray', node_color='skyblue')
-labels = nx.get_edge_attributes(G, 'weight')
-nx.draw_networkx_edge_labels(G, pos, edge_labels=labels)
-plt.axis('off')
-plt.show()
+    def identify_topics(self, summaries):
+        """Identify topics from a list of summaries."""
+        topics = []
+        for summary in summaries:
+            doc = self.nlp(summary)
+            topic = self.identify_main_concept(doc.text)
+            topics.append(topic)
+        return topics
 
-def calculate_sentence_scores(self, sentences):
-vectors = self.vectorizer.fit_transform(sentences)
-scores = cosine_similarity(vectors[-1], vectors[:-1])[0]
-return scores
-
-def get_top_sentences(self, sentences, scores, max_length, min_length):
-ranked_sentences = sorted(zip(scores, sentences), reverse=True)
-summary = ranked_sentences[0][1]
-for i in range(1, len(ranked_sentences)):
-if len(summary) + len(ranked_sentences[i][1]) <= max_length:
-summary += " " + ranked_sentences[i][1]
-else:
-break
-if len(summary) < min_length:
-for i in range(len(ranked_sentences)):
-if len(summary) + len(ranked_sentences[i][1]) <= min_length:
-summary += " " + ranked_sentences[i][1]
-else:
-break
-return summary
-
-def run(self, data_source, knowledge_base_source):
-data = self.load_data(data_source)
-preprocessed_data = [self.preprocess_text(text) for text in data]
-summaries = self.generate_summaries(preprocessed_data)
-
-print("Final Running Summary:")
-print(self.running_summary)
-
-knowledge_base = self.load_data(knowledge_base_source)
-processed_kb = self.process_knowledge_base(knowledge_base)
-topics = self.identify_topics(summaries)
-G = self.build_knowledge_graph(topics)
-self.visualize_knowledge_graph(G)
-```
+    def calculate_sentence_scores(self, sentences):
+        """Calculate the scores of sentences based on TF-IDF."""
+        preprocessed_sentences = [self.preprocess_text(sentence) for sentence
