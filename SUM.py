@@ -5,6 +5,8 @@ from nltk.tokenize import word_tokenize, sent_tokenize
 from nltk.stem import WordNetLemmatizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 import spacy
+import networkx as nx
+import matplotlib.pyplot as plt
 
 class SUM:
     def __init__(self):
@@ -80,14 +82,14 @@ class SUM:
         """Identify the main concept in the text."""
         doc = self.nlp(text)
         noun_chunks = [chunk.text for chunk in doc.noun_chunks]
-        main_concept = max(noun_chunks, key=noun_chunks.count)
+        main_concept = max(noun_chunks, key=noun_chunks.count) if noun_chunks else ""
         return main_concept
 
     def identify_main_direction(self, text):
         """Identify the main verb (direction) in the text."""
         doc = self.nlp(text)
         verbs = [token.lemma_ for token in doc if token.pos_ == 'VERB']
-        main_direction = max(verbs, key=verbs.count)
+        main_direction = max(verbs, key=verbs.count) if verbs else ""
         return main_direction
 
     def calculate_similarity(self, text1, text2):
@@ -115,4 +117,130 @@ class SUM:
 
     def calculate_sentence_scores(self, sentences):
         """Calculate the scores of sentences based on TF-IDF."""
-        preprocessed_sentences = [self.preprocess_text(sentence) for sentence
+        tfidf_matrix = self.vectorizer.fit_transform(sentences)
+        feature_names = self.vectorizer.get_feature_names_out()
+        sentence_scores = []
+        
+        for i, sentence in enumerate(sentences):
+            score = sum(tfidf_matrix[i, self.vectorizer.vocabulary_[word]] for word in word_tokenize(sentence) if word in feature_names)
+            sentence_scores.append(score)
+        
+        return sentence_scores
+
+    def get_top_sentences(self, sentences, sentence_scores, max_length=100, min_length=30):
+        """Get top sentences based on their scores."""
+        sorted_sentences = sorted(zip(sentences, sentence_scores), key=lambda x: x[1], reverse=True)
+        summary = ""
+        for sentence, score in sorted_sentences:
+            if len(summary) + len(sentence) <= max_length:
+                summary += sentence + " "
+            if len(summary) >= min_length:
+                break
+        return summary.strip()
+
+    def build_knowledge_graph(self, topics):
+        """Build a knowledge graph from identified topics."""
+        G = nx.Graph()
+        for i, topic in enumerate(topics):
+            G.add_node(topic)
+            for j, other_topic in enumerate(topics):
+                if i != j:
+                    similarity = self.calculate_similarity(topic, other_topic)
+                    if similarity > 0.5:  # You can adjust this threshold
+                        G.add_edge(topic, other_topic, weight=similarity)
+        return G
+
+    def visualize_knowledge_graph(self, G):
+        """Visualize the knowledge graph using NetworkX and Matplotlib."""
+        pos = nx.spring_layout(G)
+        plt.figure(figsize=(12, 8))
+        nx.draw(G, pos, with_labels=True, node_color='lightblue', 
+                node_size=1500, font_size=10, font_weight='bold')
+        edge_weights = nx.get_edge_attributes(G, 'weight')
+        nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_weights)
+        plt.title("Knowledge Graph")
+        plt.axis('off')
+        plt.tight_layout()
+        plt.show()
+
+    def extract_keywords(self, text, top_n=5):
+        """Extract top keywords from the text using TF-IDF."""
+        tfidf_matrix = self.vectorizer.fit_transform([text])
+        feature_names = self.vectorizer.get_feature_names_out()
+        tfidf_scores = zip(feature_names, tfidf_matrix.toarray()[0])
+        sorted_scores = sorted(tfidf_scores, key=lambda x: x[1], reverse=True)
+        return [word for word, score in sorted_scores[:top_n]]
+
+    def generate_word_cloud(self, text):
+        """Generate a word cloud from the text."""
+        from wordcloud import WordCloud
+        wordcloud = WordCloud(width=800, height=400, background_color='white').generate(text)
+        plt.figure(figsize=(10, 5))
+        plt.imshow(wordcloud, interpolation='bilinear')
+        plt.axis('off')
+        plt.title('Word Cloud')
+        plt.show()
+
+    def sentiment_analysis(self, text):
+        """Perform sentiment analysis on the text."""
+        from textblob import TextBlob
+        blob = TextBlob(text)
+        sentiment = blob.sentiment.polarity
+        if sentiment > 0:
+            return 'Positive'
+        elif sentiment < 0:
+            return 'Negative'
+        else:
+            return 'Neutral'
+
+    def generate_text_summary(self, text, ratio=0.2):
+        """Generate a summary using TextRank algorithm."""
+        from gensim.summarization import summarize
+        return summarize(text, ratio=ratio)
+
+    def export_summary(self, summary, filename='summary.txt'):
+        """Export the summary to a text file."""
+        with open(filename, 'w') as file:
+            file.write(summary)
+        print(f"Summary exported to {filename}")
+
+    def process_and_analyze(self, text):
+        """Process and analyze the input text."""
+        preprocessed_text = self.preprocess_text(text)
+        summary = self.generate_text_summary(preprocessed_text)
+        entities = self.identify_entities(text)
+        main_concept = self.identify_main_concept(text)
+        main_direction = self.identify_main_direction(text)
+        keywords = self.extract_keywords(preprocessed_text)
+        sentiment = self.sentiment_analysis(text)
+
+        print("Summary:", summary)
+        print("Entities:", entities)
+        print("Main Concept:", main_concept)
+        print("Main Direction:", main_direction)
+        print("Keywords:", keywords)
+        print("Sentiment:", sentiment)
+
+        self.generate_word_cloud(text)
+        self.export_summary(summary)
+
+    def batch_process(self, texts):
+        """Process and analyze a batch of texts."""
+        summaries = self.generate_summaries(texts)
+        topics = self.identify_topics(summaries)
+        G = self.build_knowledge_graph(topics)
+        self.visualize_knowledge_graph(G)
+
+        for i, text in enumerate(texts):
+            print(f"\nProcessing text {i+1}:")
+            self.process_and_analyze(text)
+
+if __name__ == "__main__":
+    # Example usage
+    summarizer = SUM()
+    
+    # Load data (assuming you have a JSON file with texts)
+    texts = summarizer.load_data('data.json')
+    
+    # Process the batch of texts
+    summarizer.batch_process(texts)
