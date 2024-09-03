@@ -12,21 +12,27 @@ SUM is a knowledge distillation platform that harnesses the power of AI, NLP, an
 
 ## Overview
 
-SUM (Summarizer) is a powerful tool for knowledge distillation, leveraging advanced AI, NLP, and ML techniques to transform vast datasets into concise and insightful summaries. Key features include:
-- Text Preprocessing
-- Summarization
-- Entity Identification
-- Main Concept and Direction Identification
-- Similarity Calculation
-- Knowledge Graph Construction and Visualization
+SUM (Summarizer) is an advanced tool for knowledge distillation, leveraging cutting-edge AI, NLP, and ML techniques to transform vast datasets into concise and insightful summaries. Key features include:
+
+- Multi-level summarization (tags, sentences, paragraphs)
+- Interactive analysis with user feedback
+- Temporal analysis for tracking concept and sentiment changes
+- Topic modeling for cross-document analysis
+- Knowledge Graph construction and visualization
+- Multi-lingual support with language detection and translation
+- Adaptive parameter adjustment based on user feedback
+- Comprehensive text analysis (entity recognition, keyword extraction, sentiment analysis)
+- Word cloud generation
+- Data export functionality
 
 ## Installation
 
 To install the required libraries, run:
 
 ```bash
-pip install json nltk spacy scikit-learn networkx matplotlib
+pip install json nltk spacy scikit-learn networkx matplotlib pandas wordcloud textblob gensim langdetect googletrans==3.1.0a0
 python -m spacy download en_core_web_lg
+python -m nltk.downloader punkt stopwords wordnet
 ```
 
 ## Usage
@@ -34,40 +40,34 @@ python -m spacy download en_core_web_lg
 ### 1. Initialize the Class
 
 ```python
-from text_summarizer import SUM
+from advanced_summarizer import AdvancedSUM
 
-summarizer = SUM()
+summarizer = AdvancedSUM()
 ```
 
-### 2. Load and Preprocess Data
+### 2. Interactive Analysis
 
 ```python
-data = summarizer.load_data('data.json')
-preprocessed_data = [summarizer.preprocess_text(text) for text in data]
+summarizer.simulate_interactive_analysis()
 ```
 
-### 3. Generate Summaries
+### 3. Batch Processing
 
 ```python
-summaries = summarizer.generate_summaries(preprocessed_data)
-print("Summaries:", summaries)
+texts = summarizer.load_data('data.json')
+results = summarizer.batch_process(texts)
 ```
 
-### 4. Identify Entities
+### 4. Temporal Analysis
 
 ```python
-entities = summarizer.identify_entities("Your text here")
-print("Entities:", entities)
+summarizer.temporal_analysis(results)
 ```
 
-### 5. Build and Visualize Knowledge Graph
+### 5. Export Results
 
 ```python
-knowledge_base = summarizer.load_data('knowledge_base.json')
-processed_kb = summarizer.process_knowledge_base(knowledge_base)
-topics = summarizer.identify_topics(summaries)
-G = summarizer.build_knowledge_graph(topics)
-summarizer.visualize_knowledge_graph(G)
+summarizer.export_results(results, 'analysis_results.json')
 ```
 
 ## Methods
@@ -76,37 +76,29 @@ summarizer.visualize_knowledge_graph(G)
 
 Loads data from a JSON file.
 
-### `preprocess_text(text)`
+### `process_and_analyze(text, timestamp=None)`
 
-Preprocesses text by tokenizing, removing stop words, and lemmatizing.
+Processes and analyzes a single text with multi-level summarization.
 
-### `generate_summaries(texts, max_length=100, min_length=30)`
+### `batch_process(texts, timestamps=None)`
 
-Generates summaries from a list of texts.
+Processes and analyzes a batch of texts with multi-level summarization.
 
-### `identify_entities(text)`
+### `temporal_analysis(results)`
 
-Identifies named entities in the text using SpaCy.
+Performs temporal analysis on processed texts.
 
-### `identify_main_concept(text)`
+### `generate_word_cloud(text)`
 
-Identifies the main concept in the text.
+Generates a word cloud from the text.
 
-### `identify_main_direction(text)`
+### `perform_topic_modeling(texts, num_topics=5)`
 
-Identifies the main verb (direction) in the text.
+Performs topic modeling on a collection of texts.
 
-### `calculate_similarity(text1, text2)`
+### `translate_text(text, target_lang='en')`
 
-Calculates the similarity between two texts.
-
-### `process_knowledge_base(knowledge_base)`
-
-Processes a knowledge base for use in the knowledge graph.
-
-### `identify_topics(summaries)`
-
-Identifies topics from a list of summaries.
+Translates the text to the target language.
 
 ### `build_knowledge_graph(topics)`
 
@@ -115,6 +107,10 @@ Builds a knowledge graph from identified topics.
 ### `visualize_knowledge_graph(G)`
 
 Visualizes the knowledge graph using NetworkX and Matplotlib.
+
+### `export_results(results, filename='analysis_results.json')`
+
+Exports analysis results to a JSON file.
 
 ## Contribution Guidelines
 
@@ -146,4 +142,3 @@ Thank you for using SUM! I hope it helps you distill knowledge effortlessly.
 ---
 
 <p align="center">Made with ❤️ by ototao</p>
-```
