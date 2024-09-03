@@ -1,12 +1,12 @@
 import unittest
-from SUM import SUM
+from SUM import MagnumOpusSUM
 import json
 import os
 import tempfile
 
 class TestSUM(unittest.TestCase):
     def setUp(self):
-        self.summarizer = SUM()
+        self.summarizer = MagnumOpusSUM()
         self.test_text = "This is a test sentence. It contains multiple sentences. We will use it to test various functionalities."
         
         # Create a temporary JSON file for testing load_data
@@ -16,10 +16,6 @@ class TestSUM(unittest.TestCase):
 
     def tearDown(self):
         os.unlink(self.temp_json.name)
-
-    def test_load_data(self):
-        data = self.summarizer.load_data(self.temp_json.name)
-        self.assertEqual(data, {"text1": self.test_text})
 
     def test_preprocess_text(self):
         preprocessed = self.summarizer.preprocess_text(self.test_text)
@@ -41,37 +37,32 @@ class TestSUM(unittest.TestCase):
         main_concept = self.summarizer.identify_main_concept(self.test_text)
         self.assertIsInstance(main_concept, str)
 
-    def test_identify_main_direction(self):
-        main_direction = self.summarizer.identify_main_direction(self.test_text)
-        self.assertIsInstance(main_direction, str)
-
-    def test_calculate_similarity(self):
-        similarity = self.summarizer.calculate_similarity(self.test_text, self.test_text)
-        self.assertIsInstance(similarity, float)
-        self.assertAlmostEqual(similarity, 1.0, places=5)
+    def test_sentiment_analysis(self):
+        sentiment = self.summarizer.sentiment_analysis(self.test_text)
+        self.assertIn(sentiment, ['Positive', 'Negative', 'Neutral'])
 
     def test_extract_keywords(self):
         keywords = self.summarizer.extract_keywords(self.test_text)
         self.assertIsInstance(keywords, list)
         self.assertEqual(len(keywords), 5)  # default top_n is 5
 
-    def test_sentiment_analysis(self):
-        sentiment = self.summarizer.sentiment_analysis(self.test_text)
-        self.assertIn(sentiment, ['Positive', 'Negative', 'Neutral'])
+    def test_generate_word_cloud(self):
+        wordcloud = self.summarizer.generate_word_cloud(self.test_text)
+        self.assertIsNotNone(wordcloud)
 
-    def test_generate_text_summary(self):
-        summary = self.summarizer.generate_text_summary(self.test_text)
-        self.assertIsInstance(summary, str)
-        self.assertLess(len(summary), len(self.test_text))
+    def test_detect_language(self):
+        lang = self.summarizer.detect_language(self.test_text)
+        self.assertEqual(lang, 'en')
 
-    def test_export_summary(self):
-        summary = "This is a test summary."
-        with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix='.txt') as temp_file:
-            self.summarizer.export_summary(summary, temp_file.name)
-            temp_file.seek(0)
-            content = temp_file.read()
-        self.assertEqual(content, summary)
-        os.unlink(temp_file.name)
+    def test_translate_text(self):
+        translated = self.summarizer.translate_text(self.test_text, target_lang='es')
+        self.assertNotEqual(translated, self.test_text)
+
+    def test_adjust_parameters(self):
+        initial_num_tags = self.summarizer.num_tags
+        for _ in range(5):
+            self.summarizer.adjust_parameters(5)
+        self.assertNotEqual(initial_num_tags, self.summarizer.num_tags)
 
 if __name__ == '__main__':
     unittest.main()
