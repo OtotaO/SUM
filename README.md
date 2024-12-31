@@ -8,7 +8,7 @@
 
 ## Mission Statement
 
-SUM is a knowledge distillation platform that harnesses the power of AI, NLP, and ML to extract, analyze, and present insights from vast datasets in a structured, concise, and engaging manner. With access to potentially all kinds of knowledge, the goal is to summarize it into a succinct & dense human-readable form allowing one to "download" tomes quickly whilst doing away with the "fluff". Here is a proof of concept on the amazing Tldraw platform https://computer.tldraw.com/t/7aR3GPvat7gK5s2TRKGnNG 
+SUM is a knowledge distillation platform that harnesses the power of AI, NLP, and ML to extract, analyze, and present insights from vast datasets in a structured, concise, and engaging manner. With access to potentially all kinds of knowledge, the goal is to summarize it into a succinct & dense human-readable form allowing one to "download" tomes quickly whilst doing away with the "fluff". Here is a proof of concept on the amazing Tldraw Computer platform https://computer.tldraw.com/t/7aR3GPvat7gK5s2TRKGnNG 
 
 ## Overview
 
