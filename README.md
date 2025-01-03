@@ -11,7 +11,7 @@
 SUM is a knowledge distillation platform that harnesses the power of AI, NLP, and ML to extract, analyze, and present insights from vast datasets in a structured, concise, and engaging manner. With access to potentially all kinds of knowledge, the goal is to summarize it into a succinct & dense human-readable form allowing one to "download" tomes quickly whilst doing away with the "fluff". 
 
 Here is a proof of concept on the amazing Tldraw Computer platform 
-![image](https://github.com/user-attachments/assets/9e251ce2-c11c-4840-a974-4df2a2e827b3)
+<img width="1002" alt="Screenshot 2025-01-02 at 10 29 19 PM" src="https://github.com/user-attachments/assets/b4166893-72ce-4288-9b48-a9cf7aecb680" />
 https://computer.tldraw.com/t/7aR3GPvat7gK5s2TRKGnNG 
 
 
