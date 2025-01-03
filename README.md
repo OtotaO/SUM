@@ -15,7 +15,7 @@ Here is a proof of concept on the amazing Tldraw Computer platform
 https://computer.tldraw.com/t/7aR3GPvat7gK5s2TRKGnNG 
 
 
-And here is a implementation on the mythical Websim 
+And here is an implementation on the mythical Websim 
 ![image](https://github.com/user-attachments/assets/344b68c8-cba1-4ffd-ade0-5625f5ff8beb)
 https://websim.ai/p/vvz4uk4ik02f43adxduf/1 
 
