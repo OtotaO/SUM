@@ -43,13 +43,14 @@ import nltk
 
 class MagnumOpusSUM:
     def __init__(self):
-        self.stop_words = set(stopwords.words('english'))
-        # Download necessary NLTK resources
+        # Download all required NLTK resources
         nltk.download('punkt', quiet=True)
         nltk.download('stopwords', quiet=True)
         nltk.download('wordnet', quiet=True)
+        nltk.download('punkt_tab', quiet=True)
+        nltk.download('averaged_perceptron_tagger', quiet=True)
         
-        # Initialize NLP tools
+        # Initialize NLP tools after downloads
         self.stop_words = set(stopwords.words('english'))
         self.lemmatizer = WordNetLemmatizer()
         self.vectorizer = TfidfVectorizer(stop_words='english')
@@ -181,6 +182,10 @@ class MagnumOpusSUM:
         plt.axis('off')
         plt.title('Word Cloud')
         return fig
+
+    def generate_summaries(self, texts):
+        """Generate summaries for a list of texts."""
+        return [self.generate_sentence_summary(text) for text in texts]
 
     def adjust_parameters(self, feedback_score):
         self.feedback_scores.append(feedback_score)
