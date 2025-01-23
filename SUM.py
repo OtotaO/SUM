@@ -77,8 +77,24 @@ class MagnumOpusSUM:
 
     def generate_sentence_summary(self, text):
         sentences = sent_tokenize(text)
+        if not sentences:
+            return ""
+            
+        # Extract key sentences based on TF-IDF scores
         sentence_scores = self.calculate_sentence_scores(sentences)
-        return self.get_top_sentences(sentences, sentence_scores)
+        
+        # Select more sentences for longer texts
+        num_sentences = max(3, int(len(sentences) * 0.3))  # 30% of original sentences
+        
+        # Get top sentences while preserving order
+        top_indices = sorted(range(len(sentence_scores)), 
+                           key=lambda i: sentence_scores[i], 
+                           reverse=True)[:num_sentences]
+        
+        # Keep original order for readability
+        summary_sentences = [sentences[i] for i in sorted(top_indices)]
+        
+        return " ".join(summary_sentences)
 
     def generate_paragraph_summary(self, text):
         sentences = sent_tokenize(text)
