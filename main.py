@@ -67,8 +67,12 @@ def summarize():
                 'compression_ratio': 50,  # Default compression ratio
                 'processing_time': int((time.time() - start_time) * 1000)
             }
-        
-        if not result or 'minimum' not in result:
+            
+            if not result or 'minimum' not in result:
+                return jsonify({'error': 'Failed to generate summary'}), 500
+        except Exception as e:
+            app.logger.error(f"Error generating summary: {str(e)}")
+            return jsonify({'error': 'Failed to generate summary'}), 500
             return jsonify({'error': 'Failed to generate summary'}), 500
 
         processing_time = int((time.time() - start_time) * 1000)
