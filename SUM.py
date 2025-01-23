@@ -9,7 +9,8 @@ from sklearn.decomposition import LatentDirichletAllocation
 import spacy
 import networkx as nx
 import matplotlib.pyplot as plt
-from gensim.summarization import summarize
+from nltk.tokenize import sent_tokenize
+from heapq import nlargest
 from textblob import TextBlob
 import pandas as pd
 from wordcloud import WordCloud
@@ -59,7 +60,11 @@ class MagnumOpusSUM:
         return self.get_top_sentences(sentences, sentence_scores)
 
     def generate_paragraph_summary(self, text):
-        return summarize(text, ratio=self.paragraph_ratio)
+        sentences = sent_tokenize(text)
+        sentence_scores = self.calculate_sentence_scores(sentences)
+        select_length = max(int(len(sentences) * self.paragraph_ratio), 1)
+        summary = nlargest(select_length, zip(sentences, sentence_scores), key=lambda x: x[1])
+        return ' '.join([s[0] for s in summary])
 
     def process_text(self, text, num_topics):
         preprocessed_text = self.preprocess_text(text)
