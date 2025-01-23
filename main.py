@@ -18,6 +18,7 @@ from SUM import MagnumOpusSUM
 import matplotlib
 matplotlib.use('Agg')  # Use Agg backend to avoid GUI issues
 import matplotlib.pyplot as plt
+import pickle
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads/'
@@ -48,25 +49,25 @@ def summarize():
         text = data['text']
         level = int(data['level'])
         model_type = data['model']
-        
+
         start_time = time.time()
-        
+
         # Calculate summary length based on level
         max_length = len(text.split())
         target_length = int(max_length * (level / 100))
-        
+
         # Get appropriate model
         if model_type == 'custom' and os.path.exists('custom_model.pkl'):
             with open('custom_model.pkl', 'rb') as f:
                 model = pickle.load(f)
         else:
             model = summarizer
-            
+
         result = model.process_text(text, target_length=target_length)
-        
+
         processing_time = int((time.time() - start_time) * 1000)
         compression_ratio = int((len(result['minimum'].split()) / max_length) * 100)
-        
+
         return jsonify({
             'summary': result['minimum'],
             'compression_ratio': compression_ratio,
@@ -80,11 +81,11 @@ def upload_model():
     try:
         if 'model' not in request.files:
             return jsonify({'error': 'No model file'}), 400
-            
+
         model_file = request.files['model']
         if model_file.filename == '':
             return jsonify({'error': 'No selected file'}), 400
-            
+
         model_file.save('custom_model.pkl')
         return jsonify({'message': 'Model uploaded successfully'})
     except Exception as e:
@@ -92,11 +93,12 @@ def upload_model():
 
 @app.route('/process_text', methods=['POST'])
 def process_text():
-    """Processes user-provided text."""
     try:
-        text = request.form['text']
-        num_topics = int(request.form['num_topics'])
-        summary_level = request.form['summary_level']
+        data = request.json
+        text = data['text']
+        level = int(data.get('level', 50))
+        model_type = data.get('model', 'default')
+        num_topics = max(1, int(level / 20))  # Scale topics with summary level
 
         if not text:
             return jsonify({'error': 'No text provided'}), 400
@@ -106,7 +108,7 @@ def process_text():
             text = summarizer.translate_text(text)
 
         result = summarizer.process_text(text, num_topics)
-        
+
         wordcloud = summarizer.generate_word_cloud(text)
         wordcloud_path = os.path.join('static', f'wordcloud_{hash(text)}.png')
         wordcloud.savefig(wordcloud_path)
@@ -123,7 +125,7 @@ def process_text():
             'topics': result['topics'],
             'original_language': detected_lang,
             'wordcloud_path': wordcloud_path,
-            'current_level': summary_level
+            'current_level': level #Corrected to use level instead of summary_level
         }
 
         # Update knowledge base
@@ -147,7 +149,7 @@ def upload_file():
         filename = secure_filename(file.filename)
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(file_path)
-        
+
         try:
             text = summarizer.extract_text_from_file(file_path)
             return jsonify({'text': text})
