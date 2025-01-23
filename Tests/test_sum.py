@@ -66,3 +66,28 @@ class TestSUM(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+import unittest
+from SUM import MagnumOpusSUM
+
+class TestMagnumOpusSUM(unittest.TestCase):
+    def setUp(self):
+        self.summarizer = MagnumOpusSUM()
+        self.test_text = "Machine learning has seen rapid advancements in recent years. From image recognition to natural language processing, AI systems are becoming increasingly sophisticated. Deep learning models, in particular, have shown remarkable capabilities in handling complex tasks."
+
+    def test_preprocess_text(self):
+        processed = self.summarizer.preprocess_text(self.test_text)
+        self.assertIsInstance(processed, str)
+        self.assertTrue(len(processed) > 0)
+
+    def test_generate_tag_summary(self):
+        tags = self.summarizer.generate_tag_summary(self.test_text)
+        self.assertIsInstance(tags, list)
+        self.assertTrue(len(tags) <= self.summarizer.num_tags)
+
+    def test_generate_sentence_summary(self):
+        summary = self.summarizer.generate_sentence_summary(self.test_text)
+        self.assertIsInstance(summary, str)
+        self.assertTrue(len(summary) < len(self.test_text))
+
+if __name__ == '__main__':
+    unittest.main()
