@@ -80,6 +80,9 @@ class MagnumOpusSUM:
         if not sentences:
             return ""
             
+        # Create fresh vectorizer for each summary
+        self.vectorizer = TfidfVectorizer(stop_words='english')
+        
         # Extract key sentences based on TF-IDF scores
         sentence_scores = self.calculate_sentence_scores(sentences)
         
