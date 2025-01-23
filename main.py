@@ -1,6 +1,13 @@
 import os
 import json
 import time
+import nltk
+
+# Download required NLTK data
+nltk.download('punkt')
+nltk.download('stopwords')
+nltk.download('wordnet')
+nltk.download('averaged_perceptron_tagger')
 from flask import Flask, request, jsonify, render_template, send_file
 from werkzeug.utils import secure_filename
 from SUM import MagnumOpusSUM
