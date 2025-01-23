@@ -1,8 +1,9 @@
+
 modules = ["python-3.12"]
-run = "Run SUM"
+run = "python main.py"
 
 [nix]
 channel = "stable-24_05"
 
 [deployment]
-run = ["sh", "-c", "Run SUM"]
+run = ["sh", "-c", "python main.py"]
