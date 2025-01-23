@@ -29,6 +29,55 @@ def index():
     """Renders the main HTML page for interactive interface."""
     return render_template('index.html')
 
+@app.route('/summarize', methods=['POST'])
+def summarize():
+    try:
+        data = request.json
+        text = data['text']
+        level = int(data['level'])
+        model_type = data['model']
+        
+        start_time = time.time()
+        
+        # Calculate summary length based on level
+        max_length = len(text.split())
+        target_length = int(max_length * (level / 100))
+        
+        # Get appropriate model
+        if model_type == 'custom' and os.path.exists('custom_model.pkl'):
+            with open('custom_model.pkl', 'rb') as f:
+                model = pickle.load(f)
+        else:
+            model = summarizer
+            
+        result = model.process_text(text, target_length=target_length)
+        
+        processing_time = int((time.time() - start_time) * 1000)
+        compression_ratio = int((len(result['minimum'].split()) / max_length) * 100)
+        
+        return jsonify({
+            'summary': result['minimum'],
+            'compression_ratio': compression_ratio,
+            'processing_time': processing_time
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/upload_model', methods=['POST'])
+def upload_model():
+    try:
+        if 'model' not in request.files:
+            return jsonify({'error': 'No model file'}), 400
+            
+        model_file = request.files['model']
+        if model_file.filename == '':
+            return jsonify({'error': 'No selected file'}), 400
+            
+        model_file.save('custom_model.pkl')
+        return jsonify({'message': 'Model uploaded successfully'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/process_text', methods=['POST'])
 def process_text():
     """Processes user-provided text."""

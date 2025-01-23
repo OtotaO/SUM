@@ -1,0 +1,48 @@
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.input-section, .output-section {
+    margin: 20px 0;
+}
+
+textarea {
+    width: 100%;
+    min-height: 200px;
+    padding: 10px;
+    margin: 10px 0;
+}
+
+.controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 20px 0;
+}
+
+.slider-container {
+    flex: 1;
+    margin-right: 20px;
+}
+
+#summary-level {
+    width: 100%;
+}
+
+button {
+    padding: 10px 20px;
+    background: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+#metrics {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+    color: #666;
+}
