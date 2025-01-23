@@ -60,18 +60,11 @@ def summarize():
 
         start_time = time.time()
 
-        # Calculate summary length based on level
-        max_length = len(text.split())
-        target_length = int(max_length * (level / 100))
-
-        # Get appropriate model
-        if model_type == 'custom' and os.path.exists('custom_model.pkl'):
-            with open('custom_model.pkl', 'rb') as f:
-                model = pickle.load(f)
-        else:
-            model = summarizer
-
-        result = model.process_text(text, target_length=target_length)
+        # Process text directly with summarizer for simplicity
+        result = summarizer.process_text(text, model_type)
+        
+        if not result or 'minimum' not in result:
+            return jsonify({'error': 'Failed to generate summary'}), 500
 
         processing_time = int((time.time() - start_time) * 1000)
         original_words = len(text.split())
@@ -84,7 +77,8 @@ def summarize():
             'processing_time': processing_time
         })
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        app.logger.error(f"Error in summarize endpoint: {str(e)}")
+        return jsonify({'error': 'An error occurred while processing the text'}), 500
 
 @app.route('/upload_model', methods=['POST'])
 def upload_model():
