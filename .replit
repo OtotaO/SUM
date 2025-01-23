@@ -1,0 +1,8 @@
+modules = ["python-3.12"]
+run = "Run SUM"
+
+[nix]
+channel = "stable-24_05"
+
+[deployment]
+run = ["sh", "-c", "Run SUM"]

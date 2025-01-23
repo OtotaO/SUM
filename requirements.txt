@@ -32,3 +32,5 @@ Werkzeug==2.0.1
 # Optional: for development and testing
 pytest==6.2.4
 flake8==3.9.2
+docx
+networkx
