@@ -21,9 +21,14 @@ from flask import Flask, request, jsonify, render_template, send_file
 from werkzeug.utils import secure_filename
 import PyPDF2
 from docx import Document
+from nltk.tokenize import sent_tokenize, word_tokenize
+from nltk.corpus import stopwords
+from heapq import nlargest
+import nltk
 
 class MagnumOpusSUM:
     def __init__(self):
+        self.stop_words = set(stopwords.words('english'))
         # Download necessary NLTK resources
         nltk.download('punkt', quiet=True)
         nltk.download('stopwords', quiet=True)

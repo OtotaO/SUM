@@ -46,9 +46,15 @@ def index():
 def summarize():
     try:
         data = request.json
+        if not data or 'text' not in data:
+            return jsonify({'error': 'No text provided'}), 400
+            
         text = data['text']
-        level = int(data['level'])
-        model_type = data['model']
+        level = int(data.get('level', 50))
+        model_type = data.get('model', 'tiny')
+        
+        if not text.strip():
+            return jsonify({'error': 'Empty text provided'}), 400
 
         start_time = time.time()
 
