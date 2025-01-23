@@ -60,8 +60,13 @@ def summarize():
 
         start_time = time.time()
 
-        # Process text directly with summarizer for simplicity
-        result = summarizer.process_text(text, model_type)
+        # Process text with summarizer
+        try:
+            result = {
+                'minimum': summarizer.generate_summaries([text])[0],
+                'compression_ratio': 50,  # Default compression ratio
+                'processing_time': int((time.time() - start_time) * 1000)
+            }
         
         if not result or 'minimum' not in result:
             return jsonify({'error': 'Failed to generate summary'}), 500
