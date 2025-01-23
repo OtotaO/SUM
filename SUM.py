@@ -107,10 +107,17 @@ class MagnumOpusSUM:
         return ' '.join([s[0] for s in summary])
 
     def process_text(self, text, model_type='tiny', num_topics=5):
+        # Reset state for fresh processing
+        self.vectorizer = TfidfVectorizer(stop_words='english')
+        
         if model_type == 'tiny':
             # Simple extractive summarization for browser-based processing
             sentences = sent_tokenize(text)
             word_freq = {}
+            
+            # Clear previous word frequencies
+            word_freq.clear()
+            
             for sentence in sentences:
                 words = word_tokenize(sentence.lower())
                 for word in words:

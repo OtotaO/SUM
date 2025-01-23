@@ -105,7 +105,7 @@ def process_text():
         data = request.json
         text = data['text']
         level = int(data.get('level', 50))
-        model_type = data.get('model', 'default')
+        model_type = 'tiny'  # Only use local processing
         num_topics = max(1, int(level / 20))  # Scale topics with summary level
 
         if not text:
