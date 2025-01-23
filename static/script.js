@@ -1,4 +1,3 @@
-
 document.addEventListener('DOMContentLoaded', () => {
     const summaryLevel = document.getElementById('summary-level');
     const levelValue = document.getElementById('level-value');
@@ -6,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const customModel = document.getElementById('custom-model');
     const uploadBtn = document.getElementById('upload-model');
     const summarizeBtn = document.getElementById('summarize-btn');
+    const summaryOutput = document.getElementById('summary-output');
 
     summaryLevel.addEventListener('input', (e) => {
         levelValue.textContent = `${e.target.value}%`;
@@ -28,7 +28,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (file) {
             const formData = new FormData();
             formData.append('model', file);
-            
             try {
                 const response = await fetch('/upload_model', {
                     method: 'POST',
@@ -42,40 +41,47 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+
     summarizeBtn.addEventListener('click', async () => {
         const text = document.getElementById('input-text').value;
-        const level = summaryLevel.value;
-        const model = modelType.value;
-
         if (!text) {
             alert('Please enter text to summarize');
             return;
         }
 
         try {
+            summaryOutput.textContent = 'Processing...';
             const response = await fetch('/summarize', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ text, level, model })
+                body: JSON.stringify({
+                    text: text,
+                    level: summaryLevel.value,
+                    model: modelType.value
+                })
             });
 
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
             const result = await response.json();
-            
-            document.getElementById('summary-output').textContent = result.summary;
+
+            if (result.error) {
+                throw new Error(result.error);
+            }
+
+            summaryOutput.textContent = result.summary || result.minimum;
+
             document.getElementById('compression-ratio').textContent = 
                 `Compression: ${result.compression_ratio || 0}%`;
             document.getElementById('processing-time').textContent = 
                 `Processing Time: ${result.processing_time || 0}ms`;
-            
-            if (result.wordcloud_path) {
-                const wordcloudImg = document.getElementById('wordcloud-img');
-                wordcloudImg.src = result.wordcloud_path;
-                wordcloudImg.style.display = 'block';
-            }
         } catch (error) {
-            alert('Error processing text');
+            console.error('Error:', error);
+            summaryOutput.textContent = `Error: ${error.message}`;
         }
     });
 });
