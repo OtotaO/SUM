@@ -83,8 +83,8 @@ class MagnumOpusSUM:
         # Extract key sentences based on TF-IDF scores
         sentence_scores = self.calculate_sentence_scores(sentences)
         
-        # Select more sentences for longer texts
-        num_sentences = max(3, int(len(sentences) * 0.3))  # 30% of original sentences
+        # Select at most 20% of sentences, minimum 1
+        num_sentences = max(1, min(3, int(len(sentences) * 0.2)))
         
         # Get top sentences while preserving order
         top_indices = sorted(range(len(sentence_scores)), 
