@@ -2,12 +2,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SUM - Advanced Summarizer</title>
+    <title>SUM - The Ultimate Knowledge Distiller</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <div class="container">
-        <h1>SUM - Advanced Summarizer</h1>
+        <h1>SUM - Knowledge Distiller</h1>
         
         <div class="input-section">
             <textarea id="input-text" placeholder="Enter text to summarize..."></textarea>
@@ -16,16 +16,16 @@
                 <div class="slider-container">
                     <label>Summarization Level:</label>
                     <input type="range" id="summary-level" min="1" max="100" value="50">
-                    <span id="summary-value">50%</span>
+                    <span id="level-value">50%</span>
                 </div>
                 
                 <div class="model-selection">
-                    <label>Select Model:</label>
-                    <select id="model-select">
-                        <option value="default">Default</option>
+                    <label>Model:</label>
+                    <select id="model-type">
+                        <option value="default">Default Model</option>
                         <option value="custom">Custom Model</option>
                     </select>
-                    <input type="file" id="custom-model" accept=".pkl,.h5,.model" style="display: none;">
+                    <input type="file" id="custom-model" accept=".pkl" style="display: none;">
                     <button id="upload-model">Upload Custom Model</button>
                 </div>
             </div>
@@ -34,10 +34,18 @@
         </div>
         
         <div class="output-section">
-            <div id="summary-output"></div>
-            <div id="metrics">
-                <span id="compression-ratio"></span>
-                <span id="processing-time"></span>
+            <div class="summary-container">
+                <h3>Summary</h3>
+                <div id="summary-output"></div>
+            </div>
+            
+            <div class="metrics">
+                <div id="compression-ratio"></div>
+                <div id="processing-time"></div>
+            </div>
+            
+            <div class="wordcloud">
+                <img id="wordcloud-img" style="display: none;">
             </div>
         </div>
     </div>
