@@ -66,7 +66,9 @@ def summarize():
         result = model.process_text(text, target_length=target_length)
 
         processing_time = int((time.time() - start_time) * 1000)
-        compression_ratio = int((len(result['minimum'].split()) / max_length) * 100)
+        original_words = len(text.split())
+        summary_words = len(result['minimum'].split())
+        compression_ratio = int((summary_words / original_words) * 100)
 
         return jsonify({
             'summary': result['minimum'],

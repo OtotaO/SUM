@@ -65,9 +65,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             document.getElementById('summary-output').textContent = result.summary;
             document.getElementById('compression-ratio').textContent = 
-                `Compression: ${result.compression_ratio}%`;
+                `Compression: ${result.compression_ratio || 0}%`;
             document.getElementById('processing-time').textContent = 
-                `Processing Time: ${result.processing_time}ms`;
+                `Processing Time: ${result.processing_time || 0}ms`;
             
             if (result.wordcloud_path) {
                 const wordcloudImg = document.getElementById('wordcloud-img');
