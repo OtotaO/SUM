@@ -62,17 +62,17 @@ def summarize():
 
         # Process text with summarizer
         try:
+            summary = summarizer.preprocess_text(text)
+            summary_result = summarizer.generate_summaries([summary])[0]
+            
             result = {
-                'minimum': summarizer.generate_summaries([text])[0],
-                'compression_ratio': 50,  # Default compression ratio
+                'summary': summary_result,
+                'compression_ratio': int((len(summary_result.split()) / len(text.split())) * 100),
                 'processing_time': int((time.time() - start_time) * 1000)
             }
-            
-            if not result or 'minimum' not in result:
-                return jsonify({'error': 'Failed to generate summary'}), 500
+            return jsonify(result)
         except Exception as e:
             app.logger.error(f"Error generating summary: {str(e)}")
-            return jsonify({'error': 'Failed to generate summary'}), 500
             return jsonify({'error': 'Failed to generate summary'}), 500
 
         processing_time = int((time.time() - start_time) * 1000)
