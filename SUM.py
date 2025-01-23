@@ -66,7 +66,27 @@ class MagnumOpusSUM:
         summary = nlargest(select_length, zip(sentences, sentence_scores), key=lambda x: x[1])
         return ' '.join([s[0] for s in summary])
 
-    def process_text(self, text, num_topics):
+    def process_text(self, text, model_type='tiny', num_topics=5):
+        if model_type == 'tiny':
+            # Simple extractive summarization for browser-based processing
+            sentences = sent_tokenize(text)
+            word_freq = {}
+            for sentence in sentences:
+                words = word_tokenize(sentence.lower())
+                for word in words:
+                    if word not in self.stop_words:
+                        word_freq[word] = word_freq.get(word, 0) + 1
+                        
+            sentence_scores = {}
+            for sentence in sentences:
+                score = sum(word_freq.get(word, 0) for word in word_tokenize(sentence.lower()))
+                sentence_scores[sentence] = score
+                
+            summary_sentences = nlargest(3, sentence_scores, key=sentence_scores.get)
+            summary = ' '.join(summary_sentences)
+            
+            return {'minimum': summary, 'full': text}
+            
         preprocessed_text = self.preprocess_text(text)
         
         result = {
