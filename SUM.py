@@ -20,7 +20,7 @@ from googletrans import Translator
 from flask import Flask, request, jsonify, render_template, send_file
 from werkzeug.utils import secure_filename
 import PyPDF2
-import docx
+from docx import Document
 
 class MagnumOpusSUM:
     def __init__(self):
