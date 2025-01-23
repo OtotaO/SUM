@@ -186,4 +186,4 @@ def save_progress():
     return jsonify({'message': 'Progress and knowledge base saved successfully!'})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=3000, debug=True)
