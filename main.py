@@ -49,6 +49,8 @@ def summarize():
         if not data or 'text' not in data:
             return jsonify({'error': 'No text provided'}), 400
             
+        app.logger.info(f"Received request with data: {data}")
+            
         text = data['text']
         level = int(data.get('level', 50))
         model_type = data.get('model', 'tiny')

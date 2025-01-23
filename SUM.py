@@ -1,8 +1,23 @@
 import os
 import json
 import nltk
+import spacy
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize, sent_tokenize
+from nltk.stem import WordNetLemmatizer
+from textblob import TextBlob
+from wordcloud import WordCloud
+import matplotlib.pyplot as plt
+from langdetect import detect
+from googletrans import Translator
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.decomposition import LatentDirichletAllocation
+
+# Download spacy model
+try:
+    nlp = spacy.load('en_core_web_sm')
+except:
+    os.system('python -m spacy download en_core_web_sm')
 from nltk.stem import WordNetLemmatizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
