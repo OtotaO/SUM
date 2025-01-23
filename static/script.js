@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const response = await fetch('/summarize', {
+            const response = await fetch('/process_text', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
