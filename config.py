@@ -79,11 +79,6 @@ config = {
     'testing': TestingConfig,
     'default': DevelopmentConfig
 }
-    'development': DevelopmentConfig,
-    'production': ProductionConfig,
-    'testing': TestingConfig,
-    'default': DevelopmentConfig
-}
 
 # Set the active configuration
 active_config = config[os.getenv('FLASK_ENV', 'default')]

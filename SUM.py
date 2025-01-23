@@ -175,12 +175,12 @@ class MagnumOpusSUM:
         return self.translator.translate(text, dest=target_lang).text if detected_lang != target_lang else text
 
     def generate_word_cloud(self, text):
+        fig = plt.figure(figsize=(10, 5))
         wordcloud = WordCloud(width=800, height=400, background_color='white').generate(text)
-        plt.figure(figsize=(10, 5))
         plt.imshow(wordcloud, interpolation='bilinear')
         plt.axis('off')
         plt.title('Word Cloud')
-        return plt
+        return fig
 
     def adjust_parameters(self, feedback_score):
         self.feedback_scores.append(feedback_score)

@@ -2,11 +2,6 @@ import os
 import json
 import time
 import nltk
-nltk.download('punkt')
-nltk.download('stopwords')
-nltk.download('wordnet')
-nltk.download('averaged_perceptron_tagger')
-
 # Download required NLTK data
 nltk.download('punkt')
 nltk.download('stopwords')
