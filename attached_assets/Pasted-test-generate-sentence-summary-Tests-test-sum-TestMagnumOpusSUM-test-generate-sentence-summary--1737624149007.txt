@@ -1,0 +1,43 @@
+test_generate_sentence_summary (Tests.test_sum.TestMagnumOpusSUM.test_generate_sentence_summary) ... /home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/httpx/_config.py:156: DeprecationWarning: ssl.PROTOCOL_TLS is deprecated
+  context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/httpx/_config.py:159: DeprecationWarning: ssl.OP_NO_SSL*/ssl.OP_NO_TLS* options are deprecated
+  context.options |= ssl.OP_NO_TLSv1
+/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/httpx/_config.py:160: DeprecationWarning: ssl.OP_NO_SSL*/ssl.OP_NO_TLS* options are deprecated
+  context.options |= ssl.OP_NO_TLSv1_1
+FAIL
+test_generate_tag_summary (Tests.test_sum.TestMagnumOpusSUM.test_generate_tag_summary) ... ok
+test_preprocess_text (Tests.test_sum.TestMagnumOpusSUM.test_preprocess_text) ... ok
+test_adjust_parameters (Tests.test_sum.TestSUM.test_adjust_parameters) ... ok
+test_detect_language (Tests.test_sum.TestSUM.test_detect_language) ... ok
+test_extract_keywords (Tests.test_sum.TestSUM.test_extract_keywords) ... ok
+test_generate_summaries (Tests.test_sum.TestSUM.test_generate_summaries) ... ok
+test_generate_word_cloud (Tests.test_sum.TestSUM.test_generate_word_cloud) ... ok
+test_identify_entities (Tests.test_sum.TestSUM.test_identify_entities) ... ok
+test_identify_main_concept (Tests.test_sum.TestSUM.test_identify_main_concept) ... ok
+test_preprocess_text (Tests.test_sum.TestSUM.test_preprocess_text) ... FAIL
+test_sentiment_analysis (Tests.test_sum.TestSUM.test_sentiment_analysis) ... ok
+test_translate_text (Tests.test_sum.TestSUM.test_translate_text) ... ok
+/nix/store/nb21sc3npfc8gvazwnrjxpvb5d48jysx-python3-3.12.7/lib/python3.12/unittest/suite.py:84: ResourceWarning: unclosed <ssl.SSLSocket fd=4, family=2, type=1, proto=6, laddr=('172.31.196.31', 38484), raddr=('74.125.132.95', 443)>
+  return self.run(*args, **kwds)
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+
+======================================================================
+FAIL: test_generate_sentence_summary (Tests.test_sum.TestMagnumOpusSUM.test_generate_sentence_summary)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/runner/workspace/Tests/test_sum.py", line 90, in test_generate_sentence_summary
+    self.assertTrue(len(summary) < len(self.test_text))
+AssertionError: False is not true
+
+======================================================================
+FAIL: test_preprocess_text (Tests.test_sum.TestSUM.test_preprocess_text)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/runner/workspace/Tests/test_sum.py", line 23, in test_preprocess_text
+    self.assertNotIn("a", preprocessed)
+AssertionError: 'a' unexpectedly found in 'test sentence . contains multiple sentence . use test various functionality .'
+
+----------------------------------------------------------------------
+Ran 13 tests in 11.621s
+
+FAILED (failures=2)
