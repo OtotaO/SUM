@@ -106,21 +106,56 @@ class MagnumOpusSUM:
         summary = nlargest(select_length, zip(sentences, sentence_scores), key=lambda x: x[1])
         return ' '.join([s[0] for s in summary])
 
-    def process_text(self, text, model_type='tiny', num_topics=5):
+    def process_text(self, text, summary_type='all'):
         # Reset state for fresh processing
         self.vectorizer = TfidfVectorizer(stop_words='english')
         
-        if model_type == 'tiny':
-            # Simple extractive summarization for browser-based processing
+        if not text.strip():
+            return {'error': 'Empty text provided'}
+
+        # Generate tags
+        def generate_tags(text):
+            words = word_tokenize(text.lower())
+            filtered_words = [w for w in words if w not in self.stop_words and w.isalnum()]
+            freq_dist = nltk.FreqDist(filtered_words)
+            tags = [word for word, freq in freq_dist.most_common(10)]
+            return ', '.join(tags)
+
+        # Generate terse summary
+        def generate_terse_sum(text):
             sentences = sent_tokenize(text)
-            word_freq = {}
+            if not sentences:
+                return ""
             
-            # Clear previous word frequencies
-            word_freq.clear()
+            # Get most important sentence based on TF-IDF
+            tfidf_matrix = self.vectorizer.fit_transform(sentences)
+            scores = tfidf_matrix.sum(axis=1).A1
+            best_sentence = sentences[scores.argmax()]
+            return best_sentence
+
+        # Generate detailed summary
+        def generate_detailed_summary(text):
+            sentences = sent_tokenize(text)
+            if not sentences:
+                return ""
+                
+            tfidf_matrix = self.vectorizer.fit_transform(sentences)
+            scores = tfidf_matrix.sum(axis=1).A1
             
-            for sentence in sentences:
-                words = word_tokenize(sentence.lower())
-                for word in words:
+            # Select top 30% of sentences
+            num_sentences = max(2, int(len(sentences) * 0.3))
+            top_indices = scores.argsort()[-num_sentences:][::-1]
+            
+            summary_sentences = [sentences[i] for i in sorted(top_indices)]
+            return ' '.join(summary_sentences)
+
+        result = {
+            'tags': generate_tags(text),
+            'sum': generate_terse_sum(text),
+            'summary': generate_detailed_summary(text)
+        }
+        
+        return result
                     if word not in self.stop_words:
                         word_freq[word] = word_freq.get(word, 0) + 1
                         

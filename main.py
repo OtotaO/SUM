@@ -47,8 +47,12 @@ def summarize():
         app.logger.info(f"Received request with data: {data}")
             
         text = data['text']
-        level = int(data.get('level', 50))
-        model_type = data.get('model', 'tiny')
+        result = summarizer.process_text(text)
+        
+        if 'error' in result:
+            return jsonify({'error': result['error']}), 400
+            
+        return jsonify(result)
         
         if not text.strip():
             return jsonify({'error': 'Empty text provided'}), 400
