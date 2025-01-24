@@ -1,4 +1,3 @@
-
 document.addEventListener('DOMContentLoaded', () => {
     const summaryLevels = document.getElementsByName('summary-level');
     const modelType = document.getElementById('model-type');
@@ -40,12 +39,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const result = await response.json();
-            
+
             if (result.error) {
                 throw new Error(result.error);
             }
 
-            // Display the appropriate summary based on the selected level
+            // Display the appropriate summary based on the selected level.  This assumes the backend now returns minimum_summary and full_summary
             if (selectedLevel === 'tags') {
                 summaryOutput.textContent = result.tags || '';
             } else if (selectedLevel === 'sum') {
