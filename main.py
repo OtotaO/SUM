@@ -9,7 +9,7 @@ nltk.download('wordnet')
 nltk.download('averaged_perceptron_tagger')
 from flask import Flask, request, jsonify, render_template, send_file
 from werkzeug.utils import secure_filename
-from SUM import MagnumOpusSUM
+from SUM import SimpleSUM
 import matplotlib
 matplotlib.use('Agg')  # Use Agg backend to avoid GUI issues
 import matplotlib.pyplot as plt
@@ -23,8 +23,8 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 for folder in [app.config['UPLOAD_FOLDER'], 'static', 'data']:
     os.makedirs(folder, exist_ok=True)
 
-# Initialize MagnumOpusSUM
-summarizer = MagnumOpusSUM()
+# Initialize SimpleSUM
+summarizer = SimpleSUM()
 
 # Load the knowledge base from JSON file if it exists
 knowledge_base_path = os.path.join('data', 'knowledge_base.json')
@@ -43,50 +43,14 @@ def summarize():
         data = request.json
         if not data or 'text' not in data:
             return jsonify({'error': 'No text provided'}), 400
-            
-        app.logger.info(f"Received request with data: {data}")
-            
+
         text = data['text']
-        result = summarizer.process_text(text)
-        
-        if 'error' in result:
-            return jsonify({'error': result['error']}), 400
-            
+        summary_type = data.get('type', 'sum')
+        result = summarizer.process_text(text, summary_type)
+
         return jsonify(result)
-        
-        if not text.strip():
-            return jsonify({'error': 'Empty text provided'}), 400
-
-        start_time = time.time()
-
-        # Process text with summarizer
-        try:
-            summary = summarizer.preprocess_text(text)
-            summary_result = summarizer.generate_summaries([summary])[0]
-            
-            result = {
-                'summary': summary_result,
-                'compression_ratio': int((len(summary_result.split()) / len(text.split())) * 100),
-                'processing_time': int((time.time() - start_time) * 1000)
-            }
-            return jsonify(result)
-        except Exception as e:
-            app.logger.error(f"Error generating summary: {str(e)}")
-            return jsonify({'error': 'Failed to generate summary'}), 500
-
-        processing_time = int((time.time() - start_time) * 1000)
-        original_words = len(text.split())
-        summary_words = len(result['minimum'].split())
-        compression_ratio = int((summary_words / original_words) * 100)
-
-        return jsonify({
-            'summary': result['minimum'],
-            'compression_ratio': compression_ratio,
-            'processing_time': processing_time
-        })
     except Exception as e:
-        app.logger.error(f"Error in summarize endpoint: {str(e)}")
-        return jsonify({'error': 'An error occurred while processing the text'}), 500
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/upload_model', methods=['POST'])
 def upload_model():
@@ -211,4 +175,4 @@ def save_progress():
     return jsonify({'message': 'Progress and knowledge base saved successfully!'})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=3000, debug=True)
+    app.run(host='0.0.0.0', port=3000)

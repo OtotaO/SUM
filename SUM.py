@@ -1,287 +1,57 @@
 import os
 import json
 import nltk
-import spacy
+from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize, sent_tokenize
-from nltk.stem import WordNetLemmatizer
-from textblob import TextBlob
-from wordcloud import WordCloud
-import matplotlib.pyplot as plt
-from langdetect import detect
-from googletrans import Translator
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.decomposition import LatentDirichletAllocation
-
-# Download spacy model
-try:
-    nlp = spacy.load('en_core_web_sm')
-except:
-    os.system('python -m spacy download en_core_web_sm')
-from nltk.stem import WordNetLemmatizer
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.decomposition import LatentDirichletAllocation
-import spacy
-import networkx as nx
-import matplotlib.pyplot as plt
-from nltk.tokenize import sent_tokenize
 from heapq import nlargest
-from textblob import TextBlob
-import pandas as pd
-from wordcloud import WordCloud
-from datetime import datetime
-from langdetect import detect
-from googletrans import Translator
+from collections import defaultdict
 from flask import Flask, request, jsonify, render_template, send_file
 from werkzeug.utils import secure_filename
 import PyPDF2
 from docx import Document
-from nltk.tokenize import sent_tokenize, word_tokenize
-from nltk.corpus import stopwords
-from heapq import nlargest
-import nltk
 
-class MagnumOpusSUM:
+class SimpleSUM:
     def __init__(self):
-        # Download all required NLTK resources
         nltk.download('punkt', quiet=True)
         nltk.download('stopwords', quiet=True)
-        nltk.download('wordnet', quiet=True)
-        nltk.download('punkt_tab', quiet=True)
-        nltk.download('averaged_perceptron_tagger', quiet=True)
-        
-        # Initialize NLP tools after downloads
         self.stop_words = set(stopwords.words('english'))
-        self.lemmatizer = WordNetLemmatizer()
-        self.vectorizer = TfidfVectorizer(stop_words='english')
-        self.nlp = spacy.load('en_core_web_sm')  # Use smaller model for efficiency
-        self.translator = Translator()
-        
-        # Initialize data structures
-        self.summaries = []
-        self.feedback_scores = []
-        
-        # Customizable parameters
-        self.num_tags = 5
-        self.num_sentences = 3
-        self.paragraph_ratio = 0.2
 
-    def preprocess_text(self, text):
-        words = word_tokenize(text.lower())
-        return ' '.join([self.lemmatizer.lemmatize(word) for word in words if word not in self.stop_words])
-
-    def generate_tag_summary(self, text):
-        words = word_tokenize(text.lower())
-        words = [self.lemmatizer.lemmatize(word) for word in words if word not in self.stop_words]
-        return [word for word, _ in nltk.FreqDist(words).most_common(self.num_tags)]
-
-    def generate_sentence_summary(self, text):
-        sentences = sent_tokenize(text)
-        if not sentences:
-            return ""
-            
-        # Create fresh vectorizer for each summary
-        self.vectorizer = TfidfVectorizer(stop_words='english')
-        
-        # Extract key sentences based on TF-IDF scores
-        sentence_scores = self.calculate_sentence_scores(sentences)
-        
-        # Select at most 20% of sentences, minimum 1
-        num_sentences = max(1, min(3, int(len(sentences) * 0.2)))
-        
-        # Get top sentences while preserving order
-        top_indices = sorted(range(len(sentence_scores)), 
-                           key=lambda i: sentence_scores[i], 
-                           reverse=True)[:num_sentences]
-        
-        # Keep original order for readability
-        summary_sentences = [sentences[i] for i in sorted(top_indices)]
-        
-        return " ".join(summary_sentences)
-
-    def generate_paragraph_summary(self, text):
-        sentences = sent_tokenize(text)
-        sentence_scores = self.calculate_sentence_scores(sentences)
-        select_length = max(int(len(sentences) * self.paragraph_ratio), 1)
-        summary = nlargest(select_length, zip(sentences, sentence_scores), key=lambda x: x[1])
-        return ' '.join([s[0] for s in summary])
-
-    def process_text(self, text, summary_type='all'):
+    def process_text(self, text, summary_type='sum'):
         if not text.strip():
             return {'error': 'Empty text provided'}
 
-        def generate_tags(text):
-            """Convert text into descriptive tags"""
-            words = word_tokenize(text.lower())
-            filtered_words = [w for w in words if w not in self.stop_words and w.isalnum()]
-            freq_dist = nltk.FreqDist(filtered_words)
-            tags = [word for word, freq in freq_dist.most_common(15)]
-            return ', '.join(tags)
+        sentences = sent_tokenize(text)
+        word_freq = self._calculate_word_freq(text)
+        sentence_scores = self._score_sentences(sentences, word_freq)
 
-        def generate_sum(text):
-            """Generate most essential points"""
-            sentences = sent_tokenize(text)
-            if not sentences:
-                return ""
-            tfidf_matrix = self.vectorizer.fit_transform(sentences)
-            scores = tfidf_matrix.sum(axis=1).A1
-            key_sentence = sentences[scores.argmax()]
-            return key_sentence
+        if summary_type == 'tags':
+            return {'tags': self._get_top_words(word_freq, 5)}
+        elif summary_type == 'sum':
+            return {'sum': self._get_summary(sentences, sentence_scores, 1)}
+        else:  # summary
+            return {'summary': self._get_summary(sentences, sentence_scores, 3)}
 
-        def generate_summary(text):
-            """Generate detailed multi-paragraph summary"""
-            sentences = sent_tokenize(text)
-            if not sentences:
-                return ""
-            tfidf_matrix = self.vectorizer.fit_transform(sentences)
-            scores = tfidf_matrix.sum(axis=1).A1
-            num_sentences = max(3, int(len(sentences) * 0.4))
-            top_indices = scores.argsort()[-num_sentences:][::-1]
-            summary_sentences = [sentences[i] for i in sorted(top_indices)]
-            return '\n\n'.join([' '.join(summary_sentences[:len(summary_sentences)//2]), 
-                              ' '.join(summary_sentences[len(summary_sentences)//2:])])
+    def _calculate_word_freq(self, text):
+        word_freq = defaultdict(int)
+        for word in word_tokenize(text.lower()):
+            if word.isalnum() and word not in self.stop_words:
+                word_freq[word] += 1
+        return word_freq
 
-        result = {
-            'tags': generate_tags(text),
-            'sum': generate_sum(text),
-            'summary': generate_summary(text)
-        }
-        def generate_tags(text):
-            words = word_tokenize(text.lower())
-            filtered_words = [w for w in words if w not in self.stop_words and w.isalnum()]
-            freq_dist = nltk.FreqDist(filtered_words)
-            tags = [word for word, freq in freq_dist.most_common(10)]
-            return ', '.join(tags)
+    def _score_sentences(self, sentences, word_freq):
+        sentence_scores = defaultdict(int)
+        for sentence in sentences:
+            for word in word_tokenize(sentence.lower()):
+                if word in word_freq:
+                    sentence_scores[sentence] += word_freq[word]
+        return sentence_scores
 
-        # Generate terse summary
-        def generate_terse_sum(text):
-            sentences = sent_tokenize(text)
-            if not sentences:
-                return ""
-            
-            # Get most important sentence based on TF-IDF
-            tfidf_matrix = self.vectorizer.fit_transform(sentences)
-            scores = tfidf_matrix.sum(axis=1).A1
-            best_sentence = sentences[scores.argmax()]
-            return best_sentence
+    def _get_top_words(self, word_freq, n):
+        return ', '.join(sorted(word_freq, key=word_freq.get, reverse=True)[:n])
 
-        # Generate detailed summary
-        def generate_detailed_summary(text):
-            sentences = sent_tokenize(text)
-            if not sentences:
-                return ""
-                
-            tfidf_matrix = self.vectorizer.fit_transform(sentences)
-            scores = tfidf_matrix.sum(axis=1).A1
-            
-            # Select top 30% of sentences
-            num_sentences = max(2, int(len(sentences) * 0.3))
-            top_indices = scores.argsort()[-num_sentences:][::-1]
-            
-            summary_sentences = [sentences[i] for i in sorted(top_indices)]
-            return ' '.join(summary_sentences)
-
-        result = {
-            'tags': generate_tags(text),
-            'sum': generate_terse_sum(text),
-            'summary': generate_detailed_summary(text)
-        }
-        
-        return result
-        
-        result = {
-            'tags': self.generate_tag_summary(preprocessed_text),
-            'minimum': self.generate_sentence_summary(preprocessed_text),
-            'full': self.generate_paragraph_summary(preprocessed_text),
-            'entities': self.identify_entities(text),
-            'main_concept': self.identify_main_concept(text),
-            'sentiment': self.sentiment_analysis(text),
-            'keywords': self.extract_keywords(preprocessed_text),
-            'topics': self.perform_topic_modeling([preprocessed_text], num_topics)
-        }
-        
-        self.summaries.append(result)
-        return result
-
-    def identify_entities(self, text):
-        doc = self.nlp(text)
-        return [(ent.text, ent.label_) for ent in doc.ents]
-
-    def identify_main_concept(self, text):
-        doc = self.nlp(text)
-        noun_chunks = list(doc.noun_chunks)
-        return max(noun_chunks, key=lambda chunk: chunk.root.vector_norm).text if noun_chunks else ""
-
-    def sentiment_analysis(self, text):
-        sentiment = TextBlob(text).sentiment.polarity
-        if sentiment > 0.1:
-            return 'Positive'
-        elif sentiment < -0.1:
-            return 'Negative'
-        else:
-            return 'Neutral'
-
-    def extract_keywords(self, text, top_n=5):
-        tfidf_matrix = self.vectorizer.fit_transform([text])
-        feature_names = self.vectorizer.get_feature_names_out()
-        tfidf_scores = zip(feature_names, tfidf_matrix.toarray()[0])
-        return [word for word, score in sorted(tfidf_scores, key=lambda x: x[1], reverse=True)[:top_n]]
-
-    def calculate_sentence_scores(self, sentences):
-        tfidf_matrix = self.vectorizer.fit_transform(sentences)
-        feature_names = self.vectorizer.get_feature_names_out()
-        return [sum(tfidf_matrix[i, self.vectorizer.vocabulary_[word]] 
-                    for word in word_tokenize(sentence) if word in feature_names)
-                for i, sentence in enumerate(sentences)]
-
-    def get_top_sentences(self, sentences, sentence_scores):
-        return " ".join([sentence for sentence, _ in 
-                         sorted(zip(sentences, sentence_scores), key=lambda x: x[1], reverse=True)[:self.num_sentences]])
-
-    def perform_topic_modeling(self, texts, num_topics=5):
-        vectorized_texts = self.vectorizer.fit_transform(texts)
-        lda_model = LatentDirichletAllocation(n_components=num_topics, random_state=42)
-        lda_model.fit(vectorized_texts)
-        
-        feature_names = self.vectorizer.get_feature_names_out()
-        return [f"Topic {i+1}: {', '.join([feature_names[i] for i in topic.argsort()[:-10 - 1:-1]])}" 
-                for i, topic in enumerate(lda_model.components_)]
-
-    def detect_language(self, text):
-        return detect(text)
-
-    def translate_text(self, text, target_lang='en'):
-        detected_lang = self.detect_language(text)
-        return self.translator.translate(text, dest=target_lang).text if detected_lang != target_lang else text
-
-    def generate_word_cloud(self, text):
-        fig = plt.figure(figsize=(10, 5))
-        wordcloud = WordCloud(width=800, height=400, background_color='white').generate(text)
-        plt.imshow(wordcloud, interpolation='bilinear')
-        plt.axis('off')
-        plt.title('Word Cloud')
-        return fig
-
-    def generate_summaries(self, texts):
-        """Generate summaries for a list of texts."""
-        return [self.generate_sentence_summary(text) for text in texts]
-
-    def adjust_parameters(self, feedback_score):
-        self.feedback_scores.append(feedback_score)
-        if len(self.feedback_scores) < 5:
-            return None
-
-        avg_score = sum(self.feedback_scores[-5:]) / 5
-        if avg_score < 3:
-            self.num_tags = min(10, self.num_tags + 1)
-            self.num_sentences = min(5, self.num_sentences + 1)
-            self.paragraph_ratio = min(0.3, self.paragraph_ratio + 0.05)
-        elif avg_score > 4:
-            self.num_tags = max(3, self.num_tags - 1)
-            self.num_sentences = max(2, self.num_sentences - 1)
-            self.paragraph_ratio = max(0.1, self.paragraph_ratio - 0.05)
-
-        return f"Parameters adjusted: Tags={self.num_tags}, Sentences={self.num_sentences}, Paragraph ratio={self.paragraph_ratio:.2f}"
+    def _get_summary(self, sentences, sentence_scores, n):
+        summary_sentences = nlargest(n, sentence_scores, key=sentence_scores.get)
+        return ' '.join(summary_sentences)
 
 # Flask application
 app = Flask(__name__)
@@ -291,7 +61,7 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 # Ensure upload folder exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-summarizer = MagnumOpusSUM()
+summarizer = SimpleSUM()
 
 @app.route('/')
 def index():
@@ -301,31 +71,14 @@ def index():
 def process_text():
     try:
         text = request.form['text']
-        num_topics = int(request.form['num_topics'])
         summary_level = request.form['summary_level']
 
-        detected_lang = summarizer.detect_language(text)
-        if detected_lang != 'en':
-            text = summarizer.translate_text(text)
-
-        result = summarizer.process_text(text, num_topics)
+        result = summarizer.process_text(text, summary_level)
         
-        wordcloud = summarizer.generate_word_cloud(text)
-        wordcloud_path = os.path.join('static', 'wordcloud.png')
-        wordcloud.savefig(wordcloud_path)
-        plt.close()
-
         response = {
-            'tags': result['tags'],
-            'minimum_summary': result['minimum'],
-            'full_summary': result['full'],
-            'entities': result['entities'],
-            'main_concept': result['main_concept'],
-            'sentiment': result['sentiment'],
-            'keywords': result['keywords'],
-            'topics': result['topics'],
-            'original_language': detected_lang,
-            'wordcloud_path': wordcloud_path,
+            'tags': result.get('tags', ''),
+            'minimum_summary': result.get('sum', ''),
+            'full_summary': result.get('summary', ''),
             'current_level': summary_level
         }
 
@@ -370,7 +123,7 @@ def extract_text_from_pdf(file_path):
         return ' '.join(page.extract_text() for page in reader.pages)
 
 def extract_text_from_docx(file_path):
-    doc = docx.Document(file_path)
+    doc = Document(file_path)
     return ' '.join(paragraph.text for paragraph in doc.paragraphs)
 
 @app.route('/export_summary', methods=['POST'])
@@ -381,14 +134,6 @@ def export_summary():
         f.write(summary)
     return send_file(filename, as_attachment=True)
 
-@app.route('/feedback', methods=['POST'])
-def feedback():
-    try:
-        score = int(request.json['score'])
-        message = summarizer.adjust_parameters(score)
-        return jsonify({'message': message if message else "Feedback recorded. Not enough data to adjust parameters yet."})
-    except ValueError:
-        return jsonify({'error': 'Invalid feedback score'}), 400
 
 if __name__ == '__main__':
     app.run(debug=True)
