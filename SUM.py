@@ -22,15 +22,14 @@ class SimpleSUM:
             nltk_data_dir = os.path.expanduser('~/nltk_data')
             os.makedirs(nltk_data_dir, exist_ok=True)
             
-            # Define required NLTK resources
-            # Download and verify required NLTK resources
-            try:
-                nltk.download('punkt', download_dir=nltk_data_dir, quiet=True)
-                nltk.download('stopwords', download_dir=nltk_data_dir, quiet=True)
-                nltk.download('wordnet', download_dir=nltk_data_dir, quiet=True)
-            except Exception as e:
-                logger.error(f"Error downloading NLTK resources: {str(e)}")
-                raise RuntimeError("Failed to initialize NLTK resources")
+            # Download required NLTK resources
+            resources = ['punkt', 'stopwords', 'wordnet']
+            for resource in resources:
+                try:
+                    nltk.download(resource, quiet=True)
+                except Exception as e:
+                    logger.error(f"Error downloading {resource}: {str(e)}")
+                    raise RuntimeError(f"Failed to download NLTK resource: {resource}")
         except Exception as e:
             logger.error(f"Error initializing NLTK: {str(e)}")
             raise RuntimeError("Failed to initialize NLTK resources")
