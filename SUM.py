@@ -1,8 +1,8 @@
-
 import nltk
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.corpus import stopwords
 from collections import defaultdict
+
 import os
 
 class SimpleSUM:
@@ -11,11 +11,14 @@ class SimpleSUM:
             # Create nltk_data directory
             nltk_data_dir = os.path.expanduser('~/nltk_data')
             os.makedirs(nltk_data_dir, exist_ok=True)
-            
-            nltk.download('punkt', quiet=True)
-            nltk.download('stopwords', quiet=True)
-            nltk.download('wordnet', quiet=True)
-            
+
+            # Download required NLTK resources
+            for resource in ['punkt', 'punkt_tab', 'stopwords', 'averaged_perceptron_tagger', 'wordnet']:
+                try:
+                    nltk.download(resource, quiet=True, raise_on_error=False)
+                except Exception as e:
+                    print(f"Error downloading {resource}: {str(e)}")
+
             self.stop_words = set(stopwords.words('english'))
         except Exception as e:
             print(f"Error initializing NLTK: {str(e)}")
@@ -83,8 +86,8 @@ class SimpleSUM:
 
 def main():
     summarizer = SimpleSUM()
-    text = "This is a sample text. This text will be summarized. This is another sentence. This is a fourth sentence to make it longer than the example in the previous version."
-    config = {'maxTokens': 20}  #test with a low token limit
+    text = "This is a sample text. This text will be summarized. This is another sentence.  This is a fourth sentence to make it longer than the example in the previous version."
+    config = {'maxTokens': 20} #test with a low token limit
     summary = summarizer.process_text(text, config)
     print(summary)
 
