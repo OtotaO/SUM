@@ -70,18 +70,26 @@ def index():
 @app.route('/process_text', methods=['POST'])
 def process_text():
     try:
-        text = request.form['text']
-        summary_level = request.form['summary_level']
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+            
+        text = data.get('text')
+        summary_level = data.get('level', 'sum')
+        
+        if not text:
+            return jsonify({'error': 'No text provided'}), 400
 
         result = summarizer.process_text(text, summary_level)
         
-        response = {
-            'tags': result.get('tags', ''),
-            'minimum_summary': result.get('sum', ''),
-            'full_summary': result.get('summary', ''),
-            'current_level': summary_level
-        }
-
+        response = {}
+        if summary_level == 'tags':
+            response['tags'] = result.get('tags', '')
+        elif summary_level == 'sum':
+            response['minimum_summary'] = result.get('sum', '')
+        else:
+            response['full_summary'] = result.get('summary', '')
+        
         return jsonify(response)
     except Exception as e:
         return jsonify({'error': str(e)}), 400
