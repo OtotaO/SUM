@@ -113,7 +113,55 @@ class MagnumOpusSUM:
         if not text.strip():
             return {'error': 'Empty text provided'}
 
-        # Generate tags
+        def generate_ontological_tags(text):
+            # Generate comprehensive tags with ontological focus
+            words = word_tokenize(text.lower())
+            filtered_words = [w for w in words if w not in self.stop_words and w.isalnum()]
+            freq_dist = nltk.FreqDist(filtered_words)
+            tags = [word for word, freq in freq_dist.most_common(15)]  # Get more tags for ontological coverage
+            return ', '.join(tags)
+
+        def generate_terse_sum(text):
+            # Generate the most concise possible summary
+            sentences = sent_tokenize(text)
+            if not sentences:
+                return ""
+            
+            tfidf_matrix = self.vectorizer.fit_transform(sentences)
+            scores = tfidf_matrix.sum(axis=1).A1
+            most_important_sentence = sentences[scores.argmax()]
+            # Further compress the sentence if possible
+            words = word_tokenize(most_important_sentence)
+            if len(words) > 15:  # If sentence is long, take only key parts
+                return ' '.join(words[:15]) + '...'
+            return most_important_sentence
+
+        def generate_detailed_summary(text):
+            # Generate a more comprehensive multi-paragraph summary
+            sentences = sent_tokenize(text)
+            if not sentences:
+                return ""
+                
+            tfidf_matrix = self.vectorizer.fit_transform(sentences)
+            scores = tfidf_matrix.sum(axis=1).A1
+            
+            # Select top 40% of sentences for detailed coverage
+            num_sentences = max(3, int(len(sentences) * 0.4))
+            top_indices = scores.argsort()[-num_sentences:][::-1]
+            
+            summary_sentences = [sentences[i] for i in sorted(top_indices)]
+            
+            # Group into paragraphs
+            if len(summary_sentences) > 3:
+                mid = len(summary_sentences) // 2
+                return ' '.join(summary_sentences[:mid]) + '\n\n' + ' '.join(summary_sentences[mid:])
+            return ' '.join(summary_sentences)
+
+        result = {
+            'tags': generate_ontological_tags(text),
+            'sum': generate_terse_sum(text),
+            'summary': generate_detailed_summary(text)
+        }
         def generate_tags(text):
             words = word_tokenize(text.lower())
             filtered_words = [w for w in words if w not in self.stop_words and w.isalnum()]
