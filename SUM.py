@@ -156,20 +156,6 @@ class MagnumOpusSUM:
         }
         
         return result
-                    if word not in self.stop_words:
-                        word_freq[word] = word_freq.get(word, 0) + 1
-                        
-            sentence_scores = {}
-            for sentence in sentences:
-                score = sum(word_freq.get(word, 0) for word in word_tokenize(sentence.lower()))
-                sentence_scores[sentence] = score
-                
-            summary_sentences = nlargest(3, sentence_scores, key=sentence_scores.get)
-            summary = ' '.join(summary_sentences)
-            
-            return {'minimum': summary, 'full': text}
-            
-        preprocessed_text = self.preprocess_text(text)
         
         result = {
             'tags': self.generate_tag_summary(preprocessed_text),
