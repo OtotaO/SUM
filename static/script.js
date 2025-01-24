@@ -1,16 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const summaryLevels = document.getElementsByName('summary-level');
     const summarizeBtn = document.getElementById('summarize-btn');
     const summaryOutput = document.getElementById('summary-output');
-
-    let selectedLevel = 'sum'; // Default level
-
-    // Add event listeners to radio buttons
-    for (let i = 0; i < summaryLevels.length; i++) {
-        summaryLevels[i].addEventListener('change', (e) => {
-            selectedLevel = e.target.id; // Use the id as the level (tags, sum, summary)
-        });
-    }
 
     summarizeBtn.addEventListener('click', async () => {
         const text = document.getElementById('input-text').value;
@@ -26,44 +16,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    text: text,
-                    level: selectedLevel,
-                    model: 'tiny'
-                })
+                body: JSON.stringify({ text: text })
             });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
 
             const result = await response.json();
 
             if (result.error) {
-                throw new Error(result.error);
-            }
-
-            // Display the appropriate summary based on the selected level.  This assumes the backend now returns minimum_summary and full_summary
-            if (selectedLevel === 'tags') {
-                summaryOutput.textContent = result.tags || '';
-            } else if (selectedLevel === 'sum') {
-                summaryOutput.textContent = result.minimum_summary || '';
+                summaryOutput.textContent = `Error: ${result.error}`;
             } else {
-                summaryOutput.textContent = result.full_summary || '';
-            }
-
-            // Update metrics if available
-            if (document.getElementById('compression-ratio')) {
-                document.getElementById('compression-ratio').textContent = 
-                    `Compression: ${result.compression_ratio || 0}%`;
-            }
-            if (document.getElementById('processing-time')) {
-                document.getElementById('processing-time').textContent = 
-                    `Processing Time: ${result.processing_time || 0}ms`;
+                summaryOutput.textContent = result.summary || 'No summary generated';
             }
         } catch (error) {
             console.error('Error:', error);
-            summaryOutput.textContent = `Error: ${error.message}`;
+            summaryOutput.textContent = 'An error occurred while processing the text';
         }
     });
 });

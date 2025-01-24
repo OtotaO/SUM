@@ -1,3 +1,4 @@
+
 from flask import Flask, request, jsonify, render_template
 from SUM import SimpleSUM
 
@@ -14,7 +15,7 @@ def process_text():
         data = request.get_json()
         if not data or 'text' not in data:
             return jsonify({'error': 'No text provided'}), 400
-
+            
         result = summarizer.process_text(data['text'])
         return jsonify(result)
     except Exception as e:

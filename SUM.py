@@ -2,7 +2,7 @@ import nltk
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.corpus import stopwords
 from collections import defaultdict
-from heapq import nlargest
+import nltk
 
 class SimpleSUM:
     def __init__(self):
@@ -10,38 +10,36 @@ class SimpleSUM:
         nltk.download('stopwords', quiet=True)
         self.stop_words = set(stopwords.words('english'))
 
-    def process_text(self, text, summary_type='sum'):
+    def process_text(self, text):
         if not text.strip():
             return {'error': 'Empty text provided'}
 
-        sentences = sent_tokenize(text)
-        word_freq = self._calculate_word_freq(text)
-        sentence_scores = self._score_sentences(sentences, word_freq)
+        try:
+            sentences = sent_tokenize(text)
+            if len(sentences) <= 2:
+                return {'summary': text}
 
-        summary = self._get_summary(sentences, sentence_scores, 3)
-        return {'summary': summary}
+            words = word_tokenize(text.lower())
+            word_freq = defaultdict(int)
 
-    def _calculate_word_freq(self, text):
-        word_freq = defaultdict(int)
-        for word in word_tokenize(text.lower()):
-            if word.isalnum() and word not in self.stop_words:
-                word_freq[word] += 1
-        return word_freq
+            for word in words:
+                if word.isalnum() and word not in self.stop_words:
+                    word_freq[word] += 1
 
-    def _score_sentences(self, sentences, word_freq):
-        sentence_scores = defaultdict(int)
-        for sentence in sentences:
-            for word in word_tokenize(sentence.lower()):
-                if word in word_freq:
-                    sentence_scores[sentence] += word_freq[word]
-        return sentence_scores
+            sentence_scores = defaultdict(int)
+            for sentence in sentences:
+                for word in word_tokenize(sentence.lower()):
+                    if word in word_freq:
+                        sentence_scores[sentence] += word_freq[word]
 
-    def _get_summary(self, sentences, sentence_scores, n):
-        summary_sentences = nlargest(n, sentence_scores, key=sentence_scores.get)
-        return ' '.join(summary_sentences)
+            summary_length = max(1, len(sentences) // 3)
+            summary_sentences = sorted(sentences, key=lambda s: sentence_scores[s], reverse=True)[:summary_length]
+            summary = ' '.join(summary_sentences)
 
-#This is the only remaining part of the original code.  The rest is removed because it is not needed.
-#This function is kept because it is used in the new SimpleSUM class.  All other functions are removed.
+            return {'summary': summary}
+        except Exception as e:
+            return {'error': str(e)}
+
 def main():
     summarizer = SimpleSUM()
     text = "This is a sample text. This text will be summarized.  This is another sentence."
