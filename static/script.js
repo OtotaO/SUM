@@ -1,8 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     const summaryLevels = document.getElementsByName('summary-level');
     const modelType = document.getElementById('model-type');
-    const customModel = document.getElementById('custom-model');
-    const uploadBtn = document.getElementById('upload-model');
     const summarizeBtn = document.getElementById('summarize-btn');
     const summaryOutput = document.getElementById('summary-output');
 
@@ -14,19 +12,6 @@ document.addEventListener('DOMContentLoaded', () => {
             selectedLevel = e.target.value;
         });
     }
-
-
-    modelType.addEventListener('change', (e) => {
-        if (e.target.value === 'custom') {
-            customModel.style.display = 'block';
-        } else {
-            customModel.style.display = 'none';
-        }
-    });
-
-    uploadBtn.addEventListener('click', () => {
-        customModel.click();
-    });
 
     customModel.addEventListener('change', async (e) => {
         const file = e.target.files[0];
