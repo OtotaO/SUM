@@ -1,4 +1,3 @@
-
 import nltk
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.corpus import stopwords
@@ -7,8 +6,10 @@ from collections import defaultdict
 class SimpleSUM:
     def __init__(self):
         try:
-            nltk.download('punkt', quiet=True)
-            nltk.download('stopwords', quiet=True)
+            nltk.download('punkt')
+            nltk.download('stopwords')
+            nltk.download('averaged_perceptron_tagger')
+            nltk.download('wordnet')
             self.stop_words = set(stopwords.words('english'))
         except Exception as e:
             print(f"Error initializing NLTK: {str(e)}")
