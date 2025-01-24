@@ -13,10 +13,18 @@
             <textarea id="input-text" placeholder="Enter text to summarize..."></textarea>
             
             <div class="controls">
-                <div class="slider-container">
+                <div class="summary-options">
                     <label>Summarization Level:</label>
-                    <input type="range" id="summary-level" min="1" max="100" value="50">
-                    <span id="level-value">50%</span>
+                    <div class="radio-group">
+                        <input type="radio" id="concise" name="summary-level" value="25">
+                        <label for="concise">Concise</label>
+                        
+                        <input type="radio" id="balanced" name="summary-level" value="50" checked>
+                        <label for="balanced">Balanced</label>
+                        
+                        <input type="radio" id="detailed" name="summary-level" value="75">
+                        <label for="detailed">Detailed</label>
+                    </div>
                 </div>
                 
                 <div class="model-selection">

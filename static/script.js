@@ -1,15 +1,20 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const summaryLevel = document.getElementById('summary-level');
-    const levelValue = document.getElementById('level-value');
+    const summaryLevels = document.getElementsByName('summary-level');
     const modelType = document.getElementById('model-type');
     const customModel = document.getElementById('custom-model');
     const uploadBtn = document.getElementById('upload-model');
     const summarizeBtn = document.getElementById('summarize-btn');
     const summaryOutput = document.getElementById('summary-output');
 
-    summaryLevel.addEventListener('input', (e) => {
-        levelValue.textContent = `${e.target.value}%`;
-    });
+    let selectedLevel = 'Balanced'; // Default level
+
+    // Add event listeners to radio buttons
+    for (let i = 0; i < summaryLevels.length; i++) {
+        summaryLevels[i].addEventListener('change', (e) => {
+            selectedLevel = e.target.value;
+        });
+    }
+
 
     modelType.addEventListener('change', (e) => {
         if (e.target.value === 'custom') {
@@ -58,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 body: JSON.stringify({
                     text: text,
-                    level: summaryLevel.value,
+                    level: selectedLevel, // Use selected radio button value
                     model: modelType.value
                 })
             });
