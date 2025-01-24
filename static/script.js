@@ -2,6 +2,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const summarizeBtn = document.getElementById('summarize-btn');
     const summaryOutput = document.getElementById('summary-output');
     const modelSelect = document.getElementById('model-type');
+    const inputText = document.getElementById('input-text');
+    const tokenCount = document.getElementById('current-token-count');
+    
+    inputText.addEventListener('input', () => {
+        const words = inputText.value.trim().split(/\s+/);
+        const estimatedTokens = Math.ceil(words.length * 1.3);
+        tokenCount.textContent = estimatedTokens;
+    });
     
     // TinyLLM Configuration
     const tinyLLMConfig = {
