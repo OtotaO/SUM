@@ -15,8 +15,9 @@ def process_text():
         data = request.get_json()
         if not data or 'text' not in data:
             return jsonify({'error': 'No text provided'}), 400
-            
-        result = summarizer.process_text(data['text'])
+
+        model_config = data.get('config', {}) if data.get('model') == 'tiny' else None
+        result = summarizer.process_text(data['text'], model_config)
         return jsonify(result)
     except Exception as e:
         return jsonify({'error': str(e)}), 500

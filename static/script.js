@@ -32,7 +32,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
+            summarizeBtn.disabled = true;
             summaryOutput.textContent = 'Processing...';
+            
             const response = await fetch('/process_text', {
                 method: 'POST',
                 headers: {
@@ -41,20 +43,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ 
                     text: text,
                     model: modelSelect.value,
-                    config: modelSelect.value === 'tiny' ? tinyLLMConfig : {}
+                    config: tinyLLMConfig
                 })
             });
 
-            const result = await response.json();
-
-            if (result.error) {
-                summaryOutput.textContent = `Error: ${result.error}`;
-            } else {
-                summaryOutput.textContent = result.summary || 'No summary generated';
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
+
+            const result = await response.json();
+            
+            if (result.error) {
+                throw new Error(result.error);
+            }
+            
+            summaryOutput.textContent = result.summary || 'No summary generated';
         } catch (error) {
-            console.error('Error:', error);
-            summaryOutput.textContent = 'An error occurred while processing the text';
+            console.error('Processing error:', error);
+            summaryOutput.textContent = `Error: ${error.message}`;
+        } finally {
+            summarizeBtn.disabled = false;
         }
     });
 });
