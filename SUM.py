@@ -24,11 +24,14 @@ class SimpleSUM:
         word_freq = self._calculate_word_freq(text)
         sentence_scores = self._score_sentences(sentences, word_freq)
 
-        # Return consistent response format
+        summary = self._get_summary(sentences, sentence_scores, 3)
+        min_summary = self._get_summary(sentences, sentence_scores, 1)
+        tags = self._get_top_words(word_freq, 5)
+
         return {
-            'tags': self._get_top_words(word_freq, 5),
-            'minimum_summary': self._get_summary(sentences, sentence_scores, 1),
-            'full_summary': self._get_summary(sentences, sentence_scores, 3)
+            'tags': tags,
+            'minimum_summary': min_summary,
+            'full_summary': summary
         }
 
     def _calculate_word_freq(self, text):

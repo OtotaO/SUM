@@ -1,6 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
     const summaryLevels = document.getElementsByName('summary-level');
-    const modelType = document.getElementById('model-type');
     const summarizeBtn = document.getElementById('summarize-btn');
     const summaryOutput = document.getElementById('summary-output');
 
