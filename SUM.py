@@ -6,7 +6,11 @@ import nltk
 
 class SimpleSUM:
     def __init__(self):
-        nltk.download('punkt', quiet=True)
+        try:
+            nltk.download('punkt', quiet=True)
+            nltk.download('stopwords', quiet=True)
+        except Exception as e:
+            print(f"Error downloading NLTK data: {str(e)}")
         nltk.download('stopwords', quiet=True)
         self.stop_words = set(stopwords.words('english'))
 
