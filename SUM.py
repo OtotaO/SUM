@@ -24,9 +24,14 @@ class SimpleSUM:
             print(f"Error initializing NLTK: {str(e)}")
             raise RuntimeError("Failed to initialize NLTK resources")
 
-    def process_text(self, text):
+    def process_text(self, text, model_config=None):
         if not text.strip():
             return {'error': 'Empty text provided'}
+            
+        if model_config and model_config.get('maxTokens'):
+            max_length = model_config['maxTokens']
+        else:
+            max_length = 100
 
         try:
             sentences = sent_tokenize(text)

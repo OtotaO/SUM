@@ -1,6 +1,20 @@
 document.addEventListener('DOMContentLoaded', () => {
     const summarizeBtn = document.getElementById('summarize-btn');
     const summaryOutput = document.getElementById('summary-output');
+    const modelSelect = document.getElementById('model-type');
+    
+    // TinyLLM Configuration
+    const tinyLLMConfig = {
+        temperature: 0.7,
+        maxTokens: 100,
+        topP: 0.9,
+        frequencyPenalty: 0.0,
+        presencePenalty: 0.0
+    };
+
+    function updateTinyLLMConfig(param, value) {
+        tinyLLMConfig[param] = parseFloat(value);
+    }
 
     summarizeBtn.addEventListener('click', async () => {
         const text = document.getElementById('input-text').value;
@@ -16,7 +30,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ text: text })
+                body: JSON.stringify({ 
+                    text: text,
+                    model: modelSelect.value,
+                    config: modelSelect.value === 'tiny' ? tinyLLMConfig : {}
+                })
             });
 
             const result = await response.json();
