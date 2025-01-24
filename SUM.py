@@ -3,13 +3,22 @@ from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.corpus import stopwords
 from collections import defaultdict
 
+import os
+
 class SimpleSUM:
     def __init__(self):
         try:
-            nltk.download('punkt')
-            nltk.download('stopwords')
-            nltk.download('averaged_perceptron_tagger')
-            nltk.download('wordnet')
+            # Create nltk_data directory
+            nltk_data_dir = os.path.expanduser('~/nltk_data')
+            os.makedirs(nltk_data_dir, exist_ok=True)
+            
+            # Download required NLTK resources
+            for resource in ['punkt', 'stopwords', 'averaged_perceptron_tagger', 'wordnet']:
+                try:
+                    nltk.download(resource, quiet=True)
+                except Exception as e:
+                    print(f"Error downloading {resource}: {str(e)}")
+            
             self.stop_words = set(stopwords.words('english'))
         except Exception as e:
             print(f"Error initializing NLTK: {str(e)}")
