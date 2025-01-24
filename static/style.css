@@ -38,7 +38,15 @@ textarea {
     border: 1px solid #ddd;
     border-radius: 4px;
     resize: vertical;
+    margin-bottom: 0.5rem;
+}
+
+#token-counter {
+    font-family: monospace;
+    color: #2c3e50;
+    font-weight: bold;
     margin-bottom: 1rem;
+    text-align: right;
 }
 
 .controls {
