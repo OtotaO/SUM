@@ -41,32 +41,45 @@ class SimpleSUM:
             tokens_per_word = 1.3  # Average estimate for English
             estimated_tokens = len(words) * tokens_per_word
 
-            if estimated_tokens <= max_tokens:
-                words = word_tokenize(text.lower())
-                word_freq = defaultdict(int)
+            words = word_tokenize(text.lower())
+            word_freq = defaultdict(int)
 
-                for word in words:
-                    if word.isalnum() and word not in self.stop_words:
-                        word_freq[word] += 1
+            for word in words:
+                if word.isalnum() and word not in self.stop_words:
+                    word_freq[word] += 1
 
-                sentence_scores = defaultdict(int)
-                for sentence in sentences:
-                    for word in word_tokenize(sentence.lower()):
-                        if word in word_freq:
-                            sentence_scores[sentence] += word_freq[word]
+            sentence_scores = defaultdict(int)
+            sentence_tokens = {}
+            
+            for sentence in sentences:
+                sent_words = word_tokenize(sentence.lower())
+                sentence_tokens[sentence] = len(sent_words)
+                for word in sent_words:
+                    if word in word_freq:
+                        sentence_scores[sentence] += word_freq[word]
 
-                # Make summary length proportional to input length, but always shorter
-                summary_length = max(1, min(len(sentences) // 3, len(sentences) - 1))
-
-                # Get highest scoring sentences
-                summary_sentences = sorted(sentences, key=lambda s: sentence_scores[s], reverse=True)[:summary_length]
-                # Restore original sentence order for better readability
-                summary_sentences.sort(key=sentences.index)
-                summary = ' '.join(summary_sentences)
-
-                return {'summary': summary}
-            else:
-                return {'error': 'Input text exceeds maximum token limit'}
+            # Sort sentences by score
+            sorted_sentences = sorted(sentences, key=lambda s: sentence_scores[s], reverse=True)
+            
+            # Build summary within token limit
+            summary_sentences = []
+            current_tokens = 0
+            
+            for sentence in sorted_sentences:
+                if current_tokens + sentence_tokens[sentence] <= max_tokens:
+                    summary_sentences.append(sentence)
+                    current_tokens += sentence_tokens[sentence]
+                else:
+                    break
+                    
+            if not summary_sentences:
+                # If no complete sentence fits, take the first sentence and truncate
+                first_sent_words = word_tokenize(sorted_sentences[0])[:max_tokens-1]
+                return {'summary': ' '.join(first_sent_words) + '...'}
+                
+            # Restore original order
+            summary_sentences.sort(key=sentences.index)
+            return {'summary': ' '.join(summary_sentences)}
 
         except Exception as e:
             return {'error': str(e)}
