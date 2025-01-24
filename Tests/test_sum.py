@@ -88,6 +88,30 @@ class TestMagnumOpusSUM(unittest.TestCase):
         summary = self.summarizer.generate_sentence_summary(self.test_text)
         self.assertIsInstance(summary, str)
         self.assertTrue(len(summary) < len(self.test_text))
+        
+    def test_process_text_categories(self):
+        result = self.summarizer.process_text(self.test_text)
+        self.assertIn('tags', result)
+        self.assertIn('sum', result)
+        self.assertIn('summary', result)
+        self.assertTrue(len(result['tags']) > 0)
+        self.assertTrue(len(result['sum']) > 0)
+        self.assertTrue(len(result['summary']) > 0)
+        
+    def test_empty_text(self):
+        result = self.summarizer.process_text("")
+        self.assertIn('error', result)
+        
+    def test_short_text(self):
+        short_text = "This is a very short text."
+        result = self.summarizer.process_text(short_text)
+        self.assertEqual(result['sum'], short_text)
+        
+    def test_long_text_compression(self):
+        long_text = " ".join([self.test_text] * 5)  # Repeat test text 5 times
+        result = self.summarizer.process_text(long_text)
+        self.assertTrue(len(result['summary']) < len(long_text))
+        self.assertTrue(len(result['sum']) < len(result['summary']))
 
 if __name__ == '__main__':
     unittest.main()
