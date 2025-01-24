@@ -1,24 +1,18 @@
+
 import nltk
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.corpus import stopwords
 from collections import defaultdict
-import nltk
 
 class SimpleSUM:
     def __init__(self):
-        nltk_resources = ['punkt', 'stopwords']
-        for resource in nltk_resources:
-            try:
-                nltk.download(resource, quiet=True)
-            except Exception as e:
-                print(f"Error downloading NLTK resource {resource}: {str(e)}")
-                raise RuntimeError(f"Failed to download required NLTK resource: {resource}")
-        
         try:
+            nltk.download('punkt', quiet=True)
+            nltk.download('stopwords', quiet=True)
             self.stop_words = set(stopwords.words('english'))
         except Exception as e:
-            print(f"Error initializing stopwords: {str(e)}")
-            raise RuntimeError("Failed to initialize stopwords")
+            print(f"Error initializing NLTK: {str(e)}")
+            raise RuntimeError("Failed to initialize NLTK resources")
 
     def process_text(self, text):
         if not text.strip():
@@ -52,7 +46,7 @@ class SimpleSUM:
 
 def main():
     summarizer = SimpleSUM()
-    text = "This is a sample text. This text will be summarized.  This is another sentence."
+    text = "This is a sample text. This text will be summarized. This is another sentence."
     summary = summarizer.process_text(text)
     print(summary)
 
