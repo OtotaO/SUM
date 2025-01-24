@@ -46,8 +46,13 @@ class SimpleSUM:
                     if word in word_freq:
                         sentence_scores[sentence] += word_freq[word]
 
-            summary_length = max(1, len(sentences) // 3)
+            # Make summary length proportional to input length, but always shorter
+            summary_length = max(1, min(len(sentences) // 3, len(sentences) - 1))
+            
+            # Get highest scoring sentences
             summary_sentences = sorted(sentences, key=lambda s: sentence_scores[s], reverse=True)[:summary_length]
+            # Restore original sentence order for better readability
+            summary_sentences.sort(key=sentences.index)
             summary = ' '.join(summary_sentences)
 
             return {'summary': summary}
