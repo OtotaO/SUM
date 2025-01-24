@@ -1,4 +1,3 @@
-
 * {
     box-sizing: border-box;
     margin: 0;
@@ -97,4 +96,39 @@ button:hover {
 #wordcloud-img {
     max-width: 100%;
     height: auto;
+}
+
+.model-selection {
+    margin-bottom: 1rem;
+}
+
+.model-params {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+    background: #f5f5f5;
+    border-radius: 4px;
+}
+
+.param-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.param-value {
+    font-weight: bold;
+    color: #2962ff;
+}
+
+.param-desc {
+    font-size: 0.8rem;
+    color: #666;
+    font-style: italic;
+}
+
+input[type="range"], input[type="number"] {
+    width: 100%;
+    max-width: 300px;
 }

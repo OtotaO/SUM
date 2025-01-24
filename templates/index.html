@@ -13,30 +13,30 @@
             <textarea id="input-text" placeholder="Enter text to summarize..."></textarea>
             
             <div class="controls">
-                <div class="summary-options">
-                    <label>Summarization Level:</label>
-                    <div class="radio-group">
-                        <input type="radio" id="tags" name="summary-level" value="25">
-                        <label for="tags">Tags</label>
-                        
-                        <input type="radio" id="sum" name="summary-level" value="50" checked>
-                        <label for="sum">Sum</label>
-                        
-                        <input type="radio" id="summary" name="summary-level" value="75">
-                        <label for="summary">Summary</label>
-                    </div>
-                </div>
-                
                 <div class="model-selection">
                     <label>Model:</label>
                     <select id="model-type">
                         <option value="tiny">TinyLLM (Browser)</option>
                     </select>
+                </div>
+                
+                <div id="tiny-llm-params" class="model-params">
+                    <div class="param-group">
+                        <label>Temperature: <span class="param-value">0.7</span></label>
+                        <input type="range" min="0" max="1" step="0.1" value="0.7" onchange="updateTinyLLMConfig('temperature', this.value)">
+                        <span class="param-desc">Controls randomness of output</span>
+                    </div>
                     
-                    <div id="tiny-llm-params">
-                        <label>Temperature: <input type="range" min="0" max="1" step="0.1" value="0.7" onchange="updateTinyLLMConfig('temperature', this.value)"></label>
-                        <label>Max Tokens: <input type="number" min="1" max="500" value="100" onchange="updateTinyLLMConfig('maxTokens', this.value)"></label>
-                        <label>Top P: <input type="range" min="0" max="1" step="0.1" value="0.9" onchange="updateTinyLLMConfig('topP', this.value)"></label>
+                    <div class="param-group">
+                        <label>Max Tokens: <span class="param-value">100</span></label>
+                        <input type="number" min="1" max="500" value="100" onchange="updateTinyLLMConfig('maxTokens', this.value)">
+                        <span class="param-desc">Limits response length</span>
+                    </div>
+                    
+                    <div class="param-group">
+                        <label>Top P: <span class="param-value">0.9</span></label>
+                        <input type="range" min="0" max="1" step="0.1" value="0.9" onchange="updateTinyLLMConfig('topP', this.value)">
+                        <span class="param-desc">Controls output diversity</span>
                     </div>
                 </div>
             </div>

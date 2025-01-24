@@ -60,5 +60,10 @@ const tinyLLMConfig = {
 };
 
 function updateTinyLLMConfig(param, value) {
-    tinyLLMConfig[param] = parseFloat(value);
+    const numValue = parseFloat(value);
+    tinyLLMConfig[param] = numValue;
+    
+    // Update displayed value
+    const paramGroup = document.querySelector(`input[onchange*="${param}"]`).closest('.param-group');
+    paramGroup.querySelector('.param-value').textContent = numValue;
 }
