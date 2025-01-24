@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const summarizeBtn = document.getElementById('summarize-btn');
     const summaryOutput = document.getElementById('summary-output');
 
-    let selectedLevel = 'Balanced'; // Default level
+    let selectedLevel = 'Sum'; // Default level
 
     // Add event listeners to radio buttons
     for (let i = 0; i < summaryLevels.length; i++) {
