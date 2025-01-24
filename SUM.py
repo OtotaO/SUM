@@ -13,9 +13,9 @@ class SimpleSUM:
             os.makedirs(nltk_data_dir, exist_ok=True)
             
             # Download required NLTK resources
-            for resource in ['punkt', 'stopwords', 'averaged_perceptron_tagger', 'wordnet']:
+            for resource in ['punkt', 'punkt_tab', 'stopwords', 'averaged_perceptron_tagger', 'wordnet']:
                 try:
-                    nltk.download(resource, quiet=True)
+                    nltk.download(resource, quiet=True, raise_on_error=False)
                 except Exception as e:
                     print(f"Error downloading {resource}: {str(e)}")
             
