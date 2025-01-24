@@ -33,11 +33,13 @@ class SimpleSUM:
             if len(sentences) <= 2:
                 return {'summary': text}
 
-            # Get max tokens from config
-            max_tokens = model_config.get('maxTokens', 100) if model_config else 100
+            # Get max tokens from config or calculate based on input length
+            words = word_tokenize(text)
+            input_length = len(words)
+            default_tokens = min(input_length // 3, 50)  # Target 1/3 of input length, max 50 tokens
+            max_tokens = model_config.get('maxTokens', default_tokens) if model_config else default_tokens
 
             # Approximate tokens (rough estimate: words + punctuation)
-            words = word_tokenize(text)
             tokens_per_word = 1.3  # Average estimate for English
             estimated_tokens = len(words) * tokens_per_word
 
