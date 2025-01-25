@@ -36,7 +36,7 @@ class SimpleSUM:
             # Get max tokens from config or calculate based on input length
             words = word_tokenize(text)
             input_length = len(words)
-            default_tokens = min(input_length // 3, 50)  # Target 1/3 of input length, max 50 tokens
+            default_tokens = min(input_length // 2, 200)  # Target 1/2 of input length, max 200 tokens
             max_tokens = model_config.get('maxTokens', default_tokens) if model_config else default_tokens
 
             # Approximate tokens (rough estimate: words + punctuation)
@@ -56,6 +56,13 @@ class SimpleSUM:
             for sentence in sentences:
                 sent_words = word_tokenize(sentence.lower())
                 sentence_tokens[sentence] = len(sent_words)
+                
+                # Give higher weight to section headers and key constitutional concepts
+                if "section" in sentence.lower() or "article" in sentence.lower():
+                    sentence_scores[sentence] += 5
+                if any(key in sentence.lower() for key in ["congress", "president", "supreme court", "constitution", "united states"]):
+                    sentence_scores[sentence] += 3
+                    
                 for word in sent_words:
                     if word in word_freq:
                         sentence_scores[sentence] += word_freq[word]
