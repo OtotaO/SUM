@@ -1,66 +1,55 @@
 import nltk
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.corpus import stopwords
-from collections import defaultdict
+from collections import Counter
 import os
 
 class SimpleSUM:
     def __init__(self):
-        try:
-            nltk_data_dir = os.path.expanduser('~/nltk_data')
-            os.makedirs(nltk_data_dir, exist_ok=True)
-            for resource in ['punkt', 'stopwords']:
-                nltk.download(resource, quiet=True)
-            self.stop_words = set(stopwords.words('english'))
-        except Exception as e:
-            print(f"Error initializing NLTK: {str(e)}")
-            raise
+        # Download required NLTK data
+        nltk.download('punkt', quiet=True)
+        nltk.download('stopwords', quiet=True)
+        self.stop_words = set(stopwords.words('english'))
 
     def process_text(self, text, model_config=None):
         if not text.strip():
             return {'error': 'Empty text provided'}
 
         try:
-            # Basic text cleaning
-            text = ' '.join(text.split())  # Remove extra whitespace
+            # Tokenize into sentences
             sentences = sent_tokenize(text)
 
-            if len(sentences) <= 2:
+            if len(sentences) <= 1:
                 return {'summary': text}
 
-            # Get number of sentences to include
+            # Get sentence count from config
             max_sentences = int(model_config.get('maxSentences', 3)) if model_config else 3
 
-            # Calculate word frequencies
-            word_freq = defaultdict(int)
-            for word in word_tokenize(text.lower()):
-                if word.isalnum() and word not in self.stop_words:
-                    word_freq[word] += 1
+            # Create word frequency distribution
+            words = word_tokenize(text.lower())
+            word_freq = Counter(word for word in words if word.isalnum() and word not in self.stop_words)
 
-            # Score sentences
+            # Score sentences based on word frequency
             sentence_scores = []
             for i, sentence in enumerate(sentences):
                 score = 0
                 words = word_tokenize(sentence.lower())
-
-                # Score based on word frequency
                 for word in words:
                     if word in word_freq:
                         score += word_freq[word]
-
-                # Position bias - favor earlier sentences
-                position_weight = 1.0 - (i / len(sentences))
-                score *= (1 + position_weight)
-
+                # Normalize by sentence length
+                score = score / (len(words) + 1)
+                # Boost score of early sentences
+                if i < 2:
+                    score *= 1.5
                 sentence_scores.append((score, sentence))
 
-            # Select top sentences and maintain original order
-            selected_pairs = sorted(sentence_scores, reverse=True)[:max_sentences]
-            summary_sentences = []
-            for _, sentence in sorted(selected_pairs, key=lambda x: sentences.index(x[1])):
-                summary_sentences.append(sentence)
+            # Select top N sentences while preserving order
+            top_sentences = sorted(sentence_scores, key=lambda x: x[0], reverse=True)[:max_sentences]
+            summary_sentences = sorted(top_sentences, key=lambda x: sentences.index(x[1]))
 
-            return {'summary': ' '.join(summary_sentences)}
+            summary = ' '.join(sentence[1] for sentence in summary_sentences)
+            return {'summary': summary}
 
         except Exception as e:
             return {'error': str(e)}
