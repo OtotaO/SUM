@@ -84,11 +84,12 @@ class SimpleSUM:
                 sentence_scores[sentence] = base_score
             
             # Balance section representation
-            for section_sentences in section_sentences.values():
-                if section_sentences:
-                    # Boost the highest scoring sentence from each section
-                    best_sentence = max(section_sentences, key=lambda s: sentence_scores[s])
-                    sentence_scores[best_sentence] *= 2
+            for article in article_section_sentences.values():
+                for section_sentences in article.values():
+                    if section_sentences:
+                        # Boost the highest scoring sentence from each section
+                        best_sentence = max(section_sentences, key=lambda s: sentence_scores[s])
+                        sentence_scores[best_sentence] *= 2
 
             # Sort sentences by score
             sorted_sentences = sorted(sentences, key=lambda s: sentence_scores[s], reverse=True)
