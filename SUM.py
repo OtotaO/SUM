@@ -91,19 +91,29 @@ class SimpleSUM:
                         best_sentence = max(section_sentences, key=lambda s: sentence_scores[s])
                         sentence_scores[best_sentence] *= 2
 
-            # Sort sentences by score
+            # Enhanced scoring based on position and length
+            for i, sentence in enumerate(sentences):
+                # Position bias - earlier sentences get higher base scores
+                position_weight = 1.0 - (i / len(sentences))
+                sentence_scores[sentence] *= (1 + position_weight)
+                
+                # Length penalty for very short or very long sentences
+                length = len(word_tokenize(sentence))
+                if length < 5:  # Too short
+                    sentence_scores[sentence] *= 0.5
+                elif length > 40:  # Too long
+                    sentence_scores[sentence] *= 0.7
+
+            # Sort sentences by final score
             sorted_sentences = sorted(sentences, key=lambda s: sentence_scores[s], reverse=True)
             
-            # Build summary with strict sentence control
-            summary_sentences = []
+            # Select top sentences based on maxSentences parameter
             max_sentences = int(model_config.get('maxSentences', 5)) if model_config else 5
+            summary_sentences = sorted_sentences[:max_sentences]
             
-            for sentence in sorted_sentences:
-                if len(summary_sentences) < max_sentences:
-                    summary_sentences.append(sentence)
-                else:
-                    break
-                    
+            # Sort selected sentences by their original order
+            summary_sentences.sort(key=sentences.index)
+            
             if not summary_sentences:
                 # If no complete sentence fits, take the first sentence and truncate
                 first_sent_words = word_tokenize(sorted_sentences[0])[:max_tokens-1]
