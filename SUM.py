@@ -94,17 +94,14 @@ class SimpleSUM:
             # Sort sentences by score
             sorted_sentences = sorted(sentences, key=lambda s: sentence_scores[s], reverse=True)
             
-            # Build summary with controlled length
+            # Build summary with strict sentence control
             summary_sentences = []
-            current_tokens = 0
-            min_sentences = model_config.get('minSentences', 3) if model_config else 3
-            max_sentences = model_config.get('maxSentences', 5) if model_config else 5
+            max_sentences = int(model_config.get('maxSentences', 5)) if model_config else 5
             
             for sentence in sorted_sentences:
-                if len(summary_sentences) < max_sentences and (current_tokens + sentence_tokens[sentence] <= max_tokens):
+                if len(summary_sentences) < max_sentences:
                     summary_sentences.append(sentence)
-                    current_tokens += sentence_tokens[sentence]
-                elif len(summary_sentences) >= min_sentences:
+                else:
                     break
                     
             if not summary_sentences:
