@@ -14,7 +14,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // TinyLLM Configuration
     const tinyLLMConfig = {
         temperature: 0.7,
-        maxTokens: 100,
+        maxTokens: 500,
+        maxSentences: 5,
+        minSentences: 2,
         topP: 0.9,
         frequencyPenalty: 0.0,
         presencePenalty: 0.0

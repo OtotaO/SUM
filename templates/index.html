@@ -11,6 +11,7 @@
         
         <div class="input-section">
             <textarea id="input-text" placeholder="Enter text to summarize..."></textarea>
+            <div id="token-counter">Current Tokens: <span id="current-token-count">0</span> / <span id="max-token-limit">500</span></div>
             
             <div class="controls">
                 <div class="model-selection">
@@ -28,9 +29,14 @@
                     </div>
                     
                     <div class="param-group">
-                        <label>Max Tokens: <span class="param-value">100</span></label>
-                        <input type="number" min="1" max="500" value="100" onchange="updateTinyLLMConfig('maxTokens', this.value)">
+                        <label>Max Tokens: <span class="param-value">500</span></label>
+                        <input type="range" min="100" max="1000" step="50" value="500" onchange="updateTinyLLMConfig('maxTokens', this.value)">
                         <span class="param-desc">Limits response length</span>
+                    </div>
+                    <div class="param-group">
+                        <label>Max Sentences: <span class="param-value">5</span></label>
+                        <input type="range" min="1" max="10" value="5" onchange="updateTinyLLMConfig('maxSentences', this.value)">
+                        <span class="param-desc">Maximum number of sentences</span>
                     </div>
                     
                     <div class="param-group">
@@ -53,7 +59,6 @@
             <div class="metrics">
                 <div id="compression-ratio"></div>
                 <div id="processing-time"></div>
-                <div id="token-counter">Current Tokens: <span id="current-token-count">0</span> / <span id="max-token-limit">100</span></div>
             </div>
             
             <div class="wordcloud">
