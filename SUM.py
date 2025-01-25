@@ -53,19 +53,35 @@ class SimpleSUM:
             sentence_scores = defaultdict(int)
             sentence_tokens = {}
             
+            # Track sections to ensure balanced representation
+            current_section = None
+            section_sentences = defaultdict(list)
+            
             for sentence in sentences:
                 sent_words = word_tokenize(sentence.lower())
                 sentence_tokens[sentence] = len(sent_words)
                 
-                # Give higher weight to section headers and key constitutional concepts
-                if "section" in sentence.lower() or "article" in sentence.lower():
-                    sentence_scores[sentence] += 5
-                if any(key in sentence.lower() for key in ["congress", "president", "supreme court", "constitution", "united states"]):
-                    sentence_scores[sentence] += 3
-                    
-                for word in sent_words:
-                    if word in word_freq:
-                        sentence_scores[sentence] += word_freq[word]
+                # Identify sections
+                if "section" in sentence.lower():
+                    current_section = sentence
+                    sentence_scores[sentence] = 10  # Boost section headers
+                elif current_section:
+                    section_sentences[current_section].append(sentence)
+                
+                # Score sentences
+                base_score = sum(word_freq[word] for word in sent_words if word in word_freq)
+                governance_terms = ["congress", "senate", "house", "representatives", "president", "united states"]
+                if any(term in sentence.lower() for term in governance_terms):
+                    base_score *= 1.5
+                
+                sentence_scores[sentence] = base_score
+            
+            # Balance section representation
+            for section_sentences in section_sentences.values():
+                if section_sentences:
+                    # Boost the highest scoring sentence from each section
+                    best_sentence = max(section_sentences, key=lambda s: sentence_scores[s])
+                    sentence_scores[best_sentence] *= 2
 
             # Sort sentences by score
             sorted_sentences = sorted(sentences, key=lambda s: sentence_scores[s], reverse=True)
