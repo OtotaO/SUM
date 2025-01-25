@@ -53,26 +53,33 @@ class SimpleSUM:
             sentence_scores = defaultdict(int)
             sentence_tokens = {}
             
-            # Track sections to ensure balanced representation
+            # Track articles and sections for hierarchical summarization
+            current_article = None
             current_section = None
-            section_sentences = defaultdict(list)
+            article_section_sentences = defaultdict(lambda: defaultdict(list))
             
             for sentence in sentences:
                 sent_words = word_tokenize(sentence.lower())
                 sentence_tokens[sentence] = len(sent_words)
                 
-                # Identify sections
-                if "section" in sentence.lower():
+                # Identify articles and sections
+                if "article" in sentence.lower():
+                    current_article = sentence
+                    current_section = None
+                    sentence_scores[sentence] = 15  # Boost article headers
+                elif "section" in sentence.lower():
                     current_section = sentence
                     sentence_scores[sentence] = 10  # Boost section headers
-                elif current_section:
-                    section_sentences[current_section].append(sentence)
+                elif current_article and current_section:
+                    article_section_sentences[current_article][current_section].append(sentence)
                 
-                # Score sentences
+                # Score sentences with constitutional context
                 base_score = sum(word_freq[word] for word in sent_words if word in word_freq)
-                governance_terms = ["congress", "senate", "house", "representatives", "president", "united states"]
-                if any(term in sentence.lower() for term in governance_terms):
-                    base_score *= 1.5
+                key_terms = ["congress", "senate", "house", "representatives", "president", 
+                           "united states", "power", "legislative", "executive", "judicial"]
+                term_matches = sum(term in sentence.lower() for term in key_terms)
+                if term_matches > 0:
+                    base_score *= (1 + 0.2 * term_matches)  # Proportional boost based on matches
                 
                 sentence_scores[sentence] = base_score
             
