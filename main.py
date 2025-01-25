@@ -1,9 +1,9 @@
 
 from flask import Flask, request, jsonify, render_template
-from SUM import SimpleSUM
+from SUM import MVPSummarizer
 
 app = Flask(__name__)
-summarizer = SimpleSUM()
+summarizer = MVPSummarizer()
 
 @app.route('/')
 def index():
@@ -17,7 +17,7 @@ def process_text():
             return jsonify({'error': 'No text provided'}), 400
 
         model_config = data.get('config', {}) if data.get('model') == 'tiny' else None
-        result = summarizer.process_text(data['text'], model_config)
+        result = summarizer.summarize(data['text'])
         return jsonify(result)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
