@@ -13,7 +13,12 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     function updateTinyLLMConfig(param, value) {
-        tinyLLMConfig[param] = parseFloat(value);
+        const numValue = parseFloat(value);
+        tinyLLMConfig[param] = numValue;
+        
+        // Update displayed value
+        const paramGroup = document.querySelector(`input[onchange*="${param}"]`).closest('.param-group');
+        paramGroup.querySelector('.param-value').textContent = numValue;
     }
 
     summarizeBtn.addEventListener('click', async () => {
@@ -50,20 +55,3 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
-// TinyLLM Configuration
-const tinyLLMConfig = {
-    temperature: 0.7,
-    maxTokens: 100,
-    topP: 0.9,
-    frequencyPenalty: 0.0,
-    presencePenalty: 0.0
-};
-
-function updateTinyLLMConfig(param, value) {
-    const numValue = parseFloat(value);
-    tinyLLMConfig[param] = numValue;
-    
-    // Update displayed value
-    const paramGroup = document.querySelector(`input[onchange*="${param}"]`).closest('.param-group');
-    paramGroup.querySelector('.param-value').textContent = numValue;
-}

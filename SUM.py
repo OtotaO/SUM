@@ -2,8 +2,11 @@ import nltk
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.corpus import stopwords
 from collections import defaultdict
-
 import os
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class SimpleSUM:
     def __init__(self):
@@ -13,33 +16,38 @@ class SimpleSUM:
             os.makedirs(nltk_data_dir, exist_ok=True)
 
             # Download required NLTK resources
-            for resource in ['punkt', 'punkt_tab', 'stopwords', 'averaged_perceptron_tagger', 'wordnet']:
+            for resource in ['punkt', 'stopwords']:
                 try:
-                    nltk.download(resource, quiet=True, raise_on_error=False)
+                    nltk.download(resource, download_dir=nltk_data_dir, quiet=True, raise_on_error=False)
                 except Exception as e:
-                    print(f"Error downloading {resource}: {str(e)}")
+                    logging.error(f"Error downloading {resource}: {str(e)}")
 
             self.stop_words = set(stopwords.words('english'))
+            logging.info("SimpleSUM initialized successfully.")
         except Exception as e:
-            print(f"Error initializing NLTK: {str(e)}")
+            logging.error(f"Error initializing NLTK: {str(e)}")
             raise RuntimeError("Failed to initialize NLTK resources")
 
     def process_text(self, text, model_config=None):
         if not text.strip():
+            logging.warning("Empty text provided.")
             return {'error': 'Empty text provided'}
 
         try:
+            logging.info("Starting text processing.")
             sentences = sent_tokenize(text)
             if len(sentences) <= 2:
+                logging.info("Text has <= 2 sentences, returning original text.")
                 return {'summary': text}
 
             # Get max tokens from config
             max_tokens = model_config.get('maxTokens', 100) if model_config else 100
+            logging.info(f"Max tokens set to: {max_tokens}")
 
-            # Approximate tokens (rough estimate: words + punctuation)
+            # Tokenize the text to get an accurate token count
             words = word_tokenize(text)
-            tokens_per_word = 1.3  # Average estimate for English
-            estimated_tokens = len(words) * tokens_per_word
+            estimated_tokens = len(words)
+            logging.info(f"Estimated tokens: {estimated_tokens}")
 
             words = word_tokenize(text.lower())
             word_freq = defaultdict(int)
@@ -60,6 +68,7 @@ class SimpleSUM:
 
             # Sort sentences by score
             sorted_sentences = sorted(sentences, key=lambda s: sentence_scores[s], reverse=True)
+            logging.debug(f"Sorted sentences: {sorted_sentences}")
             
             # Build summary within token limit
             summary_sentences = []
@@ -74,15 +83,21 @@ class SimpleSUM:
                     
             if not summary_sentences:
                 # If no complete sentence fits, take the first sentence and truncate
-                first_sent_words = word_tokenize(sorted_sentences[0])[:max_tokens-1]
-                return {'summary': ' '.join(first_sent_words) + '...'}
+                first_sentence = sorted_sentences[0]
+                first_sent_words = word_tokenize(first_sentence)[:max_tokens-1]
+                summary = ' '.join(first_sent_words) + '...'
+                logging.info("No complete sentence fits, returning truncated first sentence.")
+                return {'summary': summary}
                 
             # Restore original order
             summary_sentences.sort(key=sentences.index)
-            return {'summary': ' '.join(summary_sentences)}
+            summary = ' '.join(summary_sentences)
+            logging.info(f"Generated summary: {summary}")
+            return {'summary': summary}
 
         except Exception as e:
-            return {'error': str(e)}
+            logging.error(f"Error during text processing: {str(e)}")
+            return {'error': f"Error during text processing: {str(e)}"}
 
 def main():
     summarizer = SimpleSUM()
