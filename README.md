@@ -4,7 +4,7 @@
 </h1>
 <h1 align="center">SUM (Summarizer): The Ultimate Knowledge Distiller</h1>
 
-### "Depending on the author, a million books can be distilled into a single sentence, and a single sentence can conceal a million books, depending on the Author." - Me
+### "A million books can be distilled into a single sentence, and a single sentence can conceal a million books, depending on the Author." - Me
 
 ## Mission Statement
 

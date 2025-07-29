@@ -1,123 +1,110 @@
-"""
-MVP Text Summarizer
-------------------
-A minimal yet extensible implementation of extractive text summarization.
-Following the Unix philosophy: Do One Thing Well.
-
-Author: Your Name
-License: Your License
-"""
-
-from typing import Dict, List, Optional
 import nltk
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.corpus import stopwords
-from collections import Counter
+from collections import defaultdict
+import os
+import logging
 
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-class MVPSummarizer:
-    """
-    A minimal extractive text summarizer that focuses on core functionality.
-    Designed for easy extension and maintenance.
-    """
-
-    def __init__(self) -> None:
-        """Initialize the summarizer with required NLTK resources."""
-        # Download required resources only once
+class SimpleSUM:
+    def __init__(self):
         try:
-            nltk.data.find('tokenizers/punkt')
-            nltk.data.find('corpora/stopwords')
-        except LookupError:
-            nltk.download('punkt', quiet=True)
-            nltk.download('stopwords', quiet=True)
+            # Create nltk_data directory
+            nltk_data_dir = os.path.expanduser('~/nltk_data')
+            os.makedirs(nltk_data_dir, exist_ok=True)
 
-        self.stop_words = set(stopwords.words('english'))
+            # Download required NLTK resources
+            for resource in ['punkt', 'stopwords']:
+                try:
+                    nltk.download(resource, download_dir=nltk_data_dir, quiet=True, raise_on_error=False)
+                except Exception as e:
+                    logging.error(f"Error downloading {resource}: {str(e)}")
 
-    def summarize(self, text: str, num_sentences: int = 3) -> Dict[str, str]:
-        """
-        Create a summary of the input text by extracting key sentences.
+            self.stop_words = set(stopwords.words('english'))
+            logging.info("SimpleSUM initialized successfully.")
+        except Exception as e:
+            logging.error(f"Error initializing NLTK: {str(e)}")
+            raise RuntimeError("Failed to initialize NLTK resources")
 
-        Args:
-            text: Input text to summarize
-            num_sentences: Number of sentences to include in summary (default: 3)
-
-        Returns:
-            Dictionary containing the summary or error message
-        """
-        if not self._validate_input(text, num_sentences):
-            return {'error': 'Invalid input'}
+    def process_text(self, text, model_config=None):
+        if not text.strip():
+            logging.warning("Empty text provided.")
+            return {'error': 'Empty text provided'}
 
         try:
+            logging.info("Starting text processing.")
             sentences = sent_tokenize(text)
-            if len(sentences) <= 1:
+            if len(sentences) <= 2:
+                logging.info("Text has <= 2 sentences, returning original text.")
                 return {'summary': text}
 
-            # Calculate sentence importance
-            sentence_scores = self._score_sentences(sentences)
+            # Get max tokens from config
+            max_tokens = model_config.get('maxTokens', 100) if model_config else 100
+            logging.info(f"Max tokens set to: {max_tokens}")
 
-            # Extract top sentences while preserving order
-            summary = self._extract_summary(sentences, sentence_scores,
-                                            num_sentences)
+            # Tokenize the text to get an accurate token count
+            words = word_tokenize(text)
+            estimated_tokens = len(words)
+            logging.info(f"Estimated tokens: {estimated_tokens}")
 
+            words = word_tokenize(text.lower())
+            word_freq = defaultdict(int)
+
+            for word in words:
+                if word.isalnum() and word not in self.stop_words:
+                    word_freq[word] += 1
+
+            sentence_scores = defaultdict(int)
+            sentence_tokens = {}
+            
+            for sentence in sentences:
+                sent_words = word_tokenize(sentence.lower())
+                sentence_tokens[sentence] = len(sent_words)
+                for word in sent_words:
+                    if word in word_freq:
+                        sentence_scores[sentence] += word_freq[word]
+
+            # Sort sentences by score
+            sorted_sentences = sorted(sentences, key=lambda s: sentence_scores[s], reverse=True)
+            logging.debug(f"Sorted sentences: {sorted_sentences}")
+            
+            # Build summary within token limit
+            summary_sentences = []
+            current_tokens = 0
+            
+            for sentence in sorted_sentences:
+                if current_tokens + sentence_tokens[sentence] <= max_tokens:
+                    summary_sentences.append(sentence)
+                    current_tokens += sentence_tokens[sentence]
+                else:
+                    break
+                    
+            if not summary_sentences:
+                # If no complete sentence fits, take the first sentence and truncate
+                first_sentence = sorted_sentences[0]
+                first_sent_words = word_tokenize(first_sentence)[:max_tokens-1]
+                summary = ' '.join(first_sent_words) + '...'
+                logging.info("No complete sentence fits, returning truncated first sentence.")
+                return {'summary': summary}
+                
+            # Restore original order
+            summary_sentences.sort(key=sentences.index)
+            summary = ' '.join(summary_sentences)
+            logging.info(f"Generated summary: {summary}")
             return {'summary': summary}
 
         except Exception as e:
-            return {'error': f'Summarization failed: {str(e)}'}
-
-    def _validate_input(self, text: str, num_sentences: int) -> bool:
-        """Validate input parameters."""
-        return bool(text and isinstance(text, str) and text.strip()
-                    and isinstance(num_sentences, int) and num_sentences > 0)
-
-    def _score_sentences(self, sentences: List[str]) -> List[float]:
-        """
-        Score sentences based on word frequency.
-        Returns list of scores corresponding to input sentences.
-        """
-        # Create word frequency distribution
-        words = word_tokenize(' '.join(sentences).lower())
-        word_freq = Counter(word for word in words
-                            if word.isalnum() and word not in self.stop_words)
-
-        # Score each sentence
-        scores = []
-        for sentence in sentences:
-            words = word_tokenize(sentence.lower())
-            score = sum(word_freq[word] for word in words if word in word_freq)
-            scores.append(score / len(words) if words else 0)
-
-        return scores
-
-    def _extract_summary(self, sentences: List[str], scores: List[float],
-                         num_sentences: int) -> str:
-        """
-        Extract top scoring sentences while preserving original order.
-        """
-        # Get indices of top scoring sentences
-        paired_scores = list(enumerate(scores))
-        top_indices = sorted(sorted(paired_scores,
-                                    key=lambda x: x[1],
-                                    reverse=True)[:num_sentences],
-                             key=lambda x: x[0])
-
-        # Combine sentences in original order
-        summary_sentences = [sentences[idx] for idx, _ in top_indices]
-        return ' '.join(summary_sentences)
-
+            logging.error(f"Error during text processing: {str(e)}")
+            return {'error': f"Error during text processing: {str(e)}"}
 
 def main():
-    """Example usage of the MVP summarizer."""
-    sample_text = """
-    Machine learning is a subset of artificial intelligence. It focuses on the use 
-    of data and algorithms to mimic human learning. The process allows for the 
-    automated learning of insights without explicit programming. Many companies 
-    use machine learning today. It helps them improve their services and products.
-    """
-
-    summarizer = MVPSummarizer()
-    result = summarizer.summarize(sample_text, num_sentences=2)
-    print("Summary:", result['summary'])
-
+    summarizer = SimpleSUM()
+    text = "This is a sample text. This text will be summarized. This is another sentence.  This is a fourth sentence to make it longer than the example in the previous version."
+    config = {'maxTokens': 20} #test with a low token limit
+    summary = summarizer.process_text(text, config)
+    print(summary)
 
 if __name__ == "__main__":
     main()
