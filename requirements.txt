@@ -1,36 +1,45 @@
-# Web Framework
-Flask==2.1.0
+# Core dependencies
+Flask==2.3.3
+Werkzeug==2.3.7
+python-dotenv==1.0.0
 
-# Data Processing and Analysis
-numpy==1.21.0
-pandas==1.3.0
-scipy==1.7.0
+# NLP and Machine Learning
+nltk==3.8.1
+scikit-learn==1.3.0
+numpy==1.25.2
+scipy==1.11.2
+gensim==4.3.1
+wordcloud==1.9.2
+textblob==0.17.1
 
-# Natural Language Processing
-nltk==3.6.2
-spacy==3.1.0
-gensim==4.0.1
-scikit-learn==0.24.2
-textblob==0.15.3
+# Text Processing
 langdetect==1.0.9
-googletrans==3.1.0a0
+rake-nltk==1.0.6
 
-# Text Extraction
-PyPDF2==1.26.0
-python-docx==0.8.11
+# Data Handling
+pandas==2.1.0
 
 # Visualization
-matplotlib==3.4.2
-wordcloud==1.8.1
+matplotlib==3.7.2
 
-# Environment and Configuration
-python-dotenv==0.19.0
+# Web Interface
+Jinja2==3.1.2
+MarkupSafe==2.1.3
 
-# Utility
-Werkzeug==2.0.1
+# Documentation
+Sphinx==7.2.4
+sphinx-rtd-theme==1.3.0
 
-# Optional: for development and testing
-pytest==6.2.4
-flake8==3.9.2
-docx
-networkx
+# Testing
+pytest==7.4.0
+pytest-cov==4.1.0
+
+# Development Tools
+black==23.7.0
+isort==5.12.0
+flake8==6.1.0
+
+# Optional: For specific file types
+PyPDF2==3.0.1
+python-docx==1.0.0
+lxml==4.9.3

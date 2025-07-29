@@ -1,71 +1,220 @@
-
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SUM - The Ultimate Knowledge Distiller</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <meta name="description" content="SUM is a knowledge distillation platform that extracts, analyzes, and presents insights from vast datasets.">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
 </head>
 <body>
-    <div class="container">
-        <h1>SUM - Knowledge Distiller</h1>
-        
-        <div class="input-section">
-            <textarea id="input-text" placeholder="Enter text to summarize..."></textarea>
-            <div id="token-counter">Current Tokens: <span id="current-token-count">0</span> / <span id="max-token-limit">500</span></div>
+    <header>
+        <div class="container">
+            <div class="logo">
+                <h1>SUM</h1>
+                <p class="tagline">The Ultimate Knowledge Distiller</p>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="#summarize" class="active">Summarize</a></li>
+                    <li><a href="#analyze">Topic Analysis</a></li>
+                    <li><a href="#file-upload">File Processing</a></li>
+                    <li><a href="#about">About</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section id="hero" class="container">
+            <div class="hero-content">
+                <h1>Knowledge Distillation</h1>
+                <p>Transform vast datasets into concise, insightful summaries using advanced AI techniques.</p>
+                <a href="#summarize" class="btn btn-primary">Get Started</a>
+            </div>
+        </section>
+
+        <section id="summarize" class="container section">
+            <div class="section-header">
+                <h2>Summarize Text</h2>
+                <p>Extract the essential information from any text</p>
+            </div>
             
-            <div class="controls">
-                <div class="model-selection">
-                    <label>Model:</label>
-                    <select id="model-type">
-                        <option value="tiny">TinyLLM (Browser)</option>
-                    </select>
+            <div class="input-section">
+                <textarea id="input-text" placeholder="Enter text to summarize..."></textarea>
+                
+                <div class="controls">
+                    <div class="model-selection">
+                        <label>Model:</label>
+                        <select id="model-type">
+                            <option value="simple">SimpleSUM (Fast)</option>
+                            <option value="advanced">MagnumOpusSUM (Advanced)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="parameters">
+                        <div class="param-group">
+                            <label>Max Tokens: <span id="token-value">100</span></label>
+                            <input type="range" id="max-tokens" min="50" max="500" step="10" value="100">
+                        </div>
+                        
+                        <div class="param-group">
+                            <label>Include Analysis</label>
+                            <input type="checkbox" id="include-analysis">
+                        </div>
+                    </div>
+                    
+                    <button id="summarize-btn" class="btn btn-primary">Summarize</button>
+                </div>
+            </div>
+            
+            <div class="output-section">
+                <div id="loading" class="loading-indicator" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Processing...</p>
                 </div>
                 
-                <div id="tiny-llm-params" class="model-params">
-                    <div class="param-group">
-                        <label>Temperature: <span class="param-value">0.7</span></label>
-                        <input type="range" min="0" max="1" step="0.1" value="0.7" onchange="updateTinyLLMConfig('temperature', this.value)">
-                        <span class="param-desc">Controls randomness of output</span>
+                <div id="error-message" class="error" style="display: none;"></div>
+                
+                <div id="results" style="display: none;">
+                    <div class="summary-container">
+                        <h3>Summary</h3>
+                        <div id="summary-output" class="output-text"></div>
                     </div>
                     
-                    <div class="param-group">
-                        <label>Max Tokens: <span class="param-value">500</span></label>
-                        <input type="range" min="100" max="1000" step="50" value="500" onchange="updateTinyLLMConfig('maxTokens', this.value)">
-                        <span class="param-desc">Limits response length</span>
-                    </div>
-                    <div class="param-group">
-                        <label>Max Sentences: <span class="param-value">5</span></label>
-                        <input type="range" min="1" max="10" value="5" onchange="updateTinyLLMConfig('maxSentences', this.value)">
-                        <span class="param-desc">Maximum number of sentences</span>
+                    <div class="summary-container condensed">
+                        <h3>Condensed Version</h3>
+                        <div id="condensed-output" class="output-text"></div>
                     </div>
                     
-                    <div class="param-group">
-                        <label>Top P: <span class="param-value">0.9</span></label>
-                        <input type="range" min="0" max="1" step="0.1" value="0.9" onchange="updateTinyLLMConfig('topP', this.value)">
-                        <span class="param-desc">Controls output diversity</span>
+                    <div class="tags-container">
+                        <h3>Key Tags</h3>
+                        <div id="tags-output" class="tags"></div>
+                    </div>
+                    
+                    <div id="analysis-results" style="display: none;">
+                        <h3>Analysis</h3>
+                        <div class="analysis-grid">
+                            <div class="analysis-item">
+                                <h4>Sentiment</h4>
+                                <div id="sentiment-output"></div>
+                            </div>
+                            <div class="analysis-item">
+                                <h4>Keywords</h4>
+                                <div id="keywords-output"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="metrics">
+                        <div id="compression-ratio"></div>
+                        <div id="processing-time"></div>
                     </div>
                 </div>
             </div>
-            
-            <button id="summarize-btn">Summarize</button>
-        </div>
+        </section>
         
-        <div class="output-section">
-            <div class="summary-container">
-                <h3>Summary</h3>
-                <div id="summary-output"></div>
+        <section id="file-upload" class="container section">
+            <div class="section-header">
+                <h2>File Processing</h2>
+                <p>Analyze and summarize content from files</p>
             </div>
             
-            <div class="metrics">
-                <div id="compression-ratio"></div>
-                <div id="processing-time"></div>
+            <div class="upload-container">
+                <form id="file-upload-form" enctype="multipart/form-data">
+                    <div class="file-input">
+                        <label for="file">Upload File</label>
+                        <input type="file" id="file" name="file" accept=".txt,.json,.csv,.md">
+                        <p class="file-hint">Supported formats: TXT, JSON, CSV, MD</p>
+                    </div>
+                    
+                    <div class="file-options">
+                        <div class="param-group">
+                            <label>Model:</label>
+                            <select id="file-model-type" name="model">
+                                <option value="simple">SimpleSUM (Fast)</option>
+                                <option value="advanced">MagnumOpusSUM (Advanced)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="param-group">
+                            <label>Max Tokens: <span id="file-token-value">200</span></label>
+                            <input type="range" id="file-max-tokens" name="maxTokens" min="100" max="1000" step="50" value="200">
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Process File</button>
+                </form>
+                
+                <div id="file-loading" class="loading-indicator" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Processing file...</p>
+                </div>
+                
+                <div id="file-error-message" class="error" style="display: none;"></div>
+                
+                <div id="file-results" style="display: none;">
+                    <div class="file-info">
+                        <h3>File: <span id="filename-output"></span></h3>
+                    </div>
+                    
+                    <div class="summary-container">
+                        <h3>Summary</h3>
+                        <div id="file-summary-output" class="output-text"></div>
+                    </div>
+                    
+                    <div id="file-metadata">
+                        <h3>Metadata</h3>
+                        <pre id="metadata-output"></pre>
+                    </div>
+                    
+                    <div id="file-topics" style="display: none;">
+                        <h3>Topics</h3>
+                        <div id="topics-output"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section id="about" class="container section">
+            <div class="section-header">
+                <h2>About SUM</h2>
+                <p>A knowledge distillation platform</p>
             </div>
             
-            <div class="wordcloud">
-                <img id="wordcloud-img" style="display: none;">
+            <div class="about-content">
+                <div class="about-text">
+                    <p>"Depending on the author, a million books can be distilled into a single sentence, and a single sentence can conceal a million books, depending on the Author." - ototao</p>
+                    
+                    <h3>Mission Statement</h3>
+                    <p>SUM is a knowledge distillation platform that harnesses the power of AI, NLP, and ML to extract, analyze, and present insights from vast datasets in a structured, concise, and engaging manner. The goal is to summarize content into a succinct & dense human-readable form allowing one to "download" knowledge quickly.</p>
+                    
+                    <h3>Key Features</h3>
+                    <ul>
+                        <li>Multi-level summarization (tags, sentences, paragraphs)</li>
+                        <li>Interactive analysis with user feedback</li>
+                        <li>Topic modeling for cross-document analysis</li>
+                        <li>Comprehensive text analysis</li>
+                        <li>Multi-lingual support</li>
+                    </ul>
+                </div>
+                
+                <div class="about-links">
+                    <a href="https://github.com/OtotaO/SUM" target="_blank" class="btn btn-secondary">GitHub Repository</a>
+                    <a href="https://twitter.com/Otota0" target="_blank" class="btn btn-secondary">Contact on Twitter</a>
+                </div>
             </div>
+        </section>
+    </main>
+    
+    <footer>
+        <div class="container">
+            <p>Made with ❤️ by <a href="https://twitter.com/Otota0" target="_blank">ototao</a></p>
+            <p>Licensed under the Apache License 2.0</p>
         </div>
-    </div>
+    </footer>
+    
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
