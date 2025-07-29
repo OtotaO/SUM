@@ -29,7 +29,8 @@ from flask import Flask, request, jsonify, render_template, send_from_directory,
 from werkzeug.utils import secure_filename
 
 # Import SUM components
-from SUM import SimpleSUM, MagnumOpusSUM, TrinityKnowledgeEngine
+from SUM import SimpleSUM, MagnumOpusSUM, HierarchicalDensificationEngine
+from StreamingEngine import StreamingHierarchicalEngine, StreamingConfig
 from Utils.data_loader import DataLoader
 from Models.topic_modeling import TopicModeler
 from Models.summarizer import Summarizer
@@ -63,7 +64,8 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 # Initialize SUM components with configuration
 simple_summarizer = SimpleSUM()
 advanced_summarizer = None  # Lazy-loaded
-trinity_engine = None  # Lazy-loaded - The Cosmic Elevator 🚀
+hierarchical_engine = None  # Lazy-loaded - Hierarchical Densification Engine
+streaming_engine = None  # Lazy-loaded - Streaming Engine for unlimited text
 topic_modeler = None  # Lazy-loaded
 
 # Concurrency control
@@ -251,32 +253,40 @@ def process_text():
     Expected JSON input:
     {
         "text": "Text to summarize...",
-        "model": "simple|advanced|trinity",  # Optional, default: "simple"
+        "model": "simple|advanced|hierarchical|streaming",  # Optional, default: "simple"
         "config": {                          # Optional model configuration
             "maxTokens": 100,               # For simple/advanced
             "threshold": 0.3,               # For simple/advanced
             "include_analysis": false,      # For advanced
             
-            # Trinity Engine specific options:
-            "max_wisdom_tags": 7,           # Level 1: Max crystallized concepts
-            "essence_max_tokens": 50,       # Level 2: Max essence tokens
+            # Hierarchical Engine specific options:
+            "max_concepts": 7,              # Level 1: Max concept extraction
+            "max_summary_tokens": 50,       # Level 2: Max summary tokens
             "complexity_threshold": 0.7,    # Level 3: Context expansion threshold
-            "max_revelations": 3,           # Revelation Engine: Max profound insights
-            "min_revelation_score": 0.6     # Revelation Engine: Min insight quality
+            "max_insights": 3,              # Insight Engine: Max insights
+            "min_insight_score": 0.6,       # Insight Engine: Min insight quality
+            
+            # Streaming Engine specific options (for unlimited text length):
+            "chunk_size_words": 1000,       # Words per chunk
+            "overlap_ratio": 0.15,          # Overlap between chunks
+            "max_memory_mb": 512,           # Memory limit in MB
+            "max_concurrent_chunks": 4,     # Parallel processing limit
+            "enable_progressive_refinement": True,  # Improve results progressively
+            "cache_processed_chunks": True  # Cache chunks for efficiency
         }
     }
     
     Returns:
         JSON response with summary and metadata
         
-        Trinity Engine additionally returns:
+        Hierarchical Engine additionally returns:
         {
-            "trinity": {
-                "level_1_tags": [...],      # Crystallized wisdom concepts
-                "level_2_essence": "...",   # Complete minimal summary
-                "level_3_context": "..."    # Intelligent expansion (if needed)
+            "hierarchical_summary": {
+                "level_1_concepts": [...],  # Key concepts extracted
+                "level_2_core": "...",      # Core summary
+                "level_3_expanded": "..."   # Expanded context (if needed)
             },
-            "revelations": [                # Profound insights that strike the heart
+            "key_insights": [               # Important insights
                 {
                     "text": "...",
                     "score": 0.95,
@@ -284,8 +294,23 @@ def process_text():
                 }
             ],
             "metadata": {
-                "wisdom_density": 0.066,    # Philosophical content density
-                "revelation_count": 2       # Number of profound insights found
+                "concept_density": 0.066,   # Concept density
+                "insight_count": 2          # Number of insights found
+            }
+        }
+        
+        Streaming Engine (for unlimited text length) returns similar hierarchical 
+        structure plus additional streaming metadata:
+        {
+            "processing_stats": {
+                "total_chunks": 150,        # Number of text chunks processed
+                "successful_chunks": 148,   # Successfully processed chunks
+                "success_rate": 0.987       # Processing success rate
+            },
+            "streaming_metadata": {
+                "chunks_processed": 150,    # Total chunks
+                "memory_efficiency": 0.85,  # Memory usage efficiency
+                "processing_speed": "4500 words/sec"  # Processing speed
             }
         }
     """
@@ -321,23 +346,47 @@ def process_text():
                         }), 500
                 
                 result = advanced_summarizer.process_text(text, config)
-            elif model_type == 'trinity':
-                # Lazy-load Trinity Engine - The Cosmic Elevator! 🚀
-                global trinity_engine
-                if trinity_engine is None:
+            elif model_type == 'hierarchical':
+                # Lazy-load Hierarchical Densification Engine
+                global hierarchical_engine
+                if hierarchical_engine is None:
                     try:
-                        trinity_engine = TrinityKnowledgeEngine()
-                        logger.info("Trinity Knowledge Engine initialized - Ready for cosmic elevation! 🚀")
+                        hierarchical_engine = HierarchicalDensificationEngine()
+                        logger.info("Hierarchical Densification Engine initialized")
                     except Exception as e:
-                        logger.error(f"Failed to initialize Trinity Engine: {e}")
+                        logger.error(f"Failed to initialize Hierarchical Densification Engine: {e}")
                         return jsonify({
-                            'error': 'Trinity Engine unavailable',
+                            'error': 'Hierarchical Densification Engine unavailable',
                             'details': str(e)
                         }), 500
                 
-                result = trinity_engine.process_text(text, config)
+                result = hierarchical_engine.process_text(text, config)
+            elif model_type == 'streaming':
+                # Lazy-load Streaming Engine for unlimited text length
+                global streaming_engine
+                if streaming_engine is None:
+                    try:
+                        # Create streaming config from request config
+                        streaming_config = StreamingConfig(
+                            chunk_size_words=config.get('chunk_size_words', 1000),
+                            overlap_ratio=config.get('overlap_ratio', 0.15),
+                            max_memory_mb=config.get('max_memory_mb', 512),
+                            max_concurrent_chunks=config.get('max_concurrent_chunks', 4),
+                            enable_progressive_refinement=config.get('enable_progressive_refinement', True),
+                            cache_processed_chunks=config.get('cache_processed_chunks', True)
+                        )
+                        streaming_engine = StreamingHierarchicalEngine(streaming_config)
+                        logger.info("Streaming Hierarchical Engine initialized for unlimited text processing")
+                    except Exception as e:
+                        logger.error(f"Failed to initialize Streaming Engine: {e}")
+                        return jsonify({
+                            'error': 'Streaming Engine unavailable',
+                            'details': str(e)
+                        }), 500
+                
+                result = streaming_engine.process_streaming_text(text)
             else:
-                return jsonify({'error': f'Unknown model type: {model_type}. Available: simple, advanced, trinity'}), 400
+                return jsonify({'error': f'Unknown model type: {model_type}. Available: simple, advanced, hierarchical, streaming'}), 400
         
         # Add processing metadata
         result['processing_time'] = time.time() - start_time

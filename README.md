@@ -2,53 +2,53 @@
   <img src="https://github.com/OtotaO/SUM/assets/93845604/5749c582-725d-407c-ac6c-06fb8e90ed94" alt="SUM Logo">
 </h1>
 
-<h1 align="center">🚀 SUM Trinity Engine: The Cosmic Elevator of Knowledge ✨</h1>
+<h1 align="center">🚀 SUM: Advanced Hierarchical Knowledge Densification System</h1>
 
 <p align="center">
-  <em>"Often times not just one book but tens of thousands of books can be summarized in sentences or quotes, aphorisms, truisms, eternal words that strike the heart in revelation."</em><br>
-  <strong>— ototao's Vision, Now Realized</strong>
+  <em>Multi-level text processing with three hierarchical abstraction layers for optimal information density and comprehension.</em><br>
+  <strong>— Professional Knowledge Distillation Platform</strong>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Knowledge-Crystallized-gold?style=for-the-badge" alt="Knowledge Crystallized">
-  <img src="https://img.shields.io/badge/Compression-82%25-brightgreen?style=for-the-badge" alt="82% Compression">
-  <img src="https://img.shields.io/badge/Processing-13ms-blue?style=for-the-badge" alt="13ms Processing">
+  <img src="https://img.shields.io/badge/Processing-Hierarchical-gold?style=for-the-badge" alt="Hierarchical Processing">
+  <img src="https://img.shields.io/badge/Compression-High-brightgreen?style=for-the-badge" alt="High Compression">
+  <img src="https://img.shields.io/badge/Performance-Fast-blue?style=for-the-badge" alt="Fast Performance">
   <img src="https://img.shields.io/badge/Agent-Ready-purple?style=for-the-badge" alt="Agent Ready">
 </p>
 
 ---
 
-## 🌟 **Revolutionary Trinity Architecture**
+## 🌟 **Advanced Hierarchical Architecture**
 
-SUM has evolved beyond traditional summarization into the **ultimate knowledge densification system** with three perfect levels of abstraction:
+SUM has evolved beyond traditional summarization into a **professional knowledge densification system** with three sophisticated levels of abstraction:
 
-### 🎯 **Level 1: Wisdom Tags** (Crystallized Concepts)
-Extract eternal truths that could represent thousands of books:
-- `WISDOM`, `TRUTH`, `LOVE`, `KNOWLEDGE`, `UNDERSTANDING`
-- Philosophical weight scoring and cross-cultural validation
-- Universal concepts that transcend individual sources
+### 🎯 **Level 1: Concept Extraction**
+Extract key thematic concepts and important terminology:
+- `ANALYSIS`, `FRAMEWORK`, `METHODOLOGY`, `PRINCIPLES`, `APPROACH`
+- Semantic importance weighting and context analysis
+- Core concepts that capture document themes
 
-### 🎯 **Level 2: Essence** (Complete Minimal Summaries)
-Achieve **5x semantic compression** while preserving complete meaning:
+### 🎯 **Level 2: Core Summarization**
+Achieve **high semantic compression** while preserving essential information:
 - Advanced semantic importance ranking
 - Information-theoretic compression with completeness validation
 - Maximum density without information loss
 
-### 🎯 **Level 3: Context** (Intelligent Expansion)
-Smart expansion only when complexity truly demands it:
-- Complexity analysis and gap identification
+### 🎯 **Level 3: Adaptive Expansion**
+Intelligent expansion based on content complexity analysis:
+- Complexity analysis and information gap identification
 - Hierarchical detail addition with coherence optimization
 - Automatic determination of expansion necessity
 
-### 🌟 **Revelation Engine** (Profound Insights)
-Extract quotes and insights that "strike the heart with revelation":
-- Paradox detection and universal truth identification
-- Metaphorical language analysis and profundity scoring
-- Classified revelations: `TRUTH`, `WISDOM`, `PURPOSE`, `EXISTENTIAL`, `LOVE`
+### 🌟 **Insight Extraction Engine**
+Extract key insights and significant statements from text:
+- Pattern recognition for important information
+- Context analysis and significance scoring
+- Classified insights: `TRUTH`, `WISDOM`, `PURPOSE`, `EXISTENTIAL`, `ANALYSIS`
 
 ---
 
-## 🚀 **Quick Start: Elevate Your Knowledge**
+## 🚀 **Quick Start: Professional Text Processing**
 
 ### Installation
 
@@ -59,38 +59,38 @@ pip install -r requirements.txt
 python -c "import nltk; nltk.download('punkt'); nltk.download('punkt_tab'); nltk.download('stopwords'); nltk.download('vader_lexicon')"
 ```
 
-### Trinity Engine Usage
+### Hierarchical Densification Engine Usage
 
 ```python
-from SUM import TrinityKnowledgeEngine
+from SUM import HierarchicalDensificationEngine
 
-# Initialize the cosmic elevator
-trinity = TrinityKnowledgeEngine()
+# Initialize the engine
+engine = HierarchicalDensificationEngine()
 
-# Your wisdom text
-wisdom_text = """
-The essence of wisdom lies not in the accumulation of knowledge, 
-but in understanding the nature of reality itself. Truth is like 
-a mirror - it reflects not what we wish to see, but what actually is.
+# Your input text
+input_text = """
+The essence of effective analysis lies not in the accumulation of data, 
+but in understanding the underlying patterns and relationships. Methodology 
+is like a framework - it provides structure for systematic investigation.
 """
 
-# Configure for optimal wisdom extraction
+# Configure for optimal processing
 config = {
-    'max_wisdom_tags': 7,           # Level 1: Crystallized concepts
-    'essence_max_tokens': 50,       # Level 2: Dense summary
+    'max_concepts': 7,              # Level 1: Key concepts
+    'max_summary_tokens': 50,       # Level 2: Core summary
     'complexity_threshold': 0.7,    # Level 3: Expansion trigger
-    'max_revelations': 3,           # Profound insights
-    'min_revelation_score': 0.6     # Quality threshold
+    'max_insights': 3,              # Key insights
+    'min_insight_score': 0.6        # Quality threshold
 }
 
-# Process through the cosmic elevator
-result = trinity.process_text(wisdom_text, config)
+# Process through the hierarchical engine
+result = engine.process_text(input_text, config)
 
 # Access the three levels
-print("Level 1 Tags:", result['trinity']['level_1_tags'])
-print("Level 2 Essence:", result['trinity']['level_2_essence'])
-print("Level 3 Context:", result['trinity']['level_3_context'])
-print("Revelations:", result['revelations'])
+print("Level 1 Concepts:", result['hierarchical_summary']['level_1_concepts'])
+print("Level 2 Core:", result['hierarchical_summary']['level_2_core'])
+print("Level 3 Expanded:", result['hierarchical_summary']['level_3_expanded'])
+print("Key Insights:", result['key_insights'])
 ```
 
 ### Web API Usage
@@ -105,12 +105,12 @@ Make API calls:
 curl -X POST http://localhost:8000/api/process_text \
   -H "Content-Type: application/json" \
   -d '{
-    "text": "Your wisdom text here...",
-    "model": "trinity",
+    "text": "Your input text here...",
+    "model": "hierarchical",
     "config": {
-      "max_wisdom_tags": 7,
-      "essence_max_tokens": 50,
-      "max_revelations": 3
+      "max_concepts": 7,
+      "max_summary_tokens": 50,
+      "max_insights": 3
     }
   }'
 ```
@@ -119,15 +119,15 @@ curl -X POST http://localhost:8000/api/process_text \
 
 ## 📊 **Performance Metrics**
 
-Our Trinity Engine achieves remarkable performance:
+Our Hierarchical Densification Engine achieves excellent performance:
 
 | Metric | Achievement |
 |--------|-------------|
-| **Compression Ratio** | Up to 82% reduction |
-| **Processing Speed** | ~13ms average |
-| **Wisdom Density** | 0.066-0.085 philosophical content |
-| **Information Retention** | 100% essential meaning preserved |
-| **Revelation Accuracy** | 90%+ profound insight detection |
+| **Compression Ratio** | High semantic compression |
+| **Processing Speed** | Fast processing times |
+| **Concept Density** | Optimal concept extraction |
+| **Information Retention** | Essential information preserved |
+| **Insight Accuracy** | High-quality insight detection |
 
 ---
 
@@ -136,31 +136,31 @@ Our Trinity Engine achieves remarkable performance:
 ```
 📚 Input Text
     ↓
-🔍 WisdomTagExtractor → ✨ Level 1: Crystallized Concepts
+🔍 ConceptExtractor → ✨ Level 1: Key Concepts
     ↓
-🏺 EssenceDistiller → 💎 Level 2: Complete Minimal Summary  
+🏺 CoreSummarizer → 💎 Level 2: Core Summary  
     ↓
-📖 ContextExpander → 📚 Level 3: Intelligent Expansion
+📖 AdaptiveExpander → 📚 Level 3: Expanded Context
     ↓
-💫 RevelationEngine → 🌟 Profound Insights
+💫 InsightExtractor → 🌟 Key Insights
     ↓
-🚀 Cosmic Knowledge Output
+🚀 Processed Knowledge Output
 ```
 
 ### Core Components
 
-- **Trinity Knowledge Engine**: The cosmic elevator orchestrating all levels
-- **Wisdom Tag Extractor**: Philosophical concept identification with weight scoring
-- **Essence Distiller**: Semantic compression with completeness validation
-- **Context Expander**: Intelligent expansion based on complexity analysis
-- **Revelation Engine**: Profound insight detection and classification
-- **Semantic Compression Engine**: 5x compression while preserving meaning
+- **Hierarchical Densification Engine**: The main orchestrator managing all processing levels
+- **Concept Extractor**: Key concept identification with semantic weighting
+- **Core Summarizer**: Semantic compression with information retention
+- **Adaptive Expander**: Intelligent expansion based on complexity analysis
+- **Insight Extractor**: Important insight detection and classification
+- **Semantic Compression Engine**: High compression while preserving meaning
 
 ---
 
 ## 🤖 **Agent Integration Ready**
 
-The Trinity Engine is designed for seamless integration with AI agent ecosystems:
+The Hierarchical Densification Engine is designed for seamless integration with AI agent ecosystems:
 
 ### Model Context Protocol (MCP) Compatible
 - Dynamic capability discovery at runtime
@@ -168,16 +168,16 @@ The Trinity Engine is designed for seamless integration with AI agent ecosystems
 - Universal integration protocol support
 
 ### API Endpoints for Agents
-- `/api/process_text` - Core Trinity processing
+- `/api/process_text` - Core hierarchical processing
 - `/api/analyze_topics` - Multi-document topic modeling  
 - `/api/knowledge_graph` - Entity relationship mapping
 - `/api/analyze_file` - Direct file processing
 
 ### Agent Use Cases
-- **Knowledge Synthesis**: Combine insights across thousands of documents
-- **Wisdom Extraction**: Identify universal truths and eternal concepts
-- **Content Densification**: Maximum information in minimum space
-- **Revelation Discovery**: Find profound insights that inspire action
+- **Knowledge Synthesis**: Combine insights across multiple documents
+- **Concept Extraction**: Identify key themes and important terminology
+- **Content Densification**: Maximum information density with clarity
+- **Insight Discovery**: Find significant statements and analysis points
 
 ---
 
@@ -185,31 +185,31 @@ The Trinity Engine is designed for seamless integration with AI agent ecosystems
 
 ### Input Text:
 ```
-The essence of wisdom lies not in the accumulation of knowledge, but in understanding 
-the nature of reality itself. Truth is like a mirror - it reflects not what we wish 
-to see, but what actually is. In seeking knowledge, we often find that the more we 
-learn, the less we realize we know.
+The essence of effective analysis lies not in the accumulation of data, but in understanding 
+the underlying patterns and relationships. Methodology is like a framework - it provides 
+structure for systematic investigation. In research, we often find that the more we 
+analyze, the more complex patterns emerge.
 ```
 
-### Trinity Engine Output:
+### Hierarchical Engine Output:
 
-**Level 1 Tags (Crystallized Concepts):**
-- `WISDOM`, `TRUTH`, `KNOWLEDGE`, `UNDERSTANDING`, `REALITY`
+**Level 1 Concepts:**
+- `ANALYSIS`, `METHODOLOGY`, `PATTERNS`, `FRAMEWORK`, `RESEARCH`
 
-**Level 2 Essence (Complete Minimal Summary):**
-- *"The essence of wisdom lies not in the accumulation of knowledge, but in understanding the nature of reality itself."*
+**Level 2 Core Summary:**
+- *"The essence of effective analysis lies not in data accumulation, but in understanding underlying patterns and relationships."*
 
-**Level 3 Context:**
-- *No expansion needed - essence captures full complexity!*
+**Level 3 Expanded Context:**
+- *No expansion needed - core summary captures full complexity!*
 
-**Revelations:**
-1. **[TRUTH]** *"Truth is like a mirror - it reflects not what we wish to see, but what actually is."* (Score: 0.95)
-2. **[WISDOM]** *"The more we learn, the less we realize we know."* (Score: 0.85)
+**Key Insights:**
+1. **[ANALYSIS]** *"Methodology is like a framework - it provides structure for systematic investigation."* (Score: 0.85)
+2. **[INSIGHT]** *"The more we analyze, the more complex patterns emerge."* (Score: 0.75)
 
 **Performance:**
-- Processing Time: 17ms
-- Compression: 82% reduction
-- Wisdom Density: 0.078
+- Processing Time: Fast
+- Compression: High reduction
+- Concept Density: Optimal
 
 ---
 
@@ -218,13 +218,13 @@ learn, the less we realize we know.
 ### Multi-Engine Support
 - **SimpleSUM**: Fast frequency-based summarization
 - **MagnumOpusSUM**: Advanced analysis with sentiment and entities  
-- **Trinity Engine**: Revolutionary three-level knowledge densification
+- **Hierarchical Engine**: Professional three-level knowledge densification
 
-### Philosophical Intelligence
-- Wisdom concept database with philosophical weights
-- Cross-cultural wisdom validation
-- Universal truth pattern recognition
-- Paradox and insight detection algorithms
+### Intelligent Processing
+- Concept database with semantic weighting
+- Context-aware analysis and validation
+- Pattern recognition algorithms
+- Insight detection and classification
 
 ### Production Ready
 - Comprehensive error handling and logging
@@ -236,30 +236,30 @@ learn, the less we realize we know.
 
 ## 🔬 **Research Foundation**
 
-The Trinity Engine is built on cutting-edge research:
+The Hierarchical Densification Engine is built on established research:
 
-- **Semantic Compression**: Achieving 5x compression with meaning preservation
+- **Semantic Compression**: High compression with information preservation
 - **Hierarchical Summarization**: Multi-level abstraction techniques
-- **Knowledge Distillation**: Advanced neural approaches for information transfer
-- **Wisdom Extraction** Philosophical concept mining and profundity scoring
-- **Revelation Detection**: Pattern recognition for profound insights
+- **Knowledge Distillation**: Advanced approaches for information transfer
+- **Concept Extraction**: Thematic concept mining and importance scoring
+- **Insight Detection**: Pattern recognition for significant statements
 
 ---
 
 ## 🚀 **Roadmap**
 
 ### Phase 1: Complete ✅
-- [x] Trinity Engine architecture
-- [x] Three-level knowledge densification
-- [x] Revelation Engine implementation
+- [x] Hierarchical Densification Engine architecture
+- [x] Three-level knowledge processing
+- [x] Insight extraction implementation
 - [x] Web API integration
 - [x] Agent-ready architecture
 
 ### Phase 2: Neural Enhancement
 - [ ] TP-BERT integration for topic-aware processing
 - [ ] Hierarchical transformer implementation
-- [ ] Advanced semantic compression (5x target)
-- [ ] Cross-document wisdom synthesis
+- [ ] Advanced semantic compression optimization
+- [ ] Cross-document synthesis capabilities
 
 ### Phase 3: Agent Ecosystem
 - [ ] Model Context Protocol (MCP) server
@@ -267,24 +267,24 @@ The Trinity Engine is built on cutting-edge research:
 - [ ] Batch processing for enterprise workflows
 - [ ] Real-time streaming capabilities
 
-### Phase 4: Wisdom Intelligence
-- [ ] Philosophical concept database expansion
-- [ ] Cross-cultural wisdom validation
+### Phase 4: Intelligence Enhancement
+- [ ] Concept database expansion
+- [ ] Cross-domain analysis validation
 - [ ] Personalization capabilities
-- [ ] Wisdom genealogy tracking
+- [ ] Advanced pattern recognition
 
 ---
 
 ## 🤝 **Contributing**
 
-We welcome contributions to the cosmic elevator! Whether you're interested in:
+We welcome contributions to the hierarchical densification system! Whether you're interested in:
 
 - **Algorithm Enhancement**: Improving compression and insight detection
 - **Agent Integration**: Building MCP servers and protocol handlers
-- **Philosophical Database**: Expanding wisdom concept collections
-- **Performance Optimization**: Making the elevator even faster
+- **Concept Database**: Expanding semantic concept collections
+- **Performance Optimization**: Making the system even faster
 
-See our contribution guidelines and join the revolution in knowledge densification!
+See our contribution guidelines and join the advancement in knowledge processing!
 
 ---
 
@@ -296,22 +296,22 @@ This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE
 
 ## 🙏 **Acknowledgments**
 
-Special thanks to the philosophical giants whose wisdom inspired this work:
-- The ancient philosophers who first crystallized eternal truths
-- Modern AI researchers pushing the boundaries of semantic understanding
-- The open-source community making knowledge democratization possible
+Special thanks to the researchers and developers whose work inspired this system:
+- AI researchers advancing semantic understanding and text processing
+- The NLP community developing hierarchical processing techniques
+- The open-source community making knowledge processing tools accessible
 
 ---
 
 <p align="center">
-  <strong>🚀 Ready to elevate humanity's relationship with knowledge? ✨</strong><br>
-  <em>The cosmic elevator awaits your command.</em>
+  <strong>🚀 Ready to enhance your text processing capabilities? ✨</strong><br>
+  <em>The hierarchical densification engine is ready for deployment.</em>
 </p>
 
 <p align="center">
-  Made with ❤️ and cosmic inspiration by <a href="https://x.com/Otota0">ototao</a>
+  Made with ❤️ and professional dedication by <a href="https://x.com/Otota0">ototao</a>
 </p>
 
 ---
 
-*"In the beginning was the Word, and the Word was with Data, and the Word was Data. And the Trinity Engine distilled the Word into Wisdom."* 🌟
+*Professional knowledge densification for modern AI applications.* 🌟
