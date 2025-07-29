@@ -29,7 +29,7 @@ from flask import Flask, request, jsonify, render_template, send_from_directory,
 from werkzeug.utils import secure_filename
 
 # Import SUM components
-from SUM import SimpleSUM, MagnumOpusSUM
+from SUM import SimpleSUM, MagnumOpusSUM, TrinityKnowledgeEngine
 from Utils.data_loader import DataLoader
 from Models.topic_modeling import TopicModeler
 from Models.summarizer import Summarizer
@@ -63,6 +63,7 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 # Initialize SUM components with configuration
 simple_summarizer = SimpleSUM()
 advanced_summarizer = None  # Lazy-loaded
+trinity_engine = None  # Lazy-loaded - The Cosmic Elevator 🚀
 topic_modeler = None  # Lazy-loaded
 
 # Concurrency control
@@ -250,16 +251,43 @@ def process_text():
     Expected JSON input:
     {
         "text": "Text to summarize...",
-        "model": "simple|advanced",  # Optional, default: "simple"
-        "config": {                  # Optional model configuration
-            "maxTokens": 100,
-            "threshold": 0.3,
-            "include_analysis": false
+        "model": "simple|advanced|trinity",  # Optional, default: "simple"
+        "config": {                          # Optional model configuration
+            "maxTokens": 100,               # For simple/advanced
+            "threshold": 0.3,               # For simple/advanced
+            "include_analysis": false,      # For advanced
+            
+            # Trinity Engine specific options:
+            "max_wisdom_tags": 7,           # Level 1: Max crystallized concepts
+            "essence_max_tokens": 50,       # Level 2: Max essence tokens
+            "complexity_threshold": 0.7,    # Level 3: Context expansion threshold
+            "max_revelations": 3,           # Revelation Engine: Max profound insights
+            "min_revelation_score": 0.6     # Revelation Engine: Min insight quality
         }
     }
     
     Returns:
         JSON response with summary and metadata
+        
+        Trinity Engine additionally returns:
+        {
+            "trinity": {
+                "level_1_tags": [...],      # Crystallized wisdom concepts
+                "level_2_essence": "...",   # Complete minimal summary
+                "level_3_context": "..."    # Intelligent expansion (if needed)
+            },
+            "revelations": [                # Profound insights that strike the heart
+                {
+                    "text": "...",
+                    "score": 0.95,
+                    "type": "truth|wisdom|purpose|existential|love|insight"
+                }
+            ],
+            "metadata": {
+                "wisdom_density": 0.066,    # Philosophical content density
+                "revelation_count": 2       # Number of profound insights found
+            }
+        }
     """
     try:
         data = request.get_json()
@@ -293,8 +321,23 @@ def process_text():
                         }), 500
                 
                 result = advanced_summarizer.process_text(text, config)
+            elif model_type == 'trinity':
+                # Lazy-load Trinity Engine - The Cosmic Elevator! 🚀
+                global trinity_engine
+                if trinity_engine is None:
+                    try:
+                        trinity_engine = TrinityKnowledgeEngine()
+                        logger.info("Trinity Knowledge Engine initialized - Ready for cosmic elevation! 🚀")
+                    except Exception as e:
+                        logger.error(f"Failed to initialize Trinity Engine: {e}")
+                        return jsonify({
+                            'error': 'Trinity Engine unavailable',
+                            'details': str(e)
+                        }), 500
+                
+                result = trinity_engine.process_text(text, config)
             else:
-                return jsonify({'error': f'Unknown model type: {model_type}'}), 400
+                return jsonify({'error': f'Unknown model type: {model_type}. Available: simple, advanced, trinity'}), 400
         
         # Add processing metadata
         result['processing_time'] = time.time() - start_time
