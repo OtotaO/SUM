@@ -752,6 +752,58 @@ def start_life_compression():
         }), 500
 
 
+@app.route('/api/chat_export/process', methods=['POST'])
+@rate_limit(10, 60)
+def process_chat_export():
+    """
+    Process chat export files to extract training insights.
+    
+    Expected form data:
+    - file: Chat export file (JSON)
+    - extract_training: bool (optional, default: false)
+    """
+    try:
+        # Check if file was uploaded
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file uploaded'}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        # Save temporarily
+        import tempfile
+        with tempfile.NamedTemporaryFile(mode='w+b', suffix='.json', delete=False) as tmp:
+            file.save(tmp.name)
+            
+            try:
+                from chat_intelligence_engine import ChatIntelligenceEngine
+                engine = ChatIntelligenceEngine()
+                
+                # Process the chat export
+                result = engine.process_chat_export(tmp.name)
+                
+                # Clean up
+                os.unlink(tmp.name)
+                
+                return jsonify({
+                    'status': 'success',
+                    'filename': file.filename,
+                    'processing_result': result
+                })
+                
+            except Exception as e:
+                os.unlink(tmp.name)
+                raise e
+                
+    except Exception as e:
+        logger.error(f"Error processing chat export: {e}")
+        return jsonify({
+            'error': 'Chat export processing failed',
+            'details': str(e)  
+        }), 500
+
+
 @app.route('/api/life_compression/search', methods=['POST'])
 @rate_limit(20, 60)
 @validate_json_input()

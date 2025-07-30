@@ -28,6 +28,7 @@
 #ifdef __APPLE__
 #include <ApplicationServices/ApplicationServices.h>
 #include <Carbon/Carbon.h>
+#include <CoreFoundation/CoreFoundation.h>
 #elif __linux__
 #include <X11/Xlib.h>
 #include <X11/extensions/scrnsaver.h>
@@ -39,20 +40,20 @@
 #define CONFIG_FILE "~/.config/sum/monitor.conf"
 #define IPC_PIPE "/tmp/sum_monitor.pipe"
 
-// Event types
+// Event types (renamed to avoid Carbon framework collision)
 typedef enum {
-    EVENT_APP_SWITCH,
-    EVENT_WINDOW_TITLE,
-    EVENT_IDLE_TIME,
-    EVENT_KEYSTROKE_STATS,  // Not logging keys, just activity level
-    EVENT_MOUSE_STATS,      // Not tracking position, just activity
-    EVENT_SYSTEM_EVENT
-} EventType;
+    SUM_EVENT_APP_SWITCH,
+    SUM_EVENT_WINDOW_TITLE,
+    SUM_EVENT_IDLE_TIME,
+    SUM_EVENT_KEYSTROKE_STATS,  // Not logging keys, just activity level
+    SUM_EVENT_MOUSE_STATS,      // Not tracking position, just activity
+    SUM_EVENT_SYSTEM_EVENT
+} SumEventType;
 
 // Event structure
 typedef struct {
     time_t timestamp;
-    EventType type;
+    SumEventType type;
     char data[MAX_EVENT_LENGTH];
 } Event;
 
@@ -90,7 +91,7 @@ static FILE* g_log_file = NULL;
 void load_config(void);
 void save_config(void);
 void signal_handler(int sig);
-void add_event(EventType type, const char* data);
+void add_event(SumEventType type, const char* data);
 void* event_writer_thread(void* arg);
 void* compression_thread(void* arg);
 char* get_active_app_name(void);
@@ -176,7 +177,7 @@ void signal_handler(int sig) {
 }
 
 // Add event to circular buffer
-void add_event(EventType type, const char* data) {
+void add_event(SumEventType type, const char* data) {
     if (!g_config.enabled) return;
     
     pthread_mutex_lock(&g_buffer_mutex);
@@ -219,12 +220,12 @@ void* event_writer_thread(void* arg) {
             
             const char* type_str = "";
             switch (event->type) {
-                case EVENT_APP_SWITCH: type_str = "APP"; break;
-                case EVENT_WINDOW_TITLE: type_str = "WINDOW"; break;
-                case EVENT_IDLE_TIME: type_str = "IDLE"; break;
-                case EVENT_KEYSTROKE_STATS: type_str = "KEYS"; break;
-                case EVENT_MOUSE_STATS: type_str = "MOUSE"; break;
-                case EVENT_SYSTEM_EVENT: type_str = "SYSTEM"; break;
+                case SUM_EVENT_APP_SWITCH: type_str = "APP"; break;
+                case SUM_EVENT_WINDOW_TITLE: type_str = "WINDOW"; break;
+                case SUM_EVENT_IDLE_TIME: type_str = "IDLE"; break;
+                case SUM_EVENT_KEYSTROKE_STATS: type_str = "KEYS"; break;
+                case SUM_EVENT_MOUSE_STATS: type_str = "MOUSE"; break;
+                case SUM_EVENT_SYSTEM_EVENT: type_str = "SYSTEM"; break;
             }
             
             fprintf(g_log_file, "%s %s %s\n", time_str, type_str, event->data);
@@ -256,25 +257,27 @@ void* compression_thread(void* arg) {
         }
         
         // Could also trigger via socket, signal, or other IPC
-        add_event(EVENT_SYSTEM_EVENT, "Triggered compression cycle");
+        add_event(SUM_EVENT_SYSTEM_EVENT, "Triggered compression cycle");
     }
     
     return NULL;
 }
 
 #ifdef __APPLE__
-// macOS implementation
+// macOS implementation using Carbon/Core Foundation (pure C)
 char* get_active_app_name(void) {
     static char app_name[256];
     app_name[0] = '\0';
     
-    // Get frontmost application
-    NSRunningApplication* app = [[NSWorkspace sharedWorkspace] frontmostApplication];
-    if (app) {
-        const char* name = [[app localizedName] UTF8String];
-        if (name) {
-            strncpy(app_name, name, 255);
-            app_name[255] = '\0';
+    // Get frontmost process using Carbon APIs
+    ProcessSerialNumber psn;
+    OSErr err = GetFrontProcess(&psn);
+    if (err == noErr) {
+        CFStringRef processName = NULL;
+        err = CopyProcessName(&psn, &processName);
+        if (err == noErr && processName) {
+            CFStringGetCString(processName, app_name, sizeof(app_name), kCFStringEncodingUTF8);
+            CFRelease(processName);
         }
     }
     
@@ -353,7 +356,7 @@ void monitor_loop(void) {
                     char event_data[MAX_EVENT_LENGTH];
                     snprintf(event_data, sizeof(event_data), 
                             "Switched to: %s", current_app);
-                    add_event(EVENT_APP_SWITCH, event_data);
+                    add_event(SUM_EVENT_APP_SWITCH, event_data);
                     strncpy(last_app, current_app, 255);
                 }
             }
@@ -368,7 +371,7 @@ void monitor_loop(void) {
                 char event_data[MAX_EVENT_LENGTH];
                 snprintf(event_data, sizeof(event_data),
                         "Window: %s", current_window);
-                add_event(EVENT_WINDOW_TITLE, event_data);
+                add_event(SUM_EVENT_WINDOW_TITLE, event_data);
                 strncpy(last_window, current_window, 511);
             }
         }
@@ -381,10 +384,10 @@ void monitor_loop(void) {
                 char event_data[64];
                 snprintf(event_data, sizeof(event_data),
                         "User idle for %d seconds", idle_seconds);
-                add_event(EVENT_IDLE_TIME, event_data);
+                add_event(SUM_EVENT_IDLE_TIME, event_data);
                 idle_reported = 1;
             } else if (idle_seconds < 30 && idle_reported) {
-                add_event(EVENT_IDLE_TIME, "User active again");
+                add_event(SUM_EVENT_IDLE_TIME, "User active again");
                 idle_reported = 0;
             }
         }
@@ -396,7 +399,7 @@ void monitor_loop(void) {
             snprintf(stats, sizeof(stats),
                     "Activity: %d keystrokes, %d mouse events",
                     keystroke_count, mouse_event_count);
-            add_event(EVENT_SYSTEM_EVENT, stats);
+            add_event(SUM_EVENT_SYSTEM_EVENT, stats);
             
             keystroke_count = 0;
             mouse_event_count = 0;
@@ -465,13 +468,13 @@ int main(int argc, char* argv[]) {
     pthread_create(&compression_thread_id, NULL, compression_thread, NULL);
     
     // Log startup
-    add_event(EVENT_SYSTEM_EVENT, "Monitor agent started");
+    add_event(SUM_EVENT_SYSTEM_EVENT, "Monitor agent started");
     
     // Main monitoring loop
     monitor_loop();
     
     // Cleanup
-    add_event(EVENT_SYSTEM_EVENT, "Monitor agent stopping");
+    add_event(SUM_EVENT_SYSTEM_EVENT, "Monitor agent stopping");
     
     pthread_join(writer_thread, NULL);
     pthread_join(compression_thread_id, NULL);

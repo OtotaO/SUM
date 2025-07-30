@@ -49,9 +49,9 @@ Extract key insights and significant statements from text:
 
 ---
 
-## 🤖 **Revolutionary AI Integration**
+## 🤖 **Revolutionary AI Integration & Features**
 
-SUM now features **state-of-the-art AI model integration** with OpenAI and Anthropic, taking knowledge densification to unprecedented levels:
+SUM now features **state-of-the-art AI model integration** with OpenAI and Anthropic, plus advanced features for comprehensive knowledge processing:
 
 ### ⚡ **Multi-Model Support**
 - **OpenAI GPT-4 Turbo** - Most advanced reasoning and analysis
@@ -106,6 +106,13 @@ Compare outputs from multiple AI models side-by-side:
 - **Quality Analysis** - See which model produces the best summaries
 - **Cost Optimization** - Balance quality vs cost for your use case
 - **Performance Metrics** - Token usage, processing time, and costs
+
+### 📚 **Chat Export Intelligence** (NEW)
+Process LLM conversation exports to extract training insights:
+- **Universal Parser** - Supports Claude, ChatGPT, Copilot, Cursor exports
+- **Error Pattern Detection** - Identifies where models went wrong
+- **Training Data Generation** - Creates datasets for local model fine-tuning
+- **Domain Specialization** - Build focused expert models from conversation failures
 
 ---
 

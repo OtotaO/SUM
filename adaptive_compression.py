@@ -421,7 +421,7 @@ class AdaptiveCompressionEngine:
         
         # Enhanced result with metrics
         result.update({
-            'content_type': content_type.value,
+            'content_type': content_type.value if hasattr(content_type, 'value') else str(content_type),
             'information_density': density,
             'target_ratio': target_ratio,
             'adjusted_ratio': adjusted_ratio,
@@ -431,7 +431,8 @@ class AdaptiveCompressionEngine:
             'compressed_length': compressed_words
         })
         
-        logger.info(f"Compressed {content_type.value} text: "
+        content_type_str = content_type.value if hasattr(content_type, 'value') else str(content_type)
+        logger.info(f"Compressed {content_type_str} text: "
                    f"{original_words} → {compressed_words} words "
                    f"(ratio: {actual_ratio:.2%})")
         
