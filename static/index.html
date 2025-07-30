@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SUM - Hierarchical Knowledge Densification System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --gradient-4: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+        
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #0f0f0f;
+            color: #ffffff;
+        }
+        
+        .gradient-text {
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .glass-morphism {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .glow {
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
+        }
+        
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        .processing-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .dark-mode {
+            background-color: #0f0f0f;
+            color: #ffffff;
+        }
+        
+        .light-mode {
+            background-color: #ffffff;
+            color: #0f0f0f;
+        }
+        
+        .light-mode .glass-morphism {
+            background: rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body class="dark-mode">
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback } = React;
+        
+        // Lucide icon components
+        const Icon = ({ name, size = 20, className = "" }) => {
+            useEffect(() => {
+                lucide.createIcons();
+            }, []);
+            return <i data-lucide={name} className={className} style={{ width: size, height: size }}></i>;
+        };
+        
+        // Main App Component
+        const App = () => {
+            const [darkMode, setDarkMode] = useState(true);
+            const [currentView, setCurrentView] = useState('home');
+            const [apiKeys, setApiKeys] = useState({});
+            const [selectedModel, setSelectedModel] = useState('traditional');
+            const [processingText, setProcessingText] = useState('');
+            const [isProcessing, setIsProcessing] = useState(false);
+            const [results, setResults] = useState(null);
+            const [availableModels, setAvailableModels] = useState([]);
+            const [showComparison, setShowComparison] = useState(false);
+            const [comparisonModels, setComparisonModels] = useState([]);
+            const [comparisonResults, setComparisonResults] = useState(null);
+            const [processingProgress, setProcessingProgress] = useState(0);
+            const wsRef = useRef(null);
+            
+            // Load available models on mount
+            useEffect(() => {
+                fetchAvailableModels();
+                loadSavedApiKeys();
+            }, []);
+            
+            // Theme toggle
+            useEffect(() => {
+                document.body.className = darkMode ? 'dark-mode' : 'light-mode';
+            }, [darkMode]);
+            
+            const fetchAvailableModels = async () => {
+                try {
+                    const response = await fetch('/api/ai/models');
+                    const data = await response.json();
+                    setAvailableModels(data.models || []);
+                } catch (error) {
+                    console.error('Failed to fetch models:', error);
+                }
+            };
+            
+            const loadSavedApiKeys = async () => {
+                try {
+                    const response = await fetch('/api/ai/keys');
+                    const data = await response.json();
+                    setApiKeys(data.keys || {});
+                } catch (error) {
+                    console.error('Failed to load API keys:', error);
+                }
+            };
+            
+            const saveApiKey = async (provider, key) => {
+                try {
+                    const response = await fetch('/api/ai/keys', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ provider, api_key: key })
+                    });
+                    
+                    if (response.ok) {
+                        setApiKeys({ ...apiKeys, [provider]: '••••••••' });
+                        fetchAvailableModels(); // Refresh available models
+                        showNotification('API key saved successfully', 'success');
+                    }
+                } catch (error) {
+                    showNotification('Failed to save API key', 'error');
+                }
+            };
+            
+            const processText = async () => {
+                if (!processingText.trim()) {
+                    showNotification('Please enter some text to process', 'warning');
+                    return;
+                }
+                
+                setIsProcessing(true);
+                setProcessingProgress(0);
+                
+                // Connect to WebSocket for progress updates
+                connectWebSocket();
+                
+                try {
+                    const response = await fetch('/api/ai/process', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            text: processingText,
+                            model_id: selectedModel,
+                            config: {
+                                max_concepts: 7,
+                                max_summary_tokens: 100,
+                                max_insights: 3
+                            }
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    setResults(data);
+                    setIsProcessing(false);
+                    setProcessingProgress(100);
+                    
+                    // Disconnect WebSocket
+                    if (wsRef.current) {
+                        wsRef.current.close();
+                    }
+                } catch (error) {
+                    setIsProcessing(false);
+                    showNotification('Processing failed', 'error');
+                }
+            };
+            
+            const compareModels = async () => {
+                if (!processingText.trim() || comparisonModels.length < 2) {
+                    showNotification('Select at least 2 models to compare', 'warning');
+                    return;
+                }
+                
+                setIsProcessing(true);
+                
+                try {
+                    const response = await fetch('/api/ai/compare', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            text: processingText,
+                            model_ids: comparisonModels,
+                            config: {
+                                max_concepts: 7,
+                                max_summary_tokens: 100,
+                                max_insights: 3
+                            }
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    setComparisonResults(data);
+                    setIsProcessing(false);
+                } catch (error) {
+                    setIsProcessing(false);
+                    showNotification('Comparison failed', 'error');
+                }
+            };
+            
+            const connectWebSocket = () => {
+                wsRef.current = new WebSocket('ws://localhost:8765');
+                
+                wsRef.current.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    if (data.event_type === 'progress') {
+                        setProcessingProgress(data.progress);
+                    }
+                };
+            };
+            
+            const showNotification = (message, type) => {
+                // Simple notification - could be enhanced with a proper notification library
+                console.log(`${type}: ${message}`);
+            };
+            
+            // Navigation Component
+            const Navigation = () => (
+                <nav className="glass-morphism fixed top-0 left-0 right-0 z-50 px-8 py-4">
+                    <div className="max-w-7xl mx-auto flex items-center justify-between">
+                        <div className="flex items-center space-x-8">
+                            <h1 className="text-2xl font-bold gradient-text">SUM</h1>
+                            <div className="flex space-x-6">
+                                <button
+                                    onClick={() => setCurrentView('home')}
+                                    className={`px-4 py-2 rounded-lg transition-all ${
+                                        currentView === 'home' ? 'bg-white/10' : 'hover:bg-white/5'
+                                    }`}
+                                >
+                                    Process
+                                </button>
+                                <button
+                                    onClick={() => setCurrentView('compare')}
+                                    className={`px-4 py-2 rounded-lg transition-all ${
+                                        currentView === 'compare' ? 'bg-white/10' : 'hover:bg-white/5'
+                                    }`}
+                                >
+                                    Compare
+                                </button>
+                                <button
+                                    onClick={() => setCurrentView('settings')}
+                                    className={`px-4 py-2 rounded-lg transition-all ${
+                                        currentView === 'settings' ? 'bg-white/10' : 'hover:bg-white/5'
+                                    }`}
+                                >
+                                    Settings
+                                </button>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => setDarkMode(!darkMode)}
+                            className="p-2 rounded-lg hover:bg-white/10 transition-all"
+                        >
+                            <Icon name={darkMode ? 'sun' : 'moon'} size={20} />
+                        </button>
+                    </div>
+                </nav>
+            );
+            
+            // Home/Process View
+            const ProcessView = () => (
+                <div className="max-w-4xl mx-auto space-y-8">
+                    <div className="text-center space-y-4">
+                        <h2 className="text-5xl font-bold">
+                            <span className="gradient-text">Hierarchical Knowledge</span>
+                            <br />
+                            Densification System
+                        </h2>
+                        <p className="text-xl text-gray-400">
+                            Transform your text into structured insights with AI-powered summarization
+                        </p>
+                    </div>
+                    
+                    {/* Model Selection */}
+                    <div className="glass-morphism rounded-2xl p-6 space-y-4">
+                        <h3 className="text-lg font-semibold flex items-center gap-2">
+                            <Icon name="cpu" size={20} />
+                            Select Processing Model
+                        </h3>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            {availableModels.map(model => (
+                                <button
+                                    key={model.id}
+                                    onClick={() => setSelectedModel(model.id)}
+                                    disabled={!model.available}
+                                    className={`p-4 rounded-lg border transition-all ${
+                                        selectedModel === model.id
+                                            ? 'border-purple-500 bg-purple-500/20'
+                                            : model.available
+                                            ? 'border-gray-600 hover:border-gray-400'
+                                            : 'border-gray-700 opacity-50 cursor-not-allowed'
+                                    }`}
+                                >
+                                    <div className="text-left">
+                                        <div className="font-medium">{model.id}</div>
+                                        <div className="text-sm text-gray-400">{model.provider}</div>
+                                        {model.cost_per_1k_input > 0 && (
+                                            <div className="text-xs text-gray-500 mt-1">
+                                                ${model.cost_per_1k_input}/1k tokens
+                                            </div>
+                                        )}
+                                    </div>
+                                    {!model.available && (
+                                        <div className="text-xs text-red-400 mt-2">API key required</div>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    
+                    {/* Text Input */}
+                    <div className="glass-morphism rounded-2xl p-6 space-y-4">
+                        <h3 className="text-lg font-semibold flex items-center gap-2">
+                            <Icon name="file-text" size={20} />
+                            Input Text
+                        </h3>
+                        <textarea
+                            value={processingText}
+                            onChange={(e) => setProcessingText(e.target.value)}
+                            placeholder="Enter or paste your text here..."
+                            className="w-full h-64 bg-white/5 border border-gray-700 rounded-lg p-4 resize-none focus:border-purple-500 focus:outline-none transition-all"
+                        />
+                        <div className="flex items-center justify-between">
+                            <div className="text-sm text-gray-400">
+                                {processingText.length} characters • {processingText.split(/\s+/).filter(Boolean).length} words
+                            </div>
+                            <button
+                                onClick={processText}
+                                disabled={isProcessing || !processingText.trim()}
+                                className={`px-6 py-3 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                                    isProcessing || !processingText.trim()
+                                        ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                                        : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white'
+                                }`}
+                            >
+                                {isProcessing ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        Processing...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Icon name="zap" size={16} />
+                                        Process Text
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                        
+                        {/* Progress Bar */}
+                        {isProcessing && (
+                            <div className="space-y-2">
+                                <div className="flex justify-between text-sm text-gray-400">
+                                    <span>Processing...</span>
+                                    <span>{processingProgress}%</span>
+                                </div>
+                                <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
+                                    <div
+                                        className="bg-gradient-to-r from-purple-500 to-pink-500 h-full rounded-full transition-all duration-300"
+                                        style={{ width: `${processingProgress}%` }}
+                                    />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    
+                    {/* Results */}
+                    {results && (
+                        <div className="space-y-6 animate-float">
+                            {/* Hierarchical Summary */}
+                            <div className="glass-morphism rounded-2xl p-6 space-y-4">
+                                <h3 className="text-lg font-semibold flex items-center gap-2">
+                                    <Icon name="layers" size={20} />
+                                    Hierarchical Summary
+                                </h3>
+                                
+                                {/* Level 1: Concepts */}
+                                <div className="space-y-2">
+                                    <h4 className="text-sm font-medium text-gray-400">Level 1: Key Concepts</h4>
+                                    <div className="flex flex-wrap gap-2">
+                                        {results.hierarchical_summary?.level_1_concepts?.map((concept, idx) => (
+                                            <span
+                                                key={idx}
+                                                className="px-3 py-1 bg-purple-500/20 border border-purple-500/50 rounded-full text-sm"
+                                            >
+                                                {concept}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                                
+                                {/* Level 2: Core Summary */}
+                                <div className="space-y-2">
+                                    <h4 className="text-sm font-medium text-gray-400">Level 2: Core Summary</h4>
+                                    <p className="text-gray-200 leading-relaxed">
+                                        {results.hierarchical_summary?.level_2_core}
+                                    </p>
+                                </div>
+                                
+                                {/* Level 3: Expanded Context */}
+                                {results.hierarchical_summary?.level_3_expanded && (
+                                    <div className="space-y-2">
+                                        <h4 className="text-sm font-medium text-gray-400">Level 3: Expanded Context</h4>
+                                        <p className="text-gray-200 leading-relaxed">
+                                            {results.hierarchical_summary.level_3_expanded}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                            
+                            {/* Key Insights */}
+                            {results.key_insights && results.key_insights.length > 0 && (
+                                <div className="glass-morphism rounded-2xl p-6 space-y-4">
+                                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                                        <Icon name="lightbulb" size={20} />
+                                        Key Insights
+                                    </h3>
+                                    <div className="space-y-3">
+                                        {results.key_insights.map((insight, idx) => (
+                                            <div key={idx} className="flex items-start gap-3">
+                                                <div className={`px-2 py-1 rounded text-xs font-medium ${
+                                                    insight.type === 'TRUTH' ? 'bg-blue-500/20 text-blue-400' :
+                                                    insight.type === 'WISDOM' ? 'bg-purple-500/20 text-purple-400' :
+                                                    insight.type === 'PURPOSE' ? 'bg-green-500/20 text-green-400' :
+                                                    'bg-orange-500/20 text-orange-400'
+                                                }`}>
+                                                    {insight.type}
+                                                </div>
+                                                <p className="text-gray-200 flex-1">{insight.text}</p>
+                                                <div className="text-sm text-gray-500">
+                                                    {(insight.score * 100).toFixed(0)}%
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {/* Metadata */}
+                            {results.ai_metadata && (
+                                <div className="glass-morphism rounded-2xl p-6 space-y-4">
+                                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                                        <Icon name="info" size={20} />
+                                        Processing Details
+                                    </h3>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                        <div>
+                                            <div className="text-sm text-gray-400">Model</div>
+                                            <div className="font-medium">{results.ai_metadata.model}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-sm text-gray-400">Tokens Used</div>
+                                            <div className="font-medium">{results.ai_metadata.total_tokens}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-sm text-gray-400">Estimated Cost</div>
+                                            <div className="font-medium">${results.ai_metadata.estimated_cost.toFixed(4)}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-sm text-gray-400">Engine</div>
+                                            <div className="font-medium">{results.processing_engine}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+            
+            // Settings View
+            const SettingsView = () => (
+                <div className="max-w-2xl mx-auto space-y-8">
+                    <div className="text-center space-y-4">
+                        <h2 className="text-4xl font-bold gradient-text">Settings</h2>
+                        <p className="text-gray-400">Configure your API keys and preferences</p>
+                    </div>
+                    
+                    {/* API Keys */}
+                    <div className="glass-morphism rounded-2xl p-6 space-y-6">
+                        <h3 className="text-lg font-semibold flex items-center gap-2">
+                            <Icon name="key" size={20} />
+                            API Keys
+                        </h3>
+                        
+                        {/* OpenAI */}
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-400">OpenAI API Key</label>
+                            <div className="flex gap-2">
+                                <input
+                                    type="password"
+                                    placeholder="sk-..."
+                                    defaultValue={apiKeys.openai}
+                                    className="flex-1 bg-white/5 border border-gray-700 rounded-lg px-4 py-2 focus:border-purple-500 focus:outline-none"
+                                    onBlur={(e) => e.target.value && saveApiKey('openai', e.target.value)}
+                                />
+                                <button className="px-4 py-2 bg-purple-500/20 border border-purple-500/50 rounded-lg hover:bg-purple-500/30 transition-all">
+                                    Save
+                                </button>
+                            </div>
+                            <p className="text-xs text-gray-500">
+                                Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank" className="text-purple-400 hover:underline">OpenAI Platform</a>
+                            </p>
+                        </div>
+                        
+                        {/* Anthropic */}
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-400">Anthropic API Key</label>
+                            <div className="flex gap-2">
+                                <input
+                                    type="password"
+                                    placeholder="sk-ant-..."
+                                    defaultValue={apiKeys.anthropic}
+                                    className="flex-1 bg-white/5 border border-gray-700 rounded-lg px-4 py-2 focus:border-purple-500 focus:outline-none"
+                                    onBlur={(e) => e.target.value && saveApiKey('anthropic', e.target.value)}
+                                />
+                                <button className="px-4 py-2 bg-purple-500/20 border border-purple-500/50 rounded-lg hover:bg-purple-500/30 transition-all">
+                                    Save
+                                </button>
+                            </div>
+                            <p className="text-xs text-gray-500">
+                                Get your API key from <a href="https://console.anthropic.com/account/keys" target="_blank" className="text-purple-400 hover:underline">Anthropic Console</a>
+                            </p>
+                        </div>
+                    </div>
+                    
+                    {/* Model Preferences */}
+                    <div className="glass-morphism rounded-2xl p-6 space-y-4">
+                        <h3 className="text-lg font-semibold flex items-center gap-2">
+                            <Icon name="settings" size={20} />
+                            Model Preferences
+                        </h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-sm font-medium text-gray-400">Default Model</label>
+                                <select
+                                    value={selectedModel}
+                                    onChange={(e) => setSelectedModel(e.target.value)}
+                                    className="w-full mt-2 bg-white/5 border border-gray-700 rounded-lg px-4 py-2 focus:border-purple-500 focus:outline-none"
+                                >
+                                    {availableModels.map(model => (
+                                        <option key={model.id} value={model.id} disabled={!model.available}>
+                                            {model.id} ({model.provider}) {!model.available && '- API key required'}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+            
+            // Compare View
+            const CompareView = () => (
+                <div className="max-w-6xl mx-auto space-y-8">
+                    <div className="text-center space-y-4">
+                        <h2 className="text-4xl font-bold gradient-text">Model Comparison</h2>
+                        <p className="text-gray-400">Compare outputs from different models side by side</p>
+                    </div>
+                    
+                    {/* Model Selection for Comparison */}
+                    <div className="glass-morphism rounded-2xl p-6 space-y-4">
+                        <h3 className="text-lg font-semibold">Select Models to Compare</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            {availableModels.filter(m => m.available).map(model => (
+                                <label key={model.id} className="flex items-center space-x-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={comparisonModels.includes(model.id)}
+                                        onChange={(e) => {
+                                            if (e.target.checked) {
+                                                setComparisonModels([...comparisonModels, model.id]);
+                                            } else {
+                                                setComparisonModels(comparisonModels.filter(id => id !== model.id));
+                                            }
+                                        }}
+                                        className="rounded border-gray-600"
+                                    />
+                                    <span>{model.id}</span>
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+                    
+                    {/* Text Input */}
+                    <div className="glass-morphism rounded-2xl p-6 space-y-4">
+                        <textarea
+                            value={processingText}
+                            onChange={(e) => setProcessingText(e.target.value)}
+                            placeholder="Enter text to compare across models..."
+                            className="w-full h-40 bg-white/5 border border-gray-700 rounded-lg p-4 resize-none focus:border-purple-500 focus:outline-none"
+                        />
+                        <button
+                            onClick={compareModels}
+                            disabled={isProcessing || comparisonModels.length < 2}
+                            className={`px-6 py-3 rounded-lg font-medium transition-all ${
+                                isProcessing || comparisonModels.length < 2
+                                    ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                                    : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white'
+                            }`}
+                        >
+                            Compare Models
+                        </button>
+                    </div>
+                    
+                    {/* Comparison Results */}
+                    {comparisonResults && (
+                        <div className="grid md:grid-cols-2 gap-6">
+                            {Object.entries(comparisonResults.comparison_results).map(([modelId, result]) => (
+                                <div key={modelId} className="glass-morphism rounded-2xl p-6 space-y-4">
+                                    <h3 className="text-lg font-semibold">{modelId}</h3>
+                                    {result.error ? (
+                                        <div className="text-red-400">Error: {result.error}</div>
+                                    ) : (
+                                        <>
+                                            <div className="space-y-2">
+                                                <h4 className="text-sm font-medium text-gray-400">Concepts</h4>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {result.hierarchical_summary?.level_1_concepts?.map((concept, idx) => (
+                                                        <span key={idx} className="px-2 py-1 bg-purple-500/20 rounded text-sm">
+                                                            {concept}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <h4 className="text-sm font-medium text-gray-400">Summary</h4>
+                                                <p className="text-gray-200 text-sm">
+                                                    {result.hierarchical_summary?.level_2_core}
+                                                </p>
+                                            </div>
+                                            {result.ai_metadata && (
+                                                <div className="pt-2 border-t border-gray-700 text-xs text-gray-400">
+                                                    Tokens: {result.ai_metadata.total_tokens} | 
+                                                    Cost: ${result.ai_metadata.estimated_cost.toFixed(4)}
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            );
+            
+            return (
+                <div className="min-h-screen pt-20 pb-12 px-4">
+                    <Navigation />
+                    <div className="container mx-auto">
+                        {currentView === 'home' && <ProcessView />}
+                        {currentView === 'settings' && <SettingsView />}
+                        {currentView === 'compare' && <CompareView />}
+                    </div>
+                </div>
+            );
+        };
+        
+        // Render the app
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>

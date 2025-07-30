@@ -1,0 +1,517 @@
+"""
+main.py - SUM Knowledge Distillation Platform Web Service
+
+This module provides a Flask-based web service for the SUM knowledge
+distillation platform, offering both API endpoints and a web interface.
+
+Design principles:
+- Clean separation of concerns (Fowler architecture)
+- Defensive programming (Schneier security)
+- Comprehensive error handling (Stroustrup robustness)
+- Efficient resource management (Knuth optimization)
+- Clear code structure (Torvalds/van Rossum style)
+
+Author: ototao
+License: Apache License 2.0
+"""
+
+import os
+import logging
+import json
+import time
+from functools import wraps
+from typing import Dict, List, Any, Callable, Optional, Tuple, Union
+import traceback
+import tempfile
+from threading import Lock
+
+from flask import Flask, request, jsonify, render_template, send_from_directory, abort
+from werkzeug.utils import secure_filename
+
+# Import SUM components
+from SUM import SimpleSUM, AdvancedSUM
+from Utils.data_loader import DataLoader
+from Models.topic_modeling import TopicModeler
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler('sum_service.log')
+    ]
+)
+logger = logging.getLogger(__name__)
+
+# Initialize Flask application
+app = Flask(__name__)
+
+# Configure security settings
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', os.urandom(24).hex())
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload
+app.config['UPLOAD_FOLDER'] = os.path.join(tempfile.gettempdir(), 'sum_uploads')
+app.config['ALLOWED_EXTENSIONS'] = {'txt', 'json', 'csv', 'md'}
+
+# Ensure upload directory exists
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+# Initialize SUM components
+summarizer = SimpleSUM()
+advanced_summarizer = None  # Lazy-loaded
+topic_modeler = None  # Lazy-loaded
+
+# Concurrency control
+summarizer_lock = Lock()
+cache = {}
+cache_lock = Lock()
+
+
+# Utility functions
+def allowed_file(filename: str) -> bool:
+    """Check if a filename has an allowed extension."""
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
+
+
+def rate_limit(max_calls: int = 10, time_frame: int = 60) -> Callable:
+    """
+    Rate limiting decorator to prevent abuse.
+    
+    Args:
+        max_calls: Maximum number of calls allowed in the time frame
+        time_frame: Time frame in seconds
+        
+    Returns:
+        Decorated function with rate limiting
+    """
+    calls = {}
+    lock = Lock()
+    
+    def decorator(f: Callable) -> Callable:
+        @wraps(f)
+        def wrapped(*args, **kwargs):
+            # Get client identifier (IP)
+            client_id = request.remote_addr
+            
+            current_time = time.time()
+            with lock:
+                # Clean old entries
+                calls_to_remove = []
+                for cid, call_history in calls.items():
+                    updated_history = [timestamp for timestamp in call_history 
+                                      if current_time - timestamp < time_frame]
+                    if updated_history:
+                        calls[cid] = updated_history
+                    else:
+                        calls_to_remove.append(cid)
+                
+                for cid in calls_to_remove:
+                    del calls[cid]
+                
+                # Check rate limit
+                if client_id in calls and len(calls[client_id]) >= max_calls:
+                    return jsonify({
+                        'error': 'Rate limit exceeded',
+                        'retry_after': time_frame
+                    }), 429
+                
+                # Record this call
+                if client_id not in calls:
+                    calls[client_id] = []
+                calls[client_id].append(current_time)
+            
+            # Call the original function
+            return f(*args, **kwargs)
+        return wrapped
+    return decorator
+
+
+def validate_json_input() -> Callable:
+    """
+    Decorator to validate JSON input for API endpoints.
+    
+    Returns:
+        Decorated function with JSON validation
+    """
+    def decorator(f: Callable) -> Callable:
+        @wraps(f)
+        def wrapped(*args, **kwargs):
+            if not request.is_json:
+                return jsonify({'error': 'Request must be JSON'}), 400
+            
+            try:
+                data = request.get_json()
+                if not data:
+                    return jsonify({'error': 'Empty JSON provided'}), 400
+            except Exception as e:
+                return jsonify({'error': f'Invalid JSON: {str(e)}'}), 400
+            
+            return f(*args, **kwargs)
+        return wrapped
+    return decorator
+
+
+def timed_lru_cache(max_size: int = 128, expiration: int = 3600) -> Callable:
+    """
+    Time-based LRU cache decorator with expiration.
+    
+    Args:
+        max_size: Maximum number of items in cache
+        expiration: Cache entry lifetime in seconds
+        
+    Returns:
+        Decorated function with caching
+    """
+    cache_dict = {}
+    insertion_times = {}
+    access_times = {}
+    lock = Lock()
+    
+    def decorator(f: Callable) -> Callable:
+        @wraps(f)
+        def wrapped(*args, **kwargs):
+            # Convert args/kwargs to a cache key
+            key_parts = [str(arg) for arg in args]
+            key_parts.extend(f"{k}={v}" for k, v in sorted(kwargs.items()))
+            key = f.__name__ + ":" + ":".join(key_parts)
+            
+            current_time = time.time()
+            
+            with lock:
+                # Clean expired entries
+                expired_keys = [k for k, t in insertion_times.items() 
+                               if current_time - t > expiration]
+                for k in expired_keys:
+                    if k in cache_dict:
+                        del cache_dict[k]
+                    if k in insertion_times:
+                        del insertion_times[k]
+                    if k in access_times:
+                        del access_times[k]
+                
+                # Check if result in cache
+                if key in cache_dict:
+                    # Update access time
+                    access_times[key] = current_time
+                    return cache_dict[key]
+                
+                # If cache full, remove least recently used
+                if len(cache_dict) >= max_size:
+                    # Find least recently accessed item
+                    oldest_key = min(access_times.items(), key=lambda x: x[1])[0]
+                    del cache_dict[oldest_key]
+                    del insertion_times[oldest_key]
+                    del access_times[oldest_key]
+            
+            # Compute the result
+            result = f(*args, **kwargs)
+            
+            # Cache the result
+            with lock:
+                cache_dict[key] = result
+                insertion_times[key] = current_time
+                access_times[key] = current_time
+                
+            return result
+        return wrapped
+    return decorator
+
+
+# API Routes
+
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    """Simple health check endpoint."""
+    return jsonify({
+        'status': 'healthy',
+        'version': '1.0.0',
+        'uptime': time.time() - app.start_time
+    })
+
+
+@app.route('/api/process_text', methods=['POST'])
+@rate_limit(20, 60)  # 20 calls per minute
+@validate_json_input()
+def process_text():
+    """
+    Process and summarize text using the appropriate summarization model.
+    
+    Expected JSON input:
+    {
+        "text": "Text to summarize...",
+        "model": "simple|advanced",  # Optional, default: "simple"
+        "config": {                  # Optional model configuration
+            "maxTokens": 100,
+            "threshold": 0.3
+        }
+    }
+    
+    Returns:
+        JSON response with summary and metadata
+    """
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        if 'text' not in data:
+            return jsonify({'error': 'No text provided'}), 400
+            
+        text = data['text']
+        model_type = data.get('model', 'simple').lower()
+        config = data.get('config', {})
+        
+        # Process with appropriate model
+        start_time = time.time()
+        
+        with summarizer_lock:
+            if model_type == 'simple':
+                result = summarizer.process_text(text, config)
+            elif model_type == 'advanced':
+                # Lazy-load advanced summarizer
+                global advanced_summarizer
+                if advanced_summarizer is None:
+                    try:
+                        advanced_summarizer = AdvancedSUM()
+                        logger.info("Initialized AdvancedSUM")
+                    except Exception as e:
+                        logger.error(f"Failed to initialize AdvancedSUM: {e}")
+                        return jsonify({
+                            'error': 'Advanced summarizer unavailable',
+                            'details': str(e)
+                        }), 500
+                
+                result = advanced_summarizer.process_text(text, config)
+            else:
+                return jsonify({'error': f'Unknown model type: {model_type}'}), 400
+        
+        # Add processing metadata
+        result['processing_time'] = time.time() - start_time
+        result['model'] = model_type
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"Error processing text: {e}")
+        return jsonify({
+            'error': 'Error processing text',
+            'details': str(e)
+        }), 500
+
+
+@app.route('/api/analyze_topics', methods=['POST'])
+@rate_limit(10, 60)  # 10 calls per minute
+@validate_json_input()
+def analyze_topics():
+    """
+    Perform topic modeling on a collection of documents.
+    
+    Expected JSON input:
+    {
+        "documents": ["Document 1", "Document 2", ...],
+        "num_topics": 5,  # Optional, default: 5
+        "algorithm": "lda|nmf|lsa",  # Optional, default: "lda"
+        "top_n_words": 10  # Optional, default: 10
+    }
+    
+    Returns:
+        JSON response with topic model results
+    """
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        if 'documents' not in data or not data['documents']:
+            return jsonify({'error': 'No documents provided'}), 400
+            
+        documents = data['documents']
+        num_topics = int(data.get('num_topics', 5))
+        algorithm = data.get('algorithm', 'lda').lower()
+        top_n_words = int(data.get('top_n_words', 10))
+        
+        # Validate parameters
+        if not all(isinstance(doc, str) for doc in documents):
+            return jsonify({'error': 'All documents must be strings'}), 400
+            
+        if num_topics < 1 or num_topics > 100:
+            return jsonify({'error': 'num_topics must be between 1 and 100'}), 400
+            
+        if algorithm not in ['lda', 'nmf', 'lsa']:
+            return jsonify({'error': f'Unsupported algorithm: {algorithm}'}), 400
+            
+        if top_n_words < 1 or top_n_words > 50:
+            return jsonify({'error': 'top_n_words must be between 1 and 50'}), 400
+        
+        # Initialize topic modeler
+        global topic_modeler
+        topic_modeler = TopicModeler(
+            n_topics=num_topics,
+            algorithm=algorithm,
+            n_top_words=top_n_words
+        )
+        
+        # Fit the model
+        start_time = time.time()
+        topic_modeler.fit(documents)
+        
+        # Extract topics
+        topics_summary = topic_modeler.get_topics_summary()
+        
+        # Transform documents to topic space
+        doc_topics = topic_modeler.transform(documents)
+        
+        # Prepare response
+        result = {
+            'topics': topics_summary,
+            'document_topics': doc_topics.tolist(),
+            'processing_time': time.time() - start_time,
+            'model_info': {
+                'algorithm': algorithm,
+                'num_topics': num_topics,
+                'coherence': topic_modeler.coherence_scores
+            }
+        }
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"Error analyzing topics: {e}\n{traceback.format_exc()}")
+        return jsonify({
+            'error': 'Error analyzing topics',
+            'details': str(e)
+        }), 500
+
+
+@app.route('/api/analyze_file', methods=['POST'])
+@rate_limit(5, 300)  # 5 calls per 5 minutes
+def analyze_file():
+    """
+    Analyze text file and generate summary and topic information.
+    
+    Expected form data:
+    - file: File upload
+    - model: "simple|advanced" (Optional, default: "simple")
+    - num_topics: Number of topics (Optional, default: 5)
+    
+    Returns:
+        JSON response with analysis results
+    """
+    try:
+        # Check if file was uploaded
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file uploaded'}), 400
+            
+        file = request.files['file']
+        
+        # Check if filename is empty
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+            
+        if not file or not allowed_file(file.filename):
+            return jsonify({'error': 'Invalid file type'}), 400
+        
+        # Save file securely
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(filepath)
+        
+        try:
+            # Process based on file type
+            loader = DataLoader(data_file=filepath)
+            
+            # Get text content
+            texts = loader.preprocess_data()
+            flat_text = "\n\n".join([" ".join([" ".join(sent) for sent in doc]) for doc in texts])
+            
+            # Generate summary
+            model_type = request.form.get('model', 'simple').lower()
+            config = {
+                'maxTokens': int(request.form.get('maxTokens', 200))
+            }
+            
+            if model_type == 'simple':
+                summary_result = summarizer.process_text(flat_text, config)
+            else:
+                # Lazy-load advanced summarizer
+                global advanced_summarizer
+                if advanced_summarizer is None:
+                    advanced_summarizer = AdvancedSUM()
+                summary_result = advanced_summarizer.process_text(flat_text, config)
+            
+            # Extract topics if requested
+            topics_result = {}
+            if 'num_topics' in request.form:
+                num_topics = int(request.form.get('num_topics', 5))
+                
+                # Only attempt topic modeling if enough text
+                if len(flat_text.split()) > num_topics * 10:
+                    tm = TopicModeler(n_topics=num_topics)
+                    tm.fit([flat_text])
+                    topics_result = tm.get_topics_summary()
+            
+            # Get metadata
+            metadata = loader.get_metadata()
+            
+            # Prepare response
+            result = {
+                'filename': filename,
+                'summary': summary_result.get('summary', ''),
+                'metadata': metadata,
+                'topics': topics_result
+            }
+            
+            return jsonify(result)
+            
+        finally:
+            # Clean up - delete uploaded file
+            try:
+                os.remove(filepath)
+            except Exception as e:
+                logger.warning(f"Failed to delete uploaded file {filepath}: {e}")
+                
+    except Exception as e:
+        logger.error(f"Error analyzing file: {e}\n{traceback.format_exc()}")
+        return jsonify({
+            'error': 'Error analyzing file',
+            'details': str(e)
+        }), 500
+
+
+# Web interface routes
+
+@app.route('/')
+def index():
+    """Render the main application page."""
+    return render_template('index.html')
+
+
+@app.route('/static/<path:path>')
+def serve_static(path):
+    """Serve static files."""
+    return send_from_directory('static', path)
+
+
+@app.errorhandler(404)
+def not_found(error):
+    """Handle 404 errors."""
+    return jsonify({'error': 'Not found'}), 404
+
+
+@app.errorhandler(500)
+def server_error(error):
+    """Handle 500 errors."""
+    logger.error(f"Server error: {error}")
+    return jsonify({'error': 'Internal server error'}), 500
+
+
+# Main entry point
+if __name__ == '__main__':
+    # Record start time for uptime calculations
+    app.start_time = time.time()
+    
+    # Get port from environment or use default
+    port = int(os.environ.get('PORT', 3000))
+    
+    # Start server
+    logger.info(f"Starting SUM server on port {port}...")
+    app.run(host='0.0.0.0', port=port, debug=False)

@@ -36,6 +36,14 @@ from Models.topic_modeling import TopicModeler
 from Models.summarizer import Summarizer
 from config import active_config
 
+# Import AI models
+try:
+    from ai_models import HybridAIEngine, SecureKeyManager, AVAILABLE_MODELS
+    AI_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"AI models not available: {e}")
+    AI_AVAILABLE = False
+
 # Configure logging
 logging.basicConfig(
     level=getattr(logging, active_config.LOG_LEVEL),
@@ -744,7 +752,7 @@ def generate_knowledge_graph():
 @app.route('/')
 def index():
     """Render the main application page."""
-    return render_template('index.html')
+    return send_from_directory('static', 'index.html')
 
 
 @app.route('/dashboard')
@@ -763,6 +771,230 @@ def api_docs():
 def serve_static(path):
     """Serve static files."""
     return send_from_directory('static', path)
+
+
+# AI Model Integration Endpoints
+if AI_AVAILABLE:
+    # Initialize AI engine
+    ai_engine = HybridAIEngine()
+    
+    @app.route('/api/ai/models', methods=['GET'])
+    def get_ai_models():
+        """Get available AI models."""
+        try:
+            models = ai_engine.get_available_models()
+            return jsonify({
+                'models': models,
+                'status': 'success'
+            })
+        except Exception as e:
+            logger.error(f"Error getting AI models: {e}")
+            return jsonify({
+                'error': 'Failed to get models',
+                'details': str(e)
+            }), 500
+    
+    @app.route('/api/ai/keys', methods=['GET'])
+    def get_api_keys():
+        """Get saved API keys (masked for security)."""
+        try:
+            key_manager = ai_engine.key_manager
+            keys = key_manager.load_api_keys()
+            # Mask keys for security
+            masked_keys = {provider: '••••••••' if key else '' for provider, key in keys.items()}
+            return jsonify({
+                'keys': masked_keys,
+                'status': 'success'
+            })
+        except Exception as e:
+            logger.error(f"Error getting API keys: {e}")
+            return jsonify({
+                'error': 'Failed to get API keys',
+                'details': str(e)
+            }), 500
+    
+    @app.route('/api/ai/keys', methods=['POST'])
+    @rate_limit(max_calls=5, time_frame=60)
+    def save_api_key():
+        """Save API key for a provider."""
+        try:
+            data = request.get_json()
+            if not data or 'provider' not in data or 'api_key' not in data:
+                return jsonify({
+                    'error': 'Missing provider or api_key'
+                }), 400
+            
+            provider = data['provider']
+            api_key = data['api_key']
+            
+            # Validate provider
+            valid_providers = ['openai', 'anthropic']
+            if provider not in valid_providers:
+                return jsonify({
+                    'error': f'Invalid provider. Must be one of: {valid_providers}'
+                }), 400
+            
+            # Basic API key validation
+            if provider == 'openai' and not api_key.startswith('sk-'):
+                return jsonify({
+                    'error': 'Invalid OpenAI API key format'
+                }), 400
+            elif provider == 'anthropic' and not api_key.startswith('sk-ant-'):
+                return jsonify({
+                    'error': 'Invalid Anthropic API key format'
+                }), 400
+            
+            # Save key
+            key_manager = ai_engine.key_manager
+            key_manager.save_api_key(provider, api_key)
+            
+            # Refresh available models
+            ai_engine._model_cache.clear()
+            
+            return jsonify({
+                'status': 'success',
+                'message': f'API key saved for {provider}'
+            })
+            
+        except Exception as e:
+            logger.error(f"Error saving API key: {e}")
+            return jsonify({
+                'error': 'Failed to save API key',
+                'details': str(e)
+            }), 500
+    
+    @app.route('/api/ai/process', methods=['POST'])
+    @rate_limit(max_calls=20, time_frame=60)
+    def process_with_ai():
+        """Process text using AI models."""
+        try:
+            data = request.get_json()
+            if not data or 'text' not in data:
+                return jsonify({
+                    'error': 'Missing text in request'
+                }), 400
+            
+            text = data['text']
+            model_id = data.get('model_id', 'traditional')
+            config = data.get('config', {})
+            
+            # Validate text length
+            if len(text) > 50000:  # Reasonable limit
+                return jsonify({
+                    'error': 'Text too long (max 50,000 characters)'
+                }), 400
+            
+            # Process text
+            import asyncio
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                result = loop.run_until_complete(
+                    ai_engine.process_text(text, model_id, config)
+                )
+            finally:
+                loop.close()
+            
+            return jsonify({
+                'result': result,
+                'status': 'success'
+            })
+            
+        except Exception as e:
+            logger.error(f"Error processing with AI: {e}")
+            return jsonify({
+                'error': 'Processing failed',
+                'details': str(e)
+            }), 500
+    
+    @app.route('/api/ai/compare', methods=['POST'])
+    @rate_limit(max_calls=10, time_frame=60)
+    def compare_ai_models():
+        """Compare outputs from multiple AI models."""
+        try:
+            data = request.get_json()
+            if not data or 'text' not in data or 'model_ids' not in data:
+                return jsonify({
+                    'error': 'Missing text or model_ids in request'
+                }), 400
+            
+            text = data['text']
+            model_ids = data['model_ids']
+            config = data.get('config', {})
+            
+            # Validate inputs
+            if len(text) > 30000:  # Smaller limit for comparison
+                return jsonify({
+                    'error': 'Text too long for comparison (max 30,000 characters)'
+                }), 400
+            
+            if len(model_ids) > 4:  # Limit number of models to compare
+                return jsonify({
+                    'error': 'Too many models for comparison (max 4)'
+                }), 400
+            
+            # Compare models
+            import asyncio
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                result = loop.run_until_complete(
+                    ai_engine.compare_models(text, model_ids, config)
+                )
+            finally:
+                loop.close()
+            
+            return jsonify({
+                'comparison_results': result['comparison_results'],
+                'models_compared': result['models_compared'],
+                'timestamp': result['timestamp'],
+                'status': 'success'
+            })
+            
+        except Exception as e:
+            logger.error(f"Error comparing models: {e}")
+            return jsonify({
+                'error': 'Comparison failed',
+                'details': str(e)
+            }), 500
+    
+    @app.route('/api/ai/estimate_cost', methods=['POST'])
+    def estimate_cost():
+        """Estimate cost for processing text with a model."""
+        try:
+            data = request.get_json()
+            if not data or 'text' not in data or 'model_id' not in data:
+                return jsonify({
+                    'error': 'Missing text or model_id in request'
+                }), 400
+            
+            text = data['text']
+            model_id = data['model_id']
+            
+            # Estimate cost
+            cost_info = ai_engine.estimate_processing_cost(text, model_id)
+            
+            return jsonify({
+                'cost_estimate': cost_info,
+                'status': 'success'
+            })
+            
+        except Exception as e:
+            logger.error(f"Error estimating cost: {e}")
+            return jsonify({
+                'error': 'Cost estimation failed',
+                'details': str(e)
+            }), 500
+
+else:
+    # Fallback endpoints when AI is not available
+    @app.route('/api/ai/<path:path>', methods=['GET', 'POST'])
+    def ai_not_available(path):
+        """Handle AI endpoints when not available."""
+        return jsonify({
+            'error': 'AI models not available',
+            'details': 'Install required packages: pip install openai anthropic cryptography'
+        }), 503
 
 
 @app.errorhandler(404)

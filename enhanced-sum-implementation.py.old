@@ -1,0 +1,409 @@
+"""
+SUM.py - Knowledge Distillation Engine
+
+This module implements the core summarization functionality for the SUM platform.
+It provides methods for extracting key information from text using various NLP techniques.
+
+Design principles:
+- Simplicity and readability (Torvalds/van Rossum)
+- Performance optimization (Knuth)
+- Test-driven development (Beck)
+- Algorithm innovation (Dijkstra)
+- Security focus (Schneier)
+
+Author: ototao
+License: Apache License 2.0
+"""
+
+import nltk
+from nltk.tokenize import sent_tokenize, word_tokenize
+from nltk.corpus import stopwords
+from nltk.cluster.util import cosine_distance
+from collections import defaultdict, Counter
+import numpy as np
+import os
+import logging
+import re
+import math
+from functools import lru_cache
+import time
+from concurrent.futures import ThreadPoolExecutor
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+class SUM:
+    """Base class for summarization algorithms."""
+    
+    def __init__(self):
+        """Initialize the base summarizer."""
+        pass
+        
+    def process_text(self, text, model_config=None):
+        """Process text using the implemented algorithm.
+        
+        Args:
+            text (str): The input text to summarize.
+            model_config (dict, optional): Configuration parameters.
+            
+        Returns:
+            dict: A dictionary containing the summary and metadata.
+        """
+        raise NotImplementedError("Subclasses must implement process_text")
+
+
+class SimpleSUM(SUM):
+    """
+    A frequency-based extractive summarization engine.
+    
+    This implementation uses word frequency analysis to identify important sentences,
+    with optimizations for performance on larger texts.
+    """
+
+    def __init__(self):
+        """Initialize the SimpleSUM engine with required NLTK resources."""
+        super().__init__()
+        try:
+            # Create nltk_data directory if it doesn't exist
+            nltk_data_dir = os.path.expanduser('~/nltk_data')
+            os.makedirs(nltk_data_dir, exist_ok=True)
+
+            # Download required NLTK resources safely
+            for resource in ['punkt', 'stopwords']:
+                try:
+                    nltk.download(resource, download_dir=nltk_data_dir, quiet=True, raise_on_error=True)
+                except Exception as e:
+                    logger.error(f"Error downloading {resource}: {str(e)}")
+                    raise
+
+            # Load stopwords with security check
+            self._load_stopwords()
+            
+            logger.info("SimpleSUM initialized successfully.")
+        except Exception as e:
+            logger.error(f"Error initializing NLTK: {str(e)}")
+            raise RuntimeError("Failed to initialize NLTK resources")
+
+    def _load_stopwords(self):
+        """Securely load stopwords with validation."""
+        try:
+            raw_stopwords = stopwords.words('english')
+            # Validate stopwords for safety
+            self.stop_words = {word for word in raw_stopwords 
+                              if self._is_safe_string(word)}
+            logger.debug(f"Loaded {len(self.stop_words)} stopwords")
+        except Exception as e:
+            logger.error(f"Error loading stopwords: {str(e)}")
+            # Fallback to basic stopword list
+            self.stop_words = {"the", "a", "an", "and", "in", "on", "at", "to", "for", "with"}
+
+    @staticmethod
+    def _is_safe_string(text):
+        """Verify string doesn't contain potentially unsafe patterns.
+        
+        Args:
+            text (str): The string to validate.
+            
+        Returns:
+            bool: True if the string passes validation.
+        """
+        # Validate that strings don't contain code-like patterns
+        if len(text) > 100:  # Unusually long for a stopword
+            return False
+        unsafe_patterns = [
+            r'[\s\S]*exec\s*\(', r'[\s\S]*eval\s*\(', r'[\s\S]*\bimport\b',
+            r'[\s\S]*__[a-zA-Z]+__', r'[\s\S]*\bopen\s*\('
+        ]
+        return not any(re.search(pattern, text) for pattern in unsafe_patterns)
+
+    @lru_cache(maxsize=1024)
+    def _calculate_word_frequency(self, word):
+        """Calculate normalized word frequency with caching for performance.
+        
+        Args:
+            word (str): The word to calculate frequency for.
+            
+        Returns:
+            float: The normalized frequency score.
+        """
+        # Knuth-style optimization: frequency calculation with O(1) lookup
+        return self.word_freq.get(word, 0) / self.max_freq if self.max_freq > 0 else 0
+
+    def _preprocess_text(self, text):
+        """Preprocess text for summarization.
+        
+        Args:
+            text (str): The input text.
+            
+        Returns:
+            tuple: Sentences, words, and word frequency map.
+        """
+        # Security check
+        if not self._is_safe_string(text[:100]):  # Check first part of text
+            logger.warning("Potentially unsafe input detected")
+            return [], [], {}
+            
+        start_time = time.time()
+        
+        # Extract sentences
+        sentences = sent_tokenize(text)
+        
+        # Tokenize words and build frequency map
+        words = []
+        word_freq = Counter()
+        
+        for sentence in sentences:
+            sentence_words = word_tokenize(sentence.lower())
+            words.extend(sentence_words)
+            for word in sentence_words:
+                if word.isalnum() and word not in self.stop_words:
+                    word_freq[word] += 1
+        
+        # Dijkstra-inspired algorithm optimization: normalize scores once
+        self.word_freq = word_freq
+        self.max_freq = max(word_freq.values()) if word_freq else 1
+        
+        logger.debug(f"Preprocessing completed in {time.time() - start_time:.4f}s")
+        return sentences, words, word_freq
+
+    def process_text(self, text, model_config=None):
+        """Process and summarize the input text.
+        
+        Args:
+            text (str): The text to summarize.
+            model_config (dict, optional): Configuration parameters including:
+                - maxTokens: Maximum number of tokens in the summary
+                - threshold: Minimum score for sentence inclusion
+                
+        Returns:
+            dict: A dictionary containing the summary and metadata.
+        """
+        # Input validation
+        if not text or not isinstance(text, str):
+            logger.warning("Empty or invalid text provided")
+            return {'error': 'Empty or invalid text provided'}
+
+        if not text.strip():
+            logger.warning("Empty text provided")
+            return {'error': 'Empty text provided'}
+
+        try:
+            # Configuration setup
+            config = model_config or {}
+            max_tokens = max(10, min(config.get('maxTokens', 100), 500))
+            threshold = config.get('threshold', 0.3)
+            
+            logger.info(f"Starting text processing with max_tokens={max_tokens}")
+            
+            # 1. Preprocess text
+            sentences, words, word_freq = self._preprocess_text(text)
+            
+            # Handle short texts
+            if len(sentences) <= 2:
+                logger.info("Text has <= 2 sentences, returning original text")
+                return {'summary': text, 'compression_ratio': 1.0}
+                
+            # 2. Score sentences in parallel for large texts
+            if len(sentences) > 10:
+                sentence_scores = self._score_sentences_parallel(sentences, word_freq)
+            else:
+                sentence_scores = self._score_sentences(sentences, word_freq)
+                
+            # Get token counts for each sentence
+            sentence_tokens = {sentence: len(word_tokenize(sentence)) for sentence in sentences}
+            
+            # 3. Build summary respecting the token limit
+            summary_data = self._build_summary(
+                sentences, sentence_scores, sentence_tokens, max_tokens, threshold
+            )
+            
+            # 4. Add metadata
+            summary_data['original_length'] = len(words)
+            summary_data['compression_ratio'] = (
+                len(word_tokenize(summary_data['summary'])) / len(words) 
+                if words else 1.0
+            )
+            
+            logger.info(f"Generated summary with compression ratio: {summary_data['compression_ratio']:.2f}")
+            return summary_data
+
+        except Exception as e:
+            logger.error(f"Error during text processing: {str(e)}", exc_info=True)
+            return {'error': f"Error during text processing: {str(e)}"}
+
+    def _score_sentences(self, sentences, word_freq):
+        """Score sentences based on word frequency.
+        
+        Args:
+            sentences (list): List of sentences.
+            word_freq (Counter): Word frequency counter.
+            
+        Returns:
+            dict: Dictionary mapping sentences to their scores.
+        """
+        sentence_scores = {}
+        
+        for i, sentence in enumerate(sentences):
+            sent_words = word_tokenize(sentence.lower())
+            
+            # Skip very short sentences
+            if len(sent_words) < 3:
+                sentence_scores[sentence] = 0
+                continue
+                
+            # Calculate score based on normalized word frequencies
+            score = sum(self._calculate_word_frequency(word) 
+                        for word in sent_words 
+                        if word.isalnum() and word not in self.stop_words)
+                
+            # Normalize by sentence length to avoid bias towards longer sentences
+            score = score / max(1, len(sent_words))
+            
+            # Position bias: slightly prefer earlier sentences
+            position_weight = 1.0 - (0.1 * (i / max(1, len(sentences))))
+            sentence_scores[sentence] = score * position_weight
+            
+        return sentence_scores
+
+    def _score_sentences_parallel(self, sentences, word_freq):
+        """Score sentences in parallel for better performance on large texts.
+        
+        Args:
+            sentences (list): List of sentences.
+            word_freq (Counter): Word frequency counter.
+            
+        Returns:
+            dict: Dictionary mapping sentences to their scores.
+        """
+        sentence_scores = {}
+        
+        # Process sentences in chunks for better parallelism
+        chunk_size = max(1, len(sentences) // (os.cpu_count() or 4))
+        
+        def score_chunk(chunk_sentences, start_idx):
+            chunk_scores = {}
+            for i, sentence in enumerate(chunk_sentences):
+                abs_idx = start_idx + i
+                sent_words = word_tokenize(sentence.lower())
+                
+                if len(sent_words) < 3:
+                    chunk_scores[sentence] = 0
+                    continue
+                    
+                score = sum(self._calculate_word_frequency(word) 
+                           for word in sent_words 
+                           if word.isalnum() and word not in self.stop_words)
+                           
+                score = score / max(1, len(sent_words))
+                position_weight = 1.0 - (0.1 * (abs_idx / max(1, len(sentences))))
+                chunk_scores[sentence] = score * position_weight
+                
+            return chunk_scores
+        
+        with ThreadPoolExecutor() as executor:
+            futures = []
+            for i in range(0, len(sentences), chunk_size):
+                chunk = sentences[i:i+chunk_size]
+                futures.append(executor.submit(score_chunk, chunk, i))
+                
+            for future in futures:
+                sentence_scores.update(future.result())
+                
+        return sentence_scores
+
+    def _build_summary(self, sentences, sentence_scores, sentence_tokens, max_tokens, threshold):
+        """Build a summary from scored sentences.
+        
+        Args:
+            sentences (list): Original sentences.
+            sentence_scores (dict): Sentence scores.
+            sentence_tokens (dict): Token count for each sentence.
+            max_tokens (int): Maximum tokens in summary.
+            threshold (float): Minimum score threshold.
+            
+        Returns:
+            dict: Summary data.
+        """
+        # Filter sentences by threshold
+        qualified_sentences = [
+            (sentence, score) for sentence, score in sentence_scores.items() 
+            if score > threshold
+        ]
+        
+        # Sort sentences by score
+        sorted_sentences = sorted(qualified_sentences, key=lambda x: x[1], reverse=True)
+        
+        # Build summary within token limit
+        summary_sentences = []
+        current_tokens = 0
+        
+        for sentence, score in sorted_sentences:
+            if current_tokens + sentence_tokens[sentence] <= max_tokens:
+                summary_sentences.append((sentence, sentences.index(sentence)))
+                current_tokens += sentence_tokens[sentence]
+            
+            # Check if we've reached the token limit
+            if current_tokens >= max_tokens:
+                break
+                
+        # If no sentences qualified, take highest scoring sentences
+        if not summary_sentences and sorted_sentences:
+            top_sentence, _ = sorted_sentences[0]
+            if sentence_tokens[top_sentence] <= max_tokens:
+                summary_sentences.append((top_sentence, sentences.index(top_sentence)))
+            else:
+                # If even the top sentence exceeds token limit, truncate it
+                words = word_tokenize(top_sentence)[:max_tokens-1]
+                truncated = ' '.join(words) + '...'
+                return {'summary': truncated}
+                
+        # Restore original order
+        summary_sentences.sort(key=lambda x: x[1])
+        
+        # Create final summary
+        summary = ' '.join(sentence for sentence, _ in summary_sentences)
+        
+        return {'summary': summary}
+
+
+class AdvancedSUM(SUM):
+    """
+    Advanced summarization engine that extends SimpleSUM with additional features:
+    - Semantic similarity using word embeddings
+    - Topic modeling and clustering
+    - Coherence preservation
+    - Multi-document summarization
+    
+    This implementation follows a modular design for easy extension.
+    """
+    # This class would implement more advanced summarization techniques
+    # Implementation details would go here
+    pass
+
+
+def main():
+    """Main function for demonstrating and testing the summarizer."""
+    summarizer = SimpleSUM()
+    
+    # Example usage
+    sample_text = """
+    Machine learning has seen rapid advancements in recent years. From image recognition to
+    natural language processing, AI systems are becoming increasingly sophisticated. Deep learning
+    models, in particular, have shown remarkable capabilities in handling complex tasks. However,
+    challenges remain in areas such as explainability and bias mitigation. As the field continues
+    to evolve, researchers are developing new approaches to address these limitations and expand
+    the applications of machine learning across various domains.
+    """
+    
+    config = {'maxTokens': 50}
+    summary = summarizer.process_text(sample_text, config)
+    
+    print("Original text:")
+    print(sample_text)
+    print("\nSummary:")
+    print(summary['summary'])
+    print(f"\nCompression ratio: {summary['compression_ratio']:.2f}")
+
+if __name__ == "__main__":
+    main()
