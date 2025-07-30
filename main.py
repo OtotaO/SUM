@@ -565,6 +565,72 @@ def analyze_file():
         }), 500
 
 
+@app.route('/api/progressive_summarization', methods=['GET'])
+def progressive_summarization_info():
+    """
+    Get information about the Progressive Summarization WebSocket API.
+    
+    Returns:
+        JSON response with WebSocket connection details and usage instructions
+    """
+    return jsonify({
+        'websocket_url': 'ws://localhost:8765',
+        'description': 'Revolutionary real-time progressive summarization with live progress updates',
+        'features': [
+            'Real-time chunk processing visualization',
+            'Live concept extraction display', 
+            'Progressive summary building',
+            'Memory usage and performance monitoring',
+            'Interactive parameter adjustment',
+            'Beautiful WebSocket interface with animations'
+        ],
+        'message_types': {
+            'start_processing': {
+                'description': 'Start progressive text processing',
+                'required_fields': ['text'],
+                'optional_fields': ['session_id', 'config'],
+                'example': {
+                    'type': 'start_processing',
+                    'text': 'Your text to process...',
+                    'session_id': 'unique_session_id',
+                    'config': {
+                        'chunk_size_words': 1000,
+                        'overlap_ratio': 0.15,
+                        'max_memory_mb': 512,
+                        'max_concurrent_chunks': 4
+                    }
+                }
+            },
+            'get_status': {
+                'description': 'Get current processing status',
+                'example': {'type': 'get_status'}
+            },
+            'ping': {
+                'description': 'Ping the server for connectivity test',
+                'example': {'type': 'ping'}
+            }
+        },
+        'progress_events': {
+            'processing_start': 'Processing session initiated',
+            'chunking_start': 'Text chunking phase started',
+            'chunking_complete': 'Semantic chunks created',
+            'chunk_start': 'Individual chunk processing started',
+            'chunk_complete': 'Chunk processing completed with results',
+            'summary_update': 'Progressive summary updated',
+            'complete': 'All processing completed',
+            'error': 'Processing error occurred'
+        },
+        'usage_instructions': {
+            'step_1': 'Start WebSocket server: python progressive_summarization.py',
+            'step_2': 'Open progressive_client.html in browser',
+            'step_3': 'Connect WebSocket client to ws://localhost:8765',
+            'step_4': 'Send start_processing message with your text',
+            'step_5': 'Receive real-time progress updates'
+        },
+        'html_client': 'A beautiful HTML client is auto-generated as progressive_client.html'
+    })
+
+
 @app.route('/api/knowledge_graph', methods=['POST'])
 @rate_limit(5, 300)  # 5 calls per 5 minutes
 @validate_json_input()

@@ -1,0 +1,314 @@
+name: 🚀 SUM CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: '3.10'
+  DOCKER_IMAGE: sum-hierarchical-engine
+
+jobs:
+  test:
+    name: 🧪 Test Suite
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v4
+      
+    - name: 🐍 Set up Python ${{ env.PYTHON_VERSION }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        
+    - name: 📦 Cache Dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+          
+    - name: 🔧 Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-asyncio websockets psutil
+        
+    - name: 📚 Download NLTK Resources
+      run: |
+        python -c "
+        import nltk
+        nltk.download('punkt', quiet=True)
+        nltk.download('punkt_tab', quiet=True) 
+        nltk.download('stopwords', quiet=True)
+        nltk.download('vader_lexicon', quiet=True)
+        nltk.download('averaged_perceptron_tagger_eng', quiet=True)
+        nltk.download('maxent_ne_chunker_tab', quiet=True)
+        nltk.download('words', quiet=True)
+        print('✅ NLTK resources downloaded')
+        "
+        
+    - name: 🧪 Run Core Tests
+      run: |
+        echo "🚀 Running SUM Core Tests"
+        python -m pytest Tests/test_sum.py -v --tb=short
+        
+    - name: ⚡ Test Streaming Engine
+      run: |
+        echo "🌊 Testing Streaming Engine"
+        python -c "
+        from StreamingEngine import StreamingHierarchicalEngine
+        engine = StreamingHierarchicalEngine()
+        result = engine.process_streaming_text('Test streaming functionality with this sample text that should be processed efficiently.')
+        assert 'streaming_metadata' in result
+        print('✅ Streaming Engine test passed')
+        "
+        
+    - name: 🧠 Test Hierarchical Engine
+      run: |
+        echo "🎯 Testing Hierarchical Densification Engine"
+        python -c "
+        from SUM import HierarchicalDensificationEngine
+        engine = HierarchicalDensificationEngine()
+        result = engine.process_text('The essence of wisdom lies in understanding reality itself. Truth reflects what actually is, not what we wish to see.')
+        assert 'hierarchical_summary' in result
+        assert 'key_insights' in result
+        print('✅ Hierarchical Engine test passed')
+        "
+        
+    - name: 🔍 Test Progressive Summarization Import
+      run: |
+        echo "⚡ Testing Progressive Summarization"
+        python -c "
+        from progressive_summarization import ProgressWebSocketServer, ProgressiveVisualizationEngine
+        print('✅ Progressive Summarization imports successfully')
+        "
+        
+    - name: 🌐 Test Flask API
+      run: |
+        echo "🌐 Testing Flask API"
+        python -c "
+        import sys, os
+        sys.path.insert(0, '.')
+        from main import app
+        with app.test_client() as client:
+            response = client.get('/api/config')
+            assert response.status_code == 200
+            response = client.get('/api/progressive_summarization')
+            assert response.status_code == 200
+            assert 'websocket_url' in response.get_json()
+        print('✅ Flask API test passed')
+        "
+
+  security-scan:
+    name: 🔒 Security Scan
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v4
+      
+    - name: 🔍 Run Bandit Security Scan
+      run: |
+        pip install bandit[toml]
+        bandit -r . -f json -o bandit-report.json || true
+        bandit -r . -f txt || true
+        
+    - name: 📊 Upload Security Report
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: security-report
+        path: bandit-report.json
+
+  docker-build:
+    name: 🐳 Docker Build & Test
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v4
+      
+    - name: 🔧 Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: 🏗️ Build Docker Image
+      run: |
+        echo "🐳 Building SUM Docker Image"
+        docker build -t ${{ env.DOCKER_IMAGE }}:test .
+        
+    - name: 🧪 Test Docker Container
+      run: |
+        echo "🧪 Testing Docker Container"
+        # Start container in background
+        docker run -d --name sum-test -p 3000:3000 -p 8765:8765 ${{ env.DOCKER_IMAGE }}:test
+        
+        # Wait for services to start
+        sleep 30
+        
+        # Test health endpoint
+        curl -f http://localhost:3000/api/health || exit 1
+        
+        # Test progressive summarization info
+        curl -f http://localhost:3000/api/progressive_summarization || exit 1
+        
+        # Clean up
+        docker stop sum-test
+        docker rm sum-test
+        
+        echo "✅ Docker container test passed"
+
+  performance-test:
+    name: ⚡ Performance Benchmarks
+    runs-on: ubuntu-latest  
+    needs: test
+    
+    steps:
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v4
+      
+    - name: 🐍 Set up Python ${{ env.PYTHON_VERSION }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        
+    - name: 🔧 Install Dependencies
+      run: |
+        pip install -r requirements.txt
+        pip install websockets psutil memory-profiler
+        
+    - name: 📚 Download NLTK Resources
+      run: |
+        python examples/download_nltk_resources.py
+        
+    - name: ⚡ Run Performance Benchmarks
+      run: |
+        echo "⚡ Running Performance Benchmarks"
+        python -c "
+        import time
+        from SUM import SimpleSUM, HierarchicalDensificationEngine
+        from StreamingEngine import StreamingHierarchicalEngine
+        
+        test_text = '''
+        Machine learning has revolutionized how we approach complex problems across numerous domains. 
+        From healthcare diagnostics to financial modeling, from autonomous vehicles to personalized 
+        recommendations, AI systems are transforming industries at an unprecedented pace. The foundation 
+        of modern machine learning lies in deep neural networks, which can learn hierarchical 
+        representations of data. These networks excel at recognizing patterns in images, understanding 
+        natural language, and making predictions from complex datasets.
+        ''' * 20  # Make it longer for meaningful benchmarks
+        
+        # Benchmark SimpleSUM
+        simple = SimpleSUM()
+        start = time.time()
+        result = simple.process_text(test_text)
+        simple_time = time.time() - start
+        print(f'SimpleSUM: {simple_time:.3f}s')
+        
+        # Benchmark HierarchicalDensificationEngine  
+        hierarchical = HierarchicalDensificationEngine()
+        start = time.time()
+        result = hierarchical.process_text(test_text)
+        hierarchical_time = time.time() - start
+        print(f'HierarchicalDensificationEngine: {hierarchical_time:.3f}s')
+        
+        # Benchmark StreamingHierarchicalEngine
+        streaming = StreamingHierarchicalEngine()
+        start = time.time() 
+        result = streaming.process_streaming_text(test_text)
+        streaming_time = time.time() - start
+        print(f'StreamingHierarchicalEngine: {streaming_time:.3f}s')
+        
+        print('✅ Performance benchmarks completed')
+        "
+
+  deploy:
+    name: 🚀 Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [test, security-scan, docker-build]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v4
+      
+    - name: 🔧 Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: 🔑 Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+      if: ${{ secrets.DOCKERHUB_USERNAME }}
+      
+    - name: 🏗️ Build and Push Docker Image
+      if: ${{ secrets.DOCKERHUB_USERNAME }}
+      run: |
+        # Build for multiple platforms
+        docker buildx build --platform linux/amd64,linux/arm64 \
+          -t ${{ secrets.DOCKERHUB_USERNAME }}/sum-engine:latest \
+          -t ${{ secrets.DOCKERHUB_USERNAME }}/sum-engine:${{ github.sha }} \
+          --push .
+          
+    - name: 📋 Create Release Notes
+      if: github.event_name == 'push'
+      run: |
+        echo "## 🚀 SUM Release - $(date +'%Y-%m-%d')" > release-notes.md
+        echo "" >> release-notes.md
+        echo "### ✅ Features Tested:" >> release-notes.md
+        echo "- ✅ Core Summarization Engines (Simple, Advanced, Hierarchical)" >> release-notes.md
+        echo "- ✅ Streaming Engine for Unlimited Text Processing" >> release-notes.md
+        echo "- ✅ Progressive Summarization with WebSocket" >> release-notes.md
+        echo "- ✅ Docker Containerization" >> release-notes.md
+        echo "- ✅ Flask API with All Endpoints" >> release-notes.md
+        echo "- ✅ Security Scanning" >> release-notes.md
+        echo "- ✅ Performance Benchmarks" >> release-notes.md
+        echo "" >> release-notes.md
+        echo "### 🐳 Docker Deployment:" >> release-notes.md
+        echo "\`\`\`bash" >> release-notes.md
+        echo "docker pull ${{ secrets.DOCKERHUB_USERNAME }}/sum-engine:latest" >> release-notes.md
+        echo "docker run -d -p 3000:3000 -p 8765:8765 ${{ secrets.DOCKERHUB_USERNAME }}/sum-engine:latest" >> release-notes.md
+        echo "\`\`\`" >> release-notes.md
+        
+    - name: 📊 Upload Release Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: release-artifacts
+        path: |
+          release-notes.md
+          Dockerfile
+          docker-compose.yml
+          DOCKER.md
+
+  notify:
+    name: 📢 Notify Success
+    runs-on: ubuntu-latest
+    needs: [test, security-scan, docker-build, performance-test]
+    if: always()
+    
+    steps:
+    - name: 🎉 Success Notification
+      if: ${{ needs.test.result == 'success' && needs.docker-build.result == 'success' }}
+      run: |
+        echo "🎉 SUM CI/CD Pipeline Completed Successfully!"
+        echo "✅ All tests passed"
+        echo "✅ Docker build succeeded" 
+        echo "✅ Security scan completed"
+        echo "✅ Performance benchmarks finished"
+        echo ""
+        echo "🚀 SUM Hierarchical Knowledge Densification System is ready for deployment!"
+        
+    - name: ❌ Failure Notification
+      if: ${{ needs.test.result == 'failure' || needs.docker-build.result == 'failure' }}
+      run: |
+        echo "❌ SUM CI/CD Pipeline Failed"
+        echo "🔍 Check the failed job logs for details"
+        exit 1

@@ -1,0 +1,114 @@
+# Docker ignore file for SUM project
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# Logs
+*.log
+logs/
+server.log
+sum_service.log
+
+# Temporary files
+temp/
+*.tmp
+*.temp
+
+# Test files
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Backup files
+backup_local_changes/
+*.bak
+*.old
+
+# Documentation build
+docs/_build/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# PyCharm
+.idea/
+
+# Local development
+.env.local
+.env.development
+.env.test
+
+# Node modules (if any)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Uploaded files (in development)
+uploads/*
+!uploads/.gitkeep
+
+# Output files
+Output/*
+!Output/.gitkeep
+
+# Large model files
+*.pkl
+*.joblib
+*.model
+
+# Page files
+*.pages
+Untitled.pages
+changelog\ of\ sorts.pages
+
+# React files
+react-frontend.txt
