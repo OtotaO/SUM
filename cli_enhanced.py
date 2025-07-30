@@ -88,7 +88,7 @@ class EnhancedCLI:
     ║                                                               ║
     ║   🚀 SUM: Hierarchical Knowledge Densification System        ║
     ║                                                               ║
-    ║   Revolutionary Real-Time Progressive Summarization          ║
+    ║   Real-Time Progressive Summarization                    ║
     ║   with Advanced Hierarchical Processing                      ║
     ║                                                               ║
     ╚═══════════════════════════════════════════════════════════════╝
@@ -96,7 +96,7 @@ class EnhancedCLI:
             console.print(Panel(banner.strip(), style="bold blue", box=box.DOUBLE))
         else:
             print("🚀 SUM: Hierarchical Knowledge Densification System")
-            print("Revolutionary Real-Time Progressive Summarization")
+            print("Real-Time Progressive Summarization")
     
     def show_engine_menu(self) -> str:
         """Show interactive engine selection menu."""

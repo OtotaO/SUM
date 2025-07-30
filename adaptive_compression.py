@@ -1,16 +1,15 @@
 """
-Adaptive Compression Engine - Dynamic Knowledge Distillation
+Adaptive Compression Engine
 
-This module implements an adaptive compression system that automatically
-adjusts its strategy based on content characteristics. Inspired by
-Carmack's efficiency principles and designed for the grand vision of
-compressing lifetimes of human experience.
+Implements content-aware text compression that selects appropriate strategies
+based on text characteristics and information density analysis.
 
-Design Philosophy:
-- Measure information density to select optimal compression strategy
-- Preserve semantic meaning while achieving maximum compression
-- Scale from single documents to entire lifetimes
-- Learn from incompressible texts (philosophical, technical, literary)
+Features:
+- Automatic content type detection (philosophical, technical, narrative, etc.)
+- Information density measurement for compression ratio adjustment
+- Multiple compression strategies optimized for different content types
+- Quality benchmarking using reference texts with known compression limits
+- Temporal compression hierarchy for time-based data
 
 Author: ototao & Claude
 License: Apache 2.0
@@ -70,8 +69,8 @@ class CompressionStrategy(ABC):
 
 class PhilosophicalCompression(CompressionStrategy):
     """
-    Compression for philosophical/dense texts.
-    Preserves logical structure and key arguments.
+    Compression strategy for philosophical and dense texts.
+    Preserves logical connectors, arguments, and definitional statements.
     """
     
     def compress(self, text: str, target_ratio: float = 0.3) -> Dict[str, Any]:
@@ -140,8 +139,8 @@ class PhilosophicalCompression(CompressionStrategy):
 
 class TechnicalCompression(CompressionStrategy):
     """
-    Compression for technical content.
-    Preserves formulas, code, and precise terminology.
+    Compression strategy for technical content.
+    Preserves code blocks, formulas, technical terminology, and measurements.
     """
     
     def compress(self, text: str, target_ratio: float = 0.4) -> Dict[str, Any]:
@@ -274,8 +273,9 @@ class ActivityLogCompression(CompressionStrategy):
 
 class AdaptiveCompressionEngine:
     """
-    Main adaptive compression engine that selects and applies
-    optimal compression strategies based on content analysis.
+    Content-aware compression engine that analyzes text characteristics
+    and applies appropriate compression strategies based on content type
+    and information density measurements.
     """
     
     def __init__(self):

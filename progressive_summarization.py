@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-progressive_summarization.py - Revolutionary Real-Time Progress Display System
+progressive_summarization.py - Real-Time Progress Display System
 
-This module implements a revolutionary WebSocket-based real-time progress display
-that shows the summarization process as it happens, making SUM indispensable for
-processing long documents.
+This module implements a WebSocket-based real-time progress display system
+that shows the summarization process as it happens, providing transparency
+for processing long documents.
 
-Revolutionary Features:
+Features:
 - Live progress tracking with semantic chunk visualization
 - Real-time concept extraction display
 - Progressive summary building with live updates

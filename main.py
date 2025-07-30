@@ -626,7 +626,7 @@ def analyze_file():
 @validate_json_input()
 def adaptive_compress():
     """
-    Compress text using the Adaptive Compression Engine.
+    Compress text using content-aware compression strategies.
     
     Expected JSON input:
     {
@@ -637,7 +637,7 @@ def adaptive_compress():
     }
     
     Returns:
-        JSON response with compressed text and metrics
+        JSON response with compressed text and quality metrics
     """
     if not ADAPTIVE_AVAILABLE:
         return jsonify({

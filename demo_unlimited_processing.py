@@ -2,8 +2,8 @@
 """
 🚀 ULTIMATE DEMONSTRATION: SUM's Unlimited Text Processing Power!
   
-This script demonstrates SUM's revolutionary capability to process texts
-of ANY SIZE through the new StreamingHierarchicalEngine.
+This script demonstrates SUM's capability to process texts
+of any size through the StreamingHierarchicalEngine.
 
 "Let's-a-go!" - Mario (and us, conquering unlimited text processing!)
 """

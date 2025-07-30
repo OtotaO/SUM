@@ -1,15 +1,14 @@
 """
-Life Compression System - Temporal Knowledge Distillation
+Life Compression System
 
-Integrates the C monitoring agent with the adaptive compression engine
-to create a complete life-logging and compression system. Handles
-everything from moments to lifetimes.
+Integrates activity monitoring with temporal compression to process
+user activities across multiple time scales (day, week, month, year).
 
 Architecture:
-- C agent logs activities efficiently
-- Python processes and compresses temporally
-- Results stored in hierarchical time-based structure
-- Enables semantic search across entire life history
+- C monitoring agent captures user activities efficiently
+- Python backend processes and compresses data temporally
+- SQLite storage with hierarchical time-based organization
+- Full-text search across compressed activity history
 
 Author: ototao & Claude
 License: Apache 2.0

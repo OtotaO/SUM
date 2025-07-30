@@ -2,9 +2,9 @@
 """
 Test Script for Adaptive Compression System
 
-Demonstrates the revolutionary capabilities of our adaptive compression
-engine with golden texts benchmarking. This is where we see if we've
-truly created something special.
+Demonstrates the capabilities of our adaptive compression
+engine with golden texts benchmarking. Tests compression quality
+across different content types and incompressibility levels.
 
 Usage: python test_adaptive_system.py
 

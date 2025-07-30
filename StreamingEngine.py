@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-StreamingEngine.py - Revolutionary Arbitrary Length Text Processing Engine
+StreamingEngine.py - Arbitrary Length Text Processing Engine
 
 This module implements a streaming architecture that can process text of ANY size
 by intelligently chunking, processing, and aggregating results while maintaining
@@ -492,7 +492,7 @@ class ChunkProcessor:
 
 class StreamingHierarchicalEngine:
     """
-    Revolutionary streaming engine for processing text of arbitrary length.
+    Streaming engine for processing text of arbitrary length.
     
     This engine can handle documents of any size by:
     1. Breaking text into semantically coherent chunks

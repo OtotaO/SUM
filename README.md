@@ -19,9 +19,9 @@
 
 ---
 
-## 🌟 **Advanced Hierarchical Architecture**
+## 🌟 **Hierarchical Architecture**
 
-SUM has evolved beyond traditional summarization into a **professional knowledge densification system** with three sophisticated levels of abstraction:
+SUM implements a three-level knowledge densification system with distinct processing stages:
 
 ### 🎯 **Level 1: Concept Extraction**
 Extract key thematic concepts and important terminology:
@@ -49,9 +49,9 @@ Extract key insights and significant statements from text:
 
 ---
 
-## 🤖 **Revolutionary AI Integration & Features**
+## 🤖 **AI Integration & Features**
 
-SUM now features **state-of-the-art AI model integration** with OpenAI and Anthropic, plus advanced features for comprehensive knowledge processing:
+SUM provides AI model integration with OpenAI and Anthropic APIs, plus additional features for comprehensive text processing:
 
 ### ⚡ **Multi-Model Support**
 - **OpenAI GPT-4 Turbo** - Most advanced reasoning and analysis
@@ -249,7 +249,7 @@ The Hierarchical Densification Engine is designed for seamless integration with 
 
 ---
 
-## ⚡ **Revolutionary Real-Time Progressive Summarization**
+## ⚡ **Real-Time Progressive Summarization**
 
 SUM features the world's first **real-time progressive summarization system**, allowing you to watch the summarization process unfold live with beautiful visualizations.
 
@@ -332,7 +332,7 @@ ws.onmessage = (event) => {
 };
 ```
 
-### 🌟 **Why Progressive Summarization is Revolutionary**
+### 🌟 **Progressive Summarization Benefits**
 
 1. **Industry First**: No other system shows live summarization progress
 2. **User Experience**: Makes complex processing transparent and engaging

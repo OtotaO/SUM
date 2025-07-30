@@ -1,15 +1,12 @@
 """
-Golden Texts Collection - Incompressible Prose Benchmarks
+Golden Texts Collection
 
-A curated collection of texts that represent the pinnacle of human
-expression - philosophical insights, technical precision, and literary
-beauty that resist compression while maintaining meaning.
+Curated collection of texts with high information density that serve as
+benchmarks for compression quality evaluation. Includes philosophical,
+technical, literary, and mathematical texts with known compression limits.
 
-These texts serve as benchmarks for our adaptive compression engine,
-helping us understand the limits of semantic compression.
-
-"Some things cannot be compressed without losing their essence."
-- The eternal tension between brevity and meaning
+These reference texts help establish quality baselines and identify
+when compression may be removing essential meaning rather than redundancy.
 
 Author: ototao & Claude
 License: Apache 2.0
@@ -35,11 +32,11 @@ class GoldenText:
 
 class GoldenTextsCollection:
     """
-    Collection of incompressible texts for benchmarking compression algorithms.
+    Collection of high-density texts for compression quality benchmarking.
     
-    These texts represent the theoretical limits of semantic compression -
-    where every word carries essential meaning that cannot be reduced
-    without significant loss of information.
+    Contains texts where most words carry essential meaning, making them
+    useful for testing compression algorithms and establishing quality
+    thresholds for different content types.
     """
     
     def __init__(self):

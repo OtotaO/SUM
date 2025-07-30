@@ -1,19 +1,15 @@
 """
 Local Subject Matter Expert Trainer
 
-This system takes the extracted training data from chat exports and fine-tunes
-local models to become domain-specific experts. These models learn from the
-collective mistakes and corrections found in LLM conversations.
+Fine-tunes small language models using training data extracted from
+LLM conversation corrections to create domain-specific expert models.
 
-"From every conversation failure, a smarter model is born."
-- The Local Expert Manifesto
-
-Key Features:
-- Fine-tune small, efficient models (7B-13B params)
-- Domain specialization (programming, data science, etc.)
-- Context drift recovery
-- Error pattern learning
-- Deployment-ready local experts
+Features:
+- LoRA-based efficient fine-tuning for 7B-13B parameter models
+- Domain specialization using conversation correction patterns
+- Training data preparation from chat export insights
+- Model evaluation and deployment utilities
+- Support for local deployment without API dependencies
 
 Author: ototao & Claude
 License: Apache 2.0

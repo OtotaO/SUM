@@ -1,20 +1,16 @@
 """
-Chat Export Intelligence Engine - LLM Conversation Archaeologist
+Chat Export Intelligence Engine
 
-This revolutionary system mines chat exports from LLM conversations to extract
-training data goldmines, focusing on context drift, error patterns, and 
-correction sequences that can be used to train superior local expert models.
+Processes exported LLM conversations to identify patterns in model failures,
+user corrections, and context drift for training data extraction.
 
-"Every failed conversation is a training opportunity waiting to be discovered."
-- The Conversation Archaeologist's Creed
-
-Architecture:
-- Parse exports from Claude, ChatGPT, Copilot, Cursor, etc.
-- Detect context drift and model failures
-- Extract user corrections and redirections
-- Generate high-quality training data pairs
-- Compress conversations while preserving learning moments
-- Train local subject matter expert models
+Features:
+- Universal parser supporting Claude, ChatGPT, Copilot, and Cursor exports
+- Context drift detection and error pattern recognition
+- User correction sequence analysis
+- Training data pair generation from conversation flows
+- Conversation compression while preserving learning insights
+- Domain-specific insight classification
 
 Author: ototao & Claude
 License: Apache 2.0
