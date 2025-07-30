@@ -36,6 +36,15 @@ from Models.topic_modeling import TopicModeler
 from Models.summarizer import Summarizer
 from config import active_config
 
+# Import Adaptive Compression System
+try:
+    from adaptive_compression import AdaptiveCompressionEngine, ContentType
+    from life_compression_system import LifeCompressionSystem
+    ADAPTIVE_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"Adaptive compression not available: {e}")
+    ADAPTIVE_AVAILABLE = False
+
 # Import AI models
 try:
     from ai_models import HybridAIEngine, SecureKeyManager, AVAILABLE_MODELS
@@ -75,6 +84,8 @@ advanced_summarizer = None  # Lazy-loaded
 hierarchical_engine = None  # Lazy-loaded - Hierarchical Densification Engine
 streaming_engine = None  # Lazy-loaded - Streaming Engine for unlimited text
 topic_modeler = None  # Lazy-loaded
+adaptive_engine = None  # Lazy-loaded - Adaptive Compression Engine
+life_system = None  # Lazy-loaded - Life Compression System
 
 # Concurrency control
 summarizer_lock = Lock()
@@ -369,6 +380,43 @@ def process_text():
                         }), 500
                 
                 result = hierarchical_engine.process_text(text, config)
+            elif model_type == 'adaptive':
+                # Use Adaptive Compression Engine
+                global adaptive_engine
+                if adaptive_engine is None:
+                    try:
+                        adaptive_engine = AdaptiveCompressionEngine()
+                        logger.info("Initialized Adaptive Compression Engine")
+                    except Exception as e:
+                        logger.error(f"Failed to initialize Adaptive Compression Engine: {e}")
+                        return jsonify({
+                            'error': 'Adaptive Compression Engine unavailable',
+                            'details': str(e)
+                        }), 500
+                
+                # Get target ratio from config
+                target_ratio = config.get('target_ratio', 0.2)
+                
+                # Compress using adaptive strategy
+                compression_result = adaptive_engine.compress(text, target_ratio)
+                
+                # Format result to match hierarchical structure
+                result = {
+                    'hierarchical_summary': {
+                        'level_1_concepts': compression_result.get('key_concepts', []),
+                        'level_2_core': compression_result['compressed'],
+                        'level_3_expanded': None  # Adaptive doesn't use level 3
+                    },
+                    'compression_metrics': {
+                        'content_type': compression_result['content_type'],
+                        'information_density': compression_result['information_density'],
+                        'strategy_used': compression_result['strategy'],
+                        'target_ratio': compression_result['target_ratio'],
+                        'actual_ratio': compression_result['actual_ratio'],
+                        'original_words': compression_result['original_length'],
+                        'compressed_words': compression_result['compressed_length']
+                    }
+                }
             elif model_type == 'streaming':
                 # Lazy-load Streaming Engine for unlimited text length
                 global streaming_engine
@@ -394,7 +442,7 @@ def process_text():
                 
                 result = streaming_engine.process_streaming_text(text)
             else:
-                return jsonify({'error': f'Unknown model type: {model_type}. Available: simple, advanced, hierarchical, streaming'}), 400
+                return jsonify({'error': f'Unknown model type: {model_type}. Available: simple, advanced, hierarchical, adaptive, streaming'}), 400
         
         # Add processing metadata
         result['processing_time'] = time.time() - start_time
@@ -569,6 +617,195 @@ def analyze_file():
         logger.error(f"Error analyzing file: {e}\n{traceback.format_exc()}")
         return jsonify({
             'error': 'Error analyzing file',
+            'details': str(e)
+        }), 500
+
+
+@app.route('/api/adaptive_compress', methods=['POST'])
+@rate_limit(20, 60)
+@validate_json_input()
+def adaptive_compress():
+    """
+    Compress text using the Adaptive Compression Engine.
+    
+    Expected JSON input:
+    {
+        "text": "Text to compress...",
+        "target_ratio": 0.3,  # Optional, default: 0.2 (20% of original)
+        "content_type": "auto|philosophical|technical|narrative|activity_log",  # Optional
+        "benchmark": false  # Optional, run benchmarks
+    }
+    
+    Returns:
+        JSON response with compressed text and metrics
+    """
+    if not ADAPTIVE_AVAILABLE:
+        return jsonify({
+            'error': 'Adaptive compression not available',
+            'details': 'Please check dependencies'
+        }), 503
+    
+    try:
+        data = request.get_json()
+        text = data.get('text', '')
+        target_ratio = float(data.get('target_ratio', 0.2))
+        content_type_str = data.get('content_type', 'auto')
+        run_benchmark = data.get('benchmark', False)
+        
+        if not text:
+            return jsonify({'error': 'No text provided'}), 400
+        
+        # Initialize adaptive engine if needed
+        global adaptive_engine
+        if adaptive_engine is None:
+            adaptive_engine = AdaptiveCompressionEngine()
+            logger.info("Initialized Adaptive Compression Engine")
+        
+        # Determine content type
+        force_type = None
+        if content_type_str != 'auto':
+            try:
+                force_type = ContentType[content_type_str.upper()]
+            except KeyError:
+                return jsonify({
+                    'error': f'Invalid content type: {content_type_str}'
+                }), 400
+        
+        # Compress text
+        result = adaptive_engine.compress(text, target_ratio, force_type)
+        
+        # Run benchmarks if requested
+        benchmark_results = None
+        if run_benchmark:
+            benchmark_results = {}
+            benchmarks = adaptive_engine.benchmark_compression()
+            for content_type, metrics in benchmarks.items():
+                benchmark_results[content_type.value] = {
+                    'compression_ratio': metrics.compression_ratio,
+                    'information_retention': metrics.information_retention,
+                    'semantic_coherence': metrics.semantic_coherence,
+                    'readability_score': metrics.readability_score,
+                    'processing_time': metrics.processing_time
+                }
+        
+        response = {
+            'compressed_text': result['compressed'],
+            'content_type': result['content_type'],
+            'information_density': result['information_density'],
+            'compression_metrics': {
+                'target_ratio': result['target_ratio'],
+                'adjusted_ratio': result['adjusted_ratio'],
+                'actual_ratio': result['actual_ratio'],
+                'original_words': result['original_length'],
+                'compressed_words': result['compressed_length']
+            },
+            'strategy_used': result['strategy'],
+            'processing_time': result['processing_time']
+        }
+        
+        if benchmark_results:
+            response['benchmarks'] = benchmark_results
+        
+        return jsonify(response)
+        
+    except Exception as e:
+        logger.error(f"Error in adaptive compression: {e}")
+        return jsonify({
+            'error': 'Compression failed',
+            'details': str(e)
+        }), 500
+
+
+@app.route('/api/life_compression/start', methods=['POST'])
+@rate_limit(5, 300)
+def start_life_compression():
+    """Start the life compression monitoring system."""
+    if not ADAPTIVE_AVAILABLE:
+        return jsonify({
+            'error': 'Life compression not available',
+            'details': 'Please check dependencies'
+        }), 503
+    
+    try:
+        global life_system
+        if life_system is None:
+            life_system = LifeCompressionSystem()
+        
+        if not hasattr(life_system, '_is_running') or not life_system._is_running:
+            life_system.start()
+            life_system._is_running = True
+            return jsonify({
+                'status': 'started',
+                'message': 'Life compression system is now monitoring'
+            })
+        else:
+            return jsonify({
+                'status': 'already_running',
+                'message': 'Life compression system is already running'
+            })
+            
+    except Exception as e:
+        logger.error(f"Error starting life compression: {e}")
+        return jsonify({
+            'error': 'Failed to start life compression',
+            'details': str(e)
+        }), 500
+
+
+@app.route('/api/life_compression/search', methods=['POST'])
+@rate_limit(20, 60)
+@validate_json_input()
+def search_life_history():
+    """
+    Search through compressed life history.
+    
+    Expected JSON input:
+    {
+        "query": "search terms...",
+        "limit": 10  # Optional
+    }
+    """
+    if not ADAPTIVE_AVAILABLE:
+        return jsonify({
+            'error': 'Life compression not available'
+        }), 503
+    
+    try:
+        data = request.get_json()
+        query = data.get('query', '')
+        limit = int(data.get('limit', 10))
+        
+        if not query:
+            return jsonify({'error': 'No query provided'}), 400
+        
+        global life_system
+        if life_system is None:
+            life_system = LifeCompressionSystem()
+        
+        results = life_system.search_life_history(query)[:limit]
+        
+        memories = []
+        for memory in results:
+            memories.append({
+                'time_range': f"{memory.start_time} to {memory.end_time}",
+                'time_scale': memory.time_scale,
+                'compressed_text': memory.compressed_text,
+                'key_concepts': memory.key_concepts,
+                'highlights': memory.highlights,
+                'compression_ratio': memory.compression_ratio,
+                'original_events': memory.original_event_count
+            })
+        
+        return jsonify({
+            'query': query,
+            'results': memories,
+            'count': len(memories)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error searching life history: {e}")
+        return jsonify({
+            'error': 'Search failed',
             'details': str(e)
         }), 500
 
