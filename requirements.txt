@@ -56,3 +56,43 @@ psutil>=5.9.0
 
 # Enhanced CLI
 rich>=13.0.0
+
+# Multi-Modal Processing Dependencies
+PyPDF2>=3.0.1
+pdfplumber>=0.9.0
+python-docx>=1.0.0
+Pillow>=10.0.0
+pytesseract>=0.3.10
+
+# Local AI Integration
+ollama>=0.1.0
+
+# Enhanced Document Processing
+beautifulsoup4>=4.12.0
+markdown>=3.5.0
+lxml>=4.9.3
+
+# Knowledge Operating System Dependencies
+sqlite3  # Built into Python
+threading  # Built into Python
+json  # Built into Python
+datetime  # Built into Python
+pathlib  # Built into Python
+hashlib  # Built into Python
+uuid  # Built into Python
+collections  # Built into Python
+
+# Email Processing (SumMail)
+imaplib  # Built into Python
+smtplib  # Built into Python
+email  # Built into Python
+
+# OnePunchUpload Bridge
+requests>=2.31.0
+
+# Additional Dependencies for Enhanced Features
+psutil>=5.9.0
+cryptography>=41.0.0
+
+# Development and Testing
+python>=3.8
