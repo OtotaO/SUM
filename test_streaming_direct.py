@@ -7,7 +7,7 @@ import sys
 import os
 sys.path.append('.')
 
-from StreamingEngine import StreamingHierarchicalEngine, StreamingConfig
+from streaming_engine import StreamingHierarchicalEngine, StreamingConfig
 
 def test_direct_integration():
     """Test streaming engine directly to ensure it works."""

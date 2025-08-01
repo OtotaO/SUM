@@ -61,8 +61,8 @@ except ImportError:
         RICH_AVAILABLE = False
 
 # Import SUM components
-from SUM import SimpleSUM, MagnumOpusSUM, HierarchicalDensificationEngine
-from StreamingEngine import StreamingHierarchicalEngine, StreamingConfig
+from summarization_engine import SimpleSUM, MagnumOpusSUM, HierarchicalDensificationEngine
+from streaming_engine import StreamingHierarchicalEngine, StreamingConfig
 
 # Initialize console
 console = Console() if RICH_AVAILABLE else None

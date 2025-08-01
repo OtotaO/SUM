@@ -4,7 +4,7 @@ Simple Hierarchical Densification Engine Test - Direct API call
 Let's test the hierarchical engine directly!
 """
 
-from SUM import HierarchicalDensificationEngine
+from summarization_engine import HierarchicalDensificationEngine
 
 def test_hierarchical_direct():
     """Test Hierarchical Densification Engine directly without API."""

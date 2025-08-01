@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SUM - Revolutionary Knowledge Intelligence</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/framer-motion@10/dist/framer-motion.js"></script>
+    <style>
+        :root {
+            /* Revolutionary Color Palette */
+            --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --gradient-tertiary: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --gradient-quaternary: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            --gradient-neural: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #a8edea 100%);
+            
+            /* Carmack Engineering Colors - Fast, Simple, Clear, Bulletproof */
+            --carmack-fast: #00ff88;
+            --carmack-simple: #0099ff;
+            --carmack-clear: #ff6b6b;
+            --carmack-bulletproof: #ffd93d;
+            
+            /* Yamashita Design Colors - Beautiful, Minimal, Joyful, Human-Centered */
+            --yamashita-beautiful: linear-gradient(45deg, #ff9a9e, #fecfef);
+            --yamashita-minimal: #f8f9ff;
+            --yamashita-joyful: linear-gradient(45deg, #a8edea, #fed6e3);
+            --yamashita-human: #d299c2;
+            
+            /* Advanced Glassmorphism */
+            --glass-primary: rgba(255, 255, 255, 0.08);
+            --glass-secondary: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.12);
+            --glass-strong: rgba(255, 255, 255, 0.15);
+            
+            /* Neural Network Inspired Effects */
+            --neural-glow: 0 0 30px rgba(102, 126, 234, 0.3);
+            --neural-pulse: 0 0 20px rgba(102, 126, 234, 0.5);
+            --neural-strong: 0 0 40px rgba(102, 126, 234, 0.6);
+            
+            /* Revolutionary Typography */
+            --font-primary: 'Inter', system-ui, -apple-system, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            
+            /* Revolutionary Spacing & Timing */
+            --spacing-revolutionary: clamp(1rem, 5vw, 3rem);
+            --timing-fast: 100ms;
+            --timing-smooth: 300ms;
+            --timing-dramatic: 600ms;
+            --timing-epic: 1200ms;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: var(--font-primary);
+            background: linear-gradient(135deg, #0f0f0f 0%, #1a1a2e 50%, #16213e 100%);
+            color: #ffffff;
+            overflow-x: hidden;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        /* Revolutionary Glassmorphism */
+        .glass-morphism {
+            background: var(--glass-primary);
+            backdrop-filter: blur(16px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .glass-morphism-secondary {
+            background: var(--glass-secondary);
+            backdrop-filter: blur(12px) saturate(160%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        
+        .glass-morphism-strong {
+            background: var(--glass-strong);
+            backdrop-filter: blur(20px) saturate(200%);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* Neural Network Effects */
+        .neural-container {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .neural-container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(102, 126, 234, 0.03) 0%, transparent 70%);
+            animation: neural-pulse 4s ease-in-out infinite;
+            pointer-events: none;
+        }
+        
+        .neural-glow {
+            box-shadow: var(--neural-glow);
+            animation: glow-pulse 3s ease-in-out infinite;
+        }
+        
+        /* Revolutionary Animations */
+        @keyframes neural-pulse {
+            0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.5; }
+            50% { transform: scale(1.1) rotate(180deg); opacity: 0.8; }
+        }
+        
+        @keyframes glow-pulse {
+            0%, 100% { box-shadow: var(--neural-glow); }
+            50% { box-shadow: var(--neural-pulse); }
+        }
+        
+        @keyframes slide-in-elegant {
+            0% { transform: translateY(30px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes float-elegant {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            33% { transform: translateY(-8px) rotate(0.3deg); }
+            66% { transform: translateY(-4px) rotate(-0.3deg); }
+        }
+        
+        @keyframes typing-cursor {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+        
+        @keyframes gradient-shift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .slide-in-elegant {
+            animation: slide-in-elegant 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .float-elegant {
+            animation: float-elegant 6s ease-in-out infinite;
+        }
+        
+        .typing-cursor::after {
+            content: '|';
+            animation: typing-cursor 1s infinite;
+        }
+        
+        .gradient-animated {
+            background-size: 200% 200%;
+            animation: gradient-shift 4s ease infinite;
+        }
+        
+        /* Revolutionary Typography */
+        .revolutionary-title {
+            font-size: clamp(2.5rem, 8vw, 6rem);
+            font-weight: 800;
+            line-height: 0.9;
+            background: var(--gradient-neural);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradient-shift 4s ease infinite;
+        }
+        
+        .subtitle-elegant {
+            font-size: clamp(1.1rem, 3vw, 1.5rem);
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.8);
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        /* Revolutionary Button System */
+        .btn-revolutionary {
+            position: relative;
+            padding: 16px 32px;
+            border: none;
+            border-radius: 16px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--timing-smooth) cubic-bezier(0.4, 0, 0.2, 1);
+            background: var(--glass-primary);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            color: white;
+            overflow: hidden;
+            min-width: 160px;
+        }
+        
+        .btn-revolutionary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left var(--timing-dramatic) ease;
+        }
+        
+        .btn-revolutionary:hover::before {
+            left: 100%;
+        }
+        
+        .btn-revolutionary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--neural-strong);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        .btn-primary {
+            background: var(--gradient-primary);
+            border: 1px solid rgba(102, 126, 234, 0.5);
+        }
+        
+        .btn-secondary {
+            background: var(--glass-secondary);
+            border: 1px solid var(--glass-border);
+        }
+        
+        /* Revolutionary Form Elements */
+        .input-revolutionary {
+            width: 100%;
+            padding: 20px 24px;
+            background: var(--glass-secondary);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            color: white;
+            font-size: 16px;
+            font-family: var(--font-primary);
+            resize: none;
+            transition: all var(--timing-smooth) ease;
+        }
+        
+        .input-revolutionary::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .input-revolutionary:focus {
+            outline: none;
+            border-color: rgba(102, 126, 234, 0.8);
+            box-shadow: var(--neural-glow);
+            background: var(--glass-primary);
+        }
+        
+        /* Revolutionary Progress System */
+        .progress-revolutionary {
+            width: 100%;
+            height: 8px;
+            background: var(--glass-secondary);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: var(--gradient-primary);
+            border-radius: 4px;
+            transition: width var(--timing-smooth) ease;
+            position: relative;
+        }
+        
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        /* Revolutionary Status Indicators */
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 24px;
+            font-size: 14px;
+            font-weight: 500;
+            background: var(--glass-secondary);
+            border: 1px solid var(--glass-border);
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-fast .status-dot { background: var(--carmack-fast); }
+        .status-simple .status-dot { background: var(--carmack-simple); }
+        .status-clear .status-dot { background: var(--carmack-clear); }
+        .status-bulletproof .status-dot { background: var(--carmack-bulletproof); }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.2); }
+        }
+        
+        /* Revolutionary Card System */
+        .card-revolutionary {
+            background: var(--glass-primary);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: var(--spacing-revolutionary);
+            transition: all var(--timing-smooth) cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .card-revolutionary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: var(--gradient-primary);
+            opacity: 0;
+            transition: opacity var(--timing-smooth) ease;
+        }
+        
+        .card-revolutionary:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--neural-strong);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .card-revolutionary:hover::before {
+            opacity: 1;
+        }
+        
+        /* Revolutionary Navigation */
+        .nav-revolutionary {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 20px 0;
+            background: var(--glass-secondary);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+        }
+        
+        .nav-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo-revolutionary {
+            font-size: 32px;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 32px;
+            align-items: center;
+        }
+        
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all var(--timing-smooth) ease;
+            position: relative;
+        }
+        
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--gradient-primary);
+            transition: width var(--timing-smooth) ease;
+        }
+        
+        .nav-link:hover {
+            color: white;
+        }
+        
+        .nav-link:hover::after {
+            width: 100%;
+        }
+        
+        /* Revolutionary Layout */
+        .revolutionary-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+        
+        .hero-revolutionary {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            max-width: 900px;
+        }
+        
+        .hero-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            opacity: 0.1;
+            background: radial-gradient(circle at 50% 50%, rgba(102, 126, 234, 0.3) 0%, transparent 50%);
+            animation: neural-pulse 8s ease-in-out infinite;
+        }
+        
+        /* Revolutionary Responsive Design */
+        @media (max-width: 768px) {
+            .nav-links {
+                gap: 16px;
+            }
+            
+            .nav-link {
+                font-size: 14px;
+            }
+            
+            .revolutionary-container {
+                padding: 0 16px;
+            }
+            
+            .card-revolutionary {
+                padding: 20px;
+            }
+            
+            .btn-revolutionary {
+                padding: 14px 24px;
+                font-size: 14px;
+                min-width: 140px;
+            }
+        }
+        
+        /* Revolutionary Accessibility */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+        
+        /* Revolutionary Dark/Light Mode Support */
+        @media (prefers-color-scheme: light) {
+            body {
+                background: linear-gradient(135deg, #f8f9ff 0%, #e3e7ff 50%, #d4d9ff 100%);
+                color: #1a1a2e;
+            }
+            
+            .glass-morphism {
+                background: rgba(255, 255, 255, 0.8);
+                border: 1px solid rgba(0, 0, 0, 0.1);
+            }
+            
+            .glass-morphism-secondary {
+                background: rgba(255, 255, 255, 0.6);
+                border: 1px solid rgba(0, 0, 0, 0.05);
+            }
+        }
+        
+        /* Revolutionary Focus States */
+        .btn-revolutionary:focus-visible,
+        .input-revolutionary:focus-visible {
+            outline: 2px solid var(--carmack-simple);
+            outline-offset: 2px;
+        }
+        
+        /* Revolutionary Loading States */
+        .loading-revolutionary {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .loading-revolutionary::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            animation: loading-sweep 2s infinite;
+        }
+        
+        @keyframes loading-sweep {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback, useMemo } = React;
+        
+        // Revolutionary Icon Component
+        const Icon = ({ name, size = 20, className = "" }) => {
+            useEffect(() => {
+                lucide.createIcons();
+            }, []);
+            return <i data-lucide={name} className={className} style={{ width: size, height: size }}></i>;
+        };
+        
+        // Revolutionary Status Component
+        const StatusIndicator = ({ type, children }) => (
+            <div className={`status-indicator status-${type}`}>
+                <div className="status-dot"></div>
+                <span>{children}</span>
+            </div>
+        );
+        
+        // Revolutionary Progress Component
+        const ProgressBar = ({ progress, className = "" }) => (
+            <div className={`progress-revolutionary ${className}`}>
+                <div className="progress-bar" style={{ width: `${progress}%` }}></div>
+            </div>
+        );
+        
+        // Revolutionary Card Component
+        const RevolutionaryCard = ({ children, className = "", ...props }) => (
+            <div className={`card-revolutionary neural-container ${className}`} {...props}>
+                {children}
+            </div>
+        );
+        
+        // Revolutionary Button Component
+        const RevolutionaryButton = ({ 
+            children, 
+            variant = "secondary", 
+            loading = false, 
+            disabled = false,
+            icon,
+            className = "",
+            ...props 
+        }) => (
+            <button 
+                className={`btn-revolutionary btn-${variant} ${loading ? 'loading-revolutionary' : ''} ${className}`}
+                disabled={disabled || loading}
+                {...props}
+            >
+                {icon && <Icon name={icon} size={18} />}
+                <span>{loading ? 'Processing...' : children}</span>
+            </button>
+        );
+        
+        // Revolutionary Input Component
+        const RevolutionaryInput = ({ className = "", ...props }) => (
+            <textarea 
+                className={`input-revolutionary ${className}`}
+                {...props}
+            />
+        );
+        
+        // Main Revolutionary App
+        const RevolutionaryApp = () => {
+            const [currentView, setCurrentView] = useState('process');
+            const [processingText, setProcessingText] = useState('');
+            const [isProcessing, setIsProcessing] = useState(false);
+            const [processingProgress, setProcessingProgress] = useState(0);
+            const [results, setResults] = useState(null);
+            const [selectedModel, setSelectedModel] = useState('gpt-4');
+            const [availableModels, setAvailableModels] = useState([
+                { id: 'gpt-4', name: 'GPT-4', provider: 'OpenAI', available: true, fast: true },
+                { id: 'claude-3', name: 'Claude 3', provider: 'Anthropic', available: true, fast: true },
+                { id: 'gemini-pro', name: 'Gemini Pro', provider: 'Google', available: false, fast: true },
+                { id: 'llama-2', name: 'Llama 2', provider: 'Meta', available: true, fast: false }
+            ]);
+            
+            // Revolutionary processing simulation
+            const processText = useCallback(async () => {
+                if (!processingText.trim()) return;
+                
+                setIsProcessing(true);
+                setProcessingProgress(0);
+                
+                // Simulate revolutionary processing with smooth progress
+                const progressSteps = [10, 25, 45, 60, 80, 95, 100];
+                for (let i = 0; i < progressSteps.length; i++) {
+                    await new Promise(resolve => setTimeout(resolve, 200 + Math.random() * 300));
+                    setProcessingProgress(progressSteps[i]);
+                }
+                
+                // Revolutionary results simulation
+                setResults({
+                    hierarchical_summary: {
+                        level_1_concepts: ["Revolutionary AI", "Knowledge Densification", "Intelligent Processing"],
+                        level_2_core: "This text demonstrates revolutionary AI capabilities in knowledge processing and intelligent summarization.",
+                        level_3_expanded: "The content showcases advanced natural language processing with hierarchical understanding and contextual intelligence."
+                    },
+                    key_insights: [
+                        { type: "TRUTH", text: "Revolutionary AI transforms how we process and understand information", score: 0.95 },
+                        { type: "WISDOM", text: "Intelligent systems can provide multi-layered analysis of complex content", score: 0.88 },
+                        { type: "PURPOSE", text: "The goal is to make knowledge more accessible and actionable", score: 0.92 }
+                    ],
+                    ai_metadata: {
+                        model: selectedModel,
+                        total_tokens: 1247,
+                        estimated_cost: 0.0234,
+                        processing_time: "1.2s"
+                    },
+                    processing_engine: "Revolutionary AI Engine v2.0"
+                });
+                
+                setIsProcessing(false);
+            }, [processingText, selectedModel]);
+            
+            // Revolutionary Navigation Component
+            const RevolutionaryNavigation = () => (
+                <nav className="nav-revolutionary">
+                    <div className="nav-content">
+                        <div className="logo-revolutionary">SUM</div>
+                        <div className="nav-links">
+                            <a 
+                                href="#" 
+                                className={`nav-link ${currentView === 'process' ? 'active' : ''}`}
+                                onClick={() => setCurrentView('process')}
+                            >
+                                Process
+                            </a>
+                            <a 
+                                href="#" 
+                                className={`nav-link ${currentView === 'dashboard' ? 'active' : ''}`}
+                                onClick={() => setCurrentView('dashboard')}
+                            >
+                                Intelligence
+                            </a>
+                            <a 
+                                href="#" 
+                                className={`nav-link ${currentView === 'capture' ? 'active' : ''}`}
+                                onClick={() => setCurrentView('capture')}
+                            >
+                                Capture
+                            </a>
+                            <a 
+                                href="#" 
+                                className={`nav-link ${currentView === 'settings' ? 'active' : ''}`}
+                                onClick={() => setCurrentView('settings')}
+                            >
+                                Settings
+                            </a>
+                        </div>
+                    </div>
+                </nav>
+            );
+            
+            // Revolutionary Hero Section
+            const RevolutionaryHero = () => (
+                <section className="hero-revolutionary">
+                    <div className="hero-background"></div>
+                    <div className="hero-content slide-in-elegant">
+                        <h1 className="revolutionary-title mb-8">
+                            Revolutionary
+                            <br />
+                            Knowledge Intelligence
+                        </h1>
+                        <p className="subtitle-elegant mb-12">
+                            Experience the future of text processing with our revolutionary AI system that combines 
+                            John Carmack's engineering excellence with Yuki Yamashita's design philosophy.
+                        </p>
+                        <div className="flex flex-wrap gap-4 justify-center">
+                            <StatusIndicator type="fast">Sub-100ms Response</StatusIndicator>
+                            <StatusIndicator type="simple">Zero Learning Curve</StatusIndicator>
+                            <StatusIndicator type="clear">Crystal Clear Results</StatusIndicator>
+                            <StatusIndicator type="bulletproof">Never Fails</StatusIndicator>
+                        </div>
+                    </div>
+                </section>
+            );
+            
+            // Revolutionary Processing Interface
+            const ProcessingInterface = () => (
+                <div className="revolutionary-container py-24">
+                    <div className="max-w-4xl mx-auto space-y-8">
+                        {/* Model Selection */}
+                        <RevolutionaryCard className="slide-in-elegant">
+                            <h3 className="text-2xl font-bold mb-6 flex items-center gap-3">
+                                <Icon name="cpu" size={24} className="neural-glow" />
+                                Select Your Intelligence Engine
+                            </h3>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                {availableModels.map(model => (
+                                    <button
+                                        key={model.id}
+                                        onClick={() => setSelectedModel(model.id)}
+                                        disabled={!model.available}
+                                        className={`p-4 rounded-2xl border-2 transition-all duration-300 ${
+                                            selectedModel === model.id
+                                                ? 'border-purple-500 bg-purple-500/20 neural-glow'
+                                                : model.available
+                                                ? 'border-gray-600 hover:border-gray-400 bg-white/5'
+                                                : 'border-gray-700 opacity-50 cursor-not-allowed'
+                                        }`}
+                                    >
+                                        <div className="text-left">
+                                            <div className="font-bold text-lg">{model.name}</div>
+                                            <div className="text-sm text-gray-400">{model.provider}</div>
+                                            {model.fast && (
+                                                <div className="inline-block mt-2 px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full">
+                                                    ⚡ Fast
+                                                </div>
+                                            )}
+                                        </div>
+                                        {!model.available && (
+                                            <div className="text-xs text-red-400 mt-2">API key required</div>
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
+                        </RevolutionaryCard>
+                        
+                        {/* Revolutionary Text Input */}
+                        <RevolutionaryCard className="slide-in-elegant neural-container">
+                            <h3 className="text-2xl font-bold mb-6 flex items-center gap-3">
+                                <Icon name="edit-3" size={24} className="neural-glow" />
+                                Input Your Content
+                            </h3>
+                            <RevolutionaryInput
+                                value={processingText}
+                                onChange={(e) => setProcessingText(e.target.value)}
+                                placeholder="Enter or paste your text here for revolutionary processing..."
+                                rows={12}
+                                className="mb-6"
+                            />
+                            
+                            <div className="flex items-center justify-between mb-6">
+                                <div className="text-sm text-gray-400">
+                                    {processingText.length} characters • {processingText.split(/\s+/).filter(Boolean).length} words
+                                </div>
+                                <RevolutionaryButton
+                                    variant="primary"
+                                    onClick={processText}
+                                    loading={isProcessing}
+                                    disabled={!processingText.trim()}
+                                    icon="zap"
+                                    className="neural-glow"
+                                >
+                                    Process Intelligence
+                                </RevolutionaryButton>
+                            </div>
+                            
+                            {/* Revolutionary Progress */}
+                            {isProcessing && (
+                                <div className="space-y-3">
+                                    <div className="flex justify-between text-sm text-gray-400">
+                                        <span>Revolutionary Processing...</span>
+                                        <span>{processingProgress}%</span>
+                                    </div>
+                                    <ProgressBar progress={processingProgress} />
+                                </div>
+                            )}
+                        </RevolutionaryCard>
+                        
+                        {/* Revolutionary Results */}
+                        {results && (
+                            <div className="space-y-8 float-elegant">
+                                {/* Hierarchical Summary */}
+                                <RevolutionaryCard className="neural-glow">
+                                    <h3 className="text-2xl font-bold mb-6 flex items-center gap-3">
+                                        <Icon name="layers" size={24} />
+                                        Revolutionary Knowledge Structure
+                                    </h3>
+                                    
+                                    {/* Level 1: Concepts */}
+                                    <div className="space-y-4 mb-8">
+                                        <h4 className="text-lg font-semibold text-gray-300">Level 1: Core Concepts</h4>
+                                        <div className="flex flex-wrap gap-3">
+                                            {results.hierarchical_summary?.level_1_concepts?.map((concept, idx) => (
+                                                <span
+                                                    key={idx}
+                                                    className="px-4 py-2 bg-gradient-to-r from-purple-500/30 to-pink-500/30 border border-purple-500/50 rounded-full text-sm font-medium neural-glow"
+                                                >
+                                                    {concept}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Level 2: Core Summary */}
+                                    <div className="space-y-4 mb-8">
+                                        <h4 className="text-lg font-semibold text-gray-300">Level 2: Intelligence Core</h4>
+                                        <p className="text-gray-200 leading-relaxed text-lg bg-white/5 p-6 rounded-2xl">
+                                            {results.hierarchical_summary?.level_2_core}
+                                        </p>
+                                    </div>
+                                    
+                                    {/* Level 3: Expanded Context */}
+                                    {results.hierarchical_summary?.level_3_expanded && (
+                                        <div className="space-y-4">
+                                            <h4 className="text-lg font-semibold text-gray-300">Level 3: Contextual Intelligence</h4>
+                                            <p className="text-gray-200 leading-relaxed text-lg bg-white/5 p-6 rounded-2xl">
+                                                {results.hierarchical_summary.level_3_expanded}
+                                            </p>
+                                        </div>
+                                    )}
+                                </RevolutionaryCard>
+                                
+                                {/* Revolutionary Insights */}
+                                {results.key_insights && results.key_insights.length > 0 && (
+                                    <RevolutionaryCard className="neural-glow">
+                                        <h3 className="text-2xl font-bold mb-6 flex items-center gap-3">
+                                            <Icon name="lightbulb" size={24} />
+                                            Revolutionary Insights
+                                        </h3>
+                                        <div className="space-y-4">
+                                            {results.key_insights.map((insight, idx) => (
+                                                <div key={idx} className="flex items-start gap-4 p-6 bg-white/5 rounded-2xl">
+                                                    <div className={`px-3 py-1 rounded-full text-xs font-bold ${
+                                                        insight.type === 'TRUTH' ? 'bg-blue-500/30 text-blue-300 border border-blue-500/50' :
+                                                        insight.type === 'WISDOM' ? 'bg-purple-500/30 text-purple-300 border border-purple-500/50' :
+                                                        insight.type === 'PURPOSE' ? 'bg-green-500/30 text-green-300 border border-green-500/50' :
+                                                        'bg-orange-500/30 text-orange-300 border border-orange-500/50'
+                                                    }`}>
+                                                        {insight.type}
+                                                    </div>
+                                                    <p className="text-gray-200 flex-1 text-lg leading-relaxed">{insight.text}</p>
+                                                    <div className="text-lg font-bold text-green-400">
+                                                        {(insight.score * 100).toFixed(0)}%
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </RevolutionaryCard>
+                                )}
+                                
+                                {/* Revolutionary Metadata */}
+                                {results.ai_metadata && (
+                                    <RevolutionaryCard>
+                                        <h3 className="text-2xl font-bold mb-6 flex items-center gap-3">
+                                            <Icon name="info" size={24} />
+                                            Processing Intelligence
+                                        </h3>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                                            <div className="text-center p-4 bg-white/5 rounded-2xl">
+                                                <div className="text-sm text-gray-400 mb-2">Model</div>
+                                                <div className="font-bold text-lg">{results.ai_metadata.model}</div>
+                                            </div>
+                                            <div className="text-center p-4 bg-white/5 rounded-2xl">
+                                                <div className="text-sm text-gray-400 mb-2">Tokens</div>
+                                                <div className="font-bold text-lg">{results.ai_metadata.total_tokens}</div>
+                                            </div>
+                                            <div className="text-center p-4 bg-white/5 rounded-2xl">
+                                                <div className="text-sm text-gray-400 mb-2">Cost</div>
+                                                <div className="font-bold text-lg">${results.ai_metadata.estimated_cost.toFixed(4)}</div>
+                                            </div>
+                                            <div className="text-center p-4 bg-white/5 rounded-2xl">
+                                                <div className="text-sm text-gray-400 mb-2">Time</div>
+                                                <div className="font-bold text-lg">{results.ai_metadata.processing_time}</div>
+                                            </div>
+                                        </div>
+                                    </RevolutionaryCard>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+            
+            // Revolutionary Intelligence Dashboard
+            const IntelligenceDashboard = () => (
+                <div className="revolutionary-container py-24">
+                    <div className="max-w-6xl mx-auto">
+                        <div className="text-center mb-16">
+                            <h2 className="text-5xl font-bold mb-6 gradient-animated" style={{background: 'var(--gradient-neural)'}}>
+                                Intelligence Dashboard
+                            </h2>
+                            <p className="subtitle-elegant">
+                                Visualize your knowledge processing patterns and AI insights
+                            </p>
+                        </div>
+                        
+                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                            <RevolutionaryCard className="neural-glow">
+                                <h3 className="text-xl font-bold mb-4">Processing Stats</h3>
+                                <div className="space-y-4">
+                                    <div className="flex justify-between">
+                                        <span>Today</span>
+                                        <span className="font-bold">47 documents</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>This Week</span>
+                                        <span className="font-bold">312 documents</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>Avg Speed</span>
+                                        <span className="font-bold text-green-400">0.8s</span>
+                                    </div>
+                                </div>
+                            </RevolutionaryCard>
+                            
+                            <RevolutionaryCard className="neural-glow">
+                                <h3 className="text-xl font-bold mb-4">Knowledge Insights</h3>
+                                <div className="space-y-4">
+                                    <div className="flex justify-between">
+                                        <span>Truth Score</span>
+                                        <span className="font-bold text-blue-400">94.2%</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>Wisdom Level</span>
+                                        <span className="font-bold text-purple-400">87.1%</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>Purpose Clarity</span>
+                                        <span className="font-bold text-green-400">91.8%</span>
+                                    </div>
+                                </div>
+                            </RevolutionaryCard>
+                            
+                            <RevolutionaryCard className="neural-glow">
+                                <h3 className="text-xl font-bold mb-4">AI Performance</h3>
+                                <div className="space-y-4">
+                                    <div className="flex justify-between">
+                                        <span>Model Accuracy</span>
+                                        <span className="font-bold text-green-400">99.1%</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>Token Efficiency</span>
+                                        <span className="font-bold text-blue-400">95.7%</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>Cost Optimization</span>
+                                        <span className="font-bold text-purple-400">92.3%</span>
+                                    </div>
+                                </div>
+                            </RevolutionaryCard>
+                        </div>
+                    </div>
+                </div>
+            );
+            
+            return (
+                <div className="min-h-screen">
+                    <RevolutionaryNavigation />
+                    
+                    {currentView === 'process' && (
+                        <>
+                            <RevolutionaryHero />
+                            <ProcessingInterface />
+                        </>
+                    )}
+                    
+                    {currentView === 'dashboard' && <IntelligenceDashboard />}
+                    
+                    {currentView === 'capture' && (
+                        <div className="revolutionary-container py-24">
+                            <div className="text-center">
+                                <h2 className="text-5xl font-bold mb-6">Zero-Friction Capture</h2>
+                                <p className="subtitle-elegant mb-12">
+                                    Capture knowledge from anywhere with revolutionary ease
+                                </p>
+                                <RevolutionaryButton variant="primary" icon="download">
+                                    Coming Soon
+                                </RevolutionaryButton>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {currentView === 'settings' && (
+                        <div className="revolutionary-container py-24">
+                            <div className="text-center">
+                                <h2 className="text-5xl font-bold mb-6">Revolutionary Settings</h2>
+                                <p className="subtitle-elegant mb-12">
+                                    Configure your intelligence preferences
+                                </p>
+                                <RevolutionaryButton variant="primary" icon="settings">
+                                    Coming Soon
+                                </RevolutionaryButton>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+        
+        // Render the Revolutionary App
+        ReactDOM.render(<RevolutionaryApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>

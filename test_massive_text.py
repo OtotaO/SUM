@@ -5,7 +5,7 @@ Let's see it handle the equivalent of a small book!
 """
 
 import time
-from StreamingEngine import StreamingHierarchicalEngine, StreamingConfig
+from streaming_engine import StreamingHierarchicalEngine, StreamingConfig
 
 def generate_massive_test_text(target_words=50000):
     """Generate a large, realistic text for testing."""

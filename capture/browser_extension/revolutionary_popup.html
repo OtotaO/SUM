@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SUM - Revolutionary Knowledge Capture</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Revolutionary Header -->
+    <header class="header">
+      <div class="header-content">
+        <div class="logo">
+          <span class="logo-icon">🚀</span>
+          <span class="logo-text">SUM</span>
+        </div>
+        <div class="status-indicator" id="statusIndicator">
+          <span class="status-dot"></span>
+          <span class="status-text">Revolutionary</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Revolutionary Main Content -->
+    <main class="main-content">
+      <!-- Revolutionary Quick Actions -->
+      <section class="quick-actions">
+        <button class="action-btn primary" id="captureSelection">
+          <span class="btn-icon">🎯</span>
+          <span class="btn-text">Capture Selection</span>
+          <span class="btn-shortcut">Ctrl+Shift+S</span>
+        </button>
+        
+        <button class="action-btn secondary" id="capturePage">
+          <span class="btn-icon">🌐</span>
+          <span class="btn-text">Capture Page</span>
+          <span class="btn-shortcut">Ctrl+Shift+A</span>
+        </button>
+        
+        <button class="action-btn secondary" id="captureClipboard">
+          <span class="btn-icon">📋</span>
+          <span class="btn-text">Process Clipboard</span>
+          <span class="btn-shortcut">Ctrl+Shift+V</span>
+        </button>
+        
+        <button class="action-btn secondary" id="captureVoice">
+          <span class="btn-icon">🎤</span>
+          <span class="btn-text">Voice Capture</span>
+          <span class="btn-shortcut">Ctrl+Shift+R</span>
+        </button>
+      </section>
+
+      <!-- Revolutionary Recent Captures -->
+      <section class="recent-captures" id="recentCaptures">
+        <h3 class="section-title">Recent Intelligence</h3>
+        <div class="captures-list" id="capturesList">
+          <!-- Revolutionary sample captures -->
+          <div class="capture-item">
+            <div class="capture-summary">Revolutionary AI transforms how we process and understand complex information with unprecedented speed and accuracy...</div>
+            <div class="capture-meta">
+              <span>🕐 2 minutes ago</span>
+              <span>⚡ 0.8s</span>
+            </div>
+          </div>
+          <div class="capture-item">
+            <div class="capture-summary">Advanced natural language processing with hierarchical understanding capabilities and multi-modal intelligence...</div>
+            <div class="capture-meta">
+              <span>🕐 5 minutes ago</span>
+              <span>⚡ 1.2s</span>
+            </div>
+          </div>
+          <div class="capture-item">
+            <div class="capture-summary">Engineering excellence meets design beauty in this revolutionary knowledge densification system...</div>
+            <div class="capture-meta">
+              <span>🕐 12 minutes ago</span>
+              <span>⚡ 0.6s</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Revolutionary Statistics -->
+      <section class="statistics" id="statistics">
+        <h3 class="section-title">Intelligence Metrics</h3>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <span class="stat-number" id="totalCaptures">247</span>
+            <span class="stat-label">Total Processed</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number" id="avgProcessingTime">0.8s</span>
+            <span class="stat-label">Avg Speed</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number" id="todayCaptures">23</span>
+            <span class="stat-label">Today</span>
+          </div>
+        </div>
+        
+        <!-- Revolutionary Performance Indicators -->
+        <div class="performance-indicators" style="margin-top: 16px;">
+          <div class="performance-item">
+            <span class="performance-label">🚀 Speed</span>
+            <div class="performance-bar">
+              <div class="performance-fill" style="width: 95%;"></div>
+            </div>
+          </div>
+          <div class="performance-item">
+            <span class="performance-label">🎯 Accuracy</span>
+            <div class="performance-bar">
+              <div class="performance-fill" style="width: 98%;"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Revolutionary Footer -->
+    <footer class="footer">
+      <div class="footer-actions">
+        <button class="footer-btn" id="settingsBtn">
+          <span>⚙️</span>
+          Settings
+        </button>
+        <button class="footer-btn" id="dashboardBtn">
+          <span>📊</span>
+          Dashboard
+        </button>
+        <button class="footer-btn" id="helpBtn">
+          <span>🚀</span>
+          Guide
+        </button>
+      </div>
+    </footer>
+
+    <!-- Revolutionary Settings Panel -->
+    <div class="settings-panel" id="settingsPanel">
+      <div class="settings-header">
+        <h3>🎛️ Revolutionary Settings</h3>
+        <button class="close-btn" id="closeSettings">✕</button>
+      </div>
+      
+      <div class="settings-content">
+        <div class="setting-group">
+          <label class="setting-label">
+            <input type="checkbox" id="autoCapture" class="setting-checkbox" checked>
+            <span class="checkbox-custom"></span>
+            🤖 Auto-capture clipboard intelligence
+          </label>
+        </div>
+        
+        <div class="setting-group">
+          <label class="setting-label">
+            <input type="checkbox" id="showFloatingButton" class="setting-checkbox" checked>
+            <span class="checkbox-custom"></span>
+            🎯 Show floating capture button
+          </label>
+        </div>
+        
+        <div class="setting-group">
+          <label class="setting-label">
+            <input type="checkbox" id="instantProcessing" class="setting-checkbox" checked>
+            <span class="checkbox-custom"></span>
+            ⚡ Instant processing (sub-100ms)
+          </label>
+        </div>
+        
+        <div class="setting-group">
+          <label class="setting-label">
+            <input type="checkbox" id="voiceCapture" class="setting-checkbox">
+            <span class="checkbox-custom"></span>
+            🎤 Voice capture enabled
+          </label>
+        </div>
+        
+        <div class="setting-group">
+          <label class="setting-label">🎚️ Intelligence Level</label>
+          <select id="summarizationLevel" class="setting-select">
+            <option value="fast">⚡ Fast (Carmack Speed)</option>
+            <option value="quality" selected>🎯 Quality (Balanced)</option>
+            <option value="comprehensive">🧠 Comprehensive (Deep)</option>
+            <option value="revolutionary">🚀 Revolutionary (Maximum)</option>
+          </select>
+        </div>
+        
+        <div class="setting-group">
+          <label class="setting-label">📏 Maximum Intelligence Depth</label>
+          <input type="range" id="maxSummaryLength" class="setting-range" min="50" max="500" value="200">
+          <span class="range-value" id="maxSummaryLengthValue">200</span> tokens
+        </div>
+        
+        <div class="setting-group">
+          <label class="setting-label">🎨 UI Theme</label>
+          <select id="uiTheme" class="setting-select">
+            <option value="revolutionary" selected>🚀 Revolutionary</option>
+            <option value="carmack">⚡ Carmack Engineering</option>
+            <option value="yamashita">🎨 Yamashita Design</option>
+            <option value="neural">🧠 Neural Network</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="settings-footer">
+        <button class="btn-save" id="saveSettings">💾 Save Revolutionary Settings</button>
+      </div>
+    </div>
+
+    <!-- Revolutionary Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+      <div class="loading-content">
+        <div class="spinner"></div>
+        <span class="loading-text">🧠 Processing Intelligence...</span>
+        <div class="loading-progress">
+          <div class="progress-bar" id="loadingProgress"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Revolutionary Success Message -->
+    <div class="success-message" id="successMessage">
+      <div class="success-content">
+        <span class="success-icon">🚀</span>
+        <span class="success-text">Revolutionary capture completed!</span>
+      </div>
+    </div>
+
+    <!-- Revolutionary Error Message -->
+    <div class="error-message" id="errorMessage">
+      <div class="error-content">
+        <span class="error-icon">⚠️</span>
+        <span class="error-text">Processing interrupted</span>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+  
+  <!-- Revolutionary Enhancement Script -->
+  <script>
+    // Revolutionary UI Enhancements
+    document.addEventListener('DOMContentLoaded', function() {
+      // Add revolutionary interactions
+      const buttons = document.querySelectorAll('.action-btn, .footer-btn');
+      buttons.forEach(button => {
+        button.addEventListener('mouseenter', function() {
+          this.style.transform = 'translateY(-2px)';
+        });
+        
+        button.addEventListener('mouseleave', function() {
+          this.style.transform = 'translateY(0)';
+        });
+      });
+      
+      // Revolutionary progress simulation
+      const simulateProgress = () => {
+        const progressBar = document.getElementById('loadingProgress');
+        let progress = 0;
+        const interval = setInterval(() => {
+          progress += Math.random() * 15;
+          if (progress >= 100) {
+            progress = 100;
+            clearInterval(interval);
+          }
+          if (progressBar) {
+            progressBar.style.width = progress + '%';
+          }
+        }, 100);
+      };
+      
+      // Revolutionary capture button effects
+      document.getElementById('captureSelection')?.addEventListener('click', function() {
+        document.getElementById('loadingOverlay').classList.add('active');
+        simulateProgress();
+        
+        setTimeout(() => {
+          document.getElementById('loadingOverlay').classList.remove('active');
+          document.getElementById('successMessage').classList.add('active');
+          
+          setTimeout(() => {
+            document.getElementById('successMessage').classList.remove('active');
+          }, 3000);
+        }, 2000);
+      });
+      
+      // Revolutionary settings panel
+      document.getElementById('settingsBtn')?.addEventListener('click', function() {
+        document.getElementById('settingsPanel').classList.add('active');
+      });
+      
+      document.getElementById('closeSettings')?.addEventListener('click', function() {
+        document.getElementById('settingsPanel').classList.remove('active');
+      });
+      
+      // Revolutionary range value display
+      const rangeInput = document.getElementById('maxSummaryLength');
+      const rangeValue = document.getElementById('maxSummaryLengthValue');
+      
+      rangeInput?.addEventListener('input', function() {
+        rangeValue.textContent = this.value;
+      });
+      
+      // Revolutionary stats animation
+      const animateStats = () => {
+        const statNumbers = document.querySelectorAll('.stat-number');
+        statNumbers.forEach(stat => {
+          const finalValue = stat.textContent;
+          let currentValue = 0;
+          const increment = finalValue.includes('s') ? 0.1 : Math.ceil(parseInt(finalValue) / 20);
+          
+          const counter = setInterval(() => {
+            if (finalValue.includes('s')) {
+              currentValue += 0.1;
+              if (currentValue >= parseFloat(finalValue)) {
+                currentValue = parseFloat(finalValue);
+                clearInterval(counter);
+              }
+              stat.textContent = currentValue.toFixed(1) + 's';
+            } else {
+              currentValue += increment;
+              if (currentValue >= parseInt(finalValue)) {
+                currentValue = parseInt(finalValue);
+                clearInterval(counter);
+              }
+              stat.textContent = currentValue;
+            }
+          }, 50);
+        });
+      };
+      
+      // Start revolutionary animations
+      setTimeout(animateStats, 500);
+    });
+  </script>
+</body>
+</html>

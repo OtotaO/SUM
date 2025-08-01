@@ -35,7 +35,7 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 import base64
 
 # Import SUM components
-from SUM import HierarchicalDensificationEngine
+from summarization_engine import HierarchicalDensificationEngine
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

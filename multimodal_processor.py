@@ -63,7 +63,7 @@ except ImportError:
     logging.warning("Vision processing not available. Install: pip install requests")
 
 # Import SUM components
-from SUM import HierarchicalDensificationEngine
+from summarization_engine import HierarchicalDensificationEngine
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

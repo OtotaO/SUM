@@ -15,7 +15,7 @@ import os
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from SUM import SimpleSUM, MagnumOpusSUM, HierarchicalDensificationEngine
+from summarization_engine import SimpleSUM, MagnumOpusSUM, HierarchicalDensificationEngine
 from wordcloud import WordCloud
 
 

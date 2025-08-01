@@ -1,0 +1,24 @@
+# SUM Zero-Friction Capture System Requirements
+
+# Core dependencies from main SUM system
+-r ../requirements_optimized.txt
+
+# Global hotkey support (cross-platform)
+keyboard>=1.13.0
+
+# GUI for capture popup
+tkinter  # Usually included with Python
+
+# HTTP API server
+Flask>=2.3.0
+Flask-CORS>=4.0.0
+
+# Optional: Enhanced GUI (uncomment if needed)
+# customtkinter>=5.2.0  # Modern tkinter styling
+# pillow>=10.0.0        # Image support for GUI
+
+# Development dependencies (optional)
+# pytest>=7.4.0
+# pytest-asyncio>=0.21.0
+# black>=23.0.0
+# flake8>=6.0.0

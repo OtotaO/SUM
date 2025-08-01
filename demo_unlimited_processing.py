@@ -10,7 +10,7 @@ of any size through the StreamingHierarchicalEngine.
 
 import time
 import sys
-from StreamingEngine import StreamingHierarchicalEngine, StreamingConfig
+from streaming_engine import StreamingHierarchicalEngine, StreamingConfig
 
 def create_book_length_text(target_words=100000):
     """Create a text equivalent to a full-length book for testing."""

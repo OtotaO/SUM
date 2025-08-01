@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SUM - Zero-Friction Capture</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-content">
+        <div class="logo">
+          <span class="logo-icon">✨</span>
+          <span class="logo-text">SUM</span>
+        </div>
+        <div class="status-indicator" id="statusIndicator">
+          <span class="status-dot"></span>
+          <span class="status-text">Ready</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Quick Actions -->
+      <section class="quick-actions">
+        <button class="action-btn primary" id="captureSelection">
+          <span class="btn-icon">📝</span>
+          <span class="btn-text">Capture Selection</span>
+          <span class="btn-shortcut">Ctrl+Shift+S</span>
+        </button>
+        
+        <button class="action-btn secondary" id="capturePage">
+          <span class="btn-icon">📄</span>
+          <span class="btn-text">Capture Page</span>
+          <span class="btn-shortcut">Ctrl+Shift+A</span>
+        </button>
+      </section>
+
+      <!-- Recent Captures -->
+      <section class="recent-captures" id="recentCaptures">
+        <h3 class="section-title">Recent Captures</h3>
+        <div class="captures-list" id="capturesList">
+          <!-- Captures will be populated here -->
+        </div>
+      </section>
+
+      <!-- Statistics -->
+      <section class="statistics" id="statistics">
+        <h3 class="section-title">Statistics</h3>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <span class="stat-number" id="totalCaptures">0</span>
+            <span class="stat-label">Total Captures</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number" id="avgProcessingTime">0ms</span>
+            <span class="stat-label">Avg Processing Time</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number" id="todayCaptures">0</span>
+            <span class="stat-label">Today</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer-actions">
+        <button class="footer-btn" id="settingsBtn">
+          <span>⚙️</span>
+          Settings
+        </button>
+        <button class="footer-btn" id="helpBtn">
+          <span>❓</span>
+          Help
+        </button>
+      </div>
+    </footer>
+
+    <!-- Settings Panel -->
+    <div class="settings-panel" id="settingsPanel">
+      <div class="settings-header">
+        <h3>Settings</h3>
+        <button class="close-btn" id="closeSettings">✕</button>
+      </div>
+      
+      <div class="settings-content">
+        <div class="setting-group">
+          <label class="setting-label">
+            <input type="checkbox" id="autoCapture" class="setting-checkbox">
+            <span class="checkbox-custom"></span>
+            Auto-capture clipboard text
+          </label>
+        </div>
+        
+        <div class="setting-group">
+          <label class="setting-label">
+            <input type="checkbox" id="showFloatingButton" class="setting-checkbox" checked>
+            <span class="checkbox-custom"></span>
+            Show floating capture button
+          </label>
+        </div>
+        
+        <div class="setting-group">
+          <label class="setting-label">Summarization Level</label>
+          <select id="summarizationLevel" class="setting-select">
+            <option value="fast">Fast</option>
+            <option value="quality" selected>Quality</option>
+            <option value="comprehensive">Comprehensive</option>
+          </select>
+        </div>
+        
+        <div class="setting-group">
+          <label class="setting-label">Max Summary Length</label>
+          <input type="range" id="maxSummaryLength" class="setting-range" min="50" max="300" value="150">
+          <span class="range-value" id="maxSummaryLengthValue">150</span> words
+        </div>
+      </div>
+      
+      <div class="settings-footer">
+        <button class="btn-save" id="saveSettings">Save Settings</button>
+      </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+      <div class="loading-content">
+        <div class="spinner"></div>
+        <span class="loading-text">Processing...</span>
+      </div>
+    </div>
+
+    <!-- Success Message -->
+    <div class="success-message" id="successMessage">
+      <div class="success-content">
+        <span class="success-icon">✅</span>
+        <span class="success-text">Capture completed successfully!</span>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

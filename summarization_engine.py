@@ -38,7 +38,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 
-class SUM:
+class SummarizationEngine:
     """Base class for summarization algorithms."""
     
     def process_text(self, text: str, model_config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -46,7 +46,7 @@ class SUM:
         raise NotImplementedError("Subclasses must implement process_text")
 
 
-class SimpleSUM(SUM):
+class BasicSummarizationEngine(SUM):
     """
     Frequency-based extractive summarization engine with 
     optimizations for performance on larger texts.
@@ -295,7 +295,7 @@ class SimpleSUM(SUM):
         return [word for word, _ in word_freq.most_common(5)]
 
 
-class MagnumOpusSUM(SUM):
+class AdvancedSummarizationEngine(SUM):
     """
     Comprehensive text analysis and summarization system with
     multiple summarization approaches and text analysis features.

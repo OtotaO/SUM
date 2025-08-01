@@ -32,7 +32,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 # Import components for testing
 try:
-    from SUM import SimpleSUM, AdvancedSUM
+    from summarization_engine import SimpleSUM, AdvancedSUM
     from Utils.data_loader import DataLoader
     from Models.topic_modeling import TopicModeler
 except ImportError as e:

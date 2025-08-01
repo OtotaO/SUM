@@ -37,7 +37,7 @@ import smtplib
 from pathlib import Path
 
 # Import SUM components
-from SUM import HierarchicalDensificationEngine
+from summarization_engine import HierarchicalDensificationEngine
 from multimodal_processor import MultiModalProcessor
 from ollama_manager import OllamaManager, ProcessingRequest
 

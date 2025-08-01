@@ -1,0 +1,1 @@
+# Domain services - pure business logic, no external dependencies

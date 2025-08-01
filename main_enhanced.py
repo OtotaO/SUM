@@ -35,8 +35,8 @@ from werkzeug.utils import secure_filename
 from werkzeug.datastructures import FileStorage
 
 # Import existing SUM components
-from SUM import SimpleSUM, MagnumOpusSUM, HierarchicalDensificationEngine
-from StreamingEngine import StreamingHierarchicalEngine, StreamingConfig
+from summarization_engine import SimpleSUM, MagnumOpusSUM, HierarchicalDensificationEngine
+from streaming_engine import StreamingHierarchicalEngine, StreamingConfig
 from Utils.data_loader import DataLoader
 from Models.topic_modeling import TopicModeler
 from Models.summarizer import Summarizer

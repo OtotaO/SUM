@@ -43,7 +43,7 @@ logger = logging.getLogger('sum_cli')
 
 # Import SUM components
 try:
-    from SUM import SimpleSUM, AdvancedSUM
+    from summarization_engine import SimpleSUM, AdvancedSUM
     from Utils.data_loader import DataLoader
     from Models.topic_modeling import TopicModeler
     from knowledge_graph import KnowledgeGraph

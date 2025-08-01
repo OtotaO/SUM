@@ -1,0 +1,138 @@
+2025-07-31 13:55:41,852 - INFO - Starting full rename process...
+2025-07-31 13:55:41,853 - INFO - Creating backup at: /Users/ototao/Github Projects/SUM/SUM_BACKUP_20250731_135541
+2025-07-31 13:55:42,283 - INFO - Backup created successfully
+2025-07-31 13:55:42,284 - INFO - Running test suite...
+2025-07-31 13:55:42,298 - WARNING - Test failed: python -m pytest Tests/ -v
+2025-07-31 13:55:42,298 - WARNING - Error: /opt/homebrew/Caskroom/miniforge/base/bin/python: No module named pytest
+
+2025-07-31 13:55:44,764 - WARNING - Test failed: python test_SUM.py
+2025-07-31 13:55:44,764 - WARNING - Error: 2025-07-31 13:55:44,667 - INFO - SimpleSUM initialized successfully
+F2025-07-31 13:55:44,668 - INFO - SimpleSUM initialized successfully
+2025-07-31 13:55:44,679 - ERROR - Error during text processing: TestSimpleSUM.test_error_handling.<locals>.mock_sent_tokenize() takes 1 positional argument but 2 were given
+Traceback (most recent call last):
+  File "/Users/ototao/Github Projects/SUM/SUM/SUM.py", line 137, in process_text
+    sentences, words, word_freq = self._preprocess_text(text)
+  File "/Users/ototao/Github Projects/SUM/SUM/SUM.py", line 117, in _preprocess_text
+    sentence_words = word_tokenize(sentence.lower())
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.10/site-packages/nltk/tokenize/__init__.py", line 142, in word_tokenize
+    sentences = [text] if preserve_line else sent_tokenize(text, language)
+TypeError: TestSimpleSUM.test_error_handling.<locals>.mock_sent_tokenize() takes 1 positional argument but 2 were given
+.2025-07-31 13:55:44,680 - INFO - SimpleSUM initialized successfully
+F2025-07-31 13:55:44,682 - INFO - SimpleSUM initialized successfully
+F2025-07-31 13:55:44,683 - INFO - SimpleSUM initialized successfully
+.
+======================================================================
+FAIL: test_empty_text (__main__.TestSimpleSUM)
+Test that the summarizer returns an error for empty text.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/ototao/Github Projects/SUM/SUM/test_SUM.py", line 13, in test_empty_text
+    self.assertEqual(result, {'error': 'Empty text provided'})
+AssertionError: {'error': 'Empty or invalid text provided'} != {'error': 'Empty text provided'}
+- {'error': 'Empty or invalid text provided'}
+?                  -----------
+
++ {'error': 'Empty text provided'}
+
+======================================================================
+FAIL: test_no_complete_sentence_fits (__main__.TestSimpleSUM)
+Test that the summarizer returns a truncated first sentence when no complete sentence fits within the token limit.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/ototao/Github Projects/SUM/SUM/test_SUM.py", line 33, in test_no_complete_sentence_fits
+    self.assertTrue(result['summary'].endswith('...'))
+AssertionError: False is not true
+
+======================================================================
+FAIL: test_short_text (__main__.TestSimpleSUM)
+Test that the summarizer returns the original text for short texts (<= 2 sentences).
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/ototao/Github Projects/SUM/SUM/test_SUM.py", line 19, in test_short_text
+    self.assertEqual(result, {'summary': text})
+AssertionError: {'sum[25 chars]ext.', 'sum': 'This is a short text.', 'tags':[14 chars]xt']} != {'sum[25 chars]ext.'}
+- {'sum': 'This is a short text.',
+-  'summary': 'This is a short text.',
+? ^                                  ^
+
++ {'summary': 'This is a short text.'}
+? ^                                  ^
+
+-  'tags': ['short', 'text']}
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.174s
+
+FAILED (failures=3)
+
+2025-07-31 13:55:44,776 - WARNING - Test failed: python -c import summarization_engine; print("Import successful")
+2025-07-31 13:55:44,776 - WARNING - Error: Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'summarization_engine'
+
+2025-07-31 13:55:44,776 - INFO - Starting file renames...
+2025-07-31 13:55:44,783 - INFO - Renaming: sum-cli-interface.py → sum_cli_interface.py
+2025-07-31 13:55:44,783 - INFO - Renaming: knowledge-graph-visualizer.py → knowledge_graph_visualizer.py
+2025-07-31 13:55:44,783 - INFO - Renaming: StreamingEngine.py → streaming_engine.py
+2025-07-31 13:55:44,783 - INFO - Renaming: enhanced-data-loader.py → enhanced_data_loader.py
+2025-07-31 13:55:44,784 - INFO - Renaming: comprehensive-test-suite.py → comprehensive_test_suite.py
+2025-07-31 13:55:44,784 - INFO - Renaming: knowledge-graph-web-interface.py → knowledge_graph_web_interface.py
+2025-07-31 13:55:44,784 - INFO - Renaming: temporal-knowledge-analysis.py → temporal_knowledge_analysis.py
+2025-07-31 13:55:44,784 - INFO - Renaming: advanced-topic-modeler.py → advanced_topic_modeler.py
+2025-07-31 13:55:44,784 - INFO - Renaming: advanced-summarization-engine.py → advanced_summarization_engine.py
+2025-07-31 13:55:44,784 - INFO - Renaming: SUM.py → summarization_engine.py
+2025-07-31 13:55:44,784 - INFO - Renaming: documentation-generator.py → documentation_generator.py
+2025-07-31 13:55:44,784 - INFO - Successfully renamed 11 files
+2025-07-31 13:55:44,784 - INFO - Updating import statements...
+2025-07-31 13:55:44,794 - INFO - Updated import in demo_unlimited_processing.py: from StreamingEngine import → from streaming_engine import
+2025-07-31 13:55:44,794 - INFO - Updated import in knowledge_os.py: from SUM import → from summarization_engine import
+2025-07-31 13:55:44,795 - INFO - Updated import in cli_enhanced.py: from SUM import → from summarization_engine import
+2025-07-31 13:55:44,795 - INFO - Updated import in cli_enhanced.py: from StreamingEngine import → from streaming_engine import
+2025-07-31 13:55:44,795 - INFO - Updated import in progressive_summarization.py: from SUM import → from summarization_engine import
+2025-07-31 13:55:44,795 - INFO - Updated import in progressive_summarization.py: from StreamingEngine import → from streaming_engine import
+2025-07-31 13:55:44,795 - INFO - Updated import in benchmark.py: from SUM import → from summarization_engine import
+2025-07-31 13:55:44,796 - INFO - Updated import in benchmark.py: from StreamingEngine import → from streaming_engine import
+2025-07-31 13:55:44,796 - INFO - Updated import in streaming_engine.py: from SUM import → from summarization_engine import
+2025-07-31 13:55:44,796 - INFO - Updated import in automated_renaming_script.py: from SUM import → from summarization_engine import
+2025-07-31 13:55:44,796 - INFO - Updated import in automated_renaming_script.py: import SUM → import summarization_engine
+2025-07-31 13:55:44,796 - INFO - Updated import in automated_renaming_script.py: from StreamingEngine import → from streaming_engine import
+2025-07-31 13:55:44,796 - INFO - Updated import in automated_renaming_script.py: import StreamingEngine → import streaming_engine
+2025-07-31 13:55:44,796 - INFO - Updated import in summail_engine.py: from SUM import → from summarization_engine import
+2025-07-31 13:55:44,797 - INFO - Updated import in multimodal_processor.py: from SUM import → from summarization_engine import
+2025-07-31 13:55:44,798 - INFO - Updated import in main_with_summail.py: from SUM import → from summarization_engine import
+2025-07-31 13:55:44,798 - INFO - Updated import in main_with_summail.py: from StreamingEngine import → from streaming_engine import
+2025-07-31 13:55:44,798 - INFO - Updated import in test_SUM.py: from SUM import → from summarization_engine import
+2025-07-31 13:55:44,798 - INFO - Updated import in simple_trinity_test.py: from SUM import → from summarization_engine import
+2025-07-31 13:55:44,799 - INFO - Updated import in test_massive_text.py: from StreamingEngine import → from streaming_engine import
+2025-07-31 13:55:44,800 - INFO - Updated import in sum_cli_interface.py: from SUM import → from summarization_engine import
+2025-07-31 13:55:44,800 - INFO - Updated import in advanced_summarization_engine.py: from SUM import → from summarization_engine import
+2025-07-31 13:55:44,800 - INFO - Updated import in advanced_summarization_engine.py: import SUM → import summarization_engine
+2025-07-31 13:55:44,800 - INFO - Updated import in ai_models.py: from SUM import → from summarization_engine import
+2025-07-31 13:55:44,801 - INFO - Updated import in test_streaming_direct.py: from StreamingEngine import → from streaming_engine import
+2025-07-31 13:55:44,801 - INFO - Updated import in onepunch_bridge.py: from SUM import → from summarization_engine import
+2025-07-31 13:55:44,802 - INFO - Updated import in main.py: from SUM import → from summarization_engine import
+2025-07-31 13:55:44,802 - INFO - Updated import in main.py: from StreamingEngine import → from streaming_engine import
+2025-07-31 13:55:44,802 - INFO - Updated import in main_enhanced.py: from SUM import → from summarization_engine import
+2025-07-31 13:55:44,802 - INFO - Updated import in main_enhanced.py: from StreamingEngine import → from streaming_engine import
+2025-07-31 13:55:44,803 - INFO - Updated import in comprehensive_test_suite.py: from SUM import → from summarization_engine import
+2025-07-31 13:55:44,803 - INFO - Updated import in test_sum.py: from SUM import → from summarization_engine import
+2025-07-31 13:55:44,804 - INFO - Updated import in test_comprehensive.py: from SUM import → from summarization_engine import
+2025-07-31 13:55:44,804 - INFO - Updated import in summarizer.py: from SUM import → from summarization_engine import
+2025-07-31 13:55:44,805 - INFO - Updated import in integrated_config_example.py: from SUM import → from summarization_engine import
+2025-07-31 13:55:44,806 - INFO - Updated import in config_integration_example.py: from SUM import → from summarization_engine import
+2025-07-31 13:55:44,806 - INFO - Updated imports in 26 files
+2025-07-31 13:55:44,806 - INFO - Updating class definitions...
+2025-07-31 13:55:44,816 - INFO - Updated class in automated_renaming_script.py: class SUM( → class SummarizationEngine(
+2025-07-31 13:55:44,816 - INFO - Updated class in automated_renaming_script.py: class SUM: → class SummarizationEngine:
+2025-07-31 13:55:44,816 - INFO - Updated class in automated_renaming_script.py: class SimpleSUM( → class BasicSummarizationEngine(
+2025-07-31 13:55:44,816 - INFO - Updated class in automated_renaming_script.py: class MagnumOpusSUM( → class AdvancedSummarizationEngine(
+2025-07-31 13:55:44,816 - INFO - Updated class in automated_renaming_script.py: class AdvancedSUM( → class SemanticSummarizationEngine(
+2025-07-31 13:55:44,818 - INFO - Updated class in advanced_summarization_engine.py: class AdvancedSUM( → class SemanticSummarizationEngine(
+2025-07-31 13:55:44,819 - INFO - Updated class in summarization_engine.py: class SUM: → class SummarizationEngine:
+2025-07-31 13:55:44,820 - INFO - Updated class in summarization_engine.py: class SimpleSUM( → class BasicSummarizationEngine(
+2025-07-31 13:55:44,820 - INFO - Updated class in summarization_engine.py: class MagnumOpusSUM( → class AdvancedSummarizationEngine(
+2025-07-31 13:55:44,821 - INFO - Updated class definitions in 3 files
+2025-07-31 13:55:44,821 - INFO - Updating class references...
+2025-07-31 13:55:44,831 - ERROR - Error updating class references in /Users/ototao/Github Projects/SUM/SUM/temporal_knowledge_analysis.py: missing ), unterminated subpattern at position 3
+2025-07-31 13:55:44,831 - ERROR - Class reference updates failed
+2025-07-31 13:55:44,831 - ERROR - Renaming failed!

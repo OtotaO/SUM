@@ -31,7 +31,7 @@ import psutil
 import gc
 
 # Import our existing components
-from SUM import HierarchicalDensificationEngine
+from summarization_engine import HierarchicalDensificationEngine
 from nltk.tokenize import sent_tokenize, word_tokenize
 
 # Configure logging

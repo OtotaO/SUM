@@ -18,7 +18,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from Utils.config_manager import ConfigManager
-from SUM import SimpleSUM, MagnumOpusSUM
+from summarization_engine import SimpleSUM, MagnumOpusSUM
 from Models.topic_modeling import TopicModeler
 
 # Configure logging

@@ -1,0 +1,254 @@
+{
+  "timestamp": "2025-07-31T22:29:21.740049",
+  "total_thoughts_analyzed": 24,
+  "analysis_timespan_days": 172,
+  "concept_evolution": {
+    "total_concepts": 10,
+    "evolved_concepts": [
+      {
+        "concept": "Thinking",
+        "evolution_score": "0.03",
+        "depth_progression": 2,
+        "latest_depth": "0.58"
+      },
+      {
+        "concept": "Learning",
+        "evolution_score": "0.01",
+        "depth_progression": 6,
+        "latest_depth": "0.57"
+      },
+      {
+        "concept": "Philosophy",
+        "evolution_score": "0.01",
+        "depth_progression": 4,
+        "latest_depth": "0.57"
+      },
+      {
+        "concept": "Future",
+        "evolution_score": "0.01",
+        "depth_progression": 2,
+        "latest_depth": "0.56"
+      },
+      {
+        "concept": "Artificial Intelligence",
+        "evolution_score": "0.00",
+        "depth_progression": 17,
+        "latest_depth": "0.56"
+      }
+    ],
+    "breakthrough_moments": 0
+  },
+  "seasonal_patterns": {
+    "hourly": {
+      "10": {
+        "concept": "Artificial Intelligence",
+        "frequency": 2,
+        "description": "You tend to think about artificial intelligence around 10:00"
+      },
+      "14": {
+        "concept": "Artificial Intelligence",
+        "frequency": 2,
+        "description": "You tend to think about artificial intelligence around 14:00"
+      },
+      "9": {
+        "concept": "Artificial Intelligence",
+        "frequency": 1,
+        "description": "You tend to think about artificial intelligence around 9:00"
+      },
+      "16": {
+        "concept": "Artificial Intelligence",
+        "frequency": 2,
+        "description": "You tend to think about artificial intelligence around 16:00"
+      },
+      "11": {
+        "concept": "Philosophy",
+        "frequency": 1,
+        "description": "You tend to think about philosophy around 11:00"
+      },
+      "20": {
+        "concept": "Artificial Intelligence",
+        "frequency": 1,
+        "description": "You tend to think about artificial intelligence around 20:00"
+      },
+      "13": {
+        "concept": "Artificial Intelligence",
+        "frequency": 2,
+        "description": "You tend to think about artificial intelligence around 13:00"
+      },
+      "19": {
+        "concept": "Creativity",
+        "frequency": 1,
+        "description": "You tend to think about creativity around 19:00"
+      },
+      "15": {
+        "concept": "Artificial Intelligence",
+        "frequency": 2,
+        "description": "You tend to think about artificial intelligence around 15:00"
+      },
+      "12": {
+        "concept": "Artificial Intelligence",
+        "frequency": 2,
+        "description": "You tend to think about artificial intelligence around 12:00"
+      },
+      "21": {
+        "concept": "Artificial Intelligence",
+        "frequency": 1,
+        "description": "You tend to think about artificial intelligence around 21:00"
+      },
+      "18": {
+        "concept": "Artificial Intelligence",
+        "frequency": 1,
+        "description": "You tend to think about artificial intelligence around 18:00"
+      }
+    },
+    "daily": {
+      "4": {
+        "concept": "Artificial Intelligence",
+        "frequency": 2,
+        "description": "Your Friday thinking focuses on artificial intelligence"
+      },
+      "6": {
+        "concept": "Machine Learning",
+        "frequency": 1,
+        "description": "Your Sunday thinking focuses on machine learning"
+      },
+      "3": {
+        "concept": "Deep Learning",
+        "frequency": 1,
+        "description": "Your Thursday thinking focuses on deep learning"
+      },
+      "2": {
+        "concept": "Artificial Intelligence",
+        "frequency": 8,
+        "description": "Your Wednesday thinking focuses on artificial intelligence"
+      },
+      "1": {
+        "concept": "Artificial Intelligence",
+        "frequency": 5,
+        "description": "Your Tuesday thinking focuses on artificial intelligence"
+      },
+      "0": {
+        "concept": "Creativity",
+        "frequency": 2,
+        "description": "Your Monday thinking focuses on creativity"
+      }
+    }
+  },
+  "intellectual_momentum": {
+    "active_areas": 5,
+    "momentum_areas": [
+      {
+        "concept": "Artificial Intelligence",
+        "velocity": "0.1 thoughts/day",
+        "momentum_score": "0.00",
+        "breakthrough_probability": "0.0%",
+        "total_thoughts": 17,
+        "days_since_activity": 401
+      },
+      {
+        "concept": "Creativity",
+        "velocity": "0.1 thoughts/day",
+        "momentum_score": "0.00",
+        "breakthrough_probability": "0.0%",
+        "total_thoughts": 6,
+        "days_since_activity": 493
+      },
+      {
+        "concept": "Learning",
+        "velocity": "0.0 thoughts/day",
+        "momentum_score": "0.00",
+        "breakthrough_probability": "0.0%",
+        "total_thoughts": 6,
+        "days_since_activity": 421
+      },
+      {
+        "concept": "Philosophy",
+        "velocity": "0.0 thoughts/day",
+        "momentum_score": "0.00",
+        "breakthrough_probability": "0.0%",
+        "total_thoughts": 4,
+        "days_since_activity": 408
+      },
+      {
+        "concept": "Science",
+        "velocity": "0.0 thoughts/day",
+        "momentum_score": "0.00",
+        "breakthrough_probability": "0.0%",
+        "total_thoughts": 3,
+        "days_since_activity": 408
+      }
+    ]
+  },
+  "knowledge_aging": {
+    "total_thoughts": 24,
+    "oldest_thought_days": 573,
+    "ready_for_review": 24,
+    "resurrection_candidates": 0,
+    "review_needed": [
+      {
+        "thought_id": "thought_1704468600_6e4411",
+        "content_preview": "Artificial intelligence is everywhere now. What does this really mean for humanity?",
+        "age_days": 573,
+        "relevance_score": "0.00",
+        "concepts": [
+          "artificial-intelligence",
+          "creativity"
+        ]
+      },
+      {
+        "thought_id": "thought_1704655200_29d924",
+        "content_preview": "Read about machine learning today. It's fascinating how computers can learn patterns.",
+        "age_days": 571,
+        "relevance_score": "0.00",
+        "concepts": [
+          "machine-learning",
+          "technology",
+          "learning"
+        ]
+      },
+      {
+        "thought_id": "thought_1705068900_b435ae",
+        "content_preview": "Deep learning networks seem to mimic how our brains work with neurons and connections.",
+        "age_days": 566,
+        "relevance_score": "0.00",
+        "concepts": [
+          "artificial-intelligence",
+          "deep-learning",
+          "learning"
+        ]
+      },
+      {
+        "thought_id": "thought_1705614300_9de341",
+        "content_preview": "Had a breakthrough understanding neural networks! Each layer learns more complex features.",
+        "age_days": 560,
+        "relevance_score": "0.00",
+        "concepts": [
+          "deep-learning",
+          "learning"
+        ]
+      },
+      {
+        "thought_id": "thought_1706891400_99b126",
+        "content_preview": "Philosophy question: What does it mean for a machine to truly 'understand' something?",
+        "age_days": 545,
+        "relevance_score": "0.00",
+        "concepts": [
+          "philosophy"
+        ]
+      }
+    ],
+    "resurrection_opportunities": []
+  },
+  "future_projections": {
+    "projection_confidence": "70%",
+    "emerging_interests": [],
+    "declining_interests": [],
+    "recommendations": [
+      "Continue current exploration",
+      "Consider connecting emerging interests to existing knowledge",
+      "Revisit declining interests to find new perspectives"
+    ]
+  },
+  "breakthrough_moments": [],
+  "temporal_narrative": "Over 173 days, you've captured 24 thoughts exploring 10 distinct concepts. Currently, your strongest intellectual momentum is in Artificial Intelligence, suggesting exciting developments ahead. This is the poetry of evolving thought - each idea building upon the last, creating patterns that only time can reveal."
+}

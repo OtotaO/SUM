@@ -22,7 +22,7 @@ import re
 
 # SUM components
 from summail_engine import SumMailEngine, EmailCategory
-from SUM import HierarchicalDensificationEngine
+from summarization_engine import HierarchicalDensificationEngine
 from ollama_manager import OllamaManager, ProcessingRequest
 
 logger = logging.getLogger(__name__)

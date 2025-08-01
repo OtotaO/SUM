@@ -24,7 +24,7 @@ from nltk.tokenize import sent_tokenize, word_tokenize
 
 # Import our custom modules
 from .topic_modeling import TopicModeler
-from SUM import SimpleSUM, MagnumOpusSUM
+from summarization_engine import SimpleSUM, MagnumOpusSUM
 
 # Configure logging
 logger = logging.getLogger(__name__)

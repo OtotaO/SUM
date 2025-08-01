@@ -32,7 +32,7 @@ from collections import defaultdict, Counter
 import re
 
 # Core SUM components
-from SUM import HierarchicalDensificationEngine
+from summarization_engine import HierarchicalDensificationEngine
 from ollama_manager import OllamaManager, ProcessingRequest
 
 # Configure beautiful logging

@@ -1,0 +1,22 @@
+# Requirements for SUM Predictive Intelligence System
+# Additional dependencies for the predictive intelligence features
+
+# Machine Learning and Data Science
+numpy>=1.21.0
+scikit-learn>=1.0.0
+networkx>=2.6.0
+
+# Natural Language Processing
+# Note: nltk is already included in main requirements.txt
+
+# Data Processing
+pandas>=1.3.0  
+scipy>=1.7.0
+
+# Optional: For enhanced semantic analysis
+# sentence-transformers>=2.2.0  # Uncomment for better concept embeddings
+# spacy>=3.4.0  # Uncomment for advanced NLP features
+
+# Note: The system is designed to work with minimal dependencies
+# Most functionality works with just numpy, scikit-learn, and networkx
+# Additional packages above are for enhanced features only

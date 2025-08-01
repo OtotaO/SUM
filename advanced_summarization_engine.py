@@ -37,12 +37,12 @@ import math
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Import base SUM class
-from SUM import SUM, SimpleSUM
+from summarization_engine import summarization_engine, SimpleSUM
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
-class AdvancedSUM(SUM):
+class SemanticSummarizationEngine(SUM):
     """
     Advanced summarization engine combining multiple NLP techniques.
     

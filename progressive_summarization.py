@@ -29,8 +29,8 @@ from queue import Queue
 import logging
 from datetime import datetime
 
-from StreamingEngine import StreamingHierarchicalEngine, StreamingConfig
-from SUM import HierarchicalDensificationEngine
+from streaming_engine import StreamingHierarchicalEngine, StreamingConfig
+from summarization_engine import HierarchicalDensificationEngine
 
 
 # Configure logging

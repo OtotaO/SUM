@@ -1,5 +1,5 @@
 import unittest
-from SUM import SimpleSUM  # Import the SimpleSUM class from your SUM.py file
+from summarization_engine import SimpleSUM  # Import the SimpleSUM class from your SUM.py file
 
 class TestSimpleSUM(unittest.TestCase):
 
