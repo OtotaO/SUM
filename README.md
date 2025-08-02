@@ -55,6 +55,14 @@ Process ANY content type with the same simple interface.
 - **PDFs**: Research papers → knowledge graphs
 - **Code**: Repositories → architecture understanding
 
+### 📝 **Intelligent Notes**
+Effortless capture that transforms scattered thoughts into wisdom.
+- **Auto-tagging**: Notes get tagged as you write them
+- **Periodic distillation**: Related notes quietly merge into key insights every few hours
+- **Knowledge crystallization**: Patterns across your thinking become permanent wisdom
+- **Contextual surfacing**: The right insights appear exactly when you need them
+- **Policy-based processing**: Diary stays private, ideas get connected, meetings become actionable
+
 ### 🤝 **Collaborative Intelligence**
 Real-time co-thinking with teams.
 - Shared knowledge spaces with live updates
@@ -245,12 +253,6 @@ curl -X POST http://localhost:3000/api/process_text \
 Apache License 2.0 - Use it, modify it, deploy it. Make it yours.
 
 ---
-
-*Oh, and by the way—it also takes notes.*
-
-*Simple notes that get auto-tagged as you write them. Every few hours, related notes get quietly distilled into key insights. When patterns emerge across your thinking, they crystallize into permanent wisdom that surfaces exactly when you need it.*
-
-*But you probably won't think about that part. The notes just work.*
 
 <p align="center">
 <em>Built by <a href="https://x.com/Otota0">ototao</a> with AI</em>
