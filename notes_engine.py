@@ -8,7 +8,7 @@ for automatic tagging, periodic distillation, and knowledge crystallization.
 
 Because sometimes the most powerful features are the ones mentioned casually.
 
-Author: SUM Revolutionary Team
+Author: SUM Development Team
 License: Apache License 2.0
 """
 

@@ -12,7 +12,7 @@ Features:
 - Live collaboration events and notifications
 - Secure multi-user session management
 
-Author: SUM Revolutionary Team
+Author: SUM Development Team
 License: Apache License 2.0
 """
 
@@ -552,4 +552,4 @@ if __name__ == "__main__":
     print("• live_contribution - Real-time contribution")
     print("• request_insights - Request collaborative insights")
     print("• typing_indicator - Show typing status")
-    print("\n🚀 Ready for revolutionary collaborative intelligence!")
+    print("\n🚀 Ready for advanced collaborative intelligence!")

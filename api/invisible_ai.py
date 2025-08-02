@@ -1,7 +1,7 @@
 """
 invisible_ai.py - API Endpoints for Invisible AI Engine
 
-Revolutionary zero-configuration AI endpoints that automatically adapt to context.
+Advanced zero-configuration AI endpoints that automatically adapt to context.
 These endpoints provide seamless, intelligent processing without requiring users
 to select models, configure parameters, or understand complexity.
 
@@ -96,7 +96,7 @@ def process_content():
     """
     Process content with automatic adaptation - the main Invisible AI endpoint.
     
-    This is the revolutionary endpoint that requires ZERO configuration.
+    This is the advanced endpoint that requires ZERO configuration.
     Just send content and it automatically:
     - Detects context (business, technical, academic, etc.)
     - Chooses optimal processing pipeline

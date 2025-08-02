@@ -13,7 +13,7 @@ Features:
 - Knowledge inheritance and mentorship systems
 - Privacy-first anonymous insight sharing
 
-Author: SUM Revolutionary Team
+Author: SUM Development Team
 License: Apache License 2.0
 """
 

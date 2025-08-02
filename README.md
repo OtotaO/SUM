@@ -27,7 +27,7 @@ In 30 seconds, SUM can:
 - Turn scattered thoughts into structured knowledge
 - Predict what information you'll need next—before you ask
 
-## Revolutionary Features
+## Features
 
 ### 🧠 **Invisible AI**
 No configuration. No model selection. It just works.
@@ -212,7 +212,7 @@ curl -X POST http://localhost:3000/api/process_text \
 
 ## What's Next
 
-### Already Revolutionary
+### Current Features
 - ✅ Invisible AI that just works
 - ✅ Temporal intelligence tracking  
 - ✅ Predictive knowledge systems
@@ -253,5 +253,5 @@ Apache License 2.0 - Use it, modify it, deploy it. Make it yours.
 *But you probably won't think about that part. The notes just work.*
 
 <p align="center">
-<em>Built with obsession by <a href="https://x.com/Otota0">ototao</a></em>
+<em>Built by <a href="https://x.com/Otota0">ototao</a> with AI</em>
 </p>

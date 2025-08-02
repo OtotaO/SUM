@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-temporal_intelligence_engine.py - Revolutionary Temporal Intelligence System for SUM
+temporal_intelligence_engine.py - Temporal Intelligence System for SUM
 
 This system transforms SUM from understanding WHAT you think to understanding
-HOW your thinking evolves over time. It provides revolutionary insights into:
+HOW your thinking evolves over time. It provides advanced insights into:
 
 🧠 Concept Evolution - How your understanding deepens and changes
 ⏰ Seasonal Patterns - "You tend to think about X in December"  
@@ -367,7 +367,7 @@ class CognitiveRhythmAnalyzer:
 
 class TemporalIntelligenceEngine:
     """
-    The revolutionary temporal intelligence system that understands how thinking evolves over time.
+    Advanced temporal intelligence system that understands how thinking evolves over time.
     
     This engine transforms SUM from understanding WHAT you think to understanding 
     HOW your thinking evolves, providing insights that only emerge from temporal analysis.
