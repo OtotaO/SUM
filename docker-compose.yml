@@ -1,33 +1,129 @@
 version: '3.8'
 
 services:
+  # Main SUM application
   sum-api:
-    build: .
-    container_name: sum-hierarchical-engine
+    build:
+      context: .
+      target: production
+    container_name: sum-intelligence-amplifier
     ports:
-      - "3000:3000"    # Flask API server
-      - "8765:8765"    # Progressive Summarization WebSocket
-    volumes:
-      - ./uploads:/app/uploads          # File uploads
-      - ./Output:/app/Output            # Processing outputs
-      - ./Data:/app/Data                # Data storage
-      - ./temp:/app/temp                # Temporary files
+      - "3000:3000"
+      - "8765:8765"
     environment:
       - FLASK_ENV=production
-      - FLASK_HOST=0.0.0.0
-      - FLASK_PORT=3000
-      - LOG_LEVEL=INFO
+      - PYTHONPATH=/app
+      - DATABASE_URL=postgresql://sum_user:sum_password@postgres:5432/sum_db
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - sum_data:/app/Data
+      - sum_temp:/app/temp
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
-    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
     networks:
       - sum-network
 
-  # Optional: Add a reverse proxy for production
+  # Development version with hot reloading
+  sum-dev:
+    build:
+      context: .
+      target: development
+    container_name: sum-dev
+    ports:
+      - "3001:3000"  # Different port for dev
+      - "8766:8765"  # Different WebSocket port
+      - "5678:5678"  # Debugger port
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+      - PYTHONPATH=/app
+      - DATABASE_URL=postgresql://sum_user:sum_password@postgres:5432/sum_dev_db
+      - REDIS_URL=redis://redis:6379/1
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - .:/app
+      - sum_dev_data:/app/Data
+    networks:
+      - sum-network
+    profiles:
+      - development
+
+  # PostgreSQL database
+  postgres:
+    image: postgres:15-alpine
+    container_name: sum-postgres
+    environment:
+      - POSTGRES_USER=sum_user
+      - POSTGRES_PASSWORD=sum_password
+      - POSTGRES_DB=sum_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sum_user -d sum_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sum-network
+
+  # Redis for caching and sessions
+  redis:
+    image: redis:7-alpine
+    container_name: sum-redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - sum-network
+
+  # Monitoring dashboard
+  monitoring:
+    build:
+      context: .
+      target: production
+    container_name: sum-monitoring
+    command: ["python", "monitoring_dashboard.py"]
+    ports:
+      - "5000:5000"
+    environment:
+      - PYTHONPATH=/app
+    depends_on:
+      - sum-api
+    restart: unless-stopped
+    networks:
+      - sum-network
+    profiles:
+      - monitoring
+
+  # Nginx reverse proxy
   nginx:
     image: nginx:alpine
     container_name: sum-nginx
@@ -35,23 +131,32 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./ssl:/etc/nginx/ssl:ro  # SSL certificates (if available)
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_logs:/var/log/nginx
     depends_on:
       - sum-api
     restart: unless-stopped
     networks:
       - sum-network
     profiles:
-      - production  # Only start with: docker-compose --profile production up
+      - production
 
 networks:
   sum-network:
     driver: bridge
-    name: sum-hierarchical-network
+    name: sum-intelligence-network
 
 volumes:
-  sum-data:
-    name: sum-persistent-data
-  sum-outputs:
-    name: sum-processing-outputs
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  sum_data:
+    driver: local
+  sum_dev_data:
+    driver: local
+  sum_temp:
+    driver: local
+  nginx_logs:
+    driver: local
