@@ -77,16 +77,27 @@ def summarize():
     
     # Rate limit check
     if not check_rate_limit(client_ip):
-        return jsonify({'error': 'Rate limit exceeded'}), 429
+        retry_after = 60  # seconds
+        return jsonify({
+            'error': 'Rate limit exceeded',
+            'details': f'Maximum {RATE_LIMIT} requests per minute',
+            'retry_after': retry_after
+        }), 429
     
     # Validate input (Linus: don't be clever, be correct)
     data = request.get_json()
     if not data or 'text' not in data:
-        return jsonify({'error': 'Missing text field'}), 400
+        return jsonify({'error': 'Missing text field', 'details': 'Request must include {"text": "your text here"}'}), 400
     
     text = data['text']
-    if not text or len(text) > MAX_TEXT_LENGTH:
-        return jsonify({'error': f'Text must be 1-{MAX_TEXT_LENGTH} characters'}), 400
+    if not text:
+        return jsonify({'error': 'Empty text', 'details': 'Text cannot be empty'}), 400
+    
+    if len(text) < 10:
+        return jsonify({'error': 'Text too short', 'details': 'Minimum 10 characters required'}), 400
+        
+    if len(text) > MAX_TEXT_LENGTH:
+        return jsonify({'error': 'Text too long', 'details': f'Maximum {MAX_TEXT_LENGTH:,} characters allowed, got {len(text):,}'}), 400
     
     # Generate cache key
     text_hash = hashlib.md5(text.encode()).hexdigest()
@@ -110,7 +121,23 @@ def summarize():
     except Exception as e:
         # Simple error handling (no fancy error tracking systems)
         app.logger.error(f"Summarization failed: {e}")
-        return jsonify({'error': 'Summarization failed'}), 500
+        error_msg = str(e).lower()
+        
+        if 'out of memory' in error_msg:
+            return jsonify({
+                'error': 'Out of memory',
+                'details': 'Text too complex for current resources. Try a shorter text.'
+            }), 500
+        elif 'model' in error_msg:
+            return jsonify({
+                'error': 'Model error',
+                'details': 'Summarization model failed to process text. Please try again.'
+            }), 500
+        else:
+            return jsonify({
+                'error': 'Summarization failed',
+                'details': 'An unexpected error occurred. Please try again.'
+            }), 500
 
 
 @app.route('/')
