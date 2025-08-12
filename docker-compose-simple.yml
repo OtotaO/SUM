@@ -1,0 +1,111 @@
+version: '3.8'
+
+services:
+  # Redis for caching and rate limiting
+  redis:
+    image: redis:7-alpine
+    container_name: sum-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL for intelligent features
+  postgres:
+    image: postgres:16-alpine
+    container_name: sum-postgres
+    environment:
+      POSTGRES_DB: sum
+      POSTGRES_USER: sum
+      POSTGRES_PASSWORD: sum123
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sum"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Simple SUM API (core functionality)
+  sum-simple:
+    build: 
+      context: .
+      dockerfile: Dockerfile.simple
+    container_name: sum-simple
+    ports:
+      - "3000:3000"
+    environment:
+      REDIS_URL: redis://redis:6379
+      FLASK_ENV: production
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - model_cache:/root/.cache
+
+  # Intelligent SUM API (with patterns & memory)
+  sum-intelligence:
+    build:
+      context: .
+      dockerfile: Dockerfile.intelligence
+    container_name: sum-intelligence
+    ports:
+      - "3001:3001"
+    environment:
+      REDIS_URL: redis://redis:6379
+      DATABASE_URL: postgresql://sum:sum123@postgres/sum
+      FLASK_ENV: production
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - model_cache:/root/.cache
+
+  # Nginx for load balancing and gradual rollout
+  nginx:
+    image: nginx:alpine
+    container_name: sum-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - sum-simple
+      - sum-intelligence
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+    driver: local
+  postgres_data:
+    driver: local
+  model_cache:
+    driver: local
+
+networks:
+  default:
+    name: sum-network

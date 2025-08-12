@@ -1,0 +1,38 @@
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies including PostgreSQL client
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    curl \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements first for better caching
+COPY requirements_simple.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements_simple.txt
+
+# Download the model during build for faster startup
+RUN python -c "from transformers import pipeline; pipeline('summarization', model='facebook/bart-large-cnn')"
+
+# Copy application code
+COPY sum_simple.py sum_intelligence.py ./
+
+# Create non-root user
+RUN useradd -m -u 1000 sumuser && chown -R sumuser:sumuser /app
+USER sumuser
+
+# Expose port
+EXPOSE 3001
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:3001/health || exit 1
+
+# Run the intelligence layer
+CMD ["python", "sum_intelligence.py"]
