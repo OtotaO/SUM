@@ -18,7 +18,7 @@ from typing import Optional, Dict, Any, List, AsyncGenerator
 import json
 from dataclasses import dataclass
 
-from flask import Flask, request, jsonify, Response, stream_with_context
+from flask import Flask, request, jsonify, Response, stream_with_context, send_from_directory
 import redis
 from transformers import pipeline, AutoTokenizer
 import PyPDF2
@@ -392,6 +392,16 @@ def decompress_summary():
         'note': 'This is creative expansion, not true decompression',
         'experimental': True
     })
+
+@app.route('/')
+def index():
+    """Serve the web interface"""
+    return send_from_directory('static', 'index.html')
+
+@app.route('/static/<path:path>')
+def serve_static(path):
+    """Serve static files"""
+    return send_from_directory('static', path)
 
 @app.route('/capabilities', methods=['GET'])
 def show_capabilities():

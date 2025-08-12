@@ -36,6 +36,27 @@ SUM is a high-performance text summarization platform that provides:
 - Docker-ready deployment
 - Comprehensive error handling
 
+## User Interfaces
+
+SUM provides three ways to interact:
+
+### 1. Web Interface
+Navigate to `http://localhost:3000` after starting the server
+
+### 2. Command Line Interface
+```bash
+# Install CLI dependencies
+pip install click rich
+
+# Use the CLI
+./sum_cli_simple.py text "Your text here"
+./sum_cli_simple.py file document.pdf
+./sum_cli_simple.py examples  # See all options
+```
+
+### 3. REST API
+Direct API access for integration (see API Documentation below)
+
 ## Quick Start
 
 ### Option 1: Minimal Setup (No Redis)
@@ -49,6 +70,8 @@ pip install flask transformers torch
 
 # Run local version
 python quickstart_local.py
+
+# Access web UI at http://localhost:3000
 ```
 
 ### Option 2: Full Setup

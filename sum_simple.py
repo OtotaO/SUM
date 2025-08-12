@@ -21,7 +21,7 @@ import sqlite3
 from typing import Optional, Dict, Any
 from functools import lru_cache
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 import redis
 from transformers import pipeline
 
@@ -112,6 +112,16 @@ def summarize():
         app.logger.error(f"Summarization failed: {e}")
         return jsonify({'error': 'Summarization failed'}), 500
 
+
+@app.route('/')
+def index():
+    """Serve the web interface"""
+    return send_from_directory('static', 'index.html')
+
+@app.route('/static/<path:path>')
+def serve_static(path):
+    """Serve static files"""
+    return send_from_directory('static', path)
 
 @app.route('/health', methods=['GET'])
 def health():
