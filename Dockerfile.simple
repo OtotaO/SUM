@@ -1,37 +1,35 @@
-FROM python:3.11-slim
+# Simple, fast Dockerfile for SUM
+FROM python:3.10-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libmagic1 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+# Copy and install requirements
+COPY requirements_full.txt .
+RUN pip install --no-cache-dir -r requirements_full.txt
 
-# Copy requirements first for better caching
-COPY requirements_simple.txt .
-
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements_simple.txt
-
-# Download the model during build for faster startup
+# Pre-download the model (saves startup time)
 RUN python -c "from transformers import pipeline; pipeline('summarization', model='facebook/bart-large-cnn')"
 
-# Copy application code
-COPY sum_simple.py .
+# Download NLTK data
+RUN python -c "import nltk; nltk.download('punkt'); nltk.download('stopwords')"
 
-# Create non-root user
-RUN useradd -m -u 1000 sumuser && chown -R sumuser:sumuser /app
-USER sumuser
+# Copy application
+COPY . .
 
 # Expose port
 EXPOSE 3000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=3s \
     CMD curl -f http://localhost:3000/health || exit 1
 
-# Run with gunicorn for production
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:3000", "--timeout", "120", "--worker-class", "sync", "sum_simple:app"]
+# Run the ultimate version by default
+CMD ["python", "sum_ultimate.py"]

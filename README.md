@@ -43,15 +43,22 @@ SUM provides three ways to interact:
 ### 1. Web Interface
 Navigate to `http://localhost:3000` after starting the server
 
+**Features:**
+- 📁 Drag & drop file upload (PDF, DOCX, TXT, MD, HTML)
+- 🎯 Multiple density levels (tags → detailed)
+- 📋 Copy-to-clipboard for all summaries
+- ⌨️ Keyboard shortcuts (Ctrl+Enter, Ctrl+K, Ctrl+1-6)
+- 💾 Auto-save drafts
+- 🔄 Auto-retry on connection errors
+- 📊 Real-time statistics
+
 ### 2. Command Line Interface
 ```bash
-# Install CLI dependencies
-pip install click rich
-
 # Use the CLI
-./sum_cli_simple.py text "Your text here"
-./sum_cli_simple.py file document.pdf
-./sum_cli_simple.py examples  # See all options
+./sum cli text "Your text here"
+./sum cli file document.pdf --density minimal
+./sum cli stream --file book.txt
+./sum cli examples
 ```
 
 ### 3. REST API
@@ -59,34 +66,36 @@ Direct API access for integration (see API Documentation below)
 
 ## Quick Start
 
-### Option 1: Minimal Setup (No Redis)
+### Option 1: One-Line Install (Recommended)
+```bash
+curl -sSL https://raw.githubusercontent.com/OtotaO/SUM/main/install.sh | bash
+```
+
+### Option 2: Docker (Easiest)
+```bash
+git clone https://github.com/OtotaO/SUM.git && cd SUM
+docker-compose -f docker-compose-simple.yml up
+# Access at http://localhost:3000
+```
+
+### Option 3: Manual Setup
 ```bash
 # Clone repository
 git clone https://github.com/OtotaO/SUM.git
 cd SUM
 
 # Install dependencies
-pip install flask transformers torch
-
-# Run local version
-python quickstart_local.py
-
-# Access web UI at http://localhost:3000
-```
-
-### Option 2: Full Setup
-```bash
-# Install all dependencies
-pip install -r requirements.txt
+pip install -r requirements_full.txt
 
 # Start Redis
 docker run -d -p 6379:6379 redis:7-alpine
 
 # Run server
-python sum_simple.py  # Basic API
-# or
-python sum_ultimate.py  # Full feature set
+python sum_ultimate.py
+
+# Access web UI at http://localhost:3000
 ```
+
 
 ## API Documentation
 

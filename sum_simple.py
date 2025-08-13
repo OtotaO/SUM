@@ -99,8 +99,9 @@ def summarize():
     if len(text) > MAX_TEXT_LENGTH:
         return jsonify({'error': 'Text too long', 'details': f'Maximum {MAX_TEXT_LENGTH:,} characters allowed, got {len(text):,}'}), 400
     
-    # Generate cache key
-    text_hash = hashlib.md5(text.encode()).hexdigest()
+    # Generate cache key (include version for future compatibility)
+    cache_version = "v1"
+    text_hash = hashlib.md5(f"{cache_version}:{text}".encode()).hexdigest()
     
     # Check cache (Carmack: cache everything)
     cached_summary = get_summary_from_cache(text_hash)

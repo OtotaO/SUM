@@ -373,7 +373,7 @@
             `;
         }
         
-        async function summarize() {
+        async function summarize(retryCount = 0) {
             // Hide previous results
             document.getElementById('result').style.display = 'none';
             document.getElementById('loading').style.display = 'block';
@@ -391,14 +391,14 @@
                     
                     // Try ultimate endpoint first, fallback to simple
                     try {
-                        response = await fetch('/summarize/ultimate', {
+                        response = await fetchWithTimeout('/summarize/ultimate', {
                             method: 'POST',
                             headers: {'Content-Type': 'application/json'},
                             body: JSON.stringify({text, density: selectedDensity})
                         });
                     } catch (e) {
                         // Fallback to simple endpoint
-                        response = await fetch('/summarize', {
+                        response = await fetchWithTimeout('/summarize', {
                             method: 'POST',
                             headers: {'Content-Type': 'application/json'},
                             body: JSON.stringify({text})
@@ -521,10 +521,188 @@
             document.getElementById('result').style.display = 'block';
         }
         
-        // Enter key to submit
-        document.getElementById('input-text').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && e.ctrlKey) {
+        // Add copy button styles
+        const style = document.createElement('style');
+        style.textContent = `
+            .copy-button {
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                padding: 5px 10px;
+                background: #4CAF50;
+                color: white;
+                border: none;
+                border-radius: 3px;
+                cursor: pointer;
+                font-size: 12px;
+                opacity: 0.7;
+                transition: opacity 0.3s;
+            }
+            .copy-button:hover {
+                opacity: 1;
+            }
+            .copy-button.copied {
+                background: #2196F3;
+            }
+            .result-card {
+                position: relative;
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Fetch with timeout and retry
+        async function fetchWithTimeout(url, options, timeout = 30000) {
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), timeout);
+            
+            try {
+                const response = await fetch(url, {
+                    ...options,
+                    signal: controller.signal
+                });
+                clearTimeout(id);
+                return response;
+            } catch (error) {
+                clearTimeout(id);
+                throw error;
+            }
+        }
+        
+        // Updated createResultCard with copy button
+        function createResultCard(label, content) {
+            const card = document.createElement('div');
+            card.className = 'result-card';
+            
+            const labelEl = document.createElement('div');
+            labelEl.className = 'result-label';
+            labelEl.textContent = label;
+            card.appendChild(labelEl);
+            
+            if (content) {
+                const contentEl = document.createElement('div');
+                contentEl.textContent = content;
+                card.appendChild(contentEl);
+                
+                // Add copy button
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'copy-button';
+                copyBtn.textContent = 'Copy';
+                copyBtn.onclick = () => copyToClipboard(content, copyBtn);
+                card.appendChild(copyBtn);
+            }
+            
+            return card;
+        }
+        
+        // Copy to clipboard function
+        function copyToClipboard(text, button) {
+            navigator.clipboard.writeText(text).then(() => {
+                button.textContent = 'Copied!';
+                button.classList.add('copied');
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                    button.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+            });
+        }
+        
+        // Auto-retry on error
+        window.addEventListener('error', (e) => {
+            if (e.message.includes('fetch')) {
+                showError('Connection lost. Retrying...');
+                setTimeout(() => summarize(1), 2000);
+            }
+        });
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Ctrl/Cmd + Enter to submit
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                 summarize();
+            }
+            // Ctrl/Cmd + K to clear
+            else if (e.key === 'k' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                document.getElementById('input-text').value = '';
+                document.getElementById('result').style.display = 'none';
+            }
+            // Ctrl/Cmd + 1-6 for density levels
+            else if ((e.ctrlKey || e.metaKey) && e.key >= '1' && e.key <= '6') {
+                e.preventDefault();
+                const densities = ['tags', 'minimal', 'short', 'medium', 'detailed', 'all'];
+                const index = parseInt(e.key) - 1;
+                if (index < densities.length) {
+                    selectDensity(densities[index]);
+                    // Update UI
+                    document.querySelectorAll('.density-option').forEach(opt => {
+                        opt.classList.toggle('selected', opt.dataset.density === densities[index]);
+                    });
+                }
+            }
+        });
+        
+        // Add shortcuts tooltip
+        const shortcutsTooltip = document.createElement('div');
+        shortcutsTooltip.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            border-radius: 5px;
+            font-size: 12px;
+            z-index: 1000;
+        `;
+        shortcutsTooltip.innerHTML = `
+            <strong>Shortcuts:</strong><br>
+            Ctrl+Enter: Summarize<br>
+            Ctrl+K: Clear<br>
+            Ctrl+1-6: Density levels
+        `;
+        document.body.appendChild(shortcutsTooltip);
+        
+        // Hide tooltip after 5 seconds
+        setTimeout(() => {
+            shortcutsTooltip.style.display = 'none';
+        }, 5000);
+        
+        // Save to localStorage
+        function saveToHistory(text, result) {
+            const history = JSON.parse(localStorage.getItem('sumHistory') || '[]');
+            history.unshift({
+                text: text.substring(0, 100) + '...',
+                result: result,
+                timestamp: new Date().toISOString()
+            });
+            // Keep only last 10
+            if (history.length > 10) history.pop();
+            localStorage.setItem('sumHistory', JSON.stringify(history));
+        }
+        
+        // Update showResult to save history
+        const originalShowResult = showResult;
+        function showResult(data) {
+            originalShowResult(data);
+            const text = document.getElementById('input-text').value || 'File upload';
+            saveToHistory(text, data);
+        }
+        
+        // Auto-save draft
+        setInterval(() => {
+            const text = document.getElementById('input-text').value;
+            if (text) {
+                localStorage.setItem('sumDraft', text);
+            }
+        }, 5000);
+        
+        // Restore draft on load
+        window.addEventListener('load', () => {
+            const draft = localStorage.getItem('sumDraft');
+            if (draft) {
+                document.getElementById('input-text').value = draft;
             }
         });
     </script>

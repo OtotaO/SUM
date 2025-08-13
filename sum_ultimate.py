@@ -297,8 +297,9 @@ def ultimate_summarize():
     if not text:
         return jsonify({'error': 'Could not extract text'}), 400
     
-    # Check cache
-    text_hash = hashlib.md5(text.encode()).hexdigest()
+    # Check cache (include density in key to avoid collisions)
+    cache_version = "v1"
+    text_hash = hashlib.md5(f"{cache_version}:{text}".encode()).hexdigest()
     cache_key = f"ultimate:{text_hash}:{density}"
     cached = r.get(cache_key)
     if cached:
@@ -353,15 +354,27 @@ async def stream_summary():
         return jsonify({'error': 'No text provided'}), 400
     
     async def generate():
+        # Send initial keepalive
+        yield "data: {\"type\": \"keepalive\"}\n\n"
+        
+        # Send periodic keepalives during processing
+        last_keepalive = time.time()
+        
         async for chunk in streamer.stream_summary(text):
             yield chunk
+            
+            # Send keepalive every 10 seconds
+            if time.time() - last_keepalive > 10:
+                yield "data: {\"type\": \"keepalive\"}\n\n"
+                last_keepalive = time.time()
     
     return Response(
         stream_with_context(generate()),
         mimetype='text/event-stream',
         headers={
             'Cache-Control': 'no-cache',
-            'X-Accel-Buffering': 'no'
+            'X-Accel-Buffering': 'no',
+            'Connection': 'keep-alive'
         }
     )
 
