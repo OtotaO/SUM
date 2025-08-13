@@ -196,6 +196,13 @@ def timed_lru_cache(max_size=128, expiration=3600):
 
 def allowed_file(filename):
     """Check if filename has an allowed extension."""
+    if not filename:
+        return False
+    
+    # Check if universal file support is enabled
+    if current_app.config.get('UNIVERSAL_FILE_SUPPORT', False):
+        return True
+    
     if '.' not in filename:
         return False
     

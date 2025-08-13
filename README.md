@@ -23,8 +23,14 @@ SUM is a high-performance text summarization platform that provides:
   - Short: One paragraph summary
   - Medium: 2-3 paragraph summary
   - Detailed: Comprehensive multi-paragraph summary
-- **File Processing** - Automatic text extraction from PDF, DOCX, TXT, HTML, MD
+- **Universal File Processing** - Extract text from ANY file type with intelligent fallbacks
+  - Supports 50+ common formats out of the box
+  - Binary file text extraction
+  - Automatic encoding detection
+  - Graceful fallback for unknown types
+- **Clipboard Integration** - Instant capture from anywhere with global hotkey (Ctrl+Shift+T)
 - **Long Document Support** - Intelligent chunking for documents exceeding model limits
+- **Real-time Progress** - Live progress visualization for large file processing
 - **Streaming API** - Real-time progress updates via Server-Sent Events
 - **Performance Optimization** - Redis caching with configurable TTL
 - **Rate Limiting** - Protect API from abuse
@@ -44,13 +50,14 @@ SUM provides three ways to interact:
 Navigate to `http://localhost:3000` after starting the server
 
 **Features:**
-- 📁 Drag & drop file upload (PDF, DOCX, TXT, MD, HTML)
+- 📁 Drag & drop ANY file type - universal text extraction
 - 🎯 Multiple density levels (tags → detailed)
 - 📋 Copy-to-clipboard for all summaries
-- ⌨️ Keyboard shortcuts (Ctrl+Enter, Ctrl+K, Ctrl+1-6)
+- ⌨️ Global hotkey capture (Ctrl+Shift+T from anywhere!)
+- 📊 Real-time progress for large files
 - 💾 Auto-save drafts
 - 🔄 Auto-retry on connection errors
-- 📊 Real-time statistics
+- 📈 Live statistics and word count
 
 ### 2. Command Line Interface
 ```bash
@@ -177,11 +184,13 @@ Returns Server-Sent Events with progress updates.
 
 Environment variables:
 ```bash
-REDIS_URL=redis://localhost:6379  # Redis connection string
-MAX_TEXT_LENGTH=100000            # Maximum text length per request
-RATE_LIMIT=60                     # Requests per minute per IP
-CACHE_TTL=3600                    # Cache expiration in seconds
-MODEL_NAME=facebook/bart-large-cnn # Transformer model to use
+REDIS_URL=redis://localhost:6379     # Redis connection string
+MAX_TEXT_LENGTH=100000               # Maximum text length per request
+RATE_LIMIT=60                        # Requests per minute per IP
+CACHE_TTL=3600                       # Cache expiration in seconds
+MODEL_NAME=facebook/bart-large-cnn   # Transformer model to use
+SUM_UNIVERSAL_FILE_SUPPORT=True      # Accept any file extension
+SUM_MAX_CONTENT_LENGTH=104857600     # Max upload size (100MB default)
 ```
 
 ## Testing
@@ -235,14 +244,53 @@ POST /batch/summarize
 }
 ```
 
+## What's New in This Version
+
+### Universal File Support 🎉
+- **ANY file type** can now be processed - no more file type restrictions!
+- Intelligent text extraction with multiple fallback strategies
+- Binary file string extraction for compiled code analysis
+- Automatic encoding detection for international text files
+
+### Enhanced Progress Tracking 📊
+- Real-time progress bars for large file processing
+- Live word count during summarization
+- Streaming updates via Server-Sent Events
+- Visual feedback for every stage of processing
+
+### Clipboard Integration ⚡
+- Global hotkey (Ctrl+Shift+T) for instant capture
+- Auto-paste clipboard content
+- Sub-100ms popup response time
+- Beautiful capture UI with dark theme
+
+### Improved File Processing
+- Increased upload limit to 100MB
+- Support for 50+ file formats out of the box
+- Graceful fallbacks for unknown types
+- Better handling of corrupted files
+
+## Supported File Types
+
+While SUM now accepts ANY file type, it has optimized support for:
+
+**Documents**: PDF, DOCX, DOC, ODT, RTF, TXT, MD
+**Code**: Python, JavaScript, Java, C/C++, Go, Rust, and 40+ more
+**Data**: JSON, XML, CSV, Excel (XLS/XLSX)
+**Web**: HTML, CSS, JavaScript, TypeScript
+**Config**: YAML, TOML, INI, ENV
+**And literally anything else** - if it has text, we'll extract it!
+
 ## Roadmap
 
+- [x] Universal file type support
+- [x] Real-time progress visualization  
+- [x] Global clipboard integration
 - [ ] Support for additional languages
 - [ ] Custom fine-tuned models
-- [ ] Extractive summarization option
 - [ ] API key authentication
 - [ ] Webhook notifications
-- [ ] Batch processing endpoints
+- [ ] OCR for scanned documents
 
 ## Contributing
 

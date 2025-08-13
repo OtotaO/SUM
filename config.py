@@ -83,8 +83,15 @@ class Config:
     HOST = os.getenv('FLASK_HOST', '0.0.0.0')
     
     # File upload settings
-    MAX_CONTENT_LENGTH = int(os.getenv('SUM_MAX_CONTENT_LENGTH', str(16 * 1024 * 1024)))  # 16MB
-    ALLOWED_EXTENSIONS = {'txt', 'json', 'csv', 'md'}
+    MAX_CONTENT_LENGTH = int(os.getenv('SUM_MAX_CONTENT_LENGTH', str(100 * 1024 * 1024)))  # 100MB for larger files
+    # Universal file support - accept any file extension
+    ALLOWED_EXTENSIONS = {'txt', 'json', 'csv', 'md', 'pdf', 'docx', 'doc', 'html', 'htm', 'xml', 
+                         'rtf', 'odt', 'epub', 'log', 'ini', 'cfg', 'conf', 'yaml', 'yml',
+                         'toml', 'sql', 'py', 'js', 'java', 'cpp', 'c', 'h', 'hpp', 'cs',
+                         'rb', 'go', 'rs', 'swift', 'kt', 'scala', 'r', 'php', 'pl', 'sh',
+                         'bat', 'ps1', 'tsx', 'jsx', 'vue', 'svelte', 'astro', 'lua'}
+    # Set to None to accept ALL file extensions
+    UNIVERSAL_FILE_SUPPORT = os.getenv('SUM_UNIVERSAL_FILE_SUPPORT', 'True').lower() in ('true', '1', 't')
 
     # Logging settings
     LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')

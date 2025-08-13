@@ -225,6 +225,41 @@
             font-weight: bold;
             color: #4CAF50;
         }
+        
+        .progress-container {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 5px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #4CAF50;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .progress-text {
+            text-align: center;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        
+        .progress-stats {
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+        }
     </style>
 </head>
 <body>
@@ -243,10 +278,10 @@
         
         <div id="file-input" class="input-section">
             <div class="file-upload" id="file-drop">
-                <input type="file" id="file-select" accept=".txt,.pdf,.docx,.md,.html" style="display: none;">
+                <input type="file" id="file-select" accept="*" style="display: none;">
                 <p style="font-size: 48px; margin: 0;">📁</p>
                 <p style="margin: 10px 0;">Drop file here or click to select</p>
-                <p style="font-size: 14px; color: #666;">Supports: PDF, DOCX, TXT, MD, HTML</p>
+                <p style="font-size: 14px; color: #666;">Supports: ANY file type - we'll extract text from anything!</p>
                 <div id="file-info"></div>
             </div>
         </div>
@@ -285,7 +320,14 @@
         
         <div class="loading" id="loading">
             <div class="spinner"></div>
-            <p>Processing...</p>
+            <p id="loading-status">Processing...</p>
+            <div class="progress-container" id="progress-container" style="display: none;">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <p class="progress-text" id="progress-text">0%</p>
+                <p class="progress-stats" id="progress-stats"></p>
+            </div>
         </div>
         
         <div class="result" id="result">
@@ -379,8 +421,15 @@
             document.getElementById('loading').style.display = 'block';
             document.querySelector('button').disabled = true;
             
+            // Reset progress
+            document.getElementById('progress-container').style.display = 'none';
+            document.getElementById('progress-fill').style.width = '0%';
+            document.getElementById('progress-text').textContent = '0%';
+            document.getElementById('loading-status').textContent = 'Processing...';
+            
             try {
-                let response;
+                let isLargeFile = false;
+                let totalSize = 0;
                 
                 if (currentTab === 'text') {
                     const text = document.getElementById('input-text').value.trim();
@@ -389,7 +438,16 @@
                         return;
                     }
                     
-                    // Try ultimate endpoint first, fallback to simple
+                    totalSize = text.length;
+                    isLargeFile = totalSize > 10000; // Show progress for texts > 10KB
+                    
+                    if (isLargeFile) {
+                        // Use streaming endpoint for large texts
+                        streamingSummarize(text);
+                        return;
+                    }
+                    
+                    // Regular processing for smaller texts
                     try {
                         response = await fetchWithTimeout('/summarize/ultimate', {
                             method: 'POST',
@@ -408,6 +466,14 @@
                     if (!selectedFile) {
                         showError('Please select a file to summarize');
                         return;
+                    }
+                    
+                    totalSize = selectedFile.size;
+                    isLargeFile = totalSize > 1024 * 1024; // Show progress for files > 1MB
+                    
+                    if (isLargeFile) {
+                        document.getElementById('progress-container').style.display = 'block';
+                        document.getElementById('loading-status').textContent = `Processing ${selectedFile.name}...`;
                     }
                     
                     const formData = new FormData();
@@ -433,6 +499,59 @@
                 document.getElementById('loading').style.display = 'none';
                 document.querySelector('button').disabled = false;
             }
+        }
+        
+        // Streaming summarization for large content
+        function streamingSummarize(text) {
+            const eventSource = new EventSource('/summarize/stream?' + new URLSearchParams({
+                text: text,
+                density: selectedDensity
+            }));
+            
+            let processedWords = 0;
+            let totalWords = text.split(/\s+/).length;
+            let partialSummary = '';
+            
+            document.getElementById('progress-container').style.display = 'block';
+            document.getElementById('progress-stats').textContent = `0 / ${totalWords.toLocaleString()} words`;
+            
+            eventSource.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                
+                if (data.type === 'progress') {
+                    const progress = data.progress || 0;
+                    processedWords = Math.floor(totalWords * (progress / 100));
+                    
+                    document.getElementById('progress-fill').style.width = progress + '%';
+                    document.getElementById('progress-text').textContent = progress + '%';
+                    document.getElementById('progress-stats').textContent = 
+                        `${processedWords.toLocaleString()} / ${totalWords.toLocaleString()} words`;
+                    
+                } else if (data.type === 'partial') {
+                    partialSummary = data.summary;
+                    document.getElementById('loading-status').textContent = 
+                        `Processing... (${processedWords.toLocaleString()} words analyzed)`;
+                    
+                } else if (data.type === 'complete') {
+                    eventSource.close();
+                    showResult(data.result);
+                    document.getElementById('loading').style.display = 'none';
+                    document.querySelector('button').disabled = false;
+                    
+                } else if (data.type === 'error') {
+                    eventSource.close();
+                    showError(data.message);
+                    document.getElementById('loading').style.display = 'none';
+                    document.querySelector('button').disabled = false;
+                }
+            };
+            
+            eventSource.onerror = function() {
+                eventSource.close();
+                showError('Connection lost. Please try again.');
+                document.getElementById('loading').style.display = 'none';
+                document.querySelector('button').disabled = false;
+            };
         }
         
         function showResult(data) {
