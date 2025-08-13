@@ -96,6 +96,18 @@ class Config:
     # Logging settings
     LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
     LOG_FILE = os.getenv('LOG_FILE', 'sum_service.log')
+    
+    # Semantic Memory settings
+    SEMANTIC_MEMORY_MODEL = os.getenv('SUM_SEMANTIC_MEMORY_MODEL', 'all-MiniLM-L6-v2')
+    SEMANTIC_MEMORY_PATH = os.getenv('SUM_SEMANTIC_MEMORY_PATH', './semantic_memory')
+    USE_GPU_FOR_EMBEDDINGS = os.getenv('SUM_USE_GPU', 'False').lower() in ('true', '1', 't')
+    
+    # Knowledge Graph settings
+    NEO4J_URI = os.getenv('SUM_NEO4J_URI', None)
+    NEO4J_USER = os.getenv('SUM_NEO4J_USER', 'neo4j')
+    NEO4J_PASSWORD = os.getenv('SUM_NEO4J_PASSWORD', None)
+    KNOWLEDGE_GRAPH_PATH = os.getenv('SUM_KNOWLEDGE_GRAPH_PATH', './knowledge_graph')
+    SPACY_MODEL = os.getenv('SUM_SPACY_MODEL', 'en_core_web_sm')
 
     @classmethod
     def init_app(cls):

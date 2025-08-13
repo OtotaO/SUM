@@ -349,6 +349,7 @@
         </div>
     </div>
     
+    <script src="/static/streaming.js"></script>
     <script>
         let selectedDensity = 'all';
         let selectedFile = null;
@@ -415,6 +416,56 @@
             `;
         }
         
+        // Progress update handler for streaming
+        function updateProgress(event) {
+            const progressContainer = document.getElementById('progress-container');
+            const progressFill = document.getElementById('progress-fill');
+            const progressText = document.getElementById('progress-text');
+            const progressStats = document.getElementById('progress-stats');
+            const loadingStatus = document.getElementById('loading-status');
+            
+            switch (event.type) {
+                case 'start':
+                    progressContainer.style.display = 'block';
+                    loadingStatus.textContent = event.message;
+                    break;
+                    
+                case 'progress':
+                    progressFill.style.width = event.progress + '%';
+                    progressText.textContent = event.progress + '%';
+                    loadingStatus.textContent = event.message;
+                    
+                    if (event.stats) {
+                        let statsText = '';
+                        if (event.stats.total_words) {
+                            statsText = `${event.stats.total_words.toLocaleString()} words`;
+                        }
+                        if (event.stats.extracted_length) {
+                            statsText = `${event.stats.extracted_length.toLocaleString()} characters extracted`;
+                        }
+                        progressStats.textContent = statsText;
+                    }
+                    break;
+                    
+                case 'document_start':
+                    loadingStatus.textContent = event.message;
+                    progressFill.style.width = event.progress + '%';
+                    progressText.textContent = event.progress + '%';
+                    break;
+                    
+                case 'complete':
+                    progressFill.style.width = '100%';
+                    progressText.textContent = '100%';
+                    loadingStatus.textContent = event.message;
+                    break;
+                    
+                case 'error':
+                    progressContainer.style.display = 'none';
+                    showError(event.message);
+                    break;
+            }
+        }
+        
         async function summarize(retryCount = 0) {
             // Hide previous results
             document.getElementById('result').style.display = 'none';
@@ -442,8 +493,19 @@
                     isLargeFile = totalSize > 10000; // Show progress for texts > 10KB
                     
                     if (isLargeFile) {
-                        // Use streaming endpoint for large texts
-                        streamingSummarize(text);
+                        // Use new streaming client for large texts
+                        streamingClient.streamSummarize(text, {
+                            density: selectedDensity,
+                            onProgress: updateProgress
+                        }).then(result => {
+                            showResult({ result });
+                            document.getElementById('loading').style.display = 'none';
+                            document.querySelector('button').disabled = false;
+                        }).catch(error => {
+                            showError(error.message);
+                            document.getElementById('loading').style.display = 'none';
+                            document.querySelector('button').disabled = false;
+                        });
                         return;
                     }
                     
@@ -472,8 +534,19 @@
                     isLargeFile = totalSize > 1024 * 1024; // Show progress for files > 1MB
                     
                     if (isLargeFile) {
-                        document.getElementById('progress-container').style.display = 'block';
-                        document.getElementById('loading-status').textContent = `Processing ${selectedFile.name}...`;
+                        // Use streaming for large files
+                        streamingClient.streamFile(selectedFile, {
+                            onProgress: updateProgress
+                        }).then(result => {
+                            showResult({ result });
+                            document.getElementById('loading').style.display = 'none';
+                            document.querySelector('button').disabled = false;
+                        }).catch(error => {
+                            showError(error.message);
+                            document.getElementById('loading').style.display = 'none';
+                            document.querySelector('button').disabled = false;
+                        });
+                        return;
                     }
                     
                     const formData = new FormData();
@@ -590,7 +663,7 @@
                 
                 summaryTypes.forEach(type => {
                     if (result[type.key]) {
-                        contentDiv.appendChild(createResultCard(type.label, result[type.key]));
+                        contentDiv.appendChild(createResultCard(type.label, result[type.key], type.key));
                     }
                 });
             }
@@ -666,6 +739,35 @@
             .result-card {
                 position: relative;
             }
+            
+            /* Feedback styles */
+            .feedback-section {
+                margin-top: 10px;
+                padding-top: 10px;
+                border-top: 1px solid #e0e0e0;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+            .star-rating {
+                display: flex;
+                gap: 5px;
+            }
+            .star {
+                cursor: pointer;
+                color: #ddd;
+                font-size: 20px;
+                transition: color 0.2s;
+            }
+            .star:hover,
+            .star.active {
+                color: #FFD700;
+            }
+            .feedback-message {
+                font-size: 14px;
+                color: #4CAF50;
+                margin-left: 10px;
+            }
         `;
         document.head.appendChild(style);
         
@@ -687,8 +789,8 @@
             }
         }
         
-        // Updated createResultCard with copy button
-        function createResultCard(label, content) {
+        // Updated createResultCard with copy button and feedback
+        function createResultCard(label, content, summaryType) {
             const card = document.createElement('div');
             card.className = 'result-card';
             
@@ -708,9 +810,90 @@
                 copyBtn.textContent = 'Copy';
                 copyBtn.onclick = () => copyToClipboard(content, copyBtn);
                 card.appendChild(copyBtn);
+                
+                // Add feedback section
+                const feedbackSection = document.createElement('div');
+                feedbackSection.className = 'feedback-section';
+                
+                const ratingLabel = document.createElement('span');
+                ratingLabel.textContent = 'Rate this summary:';
+                ratingLabel.style.fontSize = '14px';
+                feedbackSection.appendChild(ratingLabel);
+                
+                const starRating = document.createElement('div');
+                starRating.className = 'star-rating';
+                
+                // Create 5 stars
+                for (let i = 1; i <= 5; i++) {
+                    const star = document.createElement('span');
+                    star.className = 'star';
+                    star.textContent = '★';
+                    star.dataset.rating = i;
+                    star.onclick = () => submitRating(content, summaryType || label, i, feedbackSection);
+                    starRating.appendChild(star);
+                }
+                
+                feedbackSection.appendChild(starRating);
+                card.appendChild(feedbackSection);
             }
             
             return card;
+        }
+        
+        // Submit rating function
+        async function submitRating(content, summaryType, rating, feedbackSection) {
+            // Generate content hash
+            const contentHash = await hashContent(content);
+            
+            // Submit feedback
+            try {
+                const response = await fetch('/api/feedback/submit', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        content_hash: contentHash,
+                        summary_type: summaryType.toLowerCase().replace(/[^a-z]/g, ''),
+                        rating: rating,
+                        helpful: rating >= 4
+                    })
+                });
+                
+                if (response.ok) {
+                    // Show feedback message
+                    const message = document.createElement('span');
+                    message.className = 'feedback-message';
+                    message.textContent = 'Thank you!';
+                    feedbackSection.appendChild(message);
+                    
+                    // Highlight selected stars
+                    const stars = feedbackSection.querySelectorAll('.star');
+                    stars.forEach((star, index) => {
+                        if (index < rating) {
+                            star.classList.add('active');
+                        }
+                        star.onclick = null; // Disable further clicks
+                    });
+                    
+                    // Update preferences
+                    const data = await response.json();
+                    if (data.updated_preferences) {
+                        // Could update UI based on new preferences
+                        console.log('Updated preferences:', data.updated_preferences);
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to submit feedback:', error);
+            }
+        }
+        
+        // Simple hash function for content
+        async function hashContent(content) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(content);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return hashHex.substring(0, 16);
         }
         
         // Copy to clipboard function

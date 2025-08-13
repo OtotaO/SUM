@@ -13,6 +13,7 @@ License: Apache License 2.0
 
 import os
 import logging
+import time
 from flask import Flask
 from config import active_config
 
@@ -80,6 +81,10 @@ def register_blueprints(app):
     from api.compression import compression_bp
     from api.file_processing import file_processing_bp
     from api.collaborative_intelligence import collaborative_bp
+    from api.memory_api import memory_bp
+    from api.streaming import streaming_bp
+    from api.feedback_api import feedback_bp
+    from api.health import health_bp
     from web.routes import web_bp
     
     # Register with URL prefixes
@@ -88,22 +93,77 @@ def register_blueprints(app):
     app.register_blueprint(compression_bp, url_prefix='/api')
     app.register_blueprint(file_processing_bp, url_prefix='/api')
     app.register_blueprint(collaborative_bp, url_prefix='/api/collaborative')
+    app.register_blueprint(memory_bp, url_prefix='/api')
+    app.register_blueprint(streaming_bp, url_prefix='/api')
+    app.register_blueprint(feedback_bp, url_prefix='/api')
+    app.register_blueprint(health_bp, url_prefix='/api')
     app.register_blueprint(web_bp)
 
 
 def register_error_handlers(app):
     """Register global error handlers."""
+    from flask import jsonify, request
+    from Utils.error_handler import SUMException, ValidationError, format_error_response, error_monitor
+    
     @app.errorhandler(404)
     def not_found(error):
-        from flask import jsonify
-        return jsonify({'error': 'Not found'}), 404
+        error_monitor.record_error('404', str(error), {'path': request.path})
+        return jsonify({
+            'error': True,
+            'message': 'Resource not found',
+            'path': request.path
+        }), 404
+    
+    @app.errorhandler(400)
+    def bad_request(error):
+        error_monitor.record_error('400', str(error), {'path': request.path})
+        return jsonify({
+            'error': True,
+            'message': 'Bad request',
+            'details': str(error)
+        }), 400
+    
+    @app.errorhandler(ValidationError)
+    def validation_error(error):
+        error_monitor.record_error('validation', str(error), {'field': error.details.get('field')})
+        return jsonify(format_error_response(error)), 400
+    
+    @app.errorhandler(SUMException)
+    def sum_exception(error):
+        error_monitor.record_error(error.code, str(error), error.details)
+        return jsonify(format_error_response(error)), 400
     
     @app.errorhandler(500)
     def server_error(error):
-        from flask import jsonify
         logger = logging.getLogger(__name__)
-        logger.error(f"Server error: {error}")
-        return jsonify({'error': 'Internal server error'}), 500
+        logger.error(f"Server error: {error}", exc_info=True)
+        error_monitor.record_error('500', str(error), {'path': request.path})
+        
+        # Don't expose internal errors in production
+        if app.config.get('DEBUG'):
+            return jsonify({
+                'error': True,
+                'message': 'Internal server error',
+                'details': str(error)
+            }), 500
+        else:
+            return jsonify({
+                'error': True,
+                'message': 'Internal server error',
+                'error_id': f"ERR_{int(time.time())}"
+            }), 500
+    
+    @app.errorhandler(Exception)
+    def unhandled_exception(error):
+        logger = logging.getLogger(__name__)
+        logger.error(f"Unhandled exception: {error}", exc_info=True)
+        error_monitor.record_error('unhandled', str(error), {'type': type(error).__name__})
+        
+        return jsonify({
+            'error': True,
+            'message': 'An unexpected error occurred',
+            'error_id': f"ERR_{int(time.time())}"
+        }), 500
 
 
 def initialize_extensions(app):

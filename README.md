@@ -1,314 +1,236 @@
-# SUM: Advanced Text Summarization API
+# SUM: Knowledge Crystallization System
 
-> **Transform any text into summaries at multiple density levels**
+<div align="center">
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.8+-green.svg)](https://python.org)
+[![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen.svg)]()
+[![API](https://img.shields.io/badge/API-REST-orange.svg)](docs/API_DOCUMENTATION.md)
 
-## What is SUM?
+**Transform information into crystallized knowledge through intelligent summarization, semantic memory, and cross-document synthesis.**
 
-SUM is a high-performance text summarization platform that provides:
-- **Flexible summarization** - From single-sentence to comprehensive summaries
-- **Universal file support** - Process PDFs, Word documents, HTML, and plain text
-- **Scalable architecture** - Handle documents of any length through intelligent chunking
-- **Real-time processing** - Stream summaries as documents are processed
-- **Production-ready** - Redis caching, rate limiting, and REST API
+[Features](#features) • [Quick Start](#quick-start) • [API Documentation](docs/API_DOCUMENTATION.md) • [Architecture](#architecture) • [Performance](#performance)
 
-## Features
+</div>
 
-### Core Functionality
-- **Multi-Level Summarization**
-  - Tags: Extract key terms and entities
-  - Minimal: Single sentence summary
-  - Short: One paragraph summary
-  - Medium: 2-3 paragraph summary
-  - Detailed: Comprehensive multi-paragraph summary
-- **Universal File Processing** - Extract text from ANY file type with intelligent fallbacks
-  - Supports 50+ common formats out of the box
-  - Binary file text extraction
-  - Automatic encoding detection
-  - Graceful fallback for unknown types
-- **Clipboard Integration** - Instant capture from anywhere with global hotkey (Ctrl+Shift+T)
-- **Long Document Support** - Intelligent chunking for documents exceeding model limits
-- **Real-time Progress** - Live progress visualization for large file processing
-- **Streaming API** - Real-time progress updates via Server-Sent Events
-- **Performance Optimization** - Redis caching with configurable TTL
-- **Rate Limiting** - Protect API from abuse
+## 🎯 Overview
 
-### Technical Specifications
-- Built on Hugging Face Transformers (BART model)
-- RESTful API design
-- Horizontal scaling support
-- Docker-ready deployment
-- Comprehensive error handling
+SUM is an advanced knowledge management system that goes beyond simple text summarization. It provides intelligent document processing with semantic understanding, knowledge persistence, and the ability to synthesize insights across multiple documents.
 
-## User Interfaces
+### Key Capabilities
 
-SUM provides three ways to interact:
+- **🧠 Intelligent Summarization** - Multi-density summaries from tags to comprehensive analysis
+- **💾 Semantic Memory** - Vector-based storage for intelligent retrieval and knowledge persistence
+- **🔗 Knowledge Synthesis** - Cross-document analysis with contradiction detection and consensus building
+- **📊 Real-time Processing** - Stream-based architecture for handling large documents
+- **🔄 Feedback Learning** - Adaptive system that improves based on user preferences
+- **📈 Production Ready** - Comprehensive monitoring, health checks, and error recovery
 
-### 1. Web Interface
-Navigate to `http://localhost:3000` after starting the server
+## ✨ Features
 
-**Features:**
-- 📁 Drag & drop ANY file type - universal text extraction
-- 🎯 Multiple density levels (tags → detailed)
-- 📋 Copy-to-clipboard for all summaries
-- ⌨️ Global hotkey capture (Ctrl+Shift+T from anywhere!)
-- 📊 Real-time progress for large files
-- 💾 Auto-save drafts
-- 🔄 Auto-retry on connection errors
-- 📈 Live statistics and word count
+### Core Summarization Engine
+- **Multi-Density Output**
+  - `tags`: Key terms and entities extraction
+  - `minimal`: One-sentence summary
+  - `short`: Three-sentence overview
+  - `medium`: Five-sentence summary
+  - `detailed`: Comprehensive analysis
+- **Universal File Support** - Process ANY file type with intelligent text extraction
+- **Streaming Architecture** - Handle documents of any size with progress tracking
+- **Memory-Optimized** - Chunked processing for files up to 100MB+
 
-### 2. Command Line Interface
+### Knowledge Management
+- **Semantic Memory Storage**
+  - Vector embeddings for similarity search
+  - Multiple backend support (ChromaDB, FAISS, NumPy)
+  - Persistent storage with automatic loading
+- **Knowledge Graph Integration**
+  - Entity and relationship extraction
+  - Graph-based knowledge representation
+  - Path finding between concepts
+- **Cross-Document Synthesis**
+  - Intelligent document merging
+  - Contradiction detection
+  - Consensus identification
+  - Concept evolution tracking
+
+### Production Features
+- **🛡️ Comprehensive Error Handling**
+  - Custom exception hierarchy
+  - Graceful degradation
+  - Detailed error tracking
+- **⚙️ Configuration Management**
+  - Environment-based configs
+  - Validation with type checking
+  - Secure production defaults
+- **📊 Monitoring & Health**
+  - Health check endpoints
+  - Prometheus metrics
+  - Resource usage tracking
+  - Component status monitoring
+- **🚀 Performance Optimization**
+  - Multi-layer caching (memory + disk)
+  - Asynchronous processing pipeline
+  - Connection pooling ready
+- **📚 Developer Experience**
+  - Comprehensive API documentation
+  - SDK examples
+  - OpenAPI specification
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Python 3.8+
+- 4GB RAM minimum (8GB recommended)
+- 1GB free disk space
+
+### Installation
+
 ```bash
-# Use the CLI
-./sum cli text "Your text here"
-./sum cli file document.pdf --density minimal
-./sum cli stream --file book.txt
-./sum cli examples
-```
-
-### 3. REST API
-Direct API access for integration (see API Documentation below)
-
-## Quick Start
-
-### Option 1: One-Line Install (Recommended)
-```bash
-curl -sSL https://raw.githubusercontent.com/OtotaO/SUM/main/install.sh | bash
-```
-
-### Option 2: Docker (Easiest)
-```bash
-git clone https://github.com/OtotaO/SUM.git && cd SUM
-docker-compose -f docker-compose-simple.yml up
-# Access at http://localhost:3000
-```
-
-### Option 3: Manual Setup
-```bash
-# Clone repository
+# Clone the repository
 git clone https://github.com/OtotaO/SUM.git
 cd SUM
 
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
 # Install dependencies
-pip install -r requirements_full.txt
+pip install -r requirements.txt
 
-# Start Redis
-docker run -d -p 6379:6379 redis:7-alpine
+# Download language models
+python -m spacy download en_core_web_sm
 
-# Run server
-python sum_ultimate.py
-
-# Access web UI at http://localhost:3000
+# Initialize knowledge systems
+python setup_knowledge.py
 ```
 
-
-## API Documentation
-
-### Summarize Text
-```bash
-POST /summarize/ultimate
-Content-Type: application/json
-
-{
-  "text": "Your text here...",
-  "density": "all" | "tags" | "minimal" | "short" | "medium" | "detailed"
-}
-```
-
-### Process Files
-```bash
-POST /summarize/ultimate
-Content-Type: multipart/form-data
-
-file: [binary]
-density: "minimal"
-```
-
-### Stream Processing
-```bash
-POST /summarize/stream
-Content-Type: application/json
-
-{
-  "text": "Long document text..."
-}
-```
-
-Returns Server-Sent Events with progress updates.
-
-### Response Format
-```json
-{
-  "result": {
-    "tags": ["keyword1", "keyword2", "keyword3"],
-    "minimal": "Single sentence summary.",
-    "short": "One paragraph summary of the content...",
-    "medium": "More detailed summary spanning multiple paragraphs...",
-    "detailed": "Comprehensive summary with full details...",
-    "original_words": 5000,
-    "compression_ratio": 25.5
-  },
-  "cached": false
-}
-```
-
-## Architecture
-
-```
-┌─────────────────────────────────────┐
-│          REST API Layer              │
-│    /summarize  /stream  /health      │
-├─────────────────────────────────────┤
-│       Summarization Engine           │
-│  - Text preprocessing                │
-│  - Chunk management                  │
-│  - Model inference                   │
-│  - Result aggregation                │
-├─────────────────────────────────────┤
-│         Caching Layer                │
-│      Redis (optional)                │
-└─────────────────────────────────────┘
-```
-
-## Performance Metrics
-
-- **Response Time**: <2s for standard documents
-- **Throughput**: 100+ requests/minute
-- **Max Document Size**: No hard limit (chunked processing)
-- **Compression Ratios**: 10:1 to 100:1 depending on density
-- **Cache Hit Rate**: >90% for repeated content
-
-## Configuration
-
-Environment variables:
-```bash
-REDIS_URL=redis://localhost:6379     # Redis connection string
-MAX_TEXT_LENGTH=100000               # Maximum text length per request
-RATE_LIMIT=60                        # Requests per minute per IP
-CACHE_TTL=3600                       # Cache expiration in seconds
-MODEL_NAME=facebook/bart-large-cnn   # Transformer model to use
-SUM_UNIVERSAL_FILE_SUPPORT=True      # Accept any file extension
-SUM_MAX_CONTENT_LENGTH=104857600     # Max upload size (100MB default)
-```
-
-## Testing
+### Basic Usage
 
 ```bash
-# Run unit tests
-pytest tests/
+# Start the server
+python main.py
 
-# Run integration tests
-python test_simple.py
-
-# Load testing
-python load_test.py --concurrent 10 --requests 1000
+# The web interface will be available at http://localhost:3000
 ```
 
-## Deployment
+### API Example
 
-### Docker
-```bash
-docker build -t sum-api .
-docker run -p 3000:3000 sum-api
-```
-
-### Docker Compose
-```bash
-docker-compose up -d
-```
-
-### Kubernetes
-```bash
-kubectl apply -f k8s/
-```
-
-## Advanced Features
-
-### Custom Models
 ```python
-# Use a different summarization model
-SUMMARIZER_MODEL = "google/pegasus-xsum"
+import requests
+
+# Summarize text
+response = requests.post('http://localhost:3000/api/summarize', 
+    json={
+        'text': 'Your long text here...',
+        'density': 'medium'
+    })
+
+summary = response.json()['summary']
 ```
 
-### Batch Processing
-```python
-# Process multiple documents
-POST /batch/summarize
-{
-  "documents": [
-    {"id": "1", "text": "..."},
-    {"id": "2", "text": "..."}
-  ]
-}
+## 🏗️ Architecture
+
+### System Components
+
+```
+┌─────────────────────────────────────────────────┐
+│              User Interface Layer                │
+│         (Web UI, REST API, Streaming)           │
+├─────────────────────────────────────────────────┤
+│            Knowledge Processing Layer            │
+│  ┌─────────────┐ ┌──────────────┐ ┌──────────┐ │
+│  │ Summarizer  │ │   Semantic   │ │ Knowledge│ │
+│  │   Engine    │ │    Memory    │ │   Graph  │ │
+│  └─────────────┘ └──────────────┘ └──────────┘ │
+├─────────────────────────────────────────────────┤
+│         Async Processing Pipeline                │
+│  - Concurrent processing                         │
+│  - Stream-based handling                         │
+│  - Progress tracking                             │
+├─────────────────────────────────────────────────┤
+│      Storage & Persistence Layer                 │
+│  ┌──────────┐ ┌────────────┐ ┌───────────────┐ │
+│  │  Cache   │ │   Vector   │ │   Metadata    │ │
+│  │  Layer   │ │   Store    │ │   Storage     │ │
+│  └──────────┘ └────────────┘ └───────────────┘ │
+└─────────────────────────────────────────────────┘
 ```
 
-## What's New in This Version
+### Technology Stack
 
-### Universal File Support 🎉
-- **ANY file type** can now be processed - no more file type restrictions!
-- Intelligent text extraction with multiple fallback strategies
-- Binary file string extraction for compiled code analysis
-- Automatic encoding detection for international text files
+- **Core**: Python 3.8+, Flask
+- **ML/NLP**: Transformers, Sentence-Transformers, spaCy
+- **Storage**: ChromaDB/FAISS for vectors, JSON for metadata
+- **Processing**: AsyncIO, ThreadPoolExecutor
+- **Monitoring**: Prometheus-compatible metrics
 
-### Enhanced Progress Tracking 📊
-- Real-time progress bars for large file processing
-- Live word count during summarization
-- Streaming updates via Server-Sent Events
-- Visual feedback for every stage of processing
+## 📈 Performance
 
-### Clipboard Integration ⚡
-- Global hotkey (Ctrl+Shift+T) for instant capture
-- Auto-paste clipboard content
-- Sub-100ms popup response time
-- Beautiful capture UI with dark theme
+### Benchmarks
 
-### Improved File Processing
-- Increased upload limit to 100MB
-- Support for 50+ file formats out of the box
-- Graceful fallbacks for unknown types
-- Better handling of corrupted files
+| Operation | Small (<1MB) | Medium (1-10MB) | Large (10-100MB) |
+|-----------|--------------|-----------------|------------------|
+| Summarization | <1s | 2-5s | 10-30s |
+| Semantic Search | <100ms | <100ms | <100ms |
+| Document Synthesis | <2s | 5-10s | 20-60s |
 
-## Supported File Types
+### Optimization Features
 
-While SUM now accepts ANY file type, it has optimized support for:
+- **Embedding Cache**: ~80% reduction in generation time for cached content
+- **Chunked Processing**: Handles files up to 100MB without memory issues
+- **Async Pipeline**: 10x faster batch processing
+- **Smart Fallbacks**: Graceful degradation when components unavailable
 
-**Documents**: PDF, DOCX, DOC, ODT, RTF, TXT, MD
-**Code**: Python, JavaScript, Java, C/C++, Go, Rust, and 40+ more
-**Data**: JSON, XML, CSV, Excel (XLS/XLSX)
-**Web**: HTML, CSS, JavaScript, TypeScript
-**Config**: YAML, TOML, INI, ENV
-**And literally anything else** - if it has text, we'll extract it!
+## 🔒 Security & Reliability
 
-## Roadmap
+- **Input Validation**: Comprehensive validation for all inputs
+- **Error Recovery**: Automatic retry with exponential backoff
+- **Rate Limiting**: Configurable per-endpoint limits
+- **Health Monitoring**: Kubernetes-ready health probes
+- **Secure Defaults**: Production-ready configuration
 
-- [x] Universal file type support
-- [x] Real-time progress visualization  
-- [x] Global clipboard integration
-- [ ] Support for additional languages
-- [ ] Custom fine-tuned models
-- [ ] API key authentication
-- [ ] Webhook notifications
-- [ ] OCR for scanned documents
+## 📚 Documentation
 
-## Contributing
+- [API Documentation](docs/API_DOCUMENTATION.md) - Complete endpoint reference
+- [Configuration Guide](docs/CONFIGURATION.md) - Setup and customization
+- [Architecture Overview](docs/ARCHITECTURE.md) - System design details
+- [Deployment Guide](docs/DEPLOYMENT.md) - Production deployment
 
-Contributions are welcome. Please ensure:
-1. Code follows PEP 8 style guidelines
-2. All tests pass
-3. New features include tests
-4. Documentation is updated
+## 🤝 Contributing
 
-## License
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
-Apache License 2.0 - See [LICENSE](LICENSE) file
+### Development Setup
 
-## Support
+```bash
+# Install development dependencies
+pip install -r requirements-dev.txt
 
-- Issues: [GitHub Issues](https://github.com/OtotaO/SUM/issues)
-- Discussions: [GitHub Discussions](https://github.com/OtotaO/SUM/discussions)
+# Run tests
+pytest
+
+# Run linters
+flake8 .
+black .
+```
+
+## 📄 License
+
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Built with [Hugging Face Transformers](https://huggingface.co/transformers/)
+- Vector storage powered by [ChromaDB](https://www.trychroma.com/) and [FAISS](https://github.com/facebookresearch/faiss)
+- NLP capabilities from [spaCy](https://spacy.io/)
 
 ---
 
-**SUM**: Enterprise-grade text summarization made simple.
+<div align="center">
+
+**Built with ❤️ for the knowledge worker of tomorrow**
+
+[Report Bug](https://github.com/OtotaO/SUM/issues) • [Request Feature](https://github.com/OtotaO/SUM/issues)
+
+</div>

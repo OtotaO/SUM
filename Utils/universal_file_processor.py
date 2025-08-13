@@ -168,11 +168,19 @@ class UniversalFileProcessor:
             return 'utf-8'
     
     def _process_text(self, file_path: str, encoding: Optional[str] = None) -> Dict[str, Any]:
-        """Process plain text files."""
+        """Process plain text files with memory optimization for large files."""
         if not encoding:
             encoding = self._detect_encoding(file_path)
         
         try:
+            # Check file size first
+            file_size = os.path.getsize(file_path)
+            
+            # For very large files (>50MB), use chunked reading
+            if file_size > 50 * 1024 * 1024:
+                return self._process_large_text_file(file_path, encoding)
+            
+            # Normal processing for smaller files
             with open(file_path, 'r', encoding=encoding, errors='replace') as f:
                 text = f.read()
             
@@ -182,7 +190,50 @@ class UniversalFileProcessor:
                 'metadata': {
                     'encoding': encoding,
                     'line_count': len(text.splitlines()),
-                    'word_count': len(text.split())
+                    'word_count': len(text.split()),
+                    'file_size': file_size
+                }
+            }
+        except Exception as e:
+            return {
+                'success': False,
+                'error': str(e),
+                'text': '',
+                'metadata': {}
+            }
+    
+    def _process_large_text_file(self, file_path: str, encoding: str, 
+                               chunk_size: int = 10 * 1024 * 1024) -> Dict[str, Any]:
+        """Process large text files in chunks to optimize memory usage."""
+        try:
+            chunks = []
+            line_count = 0
+            word_count = 0
+            
+            with open(file_path, 'r', encoding=encoding, errors='replace') as f:
+                while True:
+                    chunk = f.read(chunk_size)
+                    if not chunk:
+                        break
+                    
+                    chunks.append(chunk)
+                    line_count += chunk.count('\n')
+                    word_count += len(chunk.split())
+                    
+                    # Limit total text to prevent memory issues
+                    if len(chunks) * chunk_size > 100 * 1024 * 1024:  # 100MB limit
+                        chunks.append("\n\n[File truncated - exceeded 100MB limit]")
+                        break
+            
+            return {
+                'success': True,
+                'text': ''.join(chunks),
+                'metadata': {
+                    'encoding': encoding,
+                    'line_count': line_count,
+                    'word_count': word_count,
+                    'file_size': os.path.getsize(file_path),
+                    'truncated': len(chunks) * chunk_size > 100 * 1024 * 1024
                 }
             }
         except Exception as e:

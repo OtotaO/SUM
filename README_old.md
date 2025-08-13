@@ -1,362 +1,364 @@
-<h1 align="center">
-  <img src="https://github.com/OtotaO/SUM/assets/93845604/5749c582-725d-407c-ac6c-06fb8e90ed94" alt="SUM Logo">
-</h1>
+# SUM: Advanced Text Summarization API
 
-<h1 align="center">SUM: The Intelligence Amplifier</h1>
+> **Transform any text into summaries at multiple density levels**
 
-<p align="center">
-  <em>Transform information into understanding. Instantly.</em>
-</p>
-
-<p align="center">
-  <img src="https://img.shields.io/badge/AI-Invisible-black?style=for-the-badge" alt="Invisible AI">
-  <img src="https://img.shields.io/badge/Memory-Superhuman-red?style=for-the-badge" alt="Superhuman Memory">
-  <img src="https://img.shields.io/badge/Intelligence-Predictive-purple?style=for-the-badge" alt="Predictive">
-  <img src="https://img.shields.io/badge/Community-Network_Effects-orange?style=for-the-badge" alt="Network Effects">
-  <img src="https://img.shields.io/badge/Understanding-Universal-blue?style=for-the-badge" alt="Universal">
-  <img src="https://img.shields.io/badge/Deploy-Production_Ready-green?style=for-the-badge" alt="Production Ready">
-</p>
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/Python-3.8+-green.svg)](https://python.org)
 
 ## What is SUM?
 
-SUM is a cognitive intelligence platform that transforms how you process, understand, and use information. It's not just a summarizer—it's an AI-powered thinking partner that anticipates your needs, learns your patterns, and amplifies your intelligence.
-
-**One tool. Infinite possibilities.**
-
-In 30 seconds, SUM can:
-- Transform a 50-page PDF into key insights you'll actually remember
-- Convert a 2-hour meeting recording into actionable decisions  
-- Turn scattered thoughts into structured knowledge
-- Predict what information you'll need next—before you ask
+SUM is a high-performance text summarization platform that provides:
+- **Flexible summarization** - From single-sentence to comprehensive summaries
+- **Universal file support** - Process PDFs, Word documents, HTML, and plain text
+- **Scalable architecture** - Handle documents of any length through intelligent chunking
+- **Real-time processing** - Stream summaries as documents are processed
+- **Production-ready** - Redis caching, rate limiting, and REST API
 
 ## Features
 
-### 🧠 **Invisible AI**
-No configuration. No model selection. It just works.
-- Automatically adapts to your context (academic, business, creative)
-- Learns your thinking patterns without explicit training
-- Works offline, online, fast or slow—always delivers
+### Core Functionality
+- **Multi-Level Summarization**
+  - Tags: Extract key terms and entities
+  - Minimal: Single sentence summary
+  - Short: One paragraph summary
+  - Medium: 2-3 paragraph summary
+  - Detailed: Comprehensive multi-paragraph summary
+- **Universal File Processing** - Extract text from ANY file type with intelligent fallbacks
+  - Supports 50+ common formats out of the box
+  - Binary file text extraction
+  - Automatic encoding detection
+  - Graceful fallback for unknown types
+- **Clipboard Integration** - Instant capture from anywhere with global hotkey (Ctrl+Shift+T)
+- **Long Document Support** - Intelligent chunking for documents exceeding model limits
+- **Real-time Progress** - Live progress visualization for large file processing
+- **Streaming API** - Real-time progress updates via Server-Sent Events
+- **Performance Optimization** - Redis caching with configurable TTL
+- **Rate Limiting** - Protect API from abuse
 
-### 🔮 **Predictive Intelligence** 
-Anticipates your needs before you express them.
-- *"You're researching X. Here are 3 insights from Y that might help."*
-- Suggests connections between disparate ideas
-- Identifies knowledge gaps worth exploring
+### Technical Specifications
+- Built on Hugging Face Transformers (BART model)
+- RESTful API design
+- Horizontal scaling support
+- Docker-ready deployment
+- Comprehensive error handling
 
-### ⏰ **Temporal Intelligence**
-Understands how your thinking evolves over time.
-- Tracks concept evolution over months and years
-- Identifies breakthrough moments in your learning
-- Surfaces old insights exactly when they become relevant again
+## User Interfaces
 
-### 🎭 **Universal Understanding**
-Process ANY content type with the same simple interface.
-- **Images**: Screenshots → structured insights
-- **Audio**: Podcasts → key takeaways  
-- **Video**: Lectures → actionable notes
-- **PDFs**: Research papers → knowledge graphs
-- **Code**: Repositories → architecture understanding
+SUM provides three ways to interact:
 
-### 📝 **Intelligent Notes**
-Effortless capture that transforms scattered thoughts into wisdom.
-- **Auto-tagging**: Notes get tagged as you write them
-- **Periodic distillation**: Related notes quietly merge into key insights every few hours
-- **Knowledge crystallization**: Patterns across your thinking become permanent wisdom
-- **Contextual surfacing**: The right insights appear exactly when you need them
-- **Policy-based processing**: Diary stays private, ideas get connected, meetings become actionable
+### 1. Web Interface
+Navigate to `http://localhost:3000` after starting the server
 
-### 🤝 **Collaborative Intelligence**
-Real-time co-thinking with teams.
-- Shared knowledge spaces with live updates
-- Collective insight generation across multiple minds
-- Breakthrough detection in collaborative sessions
+**Features:**
+- 📁 Drag & drop ANY file type - universal text extraction
+- 🎯 Multiple density levels (tags → detailed)
+- 📋 Copy-to-clipboard for all summaries
+- ⌨️ Global hotkey capture (Ctrl+Shift+T from anywhere!)
+- 📊 Real-time progress for large files
+- 💾 Auto-save drafts
+- 🔄 Auto-retry on connection errors
+- 📈 Live statistics and word count
 
-### 🧠 **Superhuman Memory**
-Perfect recall that exceeds human limitations.
-- **Infinite retention**: Never forgets anything, ever
-- **Advanced pattern recognition**: Detects sequential, hierarchical, cyclic, and emergent patterns
-- **Predictive activation**: Surfaces relevant memories before you ask
-- **Cross-modal connections**: Links ideas across different content types
-- **Temporal networks**: Understands how your knowledge evolves over time
+### 2. Command Line Interface
+```bash
+# Use the CLI
+./sum cli text "Your text here"
+./sum cli file document.pdf --density minimal
+./sum cli stream --file book.txt
+./sum cli examples
+```
 
-### 🌐 **Community Intelligence**
-Network effects that make everyone smarter.
-- **Privacy-preserving learning**: Improves from collective usage while protecting individual data
-- **Personalized recommendations**: Suggests insights based on community patterns
-- **Pattern discovery acceleration**: Finds patterns faster through shared intelligence
-- **Network effects**: System becomes exponentially more valuable with each user
+### 3. REST API
+Direct API access for integration (see API Documentation below)
 
 ## Quick Start
 
-### Local Development
+### Option 1: One-Line Install (Recommended)
 ```bash
-# Clone and install
+curl -sSL https://raw.githubusercontent.com/OtotaO/SUM/main/install.sh | bash
+```
+
+### Option 2: Docker (Easiest)
+```bash
+git clone https://github.com/OtotaO/SUM.git && cd SUM
+docker-compose -f docker-compose-simple.yml up
+# Access at http://localhost:3000
+```
+
+### Option 3: Manual Setup
+```bash
+# Clone repository
 git clone https://github.com/OtotaO/SUM.git
 cd SUM
+
+# Install dependencies
 pip install -r requirements.txt
 
-# Run
+# Download language models (for entity extraction)
+python -m spacy download en_core_web_sm
+
+# Start Redis (optional but recommended)
+docker run -d -p 6379:6379 redis:7-alpine
+
+# Run server
 python main.py
 
-# Use - That's it. SUM figures out the rest.
+# Access web UI at http://localhost:3000
 ```
 
-### Docker (Recommended)
+### Option 4: Quick Knowledge Crystallization Setup
 ```bash
-# Production deployment
-docker-compose up -d
+# Clone and setup
+git clone https://github.com/OtotaO/SUM.git && cd SUM
+pip install -r requirements.txt
+python -m spacy download en_core_web_sm
 
-# Development with hot reloading
-docker-compose --profile development up
+# Initialize knowledge systems
+python -c "
+from memory.semantic_memory import get_semantic_memory_engine
+from memory.knowledge_graph import get_knowledge_graph_engine
+print('Initializing knowledge systems...')
+memory = get_semantic_memory_engine()
+kg = get_knowledge_graph_engine()
+print('Knowledge crystallization ready!')
+"
+
+# Start server
+python main.py
 ```
 
-### Kubernetes (Enterprise)
+
+## API Documentation
+
+### Summarize Text
 ```bash
-# Deploy to production cluster
-kubectl apply -f k8s/production/
+POST /summarize/ultimate
+Content-Type: application/json
 
-# Monitor with dashboard
-kubectl port-forward svc/sum-monitoring 5000:5000
+{
+  "text": "Your text here...",
+  "density": "all" | "tags" | "minimal" | "short" | "medium" | "detailed"
+}
 ```
 
-Visit `http://localhost:3000` and drop in any content. Watch it transform.
+### Process Files
+```bash
+POST /summarize/ultimate
+Content-Type: multipart/form-data
 
-## Real Examples
-
-**Research Paper → Actionable Insights** (3 seconds)
-```
-Input: 50-page academic PDF
-Output:
-- Key Finding: "New neural architecture achieves 23% improvement"
-- Your Interest Match: "Relates to your work on optimization last month"  
-- Suggested Action: "Compare with your implementation—potential 10x speedup"
-- Connected Ideas: Links to 3 previous papers you've processed
+file: [binary]
+density: "minimal"
 ```
 
-**Meeting Recording → Decisions** (8 seconds)
-```
-Input: 90-minute Zoom recording
-Output:
-- 3 Key Decisions Made
-- 5 Action Items (assigned to specific people)
-- 2 Unresolved Questions
-- Pattern Detected: "This is the 3rd meeting where X wasn't clarified"
+### Stream Processing
+```bash
+POST /summarize/stream
+Content-Type: application/json
+
+{
+  "text": "Long document text..."
+}
 ```
 
-## Performance
+Returns Server-Sent Events with progress updates.
 
-- **Text Processing**: 50,000 words/second
-- **Image Understanding**: 2 seconds for full page OCR + analysis  
-- **Audio Transcription**: Real-time with 98% accuracy
-- **Memory Storage**: Sub-100ms with perfect recall
-- **Pattern Recognition**: Processes 1000+ memories instantly
-- **Community Learning**: Real-time insights from collective usage
-- **Memory Efficient**: Handles gigabytes on consumer hardware
-- **Enterprise Scalable**: Auto-scaling Kubernetes deployment
+### Response Format
+```json
+{
+  "result": {
+    "tags": ["keyword1", "keyword2", "keyword3"],
+    "minimal": "Single sentence summary.",
+    "short": "One paragraph summary of the content...",
+    "medium": "More detailed summary spanning multiple paragraphs...",
+    "detailed": "Comprehensive summary with full details...",
+    "original_words": 5000,
+    "compression_ratio": 25.5
+  },
+  "cached": false
+}
+```
 
 ## Architecture
 
-SUM is built on four revolutionary principles:
-
-1. **Speed First**: Sub-second responses for most operations
-2. **Intelligence Everywhere**: Every feature enhanced with contextual AI
-3. **Zero Configuration**: Complexity hidden, intelligence visible  
-4. **Always Learning**: Gets better with every interaction
-
 ```
-Input (anything) → Invisible AI Router → Optimal Processing → Enhanced Output
-                            ↓                    ↓
-                   Superhuman Memory    Community Learning
-                            ↓                    ↓
-                   Pattern Recognition   Network Effects
-                            ↓                    ↓
-                   Predictive Activation → Perfect Recall
+┌─────────────────────────────────────────────────┐
+│              REST API Layer                      │
+│  /summarize  /memory  /knowledge  /synthesize   │
+├─────────────────────────────────────────────────┤
+│         Knowledge Crystallization Layer          │
+│  ┌─────────────┐ ┌──────────────┐ ┌──────────┐ │
+│  │  Semantic   │ │  Knowledge   │ │ Synthesis│ │
+│  │   Memory    │ │    Graph     │ │  Engine  │ │
+│  └─────────────┘ └──────────────┘ └──────────┘ │
+├─────────────────────────────────────────────────┤
+│         Async Processing Pipeline                │
+│  - Concurrent document processing                │
+│  - Stream-based file handling                    │
+│  - Real-time progress tracking                   │
+├─────────────────────────────────────────────────┤
+│         Core Summarization Engine                │
+│  - Multi-density summarization                   │
+│  - Universal file processing                     │
+│  - Intelligent text extraction                   │
+├─────────────────────────────────────────────────┤
+│      Storage & Persistence Layer                 │
+│  ┌──────────┐ ┌────────────┐ ┌───────────────┐ │
+│  │  Vector  │ │   Graph    │ │     Redis     │ │
+│  │    DB    │ │     DB     │ │    Cache      │ │
+│  └──────────┘ └────────────┘ └───────────────┘ │
+└─────────────────────────────────────────────────┘
 ```
 
-## The SUM Advantage
+## Performance Metrics
 
-| Traditional Tools | SUM |
-|-------------------|-----|
-| Forget everything over time | Perfect recall forever |
-| Process content in isolation | Learn from community patterns |
-| Configure models and parameters | AI automatically adapts |
-| Process one type of content | Universal multi-modal understanding |
-| Static summaries | Living knowledge that evolves |
-| You search for connections | Connections find you predictively |
-| Limited working memory | Superhuman memory with infinite capacity |
-| Individual intelligence only | Community intelligence amplification |
+- **Response Time**: <2s for standard documents
+- **Throughput**: 100+ requests/minute
+- **Max Document Size**: No hard limit (chunked processing)
+- **Compression Ratios**: 10:1 to 100:1 depending on density
+- **Cache Hit Rate**: >90% for repeated content
+
+## Configuration
+
+Environment variables:
+```bash
+REDIS_URL=redis://localhost:6379     # Redis connection string
+MAX_TEXT_LENGTH=100000               # Maximum text length per request
+RATE_LIMIT=60                        # Requests per minute per IP
+CACHE_TTL=3600                       # Cache expiration in seconds
+MODEL_NAME=facebook/bart-large-cnn   # Transformer model to use
+SUM_UNIVERSAL_FILE_SUPPORT=True      # Accept any file extension
+SUM_MAX_CONTENT_LENGTH=104857600     # Max upload size (100MB default)
+```
+
+## Testing
+
+```bash
+# Run unit tests
+pytest tests/
+
+# Run integration tests
+python test_simple.py
+
+# Load testing
+python load_test.py --concurrent 10 --requests 1000
+```
+
+## Deployment
+
+### Docker
+```bash
+docker build -t sum-api .
+docker run -p 3000:3000 sum-api
+```
+
+### Docker Compose
+```bash
+docker-compose up -d
+```
+
+### Kubernetes
+```bash
+kubectl apply -f k8s/
+```
 
 ## Advanced Features
 
-### 🧠 **Knowledge Operating System**
-```bash
-python knowledge_os_interface.py
-# Transform scattered thoughts into living knowledge
-```
-
-### ⚡ **Progressive Summarization**  
-```bash
-python progressive_summarization.py
-# Watch your content transform in real-time
-```
-
-### 🎭 **Multi-Modal Processing**
+### Custom Models
 ```python
-# One interface for all content types
-result = sum_engine.process("image.png")  # or .mp4, .pdf, .py, etc.
+# Use a different summarization model
+SUMMARIZER_MODEL = "google/pegasus-xsum"
 ```
 
-### 🔮 **Temporal Patterns**
+### Batch Processing
 ```python
-# Understand how your knowledge evolves
-temporal_insights = sum_engine.get_temporal_intelligence()
+# Process multiple documents
+POST /batch/summarize
+{
+  "documents": [
+    {"id": "1", "text": "..."},
+    {"id": "2", "text": "..."}
+  ]
+}
 ```
 
-### 🤝 **Collaborative Intelligence**
-```python
-# Real-time co-thinking sessions
-cluster = collab_engine.create_knowledge_cluster("AI Research Team")
-```
+## What's New in This Version
 
-### 🧠 **Superhuman Memory**
-```python
-# Store and recall with perfect precision
-memory = superhuman_memory.store_memory("Complex research insight", MemoryType.SEMANTIC)
-related = superhuman_memory.recall_memory("research", limit=10)
-patterns = superhuman_memory.analyze_memory_patterns()
-```
+### 🧠 Knowledge Crystallization - Transform Information into Intelligence
+- **Semantic Memory System**: Vector-based storage with intelligent retrieval
+- **Knowledge Graph**: Entity extraction and relationship mapping
+- **Cross-Document Synthesis**: Merge insights from multiple sources
+- **Contradiction Detection**: Identify and resolve conflicting information
+- **Concept Evolution**: Track how ideas develop over time
 
-### 🌐 **Community Intelligence**
-```python
-# Learn from collective usage patterns
-community.record_usage(content, result, satisfaction=0.9)
-insights = community.get_community_insights()
-recommendations = community.get_personalized_recommendations(context)
-```
+### Universal File Support 🎉
+- **ANY file type** can now be processed - no more file type restrictions!
+- Intelligent text extraction with multiple fallback strategies
+- Binary file string extraction for compiled code analysis
+- Automatic encoding detection for international text files
 
-### 📝 **Advanced Notes System**
-```python
-# Policy-based intelligent note processing
-notes.note("Meeting insights", policy="meetings")  # Auto-distills to actions
-notes.note("Personal reflection", policy="diary")   # Stays private, provides insights
-crystallized = notes.get_crystallized_knowledge()
-```
+### ⚡ High-Performance Async Processing
+- **Concurrent Operations**: Process multiple documents simultaneously
+- **Stream Processing**: Handle gigabyte files without memory issues
+- **Real-time Progress**: Live updates during processing
+- **Scalable Architecture**: Ready for enterprise workloads
 
-## API Integration
+### Enhanced Progress Tracking 📊
+- Real-time progress bars for large file processing
+- Live word count during summarization
+- Streaming updates via Server-Sent Events
+- Visual feedback for every stage of processing
 
-```python
-# Simple Python API
-from SUM import SumEngine
+### Clipboard Integration ⚡
+- Global hotkey (Ctrl+Shift+T) for instant capture
+- Auto-paste clipboard content
+- Sub-100ms popup response time
+- Beautiful capture UI with dark theme
 
-engine = SumEngine()
-result = engine.summarize("Any content here")
-# SUM handles format detection, routing, processing
-```
+### Improved File Processing
+- Increased upload limit to 100MB
+- Support for 50+ file formats out of the box
+- Graceful fallbacks for unknown types
+- Better handling of corrupted files
 
-```bash
-# REST API
-curl -X POST http://localhost:3000/api/process_text \
-  -H "Content-Type: application/json" \
-  -d '{"text": "Your content here"}'
-```
+## Supported File Types
 
-### Command Line Interface
-```bash
-# Summarize text or files
-sum summarize "Your text here" --length detailed
-sum summarize --file document.pdf --output summary.json
+While SUM now accepts ANY file type, it has optimized support for:
 
-# Intelligent notes
-sum note "Meeting insights about AI project" --policy meetings
-sum search "AI project" --limit 5
+**Documents**: PDF, DOCX, DOC, ODT, RTF, TXT, MD
+**Code**: Python, JavaScript, Java, C/C++, Go, Rust, and 40+ more
+**Data**: JSON, XML, CSV, Excel (XLS/XLSX)
+**Web**: HTML, CSS, JavaScript, TypeScript
+**Config**: YAML, TOML, INI, ENV
+**And literally anything else** - if it has text, we'll extract it!
 
-# Batch processing
-sum batch /path/to/documents --output /path/to/summaries
+## Roadmap
 
-# System insights
-sum insights --policy meetings --days 30
-sum stats
+- [x] Universal file type support
+- [x] Real-time progress visualization  
+- [x] Global clipboard integration
+- [ ] Support for additional languages
+- [ ] Custom fine-tuned models
+- [ ] API key authentication
+- [ ] Webhook notifications
+- [ ] OCR for scanned documents
 
-# Start web server
-sum serve --host 0.0.0.0 --port 3000
-```
+## Contributing
 
-## Use Cases
-
-**Research & Academia**: Process papers 100x faster, track concept evolution, perfect recall of all sources  
-**Business Intelligence**: Meeting recordings → action items, predict information needs, learn from team patterns  
-**Personal Knowledge**: Capture thoughts effortlessly, superhuman memory connects ideas across years  
-**Content Creation**: Research → multi-platform content, community insights optimize for every audience  
-**Team Collaboration**: Real-time co-thinking, collective intelligence, breakthrough detection  
-**Enterprise Deployment**: Auto-scaling infrastructure, security monitoring, production-ready  
-
-## Built Different
-
-### Speed Obsessed
-- Carmack-optimized architecture  
-- Sub-second response for most operations
-- 10x faster than traditional approaches
-
-### Intelligence First  
-- Every feature enhanced with AI
-- Learns without explicit training
-- Gets smarter with every use
-
-### Beautiful by Design
-- Yamashita-inspired minimalism
-- Complexity hidden, beauty visible
-- Joy in every interaction
-
-### Production Ready
-- Enterprise-grade security with input validation and rate limiting
-- Real-time monitoring dashboards with health metrics
-- Auto-scaling Kubernetes deployment with zero-downtime updates
-- Comprehensive error handling and recovery
-- Performance benchmarking and optimization
-
----
-
-## What's Next
-
-### Current Features
-- ✅ Invisible AI that just works
-- ✅ Superhuman memory with perfect recall
-- ✅ Advanced pattern recognition across all modalities
-- ✅ Temporal intelligence tracking over years
-- ✅ Predictive knowledge systems
-- ✅ Universal content understanding
-- ✅ Real-time collaborative intelligence
-- ✅ Community intelligence with network effects
-- ✅ Intelligent notes with policy-based processing
-- ✅ Production-ready deployment with auto-scaling
-
-### Coming Soon
-- 🔮 Voice-first interface
-- 🧠 Local LLM integration  
-- 🌍 Multi-language support
-- ⚡ 100x speed improvements
-
----
-
-## Community
-
-- 🌟 [Star us on GitHub](https://github.com/OtotaO/SUM)
-- 💬 [Join our Discord](https://discord.gg/sum-community)  
-- 🐦 [Follow on Twitter](https://twitter.com/sum_ai)
-- 📖 [Read the Docs](https://sum-ai.com/docs)
-
----
-
-<p align="center">
-<strong>SUM: Where information becomes intelligence.</strong><br>
-</p>
+Contributions are welcome. Please ensure:
+1. Code follows PEP 8 style guidelines
+2. All tests pass
+3. New features include tests
+4. Documentation is updated
 
 ## License
 
-Apache License 2.0 - Use it, modify it, deploy it. Make it yours.
+Apache License 2.0 - See [LICENSE](LICENSE) file
+
+## Support
+
+- Issues: [GitHub Issues](https://github.com/OtotaO/SUM/issues)
+- Discussions: [GitHub Discussions](https://github.com/OtotaO/SUM/discussions)
 
 ---
 
-<p align="center">
-<em>Built by <a href="https://x.com/Otota0">ototao</a> with AI</em>
-</p>
+**SUM**: Enterprise-grade text summarization made simple.

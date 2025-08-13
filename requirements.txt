@@ -108,3 +108,25 @@ opentelemetry-instrumentation-flask>=0.41b0
 python>=3.8
 pytest-asyncio>=0.21.0  # Async test support
 pytest-mock>=3.11.0  # Mocking support
+
+# Semantic Memory and Knowledge Graph
+sentence-transformers>=2.2.0  # For embeddings
+chromadb>=0.4.0  # Vector database
+faiss-cpu>=1.7.4  # Alternative vector search
+spacy>=3.6.0  # NLP for entity extraction
+networkx>=3.1  # Graph operations
+py2neo>=2021.2.3  # Neo4j integration (optional)
+chardet>=5.2.0  # Encoding detection
+
+# Async Processing
+aiofiles>=23.2.0  # Async file operations
+uvloop>=0.19.0  # Fast event loop (optional)
+
+# Enhanced File Processing
+python-magic>=0.4.27  # File type detection
+openpyxl>=3.1.2  # Excel file support
+ebooklib>=0.18  # EPUB support
+
+# Visualization
+python-louvain>=0.16  # Community detection
+seaborn>=0.12.0  # Enhanced plotting
