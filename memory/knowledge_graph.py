@@ -379,14 +379,20 @@ class KnowledgeGraphEngine:
             List of paths (each path is a list of entity IDs)
         """
         if self.use_neo4j:
+            # Use parameterized query to prevent SQL injection
             query = """
-            MATCH path = (start {entity_id: $start_id})-[*..%d]-(end {entity_id: $end_id})
+            MATCH path = (start {entity_id: $start_id})-[*..{max_length}]-(end {entity_id: $end_id})
             RETURN path
             LIMIT 10
-            """ % max_length
+            """
             
             try:
-                results = self.neo4j_graph.run(query, start_id=start_entity_id, end_id=end_entity_id)
+                results = self.neo4j_graph.run(
+                    query, 
+                    start_id=start_entity_id, 
+                    end_id=end_entity_id,
+                    max_length=max_length
+                )
                 paths = []
                 for record in results:
                     path = record['path']

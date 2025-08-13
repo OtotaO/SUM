@@ -13,6 +13,7 @@ License: Apache License 2.0
 
 import time
 import logging
+import hashlib
 from typing import Dict, List, Any, Optional, Union
 from functools import lru_cache
 from concurrent.futures import ThreadPoolExecutor
@@ -97,8 +98,10 @@ class SumEngine:
             if not self._validate_input(text, max_length):
                 return self._error_response("Invalid input parameters")
             
-            # Intelligent algorithm selection
-            optimal_algorithm = self._select_algorithm(text, algorithm, max_length)
+            # Intelligent algorithm selection with proper caching
+            text_hash = hashlib.sha256(text.encode()).hexdigest()
+            word_count = len(text.split())
+            optimal_algorithm = self._select_algorithm(text_hash, algorithm, max_length, word_count)
             
             # Process text with selected algorithm
             result = self._execute_summarization(text, max_length, optimal_algorithm, **kwargs)
@@ -133,18 +136,21 @@ class SumEngine:
         )
     
     @lru_cache(maxsize=512)
-    def _select_algorithm(self, text_hash: str, algorithm: str, max_length: int) -> str:
+    def _select_algorithm(self, text_hash: str, algorithm: str, max_length: int, word_count: int) -> str:
         """
         Intelligent algorithm selection based on input characteristics.
         Cached for performance.
+        
+        Args:
+            text_hash: SHA256 hash of the text (not the text itself)
+            algorithm: Requested algorithm or 'auto'
+            max_length: Maximum summary length
+            word_count: Number of words in the text
         """
         if algorithm != 'auto':
             return algorithm
         
-        # Fast heuristics for algorithm selection
-        text = text_hash  # In real implementation, text would be analyzed
-        word_count = len(text.split())
-        
+        # Fast heuristics for algorithm selection based on word count
         if word_count < 50:
             return 'fast'
         elif word_count < 500:

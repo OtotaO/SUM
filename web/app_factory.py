@@ -85,6 +85,7 @@ def register_blueprints(app):
     from api.streaming import streaming_bp
     from api.feedback_api import feedback_bp
     from api.health import health_bp
+    from api.async_file_processing import async_file_bp
     from web.routes import web_bp
     
     # Register with URL prefixes
@@ -97,6 +98,7 @@ def register_blueprints(app):
     app.register_blueprint(streaming_bp, url_prefix='/api')
     app.register_blueprint(feedback_bp, url_prefix='/api')
     app.register_blueprint(health_bp, url_prefix='/api')
+    app.register_blueprint(async_file_bp, url_prefix='/api')
     app.register_blueprint(web_bp)
 
 
@@ -169,4 +171,60 @@ def register_error_handlers(app):
 def initialize_extensions(app):
     """Initialize Flask extensions."""
     # Add any Flask extensions here (e.g., Flask-CORS, Flask-SQLAlchemy)
+    
+    # Initialize circuit breakers for API resilience
+    try:
+        from api.circuit_breaker_integration import initialize_circuit_breakers
+        initialize_circuit_breakers(app)
+        logging.getLogger(__name__).info("Circuit breakers initialized")
+    except Exception as e:
+        logging.getLogger(__name__).warning(f"Circuit breakers not initialized: {e}")
+    
+    # Add security headers to all responses
+    @app.after_request
+    def add_security_headers(response):
+        """Add security headers to every response."""
+        # Prevent MIME type sniffing
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        
+        # Prevent clickjacking
+        response.headers['X-Frame-Options'] = 'DENY'
+        
+        # Enable browser XSS protection
+        response.headers['X-XSS-Protection'] = '1; mode=block'
+        
+        # Force HTTPS (only in production)
+        if not app.debug:
+            response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+        
+        # Content Security Policy
+        csp = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
+            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
+            "font-src 'self' data: https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
+            "img-src 'self' data: https:; "
+            "connect-src 'self'; "
+            "frame-ancestors 'none'; "
+            "base-uri 'self'; "
+            "form-action 'self'"
+        )
+        response.headers['Content-Security-Policy'] = csp
+        
+        # Referrer Policy
+        response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+        
+        # Permissions Policy (formerly Feature Policy)
+        response.headers['Permissions-Policy'] = (
+            "geolocation=(), "
+            "microphone=(), "
+            "camera=(), "
+            "payment=(), "
+            "usb=(), "
+            "magnetometer=(), "
+            "accelerometer=()"
+        )
+        
+        return response
+    
     pass

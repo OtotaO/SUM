@@ -47,6 +47,17 @@ try:
 except ImportError:
     FAISS_AVAILABLE = False
 
+try:
+    from Utils.circuit_breaker import circuit_breaker
+    CIRCUIT_BREAKER_AVAILABLE = True
+except ImportError:
+    CIRCUIT_BREAKER_AVAILABLE = False
+    # Dummy decorator if circuit breaker not available
+    def circuit_breaker(**kwargs):
+        def decorator(func):
+            return func
+        return decorator
+
 logger = logging.getLogger(__name__)
 
 

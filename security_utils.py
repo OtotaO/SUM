@@ -14,7 +14,8 @@ import hmac
 import time
 import re
 import secrets
-from typing import Dict, Any, Optional, List, Callable
+import os
+from typing import Dict, Any, Optional, List, Callable, Tuple
 from datetime import datetime, timedelta
 from collections import defaultdict, deque
 import logging
@@ -159,7 +160,7 @@ class InputValidator:
 
 
 class RateLimiter:
-    """Rate limiting to prevent abuse."""
+    """Rate limiting to prevent abuse with automatic cleanup."""
     
     def __init__(self, max_requests: int = 100, time_window: int = 60):
         """
@@ -174,6 +175,9 @@ class RateLimiter:
         self.requests: Dict[str, deque] = defaultdict(lambda: deque())
         self.blocked_ips: Dict[str, datetime] = {}
         self.block_duration = timedelta(minutes=15)
+        self.last_cleanup = datetime.now()
+        self.cleanup_interval = timedelta(minutes=5)  # Clean up every 5 minutes
+        self.max_tracked_ips = 10000  # Maximum IPs to track
     
     def is_allowed(self, client_ip: str) -> tuple[bool, Optional[str]]:
         """
@@ -184,6 +188,10 @@ class RateLimiter:
         """
         now = datetime.now()
         
+        # Periodic cleanup to prevent memory bloat
+        if now - self.last_cleanup > self.cleanup_interval:
+            self._cleanup_old_data(now)
+        
         # Check if IP is currently blocked
         if client_ip in self.blocked_ips:
             if now < self.blocked_ips[client_ip]:
@@ -193,12 +201,16 @@ class RateLimiter:
                 # Unblock IP
                 del self.blocked_ips[client_ip]
         
-        # Clean old requests
+        # Clean old requests for this IP
         requests = self.requests[client_ip]
         cutoff_time = now - timedelta(seconds=self.time_window)
         
         while requests and requests[0] < cutoff_time:
             requests.popleft()
+        
+        # Remove empty request queues to save memory
+        if not requests and client_ip in self.requests:
+            del self.requests[client_ip]
         
         # Check rate limit
         if len(requests) >= self.max_requests:
@@ -211,6 +223,50 @@ class RateLimiter:
         # Add current request
         requests.append(now)
         return True, None
+    
+    def _cleanup_old_data(self, now: datetime):
+        """Remove old tracking data to prevent memory bloat."""
+        self.last_cleanup = now
+        cutoff_time = now - timedelta(seconds=self.time_window)
+        
+        # Clean up request tracking
+        ips_to_remove = []
+        for ip, requests in list(self.requests.items()):
+            # Remove old requests
+            while requests and requests[0] < cutoff_time:
+                requests.popleft()
+            
+            # Mark empty queues for removal
+            if not requests:
+                ips_to_remove.append(ip)
+        
+        # Remove empty queues
+        for ip in ips_to_remove:
+            del self.requests[ip]
+        
+        # Clean up expired blocks
+        expired_blocks = [ip for ip, block_time in self.blocked_ips.items() if now >= block_time]
+        for ip in expired_blocks:
+            del self.blocked_ips[ip]
+        
+        # If still too many IPs tracked, remove oldest ones
+        if len(self.requests) > self.max_tracked_ips:
+            # Get IPs sorted by their oldest request time
+            ip_oldest_request = []
+            for ip, requests in self.requests.items():
+                if requests:
+                    ip_oldest_request.append((ip, requests[0]))
+            
+            # Sort by oldest request time
+            ip_oldest_request.sort(key=lambda x: x[1])
+            
+            # Remove oldest IPs to stay under limit
+            num_to_remove = len(self.requests) - self.max_tracked_ips
+            for ip, _ in ip_oldest_request[:num_to_remove]:
+                if ip in self.requests:
+                    del self.requests[ip]
+        
+        logger.info(f"Rate limiter cleanup: tracking {len(self.requests)} IPs, {len(self.blocked_ips)} blocked")
     
     def get_stats(self) -> Dict[str, Any]:
         """Get rate limiter statistics."""
@@ -271,35 +327,74 @@ class APIKeyManager:
 
 
 class DataEncryption:
-    """Encrypt sensitive data at rest."""
+    """Encrypt sensitive data at rest with proper salt management."""
     
-    def __init__(self, password: str):
-        """Initialize with password."""
-        self.fernet = self._create_fernet(password)
+    def __init__(self, password: str, user_id: Optional[str] = None, salt: Optional[bytes] = None):
+        """
+        Initialize with password and optional user_id or salt.
+        
+        Args:
+            password: The password to derive the key from
+            user_id: User identifier for deterministic salt generation
+            salt: Explicit salt to use (for decryption). If not provided, generates new salt.
+        """
+        self.salt = salt or self._generate_salt(user_id)
+        self.fernet = self._create_fernet(password, self.salt)
     
-    def _create_fernet(self, password: str) -> Fernet:
-        """Create Fernet instance from password."""
+    def _generate_salt(self, user_id: Optional[str] = None) -> bytes:
+        """Generate a unique salt, either random or deterministic based on user_id."""
+        if user_id:
+            # Generate deterministic salt from user_id (useful for per-user encryption)
+            return hashlib.sha256(f"SUM_SALT_{user_id}".encode()).digest()[:16]
+        else:
+            # Generate random salt for one-time encryption
+            return os.urandom(16)
+    
+    def _create_fernet(self, password: str, salt: bytes) -> Fernet:
+        """Create Fernet instance from password with proper salt."""
         password_bytes = password.encode()
-        salt = b'salt_1234567890123456'  # In production, use random salt per user
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
             length=32,
             salt=salt,
-            iterations=100000,
+            iterations=100000,  # OWASP recommended minimum
         )
         key = base64.urlsafe_b64encode(kdf.derive(password_bytes))
         return Fernet(key)
     
     def encrypt(self, data: str) -> str:
-        """Encrypt string data."""
+        """Encrypt string data. Returns base64-encoded encrypted data with salt prepended."""
         encrypted = self.fernet.encrypt(data.encode())
-        return base64.urlsafe_b64encode(encrypted).decode()
+        # Prepend salt to encrypted data for storage
+        combined = self.salt + encrypted
+        return base64.urlsafe_b64encode(combined).decode()
     
     def decrypt(self, encrypted_data: str) -> str:
-        """Decrypt string data."""
-        encrypted_bytes = base64.urlsafe_b64decode(encrypted_data.encode())
-        decrypted = self.fernet.decrypt(encrypted_bytes)
+        """Decrypt string data. Expects base64-encoded data with salt prepended."""
+        combined = base64.urlsafe_b64decode(encrypted_data.encode())
+        # Extract salt and encrypted data
+        salt = combined[:16]
+        encrypted = combined[16:]
+        
+        # Verify salt matches (if initialized with specific salt)
+        if self.salt != salt:
+            # Re-initialize with correct salt
+            password = getattr(self, '_password', None)
+            if password:
+                self.salt = salt
+                self.fernet = self._create_fernet(password, salt)
+            else:
+                raise ValueError("Salt mismatch and no password available for re-initialization")
+        
+        decrypted = self.fernet.decrypt(encrypted)
         return decrypted.decode()
+    
+    @classmethod
+    def encrypt_with_random_salt(cls, password: str, data: str) -> Tuple[str, bytes]:
+        """Encrypt data with a random salt. Returns (encrypted_data, salt)."""
+        encryptor = cls(password)
+        encrypted = encryptor.encrypt(data)
+        return encrypted, encryptor.salt
 
 
 class SecurityMonitor:
