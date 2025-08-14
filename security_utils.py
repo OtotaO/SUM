@@ -338,6 +338,7 @@ class DataEncryption:
             user_id: User identifier for deterministic salt generation
             salt: Explicit salt to use (for decryption). If not provided, generates new salt.
         """
+        self._password = password  # Store for re-initialization during decryption
         self.salt = salt or self._generate_salt(user_id)
         self.fernet = self._create_fernet(password, self.salt)
     

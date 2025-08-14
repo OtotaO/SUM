@@ -356,24 +356,27 @@ def stream_job_progress(job_id: str):
                 job = jobs.get(job_id)
             
             if not job:
-                yield f"data: {json.dumps({'error': 'Job not found'})}\n\n"
+                error_data = {'error': 'Job not found'}
+                yield f"data: {json.dumps(error_data)}\n\n"
                 break
             
             # Send update if progress changed
             if job['progress'] != last_progress:
                 last_progress = job['progress']
-                yield f"data: {json.dumps({
+                data = {
                     'progress': job['progress'],
                     'status': job['status'],
                     'updated_at': job.get('updated_at')
-                })}\n\n"
+                }
+                yield f"data: {json.dumps(data)}\n\n"
             
             # Check if job is done
             if job['status'] in ['completed', 'failed']:
-                yield f"data: {json.dumps({
+                done_data = {
                     'status': job['status'],
                     'completed': True
-                })}\n\n"
+                }
+                yield f"data: {json.dumps(done_data)}\n\n"
                 break
             
             time.sleep(0.5)  # Poll every 500ms
