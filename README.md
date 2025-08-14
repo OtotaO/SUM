@@ -1,13 +1,13 @@
-# SUM: Knowledge Crystallization System
+# SUM: Advanced Text Summarization Platform
 
 <div align="center">
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.8+-green.svg)](https://python.org)
-[![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen.svg)]()
+[![Status](https://img.shields.io/badge/Status-Beta-yellow.svg)]()
 [![API](https://img.shields.io/badge/API-REST-orange.svg)](docs/API_DOCUMENTATION.md)
 
-**Transform information into crystallized knowledge through intelligent summarization, semantic memory, and cross-document synthesis.**
+**Professional text summarization with multi-density outputs, robust file processing, and extensible architecture for future knowledge management features.**
 
 [Features](#features) • [Quick Start](#quick-start) • [API Documentation](docs/API_DOCUMENTATION.md) • [Architecture](#architecture) • [Performance](#performance)
 
@@ -15,16 +15,23 @@
 
 ## 🎯 Overview
 
-SUM is an advanced knowledge management system that goes beyond simple text summarization. It provides intelligent document processing with semantic understanding, knowledge persistence, and the ability to synthesize insights across multiple documents.
+SUM is a robust text summarization platform that provides high-quality extractive and abstractive summaries at multiple density levels. Built with a modular architecture, it's designed to scale from simple text summarization to advanced knowledge management features.
 
-### Key Capabilities
+### Core Capabilities (Working Now)
 
-- **🧠 Intelligent Summarization** - Multi-density summaries from tags to comprehensive analysis
-- **💾 Semantic Memory** - Vector-based storage for intelligent retrieval and knowledge persistence
-- **🔗 Knowledge Synthesis** - Cross-document analysis with contradiction detection and consensus building
-- **📊 Real-time Processing** - Stream-based architecture for handling large documents
-- **🔄 Feedback Learning** - Adaptive system that improves based on user preferences
-- **📈 Production Ready** - Comprehensive monitoring, health checks, and error recovery
+- **🧠 Multi-Density Summarization** - From tags to detailed analysis
+- **📄 Universal File Support** - Process TXT, PDF, JSON, CSV, MD files
+- **⚡ Stream Processing** - Handle large files without memory issues
+- **🛡️ Production-Grade Robustness** - Error recovery, rate limiting, queue management
+- **📊 Real-time Progress** - Track processing status for long operations
+- **🔒 Secure Processing** - File validation, size limits, content verification
+
+### Advanced Features (Requires Additional Setup)
+
+- **💾 Semantic Memory** - Requires ChromaDB or FAISS installation
+- **🔗 Knowledge Graphs** - Requires Neo4j database
+- **🤖 AI Integration** - Requires API keys for GPT-4/Claude
+- **📈 Cross-Document Synthesis** - Experimental feature
 
 ## ✨ Features
 
@@ -77,6 +84,24 @@ SUM is an advanced knowledge management system that goes beyond simple text summ
   - SDK examples
   - OpenAPI specification
 
+## 📋 Requirements
+
+### Basic Installation (Text Summarization)
+```bash
+pip install -r requirements.txt
+```
+
+### Full Installation (All Features)
+```bash
+pip install -r requirements.txt
+pip install chromadb        # For semantic memory
+pip install faiss-cpu       # Alternative vector store
+pip install neo4j           # For knowledge graphs
+pip install redis           # For distributed caching
+```
+
+⚠️ **Note**: Without the additional dependencies, advanced features will automatically fall back to basic implementations.
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -108,10 +133,11 @@ python setup_knowledge.py
 ### Basic Usage
 
 ```bash
-# Start the server
-python main.py
+# Start the server (use simple version to avoid circular import issues)
+python main_simple.py
 
-# The web interface will be available at http://localhost:3000
+# The web interface will be available at http://localhost:5001
+# Note: Use port 5001, not 3000 as previously documented
 ```
 
 ### API Example
@@ -120,7 +146,7 @@ python main.py
 import requests
 
 # Summarize text
-response = requests.post('http://localhost:3000/api/summarize', 
+response = requests.post('http://localhost:5001/api/summarize', 
     json={
         'text': 'Your long text here...',
         'density': 'medium'
@@ -128,6 +154,25 @@ response = requests.post('http://localhost:3000/api/summarize',
 
 summary = response.json()['summary']
 ```
+
+## 📊 Current Status
+
+### What's Working
+- ✅ **Core Summarization** - All density levels functional
+- ✅ **File Processing** - Robust handling of multiple formats
+- ✅ **Error Recovery** - Automatic retries and circuit breakers
+- ✅ **Streaming** - Memory-efficient large file processing
+- ✅ **API** - RESTful endpoints with proper error handling
+
+### What Needs Setup
+- ⚠️ **Semantic Memory** - Install ChromaDB or FAISS for vector search
+- ⚠️ **Knowledge Graphs** - Install Neo4j for relationship mapping
+- ⚠️ **Main Entry Point** - Use `main_simple.py` due to circular imports
+
+### What's Not Working
+- ❌ **Cross-Document Synthesis** - Code exists but untested
+- ❌ **AI Integration** - Not implemented
+- ❌ **Original main.py** - Circular import issues
 
 ## 🏗️ Architecture
 

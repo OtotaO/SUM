@@ -46,7 +46,7 @@ class SummarizationEngine:
         raise NotImplementedError("Subclasses must implement process_text")
 
 
-class BasicSummarizationEngine(SUM):
+class BasicSummarizationEngine(SummarizationEngine):
     """
     Frequency-based extractive summarization engine with 
     optimizations for performance on larger texts.
