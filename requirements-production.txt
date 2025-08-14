@@ -1,0 +1,60 @@
+# Production dependencies for SUM Platform
+
+# WSGI Server
+gunicorn==21.2.0
+gevent==23.9.1  # For async workers
+
+# Database
+psycopg2-binary==2.9.9  # PostgreSQL adapter
+asyncpg==0.29.0  # Async PostgreSQL
+redis==5.0.1  # Redis client
+hiredis==2.2.3  # C parser for Redis
+
+# Monitoring and Logging
+python-json-logger==2.0.7  # Structured logging
+prometheus-client==0.19.0  # Metrics export
+opentelemetry-api==1.21.0  # Distributed tracing
+opentelemetry-sdk==1.21.0
+opentelemetry-instrumentation-flask==0.42b0
+opentelemetry-instrumentation-requests==0.42b0
+sentry-sdk[flask]==1.39.1  # Error tracking
+
+# Performance
+ujson==5.9.0  # Fast JSON parsing
+orjson==3.9.10  # Even faster JSON
+msgpack==1.0.7  # Binary serialization
+lz4==4.3.2  # Fast compression
+
+# Security
+cryptography==41.0.7  # Updated crypto
+python-jose[cryptography]==3.3.0  # JWT tokens
+passlib[bcrypt]==1.7.4  # Password hashing
+
+# File Processing
+python-magic==0.4.27  # File type detection
+pikepdf==8.10.1  # PDF processing
+openpyxl==3.1.2  # Excel files
+python-docx==1.1.0  # Word documents
+ijson==3.2.3  # Streaming JSON parser
+
+# System Monitoring
+psutil==5.9.6  # System metrics
+py-cpuinfo==9.0.0  # CPU information
+
+# Async Support
+aiofiles==23.2.1  # Async file operations
+aiohttp==3.9.1  # Async HTTP client
+aiodns==3.1.1  # Async DNS resolver
+
+# Caching
+pylibmc==1.6.3  # Memcached client
+diskcache==5.6.3  # Disk-based cache
+
+# Data Validation
+pydantic==2.5.3  # Data validation
+email-validator==2.1.0.post1  # Email validation
+phonenumbers==8.13.27  # Phone validation
+
+# Development/Debugging (remove in production)
+# flask-debugtoolbar==0.13.1
+# flask-profiler==1.8.1
