@@ -4,7 +4,7 @@ Streaming file processor for memory-efficient handling of large files
 import os
 import io
 import tempfile
-from typing import Iterator, Optional, BinaryIO, Callable, Any
+from typing import Iterator, Optional, BinaryIO, Callable, Any, Tuple, List
 import logging
 from contextlib import contextmanager
 import mmap

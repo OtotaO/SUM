@@ -1,1 +1,26 @@
-zsh: command not found: timeout
+2025-08-14 02:19:05,605 - matplotlib - DEBUG - matplotlib data path: /opt/homebrew/Caskroom/miniforge/base/lib/python3.10/site-packages/matplotlib/mpl-data
+2025-08-14 02:19:05,608 - matplotlib - DEBUG - CONFIGDIR=/Users/ototao/.matplotlib
+2025-08-14 02:19:05,609 - matplotlib - DEBUG - interactive is False
+2025-08-14 02:19:05,609 - matplotlib - DEBUG - platform is darwin
+Traceback (most recent call last):
+  File "/Users/ototao/Github Projects/SUM/SUM/main.py", line 53, in <module>
+    main()
+  File "/Users/ototao/Github Projects/SUM/SUM/main.py", line 35, in main
+    app = create_app()
+  File "/Users/ototao/Github Projects/SUM/SUM/web/app_factory.py", line 53, in create_app
+    register_blueprints(app)
+  File "/Users/ototao/Github Projects/SUM/SUM/web/app_factory.py", line 83, in register_blueprints
+    from api.collaborative_intelligence import collaborative_bp
+  File "/Users/ototao/Github Projects/SUM/SUM/api/collaborative_intelligence.py", line 32, in <module>
+    from collaborative_intelligence_engine import (
+  File "/Users/ototao/Github Projects/SUM/SUM/collaborative_intelligence_engine.py", line 34, in <module>
+    from invisible_ai_engine import InvisibleAI
+  File "/Users/ototao/Github Projects/SUM/SUM/invisible_ai_engine.py", line 53, in <module>
+    from temporal_intelligence_engine import TemporalIntelligenceEngine, TemporalSUMIntegration
+  File "/Users/ototao/Github Projects/SUM/SUM/temporal_intelligence_engine.py", line 41, in <module>
+    from knowledge_os import KnowledgeOperatingSystem, Thought, KnowledgeCluster
+  File "/Users/ototao/Github Projects/SUM/SUM/knowledge_os.py", line 35, in <module>
+    from summarization_engine import HierarchicalDensificationEngine
+  File "/Users/ototao/Github Projects/SUM/SUM/summarization_engine.py", line 49, in <module>
+    class BasicSummarizationEngine(SUM):
+NameError: name 'SUM' is not defined. Did you mean: 'sum'?
