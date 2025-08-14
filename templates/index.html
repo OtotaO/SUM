@@ -5,10 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SUM - The Ultimate Knowledge Distiller</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/ux_improvements.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/onboarding.css') }}">
     <meta name="description" content="SUM is a knowledge distillation platform that extracts, analyzes, and presents insights from vast datasets.">
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
 </head>
 <body>
+    <!-- Skip to content link for accessibility -->
+    <a href="#main" class="skip-link">Skip to main content</a>
     <header>
         <div class="container">
             <div class="logo">
@@ -26,7 +30,7 @@
         </div>
     </header>
 
-    <main>
+    <main id="main">
         <section id="hero" class="container">
             <div class="hero-content">
                 <h1>Knowledge Distillation</h1>
@@ -216,5 +220,7 @@
     </footer>
     
     <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/ux_improvements.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/onboarding.js') }}"></script>
 </body>
 </html>
