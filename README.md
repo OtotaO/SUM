@@ -1,281 +1,193 @@
-# SUM: Advanced Text Summarization Platform
+# SUM - Advanced Text Summarization
 
-<div align="center">
+> **Fast, accurate text summarization for documents of any size.**
 
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/Python-3.8+-green.svg)](https://python.org)
-[![Status](https://img.shields.io/badge/Status-Beta-yellow.svg)]()
-[![API](https://img.shields.io/badge/API-REST-orange.svg)](docs/API_DOCUMENTATION.md)
+SUM is an open-source text summarization tool that uses extractive summarization techniques to create concise summaries from documents. It supports multiple file formats and provides various summary density options.
 
-**Professional text summarization with multi-density outputs, robust file processing, and extensible architecture for future knowledge management features.**
+## Features
 
-[Features](#features) • [Quick Start](#quick-start) • [API Documentation](docs/API_DOCUMENTATION.md) • [Architecture](#architecture) • [Performance](#performance)
+- **Multiple File Formats** - Supports PDF, DOCX, TXT, HTML, RTF, and more
+- **Flexible Summarization** - Choose from 5 density levels (tags to detailed)
+- **Batch Processing** - Process multiple documents at once
+- **Web Interface** - Simple drag-and-drop file upload
+- **REST API** - Integrate summarization into your applications
+- **Command Line** - Quick summarization from terminal
+- **Cross-Platform** - Works on Windows, Mac, and Linux
 
-</div>
+## Installation
 
-## 🎯 Overview
-
-SUM is a robust text summarization platform that provides high-quality extractive and abstractive summaries at multiple density levels. Built with a modular architecture, it's designed to scale from simple text summarization to advanced knowledge management features.
-
-### Core Capabilities (Working Now)
-
-- **🧠 Multi-Density Summarization** - From tags to detailed analysis
-- **📄 Universal File Support** - Process TXT, PDF, JSON, CSV, MD files
-- **⚡ Stream Processing** - Handle large files without memory issues
-- **🛡️ Production-Grade Robustness** - Error recovery, rate limiting, queue management
-- **📊 Real-time Progress** - Track processing status for long operations
-- **🔒 Secure Processing** - File validation, size limits, content verification
-
-### Advanced Features (Requires Additional Setup)
-
-- **💾 Semantic Memory** - Requires ChromaDB or FAISS installation
-- **🔗 Knowledge Graphs** - Requires Neo4j database
-- **🤖 AI Integration** - Requires API keys for GPT-4/Claude
-- **📈 Cross-Document Synthesis** - Experimental feature
-
-## ✨ Features
-
-### Core Summarization Engine
-- **Multi-Density Output**
-  - `tags`: Key terms and entities extraction
-  - `minimal`: One-sentence summary
-  - `short`: Three-sentence overview
-  - `medium`: Five-sentence summary
-  - `detailed`: Comprehensive analysis
-- **Universal File Support** - Process ANY file type with intelligent text extraction
-- **Streaming Architecture** - Handle documents of any size with progress tracking
-- **Memory-Optimized** - Chunked processing for files up to 100MB+
-
-### Knowledge Management
-- **Semantic Memory Storage**
-  - Vector embeddings for similarity search
-  - Multiple backend support (ChromaDB, FAISS, NumPy)
-  - Persistent storage with automatic loading
-- **Knowledge Graph Integration**
-  - Entity and relationship extraction
-  - Graph-based knowledge representation
-  - Path finding between concepts
-- **Cross-Document Synthesis**
-  - Intelligent document merging
-  - Contradiction detection
-  - Consensus identification
-  - Concept evolution tracking
-
-### Production Features
-- **🛡️ Comprehensive Error Handling**
-  - Custom exception hierarchy
-  - Graceful degradation
-  - Detailed error tracking
-- **⚙️ Configuration Management**
-  - Environment-based configs
-  - Validation with type checking
-  - Secure production defaults
-- **📊 Monitoring & Health**
-  - Health check endpoints
-  - Prometheus metrics
-  - Resource usage tracking
-  - Component status monitoring
-- **🚀 Performance Optimization**
-  - Multi-layer caching (memory + disk)
-  - Asynchronous processing pipeline
-  - Connection pooling ready
-- **📚 Developer Experience**
-  - Comprehensive API documentation
-  - SDK examples
-  - OpenAPI specification
-
-## 📋 Requirements
-
-### Basic Installation (Text Summarization)
-```bash
-pip install -r requirements.txt
-```
-
-### Full Installation (All Features)
-```bash
-pip install -r requirements.txt
-pip install chromadb        # For semantic memory
-pip install faiss-cpu       # Alternative vector store
-pip install neo4j           # For knowledge graphs
-pip install redis           # For distributed caching
-```
-
-⚠️ **Note**: Without the additional dependencies, advanced features will automatically fall back to basic implementations.
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Python 3.8+
-- 4GB RAM minimum (8GB recommended)
-- 1GB free disk space
-
-### Installation
+### Quick Start
 
 ```bash
 # Clone the repository
-git clone https://github.com/OtotaO/SUM.git
+git clone https://github.com/yourusername/SUM.git
 cd SUM
-
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
 
-# Download language models
-python -m spacy download en_core_web_sm
-
-# Initialize knowledge systems
-python setup_knowledge.py
+# Run SUM
+python main.py
 ```
 
-### Basic Usage
+### Alternative Installation Methods
 
 ```bash
-# Start the server (use simple version to avoid circular import issues)
-python main_simple.py
+# Using the install script (Unix/Mac)
+./install.sh
 
-# The web interface will be available at http://localhost:5001
-# Note: Use port 5001, not 3000 as previously documented
+# Using the install script (Windows)
+install.bat
+
+# Using Docker
+docker-compose up
 ```
 
-### API Example
+## Usage
+
+### Web Interface
+
+1. Open your browser to `http://localhost:5001`
+2. Paste text or upload a file
+3. Select summary density
+4. Click "Summarize"
+
+### Command Line
+
+```bash
+# Summarize text
+python sum_cli_simple.py "Your text here"
+
+# Summarize a file
+python sum_cli_simple.py -f document.pdf
+
+# Specify summary density
+python sum_cli_simple.py -f document.pdf --density detailed
+```
+
+### API
 
 ```python
 import requests
 
-# Summarize text
-response = requests.post('http://localhost:5001/api/summarize', 
-    json={
-        'text': 'Your long text here...',
-        'density': 'medium'
-    })
+# Text summarization
+response = requests.post('http://localhost:5001/summarize', 
+    json={'text': 'Your long text here'})
+print(response.json()['summary'])
 
-summary = response.json()['summary']
+# File summarization
+with open('document.pdf', 'rb') as f:
+    files = {'file': f}
+    response = requests.post('http://localhost:5001/api/file/summarize', files=files)
+    print(response.json()['summary'])
 ```
 
-## 📊 Current Status
+## Summary Density Levels
 
-### What's Working
-- ✅ **Core Summarization** - All density levels functional
-- ✅ **File Processing** - Robust handling of multiple formats
-- ✅ **Error Recovery** - Automatic retries and circuit breakers
-- ✅ **Streaming** - Memory-efficient large file processing
-- ✅ **API** - RESTful endpoints with proper error handling
+SUM provides five density levels to match your needs:
 
-### What Needs Setup
-- ⚠️ **Semantic Memory** - Install ChromaDB or FAISS for vector search
-- ⚠️ **Knowledge Graphs** - Install Neo4j for relationship mapping
-- ⚠️ **Main Entry Point** - Use `main_simple.py` due to circular imports
+- **Tags** - Extract 5-10 key concepts
+- **Minimal** - One-sentence summary
+- **Short** - 2-3 sentence overview
+- **Medium** - Paragraph-length summary
+- **Detailed** - Comprehensive summary with key points
 
-### What's Not Working
-- ❌ **Cross-Document Synthesis** - Code exists but untested
-- ❌ **AI Integration** - Not implemented
-- ❌ **Original main.py** - Circular import issues
+## Technical Details
 
-## 🏗️ Architecture
+### Summarization Method
 
-### System Components
+SUM uses extractive summarization based on:
+- Sentence importance scoring using word frequencies
+- Key concept extraction
+- Configurable compression ratios
+- NLTK for natural language processing
 
-```
-┌─────────────────────────────────────────────────┐
-│              User Interface Layer                │
-│         (Web UI, REST API, Streaming)           │
-├─────────────────────────────────────────────────┤
-│            Knowledge Processing Layer            │
-│  ┌─────────────┐ ┌──────────────┐ ┌──────────┐ │
-│  │ Summarizer  │ │   Semantic   │ │ Knowledge│ │
-│  │   Engine    │ │    Memory    │ │   Graph  │ │
-│  └─────────────┘ └──────────────┘ └──────────┘ │
-├─────────────────────────────────────────────────┤
-│         Async Processing Pipeline                │
-│  - Concurrent processing                         │
-│  - Stream-based handling                         │
-│  - Progress tracking                             │
-├─────────────────────────────────────────────────┤
-│      Storage & Persistence Layer                 │
-│  ┌──────────┐ ┌────────────┐ ┌───────────────┐ │
-│  │  Cache   │ │   Vector   │ │   Metadata    │ │
-│  │  Layer   │ │   Store    │ │   Storage     │ │
-│  └──────────┘ └────────────┘ └───────────────┘ │
-└─────────────────────────────────────────────────┘
-```
+### Performance
 
-### Technology Stack
+- Typical processing speed: ~1,000 words per second
+- Memory usage scales with document size
+- Supports documents up to 10MB
 
-- **Core**: Python 3.8+, Flask
-- **ML/NLP**: Transformers, Sentence-Transformers, spaCy
-- **Storage**: ChromaDB/FAISS for vectors, JSON for metadata
-- **Processing**: AsyncIO, ThreadPoolExecutor
-- **Monitoring**: Prometheus-compatible metrics
+### Architecture
 
-## 📈 Performance
+- Flask-based REST API
+- Modular summarization engines
+- File processing pipeline for multiple formats
+- Optional Redis caching for repeated requests
 
-### Benchmarks
+## Requirements
 
-| Operation | Small (<1MB) | Medium (1-10MB) | Large (10-100MB) |
-|-----------|--------------|-----------------|------------------|
-| Summarization | <1s | 2-5s | 10-30s |
-| Semantic Search | <100ms | <100ms | <100ms |
-| Document Synthesis | <2s | 5-10s | 20-60s |
+- Python 3.8 or higher
+- 4GB RAM recommended
+- ~500MB disk space for dependencies
 
-### Optimization Features
+### Core Dependencies
 
-- **Embedding Cache**: ~80% reduction in generation time for cached content
-- **Chunked Processing**: Handles files up to 100MB without memory issues
-- **Async Pipeline**: 10x faster batch processing
-- **Smart Fallbacks**: Graceful degradation when components unavailable
+- Flask - Web framework
+- NLTK - Natural language processing
+- PyPDF2 - PDF text extraction
+- python-docx - Word document processing
+- BeautifulSoup4 - HTML parsing
 
-## 🔒 Security & Reliability
+## Configuration
 
-- **Input Validation**: Comprehensive validation for all inputs
-- **Error Recovery**: Automatic retry with exponential backoff
-- **Rate Limiting**: Configurable per-endpoint limits
-- **Health Monitoring**: Kubernetes-ready health probes
-- **Secure Defaults**: Production-ready configuration
-
-## 📚 Documentation
-
-- [API Documentation](docs/API_DOCUMENTATION.md) - Complete endpoint reference
-- [Configuration Guide](docs/CONFIGURATION.md) - Setup and customization
-- [Architecture Overview](docs/ARCHITECTURE.md) - System design details
-- [Deployment Guide](docs/DEPLOYMENT.md) - Production deployment
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
-### Development Setup
+Create a `.env` file to customize settings:
 
 ```bash
-# Install development dependencies
-pip install -r requirements-dev.txt
+# Server Configuration
+PORT=5001
+DEBUG=False
 
-# Run tests
-pytest
-
-# Run linters
-flake8 .
-black .
+# Optional Features
+REDIS_URL=redis://localhost:6379  # For caching
+MAX_FILE_SIZE=10485760  # 10MB
 ```
 
-## 📄 License
+## Development
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+### Running Tests
 
-## 🙏 Acknowledgments
+```bash
+pytest Tests/
+```
 
-- Built with [Hugging Face Transformers](https://huggingface.co/transformers/)
-- Vector storage powered by [ChromaDB](https://www.trychroma.com/) and [FAISS](https://github.com/facebookresearch/faiss)
-- NLP capabilities from [spaCy](https://spacy.io/)
+### Project Structure
+
+```
+SUM/
+├── main.py              # Main application entry
+├── summarization_engine.py  # Core summarization logic
+├── api/                 # REST API endpoints
+├── web/                 # Web interface
+├── Utils/              # File processing utilities
+└── static/             # Frontend assets
+```
+
+## Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes with tests
+4. Submit a pull request
+
+Focus areas for contributions:
+- Improving summarization accuracy
+- Adding new file format support
+- Performance optimizations
+- UI/UX improvements
+
+## License
+
+Apache License 2.0 - See LICENSE file for details.
+
+## Acknowledgments
+
+SUM is built with open-source technologies and wouldn't be possible without:
+- NLTK for NLP capabilities
+- Flask for the web framework
+- The Python community for excellent libraries
 
 ---
 
-<div align="center">
-
-**Built with ❤️ for the knowledge worker of tomorrow**
-
-[Report Bug](https://github.com/OtotaO/SUM/issues) • [Request Feature](https://github.com/OtotaO/SUM/issues)
-
-</div>
+**Note**: SUM is under active development. Features and performance may vary. For production use, please test thoroughly with your specific use cases.

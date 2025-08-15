@@ -1,1 +1,0 @@
-# Domain interfaces - clean abstractions

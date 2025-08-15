@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SUM - Mass Document Processing</title>
+    <style>
+        :root {
+            --primary: #4CAF50;
+            --primary-dark: #45a049;
+            --secondary: #2196F3;
+            --danger: #f44336;
+            --bg: #f5f7fa;
+            --card-bg: #ffffff;
+            --text: #333;
+            --text-light: #666;
+            --border: #e0e0e0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .header {
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .tagline {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        .main-content {
+            padding: 2rem 0;
+        }
+
+        .upload-section {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 2rem;
+        }
+
+        .upload-zone {
+            border: 3px dashed var(--primary);
+            border-radius: 8px;
+            padding: 3rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-zone:hover {
+            background: #f9f9f9;
+            border-color: var(--primary-dark);
+        }
+
+        .upload-zone.dragover {
+            background: #e8f5e9;
+            border-color: var(--primary);
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .upload-text {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-subtext {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        .file-list {
+            margin-top: 1.5rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            background: #f5f5f5;
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+        }
+
+        .file-name {
+            flex: 1;
+            margin-right: 1rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .file-size {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            margin-right: 1rem;
+        }
+
+        .remove-file {
+            background: none;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        .process-button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: block;
+            margin: 2rem auto 0;
+            font-weight: 600;
+        }
+
+        .process-button:hover:not(:disabled) {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .process-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .processing-status {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-top: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            display: none;
+        }
+
+        .status-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .status-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .status-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .status-badge.queued {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-badge.processing {
+            background: #cfe2ff;
+            color: #084298;
+        }
+
+        .status-badge.completed {
+            background: #d1e7dd;
+            color: #0f5132;
+        }
+
+        .status-badge.failed {
+            background: #f8d7da;
+            color: #842029;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--primary-dark) 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        .current-file {
+            color: var(--text-light);
+            font-style: italic;
+            margin: 0.5rem 0;
+        }
+
+        .results-section {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-top: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            display: none;
+        }
+
+        .executive-summary {
+            background: #f5f5f5;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            white-space: pre-wrap;
+            line-height: 1.8;
+        }
+
+        .themes-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        .theme-tag {
+            background: var(--secondary);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .download-button {
+            background: var(--secondary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+        }
+
+        .download-button:hover {
+            background: #1976D2;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .feature-card {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-description {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .stats-bar {
+                grid-template-columns: 1fr;
+            }
+
+            .upload-zone {
+                padding: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div>
+                    <div class="logo">SUM</div>
+                    <div class="tagline">Mass Document Processing - Distill Knowledge from Any Scale</div>
+                </div>
+                <nav>
+                    <a href="/" style="color: var(--primary); text-decoration: none;">← Back to Simple Mode</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <!-- Stats Bar -->
+            <div class="stats-bar">
+                <div class="stat-card">
+                    <div class="stat-value" id="total-files">0</div>
+                    <div class="stat-label">Files Selected</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="total-size">0 MB</div>
+                    <div class="stat-label">Total Size</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="processing-speed">∞</div>
+                    <div class="stat-label">Docs/Second</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="eta">--</div>
+                    <div class="stat-label">Time Estimate</div>
+                </div>
+            </div>
+
+            <!-- Upload Section -->
+            <div class="upload-section">
+                <div class="upload-zone" id="upload-zone">
+                    <input type="file" id="file-input" multiple accept=".pdf,.docx,.txt,.md,.html,.rtf">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">Drop 1 to 10,000 documents here</div>
+                    <div class="upload-subtext">or click to select files (PDF, DOCX, TXT, MD, HTML, RTF)</div>
+                </div>
+                
+                <div class="file-list" id="file-list"></div>
+                
+                <button class="process-button" id="process-button" disabled>
+                    Process Documents
+                </button>
+            </div>
+
+            <!-- Processing Status -->
+            <div class="processing-status" id="processing-status">
+                <div class="status-header">
+                    <div class="status-title">Processing Status</div>
+                    <div class="status-badge" id="status-badge">Initializing</div>
+                </div>
+                
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill">0%</div>
+                </div>
+                
+                <div class="current-file" id="current-file">Preparing to process...</div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="results-section" id="results-section">
+                <h2>Knowledge Distillation Complete! 🎉</h2>
+                
+                <div class="stat-card" style="margin: 1rem 0;">
+                    <div class="stat-value" id="result-docs">0</div>
+                    <div class="stat-label">Documents Processed</div>
+                </div>
+                
+                <h3>Executive Summary</h3>
+                <div class="executive-summary" id="executive-summary"></div>
+                
+                <h3>Key Themes Discovered</h3>
+                <div class="themes-container" id="themes-container"></div>
+                
+                <button class="download-button" id="download-button">
+                    📥 Download Complete Analysis
+                </button>
+            </div>
+
+            <!-- Features -->
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <div class="feature-title">Unlimited Scale</div>
+                    <div class="feature-description">Process 1 to 1,000,000 documents without memory issues</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🧠</div>
+                    <div class="feature-title">Cross-Document Intelligence</div>
+                    <div class="feature-description">Find patterns and themes across your entire collection</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <div class="feature-title">Hierarchical Summaries</div>
+                    <div class="feature-description">From executive overview to detailed analysis</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🚀</div>
+                    <div class="feature-title">Parallel Processing</div>
+                    <div class="feature-description">Use all CPU cores for maximum speed</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Global state
+        let selectedFiles = [];
+        let currentJobId = null;
+        let statusCheckInterval = null;
+
+        // DOM elements
+        const uploadZone = document.getElementById('upload-zone');
+        const fileInput = document.getElementById('file-input');
+        const fileList = document.getElementById('file-list');
+        const processButton = document.getElementById('process-button');
+        const processingStatus = document.getElementById('processing-status');
+        const resultsSection = document.getElementById('results-section');
+
+        // File upload handling
+        uploadZone.addEventListener('click', () => fileInput.click());
+        
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+        
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+        
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        function handleFiles(files) {
+            selectedFiles = Array.from(files);
+            updateFileList();
+            updateStats();
+            processButton.disabled = selectedFiles.length === 0;
+        }
+
+        function updateFileList() {
+            fileList.innerHTML = '';
+            
+            selectedFiles.forEach((file, index) => {
+                const item = document.createElement('div');
+                item.className = 'file-item';
+                
+                const fileName = document.createElement('div');
+                fileName.className = 'file-name';
+                fileName.textContent = file.name;
+                
+                const fileSize = document.createElement('div');
+                fileSize.className = 'file-size';
+                fileSize.textContent = formatFileSize(file.size);
+                
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'remove-file';
+                removeBtn.textContent = '×';
+                removeBtn.onclick = () => removeFile(index);
+                
+                item.appendChild(fileName);
+                item.appendChild(fileSize);
+                item.appendChild(removeBtn);
+                fileList.appendChild(item);
+            });
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            updateFileList();
+            updateStats();
+            processButton.disabled = selectedFiles.length === 0;
+        }
+
+        function updateStats() {
+            const totalFiles = selectedFiles.length;
+            const totalSize = selectedFiles.reduce((sum, file) => sum + file.size, 0);
+            
+            document.getElementById('total-files').textContent = totalFiles;
+            document.getElementById('total-size').textContent = formatFileSize(totalSize);
+            
+            // Estimate processing time (rough estimate: 1 second per MB)
+            const estimatedSeconds = Math.ceil(totalSize / (1024 * 1024));
+            document.getElementById('eta').textContent = formatTime(estimatedSeconds);
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 MB';
+            const mb = bytes / (1024 * 1024);
+            return mb > 1 ? mb.toFixed(1) + ' MB' : (bytes / 1024).toFixed(1) + ' KB';
+        }
+
+        function formatTime(seconds) {
+            if (seconds < 60) return seconds + 's';
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            return minutes + 'm ' + remainingSeconds + 's';
+        }
+
+        // Process documents
+        processButton.addEventListener('click', async () => {
+            if (selectedFiles.length === 0) return;
+            
+            // Prepare form data
+            const formData = new FormData();
+            selectedFiles.forEach(file => {
+                formData.append('files', file);
+            });
+            
+            // Disable UI
+            processButton.disabled = true;
+            uploadZone.style.pointerEvents = 'none';
+            
+            // Show processing status
+            processingStatus.style.display = 'block';
+            resultsSection.style.display = 'none';
+            
+            try {
+                // Upload files
+                updateStatus('Uploading files...', 'queued');
+                const uploadResponse = await fetch('/api/mass/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!uploadResponse.ok) {
+                    throw new Error('Upload failed');
+                }
+                
+                const uploadResult = await uploadResponse.json();
+                currentJobId = uploadResult.job_id;
+                
+                // Start status checking
+                startStatusChecking();
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error processing documents: ' + error.message);
+                resetUI();
+            }
+        });
+
+        function startStatusChecking() {
+            statusCheckInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/api/mass/status/${currentJobId}`);
+                    const status = await response.json();
+                    
+                    updateProcessingUI(status);
+                    
+                    if (status.status === 'completed') {
+                        clearInterval(statusCheckInterval);
+                        await showResults();
+                    } else if (status.status === 'failed') {
+                        clearInterval(statusCheckInterval);
+                        alert('Processing failed: ' + (status.error || 'Unknown error'));
+                        resetUI();
+                    }
+                } catch (error) {
+                    console.error('Status check error:', error);
+                }
+            }, 1000);
+        }
+
+        function updateProcessingUI(status) {
+            // Update status badge
+            const badge = document.getElementById('status-badge');
+            badge.textContent = status.status.charAt(0).toUpperCase() + status.status.slice(1);
+            badge.className = 'status-badge ' + status.status;
+            
+            // Update progress
+            if (status.progress) {
+                const progress = (status.progress.completed / status.progress.total) * 100;
+                const progressFill = document.getElementById('progress-fill');
+                progressFill.style.width = progress + '%';
+                progressFill.textContent = Math.round(progress) + '%';
+                
+                // Update speed
+                if (status.progress.completed > 0) {
+                    const speed = status.progress.completed / ((Date.now() - startTime) / 1000);
+                    document.getElementById('processing-speed').textContent = speed.toFixed(1);
+                }
+            }
+            
+            // Update current file
+            if (status.message) {
+                document.getElementById('current-file').textContent = status.message;
+            }
+        }
+
+        function updateStatus(message, status) {
+            document.getElementById('current-file').textContent = message;
+            const badge = document.getElementById('status-badge');
+            badge.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+            badge.className = 'status-badge ' + status;
+        }
+
+        async function showResults() {
+            try {
+                const response = await fetch(`/api/mass/results/${currentJobId}`);
+                const results = await response.json();
+                
+                // Update results UI
+                document.getElementById('result-docs').textContent = results.summary.total_documents;
+                document.getElementById('executive-summary').textContent = results.summary.executive_summary;
+                
+                // Show themes
+                const themesContainer = document.getElementById('themes-container');
+                themesContainer.innerHTML = '';
+                results.summary.key_themes.forEach(theme => {
+                    const tag = document.createElement('div');
+                    tag.className = 'theme-tag';
+                    tag.textContent = theme;
+                    themesContainer.appendChild(tag);
+                });
+                
+                // Setup download button
+                document.getElementById('download-button').onclick = () => {
+                    window.location.href = results.download_url;
+                };
+                
+                // Show results section
+                resultsSection.style.display = 'block';
+                processingStatus.style.display = 'none';
+                
+            } catch (error) {
+                console.error('Error fetching results:', error);
+                alert('Error fetching results');
+            }
+            
+            resetUI();
+        }
+
+        function resetUI() {
+            processButton.disabled = selectedFiles.length === 0;
+            uploadZone.style.pointerEvents = 'auto';
+            if (statusCheckInterval) {
+                clearInterval(statusCheckInterval);
+                statusCheckInterval = null;
+            }
+        }
+
+        // Track start time for speed calculation
+        let startTime = Date.now();
+    </script>
+</body>
+</html>

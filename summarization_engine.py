@@ -295,7 +295,7 @@ class BasicSummarizationEngine(SummarizationEngine):
         return [word for word, _ in word_freq.most_common(5)]
 
 
-class AdvancedSummarizationEngine(SUM):
+class AdvancedSummarizationEngine(SummarizationEngine):
     """
     Comprehensive text analysis and summarization system with
     multiple summarization approaches and text analysis features.
@@ -520,7 +520,7 @@ class AdvancedSummarizationEngine(SUM):
 
 
 # Hierarchical Knowledge Densification System
-class HierarchicalDensificationEngine(SUM):
+class HierarchicalDensificationEngine(SummarizationEngine):
     """
     Multi-level knowledge densification system with three hierarchical abstraction levels.
     
@@ -1062,7 +1062,7 @@ class CompletenessValidator:
 
 
 # For backward compatibility
-AdvancedSUM = MagnumOpusSUM
+# AdvancedSUM = MagnumOpusSUM  # Removed - class doesn't exist
 
 # Example usage - Hierarchical Densification Engine
 if __name__ == "__main__":

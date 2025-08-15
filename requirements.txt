@@ -1,132 +1,32 @@
-# Core dependencies
-Flask==2.3.3
-Werkzeug==2.3.7
-python-dotenv==1.0.0
+# SUM - Core Requirements
+# Minimal dependencies for the best text summarization tool
 
-# NLP and Machine Learning
+# Core NLP
 nltk==3.8.1
-scikit-learn==1.3.0
-numpy==1.25.2
-scipy==1.11.2
-gensim==4.3.1
-wordcloud==1.9.2
-textblob==0.17.1
+numpy==1.24.3
+
+# Web Framework
+flask==3.0.0
+flask-cors==4.0.0
 
 # Text Processing
-langdetect==1.0.9
-rake-nltk==1.0.6
-
-# Data Handling
-pandas==2.1.0
-
-# Visualization
-matplotlib==3.7.2
-
-# Web Interface
-Jinja2==3.1.2
-MarkupSafe==2.1.3
-
-# Documentation
-Sphinx==7.2.4
-sphinx-rtd-theme==1.3.0
-
-# Testing
-pytest==7.4.0
-pytest-cov==4.1.0
-
-# Development Tools
-black==23.7.0
-isort==5.12.0
-flake8==6.1.0
-
-# Optional: For specific file types
-PyPDF2==3.0.1
-python-docx==1.0.0
+beautifulsoup4==4.12.2
 lxml==4.9.3
+python-docx==1.1.0
+PyPDF2==3.0.1
+pandas==2.0.3
+openpyxl==3.1.2
+markdown==3.5.1
 
-# AI Model Integration (Optional)
-openai>=1.0.0
-anthropic>=0.18.0
-tiktoken>=0.5.0
-cryptography>=41.0.0
+# Utilities
+python-dotenv==1.0.0
+psutil==5.9.5
+wordcloud==1.9.2
 
-# WebSocket Support
-websockets>=11.0
-psutil>=5.9.0
+# Optional but recommended for better performance
+redis==5.0.1
+transformers==4.35.2
+torch==2.1.0
 
-# Enhanced CLI
-rich>=13.0.0
-
-# Multi-Modal Processing Dependencies
-PyPDF2>=3.0.1
-pdfplumber>=0.9.0
-python-docx>=1.0.0
-Pillow>=10.0.0
-pytesseract>=0.3.10
-
-# Local AI Integration
-ollama>=0.1.0
-
-# Enhanced Document Processing
-beautifulsoup4>=4.12.0
-markdown>=3.5.0
-lxml>=4.9.3
-
-# Knowledge Operating System Dependencies
-sqlite3  # Built into Python
-threading  # Built into Python
-json  # Built into Python
-datetime  # Built into Python
-pathlib  # Built into Python
-hashlib  # Built into Python
-uuid  # Built into Python
-collections  # Built into Python
-
-# Email Processing (SumMail)
-imaplib  # Built into Python
-smtplib  # Built into Python
-email  # Built into Python
-
-# OnePunchUpload Bridge
-requests>=2.31.0
-
-# Additional Dependencies for Enhanced Features
-psutil>=5.9.0
-cryptography>=41.0.0
-
-# Production Dependencies for Phase 1 & 2
-aiohttp>=3.9.0  # Async HTTP for webhooks
-psutil>=5.9.5  # System monitoring
-
-# OpenTelemetry (Optional but recommended)
-opentelemetry-api>=1.20.0
-opentelemetry-sdk>=1.20.0
-opentelemetry-exporter-otlp>=1.20.0
-opentelemetry-instrumentation-flask>=0.41b0
-
-# Development and Testing
-python>=3.8
-pytest-asyncio>=0.21.0  # Async test support
-pytest-mock>=3.11.0  # Mocking support
-
-# Semantic Memory and Knowledge Graph
-sentence-transformers>=2.2.0  # For embeddings
-chromadb>=0.4.0  # Vector database
-faiss-cpu>=1.7.4  # Alternative vector search
-spacy>=3.6.0  # NLP for entity extraction
-networkx>=3.1  # Graph operations
-py2neo>=2021.2.3  # Neo4j integration (optional)
-chardet>=5.2.0  # Encoding detection
-
-# Async Processing
-aiofiles>=23.2.0  # Async file operations
-uvloop>=0.19.0  # Fast event loop (optional)
-
-# Enhanced File Processing
-python-magic>=0.4.27  # File type detection
-openpyxl>=3.1.2  # Excel file support
-ebooklib>=0.18  # EPUB support
-
-# Visualization
-python-louvain>=0.16  # Community detection
-seaborn>=0.12.0  # Enhanced plotting
+# Development
+pytest==7.4.3

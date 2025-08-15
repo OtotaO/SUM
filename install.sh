@@ -1,138 +1,92 @@
-#!/bin/bash
-# SUM - One-line installer
-# Usage: curl -sSL https://raw.githubusercontent.com/OtotaO/SUM/main/install.sh | bash
+#\!/bin/bash
+# SUM One-Click Installation Script for Unix/Linux/Mac
 
-set -e
+echo "=================================================="
+echo "    SUM - One-Click Installation"
+echo "    The Text Summarization Standard"
+echo "=================================================="
+echo
 
-echo "🚀 Installing SUM - Simple Unified Summarizer"
-echo "==========================================="
-
-# Check Python version
-if ! python3 --version | grep -E "3\.(8|9|10|11)" > /dev/null; then
-    echo "❌ Error: Python 3.8+ required"
+# Check if Python 3.8+ is installed
+if \! command -v python3 &> /dev/null; then
+    echo "❌ Python 3 is not installed. Please install Python 3.8 or higher."
     exit 1
 fi
 
-# Check if Git is installed
-if ! command -v git &> /dev/null; then
-    echo "❌ Error: Git is required"
+# Get Python version
+PYTHON_VERSION=$(python3 -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
+REQUIRED_VERSION="3.8"
+
+# Compare versions
+if [ "$(printf '%s\n' "$REQUIRED_VERSION" "$PYTHON_VERSION" | sort -V | head -n1)" \!= "$REQUIRED_VERSION" ]; then
+    echo "❌ Python $REQUIRED_VERSION or higher is required (found $PYTHON_VERSION)"
     exit 1
 fi
 
-# Clone repository
-echo "📦 Downloading SUM..."
-git clone https://github.com/OtotaO/SUM.git
-cd SUM
+echo "✓ Python $PYTHON_VERSION detected"
 
 # Create virtual environment
-echo "🔧 Setting up Python environment..."
+echo "✓ Creating virtual environment..."
 python3 -m venv venv
+
+# Activate virtual environment
+echo "✓ Activating virtual environment..."
 source venv/bin/activate
 
-# Install dependencies
-echo "📚 Installing dependencies..."
+# Upgrade pip
+echo "✓ Upgrading pip..."
 pip install --upgrade pip
-pip install flask transformers torch redis
 
-# Check if Redis is installed
-if command -v redis-server &> /dev/null; then
-    echo "✅ Redis found"
-else
-    echo "📦 Installing Redis..."
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        # macOS
-        if command -v brew &> /dev/null; then
-            brew install redis
-            brew services start redis
-        else
-            echo "⚠️  Please install Redis manually or use Docker"
-        fi
-    elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
-        # Linux
-        if command -v apt-get &> /dev/null; then
-            sudo apt-get update
-            sudo apt-get install -y redis-server
-            sudo systemctl start redis-server
-        elif command -v yum &> /dev/null; then
-            sudo yum install -y redis
-            sudo systemctl start redis
-        else
-            echo "⚠️  Please install Redis manually or use Docker"
-        fi
-    fi
+# Install requirements
+echo "✓ Installing dependencies..."
+pip install -r requirements.txt
+
+# Download NLTK data
+echo "✓ Downloading NLTK data..."
+python3 -c "import nltk; nltk.download('punkt'); nltk.download('stopwords'); nltk.download('vader_lexicon')"
+
+# Create necessary directories
+echo "✓ Creating directories..."
+mkdir -p Data Output uploads temp
+
+# Create .env file if it doesn't exist
+if [ \! -f .env ]; then
+    echo "✓ Creating .env file..."
+    cat > .env << EOL
+# SUM Configuration
+FLASK_APP=main.py
+FLASK_ENV=development
+SECRET_KEY=your-secret-key-here
+PORT=5001
+
+# Optional: Redis for caching
+# REDIS_URL=redis://localhost:6379/0
+
+# Optional: API Keys for advanced features
+# OPENAI_API_KEY=your-key-here
+# ANTHROPIC_API_KEY=your-key-here
+EOL
 fi
 
-# Create launcher script
-cat > sum <<'EOF'
-#!/bin/bash
-cd "$(dirname "$0")"
-source venv/bin/activate
-
-if [ "$1" = "simple" ]; then
-    echo "Starting SUM (simple mode)..."
-    python sum_simple.py
-elif [ "$1" = "ultimate" ]; then
-    echo "Starting SUM (ultimate mode)..."
-    python sum_ultimate.py
-elif [ "$1" = "cli" ]; then
-    shift
-    python sum_cli_simple.py "$@"
-elif [ "$1" = "docker" ]; then
-    echo "Starting SUM with Docker..."
-    docker-compose -f docker-compose-simple.yml up
-else
-    echo "Starting SUM (default: ultimate mode)..."
-    python sum_ultimate.py
-fi
-EOF
-
-chmod +x sum
-
-# Create desktop shortcut (optional)
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    # macOS
-    cat > ~/Desktop/SUM.command <<EOF
-#!/bin/bash
-cd "$PWD"
-./sum
-EOF
-    chmod +x ~/Desktop/SUM.command
-elif [[ "$OSTYPE" == "linux-gnu"* ]] && [ -d ~/Desktop ]; then
-    # Linux with desktop
-    cat > ~/Desktop/SUM.desktop <<EOF
-[Desktop Entry]
-Version=1.0
-Type=Application
-Name=SUM
-Comment=Simple Unified Summarizer
-Exec=$PWD/sum
-Icon=$PWD/static/icon.png
-Terminal=true
-Categories=Utility;
-EOF
-    chmod +x ~/Desktop/SUM.desktop
-fi
-
-echo ""
-echo "✅ Installation complete!"
-echo ""
-echo "🎉 SUM is ready to use!"
-echo ""
-echo "Usage:"
-echo "  ./sum              # Start web interface (default)"
-echo "  ./sum simple       # Start simple version"
-echo "  ./sum ultimate     # Start ultimate version"
-echo "  ./sum cli text \"Your text\"  # CLI usage"
-echo "  ./sum docker       # Run with Docker"
-echo ""
-echo "Web interface will be available at: http://localhost:3000"
-echo ""
-echo "Press Ctrl+C to stop the server"
-echo ""
-
-# Ask if user wants to start now
-read -p "Start SUM now? (y/n) " -n 1 -r
 echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    ./sum
-fi
+echo "=================================================="
+echo "✅ Installation Complete\!"
+echo "=================================================="
+echo
+echo "📚 Quick Start:"
+echo "  1. Activate the virtual environment:"
+echo "     source venv/bin/activate"
+echo
+echo "  2. Run SUM:"
+echo "     python main.py"
+echo
+echo "  3. Open your browser:"
+echo "     http://localhost:5001"
+echo
+echo "💡 Pro Tips:"
+echo "  - Use 'python sum_cli_simple.py' for command-line summarization"
+echo "  - Check the README.md for API documentation"
+echo
+echo "🚀 SUM - Making summarization synonymous with SUM"
+echo "=================================================="
+EOF < /dev/null

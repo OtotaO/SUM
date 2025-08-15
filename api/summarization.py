@@ -18,8 +18,8 @@ from flask import Blueprint, request, jsonify
 from threading import Lock
 
 from web.middleware import rate_limit, validate_json_input
-from application.service_registry import registry
 from config import active_config
+from summarization_engine import BasicSummarizationEngine, AdvancedSummarizationEngine, HierarchicalDensificationEngine
 
 
 logger = logging.getLogger(__name__)
@@ -183,13 +183,13 @@ def _process_with_model(text: str, model_type: str, config: dict) -> dict:
         Processing result or error dict
     """
     if model_type == 'simple':
-        summarizer = registry.get_service('simple_summarizer')
+        summarizer = BasicSummarizationEngine()
         if not summarizer:
             return {'error': 'Simple summarizer unavailable', 'status_code': 500}
         return summarizer.process_text(text, config)
     
     elif model_type == 'advanced':
-        summarizer = registry.get_service('advanced_summarizer')
+        summarizer = AdvancedSummarizationEngine()
         if not summarizer:
             return {
                 'error': 'Advanced summarizer unavailable',
@@ -199,7 +199,7 @@ def _process_with_model(text: str, model_type: str, config: dict) -> dict:
         return summarizer.process_text(text, config)
     
     elif model_type == 'hierarchical':
-        engine = registry.get_service('hierarchical_engine')
+        engine = HierarchicalDensificationEngine()
         if not engine:
             return {
                 'error': 'Hierarchical Densification Engine unavailable',
