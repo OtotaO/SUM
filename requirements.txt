@@ -17,6 +17,7 @@ PyPDF2==3.0.1
 pandas==2.0.3
 openpyxl==3.1.2
 markdown==3.5.1
+chardet==5.2.0
 
 # Utilities
 python-dotenv==1.0.0
