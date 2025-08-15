@@ -48,28 +48,11 @@ def create_simple_app():
 
 def main():
     """Main entry point"""
-    # Check dependencies first
     print("\n" + "="*50)
-    print("🚀 SUM Platform - Starting Up")
+    print("🚀 SUM - Text Summarization Platform")
     print("="*50)
-    
-    try:
-        from check_dependencies import check_dependencies, check_feature_availability
-        deps = check_dependencies()
-        features = check_feature_availability(deps)
-        
-        available = sum(1 for v in features.values() if v)
-        total = len(features)
-        print(f"\n✅ Features Available: {available}/{total}")
-        
-        if not features["Semantic Memory"]:
-            print("⚠️  Semantic Memory: Using basic fallback (install ChromaDB/FAISS for full features)")
-        if not features["Knowledge Graphs"]:
-            print("⚠️  Knowledge Graphs: Using in-memory fallback (install Neo4j for persistence)")
-            
-    except Exception as e:
-        print(f"⚠️  Could not check dependencies: {e}")
-    
+    print("\n✅ Starting server...")
+    print("📊 Web interface will be available at http://localhost:5001")
     print("\n" + "="*50 + "\n")
     
     app = create_simple_app()
