@@ -12,6 +12,7 @@ from api.file_processing import file_processing_bp
 from api.health import health_bp
 from api.mass_processing import mass_bp
 from api.web_compatibility import web_compat_bp
+from api.auth_routes import auth_bp
 from web.routes import web_bp
 
 logger = logging.getLogger(__name__)
@@ -35,6 +36,7 @@ def create_simple_app():
     app.register_blueprint(health_bp, url_prefix='/api')
     app.register_blueprint(mass_bp)  # Mass processing at root level
     app.register_blueprint(web_compat_bp)  # Web compatibility routes at root
+    app.register_blueprint(auth_bp)  # Auth routes
     app.register_blueprint(web_bp)
     
     # Add basic error handlers

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Page for SUM Browser Extension</title>
+    <style>
+        body {
+            font-family: Georgia, serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f9f9f9;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #555;
+            margin-top: 30px;
+        }
+        .highlight {
+            background: yellow;
+            padding: 2px 4px;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .long-text {
+            text-align: justify;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Page for SUM Browser Extension</h1>
+    
+    <div class="test-section">
+        <h2>Quick Test Text</h2>
+        <p>
+            <span class="highlight">Select this highlighted text</span> to test the summarization feature. 
+            The SUM browser extension should show a floating button when you select text.
+        </p>
+    </div>
+
+    <div class="test-section">
+        <h2>The History of Artificial Intelligence</h2>
+        <div class="long-text">
+            <p>
+                The history of artificial intelligence (AI) began in antiquity, with myths, stories and rumors of artificial beings endowed with intelligence or consciousness by master craftsmen. The seeds of modern AI were planted by classical philosophers who attempted to describe the process of human thinking as the mechanical manipulation of symbols. This work culminated in the invention of the programmable digital computer in the 1940s, a machine based on the abstract essence of mathematical reasoning. This device and the ideas behind it inspired a handful of scientists to begin seriously discussing the possibility of building an electronic brain.
+            </p>
+            <p>
+                The field of AI research was founded at a workshop held on the campus of Dartmouth College during the summer of 1956. Those who attended would become the leaders of AI research for decades. Many of them predicted that a machine as intelligent as a human being would exist in no more than a generation, and they were given millions of dollars to make this vision come true.
+            </p>
+            <p>
+                Eventually, it became obvious that they had grossly underestimated the difficulty of the project. In 1974, in response to the criticism of James Lighthill and ongoing pressure from congress, the U.S. and British governments stopped funding undirected research into artificial intelligence, and the difficult years that followed would later be known as an "AI winter". Seven years later, a visionary initiative by the Japanese Government inspired governments and industry to provide AI with billions of dollars, but by the late 80s the investors became disillusioned by the absence of the needed computer power (hardware) and withdrew funding again.
+            </p>
+            <p>
+                Investment and interest in AI boomed in the first decades of the 21st century, when machine learning was successfully applied to many problems in academia and industry due to new methods, the application of powerful computer hardware, and the collection of immense data sets. Deep learning, a sub-field of machine learning, emerged in the 2010s and quickly became the most popular approach in AI research and applications.
+            </p>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Technical Documentation Example</h2>
+        <p>
+            SUM (Summarization Utility Module) is a powerful text summarization platform designed to process documents of any size, from single sentences to massive multi-gigabyte text files. The system employs multiple summarization algorithms including extractive methods (identifying and extracting key sentences), abstractive methods (generating new sentences that capture the essence), and hierarchical approaches (creating summaries at multiple levels of detail).
+        </p>
+        <p>
+            Key features include: intelligent chunking for large documents, context preservation across chunks, cross-document intelligence for analyzing multiple files simultaneously, smart caching for improved performance, and API authentication for secure access. The platform supports various file formats including PDF, DOCX, HTML, Markdown, and plain text.
+        </p>
+        <p>
+            The browser extension integrates seamlessly with the SUM API, allowing users to summarize any web content instantly. It features keyboard shortcuts (Ctrl+Shift+S for selection, Ctrl+Shift+P for full page), a floating selection button, context menu integration, and a popup interface for manual text input. The extension maintains a history of summaries and provides options for different summarization models.
+        </p>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Instructions</h2>
+        <ol>
+            <li><strong>Test Selection Summary:</strong> Select any text on this page and look for the floating "Summarize" button</li>
+            <li><strong>Test Context Menu:</strong> Right-click on selected text and choose "Summarize with SUM"</li>
+            <li><strong>Test Keyboard Shortcut:</strong> Select text and press Ctrl+Shift+S (or Cmd+Shift+S on Mac)</li>
+            <li><strong>Test Page Summary:</strong> Click the extension icon and select "Summarize Page"</li>
+            <li><strong>Test Manual Input:</strong> Click the extension icon and paste text into the input area</li>
+        </ol>
+    </div>
+
+    <script>
+        // Log extension detection
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('SUM Extension Test Page Loaded');
+            console.log('Select any text to test the summarization feature');
+        });
+    </script>
+</body>
+</html>

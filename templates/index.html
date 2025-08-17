@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/ux_improvements.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/onboarding.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/mobile.css') }}">
     <meta name="description" content="SUM is a knowledge distillation platform that extracts, analyzes, and presents insights from vast datasets.">
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
 </head>
@@ -19,7 +20,12 @@
                 <h1>SUM</h1>
                 <p class="tagline">The Ultimate Knowledge Distiller</p>
             </div>
-            <nav>
+            <button class="mobile-menu-toggle" aria-label="Toggle navigation menu" aria-expanded="false">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <nav class="main-nav">
                 <ul>
                     <li><a href="#summarize" class="active">Summarize</a></li>
                     <li><a href="#analyze">Topic Analysis</a></li>
@@ -129,8 +135,8 @@
                 <form id="file-upload-form" enctype="multipart/form-data">
                     <div class="file-input">
                         <label for="file">Upload File</label>
-                        <input type="file" id="file" name="file" accept=".txt,.json,.csv,.md">
-                        <p class="file-hint">Supported formats: TXT, JSON, CSV, MD</p>
+                        <input type="file" id="file" name="file" accept=".pdf,.docx,.doc,.txt,.html,.rtf,.md,.json,.csv">
+                        <p class="file-hint">Supported formats: PDF, DOCX, TXT, HTML, RTF, MD</p>
                     </div>
                     
                     <div class="file-options">
@@ -222,5 +228,6 @@
     <script src="{{ url_for('static', filename='script.js') }}"></script>
     <script src="{{ url_for('static', filename='js/ux_improvements.js') }}"></script>
     <script src="{{ url_for('static', filename='js/onboarding.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/mobile.js') }}"></script>
 </body>
 </html>

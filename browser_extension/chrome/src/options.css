@@ -1,0 +1,367 @@
+/**
+ * SUM Browser Extension - Options Page Styles
+ */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #1e293b;
+  background: #f8fafc;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+/* Header */
+header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+header h1 {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #0f172a;
+}
+
+header p {
+  font-size: 16px;
+  color: #64748b;
+}
+
+/* Settings sections */
+.settings-section {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.settings-section h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: #0f172a;
+}
+
+/* Form elements */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: #334155;
+}
+
+.form-group small {
+  display: block;
+  margin-top: 6px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+select.form-input {
+  cursor: pointer;
+}
+
+/* Range input */
+.form-range {
+  width: 100%;
+  margin: 12px 0;
+}
+
+.range-value {
+  text-align: center;
+  font-weight: 600;
+  color: #2563eb;
+}
+
+/* Checkbox */
+input[type="checkbox"] {
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+label input[type="checkbox"] {
+  vertical-align: middle;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: #2563eb;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.btn-secondary {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+/* Connection result */
+.connection-result {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  display: none;
+}
+
+.connection-result.success {
+  display: block;
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.connection-result.error {
+  display: block;
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+/* Shortcuts info */
+.shortcuts-info {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.shortcut {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.shortcut:not(:last-child) {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.shortcut kbd {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-family: 'SF Mono', Consolas, monospace;
+  font-size: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Data stats */
+.data-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.stat {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+
+.stat-label {
+  display: block;
+  color: #64748b;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  display: block;
+  font-size: 24px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+/* Data actions */
+.data-actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* Actions section */
+.actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 40px;
+}
+
+/* Footer */
+footer {
+  text-align: center;
+  margin-top: 60px;
+  padding-top: 20px;
+  border-top: 1px solid #e2e8f0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+footer a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+footer a:hover {
+  text-decoration: underline;
+}
+
+footer span {
+  margin: 0 8px;
+}
+
+/* Success message */
+.success-message {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #10b981;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #0f172a;
+    color: #e2e8f0;
+  }
+  
+  header h1 {
+    color: #f1f5f9;
+  }
+  
+  .settings-section {
+    background: #1e293b;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+  
+  .settings-section h2 {
+    color: #f1f5f9;
+  }
+  
+  .form-group label {
+    color: #cbd5e1;
+  }
+  
+  .form-input {
+    background: #0f172a;
+    border-color: #334155;
+    color: #e2e8f0;
+  }
+  
+  .form-input:focus {
+    border-color: #3b82f6;
+  }
+  
+  .btn-secondary {
+    background: #334155;
+    color: #e2e8f0;
+  }
+  
+  .btn-secondary:hover:not(:disabled) {
+    background: #475569;
+  }
+  
+  .shortcuts-info {
+    background: #0f172a;
+  }
+  
+  .shortcut {
+    border-bottom-color: #334155;
+  }
+  
+  .shortcut kbd {
+    background: #1e293b;
+    border-color: #334155;
+  }
+  
+  .stat {
+    background: #0f172a;
+  }
+  
+  .stat-value {
+    color: #e2e8f0;
+  }
+  
+  footer {
+    border-top-color: #334155;
+  }
+}

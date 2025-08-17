@@ -1,0 +1,651 @@
+openapi: 3.0.3
+info:
+  title: SUM - Advanced Text Summarization API
+  description: |
+    SUM is a powerful text summarization platform that can process texts from 1 byte to 1 terabyte.
+    It provides multiple summarization models, batch processing, and intelligent caching.
+    
+    ## Features
+    - Multiple summarization models (simple, advanced, hierarchical, unlimited)
+    - Process texts of any length with intelligent chunking
+    - Batch processing for up to 10,000 documents
+    - Smart caching for improved performance
+    - API key authentication with rate limiting
+    - Multi-format file support (PDF, DOCX, TXT, HTML, RTF)
+    
+    ## Authentication
+    Most endpoints support optional API key authentication for better rate limits.
+    Include your API key in the `X-API-Key` header or as an `api_key` query parameter.
+  version: 2.0.0
+  contact:
+    name: SUM Support
+    url: https://github.com/OtotaO/SUM
+    email: support@sum.example.com
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+
+servers:
+  - url: http://localhost:5001
+    description: Local development server
+  - url: https://api.sum.example.com
+    description: Production server
+
+security:
+  - ApiKeyAuth: []
+  - {}  # Also allow unauthenticated requests
+
+tags:
+  - name: Summarization
+    description: Text summarization endpoints
+  - name: Mass Processing
+    description: Batch document processing
+  - name: Files
+    description: File upload and processing
+  - name: Cache
+    description: Cache management
+  - name: Health
+    description: System health and status
+  - name: Authentication
+    description: API key management
+
+paths:
+  /api/health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Check if the API is running and healthy
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  version:
+                    type: string
+                    example: 2.0.0
+                  uptime:
+                    type: number
+                    example: 3600.5
+
+  /api/process_text:
+    post:
+      tags:
+        - Summarization
+      summary: Process and summarize text
+      description: |
+        Process text using various summarization models.
+        With API key: 60 requests/minute
+        Without API key: 20 requests/minute
+      operationId: processText
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - text
+              properties:
+                text:
+                  type: string
+                  description: Text to summarize
+                  example: "The quick brown fox jumps over the lazy dog..."
+                model:
+                  type: string
+                  enum: [simple, advanced, hierarchical, streaming, unlimited]
+                  default: simple
+                  description: Summarization model to use
+                file_path:
+                  type: string
+                  description: Server-side file path (requires API key)
+                config:
+                  type: object
+                  properties:
+                    maxTokens:
+                      type: integer
+                      minimum: 10
+                      maximum: 500
+                      default: 100
+                    threshold:
+                      type: number
+                      minimum: 0
+                      maximum: 1
+                      default: 0.3
+                    use_cache:
+                      type: boolean
+                      default: true
+      responses:
+        '200':
+          description: Successful summarization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SummarizationResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
+  /api/process_unlimited:
+    post:
+      tags:
+        - Summarization
+      summary: Process unlimited text length
+      description: Process texts of any size with intelligent chunking and streaming. Requires API key.
+      operationId: processUnlimited
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+                  description: Direct text input
+                file_path:
+                  type: string
+                  description: Server-side file path
+                config:
+                  $ref: '#/components/schemas/UnlimitedConfig'
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: File to process
+                config:
+                  type: string
+                  description: JSON configuration
+      responses:
+        '200':
+          description: Successful processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnlimitedResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+
+  /api/cache/stats:
+    get:
+      tags:
+        - Cache
+      summary: Get cache statistics
+      description: Retrieve cache performance statistics
+      operationId: getCacheStats
+      responses:
+        '200':
+          description: Cache statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_entries:
+                    type: integer
+                  memory_entries:
+                    type: integer
+                  total_size_mb:
+                    type: number
+                  max_size_mb:
+                    type: number
+                  recent_hits:
+                    type: integer
+                  hit_rate:
+                    type: number
+
+  /api/cache/clear:
+    post:
+      tags:
+        - Cache
+      summary: Clear cache
+      description: Clear all or specific cache entries. Rate limited to 1 request per 5 minutes.
+      operationId: clearCache
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+                  description: Specific text to clear from cache
+                pattern:
+                  type: string
+                  description: Pattern to match for clearing
+      responses:
+        '200':
+          description: Cache cleared successfully
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
+  /api/mass/upload:
+    post:
+      tags:
+        - Mass Processing
+      summary: Upload multiple documents
+      description: Upload up to 10,000 documents for batch processing
+      operationId: uploadDocuments
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  maxItems: 10000
+      responses:
+        '200':
+          description: Upload successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  job_id:
+                    type: string
+                  files_uploaded:
+                    type: integer
+                  status:
+                    type: string
+                  message:
+                    type: string
+
+  /api/mass/status/{job_id}:
+    get:
+      tags:
+        - Mass Processing
+      summary: Get job status
+      description: Check the status of a mass processing job
+      operationId: getJobStatus
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Job status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobStatus'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/auth/validate:
+    get:
+      tags:
+        - Authentication
+      summary: Validate API key
+      description: Validate an API key and return its information
+      operationId: validateApiKey
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Key validation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyInfo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/auth/usage:
+    get:
+      tags:
+        - Authentication
+      summary: Get API usage
+      description: Get usage statistics for the current API key
+      operationId: getApiUsage
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: days
+          in: query
+          schema:
+            type: integer
+            default: 7
+            minimum: 1
+            maximum: 90
+      responses:
+        '200':
+          description: Usage statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsageStats'
+
+  /api/auth/keys:
+    get:
+      tags:
+        - Authentication
+      summary: List API keys
+      description: List all API keys (admin only)
+      operationId: listApiKeys
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: List of API keys
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  keys:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ApiKeyInfo'
+                  total:
+                    type: integer
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    
+    post:
+      tags:
+        - Authentication
+      summary: Create API key
+      description: Create a new API key (admin only)
+      operationId: createApiKey
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  description: Friendly name for the key
+                permissions:
+                  type: array
+                  items:
+                    type: string
+                    enum: [read, summarize, write, admin]
+                  default: [read, summarize]
+                rate_limit:
+                  type: integer
+                  minimum: 1
+                  default: 60
+                daily_limit:
+                  type: integer
+                  minimum: 1
+                  default: 10000
+      responses:
+        '201':
+          description: API key created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  key_id:
+                    type: string
+                  api_key:
+                    type: string
+                    description: The actual API key (only shown once)
+                  name:
+                    type: string
+                  permissions:
+                    type: array
+                    items:
+                      type: string
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for authentication
+
+  schemas:
+    SummarizationResult:
+      type: object
+      properties:
+        summary:
+          type: string
+          description: Main summary
+        sum:
+          type: string
+          description: Condensed summary
+        tags:
+          type: array
+          items:
+            type: string
+          description: Key tags/concepts
+        original_length:
+          type: integer
+          description: Original text word count
+        compression_ratio:
+          type: number
+          description: Compression ratio achieved
+        processing_time:
+          type: number
+          description: Processing time in seconds
+        model:
+          type: string
+          description: Model used
+        cached:
+          type: boolean
+          description: Whether result was from cache
+        hierarchical_summary:
+          type: object
+          properties:
+            level_1_essence:
+              type: string
+            level_2_core:
+              type: string
+            level_3_expanded:
+              type: string
+            level_4_comprehensive:
+              type: string
+
+    UnlimitedConfig:
+      type: object
+      properties:
+        max_summary_tokens:
+          type: integer
+          default: 500
+        chunk_size:
+          type: integer
+          description: Characters per chunk
+        overlap_ratio:
+          type: number
+          minimum: 0
+          maximum: 0.5
+          default: 0.1
+        max_memory_mb:
+          type: integer
+          default: 512
+
+    UnlimitedResult:
+      type: object
+      properties:
+        summary:
+          type: string
+        hierarchical_summary:
+          type: object
+        key_concepts:
+          type: array
+          items:
+            type: string
+        total_word_count:
+          type: integer
+        processing_method:
+          type: string
+          enum: [direct, chunked, streaming, hierarchical_streaming]
+        chunks_processed:
+          type: integer
+        processing_time:
+          type: number
+        chunk_summaries:
+          type: array
+          items:
+            type: object
+            properties:
+              chunk_id:
+                type: integer
+              summary:
+                type: string
+              word_count:
+                type: integer
+
+    JobStatus:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum: [queued, processing, completed, failed]
+        files:
+          type: integer
+        progress:
+          type: object
+          properties:
+            completed:
+              type: integer
+            total:
+              type: integer
+        message:
+          type: string
+        result:
+          type: object
+          description: Available when status is completed
+
+    ApiKeyInfo:
+      type: object
+      properties:
+        valid:
+          type: boolean
+        key_id:
+          type: string
+        name:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+        rate_limit:
+          type: integer
+        daily_limit:
+          type: integer
+
+    UsageStats:
+      type: object
+      properties:
+        total_requests:
+          type: integer
+        endpoints:
+          type: object
+          additionalProperties:
+            type: integer
+        avg_response_time:
+          type: number
+        error_rate:
+          type: number
+        period_days:
+          type: integer
+        limits:
+          type: object
+          properties:
+            rate_limit:
+              type: integer
+            daily_limit:
+              type: integer
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+        details:
+          type: string
+          description: Additional error details
+        status_code:
+          type: integer
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Unauthorized:
+      description: Authentication required or invalid API key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Forbidden:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              required:
+                type: array
+                items:
+                  type: string
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    RateLimitExceeded:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              limit:
+                type: string
+                description: Rate limit description
+
+    PayloadTooLarge:
+      description: Request payload too large
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

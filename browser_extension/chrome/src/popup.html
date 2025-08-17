@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>SUM - Text Summarization</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <header class="popup-header">
+      <h1>SUM</h1>
+      <span class="version">v1.0.0</span>
+    </header>
+    
+    <main class="popup-main">
+      <!-- Input section -->
+      <section class="input-section">
+        <textarea 
+          id="textInput" 
+          placeholder="Paste text here to summarize, or use the page actions below..."
+          rows="5"
+        ></textarea>
+        <div class="input-actions">
+          <button id="summarizeTextBtn" class="btn btn-primary" disabled>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+            Summarize
+          </button>
+          <button id="clearTextBtn" class="btn btn-secondary" disabled>
+            Clear
+          </button>
+        </div>
+      </section>
+      
+      <!-- Page actions -->
+      <section class="page-actions">
+        <h2>Quick Actions</h2>
+        <div class="action-buttons">
+          <button id="summarizeSelectionBtn" class="action-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M4 6h16M4 12h16m-7 6h7"/>
+            </svg>
+            <span>Summarize Selection</span>
+          </button>
+          <button id="summarizePageBtn" class="action-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+            <span>Summarize Page</span>
+          </button>
+        </div>
+      </section>
+      
+      <!-- Summary display -->
+      <section id="summarySection" class="summary-section hidden">
+        <h2>Summary</h2>
+        <div id="summaryContent" class="summary-content"></div>
+        <div class="summary-actions">
+          <button id="copySummaryBtn" class="btn btn-secondary">
+            Copy
+          </button>
+          <button id="newSummaryBtn" class="btn btn-secondary">
+            New
+          </button>
+        </div>
+      </section>
+      
+      <!-- Recent summaries -->
+      <section class="recent-section">
+        <div class="recent-header">
+          <h2>Recent Summaries</h2>
+          <button id="clearHistoryBtn" class="btn-icon" title="Clear history">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+          </button>
+        </div>
+        <div id="recentList" class="recent-list">
+          <p class="empty-state">No recent summaries</p>
+        </div>
+      </section>
+    </main>
+    
+    <footer class="popup-footer">
+      <a href="#" id="settingsLink">Settings</a>
+      <span class="separator">•</span>
+      <a href="#" id="helpLink">Help</a>
+      <span class="separator">•</span>
+      <span id="connectionStatus" class="connection-status">
+        <span class="status-dot"></span>
+        <span class="status-text">Checking...</span>
+      </span>
+    </footer>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>SUM Extension Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>SUM Extension Settings</h1>
+      <p>Configure your SUM browser extension</p>
+    </header>
+    
+    <main>
+      <!-- API Configuration -->
+      <section class="settings-section">
+        <h2>API Configuration</h2>
+        
+        <div class="form-group">
+          <label for="apiUrl">API URL</label>
+          <input 
+            type="url" 
+            id="apiUrl" 
+            placeholder="http://localhost:5001"
+            class="form-input"
+          >
+          <small>URL of your SUM API server</small>
+        </div>
+        
+        <div class="form-group">
+          <label for="apiKey">API Key (Optional)</label>
+          <input 
+            type="password" 
+            id="apiKey" 
+            placeholder="sum_your_api_key_here"
+            class="form-input"
+          >
+          <small>For higher rate limits and advanced features</small>
+        </div>
+        
+        <button id="testConnectionBtn" class="btn btn-secondary">
+          Test Connection
+        </button>
+        <div id="connectionResult" class="connection-result"></div>
+      </section>
+      
+      <!-- Summarization Settings -->
+      <section class="settings-section">
+        <h2>Summarization Settings</h2>
+        
+        <div class="form-group">
+          <label for="model">Default Model</label>
+          <select id="model" class="form-input">
+            <option value="simple">Simple</option>
+            <option value="advanced">Advanced</option>
+            <option value="hierarchical">Hierarchical</option>
+            <option value="streaming">Streaming</option>
+            <option value="unlimited">Unlimited</option>
+          </select>
+          <small>Choose the default summarization model</small>
+        </div>
+        
+        <div class="form-group">
+          <label for="maxTokens">Maximum Summary Length</label>
+          <input 
+            type="range" 
+            id="maxTokens" 
+            min="50" 
+            max="500" 
+            value="150"
+            class="form-range"
+          >
+          <div class="range-value">
+            <span id="maxTokensValue">150</span> tokens
+          </div>
+          <small>Adjust the length of generated summaries</small>
+        </div>
+        
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="useCache" checked>
+            Enable caching
+          </label>
+          <small>Cache summaries for faster repeated access</small>
+        </div>
+      </section>
+      
+      <!-- Keyboard Shortcuts -->
+      <section class="settings-section">
+        <h2>Keyboard Shortcuts</h2>
+        
+        <div class="shortcuts-info">
+          <div class="shortcut">
+            <kbd>Ctrl+Shift+S</kbd>
+            <span>Summarize selected text</span>
+          </div>
+          <div class="shortcut">
+            <kbd>Ctrl+Shift+P</kbd>
+            <span>Summarize entire page</span>
+          </div>
+        </div>
+        
+        <button id="configureShortcutsBtn" class="btn btn-secondary">
+          Configure Shortcuts
+        </button>
+      </section>
+      
+      <!-- Data Management -->
+      <section class="settings-section">
+        <h2>Data Management</h2>
+        
+        <div class="data-stats" id="dataStats">
+          <div class="stat">
+            <span class="stat-label">Cached summaries:</span>
+            <span class="stat-value" id="cacheCount">0</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">History entries:</span>
+            <span class="stat-value" id="historyCount">0</span>
+          </div>
+        </div>
+        
+        <div class="data-actions">
+          <button id="clearCacheBtn" class="btn btn-secondary">
+            Clear Cache
+          </button>
+          <button id="clearHistoryBtn" class="btn btn-secondary">
+            Clear History
+          </button>
+          <button id="exportDataBtn" class="btn btn-secondary">
+            Export Data
+          </button>
+        </div>
+      </section>
+      
+      <!-- Save/Reset -->
+      <section class="actions">
+        <button id="saveBtn" class="btn btn-primary">
+          Save Settings
+        </button>
+        <button id="resetBtn" class="btn btn-secondary">
+          Reset to Defaults
+        </button>
+      </section>
+    </main>
+    
+    <footer>
+      <a href="https://github.com/OtotaO/SUM" target="_blank">Documentation</a>
+      <span>•</span>
+      <a href="https://github.com/OtotaO/SUM/issues" target="_blank">Report Issue</a>
+      <span>•</span>
+      <span>Version 1.0.0</span>
+    </footer>
+  </div>
+  
+  <script src="options.js"></script>
+</body>
+</html>

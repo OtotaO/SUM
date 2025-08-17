@@ -15,10 +15,11 @@ import os
 import time
 import psutil
 import logging
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, send_file, request
 from datetime import datetime, timedelta
 from typing import Dict, Any, List
 import traceback
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 health_bp = Blueprint('health', __name__)
@@ -280,6 +281,36 @@ def metrics():
 def ping():
     """Simple ping endpoint for uptime monitoring."""
     return jsonify({'pong': True, 'timestamp': time.time()})
+
+
+@health_bp.route('/openapi.yaml', methods=['GET'])
+@health_bp.route('/openapi.json', methods=['GET'])
+def get_openapi_spec():
+    """Serve OpenAPI specification."""
+    spec_path = Path(__file__).parent.parent / 'openapi.yaml'
+    
+    if not spec_path.exists():
+        return jsonify({'error': 'OpenAPI specification not found'}), 404
+        
+    # Return YAML or JSON based on request
+    if request.path.endswith('.json'):
+        # Convert YAML to JSON
+        try:
+            import yaml
+            with open(spec_path, 'r') as f:
+                spec_data = yaml.safe_load(f)
+            return jsonify(spec_data)
+        except Exception as e:
+            logger.error(f"Error converting OpenAPI spec to JSON: {e}")
+            return jsonify({'error': 'Failed to load specification'}), 500
+    else:
+        # Return YAML file
+        return send_file(
+            spec_path,
+            mimetype='application/x-yaml',
+            as_attachment=False,
+            download_name='openapi.yaml'
+        )
 
 
 # Middleware to track request metrics

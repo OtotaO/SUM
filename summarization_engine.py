@@ -33,6 +33,7 @@ from typing import Dict, List, Any, Optional, Tuple
 from collections import Counter
 from wordcloud import WordCloud
 from unlimited_text_processor import UnlimitedTextProcessor
+from smart_cache import cache_result, get_cache
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -132,6 +133,17 @@ class BasicSummarizationEngine(SummarizationEngine):
 
         try:
             config = model_config or {}
+            
+            # Check cache first if enabled
+            if config.get('use_cache', True):
+                cache = get_cache()
+                cached_result = cache.get(text, 'basic', config)
+                if cached_result:
+                    logger.info("Returning cached summary")
+                    cached_result['cached'] = True
+                    return cached_result
+            
+            start_time = time.time()
             max_tokens = max(10, min(config.get('maxTokens', 100), 500))
             threshold = config.get('threshold', 0.3)
             
@@ -140,7 +152,11 @@ class BasicSummarizationEngine(SummarizationEngine):
             if text_size > 100 * 1024:  # > 100KB
                 logger.info(f"Large text detected ({text_size:,} bytes), using unlimited processor")
                 unlimited_processor = UnlimitedTextProcessor()
-                return unlimited_processor.process_text(text, config)
+                result = unlimited_processor.process_text(text, config)
+                # Cache result
+                if config.get('use_cache', True) and 'error' not in result:
+                    cache.put(text, 'unlimited', config, result, time.time() - start_time)
+                return result
             
             sentences, words, word_freq = self._preprocess_text(text)
             
@@ -170,6 +186,12 @@ class BasicSummarizationEngine(SummarizationEngine):
             summary_data['compression_ratio'] = (
                 len(word_tokenize(summary_data['summary'])) / len(words) if words else 1.0
             )
+            
+            # Cache the result if enabled
+            if config.get('use_cache', True):
+                processing_time = time.time() - start_time
+                cache.put(text, 'basic', config, summary_data, processing_time)
+                summary_data['cached'] = False
             
             return summary_data
 
@@ -608,6 +630,16 @@ class HierarchicalDensificationEngine(SummarizationEngine):
         
         try:
             config = config or {}
+            
+            # Check cache first if enabled
+            if config.get('use_cache', True):
+                cache = get_cache()
+                cached_result = cache.get(text, 'hierarchical', config)
+                if cached_result:
+                    logger.info("Returning cached hierarchical summary")
+                    cached_result['cached'] = True
+                    return cached_result
+            
             start_time = time.time()
             
             # Level 1: Extract key concepts
@@ -642,6 +674,13 @@ class HierarchicalDensificationEngine(SummarizationEngine):
             result['summary'] = core_summary
             result['tags'] = concepts
             result['sum'] = core_summary
+            
+            # Cache the result if enabled
+            if config.get('use_cache', True):
+                processing_time = time.time() - start_time
+                cache = get_cache()
+                cache.put(text, 'hierarchical', config, result, processing_time)
+                result['cached'] = False
             
             return result
             

@@ -21,6 +21,7 @@ from web.middleware import rate_limit, validate_json_input
 from config import active_config
 from summarization_engine import BasicSummarizationEngine, AdvancedSummarizationEngine, HierarchicalDensificationEngine
 from unlimited_text_processor import process_unlimited_text
+from api.auth import optional_api_key, require_api_key
 
 
 logger = logging.getLogger(__name__)
@@ -47,7 +48,8 @@ def get_config():
 
 
 @summarization_bp.route('/process_text', methods=['POST'])
-@rate_limit(20, 60)  # 20 calls per minute
+@optional_api_key()  # Better limits with API key
+@rate_limit(20, 60)  # 20 calls per minute (public)
 @validate_json_input()
 def process_text():
     """
@@ -184,8 +186,46 @@ def analyze_topics():
         }), 500
 
 
+@summarization_bp.route('/cache/stats', methods=['GET'])
+def get_cache_stats():
+    """Get cache statistics."""
+    try:
+        from smart_cache import get_cache
+        cache = get_cache()
+        stats = cache.get_stats()
+        return jsonify(stats)
+    except Exception as e:
+        logger.error(f"Error getting cache stats: {e}")
+        return jsonify({'error': 'Failed to get cache stats'}), 500
+
+
+@summarization_bp.route('/cache/clear', methods=['POST'])
+@rate_limit(1, 300)  # 1 call per 5 minutes
+def clear_cache():
+    """Clear the cache."""
+    try:
+        from smart_cache import get_cache
+        cache = get_cache()
+        
+        # Get optional parameters
+        data = request.get_json() or {}
+        text = data.get('text')
+        pattern = data.get('pattern')
+        
+        cache.invalidate(text=text, pattern=pattern)
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Cache cleared'
+        })
+    except Exception as e:
+        logger.error(f"Error clearing cache: {e}")
+        return jsonify({'error': 'Failed to clear cache'}), 500
+
+
 @summarization_bp.route('/process_unlimited', methods=['POST'])
-@rate_limit(5, 60)  # 5 calls per minute for large files
+@require_api_key(['summarize'])  # Requires API key for large files
+@rate_limit(10, 60)  # 10 calls per minute with API key
 def process_unlimited():
     """
     Process text of unlimited length.

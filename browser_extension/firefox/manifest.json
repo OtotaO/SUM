@@ -1,0 +1,66 @@
+{
+  "manifest_version": 2,
+  "name": "SUM - Instant Text Summarization",
+  "version": "1.0.0",
+  "description": "Instantly summarize any text on the web with SUM - the world's most powerful summarization tool",
+  "permissions": [
+    "activeTab",
+    "contextMenus",
+    "storage",
+    "clipboardRead",
+    "http://localhost:5001/*",
+    "https://api.sum.example.com/*"
+  ],
+  "background": {
+    "scripts": ["src/background.js"],
+    "persistent": false
+  },
+  "browser_action": {
+    "default_popup": "src/popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/content.js"],
+      "css": ["src/content.css"]
+    }
+  ],
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "options_ui": {
+    "page": "src/options.html",
+    "open_in_tab": true
+  },
+  "commands": {
+    "summarize-selection": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+S",
+        "mac": "Command+Shift+S"
+      },
+      "description": "Summarize selected text"
+    },
+    "summarize-page": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+P",
+        "mac": "Command+Shift+P"
+      },
+      "description": "Summarize entire page"
+    }
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "sum@example.com",
+      "strict_min_version": "89.0"
+    }
+  }
+}
