@@ -6,7 +6,7 @@ This module provides the endpoints that the web interface expects.
 
 from flask import Blueprint, request, jsonify
 from api.summarization import _process_with_model
-from Utils.universal_file_processor import UniversalFileProcessor
+from utils.universal_file_processor import UniversalFileProcessor
 import tempfile
 import os
 
@@ -44,7 +44,7 @@ def summarize_simple():
         return jsonify({
             'summary': result.get('summary', ''),
             'original_words': len(text.split()),
-            'compression_ratio': len(text) / max(1, len(result.get('summary', ''))),
+            'compression_ratio': len(text) / max(1, len(result.get('summary', ''))) if result.get('summary') else 1.0,
             'model': 'simple'
         })
         
@@ -70,6 +70,7 @@ def summarize_ultimate():
             density = request.form.get('density', 'all')
             
             # Process file
+            tmp_path = None
             try:
                 # Save uploaded file temporarily
                 with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as tmp_file:
@@ -78,28 +79,46 @@ def summarize_ultimate():
                 
                 # Extract text
                 processor = UniversalFileProcessor()
-                text = processor.extract_text(tmp_path)
+                result = processor.process_file(tmp_path)
                 
-                # Clean up
-                os.unlink(tmp_path)
+                if not result['success']:
+                    return jsonify({'error': result.get('error', 'Could not extract text from file')}), 400
                 
+                text = result['text']
                 if not text:
-                    return jsonify({'error': 'Could not extract text from file'}), 400
+                    return jsonify({'error': 'No text extracted from file'}), 400
                     
             except Exception as e:
                 return jsonify({'error': f'File processing failed: {str(e)}'}), 500
+            finally:
+                # Always clean up temporary file
+                if tmp_path and os.path.exists(tmp_path):
+                    try:
+                        os.unlink(tmp_path)
+                    except:
+                        pass
         
         if not text:
             return jsonify({'error': 'No text to summarize'}), 400
         
-        # Process with hierarchical engine
-        config = {
-            'max_concepts': 10,
-            'max_summary_tokens': 500,
-            'enable_semantic_clustering': True
-        }
-        
-        result = _process_with_model(text, 'hierarchical', config)
+        # Check text size for unlimited processing
+        text_size = len(text.encode('utf-8'))
+        if text_size > 100 * 1024:  # > 100KB
+            # Use unlimited processor
+            from unlimited_text_processor import process_unlimited_text
+            result = process_unlimited_text(text, {
+                'max_summary_tokens': 500,
+                'enable_semantic_clustering': True
+            })
+        else:
+            # Process with hierarchical engine
+            config = {
+                'max_concepts': 10,
+                'max_summary_tokens': 500,
+                'enable_semantic_clustering': True
+            }
+            
+            result = _process_with_model(text, 'hierarchical', config)
         
         if 'error' in result:
             return jsonify(result), result.get('status_code', 500)
@@ -108,7 +127,7 @@ def summarize_ultimate():
         response = {
             'result': {
                 'original_words': len(text.split()),
-                'compression_ratio': len(text) / max(1, len(result.get('summary', ''))),
+                'compression_ratio': len(text) / max(1, len(result.get('summary', ''))) if result.get('summary') else 1.0,
             }
         }
         

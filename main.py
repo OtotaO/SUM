@@ -57,6 +57,12 @@ def main():
     print("📊 Web interface will be available at http://localhost:5001")
     print("\n" + "="*50 + "\n")
     
+    # Ensure required directories exist
+    import os
+    os.makedirs('uploads/mass', exist_ok=True)
+    os.makedirs('jobs', exist_ok=True)
+    os.makedirs('.sum_cache', exist_ok=True)
+    
     app = create_simple_app()
     app.start_time = time.time()
     

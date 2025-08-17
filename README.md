@@ -1,14 +1,16 @@
 # SUM - Advanced Text Summarization
 
-> **Fast, accurate text summarization for documents of any size.**
+> **Fast, accurate text summarization for documents of any size - from 1 byte to 1 terabyte.**
 
 SUM is an open-source text summarization tool that uses extractive summarization techniques to create concise summaries from documents. It supports multiple file formats and provides various summary density options.
 
 ## Features
 
-- **Multiple File Formats** - Supports PDF, DOCX, TXT, HTML, RTF, and more
+- **Unlimited Text Length** - Process texts from 1 byte to 1TB+ with intelligent chunking
+- **Multiple File Formats** - Supports PDF, DOCX, DOC, TXT, HTML, RTF, ODT and more
 - **Flexible Summarization** - Choose from 5 density levels (tags to detailed)
-- **Batch Processing** - Process multiple documents at once
+- **Batch Processing** - Process up to 10,000 documents at once
+- **Streaming Architecture** - Memory-efficient processing for massive files
 - **Web Interface** - Simple drag-and-drop file upload
 - **REST API** - Integrate summarization into your applications
 - **Command Line** - Quick summarization from terminal

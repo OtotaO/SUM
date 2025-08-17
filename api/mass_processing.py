@@ -14,6 +14,7 @@ from werkzeug.utils import secure_filename
 import threading
 import queue
 import json
+import time
 from typing import Dict, Any, List
 
 from mass_document_engine import MassDocumentEngine, StreamingMassProcessor
@@ -26,6 +27,7 @@ mass_bp = Blueprint('mass_processing', __name__)
 processing_queue = queue.Queue()
 processing_status = {}
 processing_lock = threading.Lock()
+MAX_COMPLETED_JOBS = 100  # Keep only last 100 completed jobs
 
 # Background processor thread
 processor_thread = None
@@ -72,6 +74,10 @@ def background_processor():
                         'executive_summary': result.executive_summary
                     }
                     processing_status[job_id]['message'] = 'Processing complete!'
+                    processing_status[job_id]['completed_at'] = time.time()
+                    
+                    # Clean up old completed jobs
+                    _cleanup_old_jobs()
                     
             except Exception as e:
                 logger.error(f"Error processing job {job_id}: {e}")
@@ -84,6 +90,20 @@ def background_processor():
             continue
         except Exception as e:
             logger.error(f"Background processor error: {e}")
+
+
+def _cleanup_old_jobs():
+    """Remove old completed jobs to prevent unbounded growth."""
+    with processing_lock:
+        completed_jobs = [(job_id, status) for job_id, status in processing_status.items() 
+                         if status.get('status') == 'completed']
+        
+        if len(completed_jobs) > MAX_COMPLETED_JOBS:
+            # Sort by completion time and remove oldest
+            completed_jobs.sort(key=lambda x: x[1].get('completed_at', 0))
+            
+            for job_id, _ in completed_jobs[:-MAX_COMPLETED_JOBS]:
+                del processing_status[job_id]
 
 
 @mass_bp.route('/api/mass/upload', methods=['POST'])
@@ -99,6 +119,10 @@ def upload_documents():
     files = request.files.getlist('files')
     if not files or len(files) == 0:
         return jsonify({'error': 'No files selected'}), 400
+    
+    # Validate file count
+    if len(files) > 10000:
+        return jsonify({'error': 'Too many files. Maximum 10,000 files allowed per upload'}), 400
     
     # Create job ID
     job_id = str(uuid.uuid4())
@@ -154,12 +178,17 @@ def process_folder():
     if not folder_path:
         return jsonify({'error': 'No folder path provided'}), 400
     
-    folder = Path(folder_path)
-    if not folder.exists() or not folder.is_dir():
+    # Validate folder path to prevent directory traversal
+    try:
+        folder = Path(folder_path).resolve()
+        # Ensure the resolved path is within allowed directories
+        if '..' in str(folder_path) or not folder.exists() or not folder.is_dir():
+            return jsonify({'error': 'Invalid folder path'}), 400
+    except Exception:
         return jsonify({'error': 'Invalid folder path'}), 400
     
     # Find all documents
-    extensions = ['.pdf', '.docx', '.txt', '.md', '.html', '.rtf']
+    extensions = ['.pdf', '.docx', '.doc', '.txt', '.md', '.html', '.rtf', '.odt']
     files = []
     for ext in extensions:
         files.extend(folder.glob(f'**/*{ext}'))
@@ -235,8 +264,14 @@ def get_job_results(job_id):
     
     # Load document index
     docs_index_file = results_dir / "documents" / "index.json"
-    with open(docs_index_file, 'r') as f:
-        docs_index = json.load(f)
+    docs_index = {}
+    if docs_index_file.exists():
+        try:
+            with open(docs_index_file, 'r') as f:
+                docs_index = json.load(f)
+        except Exception as e:
+            logger.error(f"Failed to load document index: {e}")
+            docs_index = {}
     
     return jsonify({
         'job_id': job_id,
@@ -295,7 +330,7 @@ def stream_process():
         return jsonify({'error': 'Folder not found'}), 404
     
     # Find all documents
-    extensions = ['.pdf', '.docx', '.txt', '.md', '.html', '.rtf']
+    extensions = ['.pdf', '.docx', '.doc', '.txt', '.md', '.html', '.rtf', '.odt']
     files = []
     for ext in extensions:
         files.extend(folder.glob(f'**/*{ext}'))

@@ -20,6 +20,7 @@ from threading import Lock
 from web.middleware import rate_limit, validate_json_input
 from config import active_config
 from summarization_engine import BasicSummarizationEngine, AdvancedSummarizationEngine, HierarchicalDensificationEngine
+from unlimited_text_processor import process_unlimited_text
 
 
 logger = logging.getLogger(__name__)
@@ -55,8 +56,9 @@ def process_text():
     Expected JSON input:
     {
         "text": "Text to summarize...",
-        "model": "simple|advanced|hierarchical|streaming",
-        "config": {...}
+        "model": "simple|advanced|hierarchical|streaming|unlimited",
+        "config": {...},
+        "file_path": "Optional path to large file"
     }
     """
     try:
@@ -69,6 +71,18 @@ def process_text():
         text = data['text']
         model_type = data.get('model', 'simple').lower()
         config = data.get('config', {})
+        file_path = data.get('file_path')
+        
+        # Check for unlimited processing
+        if model_type == 'unlimited' or file_path:
+            # Use unlimited processor for file paths or explicit unlimited mode
+            if file_path:
+                result = process_unlimited_text(file_path, config)
+            else:
+                result = process_unlimited_text(text, config)
+            result['processing_time'] = time.time() - start_time
+            result['model'] = 'unlimited'
+            return jsonify(result)
         
         # Process with appropriate model
         start_time = time.time()
@@ -170,6 +184,94 @@ def analyze_topics():
         }), 500
 
 
+@summarization_bp.route('/process_unlimited', methods=['POST'])
+@rate_limit(5, 60)  # 5 calls per minute for large files
+def process_unlimited():
+    """
+    Process text of unlimited length.
+    
+    Supports:
+    - Direct text in JSON
+    - File paths in JSON
+    - File upload as multipart/form-data
+    """
+    try:
+        import tempfile
+        import os
+        
+        file_path = None
+        text_input = None
+        config = {}
+        cleanup_file = False
+        
+        # Handle different input types
+        if request.is_json:
+            data = request.get_json()
+            text_input = data.get('text')
+            file_path = data.get('file_path')
+            config = data.get('config', {})
+        else:
+            # File upload
+            if 'file' not in request.files:
+                return jsonify({'error': 'No file uploaded'}), 400
+                
+            file = request.files['file']
+            if file.filename == '':
+                return jsonify({'error': 'No file selected'}), 400
+                
+            # Save to temporary file
+            with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as tmp:
+                file.save(tmp.name)
+                file_path = tmp.name
+                cleanup_file = True
+            
+            # Get config from form data
+            if 'config' in request.form:
+                import json
+                try:
+                    config = json.loads(request.form['config'])
+                except:
+                    config = {}
+        
+        # Validate input
+        if not text_input and not file_path:
+            return jsonify({'error': 'No text or file path provided'}), 400
+        
+        # Process
+        start_time = time.time()
+        
+        if file_path:
+            result = process_unlimited_text(file_path, config)
+        else:
+            result = process_unlimited_text(text_input, config)
+            
+        # Add metadata
+        result['processing_time'] = time.time() - start_time
+        result['endpoint'] = 'process_unlimited'
+        
+        # Cleanup temporary file if needed
+        if cleanup_file and os.path.exists(file_path):
+            try:
+                os.unlink(file_path)
+            except:
+                pass
+                
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"Error processing unlimited text: {str(e)}", exc_info=True)
+        # Cleanup on error
+        if 'cleanup_file' in locals() and cleanup_file and 'file_path' in locals() and os.path.exists(file_path):
+            try:
+                os.unlink(file_path)
+            except:
+                pass
+        return jsonify({
+            'error': 'Error processing unlimited text',
+            'details': str(e)
+        }), 500
+
+
 def _process_with_model(text: str, model_type: str, config: dict) -> dict:
     """
     Process text with the specified model.
@@ -227,6 +329,6 @@ def _process_with_model(text: str, model_type: str, config: dict) -> dict:
     else:
         return {
             'error': f'Unknown model type: {model_type}',
-            'available_models': ['simple', 'advanced', 'hierarchical', 'streaming'],
+            'available_models': ['simple', 'advanced', 'hierarchical', 'streaming', 'unlimited'],
             'status_code': 400
         }

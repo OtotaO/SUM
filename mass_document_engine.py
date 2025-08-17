@@ -26,7 +26,7 @@ from queue import Queue
 import threading
 import time
 
-from Utils.universal_file_processor import UniversalFileProcessor
+from utils.universal_file_processor import UniversalFileProcessor
 from summarization_engine import HierarchicalDensificationEngine
 import numpy as np
 

@@ -32,6 +32,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, List, Any, Optional, Tuple
 from collections import Counter
 from wordcloud import WordCloud
+from unlimited_text_processor import UnlimitedTextProcessor
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -133,6 +134,13 @@ class BasicSummarizationEngine(SummarizationEngine):
             config = model_config or {}
             max_tokens = max(10, min(config.get('maxTokens', 100), 500))
             threshold = config.get('threshold', 0.3)
+            
+            # Check text size and route to unlimited processor if needed
+            text_size = len(text.encode('utf-8'))
+            if text_size > 100 * 1024:  # > 100KB
+                logger.info(f"Large text detected ({text_size:,} bytes), using unlimited processor")
+                unlimited_processor = UnlimitedTextProcessor()
+                return unlimited_processor.process_text(text, config)
             
             sentences, words, word_freq = self._preprocess_text(text)
             
