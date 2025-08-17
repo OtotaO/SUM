@@ -547,8 +547,16 @@ class UnlimitedTextProcessor:
             return source
 
 
-# Create global instance
-unlimited_processor = UnlimitedTextProcessor()
+# Lazy initialization to avoid circular imports
+_unlimited_processor = None
+
+
+def get_unlimited_processor():
+    """Get or create the unlimited processor instance."""
+    global _unlimited_processor
+    if _unlimited_processor is None:
+        _unlimited_processor = UnlimitedTextProcessor()
+    return _unlimited_processor
 
 
 def process_unlimited_text(text_or_path: Any, 
@@ -563,4 +571,5 @@ def process_unlimited_text(text_or_path: Any,
     Returns:
         Summary results with metadata
     """
-    return unlimited_processor.process_text(text_or_path, config)
+    processor = get_unlimited_processor()
+    return processor.process_text(text_or_path, config)

@@ -20,7 +20,7 @@ from threading import Lock
 from web.middleware import rate_limit, validate_json_input
 from config import active_config
 from summarization_engine import BasicSummarizationEngine, AdvancedSummarizationEngine, HierarchicalDensificationEngine
-from unlimited_text_processor import process_unlimited_text
+from unlimited_text_processor import process_unlimited_text, get_unlimited_processor
 from api.auth import optional_api_key, require_api_key
 
 

@@ -132,4 +132,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-EOF < /dev/null
+EOF < /dev/null*.log
+*.txt
+admin_api_key.txt
+.sum_cache/
