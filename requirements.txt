@@ -32,5 +32,14 @@ redis==5.0.1
 transformers==4.35.2
 torch==2.1.0
 
+# Language Detection
+langdetect==1.0.9
+langid==1.1.6
+
 # Development
 pytest==7.4.3
+pytest-cov==4.1.0
+pytest-asyncio==0.21.1
+
+# Optional: MCP Support
+# mcp>=0.1.0  # Uncomment to enable Model Context Protocol support

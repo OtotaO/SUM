@@ -34,6 +34,7 @@ from collections import Counter
 from wordcloud import WordCloud
 from unlimited_text_processor import UnlimitedTextProcessor
 from smart_cache import cache_result, get_cache
+from language_detector import detect_language, multilingual_summarizer
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -134,6 +135,18 @@ class BasicSummarizationEngine(SummarizationEngine):
         try:
             config = model_config or {}
             
+            # Detect language
+            lang_info = detect_language(text)
+            detected_language = lang_info['language']
+            
+            # Add language info to result
+            language_metadata = {
+                'detected_language': detected_language,
+                'language_name': lang_info['language_name'],
+                'language_confidence': lang_info['confidence'],
+                'language_detection_method': lang_info['method']
+            }
+            
             # Check cache first if enabled
             if config.get('use_cache', True):
                 cache = get_cache()
@@ -186,6 +199,9 @@ class BasicSummarizationEngine(SummarizationEngine):
             summary_data['compression_ratio'] = (
                 len(word_tokenize(summary_data['summary'])) / len(words) if words else 1.0
             )
+            
+            # Add language metadata
+            summary_data.update(language_metadata)
             
             # Cache the result if enabled
             if config.get('use_cache', True):
@@ -354,12 +370,22 @@ class AdvancedSummarizationEngine(SummarizationEngine):
             return {'error': 'Invalid input'}
 
         try:
+            # Detect language
+            lang_info = detect_language(text)
+            language_metadata = {
+                'detected_language': lang_info['language'],
+                'language_name': lang_info['language_name'],
+                'language_confidence': lang_info['confidence'],
+                'language_detection_method': lang_info['method']
+            }
             if len(text.split()) < 10:
-                return {
+                result = {
                     'sum': text,
                     'summary': text,
                     'tags': self.generate_tag_summary(text)
                 }
+                result.update(language_metadata)
+                return result
 
             config = model_config or {}
             tag_summary = self.generate_tag_summary(text)
@@ -381,6 +407,7 @@ class AdvancedSummarizationEngine(SummarizationEngine):
                     'language': self.detect_language(text)
                 })
             
+            result.update(language_metadata)
             return result
             
         except Exception as e:
@@ -631,6 +658,15 @@ class HierarchicalDensificationEngine(SummarizationEngine):
         try:
             config = config or {}
             
+            # Detect language
+            lang_info = detect_language(text)
+            language_metadata = {
+                'detected_language': lang_info['language'],
+                'language_name': lang_info['language_name'],
+                'language_confidence': lang_info['confidence'],
+                'language_detection_method': lang_info['method']
+            }
+            
             # Check cache first if enabled
             if config.get('use_cache', True):
                 cache = get_cache()
@@ -674,6 +710,9 @@ class HierarchicalDensificationEngine(SummarizationEngine):
             result['summary'] = core_summary
             result['tags'] = concepts
             result['sum'] = core_summary
+            
+            # Add language metadata
+            result.update(language_metadata)
             
             # Cache the result if enabled
             if config.get('use_cache', True):

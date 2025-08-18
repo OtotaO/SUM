@@ -1,0 +1,169 @@
+{
+  "name": "sum",
+  "version": "1.0.0",
+  "description": "SUM - Advanced Text Summarization MCP Server",
+  "author": "SUM Development Team",
+  "license": "Apache-2.0",
+  "server": {
+    "command": "python",
+    "args": ["mcp_server.py"],
+    "env": {
+      "PYTHONPATH": "."
+    }
+  },
+  "tools": [
+    {
+      "name": "summarize",
+      "description": "Summarize text using various AI models",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "Text to summarize"
+          },
+          "model": {
+            "type": "string",
+            "enum": ["basic", "advanced", "hierarchical", "unlimited"],
+            "default": "hierarchical",
+            "description": "Summarization model to use"
+          },
+          "max_tokens": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 500,
+            "default": 100,
+            "description": "Maximum tokens in summary"
+          }
+        },
+        "required": ["text"]
+      }
+    },
+    {
+      "name": "batch_summarize",
+      "description": "Summarize multiple texts efficiently",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "texts": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "List of texts to summarize"
+          },
+          "model": {
+            "type": "string",
+            "enum": ["basic", "advanced", "hierarchical"],
+            "default": "basic"
+          }
+        },
+        "required": ["texts"]
+      }
+    },
+    {
+      "name": "detect_language",
+      "description": "Detect the language of text",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "Text to analyze"
+          }
+        },
+        "required": ["text"]
+      }
+    },
+    {
+      "name": "hierarchical_summary",
+      "description": "Generate multi-level hierarchical summary",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "Text to summarize hierarchically"
+          },
+          "include_insights": {
+            "type": "boolean",
+            "default": true,
+            "description": "Include key insights extraction"
+          }
+        },
+        "required": ["text"]
+      }
+    },
+    {
+      "name": "extract_concepts",
+      "description": "Extract key concepts and themes from text",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "Text to analyze"
+          },
+          "max_concepts": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 20,
+            "default": 10,
+            "description": "Maximum number of concepts"
+          }
+        },
+        "required": ["text"]
+      }
+    },
+    {
+      "name": "compare_summaries",
+      "description": "Compare summaries from different models",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "Text to summarize with multiple models"
+          },
+          "models": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["basic", "advanced", "hierarchical"]
+            },
+            "default": ["basic", "hierarchical"],
+            "description": "Models to compare"
+          }
+        },
+        "required": ["text"]
+      }
+    }
+  ],
+  "requirements": [
+    "nltk>=3.8.1",
+    "flask>=3.0.0",
+    "numpy>=1.24.3",
+    "langdetect>=1.0.9"
+  ],
+  "examples": [
+    {
+      "tool": "summarize",
+      "input": {
+        "text": "The Renaissance was a period in European history marking the transition from the Middle Ages to modernity...",
+        "model": "hierarchical",
+        "max_tokens": 100
+      }
+    },
+    {
+      "tool": "detect_language",
+      "input": {
+        "text": "Bonjour, comment allez-vous?"
+      }
+    },
+    {
+      "tool": "extract_concepts",
+      "input": {
+        "text": "Artificial intelligence is transforming healthcare through machine learning...",
+        "max_concepts": 5
+      }
+    }
+  ]
+}
