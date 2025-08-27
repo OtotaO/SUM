@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SUM Legendary - The Future of Knowledge Crystallization</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: white;
+        }
+
+        .header {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(90deg, #fff, #ffd700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .container {
+            flex: 1;
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+            width: 100%;
+        }
+
+        .tech-selector {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .tech-card {
+            flex: 1;
+            min-width: 200px;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .tech-card:hover, .tech-card.active {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .tech-card .icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .tech-card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .tech-card p {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .input-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .input-panel, .output-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 2rem;
+        }
+
+        .input-panel h2, .output-panel h2 {
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 300px;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            color: white;
+            font-size: 1rem;
+            resize: vertical;
+        }
+
+        textarea::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .controls {
+            margin-top: 1rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%);
+            border: none;
+            border-radius: 10px;
+            color: #333;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(255, 215, 0, 0.5);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .output-content {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 1rem;
+            min-height: 300px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .output-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .output-section h3 {
+            color: #ffd700;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .output-section p, .output-section ul {
+            line-height: 1.6;
+        }
+
+        .output-section ul {
+            list-style: none;
+            padding-left: 1rem;
+        }
+
+        .output-section li {
+            margin-bottom: 0.5rem;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .output-section li:before {
+            content: "▸";
+            position: absolute;
+            left: 0;
+            color: #ffd700;
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .metric {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .metric .value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .metric .label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-top: 0.25rem;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #ffd700;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .stream-message {
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            background: rgba(255, 215, 0, 0.1);
+            border-left: 3px solid #ffd700;
+            border-radius: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .input-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚀 SUM Legendary</h1>
+        <p>The Future of Knowledge Crystallization</p>
+    </div>
+
+    <div class="container">
+        <!-- Technology Selector -->
+        <div class="tech-selector">
+            <div class="tech-card active" data-tech="unified">
+                <div class="icon">🎯</div>
+                <h3>Unified</h3>
+                <p>All technologies combined</p>
+            </div>
+            <div class="tech-card" data-tech="graphrag">
+                <div class="icon">🕸️</div>
+                <h3>GraphRAG</h3>
+                <p>Corpus-level analysis</p>
+            </div>
+            <div class="tech-card" data-tech="multiagent">
+                <div class="icon">🤖</div>
+                <h3>Multi-Agent</h3>
+                <p>10+ AI agents in parallel</p>
+            </div>
+            <div class="tech-card" data-tech="raptor">
+                <div class="icon">🌳</div>
+                <h3>RAPTOR</h3>
+                <p>Hierarchical trees</p>
+            </div>
+            <div class="tech-card" data-tech="stream">
+                <div class="icon">⚡</div>
+                <h3>Stream</h3>
+                <p>Real-time processing</p>
+            </div>
+        </div>
+
+        <!-- Input/Output Section -->
+        <div class="input-section">
+            <div class="input-panel">
+                <h2>📝 Input</h2>
+                <textarea id="inputText" placeholder="Paste your text here or add multiple documents separated by '---'..."></textarea>
+                <div class="controls">
+                    <button id="processBtn" onclick="processText()">
+                        🚀 Process
+                    </button>
+                    <button onclick="loadExample()">
+                        📚 Load Example
+                    </button>
+                    <button onclick="clearAll()">
+                        🗑️ Clear
+                    </button>
+                </div>
+            </div>
+
+            <div class="output-panel">
+                <h2>💎 Output</h2>
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p style="margin-top: 1rem;">Processing with legendary technologies...</p>
+                </div>
+                <div class="output-content" id="output">
+                    <p style="opacity: 0.6; text-align: center; padding: 2rem;">
+                        Results will appear here...
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metrics Dashboard -->
+        <div class="metrics" id="metrics" style="display: none;">
+            <div class="metric">
+                <div class="value" id="qualityScore">-</div>
+                <div class="label">Quality Score</div>
+            </div>
+            <div class="metric">
+                <div class="value" id="consensusScore">-</div>
+                <div class="label">Consensus Score</div>
+            </div>
+            <div class="metric">
+                <div class="value" id="processingTime">-</div>
+                <div class="label">Processing Time</div>
+            </div>
+            <div class="metric">
+                <div class="value" id="techUsed">-</div>
+                <div class="label">Technologies Used</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedTech = 'unified';
+        let eventSource = null;
+
+        // Technology selection
+        document.querySelectorAll('.tech-card').forEach(card => {
+            card.addEventListener('click', function() {
+                document.querySelectorAll('.tech-card').forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+                selectedTech = this.dataset.tech;
+            });
+        });
+
+        async function processText() {
+            const text = document.getElementById('inputText').value;
+            if (!text.trim()) {
+                alert('Please enter some text to process');
+                return;
+            }
+
+            const outputDiv = document.getElementById('output');
+            const loadingDiv = document.getElementById('loading');
+            const metricsDiv = document.getElementById('metrics');
+            const processBtn = document.getElementById('processBtn');
+
+            // Show loading
+            loadingDiv.classList.add('active');
+            outputDiv.innerHTML = '';
+            metricsDiv.style.display = 'none';
+            processBtn.disabled = true;
+
+            try {
+                if (selectedTech === 'stream') {
+                    // Handle streaming
+                    await processStream(text);
+                } else {
+                    // Regular processing
+                    const endpoint = `/api/legendary/${selectedTech}`;
+                    const payload = selectedTech === 'graphrag' 
+                        ? { documents: text.split('---').map(d => d.trim()).filter(d => d) }
+                        : { text: text };
+
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const data = await response.json();
+                    displayResults(data);
+                }
+            } catch (error) {
+                outputDiv.innerHTML = `<p style="color: #ff6b6b;">Error: ${error.message}</p>`;
+            } finally {
+                loadingDiv.classList.remove('active');
+                processBtn.disabled = false;
+            }
+        }
+
+        async function processStream(text) {
+            const outputDiv = document.getElementById('output');
+            outputDiv.innerHTML = '<h3>🔄 Real-time Processing</h3>';
+
+            eventSource = new EventSource('/api/legendary/stream', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: text })
+            });
+
+            // Use fetch with streaming for POST
+            const response = await fetch('/api/legendary/stream', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: text })
+            });
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value);
+                const lines = chunk.split('\n');
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const data = JSON.parse(line.slice(6));
+                        if (data.complete) {
+                            outputDiv.innerHTML += '<p style="color: #4caf50;">✅ Processing complete!</p>';
+                        } else {
+                            const message = document.createElement('div');
+                            message.className = 'stream-message';
+                            message.innerHTML = `<strong>${data.stage}:</strong> ${JSON.stringify(data.result || data.status)}`;
+                            outputDiv.appendChild(message);
+                        }
+                    }
+                }
+            }
+        }
+
+        function displayResults(data) {
+            const outputDiv = document.getElementById('output');
+            const metricsDiv = document.getElementById('metrics');
+            
+            let html = '';
+
+            // Main summary
+            if (data.unified_summary || data.summary || data.answer) {
+                html += `
+                    <div class="output-section">
+                        <h3>📝 Summary</h3>
+                        <p>${data.unified_summary || data.summary || data.answer}</p>
+                    </div>
+                `;
+            }
+
+            // Essence
+            if (data.essence) {
+                html += `
+                    <div class="output-section">
+                        <h3>💡 Essence</h3>
+                        <p>${data.essence}</p>
+                    </div>
+                `;
+            }
+
+            // Hierarchical levels
+            if (data.hierarchical_levels || data.levels) {
+                const levels = data.hierarchical_levels || data.levels;
+                html += `
+                    <div class="output-section">
+                        <h3>📊 Hierarchical Levels</h3>
+                        <ul>
+                `;
+                for (const [level, summaries] of Object.entries(levels)) {
+                    if (Array.isArray(summaries)) {
+                        html += `<li><strong>${level}:</strong> ${summaries[0]}</li>`;
+                    }
+                }
+                html += '</ul></div>';
+            }
+
+            // Key themes
+            if (data.key_themes && data.key_themes.length > 0) {
+                html += `
+                    <div class="output-section">
+                        <h3>🎯 Key Themes</h3>
+                        <ul>
+                            ${data.key_themes.map(theme => `<li>${theme}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
+            // Facts
+            if (data.facts && data.facts.length > 0) {
+                html += `
+                    <div class="output-section">
+                        <h3>📌 Key Facts</h3>
+                        <ul>
+                            ${data.facts.slice(0, 5).map(fact => `<li>${fact}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
+            // Entities
+            if (data.entities && data.entities.length > 0) {
+                html += `
+                    <div class="output-section">
+                        <h3>👥 Entities</h3>
+                        <p>${data.entities.slice(0, 10).map(e => e.text || e).join(', ')}</p>
+                    </div>
+                `;
+            }
+
+            // Sentiment
+            if (data.sentiment) {
+                html += `
+                    <div class="output-section">
+                        <h3>😊 Sentiment</h3>
+                        <p>Positive: ${(data.sentiment.positive * 100).toFixed(1)}% | 
+                           Neutral: ${(data.sentiment.neutral * 100).toFixed(1)}% | 
+                           Negative: ${(data.sentiment.negative * 100).toFixed(1)}%</p>
+                    </div>
+                `;
+            }
+
+            outputDiv.innerHTML = html;
+
+            // Update metrics
+            if (data.quality_metrics || data.quality_score) {
+                metricsDiv.style.display = 'grid';
+                
+                if (data.quality_metrics) {
+                    document.getElementById('qualityScore').textContent = 
+                        (data.quality_metrics.crystallization_quality * 100).toFixed(0) + '%';
+                    document.getElementById('consensusScore').textContent = 
+                        (data.quality_metrics.agent_consensus * 100).toFixed(0) + '%';
+                } else if (data.quality_score) {
+                    document.getElementById('qualityScore').textContent = 
+                        (data.quality_score * 100).toFixed(0) + '%';
+                }
+                
+                if (data.consensus_score) {
+                    document.getElementById('consensusScore').textContent = 
+                        (data.consensus_score * 100).toFixed(0) + '%';
+                }
+                
+                if (data.processing_time) {
+                    document.getElementById('processingTime').textContent = 
+                        data.processing_time.toFixed(2) + 's';
+                }
+                
+                if (data.technologies_used) {
+                    document.getElementById('techUsed').textContent = 
+                        data.technologies_used.length;
+                }
+            }
+        }
+
+        function loadExample() {
+            const exampleText = `Artificial intelligence (AI) has emerged as one of the most transformative technologies of the 21st century, fundamentally reshaping industries, economies, and society at large. From its theoretical foundations in the 1950s to today's sophisticated deep learning systems, AI has evolved from a speculative concept to a practical reality that touches nearly every aspect of modern life.
+
+The current AI revolution is primarily driven by machine learning, particularly deep learning techniques that use artificial neural networks inspired by the human brain. These systems can process vast amounts of data, identify patterns, and make decisions with increasing accuracy. Natural language processing enables machines to understand and generate human language, while computer vision allows them to interpret visual information with superhuman precision.
+
+Major technology companies like OpenAI, Google, Microsoft, and Anthropic are investing billions in developing increasingly powerful AI models. GPT-4, Claude, and other large language models demonstrate remarkable capabilities in reasoning, creativity, and problem-solving. These models are trained on massive datasets using thousands of specialized processors, consuming enormous computational resources.
+
+The implications of AI extend far beyond technology. In healthcare, AI assists in drug discovery, disease diagnosis, and personalized treatment plans. Financial services use AI for fraud detection, algorithmic trading, and risk assessment. Manufacturing benefits from predictive maintenance and quality control. Education is being transformed through personalized learning and intelligent tutoring systems.
+
+However, the rapid advancement of AI also raises significant concerns. Job displacement due to automation threatens traditional employment structures. Bias in AI systems can perpetuate and amplify societal inequalities. Privacy concerns arise from the massive data collection required for AI training. The potential for misuse in surveillance, manipulation, and autonomous weapons systems poses ethical challenges.
+
+Governance and regulation struggle to keep pace with technological advancement. Questions about accountability, transparency, and control become increasingly urgent as AI systems become more autonomous and influential in decision-making processes.
+
+Looking forward, the trajectory of AI development points toward artificial general intelligence (AGI) - systems that match or exceed human cognitive abilities across all domains. While timeline predictions vary widely, the potential arrival of AGI represents both humanity's greatest opportunity and potentially its greatest challenge.`;
+
+            document.getElementById('inputText').value = exampleText;
+        }
+
+        function clearAll() {
+            document.getElementById('inputText').value = '';
+            document.getElementById('output').innerHTML = `
+                <p style="opacity: 0.6; text-align: center; padding: 2rem;">
+                    Results will appear here...
+                </p>
+            `;
+            document.getElementById('metrics').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

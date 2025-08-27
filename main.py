@@ -13,6 +13,8 @@ from api.health import health_bp
 from api.mass_processing import mass_bp
 from api.web_compatibility import web_compat_bp
 from api.auth_routes import auth_bp
+from api.crystallization import crystallization_bp
+from api.legendary import legendary_bp
 from web.routes import web_bp
 
 logger = logging.getLogger(__name__)
@@ -34,6 +36,8 @@ def create_simple_app():
     app.register_blueprint(summarization_bp, url_prefix='/api')
     app.register_blueprint(file_processing_bp, url_prefix='/api')
     app.register_blueprint(health_bp, url_prefix='/api')
+    app.register_blueprint(crystallization_bp)  # Knowledge crystallization API
+    app.register_blueprint(legendary_bp)  # Legendary features API
     app.register_blueprint(mass_bp)  # Mass processing at root level
     app.register_blueprint(web_compat_bp)  # Web compatibility routes at root
     app.register_blueprint(auth_bp)  # Auth routes

@@ -32,6 +32,14 @@ redis==5.0.1
 transformers==4.35.2
 torch==2.1.0
 
+# Legendary Features Dependencies
+sentence-transformers==2.2.2
+scikit-learn==1.3.2
+networkx==3.2
+python-louvain==0.16
+spacy==3.7.2
+asyncio-mqtt==0.16.2
+
 # Language Detection
 langdetect==1.0.9
 langid==1.1.6

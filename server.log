@@ -1,9 +1,9 @@
-2025-08-15 11:03:57,930 - INFO - Trinity Engine NLTK resources initialized
-2025-08-15 11:03:57,932 - INFO - Hierarchical Densification Engine initialized successfully
-2025-08-15 11:03:57,936 - INFO - Started mass document background processor
-2025-08-15 11:03:57,950 - INFO - Starting SUM server (simplified) on 0.0.0.0:5001
-2025-08-15 11:03:57,950 - INFO - Note: Using simplified startup to avoid circular imports
-2025-08-15 11:03:57,950 - INFO - Web interface available at http://0.0.0.0:5001
+2025-08-17 04:55:14,335 - INFO - Trinity Engine NLTK resources initialized
+2025-08-17 04:55:14,335 - INFO - Hierarchical Densification Engine initialized successfully
+2025-08-17 04:55:14,336 - INFO - Started mass document background processor
+2025-08-17 04:55:14,344 - INFO - Starting SUM server (simplified) on 0.0.0.0:5001
+2025-08-17 04:55:14,344 - INFO - Note: Using simplified startup to avoid circular imports
+2025-08-17 04:55:14,344 - INFO - Web interface available at http://0.0.0.0:5001
 
 ==================================================
 🚀 SUM - Text Summarization Platform
@@ -16,60 +16,51 @@
 
  * Serving Flask app 'main'
  * Debug mode: on
-2025-08-15 11:03:57,985 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+2025-08-17 04:55:14,365 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
  * Running on all addresses (0.0.0.0)
  * Running on http://127.0.0.1:5001
  * Running on http://192.168.1.176:5001
-2025-08-15 11:03:57,985 - INFO - [33mPress CTRL+C to quit[0m
-2025-08-15 11:03:57,986 - INFO -  * Restarting with stat
-2025-08-15 11:03:59,181 - INFO - Trinity Engine NLTK resources initialized
-2025-08-15 11:03:59,182 - INFO - Hierarchical Densification Engine initialized successfully
-2025-08-15 11:03:59,182 - INFO - Started mass document background processor
-2025-08-15 11:03:59,188 - INFO - Starting SUM server (simplified) on 0.0.0.0:5001
-2025-08-15 11:03:59,188 - INFO - Note: Using simplified startup to avoid circular imports
-2025-08-15 11:03:59,188 - INFO - Web interface available at http://0.0.0.0:5001
-2025-08-15 11:03:59,201 - WARNING -  * Debugger is active!
-2025-08-15 11:03:59,209 - INFO -  * Debugger PIN: 979-432-672
-2025-08-15 11:04:13,988 - INFO - Trinity Engine NLTK resources initialized
-2025-08-15 11:04:13,989 - INFO - Hierarchical Densification Engine initialized successfully
-2025-08-15 11:04:14,011 - INFO - 127.0.0.1 - - [15/Aug/2025 11:04:14] "POST /summarize/ultimate HTTP/1.1" 200 -
-2025-08-15 11:04:57,439 - INFO - 127.0.0.1 - - [15/Aug/2025 11:04:57] "GET / HTTP/1.1" 200 -
-2025-08-15 11:09:46,216 - INFO - Trinity Engine NLTK resources initialized
-2025-08-15 11:09:46,217 - INFO - Hierarchical Densification Engine initialized successfully
-2025-08-15 11:09:46,237 - INFO - 127.0.0.1 - - [15/Aug/2025 11:09:46] "POST /summarize/ultimate HTTP/1.1" 200 -
-2025-08-15 11:11:23,788 - INFO - SimpleSUM initialized successfully
-2025-08-15 11:11:23,796 - INFO - 127.0.0.1 - - [15/Aug/2025 11:11:23] "POST /summarize HTTP/1.1" 200 -
-2025-08-15 11:14:09,017 - INFO - 127.0.0.1 - - [15/Aug/2025 11:14:09] "[33mPOST /process_text HTTP/1.1[0m" 404 -
-2025-08-15 11:17:39,830 - INFO - 127.0.0.1 - - [15/Aug/2025 11:17:39] "[33mGET /health HTTP/1.1[0m" 404 -
-2025-08-15 11:22:53,264 - INFO - 127.0.0.1 - - [15/Aug/2025 11:22:53] "GET /api/health HTTP/1.1" 200 -
-2025-08-15 11:24:52,538 - INFO - Trinity Engine NLTK resources initialized
-2025-08-15 11:24:52,539 - INFO - Hierarchical Densification Engine initialized successfully
-2025-08-15 11:24:52,540 - INFO - 127.0.0.1 - - [15/Aug/2025 11:24:52] "POST /api/process_text HTTP/1.1" 200 -
-2025-08-15 11:25:11,559 - INFO -  * Detected change in '/Users/ototao/Github Projects/SUM/SUM/api/web_compatibility.py', reloading
-
-==================================================
-🚀 SUM - Text Summarization Platform
-==================================================
-
-✅ Starting server...
-📊 Web interface will be available at http://localhost:5001
-
-==================================================
-
-2025-08-15 11:25:11,833 - INFO -  * Restarting with stat
-2025-08-15 11:25:13,091 - INFO - Trinity Engine NLTK resources initialized
-2025-08-15 11:25:13,092 - INFO - Hierarchical Densification Engine initialized successfully
-2025-08-15 11:25:13,092 - INFO - Started mass document background processor
-2025-08-15 11:25:13,098 - INFO - Starting SUM server (simplified) on 0.0.0.0:5001
-2025-08-15 11:25:13,098 - INFO - Note: Using simplified startup to avoid circular imports
-2025-08-15 11:25:13,098 - INFO - Web interface available at http://0.0.0.0:5001
-2025-08-15 11:25:13,109 - WARNING -  * Debugger is active!
-2025-08-15 11:25:13,119 - INFO -  * Debugger PIN: 979-432-672
-2025-08-15 11:30:23,809 - INFO - Trinity Engine NLTK resources initialized
-2025-08-15 11:30:23,810 - INFO - Hierarchical Densification Engine initialized successfully
-2025-08-15 11:30:23,831 - INFO - 127.0.0.1 - - [15/Aug/2025 11:30:23] "POST /summarize/ultimate HTTP/1.1" 200 -
-2025-08-15 11:31:16,309 - INFO - 127.0.0.1 - - [15/Aug/2025 11:31:16] "GET / HTTP/1.1" 200 -
-2025-08-15 11:33:21,047 - INFO - 127.0.0.1 - - [15/Aug/2025 11:33:21] "GET / HTTP/1.1" 200 -
-2025-08-15 11:36:25,485 - INFO - 127.0.0.1 - - [15/Aug/2025 11:36:25] "GET / HTTP/1.1" 200 -
+2025-08-17 04:55:14,365 - INFO - [33mPress CTRL+C to quit[0m
+2025-08-17 04:55:14,366 - INFO -  * Restarting with stat
+2025-08-17 04:55:15,358 - INFO - Trinity Engine NLTK resources initialized
+2025-08-17 04:55:15,359 - INFO - Hierarchical Densification Engine initialized successfully
+2025-08-17 04:55:15,359 - INFO - Started mass document background processor
+2025-08-17 04:55:15,365 - INFO - Starting SUM server (simplified) on 0.0.0.0:5001
+2025-08-17 04:55:15,365 - INFO - Note: Using simplified startup to avoid circular imports
+2025-08-17 04:55:15,365 - INFO - Web interface available at http://0.0.0.0:5001
+2025-08-17 04:55:15,393 - WARNING -  * Debugger is active!
+2025-08-17 04:55:15,407 - INFO -  * Debugger PIN: 979-432-672
+2025-08-17 05:02:38,248 - INFO - 127.0.0.1 - - [17/Aug/2025 05:02:38] "GET /api/health HTTP/1.1" 200 -
+2025-08-17 05:03:05,339 - INFO - SimpleSUM initialized successfully
+2025-08-17 05:03:05,345 - INFO - Warmed cache with 0 entries
+2025-08-17 05:03:05,345 - INFO - Cache miss: 50f2039e...
+2025-08-17 05:03:05,361 - INFO - Cached summary: 50f2039e... (533 chars)
+2025-08-17 05:03:05,361 - INFO - 127.0.0.1 - - [17/Aug/2025 05:03:05] "POST /api/process_text HTTP/1.1" 200 -
+2025-08-17 05:03:36,234 - INFO - Trinity Engine NLTK resources initialized
+2025-08-17 05:03:36,234 - INFO - Hierarchical Densification Engine initialized successfully
+2025-08-17 05:03:36,236 - INFO - Cache miss: e27f16a6...
+2025-08-17 05:03:36,244 - INFO - Cached summary: e27f16a6... (644 chars)
+2025-08-17 05:03:36,245 - INFO - 127.0.0.1 - - [17/Aug/2025 05:03:36] "POST /api/process_text HTTP/1.1" 200 -
+2025-08-17 05:03:58,866 - INFO - Trinity Engine NLTK resources initialized
+2025-08-17 05:03:58,867 - INFO - Hierarchical Densification Engine initialized successfully
+2025-08-17 05:03:58,869 - INFO - Cache hit (memory): e27f16a6...
+2025-08-17 05:03:58,869 - INFO - Returning cached hierarchical summary
+2025-08-17 05:03:58,869 - INFO - 127.0.0.1 - - [17/Aug/2025 05:03:58] "POST /api/process_text HTTP/1.1" 200 -
+2025-08-17 05:10:03,411 - INFO - SimpleSUM initialized successfully
+2025-08-17 05:10:03,413 - INFO - Cache miss: f532214c...
+2025-08-17 05:10:03,414 - INFO - 127.0.0.1 - - [17/Aug/2025 05:10:03] "POST /api/process_text HTTP/1.1" 200 -
+2025-08-17 05:10:39,287 - INFO - 127.0.0.1 - - [17/Aug/2025 05:10:39] "[33mPOST /api/file/process HTTP/1.1[0m" 404 -
+2025-08-17 05:10:55,812 - INFO - 127.0.0.1 - - [17/Aug/2025 05:10:55] "[33mPOST /api/file/process HTTP/1.1[0m" 404 -
+2025-08-17 05:11:23,884 - INFO - Trinity Engine NLTK resources initialized
+2025-08-17 05:11:23,885 - INFO - Hierarchical Densification Engine initialized successfully
+2025-08-17 05:11:23,885 - INFO - Processing text of size: 1,556 bytes
+2025-08-17 05:11:23,885 - INFO - Cache miss: e8f3bdcb...
+2025-08-17 05:11:23,903 - INFO - Cached summary: e8f3bdcb... (1556 chars)
+2025-08-17 05:11:23,904 - INFO - 127.0.0.1 - - [17/Aug/2025 05:11:23] "POST /api/process_unlimited HTTP/1.1" 200 -
+2025-08-17 05:11:40,033 - INFO - 127.0.0.1 - - [17/Aug/2025 05:11:40] "GET /api/cache/stats HTTP/1.1" 200 -
+2025-08-17 05:11:57,512 - INFO - 127.0.0.1 - - [17/Aug/2025 05:11:57] "GET /api/openapi.yaml HTTP/1.1" 200 -
+2025-08-17 05:12:20,277 - INFO - 127.0.0.1 - - [17/Aug/2025 05:12:20] "GET / HTTP/1.1" 200 -
+2025-08-17 05:12:37,666 - INFO - 127.0.0.1 - - [17/Aug/2025 05:12:37] "GET /static/css/mobile.css HTTP/1.1" 200 -
+2025-08-17 05:13:22,149 - INFO - Processing text of size: 25,001 bytes
 /opt/homebrew/Caskroom/miniforge/base/lib/python3.10/multiprocessing/resource_tracker.py:224: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
   warnings.warn('resource_tracker: There appear to be %d '
