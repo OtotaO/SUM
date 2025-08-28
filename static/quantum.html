@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Editor - Where Intelligence Meets Writing</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --accent: #f59e0b;
+            --text: #1f2937;
+            --text-light: #6b7280;
+            --bg: #ffffff;
+            --bg-secondary: #f9fafb;
+            --border: #e5e7eb;
+            --shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            --glow: 0 0 40px rgba(99, 102, 241, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated background particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(99, 102, 241, 0.3);
+            border-radius: 50%;
+            animation: float 20s infinite;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(100vh) translateX(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100vh) translateX(100px);
+                opacity: 0;
+            }
+        }
+
+        /* Header */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo-icon {
+            font-size: 2rem;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* Mode selector */
+        .mode-selector {
+            display: flex;
+            gap: 0.5rem;
+            background: var(--bg-secondary);
+            padding: 0.25rem;
+            border-radius: 12px;
+        }
+
+        .mode-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            background: transparent;
+            color: var(--text-light);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .mode-btn.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Main container */
+        .container {
+            flex: 1;
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 250px 1fr 300px;
+            gap: 2rem;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            height: fit-content;
+            position: sticky;
+            top: 2rem;
+        }
+
+        .sidebar h3 {
+            color: var(--text);
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            opacity: 0.7;
+        }
+
+        .outline-item {
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .outline-item:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateX(5px);
+        }
+
+        /* Editor */
+        .editor-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .editor-toolbar {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-secondary);
+        }
+
+        .toolbar-btn {
+            padding: 0.5rem;
+            border: none;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+        }
+
+        .toolbar-btn:hover {
+            background: var(--primary);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .editor {
+            flex: 1;
+            padding: 3rem;
+            min-height: 600px;
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: var(--text);
+            position: relative;
+        }
+
+        .editor-content {
+            outline: none;
+            min-height: 100%;
+            position: relative;
+        }
+
+        .editor-content:focus {
+            outline: none;
+        }
+
+        /* Intelligent hints */
+        .hint {
+            position: absolute;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            box-shadow: var(--shadow);
+            animation: slideIn 0.3s ease;
+            z-index: 1000;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Intelligence panel */
+        .intelligence-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            height: fit-content;
+            position: sticky;
+            top: 2rem;
+        }
+
+        .panel-section {
+            margin-bottom: 2rem;
+        }
+
+        .panel-section h3 {
+            color: var(--text);
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            opacity: 0.7;
+        }
+
+        /* Summary density slider */
+        .density-slider {
+            width: 100%;
+            height: 40px;
+            background: var(--bg-secondary);
+            border-radius: 20px;
+            position: relative;
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        .density-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            width: 30%;
+            border-radius: 20px;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 1rem;
+        }
+
+        .density-label {
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        /* Live summary */
+        .live-summary {
+            background: var(--bg-secondary);
+            padding: 1rem;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        /* Suggestions */
+        .suggestion {
+            background: white;
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .suggestion:hover {
+            border-color: var(--primary);
+            transform: translateX(-5px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+        }
+
+        .suggestion-type {
+            font-size: 0.75rem;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+        }
+
+        .suggestion-text {
+            font-size: 0.85rem;
+            color: var(--text);
+        }
+
+        /* Selection menu */
+        .selection-menu {
+            position: absolute;
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            padding: 0.5rem;
+            display: none;
+            z-index: 1000;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .selection-menu.active {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .selection-action {
+            padding: 0.5rem 0.75rem;
+            background: var(--bg-secondary);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.85rem;
+        }
+
+        .selection-action:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Status bar */
+        .status-bar {
+            background: white;
+            border-top: 1px solid var(--border);
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            animation: blink 2s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .container {
+                grid-template-columns: 1fr 300px;
+            }
+            
+            .sidebar {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .intelligence-panel {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated particles background -->
+    <div class="particles" id="particles"></div>
+
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">
+            <span class="logo-icon">⚛️</span>
+            Quantum Editor
+        </div>
+        
+        <div class="mode-selector">
+            <button class="mode-btn active" onclick="setMode('write')">✍️ Write</button>
+            <button class="mode-btn" onclick="setMode('review')">📝 Review</button>
+            <button class="mode-btn" onclick="setMode('brainstorm')">💡 Brainstorm</button>
+        </div>
+        
+        <div style="display: flex; gap: 1rem;">
+            <button class="toolbar-btn" onclick="shareDocument()">📤</button>
+            <button class="toolbar-btn" onclick="showSettings()">⚙️</button>
+        </div>
+    </div>
+
+    <!-- Main container -->
+    <div class="container">
+        <!-- Left sidebar - Document outline -->
+        <div class="sidebar">
+            <h3>Document Structure</h3>
+            <div class="outline-item">📄 Introduction</div>
+            <div class="outline-item">📊 Main Arguments</div>
+            <div class="outline-item">🔍 Evidence</div>
+            <div class="outline-item">💭 Analysis</div>
+            <div class="outline-item">🎯 Conclusion</div>
+        </div>
+
+        <!-- Main editor -->
+        <div class="editor-container">
+            <div class="editor-toolbar">
+                <button class="toolbar-btn" onclick="formatText('bold')">𝐁</button>
+                <button class="toolbar-btn" onclick="formatText('italic')">𝐼</button>
+                <button class="toolbar-btn" onclick="formatText('underline')">U̲</button>
+                <div style="width: 1px; background: var(--border); margin: 0 0.5rem;"></div>
+                <button class="toolbar-btn" onclick="insertList()">☰</button>
+                <button class="toolbar-btn" onclick="insertQuote()">❝</button>
+                <button class="toolbar-btn" onclick="insertLink()">🔗</button>
+                <div style="width: 1px; background: var(--border); margin: 0 0.5rem;"></div>
+                <button class="toolbar-btn" onclick="voiceInput()">🎙️</button>
+                <button class="toolbar-btn" onclick="translateText()">🌍</button>
+            </div>
+
+            <div class="editor">
+                <div class="editor-content" contenteditable="true" id="editor">
+                    <h1 style="color: var(--primary); margin-bottom: 1rem;">Welcome to Quantum Editor</h1>
+                    <p>Start writing and watch as intelligence weaves through your words. This isn't just a text editor - it's a thought amplifier that understands context, suggests improvements, and helps you craft perfect documents.</p>
+                    <p style="margin-top: 1rem;">Try selecting any text to see contextual actions, or just start typing to experience predictive intelligence...</p>
+                </div>
+                
+                <!-- Selection menu -->
+                <div class="selection-menu" id="selectionMenu">
+                    <button class="selection-action" onclick="summarizeSelection()">📝 Summarize</button>
+                    <button class="selection-action" onclick="improveSelection()">✨ Improve</button>
+                    <button class="selection-action" onclick="explainSelection()">💡 Explain</button>
+                    <button class="selection-action" onclick="translateSelection()">🌍 Translate</button>
+                </div>
+            </div>
+
+            <div class="status-bar">
+                <div class="status-item">
+                    <span class="status-indicator"></span>
+                    <span>AI Ready</span>
+                </div>
+                <div class="status-item">
+                    <span>Words: <span id="wordCount">42</span></span>
+                </div>
+                <div class="status-item">
+                    <span>Reading time: <span id="readingTime">~1 min</span></span>
+                </div>
+                <div class="status-item">
+                    <span>Quality: <span id="qualityScore">92%</span></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right panel - Intelligence -->
+        <div class="intelligence-panel">
+            <div class="panel-section">
+                <h3>Live Summary</h3>
+                <div class="density-slider" onclick="adjustDensity(event)">
+                    <div class="density-fill" id="densityFill">
+                        <span class="density-label">30%</span>
+                    </div>
+                </div>
+                <div class="live-summary" id="liveSummary">
+                    Your document summary will appear here in real-time as you write. Adjust the slider above to control detail level.
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3>Suggestions</h3>
+                <div id="suggestions">
+                    <div class="suggestion">
+                        <div class="suggestion-type">Continue</div>
+                        <div class="suggestion-text">Add supporting evidence for your main argument...</div>
+                    </div>
+                    <div class="suggestion">
+                        <div class="suggestion-type">Improve</div>
+                        <div class="suggestion-text">Consider using more active voice in the second paragraph...</div>
+                    </div>
+                    <div class="suggestion">
+                        <div class="suggestion-type">Connect</div>
+                        <div class="suggestion-text">Link this concept to your introduction theme...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3>Quick Actions</h3>
+                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                    <button class="selection-action" onclick="exportDocument('pdf')">📄 PDF</button>
+                    <button class="selection-action" onclick="exportDocument('markdown')">📝 Markdown</button>
+                    <button class="selection-action" onclick="exportDocument('summary')">📊 Summary</button>
+                    <button class="selection-action" onclick="generateOutline()">📋 Outline</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize particles
+        function createParticles() {
+            const container = document.getElementById('particles');
+            for (let i = 0; i < 20; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 20 + 's';
+                particle.style.animationDuration = (15 + Math.random() * 10) + 's';
+                container.appendChild(particle);
+            }
+        }
+        createParticles();
+
+        // Editor state
+        let currentMode = 'write';
+        let selectedText = '';
+        let cursorPosition = 0;
+
+        // Initialize editor
+        const editor = document.getElementById('editor');
+        const selectionMenu = document.getElementById('selectionMenu');
+
+        // Handle text selection
+        document.addEventListener('selectionchange', () => {
+            const selection = window.getSelection();
+            if (selection.toString().length > 0) {
+                selectedText = selection.toString();
+                showSelectionMenu(selection);
+            } else {
+                hideSelectionMenu();
+            }
+        });
+
+        function showSelectionMenu(selection) {
+            const range = selection.getRangeAt(0);
+            const rect = range.getBoundingClientRect();
+            selectionMenu.style.left = rect.left + 'px';
+            selectionMenu.style.top = (rect.top - 50) + 'px';
+            selectionMenu.classList.add('active');
+        }
+
+        function hideSelectionMenu() {
+            selectionMenu.classList.remove('active');
+        }
+
+        // Handle typing
+        let typingTimer;
+        editor.addEventListener('input', () => {
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(() => {
+                updateWordCount();
+                updateLiveSummary();
+                generateSuggestions();
+            }, 500);
+        });
+
+        // Update word count
+        function updateWordCount() {
+            const text = editor.innerText;
+            const words = text.trim().split(/\s+/).length;
+            document.getElementById('wordCount').textContent = words;
+            
+            // Update reading time
+            const readingTime = Math.ceil(words / 200);
+            document.getElementById('readingTime').textContent = `~${readingTime} min`;
+        }
+
+        // Update live summary
+        function updateLiveSummary() {
+            const text = editor.innerText;
+            const density = parseInt(document.getElementById('densityFill').style.width) / 100;
+            
+            // Simulate summary generation
+            const words = text.split(/\s+/);
+            const summaryLength = Math.max(10, Math.floor(words.length * density));
+            const summary = words.slice(0, summaryLength).join(' ') + '...';
+            
+            document.getElementById('liveSummary').textContent = summary;
+        }
+
+        // Generate suggestions
+        function generateSuggestions() {
+            const suggestions = [
+                { type: 'Continue', text: 'Expand on this idea with specific examples...' },
+                { type: 'Improve', text: 'Consider breaking this into shorter sentences...' },
+                { type: 'Connect', text: 'Reference your earlier point about...' },
+                { type: 'Evidence', text: 'Add data or citations to support this claim...' }
+            ];
+            
+            const suggestionsHtml = suggestions.map(s => `
+                <div class="suggestion">
+                    <div class="suggestion-type">${s.type}</div>
+                    <div class="suggestion-text">${s.text}</div>
+                </div>
+            `).join('');
+            
+            document.getElementById('suggestions').innerHTML = suggestionsHtml;
+        }
+
+        // Adjust density slider
+        function adjustDensity(event) {
+            const slider = event.currentTarget;
+            const rect = slider.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const percentage = Math.max(5, Math.min(100, (x / rect.width) * 100));
+            
+            const fill = document.getElementById('densityFill');
+            fill.style.width = percentage + '%';
+            fill.querySelector('.density-label').textContent = Math.round(percentage) + '%';
+            
+            updateLiveSummary();
+        }
+
+        // Mode switching
+        function setMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Update interface based on mode
+            if (mode === 'review') {
+                highlightIssues();
+            } else if (mode === 'brainstorm') {
+                showBrainstormPanel();
+            }
+        }
+
+        // Selection actions
+        function summarizeSelection() {
+            alert(`Summarizing: "${selectedText.substring(0, 50)}..."`);
+            hideSelectionMenu();
+        }
+
+        function improveSelection() {
+            // Simulate improvement
+            const improved = selectedText.charAt(0).toUpperCase() + selectedText.slice(1);
+            alert(`Improved: "${improved.substring(0, 50)}..."`);
+            hideSelectionMenu();
+        }
+
+        function explainSelection() {
+            alert(`Explaining: "${selectedText.substring(0, 50)}..."`);
+            hideSelectionMenu();
+        }
+
+        function translateSelection() {
+            alert(`Translating: "${selectedText.substring(0, 50)}..."`);
+            hideSelectionMenu();
+        }
+
+        // Export functions
+        function exportDocument(format) {
+            const content = editor.innerText;
+            alert(`Exporting as ${format}:\n"${content.substring(0, 100)}..."`);
+        }
+
+        function generateOutline() {
+            alert('Generating document outline...');
+        }
+
+        // Voice input
+        function voiceInput() {
+            alert('Voice input activated. Start speaking...');
+        }
+
+        // Formatting
+        function formatText(format) {
+            document.execCommand(format, false, null);
+        }
+
+        function insertList() {
+            document.execCommand('insertUnorderedList', false, null);
+        }
+
+        function insertQuote() {
+            document.execCommand('formatBlock', false, 'blockquote');
+        }
+
+        function insertLink() {
+            const url = prompt('Enter URL:');
+            if (url) {
+                document.execCommand('createLink', false, url);
+            }
+        }
+
+        // Initialize
+        updateWordCount();
+        updateLiveSummary();
+        generateSuggestions();
+    </script>
+</body>
+</html>
