@@ -317,19 +317,27 @@ Think out loud → Perfectly formatted document
 ### 8. Collaborative AI Sessions
 Multiple people + AI working simultaneously
 
-## 💰 Business Model: Sustainable & Fair
+## 🌟 Open Source Forever
 
-### Tiers
-1. **Free**: 10 documents, basic AI (local models)
-2. **Pro** ($20/mo): Unlimited, all AI models
-3. **Team** ($30/user/mo): Collaboration, admin
-4. **Enterprise**: Custom models, on-premise
+### The Model
+**100% FREE. FOREVER. NO EXCEPTIONS.**
 
-### The Revolution
-- **LLM costs passed at cost** + small margin
-- **Users own their data** - export anytime
-- **Open source core** - community can extend
-- **Plugin marketplace** - developers earn
+- **Bring Your Own Keys**: Use any LLM with your API keys
+- **Local First**: Run completely offline with Llama, Mistral, etc.
+- **Privacy Guaranteed**: Your data never leaves your machine
+- **MIT Licensed**: Do anything you want with the code
+
+### How It Sustains
+- **Community Driven**: Contributors make it better
+- **Optional Donations**: For infrastructure costs only
+- **Transparent Grants**: Applied for fundamental research
+- **No VC Money**: No pressure to monetize users
+
+### What This Means
+- Students get professional tools for free
+- Researchers own their work completely
+- Writers keep their privacy absolute
+- Humanity gets better tools without barriers
 
 ## 🎯 Success Metrics
 
