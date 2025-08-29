@@ -12,6 +12,8 @@ from collections import defaultdict
 import re
 from nltk.tokenize import sent_tokenize, word_tokenize
 import logging
+import asyncio
+from llm_backend import llm_backend, ModelProvider
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +92,19 @@ class KnowledgeCrystallizer:
         if config.user_preferences:
             config = self.preference_learner.adapt_config(config, text)
         
+        # Check if we can use LLM for better results
+        available_providers = llm_backend.get_available_providers()
+        use_llm = len(available_providers) > 1 or 'openai' in available_providers or 'anthropic' in available_providers
+        
+        if use_llm:
+            # Use LLM-powered crystallization
+            return self._crystallize_with_llm(text, config)
+        else:
+            # Fallback to traditional extraction
+            return self._crystallize_traditional(text, config)
+    
+    def _crystallize_traditional(self, text: str, config: CrystallizationConfig) -> CrystallizedKnowledge:
+        """Traditional extraction-based crystallization"""
         # Extract key information components
         components = self._extract_components(text)
         
@@ -120,7 +135,8 @@ class KnowledgeCrystallizer:
             'main_topics': components['topics'][:5],
             'sentiment': components['sentiment'],
             'style_applied': config.style.value,
-            'density_used': config.density.value
+            'density_used': config.density.value,
+            'method': 'traditional'
         }
         
         return CrystallizedKnowledge(
@@ -130,6 +146,124 @@ class KnowledgeCrystallizer:
             interactive_elements=interactive,
             quality_score=quality_score
         )
+    
+    def _crystallize_with_llm(self, text: str, config: CrystallizationConfig) -> CrystallizedKnowledge:
+        """LLM-powered crystallization for superior results"""
+        # Run async in sync context
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            return loop.run_until_complete(self._async_crystallize_with_llm(text, config))
+        finally:
+            loop.close()
+    
+    async def _async_crystallize_with_llm(self, text: str, config: CrystallizationConfig) -> CrystallizedKnowledge:
+        """Async LLM crystallization"""
+        
+        # Generate prompts for each density level
+        levels = {}
+        
+        # Create style instruction
+        style_instruction = self._get_style_instruction(config.style)
+        
+        # Generate essence first (most important)
+        essence_prompt = f"""Extract the single most important insight from this text in one sentence.
+Style: {style_instruction}
+
+Text: {text[:3000]}...
+
+Single most important insight:"""
+        
+        essence = await llm_backend.generate(
+            essence_prompt,
+            temperature=0.3,
+            max_tokens=100
+        )
+        
+        # Generate summaries at different densities in parallel
+        tasks = []
+        for density in DensityLevel:
+            prompt = self._create_density_prompt(text, density, config.style)
+            task = llm_backend.generate(
+                prompt,
+                temperature=0.5,
+                max_tokens=int(2000 * density.value)
+            )
+            tasks.append((density.name.lower(), task))
+        
+        # Wait for all summaries
+        for density_name, task in tasks:
+            levels[density_name] = await task
+        
+        # Extract components for metadata
+        components = self._extract_components(text)
+        
+        # Calculate quality score
+        quality_score = self.quality_scorer.score(text, levels['standard'])
+        
+        # Build metadata
+        metadata = {
+            'original_length': len(text),
+            'word_count': len(word_tokenize(text)),
+            'sentence_count': len(sent_tokenize(text)),
+            'key_entities': components['entities'][:10],
+            'main_topics': components['topics'][:5],
+            'sentiment': components['sentiment'],
+            'style_applied': config.style.value,
+            'density_used': config.density.value,
+            'method': 'llm',
+            'provider': llm_backend.default_provider.value
+        }
+        
+        return CrystallizedKnowledge(
+            essence=essence,
+            levels=levels,
+            metadata=metadata,
+            interactive_elements=None,
+            quality_score=quality_score
+        )
+    
+    def _create_density_prompt(self, text: str, density: DensityLevel, style: StylePersona) -> str:
+        """Create prompt for specific density level"""
+        
+        style_instruction = self._get_style_instruction(style)
+        
+        density_instructions = {
+            DensityLevel.ESSENCE: "Summarize in exactly one sentence capturing the core message.",
+            DensityLevel.TWEET: "Summarize in 280 characters or less (tweet length).",
+            DensityLevel.ELEVATOR: "Summarize in 3-4 sentences (30-second elevator pitch).",
+            DensityLevel.EXECUTIVE: "Summarize in one paragraph suitable for C-suite briefing.",
+            DensityLevel.BRIEF: "Summarize in 2-3 paragraphs for a quick read.",
+            DensityLevel.STANDARD: "Provide a balanced 3-5 paragraph summary.",
+            DensityLevel.DETAILED: "Provide a thorough half-page summary covering all key points.",
+            DensityLevel.COMPREHENSIVE: "Provide a comprehensive full-page summary retaining most information."
+        }
+        
+        return f"""Summarize the following text.
+Density: {density_instructions[density]}
+Style: {style_instruction}
+
+Text: {text[:5000]}...
+
+Summary:"""
+    
+    def _get_style_instruction(self, style: StylePersona) -> str:
+        """Get instruction for writing style"""
+        
+        instructions = {
+            StylePersona.HEMINGWAY: "Write in Hemingway style - terse, direct sentences with no fluff.",
+            StylePersona.ACADEMIC: "Write in academic style - rigorous, methodical, with evidence.",
+            StylePersona.STORYTELLER: "Write with narrative flow, engaging and story-like.",
+            StylePersona.ANALYST: "Focus on data, metrics, and quantitative insights.",
+            StylePersona.POET: "Use metaphorical and evocative language.",
+            StylePersona.EXECUTIVE: "Be action-oriented and strategic, focus on decisions.",
+            StylePersona.TEACHER: "Be educational and clear, explaining concepts.",
+            StylePersona.JOURNALIST: "Follow the 5 W's and H structure (who, what, when, where, why, how).",
+            StylePersona.DEVELOPER: "Be technical and precise, suitable for documentation.",
+            StylePersona.NEUTRAL: "Use balanced, objective language."
+        }
+        
+        return instructions.get(style, instructions[StylePersona.NEUTRAL])
     
     def _extract_components(self, text: str) -> Dict[str, Any]:
         """Extract key components from text for crystallization"""

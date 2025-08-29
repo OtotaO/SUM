@@ -6,11 +6,29 @@ Implements hierarchical tree-based summarization with multi-level abstraction
 import numpy as np
 from typing import List, Dict, Any, Optional, Tuple
 from dataclasses import dataclass
-from sklearn.cluster import KMeans, AgglomerativeClustering
-from sentence_transformers import SentenceTransformer
 import networkx as nx
 from collections import defaultdict
 import hashlib
+import asyncio
+import logging
+from llm_backend import llm_backend
+
+logger = logging.getLogger(__name__)
+
+# Safe imports with fallbacks
+try:
+    from sklearn.cluster import KMeans, AgglomerativeClustering
+    HAS_SKLEARN = True
+except ImportError:
+    HAS_SKLEARN = False
+    logger.warning("scikit-learn not installed. Using simple clustering.")
+
+try:
+    from sentence_transformers import SentenceTransformer
+    HAS_TRANSFORMERS = True
+except ImportError:
+    HAS_TRANSFORMERS = False
+    logger.warning("sentence-transformers not installed. Using simple embeddings.")
 
 
 @dataclass

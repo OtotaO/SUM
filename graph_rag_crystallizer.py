@@ -8,12 +8,42 @@ import numpy as np
 from typing import List, Dict, Any, Optional, Tuple
 from dataclasses import dataclass
 from collections import defaultdict
-import community as community_louvain
-from sentence_transformers import SentenceTransformer
-from sklearn.cluster import DBSCAN
-import spacy
 import hashlib
 import json
+import asyncio
+import logging
+from llm_backend import llm_backend
+
+logger = logging.getLogger(__name__)
+
+# Safe imports with fallbacks
+try:
+    import community as community_louvain
+    HAS_LOUVAIN = True
+except ImportError:
+    HAS_LOUVAIN = False
+    logger.warning("python-louvain not installed. Install with: pip install python-louvain")
+
+try:
+    from sentence_transformers import SentenceTransformer
+    HAS_TRANSFORMERS = True
+except ImportError:
+    HAS_TRANSFORMERS = False
+    logger.warning("sentence-transformers not installed. Install with: pip install sentence-transformers")
+
+try:
+    from sklearn.cluster import DBSCAN
+    HAS_SKLEARN = True
+except ImportError:
+    HAS_SKLEARN = False
+    logger.warning("scikit-learn not installed. Install with: pip install scikit-learn")
+
+try:
+    import spacy
+    HAS_SPACY = True
+except ImportError:
+    HAS_SPACY = False
+    logger.warning("spacy not installed. Install with: pip install spacy")
 
 
 @dataclass
