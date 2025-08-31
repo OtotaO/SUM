@@ -92,13 +92,25 @@ class KnowledgeGraphBuilder:
     """Builds knowledge graphs from text documents"""
     
     def __init__(self):
-        self.nlp = spacy.load("en_core_web_sm")
-        self.embedder = SentenceTransformer('all-MiniLM-L6-v2')
+        try:
+            self.nlp = spacy.load("en_core_web_sm")
+        except OSError:
+            logger.warning("Spacy model 'en_core_web_sm' not found. Install with: python -m spacy download en_core_web_sm")
+            self.nlp = None
+        
+        if HAS_TRANSFORMERS:
+            self.embedder = SentenceTransformer('all-MiniLM-L6-v2')
+        else:
+            self.embedder = None
         
     def extract_entities_and_relations(self, documents: List[str]) -> Tuple[List[Entity], List[Relation]]:
         """Extract entities and relations from documents"""
         entities = {}
         relations = []
+        
+        if not self.nlp:
+            # Fallback to simple entity extraction
+            return self._simple_entity_extraction(documents)
         
         for doc_idx, text in enumerate(documents):
             doc = self.nlp(text)
@@ -134,6 +146,30 @@ class KnowledgeGraphBuilder:
                                 weight=1.0,
                                 context=doc.text[max(0, token.idx-50):min(len(doc.text), token.idx+50)]
                             ))
+        
+        return list(entities.values()), relations
+    
+    def _simple_entity_extraction(self, documents: List[str]) -> Tuple[List[Entity], List[Relation]]:
+        """Simple fallback entity extraction when spacy is not available"""
+        entities = {}
+        relations = []
+        
+        for doc_idx, text in enumerate(documents):
+            # Extract capitalized words as potential entities
+            words = text.split()
+            for word in words:
+                if word and word[0].isupper() and len(word) > 1:
+                    entity_id = self._generate_entity_id(word, "ENTITY")
+                    if entity_id not in entities:
+                        entities[entity_id] = Entity(
+                            id=entity_id,
+                            text=word,
+                            type="ENTITY",
+                            mentions=[doc_idx],
+                            attributes={'frequency': 1}
+                        )
+                    else:
+                        entities[entity_id].mentions.append(doc_idx)
         
         return list(entities.values()), relations
     
@@ -189,7 +225,10 @@ class HierarchicalSummarizer:
     """Generate hierarchical summaries of communities"""
     
     def __init__(self):
-        self.embedder = SentenceTransformer('all-MiniLM-L6-v2')
+        if HAS_TRANSFORMERS:
+            self.embedder = SentenceTransformer('all-MiniLM-L6-v2')
+        else:
+            self.embedder = None
         
     def summarize_communities(self, 
                             graph: nx.Graph, 

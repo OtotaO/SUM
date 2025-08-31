@@ -642,8 +642,9 @@ Summary:"""
                        'create', 'build', 'establish', 'improve', 'enhance']
         sentences = sent_tokenize(text)
         for sentence in sentences:
-            if any(verb in sentence.lower() for verb in action_verbs):
-                actions.append(verb)
+            for verb in action_verbs:
+                if verb in sentence.lower():
+                    actions.append(sentence)
         return list(set(actions))
     
     def _extract_numbers(self, text: str) -> List[str]:

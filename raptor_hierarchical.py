@@ -72,7 +72,10 @@ class RAPTORBuilder:
         self.max_chunk_size = max_chunk_size
         self.min_cluster_size = min_cluster_size
         self.max_levels = max_levels
-        self.embedder = SentenceTransformer(embedding_model)
+        if HAS_TRANSFORMERS:
+            self.embedder = SentenceTransformer(embedding_model)
+        else:
+            self.embedder = None
         self.summarizer = HierarchicalSummarizer()
     
     def build_tree(self, text: str) -> RAPTORTree:
@@ -379,8 +382,11 @@ class HierarchicalSummarizer:
 class RAPTORQueryEngine:
     """Query engine for RAPTOR trees"""
     
-    def __init__(self, embedder: SentenceTransformer = None):
-        self.embedder = embedder or SentenceTransformer('all-MiniLM-L6-v2')
+    def __init__(self, embedder: Optional[Any] = None):
+        if HAS_TRANSFORMERS:
+            self.embedder = embedder or SentenceTransformer('all-MiniLM-L6-v2')
+        else:
+            self.embedder = None
     
     def query(self, 
              tree: RAPTORTree,

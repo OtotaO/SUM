@@ -179,6 +179,7 @@ class IntelligentDocument:
     """
     
     def __init__(self, content: str = ""):
+        self.id = self._generate_id("document")
         self.root = DocumentNode(
             id=self._generate_id("root"),
             type="document",
@@ -480,7 +481,8 @@ class QuantumEditor:
     
     def __init__(self):
         # Core components
-        self.document = IntelligentDocument()
+        self.documents = {}  # Store multiple documents
+        self.current_document = None
         self.llm_adapter = UniversalLLMAdapter()
         self.proofreader = IntelligentProofreader(self.llm_adapter)
         self.brainstormer = ContextualBrainstormer(self.llm_adapter)
@@ -492,6 +494,14 @@ class QuantumEditor:
         self.cursor_position = 0
         self.selection = None
         self.mode = "write"  # write, review, brainstorm
+    
+    def create_document(self, content: str = "") -> IntelligentDocument:
+        """Create a new intelligent document"""
+        doc = IntelligentDocument()
+        doc.root.content = content
+        self.documents[doc.id] = doc
+        self.current_document = doc
+        return doc
         
     def _initialize_models(self):
         """Initialize available LLM models"""
