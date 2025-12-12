@@ -15,6 +15,7 @@ from api.web_compatibility import web_compat_bp
 from api.auth_routes import auth_bp
 from api.crystallization import crystallization_bp
 from api.legendary import legendary_bp
+from api.extrapolation import extrapolation_bp  # Import the new extrapolation blueprint
 from web.routes import web_bp
 
 logger = logging.getLogger(__name__)
@@ -38,6 +39,7 @@ def create_simple_app():
     app.register_blueprint(health_bp, url_prefix='/api')
     app.register_blueprint(crystallization_bp)  # Knowledge crystallization API
     app.register_blueprint(legendary_bp)  # Legendary features API
+    app.register_blueprint(extrapolation_bp) # Register extrapolation API
     app.register_blueprint(mass_bp)  # Mass processing at root level
     app.register_blueprint(web_compat_bp)  # Web compatibility routes at root
     app.register_blueprint(auth_bp)  # Auth routes
