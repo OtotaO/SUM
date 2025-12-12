@@ -1,12 +1,12 @@
 """
 Extrapolation Engine - The Reverse Summarizer
 Expands concepts, tags, and seeds into full text using LLMs.
-Includes Recursive Book Generation.
+Includes Recursive Book Generation with Transparent Logging.
 """
 
 import logging
 from dataclasses import dataclass
-from typing import Optional, AsyncGenerator, List
+from typing import Optional, AsyncGenerator, Dict, Any
 import json
 import asyncio
 from llm_backend import llm_backend, LLMConfig, ModelProvider
@@ -26,7 +26,6 @@ class ExtrapolationConfig:
 class ExtrapolationEngine:
     """
     Core engine for bi-directional knowledge transformation (Expansion side).
-    Now with Recursive Book Generation.
     """
     
     def __init__(self):
@@ -34,7 +33,6 @@ class ExtrapolationEngine:
         
     def _construct_prompt(self, seed: str, config: ExtrapolationConfig) -> str:
         """Construct a prompt that guides the LLM to expand the seed."""
-        
         return f"""
         You are a highly skilled writer and knowledge expander.
         
@@ -57,36 +55,16 @@ class ExtrapolationEngine:
         OUTPUT:
         """
 
-    async def extrapolate(self, seed: str, config: ExtrapolationConfig) -> str:
-        """
-        Generate expanded text from a seed.
-        """
-        prompt = self._construct_prompt(seed, config)
-        
-        # Determine provider based on config or default
-        provider = ModelProvider.OPENAI 
-        if config.model.startswith("llama") or config.model.startswith("mistral"):
-             provider = ModelProvider.OLLAMA
-        
-        result = await llm_backend.generate(
-            prompt=prompt,
-            provider=provider,
-            model_name=config.model,
-            temperature=config.creativity,
-            max_tokens=int(config.length_words * 1.5)
-        )
-        
-        return result
-
-    async def stream_extrapolate(self, seed: str, config: ExtrapolationConfig) -> AsyncGenerator[str, None]:
+    async def stream_extrapolate(self, seed: str, config: ExtrapolationConfig) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Stream the expansion generation. Handles Book mode recursively.
+        Yields dicts: {'type': 'text'|'log', 'content': str}
         """
         
         # SPECIAL HANDLING FOR BOOK MODE
         if config.target_format == 'book' or config.target_format == 'essay':
-             async for chunk in self._stream_recursive_book(seed, config):
-                 yield chunk
+             async for event in self._stream_recursive_book(seed, config):
+                 yield event
              return
 
         # Standard handling for shorter formats
@@ -96,6 +74,9 @@ class ExtrapolationEngine:
         if config.model.startswith("llama") or config.model.startswith("mistral"):
              provider = ModelProvider.OLLAMA
 
+        yield {'type': 'log', 'content': f'Initializing {provider.value} model...'}
+        yield {'type': 'log', 'content': f'Generating {config.target_format} with {config.style} style...'}
+
         async for chunk in llm_backend.stream_generate(
             prompt=prompt,
             provider=provider,
@@ -103,9 +84,11 @@ class ExtrapolationEngine:
             temperature=config.creativity,
             max_tokens=int(config.length_words * 1.5)
         ):
-            yield chunk
+            yield {'type': 'text', 'content': chunk}
 
-    async def _stream_recursive_book(self, seed: str, config: ExtrapolationConfig) -> AsyncGenerator[str, None]:
+        yield {'type': 'log', 'content': 'Generation complete.'}
+
+    async def _stream_recursive_book(self, seed: str, config: ExtrapolationConfig) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Recursively generates a book: Outline -> Chapters.
         """
@@ -114,7 +97,8 @@ class ExtrapolationEngine:
              provider = ModelProvider.OLLAMA
 
         # 1. Generate Outline
-        yield "**PHASE 1: Architecting Knowledge Structure...**\n\n"
+        yield {'type': 'log', 'content': 'PHASE 1: Architecting Knowledge Structure...'}
+        yield {'type': 'text', 'content': f"# {seed.title()}\n\n"}
         
         outline_prompt = f"""
         Create a comprehensive Table of Contents for a non-fiction book based on this concept: "{seed}".
@@ -132,18 +116,21 @@ class ExtrapolationEngine:
         if not chapters:
             chapters = ["Chapter 1: The Concept", "Chapter 2: The Implications", "Chapter 3: The Future"]
             
-        yield f"**Blueprint Generated:**\n{outline_text}\n\n"
+        yield {'type': 'log', 'content': f'Blueprint generated: {len(chapters)} chapters found.'}
+        yield {'type': 'text', 'content': "**Table of Contents**\n" + outline_text + "\n\n---\n\n"}
         
         # 2. Generate Chapters
-        yield "**PHASE 2: Extrapolating Chapters...**\n\n"
+        yield {'type': 'log', 'content': 'PHASE 2: Extrapolating Chapters...'}
         
         for i, chapter in enumerate(chapters):
-            yield f"\n\n## {chapter}\n\n"
+            yield {'type': 'log', 'content': f'Writing {chapter}...'}
+            yield {'type': 'text', 'content': f"\n## {chapter}\n\n"}
             
             chapter_prompt = f"""
             Write the full content for {chapter}.
             Context: This is a book about "{seed}".
             Style: {config.style}.
+            Tone: {config.tone}.
             Write at least 400 words. Focus on depth and clarity.
             """
             
@@ -152,8 +139,9 @@ class ExtrapolationEngine:
                 provider=provider,
                 max_tokens=1000
             ):
-                yield chunk
+                yield {'type': 'text', 'content': chunk}
             
-            yield "\n\n--- [Chapter Complete] ---\n"
+            yield {'type': 'text', 'content': "\n\n"}
+            yield {'type': 'log', 'content': f'Completed {chapter}'}
             
-        yield "\n\n**[Book Generation Complete]**"
+        yield {'type': 'log', 'content': 'Book generation complete.'}

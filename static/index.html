@@ -11,6 +11,7 @@
             --bg: #f5f5f5;
             --card-bg: white;
             --text: #333;
+            --log-color: #666;
         }
 
         body {
@@ -309,6 +310,22 @@
             margin: 0 auto 15px auto;
         }
         
+        /* Live Logs for Book Generation */
+        .system-log {
+            font-family: monospace;
+            font-size: 0.85em;
+            color: var(--log-color);
+            border-left: 2px solid #ddd;
+            padding-left: 10px;
+            margin: 5px 0;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-5px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
     </style>
@@ -392,6 +409,7 @@
         </div>
         
         <div class="result" id="result">
+            <!-- This is where results go -->
             <div id="result-content"></div>
         </div>
     </div>
@@ -482,7 +500,6 @@
                 inputLength = inputText.split(/\s+/).length;
             } else {
                 if (!selectedFile) return alert('Please select a file.');
-                // Approximation for file size
                 inputLength = selectedFile.size / 6; // Rough bytes-to-words
             }
             
@@ -496,17 +513,16 @@
                 // DECISION ENGINE: Summarize vs Extrapolate
                 let mode = 'summarize';
                 
-                // If the user selects "Book" or "Essay", it's almost always extrapolation/creation
+                // If "Book" or "Essay" -> Extrapolate
                 if (level.id === 'book' || level.id === 'essay') {
                     mode = 'extrapolate';
                 } 
-                // If the user selects "Tags" or "Minimal", it's almost always summarization
+                // If "Tags" or "Minimal" -> Summarize
                 else if (level.id === 'tags' || level.id === 'minimal') {
                     mode = 'summarize';
                 }
                 // Middle ground: Check relative lengths
                 else {
-                    // If input is significantly longer than target, summarize
                     if (inputLength > level.target_words * 1.5) {
                         mode = 'summarize';
                     } else {
@@ -533,16 +549,13 @@
         async function performSummarization(text, density) {
             let response;
             
-            // Mapping UI levels to API densities
-            // UI: tags, minimal, short, article, essay, book
-            // API: tags, minimal, short, medium, detailed, all
             const densityMap = {
                 'tags': 'tags',
                 'minimal': 'minimal',
                 'short': 'short',
-                'article': 'medium', // Map Article to Medium summary
+                'article': 'medium', 
                 'essay': 'detailed',
-                'book': 'all' // Fallback
+                'book': 'all'
             };
             
             const apiDensity = densityMap[density] || 'medium';
@@ -582,6 +595,8 @@
             
             document.getElementById('result').style.display = 'block';
             const contentDiv = document.getElementById('result-content');
+            
+            // Create result card for text
             contentDiv.innerHTML = '<div class="result-card" id="stream-output"></div>';
             const output = document.getElementById('stream-output');
             
@@ -600,11 +615,30 @@
                     if (line.startsWith('data: ')) {
                         try {
                             const json = JSON.parse(line.slice(6));
-                            if (json.chunk) {
-                                fullText += json.chunk;
+                            
+                            // Handling Text
+                            if (json.type === 'text' || json.chunk) {
+                                fullText += (json.content || json.chunk);
                                 output.innerHTML = formatText(fullText);
                                 window.scrollTo(0, document.body.scrollHeight);
                             }
+                            
+                            // Handling Logs
+                            if (json.type === 'log') {
+                                // Prepend log to the top of result container (or separate log container)
+                                let logDiv = document.getElementById('log-container');
+                                if (!logDiv) {
+                                    logDiv = document.createElement('div');
+                                    logDiv.id = 'log-container';
+                                    logDiv.style.marginBottom = '20px';
+                                    contentDiv.insertBefore(logDiv, output);
+                                }
+                                const logEntry = document.createElement('div');
+                                logEntry.className = 'system-log';
+                                logEntry.textContent = `> ${json.content}`;
+                                logDiv.appendChild(logEntry);
+                            }
+                            
                         } catch (e) {}
                     }
                 }
@@ -634,7 +668,6 @@
             
             // 2. Text Summary
             let summaryText = '';
-            // Try to find the specific requested density
             if (reqDensity === 'minimal' && result.minimal) summaryText = result.minimal;
             else if (reqDensity === 'short' && result.short) summaryText = result.short;
             else if (reqDensity === 'article' && result.medium) summaryText = result.medium;
@@ -649,15 +682,21 @@
                     </div>`;
             }
             
-            // Scroll to result
             document.getElementById('result').scrollIntoView({behavior: 'smooth'});
         }
         
         function formatText(text) {
             if (!text) return '';
-            return text
-                .replace(/\n\n/g, '<br><br>')
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            // Handle markdown-style basic formatting
+            let formatted = text
+                .replace(/^# (.*$)/gim, '<h1>$1</h1>') // H1
+                .replace(/^## (.*$)/gim, '<h2>$1</h2>') // H2
+                .replace(/^### (.*$)/gim, '<h3>$1</h3>') // H3
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
+                .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic
+                .replace(/\n\n/g, '<br><br>'); // Paragraphs
+                
+            return formatted;
         }
         
         function showError(msg) {
