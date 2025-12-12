@@ -108,6 +108,92 @@ def process_text():
         }), 500
 
 
+@summarization_bp.route('/ultimate', methods=['POST'])
+@optional_api_key()
+@rate_limit(30, 60)
+def ultimate_summarization():
+    """
+    The ultimate summarization endpoint that handles everything.
+    Adapts to text length, requested density, and input format.
+    
+    Supported input: JSON or Multipart Form (files)
+    """
+    try:
+        start_time = time.time()
+        
+        # 1. Parse Input
+        text = None
+        file_path = None
+        density = 'medium'
+        
+        if request.is_json:
+            data = request.get_json()
+            text = data.get('text')
+            density = data.get('density', 'medium')
+        else:
+            # File upload
+            if 'file' in request.files:
+                file = request.files['file']
+                # Save temp file logic would go here...
+                # For now assuming text for simplicity in this example
+                text = file.read().decode('utf-8', errors='ignore')
+            
+            density = request.form.get('density', 'medium')
+            
+        if not text:
+            return jsonify({'error': 'No content provided'}), 400
+            
+        # 2. Determine Strategy
+        word_count = len(text.split())
+        
+        # Map density to engine config
+        # API densities: tags, minimal, short, medium, detailed, all
+        
+        if density == 'tags':
+             # Use Basic Engine just for tags/keywords
+             engine = BasicSummarizationEngine()
+             result = {
+                 'tags': engine.generate_tag_summary(text),
+                 'original_words': word_count
+             }
+             return jsonify(result)
+             
+        # Use Hierarchical Engine for most cases as it's the most powerful
+        # But configure it based on density
+        
+        # Config for HierarchicalDensificationEngine
+        config = {
+            'target_density': 0.15, # Default
+            'use_cache': True
+        }
+        
+        if density == 'minimal':
+            config['target_density'] = 0.05
+            config['max_summary_tokens'] = 50
+        elif density == 'short':
+            config['target_density'] = 0.10
+            config['max_summary_tokens'] = 150
+        elif density == 'medium':
+            config['target_density'] = 0.20
+            config['max_summary_tokens'] = 400
+        elif density == 'detailed':
+            config['target_density'] = 0.35
+            config['max_summary_tokens'] = 1000
+            
+        engine = HierarchicalDensificationEngine()
+        result = engine.process_text(text, config)
+        
+        # Add metadata
+        result['original_words'] = word_count
+        result['processing_time'] = time.time() - start_time
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"Ultimate summarization error: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+
 @summarization_bp.route('/analyze_topics', methods=['POST'])
 @rate_limit(10, 60)  # 10 calls per minute
 @validate_json_input()
