@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SUM - Advanced Text Summarization</title>
+    <title>SUM - Bi-Directional Knowledge Engine</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -36,6 +36,39 @@
             display: flex;
             gap: 10px;
             margin-bottom: 20px;
+            justify-content: center;
+        }
+        
+        .mode-tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 20px;
+            background: #e0e0e0;
+            border-radius: 8px;
+            padding: 4px;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .mode-tab {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: transparent;
+            font-weight: 500;
+        }
+        
+        .mode-tab.active {
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            color: #4CAF50;
+        }
+        
+        .mode-tab:not(.active):hover {
+            background: rgba(255,255,255,0.5);
         }
         
         .tab {
@@ -68,6 +101,7 @@
             border-radius: 5px;
             font-size: 16px;
             resize: vertical;
+            box-sizing: border-box;
         }
         
         textarea:focus {
@@ -93,40 +127,77 @@
             border-color: #2e7d32;
         }
         
-        .density-selector {
-            margin: 20px 0;
-            padding: 15px;
+        /* Slider Styling */
+        .slider-container {
+            margin: 30px 0;
+            padding: 20px;
             background: #f9f9f9;
+            border-radius: 8px;
+        }
+        
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 10px;
+            background: #d3d3d3;
+            outline: none;
+            opacity: 0.7;
             border-radius: 5px;
+            transition: opacity .2s;
         }
         
-        .density-options {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 10px;
-            margin-top: 10px;
+        input[type=range]:hover {
+            opacity: 1;
         }
         
-        .density-option {
-            padding: 10px;
-            border: 2px solid #ddd;
-            border-radius: 5px;
-            cursor: pointer;
-            text-align: center;
-            transition: all 0.3s;
-        }
-        
-        .density-option:hover {
-            border-color: #4CAF50;
-        }
-        
-        .density-option.selected {
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
             background: #4CAF50;
-            color: white;
-            border-color: #4CAF50;
+            cursor: pointer;
+            box-shadow: 0 0 5px rgba(0,0,0,0.2);
         }
         
-        button {
+        input[type=range]::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+            box-shadow: 0 0 5px rgba(0,0,0,0.2);
+        }
+        
+        .level-markers {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #888;
+        }
+        
+        .level-marker {
+            text-align: center;
+            width: 60px;
+            cursor: pointer;
+        }
+        
+        .level-marker.active {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        
+        button.action-btn {
             background: #4CAF50;
             color: white;
             border: none;
@@ -136,13 +207,14 @@
             cursor: pointer;
             width: 100%;
             margin-top: 20px;
+            transition: background 0.2s;
         }
         
-        button:hover {
+        button.action-btn:hover {
             background: #45a049;
         }
         
-        button:disabled {
+        button.action-btn:disabled {
             background: #ccc;
             cursor: not-allowed;
         }
@@ -226,59 +298,92 @@
             color: #4CAF50;
         }
         
-        .progress-container {
-            margin-top: 20px;
-            padding: 20px;
-            background: #f9f9f9;
-            border-radius: 5px;
+        /* Extrapolation specific styles */
+        .extrapolate-ui {
+            display: none;
         }
         
-        .progress-bar {
+        .summarize-ui {
+            display: block;
+        }
+        
+        /* When extrapolate mode is active */
+        body.mode-extrapolate .extrapolate-ui {
+            display: block;
+        }
+        
+        body.mode-extrapolate .summarize-ui {
+            display: none;
+        }
+        
+        body.mode-extrapolate .action-btn {
+            background: #2196F3;
+        }
+        
+        body.mode-extrapolate .action-btn:hover {
+            background: #1976D2;
+        }
+        
+        body.mode-extrapolate .tab.active {
+            background: #2196F3;
+        }
+        
+        body.mode-extrapolate input[type=range]::-webkit-slider-thumb {
+            background: #2196F3;
+        }
+        
+        body.mode-extrapolate input[type=range]::-moz-range-thumb {
+            background: #2196F3;
+        }
+        
+        body.mode-extrapolate .level-marker.active {
+            color: #2196F3;
+        }
+
+        /* Bi-directional Slider */
+        .bidirectional-slider {
             width: 100%;
-            height: 20px;
-            background: #e0e0e0;
-            border-radius: 10px;
-            overflow: hidden;
-            margin-bottom: 10px;
+            margin: 20px 0;
         }
         
-        .progress-fill {
-            height: 100%;
-            background: #4CAF50;
-            width: 0%;
-            transition: width 0.3s ease;
+        .slider-wrapper {
+            position: relative;
+            padding-bottom: 25px;
         }
         
-        .progress-text {
-            text-align: center;
-            font-weight: bold;
-            margin: 5px 0;
+        .slider-scale {
+            display: flex;
+            justify-content: space-between;
+            position: absolute;
+            width: 100%;
+            top: 15px;
+            pointer-events: none;
         }
         
-        .progress-stats {
-            text-align: center;
-            font-size: 14px;
-            color: #666;
+        .scale-point {
+            width: 1px;
+            height: 5px;
+            background: #ccc;
         }
     </style>
 </head>
-<body>
+<body class="mode-summarize">
     <div class="container">
         <h1>SUM</h1>
-        <p class="subtitle">Transform any text into perfect summaries</p>
-        <div style="text-align: center; margin: 10px 0;">
-            <a href="/static/mass.html" style="color: #4CAF50; text-decoration: none; font-weight: bold;">
-                🚀 Need to process 100+ documents? Try Mass Processing Mode →
-            </a>
+        <p class="subtitle">Bi-Directional Knowledge Engine</p>
+        
+        <div class="mode-tabs">
+            <button class="mode-tab active" onclick="setMode('summarize')">Contract (Summarize)</button>
+            <button class="mode-tab" onclick="setMode('extrapolate')">Expand (Extrapolate)</button>
         </div>
         
         <div class="input-tabs">
-            <button class="tab active" onclick="switchTab('text')">📝 Text Input</button>
-            <button class="tab" onclick="switchTab('file')">📁 File Upload</button>
+            <button class="tab active" onclick="switchTab('text')">📝 Input</button>
+            <button class="tab" onclick="switchTab('file')">📁 File</button>
         </div>
         
         <div id="text-input" class="input-section active">
-            <textarea id="input-text" placeholder="Paste your text here..."></textarea>
+            <textarea id="input-text" placeholder="Enter text to process..."></textarea>
         </div>
         
         <div id="file-input" class="input-section">
@@ -286,69 +391,68 @@
                 <input type="file" id="file-select" accept="*" style="display: none;">
                 <p style="font-size: 48px; margin: 0;">📁</p>
                 <p style="margin: 10px 0;">Drop file here or click to select</p>
-                <p style="font-size: 14px; color: #666;">Supports: ANY file type - we'll extract text from anything!</p>
                 <div id="file-info"></div>
             </div>
         </div>
         
-        <div class="density-selector">
-            <label style="font-weight: bold;">Summary Density:</label>
-            <div class="density-options">
-                <div class="density-option" data-density="tags" onclick="selectDensity('tags')">
-                    <div>🏷️</div>
-                    <div>Tags Only</div>
-                </div>
-                <div class="density-option" data-density="minimal" onclick="selectDensity('minimal')">
-                    <div>📝</div>
-                    <div>Minimal</div>
-                </div>
-                <div class="density-option" data-density="short" onclick="selectDensity('short')">
-                    <div>📄</div>
-                    <div>Short</div>
-                </div>
-                <div class="density-option" data-density="medium" onclick="selectDensity('medium')">
-                    <div>📃</div>
-                    <div>Medium</div>
-                </div>
-                <div class="density-option" data-density="detailed" onclick="selectDensity('detailed')">
-                    <div>📚</div>
-                    <div>Detailed</div>
-                </div>
-                <div class="density-option selected" data-density="all" onclick="selectDensity('all')">
-                    <div>🎯</div>
-                    <div>All Levels</div>
+        <!-- Summarization Slider -->
+        <div class="slider-container summarize-ui">
+            <div class="slider-label">
+                <span>Summary Density</span>
+                <span id="sum-label-val">Standard</span>
+            </div>
+            <div class="slider-wrapper">
+                <input type="range" min="0" max="5" value="3" step="1" id="sum-slider" oninput="updateSumSlider(this.value)">
+                <div class="level-markers">
+                    <div class="level-marker" onclick="setSumSlider(0)">Tags</div>
+                    <div class="level-marker" onclick="setSumSlider(1)">Minimal</div>
+                    <div class="level-marker" onclick="setSumSlider(2)">Short</div>
+                    <div class="level-marker" onclick="setSumSlider(3)">Standard</div>
+                    <div class="level-marker" onclick="setSumSlider(4)">Detailed</div>
+                    <div class="level-marker" onclick="setSumSlider(5)">All</div>
                 </div>
             </div>
         </div>
         
-        <button onclick="summarize()">Summarize</button>
+        <!-- Extrapolation Slider -->
+        <div class="slider-container extrapolate-ui">
+            <div class="slider-label">
+                <span>Expansion Level</span>
+                <span id="exp-label-val">Paragraph</span>
+            </div>
+            <div class="slider-wrapper">
+                <input type="range" min="0" max="4" value="1" step="1" id="exp-slider" oninput="updateExpSlider(this.value)">
+                <div class="level-markers">
+                    <div class="level-marker" onclick="setExpSlider(0)">Sentence</div>
+                    <div class="level-marker" onclick="setExpSlider(1)">Paragraph</div>
+                    <div class="level-marker" onclick="setExpSlider(2)">Article</div>
+                    <div class="level-marker" onclick="setExpSlider(3)">Essay</div>
+                    <div class="level-marker" onclick="setExpSlider(4)">Book</div>
+                </div>
+            </div>
+        </div>
+        
+        <button id="action-btn" class="action-btn" onclick="processText()">Summarize</button>
         
         <div class="loading" id="loading">
             <div class="spinner"></div>
             <p id="loading-status">Processing...</p>
-            <div class="progress-container" id="progress-container" style="display: none;">
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progress-fill"></div>
-                </div>
-                <p class="progress-text" id="progress-text">0%</p>
-                <p class="progress-stats" id="progress-stats"></p>
-            </div>
         </div>
         
         <div class="result" id="result">
             <div id="result-content"></div>
             <div class="stats" id="stats" style="display: none;">
                 <div class="stat">
-                    <div>Original Words</div>
+                    <div>Original Length</div>
                     <div class="stat-value" id="stat-words">-</div>
                 </div>
                 <div class="stat">
-                    <div>Compression</div>
-                    <div class="stat-value" id="stat-compression">-</div>
+                    <div>Ratio</div>
+                    <div class="stat-value" id="stat-ratio">-</div>
                 </div>
                 <div class="stat">
-                    <div>From Cache</div>
-                    <div class="stat-value" id="stat-cached">-</div>
+                    <div>Processing Time</div>
+                    <div class="stat-value" id="stat-time">-</div>
                 </div>
             </div>
         </div>
@@ -356,11 +460,69 @@
     
     <script src="/static/streaming.js"></script>
     <script>
-        let selectedDensity = 'all';
-        let selectedFile = null;
+        let currentMode = 'summarize';
         let currentTab = 'text';
+        let selectedFile = null;
         
-        // Switch tabs
+        // Settings mapping
+        const sumLevels = ['tags', 'minimal', 'short', 'medium', 'detailed', 'all'];
+        const sumLabels = ['Tags Only', 'Minimal', 'Short', 'Standard', 'Detailed', 'All Levels'];
+        
+        const expLevels = ['sentence', 'paragraph', 'article', 'essay', 'book'];
+        const expLabels = ['Sentence', 'Paragraph', 'Article', 'Essay', 'Book Chapter'];
+        
+        function setMode(mode) {
+            currentMode = mode;
+            document.body.className = `mode-${mode}`;
+            
+            // Update tabs UI
+            document.querySelectorAll('.mode-tab').forEach(t => {
+                t.classList.toggle('active', t.textContent.toLowerCase().includes(mode));
+            });
+            
+            // Update button text
+            const btn = document.getElementById('action-btn');
+            btn.textContent = mode === 'summarize' ? 'Summarize' : 'Extrapolate';
+            
+            // Update placeholder
+            const placeholder = mode === 'summarize' 
+                ? 'Paste text to summarize...' 
+                : 'Enter a concept, tag, or seed idea to expand...';
+            document.getElementById('input-text').placeholder = placeholder;
+        }
+        
+        function updateSumSlider(val) {
+            document.getElementById('sum-label-val').textContent = sumLabels[val];
+            highlightMarker('summarize', val);
+        }
+        
+        function setSumSlider(val) {
+            document.getElementById('sum-slider').value = val;
+            updateSumSlider(val);
+        }
+        
+        function updateExpSlider(val) {
+            document.getElementById('exp-label-val').textContent = expLabels[val];
+            highlightMarker('extrapolate', val);
+        }
+        
+        function setExpSlider(val) {
+            document.getElementById('exp-slider').value = val;
+            updateExpSlider(val);
+        }
+        
+        function highlightMarker(mode, idx) {
+            const container = mode === 'summarize' ? '.summarize-ui' : '.extrapolate-ui';
+            const markers = document.querySelectorAll(`${container} .level-marker`);
+            markers.forEach((m, i) => {
+                m.classList.toggle('active', i == idx);
+            });
+        }
+        
+        // Initialize
+        updateSumSlider(3);
+        updateExpSlider(1);
+        
         function switchTab(tab) {
             currentTab = tab;
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -370,648 +532,276 @@
             document.getElementById(`${tab}-input`).classList.add('active');
         }
         
-        // Select density
-        function selectDensity(density) {
-            selectedDensity = density;
-            document.querySelectorAll('.density-option').forEach(opt => {
-                opt.classList.toggle('selected', opt.dataset.density === density);
-            });
-        }
-        
-        // File handling
+        // File handling logic remains similar
         const fileDropZone = document.getElementById('file-drop');
         const fileInput = document.getElementById('file-select');
         
         fileDropZone.addEventListener('click', () => fileInput.click());
-        
         fileInput.addEventListener('change', (e) => {
             if (e.target.files.length > 0) {
                 selectedFile = e.target.files[0];
-                showFileInfo();
+                document.getElementById('file-info').textContent = selectedFile.name;
             }
         });
         
-        // Drag and drop
-        fileDropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            fileDropZone.classList.add('dragover');
-        });
-        
-        fileDropZone.addEventListener('dragleave', () => {
-            fileDropZone.classList.remove('dragover');
-        });
-        
-        fileDropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            fileDropZone.classList.remove('dragover');
+        async function processText() {
+            const text = document.getElementById('input-text').value.trim();
             
-            if (e.dataTransfer.files.length > 0) {
-                selectedFile = e.dataTransfer.files[0];
-                showFileInfo();
+            if (currentTab === 'text' && !text) {
+                alert('Please enter text');
+                return;
             }
-        });
-        
-        function showFileInfo() {
-            const info = document.getElementById('file-info');
-            info.innerHTML = `
-                <div style="margin-top: 20px; padding: 10px; background: #e8f5e9; border-radius: 5px;">
-                    <strong>${selectedFile.name}</strong><br>
-                    Size: ${(selectedFile.size / 1024).toFixed(1)} KB
-                </div>
-            `;
-        }
-        
-        // Progress update handler for streaming
-        function updateProgress(event) {
-            const progressContainer = document.getElementById('progress-container');
-            const progressFill = document.getElementById('progress-fill');
-            const progressText = document.getElementById('progress-text');
-            const progressStats = document.getElementById('progress-stats');
-            const loadingStatus = document.getElementById('loading-status');
             
-            switch (event.type) {
-                case 'start':
-                    progressContainer.style.display = 'block';
-                    loadingStatus.textContent = event.message;
-                    break;
-                    
-                case 'progress':
-                    progressFill.style.width = event.progress + '%';
-                    progressText.textContent = event.progress + '%';
-                    loadingStatus.textContent = event.message;
-                    
-                    if (event.stats) {
-                        let statsText = '';
-                        if (event.stats.total_words) {
-                            statsText = `${event.stats.total_words.toLocaleString()} words`;
-                        }
-                        if (event.stats.extracted_length) {
-                            statsText = `${event.stats.extracted_length.toLocaleString()} characters extracted`;
-                        }
-                        progressStats.textContent = statsText;
-                    }
-                    break;
-                    
-                case 'document_start':
-                    loadingStatus.textContent = event.message;
-                    progressFill.style.width = event.progress + '%';
-                    progressText.textContent = event.progress + '%';
-                    break;
-                    
-                case 'complete':
-                    progressFill.style.width = '100%';
-                    progressText.textContent = '100%';
-                    loadingStatus.textContent = event.message;
-                    break;
-                    
-                case 'error':
-                    progressContainer.style.display = 'none';
-                    showError(event.message);
-                    break;
-            }
-        }
-        
-        async function summarize(retryCount = 0) {
-            // Hide previous results
-            document.getElementById('result').style.display = 'none';
             document.getElementById('loading').style.display = 'block';
-            document.querySelector('button').disabled = true;
-            
-            // Reset progress
-            document.getElementById('progress-container').style.display = 'none';
-            document.getElementById('progress-fill').style.width = '0%';
-            document.getElementById('progress-text').textContent = '0%';
-            document.getElementById('loading-status').textContent = 'Processing...';
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('action-btn').disabled = true;
             
             try {
-                let isLargeFile = false;
-                let totalSize = 0;
-                
-                if (currentTab === 'text') {
-                    const text = document.getElementById('input-text').value.trim();
-                    if (!text) {
-                        showError('Please enter some text to summarize');
-                        return;
-                    }
-                    
-                    totalSize = text.length;
-                    isLargeFile = totalSize > 10000; // Show progress for texts > 10KB
-                    
-                    if (isLargeFile) {
-                        // Use new streaming client for large texts
-                        streamingClient.streamSummarize(text, {
-                            density: selectedDensity,
-                            onProgress: updateProgress
-                        }).then(result => {
-                            showResult({ result });
-                            document.getElementById('loading').style.display = 'none';
-                            document.querySelector('button').disabled = false;
-                        }).catch(error => {
-                            showError(error.message);
-                            document.getElementById('loading').style.display = 'none';
-                            document.querySelector('button').disabled = false;
-                        });
-                        return;
-                    }
-                    
-                    // Regular processing for smaller texts
-                    try {
-                        response = await fetchWithTimeout('/summarize/ultimate', {
-                            method: 'POST',
-                            headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify({text, density: selectedDensity})
-                        });
-                    } catch (e) {
-                        // Fallback to simple endpoint
-                        response = await fetchWithTimeout('/summarize', {
-                            method: 'POST',
-                            headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify({text})
-                        });
-                    }
+                if (currentMode === 'summarize') {
+                    await handleSummarize(text);
                 } else {
-                    if (!selectedFile) {
-                        showError('Please select a file to summarize');
-                        return;
-                    }
-                    
-                    totalSize = selectedFile.size;
-                    isLargeFile = totalSize > 1024 * 1024; // Show progress for files > 1MB
-                    
-                    if (isLargeFile) {
-                        // Use streaming for large files
-                        streamingClient.streamFile(selectedFile, {
-                            onProgress: updateProgress
-                        }).then(result => {
-                            showResult({ result });
-                            document.getElementById('loading').style.display = 'none';
-                            document.querySelector('button').disabled = false;
-                        }).catch(error => {
-                            showError(error.message);
-                            document.getElementById('loading').style.display = 'none';
-                            document.querySelector('button').disabled = false;
-                        });
-                        return;
-                    }
-                    
-                    const formData = new FormData();
-                    formData.append('file', selectedFile);
-                    formData.append('density', selectedDensity);
-                    
-                    response = await fetch('/summarize/ultimate', {
-                        method: 'POST',
-                        body: formData
-                    });
+                    await handleExtrapolate(text);
                 }
-                
-                const data = await response.json();
-                
-                if (response.ok) {
-                    showResult(data);
-                } else {
-                    showError(data.error + (data.details ? ': ' + data.details : ''));
-                }
-            } catch (error) {
-                showError('Network error. Is the server running?');
+            } catch (e) {
+                showError(e.message);
             } finally {
                 document.getElementById('loading').style.display = 'none';
-                document.querySelector('button').disabled = false;
+                document.getElementById('action-btn').disabled = false;
             }
         }
         
-        // Streaming summarization for large content
-        function streamingSummarize(text) {
-            const eventSource = new EventSource('/summarize/stream?' + new URLSearchParams({
-                text: text,
-                density: selectedDensity
-            }));
+        async function handleSummarize(text) {
+            const levelIdx = document.getElementById('sum-slider').value;
+            const density = sumLevels[levelIdx];
             
-            let processedWords = 0;
-            let totalWords = text.split(/\s+/).length;
-            let partialSummary = '';
+            let response;
+            if (currentTab === 'file') {
+                 const formData = new FormData();
+                 formData.append('file', selectedFile);
+                 formData.append('density', density);
+                 response = await fetch('/summarize/ultimate', { method: 'POST', body: formData });
+            } else {
+                 response = await fetch('/summarize/ultimate', {
+                     method: 'POST',
+                     headers: {'Content-Type': 'application/json'},
+                     body: JSON.stringify({text, density})
+                 });
+            }
             
-            document.getElementById('progress-container').style.display = 'block';
-            document.getElementById('progress-stats').textContent = `0 / ${totalWords.toLocaleString()} words`;
+            const data = await response.json();
+            if (response.ok) {
+                showResult(data);
+            } else {
+                throw new Error(data.error || 'Summarization failed');
+            }
+        }
+        
+        async function handleExtrapolate(text) {
+            const levelIdx = document.getElementById('exp-slider').value;
+            const format = expLevels[levelIdx];
+            const wordsMap = {0: 50, 1: 200, 2: 800, 3: 2000, 4: 5000};
             
-            eventSource.onmessage = function(event) {
-                const data = JSON.parse(event.data);
+            // Use streaming for better UX
+            const eventSource = new EventSourcePolyfill('/api/extrapolate/stream', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    seed: text,
+                    target_format: format,
+                    length_words: wordsMap[levelIdx]
+                })
+            });
+            
+            let fullText = '';
+            const contentDiv = document.getElementById('result-content');
+            contentDiv.innerHTML = ''; // Clear previous
+            document.getElementById('result').style.display = 'block';
+            
+            return new Promise((resolve, reject) => {
+                eventSource.onmessage = (e) => {
+                    const data = JSON.parse(e.data);
+                    
+                    if (data.chunk) {
+                        fullText += data.chunk;
+                        // Simple Markdown-ish rendering
+                        contentDiv.innerHTML = formatText(fullText); 
+                        // Auto-scroll to bottom
+                        window.scrollTo(0, document.body.scrollHeight);
+                    }
+                    
+                    if (data.status === 'complete') {
+                        eventSource.close();
+                        resolve();
+                    }
+                };
                 
-                if (data.type === 'progress') {
-                    const progress = data.progress || 0;
-                    processedWords = Math.floor(totalWords * (progress / 100));
-                    
-                    document.getElementById('progress-fill').style.width = progress + '%';
-                    document.getElementById('progress-text').textContent = progress + '%';
-                    document.getElementById('progress-stats').textContent = 
-                        `${processedWords.toLocaleString()} / ${totalWords.toLocaleString()} words`;
-                    
-                } else if (data.type === 'partial') {
-                    partialSummary = data.summary;
-                    document.getElementById('loading-status').textContent = 
-                        `Processing... (${processedWords.toLocaleString()} words analyzed)`;
-                    
-                } else if (data.type === 'complete') {
+                eventSource.onerror = (e) => {
                     eventSource.close();
-                    showResult(data.result);
-                    document.getElementById('loading').style.display = 'none';
-                    document.querySelector('button').disabled = false;
-                    
-                } else if (data.type === 'error') {
-                    eventSource.close();
-                    showError(data.message);
-                    document.getElementById('loading').style.display = 'none';
-                    document.querySelector('button').disabled = false;
-                }
-            };
+                    reject(new Error('Stream connection failed'));
+                };
+            });
+        }
+        
+        // Simple polyfill-like fetch wrapper for SSE since standard EventSource doesn't support POST bodies
+        // In a real app we'd use fetch-event-source or similar. For now, we'll fall back to non-streaming POST if needed
+        // But let's hack a simple fetch reader for streaming
+        function EventSourcePolyfill(url, options) {
+            const listeners = {};
+            let controller = new AbortController();
             
-            eventSource.onerror = function() {
-                eventSource.close();
-                showError('Connection lost. Please try again.');
-                document.getElementById('loading').style.display = 'none';
-                document.querySelector('button').disabled = false;
+            fetch(url, {
+                ...options,
+                signal: controller.signal
+            }).then(async response => {
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                
+                while (true) {
+                    const {done, value} = await reader.read();
+                    if (done) break;
+                    
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n\n');
+                    
+                    lines.forEach(line => {
+                        if (line.startsWith('data: ')) {
+                            const data = line.slice(6);
+                            if (listeners['message']) {
+                                listeners['message']({data});
+                            }
+                        }
+                    });
+                }
+            }).catch(e => {
+                if (listeners['error']) listeners['error'](e);
+            });
+            
+            return {
+                onmessage: null, // setter
+                onerror: null,
+                close: () => controller.abort()
             };
+        }
+        // Monkey patch to make the syntax above work with the custom class
+        Object.defineProperty(EventSourcePolyfill.prototype, 'onmessage', {
+            set: function(handler) { this.listeners['message'] = handler; }
+        });
+        
+        // Better streaming implementation using fetch directly
+        async function streamExtrapolation(text, format, length) {
+             const response = await fetch('/api/extrapolate/stream', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    seed: text,
+                    target_format: format,
+                    length_words: length
+                })
+            });
+            
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let fullText = '';
+            const contentDiv = document.getElementById('result-content');
+            contentDiv.innerHTML = '<div class="result-card"></div>';
+            const cardContent = contentDiv.querySelector('.result-card');
+            
+            document.getElementById('result').style.display = 'block';
+            
+            while (true) {
+                const {done, value} = await reader.read();
+                if (done) break;
+                
+                const chunk = decoder.decode(value, {stream: true});
+                const lines = chunk.split('\n\n');
+                
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const data = JSON.parse(line.slice(6));
+                            if (data.chunk) {
+                                fullText += data.chunk;
+                                cardContent.innerHTML = formatText(fullText);
+                            }
+                        } catch (e) { console.log('Parse error', e); }
+                    }
+                }
+            }
+        }
+        
+        // Replace handleExtrapolate with the direct fetch version
+        handleExtrapolate = async function(text) {
+             const levelIdx = document.getElementById('exp-slider').value;
+            const format = expLevels[levelIdx];
+            const wordsMap = {0: 50, 1: 200, 2: 800, 3: 2000, 4: 5000};
+            
+            await streamExtrapolation(text, format, wordsMap[levelIdx]);
+        }
+        
+        function formatText(text) {
+            // Convert newlines to breaks, bold headers
+            return text
+                .replace(/\n\n/g, '<br><br>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
         }
         
         function showResult(data) {
             const contentDiv = document.getElementById('result-content');
             contentDiv.innerHTML = '';
             
-            // Handle both ultimate and simple API responses
+            // Standardize result object
             const result = data.result || data;
             
-            // Simple API response
+            // Extrapolation result (simple text)
+            if (typeof result === 'string') {
+                 contentDiv.innerHTML = `<div class="result-card">${formatText(result)}</div>`;
+                 return;
+            }
+            
+            // Summarization result
             if (result.summary && !result.tags) {
-                const card = createResultCard('Summary', result.summary);
-                contentDiv.appendChild(card);
+                // Simple summary
+                contentDiv.innerHTML = `<div class="result-card"><div class="result-label">Summary</div>${result.summary}</div>`;
             } else {
-                // Ultimate API response with multiple densities
+                // Complex summary
                 if (result.tags) {
-                    const card = createResultCard('🏷️ Tags', '');
-                    const tagsDiv = document.createElement('div');
-                    tagsDiv.className = 'tags';
-                    result.tags.forEach(tag => {
-                        const tagEl = document.createElement('span');
-                        tagEl.className = 'tag';
-                        tagEl.textContent = tag;
-                        tagsDiv.appendChild(tagEl);
-                    });
-                    card.appendChild(tagsDiv);
-                    contentDiv.appendChild(card);
+                    const tagCard = document.createElement('div');
+                    tagCard.className = 'result-card';
+                    tagCard.innerHTML = `<div class="result-label">🏷️ Tags</div><div class="tags">${result.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>`;
+                    contentDiv.appendChild(tagCard);
                 }
                 
-                const summaryTypes = [
-                    {key: 'minimal', label: '📝 Minimal'},
-                    {key: 'short', label: '📄 Short'},
-                    {key: 'medium', label: '📃 Medium'},
-                    {key: 'detailed', label: '📚 Detailed'}
-                ];
+                // Show specific levels if requested
+                const levelIdx = document.getElementById('sum-slider').value;
+                const reqLevel = sumLevels[levelIdx];
                 
-                summaryTypes.forEach(type => {
-                    if (result[type.key]) {
-                        contentDiv.appendChild(createResultCard(type.label, result[type.key], type.key));
-                    }
-                });
+                if (reqLevel === 'all') {
+                     ['minimal', 'short', 'medium', 'detailed'].forEach(k => {
+                         if (result[k]) {
+                             contentDiv.innerHTML += `<div class="result-card"><div class="result-label">${k.toUpperCase()}</div>${result[k]}</div>`;
+                         }
+                     });
+                } else if (result[reqLevel]) {
+                    contentDiv.innerHTML += `<div class="result-card"><div class="result-label">Summary</div>${result[reqLevel]}</div>`;
+                } else if (result.summary) {
+                    contentDiv.innerHTML += `<div class="result-card"><div class="result-label">Summary</div>${result.summary}</div>`;
+                }
             }
             
-            // Show stats if available
-            if (result.original_words || result.compression_ratio) {
+            document.getElementById('result').style.display = 'block';
+            
+            // Show stats
+            if (data.metadata || result.original_length) {
                 document.getElementById('stats').style.display = 'flex';
-                document.getElementById('stat-words').textContent = 
-                    result.original_words ? result.original_words.toLocaleString() : '-';
-                document.getElementById('stat-compression').textContent = 
-                    result.compression_ratio ? `${result.compression_ratio.toFixed(1)}:1` : '-';
-                document.getElementById('stat-cached').textContent = 
-                    data.cached ? '✓' : '✗';
+                // ... populate stats
             }
-            
-            document.getElementById('result').style.display = 'block';
         }
         
-        function createResultCard(label, content) {
-            const card = document.createElement('div');
-            card.className = 'result-card';
-            
-            const labelEl = document.createElement('div');
-            labelEl.className = 'result-label';
-            labelEl.textContent = label;
-            card.appendChild(labelEl);
-            
-            if (content) {
-                const contentEl = document.createElement('div');
-                contentEl.textContent = content;
-                card.appendChild(contentEl);
-            }
-            
-            return card;
-        }
-        
-        function showError(message) {
+        function showError(msg) {
             const contentDiv = document.getElementById('result-content');
-            contentDiv.innerHTML = '';
-            
-            const errorCard = document.createElement('div');
-            errorCard.className = 'result-card error';
-            errorCard.textContent = message;
-            contentDiv.appendChild(errorCard);
-            
-            document.getElementById('stats').style.display = 'none';
+            contentDiv.innerHTML = `<div class="result-card error">${msg}</div>`;
             document.getElementById('result').style.display = 'block';
         }
-        
-        // Add copy button styles
-        const style = document.createElement('style');
-        style.textContent = `
-            .copy-button {
-                position: absolute;
-                top: 10px;
-                right: 10px;
-                padding: 5px 10px;
-                background: #4CAF50;
-                color: white;
-                border: none;
-                border-radius: 3px;
-                cursor: pointer;
-                font-size: 12px;
-                opacity: 0.7;
-                transition: opacity 0.3s;
-            }
-            .copy-button:hover {
-                opacity: 1;
-            }
-            .copy-button.copied {
-                background: #2196F3;
-            }
-            .result-card {
-                position: relative;
-            }
-            
-            /* Feedback styles */
-            .feedback-section {
-                margin-top: 10px;
-                padding-top: 10px;
-                border-top: 1px solid #e0e0e0;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-            }
-            .star-rating {
-                display: flex;
-                gap: 5px;
-            }
-            .star {
-                cursor: pointer;
-                color: #ddd;
-                font-size: 20px;
-                transition: color 0.2s;
-            }
-            .star:hover,
-            .star.active {
-                color: #FFD700;
-            }
-            .feedback-message {
-                font-size: 14px;
-                color: #4CAF50;
-                margin-left: 10px;
-            }
-        `;
-        document.head.appendChild(style);
-        
-        // Fetch with timeout and retry
-        async function fetchWithTimeout(url, options, timeout = 30000) {
-            const controller = new AbortController();
-            const id = setTimeout(() => controller.abort(), timeout);
-            
-            try {
-                const response = await fetch(url, {
-                    ...options,
-                    signal: controller.signal
-                });
-                clearTimeout(id);
-                return response;
-            } catch (error) {
-                clearTimeout(id);
-                throw error;
-            }
-        }
-        
-        // Updated createResultCard with copy button and feedback
-        function createResultCard(label, content, summaryType) {
-            const card = document.createElement('div');
-            card.className = 'result-card';
-            
-            const labelEl = document.createElement('div');
-            labelEl.className = 'result-label';
-            labelEl.textContent = label;
-            card.appendChild(labelEl);
-            
-            if (content) {
-                const contentEl = document.createElement('div');
-                contentEl.textContent = content;
-                card.appendChild(contentEl);
-                
-                // Add copy button
-                const copyBtn = document.createElement('button');
-                copyBtn.className = 'copy-button';
-                copyBtn.textContent = 'Copy';
-                copyBtn.onclick = () => copyToClipboard(content, copyBtn);
-                card.appendChild(copyBtn);
-                
-                // Add feedback section
-                const feedbackSection = document.createElement('div');
-                feedbackSection.className = 'feedback-section';
-                
-                const ratingLabel = document.createElement('span');
-                ratingLabel.textContent = 'Rate this summary:';
-                ratingLabel.style.fontSize = '14px';
-                feedbackSection.appendChild(ratingLabel);
-                
-                const starRating = document.createElement('div');
-                starRating.className = 'star-rating';
-                
-                // Create 5 stars
-                for (let i = 1; i <= 5; i++) {
-                    const star = document.createElement('span');
-                    star.className = 'star';
-                    star.textContent = '★';
-                    star.dataset.rating = i;
-                    star.onclick = () => submitRating(content, summaryType || label, i, feedbackSection);
-                    starRating.appendChild(star);
-                }
-                
-                feedbackSection.appendChild(starRating);
-                card.appendChild(feedbackSection);
-            }
-            
-            return card;
-        }
-        
-        // Submit rating function
-        async function submitRating(content, summaryType, rating, feedbackSection) {
-            // Generate content hash
-            const contentHash = await hashContent(content);
-            
-            // Submit feedback
-            try {
-                const response = await fetch('/api/feedback/submit', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        content_hash: contentHash,
-                        summary_type: summaryType.toLowerCase().replace(/[^a-z]/g, ''),
-                        rating: rating,
-                        helpful: rating >= 4
-                    })
-                });
-                
-                if (response.ok) {
-                    // Show feedback message
-                    const message = document.createElement('span');
-                    message.className = 'feedback-message';
-                    message.textContent = 'Thank you!';
-                    feedbackSection.appendChild(message);
-                    
-                    // Highlight selected stars
-                    const stars = feedbackSection.querySelectorAll('.star');
-                    stars.forEach((star, index) => {
-                        if (index < rating) {
-                            star.classList.add('active');
-                        }
-                        star.onclick = null; // Disable further clicks
-                    });
-                    
-                    // Update preferences
-                    const data = await response.json();
-                    if (data.updated_preferences) {
-                        // Could update UI based on new preferences
-                        console.log('Updated preferences:', data.updated_preferences);
-                    }
-                }
-            } catch (error) {
-                console.error('Failed to submit feedback:', error);
-            }
-        }
-        
-        // Simple hash function for content
-        async function hashContent(content) {
-            const encoder = new TextEncoder();
-            const data = encoder.encode(content);
-            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-            return hashHex.substring(0, 16);
-        }
-        
-        // Copy to clipboard function
-        function copyToClipboard(text, button) {
-            navigator.clipboard.writeText(text).then(() => {
-                button.textContent = 'Copied!';
-                button.classList.add('copied');
-                setTimeout(() => {
-                    button.textContent = 'Copy';
-                    button.classList.remove('copied');
-                }, 2000);
-            }).catch(err => {
-                console.error('Failed to copy:', err);
-            });
-        }
-        
-        // Auto-retry on error
-        window.addEventListener('error', (e) => {
-            if (e.message.includes('fetch')) {
-                showError('Connection lost. Retrying...');
-                setTimeout(() => summarize(1), 2000);
-            }
-        });
-        
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            // Ctrl/Cmd + Enter to submit
-            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                summarize();
-            }
-            // Ctrl/Cmd + K to clear
-            else if (e.key === 'k' && (e.ctrlKey || e.metaKey)) {
-                e.preventDefault();
-                document.getElementById('input-text').value = '';
-                document.getElementById('result').style.display = 'none';
-            }
-            // Ctrl/Cmd + 1-6 for density levels
-            else if ((e.ctrlKey || e.metaKey) && e.key >= '1' && e.key <= '6') {
-                e.preventDefault();
-                const densities = ['tags', 'minimal', 'short', 'medium', 'detailed', 'all'];
-                const index = parseInt(e.key) - 1;
-                if (index < densities.length) {
-                    selectDensity(densities[index]);
-                    // Update UI
-                    document.querySelectorAll('.density-option').forEach(opt => {
-                        opt.classList.toggle('selected', opt.dataset.density === densities[index]);
-                    });
-                }
-            }
-        });
-        
-        // Add shortcuts tooltip
-        const shortcutsTooltip = document.createElement('div');
-        shortcutsTooltip.style.cssText = `
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            padding: 10px;
-            background: rgba(0,0,0,0.8);
-            color: white;
-            border-radius: 5px;
-            font-size: 12px;
-            z-index: 1000;
-        `;
-        shortcutsTooltip.innerHTML = `
-            <strong>Shortcuts:</strong><br>
-            Ctrl+Enter: Summarize<br>
-            Ctrl+K: Clear<br>
-            Ctrl+1-6: Density levels
-        `;
-        document.body.appendChild(shortcutsTooltip);
-        
-        // Hide tooltip after 5 seconds
-        setTimeout(() => {
-            shortcutsTooltip.style.display = 'none';
-        }, 5000);
-        
-        // Save to localStorage
-        function saveToHistory(text, result) {
-            const history = JSON.parse(localStorage.getItem('sumHistory') || '[]');
-            history.unshift({
-                text: text.substring(0, 100) + '...',
-                result: result,
-                timestamp: new Date().toISOString()
-            });
-            // Keep only last 10
-            if (history.length > 10) history.pop();
-            localStorage.setItem('sumHistory', JSON.stringify(history));
-        }
-        
-        // Update showResult to save history
-        const originalShowResult = showResult;
-        function showResult(data) {
-            originalShowResult(data);
-            const text = document.getElementById('input-text').value || 'File upload';
-            saveToHistory(text, data);
-        }
-        
-        // Auto-save draft
-        setInterval(() => {
-            const text = document.getElementById('input-text').value;
-            if (text) {
-                localStorage.setItem('sumDraft', text);
-            }
-        }, 5000);
-        
-        // Restore draft on load
-        window.addEventListener('load', () => {
-            const draft = localStorage.getItem('sumDraft');
-            if (draft) {
-                document.getElementById('input-text').value = draft;
-            }
-        });
     </script>
 </body>
 </html>
