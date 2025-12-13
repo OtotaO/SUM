@@ -33,6 +33,7 @@ from summarization_engine import (
     AdvancedSummarizationEngine,
     HierarchicalDensificationEngine
 )
+from extrapolation_engine import ExtrapolationEngine, ExtrapolationConfig
 from unlimited_text_processor import get_unlimited_processor
 from language_detector import detect_language
 from smart_cache import get_cache
@@ -64,6 +65,7 @@ class SUMMCPServer(MCPServer if MCP_AVAILABLE else object):
             'hierarchical': HierarchicalDensificationEngine()
         }
         
+        self.extrapolation_engine = ExtrapolationEngine()
         self.unlimited_processor = get_unlimited_processor()
         self.cache = get_cache()
         
@@ -215,6 +217,71 @@ class SUMMCPServer(MCPServer if MCP_AVAILABLE else object):
                 "required": ["text"]
             },
             handler=self.compare_models
+        ))
+
+        # Extrapolate text tool
+        self.register_tool(Tool(
+            name="extrapolate",
+            description="Expand a seed text into a larger piece (Essay, Article, etc.)",
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "seed": {
+                        "type": "string",
+                        "description": "The initial seed text or concept"
+                    },
+                    "format": {
+                        "type": "string",
+                        "enum": ["paragraph", "article", "essay"],
+                        "default": "article",
+                        "description": "Target format"
+                    },
+                    "style": {
+                        "type": "string",
+                        "default": "professional",
+                        "description": "Writing style"
+                    },
+                    "tone": {
+                        "type": "string",
+                        "default": "neutral",
+                        "description": "Writing tone"
+                    },
+                    "length": {
+                        "type": "integer",
+                        "default": 500,
+                        "description": "Approximate word count"
+                    }
+                },
+                "required": ["seed"]
+            },
+            handler=self.extrapolate_text
+        ))
+
+        # Generate book tool
+        self.register_tool(Tool(
+            name="generate_book",
+            description="Generate a comprehensive book structure and content from a concept",
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "concept": {
+                        "type": "string",
+                        "description": "The central concept of the book"
+                    },
+                    "style": {
+                        "type": "string",
+                        "default": "academic",
+                        "description": "Writing style"
+                    },
+                    "tone": {
+                        "type": "string",
+                        "default": "informative",
+                        "description": "Writing tone"
+                    }
+                },
+                "required": ["concept"]
+            },
+            handler=self.generate_book
         ))
     
     async def summarize_text(self, text: str, model: str = "hierarchical", 
@@ -480,6 +547,90 @@ class SUMMCPServer(MCPServer if MCP_AVAILABLE else object):
             
         except Exception as e:
             logger.error(f"Error in compare_models: {e}")
+            return ToolResult(
+                success=False,
+                error=str(e)
+            )
+
+    async def extrapolate_text(self, seed: str, format: str = "article", 
+                             style: str = "professional", tone: str = "neutral", 
+                             length: int = 500) -> ToolResult:
+        """
+        Expand a seed text into a larger piece.
+        
+        Args:
+            seed: Initial seed text
+            format: Target format
+            style: Writing style
+            tone: Writing tone
+            length: Approximate word count
+            
+        Returns:
+            ToolResult with expanded text
+        """
+        try:
+            config = ExtrapolationConfig(
+                target_format=format,
+                style=style,
+                tone=tone,
+                length_words=length
+            )
+            
+            full_text = ""
+            async for chunk in self.extrapolation_engine.stream_extrapolate(seed, config):
+                if chunk['type'] == 'text':
+                    full_text += chunk['content']
+            
+            return ToolResult(
+                success=True,
+                data={
+                    "text": full_text,
+                    "format": format,
+                    "length": len(full_text.split())
+                }
+            )
+        except Exception as e:
+            logger.error(f"Error in extrapolate_text: {e}")
+            return ToolResult(
+                success=False,
+                error=str(e)
+            )
+
+    async def generate_book(self, concept: str, style: str = "academic", 
+                          tone: str = "informative") -> ToolResult:
+        """
+        Generate a book from a concept.
+        
+        Args:
+            concept: Book concept
+            style: Writing style
+            tone: Writing tone
+            
+        Returns:
+            ToolResult with book content
+        """
+        try:
+            config = ExtrapolationConfig(
+                target_format="book",
+                style=style,
+                tone=tone,
+                length_words=5000 
+            )
+            
+            full_text = ""
+            async for chunk in self.extrapolation_engine.stream_extrapolate(concept, config):
+                 if chunk['type'] == 'text':
+                    full_text += chunk['content']
+            
+            return ToolResult(
+                success=True,
+                data={
+                    "book_content": full_text,
+                    "concept": concept
+                }
+            )
+        except Exception as e:
+            logger.error(f"Error in generate_book: {e}")
             return ToolResult(
                 success=False,
                 error=str(e)
