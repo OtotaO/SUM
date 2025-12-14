@@ -1,53 +1,14 @@
-# SUM - Core Requirements
-# Minimal dependencies for the best text summarization tool
-
-# Core NLP
-nltk==3.8.1
-numpy==1.24.3
-
-# Web Framework
-flask==3.0.0
-flask-cors==4.0.0
-
-# Text Processing
-beautifulsoup4==4.12.2
-lxml==4.9.3
-python-docx==1.1.0
-PyPDF2==3.0.1
-pandas==2.0.3
-openpyxl==3.1.2
-markdown==3.5.1
-chardet==5.2.0
-
-# API Documentation
-PyYAML==6.0.1
-
-# Utilities
-python-dotenv==1.0.0
-psutil==5.9.5
-wordcloud==1.9.2
-
-# Optional but recommended for better performance
-redis==5.0.1
-transformers==4.35.2
-torch==2.1.0
-
-# Legendary Features Dependencies
-sentence-transformers==2.2.2
-scikit-learn==1.3.2
-networkx==3.2
-python-louvain==0.16
-spacy==3.7.2
-asyncio-mqtt==0.16.2
-
-# Language Detection
-langdetect==1.0.9
-langid==1.1.6
-
-# Development
-pytest==7.4.3
-pytest-cov==4.1.0
-pytest-asyncio==0.21.1
-
-# Optional: MCP Support
-# mcp>=0.1.0  # Uncomment to enable Model Context Protocol support
+flask
+werkzeug
+requests
+nltk
+pyyaml
+python-dotenv
+numpy
+wordcloud
+matplotlib
+pillow
+networkx
+chardet
+pypdf
+pytesseract

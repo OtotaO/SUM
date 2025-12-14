@@ -76,30 +76,61 @@ def configure_logging(config):
 def register_blueprints(app):
     """Register all application blueprints."""
     # Import blueprints here to avoid circular imports
-    from api.summarization import summarization_bp
-    from api.ai_models import ai_models_bp
-    from api.compression import compression_bp
-    from api.file_processing import file_processing_bp
-    from api.collaborative_intelligence import collaborative_bp
-    from api.memory_api import memory_bp
-    from api.streaming import streaming_bp
-    from api.feedback_api import feedback_bp
-    from api.health import health_bp
-    from api.async_file_processing import async_file_bp
-    from web.routes import web_bp
     
-    # Register with URL prefixes
-    app.register_blueprint(summarization_bp, url_prefix='/api')
-    app.register_blueprint(ai_models_bp, url_prefix='/api/ai')
-    app.register_blueprint(compression_bp, url_prefix='/api')
-    app.register_blueprint(file_processing_bp, url_prefix='/api')
-    app.register_blueprint(collaborative_bp, url_prefix='/api/collaborative')
-    app.register_blueprint(memory_bp, url_prefix='/api')
-    app.register_blueprint(streaming_bp, url_prefix='/api')
-    app.register_blueprint(feedback_bp, url_prefix='/api')
-    app.register_blueprint(health_bp, url_prefix='/api')
-    app.register_blueprint(async_file_bp, url_prefix='/api')
-    app.register_blueprint(web_bp)
+    # Core Blueprints (Confirmed Existence)
+    try:
+        from api.summarization import summarization_bp
+        app.register_blueprint(summarization_bp, url_prefix='/api')
+    except ImportError:
+        logging.warning("Could not import api.summarization")
+
+    try:
+        from api.file_processing import file_processing_bp
+        app.register_blueprint(file_processing_bp, url_prefix='/api')
+    except ImportError:
+        logging.warning("Could not import api.file_processing")
+
+    try:
+        from api.health import health_bp
+        app.register_blueprint(health_bp, url_prefix='/api')
+    except ImportError:
+        logging.warning("Could not import api.health")
+
+    try:
+        from api.knowledge_os import knowledge_bp
+        app.register_blueprint(knowledge_bp, url_prefix='/api')
+    except ImportError:
+        logging.warning("Could not import api.knowledge_os")
+        
+    try:
+        from web.routes import web_bp
+        app.register_blueprint(web_bp)
+    except ImportError:
+        logging.warning("Could not import web.routes")
+
+    # Optional Blueprints (May or may not exist)
+    optional_blueprints = [
+        ('api.ai_models', 'ai_models_bp', '/api/ai'),
+        ('api.compression', 'compression_bp', '/api'),
+        ('api.collaborative_intelligence', 'collaborative_bp', '/api/collaborative'),
+        ('api.memory_api', 'memory_bp', '/api'),
+        ('api.streaming', 'streaming_bp', '/api'),
+        ('api.feedback_api', 'feedback_bp', '/api'),
+        ('api.async_file_processing', 'async_file_bp', '/api'),
+        ('api.auth_routes', 'auth_bp', '/api/auth'), # Assuming auth_bp name
+        ('api.crystallization', 'crystallization_bp', '/api/crystallization'),
+        ('api.extrapolation', 'extrapolation_bp', '/api/extrapolation'),
+        ('api.legendary', 'legendary_bp', '/api/legendary'),
+        ('api.mass_processing', 'mass_processing_bp', '/api/mass')
+    ]
+
+    for module_name, bp_name, prefix in optional_blueprints:
+        try:
+            module = __import__(module_name, fromlist=[bp_name])
+            bp = getattr(module, bp_name)
+            app.register_blueprint(bp, url_prefix=prefix)
+        except (ImportError, AttributeError) as e:
+            logging.debug(f"Optional module {module_name} not loaded: {e}")
 
 
 def register_error_handlers(app):

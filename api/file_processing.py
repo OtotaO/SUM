@@ -20,7 +20,12 @@ from werkzeug.utils import secure_filename
 
 from web.middleware import rate_limit, allowed_file
 from config import active_config
-from summarization_engine import SummarizationEngine
+from summarization_engine import (
+    SummarizationEngine, 
+    BasicSummarizationEngine, 
+    AdvancedSummarizationEngine, 
+    HierarchicalDensificationEngine
+)
 from multimodal_processor import MultiModalProcessor
 
 # Try to import ChatIntelligenceEngine, but don't fail if missing
@@ -28,6 +33,13 @@ try:
     from chat_intelligence_engine import ChatIntelligenceEngine
 except ImportError:
     ChatIntelligenceEngine = None
+
+# Import OnePunchBridge
+try:
+    from onepunch_bridge import OnePunchBridge
+    onepunch_bridge = OnePunchBridge()
+except ImportError:
+    onepunch_bridge = None
 
 logger = logging.getLogger(__name__)
 file_processing_bp = Blueprint('file_processing', __name__)
@@ -39,6 +51,7 @@ file_processing_bp = Blueprint('file_processing', __name__)
 def analyze_file():
     """
     Analyze file (Text, PDF, Image) and generate summary.
+    Optionally generate OnePunch content if 'generate_social' is true.
     """
     try:
         # Validate file upload
@@ -70,11 +83,29 @@ def analyze_file():
             model_type = request.form.get('model', 'hierarchical').lower()
             max_tokens = int(request.form.get('maxTokens', str(active_config.MAX_SUMMARY_LENGTH)))
             
-            engine = SummarizationEngine()
+            # Select appropriate engine
+            if model_type == 'hierarchical':
+                engine = HierarchicalDensificationEngine()
+            elif model_type == 'advanced':
+                engine = AdvancedSummarizationEngine()
+            else:
+                engine = BasicSummarizationEngine()
             
             # Use appropriate method based on request or default to process_text which handles logic
             result = engine.process_text(text_content, {'maxTokens': max_tokens})
             
+            # 3. Optional: OnePunch Integration
+            generate_social = request.form.get('generate_social', 'false').lower() == 'true'
+            social_content = None
+            
+            if generate_social and onepunch_bridge:
+                try:
+                    title = filename.rsplit('.', 1)[0].replace('_', ' ').title()
+                    social_content = onepunch_bridge.process_content(text_content, title=title)
+                except Exception as e:
+                    logger.warning(f"OnePunch bridge failed: {e}")
+                    social_content = {"error": "Bridge generation failed", "details": str(e)}
+
             # Format output
             response = {
                 'filename': filename,
@@ -85,6 +116,9 @@ def analyze_file():
                 'original_length': len(text_content),
                 'pages': processed_data.get('pages', 1)
             }
+            
+            if social_content:
+                response['social_content'] = social_content
             
             return jsonify(response)
             
@@ -173,7 +207,8 @@ def generate_knowledge_graph():
         min_weight = float(data.get('min_weight', 0.1))
         
         # Use SummarizationEngine for extraction logic
-        engine = SummarizationEngine()
+        # Default to Basic engine for knowledge graph if not specified
+        engine = BasicSummarizationEngine() 
         result = engine.process_text(text)
         
         # In a real implementation, we would extract entities and relations.

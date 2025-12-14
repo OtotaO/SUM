@@ -1,8 +1,0 @@
-2025-08-14 02:19:05,605 - matplotlib - DEBUG - matplotlib data path: /opt/homebrew/Caskroom/miniforge/base/lib/python3.10/site-packages/matplotlib/mpl-data
-2025-08-14 02:19:05,608 - matplotlib - DEBUG - CONFIGDIR=/Users/ototao/.matplotlib
-2025-08-14 02:19:05,609 - matplotlib - DEBUG - interactive is False
-2025-08-14 02:19:05,609 - matplotlib - DEBUG - platform is darwin
-2025-08-14 05:14:36,608 - matplotlib - DEBUG - matplotlib data path: /opt/homebrew/Caskroom/miniforge/base/lib/python3.10/site-packages/matplotlib/mpl-data
-2025-08-14 05:14:36,617 - matplotlib - DEBUG - CONFIGDIR=/Users/ototao/.matplotlib
-2025-08-14 05:14:36,619 - matplotlib - DEBUG - interactive is False
-2025-08-14 05:14:36,619 - matplotlib - DEBUG - platform is darwin
