@@ -12,3 +12,4 @@ networkx
 chardet
 pypdf
 pytesseract
+psutil
