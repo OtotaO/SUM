@@ -26,9 +26,10 @@ Our revolutionary UI features a single slider that controls knowledge density.
 
 ## Features
 
-- **Recursive Book Generation**: Automatically architects a book structure and writes it chapter by chapter.
+- **Recursive Book Generation**: Automatically architects a book structure and writes it chapter by chapter using a two-phase "Blueprint -> Draft" process.
 - **Streaming Intelligence**: Watch as the system "thinks" and generates content in real-time with transparent system logs.
-- **Unlimited Context**: Process files from 1KB to 1TB.
+- **Unlimited Context**: Process files from 1KB to 1TB using intelligent memory mapping (mmap) and streaming chunkers.
+- **Legendary Intelligence**: Includes GraphRAG and RAPTOR implementations with robust "Light Mode" fallbacks for environments without heavy ML libraries.
 - **Smart Caching**: Instant results for previously processed concepts.
 - **Live Markdown**: Beautifully formatted output with headers, bolding, and structure.
 
@@ -62,7 +63,20 @@ python main.py
 - **Backend**: Python, Flask, Universal LLM Backend (OpenAI/Ollama/Local)
 - **Engine**: Hierarchical Densification Engine (for Summarization) & Recursive Extrapolation Engine (for Expansion)
 - **Frontend**: SSE (Server-Sent Events) for real-time streaming, dynamic CSS variables.
-- **Intelligence**: Multi-agent architecture with recursive logic.
+- **Intelligence Architecture**: 
+  - **Core**: Extractive & Abstractive summarization via NLTK & LLMs.
+  - **Advanced**: GraphRAG (Graph-based retrieval) & RAPTOR (Recursive tree summarization).
+  - **Multi-Agent**: Prototype orchestration system simulating 10+ specialized roles.
+
+## Deployment
+
+This is a server-side Python application using Flask. It requires a runtime environment and cannot be deployed to static hosting (like Firebase Hosting or GitHub Pages).
+
+**Recommended Deployment Options:**
+- **Google Cloud Run**: Ideal for containerized Python apps.
+- **AWS App Runner**: Fully managed container application service.
+- **Heroku / Railway / Render**: Simple PaaS deployment.
+- **VPS (DigitalOcean/Linode)**: Run with `gunicorn` or `systemd`.
 
 ## Configuration
 
