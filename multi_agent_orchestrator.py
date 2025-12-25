@@ -86,7 +86,7 @@ class BaseAgent:
         }
         return model_mapping.get(role, "base-model")
     
-    async def process(self, task: AgentTask) -> AgentResult:
+    async def process_task(self, task: AgentTask) -> AgentResult:
         """Process task asynchronously"""
         start_time = time.time()
         
@@ -370,7 +370,7 @@ class MultiAgentOrchestrator:
         coroutines = []
         for task in tasks:
             agent = self.agents[task.role]
-            coroutines.append(agent.process(task))
+            coroutines.append(agent.process_task(task))
         
         # Execute all coroutines
         results = await asyncio.gather(*coroutines)

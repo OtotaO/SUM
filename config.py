@@ -79,7 +79,8 @@ class Config:
     # Flask settings
     SECRET_KEY = os.getenv('FLASK_SECRET_KEY', os.urandom(24).hex())
     DEBUG = os.getenv('FLASK_DEBUG', 'True').lower() in ('true', '1', 't')
-    PORT = int(os.getenv('FLASK_PORT', '5001'))
+    # Prioritize PORT env var (standard), then FLASK_PORT, then default 5001
+    PORT = int(os.getenv('PORT', os.getenv('FLASK_PORT', '5001')))
     HOST = os.getenv('FLASK_HOST', '0.0.0.0')
     
     # File upload settings
