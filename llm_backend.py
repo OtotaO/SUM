@@ -285,6 +285,14 @@ class LocalProvider(BaseLLMProvider):
     
     async def generate(self, prompt: str, config: LLMConfig) -> str:
         """Use the existing summarization engine"""
+
+        # Check if this is an expansion/generation request rather than summarization
+        prompt_lower = prompt.lower()
+        generation_keywords = ["expand", "write", "create", "chapter", "extrapolate"]
+        # Simple heuristic: if prompt is asking to create content and is relatively short (instructional)
+        if any(keyword in prompt_lower for keyword in generation_keywords) and len(prompt) < 2000:
+             return "Text generation requires an active LLM (OpenAI, Anthropic, or Ollama). Please configure one."
+
         try:
             from summarization_engine import SummarizationEngine
             
