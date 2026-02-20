@@ -61,6 +61,13 @@ class ExtrapolationEngine:
         Yields dicts: {'type': 'text'|'log', 'content': str}
         """
         
+        # Check if we have a capable LLM
+        available_providers = llm_backend.get_available_providers()
+        has_llm = 'openai' in available_providers or 'anthropic' in available_providers or 'ollama' in available_providers or 'huggingface' in available_providers
+
+        if not has_llm:
+            yield {'type': 'text', 'content': '\n**Extrapolation Unavailable**\n\nExtrapolation requires an active LLM (OpenAI, Anthropic, or Ollama). Please configure one or run a local Ollama instance.'}
+            return
         # SPECIAL HANDLING FOR BOOK MODE
         if config.target_format == 'book' or config.target_format == 'essay':
              async for event in self._stream_recursive_book(seed, config):
