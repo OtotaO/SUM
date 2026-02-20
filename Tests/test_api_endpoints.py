@@ -19,7 +19,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from main import create_simple_app
 app = create_simple_app()
-from api.auth import create_api_key, validate_api_key
+from api.auth import get_auth_manager
 
 
 class TestAPIEndpoints:
@@ -35,7 +35,7 @@ class TestAPIEndpoints:
     @pytest.fixture
     def api_key(self):
         """Create a test API key."""
-        key_data = create_api_key(
+        key_data = get_auth_manager().generate_api_key(
             name="Test Key",
             permissions=['read', 'summarize'],
             rate_limit=100
@@ -253,7 +253,7 @@ class TestAuthentication:
     def test_api_key_validation(self, client):
         """Test API key validation endpoint."""
         # Create a key
-        key_data = create_api_key("Test", ['read'])
+        key_data = get_auth_manager().generate_api_key("Test", ['read'])
         api_key = key_data['api_key']
         
         # Validate it
@@ -288,7 +288,7 @@ class TestAuthentication:
     def test_permissions(self, client):
         """Test permission checking."""
         # Create key with limited permissions
-        key_data = create_api_key("Limited", ['read'])
+        key_data = get_auth_manager().generate_api_key("Limited", ['read'])
         api_key = key_data['api_key']
         
         # Try to access endpoint requiring 'summarize' permission
