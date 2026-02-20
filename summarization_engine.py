@@ -777,6 +777,11 @@ class ConceptExtractor:
         words = word_tokenize(text.lower())
         word_freq = Counter(words)
         
+        # Optimization: Tokenize sentences once outside the loop
+        sentences = sent_tokenize(text)
+        # Pre-lowercase sentences to avoid redundant lower() calls
+        lower_sentences = [s.lower() for s in sentences]
+
         # Score words by conceptual importance
         concept_scores = {}
         
@@ -790,7 +795,8 @@ class ConceptExtractor:
             concept_boost = self.concept_weights.get(word, 0)
             
             # Boost words that appear in important contexts
-            context_boost = self._calculate_context_importance(word, text)
+            # Pass pre-processed sentences for better performance
+            context_boost = self._calculate_context_importance(word, lower_sentences)
             
             # Final concept score
             concept_scores[word] = base_score + (concept_boost * 0.5) + (context_boost * 0.3)
@@ -806,23 +812,22 @@ class ConceptExtractor:
         
         return concepts
     
-    def _calculate_context_importance(self, word: str, text: str) -> float:
+    def _calculate_context_importance(self, word: str, lower_sentences: List[str]) -> float:
         """Calculate boost based on contextual importance."""
-        sentences = sent_tokenize(text)
         boost = 0.0
         
-        for sentence in sentences:
-            if word in sentence.lower():
+        for sentence_lower in lower_sentences:
+            if word in sentence_lower:
                 # Check for importance markers in the same sentence
                 importance_markers = ['important', 'essential', 'key', 'critical', 'fundamental', 
                                     'crucial', 'vital', 'primary', 'main', 'significant']
                 
                 for marker in importance_markers:
-                    if marker in sentence.lower() and marker != word:
+                    if marker in sentence_lower and marker != word:
                         boost += 0.1
                         
                 # Boost for technical/analytical concepts
-                if any(technical in sentence.lower() for technical in 
+                if any(technical in sentence_lower for technical in
                       ['concept', 'framework', 'principle', 'methodology', 'approach']):
                     boost += 0.05
         
