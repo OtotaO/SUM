@@ -11,6 +11,7 @@ import hashlib
 from collections import defaultdict
 import re
 from nltk.tokenize import sent_tokenize, word_tokenize
+from optimized_summarizer import OptimizedSummarizer
 import logging
 import asyncio
 from llm_backend import llm_backend, ModelProvider
@@ -78,6 +79,7 @@ class KnowledgeCrystallizer:
         self.density_algorithms = self._load_density_algorithms()
         self.quality_scorer = QualityScorer()
         self.preference_learner = PreferenceLearner()
+        self.summarizer = OptimizedSummarizer()
         
     def crystallize(self, 
                    text: str, 
@@ -158,48 +160,74 @@ class KnowledgeCrystallizer:
             loop.close()
     
     async def _async_crystallize_with_llm(self, text: str, config: CrystallizationConfig) -> CrystallizedKnowledge:
-        """Async LLM crystallization"""
+        """Async LLM crystallization with Cascading Summarization"""
         
-        # Generate prompts for each density level
         levels = {}
-        
-        # Create style instruction
         style_instruction = self._get_style_instruction(config.style)
         
-        # Generate essence first (most important)
-        essence_prompt = f"""Extract the single most important insight from this text in one sentence.
-Style: {style_instruction}
-
-Text: {text[:3000]}...
-
-Single most important insight:"""
+        # 1. Generate Comprehensive (Top Level) first from original text
+        # Use full text (truncated reasonably by prompt creator if needed)
+        comprehensive_prompt = self._create_density_prompt(text, DensityLevel.COMPREHENSIVE, config.style)
         
-        essence = await llm_backend.generate(
-            essence_prompt,
+        # Use concurrent execution if we want, but cascading requires dependency.
+        # We start with the heaviest lifting.
+        comprehensive_summary = await llm_backend.generate(
+            comprehensive_prompt,
             temperature=0.3,
-            max_tokens=100
+            max_tokens=2500
         )
+        levels['comprehensive'] = comprehensive_summary
         
-        # Generate summaries at different densities in parallel
-        tasks = []
-        for density in DensityLevel:
-            prompt = self._create_density_prompt(text, density, config.style)
-            task = llm_backend.generate(
+        # 2. Cascade down: Use the previous summary as the source for the next level
+        # This ensures coherence and saves tokens.
+        cascade_order = [
+            DensityLevel.DETAILED,
+            DensityLevel.STANDARD,
+            DensityLevel.BRIEF,
+            DensityLevel.EXECUTIVE,
+            DensityLevel.ELEVATOR,
+            DensityLevel.TWEET,
+            DensityLevel.ESSENCE
+        ]
+
+        current_source_text = comprehensive_summary
+
+        for density in cascade_order:
+            # Use the previous level's output as input
+            prompt = self._create_density_prompt(current_source_text, density, config.style)
+
+            # Estimate tokens needed
+            max_tokens = 1000
+            if density == DensityLevel.TWEET: max_tokens = 100
+            elif density == DensityLevel.ESSENCE: max_tokens = 100
+            elif density == DensityLevel.ELEVATOR: max_tokens = 200
+            elif density == DensityLevel.EXECUTIVE: max_tokens = 400
+            elif density == DensityLevel.BRIEF: max_tokens = 800
+
+            summary = await llm_backend.generate(
                 prompt,
-                temperature=0.5,
-                max_tokens=int(2000 * density.value)
+                temperature=0.4,
+                max_tokens=max_tokens
             )
-            tasks.append((density.name.lower(), task))
+
+            levels[density.name.lower()] = summary
+
+            # Update source only if the summary is substantial enough to be a source
+            # Otherwise keep using the detailed one?
+            # Actually, standard -> brief -> executive is a good chain.
+            if len(summary) > 200:
+                current_source_text = summary
         
-        # Wait for all summaries
-        for density_name, task in tasks:
-            levels[density_name] = await task
-        
-        # Extract components for metadata
+        essence = levels.get('essence', '')
+        if not essence:
+             # Fallback if essence failed
+             essence = levels.get('tweet', 'Summary generated.')
+
+        # Extract components for metadata (using original text)
         components = self._extract_components(text)
         
         # Calculate quality score
-        quality_score = self.quality_scorer.score(text, levels['standard'])
+        quality_score = self.quality_scorer.score(text, levels.get('standard', ''))
         
         # Build metadata
         metadata = {
@@ -211,7 +239,7 @@ Single most important insight:"""
             'sentiment': components['sentiment'],
             'style_applied': config.style.value,
             'density_used': config.density.value,
-            'method': 'llm',
+            'method': 'llm_cascade',
             'provider': llm_backend.default_provider.value
         }
         
@@ -222,7 +250,7 @@ Single most important insight:"""
             interactive_elements=None,
             quality_score=quality_score
         )
-    
+
     def _create_density_prompt(self, text: str, density: DensityLevel, style: StylePersona) -> str:
         """Create prompt for specific density level"""
         
@@ -287,18 +315,27 @@ Summary:"""
                             components: Dict,
                             density: DensityLevel,
                             style: StylePersona) -> str:
-        """Generate summary at specific density level"""
-        target_length = int(len(components['sentences']) * density.value)
-        target_length = max(1, target_length)  # At least one sentence
+        """Generate summary at specific density level using OptimizedSummarizer"""
+        # Reconstruct text from components if not available directly
+        text = ' '.join(components.get('sentences', []))
+        if not text:
+            return ""
+
+        # Use OptimizedSummarizer for high quality extractive summarization
+        # Density value is used as ratio
+        ratio = density.value
         
-        # Select most important sentences
-        ranked_sentences = self._rank_sentences(components)
-        selected = ranked_sentences[:target_length]
+        # Ensure minimum ratio for very short texts or low densities
+        if len(text) < 500:
+            ratio = max(ratio, 0.5)
+
+        try:
+            summary = self.summarizer.summarize_ultra_fast(text, ratio=ratio)
+        except Exception as e:
+            logger.error(f"Summarization failed: {e}")
+            summary = text[:500] + "..."
         
-        # Apply style transformation
-        styled_text = self._apply_style(selected, style, components)
-        
-        return styled_text
+        return summary
     
     def _extract_essence(self, components: Dict, style: StylePersona) -> str:
         """Extract the single most important insight"""
@@ -677,33 +714,26 @@ Summary:"""
         return scores[0][1] if scores else components['sentences'][0]
     
     def _hemingway_punch(self, sentence: str) -> str:
-        """Make sentence punchy like Hemingway"""
-        # Remove unnecessary words
-        words_to_remove = ['that', 'which', 'who', 'very', 'really', 'quite', 'rather']
+        """Make sentence punchy like Hemingway (Safe Mode)"""
+        # In traditional mode without LLM, extensive rewriting is dangerous.
+        # We perform only minimal, safe simplifications.
+
+        # Remove truly redundant qualifiers if safe
+        words_to_remove = ['very', 'really', 'quite', 'extremely']
         for word in words_to_remove:
-            sentence = re.sub(f'\\b{word}\\b', '', sentence, flags=re.IGNORECASE)
-        # Remove double spaces
-        sentence = ' '.join(sentence.split())
-        # Make it shorter if still too long
-        if len(sentence) > 100:
-            sentence = sentence[:sentence.find('.', 80) + 1] if '.' in sentence[80:] else sentence[:97] + '...'
+            sentence = sentence.replace(f" {word} ", " ")
+
         return sentence
     
     def _poeticize(self, sentence: str) -> str:
-        """Add poetic flair"""
-        # Simple poeticization - in production, use more sophisticated NLG
-        if 'is' in sentence:
-            sentence = sentence.replace(' is ', ' blooms as ', 1)
-        if 'are' in sentence:
-            sentence = sentence.replace(' are ', ' dance as ', 1)
+        """Add poetic flair (Safe Mode)"""
+        # Without LLM, returning original is safer than naive replacement
         return sentence
     
     def _executivize(self, sentence: str) -> str:
-        """Make it executive-friendly"""
-        # Add impact language
-        impact_words = ['Critical:', 'Strategic:', 'Key insight:', 'Bottom line:']
-        import random
-        return f"{random.choice(impact_words)} {sentence}"
+        """Make it executive-friendly (Safe Mode)"""
+        # Minimal changes
+        return sentence
     
     def _detect_trend(self, numbers: List[str]) -> bool:
         """Detect if numbers show a trend"""
