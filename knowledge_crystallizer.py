@@ -744,7 +744,7 @@ Summary:"""
             if len(vals) >= 3:
                 # Simple trend detection
                 return vals[-1] > vals[0]
-        except:
+        except ValueError:
             return False
         return False
     
