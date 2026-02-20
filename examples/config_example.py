@@ -16,7 +16,7 @@ from pathlib import Path
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from Utils.config_manager import ConfigManager
+from utils.config_manager import ConfigManager
 
 def main():
     """Demonstrate ConfigManager usage."""

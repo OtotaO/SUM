@@ -17,7 +17,7 @@ The `ConfigManager` class provides centralized configuration management for the 
 **Example usage:**
 
 ```python
-from Utils.config_manager import ConfigManager
+from utils.config_manager import ConfigManager
 
 # Create a configuration manager with base settings
 config = ConfigManager({
@@ -48,7 +48,7 @@ Provides standardized error handling utilities for consistent error management a
 **Example usage:**
 
 ```python
-from Utils.error_handling import handle_exceptions, ValidationError, safe_execute
+from utils.error_handling import handle_exceptions, ValidationError, safe_execute
 
 # Use the handle_exceptions decorator for standardized error handling
 @handle_exceptions(logger_instance=logger)
@@ -78,7 +78,7 @@ Provides centralized utilities for managing NLTK resources:
 **Example usage:**
 
 ```python
-from Utils.nltk_utils import initialize_nltk, get_stopwords, get_lemmatizer
+from utils.nltk_utils import initialize_nltk, get_stopwords, get_lemmatizer
 
 # Initialize NLTK resources
 initialize_nltk()
@@ -105,7 +105,7 @@ Provides standardized text preprocessing functions:
 **Example usage:**
 
 ```python
-from Utils.text_preprocessing import preprocess_text, tokenize_sentences, tokenize_words
+from utils.text_preprocessing import preprocess_text, tokenize_sentences, tokenize_words
 
 # Preprocess text with various options
 processed_text = preprocess_text(

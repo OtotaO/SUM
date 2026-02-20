@@ -16,7 +16,7 @@ import logging
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Import centralized NLTK utilities
-from Utils.nltk_utils import initialize_nltk, download_specific_resource, REQUIRED_RESOURCES
+from utils.nltk_utils import initialize_nltk, download_specific_resource, REQUIRED_RESOURCES
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

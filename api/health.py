@@ -146,7 +146,7 @@ class HealthMonitor:
         
         # Check file processing
         try:
-            from Utils.universal_file_processor import UniversalFileProcessor
+            from utils.universal_file_processor import UniversalFileProcessor
             processor = UniversalFileProcessor()
             components['file_processor'] = {
                 'status': 'healthy',

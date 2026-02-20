@@ -67,7 +67,7 @@ import numpy as np
 from flask import Flask, request, jsonify
 
 # Local imports
-from Utils.config_manager import ConfigManager
+from utils.config_manager import ConfigManager
 from Models.topic_modeling import TopicModeler
 ```
 
@@ -138,7 +138,7 @@ SUM/
 ├── Models/                 # Model implementations
 │   ├── summarizer.py
 │   └── topic_modeling.py
-├── Utils/                  # Utility modules
+├── utils/                  # Utility modules
 │   ├── config_manager.py
 │   ├── data_loader.py
 │   └── text_preprocessing.py

@@ -17,7 +17,7 @@ import shutil
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from Utils.nltk_utils import (
+from utils.nltk_utils import (
     initialize_nltk,
     get_stopwords,
     get_lemmatizer,
@@ -36,7 +36,7 @@ class TestNLTKUtils(unittest.TestCase):
         self.nltk_data_dir = Path(self.temp_dir.name)
         
         # Reset initialization state
-        import Utils.nltk_utils as nltk_utils
+        import utils.nltk_utils as nltk_utils
         nltk_utils._initialized = False
         nltk_utils._stopwords_cache = None
         nltk_utils._lemmatizer_cache = None
@@ -47,7 +47,7 @@ class TestNLTKUtils(unittest.TestCase):
         self.temp_dir.cleanup()
         
         # Reset initialization state
-        import Utils.nltk_utils as nltk_utils
+        import utils.nltk_utils as nltk_utils
         nltk_utils._initialized = False
         nltk_utils._stopwords_cache = None
         nltk_utils._lemmatizer_cache = None
@@ -141,7 +141,7 @@ class TestNLTKUtils(unittest.TestCase):
         )
         
         # Reset initialization state
-        import Utils.nltk_utils as nltk_utils
+        import utils.nltk_utils as nltk_utils
         nltk_utils._initialized = False
         
         # Second initialization

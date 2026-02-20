@@ -20,7 +20,7 @@ from typing import List, Set, Dict, Tuple, Optional, Any, Union
 import threading
 
 # Import centralized NLTK utilities
-from Utils.nltk_utils import get_stopwords, get_lemmatizer, initialize_nltk
+from utils.nltk_utils import get_stopwords, get_lemmatizer, initialize_nltk
 
 # Configure logging
 logger = logging.getLogger(__name__)

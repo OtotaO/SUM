@@ -17,7 +17,7 @@ import sys
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from Utils.config_manager import ConfigManager
+from utils.config_manager import ConfigManager
 
 class TestConfigManager(unittest.TestCase):
     """Tests for the ConfigManager class."""

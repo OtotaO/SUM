@@ -36,7 +36,7 @@ class Config:
     # Directory paths
     DATA_DIR = os.path.join(BASE_DIR, 'Data')
     MODELS_DIR = os.path.join(BASE_DIR, 'Models')
-    UTILS_DIR = os.path.join(BASE_DIR, 'Utils')
+    UTILS_DIR = os.path.join(BASE_DIR, 'utils')
     OUTPUT_DIR = os.path.join(BASE_DIR, 'Output')
     UPLOADS_DIR = os.path.join(BASE_DIR, 'uploads')
     TEMP_DIR = os.path.join(BASE_DIR, 'temp')

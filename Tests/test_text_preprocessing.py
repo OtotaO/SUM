@@ -14,7 +14,7 @@ import sys
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from Utils.text_preprocessing import (
+from utils.text_preprocessing import (
     TextPreprocessor,
     preprocess_text,
     tokenize_sentences,
