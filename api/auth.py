@@ -148,7 +148,9 @@ class APIAuthManager:
         """
         # Generate secure random key
         key_id = secrets.token_urlsafe(16)
-        api_key = f"sum_{secrets.token_urlsafe(32)}"
+        secret = secrets.token_urlsafe(32)
+        # New format: sum_{key_id}.{secret} for efficient lookup with salted hash
+        api_key = f"sum_{key_id}.{secret}"
         key_hash = self._hash_key(api_key)
         
         # Default permissions
@@ -199,6 +201,7 @@ class APIAuthManager:
     def validate_api_key(self, api_key: str) -> Optional[APIKey]:
         """
         Validate an API key and return key info.
+        Supports both new salted keys and legacy unsalted keys.
         
         Args:
             api_key: The API key to validate
@@ -209,13 +212,33 @@ class APIAuthManager:
         if not api_key or not api_key.startswith('sum_'):
             return None
             
-        key_hash = self._hash_key(api_key)
-        
         with sqlite3.connect(self.db_path) as conn:
+            # Try new format first: sum_{key_id}.{secret}
+            if '.' in api_key:
+                parts = api_key.split('.')
+                if len(parts) == 2:
+                    prefix_with_id = parts[0]
+                    if prefix_with_id.startswith('sum_'):
+                        key_id = prefix_with_id[4:]
+
+                        row = conn.execute("""
+                            SELECT * FROM api_keys
+                            WHERE key_id = ? AND is_active = 1
+                        """, (key_id,)).fetchone()
+
+                        if row:
+                            key_info = self._row_to_api_key(row)
+                            # Verify with secure salted hash if present
+                            if key_info.key_hash.startswith(('pbkdf2:', 'scrypt:', 'argon2:')):
+                                if check_password_hash(key_info.key_hash, api_key):
+                                    return key_info
+
+            # Fallback for legacy unsalted SHA256 keys or if dot format failed
+            legacy_hash = hashlib.sha256(api_key.encode()).hexdigest()
             row = conn.execute("""
                 SELECT * FROM api_keys 
                 WHERE key_hash = ? AND is_active = 1
-            """, (key_hash,)).fetchone()
+            """, (legacy_hash,)).fetchone()
             
             if row:
                 return self._row_to_api_key(row)
@@ -374,8 +397,8 @@ class APIAuthManager:
         return keys
         
     def _hash_key(self, api_key: str) -> str:
-        """Hash an API key for storage."""
-        return hashlib.sha256(api_key.encode()).hexdigest()
+        """Hash an API key for storage using secure salted hashing."""
+        return generate_password_hash(api_key)
         
     def _row_to_api_key(self, row) -> APIKey:
         """Convert database row to APIKey object."""
