@@ -136,7 +136,7 @@ def register_blueprints(app):
 def register_error_handlers(app):
     """Register global error handlers."""
     from flask import jsonify, request
-    from Utils.error_handler import SUMException, ValidationError, format_error_response, error_monitor
+    from utils.error_handler import SUMException, ValidationError, format_error_response, error_monitor
     
     @app.errorhandler(404)
     def not_found(error):

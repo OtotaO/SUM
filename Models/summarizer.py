@@ -56,7 +56,7 @@ class Summarizer:
             raise ValueError("Either data_file or data must be provided")
             
         # Initialize components
-        from Utils.data_loader import DataLoader
+        from utils.data_loader import DataLoader
         self.data_loader = DataLoader(data_file=data_file, data=data)
         self.topic_modeler = TopicModeler(n_topics=num_topics, algorithm=algorithm)
         

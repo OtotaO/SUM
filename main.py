@@ -56,6 +56,9 @@ def create_simple_app():
     
     return app
 
+# Expose app globally for testing/WSGI
+app = create_simple_app()
+
 def main():
     """Main entry point"""
     print("\n" + "="*50)
@@ -71,7 +74,7 @@ def main():
     os.makedirs('jobs', exist_ok=True)
     os.makedirs('.sum_cache', exist_ok=True)
     
-    app = create_simple_app()
+    # Use the global app instance
     app.start_time = time.time()
     
     host = active_config.HOST
