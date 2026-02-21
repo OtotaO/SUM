@@ -50,7 +50,7 @@ jobs:
         pip install -r requirements.txt
         pip install pytest pytest-cov pytest-asyncio
         # Install NLTK data required for tests
-        python -m nltk.downloader punkt_tab stopwords wordnet averaged_perceptron_tagger
+        python -m nltk.downloader punkt_tab stopwords wordnet averaged_perceptron_tagger averaged_perceptron_tagger_eng
     
     - name: Run tests
       env:
