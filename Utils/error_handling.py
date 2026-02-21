@@ -197,7 +197,10 @@ def handle_exceptions(
                     raise
                 
                 # Return default error response
-                if issubclass(func.__annotations__.get('return', type(None)), dict):
+
+                return_type = func.__annotations__.get('return', type(None))
+                origin = get_origin(return_type) or return_type
+                if isinstance(origin, type) and issubclass(origin, dict):
                     return {'error': True, 'message': default_message}
                 return None
                 

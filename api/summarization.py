@@ -30,6 +30,24 @@ summarization_bp = Blueprint('summarization', __name__)
 # Thread-safe processing lock
 _processing_lock = Lock()
 
+# Global engine instances
+_hierarchical_engine = None
+_engine_init_lock = Lock()
+
+
+def get_hierarchical_engine():
+    """Get or initialize the HierarchicalDensificationEngine singleton."""
+    global _hierarchical_engine
+    if _hierarchical_engine is None:
+        with _engine_init_lock:
+            if _hierarchical_engine is None:
+                try:
+                    _hierarchical_engine = HierarchicalDensificationEngine()
+                except Exception as e:
+                    logger.error(f"Failed to initialize HierarchicalDensificationEngine: {e}")
+                    return None
+    return _hierarchical_engine
+
 
 @summarization_bp.route('/health', methods=['GET'])
 def health_check():
@@ -180,7 +198,10 @@ def ultimate_summarization():
             config['target_density'] = 0.35
             config['max_summary_tokens'] = 1000
             
-        engine = HierarchicalDensificationEngine()
+        engine = get_hierarchical_engine()
+        if not engine:
+            return jsonify({'error': 'Summarization engine unavailable'}), 500
+
         result = engine.process_text(text, config)
         
         # Add metadata
@@ -427,7 +448,7 @@ def _process_with_model(text: str, model_type: str, config: dict) -> dict:
         return summarizer.process_text(text, config)
     
     elif model_type == 'hierarchical':
-        engine = HierarchicalDensificationEngine()
+        engine = get_hierarchical_engine()
         if not engine:
             return {
                 'error': 'Hierarchical Densification Engine unavailable',

@@ -84,8 +84,9 @@ class UnlimitedTextProcessor:
         self.max_memory_usage = max_memory_usage
         
         # Lazy import to avoid circular dependency
-        from summarization_engine import HierarchicalDensificationEngine
-        self.summarizer = HierarchicalDensificationEngine()
+        # Lazy import and use singleton
+        from api.summarization import get_hierarchical_engine
+        self.summarizer = get_hierarchical_engine()
         
     def process_text(self, 
                      text_or_path: Any,
