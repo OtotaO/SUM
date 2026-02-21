@@ -551,3 +551,11 @@ def optional_api_key():
             
         return wrapper
     return decorator
+# Backward compatibility wrappers
+def create_api_key(name: str, permissions: List[str] = None) -> Tuple[str, str]:
+    """Wrapper for APIAuthManager.generate_api_key"""
+    return get_auth_manager().generate_api_key(name, permissions)
+
+def validate_api_key(api_key: str) -> Optional[APIKey]:
+    """Wrapper for APIAuthManager.validate_api_key"""
+    return get_auth_manager().validate_api_key(api_key)

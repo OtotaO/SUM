@@ -1234,3 +1234,7 @@ if __name__ == "__main__":
     advanced_engine = MagnumOpusSUM()
     advanced_result = advanced_engine.process_text(wisdom_text, {'maxTokens': 30})
     print(f"MagnumOpusSUM: {advanced_result.get('summary', 'N/A')}")
+
+# Aliases for backward compatibility
+SimpleSUM = BasicSummarizationEngine
+MagnumOpusSUM = AdvancedSummarizationEngine
