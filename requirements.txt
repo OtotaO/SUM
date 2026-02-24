@@ -3,7 +3,7 @@ blinker
 certifi==2025.11.12
 chardet==5.2.0
 charset-normalizer==3.4.4
-click==8.3.1
+click
 contourpy
 cycler==0.12.1
 Flask==3.1.2
@@ -15,7 +15,7 @@ joblib==1.5.3
 kiwisolver==1.4.9
 MarkupSafe==3.0.3
 matplotlib==3.10.8
-networkx==3.6.1
+networkx
 nltk==3.9.2
 numpy<2.0.0
 packaging==25.0
