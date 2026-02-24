@@ -29,6 +29,8 @@ logger = logging.getLogger(__name__)
 
 class Config:
     """Base configuration class with common settings."""
+    # NLTK settings
+    NLTK_DATA_DIR = os.getenv('NLTK_DATA', os.path.expanduser('~/nltk_data'))
     
     # Base directory
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
