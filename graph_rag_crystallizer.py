@@ -152,7 +152,6 @@ class KnowledgeGraphBuilder:
     def _simple_entity_extraction(self, documents: List[str]) -> Tuple[List[Entity], List[Relation]]:
         """Simple fallback entity extraction when spacy is not available"""
         entities = {}
-        relations = []
         
         for doc_idx, text in enumerate(documents):
             # Extract capitalized words as potential entities
@@ -171,7 +170,7 @@ class KnowledgeGraphBuilder:
                     else:
                         entities[entity_id].mentions.append(doc_idx)
         
-        return list(entities.values()), relations
+        return list(entities.values()), []
     
     def _generate_entity_id(self, text: str, entity_type: str) -> str:
         """Generate unique ID for entity"""
