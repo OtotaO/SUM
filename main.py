@@ -84,5 +84,8 @@ def main():
     
     app.run(host=host, port=port, debug=debug)
 
+# Create app instance for testing and WSGI servers
+app = create_simple_app()
+
 if __name__ == '__main__':
     main()
