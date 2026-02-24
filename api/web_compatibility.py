@@ -4,11 +4,20 @@ Web compatibility routes to bridge frontend and backend
 This module provides the endpoints that the web interface expects.
 """
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, Response, stream_with_context
 from api.summarization import _process_with_model
 from utils.universal_file_processor import UniversalFileProcessor
 import tempfile
 import os
+import json
+import asyncio
+import queue
+import threading
+import traceback
+from asgiref.sync import async_to_sync
+
+# Import llm_backend for streaming support
+from llm_backend import llm_backend, ModelProvider
 
 web_compat_bp = Blueprint('web_compat', __name__)
 
@@ -166,27 +175,98 @@ def summarize_ultimate():
 
 @web_compat_bp.route('/api/stream/summarize', methods=['GET', 'POST'])
 def stream_summarize():
-    """Streaming summarization endpoint (placeholder)."""
-    # For now, return a non-streaming response
-    # TODO: Implement true streaming with Server-Sent Events
+    """Streaming summarization endpoint using Server-Sent Events (SSE)."""
     
+    # Handle request parameters
     if request.method == 'GET':
         text = request.args.get('text', '')
+        density = request.args.get('density', 'medium')
     else:
-        data = request.get_json()
+        data = request.get_json() or {}
         text = data.get('text', '')
+        density = data.get('density', 'medium')
     
     if not text:
         return jsonify({'error': 'No text provided'}), 400
     
-    # Process normally and return as complete
-    config = {'maxTokens': 200}
-    result = _process_with_model(text, 'simple', config)
-    
-    return jsonify({
-        'type': 'complete',
-        'result': {
-            'summary': result.get('summary', ''),
-            'original_words': len(text.split())
-        }
-    })
+    # Map density to max_tokens for LLM config
+    density_map = {
+        'minimal': 50,
+        'short': 100,
+        'medium': 200,
+        'detailed': 500,
+        'comprehensive': 1000
+    }
+    max_tokens = density_map.get(density, 200)
+
+    # Prepare for streaming
+    async def generate():
+        try:
+            # Construct prompt based on provider
+            provider = llm_backend.default_provider
+
+            # Use a clean prompt for local, and instructional for others
+            if provider == ModelProvider.LOCAL:
+                prompt = text
+            else:
+                prompt = f"Please provide a comprehensive summary of the following text:\n\n{text}"
+
+            # Stream the response
+            async for chunk in llm_backend.stream_generate(
+                prompt=prompt,
+                max_tokens=max_tokens
+            ):
+                # Format as SSE
+                payload = {'chunk': chunk}
+                yield f"data: {json.dumps(payload)}\n\n"
+
+            # Signal completion
+            yield f"data: {json.dumps({'type': 'complete'})}\n\n"
+            yield "data: [DONE]\n\n"
+
+        except Exception as e:
+            error_payload = {'error': str(e)}
+            yield f"data: {json.dumps(error_payload)}\n\n"
+
+    # Synchronous wrapper using a thread and queue to bridge async to sync
+    def generate_sync():
+        q = queue.Queue()
+
+        async def producer():
+            try:
+                async for chunk in generate():
+                    q.put(chunk)
+                q.put(None) # Sentinel for completion
+            except Exception as e:
+                q.put(e)
+
+        def run_loop():
+            # Create a new event loop for this thread
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                loop.run_until_complete(producer())
+            finally:
+                loop.close()
+
+        # Start producer in a separate thread
+        t = threading.Thread(target=run_loop)
+        t.start()
+
+        try:
+            while True:
+                item = q.get()
+                if item is None:
+                    break
+                if isinstance(item, Exception):
+                    # Log error and yield an error message if possible
+                    # Or break, as we can't raise it easily in the generator flow without breaking the stream
+                    print(f"Streaming error: {item}")
+                    # If we haven't sent headers yet, this might 500, but we are streaming...
+                    yield f"data: {json.dumps({'error': str(item)})}\n\n"
+                    break
+                yield item
+        finally:
+            t.join()
+
+    return Response(stream_with_context(generate_sync()), mimetype='text/event-stream')
