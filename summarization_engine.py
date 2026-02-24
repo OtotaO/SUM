@@ -96,8 +96,8 @@ class BasicSummarizationEngine(SummarizationEngine):
         if len(text) > 100:  # Unusually long for a stopword
             return False
         unsafe_patterns = [
-            r'[\s\S]*exec\s*\(', r'[\s\S]*eval\s*\(', r'[\s\S]*\bimport\b',
-            r'[\s\S]*__[a-zA-Z]+__', r'[\s\S]*\bopen\s*\('
+            r'exec\s*\(', r'eval\s*\(', r'\bimport\b',
+            r'__[a-zA-Z]+__', r'\bopen\s*\('
         ]
         return not any(re.search(pattern, text) for pattern in unsafe_patterns)
 
@@ -637,8 +637,8 @@ class HierarchicalDensificationEngine(SummarizationEngine):
         if len(text) > 100:
             return False
         unsafe_patterns = [
-            r'[\s\S]*exec\s*\(', r'[\s\S]*eval\s*\(', r'[\s\S]*\bimport\b',
-            r'[\s\S]*__[a-zA-Z]+__', r'[\s\S]*\bopen\s*\('
+            r'exec\s*\(', r'eval\s*\(', r'\bimport\b',
+            r'__[a-zA-Z]+__', r'\bopen\s*\('
         ]
         return not any(re.search(pattern, text) for pattern in unsafe_patterns)
     
