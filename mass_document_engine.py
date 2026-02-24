@@ -419,7 +419,7 @@ class MassDocumentEngine:
         return insights
         
     def _generate_doc_id(self, file_path: str) -> str:
-        """Generate unique document ID based on file path and content hash."""
+        """Generate unique document ID based on file name, size, and modification time."""
         # Use file path and size for quick ID
         path = Path(file_path)
         stat = path.stat()
