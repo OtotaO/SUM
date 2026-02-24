@@ -17,7 +17,8 @@ from unittest.mock import patch, MagicMock
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from main import app
+from main import create_simple_app
+app = create_simple_app()
 from api.auth import create_api_key, validate_api_key
 
 
