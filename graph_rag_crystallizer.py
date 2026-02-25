@@ -25,7 +25,7 @@ except ImportError:
     logger.warning("python-louvain not installed. Install with: pip install python-louvain")
 
 try:
-    from sentence_transformers import SentenceTransformer
+    from sentence_transformers import SentenceTransformer, util
     HAS_TRANSFORMERS = True
 except ImportError:
     HAS_TRANSFORMERS = False
@@ -92,10 +92,13 @@ class KnowledgeGraphBuilder:
     """Builds knowledge graphs from text documents"""
     
     def __init__(self):
-        try:
-            self.nlp = spacy.load("en_core_web_sm")
-        except OSError:
-            logger.warning("Spacy model 'en_core_web_sm' not found. Install with: python -m spacy download en_core_web_sm")
+        if HAS_SPACY:
+            try:
+                self.nlp = spacy.load("en_core_web_sm")
+            except OSError:
+                logger.warning("Spacy model 'en_core_web_sm' not found. Install with: python -m spacy download en_core_web_sm")
+                self.nlp = None
+        else:
             self.nlp = None
         
         if HAS_TRANSFORMERS:
@@ -325,23 +328,26 @@ class HierarchicalSummarizer:
             return " ".join(summaries)
         else:
             # Group similar summaries
-            embeddings = self.embedder.encode(summaries)
-            clustering = DBSCAN(eps=0.5, min_samples=2).fit(embeddings)
-            
-            # Generate summary for each cluster
-            cluster_summaries = []
-            for cluster_id in set(clustering.labels_):
-                if cluster_id != -1:  # Not noise
-                    cluster_texts = [summaries[i] for i, label in enumerate(clustering.labels_) 
-                                   if label == cluster_id]
-                    cluster_summaries.append(self._merge_texts(cluster_texts))
-            
-            # Add unclustered summaries
-            noise_summaries = [summaries[i] for i, label in enumerate(clustering.labels_) 
-                             if label == -1]
-            cluster_summaries.extend(noise_summaries[:2])  # Limit noise
-            
-            return " ".join(cluster_summaries)
+            if self.embedder and HAS_SKLEARN:
+                embeddings = self.embedder.encode(summaries)
+                clustering = DBSCAN(eps=0.5, min_samples=2).fit(embeddings)
+
+                # Generate summary for each cluster
+                cluster_summaries = []
+                for cluster_id in set(clustering.labels_):
+                    if cluster_id != -1:  # Not noise
+                        cluster_texts = [summaries[i] for i, label in enumerate(clustering.labels_)
+                                       if label == cluster_id]
+                        cluster_summaries.append(self._merge_texts(cluster_texts))
+
+                # Add unclustered summaries
+                noise_summaries = [summaries[i] for i, label in enumerate(clustering.labels_)
+                                 if label == -1]
+                cluster_summaries.extend(noise_summaries[:2])  # Limit noise
+
+                return " ".join(cluster_summaries)
+            else:
+                 return " ".join(summaries[:5]) # Fallback
     
     def _merge_texts(self, texts: List[str]) -> str:
         """Merge similar texts into one"""
@@ -411,7 +417,8 @@ class GraphRAGCrystallizer:
         # Generate global summary
         global_summary = self._generate_global_summary(
             hierarchical_summaries, 
-            query
+            query,
+            communities=all_communities
         )
         
         # Generate entity-level summaries
@@ -438,7 +445,8 @@ class GraphRAGCrystallizer:
     
     def _generate_global_summary(self, 
                                 hierarchical_summaries: Dict[int, str],
-                                query: Optional[str] = None) -> str:
+                                query: Optional[str] = None,
+                                communities: Optional[List[Community]] = None) -> str:
         """Generate global summary from hierarchical summaries"""
         if not hierarchical_summaries:
             return "No significant patterns found in corpus."
@@ -448,11 +456,89 @@ class GraphRAGCrystallizer:
         base_summary = hierarchical_summaries[highest_level]
         
         if query:
-            # TODO: Focus summary based on query
+            # Focus summary based on query
+            if communities:
+                relevant_summaries = self._filter_relevant_communities(query, communities)
+                if relevant_summaries:
+                    # Construct prompt for LLM
+                    context = "\n".join([f"- {s}" for s in relevant_summaries[:10]])
+                    prompt = f"Context from knowledge graph communities:\n{context}\n\nQuery: {query}\n\nPlease provide a comprehensive answer to the query based on the context provided."
+
+                    # Use LLM backend to generate answer
+                    # Using asyncio.run since we are in a synchronous context but LLM backend is async
+                    try:
+                        return asyncio.run(llm_backend.generate(prompt))
+                    except RuntimeError:
+                        # Fallback if already in event loop
+                         # This might happen in web server context.
+                         # For now, we assume simple script usage or handle appropriately.
+                         # A safer bet is to use a sync wrapper or just return the relevant summaries if async fails.
+                         return f"Regarding '{query}':\n" + "\n".join(relevant_summaries[:5])
+                    except Exception as e:
+                        logger.error(f"LLM generation failed: {e}")
+                        return f"Regarding '{query}':\n" + "\n".join(relevant_summaries[:5])
+
+            # Fallback
             return f"Regarding '{query}': {base_summary}"
         else:
             return f"Key insights: {base_summary}"
-    
+
+    def _filter_relevant_communities(self, query: str, communities: List[Community]) -> List[str]:
+        """Filter communities relevant to query"""
+        if not communities:
+            return []
+
+        # semantic search if available
+        if self.hierarchical_summarizer.embedder:
+            try:
+                query_embedding = self.hierarchical_summarizer.embedder.encode(query)
+                community_summaries = [c.summary for c in communities]
+                community_embeddings = self.hierarchical_summarizer.embedder.encode(community_summaries)
+
+                # Compute cosine similarities
+                similarities = util.cos_sim(query_embedding, community_embeddings)[0]
+
+                # Sort by similarity
+                scored_communities = sorted(
+                    zip(communities, similarities),
+                    key=lambda x: x[1],
+                    reverse=True
+                )
+
+                return [c.summary for c, score in scored_communities if score > 0.3] # Threshold
+            except Exception as e:
+                logger.warning(f"Semantic search failed: {e}. Falling back to keyword matching.")
+
+        # Keyword matching fallback
+        query_terms = set(query.lower().split())
+        scored_communities = []
+
+        for community in communities:
+            score = 0
+            # Check summary
+            summary_lower = community.summary.lower()
+            for term in query_terms:
+                if term in summary_lower:
+                    score += 2
+
+            # Check entities
+            for entity in community.entities:
+                if any(term in entity.text.lower() for term in query_terms):
+                    score += 1
+
+            if score > 0:
+                scored_communities.append((community, score))
+
+        # Sort by score
+        scored_communities.sort(key=lambda x: x[1], reverse=True)
+        seen = set()
+        unique_summaries = []
+        for c, score in scored_communities:
+            if c.summary not in seen:
+                seen.add(c.summary)
+                unique_summaries.append(c.summary)
+        return unique_summaries
+
     def _generate_entity_summaries(self, 
                                   entities: List[Entity],
                                   graph: nx.Graph) -> Dict[str, str]:
