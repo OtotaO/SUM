@@ -181,7 +181,9 @@ class BasicSummarizationEngine(SummarizationEngine):
             sentences, words, word_freq = self._preprocess_text(text)
             
             if len(sentences) <= 2:
-                return {'summary': text, 'sum': text, 'tags': self.generate_tag_summary(text)}
+                result = {'summary': text, 'sum': text, 'tags': self.generate_tag_summary(text)}
+                result.update(language_metadata)
+                return result
                 
             sentence_scores = (
                 self._score_sentences_parallel(sentences, word_freq) 
@@ -1240,10 +1242,11 @@ if __name__ == "__main__":
     
     # Quick comparison with legacy engines
     print(f"\n📈 LEGACY ENGINE COMPARISON:")
-    simple_engine = SimpleSUM()
-    simple_result = simple_engine.process_text(wisdom_text, {'maxTokens': 30})
-    print(f"SimpleSUM: {simple_result.get('summary', 'N/A')}")
+    simple_engine = BasicSummarizationEngine()
+    simple_result = simple_engine.process_text(test_text, {'maxTokens': 30, 'threshold': 0.1})
+
+    print(f"BasicSummarizationEngine: {simple_result.get('summary', 'N/A')}")
     
-    advanced_engine = MagnumOpusSUM()
-    advanced_result = advanced_engine.process_text(wisdom_text, {'maxTokens': 30})
-    print(f"MagnumOpusSUM: {advanced_result.get('summary', 'N/A')}")
+    advanced_engine = AdvancedSummarizationEngine()
+    advanced_result = advanced_engine.process_text(test_text, {'maxTokens': 30})
+    print(f"AdvancedSummarizationEngine: {advanced_result.get('summary', 'N/A')}")

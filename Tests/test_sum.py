@@ -2,7 +2,7 @@
 Test suite for SUM summarization engines.
 
 This module contains comprehensive tests for all SUM engine components
-including SimpleSUM, MagnumOpusSUM, and HierarchicalDensificationEngine.
+including BasicSummarizationEngine, AdvancedSummarizationEngine, and HierarchicalDensificationEngine.
 
 Author: ototao
 License: Apache License 2.0
@@ -15,16 +15,16 @@ import os
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from summarization_engine import SimpleSUM, MagnumOpusSUM, HierarchicalDensificationEngine
+from summarization_engine import BasicSummarizationEngine, AdvancedSummarizationEngine, HierarchicalDensificationEngine
 from wordcloud import WordCloud
 
 
-class TestSimpleSUM(unittest.TestCase):
-    """Test cases for SimpleSUM engine."""
+class TestBasicSummarizationEngine(unittest.TestCase):
+    """Test cases for BasicSummarizationEngine engine."""
     
     def setUp(self):
         """Set up test fixtures."""
-        self.summarizer = SimpleSUM()
+        self.summarizer = BasicSummarizationEngine()
         self.test_text = """
         Machine learning and artificial intelligence have revolutionized the technology industry. 
         Companies like Google, Microsoft, and Amazon are leading the way in developing AI solutions. 
@@ -89,12 +89,12 @@ class TestSimpleSUM(unittest.TestCase):
         self.assertLessEqual(summary_tokens, 60)  # Allow some tolerance
 
 
-class TestMagnumOpusSUM(unittest.TestCase):
-    """Test cases for MagnumOpusSUM engine."""
+class TestAdvancedSummarizationEngine(unittest.TestCase):
+    """Test cases for AdvancedSummarizationEngine engine."""
     
     def setUp(self):
         """Set up test fixtures."""
-        self.summarizer = MagnumOpusSUM()
+        self.summarizer = AdvancedSummarizationEngine()
         self.test_text = """
         Machine learning and artificial intelligence have revolutionized the technology industry. 
         Companies like Google, Microsoft, and Amazon are leading the way in developing AI solutions. 
