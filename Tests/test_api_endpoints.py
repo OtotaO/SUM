@@ -15,7 +15,16 @@ class TestAPIEndpoints:
     """Test suite for API endpoints."""
     
     @pytest.fixture
-    def client(self):
+    def app(self):
+        """Create the app."""
+        app = create_simple_app()
+        app.config.update({
+            "TESTING": True,
+        })
+        return app
+
+    @pytest.fixture
+    def client(self, app):
         """Create a test client."""
         app = create_simple_app()
         app.config['TESTING'] = True

@@ -29,6 +29,8 @@ logger = logging.getLogger(__name__)
 
 class Config:
     """Base configuration class with common settings."""
+    # NLTK settings
+    NLTK_DATA_DIR = os.getenv('NLTK_DATA', os.path.expanduser('~/nltk_data'))
     
     # Base directory
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -78,7 +80,7 @@ class Config:
 
     # Flask settings
     SECRET_KEY = os.getenv('FLASK_SECRET_KEY', os.urandom(24).hex())
-    DEBUG = os.getenv('FLASK_DEBUG', 'True').lower() in ('true', '1', 't')
+    DEBUG = os.getenv('FLASK_DEBUG', 'False').lower() in ('true', '1', 't')
     # Prioritize PORT env var (standard), then FLASK_PORT, then default 5001
     PORT = int(os.getenv('PORT', os.getenv('FLASK_PORT', '5001')))
     HOST = os.getenv('FLASK_HOST', '0.0.0.0')
@@ -224,7 +226,7 @@ config = {
     'development': DevelopmentConfig,
     'production': ProductionConfig,
     'testing': TestingConfig,
-    'default': DevelopmentConfig
+    'default': ProductionConfig
 }
 
 # Set the active configuration

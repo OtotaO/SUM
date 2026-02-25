@@ -2,7 +2,6 @@
 Knowledge Crystallization Engine - The Core of Ultimate Summarization
 """
 
-import numpy as np
 from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass
 from enum import Enum
@@ -255,20 +254,10 @@ class KnowledgeCrystallizer:
         """Create prompt for specific density level"""
         
         style_instruction = self._get_style_instruction(style)
-        
-        density_instructions = {
-            DensityLevel.ESSENCE: "Summarize in exactly one sentence capturing the core message.",
-            DensityLevel.TWEET: "Summarize in 280 characters or less (tweet length).",
-            DensityLevel.ELEVATOR: "Summarize in 3-4 sentences (30-second elevator pitch).",
-            DensityLevel.EXECUTIVE: "Summarize in one paragraph suitable for C-suite briefing.",
-            DensityLevel.BRIEF: "Summarize in 2-3 paragraphs for a quick read.",
-            DensityLevel.STANDARD: "Provide a balanced 3-5 paragraph summary.",
-            DensityLevel.DETAILED: "Provide a thorough half-page summary covering all key points.",
-            DensityLevel.COMPREHENSIVE: "Provide a comprehensive full-page summary retaining most information."
-        }
+        density_instruction = self.density_algorithms.get(density, "")
         
         return f"""Summarize the following text.
-Density: {density_instructions[density]}
+Density: {density_instruction}
 Style: {style_instruction}
 
 Text: {text[:5000]}...
@@ -277,21 +266,7 @@ Summary:"""
     
     def _get_style_instruction(self, style: StylePersona) -> str:
         """Get instruction for writing style"""
-        
-        instructions = {
-            StylePersona.HEMINGWAY: "Write in Hemingway style - terse, direct sentences with no fluff.",
-            StylePersona.ACADEMIC: "Write in academic style - rigorous, methodical, with evidence.",
-            StylePersona.STORYTELLER: "Write with narrative flow, engaging and story-like.",
-            StylePersona.ANALYST: "Focus on data, metrics, and quantitative insights.",
-            StylePersona.POET: "Use metaphorical and evocative language.",
-            StylePersona.EXECUTIVE: "Be action-oriented and strategic, focus on decisions.",
-            StylePersona.TEACHER: "Be educational and clear, explaining concepts.",
-            StylePersona.JOURNALIST: "Follow the 5 W's and H structure (who, what, when, where, why, how).",
-            StylePersona.DEVELOPER: "Be technical and precise, suitable for documentation.",
-            StylePersona.NEUTRAL: "Use balanced, objective language."
-        }
-        
-        return instructions.get(style, instructions[StylePersona.NEUTRAL])
+        return self.style_templates.get(style, self.style_templates.get(StylePersona.NEUTRAL, ""))
     
     def _extract_components(self, text: str) -> Dict[str, Any]:
         """Extract key components from text for crystallization"""
@@ -797,13 +772,33 @@ Summary:"""
                 return sentence
         return None
     
-    def _load_style_templates(self) -> Dict:
+    def _load_style_templates(self) -> Dict[StylePersona, str]:
         """Load style templates"""
-        return {}  # Placeholder for style templates
+        return {
+            StylePersona.HEMINGWAY: "Write in Hemingway style - terse, direct sentences with no fluff.",
+            StylePersona.ACADEMIC: "Write in academic style - rigorous, methodical, with evidence.",
+            StylePersona.STORYTELLER: "Write with narrative flow, engaging and story-like.",
+            StylePersona.ANALYST: "Focus on data, metrics, and quantitative insights.",
+            StylePersona.POET: "Use metaphorical and evocative language.",
+            StylePersona.EXECUTIVE: "Be action-oriented and strategic, focus on decisions.",
+            StylePersona.TEACHER: "Be educational and clear, explaining concepts.",
+            StylePersona.JOURNALIST: "Follow the 5 W's and H structure (who, what, when, where, why, how).",
+            StylePersona.DEVELOPER: "Be technical and precise, suitable for documentation.",
+            StylePersona.NEUTRAL: "Use balanced, objective language."
+        }
     
-    def _load_density_algorithms(self) -> Dict:
+    def _load_density_algorithms(self) -> Dict[DensityLevel, str]:
         """Load density algorithms"""
-        return {}  # Placeholder for density algorithms
+        return {
+            DensityLevel.ESSENCE: "Summarize in exactly one sentence capturing the core message.",
+            DensityLevel.TWEET: "Summarize in 280 characters or less (tweet length).",
+            DensityLevel.ELEVATOR: "Summarize in 3-4 sentences (30-second elevator pitch).",
+            DensityLevel.EXECUTIVE: "Summarize in one paragraph suitable for C-suite briefing.",
+            DensityLevel.BRIEF: "Summarize in 2-3 paragraphs for a quick read.",
+            DensityLevel.STANDARD: "Provide a balanced 3-5 paragraph summary.",
+            DensityLevel.DETAILED: "Provide a thorough half-page summary covering all key points.",
+            DensityLevel.COMPREHENSIVE: "Provide a comprehensive full-page summary retaining most information."
+        }
 
 
 class QualityScorer:

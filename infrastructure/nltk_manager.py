@@ -7,6 +7,7 @@ import nltk
 import os
 import logging
 from typing import List, Set
+from config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -15,12 +16,16 @@ class NLTKResourceManager:
     """Manages NLTK resource downloads and initialization."""
     
     def __init__(self):
-        self.nltk_data_dir = os.path.expanduser('~/nltk_data')
+        self.nltk_data_dir = Config.NLTK_DATA_DIR
         
     def initialize_resources(self, resources: List[str]) -> None:
         """Initialize required NLTK resources."""
         os.makedirs(self.nltk_data_dir, exist_ok=True)
         
+        # Ensure NLTK uses this directory
+        if self.nltk_data_dir not in nltk.data.path:
+            nltk.data.path.append(self.nltk_data_dir)
+
         for resource in resources:
             try:
                 nltk.download(resource, download_dir=self.nltk_data_dir, quiet=True)
