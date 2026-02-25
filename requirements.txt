@@ -39,3 +39,4 @@ typing_extensions==4.15.0
 urllib3==2.6.2
 Werkzeug==3.1.4
 wordcloud==1.9.5
+redis
