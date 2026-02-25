@@ -27,6 +27,7 @@ import logging
 import re
 import time
 import json
+from config import Config
 from functools import lru_cache
 from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, List, Any, Optional, Tuple
@@ -64,10 +65,16 @@ class BasicSummarizationEngine(SummarizationEngine):
     def _init_nltk(self):
         """Initialize NLTK resources safely."""
         try:
-            nltk_data_dir = os.path.expanduser('~/nltk_data')
+            nltk_data_dir = Config.NLTK_DATA_DIR
+
             os.makedirs(nltk_data_dir, exist_ok=True)
 
-            for resource in ['punkt', 'stopwords']:
+
+            if nltk_data_dir not in nltk.data.path:
+
+                nltk.data.path.append(nltk_data_dir)
+
+            for resource in ['punkt', 'punkt_tab', 'stopwords']:
                 try:
                     nltk.download(resource, download_dir=nltk_data_dir, quiet=True)
                 except Exception as e:
@@ -96,8 +103,8 @@ class BasicSummarizationEngine(SummarizationEngine):
         if len(text) > 100:  # Unusually long for a stopword
             return False
         unsafe_patterns = [
-            r'[\s\S]*exec\s*\(', r'[\s\S]*eval\s*\(', r'[\s\S]*\bimport\b',
-            r'[\s\S]*__[a-zA-Z]+__', r'[\s\S]*\bopen\s*\('
+            r'exec\s*\(', r'eval\s*\(', r'\bimport\b',
+            r'__[a-zA-Z]+__', r'\bopen\s*\('
         ]
         return not any(re.search(pattern, text) for pattern in unsafe_patterns)
 
@@ -352,7 +359,7 @@ class AdvancedSummarizationEngine(SummarizationEngine):
     def __init__(self, num_tags: int = 5) -> None:
         """Initialize the advanced summarizer."""
         required_packages = [
-            'punkt', 'stopwords', 'averaged_perceptron_tagger',
+            'punkt', 'punkt_tab', 'stopwords', 'averaged_perceptron_tagger',
             'maxent_ne_chunker', 'words', 'vader_lexicon'
         ]
         
@@ -607,10 +614,16 @@ class HierarchicalDensificationEngine(SummarizationEngine):
     def _init_nltk(self):
         """Initialize NLTK resources safely."""
         try:
-            nltk_data_dir = os.path.expanduser('~/nltk_data')
+            nltk_data_dir = Config.NLTK_DATA_DIR
+
             os.makedirs(nltk_data_dir, exist_ok=True)
 
-            for resource in ['punkt', 'stopwords', 'averaged_perceptron_tagger', 'vader_lexicon']:
+
+            if nltk_data_dir not in nltk.data.path:
+
+                nltk.data.path.append(nltk_data_dir)
+
+            for resource in ['punkt', 'punkt_tab', 'stopwords', 'averaged_perceptron_tagger', 'vader_lexicon']:
                 try:
                     nltk.download(resource, download_dir=nltk_data_dir, quiet=True)
                 except Exception as e:
@@ -639,8 +652,8 @@ class HierarchicalDensificationEngine(SummarizationEngine):
         if len(text) > 100:
             return False
         unsafe_patterns = [
-            r'[\s\S]*exec\s*\(', r'[\s\S]*eval\s*\(', r'[\s\S]*\bimport\b',
-            r'[\s\S]*__[a-zA-Z]+__', r'[\s\S]*\bopen\s*\('
+            r'exec\s*\(', r'eval\s*\(', r'\bimport\b',
+            r'__[a-zA-Z]+__', r'\bopen\s*\('
         ]
         return not any(re.search(pattern, text) for pattern in unsafe_patterns)
     
