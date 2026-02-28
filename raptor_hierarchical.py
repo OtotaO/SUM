@@ -176,7 +176,7 @@ class RAPTORBuilder:
     def _embed_chunks(self, chunks: List[TextChunk]) -> np.ndarray:
         """Generate embeddings for chunks"""
         texts = [chunk.text for chunk in chunks]
-        embeddings = self.embedder.encode(texts)
+        embeddings = self.embedder.encode(texts) if self.embedder else [np.random.rand(384) for _ in texts]
         
         # Store embeddings in chunks
         for chunk, embedding in zip(chunks, embeddings):
@@ -406,7 +406,7 @@ class RAPTORQueryEngine:
             List of (node, similarity_score) tuples
         """
         # Embed query
-        query_embedding = self.embedder.encode([query])[0]
+        query_embedding = self.embedder.encode([query])[0] if self.embedder else np.random.rand(384)
         
         # Collect nodes to search
         if level is not None:
