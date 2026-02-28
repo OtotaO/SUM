@@ -560,25 +560,67 @@
             
             const apiDensity = densityMap[density] || 'medium';
             
+            document.getElementById('result').style.display = 'block';
+            const contentDiv = document.getElementById('result-content');
+            contentDiv.innerHTML = '<div id="log-container" style="margin-bottom: 20px;"></div><div id="summary-output"></div>';
+
+            const logContainer = document.getElementById('log-container');
+            const summaryOutput = document.getElementById('summary-output');
+
             if (currentTab === 'file') {
                 const formData = new FormData();
                 formData.append('file', selectedFile);
                 formData.append('density', apiDensity);
-                response = await fetch('/summarize/ultimate', { method: 'POST', body: formData });
+                response = await fetch('/api/summarize/stream_unlimited', { method: 'POST', body: formData });
             } else {
-                response = await fetch('/summarize/ultimate', {
+                response = await fetch('/api/summarize/stream_unlimited', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ text, density: apiDensity })
                 });
             }
             
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.error || 'Summarization failed');
+            if (!response.ok) throw new Error('Summarization failed');
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
             
-            displayResult(data, density);
+            while (true) {
+                const {done, value} = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, {stream: true});
+                const lines = buffer.split('
+
+');
+                buffer = lines.pop(); // keep the last incomplete chunk in the buffer
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const dataStr = line.slice(6);
+                        if (dataStr === '[DONE]') continue;
+                        try {
+                            const json = JSON.parse(dataStr);
+                            if (json.type === 'log') {
+                                const logEntry = document.createElement('div');
+                                logEntry.className = 'system-log';
+                                logEntry.textContent = `> ${json.content}`;
+                                logContainer.appendChild(logEntry);
+                                // Auto scroll
+                                window.scrollTo(0, document.body.scrollHeight);
+                            } else if (json.type === 'result') {
+                                displayResult(json.data, density);
+                            } else if (json.type === 'error') {
+                                showError(json.content);
+                            }
+                        } catch (e) {
+                            console.error('Error parsing SSE', e, dataStr);
+                        }
+                    }
+                }
+            }
         }
-        
         async function performExtrapolation(seedText, formatId, length) {
             // Streaming Extrapolation
             const response = await fetch('/api/extrapolate/stream', {
