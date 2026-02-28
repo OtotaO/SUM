@@ -89,7 +89,8 @@ class UnlimitedTextProcessor:
         
     def process_text(self, 
                      text_or_path: Any,
-                     config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+                     config: Optional[Dict[str, Any]] = None,
+                     progress_callback=None) -> Dict[str, Any]:
         """
         Process text of any length intelligently.
         
@@ -107,14 +108,42 @@ class UnlimitedTextProcessor:
         
         # Route to appropriate processor based on size
         if text_size < self.SMALL_TEXT:
-            return self._process_small_text(text_source, config)
+            return self._process_small_text(text_source, config, progress_callback)
         elif text_size < self.MEDIUM_TEXT:
-            return self._process_medium_text(text_source, text_size, config)
+            return self._process_medium_text(text_source, text_size, config, progress_callback)
         elif text_size < self.LARGE_TEXT:
-            return self._process_large_text(text_source, text_size, config)
+            return self._process_large_text(text_source, text_size, config, progress_callback)
         else:
-            return self._process_massive_text(text_source, text_size, config)
+            return self._process_massive_text(text_source, text_size, config, progress_callback)
             
+
+    def process_text_stream(self, text_or_path: Any, config: Optional[Dict[str, Any]] = None):
+        import queue
+        import threading
+
+        q = queue.Queue()
+
+        def callback(event):
+            q.put(event)
+
+        def worker():
+            try:
+                result = self.process_text(text_or_path, config, progress_callback=callback)
+                q.put({'type': 'result', 'data': result})
+            except Exception as e:
+                q.put({'type': 'error', 'content': str(e)})
+            finally:
+                q.put(None)
+
+        t = threading.Thread(target=worker)
+        t.start()
+
+        while True:
+            item = q.get()
+            if item is None:
+                break
+            yield item
+
     def _analyze_input(self, text_or_path: Any) -> Tuple[int, Any]:
         """Analyze input to determine size and type."""
         if isinstance(text_or_path, str):
@@ -138,7 +167,8 @@ class UnlimitedTextProcessor:
             
     def _process_small_text(self, 
                            text_source: Any, 
-                           config: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+                           config: Optional[Dict[str, Any]],
+                           progress_callback=None) -> Dict[str, Any]:
         """Process small texts directly without chunking."""
         # Get text content
         if isinstance(text_source, str) and not os.path.exists(text_source):
@@ -147,6 +177,7 @@ class UnlimitedTextProcessor:
             text = self._read_text(text_source, limit=self.SMALL_TEXT)
             
         # Process with standard summarizer
+        if progress_callback: progress_callback({'type': 'log', 'content': 'Processing small text directly...'})
         result = self.summarizer.process_text(text, config)
         result['processing_method'] = 'direct'
         result['chunks_processed'] = 1
@@ -156,7 +187,8 @@ class UnlimitedTextProcessor:
     def _process_medium_text(self,
                             text_source: Any,
                             text_size: int,
-                            config: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+                            config: Optional[Dict[str, Any]],
+                            progress_callback=None) -> Dict[str, Any]:
         """Process medium texts with smart chunking."""
         # Determine optimal chunk size
         chunk_size = self._calculate_chunk_size(text_size)
@@ -168,7 +200,8 @@ class UnlimitedTextProcessor:
         
         # Summarize each chunk
         chunk_summaries = []
-        for chunk in chunks:
+        for i, chunk in enumerate(chunks):
+            if progress_callback: progress_callback({'type': 'log', 'content': f'Processing chunk {i+1}/{len(chunks)}...'})
             summary = self._process_chunk(chunk, config)
             chunk_summaries.append(summary)
             
@@ -183,7 +216,8 @@ class UnlimitedTextProcessor:
     def _process_large_text(self,
                            text_source: Any,
                            text_size: int,
-                           config: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+                           config: Optional[Dict[str, Any]],
+                           progress_callback=None) -> Dict[str, Any]:
         """Process large texts with memory-mapped streaming."""
         # Use larger chunks for efficiency
         chunk_size = self.LARGE_CHUNK
@@ -207,7 +241,8 @@ class UnlimitedTextProcessor:
             with open(text_source, 'r+b') as f:
                 with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mmapped:
                     # Process chunks from memory map
-                    for chunk in self._create_mmap_chunks(mmapped, chunk_size, overlap_size):
+                    for i, chunk in enumerate(self._create_mmap_chunks(mmapped, chunk_size, overlap_size)):
+                        if progress_callback: progress_callback({'type': 'log', 'content': f'Processing large memory-mapped chunk {i+1}...'})
                         summary = self._process_chunk(chunk, config)
                         chunk_summaries.append(summary)
                         
@@ -231,7 +266,8 @@ class UnlimitedTextProcessor:
     def _process_massive_text(self,
                              text_source: Any,
                              text_size: int,
-                             config: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+                             config: Optional[Dict[str, Any]],
+                             progress_callback=None) -> Dict[str, Any]:
         """Process massive texts with multi-level hierarchical summarization."""
         # Use very large chunks
         chunk_size = self.LARGE_CHUNK * 2
@@ -246,12 +282,15 @@ class UnlimitedTextProcessor:
         chunk_generator = self._create_streaming_chunks(text_source, chunk_size, overlap_size)
         
         batch = []
+        batch_idx = 1
         for chunk in chunk_generator:
             batch.append(chunk)
             
             if len(batch) >= batch_size:
                 # Process batch
-                batch_summary = self._process_batch(batch, config)
+                if progress_callback: progress_callback({'type': 'log', 'content': f'Processing massive text batch {batch_idx}...'})
+                batch_summary = self._process_batch(batch, config, progress_callback)
+                batch_idx += 1
                 batch_summaries.append(batch_summary)
                 batch = []
                 
@@ -261,7 +300,8 @@ class UnlimitedTextProcessor:
                 
         # Process remaining batch
         if batch:
-            batch_summary = self._process_batch(batch, config)
+            if progress_callback: progress_callback({'type': 'log', 'content': 'Processing final massive text batch...'})
+            batch_summary = self._process_batch(batch, config, progress_callback)
             batch_summaries.append(batch_summary)
             
         # Second level: Combine batch summaries
@@ -500,10 +540,12 @@ class UnlimitedTextProcessor:
         
     def _process_batch(self,
                       chunks: List[TextChunk],
-                      config: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+                      config: Optional[Dict[str, Any]],
+                      progress_callback=None) -> Dict[str, Any]:
         """Process a batch of chunks."""
         summaries = []
-        for chunk in chunks:
+        for i, chunk in enumerate(chunks):
+            if progress_callback: progress_callback({'type': 'log', 'content': f'  -> Inner chunk {i+1}/{len(chunks)}...'})
             summary = self._process_chunk(chunk, config)
             summaries.append(summary)
             

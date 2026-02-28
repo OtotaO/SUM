@@ -270,3 +270,95 @@ def stream_summarize():
             t.join()
 
     return Response(stream_with_context(generate_sync()), mimetype='text/event-stream')
+
+
+@web_compat_bp.route('/api/summarize/stream_unlimited', methods=['POST'])
+def stream_unlimited_summarize():
+    """Streaming summarization endpoint using Server-Sent Events (SSE) for unlimited text."""
+    try:
+        text = None
+        tmp_path = None
+
+        if request.is_json:
+            data = request.get_json()
+            text = data.get('text', '')
+            density = data.get('density', 'all')
+        else:
+            if 'file' not in request.files:
+                return jsonify({'error': 'No file provided'}), 400
+
+            file = request.files['file']
+            density = request.form.get('density', 'all')
+
+            import tempfile
+            import os
+            with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as tmp_file:
+                file.save(tmp_file.name)
+                tmp_path = tmp_file.name
+
+            from utils.universal_file_processor import UniversalFileProcessor
+            processor = UniversalFileProcessor()
+            result = processor.process_file(tmp_path)
+
+            if not result['success']:
+                return jsonify({'error': result.get('error', 'Could not extract text from file')}), 400
+
+            text = result['text']
+
+        if not text:
+            return jsonify({'error': 'No text to summarize'}), 400
+
+        config = {
+            'max_concepts': 10,
+            'max_summary_tokens': 500,
+            'enable_semantic_clustering': True
+        }
+
+        from unlimited_text_processor import get_unlimited_processor
+        unlimited_processor = get_unlimited_processor()
+
+        def generate():
+            try:
+                for event in unlimited_processor.process_text_stream(text, config):
+                    if event['type'] == 'result':
+                        result = event['data']
+                        response = {
+                            'result': {
+                                'original_words': len(text.split()),
+                                'compression_ratio': len(text) / max(1, len(result.get('summary', ''))) if result.get('summary') else 1.0,
+                            }
+                        }
+
+                        if 'hierarchical_summary' in result:
+                            hs = result['hierarchical_summary']
+                            response['result'].update({
+                                'tags': result.get('tags', result.get('key_concepts', []))[:10],
+                                'minimal': ', '.join(hs.get('level_1_concepts', [])) if hs.get('level_1_concepts') else '',
+                                'short': hs.get('level_2_core', ''),
+                                'medium': hs.get('level_3_expanded', '') or hs.get('level_2_core', ''),
+                                'detailed': result.get('summary', hs.get('level_3_expanded', '') or hs.get('level_2_core', ''))
+                            })
+                        else:
+                            summary = result.get('summary', '')
+                            response['result'].update({
+                                'tags': result.get('tags', []),
+                                'minimal': summary[:100] + '...' if len(summary) > 100 else summary,
+                                'short': summary[:200] + '...' if len(summary) > 200 else summary,
+                                'medium': summary[:500] + '...' if len(summary) > 500 else summary,
+                                'detailed': summary
+                            })
+
+                        yield f"data: {json.dumps({'type': 'result', 'data': response})}\n\n"
+                    else:
+                        yield f"data: {json.dumps(event)}\n\n"
+                yield "data: [DONE]\n\n"
+            finally:
+                if tmp_path and os.path.exists(tmp_path):
+                    try:
+                        os.unlink(tmp_path)
+                    except:
+                        pass
+
+        return Response(stream_with_context(generate()), mimetype='text/event-stream')
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
