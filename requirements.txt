@@ -39,3 +39,4 @@ urllib3>=2.0.0
 Werkzeug>=3.0.0
 wordcloud>=1.9.0
 redis>=5.0.0
+asgiref>=3.7.2

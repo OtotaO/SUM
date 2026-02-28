@@ -78,3 +78,63 @@ def stream_extrapolation():
     except Exception as e:
         logger.error(f"Stream extrapolation error: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
+from unlimited_extrapolation_processor import get_unlimited_extrapolator
+
+@extrapolation_bp.route('/api/extrapolate/stream_unlimited', methods=['POST'])
+def stream_extrapolation_unlimited():
+    """
+    Stream unlimited extrapolation (e.g. multi-volume books).
+    Uses Server-Sent Events (SSE) to emit text and progress updates.
+    """
+    try:
+        data = request.get_json()
+        seed = data.get('seed')
+
+        if not seed:
+            return jsonify({'error': 'No seed text provided'}), 400
+
+        config = ExtrapolationConfig(
+            target_format=data.get('target_format', 'book'),
+            style=data.get('style', 'neutral'),
+            tone=data.get('tone', 'neutral'),
+            length_words=data.get('length_words', 10000),
+            creativity=data.get('creativity', 0.7)
+        )
+
+        processor = get_unlimited_extrapolator()
+
+        async def generate():
+            yield f"data: {json.dumps({'status': 'initializing'})}\n\n"
+
+            async for event in processor.process_extrapolation_stream(seed, config):
+                yield f"data: {json.dumps(event)}\n\n"
+
+            yield f"data: {json.dumps({'status': 'complete'})}\n\n"
+
+        # Helper to run async generator in sync Flask
+        def sync_generator():
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                agen = generate()
+                while True:
+                    try:
+                        yield loop.run_until_complete(agen.__anext__())
+                    except StopAsyncIteration:
+                        break
+            finally:
+                loop.close()
+
+        return Response(
+            sync_generator(),
+            mimetype='text/event-stream',
+            headers={
+                'Cache-Control': 'no-cache',
+                'X-Accel-Buffering': 'no'
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Unlimited stream extrapolation error: {str(e)}")
+        return jsonify({'error': str(e)}), 500

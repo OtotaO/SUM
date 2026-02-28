@@ -1,3 +1,4 @@
+import tempfile
 """
 Test suite for SUM API endpoints
 
@@ -56,13 +57,13 @@ def client(mock_auth_manager):
 
 @pytest.fixture
 def api_key(mock_auth_manager):
-    """Create a test API key."""
-    key_id, key = mock_auth_manager.generate_api_key(
+    """Create a test API api_key."""
+    api_key_id, api_key = mock_auth_manager.generate_api_key(
         name="Test Key",
         permissions=['read', 'summarize'],
         rate_limit=100
     )
-    return key
+    return api_key
 
 class TestAPIEndpoints:
     """Test suite for API endpoints."""
@@ -110,12 +111,12 @@ class TestAuthentication:
     """Test suite for authentication system."""
     
     def test_api_key_validation(self, client, mock_auth_manager):
-        """Test API key validation endpoint."""
-        key_id, api_key = mock_auth_manager.generate_api_key("Test", ["read"])
+        """Test API api_key validation endpoint."""
+        api_key_id, api_key = mock_auth_manager.generate_api_key("Test", ["read"])
         
         response = client.get(
             '/api/auth/validate',
-            headers={'X-API-Key': key_secret}
+            headers={'X-API-Key': api_key}
         )
         assert response.status_code == 200
         data = json.loads(response.data)

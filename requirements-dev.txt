@@ -13,4 +13,4 @@ pre-commit
 debugpy
 ipython
 jupyter
-tox
+toxspacy>=3.4.0
