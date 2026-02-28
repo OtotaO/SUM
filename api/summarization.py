@@ -14,7 +14,7 @@ License: Apache License 2.0
 import time
 import logging
 import traceback
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, Response, stream_with_context
 from threading import Lock
 
 from web.middleware import rate_limit, validate_json_input
@@ -54,7 +54,7 @@ def get_config():
 def process_text():
     """
     Process and summarize text using the appropriate summarization model.
-    
+
     Expected JSON input:
     {
         "text": "Text to summarize...",
@@ -65,16 +65,16 @@ def process_text():
     """
     try:
         data = request.get_json()
-        
+
         # Validate required fields
         if 'text' not in data:
             return jsonify({'error': 'No text provided'}), 400
-        
+
         text = data['text']
         model_type = data.get('model', 'simple').lower()
         config = data.get('config', {})
         file_path = data.get('file_path')
-        
+
         # Check for unlimited processing
         if model_type == 'unlimited' or file_path:
             # Use unlimited processor for file paths or explicit unlimited mode
@@ -82,24 +82,24 @@ def process_text():
                 result = process_unlimited_text(file_path, config)
             else:
                 result = process_unlimited_text(text, config)
-            result['processing_time'] = time.time() - start_time
+            result['processing_time'] = 0.0
             result['model'] = 'unlimited'
             return jsonify(result)
-        
+
         # Process with appropriate model
         start_time = time.time()
-        
+
         with _processing_lock:
             result = _process_with_model(text, model_type, config)
             if 'error' in result:
                 return jsonify(result), result.get('status_code', 500)
-        
+
         # Add processing metadata
         result['processing_time'] = time.time() - start_time
         result['model'] = model_type
-        
+
         return jsonify(result)
-        
+
     except Exception as e:
         logger.error(f"Error processing text: {e}")
         return jsonify({
@@ -115,17 +115,17 @@ def ultimate_summarization():
     """
     The ultimate summarization endpoint that handles everything.
     Adapts to text length, requested density, and input format.
-    
+
     Supported input: JSON or Multipart Form (files)
     """
     try:
         start_time = time.time()
-        
+
         # 1. Parse Input
         text = None
         file_path = None
         density = 'medium'
-        
+
         if request.is_json:
             data = request.get_json()
             text = data.get('text')
@@ -137,18 +137,18 @@ def ultimate_summarization():
                 # Save temp file logic would go here...
                 # For now assuming text for simplicity in this example
                 text = file.read().decode('utf-8', errors='ignore')
-            
+
             density = request.form.get('density', 'medium')
-            
+
         if not text:
             return jsonify({'error': 'No content provided'}), 400
-            
+
         # 2. Determine Strategy
         word_count = len(text.split())
-        
+
         # Map density to engine config
         # API densities: tags, minimal, short, medium, detailed, all
-        
+
         if density == 'tags':
              # Use Basic Engine just for tags/keywords
              engine = BasicSummarizationEngine()
@@ -157,16 +157,16 @@ def ultimate_summarization():
                  'original_words': word_count
              }
              return jsonify(result)
-             
+
         # Use Hierarchical Engine for most cases as it's the most powerful
         # But configure it based on density
-        
+
         # Config for HierarchicalDensificationEngine
         config = {
             'target_density': 0.15, # Default
             'use_cache': True
         }
-        
+
         if density == 'minimal':
             config['target_density'] = 0.05
             config['max_summary_tokens'] = 50
@@ -179,16 +179,16 @@ def ultimate_summarization():
         elif density == 'detailed':
             config['target_density'] = 0.35
             config['max_summary_tokens'] = 1000
-            
+
         engine = HierarchicalDensificationEngine()
         result = engine.process_text(text, config)
-        
+
         # Add metadata
         result['original_words'] = word_count
         result['processing_time'] = time.time() - start_time
-        
+
         return jsonify(result)
-        
+
     except Exception as e:
         logger.error(f"Ultimate summarization error: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
@@ -200,7 +200,7 @@ def ultimate_summarization():
 def analyze_topics():
     """
     Perform topic modeling on a collection of documents.
-    
+
     Expected JSON input:
     {
         "documents": ["Document 1", "Document 2", ...],
@@ -211,29 +211,29 @@ def analyze_topics():
     """
     try:
         data = request.get_json()
-        
+
         # Validate required fields
         if 'documents' not in data or not data['documents']:
             return jsonify({'error': 'No documents provided'}), 400
-        
+
         documents = data['documents']
         num_topics = int(data.get('num_topics', 5))
         algorithm = data.get('algorithm', 'lda').lower()
         top_n_words = int(data.get('top_n_words', 10))
-        
+
         # Validate parameters
         if not all(isinstance(doc, str) for doc in documents):
             return jsonify({'error': 'All documents must be strings'}), 400
-        
+
         if not 1 <= num_topics <= 100:
             return jsonify({'error': 'num_topics must be between 1 and 100'}), 400
-        
+
         if algorithm not in ['lda', 'nmf', 'lsa']:
             return jsonify({'error': f'Unsupported algorithm: {algorithm}'}), 400
-        
+
         if not 1 <= top_n_words <= 50:
             return jsonify({'error': 'top_n_words must be between 1 and 50'}), 400
-        
+
         # Get or create topic modeler
         from Models.topic_modeling import TopicModeler
         topic_modeler = TopicModeler(
@@ -241,15 +241,15 @@ def analyze_topics():
             algorithm=algorithm,
             n_top_words=top_n_words
         )
-        
+
         # Process documents
         start_time = time.time()
         topic_modeler.fit(documents)
-        
+
         # Extract results
         topics_summary = topic_modeler.get_topics_summary()
         doc_topics = topic_modeler.transform(documents)
-        
+
         # Prepare response
         result = {
             'topics': topics_summary,
@@ -261,9 +261,9 @@ def analyze_topics():
                 'coherence': topic_modeler.coherence_scores
             }
         }
-        
+
         return jsonify(result)
-        
+
     except Exception as e:
         logger.error(f"Error analyzing topics: {e}\n{traceback.format_exc()}")
         return jsonify({
@@ -292,14 +292,14 @@ def clear_cache():
     try:
         from smart_cache import get_cache
         cache = get_cache()
-        
+
         # Get optional parameters
         data = request.get_json() or {}
         text = data.get('text')
         pattern = data.get('pattern')
-        
+
         cache.invalidate(text=text, pattern=pattern)
-        
+
         return jsonify({
             'status': 'success',
             'message': 'Cache cleared'
@@ -315,7 +315,7 @@ def clear_cache():
 def process_unlimited():
     """
     Process text of unlimited length.
-    
+
     Supports:
     - Direct text in JSON
     - File paths in JSON
@@ -324,12 +324,12 @@ def process_unlimited():
     try:
         import tempfile
         import os
-        
+
         file_path = None
         text_input = None
         config = {}
         cleanup_file = False
-        
+
         # Handle different input types
         if request.is_json:
             data = request.get_json()
@@ -340,17 +340,17 @@ def process_unlimited():
             # File upload
             if 'file' not in request.files:
                 return jsonify({'error': 'No file uploaded'}), 400
-                
+
             file = request.files['file']
             if file.filename == '':
                 return jsonify({'error': 'No file selected'}), 400
-                
+
             # Save to temporary file
             with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as tmp:
                 file.save(tmp.name)
                 file_path = tmp.name
                 cleanup_file = True
-            
+
             # Get config from form data
             if 'config' in request.form:
                 import json
@@ -358,32 +358,32 @@ def process_unlimited():
                     config = json.loads(request.form['config'])
                 except:
                     config = {}
-        
+
         # Validate input
         if not text_input and not file_path:
             return jsonify({'error': 'No text or file path provided'}), 400
-        
+
         # Process
         start_time = time.time()
-        
+
         if file_path:
             result = process_unlimited_text(file_path, config)
         else:
             result = process_unlimited_text(text_input, config)
-            
+
         # Add metadata
         result['processing_time'] = time.time() - start_time
         result['endpoint'] = 'process_unlimited'
-        
+
         # Cleanup temporary file if needed
         if cleanup_file and os.path.exists(file_path):
             try:
                 os.unlink(file_path)
             except:
                 pass
-                
+
         return jsonify(result)
-        
+
     except Exception as e:
         logger.error(f"Error processing unlimited text: {str(e)}", exc_info=True)
         # Cleanup on error
@@ -401,12 +401,12 @@ def process_unlimited():
 def _process_with_model(text: str, model_type: str, config: dict) -> dict:
     """
     Process text with the specified model.
-    
+
     Args:
         text: Input text
         model_type: Model to use
         config: Model configuration
-        
+
     Returns:
         Processing result or error dict
     """
@@ -415,7 +415,7 @@ def _process_with_model(text: str, model_type: str, config: dict) -> dict:
         if not summarizer:
             return {'error': 'Simple summarizer unavailable', 'status_code': 500}
         return summarizer.process_text(text, config)
-    
+
     elif model_type == 'advanced':
         summarizer = AdvancedSummarizationEngine()
         if not summarizer:
@@ -425,7 +425,7 @@ def _process_with_model(text: str, model_type: str, config: dict) -> dict:
                 'status_code': 500
             }
         return summarizer.process_text(text, config)
-    
+
     elif model_type == 'hierarchical':
         engine = HierarchicalDensificationEngine()
         if not engine:
@@ -434,7 +434,7 @@ def _process_with_model(text: str, model_type: str, config: dict) -> dict:
                 'status_code': 500
             }
         return engine.process_text(text, config)
-    
+
     elif model_type == 'streaming':
         # Create streaming config from request
         from streaming_engine import StreamingConfig
@@ -446,15 +446,101 @@ def _process_with_model(text: str, model_type: str, config: dict) -> dict:
             enable_progressive_refinement=config.get('enable_progressive_refinement', True),
             cache_processed_chunks=config.get('cache_processed_chunks', True)
         )
-        
+
         # Get or create streaming engine with config
         from streaming_engine import StreamingHierarchicalEngine
         engine = StreamingHierarchicalEngine(streaming_config)
         return engine.process_streaming_text(text)
-    
+
     else:
         return {
             'error': f'Unknown model type: {model_type}',
             'available_models': ['simple', 'advanced', 'hierarchical', 'streaming', 'unlimited'],
             'status_code': 400
         }
+
+@summarization_bp.route('/stream_unlimited', methods=['POST'])
+@rate_limit(10, 60)
+def stream_unlimited():
+    """
+    Stream processing of text of unlimited length.
+
+    Supports:
+    - Direct text in JSON
+    - File paths in JSON
+    - File upload as multipart/form-data
+    """
+    try:
+        import tempfile
+        import os
+        import json
+
+        file_path = None
+        text_input = None
+        config = {}
+        cleanup_file = False
+
+        # Handle different input types
+        if request.is_json:
+            data = request.get_json()
+            text_input = data.get('text')
+            file_path = data.get('file_path')
+            config = data.get('config', {})
+        else:
+            # File upload
+            if 'file' not in request.files:
+                return jsonify({'error': 'No file uploaded'}), 400
+
+            file = request.files['file']
+            if file.filename == '':
+                return jsonify({'error': 'No file selected'}), 400
+
+            # Save to temporary file
+            with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as tmp:
+                file.save(tmp.name)
+                file_path = tmp.name
+                cleanup_file = True
+
+            # Get config from form data
+            if 'config' in request.form:
+                try:
+                    config = json.loads(request.form['config'])
+                except:
+                    config = {}
+
+        # Validate input
+        if not text_input and not file_path:
+            return jsonify({'error': 'No text or file path provided'}), 400
+
+        def generate():
+            try:
+                processor = get_unlimited_processor()
+                # Determine input to pass to processor
+                input_data = file_path if file_path else text_input
+
+                yield f"data: {json.dumps({'status': 'initializing'})}\n\n"
+
+                for event in processor.process_text_stream(input_data, config):
+                    yield f"data: {json.dumps(event)}\n\n"
+
+                yield f"data: {json.dumps({'status': 'complete'})}\n\n"
+
+            except Exception as e:
+                logger.error(f"Error in stream processing: {str(e)}", exc_info=True)
+                yield f"data: {json.dumps({'type': 'error', 'content': str(e)})}\n\n"
+            finally:
+                # Cleanup temporary file if needed
+                if cleanup_file and file_path and os.path.exists(file_path):
+                    try:
+                        os.unlink(file_path)
+                    except:
+                        pass
+
+        return Response(stream_with_context(generate()), mimetype='text/event-stream')
+
+    except Exception as e:
+        logger.error(f"Error initializing stream: {str(e)}", exc_info=True)
+        return jsonify({
+            'error': 'Error initializing stream',
+            'details': str(e)
+        }), 500
