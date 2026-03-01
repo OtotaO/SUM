@@ -17,6 +17,7 @@ License: Apache License 2.0
 
 import logging
 import hashlib
+import time
 from typing import Iterator, Dict, Any, List, Optional, Tuple
 from dataclasses import dataclass
 import io
@@ -86,6 +87,73 @@ class UnlimitedTextProcessor:
         # Lazy import to avoid circular dependency
         from summarization_engine import HierarchicalDensificationEngine
         self.summarizer = HierarchicalDensificationEngine()
+
+    def _resolve_model_route(self, config: Optional[Dict[str, Any]]) -> Dict[str, List[str]]:
+        """Resolve model routing strategy used for each processing phase."""
+        route = {
+            'extract': ['hierarchical-densification'],
+            'chunk': ['hierarchical-densification'],
+            'combine': ['hierarchical-densification']
+        }
+        if not config:
+            return route
+
+        configured_route = config.get('model_route', {})
+        if isinstance(configured_route, dict):
+            for phase, default_route in route.items():
+                value = configured_route.get(phase)
+                if isinstance(value, str) and value.strip():
+                    route[phase] = [value.strip()]
+                elif isinstance(value, list):
+                    normalized = [v.strip() for v in value if isinstance(v, str) and v.strip()]
+                    if normalized:
+                        route[phase] = normalized
+
+        return route
+
+    def _emit_progress(self,
+                       progress_callback,
+                       *,
+                       phase: str,
+                       completed: int,
+                       total: Optional[int],
+                       start_time: float,
+                       bytes_processed: int,
+                       total_bytes: int,
+                       model_route: Dict[str, List[str]],
+                       message: str):
+        """Emit a structured running-total progress event."""
+        if not progress_callback:
+            return
+
+        elapsed = max(time.time() - start_time, 1e-6)
+        throughput_bytes_per_sec = bytes_processed / elapsed
+        percentage = None
+        eta_seconds = None
+
+        if total and total > 0:
+            percentage = (completed / total) * 100
+            remaining_items = max(total - completed, 0)
+            items_per_sec = completed / elapsed if completed else 0
+            if items_per_sec > 0 and remaining_items > 0:
+                eta_seconds = remaining_items / items_per_sec
+
+        progress_callback({
+            'type': 'progress',
+            'phase': phase,
+            'message': message,
+            'running_total': {
+                'completed_items': completed,
+                'total_items': total,
+                'percentage': percentage,
+                'bytes_processed': bytes_processed,
+                'total_bytes': total_bytes,
+                'elapsed_seconds': elapsed,
+                'throughput_bytes_per_sec': throughput_bytes_per_sec,
+                'eta_seconds': eta_seconds,
+            },
+            'model_route': model_route,
+        })
         
     def process_text(self, 
                      text_or_path: Any,
@@ -103,18 +171,19 @@ class UnlimitedTextProcessor:
         """
         # Determine input type and size
         text_size, text_source = self._analyze_input(text_or_path)
+        model_route = self._resolve_model_route(config)
         
         logger.info(f"Processing text of size: {text_size:,} bytes")
         
         # Route to appropriate processor based on size
         if text_size < self.SMALL_TEXT:
-            return self._process_small_text(text_source, config, progress_callback)
+            return self._process_small_text(text_source, config, text_size, model_route, progress_callback)
         elif text_size < self.MEDIUM_TEXT:
-            return self._process_medium_text(text_source, text_size, config, progress_callback)
+            return self._process_medium_text(text_source, text_size, config, model_route, progress_callback)
         elif text_size < self.LARGE_TEXT:
-            return self._process_large_text(text_source, text_size, config, progress_callback)
+            return self._process_large_text(text_source, text_size, config, model_route, progress_callback)
         else:
-            return self._process_massive_text(text_source, text_size, config, progress_callback)
+            return self._process_massive_text(text_source, text_size, config, model_route, progress_callback)
             
 
     def process_text_stream(self, text_or_path: Any, config: Optional[Dict[str, Any]] = None):
@@ -168,6 +237,8 @@ class UnlimitedTextProcessor:
     def _process_small_text(self, 
                            text_source: Any, 
                            config: Optional[Dict[str, Any]],
+                           text_size: int,
+                           model_route: Dict[str, List[str]],
                            progress_callback=None) -> Dict[str, Any]:
         """Process small texts directly without chunking."""
         # Get text content
@@ -176,11 +247,19 @@ class UnlimitedTextProcessor:
         else:
             text = self._read_text(text_source, limit=self.SMALL_TEXT)
             
+        start_time = time.time()
         # Process with standard summarizer
         if progress_callback: progress_callback({'type': 'log', 'content': 'Processing small text directly...'})
+        self._emit_progress(progress_callback, phase='extract', completed=0, total=1, start_time=start_time,
+                            bytes_processed=0, total_bytes=text_size, model_route=model_route,
+                            message='Initializing direct processing...')
         result = self.summarizer.process_text(text, config)
+        self._emit_progress(progress_callback, phase='extract', completed=1, total=1, start_time=start_time,
+                            bytes_processed=text_size, total_bytes=text_size, model_route=model_route,
+                            message='Direct processing complete.')
         result['processing_method'] = 'direct'
         result['chunks_processed'] = 1
+        result['model_route'] = model_route
         
         return result
         
@@ -188,8 +267,10 @@ class UnlimitedTextProcessor:
                             text_source: Any,
                             text_size: int,
                             config: Optional[Dict[str, Any]],
+                            model_route: Dict[str, List[str]],
                             progress_callback=None) -> Dict[str, Any]:
         """Process medium texts with smart chunking."""
+        start_time = time.time()
         # Determine optimal chunk size
         chunk_size = self._calculate_chunk_size(text_size)
         overlap_size = int(chunk_size * self.overlap_ratio)
@@ -204,12 +285,17 @@ class UnlimitedTextProcessor:
             if progress_callback: progress_callback({'type': 'log', 'content': f'Processing chunk {i+1}/{len(chunks)}...'})
             summary = self._process_chunk(chunk, config)
             chunk_summaries.append(summary)
+            self._emit_progress(progress_callback, phase='chunk', completed=i + 1, total=len(chunks),
+                                start_time=start_time, bytes_processed=min(chunk.end_pos, text_size),
+                                total_bytes=text_size, model_route=model_route,
+                                message=f'Chunk {i + 1}/{len(chunks)} complete.')
             
         # Combine chunk summaries
         combined_result = self._combine_chunk_summaries(chunk_summaries, config)
         combined_result['processing_method'] = 'chunked'
         combined_result['chunks_processed'] = len(chunks)
         combined_result['chunk_size'] = chunk_size
+        combined_result['model_route'] = model_route
         
         return combined_result
         
@@ -217,8 +303,10 @@ class UnlimitedTextProcessor:
                            text_source: Any,
                            text_size: int,
                            config: Optional[Dict[str, Any]],
+                           model_route: Dict[str, List[str]],
                            progress_callback=None) -> Dict[str, Any]:
         """Process large texts with memory-mapped streaming."""
+        start_time = time.time()
         # Use larger chunks for efficiency
         chunk_size = self.LARGE_CHUNK
         overlap_size = int(chunk_size * self.overlap_ratio)
@@ -245,6 +333,10 @@ class UnlimitedTextProcessor:
                         if progress_callback: progress_callback({'type': 'log', 'content': f'Processing large memory-mapped chunk {i+1}...'})
                         summary = self._process_chunk(chunk, config)
                         chunk_summaries.append(summary)
+                        self._emit_progress(progress_callback, phase='chunk', completed=i + 1, total=None,
+                                            start_time=start_time, bytes_processed=min(chunk.end_pos, text_size),
+                                            total_bytes=text_size, model_route=model_route,
+                                            message=f'Processed large chunk {i + 1}.')
                         
                         # Free memory periodically
                         if len(chunk_summaries) % 10 == 0:
@@ -256,6 +348,7 @@ class UnlimitedTextProcessor:
             result['processing_method'] = 'streaming'
             result['chunks_processed'] = len(chunk_summaries)
             result['chunk_size'] = chunk_size
+            result['model_route'] = model_route
             
             return result
             
@@ -267,8 +360,10 @@ class UnlimitedTextProcessor:
                              text_source: Any,
                              text_size: int,
                              config: Optional[Dict[str, Any]],
+                             model_route: Dict[str, List[str]],
                              progress_callback=None) -> Dict[str, Any]:
         """Process massive texts with multi-level hierarchical summarization."""
+        start_time = time.time()
         # Use very large chunks
         chunk_size = self.LARGE_CHUNK * 2
         overlap_size = int(chunk_size * self.overlap_ratio)
@@ -292,6 +387,12 @@ class UnlimitedTextProcessor:
                 batch_summary = self._process_batch(batch, config, progress_callback)
                 batch_idx += 1
                 batch_summaries.append(batch_summary)
+                processed_chunks = sum(bs['chunks'] for bs in batch_summaries)
+                self._emit_progress(progress_callback, phase='batch', completed=processed_chunks, total=None,
+                                    start_time=start_time,
+                                    bytes_processed=min(processed_chunks * (chunk_size - overlap_size), text_size),
+                                    total_bytes=text_size, model_route=model_route,
+                                    message=f'Batch {batch_idx - 1} complete ({processed_chunks} chunks total).')
                 batch = []
                 
                 # Free memory
@@ -303,12 +404,19 @@ class UnlimitedTextProcessor:
             if progress_callback: progress_callback({'type': 'log', 'content': 'Processing final massive text batch...'})
             batch_summary = self._process_batch(batch, config, progress_callback)
             batch_summaries.append(batch_summary)
+            processed_chunks = sum(bs['chunks'] for bs in batch_summaries)
+            self._emit_progress(progress_callback, phase='batch', completed=processed_chunks, total=None,
+                                start_time=start_time,
+                                bytes_processed=min(processed_chunks * (chunk_size - overlap_size), text_size),
+                                total_bytes=text_size, model_route=model_route,
+                                message='Final batch complete.')
             
         # Second level: Combine batch summaries
         final_result = self._combine_batch_summaries(batch_summaries, config)
         final_result['processing_method'] = 'hierarchical_streaming'
         final_result['total_chunks'] = sum(bs['chunks'] for bs in batch_summaries)
         final_result['batches_processed'] = len(batch_summaries)
+        final_result['model_route'] = model_route
         
         return final_result
         
