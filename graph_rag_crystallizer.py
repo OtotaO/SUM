@@ -3,7 +3,19 @@ GraphRAG-based Knowledge Crystallization Engine
 Implements Microsoft Research's GraphRAG approach for corpus-level summarization
 """
 
-import networkx as nx
+from __future__ import annotations
+
+import logging
+
+logger = logging.getLogger(__name__)
+
+try:
+    import networkx as nx
+    HAS_NETWORKX = True
+except ImportError:
+    nx = None
+    HAS_NETWORKX = False
+    logger.warning("networkx not installed. Using lightweight graph fallback.")
 import numpy as np
 from typing import List, Dict, Any, Optional, Tuple
 from dataclasses import dataclass
@@ -11,10 +23,7 @@ from collections import defaultdict
 import hashlib
 import json
 import asyncio
-import logging
 from llm_backend import llm_backend
-
-logger = logging.getLogger(__name__)
 
 # Safe imports with fallbacks
 try:
@@ -44,6 +53,91 @@ try:
 except ImportError:
     HAS_SPACY = False
     logger.warning("spacy not installed. Install with: pip install spacy")
+
+
+class _SimpleGraph:
+    """Minimal undirected graph fallback used when networkx is unavailable."""
+
+    def __init__(self):
+        self.nodes = {}
+        self._edges = {}
+
+    def add_node(self, node_id, **attrs):
+        self.nodes[node_id] = attrs
+
+    def add_edge(self, source, target, **attrs):
+        key = tuple(sorted((source, target)))
+        self._edges[key] = attrs
+
+    def has_edge(self, source, target):
+        return tuple(sorted((source, target))) in self._edges
+
+    def __getitem__(self, source):
+        class _AdjProxy(dict):
+            pass
+
+        proxy = _AdjProxy()
+        for (a, b), data in self._edges.items():
+            if a == source:
+                proxy[b] = data
+            elif b == source:
+                proxy[a] = data
+        return proxy
+
+    def edges(self, data=False):
+        for (a, b), attrs in self._edges.items():
+            if data:
+                yield a, b, attrs
+            else:
+                yield a, b
+
+    def subgraph(self, node_ids):
+        sub = _SimpleGraph()
+        for node_id in node_ids:
+            if node_id in self.nodes:
+                sub.add_node(node_id, **self.nodes[node_id])
+        node_set = set(node_ids)
+        for (a, b), attrs in self._edges.items():
+            if a in node_set and b in node_set:
+                sub.add_edge(a, b, **attrs)
+        return sub
+
+    def __contains__(self, node_id):
+        return node_id in self.nodes
+
+    def degree(self, node_id):
+        return sum(1 for a, b in self.edges() if a == node_id or b == node_id)
+
+    def neighbors(self, node_id):
+        for a, b in self.edges():
+            if a == node_id:
+                yield b
+            elif b == node_id:
+                yield a
+
+    def number_of_edges(self):
+        return len(self._edges)
+
+
+def _degree_centrality(graph):
+    node_ids = list(graph.nodes.keys()) if isinstance(graph.nodes, dict) else list(graph.nodes)
+    n = len(node_ids)
+    if n <= 1:
+        return {node_id: 0.0 for node_id in node_ids}
+    counts = {node_id: 0 for node_id in node_ids}
+    for source, target in graph.edges():
+        counts[source] = counts.get(source, 0) + 1
+        counts[target] = counts.get(target, 0) + 1
+    return {node_id: counts.get(node_id, 0) / (n - 1) for node_id in node_ids}
+
+
+def _density(graph):
+    node_ids = list(graph.nodes.keys()) if isinstance(graph.nodes, dict) else list(graph.nodes)
+    n = len(node_ids)
+    if n <= 1:
+        return 0.0
+    edge_count = sum(1 for _ in graph.edges())
+    return (2 * edge_count) / (n * (n - 1))
 
 
 @dataclass
@@ -182,7 +276,10 @@ class KnowledgeGraphBuilder:
     
     def build_graph(self, entities: List[Entity], relations: List[Relation]) -> nx.Graph:
         """Build NetworkX graph from entities and relations"""
-        G = nx.Graph()
+        if HAS_NETWORKX:
+            G = nx.Graph()
+        else:
+            G = _SimpleGraph()
         
         # Add nodes
         for entity in entities:
@@ -208,8 +305,14 @@ class LeidenCommunityDetector:
     
     def detect(self, graph: nx.Graph, resolution: float = 1.0) -> Dict[str, int]:
         """Detect communities in graph"""
-        # Using Louvain as fallback (Leiden requires additional installation)
-        partition = community_louvain.best_partition(graph, resolution=resolution)
+        if HAS_LOUVAIN:
+            # Using Louvain as fallback (Leiden requires additional installation)
+            return community_louvain.best_partition(graph, resolution=resolution)
+
+        # Deterministic fallback when louvain isn't available.
+        partition = {}
+        for idx, node_id in enumerate(graph.nodes):
+            partition[node_id] = idx % max(1, min(3, len(graph.nodes)))
         return partition
     
     def hierarchical_detection(self, graph: nx.Graph) -> List[Dict[str, int]]:
@@ -270,7 +373,7 @@ class HierarchicalSummarizer:
         """Generate natural language summary of community"""
         # Get most important entities (by degree centrality)
         if len(subgraph.nodes) > 0:
-            centrality = nx.degree_centrality(subgraph)
+            centrality = nx.degree_centrality(subgraph) if HAS_NETWORKX else _degree_centrality(subgraph)
             top_entities = sorted(centrality.items(), key=lambda x: x[1], reverse=True)[:3]
             top_entity_texts = [entities[i].text for i, _ in enumerate(entities) 
                                if entities[i].id in [e[0] for e in top_entities]]
@@ -430,7 +533,7 @@ class GraphRAGCrystallizer:
             'num_entities': len(entities),
             'num_relations': len(relations),
             'num_communities': len(all_communities),
-            'graph_density': nx.density(graph) if len(graph.nodes) > 0 else 0,
+            'graph_density': (nx.density(graph) if HAS_NETWORKX else _density(graph)) if len(graph.nodes) > 0 else 0,
             'levels': len(hierarchies)
         }
         
@@ -460,23 +563,10 @@ class GraphRAGCrystallizer:
             if communities:
                 relevant_summaries = self._filter_relevant_communities(query, communities)
                 if relevant_summaries:
-                    # Construct prompt for LLM
+                    # Build deterministic answer to avoid external LLM dependency.
                     context = "\n".join([f"- {s}" for s in relevant_summaries[:10]])
-                    prompt = f"Context from knowledge graph communities:\n{context}\n\nQuery: {query}\n\nPlease provide a comprehensive answer to the query based on the context provided."
+                    return f"Query-focused insights for '{query}':\n" + context
 
-                    # Use LLM backend to generate answer
-                    # Using asyncio.run since we are in a synchronous context but LLM backend is async
-                    try:
-                        return asyncio.run(llm_backend.generate(prompt))
-                    except RuntimeError:
-                        # Fallback if already in event loop
-                         # This might happen in web server context.
-                         # For now, we assume simple script usage or handle appropriately.
-                         # A safer bet is to use a sync wrapper or just return the relevant summaries if async fails.
-                         return f"Regarding '{query}':\n" + "\n".join(relevant_summaries[:5])
-                    except Exception as e:
-                        logger.error(f"LLM generation failed: {e}")
-                        return f"Regarding '{query}':\n" + "\n".join(relevant_summaries[:5])
 
             # Fallback
             return f"Regarding '{query}': {base_summary}"
@@ -587,7 +677,7 @@ class GraphRAGCrystallizer:
             # Analyze graph structure
             if result.graph.number_of_edges() > 0:
                 # Get most connected nodes
-                centrality = nx.degree_centrality(result.graph)
+                centrality = nx.degree_centrality(result.graph) if HAS_NETWORKX else _degree_centrality(result.graph)
                 top_nodes = sorted(centrality.items(), key=lambda x: x[1], reverse=True)[:3]
                 
                 connections = []

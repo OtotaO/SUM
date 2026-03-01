@@ -3,10 +3,15 @@ RAPTOR: Recursive Abstractive Processing for Tree-Organized Retrieval
 Implements hierarchical tree-based summarization with multi-level abstraction
 """
 
+from __future__ import annotations
+
 import numpy as np
 from typing import List, Dict, Any, Optional, Tuple
 from dataclasses import dataclass
-import networkx as nx
+try:
+    import networkx as nx
+except ImportError:
+    nx = None
 from collections import defaultdict
 import hashlib
 import asyncio
@@ -197,23 +202,27 @@ class RAPTORBuilder:
         n_clusters = min(n_chunks // self.min_cluster_size, int(np.sqrt(n_chunks)))
         n_clusters = max(2, n_clusters)
         
-        # Perform clustering
-        if n_chunks < 10:
-            # Use hierarchical clustering for small sets
-            clustering = AgglomerativeClustering(
-                n_clusters=n_clusters,
-                metric='cosine',
-                linkage='average'
-            )
+        if not HAS_SKLEARN:
+            # Simple deterministic fallback when sklearn is unavailable.
+            labels = np.array([idx % n_clusters for idx in range(n_chunks)])
         else:
-            # Use K-means for larger sets
-            clustering = KMeans(
-                n_clusters=n_clusters,
-                random_state=42,
-                n_init=10
-            )
-        
-        labels = clustering.fit_predict(embeddings)
+            # Perform clustering
+            if n_chunks < 10:
+                # Use hierarchical clustering for small sets
+                clustering = AgglomerativeClustering(
+                    n_clusters=n_clusters,
+                    metric='cosine',
+                    linkage='average'
+                )
+            else:
+                # Use K-means for larger sets
+                clustering = KMeans(
+                    n_clusters=n_clusters,
+                    random_state=42,
+                    n_init=10
+                )
+
+            labels = clustering.fit_predict(embeddings)
         
         # Group chunks by cluster
         clusters = defaultdict(list)
