@@ -4,8 +4,9 @@ Enhanced Flask Application Factory with Robustness Improvements
 import os
 import logging
 import time
+from importlib import import_module
 from datetime import datetime
-from flask import Flask, request, g, jsonify
+from flask import Flask, request, g, jsonify, has_request_context
 from config import active_config
 from utils.database_pool import DatabaseManager
 from utils.request_queue import RequestQueue
@@ -15,6 +16,24 @@ from utils.streaming_file_processor import StreamingFileProcessor
 import asyncio
 
 logger = logging.getLogger(__name__)
+
+
+def _load_optional_attr(module_name, attr_name):
+    """Load optional attribute from module, logging when unavailable."""
+    try:
+        module = import_module(module_name)
+        return getattr(module, attr_name)
+    except (ImportError, AttributeError) as exc:
+        logger.warning("Optional dependency unavailable: %s.%s (%s)", module_name, attr_name, exc)
+        return None
+
+
+DatabaseManager = _load_optional_attr('Utils.database_pool', 'DatabaseManager')
+RequestQueue = _load_optional_attr('Utils.request_queue', 'RequestQueue')
+ErrorRecoveryManager = _load_optional_attr('Utils.error_recovery', 'ErrorRecoveryManager')
+StreamingFileProcessor = _load_optional_attr('Utils.streaming_file_processor', 'StreamingFileProcessor')
+
+FileValidator = _load_optional_attr('Utils.file_validator', 'FileValidator')
 
 # Global instances for shared resources
 db_manager = None
@@ -71,15 +90,18 @@ def create_robust_app(config=None):
 
 def configure_enhanced_logging(config):
     """Configure enhanced logging with structured output"""
-    import json
-    from pythonjsonlogger import jsonlogger
+    try:
+        from pythonjsonlogger import jsonlogger
+        formatter = jsonlogger.JsonFormatter(
+            '%(timestamp)s %(level)s %(name)s %(message)s',
+            timestamp=True
+        )
+    except ImportError:
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - %(message)s')
+        logger.warning("pythonjsonlogger unavailable; falling back to plain logging formatter")
     
     # JSON formatter for structured logs
     logHandler = logging.StreamHandler()
-    formatter = jsonlogger.JsonFormatter(
-        '%(timestamp)s %(level)s %(name)s %(message)s',
-        timestamp=True
-    )
     logHandler.setFormatter(formatter)
     
     # File handler with rotation
@@ -102,7 +124,7 @@ def configure_enhanced_logging(config):
     
     class RequestIdFilter(logging.Filter):
         def filter(self, record):
-            record.request_id = getattr(g, 'request_id', 'no-request')
+            record.request_id = getattr(g, 'request_id', 'no-request') if has_request_context() else 'no-request'
             return True
     
     for handler in logging.root.handlers:
@@ -113,31 +135,43 @@ def initialize_robust_components(app, config):
     global db_manager, request_queue, error_manager, file_validator, streaming_processor
     
     # Database connection pool
-    db_manager = DatabaseManager(
-        db_type='sqlite',
-        database_path=os.path.join(config.DATA_DIR, 'sum_knowledge.db'),
-        pool_size=10,
-        max_overflow=20
-    )
+    if DatabaseManager:
+        db_manager = DatabaseManager(
+            db_type='sqlite',
+            database_path=os.path.join(config.DATA_DIR, 'sum_knowledge.db'),
+            pool_size=10,
+            max_overflow=20
+        )
+    else:
+        db_manager = None
     
     # Request queue system
-    request_queue = RequestQueue(
-        max_concurrent_requests=app.config['MAX_CONCURRENT_REQUESTS'],
-        max_queue_size=200,
-        memory_threshold_percent=app.config['MEMORY_THRESHOLD_PERCENT'],
-        cpu_threshold_percent=app.config['CPU_THRESHOLD_PERCENT']
-    )
+    if RequestQueue:
+        request_queue = RequestQueue(
+            max_concurrent_requests=app.config['MAX_CONCURRENT_REQUESTS'],
+            max_queue_size=200,
+            memory_threshold_percent=app.config['MEMORY_THRESHOLD_PERCENT'],
+            cpu_threshold_percent=app.config['CPU_THRESHOLD_PERCENT']
+        )
+    else:
+        request_queue = None
     
     # Error recovery manager
-    error_manager = ErrorRecoveryManager()
+    if ErrorRecoveryManager:
+        error_manager = ErrorRecoveryManager()
+    else:
+        error_manager = None
     
     # File validator
-    file_validator = FileValidator()
+    file_validator = FileValidator() if FileValidator else None
     
     # Streaming file processor
-    streaming_processor = StreamingFileProcessor(
-        temp_dir=os.path.join(config.DATA_DIR, 'temp')
-    )
+    if StreamingFileProcessor:
+        streaming_processor = StreamingFileProcessor(
+            temp_dir=os.path.join(config.DATA_DIR, 'temp')
+        )
+    else:
+        streaming_processor = None
     
     # Store in app context
     app.db_manager = db_manager
@@ -147,38 +181,43 @@ def initialize_robust_components(app, config):
     app.streaming_processor = streaming_processor
     
     # Start request queue processing
-    @app.before_first_request
-    async def start_queue():
-        if not request_queue.is_running:
-            await request_queue.start()
-            logger.info("Request queue started")
+    if request_queue:
+        @app.before_request
+        def start_queue():
+            if not getattr(request_queue, 'is_running', False):
+                try:
+                    asyncio.run(request_queue.start())
+                    logger.info("Request queue started")
+                except Exception as exc:
+                    logger.warning("Failed to start request queue: %s", exc)
 
 def register_blueprints(app):
     """Register all application blueprints"""
-    from api.summarization import summarization_bp
-    from api.ai_models import ai_models_bp
-    from api.compression import compression_bp
-    from api.file_processing import file_processing_bp
-    from api.collaborative_intelligence import collaborative_bp
-    from api.memory_api import memory_bp
-    from api.streaming import streaming_bp
-    from api.feedback_api import feedback_bp
-    from api.health import health_bp
-    from api.async_file_processing import async_file_bp
-    from web.routes import web_bp
-    
-    # Register with URL prefixes
-    app.register_blueprint(summarization_bp, url_prefix='/api')
-    app.register_blueprint(ai_models_bp, url_prefix='/api/ai')
-    app.register_blueprint(compression_bp, url_prefix='/api')
-    app.register_blueprint(file_processing_bp, url_prefix='/api')
-    app.register_blueprint(collaborative_bp, url_prefix='/api/collaborative')
-    app.register_blueprint(memory_bp, url_prefix='/api')
-    app.register_blueprint(streaming_bp, url_prefix='/api')
-    app.register_blueprint(feedback_bp, url_prefix='/api')
-    app.register_blueprint(health_bp, url_prefix='/api')
-    app.register_blueprint(async_file_bp, url_prefix='/api')
-    app.register_blueprint(web_bp)
+    blueprint_specs = [
+        ('api.summarization', 'summarization_bp', '/api', True),
+        ('api.file_processing', 'file_processing_bp', '/api', True),
+        ('api.health', 'health_bp', '/api', True),
+        ('web.routes', 'web_bp', None, True),
+        ('api.ai_models', 'ai_models_bp', '/api/ai', False),
+        ('api.compression', 'compression_bp', '/api', False),
+        ('api.collaborative_intelligence', 'collaborative_bp', '/api/collaborative', False),
+        ('api.memory_api', 'memory_bp', '/api', False),
+        ('api.streaming', 'streaming_bp', '/api', False),
+        ('api.feedback_api', 'feedback_bp', '/api', False),
+        ('api.async_file_processing', 'async_file_bp', '/api', False),
+    ]
+
+    for module_name, blueprint_name, prefix, is_core in blueprint_specs:
+        blueprint = _load_optional_attr(module_name, blueprint_name)
+        if blueprint is None:
+            if is_core:
+                logger.warning("Skipping core blueprint %s due to import failure", module_name)
+            continue
+
+        if prefix:
+            app.register_blueprint(blueprint, url_prefix=prefix)
+        else:
+            app.register_blueprint(blueprint)
 
 def register_enhanced_error_handlers(app):
     """Register enhanced error handlers with recovery"""
@@ -187,45 +226,57 @@ def register_enhanced_error_handlers(app):
     
     @app.errorhandler(404)
     def not_found(error):
-        error_context = error_manager.track_error(
-            error, 
-            {'path': request.path, 'method': request.method}
-        )
+        if error_manager:
+            error_context = error_manager.track_error(
+                error,
+                {'path': request.path, 'method': request.method}
+            )
+            error_id = error_context.timestamp.timestamp()
+        else:
+            error_id = int(time.time())
         
         return jsonify({
             'error': True,
             'message': 'Resource not found',
             'path': request.path,
-            'error_id': error_context.timestamp.timestamp()
+            'error_id': error_id
         }), 404
     
     @app.errorhandler(ValidationError)
     def validation_error(error):
-        error_context = error_manager.track_error(
-            error,
-            {'endpoint': request.endpoint, 'data': request.get_json()}
-        )
+        if error_manager:
+            error_context = error_manager.track_error(
+                error,
+                {'endpoint': request.endpoint, 'data': request.get_json(silent=True)}
+            )
+            error_id = error_context.timestamp.timestamp()
+        else:
+            error_id = int(time.time())
         
         return jsonify({
             'error': True,
             'message': str(error),
             'field': error.details.get('field'),
-            'error_id': error_context.timestamp.timestamp()
+            'error_id': error_id
         }), 400
     
     @app.errorhandler(500)
     def server_error(error):
-        error_context = error_manager.track_error(
-            error,
-            {
-                'path': request.path,
-                'method': request.method,
-                'headers': dict(request.headers)
-            }
-        )
+        if error_manager:
+            error_context = error_manager.track_error(
+                error,
+                {
+                    'path': request.path,
+                    'method': request.method,
+                    'headers': dict(request.headers)
+                }
+            )
+            error_id = error_context.timestamp.timestamp()
+        else:
+            error_id = int(time.time())
         
         # Check if we can recover
-        recovery_func = error_manager.recovery_strategies.get(type(error))
+        recovery_func = error_manager.recovery_strategies.get(type(error)) if error_manager else None
         if recovery_func:
             try:
                 recovery_result = asyncio.run(recovery_func(error, {}))
@@ -241,13 +292,13 @@ def register_enhanced_error_handlers(app):
                 'error': True,
                 'message': 'Internal server error',
                 'details': str(error),
-                'error_id': error_context.timestamp.timestamp()
+                'error_id': error_id
             }), 500
         else:
             return jsonify({
                 'error': True,
                 'message': 'An error occurred processing your request',
-                'error_id': error_context.timestamp.timestamp(),
+                'error_id': error_id,
                 'support': 'Please contact support with this error ID'
             }), 500
 
