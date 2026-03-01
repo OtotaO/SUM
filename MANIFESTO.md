@@ -47,7 +47,7 @@ This is not a refactor. This is a **revolution**.
 
 ```
 Before: 
-User → Web → API → Application → Domain → Infrastructure → Models → Utils → ???
+User → Web → API → Application → Domain → Infrastructure → Models → utils → ???
 
 After:
 User → API → Logic → Database

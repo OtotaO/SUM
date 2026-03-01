@@ -106,6 +106,12 @@ jobs:
       run: |
         pip install flake8 black isort mypy
     
+    - name: Enforce canonical utils package imports
+      run: |
+        if rg -n "\bfrom Utils\.|\bimport Utils\b|Utils/" --glob '!Utils/**'; then
+          echo "❌ Found non-canonical Utils references. Use lowercase utils package paths only."
+          exit 1
+        fi
     - name: Run linters
       run: |
         # Define targets
