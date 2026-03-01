@@ -109,7 +109,7 @@ This document establishes a comprehensive naming convention standard for the SUM
 - `engines/`
 
 ❌ **Incorrect:**
-- `Utils/` (capitalized)
+- `utils/` (capitalized)
 - `AI_Models/` (mixed case)
 - `Text-Processing/` (hyphenated)
 

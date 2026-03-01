@@ -38,7 +38,7 @@ class Config:
     # Directory paths
     DATA_DIR = os.path.join(BASE_DIR, 'Data')
     MODELS_DIR = os.path.join(BASE_DIR, 'Models')
-    UTILS_DIR = os.path.join(BASE_DIR, 'Utils')
+    UTILS_DIR = os.path.join(BASE_DIR, 'utils')
     OUTPUT_DIR = os.path.join(BASE_DIR, 'Output')
     UPLOADS_DIR = os.path.join(BASE_DIR, 'uploads')
     TEMP_DIR = os.path.join(BASE_DIR, 'temp')
@@ -55,7 +55,7 @@ class Config:
     VECTORIZER_MODEL = os.path.join(MODELS_DIR, 'vectorizer_model.pkl')
     NAIVE_BAYES_MODEL = os.path.join(MODELS_DIR, 'naive_bayes_model.pkl')
 
-    # Utils paths
+    # utils paths
     STOP_WORDS_FILE = os.path.join(UTILS_DIR, 'stop_words.txt')
 
     # Output paths

@@ -10,7 +10,7 @@ After reviewing the SUM project with Occam's Razor, Carmack's performance obsess
 
 ### 1. **Too Many Abstractions**
 ```
-Current: Web → API → Application → Domain → Infrastructure → Models → Utils
+Current: Web → API → Application → Domain → Infrastructure → Models → utils
 Better:  API → Core → Storage
 ```
 
