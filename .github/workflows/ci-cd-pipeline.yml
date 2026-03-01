@@ -58,7 +58,7 @@ jobs:
       
     - name: Test with pytest
       run: |
-        pytest tests/ -v --cov=. --cov-report=xml --cov-report=html
+        pytest Tests/ -v --cov=. --cov-report=xml --cov-report=html
         
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
@@ -164,7 +164,7 @@ jobs:
         
     - name: Run performance benchmarks
       run: |
-        pytest tests/test_performance.py --benchmark-json=benchmark.json
+        pytest Tests/test_performance.py --benchmark-json=benchmark.json
         
     - name: Store benchmark result
       uses: benchmark-action/github-action-benchmark@v1
@@ -198,12 +198,12 @@ jobs:
       run: |
         echo "🔍 Running health checks on staging deployment"
         # curl -f http://staging.sum-ai.com/health || exit 1
-        # python tests/integration/test_staging.py
+        # python Tests/integration/test_staging.py
         
     - name: Run smoke tests
       run: |
         echo "💨 Running smoke tests"
-        # pytest tests/smoke/ --staging
+        # pytest Tests/smoke/ --staging
 
   # Deploy to Production
   deploy-production:
@@ -246,7 +246,7 @@ jobs:
       run: |
         echo "🔍 Running production health checks"
         # curl -f https://api.sum-ai.com/health || exit 1
-        # python tests/integration/test_production.py
+        # python Tests/integration/test_production.py
         
     - name: Update monitoring dashboards
       run: |

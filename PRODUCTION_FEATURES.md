@@ -20,7 +20,7 @@ This document describes the production-grade enhancements added to the SUM platf
 
 **Run Tests:**
 ```bash
-python tests/test_comprehensive_suite.py
+python Tests/test_comprehensive_suite.py
 ```
 
 #### 2. **Webhook System** (`infrastructure/webhook_system.py`)
@@ -174,7 +174,7 @@ python main_production.py
 
 ### **4. Run Tests**
 ```bash
-python tests/test_comprehensive_suite.py
+python Tests/test_comprehensive_suite.py
 ```
 
 ---

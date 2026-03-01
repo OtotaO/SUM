@@ -60,7 +60,7 @@ def main():
     if args.tests:
         pytest_args.extend(args.tests)
     else:
-        pytest_args.append('tests')
+        pytest_args.append('Tests')
     
     # Add options
     if not args.slow:
