@@ -42,8 +42,11 @@ Our revolutionary UI features a single slider that controls knowledge density.
 git clone https://github.com/OtotaO/SUM.git
 cd SUM
 
-# Install dependencies
+# Install core (basic) dependencies
 pip install -r requirements.txt
+
+# Optional: enable legendary features (GraphRAG/RAPTOR/advanced integrations)
+pip install -r requirements-legendary.txt
 
 # Run the Universal Engine
 python main.py

@@ -24,7 +24,12 @@ cd SUM
 
 ### Step 2: Install
 ```bash
+# Basic runtime
 pip install -r requirements.txt
+
+# Optional legendary feature set
+pip install -r requirements-legendary.txt
+
 python -c "import nltk; nltk.download('punkt'); nltk.download('stopwords'); nltk.download('vader_lexicon')"
 ```
 
@@ -73,7 +78,12 @@ git clone https://github.com/OtotaO/SUM.git
 cd SUM
 python -m venv sum_env
 source sum_env/bin/activate  # or sum_env\Scripts\activate on Windows
+# Basic runtime
 pip install -r requirements.txt
+
+# Optional legendary feature set
+pip install -r requirements-legendary.txt
+
 python main.py
 ```
 **Advantages**: Full control, easier development
@@ -144,6 +154,8 @@ engine = SumEngine(
 ### Common Issues
 
 **Import Error**: Ensure you're in the SUM directory: `cd SUM`
+
+**Missing legendary features**: Install optional dependencies: `pip install -r requirements-legendary.txt`
 
 **NLTK Missing**: Run: `python -c "import nltk; nltk.download('punkt')"`  
 
