@@ -133,7 +133,7 @@ All legendary endpoints return comprehensive results including:
 Run the comprehensive test suite:
 
 ```bash
-pytest tests/test_legendary.py -v
+pytest Tests/test_legendary.py -v
 ```
 
 ## 🎯 Use Cases

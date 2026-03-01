@@ -8,6 +8,11 @@ from importlib import import_module
 from datetime import datetime
 from flask import Flask, request, g, jsonify, has_request_context
 from config import active_config
+from utils.database_pool import DatabaseManager
+from utils.request_queue import RequestQueue
+from utils.error_recovery import ErrorRecoveryManager
+from utils.file_validator import FileValidator
+from utils.streaming_file_processor import StreamingFileProcessor
 import asyncio
 
 logger = logging.getLogger(__name__)
@@ -217,7 +222,7 @@ def register_blueprints(app):
 def register_enhanced_error_handlers(app):
     """Register enhanced error handlers with recovery"""
     from flask import jsonify
-    from Utils.error_handler import SUMException, ValidationError
+    from utils.error_handler import SUMException, ValidationError
     
     @app.errorhandler(404)
     def not_found(error):

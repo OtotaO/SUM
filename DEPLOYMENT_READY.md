@@ -92,7 +92,7 @@ kubectl apply -f k8s/
 
 ```bash
 # Run tests
-pytest tests/ -v
+pytest Tests/ -v
 
 # Check code quality
 black sum_simple.py sum_intelligence.py
@@ -124,7 +124,7 @@ We took away 98% of the code and made it 10x better.
 
 Before deploying to production:
 
-- [ ] Run all tests: `pytest tests/ -v`
+- [ ] Run all tests: `pytest Tests/ -v`
 - [ ] Check Docker builds: `docker-compose build`
 - [ ] Verify health endpoints: `curl localhost:3000/health`
 - [ ] Review monitoring setup
