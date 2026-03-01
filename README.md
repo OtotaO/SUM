@@ -61,6 +61,18 @@ python main.py
    - Slide **Right** to expand into a book.
 4. **Watch** the transformation happen in real-time.
 
+
+## Moonshot Focus: Text-First at Massive Scale
+
+To align with the long-term vision ("tomes to tags" and back), SUM is now prioritizing a text-first execution plan with:
+
+- **Bi-directional density contracts** from tags → digest → article → book.
+- **Arbitrary-size processing** via hierarchical streaming and map-reduce style synthesis.
+- **Running-total progress telemetry** (phase, items, tokens, throughput, ETA) surfaced live in UI and APIs.
+- **Multi-model routing** for extraction, summarization, and extrapolation with fallback chains.
+
+See detailed implementation plan: **[`TEXT_FIRST_MOONSHOT_PLAN.md`](TEXT_FIRST_MOONSHOT_PLAN.md)**.
+
 ## Technology Stack
 
 - **Backend**: Python, Flask, Universal LLM Backend (OpenAI/Ollama/Local)
