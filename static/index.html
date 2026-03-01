@@ -567,6 +567,38 @@
             const logContainer = document.getElementById('log-container');
             const summaryOutput = document.getElementById('summary-output');
 
+            const progressPanel = document.createElement('div');
+            progressPanel.className = 'result-card';
+            progressPanel.id = 'running-total-panel';
+            progressPanel.innerHTML = `
+                <div class="result-label">📈 Running Total</div>
+                <div id="running-total-metrics" style="font-family: monospace; white-space: pre-wrap; line-height: 1.6;">Initializing...</div>
+            `;
+            logContainer.appendChild(progressPanel);
+
+            function updateRunningTotal(event) {
+                const metrics = document.getElementById('running-total-metrics');
+                if (!metrics) return;
+
+                const running = event.running_total || {};
+                const completed = running.completed_items ?? 0;
+                const total = running.total_items ?? '?';
+                const pct = running.percentage != null ? `${running.percentage.toFixed(1)}%` : 'n/a';
+                const bytes = running.bytes_processed != null ? running.bytes_processed.toLocaleString() : '0';
+                const bytesTotal = running.total_bytes != null ? running.total_bytes.toLocaleString() : '?';
+                const throughput = running.throughput_bytes_per_sec != null ? `${Math.round(running.throughput_bytes_per_sec).toLocaleString()} B/s` : 'n/a';
+                const eta = running.eta_seconds != null ? `${Math.round(running.eta_seconds)}s` : 'n/a';
+                const route = event.model_route || {};
+
+                metrics.textContent =
+`Phase       : ${event.phase || 'unknown'}
+Progress    : ${completed}/${total} (${pct})
+Bytes       : ${bytes}/${bytesTotal}
+Throughput  : ${throughput}
+ETA         : ${eta}
+Model route : extract=${(route.extract || []).join(' -> ') || 'default'} | chunk=${(route.chunk || []).join(' -> ') || 'default'} | combine=${(route.combine || []).join(' -> ') || 'default'}`;
+            }
+
             if (currentTab === 'file') {
                 const formData = new FormData();
                 formData.append('file', selectedFile);
@@ -591,9 +623,7 @@
                 if (done) break;
 
                 buffer += decoder.decode(value, {stream: true});
-                const lines = buffer.split('
-
-');
+                const lines = buffer.split('\n\n');
                 buffer = lines.pop(); // keep the last incomplete chunk in the buffer
 
                 for (const line of lines) {
@@ -609,10 +639,14 @@
                                 logContainer.appendChild(logEntry);
                                 // Auto scroll
                                 window.scrollTo(0, document.body.scrollHeight);
+                            } else if (json.type === 'progress') {
+                                updateRunningTotal(json);
                             } else if (json.type === 'result') {
                                 displayResult(json.data, density);
                             } else if (json.type === 'error') {
                                 showError(json.content);
+                            } else if (json.status === 'initializing') {
+                                updateRunningTotal({ phase: 'initialize', running_total: { completed_items: 0, total_items: 0 } });
                             }
                         } catch (e) {
                             console.error('Error parsing SSE', e, dataStr);
