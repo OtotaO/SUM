@@ -52,26 +52,16 @@ def install_legendary_features():
     
     if response != 'n':
         print("\n🚀 Installing legendary features...")
-        packages = [
-            "sentence-transformers",
-            "scikit-learn",
-            "spacy",
-            "python-louvain",
-            "openai",
-            "anthropic"
-        ]
-        
-        for package in packages:
-            print(f"  Installing {package}...")
-            subprocess.run([sys.executable, "-m", "pip", "install", package], 
-                         capture_output=True, check=False)
-        
-        # Download spacy model
-        print("  Downloading language model...")
-        subprocess.run([sys.executable, "-m", "spacy", "download", "en_core_web_sm"], 
-                      capture_output=True, check=False)
-        
-        print("✅ Legendary features installed!")
+        legendary_requirements = "requirements-legendary.txt"
+
+        if os.path.exists(legendary_requirements):
+            subprocess.run(
+                [sys.executable, "-m", "pip", "install", "-r", legendary_requirements],
+                check=False,
+            )
+            print("✅ Legendary features installed!")
+        else:
+            print(f"⚠️  {legendary_requirements} not found. Skipping optional install.")
     else:
         print("⚠️  Skipping legendary features (basic mode)")
 
