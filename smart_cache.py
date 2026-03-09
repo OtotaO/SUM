@@ -34,6 +34,7 @@ class CacheEntry:
     """Represents a cached summary."""
     content_hash: str
     summary: Dict[str, Any]
+    text_preview: str
     text_length: int
     model_type: str
     config_hash: str
@@ -58,8 +59,9 @@ class SmartCache:
     def __init__(self,
                  cache_dir: str = ".sum_cache",
                  max_size_mb: int = 1024,
-                 default_ttl_hours: int = 168,  # 1 week
-                 similarity_threshold: float = 0.95):
+                 default_ttl_hours: float = 168,  # 1 week
+                 similarity_threshold: float = 0.95,
+                 max_entries: int = 1000):
         """
         Initialize smart cache.
         
@@ -73,8 +75,14 @@ class SmartCache:
         self.cache_dir.mkdir(exist_ok=True)
         
         self.max_size_bytes = max_size_mb * 1024 * 1024
-        self.default_ttl = timedelta(hours=default_ttl_hours)
+        # Keep timedelta for internal calculations while exposing seconds for
+        # backward compatibility with existing callers/tests.
+        self._default_ttl_delta = timedelta(hours=default_ttl_hours)
+        self.default_ttl = self._default_ttl_delta.total_seconds()
         self.similarity_threshold = similarity_threshold
+        self.max_entries = max_entries
+        self.hits = 0
+        self.misses = 0
         
         # Initialize database
         self.db_path = self.cache_dir / "cache.db"
@@ -105,9 +113,14 @@ class SmartCache:
                     last_accessed REAL,
                     access_count INTEGER,
                     processing_time REAL,
+                    text_preview TEXT,
                     embedding BLOB
                 )
             """)
+
+            columns = [row[1] for row in conn.execute("PRAGMA table_info(cache_entries)").fetchall()]
+            if 'text_preview' not in columns:
+                conn.execute("ALTER TABLE cache_entries ADD COLUMN text_preview TEXT DEFAULT ''")
             
             conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_last_accessed 
@@ -140,13 +153,21 @@ class SmartCache:
         
         with self.cache_lock:
             # Check memory cache first
-            cache_key = f"{content_hash}:{model_type}:{config_hash}"
+            cache_key = self._get_cache_key(text, model_type, config)
             if cache_key in self.memory_cache:
                 entry = self.memory_cache[cache_key]
-                # Update access info
+                if self._is_entry_expired(entry):
+                    del self.memory_cache[cache_key]
+                    self._delete_entry(entry)
+                    self.misses += 1
+                    logger.info(f"Cache expired (memory): {content_hash[:8]}...")
+                    return None
+                # Update access info; persist periodically to keep memory-hit path fast.
                 entry.last_accessed = time.time()
                 entry.access_count += 1
-                self._update_database(entry)
+                if entry.access_count % 10 == 0:
+                    self._update_database(entry)
+                self.hits += 1
                 
                 logger.info(f"Cache hit (memory): {content_hash[:8]}...")
                 return entry.summary
@@ -154,9 +175,15 @@ class SmartCache:
             # Check database
             entry = self._load_from_database(content_hash, model_type, config_hash)
             if entry:
+                if self._is_entry_expired(entry):
+                    self._delete_entry(entry)
+                    self.misses += 1
+                    logger.info(f"Cache expired (disk): {content_hash[:8]}...")
+                    return None
                 # Add to memory cache
                 self.memory_cache[cache_key] = entry
                 self._ensure_memory_limit()
+                self.hits += 1
                 
                 logger.info(f"Cache hit (disk): {content_hash[:8]}...")
                 return entry.summary
@@ -169,6 +196,7 @@ class SmartCache:
                     return similar_entry.summary
                     
         logger.info(f"Cache miss: {content_hash[:8]}...")
+        self.misses += 1
         return None
         
     def put(self,
@@ -195,6 +223,7 @@ class SmartCache:
         entry = CacheEntry(
             content_hash=content_hash,
             summary=summary,
+            text_preview=text[:500],
             text_length=len(text),
             model_type=model_type,
             config_hash=config_hash,
@@ -206,7 +235,7 @@ class SmartCache:
         
         with self.cache_lock:
             # Add to memory cache
-            cache_key = f"{content_hash}:{model_type}:{config_hash}"
+            cache_key = self._get_cache_key(text, model_type, config)
             self.memory_cache[cache_key] = entry
             self._ensure_memory_limit()
             
@@ -246,6 +275,25 @@ class SmartCache:
                 with sqlite3.connect(self.db_path) as conn:
                     conn.execute("DELETE FROM cache_entries")
                 logger.info("Cache cleared")
+
+    def clear(self, pattern: Optional[str] = None) -> int:
+        """Clear cache entries and return the number of removed items."""
+        with self.cache_lock:
+            with sqlite3.connect(self.db_path) as conn:
+                if pattern:
+                    rows = conn.execute(
+                        "SELECT content_hash FROM cache_entries WHERE lower(text_preview) LIKE ?",
+                        (f"%{pattern.lower()}%",)
+                    ).fetchall()
+                    matched_hashes = [row[0] for row in rows]
+                    for content_hash in set(matched_hashes):
+                        self._invalidate_hash(content_hash)
+                    return len(set(matched_hashes))
+
+                removed = conn.execute("SELECT COUNT(*) FROM cache_entries").fetchone()[0]
+                self.memory_cache.clear()
+                conn.execute("DELETE FROM cache_entries")
+                return removed
                 
     def get_stats(self) -> Dict[str, Any]:
         """Get cache statistics."""
@@ -272,9 +320,13 @@ class SmartCache:
             'memory_entries': len(self.memory_cache),
             'total_size_mb': total_size / (1024 * 1024),
             'max_size_mb': self.max_size_bytes / (1024 * 1024),
-            'recent_hits': recent_hits,
+            'recent_hits': self.hits if self.hits else recent_hits,
             'hit_rate': self._calculate_hit_rate()
         }
+
+    def _get_cache_key(self, text: str, model_type: str, config: Dict[str, Any]) -> str:
+        """Build deterministic cache key."""
+        return f"{self._hash_text(text)}:{model_type}:{self._hash_config(config)}"
         
     def _hash_text(self, text: str) -> str:
         """Generate hash for text content."""
@@ -314,7 +366,7 @@ class SmartCache:
     def _ensure_memory_limit(self):
         """Ensure memory cache doesn't exceed size limit."""
         # Simple LRU eviction
-        while len(self.memory_cache) > 1000:  # Max 1000 entries in memory
+        while len(self.memory_cache) > self.max_entries:
             # Remove least recently used
             self.memory_cache.popitem(last=False)
             
@@ -331,7 +383,7 @@ class SmartCache:
     def _cleanup_expired(self):
         """Remove expired entries."""
         with sqlite3.connect(self.db_path) as conn:
-            expired_time = time.time() - self.default_ttl.total_seconds()
+            expired_time = time.time() - self.default_ttl
             conn.execute(
                 "DELETE FROM cache_entries WHERE last_accessed < ?",
                 (expired_time,)
@@ -370,8 +422,8 @@ class SmartCache:
                 INSERT OR REPLACE INTO cache_entries 
                 (content_hash, summary_data, text_length, model_type, 
                  config_hash, created_at, last_accessed, access_count, 
-                 processing_time, embedding)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 processing_time, text_preview, embedding)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 entry.content_hash,
                 pickle.dumps(entry.summary),
@@ -382,6 +434,7 @@ class SmartCache:
                 entry.last_accessed,
                 entry.access_count,
                 entry.processing_time,
+                entry.text_preview,
                 None  # Embedding generated async
             ))
             
@@ -412,6 +465,7 @@ class SmartCache:
             last_accessed=row[6],
             access_count=row[7],
             processing_time=row[8]
+            ,text_preview=row[9] or ""
         )
         
     def _update_database(self, entry: CacheEntry):
@@ -445,6 +499,18 @@ class SmartCache:
                 "DELETE FROM cache_entries WHERE content_hash = ?",
                 (content_hash,)
             )
+
+    def _delete_entry(self, entry: CacheEntry):
+        """Delete a specific cache entry from persistent storage."""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute(
+                "DELETE FROM cache_entries WHERE content_hash = ? AND model_type = ? AND config_hash = ?",
+                (entry.content_hash, entry.model_type, entry.config_hash)
+            )
+
+    def _is_entry_expired(self, entry: CacheEntry) -> bool:
+        """Check whether a cache entry has expired."""
+        return (time.time() - entry.last_accessed) > self.default_ttl
             
     def _generate_embedding(self, content_hash: str, text: str):
         """Generate embedding for similarity matching."""
@@ -479,9 +545,8 @@ class SmartCache:
         
     def _calculate_hit_rate(self) -> float:
         """Calculate cache hit rate."""
-        # This would track hits/misses over time
-        # For now, return a placeholder
-        return 0.0
+        total = self.hits + self.misses
+        return (self.hits / total) if total else 0.0
 
 
 # Global cache instance
@@ -501,26 +566,34 @@ def get_cache() -> SmartCache:
     return _cache_instance
 
 
-def cache_result(func):
+def cache_result(model: Optional[str] = None):
     """Decorator for caching function results."""
-    def wrapper(text: str, model_type: str, config: Dict[str, Any]) -> Dict[str, Any]:
-        cache = get_cache()
-        
-        # Try cache first
-        cached = cache.get(text, model_type, config)
-        if cached:
-            cached['cached'] = True
-            return cached
-            
-        # Process and cache
-        start_time = time.time()
-        result = func(text, model_type, config)
-        processing_time = time.time() - start_time
-        
-        if 'error' not in result:
-            cache.put(text, model_type, config, result, processing_time)
-            
-        result['cached'] = False
-        return result
-        
-    return wrapper
+    def decorator(func):
+        def wrapper(text: str, *args, **kwargs) -> Dict[str, Any]:
+            cache = get_cache()
+            config = kwargs.get("config") or {}
+            model_type = model or kwargs.get("model_type") or func.__name__
+
+            cached = cache.get(text, model_type, config)
+            if cached:
+                cached["cached"] = True
+                return cached
+
+            start_time = time.time()
+            result = func(text, *args, **kwargs)
+            processing_time = time.time() - start_time
+
+            if isinstance(result, dict) and "error" not in result:
+                cache.put(text, model_type, config, result, processing_time)
+
+            if isinstance(result, dict):
+                result["cached"] = False
+            return result
+
+        return wrapper
+
+    if callable(model):
+        func = model
+        model = None
+        return decorator(func)
+    return decorator
