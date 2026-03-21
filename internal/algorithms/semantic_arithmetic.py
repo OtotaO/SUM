@@ -16,6 +16,7 @@ License: Apache License 2.0
 """
 
 import math
+import hashlib
 import logging
 from typing import Dict, List, Tuple, Set
 
@@ -68,7 +69,7 @@ class GodelStateAlgebra:
     """
 
     def __init__(self):
-        self.current_prime: int = 2
+        # Deterministic primes — no sequential watermark needed
         self.axiom_to_prime: Dict[str, int] = {}
         self.prime_to_axiom: Dict[int, str] = {}
 
@@ -88,19 +89,32 @@ class GodelStateAlgebra:
     # Prime minting
     # ------------------------------------------------------------------
 
-    def _next_prime(self) -> int:
-        """Consume and return the current prime, then advance."""
-        p = self.current_prime
-        self.current_prime = sympy.nextprime(self.current_prime)
-        return p
+    def _deterministic_prime(self, axiom_key: str) -> int:
+        """
+        Generates a globally unique, deterministic prime for a given axiom.
+
+        Uses SHA-256 to hash the axiom key into a 64-bit integer space,
+        then finds the next prime.  This allows lock-free LCM merging
+        of Gödel States across branches and distributed networks.
+
+        Args:
+            axiom_key: The normalised axiom string.
+
+        Returns:
+            A deterministic prime number unique to this axiom.
+        """
+        h = hashlib.sha256(axiom_key.encode('utf-8')).digest()
+        seed = int.from_bytes(h[:8], byteorder='big')
+        return sympy.nextprime(seed)
 
     def get_or_mint_prime(self, subject: str, predicate: str, object_: str) -> int:
         """
-        Mint a new Semantic Prime for an irreducible axiom, or return
-        the existing one if we have seen this axiom before.
+        Mint a new Universal Semantic Prime for an irreducible axiom,
+        or return the existing one if we have seen this axiom before.
 
-        The axiom key is case-normalised and whitespace-stripped so that
-        "Alice || age || 30" and "alice||Age|| 30" resolve to the same prime.
+        Uses cryptographic hashing for deterministic, globally consistent
+        prime assignment.  Two isolated instances will always generate
+        the exact same prime for the same axiom.
 
         Args:
             subject:   The entity.
@@ -117,7 +131,12 @@ class GodelStateAlgebra:
         )
 
         if axiom_key not in self.axiom_to_prime:
-            p = self._next_prime()
+            p = self._deterministic_prime(axiom_key)
+
+            # Collision detection (astronomically rare, but required)
+            while p in self.prime_to_axiom and self.prime_to_axiom[p] != axiom_key:
+                p = sympy.nextprime(p)
+
             self.axiom_to_prime[axiom_key] = p
             self.prime_to_axiom[p] = axiom_key
 

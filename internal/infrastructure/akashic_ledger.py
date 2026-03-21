@@ -19,7 +19,7 @@ import sqlite3
 import asyncio
 import logging
 
-import sympy
+
 
 from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
 
@@ -51,7 +51,7 @@ class AkashicLedger:
                 CREATE TABLE IF NOT EXISTS semantic_events (
                     seq_id      INTEGER PRIMARY KEY AUTOINCREMENT,
                     operation   TEXT    NOT NULL,   -- 'MINT', 'MUL', 'DIV'
-                    prime       INTEGER NOT NULL,
+                    prime       TEXT    NOT NULL,   -- Stored as TEXT for arbitrary-precision
                     axiom_key   TEXT
                 )
             """)
@@ -77,11 +77,11 @@ class AkashicLedger:
                 conn.execute(
                     "INSERT INTO semantic_events "
                     "(operation, prime, axiom_key) VALUES (?, ?, ?)",
-                    (operation, prime, axiom_key),
+                    (operation, str(prime), axiom_key),
                 )
 
         await asyncio.to_thread(_write)
-        logger.debug("Ledger ← %s prime=%d axiom=%s", operation, prime, axiom_key)
+        logger.debug("Ledger ← %s prime=%s axiom=%s", operation, prime, axiom_key)
 
     # ------------------------------------------------------------------
     # Crash recovery
@@ -91,8 +91,10 @@ class AkashicLedger:
         """
         Replay the full event trace to reconstruct:
           1. The ``axiom_to_prime`` / ``prime_to_axiom`` mappings.
-          2. The ``current_prime`` watermark.
-          3. The exact global Gödel BigInt.
+          2. The exact global Gödel BigInt.
+
+        Primes are now deterministic (SHA-256 seeded), so no sequential
+        watermark needs to be tracked.
 
         Args:
             algebra: A **fresh** GodelStateAlgebra to populate.
@@ -111,13 +113,11 @@ class AkashicLedger:
 
         global_state = 1
 
-        for op, prime, axiom in events:
+        for op, prime_str, axiom in events:
+            prime = int(prime_str)
             if op == "MINT":
                 algebra.axiom_to_prime[axiom] = prime
                 algebra.prime_to_axiom[prime] = axiom
-                # Ensure the watermark stays ahead of all minted primes.
-                if prime >= algebra.current_prime:
-                    algebra.current_prime = sympy.nextprime(prime)
             elif op == "MUL":
                 global_state = math.lcm(global_state, prime)
             elif op == "DIV":
