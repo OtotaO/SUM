@@ -10,6 +10,9 @@ Operations:
     MUL  — a prime was multiplied into the global state (LCM)
     DIV  — a prime was divided out of the global state (deletion)
 
+The Chronos Engine (Phase 10) adds time-travel capability by allowing
+historical state rebuilds up to any specific ledger tick (``max_seq_id``).
+
 Author: ototao
 License: Apache License 2.0
 """
@@ -18,8 +21,6 @@ import math
 import sqlite3
 import asyncio
 import logging
-
-
 
 from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
 
@@ -34,6 +35,10 @@ class AkashicLedger:
     change, we append a single O(1) mathematical trace (``MINT``,
     ``MUL``, ``DIV``).  The exact BigInt can be rebuilt at any time by
     replaying the trace in order.
+
+    The Chronos Engine enables O(1) Time Travel by replaying only up
+    to a given ``max_seq_id``, reconstructing the universe as it
+    existed at any historical tick.
     """
 
     def __init__(self, db_path: str = "akashic.db"):
@@ -84,36 +89,48 @@ class AkashicLedger:
         logger.debug("Ledger ← %s prime=%s axiom=%s", operation, prime, axiom_key)
 
     # ------------------------------------------------------------------
-    # Crash recovery
+    # Crash recovery & Time Travel (Chronos Engine)
     # ------------------------------------------------------------------
 
-    async def rebuild_state(self, algebra: GodelStateAlgebra) -> int:
+    async def rebuild_state(
+        self, algebra: GodelStateAlgebra, max_seq_id: int = None
+    ) -> int:
         """
-        Replay the full event trace to reconstruct:
-          1. The ``axiom_to_prime`` / ``prime_to_axiom`` mappings.
-          2. The exact global Gödel BigInt.
+        Replay the event trace to reconstruct the Gödel BigInt.
 
-        Primes are now deterministic (SHA-256 seeded), so no sequential
+        When ``max_seq_id`` is provided, only events up to that tick
+        are replayed, enabling **O(1) Time Travel** — the exact state
+        of knowledge at any historical moment can be reconstructed
+        into an alternate timeline branch.
+
+        Primes are deterministic (SHA-256 seeded), so no sequential
         watermark needs to be tracked.
 
         Args:
-            algebra: A **fresh** GodelStateAlgebra to populate.
+            algebra:    A GodelStateAlgebra to populate.
+            max_seq_id: Optional tick limit for time-travel rebuilds.
 
         Returns:
             The reconstructed global state integer.
         """
         def _read():
             with sqlite3.connect(self.db_path) as conn:
-                return conn.execute(
-                    "SELECT operation, prime, axiom_key "
-                    "FROM semantic_events ORDER BY seq_id ASC"
-                ).fetchall()
+                query = (
+                    "SELECT seq_id, operation, prime, axiom_key "
+                    "FROM semantic_events"
+                )
+                params = []
+                if max_seq_id is not None:
+                    query += " WHERE seq_id <= ?"
+                    params.append(max_seq_id)
+                query += " ORDER BY seq_id ASC"
+                return conn.execute(query, params).fetchall()
 
         events = await asyncio.to_thread(_read)
 
         global_state = 1
 
-        for op, prime_str, axiom in events:
+        for seq_id, op, prime_str, axiom in events:
             prime = int(prime_str)
             if op == "MINT":
                 algebra.axiom_to_prime[axiom] = prime
@@ -130,3 +147,26 @@ class AkashicLedger:
             global_state.bit_length(),
         )
         return global_state
+
+    # ------------------------------------------------------------------
+    # Chronos Engine — Tick Query
+    # ------------------------------------------------------------------
+
+    async def get_latest_tick(self) -> int:
+        """
+        Return the latest sequence ID (tick) in the ledger.
+
+        This represents the current "time" of the knowledge universe
+        and can be used as a bookmark for time-travel operations.
+
+        Returns:
+            The highest ``seq_id``, or 0 if the ledger is empty.
+        """
+        def _read():
+            with sqlite3.connect(self.db_path) as conn:
+                res = conn.execute(
+                    "SELECT MAX(seq_id) FROM semantic_events"
+                ).fetchone()
+                return res[0] if res[0] else 0
+
+        return await asyncio.to_thread(_read)

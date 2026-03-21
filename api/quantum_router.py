@@ -10,6 +10,10 @@ Exposes the Gödel-State Engine to the outside world via FastAPI:
     /query           – O(1) GraphRAG neighbourhood retrieval
     /branch          – O(1) epistemic branching (Git for Truth)
     /merge           – O(1) LCM-based branch merging
+    /time-travel     – Chronos Engine (O(1) historical state rebuild)
+    /peers           – P2P Holographic Mesh peer management
+    /zk/prove        – Zero-Knowledge Semantic Proofs
+    /tick            – Current Akashic Ledger tick
 
 The ``GlobalKnowledgeOS`` singleton boots from the Akashic Ledger on
 startup, rebuilding the exact Gödel BigInt from the SQLite trace.
@@ -32,6 +36,8 @@ from internal.ensemble.vector_bridge import ContinuousDiscreteBridge
 from internal.infrastructure.akashic_ledger import AkashicLedger
 from internal.ensemble.epistemic_loop import QuantumExtrapolator
 from internal.ensemble.causal_triggers import CausalTriggerMap
+from internal.algorithms.zk_semantics import ZKSemanticProver
+from internal.infrastructure.p2p_mesh import EpistemicMeshNetwork
 from mass_semantic_engine import MassSemanticEngine
 
 logger = logging.getLogger(__name__)
@@ -58,6 +64,7 @@ class GlobalKnowledgeOS:
             cls._instance.algebra = GodelStateAlgebra()
             cls._instance.ledger = AkashicLedger("production_akashic.db")
             cls._instance.branches = {"main": 1}  # Multiverse State
+            cls._instance.mesh = None
             cls._instance.is_booted = False
         return cls._instance
 
@@ -114,7 +121,18 @@ class GlobalKnowledgeOS:
                 llm_adapter.extract_triplets,
             )
 
+        # P2P Holographic Mesh
+        self.mesh = EpistemicMeshNetwork(
+            self.algebra,
+            lambda b: self.branches.get(b, 1),
+            self._update_branch_state,
+        )
+
         self.is_booted = True
+
+    def _update_branch_state(self, branch: str, new_state: int):
+        """Callback for the P2P mesh to update branch states."""
+        self.branches[branch] = new_state
 
 
 # Singleton instance used by route handlers
@@ -159,6 +177,20 @@ class BranchRequest(BaseModel):
 class MergeRequest(BaseModel):
     source_branch: str
     target_branch: str
+
+
+class TimeTravelRequest(BaseModel):
+    target_tick: int
+    new_branch_name: str
+
+
+class PeerRequest(BaseModel):
+    peer_url: str
+
+
+class ZKProofRequest(BaseModel):
+    axiom_key: str
+    branch: str = "main"
 
 
 # ─── Helper ──────────────────────────────────────────────────────────
@@ -457,6 +489,123 @@ async def list_branches():
     }
 
 
+# ─── Chronos Engine (Time Travel) ────────────────────────────────────
+
+@router.post("/time-travel")
+async def time_travel(req: TimeTravelRequest):
+    """
+    O(1) Chronos Engine.
+
+    Rebuilds the exact state of the universe at a historical ledger
+    tick into an alternate timeline branch.  This is a full BigInt
+    reconstruction from the Akashic trace, filtered to ``max_seq_id``.
+    """
+    if not kos.is_booted:
+        raise HTTPException(status_code=503, detail="KOS booting")
+
+    if req.new_branch_name in kos.branches:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Branch '{req.new_branch_name}' already exists",
+        )
+
+    # Rebuild a fresh algebra for the historical snapshot
+    from internal.algorithms.semantic_arithmetic import GodelStateAlgebra as GSA
+    historical_algebra = GSA()
+    past_state = await kos.ledger.rebuild_state(
+        historical_algebra, max_seq_id=req.target_tick
+    )
+    kos.branches[req.new_branch_name] = past_state
+
+    from internal.ensemble.epistemic_arbiter import kos_telemetry
+    await kos_telemetry.broadcast(
+        f"⏳ Chronos Time Travel: Branch '{req.new_branch_name}' "
+        f"created at tick {req.target_tick}"
+    )
+
+    return {
+        "message": (
+            f"Time travel successful. Branch '{req.new_branch_name}' "
+            f"created at tick {req.target_tick}."
+        ),
+        "historical_state_integer": str(past_state),
+        "branch_count": len(kos.branches),
+    }
+
+
+@router.get("/tick")
+async def get_latest_tick():
+    """Returns the current Akashic Ledger tick (latest seq_id)."""
+    if not kos.is_booted:
+        raise HTTPException(status_code=503, detail="KOS booting")
+    tick = await kos.ledger.get_latest_tick()
+    return {"latest_tick": tick}
+
+
+# ─── Zero-Knowledge Semantic Proofs ──────────────────────────────────
+
+@router.post("/zk/prove")
+async def generate_zk_proof(req: ZKProofRequest):
+    """
+    Generates a Zero-Knowledge proof that this node knows a specific
+    axiom without revealing the full state integer.
+
+    Returns a salted hash commitment over the quotient.
+    """
+    if not kos.is_booted:
+        raise HTTPException(status_code=503, detail="KOS booting")
+
+    prime = kos.algebra.axiom_to_prime.get(req.axiom_key)
+    if not prime:
+        raise HTTPException(status_code=404, detail="Axiom not known")
+
+    state = _get_branch_state(req.branch)
+    try:
+        proof = ZKSemanticProver.generate_proof(state, prime)
+        return proof
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/zk/verify")
+async def verify_zk_proof(proof: dict):
+    """Verifies a Zero-Knowledge semantic proof."""
+    valid = ZKSemanticProver.verify_proof(proof)
+    return {"valid": valid}
+
+
+# ─── P2P Holographic Mesh ────────────────────────────────────────────
+
+@router.post("/peers")
+async def add_network_peer(req: PeerRequest):
+    """
+    Add a remote KOS node to the Holographic Mesh.
+
+    Immediately triggers an initial sync with the new peer.
+    """
+    if not kos.is_booted:
+        raise HTTPException(status_code=503, detail="KOS booting")
+    if not kos.mesh:
+        raise HTTPException(status_code=503, detail="P2P mesh not initialised")
+
+    kos.mesh.add_peer(req.peer_url)
+    asyncio.create_task(kos.mesh._sync_with_peer(req.peer_url))
+
+    return {
+        "message": f"Peer {req.peer_url} added to Epistemic Mesh.",
+        "active_peers": list(kos.mesh.peers),
+    }
+
+
+@router.get("/peers")
+async def list_peers():
+    """Lists all known peers in the Holographic Mesh."""
+    if not kos.is_booted:
+        raise HTTPException(status_code=503, detail="KOS booting")
+    peers = list(kos.mesh.peers) if kos.mesh else []
+    return {"peers": peers, "count": len(peers)}
+
+
 # ─── SSE Telemetry ────────────────────────────────────────────────────
 
 @router.get("/telemetry")
@@ -465,7 +614,7 @@ async def telemetry_stream():
     Server-Sent Events endpoint for real-time internal monologue.
 
     Streams paradox detection, superposition entry, wave function
-    collapse, and causal inference events to the frontend.
+    collapse, causal inference, time travel, and P2P sync events.
     """
     from internal.ensemble.epistemic_arbiter import kos_telemetry
 

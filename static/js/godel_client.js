@@ -14,10 +14,12 @@ class GodelClient {
 
     async syncWithServer() {
         try {
+            const branchSelector = document.getElementById('branch-selector');
+            const branch = branchSelector ? branchSelector.value : "main";
             const response = await fetch('/api/v1/quantum/sync', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ client_state_integer: this.localState.toString() })
+                body: JSON.stringify({ client_state_integer: this.localState.toString(), branch: branch })
             });
 
             if (!response.ok) throw new Error("Sync failed: " + response.status);

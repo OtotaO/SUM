@@ -130,6 +130,8 @@
         .log-superposition { color: #8b5cf6; }
         .log-collapse { color: #0ea5e9; font-weight: bold; }
         .log-inference { color: #f472b6; font-style: italic; font-weight: bold; }
+        .log-p2p { color: #34d399; font-weight: bold; }
+        .log-chronos { color: #fbbf24; font-style: italic; }
     </style>
 </head>
 <body>
@@ -143,6 +145,21 @@
 
         <div id="state-display">Gödel State: 1</div>
         <div id="axiom-count">Axioms: 0</div>
+
+        <div class="divider"></div>
+
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <select id="branch-selector" style="flex: 1; background: #0f172a; color: #e2e8f0; border: 1px solid #334155; padding: 7px 10px; border-radius: 8px; outline: none; font-size: 12px; font-family: 'JetBrains Mono', monospace;" onchange="changeBranch()">
+                <option value="main">main</option>
+            </select>
+            <button onclick="createNewBranch()" style="padding: 7px 12px; background: linear-gradient(135deg, #059669, #10b981); font-size: 11px; width: auto; min-width: 70px; border-radius: 8px;">+ Branch</button>
+            <button onclick="timeTravel()" style="padding: 7px 12px; background: linear-gradient(135deg, #d97706, #f59e0b); font-size: 11px; width: auto; min-width: 60px; border-radius: 8px;">⏳ Travel</button>
+        </div>
+
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <input type="text" id="peer-url" placeholder="http://remote-node:8000" style="flex: 1; background: #0f172a; border: 1px solid #334155; color: #e2e8f0; padding: 7px 10px; border-radius: 8px; outline: none; font-size: 12px; font-family: 'JetBrains Mono', monospace;">
+            <button onclick="connectPeer()" style="padding: 7px 12px; background: linear-gradient(135deg, #7c3aed, #8b5cf6); font-size: 11px; width: auto; min-width: 80px; border-radius: 8px;">🌐 Add Peer</button>
+        </div>
 
         <div class="divider"></div>
 
@@ -251,10 +268,79 @@
             else if (event.data.includes("🌀")) p.className = "log-superposition";
             else if (event.data.includes("⚡")) p.className = "log-collapse";
             else if (event.data.includes("🔗")) p.className = "log-inference";
+            else if (event.data.includes("🌐") || event.data.includes("🚨")) p.className = "log-p2p";
+            else if (event.data.includes("⏳")) p.className = "log-chronos";
             terminal.appendChild(p);
             terminal.scrollTop = terminal.scrollHeight;
         };
         evtSource.onerror = function() { console.log("Telemetry stream disconnected, retrying..."); };
+
+        // ─── Multiverse Controls ─────────────────────────
+        async function fetchBranches() {
+            try {
+                const res = await fetch('/api/v1/quantum/branches');
+                const data = await res.json();
+                const selector = document.getElementById('branch-selector');
+                const current = selector.value;
+                selector.innerHTML = '';
+                Object.keys(data.branches).forEach(b => {
+                    const opt = document.createElement('option');
+                    opt.value = b;
+                    opt.innerText = b;
+                    selector.appendChild(opt);
+                });
+                if (Object.keys(data.branches).includes(current)) selector.value = current;
+            } catch (e) {}
+        }
+        fetchBranches();
+        setInterval(fetchBranches, 5000);
+
+        function changeBranch() {
+            client.localState = 1n;
+            client.nodes.clear();
+            client.edges.clear();
+            client.syncWithServer();
+        }
+
+        async function createNewBranch() {
+            const newBranch = prompt("Enter new branch name:");
+            if (!newBranch) return;
+            const currentBranch = document.getElementById('branch-selector').value;
+            await fetch('/api/v1/quantum/branch', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ source_branch: currentBranch, new_branch: newBranch })
+            });
+            await fetchBranches();
+            document.getElementById('branch-selector').value = newBranch;
+            changeBranch();
+        }
+
+        async function timeTravel() {
+            const tick = prompt("Enter historical tick ID to time-travel to:");
+            if (!tick) return;
+            const newBranch = prompt("Name this alternate timeline branch:");
+            if (!newBranch) return;
+            await fetch('/api/v1/quantum/time-travel', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ target_tick: parseInt(tick), new_branch_name: newBranch })
+            });
+            await fetchBranches();
+            document.getElementById('branch-selector').value = newBranch;
+            changeBranch();
+        }
+
+        async function connectPeer() {
+            const url = document.getElementById('peer-url').value.trim();
+            if (!url) return;
+            await fetch('/api/v1/quantum/peers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ peer_url: url })
+            });
+            document.getElementById('peer-url').value = '';
+        }
     </script>
 </body>
 </html>

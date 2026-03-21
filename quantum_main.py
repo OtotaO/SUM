@@ -69,6 +69,13 @@ async def lifespan(app: FastAPI):
         )
     )
 
+    # Start the P2P Holographic Mesh daemon
+    mesh_task = None
+    if kos.mesh:
+        mesh_task = asyncio.create_task(
+            kos.mesh.start_gossip_daemon(interval=15)
+        )
+
     # Wire the Epistemic Arbiter (Wave Function Collapse)
     from internal.ensemble.epistemic_arbiter import EpistemicArbiter
 
@@ -89,6 +96,10 @@ async def lifespan(app: FastAPI):
     # Graceful shutdown
     kos.crystallizer.stop_daemon()
     daemon_task.cancel()
+    if kos.mesh:
+        kos.mesh.stop_daemon()
+    if mesh_task:
+        mesh_task.cancel()
     logger.info("Quantum Knowledge OS shutting down.")
 
 
