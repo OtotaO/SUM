@@ -273,3 +273,66 @@ class GodelStateAlgebra:
                 break
 
         return hallucinated_axioms
+
+    # ------------------------------------------------------------------
+    # Temporal evolution (Delete / Update)
+    # ------------------------------------------------------------------
+
+    def delete_axiom(self, global_state: int, axiom_key: str) -> int:
+        """
+        O(1) Semantic Deletion.
+
+        Removes a fact from the global state by dividing out its prime
+        factor.  Handles multiple occurrences if merged carelessly.
+
+        Args:
+            global_state: The current global Gödel integer.
+            axiom_key:    Normalised axiom key (``subject||predicate||object``).
+
+        Returns:
+            The updated global state with the axiom removed.
+        """
+        axiom_key = axiom_key.strip().lower()
+
+        if axiom_key not in self.axiom_to_prime:
+            return global_state  # Axiom was never minted
+
+        prime = self.axiom_to_prime[axiom_key]
+
+        # Completely factor out the prime
+        while global_state % prime == 0:
+            global_state //= prime
+
+        return global_state
+
+    def update_axiom(
+        self, global_state: int, old_axiom_key: str, new_axiom_key: str
+    ) -> int:
+        """
+        O(1) Semantic Update (Curvature Resolution).
+
+        Divides out the obsolete fact and multiplies in the new fact —
+        a single atomic gauge transformation on the state integer.
+
+        Args:
+            global_state:  The current global Gödel integer.
+            old_axiom_key: Key of the axiom to replace (``subj||pred||obj``).
+            new_axiom_key: Key of the replacement axiom (``subj||pred||obj``).
+
+        Returns:
+            The updated global state.
+
+        Raises:
+            ValueError: If the new axiom key is malformed.
+        """
+        parts = new_axiom_key.split("||")
+        if len(parts) != 3:
+            raise ValueError(
+                "Invalid axiom format. Must be subject||predicate||object"
+            )
+
+        new_prime = self.get_or_mint_prime(parts[0], parts[1], parts[2])
+        state_without_old = self.delete_axiom(global_state, old_axiom_key)
+
+        return state_without_old * new_prime
+
