@@ -10,3 +10,4 @@ structlog==23.2.0
 sentry-sdk[flask]==1.38.0
 newrelic==9.2.0
 sympy>=1.12
+numpy>=1.24.0

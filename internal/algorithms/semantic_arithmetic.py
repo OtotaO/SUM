@@ -334,5 +334,5 @@ class GodelStateAlgebra:
         new_prime = self.get_or_mint_prime(parts[0], parts[1], parts[2])
         state_without_old = self.delete_axiom(global_state, old_axiom_key)
 
-        return state_without_old * new_prime
+        return math.lcm(state_without_old, new_prime)
 
