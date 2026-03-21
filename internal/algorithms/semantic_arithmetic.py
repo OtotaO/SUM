@@ -76,6 +76,10 @@ class GodelStateAlgebra:
         # Maps a context key (subject||predicate) to its set of competing object primes.
         self.exclusion_zones: Dict[str, Set[int]] = {}
 
+        # Fractal Crystallization provenance.
+        # Maps macro-prime → product of micro-primes for lossless decompression.
+        self.macro_provenance: Dict[int, int] = {}
+
     # ------------------------------------------------------------------
     # Prime minting
     # ------------------------------------------------------------------
@@ -385,4 +389,95 @@ class GodelStateAlgebra:
             "add": _extract_axioms(missing_product),
             "delete": _extract_axioms(obsolete_product),
         }
+
+    # ------------------------------------------------------------------
+    # Fractal Crystallization (Semantic Zooming)
+    # ------------------------------------------------------------------
+
+    def crystallize_axioms(
+        self,
+        global_state: int,
+        micro_axiom_keys: List[str],
+        macro_axiom_key: str,
+    ) -> int:
+        """
+        O(1) Fractal Compression (Zoom Out).
+
+        Replaces a cluster of micro-primes with a single Macro-Prime.
+        Stores the cluster product as provenance for lossless
+        decompression via ``decrystallize_axiom``.
+
+        Args:
+            global_state:     Current global Gödel integer.
+            micro_axiom_keys: Keys of micro-axioms to compress.
+            macro_axiom_key:  Key for the new macro-axiom.
+
+        Returns:
+            Updated global state with micro-primes replaced by macro-prime.
+        """
+        cluster_product = 1
+
+        for key in micro_axiom_keys:
+            key = key.strip().lower()
+            if (
+                key in self.axiom_to_prime
+                and global_state % self.axiom_to_prime[key] == 0
+            ):
+                prime = self.axiom_to_prime[key]
+                cluster_product *= prime
+                # Completely factor out the micro-prime
+                while global_state % prime == 0:
+                    global_state //= prime
+
+        if cluster_product == 1:
+            return global_state  # No active micro-primes found
+
+        parts = macro_axiom_key.split("||")
+        if len(parts) != 3:
+            raise ValueError(
+                "Invalid macro axiom format. Must be subject||predicate||object"
+            )
+
+        macro_prime = self.get_or_mint_prime(parts[0], parts[1], parts[2])
+
+        # Store provenance for lossless decompression
+        self.macro_provenance[macro_prime] = cluster_product
+
+        return math.lcm(global_state, macro_prime)
+
+    def decrystallize_axiom(
+        self, global_state: int, macro_axiom_key: str
+    ) -> int:
+        """
+        O(1) Semantic Decompression (Zoom In).
+
+        Divides out the Macro-Prime and restores the full cluster of
+        micro-primes from stored provenance.
+
+        Args:
+            global_state:   Current global Gödel integer.
+            macro_axiom_key: Key of the macro-axiom to decompress.
+
+        Returns:
+            Updated global state with micro-primes restored.
+        """
+        macro_axiom_key = macro_axiom_key.strip().lower()
+
+        if macro_axiom_key not in self.axiom_to_prime:
+            return global_state
+
+        macro_prime = self.axiom_to_prime[macro_axiom_key]
+
+        if (
+            global_state % macro_prime != 0
+            or macro_prime not in self.macro_provenance
+        ):
+            return global_state
+
+        # Factor out the macro-prime
+        while global_state % macro_prime == 0:
+            global_state //= macro_prime
+
+        # Restore the micro-prime cluster
+        return math.lcm(global_state, self.macro_provenance[macro_prime])
 

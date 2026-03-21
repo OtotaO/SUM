@@ -16,9 +16,10 @@ License: Apache License 2.0
 """
 
 import logging
+import math
 from typing import List
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 
 from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
@@ -105,7 +106,11 @@ class SearchRequest(BaseModel):
 
 
 class IngestRequest(BaseModel):
-    chunks: List[str]
+    text: str
+
+
+class ExtrapolateRequest(BaseModel):
+    target_axioms: List[str]
 
 
 # ─── Routes ──────────────────────────────────────────────────────────
@@ -160,7 +165,81 @@ async def semantic_search(request: SearchRequest):
     )
     return {
         "verified_axioms": [
-            {"axiom": axiom, "similarity": round(sim, 4)}
+            {"axiom": axiom, "similarity": round(float(sim), 4)}
             for axiom, sim in results
         ]
     }
+
+
+@router.post("/ingest")
+async def ingest_document(
+    request: IngestRequest, background_tasks: BackgroundTasks
+):
+    """
+    Tomes → Tags. Ingests raw text into the Gödel state via MapReduce
+    extraction, mathematical merge, and Akashic trace logging.
+    """
+    if not kos.is_booted:
+        raise HTTPException(status_code=503, detail="KOS booting")
+
+    if not hasattr(kos, "mass_engine"):
+        raise HTTPException(
+            status_code=503,
+            detail="Mass engine not initialised (no LLM adapter)",
+        )
+
+    # 1. Chunk the text
+    chunk_size = 2000
+    chunks = [
+        request.text[i : i + chunk_size]
+        for i in range(0, len(request.text), chunk_size)
+    ]
+    raw_claims_estimate = max(len(request.text) // 100, 1)
+
+    # 2. MapReduce extraction
+    result = await kos.mass_engine.tomes_to_tags(raw_claims_estimate, chunks)
+    new_state = result["global_state"]
+
+    # 3. Mathematical merge
+    kos.global_state = math.lcm(kos.global_state, new_state)
+
+    # 4. Akashic trace — log new primes
+    for prime, axiom in kos.algebra.prime_to_axiom.items():
+        if new_state % prime == 0:
+            await kos.ledger.append_event("MINT", prime, axiom)
+            await kos.ledger.append_event("MUL", prime)
+
+    # 5. Background vector indexing
+    if hasattr(kos, "vector_bridge"):
+        background_tasks.add_task(kos.vector_bridge.index_new_primes)
+
+    return {
+        "status": "success",
+        "new_global_state": str(kos.global_state),
+        "axioms_ingested": result["total_unique_primes"],
+        "paradoxes": result["paradoxes"],
+    }
+
+
+@router.post("/extrapolate")
+async def extrapolate_tome(request: ExtrapolateRequest):
+    """
+    Tags → Tomes and Back. Generates a hallucination-proof narrative
+    strictly from verified axioms in the global state.
+    """
+    if not kos.is_booted:
+        raise HTTPException(status_code=503, detail="KOS booting")
+
+    if not hasattr(kos, "extrapolator"):
+        raise HTTPException(
+            status_code=503,
+            detail="Extrapolator not initialised (no LLM adapter)",
+        )
+
+    try:
+        narrative = await kos.extrapolator.extrapolate_with_proof(
+            kos.global_state, request.target_axioms
+        )
+        return {"verified_narrative": narrative}
+    except RuntimeError as e:
+        raise HTTPException(status_code=500, detail=str(e))
