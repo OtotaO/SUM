@@ -243,3 +243,42 @@ async def extrapolate_tome(request: ExtrapolateRequest):
         return {"verified_narrative": narrative}
     except RuntimeError as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ─── Quantum GraphRAG ────────────────────────────────────────────────
+
+class QuantumQueryRequest(BaseModel):
+    nodes: List[str]
+    hops: int = 1
+
+
+@router.post("/query")
+async def quantum_graph_rag(request: QuantumQueryRequest):
+    """
+    O(1) Topological GraphRAG Context Retrieval.
+
+    Returns the exact axioms in the mathematical neighbourhood of the
+    requested nodes, filtered to only include alive axioms.
+    """
+    if not kos.is_booted:
+        raise HTTPException(status_code=503, detail="KOS booting")
+
+    context_integer = kos.algebra.get_quantum_neighborhood(
+        kos.global_state, request.nodes, request.hops
+    )
+
+    # Extract axioms from the context integer
+    context_axioms: list[str] = []
+    temp_int = context_integer
+    for prime, axiom in kos.algebra.prime_to_axiom.items():
+        if temp_int % prime == 0:
+            context_axioms.append(axiom)
+            while temp_int % prime == 0:
+                temp_int //= prime
+        if temp_int == 1:
+            break
+
+    return {
+        "context_integer": str(context_integer),
+        "axioms": context_axioms,
+    }

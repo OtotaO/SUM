@@ -13,6 +13,7 @@ License: Apache License 2.0
 """
 
 import os
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
@@ -23,6 +24,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api.quantum_router import router as quantum_router, kos
 from internal.ensemble.live_llm_adapter import LiveLLMAdapter
+from internal.ensemble.autonomous_agent import AutonomousCrystallizer
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -30,9 +32,10 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Boot the KOS on startup, cleanup on shutdown."""
+    """Boot the KOS on startup, start daemon, cleanup on shutdown."""
     logger.info("Initializing Quantum Knowledge OS...")
     api_key = os.getenv("OPENAI_API_KEY")
+    llm_adapter = None
     if api_key:
         llm_adapter = LiveLLMAdapter(api_key=api_key)
         await kos.boot_sequence(llm_adapter)
@@ -47,8 +50,30 @@ async def lifespan(app: FastAPI):
     preview = state_str[:30] + "..." if len(state_str) > 30 else state_str
     logger.info("🚀 KOS Booted. Global State: %s", preview)
 
+    # Start the Autonomous Crystallizer daemon
+    async def summarize_cluster(axioms):
+        if llm_adapter:
+            return await llm_adapter.generate_text(
+                axioms, negative_constraints=[]
+            )
+        return "has_complex_history"
+
+    kos.crystallizer = AutonomousCrystallizer(
+        kos.algebra, kos.ledger, summarize_cluster
+    )
+    daemon_task = asyncio.create_task(
+        kos.crystallizer.start_daemon(
+            get_state_func=lambda: kos.global_state,
+            set_state_func=lambda s: setattr(kos, "global_state", s),
+            interval=30,
+        )
+    )
+
     yield  # App is running
 
+    # Graceful shutdown
+    kos.crystallizer.stop_daemon()
+    daemon_task.cancel()
     logger.info("Quantum Knowledge OS shutting down.")
 
 

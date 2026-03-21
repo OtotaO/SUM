@@ -80,6 +80,10 @@ class GodelStateAlgebra:
         # Maps macro-prime → product of micro-primes for lossless decompression.
         self.macro_provenance: Dict[int, int] = {}
 
+        # Quantum GraphRAG node registry.
+        # Maps each node (subject/object) to the product of all primes it participates in.
+        self.node_registry: Dict[str, int] = {}
+
     # ------------------------------------------------------------------
     # Prime minting
     # ------------------------------------------------------------------
@@ -128,7 +132,65 @@ class GodelStateAlgebra:
                 self.exclusion_zones[zone_key] = set()
             self.exclusion_zones[zone_key].add(p)
 
+            # Update node registry for O(1) GraphRAG traversal
+            self._update_node_registry(
+                subject.strip().lower(), object_.strip().lower(), p
+            )
+
         return self.axiom_to_prime[axiom_key]
+
+    # ------------------------------------------------------------------
+    # Quantum GraphRAG (O(1) Node Registry)
+    # ------------------------------------------------------------------
+
+    def _update_node_registry(
+        self, subject: str, object_: str, prime: int
+    ):
+        """
+        Maintains the O(1) Context Integer for each node.
+
+        Every time a prime is minted, both its subject and object nodes
+        accumulate the prime into their integer via LCM.
+        """
+        if subject not in self.node_registry:
+            self.node_registry[subject] = 1
+        if object_ not in self.node_registry:
+            self.node_registry[object_] = 1
+        self.node_registry[subject] = math.lcm(
+            self.node_registry[subject], prime
+        )
+        self.node_registry[object_] = math.lcm(
+            self.node_registry[object_], prime
+        )
+
+    def get_quantum_neighborhood(
+        self, global_state: int, nodes: List[str], hops: int = 1
+    ) -> int:
+        """
+        O(1) GraphRAG Traversal.
+
+        Returns the exact Gödel Integer representing the combined
+        topological neighborhood of the requested nodes, filtered to
+        only include axioms alive in the current global state.
+
+        Args:
+            global_state: Current Gödel integer.
+            nodes:        Entity names to query.
+            hops:         Number of traversal hops (currently 1-hop).
+
+        Returns:
+            Gödel integer representing the neighbourhood context.
+        """
+        context_state = 1
+
+        for node in nodes:
+            if node in self.node_registry:
+                node_integer = self.node_registry[node]
+                # Filter for only edges alive in the global state
+                alive_node_integer = math.gcd(global_state, node_integer)
+                context_state = math.lcm(context_state, alive_node_integer)
+
+        return context_state
 
     # ------------------------------------------------------------------
     # Encoding
