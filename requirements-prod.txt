@@ -11,3 +11,8 @@ sentry-sdk[flask]==1.38.0
 newrelic==9.2.0
 sympy>=1.12
 numpy>=1.24.0
+fastapi>=0.100.0
+uvicorn>=0.23.0
+pydantic>=2.0.0
+openai>=1.0.0
+httpx>=0.24.0

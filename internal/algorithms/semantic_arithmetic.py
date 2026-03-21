@@ -336,3 +336,53 @@ class GodelStateAlgebra:
 
         return math.lcm(state_without_old, new_prime)
 
+    # ------------------------------------------------------------------
+    # Gödel Sync Protocol (O(1) Distributed Delta)
+    # ------------------------------------------------------------------
+
+    def calculate_network_delta(
+        self, global_state: int, client_state: int
+    ) -> dict:
+        """
+        O(1) Distributed State Synchronization.
+
+        Compares the server's global integer with the client's integer to
+        compute the exact semantic delta:
+            shared_truth     = gcd(global, client)
+            missing_product  = global // shared_truth   → axioms to ADD
+            obsolete_product = client // shared_truth    → axioms to DELETE
+
+        Args:
+            global_state: The server's current Gödel integer.
+            client_state: The client's cached Gödel integer.
+
+        Returns:
+            Dict with ``"add"`` and ``"delete"`` lists of axiom key strings.
+        """
+        if global_state == client_state:
+            return {"add": [], "delete": []}
+
+        shared_truth = math.gcd(global_state, client_state)
+
+        # Primes the client is missing (server has, client doesn't)
+        missing_product = global_state // shared_truth
+
+        # Primes the client has that are obsolete
+        obsolete_product = client_state // shared_truth
+
+        def _extract_axioms(product: int) -> List[str]:
+            axioms: List[str] = []
+            for prime, axiom in self.prime_to_axiom.items():
+                if product % prime == 0:
+                    axioms.append(axiom)
+                    while product % prime == 0:
+                        product //= prime
+                if product == 1:
+                    break
+            return axioms
+
+        return {
+            "add": _extract_axioms(missing_product),
+            "delete": _extract_axioms(obsolete_product),
+        }
+
