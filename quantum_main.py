@@ -69,6 +69,21 @@ async def lifespan(app: FastAPI):
         )
     )
 
+    # Wire the Epistemic Arbiter (Wave Function Collapse)
+    from internal.ensemble.epistemic_arbiter import EpistemicArbiter
+
+    async def llm_judge(prompt: str) -> str:
+        if llm_adapter and hasattr(llm_adapter, "client"):
+            response = await llm_adapter.client.chat.completions.create(
+                model=llm_adapter.model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.0,
+            )
+            return response.choices[0].message.content
+        return prompt.split("Claim B:")[-1].strip().split()[-1]
+
+    kos.arbiter = EpistemicArbiter(llm_judge)
+
     yield  # App is running
 
     # Graceful shutdown

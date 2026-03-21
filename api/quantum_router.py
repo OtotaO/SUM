@@ -17,9 +17,11 @@ License: Apache License 2.0
 
 import logging
 import math
+import asyncio
 from typing import List
 
 from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
@@ -282,3 +284,34 @@ async def quantum_graph_rag(request: QuantumQueryRequest):
         "context_integer": str(context_integer),
         "axioms": context_axioms,
     }
+
+
+# ─── SSE Telemetry ────────────────────────────────────────────────────
+
+@router.get("/telemetry")
+async def telemetry_stream():
+    """
+    Server-Sent Events endpoint for real-time internal monologue.
+
+    Streams paradox detection, superposition entry, and wave function
+    collapse events to the frontend.
+    """
+    from internal.ensemble.epistemic_arbiter import kos_telemetry
+
+    async def event_generator():
+        queue = kos_telemetry.subscribe()
+        try:
+            while True:
+                message = await queue.get()
+                yield f"data: {message}\n\n"
+        except asyncio.CancelledError:
+            kos_telemetry.unsubscribe(queue)
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        },
+    )

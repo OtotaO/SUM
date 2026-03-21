@@ -117,6 +117,18 @@
             0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
             50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
         }
+
+        .terminal {
+            background: #020617; border: 1px solid #1e293b;
+            border-radius: 8px; padding: 10px;
+            font-family: 'JetBrains Mono', monospace; font-size: 11px;
+            color: #10b981; height: 140px; overflow-y: auto;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+        .terminal p { margin: 2px 0; }
+        .log-warn { color: #f59e0b; }
+        .log-superposition { color: #8b5cf6; }
+        .log-collapse { color: #0ea5e9; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -147,6 +159,15 @@
             <button id="extrapolate-btn" onclick="extrapolateTags()">Generate Verified Tome</button>
             <div id="extrapolate-result" class="result-box" style="margin-top: 10px;">
                 Awaiting extrapolation…
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div>
+            <p class="section-label">③ System Telemetry</p>
+            <div id="telemetry-terminal" class="terminal">
+                <p style="color: #475569;">Awaiting system events…</p>
             </div>
         </div>
     </div>
@@ -217,6 +238,21 @@
             } catch (e) { console.error(e); result.innerText = "Extrapolation failed: " + e.message; }
             finally { btn.innerText = "Generate Verified Tome"; btn.style.opacity = "1"; btn.style.pointerEvents = "auto"; }
         }
+
+        // ─── SSE Telemetry ────────────────────────────────
+        const evtSource = new EventSource("/api/v1/quantum/telemetry");
+        const terminal = document.getElementById("telemetry-terminal");
+
+        evtSource.onmessage = function(event) {
+            const p = document.createElement("p");
+            p.innerText = "> " + event.data;
+            if (event.data.includes("⚠")) p.className = "log-warn";
+            else if (event.data.includes("🌀")) p.className = "log-superposition";
+            else if (event.data.includes("⚡")) p.className = "log-collapse";
+            terminal.appendChild(p);
+            terminal.scrollTop = terminal.scrollHeight;
+        };
+        evtSource.onerror = function() { console.log("Telemetry stream disconnected, retrying..."); };
     </script>
 </body>
 </html>
