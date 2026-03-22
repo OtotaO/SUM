@@ -286,6 +286,23 @@ class CanonicalCodec:
                 f"Bundle axiom count exceeds limit: {axiom_count} "
                 f"(max {MAX_AXIOM_COUNT})"
             )
+        # ── Timestamp validation ──
+        raw_ts = bundle_dict.get("timestamp", "")
+        try:
+            from datetime import datetime, timezone, timedelta
+            parsed_ts = datetime.fromisoformat(raw_ts)
+            # Reject timestamps more than 24h in the future (clock skew tolerance)
+            now = datetime.now(timezone.utc)
+            if parsed_ts.tzinfo and parsed_ts > now + timedelta(hours=24):
+                raise ValueError(
+                    f"Bundle timestamp is >24h in the future: {raw_ts}"
+                )
+        except (ValueError, TypeError) as e:
+            if "future" in str(e):
+                raise
+            raise ValueError(
+                f"Bundle timestamp is not valid ISO 8601: {raw_ts!r}"
+            ) from e
 
         canonical_tome = bundle_dict["canonical_tome"]
         state_str = bundle_dict["state_integer"]
