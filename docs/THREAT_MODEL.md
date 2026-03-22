@@ -60,13 +60,13 @@ Producer ──(shared key)──> Bundle ──(shared key)──> Consumer
 
 ## 3. What Is NOT Protected
 
-### 3.1. Public Authenticity (❌ Not Protected)
+### 3.1. Public Authenticity (✅ Now Protected)
 
 **Threat:** A third party wants to verify that a bundle was produced by a specific author.
 
-**Current status:** HMAC is a shared-secret scheme. Anyone with the key can produce a valid signature. There is no way for a third party to verify provenance without the key.
+**Defense:** Ed25519 public-key signatures. The 32-byte public key is embedded in the bundle. Any party with the public key can verify provenance without the HMAC secret.
 
-**Mitigation (future):** Ed25519 or similar public-key signatures would allow anyone with the public key to verify the producer's identity. This is targeted for a future workstream.
+**Residual risk:** The embedded public key is self-asserted. A trust-on-first-use (TOFU) model or certificate authority is needed for strong identity binding. The current system proves "this bundle was signed by the holder of this private key" but not "this private key belongs to entity X."
 
 ### 3.2. Key Compromise (❌ Not Protected)
 
@@ -118,7 +118,7 @@ Producer ──(shared key)──> Bundle ──(shared key)──> Consumer
 | State/tome mismatch | ✅ | Witness verification |
 | Version mismatch | ✅ | Version gate |
 | Malformed bundles | ✅ | Field validation |
-| Public authenticity | ❌ | Needs public-key crypto |
+| Public authenticity | ✅ | Ed25519 signatures (self-asserted key) |
 | Key compromise | ❌ | Needs key rotation |
 | Adversarial extraction | ❌ | Needs extraction hardening |
 | Collision replay | ⚠️ | Resolution exists, not cross-verified |

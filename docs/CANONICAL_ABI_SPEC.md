@@ -1,6 +1,6 @@
 # Canonical Semantic ABI Specification
 
-**Version:** 1.0.0
+**Version:** 1.1.0
 **Status:** Normative
 **Date:** 2026-03-22
 
@@ -140,7 +140,7 @@ A conforming bundle MUST contain:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `bundle_version` | string | Bundle format version (currently `"1.0.0"`) |
+| `bundle_version` | string | Bundle format version (currently `"1.1.0"`) |
 | `canonical_format_version` | string | Canonical tome grammar version (currently `"1.0.0"`) |
 | `canonical_tome` | string | The canonical tome text |
 | `state_integer` | string | Decimal string representation of the Gödel State Integer |
@@ -154,6 +154,8 @@ A conforming bundle MUST contain:
 | `branch` | string | Branch identifier |
 | `axiom_count` | integer | Number of active axioms |
 | `is_delta` | boolean | Whether this is a delta bundle |
+| `public_signature` | string | Ed25519 signature: `"ed25519:<base64>"` (see §7.2) |
+| `public_key` | string | Ed25519 public key: `"ed25519:<base64>"` (see §7.2) |
 
 ### 6.3. State Integer Encoding
 
@@ -180,9 +182,28 @@ The HMAC key is a shared secret between the producer and consumer.
 > [!WARNING]
 > HMAC-SHA256 provides **tamper detection between trusted peers** sharing a secret key. It does NOT provide public third-party authenticity verification. See `THREAT_MODEL.md` for details.
 
-### 7.2. Future: Public-Key Signatures
+### 7.2. Ed25519 Public-Key Signatures
 
-A future version MAY add public-key signatures (e.g., Ed25519) for independent provenance verification. When introduced, both signature types MAY coexist in a dual-signature model.
+When a signing keypair is available, bundles include dual signatures:
+
+```
+"public_signature": "ed25519:<base64_signature>",
+"public_key": "ed25519:<base64_32byte_pubkey>"
+```
+
+The Ed25519 payload is identical to the HMAC payload:
+
+```
+canonical_tome + "|" + state_integer + "|" + timestamp
+```
+
+Encoded as UTF-8 before signing.
+
+**Key format:** Ed25519 private keys are stored as PEM (PKCS8). Public keys are 32 bytes, base64-encoded in bundles.
+
+**Verification:** Any party with the 32-byte public key can verify the signature without possessing the HMAC secret. Both signature types are verified independently on import.
+
+**Backward compatibility:** `public_signature` and `public_key` are OPTIONAL. Bundles without these fields are valid v1.0.0 bundles and MUST be accepted by v1.1.0 consumers.
 
 ## 8. Import/Export Semantics
 
@@ -210,7 +231,7 @@ A witness verifier:
 2. MUST independently derive primes from axiom keys
 3. MUST reconstruct the state integer via LCM
 4. MUST compare the reconstructed integer to `state_integer`
-5. SHOULD NOT verify the HMAC signature (requires shared secret)
+5. SHOULD verify the Ed25519 signature if `public_key` is embedded
 
 ## 9. Delta Bundles
 
