@@ -8,3 +8,4 @@ e91299f	242	15/15	keep	threat model update, extraction harness
 b13858b	245	15/15	keep	dos defense bundle size limits
 526023125115/15keeptimestamp format validation in bundle import
 6878c1c25715/15keepcross-instance collision resolution verification
+-------26915/15keepbundle version negotiation tests
