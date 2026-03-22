@@ -11,3 +11,4 @@ sympy>=1.12
 sse-starlette>=1.6.5
 pytest>=7.0.0
 pytest-asyncio>=0.21.0
+feedparser>=6.0.10

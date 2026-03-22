@@ -25,6 +25,7 @@ License: Apache License 2.0
 import logging
 import math
 import asyncio
+import os
 from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, BackgroundTasks, Query
@@ -62,7 +63,11 @@ class GlobalKnowledgeOS:
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance.algebra = GodelStateAlgebra()
-            cls._instance.ledger = AkashicLedger("production_akashic.db")
+
+            # Dynamic DB allocation for the P2P Swarm
+            db_path = os.getenv("AKASHIC_DB", "production_akashic.db")
+            cls._instance.ledger = AkashicLedger(db_path)
+
             cls._instance.branches = {"main": 1}  # Multiverse State
             cls._instance.mesh = None
             cls._instance.is_booted = False
@@ -182,6 +187,12 @@ class MergeRequest(BaseModel):
 class TimeTravelRequest(BaseModel):
     target_tick: int
     new_branch_name: str
+
+
+class DirectMathRequest(BaseModel):
+    """Zero-cost ingestion: bypass LLM, inject triplets directly into the math engine."""
+    triplets: List[List[str]]  # [[subject, predicate, object]]
+    branch: str = "main"
 
 
 class PeerRequest(BaseModel):
@@ -329,6 +340,67 @@ async def ingest_document(
         "paradoxes": result["paradoxes"],
     }
 
+
+@router.post("/ingest/math")
+async def ingest_math_direct(
+    request: DirectMathRequest, background_tasks: BackgroundTasks
+):
+    """
+    Zero-Cost Ingestion: Bypasses the LLM entirely and injects strict
+    mathematical triplets directly into the Gödel-State Engine.
+
+    Each triplet is a [subject, predicate, object] array that gets
+    deterministically mapped to a Semantic Prime, merged via LCM,
+    and cascaded through the Interacting Theory engine.
+
+    Cost: $0. Speed: microseconds. Truth: absolute.
+    """
+    if not kos.is_booted:
+        raise HTTPException(status_code=503, detail="KOS booting")
+
+    branch = request.branch
+    current_state = kos.branches.get(branch, 1)
+    new_state_product = 1
+    added_axioms = []
+
+    for t in request.triplets:
+        if len(t) == 3:
+            s, p, o = [x.strip().lower() for x in t]
+            prime = kos.algebra.get_or_mint_prime(s, p, o)
+            axiom = f"{s}||{p}||{o}"
+
+            # Only process if genuinely new to both current state and this batch
+            if current_state % prime != 0 and new_state_product % prime != 0:
+                new_state_product = math.lcm(new_state_product, prime)
+                added_axioms.append((prime, axiom))
+
+    if added_axioms:
+        new_state = math.lcm(current_state, new_state_product)
+
+        # Log to Akashic Ledger
+        for prime, axiom in added_axioms:
+            await kos.ledger.append_event("MINT", prime, axiom)
+            await kos.ledger.append_event("MUL", prime)
+
+        # Apply Interacting Theory (Causal Cascades)
+        axioms_strs = [a[1] for a in added_axioms]
+        if hasattr(kos, "trigger_map"):
+            new_state = await kos.trigger_map.apply_cascade(
+                new_state, axioms_strs
+            )
+
+        kos.branches[branch] = new_state
+
+        # Background vector indexing
+        if hasattr(kos, "vector_bridge"):
+            background_tasks.add_task(kos.vector_bridge.index_new_primes)
+
+    return {
+        "status": "success",
+        "branch": branch,
+        "new_global_state": str(kos.branches.get(branch, 1)),
+        "axioms_added": len(added_axioms),
+    }
 
 @router.post("/extrapolate")
 async def extrapolate_tome(request: ExtrapolateRequest):
