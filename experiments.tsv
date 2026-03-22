@@ -12,3 +12,4 @@ b13858b	245	15/15	keep	dos defense bundle size limits
 -------28515/15keepP0: ZK semantic proof test suite (16 tests)
 -------29315/15keepP1: akashic ledger replay + time-travel (8 tests)
 -------29915/15keepP2: causal trigger cascade verification (6 tests)
+-------29915/15keepP3: archive 64 orphan docs to docs/archive/
