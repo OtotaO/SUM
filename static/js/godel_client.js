@@ -2,7 +2,7 @@
  * Gödel Client — Browser-side BigInt state & vis-network graph
  *
  * Maintains a local BigInt mirror of the server's Gödel state.
- * Polls /sync to receive O(1) deltas and renders a live knowledge
+ * Polls /sync to receive deltas and renders a live knowledge
  * graph using vis-network.
  */
 class GodelClient {

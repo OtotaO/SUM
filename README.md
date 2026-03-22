@@ -2,11 +2,13 @@
 
 [![Quantum Knowledge OS CI](https://github.com/OtotaO/SUM/actions/workflows/quantum-ci.yml/badge.svg)](https://github.com/OtotaO/SUM/actions/workflows/quantum-ci.yml)
 
-> **From Atomic Tags to Infinite Books. Mathematically Verified. Hallucination-Proof.**
+> **From Atomic Tags to Structured Books. Mathematically Verified within the Canonical Semantic Boundary.**
 
-SUM is the world's first **Gödel-State Knowledge Engine** — a system that encodes human language and logic as prime-factored integers and performs semantic operations (merge, entailment, paradox resolution, graph traversal) in **O(1) time** using pure number theory.
+SUM is a **Gödel-State Knowledge Engine** — a system that encodes semantic content as prime-factored integers and performs semantic operations (merge, entailment, paradox detection, graph traversal) using pure number theory, avoiding corpus-scale scanning.
 
-Built on the formalisms of the **Semantic Prime Number Theorem** and **Gauge-Theoretic CRUD** (Yaroslavtsev, 2026), SUM abandons probabilistic vector databases and heuristic token-windows. Instead, it provides absolute **mathematical proof** that every generated statement is grounded in verified facts, while supporting decentralized P2P syncing, zero-cost branching (Git for Truth), and time travel.
+Built on the formalisms of the **Semantic Prime Number Theorem** and **Gauge-Theoretic CRUD**, SUM replaces probabilistic vector databases with deterministic integer arithmetic for core knowledge operations. It provides **mechanically verifiable round-trip conservation** within the canonical semantic representation, cross-runtime state verification, signed knowledge transport, and decentralized P2P syncing.
+
+> **Complexity note:** operations described below as O(1) are O(1) **in axiom count** — they do not scan the corpus. They scale with integer **bit length** (sub-quadratic via GMP). See [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) for precise complexity analysis.
 
 ---
 
@@ -27,9 +29,9 @@ Built on the formalisms of the **Semantic Prime Number Theorem** and **Gauge-The
 │  │                   GlobalKnowledgeOS Singleton                    │  │
 │  ├──────────────────────────────────────────────────────────────────┤  │
 │  │ GodelStateAlgebra       │ Epistemic Engine    │ Multiverse       │  │
-│  │ • SHA-256 Primes        │ • Paradox Collapse  │ • O(1) Branching │  │
-│  │ • LCM Merge / GCD Sync  │ • ZK Semantic Proof │ • O(1) Merging   │  │
-│  │ • O(1) GraphRAG         │ • Causal Cascades   │ • Time Travel    │  │
+│  │ • SHA-256 Primes        │ • Paradox Collapse  │ • Branching      │  │
+│  │ • LCM Merge / GCD Sync  │ • ZK Semantic Proof │ • Merging        │  │
+│  │ • GraphRAG              │ • Causal Cascades   │ • Time Travel    │  │
 │  ├─────────────────────────┴─────────────────────┴──────────────────┤  │
 │  │                      Akashic Ledger (SQLite)                     │  │
 │  │         Event-sourced • Crash-safe • Historically Replayable     │  │
@@ -45,14 +47,16 @@ Built on the formalisms of the **Semantic Prime Number Theorem** and **Gauge-The
 
 Every irreducible fact ("Alice age 30") is assigned a unique, deterministic **prime number** via SHA-256 hashing. The entire knowledge state of the universe is a single massive integer — the product of all active primes.
 
-| Semantic Operation | Mathematical Equivalent | Time Complexity |
-|--------------------|-------------------------|-----------------|
-| **Branch / Fork** | Integer Copy: `Branch_B = Branch_A` | O(1) |
-| **Merge States** | Least Common Multiple: `math.lcm(A, B)` | O(1) Lock-free |
-| **Verify a Fact** | Modulo Entailment: `Global_State % Prime == 0` | O(1) |
-| **Delete a Fact** | Integer Division: `Global_State // Prime` | O(1) |
-| **Update a Fact** | `lcm(State // Old_Prime, New_Prime)`| O(1) |
-| **GraphRAG Traversal** | `math.gcd(Global, Node_Integer)` | O(1) |
+| Semantic Operation | Mathematical Equivalent | Complexity† |
+|--------------------|-------------------------|-------------|
+| **Branch / Fork** | Integer Copy: `Branch_B = Branch_A` | O(n) copy |
+| **Merge States** | Least Common Multiple: `math.lcm(A, B)` | O(n²) GCD |
+| **Verify a Fact** | Modulo Entailment: `Global_State % Prime == 0` | O(n) modulo |
+| **Delete a Fact** | Integer Division: `Global_State // Prime` | O(n) division |
+| **Update a Fact** | `lcm(State // Old_Prime, New_Prime)`| O(n²) GCD |
+| **GraphRAG Traversal** | `math.gcd(Global, Node_Integer)` | O(n²) GCD |
+
+†n = bit length of the integer, NOT axiom count. No corpus scanning required.
 
 ### 2. The Epistemic Feedback Loop
 
@@ -64,20 +68,20 @@ Maps the absolute certainty of discrete Gödel Primes to the fuzzy continuous sp
 
 ### 4. The Akashic Ledger (Fidelity Persistence)
 
-An append-only SQLite event log (`MINT`, `MUL`, `DIV`). Provides absolute **crash recovery** — the massive RAM-based Gödel BigInt can be perfectly reconstructed from the O(1) mathematical trace.
+An append-only SQLite event log (`MINT`, `MUL`, `DIV`). Provides **crash recovery** — the RAM-based Gödel BigInt can be perfectly reconstructed by replaying the mathematical trace.
 
 ### 5. The Gödel Sync Protocol
 
-Clients hold a local `BigInt` state. Syncing over the network requires sending *one integer*. The server uses `math.gcd` to identify exactly what the client needs to add or delete. **O(1) network delta**, zero JSON diffing.
+Clients hold a local `BigInt` state. Syncing over the network requires sending *one integer*. The server uses `math.gcd` to identify exactly what the client needs to add or delete. **Single-integer network delta**, zero JSON diffing.
 
 ### 6. Fractal Crystallization (Semantic Zooming)
 
   - **Zoom Out**: Replace a cluster of 100 micro-primes with 1 Macro-Prime, storing the cluster product as provenance.
-  - **Zoom In**: Divide out the Macro-Prime and multiply the provenance back in to decompress the cluster in O(1) time.
+  - **Zoom In**: Divide out the Macro-Prime and multiply the provenance back in to decompress the cluster (single division + multiplication).
 
 ### 7. Quantum GraphRAG & The Subconscious Daemon
 
-Standard RAG is O(N log N). Quantum GraphRAG maintains a "Node Integer" for every entity. Querying a node's multi-hop topological neighborhood is simply `math.gcd(Global_State, Node_Integer)` — **O(1)**. A background daemon autonomously crystallizes dense clusters while the system sleeps.
+Standard RAG requires O(N) vector scans. Quantum GraphRAG maintains a "Node Integer" for every entity. Querying a node's multi-hop topological neighborhood is `math.gcd(Global_State, Node_Integer)` — **no corpus scan required**. A background daemon autonomously crystallizes dense clusters while the system sleeps.
 
 ### 8. Epistemic Superposition & Wave Function Collapse
 
@@ -85,7 +89,7 @@ When mutually exclusive facts are ingested ("Alice lives in NY" vs "London"), th
 
 ### 9. The Multiverse of Meaning (Git for Truth)
 
-Because the universe is just an integer, branching a timeline is an O(1) integer copy. We support **Semantic Smart Contracts** (Causal Triggers): learning one fact automatically cascades through the integer, deducing logical consequences instantly until equilibrium is reached.
+Because the state is just an integer, branching a timeline is a simple integer copy. We support **Semantic Smart Contracts** (Causal Triggers): learning one fact automatically cascades through the integer, deducing logical consequences until equilibrium is reached.
 
 ### 10. The Chronos Engine & Holographic Mesh
 
@@ -114,7 +118,7 @@ git clone https://github.com/OtotaO/SUM.git
 cd SUM
 pip install -r requirements-prod.txt
 
-# Run the 85-test mathematical verification suite
+# Run the 165+ test verification suite
 python -m pytest Tests/ -v
 
 # Launch the Quantum UI & OS
@@ -133,14 +137,14 @@ All endpoints are mounted under `/api/v1/quantum/`. Every endpoint accepts an op
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `GET` | `/state` | Returns the current Gödel integer |
-| `POST` | `/sync` | O(1) network delta sync via GCD |
+| `POST` | `/sync` | Network delta sync via GCD |
 | `POST` | `/ingest` | Tomes → Tags (Text to Math pipeline) |
-| `POST` | `/extrapolate`| Tags → Tomes (Hallucination-proof generation) |
-| `POST` | `/query` | O(1) Quantum GraphRAG retrieval |
+| `POST` | `/extrapolate`| Tags → Tomes (Verified generation) |
+| `POST` | `/query` | GraphRAG retrieval |
 | `POST` | `/search` | Fuzzy semantic search via Vector Bridge |
 | `GET` | `/telemetry` | SSE Stream of internal monologues & wave collapses |
-| `POST` | `/branch` | O(1) Semantic Branching (fork state) |
-| `POST` | `/merge` | O(1) Semantic Merge via LCM |
+| `POST` | `/branch` | Semantic Branching (fork state) |
+| `POST` | `/merge` | Semantic Merge via LCM |
 | `POST` | `/time-travel`| Rebuilds the universe at a historical tick |
 | `POST` | `/zk/prove` | Generate a Zero-Knowledge Semantic Proof |
 | `POST` | `/peers` | Add a node to the P2P Holographic Mesh |
@@ -165,16 +169,24 @@ SUM/
 │   │   └── live_llm_adapter.py       # OpenAI structured outputs adapter
 │   └── infrastructure/
 │       ├── akashic_ledger.py         # Event-sourced crash recovery & Time Travel
-│       └── p2p_mesh.py               # Decentralized Holographic Gossip Protocol
+│       ├── p2p_mesh.py               # Decentralized Gossip Protocol
+│       └── canonical_codec.py        # Signed bundle transport (HMAC-SHA256)
 ├── api/
 │   └── quantum_router.py             # FastAPI routing and GlobalKnowledgeOS
 ├── mass_semantic_engine.py           # MapReduce Tomes↔Tags pipeline
 ├── quantum_main.py                   # ASGI entrypoint (FastAPI + lifespan boot)
+├── standalone_verifier/
+│   └── verify.js                     # Independent Node.js semantic witness
+├── docs/
+│   ├── CANONICAL_ABI_SPEC.md         # Normative protocol specification
+│   ├── PROOF_BOUNDARY.md             # What is proven vs aspirational
+│   ├── THREAT_MODEL.md               # Security analysis and attack surfaces
+│   └── COMPATIBILITY_POLICY.md       # Version semantics and guarantees
 ├── static/
 │   ├── quantum.html                  # Quantum UI (vis-network, Telemetry HUD)
 │   └── js/godel_client.js            # Browser-side Gödel sync client
 └── Tests/
-    └── test_phase[1-10]_*.py         # 85/85 Passing Mathematical Boundary Tests
+    └── test_phase[1-16]_*.py         # 165+ Passing Verification Tests
 ```
 
 ---
@@ -182,8 +194,13 @@ SUM/
 ## 🛡️ Mathematical Verification Suite
 
 ```text
-85 passed in 0.52s
+165+ passed
 
+Property & Adversarial Tests ........... 43 ✓  (algebra invariants, bundle hardening)
+Phase 16 — Independent Witness ......... 21 ✓  (cross-runtime verification)
+Phase 15 — Canonical Semantic ABI ...... 22 ✓  (versioning, bundles, JWT, multi-hop)
+Phase 14 — Ouroboros Round-Trip ........ 16 ✓  (encode/decode conservation)
+Phase 13 — JWT Multi-Tenancy ........... 3  ✓
 Phase 10 — Chronos & Mesh .............. 17 ✓
 Phase 9 — Multiverse & Causal Triggers . 21 ✓
 Phase 8 — Wave Function Collapse ....... 8  ✓
@@ -220,5 +237,5 @@ Apache 2.0 — Built for the future of Man and Machine.
 ---
 
 <p align="center">
-<strong>SUM — Distill the Universe. Expand the Atom. Prove Everything.</strong>
+<strong>SUM — Canonical Semantic Compression. Mechanically Verified.</strong>
 </p>

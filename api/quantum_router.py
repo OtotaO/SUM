@@ -6,14 +6,14 @@ Quantum Router — The Global Knowledge OS API
 
 Exposes the Gödel-State Engine to the outside world via FastAPI:
     /state           – current global integer (branch-aware)
-    /sync            – O(1) delta synchronisation (Gödel Sync Protocol)
+    /sync            – delta synchronisation (Gödel Sync Protocol)
     /search          – semantic search over alive primes
     /ingest          – ingest text into the global state via live LLM
-    /extrapolate     – hallucination-proof narrative generation
-    /query           – O(1) GraphRAG neighbourhood retrieval
-    /branch          – O(1) epistemic branching (Git for Truth)
-    /merge           – O(1) LCM-based branch merging
-    /time-travel     – Chronos Engine (O(1) historical state rebuild)
+    /extrapolate     – verified narrative generation
+    /query           – GraphRAG neighbourhood retrieval
+    /branch          – epistemic branching (Git for Truth)
+    /merge           – LCM-based branch merging
+    /time-travel     – Chronos Engine (historical state rebuild)
     /peers           – P2P Holographic Mesh peer management
     /zk/prove        – Zero-Knowledge Semantic Proofs
     /tick            – Current Akashic Ledger tick
@@ -346,7 +346,7 @@ async def sync_client_state(
     user_id: str = Depends(get_current_user),
 ):
     """
-    O(1) Delta Sync (Gödel Sync Protocol).
+    Delta Sync (Gödel Sync Protocol).
 
     Returns exactly which axioms the client needs to add and delete
     to match the server's state.
@@ -556,7 +556,7 @@ async def quantum_graph_rag(
     user_id: str = Depends(get_current_user),
 ):
     """
-    O(1) Topological GraphRAG Context Retrieval.
+    GraphRAG Topological Context Retrieval.
 
     Returns the exact axioms in the mathematical neighbourhood of the
     requested nodes, filtered to only include alive axioms.
@@ -594,7 +594,7 @@ async def quantum_graph_rag(
 @router.post("/branch")
 async def create_branch(req: BranchRequest):
     """
-    O(1) Epistemic Branching.
+    Epistemic Branching.
 
     Creates a parallel universe of knowledge by copying a single integer.
     This is literally an integer assignment — the most efficient fork
@@ -628,7 +628,7 @@ async def create_branch(req: BranchRequest):
 @router.post("/merge")
 async def merge_branches(req: MergeRequest):
     """
-    O(1) Merge via LCM.
+    Merge via LCM.
 
     Merges two parallel universes of knowledge by computing their
     Least Common Multiple.  Any axiom in either branch survives.
@@ -693,7 +693,7 @@ async def time_travel(
     user_id: str = Depends(get_current_user),
 ):
     """
-    O(1) Chronos Engine.
+    Chronos Engine (historical state rebuild).
 
     Rebuilds the exact state of the universe at a historical ledger
     tick into an alternate timeline branch.  This is a full BigInt

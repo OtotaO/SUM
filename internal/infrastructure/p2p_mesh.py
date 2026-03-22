@@ -6,7 +6,7 @@ GlobalKnowledgeOS instances into a distributed hive-mind.
 
 Each node periodically:
     1. Contacts its known peers via the Gödel Sync Protocol.
-    2. Receives an O(1) delta of missing axioms.
+    2. Receives a delta of missing axioms.
     3. Mints and merges the novel axioms into its local state.
     4. Detects and reports contradictions imported from the network.
 
@@ -36,7 +36,7 @@ class EpistemicMeshNetwork:
     Decentralized P2P Hive Mind.
 
     Gossips Gödel Integers across distributed nodes to achieve
-    O(1) Global Consensus via the Gödel Sync Protocol.
+    Global Consensus via the Gödel Sync Protocol.
     """
 
     def __init__(

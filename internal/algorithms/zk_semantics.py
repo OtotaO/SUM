@@ -13,7 +13,7 @@ Protocol:
        confirm the prover genuinely held the factor.
 
 This is a simplified Pedersen-style commitment scheme optimised for
-the Gödel integer domain.  It is non-interactive and O(1).
+the Gödel integer domain.  It is non-interactive.
 
 Author: ototao
 License: Apache License 2.0

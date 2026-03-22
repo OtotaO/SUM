@@ -54,7 +54,7 @@ class CausalTriggerMap:
         Cascades inferences recursively until the semantic state
         reaches equilibrium.
 
-        O(1) Idempotency is guaranteed by Gödel LCM arithmetic —
+        Idempotency is guaranteed by Gödel LCM arithmetic —
         re-minting an existing prime changes nothing.
 
         Args:

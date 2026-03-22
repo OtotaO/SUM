@@ -154,7 +154,7 @@ class GodelStateAlgebra:
                 self.exclusion_zones[zone_key] = set()
             self.exclusion_zones[zone_key].add(p)
 
-            # Update node registry for O(1) GraphRAG traversal
+            # Update node registry for GraphRAG traversal
             self._update_node_registry(
                 subject.strip().lower(), object_.strip().lower(), p
             )
@@ -162,14 +162,14 @@ class GodelStateAlgebra:
         return self.axiom_to_prime[axiom_key]
 
     # ------------------------------------------------------------------
-    # Quantum GraphRAG (O(1) Node Registry)
+    # Quantum GraphRAG (Node Registry)
     # ------------------------------------------------------------------
 
     def _update_node_registry(
         self, subject: str, object_: str, prime: int
     ):
         """
-        Maintains the O(1) Context Integer for each node.
+        Maintains the Context Integer for each node.
 
         Every time a prime is minted, both its subject and object nodes
         accumulate the prime into their integer via LCM.
@@ -189,7 +189,7 @@ class GodelStateAlgebra:
         self, global_state: int, nodes: List[str], hops: int = 1
     ) -> int:
         """
-        O(1) GraphRAG Traversal with N-Hop Support.
+        GraphRAG Traversal with N-Hop Support.
 
         Returns the exact Gödel Integer representing the combined
         topological neighborhood of the requested nodes, filtered to
@@ -390,7 +390,7 @@ class GodelStateAlgebra:
 
     def delete_axiom(self, global_state: int, axiom_key: str) -> int:
         """
-        O(1) Semantic Deletion.
+        Semantic Deletion.
 
         Removes a fact from the global state by dividing out its prime
         factor.  Handles multiple occurrences if merged carelessly.
@@ -419,7 +419,7 @@ class GodelStateAlgebra:
         self, global_state: int, old_axiom_key: str, new_axiom_key: str
     ) -> int:
         """
-        O(1) Semantic Update (Curvature Resolution).
+        Semantic Update (Curvature Resolution).
 
         Divides out the obsolete fact and multiplies in the new fact —
         a single atomic gauge transformation on the state integer.
@@ -447,7 +447,7 @@ class GodelStateAlgebra:
         return math.lcm(state_without_old, new_prime)
 
     # ------------------------------------------------------------------
-    # Gödel Sync Protocol (O(1) Distributed Delta)
+    # Gödel Sync Protocol (Distributed Delta)
     # ------------------------------------------------------------------
 
     def calculate_network_delta(

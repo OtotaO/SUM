@@ -5,7 +5,7 @@ Governs the closed-loop extrapolation pipeline:
     1. TOMES:  Generate narrative text from verified Gödel axioms.
     2. TAGS:   Extract triplets from the narrative and re-encode as a
                Gödel integer.
-    3. VERIFY: O(1) modulo check — ``global_state % generated_state == 0``.
+    3. VERIFY: modulo check — ``global_state % generated_state == 0``.
     4. DIAGNOSE: If verification fails, GCD-based hallucination isolation
                  identifies the exact fabricated claims.
     5. SELF-CORRECT: Feed hallucinated axioms back as strict negative
@@ -105,7 +105,7 @@ class QuantumExtrapolator:
                 extracted_triplets
             )
 
-            # ── 3. VERIFY: The O(1) Epistemic Hardware Filter ────────
+            # ── 3. VERIFY: The Epistemic Hardware Filter ────────────
             if self.algebra.verify_entailment(global_state, generated_state):
                 logger.info(
                     "Mathematical Proof of Zero Hallucination achieved "

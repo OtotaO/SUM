@@ -2,7 +2,7 @@
 Akashic Ledger — Event-Sourced Fidelity Persistence
 
 Implements Yaroslavtsev's Fidelity Axiom (§7.1):  RAM holds the massive
-Gödel BigInt, while disk holds O(1) append-only mathematical operations
+Gödel BigInt, while disk holds append-only mathematical operations
 (traces) that can reconstruct it exactly after a crash.
 
 Operations:
@@ -32,11 +32,11 @@ class AkashicLedger:
     Crash-safe persistence for the Gödel state via event sourcing.
 
     Instead of serialising a million-digit integer to disk on every
-    change, we append a single O(1) mathematical trace (``MINT``,
+    change, we append a single mathematical trace (``MINT``,
     ``MUL``, ``DIV``).  The exact BigInt can be rebuilt at any time by
     replaying the trace in order.
 
-    The Chronos Engine enables O(1) Time Travel by replaying only up
+    The Chronos Engine enables Time Travel by replaying only up
     to a given ``max_seq_id``, reconstructing the universe as it
     existed at any historical tick.
     """
@@ -99,7 +99,7 @@ class AkashicLedger:
         Replay the event trace to reconstruct the Gödel BigInt.
 
         When ``max_seq_id`` is provided, only events up to that tick
-        are replayed, enabling **O(1) Time Travel** — the exact state
+        are replayed, enabling **Time Travel** — the exact state
         of knowledge at any historical moment can be reconstructed
         into an alternate timeline branch.
 
