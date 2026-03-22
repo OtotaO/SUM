@@ -12,29 +12,35 @@ Bundle format:
         "canonical_tome": "...",
         "state_integer": "...",
         "timestamp": "2026-03-22T12:00:00+00:00",
-        "signature": "hmac-sha256:..."
+        "signature": "hmac-sha256:...",
+        "public_signature": "ed25519:<base64>",  // optional
+        "public_key": "ed25519:<base64>"           // optional
     }
 
-The signature covers ``canonical_tome + state_integer + timestamp``
-using HMAC-SHA256, ensuring tamper detection during transport.
+Signature layers:
+    1. HMAC-SHA256 (shared secret) — tamper detection between trusted peers
+    2. Ed25519 (public key) — provenance verification by any third party
 
-Delta bundles contain only the novel axioms (the difference between
-a source and target state), enabling bandwidth-efficient sync.
+Both signatures cover the same payload: ``canonical_tome|state_integer|timestamp``.
+HMAC remains mandatory for backward compatibility. Ed25519 is added when a
+KeyManager is provided.
 
 Phase 15: Canonical Semantic ABI.
+Phase 17: Ed25519 Public-Key Attestation.
 
 Author: ototao
 License: Apache License 2.0
 """
 
+import base64
 import hashlib
 import hmac
 import json
 import math
 import logging
 from datetime import datetime, timezone
-from dataclasses import dataclass, asdict
-from typing import List, Optional
+from dataclasses import dataclass, asdict, field
+from typing import List, Optional, TYPE_CHECKING
 
 from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
 from internal.ensemble.tome_generator import (
@@ -42,9 +48,12 @@ from internal.ensemble.tome_generator import (
     CANONICAL_FORMAT_VERSION,
 )
 
+if TYPE_CHECKING:
+    from internal.infrastructure.key_manager import KeyManager
+
 logger = logging.getLogger(__name__)
 
-BUNDLE_VERSION = "1.0.0"
+BUNDLE_VERSION = "1.1.0"  # Minor bump: added optional Ed25519 fields
 
 
 @dataclass
@@ -59,6 +68,8 @@ class CanonicalBundle:
     timestamp: str
     signature: str
     is_delta: bool = False
+    public_signature: Optional[str] = None  # "ed25519:<base64>"
+    public_key: Optional[str] = None        # "ed25519:<base64>"
 
 
 class InvalidSignatureError(Exception):
@@ -71,7 +82,8 @@ class CanonicalCodec:
     Signed knowledge transport codec.
 
     Exports and imports CanonicalBundles with HMAC-SHA256 signatures
-    for tamper-proof knowledge transport between nodes.
+    for tamper detection, and optional Ed25519 signatures for
+    public-key provenance verification.
     """
 
     def __init__(
@@ -79,13 +91,15 @@ class CanonicalCodec:
         algebra: GodelStateAlgebra,
         tome_generator: AutoregressiveTomeGenerator,
         signing_key: str = "sum-default-key",
+        key_manager: Optional["KeyManager"] = None,
     ):
         self.algebra = algebra
         self.tome_generator = tome_generator
         self.signing_key = signing_key.encode("utf-8")
+        self.key_manager = key_manager
 
     # ------------------------------------------------------------------
-    # Signing
+    # HMAC Signing
     # ------------------------------------------------------------------
 
     def _sign(self, canonical_tome: str, state_str: str, timestamp: str) -> str:
@@ -104,6 +118,74 @@ class CanonicalCodec:
         """Verify HMAC-SHA256 signature."""
         expected = self._sign(canonical_tome, state_str, timestamp)
         return hmac.compare_digest(expected, signature)
+
+    # ------------------------------------------------------------------
+    # Ed25519 Signing
+    # ------------------------------------------------------------------
+
+    def _ed25519_sign(
+        self, canonical_tome: str, state_str: str, timestamp: str
+    ) -> tuple:
+        """
+        Produce Ed25519 signature and public key.
+
+        Returns:
+            (public_signature_str, public_key_str) or (None, None)
+            if no KeyManager is configured.
+        """
+        if self.key_manager is None:
+            return None, None
+
+        private_key, _ = self.key_manager.ensure_keypair()
+        payload = f"{canonical_tome}|{state_str}|{timestamp}".encode("utf-8")
+        sig_bytes = private_key.sign(payload)
+        pub_bytes = self.key_manager.get_public_key_bytes()
+
+        sig_str = f"ed25519:{base64.b64encode(sig_bytes).decode('ascii')}"
+        pub_str = f"ed25519:{base64.b64encode(pub_bytes).decode('ascii')}"
+        return sig_str, pub_str
+
+    @staticmethod
+    def _ed25519_verify(
+        canonical_tome: str,
+        state_str: str,
+        timestamp: str,
+        public_signature: str,
+        public_key_str: str,
+    ) -> bool:
+        """
+        Verify Ed25519 signature using the embedded public key.
+
+        Args:
+            canonical_tome: The canonical tome text.
+            state_str:      Decimal state integer string.
+            timestamp:      ISO 8601 timestamp.
+            public_signature: "ed25519:<base64_sig>"
+            public_key_str:   "ed25519:<base64_pubkey>"
+
+        Returns:
+            True if valid, False otherwise.
+        """
+        try:
+            from cryptography.hazmat.primitives.asymmetric.ed25519 import (
+                Ed25519PublicKey,
+            )
+            from cryptography.exceptions import InvalidSignature
+
+            sig_b64 = public_signature.split(":", 1)[1]
+            pub_b64 = public_key_str.split(":", 1)[1]
+
+            sig_bytes = base64.b64decode(sig_b64)
+            pub_bytes = base64.b64decode(pub_b64)
+
+            public_key = Ed25519PublicKey.from_public_bytes(pub_bytes)
+            payload = f"{canonical_tome}|{state_str}|{timestamp}".encode(
+                "utf-8"
+            )
+            public_key.verify(sig_bytes, payload)
+            return True
+        except (InvalidSignature, Exception):
+            return False
 
     # ------------------------------------------------------------------
     # Export
@@ -132,6 +214,7 @@ class CanonicalCodec:
         timestamp = datetime.now(timezone.utc).isoformat()
 
         signature = self._sign(canonical_tome, state_str, timestamp)
+        pub_sig, pub_key = self._ed25519_sign(canonical_tome, state_str, timestamp)
 
         bundle = CanonicalBundle(
             bundle_version=BUNDLE_VERSION,
@@ -143,9 +226,13 @@ class CanonicalCodec:
             timestamp=timestamp,
             signature=signature,
             is_delta=False,
+            public_signature=pub_sig,
+            public_key=pub_key,
         )
 
-        return asdict(bundle)
+        # Strip None fields for backward compatibility
+        result = asdict(bundle)
+        return {k: v for k, v in result.items() if v is not None}
 
     # ------------------------------------------------------------------
     # Import
@@ -155,7 +242,8 @@ class CanonicalCodec:
         """
         Import and verify a signed bundle.
 
-        Validates the HMAC-SHA256 signature, then returns the
+        Validates the HMAC-SHA256 signature, and optionally the
+        Ed25519 public-key signature if present. Returns the
         verified state integer for merging into a branch.
 
         Args:
@@ -165,7 +253,7 @@ class CanonicalCodec:
             The verified state integer.
 
         Raises:
-            InvalidSignatureError: If the signature doesn't match.
+            InvalidSignatureError: If any signature doesn't match.
             ValueError: If required fields are missing.
         """
         required = {"canonical_tome", "state_integer", "timestamp", "signature"}
@@ -178,17 +266,32 @@ class CanonicalCodec:
         timestamp = bundle_dict["timestamp"]
         signature = bundle_dict["signature"]
 
+        # Verify HMAC (mandatory)
         if not self._verify_signature(canonical_tome, state_str, timestamp, signature):
             raise InvalidSignatureError(
-                "Bundle signature verification failed. "
+                "Bundle HMAC signature verification failed. "
                 "The content may have been tampered with."
             )
 
+        # Verify Ed25519 (if present)
+        pub_sig = bundle_dict.get("public_signature")
+        pub_key = bundle_dict.get("public_key")
+        if pub_sig and pub_key:
+            if not self._ed25519_verify(
+                canonical_tome, state_str, timestamp, pub_sig, pub_key
+            ):
+                raise InvalidSignatureError(
+                    "Bundle Ed25519 signature verification failed. "
+                    "The provenance cannot be verified."
+                )
+            logger.info("Ed25519 provenance verified for bundle")
+
         state = int(state_str)
         logger.info(
-            "Bundle imported: branch=%s, axioms=%s, verified=True",
+            "Bundle imported: branch=%s, axioms=%s, hmac=✓, ed25519=%s",
             bundle_dict.get("branch", "unknown"),
             bundle_dict.get("axiom_count", "?"),
+            "✓" if pub_sig else "n/a",
         )
         return state
 
