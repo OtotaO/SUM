@@ -188,7 +188,7 @@ SUM/
 │   └── js/godel_client.js            # Browser-side Gödel sync client
 └── Tests/
     ├── fixtures/                      # Frozen golden reference vectors
-    └── test_phase[1-17]_*.py         # 226+ Passing Verification Tests
+    └── test_*.py                      # 324 Passing Verification Tests
 ```
 
 ---
@@ -196,8 +196,17 @@ SUM/
 ## 🛡️ Mathematical Verification Suite
 
 ```text
-226+ passed
+324 passed · 15/15 fortress checks
 
+─── Core Hardening (Process Intensification) ───
+ZK Semantic Proofs .................... 16 ✓  (round-trip, tamper, non-linkability, stress)
+Akashic Ledger Replay ................. 8  ✓  (crash recovery, time-travel, DIV)
+Causal Cascade Verification ........... 6  ✓  (multi-hop, cycle termination, idempotency)
+Gauge Orchestrator .................... 10 ✓  (L1/L2/L3 detection, merge, arbitration)
+Extraction Adversarial ................ 15 ✓  (HTML/SQL injection, Unicode, 10K-word stress)
+Cross-Instance & Stability ............ 24 ✓  (collision, tome ordering, timestamp, version)
+
+─── Phase Tests ───
 Ed25519 Attestation ................... 11 ✓  (dual-sig, tamper, compat, key mgmt)
 Witness Matrix Hardening .............. 7  ✓  (frozen vectors, cross-runtime)
 Property & Adversarial Tests .......... 43 ✓  (algebra invariants, bundle hardening)
