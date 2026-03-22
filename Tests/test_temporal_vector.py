@@ -145,11 +145,8 @@ def make_deterministic_embedder(dim: int = 8):
 
 class TestVectorBridge:
 
-    def _run(self, coro):
-        """Helper to run async code in tests."""
-        return asyncio.get_event_loop().run_until_complete(coro)
-
-    def test_index_new_primes(self):
+    @pytest.mark.asyncio
+    async def test_index_new_primes(self):
         """All primes get indexed into the vector space."""
         alg = GodelStateAlgebra()
         alg.encode_chunk_state([
@@ -158,16 +155,17 @@ class TestVectorBridge:
         ])
 
         bridge = ContinuousDiscreteBridge(alg, make_deterministic_embedder())
-        count = self._run(bridge.index_new_primes())
+        count = await bridge.index_new_primes()
 
         assert count == 2
         assert len(bridge.prime_embeddings) == 2
 
         # Re-indexing is idempotent
-        count2 = self._run(bridge.index_new_primes())
+        count2 = await bridge.index_new_primes()
         assert count2 == 0
 
-    def test_search_returns_alive_primes(self):
+    @pytest.mark.asyncio
+    async def test_search_returns_alive_primes(self):
         """Search only returns axioms whose primes divide the state."""
         alg = GodelStateAlgebra()
         state = alg.encode_chunk_state([
@@ -177,17 +175,16 @@ class TestVectorBridge:
         ])
 
         bridge = ContinuousDiscreteBridge(alg, make_deterministic_embedder())
-        self._run(bridge.index_new_primes())
+        await bridge.index_new_primes()
 
-        results = self._run(
-            bridge.semantic_search_godel_state(state, "how old is alice", top_k=10)
-        )
+        results = await bridge.semantic_search_godel_state(state, "how old is alice", top_k=10)
 
         # All 3 axioms should be returned (they're all alive)
         returned_keys = [r[0] for r in results]
         assert len(returned_keys) == 3
 
-    def test_deleted_prime_vanishes_from_search(self):
+    @pytest.mark.asyncio
+    async def test_deleted_prime_vanishes_from_search(self):
         """After deleting an axiom, it no longer appears in search."""
         alg = GodelStateAlgebra()
         state = alg.encode_chunk_state([
@@ -196,50 +193,47 @@ class TestVectorBridge:
         ])
 
         bridge = ContinuousDiscreteBridge(alg, make_deterministic_embedder())
-        self._run(bridge.index_new_primes())
+        await bridge.index_new_primes()
 
         # Delete Alice
         new_state = alg.delete_axiom(state, "alice||age||30")
 
-        results = self._run(
-            bridge.semantic_search_godel_state(new_state, "alice age", top_k=10)
-        )
+        results = await bridge.semantic_search_godel_state(new_state, "alice age", top_k=10)
 
         returned_keys = [r[0] for r in results]
         assert "alice||age||30" not in returned_keys
         assert "bob||role||admin" in returned_keys
 
-    def test_updated_axiom_reflected_in_search(self):
+    @pytest.mark.asyncio
+    async def test_updated_axiom_reflected_in_search(self):
         """After updating, old axiom is gone and new axiom appears."""
         alg = GodelStateAlgebra()
         state = alg.encode_chunk_state([("Alice", "age", "30")])
 
         bridge = ContinuousDiscreteBridge(alg, make_deterministic_embedder())
-        self._run(bridge.index_new_primes())
+        await bridge.index_new_primes()
 
         # Update: Alice's age 30 → 31
         new_state = alg.update_axiom(state, "alice||age||30", "alice||age||31")
 
         # Index the new prime
-        self._run(bridge.index_new_primes())
+        await bridge.index_new_primes()
 
-        results = self._run(
-            bridge.semantic_search_godel_state(new_state, "alice age", top_k=10)
-        )
+        results = await bridge.semantic_search_godel_state(new_state, "alice age", top_k=10)
 
         returned_keys = [r[0] for r in results]
         assert "alice||age||30" not in returned_keys
         assert "alice||age||31" in returned_keys
 
-    def test_empty_state_returns_nothing(self):
+    @pytest.mark.asyncio
+    async def test_empty_state_returns_nothing(self):
         """State = 1 (empty) returns no results."""
         alg = GodelStateAlgebra()
         alg.encode_chunk_state([("Alice", "age", "30")])
 
         bridge = ContinuousDiscreteBridge(alg, make_deterministic_embedder())
-        self._run(bridge.index_new_primes())
+        await bridge.index_new_primes()
 
-        results = self._run(
-            bridge.semantic_search_godel_state(1, "alice", top_k=10)
-        )
+        results = await bridge.semantic_search_godel_state(1, "alice", top_k=10)
         assert results == []
+

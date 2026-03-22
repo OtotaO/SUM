@@ -1,5 +1,7 @@
 # SUM — The Quantum Knowledge OS
 
+[![Quantum Knowledge OS CI](https://github.com/OtotaO/SUM/actions/workflows/quantum-ci.yml/badge.svg)](https://github.com/OtotaO/SUM/actions/workflows/quantum-ci.yml)
+
 > **From Atomic Tags to Infinite Books. Mathematically Verified. Hallucination-Proof.**
 
 SUM is the world's first **Gödel-State Knowledge Engine** — a system that encodes human language and logic as prime-factored integers and performs semantic operations (merge, entailment, paradox resolution, graph traversal) in **O(1) time** using pure number theory.
