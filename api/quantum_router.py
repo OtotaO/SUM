@@ -41,10 +41,13 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from internal.algorithms.syntactic_sieve import DeterministicSieve
 from internal.ensemble.vector_bridge import ContinuousDiscreteBridge
 from internal.infrastructure.akashic_ledger import AkashicLedger
 from internal.ensemble.epistemic_loop import QuantumExtrapolator
 from internal.ensemble.causal_triggers import CausalTriggerMap
+from internal.ensemble.tome_generator import AutoregressiveTomeGenerator
+from internal.ensemble.ouroboros import OuroborosVerifier
 from internal.algorithms.zk_semantics import ZKSemanticProver
 from internal.infrastructure.p2p_mesh import EpistemicMeshNetwork
 from mass_semantic_engine import MassSemanticEngine
@@ -133,6 +136,17 @@ class GlobalKnowledgeOS:
                 llm_adapter.generate_text,
                 llm_adapter.extract_triplets,
             )
+
+        # Phase 14: Deterministic Sieve + Tome Generator + Ouroboros
+        # These work in math-only mode (no LLM required)
+        self.sieve = DeterministicSieve()
+        self.tome_generator = AutoregressiveTomeGenerator(
+            self.algebra,
+            extrapolator=getattr(self, 'extrapolator', None),
+        )
+        self.ouroboros = OuroborosVerifier(
+            self.algebra, self.sieve, self.tome_generator,
+        )
 
         # P2P Holographic Mesh
         self.mesh = EpistemicMeshNetwork(
@@ -254,6 +268,22 @@ class PeerRequest(BaseModel):
 class ZKProofRequest(BaseModel):
     axiom_key: str
     branch: str = "main"
+
+
+class RehydrateRequest(BaseModel):
+    """Unpack a Gödel Integer into a structured Tome."""
+    title: str = "The Rehydrated Codex"
+    mode: str = "proof"  # "proof" (canonical) or "narrative" (LLM)
+
+
+class LearnRequest(BaseModel):
+    """Generate an Epistemic Delta Tome for personalized learning."""
+    target_topic_node: str
+
+
+class OuroborosRequest(BaseModel):
+    """Verify semantic conservation via round-trip encoding."""
+    text: str
 
 
 # ─── Helper ──────────────────────────────────────────────────────────
@@ -771,7 +801,134 @@ async def list_peers():
     return {"peers": peers, "count": len(peers)}
 
 
-# ─── SSE Telemetry ────────────────────────────────────────────────────
+# ─── Phase 14: Ouroboros Protocol ────────────────────────────────────
+
+@router.post("/rehydrate")
+async def rehydrate_tome(
+    req: RehydrateRequest,
+    user_id: str = Depends(get_current_user),
+):
+    """
+    Lossless Semantic Rehydration.
+
+    Unpacks the user's Gödel branch into a structured Tome.
+
+    Modes:
+        * ``proof``     — deterministic canonical output (round-trips)
+        * ``narrative``  — LLM-enhanced prose (requires LLM adapter)
+    """
+    if not kos.is_booted:
+        raise HTTPException(status_code=503, detail="KOS booting")
+
+    current_state = kos.branches.get(user_id, 1)
+    if current_state == 1:
+        return {
+            "tome": "Knowledge state is empty. Nothing to rehydrate.",
+            "axiom_count": 0,
+        }
+
+    tome_text = await kos.tome_generator.generate_tome(
+        current_state, req.title, mode=req.mode
+    )
+    active_axioms = kos.tome_generator.extract_active_axioms(current_state)
+
+    return {
+        "tome": tome_text,
+        "mode": req.mode,
+        "axiom_count": len(active_axioms),
+        "state_digits": len(str(current_state)),
+        "user_id": user_id,
+    }
+
+
+@router.post("/learn")
+async def generate_epistemic_delta(
+    req: LearnRequest,
+    user_id: str = Depends(get_current_user),
+):
+    """
+    Epistemic Delta Generation (Personalized Learning).
+
+    Computes the exact mathematical gap between the user's knowledge
+    and a target topic, then generates a custom Tome containing only
+    the facts the user does not already know:
+
+        delta = topic_integer // gcd(topic_integer, user_integer)
+
+    This is the perfectly optimized educational curriculum.
+    """
+    if not kos.is_booted:
+        raise HTTPException(status_code=503, detail="KOS booting")
+
+    user_state = kos.branches.get(user_id, 1)
+
+    # Pull topic knowledge via GraphRAG from the global main branch
+    main_state = kos.branches.get("main", 1)
+    topic_integer = kos.algebra.get_quantum_neighborhood(
+        main_state, [req.target_topic_node.strip().lower()], hops=1
+    )
+
+    if topic_integer == 1:
+        return {
+            "target_topic": req.target_topic_node,
+            "educational_tome": (
+                f"No knowledge found about '{req.target_topic_node}' "
+                f"in the global state."
+            ),
+            "delta_axiom_count": 0,
+        }
+
+    # The Epistemic Delta: Topic ÷ gcd(Topic, User)
+    shared_knowledge = math.gcd(topic_integer, user_state)
+    delta_integer = topic_integer // shared_knowledge
+
+    if delta_integer == 1:
+        return {
+            "target_topic": req.target_topic_node,
+            "educational_tome": (
+                f"You already know everything about "
+                f"'{req.target_topic_node}'."
+            ),
+            "delta_axiom_count": 0,
+        }
+
+    # Generate the educational Tome from the delta
+    delta_axioms = kos.tome_generator.extract_active_axioms(delta_integer)
+    tome = kos.tome_generator.generate_canonical(
+        delta_integer,
+        f"Learning Delta: {req.target_topic_node.title()}",
+    )
+
+    return {
+        "target_topic": req.target_topic_node,
+        "educational_tome": tome,
+        "delta_axiom_count": len(delta_axioms),
+        "user_id": user_id,
+    }
+
+
+@router.post("/ouroboros/verify")
+async def verify_semantic_conservation(req: OuroborosRequest):
+    """
+    Prove Semantic Conservation (The Ouroboros Protocol).
+
+    Accepts raw text and runs the full round-trip:
+        Text → Sieve → Integer A → Canonical Tome → Sieve → Integer B
+
+    Returns a proof object demonstrating whether A == B
+    (lossless conservation) and detailed diagnostics if not.
+    """
+    if not kos.is_booted:
+        raise HTTPException(status_code=503, detail="KOS booting")
+
+    proof = kos.ouroboros.verify_from_text(req.text)
+    result = kos.ouroboros.proof_to_dict(proof)
+    result["canonical_tome"] = proof.canonical_tome
+
+    return result
+
+
+# ─── SSE Telemetry ────────────────────────────────────────────────
 
 @router.get("/telemetry")
 async def telemetry_stream():

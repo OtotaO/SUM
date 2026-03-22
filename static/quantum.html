@@ -183,7 +183,29 @@
         <div class="divider"></div>
 
         <div>
-            <p class="section-label">③ System Telemetry</p>
+            <p class="section-label">③ Rehydrate (Tags → Tome)</p>
+            <input type="text" id="rehydrate-title" placeholder="Tome title (optional)" style="width: 100%; background: #0c1222; border: 1px solid #1e293b; color: #f1f5f9; padding: 10px; border-radius: 10px; margin-bottom: 8px; font-size: 13px; outline: none; font-family: inherit;">
+            <button id="rehydrate-btn" onclick="rehydrateTome()" style="background: linear-gradient(135deg, #059669, #10b981);">Rehydrate Gödel State</button>
+            <div id="rehydrate-result" class="result-box" style="margin-top: 10px; white-space: pre-wrap;">
+                Awaiting rehydration…
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div>
+            <p class="section-label">④ Epistemic Delta (Learn)</p>
+            <input type="text" id="learn-topic" placeholder="Topic entity (e.g. alice, quantum, gravity)" style="width: 100%; background: #0c1222; border: 1px solid #1e293b; color: #f1f5f9; padding: 10px; border-radius: 10px; margin-bottom: 8px; font-size: 13px; outline: none; font-family: inherit;">
+            <button id="learn-btn" onclick="learnTopic()" style="background: linear-gradient(135deg, #7c3aed, #8b5cf6);">Generate Delta Tome</button>
+            <div id="learn-result" class="result-box" style="margin-top: 10px; white-space: pre-wrap;">
+                Awaiting epistemic delta…
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div>
+            <p class="section-label">⑤ System Telemetry</p>
             <div id="telemetry-terminal" class="terminal">
                 <p style="color: #475569;">Awaiting system events…</p>
             </div>
@@ -255,6 +277,44 @@
                 result.innerText = data.verified_narrative || data.detail || "No response.";
             } catch (e) { console.error(e); result.innerText = "Extrapolation failed: " + e.message; }
             finally { btn.innerText = "Generate Verified Tome"; btn.style.opacity = "1"; btn.style.pointerEvents = "auto"; }
+        }
+
+        // ─── Phase 14: Rehydrate + Learn ─────────────────────
+        async function rehydrateTome() {
+            const btn = document.getElementById('rehydrate-btn');
+            const result = document.getElementById('rehydrate-result');
+            const title = document.getElementById('rehydrate-title').value.trim() || "The Rehydrated Codex";
+            btn.innerText = "Rehydrating…"; btn.style.opacity = "0.6"; btn.style.pointerEvents = "none";
+            result.innerText = "Unpacking Gödel Integer…";
+            try {
+                const res = await fetch('/api/v1/quantum/rehydrate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title: title, mode: "proof" })
+                });
+                const data = await res.json();
+                result.innerText = data.tome + "\n\n[" + (data.axiom_count || 0) + " axioms, " + (data.state_digits || 0) + " digits]";
+            } catch (e) { result.innerText = "Rehydration failed: " + e.message; }
+            finally { btn.innerText = "Rehydrate Gödel State"; btn.style.opacity = "1"; btn.style.pointerEvents = "auto"; }
+        }
+
+        async function learnTopic() {
+            const btn = document.getElementById('learn-btn');
+            const result = document.getElementById('learn-result');
+            const topic = document.getElementById('learn-topic').value.trim().toLowerCase();
+            if (!topic) return;
+            btn.innerText = "Computing Delta…"; btn.style.opacity = "0.6"; btn.style.pointerEvents = "none";
+            result.innerText = "Calculating epistemic gap…";
+            try {
+                const res = await fetch('/api/v1/quantum/learn', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target_topic_node: topic })
+                });
+                const data = await res.json();
+                result.innerText = data.educational_tome + "\n\n[" + (data.delta_axiom_count || 0) + " new axioms]";
+            } catch (e) { result.innerText = "Learning failed: " + e.message; }
+            finally { btn.innerText = "Generate Delta Tome"; btn.style.opacity = "1"; btn.style.pointerEvents = "auto"; }
         }
 
         // ─── SSE Telemetry ────────────────────────────────
