@@ -118,7 +118,7 @@ git clone https://github.com/OtotaO/SUM.git
 cd SUM
 pip install -r requirements-prod.txt
 
-# Run the 165+ test verification suite
+# Run the 226+ test verification suite
 python -m pytest Tests/ -v
 
 # Launch the Quantum UI & OS
@@ -170,7 +170,8 @@ SUM/
 │   └── infrastructure/
 │       ├── akashic_ledger.py         # Event-sourced crash recovery & Time Travel
 │       ├── p2p_mesh.py               # Decentralized Gossip Protocol
-│       └── canonical_codec.py        # Signed bundle transport (HMAC-SHA256)
+│       ├── canonical_codec.py        # Signed bundle transport (HMAC + Ed25519)
+│       └── key_manager.py             # Ed25519 keypair lifecycle management
 ├── api/
 │   └── quantum_router.py             # FastAPI routing and GlobalKnowledgeOS
 ├── mass_semantic_engine.py           # MapReduce Tomes↔Tags pipeline
@@ -186,7 +187,8 @@ SUM/
 │   ├── quantum.html                  # Quantum UI (vis-network, Telemetry HUD)
 │   └── js/godel_client.js            # Browser-side Gödel sync client
 └── Tests/
-    └── test_phase[1-16]_*.py         # 165+ Passing Verification Tests
+    ├── fixtures/                      # Frozen golden reference vectors
+    └── test_phase[1-17]_*.py         # 226+ Passing Verification Tests
 ```
 
 ---
@@ -194,23 +196,25 @@ SUM/
 ## 🛡️ Mathematical Verification Suite
 
 ```text
-165+ passed
+226+ passed
 
-Property & Adversarial Tests ........... 43 ✓  (algebra invariants, bundle hardening)
-Phase 16 — Independent Witness ......... 21 ✓  (cross-runtime verification)
-Phase 15 — Canonical Semantic ABI ...... 22 ✓  (versioning, bundles, JWT, multi-hop)
-Phase 14 — Ouroboros Round-Trip ........ 16 ✓  (encode/decode conservation)
-Phase 13 — JWT Multi-Tenancy ........... 3  ✓
-Phase 10 — Chronos & Mesh .............. 17 ✓
-Phase 9 — Multiverse & Causal Triggers . 21 ✓
-Phase 8 — Wave Function Collapse ....... 8  ✓
-Phase 7 — GraphRAG + Daemon ............ 6  ✓
-Phase 6 — Fractal Crystallization ...... 5  ✓
-Phase 5 — Gödel Sync Protocol + API .... 7  ✓
-Phase 4 — Akashic Ledger ............... 3  ✓
-Phase 3 — Temporal CRUD + Vectors ...... 12 ✓
-Phase 2 — Epistemic Feedback Loop ...... 7  ✓
-Phase 1 — SPNT + Gödel Algebra ......... 15 ✓
+Ed25519 Attestation ................... 11 ✓  (dual-sig, tamper, compat, key mgmt)
+Witness Matrix Hardening .............. 7  ✓  (frozen vectors, cross-runtime)
+Property & Adversarial Tests .......... 43 ✓  (algebra invariants, bundle hardening)
+Phase 16 — Independent Witness ........ 21 ✓  (cross-runtime verification)
+Phase 15 — Canonical Semantic ABI ..... 22 ✓  (versioning, bundles, JWT, multi-hop)
+Phase 14 — Ouroboros Round-Trip ....... 16 ✓  (encode/decode conservation)
+Phase 13 — JWT Multi-Tenancy .......... 3  ✓
+Phase 10 — Chronos & Mesh ............. 17 ✓
+Phase 9 — Multiverse & Causal Triggers  21 ✓
+Phase 8 — Wave Function Collapse ...... 8  ✓
+Phase 7 — GraphRAG + Daemon ........... 6  ✓
+Phase 6 — Fractal Crystallization ..... 5  ✓
+Phase 5 — Gödel Sync Protocol + API ... 7  ✓
+Phase 4 — Akashic Ledger .............. 3  ✓
+Phase 3 — Temporal CRUD + Vectors ..... 12 ✓
+Phase 2 — Epistemic Feedback Loop ..... 7  ✓
+Phase 1 — SPNT + Gödel Algebra ........ 15 ✓
 ```
 
 ---
