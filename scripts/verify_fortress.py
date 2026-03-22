@@ -157,6 +157,52 @@ def main():
         all_pass &= check("Both keys trusted", len(trusted) == 2)
         all_pass &= check("Old key in trusted list", pub1 in trusted)
 
+    # ── 6. ZK Semantic Proof ──────────────────────────────────
+    print("\n[6] ZK Semantic Proof Round-Trip")
+    from internal.algorithms.zk_semantics import ZKSemanticProver
+    zk_alg = GodelStateAlgebra()
+    zk_p = zk_alg.get_or_mint_prime("fortress", "zk", "proof")
+    zk_proof = ZKSemanticProver.generate_proof(zk_p, zk_p)
+    all_pass &= check("ZK proof generates", "commitment" in zk_proof)
+    all_pass &= check("ZK proof verifies", ZKSemanticProver.verify_proof(zk_proof))
+    zk_proof["quotient"] = str(int(zk_proof["quotient"]) + 1)
+    all_pass &= check("Tampered ZK rejected", not ZKSemanticProver.verify_proof(zk_proof))
+
+    # ── 7. Akashic Ledger Replay ──────────────────────────────
+    print("\n[7] Akashic Ledger Replay")
+    import asyncio, os
+    from internal.infrastructure.akashic_ledger import AkashicLedger
+
+    async def _ledger_check():
+        with tempfile.TemporaryDirectory() as td:
+            ledger = AkashicLedger(db_path=os.path.join(td, "fort.db"))
+            la = GodelStateAlgebra()
+            p = la.get_or_mint_prime("ledger", "test", "replay")
+            await ledger.append_event("MINT", p, "ledger||test||replay")
+            await ledger.append_event("MUL", p)
+            fresh = GodelStateAlgebra()
+            rebuilt = await ledger.rebuild_state(fresh)
+            return rebuilt == p and "ledger||test||replay" in fresh.axiom_to_prime
+
+    ledger_ok = asyncio.run(_ledger_check())
+    all_pass &= check("Ledger write→replay matches", ledger_ok)
+
+    # ── 8. End-to-End Pipeline ────────────────────────────────
+    print("\n[8] End-to-End Pipeline (text → sieve → algebra → codec → reimport)")
+    from internal.algorithms.syntactic_sieve import DeterministicSieve
+    sieve = DeterministicSieve()
+    triplets = sieve.extract_triplets("Alice likes cats. Bob knows Python.")
+    e2e_alg = GodelStateAlgebra()
+    e2e_state = 1
+    for s, p, o in triplets:
+        e2e_state = math.lcm(e2e_state, e2e_alg.get_or_mint_prime(s, p, o))
+    e2e_tome = AutoregressiveTomeGenerator(e2e_alg)
+    e2e_codec = CanonicalCodec(e2e_alg, e2e_tome, "e2e-fortress-key-32bytes!!")
+    e2e_bundle = e2e_codec.export_bundle(e2e_state)
+    e2e_reimport = e2e_codec.import_bundle(e2e_bundle)
+    all_pass &= check("Sieve extracts triplets", len(triplets) >= 1)
+    all_pass &= check("Pipeline round-trip matches", e2e_reimport == e2e_state)
+
     # ── Summary ─────────────────────────────────────────
     print(f"\n{'=' * 60}")
     if all_pass:
