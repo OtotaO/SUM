@@ -27,6 +27,10 @@ from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
 
 logger = logging.getLogger(__name__)
 
+# The canonical format version — treat this as an ABI contract.
+# Bump when the template grammar changes.
+CANONICAL_FORMAT_VERSION = "1.0.0"
+
 
 class AutoregressiveTomeGenerator:
     """
@@ -96,9 +100,9 @@ class AutoregressiveTomeGenerator:
         chapters = self.cluster_by_subject(target_state)
 
         if not chapters:
-            return f"# {title}\n\nThe Gödel State is empty (= 1). No axioms to rehydrate."
+            return f"@canonical_version: {CANONICAL_FORMAT_VERSION}\n# {title}\n\nThe Gödel State is empty (= 1). No axioms to rehydrate."
 
-        lines = [f"# {title}", ""]
+        lines = [f"@canonical_version: {CANONICAL_FORMAT_VERSION}", f"# {title}", ""]
 
         # Sort subjects lexicographically for determinism
         for subject in sorted(chapters.keys()):

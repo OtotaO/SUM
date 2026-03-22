@@ -189,28 +189,50 @@ class GodelStateAlgebra:
         self, global_state: int, nodes: List[str], hops: int = 1
     ) -> int:
         """
-        O(1) GraphRAG Traversal.
+        O(1) GraphRAG Traversal with N-Hop Support.
 
         Returns the exact Gödel Integer representing the combined
         topological neighborhood of the requested nodes, filtered to
         only include axioms alive in the current global state.
 
+        The traversal iteratively expands the frontier: at each hop,
+        new neighbor nodes are discovered and their edges are collected.
+
         Args:
             global_state: Current Gödel integer.
             nodes:        Entity names to query.
-            hops:         Number of traversal hops (currently 1-hop).
+            hops:         Number of traversal hops (1-hop, 2-hop, etc.).
 
         Returns:
             Gödel integer representing the neighbourhood context.
         """
+        visited: set = set()
+        frontier: set = set(n.strip().lower() for n in nodes)
         context_state = 1
 
-        for node in nodes:
-            if node in self.node_registry:
-                node_integer = self.node_registry[node]
-                # Filter for only edges alive in the global state
-                alive_node_integer = math.gcd(global_state, node_integer)
-                context_state = math.lcm(context_state, alive_node_integer)
+        for _hop in range(hops):
+            next_frontier: set = set()
+            for node in frontier:
+                if node in visited:
+                    continue
+                visited.add(node)
+                if node in self.node_registry:
+                    node_integer = self.node_registry[node]
+                    # Filter for only edges alive in the global state
+                    alive_node_integer = math.gcd(
+                        global_state, node_integer
+                    )
+                    context_state = math.lcm(
+                        context_state, alive_node_integer
+                    )
+                    # Discover neighbor nodes for next hop
+                    for prime, axiom in self.prime_to_axiom.items():
+                        if alive_node_integer % prime == 0:
+                            parts = axiom.split("||")
+                            if len(parts) == 3:
+                                next_frontier.add(parts[0])
+                                next_frontier.add(parts[2])
+            frontier = next_frontier - visited
 
         return context_state
 

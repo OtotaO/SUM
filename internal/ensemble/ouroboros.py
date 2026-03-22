@@ -31,12 +31,16 @@ License: Apache License 2.0
 import math
 import re
 import logging
+from datetime import datetime, timezone
 from typing import List, Tuple
 from dataclasses import dataclass, field
 
 from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
 from internal.algorithms.syntactic_sieve import DeterministicSieve
-from internal.ensemble.tome_generator import AutoregressiveTomeGenerator
+from internal.ensemble.tome_generator import (
+    AutoregressiveTomeGenerator,
+    CANONICAL_FORMAT_VERSION,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -48,8 +52,13 @@ class ConservationProof:
 
     Attributes:
         is_conserved:     True if the round-trip is lossless.
+        format_version:   Canonical format version used for the proof.
+        proof_mode:       Always ``"canonical"`` for conservation proofs.
+        timestamp:        ISO 8601 timestamp of verification.
         source_state:     Integer A (original encoding).
         reconstructed_state: Integer B (re-encoded from canonical tome).
+        state_a_digits:   Digit count of Integer A.
+        state_b_digits:   Digit count of Integer B.
         source_axiom_count:  Number of axioms in A.
         reconstructed_axiom_count: Number of axioms in B.
         missing_axioms:   Axioms in A but not in B (lost in decode).
@@ -57,8 +66,13 @@ class ConservationProof:
         canonical_tome:   The intermediate canonical text.
     """
     is_conserved: bool
+    format_version: str
+    proof_mode: str
+    timestamp: str
     source_state: int
     reconstructed_state: int
+    state_a_digits: int
+    state_b_digits: int
     source_axiom_count: int
     reconstructed_axiom_count: int
     missing_axioms: List[str] = field(default_factory=list)
@@ -79,8 +93,13 @@ class OuroborosVerifier:
     never for the conservation proof itself.
     """
 
+    # Supported canonical format versions
+    SUPPORTED_VERSIONS = {"1.0.0"}
+
     # Regex to extract axiom components from canonical "The {s} {p} {o}." lines
     _CANONICAL_LINE_RE = re.compile(r"^The (\S+) (\S+) (.+)\.$")
+    # Regex to extract version header
+    _VERSION_RE = re.compile(r"^@canonical_version:\s*(.+)$")
 
     def __init__(
         self,
@@ -94,25 +113,34 @@ class OuroborosVerifier:
 
     def _reconstruct_from_canonical(
         self, canonical_tome: str
-    ) -> Tuple[int, List[str]]:
+    ) -> Tuple[int, List[str], str]:
         """
         Parse canonical tome text back into axiom keys and re-encode.
 
         The canonical renderer emits lines in the exact format::
 
+            @canonical_version: 1.0.0
             The {subject} {predicate} {object}.
 
-        This method extracts those components, reconstructs the axiom
-        key ``s||p||o``, and re-encodes to a Gödel integer.
+        This method extracts the version, validates it, reconstructs
+        axiom keys, and re-encodes to a Gödel integer.
 
         Returns:
-            (reconstructed_state, list_of_axiom_keys)
+            (reconstructed_state, list_of_axiom_keys, format_version)
         """
         state = 1
         axiom_keys = []
+        format_version = "unknown"
 
         for line in canonical_tome.splitlines():
             line = line.strip()
+
+            # Check for version header
+            vm = self._VERSION_RE.match(line)
+            if vm:
+                format_version = vm.group(1).strip()
+                continue
+
             m = self._CANONICAL_LINE_RE.match(line)
             if m:
                 s, p, o = m.group(1), m.group(2), m.group(3)
@@ -121,7 +149,7 @@ class OuroborosVerifier:
                     state = math.lcm(state, prime)
                 axiom_keys.append(f"{s}||{p}||{o}")
 
-        return state, axiom_keys
+        return state, axiom_keys, format_version
 
     def _extract_axiom_keys(self, state: int) -> set:
         """Extract the set of axiom keys whose primes divide the state."""
@@ -154,7 +182,9 @@ class OuroborosVerifier:
         )
 
         # Step 2: Re-encode from canonical template lines (NOT via NLP sieve)
-        reconstructed_state, _ = self._reconstruct_from_canonical(canonical_tome)
+        reconstructed_state, _, format_version = self._reconstruct_from_canonical(
+            canonical_tome
+        )
 
         # Step 3: Diagnose
         source_axioms = self._extract_axiom_keys(target_state)
@@ -164,11 +194,17 @@ class OuroborosVerifier:
         extra = sorted(reconstructed_axioms - source_axioms)
 
         is_conserved = (target_state == reconstructed_state)
+        now = datetime.now(timezone.utc).isoformat()
 
         proof = ConservationProof(
             is_conserved=is_conserved,
+            format_version=format_version,
+            proof_mode="canonical",
+            timestamp=now,
             source_state=target_state,
             reconstructed_state=reconstructed_state,
+            state_a_digits=len(str(target_state)),
+            state_b_digits=len(str(reconstructed_state)),
             source_axiom_count=len(source_axioms),
             reconstructed_axiom_count=len(reconstructed_axioms),
             missing_axioms=missing,
@@ -219,8 +255,11 @@ class OuroborosVerifier:
         """Serialize a ConservationProof for API responses."""
         return {
             "is_conserved": proof.is_conserved,
-            "source_state_digits": len(str(proof.source_state)),
-            "reconstructed_state_digits": len(str(proof.reconstructed_state)),
+            "format_version": proof.format_version,
+            "proof_mode": proof.proof_mode,
+            "timestamp": proof.timestamp,
+            "state_a_digits": proof.state_a_digits,
+            "state_b_digits": proof.state_b_digits,
             "source_axiom_count": proof.source_axiom_count,
             "reconstructed_axiom_count": proof.reconstructed_axiom_count,
             "missing_axioms": proof.missing_axioms,

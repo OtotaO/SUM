@@ -6,19 +6,24 @@
  * graph using vis-network.
  */
 class GodelClient {
-    constructor() {
+    constructor(token = null) {
         this.localState = 1n;
         this.nodes = new vis.DataSet();
         this.edges = new vis.DataSet();
+        this.token = token;
     }
 
     async syncWithServer() {
         try {
             const branchSelector = document.getElementById('branch-selector');
             const branch = branchSelector ? branchSelector.value : "main";
+            const headers = { 'Content-Type': 'application/json' };
+            if (this.token) {
+                headers['Authorization'] = 'Bearer ' + this.token;
+            }
             const response = await fetch('/api/v1/quantum/sync', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: headers,
                 body: JSON.stringify({ client_state_integer: this.localState.toString(), branch: branch })
             });
 

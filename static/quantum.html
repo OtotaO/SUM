@@ -143,6 +143,12 @@
             </div>
         </div>
 
+        <div id="auth-panel" style="display: flex; gap: 8px; align-items: center;">
+            <input type="text" id="auth-username" placeholder="Username" style="flex: 1; background: #0f172a; border: 1px solid #334155; color: #e2e8f0; padding: 7px 10px; border-radius: 8px; outline: none; font-size: 12px; font-family: 'JetBrains Mono', monospace;">
+            <button id="auth-btn" onclick="getPassport()" style="padding: 7px 12px; background: linear-gradient(135deg, #f59e0b, #d97706); font-size: 11px; width: auto; min-width: 100px; border-radius: 8px;">🔑 Get Passport</button>
+        </div>
+        <div id="auth-status" style="font-family: 'JetBrains Mono', monospace; color: #64748b; font-size: 11px;">Not authenticated</div>
+
         <div id="state-display">Gödel State: 1</div>
         <div id="axiom-count">Axioms: 0</div>
 
@@ -216,8 +222,57 @@
 
     <script src="/static/js/godel_client.js"></script>
     <script>
+        // ─── Auth Layer ──────────────────────────────────────
+        let currentToken = localStorage.getItem('sum_jwt') || null;
+        let currentUser = localStorage.getItem('sum_user') || null;
+
+        function updateAuthUI() {
+            const status = document.getElementById('auth-status');
+            const panel = document.getElementById('auth-panel');
+            if (currentToken && currentUser) {
+                status.innerHTML = '🔐 <span style="color: #38bdf8;">' + currentUser + '</span>';
+                status.style.color = '#22c55e';
+            } else {
+                status.innerText = 'Not authenticated';
+                status.style.color = '#64748b';
+            }
+        }
+
+        async function getPassport() {
+            const username = document.getElementById('auth-username').value.trim();
+            if (!username) return;
+            try {
+                const res = await fetch('/api/v1/quantum/auth/token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: username })
+                });
+                if (!res.ok) throw new Error(await res.text());
+                const data = await res.json();
+                currentToken = data.access_token;
+                currentUser = username;
+                localStorage.setItem('sum_jwt', currentToken);
+                localStorage.setItem('sum_user', currentUser);
+                updateAuthUI();
+                // Reinit client with token
+                client.token = currentToken;
+                client.syncWithServer();
+            } catch (e) { alert('Auth failed: ' + e.message); }
+        }
+
+        async function authFetch(url, opts = {}) {
+            if (!opts.headers) opts.headers = {};
+            opts.headers['Content-Type'] = opts.headers['Content-Type'] || 'application/json';
+            if (currentToken) {
+                opts.headers['Authorization'] = 'Bearer ' + currentToken;
+            }
+            return fetch(url, opts);
+        }
+
+        updateAuthUI();
+
         const container = document.getElementById('network-container');
-        const client = new GodelClient();
+        const client = new GodelClient(currentToken);
         const data = { nodes: client.nodes, edges: client.edges };
         const options = {
             nodes: {
@@ -255,7 +310,7 @@
             if (!text) return;
             btn.innerText = "Crystallizing…"; btn.style.opacity = "0.6"; btn.style.pointerEvents = "none";
             try {
-                const res = await fetch('/api/v1/quantum/ingest', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) });
+                const res = await authFetch('/api/v1/quantum/ingest', { method: 'POST', body: JSON.stringify({ text }) });
                 if (!res.ok) throw new Error(await res.text());
                 box.value = '';
                 await client.syncWithServer();
@@ -272,7 +327,7 @@
             btn.innerText = "Running Epistemic Loop…"; btn.style.opacity = "0.6"; btn.style.pointerEvents = "none";
             result.innerText = "Proving mathematical fidelity…";
             try {
-                const res = await fetch('/api/v1/quantum/extrapolate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ target_axioms: tags }) });
+                const res = await authFetch('/api/v1/quantum/extrapolate', { method: 'POST', body: JSON.stringify({ target_axioms: tags }) });
                 const data = await res.json();
                 result.innerText = data.verified_narrative || data.detail || "No response.";
             } catch (e) { console.error(e); result.innerText = "Extrapolation failed: " + e.message; }
@@ -287,9 +342,8 @@
             btn.innerText = "Rehydrating…"; btn.style.opacity = "0.6"; btn.style.pointerEvents = "none";
             result.innerText = "Unpacking Gödel Integer…";
             try {
-                const res = await fetch('/api/v1/quantum/rehydrate', {
+                const res = await authFetch('/api/v1/quantum/rehydrate', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ title: title, mode: "proof" })
                 });
                 const data = await res.json();
@@ -306,9 +360,8 @@
             btn.innerText = "Computing Delta…"; btn.style.opacity = "0.6"; btn.style.pointerEvents = "none";
             result.innerText = "Calculating epistemic gap…";
             try {
-                const res = await fetch('/api/v1/quantum/learn', {
+                const res = await authFetch('/api/v1/quantum/learn', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ target_topic_node: topic })
                 });
                 const data = await res.json();
@@ -338,7 +391,7 @@
         // ─── Multiverse Controls ─────────────────────────
         async function fetchBranches() {
             try {
-                const res = await fetch('/api/v1/quantum/branches');
+                const res = await authFetch('/api/v1/quantum/branches');
                 const data = await res.json();
                 const selector = document.getElementById('branch-selector');
                 const current = selector.value;
@@ -366,9 +419,8 @@
             const newBranch = prompt("Enter new branch name:");
             if (!newBranch) return;
             const currentBranch = document.getElementById('branch-selector').value;
-            await fetch('/api/v1/quantum/branch', {
+            await authFetch('/api/v1/quantum/branch', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ source_branch: currentBranch, new_branch: newBranch })
             });
             await fetchBranches();
@@ -381,9 +433,8 @@
             if (!tick) return;
             const newBranch = prompt("Name this alternate timeline branch:");
             if (!newBranch) return;
-            await fetch('/api/v1/quantum/time-travel', {
+            await authFetch('/api/v1/quantum/time-travel', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ target_tick: parseInt(tick), new_branch_name: newBranch })
             });
             await fetchBranches();
@@ -394,9 +445,8 @@
         async function connectPeer() {
             const url = document.getElementById('peer-url').value.trim();
             if (!url) return;
-            await fetch('/api/v1/quantum/peers', {
+            await authFetch('/api/v1/quantum/peers', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ peer_url: url })
             });
             document.getElementById('peer-url').value = '';

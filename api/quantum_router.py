@@ -44,6 +44,7 @@ from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
 from internal.algorithms.syntactic_sieve import DeterministicSieve
 from internal.ensemble.vector_bridge import ContinuousDiscreteBridge
 from internal.infrastructure.akashic_ledger import AkashicLedger
+from internal.infrastructure.canonical_codec import CanonicalCodec, InvalidSignatureError
 from internal.ensemble.epistemic_loop import QuantumExtrapolator
 from internal.ensemble.causal_triggers import CausalTriggerMap
 from internal.ensemble.tome_generator import AutoregressiveTomeGenerator
@@ -146,6 +147,13 @@ class GlobalKnowledgeOS:
         )
         self.ouroboros = OuroborosVerifier(
             self.algebra, self.sieve, self.tome_generator,
+        )
+
+        # Phase 15: Canonical Codec for signed knowledge transport
+        self.codec = CanonicalCodec(
+            self.algebra,
+            self.tome_generator,
+            signing_key=SECRET_KEY,
         )
 
         # P2P Holographic Mesh
@@ -926,6 +934,69 @@ async def verify_semantic_conservation(req: OuroborosRequest):
     result["canonical_tome"] = proof.canonical_tome
 
     return result
+
+
+@router.post("/export")
+async def export_knowledge_bundle(
+    user_id: str = Depends(get_current_user),
+):
+    """
+    Export a branch's state as a signed, self-contained bundle.
+
+    The bundle includes the canonical tome, state integer, axiom count,
+    timestamp, and an HMAC-SHA256 signature for tamper detection.
+    """
+    if not kos.is_booted:
+        raise HTTPException(status_code=503, detail="KOS booting")
+
+    current_state = kos.branches.get(user_id, 1)
+    bundle = kos.codec.export_bundle(
+        current_state, branch=user_id, title=f"Export: {user_id}"
+    )
+    return bundle
+
+
+class ImportRequest(BaseModel):
+    """Import a signed knowledge bundle."""
+    bundle: dict
+
+
+@router.post("/import")
+async def import_knowledge_bundle(
+    req: ImportRequest,
+    user_id: str = Depends(get_current_user),
+):
+    """
+    Import and verify a signed bundle into the user's branch.
+
+    Validates HMAC-SHA256 signature, then merges the imported state
+    via LCM into the user's branch.
+    """
+    if not kos.is_booted:
+        raise HTTPException(status_code=503, detail="KOS booting")
+
+    try:
+        imported_state = kos.codec.import_bundle(req.bundle)
+    except InvalidSignatureError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    # Merge via LCM
+    current = kos.branches.get(user_id, 1)
+    new_state = math.lcm(current, imported_state)
+    kos.branches[user_id] = new_state
+
+    return {
+        "imported": True,
+        "user_id": user_id,
+        "previous_axiom_count": len(
+            kos.tome_generator.extract_active_axioms(current)
+        ),
+        "new_axiom_count": len(
+            kos.tome_generator.extract_active_axioms(new_state)
+        ),
+    }
 
 
 # ─── SSE Telemetry ────────────────────────────────────────────────
