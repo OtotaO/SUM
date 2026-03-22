@@ -99,3 +99,61 @@ class EpistemicArbiter:
             )
 
         return resolutions
+
+
+class DeterministicArbiter:
+    """
+    Deterministic contradiction resolution without LLM.
+
+    Resolves Level 3 Curvature using SHA-256 lexicographic ordering:
+    for each conflict (subject, predicate, obj_a, obj_b), the winner
+    is whichever object has the lower SHA-256 hash of
+    ``f"{subject}||{predicate}||{object}"``.
+
+    This guarantees:
+      - Identical resolution on every node (deterministic)
+      - No LLM cost or latency
+      - Consistent ordering regardless of minting order
+      - Reproducibility across runtimes (SHA-256 is universal)
+    """
+
+    @staticmethod
+    def _canonical_hash(subject: str, predicate: str, obj: str) -> str:
+        """SHA-256 of the canonical triplet key."""
+        import hashlib
+        return hashlib.sha256(
+            f"{subject}||{predicate}||{obj}".encode()
+        ).hexdigest()
+
+    async def collapse_wave_function(
+        self, conflicts: List[Tuple[str, str, str, str]]
+    ) -> Dict[Tuple[str, str], str]:
+        """
+        Resolve conflicts deterministically via SHA-256 ordering.
+
+        For each (subject, predicate, obj_a, obj_b), the object with
+        the lexicographically lower SHA-256 hash wins.
+        """
+        resolutions: Dict[Tuple[str, str], str] = {}
+
+        for subject, predicate, obj_a, obj_b in conflicts:
+            hash_a = self._canonical_hash(subject, predicate, obj_a)
+            hash_b = self._canonical_hash(subject, predicate, obj_b)
+
+            winner = obj_a if hash_a <= hash_b else obj_b
+
+            await kos_telemetry.broadcast(
+                f"⚠️ Level 3 Curvature: "
+                f"{subject} {predicate} [{obj_a} OR {obj_b}]"
+            )
+            await kos_telemetry.broadcast(
+                f"🔬 Deterministic Resolution: SHA-256({obj_a})={hash_a[:8]}… "
+                f"vs SHA-256({obj_b})={hash_b[:8]}…"
+            )
+            await kos_telemetry.broadcast(
+                f"⚡ Collapsed → {subject} {predicate} → {winner}"
+            )
+
+            resolutions[(subject, predicate)] = winner
+
+        return resolutions

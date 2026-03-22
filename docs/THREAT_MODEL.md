@@ -92,24 +92,23 @@ Producer ──(shared key)──> Bundle ──(shared key)──> Consumer
 
 **Residual risk:** Astronomically unlikely collision (birthday bound ≈ 2⁻³² at ~10⁴ axioms). Resolution path is tested and cross-verified.
 
-### 3.5. Contradiction Governance (❌ Not Protected)
+### 3.5. Contradiction Governance (✅ Now Protected)
 
 **Threat:** Two bundles contain contradictory facts (e.g., "earth orbits sun" and "sun orbits earth").
 
-**Impact:** The system detects contradictions via exclusion zones (same subject+predicate, different objects). However, automated resolution (EpistemicArbiter) uses LLM judgment, which is non-deterministic and non-auditable.
+**Defense:** The `DeterministicArbiter` resolves Level 3 Curvature using SHA-256 lexicographic ordering: for each conflict (subject, predicate, obj_a, obj_b), the winner is whichever object has the lower SHA-256 hash of its canonical triplet key. This guarantees identical resolution on every node without LLM. The `EpistemicArbiter` (LLM-based) remains available as an optional upgrade when richer judgment is desired.
 
-**Honest status:** Contradiction detection is mechanical. Contradiction *resolution* involves judgment and is NOT purely mathematical. The system does not solve "objective truth" by arithmetic alone.
+**Residual risk:** SHA-256 ordering is deterministic but not semantically meaningful — it picks a winner, but doesn't judge truth. This is by design: the system does not claim to solve "objective truth."
 
 ### 3.6. Denial of Service (✅ Now Protected)
 
 **Threat:** An attacker submits extremely large integers or bundles to exhaust memory or CPU.
 
-**Defense:** Bundle import enforces size limits before any cryptographic verification:
-- Canonical tome: max 10 MB
-- State integer: max 100,000 digits (~330K bits)
-- Axiom count: max 10,000
+**Defense:** Multi-layer protection:
+- **Bundle limits:** Canonical tome max 10 MB, state integer max 100,000 digits, axiom count max 10,000
+- **Rate limiting:** In-memory sliding window rate limiter (configurable per-IP, default 60 req/min) blocks volumetric abuse
 
-**Residual risk:** No rate limiting on the HTTP endpoint itself. Volumetric DDoS is not addressed at the application layer.
+**Residual risk:** In-memory rate limiter does not persist across restarts. Distributed DDoS requires upstream infrastructure (CDN, WAF).
 
 ---
 
@@ -125,5 +124,5 @@ Producer ──(shared key)──> Bundle ──(shared key)──> Consumer
 | Key compromise | ✅ | Key rotation + archive (no real-time revocation) |
 | Adversarial extraction | ⚠️ | Hardened (15 adversarial tests), needs confidence scoring |
 | Collision replay | ✅ | 1000-axiom cross-instance stress test |
-| Contradiction governance | ❌ | Detection only, resolution is non-deterministic |
-| Resource exhaustion | ✅ | Bundle size limits (no rate limiting) |
+| Contradiction governance | ✅ | DeterministicArbiter (SHA-256 ordering, no LLM) |
+| Resource exhaustion | ✅ | Bundle size limits + sliding window rate limiter |
