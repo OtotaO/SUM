@@ -44,7 +44,15 @@ def derive_prime(key: str) -> int:
     return int(nextprime(seed))
 
 
+passed = 0
+total = 0
+
+
 def check(label: str, condition: bool, detail: str = ""):
+    global passed, total
+    total += 1
+    if condition:
+        passed += 1
     status = "✅" if condition else "❌"
     msg = f"  {status} {label}"
     if detail and not condition:
@@ -54,6 +62,12 @@ def check(label: str, condition: bool, detail: str = ""):
 
 
 def main():
+    global passed, total
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--json", action="store_true", help="Output JSON summary")
+    args = parser.parse_args()
+
     print("\n" + "=" * 60)
     print("  VERIFIABILITY FORTRESS — COMPREHENSIVE CHECK")
     print("=" * 60)
@@ -146,10 +160,19 @@ def main():
     # ── Summary ─────────────────────────────────────────
     print(f"\n{'=' * 60}")
     if all_pass:
-        print("  ✅ ALL FORTRESS CHECKS PASSED")
+        print(f"  ✅ ALL FORTRESS CHECKS PASSED ({passed}/{total})")
     else:
-        print("  ❌ SOME CHECKS FAILED")
+        print(f"  ❌ SOME CHECKS FAILED ({passed}/{total})")
     print(f"{'=' * 60}\n")
+
+    if args.json:
+        summary = {
+            "passed": passed,
+            "total": total,
+            "all_pass": all_pass,
+            "ratio": f"{passed}/{total}",
+        }
+        print(json.dumps(summary))
 
     sys.exit(0 if all_pass else 1)
 

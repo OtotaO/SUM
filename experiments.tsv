@@ -1,0 +1,8 @@
+commit	tests	checks	status	description
+a592dd6	208	n/a	keep	fortress phase 1: specs, property tests, O(1) corrections
+f0ea422	226	n/a	keep	fortress phase 2: ed25519 dual-sig, witness matrix
+f3c9355	226	n/a	keep	spec updates for ed25519
+90b66cb	226	15/15	keep	readme refresh, forensic diff cli
+67ef384	231	15/15	keep	key rotation, verify_fortress harness
+e91299f	242	15/15	keep	threat model update, extraction harness
+b13858b	245	15/15	keep	dos defense bundle size limits
