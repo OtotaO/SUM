@@ -29,3 +29,7 @@ jobs:
     - name: Run Gödel-State Algebra Bounds
       run: |
         python -m pytest Tests/ -v
+
+    - name: Run Fortress Gate (21 checks)
+      run: |
+        python scripts/verify_fortress.py --json

@@ -16,3 +16,4 @@ b13858b	245	15/15	keep	dos defense bundle size limits
 -------31415/15keepP4: extraction adversarial hardening (15 tests)
 -------32415/15keepP5: gauge orchestrator tests (10 tests)
 -------32421/21keepfortress expansion: ZK + ledger + E2E pipeline (15→21 checks)
+-------32421/21keepthreat model update + CI fortress gate
