@@ -118,7 +118,7 @@ git clone https://github.com/OtotaO/SUM.git
 cd SUM
 pip install -r requirements-prod.txt
 
-# Run the 226+ test verification suite
+# Run the 231+ test verification suite
 python -m pytest Tests/ -v
 
 # Launch the Quantum UI & OS

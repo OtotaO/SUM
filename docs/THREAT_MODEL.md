@@ -23,8 +23,8 @@ Producer ──(shared key)──> Bundle ──(shared key)──> Consumer
 |-----------|--------|
 | Producer and consumer share a key | **Required** |
 | Transport channel integrity | **Not assumed** (HMAC covers this) |
-| Third-party verification | **Not supported** (requires public-key crypto) |
-| Key secrecy | **Assumed** (if key is compromised, all guarantees void) |
+| Third-party verification | **Supported** via Ed25519 (self-asserted key) |
+| Key secrecy | **Assumed** (key rotation + archive available) |
 
 ---
 
@@ -68,13 +68,13 @@ Producer ──(shared key)──> Bundle ──(shared key)──> Consumer
 
 **Residual risk:** The embedded public key is self-asserted. A trust-on-first-use (TOFU) model or certificate authority is needed for strong identity binding. The current system proves "this bundle was signed by the holder of this private key" but not "this private key belongs to entity X."
 
-### 3.2. Key Compromise (❌ Not Protected)
+### 3.2. Key Compromise (✅ Now Protected)
 
-**Threat:** The HMAC signing key is leaked or stolen.
+**Threat:** The HMAC signing key or Ed25519 private key is leaked or stolen.
 
-**Impact:** An attacker can forge valid-looking bundles. All bundles signed with the compromised key become untrustworthy.
+**Defense:** Key rotation via `KeyManager.rotate_keypair()`. Old keys are archived to `keys/rotated/` with microsecond timestamps. `list_trusted_public_keys()` returns all historical keys for verifying bundles signed by rotated keys.
 
-**Mitigation:** Key rotation. Currently no key rotation mechanism exists. Future work should add key identifiers and rotation/revocation support.
+**Residual risk:** There is no real-time revocation mechanism. If a key is compromised, bundles signed with it remain valid until the operator manually invalidates them. A future PKI or key revocation list (KRL) would address this.
 
 ### 3.3. Extraction Manipulation (❌ Not Protected)
 
@@ -119,7 +119,7 @@ Producer ──(shared key)──> Bundle ──(shared key)──> Consumer
 | Version mismatch | ✅ | Version gate |
 | Malformed bundles | ✅ | Field validation |
 | Public authenticity | ✅ | Ed25519 signatures (self-asserted key) |
-| Key compromise | ❌ | Needs key rotation |
+| Key compromise | ✅ | Key rotation + archive (no real-time revocation) |
 | Adversarial extraction | ❌ | Needs extraction hardening |
 | Collision replay | ⚠️ | Resolution exists, not cross-verified |
 | Contradiction governance | ❌ | Detection only, resolution is non-deterministic |
