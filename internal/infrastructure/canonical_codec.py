@@ -261,6 +261,32 @@ class CanonicalCodec:
         if missing:
             raise ValueError(f"Bundle missing required fields: {missing}")
 
+        # ── DoS defense: enforce size limits before any crypto ──
+        MAX_TOME_BYTES = 10 * 1024 * 1024    # 10 MB
+        MAX_STATE_DIGITS = 100_000            # ~330K bits
+        MAX_AXIOM_COUNT = 10_000
+
+        tome_size = len(bundle_dict.get("canonical_tome", ""))
+        if tome_size > MAX_TOME_BYTES:
+            raise ValueError(
+                f"Bundle tome exceeds size limit: {tome_size} bytes "
+                f"(max {MAX_TOME_BYTES})"
+            )
+
+        state_digits = len(bundle_dict.get("state_integer", ""))
+        if state_digits > MAX_STATE_DIGITS:
+            raise ValueError(
+                f"Bundle state integer exceeds digit limit: {state_digits} "
+                f"(max {MAX_STATE_DIGITS})"
+            )
+
+        axiom_count = bundle_dict.get("axiom_count", 0)
+        if isinstance(axiom_count, int) and axiom_count > MAX_AXIOM_COUNT:
+            raise ValueError(
+                f"Bundle axiom count exceeds limit: {axiom_count} "
+                f"(max {MAX_AXIOM_COUNT})"
+            )
+
         canonical_tome = bundle_dict["canonical_tome"]
         state_str = bundle_dict["state_integer"]
         timestamp = bundle_dict["timestamp"]

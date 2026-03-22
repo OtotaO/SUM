@@ -100,13 +100,16 @@ Producer ──(shared key)──> Bundle ──(shared key)──> Consumer
 
 **Honest status:** Contradiction detection is mechanical. Contradiction *resolution* involves judgment and is NOT purely mathematical. The system does not solve "objective truth" by arithmetic alone.
 
-### 3.6. Denial of Service (❌ Not Protected)
+### 3.6. Denial of Service (✅ Now Protected)
 
 **Threat:** An attacker submits extremely large integers or bundles to exhaust memory or CPU.
 
-**Impact:** Arbitrary-precision integer operations scale with bit length. A sufficiently large integer could consume excessive resources.
+**Defense:** Bundle import enforces size limits before any cryptographic verification:
+- Canonical tome: max 10 MB
+- State integer: max 100,000 digits (~330K bits)
+- Axiom count: max 10,000
 
-**Mitigation:** No rate limiting or size bounds are currently enforced on bundle import. Future hardening should add explicit size limits.
+**Residual risk:** No rate limiting on the HTTP endpoint itself. Volumetric DDoS is not addressed at the application layer.
 
 ---
 
@@ -123,4 +126,4 @@ Producer ──(shared key)──> Bundle ──(shared key)──> Consumer
 | Adversarial extraction | ❌ | Needs extraction hardening |
 | Collision replay | ⚠️ | Resolution exists, not cross-verified |
 | Contradiction governance | ❌ | Detection only, resolution is non-deterministic |
-| Resource exhaustion | ❌ | Needs size limits |
+| Resource exhaustion | ✅ | Bundle size limits (no rate limiting) |

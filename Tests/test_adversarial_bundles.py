@@ -210,3 +210,32 @@ class TestEdgeCases:
         # Round-trip through import
         imported_state = codec_inst.import_bundle(bundle)
         assert imported_state == prime
+
+
+# ─── 6. DoS Defense (Resource Exhaustion) ────────────────────────
+
+class TestDoSDefense:
+
+    def test_oversized_tome_rejected(self, codec, valid_bundle):
+        """Bundle with >10MB canonical_tome is rejected."""
+        codec_inst, _ = codec
+        attack = copy.deepcopy(valid_bundle)
+        attack["canonical_tome"] = "X" * (11 * 1024 * 1024)  # 11MB
+        with pytest.raises(ValueError, match="size limit"):
+            codec_inst.import_bundle(attack)
+
+    def test_oversized_state_integer_rejected(self, codec, valid_bundle):
+        """Bundle with >100K digit state_integer is rejected."""
+        codec_inst, _ = codec
+        attack = copy.deepcopy(valid_bundle)
+        attack["state_integer"] = "9" * 200_000  # 200K digits
+        with pytest.raises(ValueError, match="digit limit"):
+            codec_inst.import_bundle(attack)
+
+    def test_excessive_axiom_count_rejected(self, codec, valid_bundle):
+        """Bundle claiming >10K axioms is rejected."""
+        codec_inst, _ = codec
+        attack = copy.deepcopy(valid_bundle)
+        attack["axiom_count"] = 50_000
+        with pytest.raises(ValueError, match="axiom count exceeds"):
+            codec_inst.import_bundle(attack)
