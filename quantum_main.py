@@ -1,3 +1,9 @@
+import sys
+# Zenith of Process Intensification: Uncap the maximum integer string
+# conversion limit.  The Gödel Integer will grow into hundreds of
+# thousands of digits as the harvester devours the internet.
+sys.set_int_max_str_digits(0)
+
 """
 Quantum Knowledge OS — ASGI Entrypoint
 

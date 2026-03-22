@@ -1,3 +1,6 @@
+import sys
+sys.set_int_max_str_digits(0)
+
 """
 Semantic Prime Number Theorem (SPNT) & Gödel-State Algebra
 

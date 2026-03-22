@@ -1,3 +1,6 @@
+import sys
+sys.set_int_max_str_digits(0)
+
 """
 Quantum Router — The Global Knowledge OS API
 
@@ -14,9 +17,12 @@ Exposes the Gödel-State Engine to the outside world via FastAPI:
     /peers           – P2P Holographic Mesh peer management
     /zk/prove        – Zero-Knowledge Semantic Proofs
     /tick            – Current Akashic Ledger tick
+    /auth/token      – Quantum Passport (JWT multi-tenancy)
 
 The ``GlobalKnowledgeOS`` singleton boots from the Akashic Ledger on
 startup, rebuilding the exact Gödel BigInt from the SQLite trace.
+
+Phase 13: Zenith of Process Intensification — JWT Sovereign Tenancy.
 
 Author: ototao
 License: Apache License 2.0
@@ -26,9 +32,11 @@ import logging
 import math
 import asyncio
 import os
+from datetime import datetime, timedelta
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, BackgroundTasks, Query
+import jwt
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Header, Query
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -144,7 +152,51 @@ class GlobalKnowledgeOS:
 kos = GlobalKnowledgeOS()
 
 
+# ─── JWT Sovereign Tenancy ────────────────────────────────────────────
+
+SECRET_KEY = os.getenv("SUM_JWT_SECRET", "quantum_supremacy_secret")
+ALGORITHM = "HS256"
+
+
+def create_access_token(user_id: str) -> str:
+    """Create a JWT Quantum Passport for multi-tenant branch isolation."""
+    expire = datetime.utcnow() + timedelta(days=7)
+    return jwt.encode(
+        {"sub": user_id, "exp": expire}, SECRET_KEY, algorithm=ALGORITHM
+    )
+
+
+async def get_current_user(authorization: str = Header(None)) -> str:
+    """
+    Validates JWT and returns the User ID (which acts as their
+    semantic branch in the Gödel multiverse).
+
+    Falls back to ``"main"`` if no token is provided, preserving
+    backward compatibility for local dev and unauthenticated usage.
+    """
+    if not authorization or not authorization.startswith("Bearer "):
+        return "main"  # Legacy / unauthenticated
+
+    token = authorization.split(" ")[1]
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub", "main")
+        if user_id not in kos.branches:
+            kos.branches[user_id] = 1
+        return user_id
+    except Exception:
+        raise HTTPException(
+            status_code=401, detail="Invalid or expired Quantum Passport"
+        )
+
+
+
 # ─── Request / Response models ────────────────────────────────────────
+
+class TokenRequest(BaseModel):
+    """Request a Quantum Passport (JWT) for multi-tenant access."""
+    username: str
+
 
 class SyncRequest(BaseModel):
     """Client sends its Gödel integer as a string (BigInts exceed JS limits)."""
@@ -217,22 +269,44 @@ def _get_branch_state(branch: str) -> int:
 
 # ─── Routes ──────────────────────────────────────────────────────────
 
+@router.post("/auth/token")
+async def generate_token(req: TokenRequest):
+    """Generates a Quantum Passport for Multi-Tenancy."""
+    token = create_access_token(req.username)
+    if req.username not in kos.branches:
+        kos.branches[req.username] = 1
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "branch": req.username,
+    }
+
+
 @router.get("/state")
-async def get_global_state(branch: str = Query("main")):
+async def get_global_state(
+    user_id: str = Depends(get_current_user),
+    branch: str = Query(None),
+):
     """Returns the current global Gödel integer and axiom count."""
     if not kos.is_booted:
         raise HTTPException(status_code=503, detail="KOS booting")
-    state = _get_branch_state(branch)
+    # JWT user_id takes precedence; fall back to query param for legacy usage
+    effective_branch = user_id if user_id != "main" else (branch or "main")
+    state = _get_branch_state(effective_branch)
     return {
-        "branch": branch,
+        "branch": effective_branch,
         "global_state_integer": str(state),
         "axiom_count": len(kos.algebra.prime_to_axiom),
         "branch_count": len(kos.branches),
+        "user_id": user_id,
     }
 
 
 @router.post("/sync")
-async def sync_client_state(request: SyncRequest):
+async def sync_client_state(
+    request: SyncRequest,
+    user_id: str = Depends(get_current_user),
+):
     """
     O(1) Delta Sync (Gödel Sync Protocol).
 
@@ -242,12 +316,13 @@ async def sync_client_state(request: SyncRequest):
     if not kos.is_booted:
         raise HTTPException(status_code=503, detail="KOS booting")
 
-    branch_state = _get_branch_state(request.branch)
+    effective_branch = user_id if user_id != "main" else request.branch
+    branch_state = _get_branch_state(effective_branch)
     client_state = int(request.client_state_integer)
     delta = kos.algebra.calculate_network_delta(branch_state, client_state)
 
     return {
-        "branch": request.branch,
+        "branch": effective_branch,
         "new_global_state": str(branch_state),
         "delta": delta,
     }
@@ -343,7 +418,9 @@ async def ingest_document(
 
 @router.post("/ingest/math")
 async def ingest_math_direct(
-    request: DirectMathRequest, background_tasks: BackgroundTasks
+    request: DirectMathRequest,
+    background_tasks: BackgroundTasks,
+    user_id: str = Depends(get_current_user),
 ):
     """
     Zero-Cost Ingestion: Bypasses the LLM entirely and injects strict
@@ -358,7 +435,7 @@ async def ingest_math_direct(
     if not kos.is_booted:
         raise HTTPException(status_code=503, detail="KOS booting")
 
-    branch = request.branch
+    branch = user_id if user_id != "main" else request.branch
     current_state = kos.branches.get(branch, 1)
     new_state_product = 1
     added_axioms = []
@@ -400,10 +477,14 @@ async def ingest_math_direct(
         "branch": branch,
         "new_global_state": str(kos.branches.get(branch, 1)),
         "axioms_added": len(added_axioms),
+        "user_id": user_id,
     }
 
 @router.post("/extrapolate")
-async def extrapolate_tome(request: ExtrapolateRequest):
+async def extrapolate_tome(
+    request: ExtrapolateRequest,
+    user_id: str = Depends(get_current_user),
+):
     """
     Tags → Tomes and Back. Generates a hallucination-proof narrative
     strictly from verified axioms in the global state.
@@ -417,13 +498,14 @@ async def extrapolate_tome(request: ExtrapolateRequest):
             detail="Extrapolator not initialised (no LLM adapter)",
         )
 
-    branch_state = _get_branch_state(request.branch)
+    effective_branch = user_id if user_id != "main" else request.branch
+    branch_state = _get_branch_state(effective_branch)
 
     try:
         narrative = await kos.extrapolator.extrapolate_with_proof(
             branch_state, request.target_axioms
         )
-        return {"branch": request.branch, "verified_narrative": narrative}
+        return {"branch": effective_branch, "verified_narrative": narrative}
     except RuntimeError as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -431,7 +513,10 @@ async def extrapolate_tome(request: ExtrapolateRequest):
 # ─── Quantum GraphRAG ────────────────────────────────────────────────
 
 @router.post("/query")
-async def quantum_graph_rag(request: QuantumQueryRequest):
+async def quantum_graph_rag(
+    request: QuantumQueryRequest,
+    user_id: str = Depends(get_current_user),
+):
     """
     O(1) Topological GraphRAG Context Retrieval.
 
@@ -441,7 +526,8 @@ async def quantum_graph_rag(request: QuantumQueryRequest):
     if not kos.is_booted:
         raise HTTPException(status_code=503, detail="KOS booting")
 
-    branch_state = _get_branch_state(request.branch)
+    effective_branch = user_id if user_id != "main" else request.branch
+    branch_state = _get_branch_state(effective_branch)
 
     context_integer = kos.algebra.get_quantum_neighborhood(
         branch_state, request.nodes, request.hops
@@ -459,7 +545,7 @@ async def quantum_graph_rag(request: QuantumQueryRequest):
             break
 
     return {
-        "branch": request.branch,
+        "branch": effective_branch,
         "context_integer": str(context_integer),
         "axioms": context_axioms,
     }
@@ -564,7 +650,10 @@ async def list_branches():
 # ─── Chronos Engine (Time Travel) ────────────────────────────────────
 
 @router.post("/time-travel")
-async def time_travel(req: TimeTravelRequest):
+async def time_travel(
+    req: TimeTravelRequest,
+    user_id: str = Depends(get_current_user),
+):
     """
     O(1) Chronos Engine.
 
@@ -617,7 +706,10 @@ async def get_latest_tick():
 # ─── Zero-Knowledge Semantic Proofs ──────────────────────────────────
 
 @router.post("/zk/prove")
-async def generate_zk_proof(req: ZKProofRequest):
+async def generate_zk_proof(
+    req: ZKProofRequest,
+    user_id: str = Depends(get_current_user),
+):
     """
     Generates a Zero-Knowledge proof that this node knows a specific
     axiom without revealing the full state integer.
@@ -631,7 +723,8 @@ async def generate_zk_proof(req: ZKProofRequest):
     if not prime:
         raise HTTPException(status_code=404, detail="Axiom not known")
 
-    state = _get_branch_state(req.branch)
+    effective_branch = user_id if user_id != "main" else req.branch
+    state = _get_branch_state(effective_branch)
     try:
         proof = ZKSemanticProver.generate_proof(state, prime)
         return proof

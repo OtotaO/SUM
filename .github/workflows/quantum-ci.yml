@@ -23,6 +23,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements-prod.txt
 
+    - name: Download Spacy Model
+      run: python -m spacy download en_core_web_sm
+
     - name: Run Gödel-State Algebra Bounds
       run: |
         python -m pytest Tests/ -v
