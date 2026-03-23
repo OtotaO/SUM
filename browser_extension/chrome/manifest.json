@@ -1,20 +1,35 @@
 {
   "manifest_version": 3,
   "name": "SUM Exocortex",
-  "version": "1.0",
-  "description": "Continuous Digital Ingestion for the Quantum Knowledge OS",
+  "version": "2.0",
+  "description": "Horizon I — Continuous Digital Ingestion for the Quantum Knowledge OS. Crystallize browsing into your Gödel State.",
   "action": {
     "default_popup": "src/popup.html"
   },
   "background": {
     "service_worker": "src/background.js"
   },
+  "options_page": "src/options.html",
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/content.js"],
+      "css": ["src/content.css"]
+    }
+  ],
   "permissions": [
     "activeTab",
     "scripting",
-    "contextMenus"
+    "contextMenus",
+    "storage"
   ],
   "host_permissions": [
-    "http://localhost:8000/*"
-  ]
+    "http://localhost:8000/*",
+    "https://*/*"
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
 }

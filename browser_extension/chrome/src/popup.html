@@ -1,21 +1,120 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="utf-8">
   <style>
-    body { width: 320px; padding: 15px; font-family: -apple-system, system-ui, sans-serif; background: #050505; color: #fff; margin: 0; }
-    h2 { margin-top: 0; color: #38bdf8; font-size: 18px; letter-spacing: -0.5px; }
-    .state-box { background: #0f172a; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 11px; color: #10b981; word-break: break-all; border: 1px solid #1e293b; margin-bottom: 15px; }
-    button { background: #2563eb; color: #fff; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; transition: background 0.2s; }
-    button:hover { background: #1d4ed8; }
-    button:disabled { background: #475569; cursor: not-allowed; }
-    #status { margin-top: 12px; font-size: 12px; color: #94a3b8; text-align: center; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      width: 360px; padding: 16px; font-family: -apple-system, system-ui, sans-serif;
+      background: #050510; color: #e2e8f0;
+    }
+    .header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 14px; border-bottom: 1px solid #1e293b; padding-bottom: 10px;
+    }
+    .header h2 {
+      font-size: 17px; letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #38bdf8, #818cf8);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .status-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: #475569; box-shadow: 0 0 6px rgba(71,85,105,0.5);
+      transition: all 0.3s;
+    }
+    .status-dot.online { background: #10b981; box-shadow: 0 0 8px rgba(16,185,129,0.6); }
+    .status-dot.offline { background: #ef4444; box-shadow: 0 0 8px rgba(239,68,68,0.6); }
+
+    .state-card {
+      background: #0f172a; border: 1px solid #1e293b; border-radius: 10px;
+      padding: 12px; margin-bottom: 12px;
+    }
+    .state-label { font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+    .state-value {
+      font-family: 'SF Mono', 'Fira Code', monospace; font-size: 11px;
+      color: #10b981; word-break: break-all; line-height: 1.4;
+    }
+    .metrics {
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
+      margin-bottom: 12px;
+    }
+    .metric {
+      background: #0f172a; border: 1px solid #1e293b; border-radius: 8px;
+      padding: 10px; text-align: center;
+    }
+    .metric-value { font-size: 18px; font-weight: 700; color: #38bdf8; }
+    .metric-label { font-size: 9px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+
+    .discoveries {
+      background: #0f172a; border: 1px solid #1e293b; border-radius: 10px;
+      padding: 12px; margin-bottom: 12px; max-height: 100px; overflow-y: auto;
+    }
+    .discoveries .state-label { margin-bottom: 8px; }
+    .discovery-item {
+      font-size: 11px; color: #94a3b8; padding: 4px 0;
+      border-bottom: 1px solid #1e293b0a;
+    }
+    .discovery-item:last-child { border-bottom: none; }
+    .discovery-item .pred { color: #f59e0b; }
+
+    .actions { display: flex; gap: 8px; }
+    button {
+      flex: 1; padding: 10px; border-radius: 8px; border: none;
+      font-weight: 600; cursor: pointer; font-size: 12px;
+      transition: all 0.2s;
+    }
+    .btn-primary { background: #2563eb; color: #fff; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { background: #1e293b; color: #94a3b8; }
+    .btn-secondary:hover { background: #334155; color: #e2e8f0; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    #status {
+      margin-top: 10px; font-size: 11px; color: #64748b;
+      text-align: center; min-height: 16px;
+    }
+    .status-success { color: #10b981 !important; }
+    .status-error { color: #ef4444 !important; }
   </style>
 </head>
 <body>
-  <h2>SUM Exocortex</h2>
-  <div class="state-box" id="godel-state">Checking Neural Link...</div>
-  <button id="ingest-btn">Crystallize Active Tab</button>
+  <div class="header">
+    <h2>SUM Exocortex</h2>
+    <div class="status-dot" id="status-dot" title="Checking..."></div>
+  </div>
+
+  <div class="state-card">
+    <div class="state-label">Gödel State Integer</div>
+    <div class="state-value" id="godel-state">Connecting to Neural Link...</div>
+  </div>
+
+  <div class="metrics">
+    <div class="metric">
+      <div class="metric-value" id="axiom-count">—</div>
+      <div class="metric-label">Axioms</div>
+    </div>
+    <div class="metric">
+      <div class="metric-value" id="bit-length">—</div>
+      <div class="metric-label">Bits</div>
+    </div>
+    <div class="metric">
+      <div class="metric-value" id="tick">—</div>
+      <div class="metric-label">Tick</div>
+    </div>
+  </div>
+
+  <div class="discoveries" id="discoveries-panel" style="display:none;">
+    <div class="state-label">🔬 Machine Discoveries</div>
+    <div id="discoveries-list"></div>
+  </div>
+
+  <div class="actions">
+    <button class="btn-primary" id="ingest-btn" disabled>Crystallize Tab</button>
+    <button class="btn-secondary" id="sync-btn" disabled>Sync State</button>
+  </div>
+
   <div id="status"></div>
+
   <script src="popup.js"></script>
 </body>
 </html>

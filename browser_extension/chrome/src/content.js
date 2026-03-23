@@ -1,319 +1,189 @@
 /**
- * SUM Browser Extension - Content Script
- * Handles page interaction, text extraction, and summary display
+ * SUM Exocortex — Content Script
+ *
+ * Injected into every page. Provides:
+ *   1. Floating "Crystallize" button on text selection (>50 chars)
+ *   2. Crystallization result overlay (axioms ingested, state)
+ *   3. Message handler for background script communication
  */
 
-// Summary display container
-let summaryContainer = null;
+// ─── State ───────────────────────────────────────────────────────────
 
-// Initialize content script
-(function() {
-  // Listen for messages from background script
-  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    switch (request.action) {
-      case 'getSelection':
-        const selectedText = window.getSelection().toString();
-        sendResponse({ text: selectedText });
-        break;
-        
-      case 'getPageContent':
-        const content = extractPageContent();
-        sendResponse({ content });
-        break;
-        
-      case 'showSummary':
-        showSummaryOverlay(request.summary, request.source);
-        break;
-        
-      case 'showError':
-        showErrorMessage(request.error);
-        break;
-    }
-  });
-  
-  // Add floating summarize button for selected text
-  let selectionButton = null;
-  
-  document.addEventListener('mouseup', (e) => {
-    const selection = window.getSelection();
-    const text = selection.toString().trim();
-    
-    if (text.length > 50) {
-      showSelectionButton(e.pageX, e.pageY, text);
-    } else {
-      hideSelectionButton();
-    }
-  });
-  
-  document.addEventListener('mousedown', (e) => {
-    if (!e.target.closest('.sum-selection-button')) {
-      hideSelectionButton();
-    }
-  });
-  
-  function showSelectionButton(x, y, text) {
-    if (!selectionButton) {
-      selectionButton = document.createElement('div');
-      selectionButton.className = 'sum-selection-button';
-      selectionButton.innerHTML = `
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/>
-          <line x1="16" y1="13" x2="8" y2="13"/>
-          <line x1="16" y1="17" x2="8" y2="17"/>
-          <polyline points="10 9 9 9 8 9"/>
-        </svg>
-        <span>Summarize</span>
-      `;
-      document.body.appendChild(selectionButton);
-      
-      selectionButton.addEventListener('click', () => {
-        chrome.runtime.sendMessage({
-          action: 'summarize',
-          text: text,
-          type: 'selection'
-        });
-        hideSelectionButton();
-      });
-    }
-    
-    selectionButton.style.left = `${x + 10}px`;
-    selectionButton.style.top = `${y - 40}px`;
-    selectionButton.style.display = 'flex';
-  }
-  
-  function hideSelectionButton() {
-    if (selectionButton) {
-      selectionButton.style.display = 'none';
-    }
-  }
+let selectionButton = null;
+let resultOverlay = null;
+
+// ─── Init ────────────────────────────────────────────────────────────
+
+(function () {
+    // Message handler
+    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+        switch (request.action) {
+            case "getSelection":
+                sendResponse({ text: window.getSelection().toString() });
+                break;
+            case "getPageContent":
+                sendResponse({ content: extractPageContent() });
+                break;
+            case "showResult":
+                showCrystallizationResult(request.data);
+                break;
+            case "showError":
+                showErrorToast(request.error);
+                break;
+        }
+    });
+
+    // Floating crystallize button on selection
+    document.addEventListener("mouseup", (e) => {
+        const text = window.getSelection().toString().trim();
+        if (text.length > 50) {
+            showSelectionButton(e.pageX, e.pageY, text);
+        } else {
+            hideSelectionButton();
+        }
+    });
+
+    document.addEventListener("mousedown", (e) => {
+        if (!e.target.closest(".sum-crystallize-btn")) {
+            hideSelectionButton();
+        }
+    });
 })();
 
-// Extract main content from page
+// ─── Page Content Extraction ─────────────────────────────────────────
+
 function extractPageContent() {
-  // Remove script and style elements
-  const clonedDoc = document.cloneNode(true);
-  const scripts = clonedDoc.querySelectorAll('script, style, noscript');
-  scripts.forEach(el => el.remove());
-  
-  // Try to find main content areas
-  const contentSelectors = [
-    'main',
-    'article',
-    '[role="main"]',
-    '.content',
-    '#content',
-    '.post',
-    '.article-body',
-    '.entry-content'
-  ];
-  
-  let content = '';
-  
-  for (const selector of contentSelectors) {
-    const element = document.querySelector(selector);
-    if (element) {
-      content = element.innerText;
-      break;
+    const selectors = [
+        "main", "article", '[role="main"]',
+        ".content", "#content", ".post",
+        ".article-body", ".entry-content"
+    ];
+
+    let content = "";
+    for (const selector of selectors) {
+        const el = document.querySelector(selector);
+        if (el) {
+            content = el.innerText;
+            break;
+        }
     }
-  }
-  
-  // Fallback to body content
-  if (!content) {
-    content = document.body.innerText;
-  }
-  
-  // Clean up whitespace
-  content = content.replace(/\s+/g, ' ').trim();
-  
-  // Add page title
-  const title = document.title;
-  if (title) {
-    content = `${title}\n\n${content}`;
-  }
-  
-  return content;
+
+    if (!content) content = document.body.innerText;
+    content = content.replace(/\s+/g, " ").trim();
+
+    const title = document.title;
+    if (title) content = `${title}\n\n${content}`;
+
+    return content;
 }
 
-// Show summary overlay
-function showSummaryOverlay(summary, source) {
-  // Remove existing container
-  if (summaryContainer) {
-    summaryContainer.remove();
-  }
-  
-  // Create container
-  summaryContainer = document.createElement('div');
-  summaryContainer.className = 'sum-summary-container';
-  
-  // Build summary content
-  const hierarchical = summary.hierarchical_summary;
-  const tags = summary.tags || [];
-  
-  summaryContainer.innerHTML = `
-    <div class="sum-summary-header">
-      <h3>SUM Summary</h3>
-      <div class="sum-summary-actions">
-        <button class="sum-copy-btn" title="Copy summary">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-          </svg>
-        </button>
-        <button class="sum-close-btn" title="Close">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <line x1="18" y1="6" x2="6" y2="18"/>
-            <line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
-        </button>
-      </div>
-    </div>
-    <div class="sum-summary-content">
-      <div class="sum-summary-main">
-        <h4>Summary</h4>
-        <p>${summary.summary || summary.sum}</p>
-      </div>
-      ${hierarchical ? `
-        <div class="sum-summary-hierarchical">
-          <h4>Detailed Summary</h4>
-          ${hierarchical.level_1_essence ? `<p><strong>Essence:</strong> ${hierarchical.level_1_essence}</p>` : ''}
-          ${hierarchical.level_2_core ? `<p><strong>Core:</strong> ${hierarchical.level_2_core}</p>` : ''}
-          ${hierarchical.level_3_expanded ? `<p><strong>Expanded:</strong> ${hierarchical.level_3_expanded}</p>` : ''}
-        </div>
-      ` : ''}
-      ${tags.length > 0 ? `
-        <div class="sum-summary-tags">
-          <h4>Key Concepts</h4>
-          <div class="sum-tags">
-            ${tags.map(tag => `<span class="sum-tag">${tag}</span>`).join('')}
-          </div>
-        </div>
-      ` : ''}
-      <div class="sum-summary-meta">
-        <span>Model: ${summary.model || 'unknown'}</span>
-        <span>Compression: ${summary.compression_ratio ? `${summary.compression_ratio.toFixed(1)}x` : 'N/A'}</span>
-        ${summary.cached ? '<span class="sum-cached">Cached</span>' : ''}
-      </div>
-    </div>
-  `;
-  
-  document.body.appendChild(summaryContainer);
-  
-  // Add event listeners
-  const closeBtn = summaryContainer.querySelector('.sum-close-btn');
-  closeBtn.addEventListener('click', () => {
-    summaryContainer.remove();
-    summaryContainer = null;
-  });
-  
-  const copyBtn = summaryContainer.querySelector('.sum-copy-btn');
-  copyBtn.addEventListener('click', () => {
-    const summaryText = formatSummaryForCopy(summary);
-    navigator.clipboard.writeText(summaryText).then(() => {
-      copyBtn.innerHTML = '✓';
-      setTimeout(() => {
-        copyBtn.innerHTML = `
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-          </svg>
+// ─── Floating Crystallize Button ─────────────────────────────────────
+
+function showSelectionButton(x, y, text) {
+    if (!selectionButton) {
+        selectionButton = document.createElement("div");
+        selectionButton.className = "sum-crystallize-btn";
+        selectionButton.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+            <span>Crystallize</span>
         `;
-      }, 2000);
-    });
-  });
-  
-  // Make draggable
-  makeDraggable(summaryContainer);
-}
+        selectionButton.style.cssText =
+            "position:absolute;display:none;align-items:center;gap:6px;" +
+            "background:#2563eb;color:#fff;padding:6px 12px;border-radius:8px;" +
+            "font-family:-apple-system,system-ui,sans-serif;font-size:12px;font-weight:600;" +
+            "cursor:pointer;z-index:999999;box-shadow:0 4px 12px rgba(37,99,235,0.4);" +
+            "border:1px solid rgba(255,255,255,0.15);transition:transform 0.15s;" +
+            "backdrop-filter:blur(4px);";
+        document.body.appendChild(selectionButton);
 
-// Format summary for copying
-function formatSummaryForCopy(summary) {
-  let text = `SUM Summary\n\n${summary.summary || summary.sum}\n`;
-  
-  if (summary.hierarchical_summary) {
-    const h = summary.hierarchical_summary;
-    text += '\n--- Detailed Summary ---\n';
-    if (h.level_1_essence) text += `Essence: ${h.level_1_essence}\n`;
-    if (h.level_2_core) text += `Core: ${h.level_2_core}\n`;
-    if (h.level_3_expanded) text += `Expanded: ${h.level_3_expanded}\n`;
-  }
-  
-  if (summary.tags && summary.tags.length > 0) {
-    text += `\nKey Concepts: ${summary.tags.join(', ')}\n`;
-  }
-  
-  text += `\n[Summarized with SUM - ${new Date().toLocaleString()}]`;
-  
-  return text;
-}
+        selectionButton.addEventListener("mouseenter", () => {
+            selectionButton.style.transform = "scale(1.05)";
+        });
+        selectionButton.addEventListener("mouseleave", () => {
+            selectionButton.style.transform = "scale(1)";
+        });
 
-// Show error message
-function showErrorMessage(error) {
-  const errorDiv = document.createElement('div');
-  errorDiv.className = 'sum-error-message';
-  errorDiv.innerHTML = `
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-      <circle cx="12" cy="12" r="10"/>
-      <line x1="12" y1="8" x2="12" y2="12"/>
-      <line x1="12" y1="16" x2="12.01" y2="16"/>
-    </svg>
-    <span>${error}</span>
-  `;
-  
-  document.body.appendChild(errorDiv);
-  
-  setTimeout(() => {
-    errorDiv.remove();
-  }, 5000);
-}
-
-// Make element draggable
-function makeDraggable(element) {
-  let isDragging = false;
-  let currentX;
-  let currentY;
-  let initialX;
-  let initialY;
-  let xOffset = 0;
-  let yOffset = 0;
-  
-  const header = element.querySelector('.sum-summary-header');
-  
-  header.addEventListener('mousedown', dragStart);
-  
-  function dragStart(e) {
-    initialX = e.clientX - xOffset;
-    initialY = e.clientY - yOffset;
-    
-    if (e.target.closest('.sum-summary-actions')) {
-      return;
+        selectionButton.addEventListener("click", () => {
+            hideSelectionButton();
+            chrome.runtime.sendMessage({
+                action: "summarize",   // handled by background
+                text: text,
+                type: "selection"
+            });
+        });
     }
-    
-    isDragging = true;
-    header.style.cursor = 'grabbing';
-  }
-  
-  document.addEventListener('mousemove', drag);
-  document.addEventListener('mouseup', dragEnd);
-  
-  function drag(e) {
-    if (!isDragging) return;
-    
-    e.preventDefault();
-    currentX = e.clientX - initialX;
-    currentY = e.clientY - initialY;
-    
-    xOffset = currentX;
-    yOffset = currentY;
-    
-    element.style.transform = `translate(${currentX}px, ${currentY}px)`;
-  }
-  
-  function dragEnd(e) {
-    initialX = currentX;
-    initialY = currentY;
-    
-    isDragging = false;
-    header.style.cursor = 'grab';
-  }
+
+    selectionButton.style.left = `${x + 10}px`;
+    selectionButton.style.top = `${y - 40}px`;
+    selectionButton.style.display = "flex";
+}
+
+function hideSelectionButton() {
+    if (selectionButton) {
+        selectionButton.style.display = "none";
+    }
+}
+
+// ─── Crystallization Result Overlay ──────────────────────────────────
+
+function showCrystallizationResult(data) {
+    if (resultOverlay) resultOverlay.remove();
+
+    resultOverlay = document.createElement("div");
+    resultOverlay.style.cssText =
+        "position:fixed;top:20px;right:20px;width:320px;background:#0f172a;" +
+        "border:1px solid #1e293b;border-radius:12px;padding:16px;z-index:999999;" +
+        "font-family:-apple-system,system-ui,sans-serif;color:#e2e8f0;" +
+        "box-shadow:0 8px 24px rgba(0,0,0,0.5);backdrop-filter:blur(12px);";
+
+    resultOverlay.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <span style="font-size:14px;font-weight:700;background:linear-gradient(135deg,#38bdf8,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+                🧠 Crystallized
+            </span>
+            <span id="sum-close" style="cursor:pointer;color:#64748b;font-size:18px;">&times;</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+            <div style="background:#1e293b;padding:8px;border-radius:8px;text-align:center;">
+                <div style="font-size:20px;font-weight:700;color:#10b981;">${data.axioms_ingested ?? "?"}</div>
+                <div style="font-size:9px;color:#64748b;text-transform:uppercase;">Axioms</div>
+            </div>
+            <div style="background:#1e293b;padding:8px;border-radius:8px;text-align:center;">
+                <div style="font-size:20px;font-weight:700;color:#38bdf8;">${data.new_axioms ?? "?"}</div>
+                <div style="font-size:9px;color:#64748b;text-transform:uppercase;">New</div>
+            </div>
+        </div>
+        <div style="font-size:10px;color:#64748b;font-family:monospace;word-break:break-all;">
+            State: ${String(data.new_global_state || "").substring(0, 40)}…
+        </div>
+    `;
+
+    document.body.appendChild(resultOverlay);
+
+    resultOverlay.querySelector("#sum-close").addEventListener("click", () => {
+        resultOverlay.remove();
+        resultOverlay = null;
+    });
+
+    setTimeout(() => {
+        if (resultOverlay) {
+            resultOverlay.remove();
+            resultOverlay = null;
+        }
+    }, 8000);
+}
+
+// ─── Error Toast ─────────────────────────────────────────────────────
+
+function showErrorToast(error) {
+    const toast = document.createElement("div");
+    toast.style.cssText =
+        "position:fixed;bottom:20px;right:20px;background:#ef4444;color:#fff;" +
+        "padding:12px 18px;border-radius:10px;font-family:monospace;z-index:999999;" +
+        "font-size:12px;box-shadow:0 4px 12px rgba(0,0,0,0.4);";
+    toast.innerText = `❌ SUM: ${error}`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
 }
