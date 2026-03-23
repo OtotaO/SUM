@@ -117,6 +117,276 @@ export fn sum_get_deterministic_prime(axiom_ptr: [*c]const u8, axiom_len: usize)
     return nextPrime(seed);
 }
 
+// ═══════════════════════════════════════════════════════════════════════
+// STAGE 3 — sha256_128_v2: BPSW Primality for u128
+//
+// Baillie-PSW = strong base-2 Miller–Rabin + Strong Lucas (Selfridge A)
+// No known BPSW pseudoprime exists. This is an engineering trust
+// assumption, not a formal proof of primality correctness.
+// ═══════════════════════════════════════════════════════════════════════
+
+/// Modular exponentiation for u128 using u256 intermediates.
+fn modPow128(base: u128, exponent: u128, modulus: u128) u128 {
+    if (modulus == 1) return 0;
+    var res: u256 = 1;
+    var b: u256 = @as(u256, base) % @as(u256, modulus);
+    var e: u128 = exponent;
+    while (e > 0) {
+        if (e % 2 == 1) {
+            res = (res * b) % @as(u256, modulus);
+        }
+        e >>= 1;
+        b = (b * b) % @as(u256, modulus);
+    }
+    return @as(u128, @intCast(res));
+}
+
+/// Signed modular reduction: returns value in [0, n-1].
+fn signedMod(val: i256, n: u128) u128 {
+    const n_wide: i256 = @as(i256, n);
+    const r = @mod(val, n_wide);
+    return @as(u128, @intCast(r));
+}
+
+/// Integer square root of u128 via Newton's method.
+fn isqrt128(n: u128) u128 {
+    if (n < 2) return n;
+    var x: u128 = n;
+    var y: u128 = (x + 1) / 2;
+    while (y < x) {
+        x = y;
+        y = (x + n / x) / 2;
+    }
+    return x;
+}
+
+/// Jacobi symbol (a/n) for u128. n must be odd > 0.
+/// Returns -1, 0, or 1.
+fn jacobi128(a_in: u128, n_in: u128) i32 {
+    var a: u128 = a_in % n_in;
+    var n: u128 = n_in;
+    var result: i32 = 1;
+    while (a != 0) {
+        while (a % 2 == 0) {
+            a /= 2;
+            const n_mod_8 = n % 8;
+            if (n_mod_8 == 3 or n_mod_8 == 5) result = -result;
+        }
+        const tmp = a;
+        a = n;
+        n = tmp;
+        if (a % 4 == 3 and n % 4 == 3) result = -result;
+        a = a % n;
+    }
+    return if (n == 1) result else 0;
+}
+
+/// Jacobi symbol for signed D values. Handles negative D by
+/// computing Jacobi(D mod n, n).
+fn jacobiSigned(d: i32, n: u128) i32 {
+    if (d >= 0) {
+        return jacobi128(@as(u128, @intCast(d)), n);
+    } else {
+        // d mod n = n - (|d| mod n), unless |d| mod n == 0
+        const abs_d: u128 = @as(u128, @intCast(-d));
+        const r = abs_d % n;
+        if (r == 0) return 0;
+        return jacobi128(n - r, n);
+    }
+}
+
+/// Selfridge Method A: find first D in {5, -7, 9, -11, 13, ...}
+/// where Jacobi(D|n) = -1. Returns D value or 0 if not found.
+fn selfridgeD(n: u128) i32 {
+    var d: i32 = 5;
+    var sign: i32 = 1;
+    var i: u32 = 0;
+    while (i < 100) : (i += 1) {
+        const j = jacobiSigned(d, n);
+        if (j == -1) return d;
+        if (j == 0) {
+            const abs_d: u128 = if (d >= 0) @as(u128, @intCast(d)) else @as(u128, @intCast(-d));
+            if (abs_d < n) return 0; // n has a factor
+        }
+        sign = -sign;
+        const abs_d_next = (if (d >= 0) d else -d) + 2;
+        d = sign * abs_d_next;
+    }
+    return 0;
+}
+
+/// Strong Lucas probable prime test for u128.
+/// Uses Selfridge Method A parameters.
+fn strongLucasTest128(n: u128) bool {
+    if (n < 2) return false;
+    if (n == 2) return true;
+    if (n % 2 == 0) return false;
+
+    // Perfect square check
+    const s_root = isqrt128(n);
+    if (s_root * s_root == n) return false;
+
+    const d_val = selfridgeD(n);
+    if (d_val == 0) return false;
+
+    // P = 1, Q = (1 - D) / 4
+    const d_wide: i256 = @as(i256, d_val);
+    const q_signed: i256 = @divExact(1 - d_wide, 4);
+
+    // n + 1 = 2^s * d_odd
+    var d_odd: u128 = n + 1;
+    if (d_odd == 0) return false; // overflow check (n = max u128)
+    var s: u32 = 0;
+    while (d_odd % 2 == 0) {
+        d_odd /= 2;
+        s += 1;
+    }
+
+    // Lucas sequence U_d, V_d (mod n) using doubling method
+    var u_val: i256 = 1;
+    var v_val: i256 = 1; // P = 1
+    var qk: i256 = q_signed;
+    const n_wide: i256 = @as(i256, n);
+
+    // Binary expansion of d_odd, process from second-most-significant bit
+    var bit_pos: u7 = 127;
+    // Find the MSB of d_odd
+    while (bit_pos > 0 and (d_odd >> @as(u7, bit_pos)) == 0) {
+        bit_pos -= 1;
+    }
+    // Skip MSB, process remaining bits
+    if (bit_pos > 0) {
+        bit_pos -= 1;
+        var remaining: u32 = bit_pos + 1;
+        while (remaining > 0) {
+            remaining -= 1;
+            const bp: u7 = @as(u7, @intCast(remaining));
+
+            // Double step
+            u_val = @mod(u_val * v_val, n_wide);
+            v_val = @mod(v_val * v_val - 2 * qk, n_wide);
+            qk = @mod(qk * qk, n_wide);
+
+            if ((d_odd >> bp) & 1 == 1) {
+                // Add step: U' = (P*U + V)/2, V' = (D*U + P*V)/2
+                const new_u = u_val + v_val; // P=1, so P*U + V = U + V
+                const new_v = d_wide * u_val + v_val; // P=1, so D*U + P*V = D*U + V
+                // Divide by 2 mod n: if odd, add n first
+                u_val = if (@mod(new_u, 2) == 0)
+                    @mod(@divExact(new_u, 2), n_wide)
+                else
+                    @mod(@divExact(new_u + n_wide, 2), n_wide);
+                v_val = if (@mod(new_v, 2) == 0)
+                    @mod(@divExact(new_v, 2), n_wide)
+                else
+                    @mod(@divExact(new_v + n_wide, 2), n_wide);
+                qk = @mod(qk * q_signed, n_wide);
+            }
+        }
+    }
+
+    // Normalize
+    const u_final = signedMod(u_val, n);
+    const v_final = signedMod(v_val, n);
+
+    // Strong Lucas: U_d ≡ 0 OR V_{d*2^r} ≡ 0 for some 0 <= r < s
+    if (u_final == 0 or v_final == 0) return true;
+
+    // Check V_{d*2^r} for r = 1..s-1
+    var v_cur: i256 = v_val;
+    var qk_cur: i256 = qk;
+    var r: u32 = 1;
+    while (r < s) : (r += 1) {
+        v_cur = @mod(v_cur * v_cur - 2 * qk_cur, n_wide);
+        qk_cur = @mod(qk_cur * qk_cur, n_wide);
+        if (signedMod(v_cur, n) == 0) return true;
+    }
+
+    return false;
+}
+
+/// BPSW primality test for u128.
+/// Phase 1: strong base-2 Miller-Rabin
+/// Phase 2: Strong Lucas with Selfridge Method A
+fn isPrimeBPSW128(n: u128) bool {
+    if (n < 2) return false;
+    if (n < 4) return true;
+    if (n % 2 == 0 or n % 3 == 0) return false;
+
+    // Small primes fast-path
+    const small_primes = [_]u128{ 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43 };
+    for (small_primes) |sp| {
+        if (n == sp) return true;
+        if (n % sp == 0) return false;
+    }
+
+    // Phase 1: Strong base-2 Miller-Rabin
+    var d: u128 = n - 1;
+    var s: u32 = 0;
+    while (d % 2 == 0) {
+        d /= 2;
+        s += 1;
+    }
+
+    var x = modPow128(2, d, n);
+    if (x != 1 and x != n - 1) {
+        var composite = true;
+        var r: u32 = 1;
+        while (r < s) : (r += 1) {
+            x = modPow128(x, 2, n);
+            if (x == n - 1) {
+                composite = false;
+                break;
+            }
+        }
+        if (composite) return false;
+    }
+
+    // Phase 2: Strong Lucas
+    return strongLucasTest128(n);
+}
+
+/// Next prime after n, using BPSW for u128 inputs.
+fn nextPrime128(n: u128) u128 {
+    var p = n + 1;
+    if (p % 2 == 0 and p > 2) p += 1;
+    while (!isPrimeBPSW128(p)) {
+        p += 2;
+    }
+    return p;
+}
+
+/// Stage 3 v2 C-ABI export: SHA-256(axiom) → 16-byte seed → nextPrime128.
+/// Result is written as 16-byte big-endian into caller-provided buffer.
+/// Returns 0 on success, -1 on error.
+export fn sum_get_deterministic_prime_v2(
+    axiom_ptr: [*c]const u8,
+    axiom_len: usize,
+    out_buf: [*c]u8,
+) i32 {
+    const axiom_str = axiom_ptr[0..axiom_len];
+
+    var hash: [32]u8 = undefined;
+    std.crypto.hash.sha2.Sha256.hash(axiom_str, &hash, .{});
+
+    // Extract first 16 bytes as big-endian u128 seed
+    var seed: u128 = 0;
+    for (hash[0..16]) |byte| {
+        seed = (seed << 8) | byte;
+    }
+
+    const prime = nextPrime128(seed);
+
+    // Write as 16-byte big-endian
+    var i: u4 = 0;
+    while (i < 16) : (i += 1) {
+        const shift: u7 = @as(u7, 15 - i) * 8;
+        out_buf[i] = @as(u8, @intCast((prime >> shift) & 0xFF));
+    }
+
+    return 0;
+}
+
 // ─── Tests (Phase 17 — Prime Derivation) ────────────────────────────
 
 test "modPow basic" {
@@ -146,6 +416,50 @@ test "deterministic prime for 'alice||likes||cats'" {
     const axiom = "alice||likes||cats";
     const prime = sum_get_deterministic_prime(axiom.ptr, axiom.len);
     try std.testing.expectEqual(@as(u64, 14326936561644797201), prime);
+}
+
+// ─── Tests (Stage 3 — v2 BPSW 128-bit) ─────────────────────────────
+
+test "modPow128 basic" {
+    try std.testing.expectEqual(@as(u128, 1), modPow128(2, 10, 1023));
+    try std.testing.expectEqual(@as(u128, 0), modPow128(5, 3, 1));
+    try std.testing.expectEqual(@as(u128, 8), modPow128(2, 3, 1000));
+}
+
+test "isPrimeBPSW128 known primes" {
+    try std.testing.expect(isPrimeBPSW128(2));
+    try std.testing.expect(isPrimeBPSW128(3));
+    try std.testing.expect(isPrimeBPSW128(7));
+    try std.testing.expect(isPrimeBPSW128(104729));
+    try std.testing.expect(!isPrimeBPSW128(0));
+    try std.testing.expect(!isPrimeBPSW128(1));
+    try std.testing.expect(!isPrimeBPSW128(4));
+    try std.testing.expect(!isPrimeBPSW128(100));
+}
+
+test "isPrimeBPSW128 large prime" {
+    // Test with the v2 reference prime for alice||likes||cats
+    try std.testing.expect(isPrimeBPSW128(264285332112933860981052902103273947671));
+}
+
+test "nextPrime128 basic" {
+    try std.testing.expectEqual(@as(u128, 5), nextPrime128(3));
+    try std.testing.expectEqual(@as(u128, 11), nextPrime128(7));
+    try std.testing.expectEqual(@as(u128, 2), nextPrime128(1));
+}
+
+test "v2 deterministic prime for 'alice||likes||cats'" {
+    const axiom = "alice||likes||cats";
+    var out: [16]u8 = undefined;
+    const rc = sum_get_deterministic_prime_v2(axiom.ptr, axiom.len, &out);
+    try std.testing.expectEqual(@as(i32, 0), rc);
+
+    // Reconstruct u128 from big-endian bytes
+    var prime: u128 = 0;
+    for (out[0..16]) |byte| {
+        prime = (prime << 8) | byte;
+    }
+    try std.testing.expectEqual(@as(u128, 264285332112933860981052902103273947671), prime);
 }
 
 // ═══════════════════════════════════════════════════════════════════════

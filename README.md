@@ -127,7 +127,7 @@ git clone https://github.com/OtotaO/SUM.git
 cd SUM
 pip install -r requirements-prod.txt
 
-# Run the 551 tests verification suite
+# Run the 579 tests verification suite
 python -m pytest Tests/ -v
 
 # Run the 21-check Fortress gate
@@ -233,7 +233,7 @@ SUM/
 ├── experiments.tsv                   # Autoresearch experiment ledger
 └── Tests/
     ├── fixtures/                      # Frozen golden reference vectors
-    └── test_*.py                      # 551 Passing Verification Tests
+    └── test_*.py                      # 579 Passing Verification Tests
 ```
 
 ---
@@ -241,7 +241,7 @@ SUM/
 ## 🛡️ Mathematical Verification Suite
 
 ```text
-551 passed · 21/21 fortress checks
+579 passed · 21/21 fortress checks
 
 ─── Core Hardening (Process Intensification) ───
 ZK Semantic Proofs .................... 16 ✓  (round-trip, tamper, non-linkability, stress)
@@ -279,6 +279,7 @@ Phase 24 — Confidence Calibration ..... 23 ✓  (source-type, redundancy, cont
 Phase 25 — Semantic Deduplication ..... 22 ✓  (predicate synonyms, Jaccard+Levenshtein, API dedup)
 Stage 1 — Dual-Format Transport ....... 18 ✓  (hex companion fields, parse_state, P2P hex)
 Stage 2 — Scheme Versioning ........... 27 ✓  (scheme registry, protocol enforcement, hex cross-check)
+Stage 3A — 128-Bit Shadow ............. 28 ✓  (v2 reference vectors, Python↔Node parity, BPSW, collision policy)
 ```
 
 ### Threat Model Coverage

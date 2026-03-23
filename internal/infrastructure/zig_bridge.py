@@ -62,6 +62,7 @@ class ZigMathEngine:
             try:
                 self.lib = ctypes.CDLL(lib_path)
                 self._bind_phase17()
+                self._bind_phase17_v2()
                 self._bind_phase17b()
                 logger.info("⚡ BARE-METAL ZIG CORE ENGAGED ⚡")
             except Exception as exc:
@@ -78,6 +79,14 @@ class ZigMathEngine:
             ctypes.c_char_p, ctypes.c_size_t,
         ]
         self.lib.sum_get_deterministic_prime.restype = ctypes.c_uint64
+
+    def _bind_phase17_v2(self):
+        """Bind Stage 3 export: v2 deterministic prime (128-bit BPSW)."""
+        self.lib.sum_get_deterministic_prime_v2.argtypes = [
+            ctypes.c_char_p, ctypes.c_size_t,
+            ctypes.c_char_p,  # 16-byte output buffer
+        ]
+        self.lib.sum_get_deterministic_prime_v2.restype = ctypes.c_int32
 
     def _bind_phase17b(self):
         """Bind Phase 17b exports: BigInt arithmetic (LCM, GCD, mod, divisibility)."""
@@ -124,6 +133,17 @@ class ZigMathEngine:
             return None
         encoded = axiom.encode("utf-8")
         return self.lib.sum_get_deterministic_prime(encoded, len(encoded))
+
+    def get_deterministic_prime_v2(self, axiom: str) -> int | None:
+        """SHA-256(axiom) → 16-byte seed → next prime via BPSW (Zig bare-metal)."""
+        if self.lib is None:
+            return None
+        encoded = axiom.encode("utf-8")
+        out_buf = ctypes.create_string_buffer(16)
+        rc = self.lib.sum_get_deterministic_prime_v2(encoded, len(encoded), out_buf)
+        if rc != 0:
+            return None
+        return int.from_bytes(out_buf.raw, byteorder="big")
 
     # ------------------------------------------------------------------
     # Phase 17b: BigInt Helpers

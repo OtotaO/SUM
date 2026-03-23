@@ -25,7 +25,21 @@ from typing import Dict, List, Tuple, Set
 
 import sympy
 
+from internal.infrastructure.scheme_registry import CURRENT_SCHEME
+
 logger = logging.getLogger(__name__)
+
+
+class PrimeCollisionError(Exception):
+    """Hard failure when two distinct axiom keys hash to the same prime.
+
+    In sha256_64_v1, collisions are resolved by advancing to the next
+    prime (order-dependent, consensus-unsafe for distributed systems).
+
+    In sha256_128_v2, collisions are fatal.  The 128-bit seed space
+    makes birthday-bound collisions require ~2^64 distinct axioms.
+    If one ever occurs, something is deeply wrong.
+    """
 
 
 def _get_zig_engine():
@@ -115,9 +129,9 @@ class GodelStateAlgebra:
         """
         Generates a globally unique, deterministic prime for a given axiom.
 
-        Uses SHA-256 to hash the axiom key into a 64-bit integer space,
-        then finds the next prime.  This allows lock-free LCM merging
-        of Gödel States across branches and distributed networks.
+        Dispatches based on the active scheme:
+            sha256_64_v1:  SHA-256 → first 8 bytes → nextprime(seed)
+            sha256_128_v2: SHA-256 → first 16 bytes → nextprime(seed)
 
         HORIZON III — Strangler Fig:
             Routes to the bare-metal Zig core (nanosecond-speed C-ABI)
@@ -130,6 +144,12 @@ class GodelStateAlgebra:
         Returns:
             A deterministic prime number unique to this axiom.
         """
+        if CURRENT_SCHEME == "sha256_128_v2":
+            return self._deterministic_prime_v2(axiom_key)
+        return self._deterministic_prime_v1(axiom_key)
+
+    def _deterministic_prime_v1(self, axiom_key: str) -> int:
+        """v1: SHA-256 → first 8 bytes big-endian → nextprime(seed)."""
         # ── Bare-Metal Fast Path (Zig C-ABI) ──
         zig = _get_zig_engine()
         if zig is not None:
@@ -137,9 +157,26 @@ class GodelStateAlgebra:
             if result is not None:
                 return result
 
-        # ── Legacy Python Fallback ──
+        # ── Python Fallback ──
         h = hashlib.sha256(axiom_key.encode('utf-8')).digest()
         seed = int.from_bytes(h[:8], byteorder='big')
+        return sympy.nextprime(seed)
+
+    def _deterministic_prime_v2(self, axiom_key: str) -> int:
+        """v2: SHA-256 → first 16 bytes big-endian → nextprime(seed).
+
+        Uses sympy.nextprime which internally uses BPSW for large inputs.
+        """
+        # ── Bare-Metal Fast Path (Zig C-ABI v2) ──
+        zig = _get_zig_engine()
+        if zig is not None and hasattr(zig, 'get_deterministic_prime_v2'):
+            result = zig.get_deterministic_prime_v2(axiom_key)
+            if result is not None:
+                return result
+
+        # ── Python path ──
+        h = hashlib.sha256(axiom_key.encode('utf-8')).digest()
+        seed = int.from_bytes(h[:16], byteorder='big')
         return sympy.nextprime(seed)
 
     def get_or_mint_prime(self, subject: str, predicate: str, object_: str) -> int:
@@ -168,9 +205,20 @@ class GodelStateAlgebra:
         if axiom_key not in self.axiom_to_prime:
             p = self._deterministic_prime(axiom_key)
 
-            # Collision detection (astronomically rare, but required)
-            while p in self.prime_to_axiom and self.prime_to_axiom[p] != axiom_key:
-                p = sympy.nextprime(p)
+            # Collision handling is scheme-dependent
+            if p in self.prime_to_axiom and self.prime_to_axiom[p] != axiom_key:
+                if CURRENT_SCHEME == "sha256_128_v2":
+                    # v2: hard fail — collision loop is hidden nondeterminism
+                    raise PrimeCollisionError(
+                        f"128-bit prime collision detected: prime {p} already "
+                        f"assigned to {self.prime_to_axiom[p]!r}, cannot assign "
+                        f"to {axiom_key!r}. This should be astronomically rare. "
+                        f"Investigate immediately."
+                    )
+                else:
+                    # v1: advance to next prime (order-dependent, legacy behavior)
+                    while p in self.prime_to_axiom and self.prime_to_axiom[p] != axiom_key:
+                        p = sympy.nextprime(p)
 
             self.axiom_to_prime[axiom_key] = p
             self.prime_to_axiom[p] = axiom_key

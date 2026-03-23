@@ -35,3 +35,4 @@ cf8ae09	394	21/21	keep	Phase 19: Sovereign Edge + Automated Scientist — causal
 -------	506	21/21	keep	Phase 25: Semantic Deduplication — predicate synonyms, Jaccard+Levenshtein fuzzy match, API integration (22 tests)
 -------	524	21/21	keep	Stage 1: Dual-Format Transport — hex companion fields on all 11 API surfaces, parse_state auto-detect, P2P hex (18 tests)
 -------	551	21/21	keep	Stage 2: Scheme Versioning — scheme_registry, bundle prime_scheme, P2P negotiation, mixed-scheme rejection, hex cross-check (27 tests)
+-------	579	21/21	keep	Stage 3A: 128-Bit Shadow — v2 reference vectors, Python↔Node BPSW parity, PrimeCollisionError, Zig u128 BPSW (28 tests)

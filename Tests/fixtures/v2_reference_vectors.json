@@ -1,0 +1,47 @@
+{
+  "description": "Frozen reference vectors for v1 (sha256_64_v1) and v2 (sha256_128_v2) prime derivation. These vectors are the cross-runtime parity ground truth.",
+  "generated_by": "Python 3.13 + sympy (BPSW-based nextprime)",
+  "frozen_date": "2026-03-23",
+  "vectors": [
+    {
+      "axiom_key": "alice||likes||cats",
+      "sha256_hex": "c6d380e53c64fca99927bc755a37c1d9ecbd9139b65f4a5acad1fbf6c310f012",
+      "v1_seed": "14326936561644797097",
+      "v1_prime": "14326936561644797201",
+      "v2_seed": "264285332112933860981052902103273947609",
+      "v2_prime": "264285332112933860981052902103273947671"
+    },
+    {
+      "axiom_key": "bob||knows||python",
+      "sha256_hex": "b37d3c2b55c0b0195fccb24db0ac8e7539f589532cde1315639cef126fb0cc76",
+      "v1_seed": "12933559861697884185",
+      "v1_prime": "12933559861697884259",
+      "v2_seed": "238582068730743173113692744107846045301",
+      "v2_prime": "238582068730743173113692744107846045503"
+    },
+    {
+      "axiom_key": "earth||orbits||sun",
+      "sha256_hex": "8e3176e1eae59d0a3c4f748c53c015f34fe53af98221e7b509946913b25309b1",
+      "v1_seed": "10246101339925224714",
+      "v1_prime": "10246101339925224733",
+      "v2_seed": "189007209170893135023962148948466996723",
+      "v2_prime": "189007209170893135023962148948466996823"
+    },
+    {
+      "axiom_key": "quantum||entangles||photon",
+      "sha256_hex": "391d904d931d2bad8cff08a1d8c68ea10e4bd364b828f98653da2bf539e6dde9",
+      "v1_seed": "4115604297341545389",
+      "v1_prime": "4115604297341545427",
+      "v2_seed": "75919499181718715751351316207293075105",
+      "v2_prime": "75919499181718715751351316207293075217"
+    },
+    {
+      "axiom_key": "water||contains||hydrogen",
+      "sha256_hex": "165d98c13189e1510a1a17e1f2a459d918c9287b65697c0540525e75f260a59f",
+      "v1_seed": "1611612197195735377",
+      "v1_prime": "1611612197195735393",
+      "v2_seed": "29728997747738460826164635775038413273",
+      "v2_prime": "29728997747738460826164635775038413403"
+    }
+  ]
+}
