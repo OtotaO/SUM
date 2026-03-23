@@ -186,7 +186,7 @@ class TestMassSemanticEngine:
 
     def test_full_pipeline(self):
         """MAP → ENCODE → REDUCE → AUDIT end-to-end."""
-        from internal.legacy_api.mass_semantic_engine import MassSemanticEngine
+        from internal.ensemble.mass_semantic_engine import MassSemanticEngine
 
         # Mock extractor: returns fixed triplets per chunk
         async def mock_extractor(chunk: str):
@@ -210,7 +210,7 @@ class TestMassSemanticEngine:
 
     def test_spnt_overclaim_warning(self):
         """Pipeline flags overclaim when primes exceed SPNT bound."""
-        from internal.legacy_api.mass_semantic_engine import MassSemanticEngine
+        from internal.ensemble.mass_semantic_engine import MassSemanticEngine
 
         # Return many unique axioms from a single chunk
         async def greedy_extractor(chunk: str):
