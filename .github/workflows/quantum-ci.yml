@@ -7,7 +7,28 @@ on:
     branches: [ "main" ]
 
 jobs:
+  zig-core:
+    name: Zig Core (BigInt Arithmetic)
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Zig 0.13
+      uses: mlugg/setup-zig@v1
+      with:
+        version: 0.13.0
+
+    - name: Build libsum_core (ReleaseFast)
+      run: zig build -Doptimize=ReleaseFast
+      working-directory: core-zig
+
+    - name: Run Zig Built-in Tests
+      run: zig build test
+      working-directory: core-zig
+
   mathematical-verification:
+    name: Python Gödel-State Algebra (376 tests)
+    needs: zig-core
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -17,6 +38,15 @@ jobs:
       with:
         python-version: "3.12"
         cache: 'pip'
+
+    - name: Install Zig 0.13
+      uses: mlugg/setup-zig@v1
+      with:
+        version: 0.13.0
+
+    - name: Build Zig Core for Python FFI
+      run: zig build -Doptimize=ReleaseFast
+      working-directory: core-zig
 
     - name: Install Quantum OS Dependencies
       run: |
@@ -33,3 +63,4 @@ jobs:
     - name: Run Fortress Gate (21 checks)
       run: |
         python scripts/verify_fortress.py --json
+
