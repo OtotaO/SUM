@@ -98,6 +98,16 @@ class GodelStateAlgebra:
         self.node_registry: Dict[str, int] = {}
 
     # ------------------------------------------------------------------
+    # Predicate canonicalization
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _canonicalize_predicate(predicate: str) -> str:
+        """Normalize a free-form predicate to the canonical vocabulary."""
+        from internal.algorithms.predicate_canon import canonicalize
+        return canonicalize(predicate)
+
+    # ------------------------------------------------------------------
     # Prime minting
     # ------------------------------------------------------------------
 
@@ -151,7 +161,7 @@ class GodelStateAlgebra:
         """
         axiom_key = (
             f"{subject.strip().lower()}||"
-            f"{predicate.strip().lower()}||"
+            f"{self._canonicalize_predicate(predicate)}||"
             f"{object_.strip().lower()}"
         )
 

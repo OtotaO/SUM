@@ -304,6 +304,13 @@ class OuroborosRequest(BaseModel):
     text: str
 
 
+class AskRequest(BaseModel):
+    """Natural-language knowledge retrieval over the Gödel state."""
+    question: str
+    branch: str = "main"
+    top_k: int = 10
+
+
 # ─── Helper ──────────────────────────────────────────────────────────
 
 def _get_branch_state(branch: str) -> int:
@@ -1114,3 +1121,137 @@ async def get_autonomous_discoveries():
         "total_discoveries": total,
         "recent": discoveries,
     }
+
+
+# ─── Phase 21: Knowledge Retrieval ───────────────────────────────────
+
+@router.post("/ask")
+async def ask_knowledge(
+    req: AskRequest,
+    user_id: str = Depends(get_current_user),
+):
+    """
+    Natural-Language Knowledge Retrieval over the Gödel State.
+
+    Closes the ingest↔retrieve loop. Works in two modes:
+
+    1. **Math-only (always available):** Tokenizes the question into
+       keywords, scans all axioms alive in the current state for
+       substring matches, and returns ranked results.
+
+    2. **Semantic (when VectorBridge is booted):** Uses embedding
+       cosine similarity for fuzzy matching, then optionally
+       synthesizes a narrative answer via the EpistemicLoop.
+
+    Returns matching axioms with their prime numbers and a
+    synthesized answer when the LLM is available.
+    """
+    if not kos.is_booted:
+        raise HTTPException(status_code=503, detail="KOS booting")
+
+    effective_branch = user_id if user_id != "main" else req.branch
+    current_state = kos.branches.get(effective_branch, 1)
+
+    if current_state == 1:
+        return {
+            "question": req.question,
+            "matches": [],
+            "answer": "No knowledge has been ingested yet.",
+            "mode": "empty",
+        }
+
+    # ── 1. Get all active axioms ─────────────────────────────────
+    active_axioms = kos.algebra.get_active_axioms(current_state)
+
+    # ── 2. Keyword matching (always works, no LLM needed) ────────
+    from internal.algorithms.predicate_canon import canonicalize
+    question_lower = req.question.lower()
+    keywords = [
+        w for w in question_lower.replace("?", "").replace(".", "").split()
+        if len(w) > 2 and w not in {
+            "the", "and", "for", "are", "was", "were", "has", "have",
+            "this", "that", "with", "from", "what", "who", "how",
+            "why", "when", "where", "does", "did", "can", "could",
+            "will", "would", "should", "about", "which",
+        }
+    ]
+
+    scored_axioms = []
+    for ax in active_axioms:
+        parts = ax.split("||")
+        if len(parts) == 3:
+            s, p, o = parts
+            # Score by keyword overlap
+            ax_text = f"{s} {p} {o}".lower()
+            score = sum(1 for kw in keywords if kw in ax_text)
+            if score > 0:
+                prime = kos.algebra.axiom_to_prime.get(ax, 0)
+                scored_axioms.append({
+                    "subject": s,
+                    "predicate": p,
+                    "object": o,
+                    "axiom_key": ax,
+                    "prime": prime,
+                    "relevance_score": score,
+                })
+
+    # Sort by relevance
+    scored_axioms.sort(key=lambda x: x["relevance_score"], reverse=True)
+    top_matches = scored_axioms[:req.top_k]
+
+    # ── 3. Semantic search (if VectorBridge is available) ─────────
+    semantic_matches = []
+    mode = "keyword"
+
+    if hasattr(kos, "vector_bridge") and kos.vector_bridge is not None:
+        try:
+            results = await kos.vector_bridge.semantic_search_godel_state(
+                query=req.question,
+                global_state=current_state,
+                top_k=req.top_k,
+            )
+            semantic_matches = [
+                {
+                    "axiom_key": r["axiom_key"],
+                    "similarity": round(r["similarity"], 4),
+                }
+                for r in results
+            ]
+            mode = "semantic"
+        except Exception as e:
+            logger.warning("VectorBridge search failed: %s", e)
+
+    # ── 4. Synthesize answer from matched axioms ─────────────────
+    answer = None
+    if top_matches:
+        # Build a concise answer from matched axioms
+        facts = [
+            f"{m['subject']} {m['predicate']} {m['object']}"
+            for m in top_matches[:5]
+        ]
+        answer = "Based on known axioms:\n" + "\n".join(
+            f"  • {fact}" for fact in facts
+        )
+
+        # If LLM is available, generate a synthesized narrative
+        if hasattr(kos, "extrapolator") and kos.extrapolator is not None:
+            try:
+                axiom_keys = [m["axiom_key"] for m in top_matches[:5]]
+                narrative = await kos.extrapolator.extrapolate_with_proof(
+                    current_state, axiom_keys
+                )
+                answer = narrative
+                mode = "verified_narrative"
+            except Exception as e:
+                logger.warning("Narrative synthesis failed: %s", e)
+
+    return {
+        "question": req.question,
+        "matches": top_matches,
+        "semantic_matches": semantic_matches,
+        "answer": answer or "No matching knowledge found.",
+        "mode": mode,
+        "total_active_axioms": len(active_axioms),
+        "branch": effective_branch,
+    }
+
