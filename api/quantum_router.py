@@ -240,6 +240,7 @@ class SearchRequest(BaseModel):
 class IngestRequest(BaseModel):
     text: str
     branch: str = "main"
+    source_url: str = ""
 
 
 class ExtrapolateRequest(BaseModel):
@@ -272,6 +273,7 @@ class DirectMathRequest(BaseModel):
     """Zero-cost ingestion: bypass LLM, inject triplets directly into the math engine."""
     triplets: List[List[str]]  # [[subject, predicate, object]]
     branch: str = "main"
+    source_url: str = ""
 
 
 class PeerRequest(BaseModel):
@@ -444,11 +446,17 @@ async def ingest_document(
     # 3. Mathematical merge
     kos.branches[branch] = math.lcm(branch_state, new_state)
 
-    # 4. Akashic trace — log new primes
+    # 4. Akashic trace — log new primes (Phase 22: with provenance)
+    from datetime import datetime as _dt
+    _now = _dt.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
     delta_axioms = []
     for prime, axiom in kos.algebra.prime_to_axiom.items():
         if new_state % prime == 0:
-            await kos.ledger.append_event("MINT", prime, axiom)
+            await kos.ledger.append_event(
+                "MINT", prime, axiom,
+                source_url=request.source_url,
+                ingested_at=_now,
+            )
             await kos.ledger.append_event("MUL", prime)
             delta_axioms.append(axiom)
 
@@ -509,9 +517,15 @@ async def ingest_math_direct(
     if added_axioms:
         new_state = math.lcm(current_state, new_state_product)
 
-        # Log to Akashic Ledger
+        # Log to Akashic Ledger (Phase 22: with provenance)
+        from datetime import datetime as _dt
+        _now = _dt.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
         for prime, axiom in added_axioms:
-            await kos.ledger.append_event("MINT", prime, axiom)
+            await kos.ledger.append_event(
+                "MINT", prime, axiom,
+                source_url=request.source_url,
+                ingested_at=_now,
+            )
             await kos.ledger.append_event("MUL", prime)
 
         # Apply Interacting Theory (Causal Cascades)
@@ -1123,7 +1137,7 @@ async def get_autonomous_discoveries():
     }
 
 
-# ─── Phase 21: Knowledge Retrieval ───────────────────────────────────
+# ─── Phase 21+22: Knowledge Retrieval + Provenance ──────────────────
 
 @router.post("/ask")
 async def ask_knowledge(
@@ -1143,8 +1157,9 @@ async def ask_knowledge(
        cosine similarity for fuzzy matching, then optionally
        synthesizes a narrative answer via the EpistemicLoop.
 
-    Returns matching axioms with their prime numbers and a
-    synthesized answer when the LLM is available.
+    Phase 22: Results are weighted by confidence × recency, and
+    provenance metadata (source_url, confidence, ingested_at) is
+    included in every match.
     """
     if not kos.is_booted:
         raise HTTPException(status_code=503, detail="KOS booting")
@@ -1192,10 +1207,43 @@ async def ask_knowledge(
                     "object": o,
                     "axiom_key": ax,
                     "prime": prime,
-                    "relevance_score": score,
+                    "relevance_score": float(score),
                 })
 
-    # Sort by relevance
+    # ── 2b. Provenance-weighted scoring (Phase 22) ────────────────
+    if scored_axioms:
+        axiom_keys = [m["axiom_key"] for m in scored_axioms]
+        provenance = await kos.ledger.get_provenance_batch(axiom_keys)
+
+        from datetime import datetime as _dt
+        _now = _dt.utcnow()
+        for m in scored_axioms:
+            prov = provenance.get(m["axiom_key"])
+            if prov:
+                m["source_url"] = prov["source_url"]
+                m["confidence"] = prov["confidence"]
+                m["ingested_at"] = prov["ingested_at"]
+
+                # Recency factor: halve score every 30 days
+                recency = 1.0
+                if prov["ingested_at"]:
+                    try:
+                        ts = _dt.fromisoformat(prov["ingested_at"])
+                        age_days = max((_now - ts).days, 0)
+                        recency = 0.5 ** (age_days / 30.0)
+                    except (ValueError, TypeError):
+                        pass
+
+                # Weighted score = keyword_hits × confidence × recency
+                m["relevance_score"] = (
+                    m["relevance_score"] * prov["confidence"] * recency
+                )
+            else:
+                m["source_url"] = ""
+                m["confidence"] = 0.5
+                m["ingested_at"] = ""
+
+    # Sort by weighted relevance
     scored_axioms.sort(key=lambda x: x["relevance_score"], reverse=True)
     top_matches = scored_axioms[:req.top_k]
 
@@ -1253,5 +1301,35 @@ async def ask_knowledge(
         "mode": mode,
         "total_active_axioms": len(active_axioms),
         "branch": effective_branch,
+    }
+
+
+# ─── Phase 22: Provenance Query ──────────────────────────────────────
+
+@router.get("/provenance/{axiom_key:path}")
+async def get_provenance(
+    axiom_key: str,
+    user_id: str = Depends(get_current_user),
+):
+    """
+    Retrieve the full provenance chain for a specific axiom.
+
+    Returns every source that contributed this axiom, with its
+    confidence score and ingestion timestamp. The axiom_key is
+    the normalised ``subject||predicate||object`` string.
+    """
+    if not kos.is_booted:
+        raise HTTPException(status_code=503, detail="KOS booting")
+
+    chain = await kos.ledger.get_axiom_provenance(axiom_key)
+
+    # Check if the axiom actually exists in the algebra
+    prime = kos.algebra.axiom_to_prime.get(axiom_key)
+
+    return {
+        "axiom_key": axiom_key,
+        "prime": prime,
+        "provenance_chain": chain,
+        "total_sources": len(chain),
     }
 

@@ -58,7 +58,7 @@ class AkashicLedger:
     # ------------------------------------------------------------------
 
     def _init_db(self) -> None:
-        """Create the event table if it does not exist."""
+        """Create the event table if it does not exist, then migrate."""
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS semantic_events (
@@ -69,33 +69,146 @@ class AkashicLedger:
                 )
             """)
             conn.commit()
+            # Phase 22: Provenance + Confidence migration
+            self._migrate_provenance(conn)
+
+    def _migrate_provenance(self, conn: sqlite3.Connection) -> None:
+        """Idempotent migration: add provenance columns if missing."""
+        columns_to_add = [
+            ("source_url",  "TEXT DEFAULT ''"),
+            ("confidence",  "REAL DEFAULT 0.5"),
+            ("ingested_at", "TEXT DEFAULT ''"),
+        ]
+        for col_name, col_def in columns_to_add:
+            try:
+                conn.execute(
+                    f"ALTER TABLE semantic_events ADD COLUMN {col_name} {col_def}"
+                )
+            except sqlite3.OperationalError:
+                pass  # Column already exists — safe to ignore
+        conn.commit()
 
     # ------------------------------------------------------------------
     # Append
     # ------------------------------------------------------------------
 
     async def append_event(
-        self, operation: str, prime: int, axiom_key: str = ""
+        self,
+        operation: str,
+        prime: int,
+        axiom_key: str = "",
+        *,
+        source_url: str = "",
+        confidence: float = 0.5,
+        ingested_at: str = "",
     ) -> None:
         """
         Append a single mathematical trace to the ledger.
 
         Args:
-            operation: One of ``'MINT'``, ``'MUL'``, ``'DIV'``,
-                       ``'SYNC'``, ``'DEDUCED'``.
-            prime:     The semantic prime involved.
-            axiom_key: Human-readable axiom key (for ``MINT``/``DEDUCED`` events).
+            operation:   One of ``'MINT'``, ``'MUL'``, ``'DIV'``,
+                         ``'SYNC'``, ``'DEDUCED'``.
+            prime:       The semantic prime involved.
+            axiom_key:   Human-readable axiom key (for ``MINT``/``DEDUCED`` events).
+            source_url:  Origin URL or identifier for this axiom.
+            confidence:  Trust score in [0.0, 1.0], default 0.5.
+            ingested_at: ISO timestamp (YYYY-MM-DDTHH:MM:SS).
         """
         def _write():
             with sqlite3.connect(self.db_path) as conn:
                 conn.execute(
                     "INSERT INTO semantic_events "
-                    "(operation, prime, axiom_key) VALUES (?, ?, ?)",
-                    (operation, str(prime), axiom_key),
+                    "(operation, prime, axiom_key, source_url, confidence, ingested_at) "
+                    "VALUES (?, ?, ?, ?, ?, ?)",
+                    (operation, str(prime), axiom_key,
+                     source_url, confidence, ingested_at),
                 )
 
         await asyncio.to_thread(_write)
-        logger.debug("Ledger ← %s prime=%s axiom=%s", operation, prime, axiom_key)
+        logger.debug(
+            "Ledger ← %s prime=%s axiom=%s source=%s conf=%.2f",
+            operation, prime, axiom_key, source_url, confidence,
+        )
+
+    # ------------------------------------------------------------------
+    # Provenance queries (Phase 22)
+    # ------------------------------------------------------------------
+
+    async def get_axiom_provenance(self, axiom_key: str) -> list:
+        """
+        Retrieve provenance metadata for a specific axiom.
+
+        Queries all MINT events matching the axiom_key to build
+        a full provenance chain (an axiom may be re-ingested from
+        multiple sources).
+
+        Args:
+            axiom_key: The normalised axiom string (``subj||pred||obj``).
+
+        Returns:
+            List of dicts with ``source_url``, ``confidence``,
+            ``ingested_at``, ``seq_id``.
+        """
+        def _read():
+            with sqlite3.connect(self.db_path) as conn:
+                rows = conn.execute(
+                    "SELECT seq_id, source_url, confidence, ingested_at "
+                    "FROM semantic_events "
+                    "WHERE operation = 'MINT' AND axiom_key = ? "
+                    "ORDER BY seq_id ASC",
+                    (axiom_key,),
+                ).fetchall()
+                return [
+                    {
+                        "seq_id": r[0],
+                        "source_url": r[1] or "",
+                        "confidence": r[2] if r[2] is not None else 0.5,
+                        "ingested_at": r[3] or "",
+                    }
+                    for r in rows
+                ]
+
+        return await asyncio.to_thread(_read)
+
+    async def get_provenance_batch(self, axiom_keys: list) -> dict:
+        """
+        Batch provenance lookup for multiple axioms.
+
+        Returns the *latest* (highest-confidence, most-recent) provenance
+        record for each axiom, keyed by axiom_key.
+
+        Args:
+            axiom_keys: List of axiom key strings.
+
+        Returns:
+            Dict mapping axiom_key → provenance dict (or None if not found).
+        """
+        if not axiom_keys:
+            return {}
+
+        def _read():
+            with sqlite3.connect(self.db_path) as conn:
+                placeholders = ",".join("?" for _ in axiom_keys)
+                rows = conn.execute(
+                    f"SELECT axiom_key, source_url, confidence, ingested_at "
+                    f"FROM semantic_events "
+                    f"WHERE operation = 'MINT' AND axiom_key IN ({placeholders}) "
+                    f"ORDER BY seq_id DESC",
+                    axiom_keys,
+                ).fetchall()
+
+                # Keep the latest record per axiom_key
+                result = {}
+                for axiom_key, source_url, confidence, ingested_at in rows:
+                    if axiom_key not in result:
+                        result[axiom_key] = {
+                            "source_url": source_url or "",
+                            "confidence": confidence if confidence is not None else 0.5,
+                            "ingested_at": ingested_at or "",
+                        }
+                return result
+
+        return await asyncio.to_thread(_read)
 
     # ------------------------------------------------------------------
     # Crash recovery & Time Travel (Chronos Engine)

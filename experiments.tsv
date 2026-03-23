@@ -29,3 +29,4 @@ cf8ae09	394	21/21	keep	Phase 19: Sovereign Edge + Automated Scientist — causal
 8cd5d68	416	21/21	keep	Phase 20: Horizon I EXOCORTEX — browser extension rewired to Quantum API (8 tests)
 6e62a3b	416	21/21	keep	Clone-and-Run: deleted mcp_server + legacy_api, Dockerfile, .env.example, CI fix
 6fc98a3	431	21/21	keep	Phase 21: Knowledge Retrieval — /ask endpoint, predicate canonicalization (15 tests)
+-------	445	21/21	keep	Phase 22: Provenance + Confidence — source tracking, confidence×recency weighting, /provenance endpoint (14 tests)
