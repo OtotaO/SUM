@@ -127,7 +127,7 @@ git clone https://github.com/OtotaO/SUM.git
 cd SUM
 pip install -r requirements-prod.txt
 
-# Run the 394-test verification suite
+# Run the 408-test verification suite
 python -m pytest Tests/ -v
 
 # Run the 21-check Fortress gate
@@ -230,7 +230,7 @@ SUM/
 ├── experiments.tsv                   # Autoresearch experiment ledger
 └── Tests/
     ├── fixtures/                      # Frozen golden reference vectors
-    └── test_*.py                      # 394 Passing Verification Tests
+    └── test_*.py                      # 408 Passing Verification Tests
 ```
 
 ---
@@ -238,7 +238,7 @@ SUM/
 ## 🛡️ Mathematical Verification Suite
 
 ```text
-394 passed · 21/21 fortress checks
+408 passed · 21/21 fortress checks
 
 ─── Core Hardening (Process Intensification) ───
 ZK Semantic Proofs .................... 16 ✓  (round-trip, tamper, non-linkability, stress)
