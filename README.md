@@ -127,7 +127,7 @@ git clone https://github.com/OtotaO/SUM.git
 cd SUM
 pip install -r requirements-prod.txt
 
-# Run the 431 tests verification suite
+# Run the 461 tests verification suite
 python -m pytest Tests/ -v
 
 # Run the 21-check Fortress gate
@@ -171,6 +171,8 @@ All endpoints are mounted under `/api/v1/quantum/`. Every endpoint accepts an op
 | `POST` | `/peers` | Add a node to the P2P Holographic Mesh |
 | `POST` | `/sync/state` | O(1) LCM merge from browser/peer |
 | `GET` | `/discoveries` | Machine-deduced knowledge |
+| `POST` | `/ask` | Natural-language knowledge retrieval |
+| `GET` | `/provenance/{axiom_key}` | Axiom provenance chain query |
 
 ---
 
@@ -213,6 +215,7 @@ SUM/
 ├── standalone_verifier/
 │   └── verify.js                     # Independent Node.js semantic witness
 ├── scripts/
+│   ├── sum_cli.py                    # CLI tool: ingest, ask, export, diff, status, provenance
 │   ├── verify_fortress.py            # 21-check CI verification gate
 │   ├── launch_swarm.sh               # Local P2P swarm launcher
 │   ├── babel_harvester.py            # RSS→math ingestion for Babel Protocol
@@ -230,7 +233,7 @@ SUM/
 ├── experiments.tsv                   # Autoresearch experiment ledger
 └── Tests/
     ├── fixtures/                      # Frozen golden reference vectors
-    └── test_*.py                      # 416 Passing Verification Tests
+    └── test_*.py                      # 461 Passing Verification Tests
 ```
 
 ---
@@ -238,7 +241,7 @@ SUM/
 ## 🛡️ Mathematical Verification Suite
 
 ```text
-416 passed · 21/21 fortress checks
+461 passed · 21/21 fortress checks
 
 ─── Core Hardening (Process Intensification) ───
 ZK Semantic Proofs .................... 16 ✓  (round-trip, tamper, non-linkability, stress)
@@ -269,6 +272,9 @@ Phase 4 — Akashic Ledger .............. 3  ✓
 Phase 3 — Temporal CRUD + Vectors ..... 12 ✓
 Phase 2 — Epistemic Feedback Loop ..... 7  ✓
 Phase 1 — SPNT + Gödel Algebra ........ 15 ✓
+Phase 21 — Knowledge Retrieval ........ 15 ✓  (/ask endpoint, predicate canonicalization)
+Phase 22 — Provenance + Confidence .... 14 ✓  (source tracking, confidence×recency weighting)
+Phase 23 — CLI Tool ................... 16 ✓  (ingest, ask, export, diff, status, provenance)
 ```
 
 ### Threat Model Coverage
