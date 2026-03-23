@@ -98,6 +98,13 @@ class ZigMathEngine:
         ]
         self.lib.sum_bigint_divisible_by_u64.restype = ctypes.c_int32
 
+        self.lib.sum_batch_mint_primes.argtypes = [
+            ctypes.c_char_p, ctypes.c_size_t,   # axioms_ptr, axioms_len
+            ctypes.POINTER(ctypes.c_uint64),     # out_primes
+            ctypes.c_size_t,                     # out_cap
+        ]
+        self.lib.sum_batch_mint_primes.restype = ctypes.c_int32
+
     # ------------------------------------------------------------------
     # Properties
     # ------------------------------------------------------------------
@@ -191,6 +198,30 @@ class ZigMathEngine:
         if rc == -2:
             return None
         return rc == 1
+
+
+    def batch_mint_primes(self, axiom_keys: list) -> list:
+        """
+        Batch-mint deterministic primes from a list of axiom key strings.
+        Amortizes FFI overhead across the batch.
+
+        Returns list of u64 primes, or None if Zig is unavailable.
+        """
+        if not self._lib:
+            return None
+        try:
+            # Concatenate with null separators
+            joined = b'\x00'.join(k.encode('utf-8') for k in axiom_keys) + b'\x00'
+            out_cap = len(axiom_keys)
+            out_primes = (ctypes.c_uint64 * out_cap)()
+            count = self._lib.sum_batch_mint_primes(
+                joined, len(joined), out_primes, out_cap
+            )
+            if count < 0:
+                return None
+            return [out_primes[i] for i in range(count)]
+        except Exception:
+            return None
 
 
 # ─── Module-level singleton ──────────────────────────────────────────

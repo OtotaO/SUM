@@ -1,4 +1,29 @@
 const std = @import("std");
+const builtin = @import("builtin");
+
+// ─── Comptime Allocator Selection ────────────────────────────────────
+//
+// On native targets (Linux, macOS, Windows), we use the page allocator
+// for zero-heap-leak operation.  On WASM (freestanding), we use the
+// WASM-specific allocator backed by memory.grow.
+
+const wasm_alloc = if (builtin.target.os.tag == .freestanding)
+    std.heap.wasm_allocator
+else
+    std.heap.page_allocator;
+
+// ─── WASM Memory Exports ─────────────────────────────────────────────
+//
+// JavaScript needs to allocate/free buffers in WASM linear memory.
+
+export fn wasm_alloc_bytes(len: usize) ?[*]u8 {
+    const slice = wasm_alloc.alloc(u8, len) catch return null;
+    return slice.ptr;
+}
+
+export fn wasm_free_bytes(ptr: [*]u8, len: usize) void {
+    wasm_alloc.free(ptr[0..len]);
+}
 
 // ─── Modular Exponentiation ──────────────────────────────────────────
 //
@@ -230,7 +255,7 @@ export fn sum_bigint_gcd(
     out_cap: usize,
     out_len: *usize,
 ) i32 {
-    const allocator = std.heap.page_allocator;
+    const allocator = wasm_alloc;
 
     var a = bigintFromBytes(allocator, a_ptr[0..a_len]) catch return -2;
     defer a.deinit();
@@ -258,7 +283,7 @@ export fn sum_bigint_lcm(
     out_cap: usize,
     out_len: *usize,
 ) i32 {
-    const allocator = std.heap.page_allocator;
+    const allocator = wasm_alloc;
 
     var a = bigintFromBytes(allocator, a_ptr[0..a_len]) catch return -2;
     defer a.deinit();
@@ -308,7 +333,7 @@ export fn sum_bigint_mod(
     out_cap: usize,
     out_len: *usize,
 ) i32 {
-    const allocator = std.heap.page_allocator;
+    const allocator = wasm_alloc;
 
     var a = bigintFromBytes(allocator, a_ptr[0..a_len]) catch return -2;
     defer a.deinit();
@@ -347,3 +372,47 @@ export fn sum_bigint_divisible_by_u64(
 
     return if (remainder == 0) 1 else 0;
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// PHASE 18 — Batch Prime Minting
+//
+// Amortizes FFI overhead by processing N axioms in a single C-ABI call.
+// Input:  flat buffer of null-terminated axiom strings
+// Output: array of u64 primes written to caller buffer
+// ═══════════════════════════════════════════════════════════════════════
+
+/// Batch-mint deterministic primes from null-terminated axiom strings.
+/// Input: concatenated null-terminated strings (e.g. "alice||a||b\x00bob||c||d\x00")
+/// Output: u64 primes written to out_primes buffer.
+/// Returns number of primes minted, or -1 on error.
+export fn sum_batch_mint_primes(
+    axioms_ptr: [*c]const u8,
+    axioms_len: usize,
+    out_primes: [*c]u64,
+    out_cap: usize,
+) i32 {
+    const axioms = axioms_ptr[0..axioms_len];
+    var count: usize = 0;
+    var start: usize = 0;
+
+    for (axioms, 0..) |byte, i| {
+        if (byte == 0) {
+            if (i > start and count < out_cap) {
+                const axiom_slice = axioms[start..i];
+                out_primes[count] = sum_get_deterministic_prime(axiom_slice.ptr, axiom_slice.len);
+                count += 1;
+            }
+            start = i + 1;
+        }
+    }
+
+    // Handle last axiom if no trailing null
+    if (start < axioms_len and count < out_cap) {
+        const axiom_slice = axioms[start..axioms_len];
+        out_primes[count] = sum_get_deterministic_prime(axiom_slice.ptr, axiom_slice.len);
+        count += 1;
+    }
+
+    return @as(i32, @intCast(count));
+}
+

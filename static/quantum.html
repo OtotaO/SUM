@@ -221,7 +221,19 @@
     <div id="network-container"></div>
 
     <script src="/static/js/godel_client.js"></script>
+    <script src="/static/js/sum_wasm.js"></script>
     <script>
+        // ─── WASM Initialization ────────────────────────────
+        let sumWasm = null;
+        (async () => {
+            sumWasm = await SumWasm.init('/static/sum_core.wasm');
+            if (sumWasm) {
+                const dot = document.querySelector('.sync-dot');
+                dot.style.background = '#f59e0b';
+                dot.parentElement.innerHTML = '<span class="sync-dot" style="background:#22c55e;"></span>Live Gödel Sync <span style="color:#f59e0b; font-weight:600;">⚡ WASM</span>';
+            }
+        })();
+
         // ─── Auth Layer ──────────────────────────────────────
         let currentToken = localStorage.getItem('sum_jwt') || null;
         let currentUser = localStorage.getItem('sum_user') || null;
