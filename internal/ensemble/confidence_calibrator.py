@@ -8,6 +8,7 @@ Signals:
     1. Source-type heuristic — URL domain → base confidence
     2. Redundancy boost — same axiom from N sources → +0.05 per source
     3. Contradiction penalty — conflicts with existing axioms → ×0.5
+    4. Linguistic certainty — hedging words in source text → multiplier
 
 Optional:
     4. LLM verbalized confidence — ask model to self-rate (opt-in)
@@ -66,6 +67,7 @@ class ConfidenceCalibrator:
     1. Source URL domain classification
     2. Redundancy across independent sources
     3. Contradiction detection against existing state
+    4. Linguistic certainty (hedging markers in source text)
     """
 
     def source_type_score(self, source_url: str) -> float:
@@ -169,6 +171,7 @@ class ConfidenceCalibrator:
         algebra=None,
         ledger=None,
         manual_confidence: Optional[float] = None,
+        linguistic_certainty: float = 1.0,
     ) -> float:
         """Compute calibrated confidence using all available signals.
 
@@ -176,9 +179,15 @@ class ConfidenceCalibrator:
             1. Start with source-type base score
             2. Add redundancy boost (if ledger available)
             3. Apply contradiction penalty (if algebra + state available)
-            4. Clamp to [0.0, 1.0]
+            4. Apply linguistic certainty multiplier (if < 1.0)
+            5. Clamp to [0.0, 1.0]
 
         If manual_confidence is provided, it is used as-is (no calibration).
+
+        Args:
+            linguistic_certainty: Output from detect_hedging() in
+                syntactic_sieve.py. 1.0 = definite, <1.0 = hedged.
+                This is a metadata-only signal.
 
         Returns:
             float: Calibrated confidence score in [0.0, 1.0]
@@ -197,8 +206,11 @@ class ConfidenceCalibrator:
             axiom_key, current_state, algebra
         )
 
-        # Combine: (base + redundancy_boost) × contradiction_penalty
-        score = (base + boost) * penalty
+        # Signal 4: Linguistic certainty
+        ling = max(0.0, min(1.0, linguistic_certainty))
+
+        # Combine: (base + redundancy_boost) × contradiction × linguistic
+        score = (base + boost) * penalty * ling
 
         # Clamp
         return max(0.0, min(REDUNDANCY_CAP, score))
