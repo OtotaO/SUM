@@ -233,7 +233,7 @@ SUM/
 ├── experiments.tsv                   # Autoresearch experiment ledger
 └── Tests/
     ├── fixtures/                      # Frozen golden reference vectors
-    └── test_*.py                      # 608 Passing Verification Tests
+    └── test_*.py                      # 621 Passing Verification Tests
 ```
 
 ---
@@ -282,6 +282,7 @@ Stage 2 — Scheme Versioning ........... 27 ✓  (scheme registry, protocol enf
 Stage 3A — 128-Bit Shadow ............. 28 ✓  (v2 reference vectors, Python↔Node parity, BPSW, collision policy)
 Stage 4 — Evidence Enrichment ......... 12 ✓  (hedging detection, certainty calibration, annotated triplets)
 Stage 5 — Resource Guards ............. 17 ✓  (payload limits, HTTP 413, operator-readable errors)
+Stage 6-7 — Perfection Criteria ....... 13 ✓  (v1 stable, v2 shadow, fail-closed, evidence, limits, vectors)
 ```
 
 ### Threat Model Coverage
