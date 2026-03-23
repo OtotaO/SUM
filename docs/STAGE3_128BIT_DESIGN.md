@@ -12,13 +12,12 @@
 
 The current `sha256_64_v1` scheme derives primes from a 64-bit seed space (2⁶⁴ ≈ 1.8×10¹⁹). At scale, this creates two risks:
 
-| Risk | Severity | Trigger Threshold |
-|------|----------|-------------------|
-| Birthday-bound collision on 8-byte SHA-256 prefix | Low | ~2¹⁶ axioms (65K) for 50% collision probability |
-| Prime density in 64-bit range too sparse for large corpora | Medium | Corpus > 10⁶ axioms |
-| Collision resolution order-dependence | Medium | Any collision between distributed nodes |
+| Risk | Severity | Detail |
+|------|----------|--------|
+| Birthday-bound collision on 8-byte SHA-256 prefix | Medium | 50% collision probability at ~2³² distinct axioms (~4 billion). Not imminent, but not astronomically remote either. |
+| Order-dependent collision remediation | High | The current `nextprime` collision loop resolves collisions in process-local minting order. Two independent nodes minting the same axioms in different order will assign different primes to a colliding pair. This is not consensus-safe. |
 
-Moving to a 128-bit seed space (2¹²⁸ ≈ 3.4×10³⁸) makes birthday-bound collisions require ~2⁶⁴ axioms — effectively impossible for any realistic corpus. It eliminates collision resolution as a practical concern completely.
+Moving to a 128-bit seed space (2¹²⁸ ≈ 3.4×10³⁸) pushes birthday-bound collisions to ~2⁶⁴ distinct axioms — effectively impossible for any realistic corpus. Combined with removing the collision-resolution loop (see §9), this eliminates the entire class of order-dependent identity drift.
 
 ## 2. Proposed Scheme: `sha256_128_v2`
 
@@ -59,14 +58,17 @@ This is the consensus-critical core of Stage 3.
 
 | Property | Value |
 |----------|-------|
-| Correctness claim | No known BPSW pseudoprime exists (verified to 2⁶⁴ by Feitsma/Galway, exhaustive search ongoing) |
-| False positive rate | Conjectured zero; bounty of $30+ for counterexample since 1980 |
+| Correctness claim | No known BPSW pseudoprime exists (verified exhaustively to 2⁶⁴ by Feitsma/Galway; $620+ bounty outstanding since 1980) |
+| False positive rate | Conjectured zero in practice; NOT a formal proof of universal primality correctness |
 | Deterministic? | Yes — no random witnesses, no probabilistic behavior |
 | Performance | ~4× slower than 12-witness M-R on 128-bit inputs |
 | Cross-runtime availability | Python: `sympy.isprime()` already uses BPSW. Zig: must implement. Node: must implement. |
 
 **Why BPSW for 128-bit:**
 The 12-witness deterministic M-R set {2,3,5,7,11,13,17,19,23,29,31,37} is only proven correct up to 3.3×10²⁴ (≈ 81 bits). For 128-bit inputs, M-R with these witnesses is NO LONGER PROVABLY DETERMINISTIC. BPSW has no known failure at any range.
+
+> [!IMPORTANT]
+> **Trust model:** BPSW is chosen as a deterministic-in-execution probable-prime algorithm with no known counterexamples in practice, but it is **not** a formal proof of primality correctness over all integers. This is an explicit engineering trust assumption of `sha256_128_v2`. If a BPSW pseudoprime is ever discovered, the scheme must be superseded.
 
 ### 3.2. Option B: Extended Deterministic Miller-Rabin
 
@@ -133,7 +135,7 @@ Reference vectors MUST include:
 | v1 node receives v2 sync | ❌ Reject | 409 |
 | v2 node receives v2 sync | ✅ Accept | 200 |
 | v2 node receives v1 sync | ❌ Reject | 409 |
-| No scheme in request | Default to sender's own scheme | 200 |
+| No scheme in request | Receiver defaults to its own current scheme (backward compat with legacy clients) | 200 |
 
 > **v1 and v2 nodes MUST NOT merge state.** The primes are fundamentally different — LCM of mixed primes produces a state that neither side can interpret correctly.
 
@@ -250,21 +252,56 @@ No v2 code may be merged until ALL of the following are satisfied:
 | **G9** | ABI spec updated with v2 derivation rule |
 | **G10** | Migration tool (optional) documented if built |
 
-## 9. Open Questions
+## 9. Resolved Design Decisions
 
-These MUST be resolved before marking this doc APPROVED:
+These were initially open questions. All have been resolved:
 
-1. **BPSW variant:** Use Selfridge parameters (D, P, Q) = first D in {5, −7, 9, −11, ...} where Jacobi(D|n) = −1? This is the standard Selfridge Method A. Confirm all three runtimes use identical parameters.
+### 9.1. BPSW Variant — RESOLVED
+**Decision:** Baillie-PSW = strong base-2 Miller–Rabin + **Strong Lucas** probable prime test with **Selfridge Method A** parameter selection.
 
-2. **Strong Lucas vs Standard Lucas:** Strong Lucas is more restrictive (fewer pseudoprimes). Recommend Strong Lucas. Confirm sympy's `isprime()` uses Strong Lucas internally.
+Selfridge Method A: choose the first `D` in the sequence {5, −7, 9, −11, 13, −15, ...} such that `Jacobi(D|n) = −1`, then set `P = 1`, `Q = (1 − D) / 4`.
 
-3. **Trial division bound:** How many small primes to check before BPSW? Recommend primes up to 1000 (168 primes) for performance. This is an optimization, not a correctness concern.
+All three runtimes (Python, Zig, Node.js) MUST use identical Selfridge parameters. Cross-runtime parity tests (Gate G5) exist specifically to catch drift.
 
-4. **Collision resolution in v2:** With a 128-bit seed space, collisions are effectively impossible (birthday bound at ~2⁶⁴ axioms). Should we REMOVE the collision resolution loop entirely for v2, or keep it for belt-and-suspenders safety?
+### 9.2. Strong Lucas vs Standard Lucas — RESOLVED
+**Decision:** Strong Lucas. It is strictly more restrictive (fewer pseudoprimes) than Standard Lucas. There is no benefit to the weaker version.
 
-5. **WASM target:** The Zig WASM build currently exports u64-returning functions. u128 is not a native WASM type. Strategy: return the prime as two u64 halves, or as a hex string in WASM linear memory?
+### 9.3. Collision Handling in v2 — RESOLVED
+**Decision:** Remove the collision-resolution loop entirely. Replace with a **hard error**.
+
+Rationale:
+- The collision loop is hidden nondeterminism that destroys distributed consensus.
+- In a 128-bit seed space, birthday-bound collision requires ~2⁶⁴ axioms — effectively impossible.
+- If a collision ever occurs, the system MUST fail loudly with an operator-visible error, not silently mutate identity assignment.
+- This is the single most important behavioral improvement over v1.
+
+```python
+# v2 collision policy
+if p in self.prime_to_axiom and self.prime_to_axiom[p] != axiom_key:
+    raise CollisionError(
+        f"128-bit prime collision detected: prime {p} already assigned to "
+        f"{self.prime_to_axiom[p]!r}, cannot assign to {axiom_key!r}. "
+        f"This should be astronomically rare. Investigate immediately."
+    )
+```
+
+### 9.4. WASM u128 Transport — RESOLVED
+**Decision:** Caller-provided 16-byte big-endian output buffer in WASM linear memory.
+
+Rationale:
+- Consistent with the current JS/WASM byte-oriented bridge (`wasm_alloc_bytes`/`wasm_free_bytes`).
+- Lower overhead than hex string formatting.
+- Avoids inventing a new ABI just for v2.
+- u128 is not a native WASM type; two-u64-halves is fragile. Byte buffer is cleanest.
+
+## 10. Remaining Non-Blocking Items
+
+### Trial Division Prefilter
+**Status:** Non-normative implementation detail.
+
+Implementations MAY use trial division against small primes (e.g., primes up to 1000) before invoking BPSW for performance. The exact bound is not specified. Cross-runtime parity tests (Gate G5) must pass regardless of whether trial division is used.
 
 ---
 
 > [!CAUTION]
-> **This document is DRAFT.** No implementation work should begin until all open questions are resolved and this document is marked APPROVED.
+> **This document is DRAFT.** No implementation work should begin until this document is marked APPROVED.
