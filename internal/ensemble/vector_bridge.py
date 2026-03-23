@@ -14,12 +14,19 @@ Architecture:
     - Deleted axioms are automatically excluded because their primes no
       longer divide the state.
 
+Horizon III — Universal Vector Alignment:
+    - Supports optional affine transformation matrices (W*, b*) from
+      Gorbett & Jana (2026) for cross-model linear alignment.
+    - Heterogeneous P2P nodes (Llama, Qwen, Mistral, etc.) can perfectly
+      align their embeddings into a single Canonical Geometry before
+      discrete prime extraction via O(1) linear affine maps.
+
 Author: ototao
 License: Apache License 2.0
 """
 
 import logging
-from typing import Callable, Awaitable, List, Dict, Tuple
+from typing import Callable, Awaitable, List, Dict, Optional, Tuple
 
 import numpy as np
 
@@ -37,21 +44,68 @@ class ContinuousDiscreteBridge:
     vector embedding.  Queries are projected into the same space and
     ranked by cosine similarity — but *only* against primes that are
     currently alive in the global state.
+
+    Horizon III:
+        When ``affine_map`` (W*) and optional ``bias_map`` (b*) are
+        provided, all embeddings are translated into the Canonical
+        Geometry via an O(1) linear affine transformation before
+        indexing and search.  This allows heterogeneous LLM nodes
+        in a P2P swarm to perfectly align their latent spaces.
     """
 
     def __init__(
         self,
         algebra: GodelStateAlgebra,
         embedding_model: Callable[[str], Awaitable[List[float]]],
+        affine_map: Optional[np.ndarray] = None,
+        bias_map: Optional[np.ndarray] = None,
     ):
         """
         Args:
             algebra:         A GodelStateAlgebra instance with minted primes.
             embedding_model: Async callable (text) → List[float] vector.
+            affine_map:      Optional W* matrix (d×d) for cross-model alignment.
+            bias_map:        Optional b* bias vector (d,) for cross-model alignment.
         """
         self.algebra = algebra
         self.get_embedding = embedding_model
         self.prime_embeddings: Dict[int, np.ndarray] = {}
+
+        # W* and b* matrices from Gorbett & Jana (2026) for cross-model
+        # linear alignment into the Canonical Geometry.
+        self.affine_map = affine_map
+        self.bias_map = bias_map
+
+    # ------------------------------------------------------------------
+    # Affine alignment
+    # ------------------------------------------------------------------
+
+    def _align_vector(self, vector: np.ndarray) -> np.ndarray:
+        """
+        Applies O(1) Linear Alignment to translate heterogeneous latent
+        spaces into the Canonical Geometry.
+
+        If no affine map is configured, returns the input unchanged.
+
+        Args:
+            vector: Raw embedding vector (np.ndarray, float32).
+
+        Returns:
+            Aligned (and re-normalised) vector.
+        """
+        if self.affine_map is None:
+            return vector
+
+        v = np.dot(vector, self.affine_map)
+        if self.bias_map is not None:
+            v = v + self.bias_map
+
+        # Re-normalise to unit length for cosine similarity
+        norm = np.linalg.norm(v)
+        if norm > 0:
+            v = v / norm
+
+        return v.astype(np.float32)
 
     # ------------------------------------------------------------------
     # Indexing
@@ -70,8 +124,11 @@ class ContinuousDiscreteBridge:
             if prime not in self.prime_embeddings:
                 # "alice||age||30" → "alice age 30"
                 natural_text = " ".join(axiom.split("||"))
-                vector = await self.get_embedding(natural_text)
-                self.prime_embeddings[prime] = np.array(vector, dtype=np.float32)
+                raw_vector = await self.get_embedding(natural_text)
+                aligned = self._align_vector(
+                    np.array(raw_vector, dtype=np.float32)
+                )
+                self.prime_embeddings[prime] = aligned
                 newly_indexed += 1
 
         if newly_indexed:
@@ -104,9 +161,10 @@ class ContinuousDiscreteBridge:
         Returns:
             List of (axiom_key, similarity_score) tuples, descending.
         """
-        query_vector = np.array(
+        raw_query = np.array(
             await self.get_embedding(query), dtype=np.float32
         )
+        query_vector = self._align_vector(raw_query)
         query_norm = np.linalg.norm(query_vector)
         if query_norm == 0:
             return []

@@ -100,12 +100,28 @@ class GodelStateAlgebra:
         then finds the next prime.  This allows lock-free LCM merging
         of Gödel States across branches and distributed networks.
 
+        HORIZON III — Strangler Fig:
+            Routes to the bare-metal Zig core (nanosecond-speed C-ABI)
+            when ``libsum_core`` is compiled and available.  Falls back
+            to Python ``sympy.nextprime`` seamlessly otherwise.
+
         Args:
             axiom_key: The normalised axiom string.
 
         Returns:
             A deterministic prime number unique to this axiom.
         """
+        # ── Bare-Metal Fast Path (Zig C-ABI) ──
+        try:
+            from internal.infrastructure.zig_bridge import zig_engine
+            if zig_engine is not None:
+                result = zig_engine.get_deterministic_prime(axiom_key)
+                if result is not None:
+                    return result
+        except ImportError:
+            pass
+
+        # ── Legacy Python Fallback ──
         h = hashlib.sha256(axiom_key.encode('utf-8')).digest()
         seed = int.from_bytes(h[:8], byteorder='big')
         return sympy.nextprime(seed)
