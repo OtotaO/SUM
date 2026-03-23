@@ -233,7 +233,7 @@ SUM/
 ├── experiments.tsv                   # Autoresearch experiment ledger
 └── Tests/
     ├── fixtures/                      # Frozen golden reference vectors
-    └── test_*.py                      # 621 Passing Verification Tests
+    └── test_*.py                      # 641 Passing Verification Tests
 ```
 
 ---
@@ -283,7 +283,13 @@ Stage 3A — 128-Bit Shadow ............. 28 ✓  (v2 reference vectors, Python�
 Stage 4 — Evidence Enrichment ......... 12 ✓  (hedging detection, certainty calibration, annotated triplets)
 Stage 5 — Resource Guards ............. 17 ✓  (payload limits, HTTP 413, operator-readable errors)
 Stage 6-7 — Perfection Criteria ....... 13 ✓  (v1 stable, v2 shadow, fail-closed, evidence, limits, vectors)
+Final Integration — Operational ....... 20 ✓  (guards in handlers, evidence in /ingest, Node v2 witness, env-flag activation)
 ```
+
+> **Honest status notes:**
+> - **Zig v2 parity:** implemented but pending toolchain confirmation (no local Zig available)
+> - **v2 activation:** gated behind `SUM_PRIME_SCHEME=sha256_128_v2` env var; default is v1
+> - **Evidence enrichment:** affects `/ingest` (LLM path) and `/ingest/math` (direct path); other ingestion surfaces not yet covered
 
 ### Threat Model Coverage
 

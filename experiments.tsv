@@ -39,3 +39,4 @@ cf8ae09	394	21/21	keep	Phase 19: Sovereign Edge + Automated Scientist — causal
 -------	591	21/21	keep	Stage 4: Evidence Enrichment — hedging detection, linguistic certainty calibration, annotated triplet extraction (12 tests)
 -------	608	21/21	keep	Stage 5: Resource Guards — payload limits, HTTP 413, operator-readable failures, ingest/bundle/sync/ask/branch/axiom guards (17 tests)
 -------	621	21/21	keep	Stage 6-7: Perfection Criteria — v1 stable, v2 shadow, fail-closed, evidence clean, limits exist, vectors frozen, codec consistent (13 tests)
+-------	641	21/21	keep	Final Integration: guards in handlers (7 endpoints), evidence in /ingest, Node v2 witness, SUM_PRIME_SCHEME activation (20 behavioral tests)

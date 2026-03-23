@@ -380,20 +380,45 @@ function parseCanonicalTome(tomeText) {
 
 /**
  * Reconstruct the Gödel State Integer from a list of axiom keys.
+ *
+ * @param {string[]} axiomKeys - Axiom keys to reconstruct from.
+ * @param {string} scheme - Prime derivation scheme: 'sha256_64_v1' or 'sha256_128_v2'.
  */
-function reconstructState(axiomKeys) {
+function reconstructState(axiomKeys, scheme = 'sha256_64_v1') {
+  // Select derivation function based on scheme
+  let derive;
+  let nextP;
+  if (scheme === 'sha256_64_v1') {
+    derive = derivePrime;
+    nextP = nextPrime;
+  } else if (scheme === 'sha256_128_v2') {
+    derive = derivePrimeV2;
+    nextP = nextPrimeBPSW;
+  } else {
+    throw new Error(`Unknown prime scheme: ${scheme}. Known schemes: sha256_64_v1, sha256_128_v2`);
+  }
+
   let state = 1n;
   const primeMap = new Map(); // axiom → prime (for collision detection)
 
   for (const key of axiomKeys) {
     if (primeMap.has(key)) continue; // deduplicate
 
-    let prime = derivePrime(key);
+    let prime = derive(key);
 
     // Collision resolution: if two different axioms produce the same prime,
     // advance to the next prime. Mirrors Python's while-loop.
-    while (primeMap.has(prime.toString()) && primeMap.get(prime.toString()) !== key) {
-      prime = nextPrime(prime);
+    // In v2, collisions are a hard failure (PrimeCollisionError in Python).
+    if (scheme === 'sha256_128_v2') {
+      // v2: hard fail on collision
+      if (primeMap.has(prime.toString()) && primeMap.get(prime.toString()) !== key) {
+        throw new Error(`PrimeCollisionError: v2 collision for '${key}' with existing '${primeMap.get(prime.toString())}'. This is a fatal v2 error.`);
+      }
+    } else {
+      // v1: advance to next prime on collision
+      while (primeMap.has(prime.toString()) && primeMap.get(prime.toString()) !== key) {
+        prime = nextP(prime);
+      }
     }
 
     primeMap.set(key, prime);
@@ -604,6 +629,16 @@ function verifyBundle(bundlePath) {
     process.exit(3);
   }
 
+  // 3b. Scheme validation
+  const KNOWN_SCHEMES = ['sha256_64_v1', 'sha256_128_v2'];
+  const scheme = bundle.prime_scheme || 'sha256_64_v1';
+  if (!KNOWN_SCHEMES.includes(scheme)) {
+    console.error(`\n❌ Unknown prime scheme: ${scheme}`);
+    console.error(`   Known schemes: ${KNOWN_SCHEMES.join(', ')}`);
+    process.exit(3);
+  }
+  console.log(`  Prime Scheme:      ${scheme}`);
+
   // 4. Parse canonical tome
   const axiomKeys = parseCanonicalTome(bundle.canonical_tome);
   console.log(`  Axioms Discovered: ${axiomKeys.length}`);
@@ -611,9 +646,15 @@ function verifyBundle(bundlePath) {
     console.log(`  Axioms Expected:   ${bundle.axiom_count}`);
   }
 
-  // 5. Reconstruct state
-  console.log('\n  Reconstructing Gödel State Integer...');
-  const reconstructed = reconstructState(axiomKeys);
+  // 5. Reconstruct state (scheme-aware)
+  console.log(`\n  Reconstructing Gödel State Integer using ${scheme}...`);
+  let reconstructed;
+  try {
+    reconstructed = reconstructState(axiomKeys, scheme);
+  } catch (e) {
+    console.error(`\n❌ Reconstruction failed: ${e.message}`);
+    process.exit(4);
+  }
   const exported = BigInt(bundle.state_integer);
 
   const reconDigits = reconstructed.toString().length;
@@ -629,6 +670,7 @@ function verifyBundle(bundlePath) {
   if (match) {
     console.log('  ✅ WITNESS VERIFICATION PASSED');
     console.log('');
+    console.log(`  Scheme:  ${scheme}`);
     console.log('  The JavaScript-reconstructed Gödel State Integer');
     console.log('  exactly matches the Python-exported state.');
     console.log('');
@@ -639,10 +681,15 @@ function verifyBundle(bundlePath) {
     console.log('');
     console.log('  Caveats:');
     console.log('  • HMAC signature NOT verified (shared-secret, not public witness)');
-    console.log('  • Collision resolution assumed collision-free (SHA-256 8-byte prefix)');
+    if (scheme === 'sha256_64_v1') {
+      console.log('  • Collision resolution assumed collision-free (SHA-256 8-byte prefix)');
+    } else {
+      console.log('  • v2 collisions are fatal (no advancement loop)');
+    }
   } else {
     console.log('  ❌ WITNESS VERIFICATION FAILED');
     console.log('');
+    console.log(`  Scheme: ${scheme}`);
     console.log('  The reconstructed state does NOT match the exported state.');
     console.log(`  Exported:      ${exported.toString().substring(0, 40)}...`);
     console.log(`  Reconstructed: ${reconstructed.toString().substring(0, 40)}...`);

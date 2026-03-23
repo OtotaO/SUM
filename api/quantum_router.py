@@ -42,6 +42,7 @@ from pydantic import BaseModel
 
 from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
 from internal.algorithms.syntactic_sieve import DeterministicSieve
+from internal.algorithms.syntactic_sieve import detect_hedging
 from internal.ensemble.vector_bridge import ContinuousDiscreteBridge
 from internal.infrastructure.akashic_ledger import AkashicLedger
 from internal.infrastructure.canonical_codec import CanonicalCodec, InvalidSignatureError
@@ -56,6 +57,10 @@ from internal.ensemble.confidence_calibrator import ConfidenceCalibrator
 from internal.ensemble.semantic_dedup import SemanticDeduplicator
 from internal.infrastructure.state_encoding import dual_field, parse_state, to_hex
 from internal.infrastructure.scheme_registry import CURRENT_SCHEME, validate_scheme_or_raise
+from internal.infrastructure.resource_guards import (
+    guard_ingest_text, guard_bundle_import, guard_ask_query,
+    guard_branch_name, guard_axiom_key, guard_sync_request,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -436,6 +441,9 @@ async def ingest_document(
     extraction, mathematical merge, and Akashic trace logging.
     Now triggers causal cascades via the Interacting Theory engine.
     """
+    # Stage 5: Resource guard — reject oversized payloads before LLM work
+    guard_ingest_text(request.text)
+
     if not kos.is_booted:
         raise HTTPException(status_code=503, detail="KOS booting")
 
@@ -464,14 +472,26 @@ async def ingest_document(
     kos.branches[branch] = math.lcm(branch_state, new_state)
 
     # 4. Akashic trace — log new primes (Phase 22: with provenance)
+    #    Stage 4: Run hedging detection on the raw text for linguistic certainty
     from datetime import datetime as _dt
     _now = _dt.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+    text_certainty = detect_hedging(request.text)
+    calibrator = ConfidenceCalibrator()
     delta_axioms = []
     for prime, axiom in kos.algebra.prime_to_axiom.items():
         if new_state % prime == 0:
+            conf = await calibrator.calibrate(
+                axiom_key=axiom,
+                source_url=request.source_url,
+                current_state=branch_state,
+                algebra=kos.algebra,
+                ledger=kos.ledger,
+                linguistic_certainty=text_certainty,
+            )
             await kos.ledger.append_event(
                 "MINT", prime, axiom,
                 source_url=request.source_url,
+                confidence=conf,
                 ingested_at=_now,
             )
             await kos.ledger.append_event("MUL", prime)
@@ -568,6 +588,7 @@ async def ingest_math_direct(
                     current_state=current_state,
                     algebra=kos.algebra,
                     ledger=kos.ledger,
+                    linguistic_certainty=detect_hedging(request.source_url),
                 )
             await kos.ledger.append_event(
                 "MINT", prime, axiom,
@@ -682,6 +703,10 @@ async def create_branch(req: BranchRequest):
     This is literally an integer assignment — the most efficient fork
     operation in the history of knowledge management.
     """
+    # Stage 5: Resource guard — reject pathological branch names
+    guard_branch_name(req.new_branch)
+    guard_branch_name(req.source_branch)
+
     if not kos.is_booted:
         raise HTTPException(status_code=503, detail="KOS booting")
     if req.source_branch not in kos.branches:
@@ -781,6 +806,9 @@ async def time_travel(
     tick into an alternate timeline branch.  This is a full BigInt
     reconstruction from the Akashic trace, filtered to ``max_seq_id``.
     """
+    # Stage 5: Resource guard — reject pathological branch names
+    guard_branch_name(req.new_branch_name)
+
     if not kos.is_booted:
         raise HTTPException(status_code=503, detail="KOS booting")
 
@@ -1054,6 +1082,9 @@ async def import_knowledge_bundle(
     Validates HMAC-SHA256 signature, then merges the imported state
     via LCM into the user's branch.
     """
+    # Stage 5: Resource guard — reject oversized bundles before crypto work
+    guard_bundle_import(req.bundle)
+
     if not kos.is_booted:
         raise HTTPException(status_code=503, detail="KOS booting")
 
@@ -1119,6 +1150,9 @@ async def sync_peer_state(
     user_id: str = Depends(get_current_user),
 ):
     """O(1) P2P Merge. Accepts a foreign Gödel Integer and merges via LCM."""
+    # Stage 5: Resource guard — reject oversized sync payloads
+    guard_sync_request(len(req.peer_state_integer))
+
     if not kos.is_booted:
         raise HTTPException(status_code=503, detail="KOS booting")
 
@@ -1220,6 +1254,9 @@ async def ask_knowledge(
     provenance metadata (source_url, confidence, ingested_at) is
     included in every match.
     """
+    # Stage 5: Resource guard — reject oversized queries
+    guard_ask_query(req.question)
+
     if not kos.is_booted:
         raise HTTPException(status_code=503, detail="KOS booting")
 
@@ -1377,6 +1414,9 @@ async def get_provenance(
     confidence score and ingestion timestamp. The axiom_key is
     the normalised ``subject||predicate||object`` string.
     """
+    # Stage 5: Resource guard — reject pathological axiom keys
+    guard_axiom_key(axiom_key)
+
     if not kos.is_booted:
         raise HTTPException(status_code=503, detail="KOS booting")
 

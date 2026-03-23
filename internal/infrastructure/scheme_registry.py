@@ -23,10 +23,38 @@ License: Apache License 2.0
 
 from dataclasses import dataclass
 from typing import Optional
+import os
 
-# ─── The current (and only active) scheme ────────────────────────────
+# ─── The default scheme ──────────────────────────────────────────────
 
-CURRENT_SCHEME = "sha256_64_v1"
+_DEFAULT_SCHEME = "sha256_64_v1"
+_VALID_SCHEMES = {"sha256_64_v1", "sha256_128_v2"}
+
+
+def _resolve_scheme() -> str:
+    """Resolve the active scheme from env var SUM_PRIME_SCHEME.
+
+    Rules:
+      1. If SUM_PRIME_SCHEME is unset or empty → default to sha256_64_v1
+      2. If set to a known scheme → use it
+      3. If set to an unknown value → crash immediately (fail-closed)
+
+    This runs once at import time. To switch scheme, restart the process
+    with the new env var value.
+    """
+    env = os.environ.get("SUM_PRIME_SCHEME", "").strip()
+    if not env:
+        return _DEFAULT_SCHEME
+    if env not in _VALID_SCHEMES:
+        raise RuntimeError(
+            f"FATAL: SUM_PRIME_SCHEME={env!r} is not a known scheme. "
+            f"Valid schemes: {sorted(_VALID_SCHEMES)}. "
+            f"Fix the environment variable or remove it to use the default ({_DEFAULT_SCHEME})."
+        )
+    return env
+
+
+CURRENT_SCHEME = _resolve_scheme()
 
 
 @dataclass(frozen=True)
