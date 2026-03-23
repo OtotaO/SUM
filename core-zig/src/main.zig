@@ -141,9 +141,9 @@ fn modPow128(base: u128, exponent: u128, modulus: u128) u128 {
     return @as(u128, @intCast(res));
 }
 
-/// Signed modular reduction: returns value in [0, n-1].
-fn signedMod(val: i256, n: u128) u128 {
-    const n_wide: i256 = @as(i256, n);
+/// Signed modular reduction for i512: returns value in [0, n-1].
+fn signedMod512(val: i512, n: u128) u128 {
+    const n_wide: i512 = @as(i512, n);
     const r = @mod(val, n_wide);
     return @as(u128, @intCast(r));
 }
@@ -217,6 +217,7 @@ fn selfridgeD(n: u128) i32 {
 
 /// Strong Lucas probable prime test for u128.
 /// Uses Selfridge Method A parameters.
+/// All intermediates use i512 to prevent overflow on u128-scale products.
 fn strongLucasTest128(n: u128) bool {
     if (n < 2) return false;
     if (n == 2) return true;
@@ -230,8 +231,8 @@ fn strongLucasTest128(n: u128) bool {
     if (d_val == 0) return false;
 
     // P = 1, Q = (1 - D) / 4
-    const d_wide: i256 = @as(i256, d_val);
-    const q_signed: i256 = @divExact(1 - d_wide, 4);
+    const d_wide: i512 = @as(i512, d_val);
+    const q_signed: i512 = @divExact(1 - d_wide, 4);
 
     // n + 1 = 2^s * d_odd
     var d_odd: u128 = n + 1;
@@ -243,10 +244,12 @@ fn strongLucasTest128(n: u128) bool {
     }
 
     // Lucas sequence U_d, V_d (mod n) using doubling method
-    var u_val: i256 = 1;
-    var v_val: i256 = 1; // P = 1
-    var qk: i256 = q_signed;
-    const n_wide: i256 = @as(i256, n);
+    // i512 intermediates prevent overflow: max product is ~(2^128)^2 = 2^256,
+    // which fits comfortably in i512 (max 2^511-1).
+    var u_val: i512 = 1;
+    var v_val: i512 = 1; // P = 1
+    var qk: i512 = q_signed;
+    const n_wide: i512 = @as(i512, n);
 
     // Binary expansion of d_odd, process from second-most-significant bit
     var bit_pos: u7 = 127;
@@ -286,20 +289,20 @@ fn strongLucasTest128(n: u128) bool {
     }
 
     // Normalize
-    const u_final = signedMod(u_val, n);
-    const v_final = signedMod(v_val, n);
+    const u_final = signedMod512(u_val, n);
+    const v_final = signedMod512(v_val, n);
 
     // Strong Lucas: U_d ≡ 0 OR V_{d*2^r} ≡ 0 for some 0 <= r < s
     if (u_final == 0 or v_final == 0) return true;
 
     // Check V_{d*2^r} for r = 1..s-1
-    var v_cur: i256 = v_val;
-    var qk_cur: i256 = qk;
+    var v_cur: i512 = v_val;
+    var qk_cur: i512 = qk;
     var r: u32 = 1;
     while (r < s) : (r += 1) {
         v_cur = @mod(v_cur * v_cur - 2 * qk_cur, n_wide);
         qk_cur = @mod(qk_cur * qk_cur, n_wide);
-        if (signedMod(v_cur, n) == 0) return true;
+        if (signedMod512(v_cur, n) == 0) return true;
     }
 
     return false;
@@ -378,9 +381,9 @@ export fn sum_get_deterministic_prime_v2(
     const prime = nextPrime128(seed);
 
     // Write as 16-byte big-endian
-    var i: u4 = 0;
+    var i: u5 = 0;
     while (i < 16) : (i += 1) {
-        const shift: u7 = @as(u7, 15 - i) * 8;
+        const shift: u7 = @as(u7, 15 - @as(u7, i)) * 8;
         out_buf[i] = @as(u8, @intCast((prime >> shift) & 0xFF));
     }
 

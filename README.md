@@ -287,9 +287,10 @@ Final Integration — Operational ....... 20 ✓  (guards in handlers, evidence 
 ```
 
 > **Honest status notes:**
-> - **Zig v2 parity:** implemented but pending toolchain confirmation (no local Zig available)
+> - **Zig v2 parity:** ✅ confirmed — Zig 0.15.2, `zig build test` passes, Python↔Zig v2 primes match on frozen vectors
 > - **v2 activation:** gated behind `SUM_PRIME_SCHEME=sha256_128_v2` env var; default is v1
 > - **Evidence enrichment:** affects `/ingest` (LLM path) and `/ingest/math` (direct path); other ingestion surfaces not yet covered
+> - **Linguistic certainty:** document-level (coarse-grained) in `/ingest`; `/ingest/math` defaults to 1.0 (definitional)
 
 ### Threat Model Coverage
 
