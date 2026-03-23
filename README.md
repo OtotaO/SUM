@@ -21,8 +21,9 @@ Built on the formalisms of the **Semantic Prime Number Theorem** and **Gauge-The
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────────────────┐ │
 │  │ Quantum UI   │  │ Quantum API  │  │ Autonomous Daemons               │ │
 │  │ quantum.html │  │ /state /sync │  │ • Subconscious Crystallizer      │ │
-│  │ vis-network  │  │ /ingest /zk  │  │ • P2P Holographic Mesh           │ │
-│  │ Telemetry HUD│  │ /branch      │  │ • Epistemic Arbiter              │ │
+│  │ WASM Engine  │  │ /ingest /zk  │  │ • P2P Holographic Mesh           │ │
+│  │ vis-network  │  │ /sync/state  │  │ • Epistemic Arbiter              │ │
+│  │ Telemetry HUD│  │ /discoveries │  │ • Automated Scientist Daemon     │ │
 │  └──────┬───────┘  └──────┬───────┘  └──────────────┬───────────────────┘ │
 │         │                 │                          │                    │
 │  ┌──────┴─────────────────┴──────────────────────────┴─────────────────┐  │
@@ -72,7 +73,7 @@ Maps the absolute certainty of discrete Gödel Primes to the fuzzy continuous sp
 
 ### 4. The Akashic Ledger (Fidelity Persistence)
 
-An append-only SQLite event log (`MINT`, `MUL`, `DIV`). Provides **crash recovery** — the RAM-based Gödel BigInt can be perfectly reconstructed by replaying the mathematical trace.
+An append-only SQLite event log (`MINT`, `MUL`, `DIV`, `SYNC`, `DEDUCED`). Provides **crash recovery** — the RAM-based Gödel BigInt can be perfectly reconstructed by replaying the mathematical trace.
 
 ### 5. The Gödel Sync Protocol
 
@@ -113,7 +114,7 @@ SUM has completed its genesis and hardening phases. The road ahead expands into 
 
 1.  **Horizon I: Project EXOCORTEX (Continuous Human Digitization):** Wiring desktop and browser companion clients to stream daily human life directly into the `/ingest` API, compressing personal reality into a single, ever-growing Gödel Integer.
 2.  **Horizon II: The Babel Protocol (Planetary-Scale Truth):** Deploying thousands of headless `SUM` nodes to ingest Wikipedia, ArXiv, and global news—forcing the Epistemic Arbiter to collapse historical and scientific paradoxes into a Single Master Integer (Planetary Truth).
-3.  **Horizon III: Bare-Metal Supremacy (Zig → WASM → Quantum):** The Strangler Fig migration progressively replaces Python's math engine with Zig's zero-cost C-ABI. First target: deterministic primes ✅. Next targets: LCM/GCD state arithmetic, then first-class WebAssembly compilation enabling the entire OS to run natively inside a browser tab. The ultimate terminus: porting to physical quantum hardware via Shor's Algorithm for instantaneous semantic routing.
+3.  **Horizon III: Bare-Metal Supremacy (Zig → WASM → Quantum):** The Strangler Fig migration progressively replaces Python's math engine with Zig's zero-cost C-ABI. Deterministic primes, LCM/GCD, mod, divisibility, and batch minting are all live in Zig. First-class **WebAssembly compilation** enables the math core to run natively inside a browser tab via `sum_wasm.js`. The **Automated Scientist daemon** continuously sweeps the global state for logically entailed but unminted axioms, performing autonomous deduction via transitive closure. The ultimate terminus: porting to physical quantum hardware via Shor's Algorithm for instantaneous semantic routing.
 
 ---
 
@@ -168,6 +169,8 @@ All endpoints are mounted under `/api/v1/quantum/`. Every endpoint accepts an op
 | `POST` | `/time-travel`| Rebuilds the universe at a historical tick |
 | `POST` | `/zk/prove` | Generate a Zero-Knowledge Semantic Proof |
 | `POST` | `/peers` | Add a node to the P2P Holographic Mesh |
+| `POST` | `/sync/state` | O(1) LCM merge from browser/peer |
+| `GET` | `/discoveries` | Machine-deduced knowledge |
 
 ---
 
@@ -179,7 +182,8 @@ SUM/
 │   ├── algorithms/
 │   │   ├── semantic_arithmetic.py    # GodelStateAlgebra, SPNT, Fractal Zoom
 │   │   ├── syntactic_sieve.py        # DeterministicSieve — spaCy NLP → (S,P,O) triplets
-│   │   └── zk_semantics.py           # Zero-Knowledge Entailment Proofs
+│   │   ├── zk_semantics.py           # Zero-Knowledge Entailment Proofs
+│   │   └── causal_discovery.py       # Topological inference via transitive closure
 │   ├── ensemble/
 │   │   ├── epistemic_loop.py         # Hallucination-proof generation loop
 │   │   ├── vector_bridge.py          # Continuous↔Discrete bridge + Affine Alignment
@@ -189,22 +193,23 @@ SUM/
 │   │   ├── causal_triggers.py        # Semantic Smart Contracts (deductive cascades)
 │   │   ├── ouroboros.py              # OuroborosVerifier — round-trip conservation proof
 │   │   ├── tome_generator.py         # AutoregressiveTomeGenerator — canonical tomes
-│   │   └── live_llm_adapter.py       # OpenAI structured outputs adapter
+│   │   ├── live_llm_adapter.py       # OpenAI structured outputs adapter
+│   │   └── automated_scientist.py    # Autonomous deduction daemon (15s cycles)
 │   └── infrastructure/
 │       ├── akashic_ledger.py         # Event-sourced crash recovery & Time Travel
 │       ├── p2p_mesh.py               # Decentralized Gossip Protocol
 │       ├── canonical_codec.py        # Signed bundle transport (HMAC + Ed25519)
 │       ├── key_manager.py            # Ed25519 keypair lifecycle management
 │       ├── rate_limiter.py           # Sliding window per-IP rate limiter
-│       └── zig_bridge.py            # Horizon III: Zig C-ABI FFI bridge (ctypes)
+│       ├── zig_bridge.py            # Horizon III: Zig C-ABI FFI bridge (ctypes)
+│       └── telemetry.py             # @trace_zig_ffi observability decorator
 ├── core-zig/
-│   ├── build.zig                     # Zig build script for libsum_core
+│   ├── build.zig                     # Dual targets: native + WASM
 │   └── src/
-│       └── main.zig                  # Bare-metal primes: SHA-256 → Miller-Rabin (C-ABI)
+│       └── main.zig                  # Bare-metal primes, LCM, GCD, batch mint (C-ABI)
 ├── api/
 │   └── quantum_router.py            # FastAPI routing and GlobalKnowledgeOS
 ├── quantum_main.py                   # ASGI entrypoint (FastAPI + lifespan boot)
-├── mass_semantic_engine.py           # MapReduce Tomes↔Tags pipeline
 ├── standalone_verifier/
 │   └── verify.js                     # Independent Node.js semantic witness
 ├── scripts/
@@ -218,8 +223,10 @@ SUM/
 │   ├── THREAT_MODEL.md               # Security analysis and attack surfaces
 │   └── COMPATIBILITY_POLICY.md       # Version semantics and guarantees
 ├── static/
-│   ├── quantum.html                  # Quantum UI (vis-network, Telemetry HUD)
-│   └── js/godel_client.js            # Browser-side Gödel sync client
+│   ├── quantum.html                  # Quantum UI (Sovereign Edge, Telemetry HUD)
+│   └── js/
+│       ├── godel_client.js            # Browser-side Gödel sync client
+│       └── sum_wasm.js               # WASM BigInt API (offline math engine)
 ├── experiments.tsv                   # Autoresearch experiment ledger
 └── Tests/
     ├── fixtures/                      # Frozen golden reference vectors
