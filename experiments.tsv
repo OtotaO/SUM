@@ -26,4 +26,4 @@ abc0cf7	376	21/21	keep	Phase 17b: Strangler Fig BigInt — LCM/GCD/mod/divisibil
 cf8ae09	394	21/21	keep	Phase 19: Sovereign Edge + Automated Scientist — causal discovery, offline WASM ingestion, /sync/state (10 tests)
 8740965	394	21/21	keep	Cleanup: removed dead Flask stack, 90 files, 16787 lines — single Quantum entry point
 44397bd	408	21/21	keep	Harden: wave 2 cleanup (20 files), JWT security fix, 14 module coverage tests
-PENDING	416	21/21	keep	Phase 20: Horizon I EXOCORTEX — browser extension rewired to Quantum API (8 tests)
+8cd5d68	416	21/21	keep	Phase 20: Horizon I EXOCORTEX — browser extension rewired to Quantum API (8 tests)
