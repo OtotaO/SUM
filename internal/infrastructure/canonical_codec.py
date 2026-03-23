@@ -47,6 +47,11 @@ from internal.ensemble.tome_generator import (
     AutoregressiveTomeGenerator,
     CANONICAL_FORMAT_VERSION,
 )
+from internal.infrastructure.scheme_registry import (
+    CURRENT_SCHEME,
+    validate_scheme_or_raise,
+)
+from internal.infrastructure.state_encoding import to_hex
 
 if TYPE_CHECKING:
     from internal.infrastructure.key_manager import KeyManager
@@ -75,6 +80,8 @@ class CanonicalBundle:
     state_integer: str  # String for BigInt JSON safety
     timestamp: str
     signature: str
+    prime_scheme: str = CURRENT_SCHEME
+    state_integer_hex: Optional[str] = None
     is_delta: bool = False
     public_signature: Optional[str] = None  # "ed25519:<base64>"
     public_key: Optional[str] = None        # "ed25519:<base64>"
@@ -233,6 +240,8 @@ class CanonicalCodec:
             state_integer=state_str,
             timestamp=timestamp,
             signature=signature,
+            prime_scheme=CURRENT_SCHEME,
+            state_integer_hex=to_hex(state),
             is_delta=False,
             public_signature=pub_sig,
             public_key=pub_key,
@@ -337,11 +346,16 @@ class CanonicalCodec:
                 )
             logger.info("Ed25519 provenance verified for bundle")
 
+        # ── Scheme compatibility check ──
+        bundle_scheme = bundle_dict.get("prime_scheme", CURRENT_SCHEME)
+        validate_scheme_or_raise(bundle_scheme, context="bundle import")
+
         state = int(state_str)
         logger.info(
-            "Bundle imported: branch=%s, axioms=%s, hmac=✓, ed25519=%s",
+            "Bundle imported: branch=%s, axioms=%s, scheme=%s, hmac=✓, ed25519=%s",
             bundle_dict.get("branch", "unknown"),
             bundle_dict.get("axiom_count", "?"),
+            bundle_scheme,
             "✓" if pub_sig else "n/a",
         )
         return state

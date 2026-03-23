@@ -55,6 +55,7 @@ from internal.ensemble.mass_semantic_engine import MassSemanticEngine
 from internal.ensemble.confidence_calibrator import ConfidenceCalibrator
 from internal.ensemble.semantic_dedup import SemanticDeduplicator
 from internal.infrastructure.state_encoding import dual_field, parse_state, to_hex
+from internal.infrastructure.scheme_registry import CURRENT_SCHEME, validate_scheme_or_raise
 
 logger = logging.getLogger(__name__)
 
@@ -359,6 +360,7 @@ async def get_global_state(
         **dual_field("global_state_integer", state),
         "axiom_count": len(kos.algebra.prime_to_axiom),
         "branch_count": len(kos.branches),
+        "prime_scheme": CURRENT_SCHEME,
         "user_id": user_id,
     }
 
@@ -385,6 +387,7 @@ async def sync_client_state(
     return {
         "branch": effective_branch,
         **dual_field("new_global_state", branch_state),
+        "prime_scheme": CURRENT_SCHEME,
         "delta": delta,
     }
 
@@ -1117,6 +1120,13 @@ async def sync_peer_state(
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid peer state integer.")
 
+    # Scheme validation: reject incompatible peers
+    peer_scheme = getattr(req, "prime_scheme", None) or CURRENT_SCHEME
+    try:
+        validate_scheme_or_raise(peer_scheme, context="peer sync")
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+
     # Use Zig FFI if available, fallback to Python
     try:
         from internal.infrastructure.zig_bridge import zig_engine
@@ -1142,6 +1152,7 @@ async def sync_peer_state(
         "status": "synchronized",
         "branch": effective_branch,
         **dual_field("global_state_integer", new_state),
+        "prime_scheme": CURRENT_SCHEME,
     }
 
 

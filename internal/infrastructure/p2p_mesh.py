@@ -27,6 +27,7 @@ import httpx
 
 from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
 from internal.ensemble.epistemic_arbiter import kos_telemetry
+from internal.infrastructure.scheme_registry import CURRENT_SCHEME, is_compatible
 
 logger = logging.getLogger(__name__)
 
@@ -87,12 +88,23 @@ class EpistemicMeshNetwork:
                     json={
                         "client_state_integer": hex(local_state),
                         "branch": branch,
+                        "prime_scheme": CURRENT_SCHEME,
                     },
                 )
                 if resp.status_code != 200:
                     return
 
                 data = resp.json()
+
+                # Scheme negotiation: reject incompatible peers
+                peer_scheme = data.get("prime_scheme", CURRENT_SCHEME)
+                if not is_compatible(peer_scheme):
+                    logger.warning(
+                        "Rejecting sync with %s: incompatible scheme %s",
+                        peer_url, peer_scheme,
+                    )
+                    return
+
                 # Prefer hex if available, fall back to decimal
                 raw_state = data.get("new_global_state_hex") or data.get("new_global_state")
                 remote_state = int(raw_state, 16) if raw_state.startswith("0x") else int(raw_state)
