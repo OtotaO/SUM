@@ -22,3 +22,5 @@ ec87815	354	21/21	keep	Phase 17: Horizon III — Zig C-ABI + affine vector align
 abc0cf7	376	21/21	keep	Phase 17b: Strangler Fig BigInt — LCM/GCD/mod/divisibility (22 tests)
 642042c	376	21/21	keep	Gap Closure: full Strangler Fig (7 files), CI Zig, requirements consolidation, 13 files archived
 -------	384	21/21	keep	Phase 17c: CI cleanup, import refactor (10 files → internal/legacy_api/), benchmarks (8 tests), pyrightconfig
+840228c	384	21/21	keep	Phase 18: Horizon IV — WASM target, batch prime minting, observability decorator
+cf8ae09	394	21/21	keep	Phase 19: Sovereign Edge + Automated Scientist — causal discovery, offline WASM ingestion, /sync/state (10 tests)
