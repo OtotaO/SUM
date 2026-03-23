@@ -59,7 +59,7 @@ from internal.infrastructure.state_encoding import dual_field, parse_state, to_h
 from internal.infrastructure.scheme_registry import CURRENT_SCHEME, validate_scheme_or_raise
 from internal.infrastructure.resource_guards import (
     guard_ingest_text, guard_bundle_import, guard_ask_query,
-    guard_branch_name, guard_axiom_key, guard_sync_request,
+    guard_branch_name, guard_axiom_key, guard_sync_state_digits,
 )
 
 logger = logging.getLogger(__name__)
@@ -472,7 +472,10 @@ async def ingest_document(
     kos.branches[branch] = math.lcm(branch_state, new_state)
 
     # 4. Akashic trace — log new primes (Phase 22: with provenance)
-    #    Stage 4: Run hedging detection on the raw text for linguistic certainty
+    #    Stage 4: Run hedging detection on the raw text for linguistic certainty.
+    #    NOTE: This is document-level certainty (coarse-grained). If the document
+    #    mixes definite and hedged statements, the score is smeared across all axioms.
+    #    Sentence-level granularity would require per-axiom source-text mapping.
     from datetime import datetime as _dt
     _now = _dt.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
     text_certainty = detect_hedging(request.text)
@@ -588,7 +591,10 @@ async def ingest_math_direct(
                     current_state=current_state,
                     algebra=kos.algebra,
                     ledger=kos.ledger,
-                    linguistic_certainty=detect_hedging(request.source_url),
+                    # /ingest/math takes raw triplets with no natural-language
+                    # source text, so linguistic certainty defaults to 1.0.
+                    # Direct math input is definitional, not hedged.
+                    linguistic_certainty=1.0,
                 )
             await kos.ledger.append_event(
                 "MINT", prime, axiom,
@@ -1151,7 +1157,7 @@ async def sync_peer_state(
 ):
     """O(1) P2P Merge. Accepts a foreign Gödel Integer and merges via LCM."""
     # Stage 5: Resource guard — reject oversized sync payloads
-    guard_sync_request(len(req.peer_state_integer))
+    guard_sync_state_digits(len(req.peer_state_integer))
 
     if not kos.is_booted:
         raise HTTPException(status_code=503, detail="KOS booting")

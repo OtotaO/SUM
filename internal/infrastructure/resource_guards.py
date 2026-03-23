@@ -25,7 +25,8 @@ MAX_INGEST_TEXT_CHARS = 200_000          # ~200K characters
 MAX_BUNDLE_SIZE_BYTES = 10_000_000       # 10 MB
 MAX_STATE_INTEGER_DIGITS = 100_000       # 100K decimal digits
 MAX_CANONICAL_TOME_LINES = 50_000        # 50K axiom lines
-MAX_SYNC_AXIOMS = 10_000                 # 10K axioms per sync request
+MAX_SYNC_AXIOMS = 10_000                 # 10K axioms per sync request (unused, kept for compat)
+MAX_SYNC_STATE_DIGITS = 100_000          # peer state integer digit count
 MAX_ASK_QUERY_LENGTH = 5_000             # 5K characters for /ask
 MAX_BRANCH_NAME_LENGTH = 128             # branch name
 MAX_AXIOM_KEY_LENGTH = 1_000             # single axiom key
@@ -83,12 +84,12 @@ def guard_bundle_import(bundle: dict) -> None:
             )
 
 
-def guard_sync_request(axiom_count: int) -> None:
-    """Reject sync requests with too many axioms."""
-    if axiom_count > MAX_SYNC_AXIOMS:
+def guard_sync_state_digits(digit_count: int) -> None:
+    """Reject sync requests with oversized state integers (digit count)."""
+    if digit_count > MAX_SYNC_STATE_DIGITS:
         raise ResourceLimitError(
-            "sync_axiom_count", axiom_count, MAX_SYNC_AXIOMS,
-            "Paginate large sync operations."
+            "sync_state_digits", digit_count, MAX_SYNC_STATE_DIGITS,
+            "Peer state integer is too large. Paginate or shard state."
         )
 
 

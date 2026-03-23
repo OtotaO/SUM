@@ -95,13 +95,13 @@ class TestResourceLimitsExist:
         from internal.infrastructure.resource_guards import (
             guard_ingest_text,
             guard_bundle_import,
-            guard_sync_request,
+            guard_sync_state_digits,
             guard_ask_query,
             guard_branch_name,
             guard_axiom_key,
         )
         assert all(callable(fn) for fn in [
-            guard_ingest_text, guard_bundle_import, guard_sync_request,
+            guard_ingest_text, guard_bundle_import, guard_sync_state_digits,
             guard_ask_query, guard_branch_name, guard_axiom_key,
         ])
 

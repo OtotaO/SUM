@@ -33,7 +33,7 @@ class TestGuardsWiredIntoHandlers:
             "guard_ask_query(",
             "guard_branch_name(",
             "guard_axiom_key(",
-            "guard_sync_request(",
+            "guard_sync_state_digits(",
         ]
         found = [g for g in guard_calls if g in source]
         assert len(found) == 6, (

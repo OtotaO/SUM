@@ -19,14 +19,14 @@ from fastapi import HTTPException
 from internal.infrastructure.resource_guards import (
     guard_ingest_text,
     guard_bundle_import,
-    guard_sync_request,
+    guard_sync_state_digits,
     guard_ask_query,
     guard_branch_name,
     guard_axiom_key,
     ResourceLimitError,
     MAX_INGEST_TEXT_CHARS,
     MAX_BUNDLE_SIZE_BYTES,
-    MAX_SYNC_AXIOMS,
+    MAX_SYNC_STATE_DIGITS,
     MAX_ASK_QUERY_LENGTH,
     MAX_BRANCH_NAME_LENGTH,
     MAX_AXIOM_KEY_LENGTH,
@@ -90,11 +90,11 @@ class TestBundleGuards:
 
 class TestSyncGuards:
     def test_normal_sync_accepted(self):
-        guard_sync_request(100)
+        guard_sync_state_digits(100)
 
-    def test_oversized_sync_rejected(self):
-        with pytest.raises(HTTPException) as exc:
-            guard_sync_request(MAX_SYNC_AXIOMS + 1)
+    def test_sync_rejects_oversized(self):
+        with pytest.raises(ResourceLimitError) as exc:
+            guard_sync_state_digits(MAX_STATE_INTEGER_DIGITS + 1)
         assert exc.value.status_code == 413
 
 
