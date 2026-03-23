@@ -211,7 +211,26 @@
         <div class="divider"></div>
 
         <div>
-            <p class="section-label">⑤ System Telemetry</p>
+            <p class="section-label">⑥ Sovereign Edge (WASM)</p>
+            <div style="margin-bottom: 12px; display: flex; gap: 8px;">
+                <div style="flex: 1; padding: 10px; background: #0f172a; border: 1px solid #1e293b; border-radius: 8px;">
+                    <div style="font-size: 10px; color: #94a3b8; margin-bottom: 4px;">💻 LOCAL STATE</div>
+                    <div id="local-state-display" style="color: #10b981; font-weight: bold; word-break: break-all; font-size: 11px;">1</div>
+                </div>
+                <div style="flex: 1; padding: 10px; background: #0f172a; border: 1px solid #1e293b; border-radius: 8px;">
+                    <div style="font-size: 10px; color: #94a3b8; margin-bottom: 4px;">🌍 GLOBAL STATE</div>
+                    <div id="global-state-display" style="color: #38bdf8; font-weight: bold; word-break: break-all; font-size: 11px;">1</div>
+                    <button onclick="syncWithSwarm()" style="margin-top: 6px; width: 100%; background: #3b82f6; color: white; border: none; padding: 5px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">O(1) Merge to Swarm</button>
+                </div>
+            </div>
+            <textarea id="local-ingest-text" placeholder="Enter facts: [alice||knows||bob] [bob||causes||event]" style="width: 100%; height: 50px; background: #0f172a; border: 1px solid #334155; color: #fff; padding: 8px; border-radius: 8px; margin-bottom: 8px; font-size: 12px; outline: none; resize: none; box-sizing: border-box;"></textarea>
+            <button id="local-ingest-btn" onclick="ingestLocally()" style="background: #10b981; color: #fff; border: none; padding: 8px; border-radius: 8px; cursor: pointer; font-weight: 600; width: 100%; font-size: 13px;">Mint Primes Locally ⚡</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <div>
+            <p class="section-label">⑦ System Telemetry</p>
             <div id="telemetry-terminal" class="terminal">
                 <p style="color: #475569;">Awaiting system events…</p>
             </div>
@@ -282,6 +301,78 @@
         }
 
         updateAuthUI();
+
+        // ─── Sovereign Edge (Local WASM State) ─────────────────
+        let localGodelState = BigInt(localStorage.getItem('sum_local_state') || '1');
+
+        function updateLocalUI() {
+            const str = localGodelState.toString();
+            const display = str.length > 40
+                ? str.substring(0, 18) + '......' + str.substring(str.length - 18)
+                : str;
+            document.getElementById('local-state-display').innerText =
+                '[Len: ' + str.length + '] ' + display;
+            localStorage.setItem('sum_local_state', str);
+        }
+
+        async function ingestLocally() {
+            const text = document.getElementById('local-ingest-text').value;
+            if (!text || !sumWasm) {
+                alert('WASM module not loaded yet!');
+                return;
+            }
+            const regex = /\[(.*?)\]/g;
+            let match;
+            let count = 0;
+            while ((match = regex.exec(text)) !== null) {
+                const parts = match[1].split('||');
+                if (parts.length === 3) {
+                    const axiomStr = parts.map(p => p.trim().toLowerCase()).join('||');
+                    const prime = BigInt(sumWasm.getDeterministicPrime(axiomStr));
+                    if (localGodelState % prime !== 0n) {
+                        // LCM via WASM if possible, fallback to JS
+                        try {
+                            localGodelState = sumWasm.bigintLcm(localGodelState, prime);
+                        } catch (e) {
+                            // JS fallback LCM
+                            function gcd(a, b) { return b === 0n ? a : gcd(b, a % b); }
+                            localGodelState = (localGodelState / gcd(localGodelState, prime)) * prime;
+                        }
+                        count++;
+                    }
+                }
+            }
+            document.getElementById('local-ingest-text').value = '';
+            updateLocalUI();
+            if (count > 0) {
+                const term = document.getElementById('telemetry-terminal');
+                term.innerHTML += '<p style="color:#10b981;">⚡ WASM: Minted ' + count + ' primes locally</p>';
+                term.scrollTop = term.scrollHeight;
+            }
+        }
+
+        async function syncWithSwarm() {
+            try {
+                const res = await authFetch('/api/v1/quantum/sync/state', {
+                    method: 'POST',
+                    body: JSON.stringify({ peer_state_integer: localGodelState.toString() })
+                });
+                const data = await res.json();
+                localGodelState = BigInt(data.global_state_integer);
+                updateLocalUI();
+                const stateStr = data.global_state_integer;
+                const display = stateStr.length > 40
+                    ? stateStr.substring(0, 18) + '......' + stateStr.substring(stateStr.length - 18)
+                    : stateStr;
+                document.getElementById('global-state-display').innerText =
+                    '[Len: ' + stateStr.length + '] ' + display;
+                const term = document.getElementById('telemetry-terminal');
+                term.innerHTML += '<p style="color:#38bdf8;">🌐 Synced with swarm — state merged</p>';
+                term.scrollTop = term.scrollHeight;
+            } catch (e) { console.error('Swarm sync failed', e); }
+        }
+
+        setTimeout(updateLocalUI, 500);
 
         const container = document.getElementById('network-container');
         const client = new GodelClient(currentToken);

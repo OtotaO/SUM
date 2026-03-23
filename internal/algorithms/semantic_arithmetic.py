@@ -184,6 +184,32 @@ class GodelStateAlgebra:
         return self.axiom_to_prime[axiom_key]
 
     # ------------------------------------------------------------------
+    # State Factorisation
+    # ------------------------------------------------------------------
+
+    def get_active_axioms(self, state: int) -> list:
+        """
+        Factorise a Gödel state to extract all active axiom keys.
+
+        Iterates over all known primes and checks divisibility.
+        Returns the list of axiom key strings (e.g. "alice||likes||cats")
+        whose primes divide the state.
+
+        Args:
+            state: The Gödel integer to factorise.
+
+        Returns:
+            List of axiom key strings.
+        """
+        if state <= 1:
+            return []
+        active = []
+        for prime, axiom in self.prime_to_axiom.items():
+            if state % prime == 0:
+                active.append(axiom)
+        return active
+
+    # ------------------------------------------------------------------
     # Quantum GraphRAG (Node Registry)
     # ------------------------------------------------------------------
 

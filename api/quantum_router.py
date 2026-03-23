@@ -163,6 +163,11 @@ class GlobalKnowledgeOS:
             self._update_branch_state,
         )
 
+        # Phase 19: Automated Scientist Daemon
+        from internal.ensemble.automated_scientist import AutomatedScientistDaemon
+        self.scientist_daemon = AutomatedScientistDaemon(self, interval_seconds=15)
+        asyncio.create_task(self.scientist_daemon.start_dreaming())
+
         self.is_booted = True
 
     def _update_branch_state(self, branch: str, new_state: int):
@@ -287,6 +292,11 @@ class RehydrateRequest(BaseModel):
 class LearnRequest(BaseModel):
     """Generate an Epistemic Delta Tome for personalized learning."""
     target_topic_node: str
+
+
+class SyncStateRequest(BaseModel):
+    """P2P sync: accept a foreign Gödel Integer for O(1) LCM merge."""
+    peer_state_integer: str
 
 
 class OuroborosRequest(BaseModel):
@@ -1028,3 +1038,79 @@ async def telemetry_stream():
             "Connection": "keep-alive",
         },
     )
+
+# ─── Phase 19: Sovereign Edge & Machine Synthesis ─────────────────
+
+@router.post("/sync/state")
+async def sync_peer_state(
+    req: SyncStateRequest,
+    user_id: str = Depends(get_current_user),
+):
+    """O(1) P2P Merge. Accepts a foreign Gödel Integer and merges via LCM."""
+    if not kos.is_booted:
+        raise HTTPException(status_code=503, detail="KOS booting")
+
+    effective_branch = user_id if user_id != "main" else "main"
+    current_state = kos.branches.get(effective_branch, 1)
+
+    try:
+        peer_int = int(req.peer_state_integer)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid peer state integer.")
+
+    # Use Zig FFI if available, fallback to Python
+    try:
+        from internal.infrastructure.zig_bridge import zig_engine
+        if zig_engine and hasattr(zig_engine, 'bigint_lcm'):
+            new_state = zig_engine.bigint_lcm(current_state, peer_int)
+        else:
+            new_state = math.lcm(current_state, peer_int)
+    except ImportError:
+        new_state = math.lcm(current_state, peer_int)
+
+    if new_state != current_state:
+        kos.branches[effective_branch] = new_state
+        await kos.ledger.append_event(
+            "SYNC", 1, f"Merged peer state from {user_id}"
+        )
+
+        from internal.ensemble.epistemic_arbiter import kos_telemetry
+        await kos_telemetry.broadcast(
+            f"🌐 Sovereign Edge Sync: merged state from {user_id}"
+        )
+
+    return {
+        "status": "synchronized",
+        "branch": effective_branch,
+        "global_state_integer": str(new_state),
+    }
+
+
+@router.get("/discoveries")
+async def get_autonomous_discoveries():
+    """Returns knowledge autonomously deduced by the Automated Scientist."""
+    if not kos.is_booted:
+        raise HTTPException(status_code=503, detail="KOS booting")
+
+    total = 0
+    if hasattr(kos, 'scientist_daemon'):
+        total = kos.scientist_daemon.total_discoveries
+
+    # Query ledger for DEDUCED events
+    import sqlite3
+    try:
+        with sqlite3.connect(kos.ledger.db_path) as conn:
+            rows = conn.execute(
+                "SELECT axiom_key, rowid FROM semantic_events "
+                "WHERE operation = 'DEDUCED' ORDER BY rowid DESC LIMIT 50"
+            ).fetchall()
+        discoveries = [
+            {"axiom": r[0].replace("||", " "), "id": r[1]} for r in rows
+        ]
+    except Exception:
+        discoveries = []
+
+    return {
+        "total_discoveries": total,
+        "recent": discoveries,
+    }

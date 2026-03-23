@@ -81,9 +81,10 @@ class AkashicLedger:
         Append a single mathematical trace to the ledger.
 
         Args:
-            operation: One of ``'MINT'``, ``'MUL'``, ``'DIV'``.
+            operation: One of ``'MINT'``, ``'MUL'``, ``'DIV'``,
+                       ``'SYNC'``, ``'DEDUCED'``.
             prime:     The semantic prime involved.
-            axiom_key: Human-readable axiom key (for ``MINT`` events).
+            axiom_key: Human-readable axiom key (for ``MINT``/``DEDUCED`` events).
         """
         def _write():
             with sqlite3.connect(self.db_path) as conn:
