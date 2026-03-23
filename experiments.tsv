@@ -33,3 +33,4 @@ cf8ae09	394	21/21	keep	Phase 19: Sovereign Edge + Automated Scientist — causal
 -------	461	21/21	keep	Phase 23: CLI — sum_cli.py with ingest/ask/export/diff/status/provenance commands (16 tests)
 -------	484	21/21	keep	Phase 24: Confidence Calibration — source-type heuristic, redundancy boost, contradiction penalty (23 tests)
 -------	506	21/21	keep	Phase 25: Semantic Deduplication — predicate synonyms, Jaccard+Levenshtein fuzzy match, API integration (22 tests)
+-------	524	21/21	keep	Stage 1: Dual-Format Transport — hex companion fields on all 11 API surfaces, parse_state auto-detect, P2P hex (18 tests)

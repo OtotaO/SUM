@@ -85,7 +85,7 @@ class EpistemicMeshNetwork:
                 resp = await client.post(
                     f"{peer_url}/api/v1/quantum/sync",
                     json={
-                        "client_state_integer": str(local_state),
+                        "client_state_integer": hex(local_state),
                         "branch": branch,
                     },
                 )
@@ -93,7 +93,9 @@ class EpistemicMeshNetwork:
                     return
 
                 data = resp.json()
-                remote_state = int(data["new_global_state"])
+                # Prefer hex if available, fall back to decimal
+                raw_state = data.get("new_global_state_hex") or data.get("new_global_state")
+                remote_state = int(raw_state, 16) if raw_state.startswith("0x") else int(raw_state)
 
                 if local_state == remote_state:
                     return  # Perfect consensus — nothing to do

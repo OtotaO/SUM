@@ -54,6 +54,7 @@ from internal.infrastructure.p2p_mesh import EpistemicMeshNetwork
 from internal.ensemble.mass_semantic_engine import MassSemanticEngine
 from internal.ensemble.confidence_calibrator import ConfidenceCalibrator
 from internal.ensemble.semantic_dedup import SemanticDeduplicator
+from internal.infrastructure.state_encoding import dual_field, parse_state, to_hex
 
 logger = logging.getLogger(__name__)
 
@@ -355,7 +356,7 @@ async def get_global_state(
     state = _get_branch_state(effective_branch)
     return {
         "branch": effective_branch,
-        "global_state_integer": str(state),
+        **dual_field("global_state_integer", state),
         "axiom_count": len(kos.algebra.prime_to_axiom),
         "branch_count": len(kos.branches),
         "user_id": user_id,
@@ -378,12 +379,12 @@ async def sync_client_state(
 
     effective_branch = user_id if user_id != "main" else request.branch
     branch_state = _get_branch_state(effective_branch)
-    client_state = int(request.client_state_integer)
+    client_state = parse_state(request.client_state_integer)
     delta = kos.algebra.calculate_network_delta(branch_state, client_state)
 
     return {
         "branch": effective_branch,
-        "new_global_state": str(branch_state),
+        **dual_field("new_global_state", branch_state),
         "delta": delta,
     }
 
@@ -476,7 +477,7 @@ async def ingest_document(
     return {
         "status": "success",
         "branch": branch,
-        "new_global_state": str(kos.branches[branch]),
+        **dual_field("new_global_state", kos.branches[branch]),
         "axioms_ingested": result["total_unique_primes"],
         "paradoxes": result["paradoxes"],
     }
@@ -579,7 +580,7 @@ async def ingest_math_direct(
     return {
         "status": "success",
         "branch": branch,
-        "new_global_state": str(kos.branches.get(branch, 1)),
+        **dual_field("new_global_state", kos.branches.get(branch, 1)),
         "axioms_added": len(added_axioms),
         "duplicates_skipped": len(skipped_duplicates),
         "skipped_details": skipped_duplicates,
@@ -652,7 +653,7 @@ async def quantum_graph_rag(
 
     return {
         "branch": effective_branch,
-        "context_integer": str(context_integer),
+        **dual_field("context_integer", context_integer),
         "axioms": context_axioms,
     }
 
@@ -688,7 +689,7 @@ async def create_branch(req: BranchRequest):
 
     return {
         "message": f"Branch '{req.new_branch}' created.",
-        "state_integer": str(kos.branches[req.new_branch]),
+        **dual_field("state_integer", kos.branches[req.new_branch]),
         "branch_count": len(kos.branches),
     }
 
@@ -731,7 +732,7 @@ async def merge_branches(req: MergeRequest):
 
     return {
         "message": "Merge successful",
-        "new_state": str(merged_state),
+        **dual_field("new_state", merged_state),
         "paradoxes_detected": len(paradoxes),
         "paradoxes": paradoxes,
     }
@@ -745,7 +746,7 @@ async def list_branches():
     return {
         "branches": {
             name: {
-                "state_integer": str(state),
+                **dual_field("state_integer", state),
                 "bit_length": state.bit_length(),
             }
             for name, state in kos.branches.items()
@@ -795,7 +796,7 @@ async def time_travel(
             f"Time travel successful. Branch '{req.new_branch_name}' "
             f"created at tick {req.target_tick}."
         ),
-        "historical_state_integer": str(past_state),
+        **dual_field("historical_state_integer", past_state),
         "branch_count": len(kos.branches),
     }
 
@@ -1112,7 +1113,7 @@ async def sync_peer_state(
     current_state = kos.branches.get(effective_branch, 1)
 
     try:
-        peer_int = int(req.peer_state_integer)
+        peer_int = parse_state(req.peer_state_integer)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid peer state integer.")
 
@@ -1140,7 +1141,7 @@ async def sync_peer_state(
     return {
         "status": "synchronized",
         "branch": effective_branch,
-        "global_state_integer": str(new_state),
+        **dual_field("global_state_integer", new_state),
     }
 
 
