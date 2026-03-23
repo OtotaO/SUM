@@ -116,6 +116,59 @@ Collision resolution depends on minting order. Two implementations that mint axi
 
 Reference LCM state for all three: `1898585074409907150524167558344558620554613878579045806247`
 
+### 4.5. v2 Derivation Rule (`sha256_128_v2`) — **SHADOW / EXPERIMENTAL**
+
+> [!IMPORTANT]
+> **`sha256_128_v2` is NOT the active default scheme.** It exists in shadow mode only.
+> The active scheme remains `sha256_64_v1`. No production system should emit v2 primes
+> unless explicitly configured to do so.
+
+Given an axiom key string `K`:
+
+1. Compute `H = SHA-256(K)` where `K` is encoded as UTF-8
+2. Extract the first **16 bytes** of `H` as a big-endian unsigned 128-bit integer: `seed`
+3. Find the next prime number strictly greater than `seed`: `prime = nextprime(seed)`
+
+Primality testing for 128-bit candidates uses **BPSW** (Baillie–PSW):
+- Phase 1: Strong base-2 Miller–Rabin
+- Phase 2: Strong Lucas probable prime test (Selfridge Method A, P=1, Q=(1−D)/4)
+
+> [!WARNING]
+> BPSW has no known pseudoprimes but is not a formal proof of primality.
+> This is an engineering trust assumption. If a BPSW counterexample is ever
+> discovered, the v2 scheme would need to be superseded.
+
+### 4.6. v2 Collision Policy
+
+**v2 does NOT use a collision-resolution loop.** If two distinct axiom keys produce
+the same 128-bit prime, the implementation MUST raise a hard error (e.g., `PrimeCollisionError`).
+
+Rationale: the birthday bound for a 128-bit seed space is ~2⁶⁴ distinct axioms.
+Collisions are astronomically unlikely. A collision-resolution loop introduces
+order-dependent nondeterminism that is consensus-unsafe for distributed systems.
+
+### 4.7. Non-Interoperability Statement
+
+v1 (`sha256_64_v1`) and v2 (`sha256_128_v2`) produce **completely different primes**
+for the same axiom key. They are non-interoperable:
+
+- Sync between v1 and v2 nodes MUST be rejected (HTTP 409)
+- Bundle import across schemes MUST be rejected
+- No read-only, bridge, or fallback mode is permitted
+
+Migration from v1 to v2 is a **fresh-universe operation**: semantic content may be
+re-ingested, but state identity (primes, Gödel integers, bundles, ZK proofs) is invalidated.
+
+### 4.8. v2 Reference Vectors
+
+| Axiom Key | SHA-256 First 16 Bytes (hex) | Seed | Prime |
+|-----------|------------------------------|------|-------|
+| `alice\|\|likes\|\|cats` | `c6d380e53c64fca99927bc755a37c1d9` | `264285332112933860981052902103273947609` | `264285332112933860981052902103273947671` |
+| `bob\|\|knows\|\|python` | `b37d3c2b55c0b0195fccb24db0ac8e75` | `238582068730743173113692744107846045301` | `238582068730743173113692744107846045503` |
+| `earth\|\|orbits\|\|sun` | `8e3176e1eae59d0a3c4f748c53c015f3` | `189007209170893135023962148948466996723` | `189007209170893135023962148948466996823` |
+| `quantum\|\|entangles\|\|photon` | `391d904d931d2bad8cff08a1d8c68ea1` | `75919499181718715751351316207293075105` | `75919499181718715751351316207293075217` |
+| `water\|\|contains\|\|hydrogen` | `165d98c13189e1510a1a17e1f2a459d9` | `29728997747738460826164635775038413273` | `29728997747738460826164635775038413403` |
+
 ## 5. State Reconstruction
 
 Given a set of axiom keys `{K₁, K₂, ..., Kₙ}`:

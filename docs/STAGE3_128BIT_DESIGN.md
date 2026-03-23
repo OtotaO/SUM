@@ -1,6 +1,6 @@
 # Stage 3 Design Doc — 128-Bit Prime Derivation
 
-**Status:** DRAFT — Not approved for implementation  
+**Status:** APPROVED FOR IMPLEMENTATION (shadow mode)  
 **Scheme ID:** `sha256_128_v2`  
 **Date:** 2026-03-23  
 **Author:** ototao  
@@ -301,7 +301,42 @@ Rationale:
 
 Implementations MAY use trial division against small primes (e.g., primes up to 1000) before invoking BPSW for performance. The exact bound is not specified. Cross-runtime parity tests (Gate G5) must pass regardless of whether trial division is used.
 
+## 11. Activation Decision — Stage 3C
+
+### 11.1. Options Evaluated
+
+| Option | Description | Risk |
+|--------|-------------|------|
+| A. Remain v1 default, v2 experimental | v2 code exists but is never active by default | Lowest — no existing system affected |
+| B. Env-flag opt-in for new instances | `SUM_PRIME_SCHEME=sha256_128_v2` enables v2 for fresh deployments | Low — explicit operator choice |
+| C. Full default switch for fresh installs | New `GodelStateAlgebra()` defaults to v2 | Medium — new users get v2, old users unaffected |
+| D. Mandatory v2 for all | Switch `CURRENT_SCHEME` globally | High — invalidates all existing v1 systems |
+
+### 11.2. Recommendation
+
+> **Option B: env-flag opt-in for new instances.**
+>
+> This is the most conservative sane choice.
+
+Rationale:
+- v1 remains the default for all existing and new deployments unless explicitly opted in
+- Operators who want the 128-bit address space can set a single environment variable
+- No existing ledger, bundle, proof, or peer relationship is affected
+- v2 activation is an explicit, auditable decision by the operator
+- If a BPSW counterexample is ever discovered, the blast radius is limited to explicitly opted-in instances
+
+### 11.3. Implementation
+
+In `scheme_registry.py`:
+```python
+import os
+CURRENT_SCHEME = os.environ.get("SUM_PRIME_SCHEME", "sha256_64_v1")
+```
+
+This change is deferred until all acceptance gates (G1-G10) are satisfied and the operator documentation is complete.
+
 ---
 
-> [!CAUTION]
-> **This document is DRAFT.** No implementation work should begin until this document is marked APPROVED.
+> [!NOTE]
+> **This document is APPROVED.** Implementation has been completed in shadow mode.
+> Activation (making v2 the default) remains a separate decision requiring all acceptance gates.
