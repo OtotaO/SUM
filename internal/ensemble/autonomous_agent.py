@@ -24,6 +24,14 @@ from internal.infrastructure.akashic_ledger import AkashicLedger
 logger = logging.getLogger(__name__)
 
 
+def _zig():
+    try:
+        from internal.infrastructure.zig_bridge import zig_engine
+        return zig_engine
+    except ImportError:
+        return None
+
+
 class AutonomousCrystallizer:
     """
     The Subconscious Graph Optimizer.
@@ -60,7 +68,9 @@ class AutonomousCrystallizer:
         new_state = global_state
 
         for node, node_integer in list(self.algebra.node_registry.items()):
-            alive_node_integer = math.gcd(new_state, node_integer)
+            z = _zig()
+            zg = z.bigint_gcd(new_state, node_integer) if z else None
+            alive_node_integer = zg if zg is not None else math.gcd(new_state, node_integer)
 
             # Extract alive axioms connected to this node
             cluster_axioms: list[str] = []

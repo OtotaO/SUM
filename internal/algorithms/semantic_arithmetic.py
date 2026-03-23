@@ -336,12 +336,19 @@ class GodelStateAlgebra:
         if hypothesis_state == 0:
             return False
 
-        # ── Bare-Metal Fast Path (Zig divisibility) ──
+        # ── Bare-Metal Fast Path (Zig) ──
         zig = _get_zig_engine()
         if zig is not None:
-            result = zig.is_divisible_by(global_state, hypothesis_state)
-            if result is not None:
-                return result
+            if hypothesis_state.bit_length() <= 64:
+                # Single prime — optimized streaming mod (no BigInt needed)
+                result = zig.is_divisible_by(global_state, hypothesis_state)
+                if result is not None:
+                    return result
+            else:
+                # Composite hypothesis — full BigInt modulo
+                result = zig.bigint_mod(global_state, hypothesis_state)
+                if result is not None:
+                    return result == 0
 
         # ── Legacy Python Fallback ──
         return global_state % hypothesis_state == 0

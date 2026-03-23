@@ -53,6 +53,14 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
+def _zig():
+    try:
+        from internal.infrastructure.zig_bridge import zig_engine
+        return zig_engine
+    except ImportError:
+        return None
+
 BUNDLE_VERSION = "1.1.0"  # Minor bump: added optional Ed25519 fields
 
 
@@ -362,7 +370,9 @@ class CanonicalCodec:
         Returns:
             A signed delta bundle dict.
         """
-        shared = math.gcd(target_state, source_state)
+        z = _zig()
+        zg = z.bigint_gcd(target_state, source_state) if z else None
+        shared = zg if zg is not None else math.gcd(target_state, source_state)
         delta_state = target_state // shared
 
         if delta_state == 1:

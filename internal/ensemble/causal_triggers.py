@@ -21,6 +21,14 @@ from internal.infrastructure.akashic_ledger import AkashicLedger
 from internal.ensemble.epistemic_arbiter import kos_telemetry
 
 
+def _zig():
+    try:
+        from internal.infrastructure.zig_bridge import zig_engine
+        return zig_engine
+    except ImportError:
+        return None
+
+
 class CausalTriggerMap:
     """
     Implements Yaroslavtsev's Interacting Theory (Section 5.7).
@@ -97,7 +105,9 @@ class CausalTriggerMap:
                             )
 
                             # Lock the inference into the state
-                            new_state = math.lcm(new_state, inf_prime)
+                            z = _zig()
+                            r = z.bigint_lcm(new_state, inf_prime) if z else None
+                            new_state = r if r is not None else math.lcm(new_state, inf_prime)
 
                             # Persist to Akashic Ledger
                             await self.ledger.append_event(

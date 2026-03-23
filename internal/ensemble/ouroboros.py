@@ -45,6 +45,14 @@ from internal.ensemble.tome_generator import (
 logger = logging.getLogger(__name__)
 
 
+def _zig():
+    try:
+        from internal.infrastructure.zig_bridge import zig_engine
+        return zig_engine
+    except ImportError:
+        return None
+
+
 @dataclass
 class ConservationProof:
     """
@@ -146,7 +154,9 @@ class OuroborosVerifier:
                 s, p, o = m.group(1), m.group(2), m.group(3)
                 prime = self.algebra.get_or_mint_prime(s, p, o)
                 if state % prime != 0:
-                    state = math.lcm(state, prime)
+                    z = _zig()
+                    r = z.bigint_lcm(state, prime) if z else None
+                    state = r if r is not None else math.lcm(state, prime)
                 axiom_keys.append(f"{s}||{p}||{o}")
 
         return state, axiom_keys, format_version
@@ -244,7 +254,9 @@ class OuroborosVerifier:
         for s, p, o in triplets:
             prime = self.algebra.get_or_mint_prime(s, p, o)
             if state_a % prime != 0:
-                state_a = math.lcm(state_a, prime)
+                z = _zig()
+                r = z.bigint_lcm(state_a, prime) if z else None
+                state_a = r if r is not None else math.lcm(state_a, prime)
 
         # Step 2: Verify conservation from Integer A (canonical path only)
         proof = self.verify_from_state(state_a)

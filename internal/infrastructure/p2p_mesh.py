@@ -31,6 +31,14 @@ from internal.ensemble.epistemic_arbiter import kos_telemetry
 logger = logging.getLogger(__name__)
 
 
+def _zig():
+    try:
+        from internal.infrastructure.zig_bridge import zig_engine
+        return zig_engine
+    except ImportError:
+        return None
+
+
 class EpistemicMeshNetwork:
     """
     Decentralized P2P Hive Mind.
@@ -104,7 +112,9 @@ class EpistemicMeshNetwork:
                             p = self.algebra.get_or_mint_prime(
                                 parts[0], parts[1], parts[2]
                             )
-                            new_state = math.lcm(new_state, p)
+                            z = _zig()
+                            r = z.bigint_lcm(new_state, p) if z else None
+                            new_state = r if r is not None else math.lcm(new_state, p)
 
                     # Detect contradictions imported from the network
                     paradoxes = self.algebra.detect_curvature_paradoxes(

@@ -27,6 +27,14 @@ from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
 logger = logging.getLogger(__name__)
 
 
+def _zig():
+    try:
+        from internal.infrastructure.zig_bridge import zig_engine
+        return zig_engine
+    except ImportError:
+        return None
+
+
 class AkashicLedger:
     """
     Crash-safe persistence for the Gödel state via event sourcing.
@@ -136,7 +144,9 @@ class AkashicLedger:
                 algebra.axiom_to_prime[axiom] = prime
                 algebra.prime_to_axiom[prime] = axiom
             elif op == "MUL":
-                global_state = math.lcm(global_state, prime)
+                z = _zig()
+                r = z.bigint_lcm(global_state, prime) if z else None
+                global_state = r if r is not None else math.lcm(global_state, prime)
             elif op == "DIV":
                 while global_state % prime == 0:
                     global_state //= prime
