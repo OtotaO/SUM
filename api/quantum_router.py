@@ -53,6 +53,7 @@ from internal.algorithms.zk_semantics import ZKSemanticProver
 from internal.infrastructure.p2p_mesh import EpistemicMeshNetwork
 from internal.ensemble.mass_semantic_engine import MassSemanticEngine
 from internal.ensemble.confidence_calibrator import ConfidenceCalibrator
+from internal.ensemble.semantic_dedup import SemanticDeduplicator
 
 logger = logging.getLogger(__name__)
 
@@ -505,16 +506,35 @@ async def ingest_math_direct(
     new_state_product = 1
     added_axioms = []
 
+    # Phase 25: Semantic Deduplication
+    dedup = SemanticDeduplicator()
+    existing_axioms = kos.algebra.get_active_axioms(current_state) if current_state > 1 else []
+    skipped_duplicates = []
+
     for t in request.triplets:
         if len(t) == 3:
             s, p, o = [x.strip().lower() for x in t]
-            prime = kos.algebra.get_or_mint_prime(s, p, o)
             axiom = f"{s}||{p}||{o}"
+
+            # Check for near-duplicate before minting
+            if existing_axioms:
+                result = dedup.deduplicate(axiom, existing_axioms)
+                if result.is_duplicate:
+                    skipped_duplicates.append({
+                        "axiom": axiom,
+                        "duplicate_of": result.duplicate_of,
+                        "similarity": round(result.similarity, 3),
+                        "method": result.method,
+                    })
+                    continue
+
+            prime = kos.algebra.get_or_mint_prime(s, p, o)
 
             # Only process if genuinely new to both current state and this batch
             if current_state % prime != 0 and new_state_product % prime != 0:
                 new_state_product = math.lcm(new_state_product, prime)
                 added_axioms.append((prime, axiom))
+                existing_axioms.append(axiom)  # track within batch
 
     if added_axioms:
         new_state = math.lcm(current_state, new_state_product)
@@ -561,6 +581,8 @@ async def ingest_math_direct(
         "branch": branch,
         "new_global_state": str(kos.branches.get(branch, 1)),
         "axioms_added": len(added_axioms),
+        "duplicates_skipped": len(skipped_duplicates),
+        "skipped_details": skipped_duplicates,
         "user_id": user_id,
     }
 
