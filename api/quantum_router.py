@@ -233,6 +233,7 @@ class SyncRequest(BaseModel):
     """Client sends its Gödel integer as a string (BigInts exceed JS limits)."""
     client_state_integer: str
     branch: str = "main"
+    prime_scheme: Optional[str] = None  # Defaults to current scheme if absent
 
 
 class SearchRequest(BaseModel):
@@ -304,6 +305,7 @@ class LearnRequest(BaseModel):
 class SyncStateRequest(BaseModel):
     """P2P sync: accept a foreign Gödel Integer for O(1) LCM merge."""
     peer_state_integer: str
+    prime_scheme: Optional[str] = None  # Defaults to current scheme if absent
 
 
 class OuroborosRequest(BaseModel):
@@ -381,6 +383,14 @@ async def sync_client_state(
 
     effective_branch = user_id if user_id != "main" else request.branch
     branch_state = _get_branch_state(effective_branch)
+
+    # Scheme validation: reject incompatible clients
+    incoming_scheme = request.prime_scheme or CURRENT_SCHEME
+    try:
+        validate_scheme_or_raise(incoming_scheme, context="client sync")
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+
     client_state = parse_state(request.client_state_integer)
     delta = kos.algebra.calculate_network_delta(branch_state, client_state)
 
@@ -1121,7 +1131,7 @@ async def sync_peer_state(
         raise HTTPException(status_code=400, detail="Invalid peer state integer.")
 
     # Scheme validation: reject incompatible peers
-    peer_scheme = getattr(req, "prime_scheme", None) or CURRENT_SCHEME
+    peer_scheme = req.prime_scheme or CURRENT_SCHEME
     try:
         validate_scheme_or_raise(peer_scheme, context="peer sync")
     except ValueError as e:

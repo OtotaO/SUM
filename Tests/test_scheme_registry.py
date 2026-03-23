@@ -165,3 +165,132 @@ class TestAPIScheme:
         assert resp.status_code == 200
         data = resp.json()
         assert data["prime_scheme"] == "sha256_64_v1"
+
+
+# ─── End-to-End Protocol Enforcement Tests ────────────────────────────
+
+class TestProtocolEnforcement:
+    """These tests prove the scheme negotiation is real, not theater."""
+
+    @pytest.fixture
+    def booted_app(self, tmp_path):
+        from api.quantum_router import kos
+        orig = {
+            "ledger": kos.ledger,
+            "booted": kos.is_booted,
+            "branches": kos.branches,
+            "algebra": kos.algebra,
+        }
+        kos.ledger = AkashicLedger(str(tmp_path / "test_enforce.db"))
+        kos.is_booted = True
+        kos.branches = {"main": 1}
+        kos.algebra = GodelStateAlgebra()
+
+        from fastapi.testclient import TestClient
+        from quantum_main import app
+        yield TestClient(app)
+
+        kos.ledger = orig["ledger"]
+        kos.is_booted = orig["booted"]
+        kos.branches = orig["branches"]
+        kos.algebra = orig["algebra"]
+
+    def test_sync_rejects_incompatible_scheme(self, booted_app):
+        """/sync returns 409 when client sends an incompatible scheme."""
+        resp = booted_app.post(
+            "/api/v1/quantum/sync",
+            json={
+                "client_state_integer": "1",
+                "branch": "main",
+                "prime_scheme": "sha256_128_v2",
+            },
+        )
+        assert resp.status_code == 409
+        assert "Incompatible prime scheme" in resp.json()["detail"]
+
+    def test_sync_accepts_compatible_scheme(self, booted_app):
+        """/sync succeeds when client sends the current scheme."""
+        resp = booted_app.post(
+            "/api/v1/quantum/sync",
+            json={
+                "client_state_integer": "1",
+                "branch": "main",
+                "prime_scheme": "sha256_64_v1",
+            },
+        )
+        assert resp.status_code == 200
+
+    def test_sync_accepts_absent_scheme(self, booted_app):
+        """/sync succeeds when no scheme is sent (backward compat)."""
+        resp = booted_app.post(
+            "/api/v1/quantum/sync",
+            json={"client_state_integer": "1", "branch": "main"},
+        )
+        assert resp.status_code == 200
+
+    def test_sync_state_rejects_incompatible_scheme(self, booted_app):
+        """/sync/state returns 409 when peer sends an incompatible scheme."""
+        resp = booted_app.post(
+            "/api/v1/quantum/sync/state",
+            json={
+                "peer_state_integer": "1",
+                "prime_scheme": "sha256_128_v2",
+            },
+        )
+        assert resp.status_code == 409
+        assert "Incompatible prime scheme" in resp.json()["detail"]
+
+    def test_sync_state_accepts_compatible_scheme(self, booted_app):
+        """/sync/state succeeds with the current scheme."""
+        resp = booted_app.post(
+            "/api/v1/quantum/sync/state",
+            json={
+                "peer_state_integer": "1",
+                "prime_scheme": "sha256_64_v1",
+            },
+        )
+        assert resp.status_code == 200
+
+    def test_sync_state_accepts_absent_scheme(self, booted_app):
+        """/sync/state succeeds when no scheme is sent (backward compat)."""
+        resp = booted_app.post(
+            "/api/v1/quantum/sync/state",
+            json={"peer_state_integer": "1"},
+        )
+        assert resp.status_code == 200
+
+
+class TestBundleHexCrossCheck:
+    """Prove that state_integer_hex is not just advisory."""
+
+    @pytest.fixture
+    def codec(self, tmp_path):
+        from internal.ensemble.tome_generator import AutoregressiveTomeGenerator
+        from internal.infrastructure.canonical_codec import CanonicalCodec
+        algebra = GodelStateAlgebra()
+        tome_gen = AutoregressiveTomeGenerator(algebra)
+        return CanonicalCodec(algebra, tome_gen, signing_key="test-key")
+
+    def test_hex_tamper_detected(self, codec):
+        """If state_integer_hex is altered, import raises ValueError."""
+        bundle = codec.export_bundle(42)
+        assert bundle["state_integer"] == "42"
+        assert bundle["state_integer_hex"] == "0x2a"
+        # Tamper the hex
+        bundle["state_integer_hex"] = "0xff"
+        with pytest.raises(ValueError, match="does not match"):
+            codec.import_bundle(bundle)
+
+    def test_hex_consistent_passes(self, codec):
+        """Consistent hex/decimal passes fine."""
+        bundle = codec.export_bundle(255)
+        assert bundle["state_integer_hex"] == "0xff"
+        state = codec.import_bundle(bundle)
+        assert state == 255
+
+    def test_hex_absent_passes(self, codec):
+        """Bundles without state_integer_hex still import fine."""
+        bundle = codec.export_bundle(1)
+        del bundle["state_integer_hex"]
+        state = codec.import_bundle(bundle)
+        assert state == 1

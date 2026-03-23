@@ -351,6 +351,21 @@ class CanonicalCodec:
         validate_scheme_or_raise(bundle_scheme, context="bundle import")
 
         state = int(state_str)
+
+        # ── Hex cross-check: if state_integer_hex is present, it must agree ──
+        hex_str = bundle_dict.get("state_integer_hex")
+        if hex_str is not None:
+            try:
+                hex_val = int(hex_str, 16)
+            except (ValueError, TypeError):
+                raise ValueError(
+                    f"Bundle state_integer_hex is not valid hex: {hex_str!r}"
+                )
+            if hex_val != state:
+                raise ValueError(
+                    f"Bundle state_integer_hex ({hex_str}) does not match "
+                    f"state_integer ({state_str}). Possible tampering."
+                )
         logger.info(
             "Bundle imported: branch=%s, axioms=%s, scheme=%s, hmac=✓, ed25519=%s",
             bundle_dict.get("branch", "unknown"),
