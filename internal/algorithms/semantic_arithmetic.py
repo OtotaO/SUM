@@ -28,6 +28,15 @@ import sympy
 logger = logging.getLogger(__name__)
 
 
+def _get_zig_engine():
+    """Lazy import of the Zig FFI bridge singleton."""
+    try:
+        from internal.infrastructure.zig_bridge import zig_engine
+        return zig_engine
+    except ImportError:
+        return None
+
+
 class SemanticPrimeNumberTheorem:
     """
     The classical PNT states that the density of primes up to N is
@@ -112,14 +121,11 @@ class GodelStateAlgebra:
             A deterministic prime number unique to this axiom.
         """
         # ── Bare-Metal Fast Path (Zig C-ABI) ──
-        try:
-            from internal.infrastructure.zig_bridge import zig_engine
-            if zig_engine is not None:
-                result = zig_engine.get_deterministic_prime(axiom_key)
-                if result is not None:
-                    return result
-        except ImportError:
-            pass
+        zig = _get_zig_engine()
+        if zig is not None:
+            result = zig.get_deterministic_prime(axiom_key)
+            if result is not None:
+                return result
 
         # ── Legacy Python Fallback ──
         h = hashlib.sha256(axiom_key.encode('utf-8')).digest()
@@ -292,6 +298,20 @@ class GodelStateAlgebra:
         """
         if not state_integers:
             return 1
+
+        # ── Bare-Metal Fast Path (Zig BigInt LCM) ──
+        zig = _get_zig_engine()
+        if zig is not None:
+            result = state_integers[0]
+            for s in state_integers[1:]:
+                r = zig.bigint_lcm(result, s)
+                if r is None:
+                    break
+                result = r
+            else:
+                return result
+
+        # ── Legacy Python Fallback ──
         return math.lcm(*state_integers)
 
     # ------------------------------------------------------------------
@@ -315,6 +335,15 @@ class GodelStateAlgebra:
         """
         if hypothesis_state == 0:
             return False
+
+        # ── Bare-Metal Fast Path (Zig divisibility) ──
+        zig = _get_zig_engine()
+        if zig is not None:
+            result = zig.is_divisible_by(global_state, hypothesis_state)
+            if result is not None:
+                return result
+
+        # ── Legacy Python Fallback ──
         return global_state % hypothesis_state == 0
 
     # ------------------------------------------------------------------
@@ -383,8 +412,17 @@ class GodelStateAlgebra:
         if global_state % generated_state == 0:
             return []  # Zero hallucinations
 
-        # Isolate the exact product of all hallucinated primes.
-        shared_truth = math.gcd(global_state, generated_state)
+        # ── Bare-Metal Fast Path (Zig BigInt GCD) ──
+        zig = _get_zig_engine()
+        if zig is not None:
+            zig_gcd = zig.bigint_gcd(global_state, generated_state)
+            if zig_gcd is not None:
+                shared_truth = zig_gcd
+            else:
+                shared_truth = math.gcd(global_state, generated_state)
+        else:
+            shared_truth = math.gcd(global_state, generated_state)
+
         hallucinated_product = generated_state // shared_truth
 
         hallucinated_axioms: List[str] = []
@@ -488,7 +526,16 @@ class GodelStateAlgebra:
         if global_state == client_state:
             return {"add": [], "delete": []}
 
-        shared_truth = math.gcd(global_state, client_state)
+        # ── Bare-Metal Fast Path (Zig BigInt GCD) ──
+        zig = _get_zig_engine()
+        if zig is not None:
+            zig_gcd = zig.bigint_gcd(global_state, client_state)
+            if zig_gcd is not None:
+                shared_truth = zig_gcd
+            else:
+                shared_truth = math.gcd(global_state, client_state)
+        else:
+            shared_truth = math.gcd(global_state, client_state)
 
         # Primes the client is missing (server has, client doesn't)
         missing_product = global_state // shared_truth

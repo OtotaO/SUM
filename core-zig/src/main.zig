@@ -92,7 +92,7 @@ export fn sum_get_deterministic_prime(axiom_ptr: [*c]const u8, axiom_len: usize)
     return nextPrime(seed);
 }
 
-// ─── Tests ──────────────────────────────────────────────────────────
+// ─── Tests (Phase 17 — Prime Derivation) ────────────────────────────
 
 test "modPow basic" {
     try std.testing.expectEqual(@as(u64, 1), modPow(2, 10, 1023));
@@ -120,6 +120,230 @@ test "nextPrime basic" {
 test "deterministic prime for 'alice||likes||cats'" {
     const axiom = "alice||likes||cats";
     const prime = sum_get_deterministic_prime(axiom.ptr, axiom.len);
-    // Must match Python: sympy.nextprime(seed) where seed = big-endian first 8 bytes of SHA-256
     try std.testing.expectEqual(@as(u64, 14326936561644797201), prime);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// PHASE 17b — BigInt Arithmetic C-ABI Exports
+//
+// Arbitrary-precision LCM, GCD, modulo, and divisibility operations
+// using Zig's std.math.big.int.Managed. These are the mathematical
+// heartbeat of the Gödel-State algebra.
+//
+// Protocol:
+//   - Inputs: big-endian byte arrays representing unsigned integers
+//   - Output: big-endian byte array written to caller-provided buffer
+//   - Return: 0 = success, -1 = buffer too small, -2 = internal error
+//   - out_len: set to actual byte count of result
+// ═══════════════════════════════════════════════════════════════════════
+
+const Managed = std.math.big.int.Managed;
+
+/// Import a big-endian byte slice into a Managed big integer.
+fn bigintFromBytes(allocator: std.mem.Allocator, bytes: []const u8) !Managed {
+    var result = try Managed.init(allocator);
+    errdefer result.deinit();
+
+    if (bytes.len == 0) {
+        try result.set(0);
+        return result;
+    }
+
+    // Build the integer from big-endian bytes
+    try result.set(0);
+    for (bytes) |byte| {
+        // result = result * 256 + byte
+        var temp = try Managed.init(allocator);
+        defer temp.deinit();
+        try temp.set(256);
+        try result.mul(&result, &temp);
+
+        var byte_val = try Managed.init(allocator);
+        defer byte_val.deinit();
+        try byte_val.set(@as(u64, byte));
+        try result.add(&result, &byte_val);
+    }
+
+    return result;
+}
+
+/// Export a Managed big integer to big-endian bytes in a caller buffer.
+/// Returns the number of bytes written, or error.
+fn bigintToBytes(val: *const Managed, out: []u8) !usize {
+    // Handle zero
+    if (val.eqlZero()) {
+        if (out.len < 1) return error.BufferTooSmall;
+        out[0] = 0;
+        return 1;
+    }
+
+    const allocator = val.allocator;
+
+    // Extract bytes by repeated divmod 256
+    var temp = try val.clone();
+    defer temp.deinit();
+
+    var divisor = try Managed.initSet(allocator, 256);
+    defer divisor.deinit();
+
+    var bytes_buf: [65536]u8 = undefined;
+    var byte_count: usize = 0;
+
+    while (!temp.eqlZero()) {
+        if (byte_count >= bytes_buf.len) return error.BufferTooSmall;
+
+        var quotient = try Managed.init(allocator);
+        defer quotient.deinit();
+        var remainder = try Managed.init(allocator);
+        defer remainder.deinit();
+
+        try quotient.divFloor(&remainder, &temp, &divisor);
+
+        // Get the remainder as u8
+        const rem_limbs = remainder.limbs;
+        const rem_byte: u8 = if (remainder.eqlZero()) 0 else @as(u8, @intCast(rem_limbs[0] & 0xFF));
+        bytes_buf[byte_count] = rem_byte;
+        byte_count += 1;
+
+        try temp.copy(quotient.toConst());
+    }
+
+    if (byte_count > out.len) return error.BufferTooSmall;
+
+    // Reverse to big-endian
+    var i: usize = 0;
+    while (i < byte_count) : (i += 1) {
+        out[i] = bytes_buf[byte_count - 1 - i];
+    }
+
+    return byte_count;
+}
+
+/// BigInt GCD: gcd(a, b) → result bytes.
+/// Returns 0 on success, -1 if buffer too small, -2 on error.
+export fn sum_bigint_gcd(
+    a_ptr: [*c]const u8,
+    a_len: usize,
+    b_ptr: [*c]const u8,
+    b_len: usize,
+    out_ptr: [*c]u8,
+    out_cap: usize,
+    out_len: *usize,
+) i32 {
+    const allocator = std.heap.page_allocator;
+
+    var a = bigintFromBytes(allocator, a_ptr[0..a_len]) catch return -2;
+    defer a.deinit();
+    var b = bigintFromBytes(allocator, b_ptr[0..b_len]) catch return -2;
+    defer b.deinit();
+
+    // GCD via Euclidean algorithm
+    var result = Managed.init(allocator) catch return -2;
+    defer result.deinit();
+    result.gcd(&a, &b) catch return -2;
+
+    const written = bigintToBytes(&result, out_ptr[0..out_cap]) catch return -1;
+    out_len.* = written;
+    return 0;
+}
+
+/// BigInt LCM: lcm(a, b) = a * b / gcd(a, b) → result bytes.
+/// Returns 0 on success, -1 if buffer too small, -2 on error.
+export fn sum_bigint_lcm(
+    a_ptr: [*c]const u8,
+    a_len: usize,
+    b_ptr: [*c]const u8,
+    b_len: usize,
+    out_ptr: [*c]u8,
+    out_cap: usize,
+    out_len: *usize,
+) i32 {
+    const allocator = std.heap.page_allocator;
+
+    var a = bigintFromBytes(allocator, a_ptr[0..a_len]) catch return -2;
+    defer a.deinit();
+    var b = bigintFromBytes(allocator, b_ptr[0..b_len]) catch return -2;
+    defer b.deinit();
+
+    // gcd(a, b)
+    var g = Managed.init(allocator) catch return -2;
+    defer g.deinit();
+    g.gcd(&a, &b) catch return -2;
+
+    if (g.eqlZero()) {
+        // LCM(0, x) = 0
+        out_ptr[0] = 0;
+        out_len.* = 1;
+        return 0;
+    }
+
+    // product = a * b
+    var product = Managed.init(allocator) catch return -2;
+    defer product.deinit();
+    product.mul(&a, &b) catch return -2;
+
+    // lcm = product / gcd
+    var result = Managed.init(allocator) catch return -2;
+    defer result.deinit();
+    var rem = Managed.init(allocator) catch return -2;
+    defer rem.deinit();
+    result.divFloor(&rem, &product, &g) catch return -2;
+
+    // Ensure positive
+    result.setSign(true);
+
+    const written = bigintToBytes(&result, out_ptr[0..out_cap]) catch return -1;
+    out_len.* = written;
+    return 0;
+}
+
+/// BigInt modulo: a % b → result bytes.
+/// Returns 0 on success, -1 if buffer too small, -2 on error.
+export fn sum_bigint_mod(
+    a_ptr: [*c]const u8,
+    a_len: usize,
+    b_ptr: [*c]const u8,
+    b_len: usize,
+    out_ptr: [*c]u8,
+    out_cap: usize,
+    out_len: *usize,
+) i32 {
+    const allocator = std.heap.page_allocator;
+
+    var a = bigintFromBytes(allocator, a_ptr[0..a_len]) catch return -2;
+    defer a.deinit();
+    var b = bigintFromBytes(allocator, b_ptr[0..b_len]) catch return -2;
+    defer b.deinit();
+
+    var quotient = Managed.init(allocator) catch return -2;
+    defer quotient.deinit();
+    var remainder = Managed.init(allocator) catch return -2;
+    defer remainder.deinit();
+
+    quotient.divFloor(&remainder, &a, &b) catch return -2;
+
+    const written = bigintToBytes(&remainder, out_ptr[0..out_cap]) catch return -1;
+    out_len.* = written;
+    return 0;
+}
+
+/// Optimized: is state divisible by a 64-bit prime?
+/// Returns 1 if divisible, 0 if not, -2 on error.
+/// This avoids constructing a BigInt for the divisor.
+export fn sum_bigint_divisible_by_u64(
+    a_ptr: [*c]const u8,
+    a_len: usize,
+    prime: u64,
+) i32 {
+    if (prime == 0) return -2;
+
+    // Compute a mod prime using streaming modular arithmetic
+    // No BigInt needed for the divisor — just accumulate mod
+    var remainder: u128 = 0;
+    const bytes = a_ptr[0..a_len];
+    for (bytes) |byte| {
+        remainder = (remainder * 256 + byte) % prime;
+    }
+
+    return if (remainder == 0) 1 else 0;
 }
