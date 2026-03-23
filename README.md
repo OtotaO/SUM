@@ -15,33 +15,35 @@ Built on the formalisms of the **Semantic Prime Number Theorem** and **Gauge-The
 ## 🌌 Architecture
 
 ```text
-┌────────────────────────────────────────────────────────────────────────┐
-│                      Quantum Knowledge OS (SUM)                        │
-│                                                                        │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────────────┐  │
-│  │ Quantum UI   │  │ Quantum API  │  │ Autonomous Daemons           │  │
-│  │ quantum.html │  │ /state /sync │  │ • Subconscious Crystallizer  │  │
-│  │ vis-network  │  │ /ingest /zk  │  │ • P2P Holographic Mesh       │  │
-│  │ Telemetry HUD│  │ /branch      │  │ • Epistemic Arbiter          │  │
-│  └──────┬───────┘  └──────┬───────┘  └──────────────┬───────────────┘  │
-│         │                 │                         │                  │
-│  ┌──────┴─────────────────┴─────────────────────────┴───────────────┐  │
-│  │                   GlobalKnowledgeOS Singleton                    │  │
-│  ├──────────────────────────────────────────────────────────────────┤  │
-│  │ GodelStateAlgebra       │ Epistemic Engine    │ Multiverse       │  │
-│  │ • SHA-256 Primes        │ • Paradox Collapse  │ • Branching      │  │
-│  │ • LCM Merge / GCD Sync  │ • ZK Semantic Proof │ • Merging        │  │
-│  │ • GraphRAG              │ • Causal Cascades   │ • Time Travel    │  │
-│  ├─────────────────────────┴─────────────────────┴──────────────────┤  │
-│  │                      Akashic Ledger (SQLite)                     │  │
-│  │         Event-sourced • Crash-safe • Historically Replayable     │  │
-│  └──────────────────────────────────────────────────────────────────┘  │
-└────────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────┐
+│                       Quantum Knowledge OS (SUM)                          │
+│                                                                           │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────────────────┐ │
+│  │ Quantum UI   │  │ Quantum API  │  │ Autonomous Daemons               │ │
+│  │ quantum.html │  │ /state /sync │  │ • Subconscious Crystallizer      │ │
+│  │ vis-network  │  │ /ingest /zk  │  │ • P2P Holographic Mesh           │ │
+│  │ Telemetry HUD│  │ /branch      │  │ • Epistemic Arbiter              │ │
+│  └──────┬───────┘  └──────┬───────┘  └──────────────┬───────────────────┘ │
+│         │                 │                          │                    │
+│  ┌──────┴─────────────────┴──────────────────────────┴─────────────────┐  │
+│  │                    GlobalKnowledgeOS Singleton                      │  │
+│  ├────────────────────────────────────────────────────────────────────┤  │
+│  │ GodelStateAlgebra       │ Epistemic Engine    │ Multiverse          │  │
+│  │ • SHA-256 Primes        │ • Paradox Collapse  │ • Branching         │  │
+│  │ • LCM Merge / GCD Sync │ • ZK Semantic Proof │ • Merging           │  │
+│  │ • GraphRAG             │ • Causal Cascades   │ • Time Travel       │  │
+│  │ • Zig C-ABI Fast Path  │ • Deterministic     │                     │  │
+│  │   (Strangler Fig)      │   Arbiter (SHA-256) │                     │  │
+│  ├─────────────────────────┴─────────────────────┴────────────────────┤  │
+│  │                      Akashic Ledger (SQLite)                       │  │
+│  │         Event-sourced • Crash-safe • Historically Replayable       │  │
+│  └────────────────────────────────────────────────────────────────────┘  │
+└────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🧮 The 10-Phase Capabilities
+## 🧮 Core Capabilities
 
 ### 1. Gödel-State Algebra & SPNT
 
@@ -66,6 +68,8 @@ LLM-generated text is **mathematically verified** against the Gödel state. If t
 
 Maps the absolute certainty of discrete Gödel Primes to the fuzzy continuous space of Vector Embeddings. Semantic search (`cosine_similarity`) is mathematically filtered by `State % Prime == 0`, meaning deleted facts vanish instantly from search results.
 
+**Horizon III — Universal Vector Alignment:** Supports optional O(1) affine transformation matrices (W\*, b\*) enabling heterogeneous P2P nodes (Llama, Qwen, Mistral, etc.) to perfectly align their latent geometries into a single Canonical Geometry before discrete prime extraction.
+
 ### 4. The Akashic Ledger (Fidelity Persistence)
 
 An append-only SQLite event log (`MINT`, `MUL`, `DIV`). Provides **crash recovery** — the RAM-based Gödel BigInt can be perfectly reconstructed by replaying the mathematical trace.
@@ -85,7 +89,7 @@ Standard RAG requires O(N) vector scans. Quantum GraphRAG maintains a "Node Inte
 
 ### 8. Epistemic Superposition & Wave Function Collapse
 
-When mutually exclusive facts are ingested ("Alice lives in NY" vs "London"), the system detects Level 3 Curvature (a topological paradox) and enters Superposition. An LLM Arbiter acts as a logical judge, mathematically collapsing the wave function to a single verified truth, streamed live via Server-Sent Events (SSE).
+When mutually exclusive facts are ingested ("Alice lives in NY" vs "London"), the system detects Level 3 Curvature (a topological paradox) and enters Superposition. An LLM Arbiter acts as a logical judge, mathematically collapsing the wave function to a single verified truth, streamed live via Server-Sent Events (SSE). A `DeterministicArbiter` (SHA-256 lexicographic ordering) provides a zero-dependency fallback requiring no LLM.
 
 ### 9. The Multiverse of Meaning (Git for Truth)
 
@@ -97,15 +101,19 @@ Because the state is just an integer, branching a timeline is a simple integer c
   - **ZK Semantic Proofs**: Prove you know a fact using salted SHA-256 hashes of the quotient, without revealing your state integer.
   - **Decentralized P2P**: A background gossip daemon constantly syncs Gödel Integers with peer nodes, achieving a planetary hive-mind.
 
+### 11. Horizon III — Bare-Metal Singularity
+
+The `GodelStateAlgebra` core is being progressively migrated to **Zig** via the **Strangler Fig Pattern**. A compiled `libsum_core` shared library (`.dylib`/`.so`/`.dll`) exports C-ABI functions for deterministic prime derivation (SHA-256 → Miller-Rabin) at nanosecond speed. Python's `ctypes` loads the binary transparently — if present, the engine runs at bare-metal speed; if not, it falls back to `sympy` seamlessly with zero impact on correctness or CI.
+
 ---
 
 ## 🌅 Future Horizons
 
-SUM has completed its genesis phase. The road ahead expands into three frontiers:
+SUM has completed its genesis and hardening phases. The road ahead expands into three frontiers:
 
 1.  **Horizon I: Project EXOCORTEX (Continuous Human Digitization):** Wiring desktop and browser companion clients to stream daily human life directly into the `/ingest` API, compressing personal reality into a single, ever-growing Gödel Integer.
 2.  **Horizon II: The Babel Protocol (Planetary-Scale Truth):** Deploying thousands of headless `SUM` nodes to ingest Wikipedia, ArXiv, and global news—forcing the Epistemic Arbiter to collapse historical and scientific paradoxes into a Single Master Integer (Planetary Truth).
-3.  **Horizon III: Shor's Horizon (Quantum Hardware Execution):** Porting the core `GodelStateAlgebra` to GMP (C++/Rust) and eventually executing the Semantic Sieve natively on Physical Quantum Computers to achieve instantaneous semantic routing using Shor's Algorithm.
+3.  **Horizon III: Bare-Metal Supremacy (Zig → WASM → Quantum):** The Strangler Fig migration progressively replaces Python's math engine with Zig's zero-cost C-ABI. First target: deterministic primes ✅. Next targets: LCM/GCD state arithmetic, then first-class WebAssembly compilation enabling the entire OS to run natively inside a browser tab. The ultimate terminus: porting to physical quantum hardware via Shor's Algorithm for instantaneous semantic routing.
 
 ---
 
@@ -118,8 +126,11 @@ git clone https://github.com/OtotaO/SUM.git
 cd SUM
 pip install -r requirements-prod.txt
 
-# Run the 231+ test verification suite
+# Run the 354-test verification suite
 python -m pytest Tests/ -v
+
+# Run the 21-check Fortress gate
+python scripts/verify_fortress.py --json
 
 # Launch the Quantum UI & OS
 export OPENAI_API_KEY="sk-..."
@@ -127,6 +138,14 @@ uvicorn quantum_main:app --reload --port 8000
 ```
 
 Open `http://localhost:8000` to access the **Dashboard of Truth** (Vis-Network Graph, BigInt State Mirror, Live Telemetry).
+
+### 2. (Optional) Activate Bare-Metal Zig Core
+
+```bash
+brew install zig  # or your platform's package manager
+cd core-zig && zig build -Doptimize=ReleaseFast && cd ..
+# Engine will print: ⚡ BARE-METAL ZIG CORE ENGAGED ⚡
+```
 
 ---
 
@@ -139,6 +158,7 @@ All endpoints are mounted under `/api/v1/quantum/`. Every endpoint accepts an op
 | `GET` | `/state` | Returns the current Gödel integer |
 | `POST` | `/sync` | Network delta sync via GCD |
 | `POST` | `/ingest` | Tomes → Tags (Text to Math pipeline) |
+| `POST` | `/ingest/math` | Math-only ingestion (no LLM required) |
 | `POST` | `/extrapolate`| Tags → Tomes (Verified generation) |
 | `POST` | `/query` | GraphRAG retrieval |
 | `POST` | `/search` | Fuzzy semantic search via Vector Bridge |
@@ -158,26 +178,40 @@ SUM/
 ├── internal/
 │   ├── algorithms/
 │   │   ├── semantic_arithmetic.py    # GodelStateAlgebra, SPNT, Fractal Zoom
+│   │   ├── syntactic_sieve.py        # DeterministicSieve — spaCy NLP → (S,P,O) triplets
 │   │   └── zk_semantics.py           # Zero-Knowledge Entailment Proofs
 │   ├── ensemble/
-│   │   ├── epistemic_loop.py         # Hallucination-proof generation
-│   │   ├── vector_bridge.py          # Continuous↔Discrete bridge
+│   │   ├── epistemic_loop.py         # Hallucination-proof generation loop
+│   │   ├── vector_bridge.py          # Continuous↔Discrete bridge + Affine Alignment
 │   │   ├── autonomous_agent.py       # Subconscious Crystallizer daemon
-│   │   ├── epistemic_arbiter.py      # Wave Function Collapse & SSE
-│   │   ├── gauge_orchestrator.py     # L1/L2/L3 Commutativity Hierarchy
-│   │   ├── causal_triggers.py        # Semantic Smart Contracts
+│   │   ├── epistemic_arbiter.py      # Wave Function Collapse (LLM + Deterministic)
+│   │   ├── gauge_orchestrator.py     # L1/L2/L3 Curvature Commutativity Hierarchy
+│   │   ├── causal_triggers.py        # Semantic Smart Contracts (deductive cascades)
+│   │   ├── ouroboros.py              # OuroborosVerifier — round-trip conservation proof
+│   │   ├── tome_generator.py         # AutoregressiveTomeGenerator — canonical tomes
 │   │   └── live_llm_adapter.py       # OpenAI structured outputs adapter
 │   └── infrastructure/
 │       ├── akashic_ledger.py         # Event-sourced crash recovery & Time Travel
 │       ├── p2p_mesh.py               # Decentralized Gossip Protocol
 │       ├── canonical_codec.py        # Signed bundle transport (HMAC + Ed25519)
-│       └── key_manager.py             # Ed25519 keypair lifecycle management
+│       ├── key_manager.py            # Ed25519 keypair lifecycle management
+│       ├── rate_limiter.py           # Sliding window per-IP rate limiter
+│       └── zig_bridge.py            # Horizon III: Zig C-ABI FFI bridge (ctypes)
+├── core-zig/
+│   ├── build.zig                     # Zig build script for libsum_core
+│   └── src/
+│       └── main.zig                  # Bare-metal primes: SHA-256 → Miller-Rabin (C-ABI)
 ├── api/
-│   └── quantum_router.py             # FastAPI routing and GlobalKnowledgeOS
-├── mass_semantic_engine.py           # MapReduce Tomes↔Tags pipeline
+│   └── quantum_router.py            # FastAPI routing and GlobalKnowledgeOS
 ├── quantum_main.py                   # ASGI entrypoint (FastAPI + lifespan boot)
+├── mass_semantic_engine.py           # MapReduce Tomes↔Tags pipeline
 ├── standalone_verifier/
 │   └── verify.js                     # Independent Node.js semantic witness
+├── scripts/
+│   ├── verify_fortress.py            # 21-check CI verification gate
+│   ├── launch_swarm.sh               # Local P2P swarm launcher
+│   ├── babel_harvester.py            # RSS→math ingestion for Babel Protocol
+│   └── ignite_mesh.py                # P2P mesh ignition script
 ├── docs/
 │   ├── CANONICAL_ABI_SPEC.md         # Normative protocol specification
 │   ├── PROOF_BOUNDARY.md             # What is proven vs aspirational
@@ -186,9 +220,10 @@ SUM/
 ├── static/
 │   ├── quantum.html                  # Quantum UI (vis-network, Telemetry HUD)
 │   └── js/godel_client.js            # Browser-side Gödel sync client
+├── experiments.tsv                   # Autoresearch experiment ledger
 └── Tests/
     ├── fixtures/                      # Frozen golden reference vectors
-    └── test_*.py                      # 324 Passing Verification Tests
+    └── test_*.py                      # 354 Passing Verification Tests
 ```
 
 ---
@@ -196,7 +231,7 @@ SUM/
 ## 🛡️ Mathematical Verification Suite
 
 ```text
-324 passed · 15/15 fortress checks
+354 passed · 21/21 fortress checks
 
 ─── Core Hardening (Process Intensification) ───
 ZK Semantic Proofs .................... 16 ✓  (round-trip, tamper, non-linkability, stress)
@@ -204,27 +239,44 @@ Akashic Ledger Replay ................. 8  ✓  (crash recovery, time-travel, DI
 Causal Cascade Verification ........... 6  ✓  (multi-hop, cycle termination, idempotency)
 Gauge Orchestrator .................... 10 ✓  (L1/L2/L3 detection, merge, arbitration)
 Extraction Adversarial ................ 15 ✓  (HTML/SQL injection, Unicode, 10K-word stress)
+Deterministic Arbiter ................. 7  ✓  (SHA-256 lexicographic, no LLM dependency)
+Rate Limiter .......................... 8  ✓  (sliding window, per-IP, burst protection)
 Cross-Instance & Stability ............ 24 ✓  (collision, tome ordering, timestamp, version)
 
 ─── Phase Tests ───
-Ed25519 Attestation ................... 11 ✓  (dual-sig, tamper, compat, key mgmt)
-Witness Matrix Hardening .............. 7  ✓  (frozen vectors, cross-runtime)
-Property & Adversarial Tests .......... 43 ✓  (algebra invariants, bundle hardening)
-Phase 16 — Independent Witness ........ 21 ✓  (cross-runtime verification)
+Phase 17 — Horizon III ................ 15 ✓  (affine alignment, Zig FFI, Strangler Fig)
+Phase 16 — Independent Witness ........ 21 ✓  (cross-runtime verification, frozen vectors)
 Phase 15 — Canonical Semantic ABI ..... 22 ✓  (versioning, bundles, JWT, multi-hop)
 Phase 14 — Ouroboros Round-Trip ....... 16 ✓  (encode/decode conservation)
-Phase 13 — JWT Multi-Tenancy .......... 3  ✓
+Phase 13 — JWT Multi-Tenancy .......... 12 ✓  (token gen, isolation, branch safety)
+Ed25519 Attestation ................... 11 ✓  (dual-sig, tamper, compat, key mgmt)
+Witness Matrix Hardening .............. 7  ✓  (frozen vectors, cross-runtime)
+Property & Adversarial Tests .......... 46 ✓  (algebra invariants, bundle hardening)
 Phase 10 — Chronos & Mesh ............. 17 ✓
 Phase 9 — Multiverse & Causal Triggers  21 ✓
 Phase 8 — Wave Function Collapse ...... 8  ✓
 Phase 7 — GraphRAG + Daemon ........... 6  ✓
 Phase 6 — Fractal Crystallization ..... 5  ✓
-Phase 5 — Gödel Sync Protocol + API ... 7  ✓
 Phase 4 — Akashic Ledger .............. 3  ✓
 Phase 3 — Temporal CRUD + Vectors ..... 12 ✓
 Phase 2 — Epistemic Feedback Loop ..... 7  ✓
 Phase 1 — SPNT + Gödel Algebra ........ 15 ✓
 ```
+
+### Threat Model Coverage
+
+| Vector | Status |
+|--------|--------|
+| Bundle tampering | ✅ HMAC-SHA256 + Ed25519 |
+| State/tome mismatch | ✅ Witness verification |
+| Version mismatch | ✅ Version gate |
+| Malformed bundles | ✅ Field validation |
+| Public authenticity | ✅ Ed25519 (self-asserted) |
+| Key compromise | ✅ Rotation + archive |
+| Adversarial extraction | ✅ Hardened sieve + stress tests |
+| Collision replay | ✅ 1000-axiom cross-instance test |
+| Contradiction governance | ✅ DeterministicArbiter (SHA-256) |
+| Resource exhaustion | ✅ Bundle limits + rate limiter |
 
 ---
 
@@ -240,8 +292,9 @@ OPENAI_API_KEY=sk-...    # Required for LLM features (ingest/extrapolate/search/
 1.  Fork it
 2.  Create your feature branch (`git checkout -b feature/holographic-expansion`)
 3.  Run the test suite (`python -m pytest Tests/ -v`)
-4.  Commit your changes
-5.  Push and open a Pull Request
+4.  Run the fortress gate (`python scripts/verify_fortress.py --json`)
+5.  Commit your changes
+6.  Push and open a Pull Request
 
 ## 📜 License
 
