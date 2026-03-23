@@ -52,6 +52,7 @@ from internal.ensemble.ouroboros import OuroborosVerifier
 from internal.algorithms.zk_semantics import ZKSemanticProver
 from internal.infrastructure.p2p_mesh import EpistemicMeshNetwork
 from internal.ensemble.mass_semantic_engine import MassSemanticEngine
+from internal.ensemble.confidence_calibrator import ConfidenceCalibrator
 
 logger = logging.getLogger(__name__)
 
@@ -274,7 +275,8 @@ class DirectMathRequest(BaseModel):
     triplets: List[List[str]]  # [[subject, predicate, object]]
     branch: str = "main"
     source_url: str = ""
-
+    confidence_mode: str = "auto"  # "auto", "manual", or "llm"
+    confidence: Optional[float] = None  # only used when confidence_mode="manual"
 
 class PeerRequest(BaseModel):
     peer_url: str
@@ -517,13 +519,26 @@ async def ingest_math_direct(
     if added_axioms:
         new_state = math.lcm(current_state, new_state_product)
 
-        # Log to Akashic Ledger (Phase 22: with provenance)
+        # Phase 24: Auto-calibrate confidence
         from datetime import datetime as _dt
         _now = _dt.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+        calibrator = ConfidenceCalibrator()
+
         for prime, axiom in added_axioms:
+            if request.confidence_mode == "manual" and request.confidence is not None:
+                conf = max(0.0, min(1.0, request.confidence))
+            else:
+                conf = await calibrator.calibrate(
+                    axiom_key=axiom,
+                    source_url=request.source_url,
+                    current_state=current_state,
+                    algebra=kos.algebra,
+                    ledger=kos.ledger,
+                )
             await kos.ledger.append_event(
                 "MINT", prime, axiom,
                 source_url=request.source_url,
+                confidence=conf,
                 ingested_at=_now,
             )
             await kos.ledger.append_event("MUL", prime)

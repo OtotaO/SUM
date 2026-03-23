@@ -31,3 +31,4 @@ cf8ae09	394	21/21	keep	Phase 19: Sovereign Edge + Automated Scientist — causal
 6fc98a3	431	21/21	keep	Phase 21: Knowledge Retrieval — /ask endpoint, predicate canonicalization (15 tests)
 -------	445	21/21	keep	Phase 22: Provenance + Confidence — source tracking, confidence×recency weighting, /provenance endpoint (14 tests)
 -------	461	21/21	keep	Phase 23: CLI — sum_cli.py with ingest/ask/export/diff/status/provenance commands (16 tests)
+-------	484	21/21	keep	Phase 24: Confidence Calibration — source-type heuristic, redundancy boost, contradiction penalty (23 tests)

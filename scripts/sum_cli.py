@@ -36,6 +36,7 @@ import click
 
 from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
 from internal.infrastructure.akashic_ledger import AkashicLedger
+from internal.ensemble.confidence_calibrator import ConfidenceCalibrator
 
 
 # ─── Shared boot context ─────────────────────────────────────────────
@@ -60,7 +61,7 @@ def _boot_sync():
 # ─── CLI Group ────────────────────────────────────────────────────────
 
 @click.group()
-@click.version_option(version="0.23.0", prog_name="sum")
+@click.version_option(version="0.24.0", prog_name="sum")
 def cli():
     """SUM — Quantum Knowledge OS CLI
 
@@ -101,7 +102,7 @@ def status():
 @cli.command()
 @click.argument("source")
 @click.option("--source-url", default="", help="Provenance URL for this content")
-@click.option("--confidence", default=0.5, type=float, help="Confidence score [0.0–1.0]")
+@click.option("--confidence", default=None, type=float, help="Manual confidence [0.0–1.0]. Omit for auto-calibration.")
 def ingest(source, source_url, confidence):
     """Ingest triplets from a file or inline text.
 
@@ -138,16 +139,26 @@ def ingest(source, source_url, confidence):
 
     async def _ingest():
         nonlocal state, added
+        calibrator = ConfidenceCalibrator()
         for s, p, o in triplets:
             s, p, o = s.strip().lower(), p.strip().lower(), o.strip().lower()
             prime = algebra.get_or_mint_prime(s, p, o)
             axiom = f"{s}||{algebra._canonicalize_predicate(p)}||{o}"
             if state % prime != 0:
+                # Phase 24: auto-calibrate or use manual
+                conf = await calibrator.calibrate(
+                    axiom_key=axiom,
+                    source_url=source_url,
+                    current_state=state,
+                    algebra=algebra,
+                    ledger=ledger,
+                    manual_confidence=confidence,
+                )
                 state = math.lcm(state, prime)
                 await ledger.append_event(
                     "MINT", prime, axiom,
                     source_url=source_url,
-                    confidence=confidence,
+                    confidence=conf,
                     ingested_at=now,
                 )
                 await ledger.append_event("MUL", prime)

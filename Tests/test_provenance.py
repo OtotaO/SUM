@@ -198,7 +198,7 @@ class TestIngestMathProvenance:
             ).fetchone()
         assert row is not None
         assert row[0] == "https://nasa.gov/solar-system"
-        assert row[1] == pytest.approx(0.5)  # default
+        assert row[1] == pytest.approx(0.85)  # auto-calibrated: .gov domain
         assert len(row[2]) > 0  # ingested_at is set
 
     def test_ingest_math_empty_source_url(self, booted_app, tmp_path):
