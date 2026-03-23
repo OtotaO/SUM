@@ -153,6 +153,12 @@ class TestIngestMathProvenance:
     def booted_app(self, tmp_path):
         """Create a test client with a booted KOS using a temp DB."""
         from api.quantum_router import kos
+        # Save original state
+        orig_ledger = kos.ledger
+        orig_booted = kos.is_booted
+        orig_branches = kos.branches
+        orig_algebra = kos.algebra
+
         # Use temp DB so tests don't pollute production
         db_path = str(tmp_path / "test_ingest.db")
         kos.ledger = AkashicLedger(db_path)
@@ -162,7 +168,13 @@ class TestIngestMathProvenance:
 
         from fastapi.testclient import TestClient
         from quantum_main import app
-        return TestClient(app)
+        yield TestClient(app)
+
+        # Restore original state
+        kos.ledger = orig_ledger
+        kos.is_booted = orig_booted
+        kos.branches = orig_branches
+        kos.algebra = orig_algebra
 
     def test_ingest_math_stores_source_url(self, booted_app, tmp_path):
         """POST /ingest/math with source_url stores it in the ledger."""
@@ -215,6 +227,11 @@ class TestAskProvenance:
     def booted_app(self, tmp_path):
         """Create a test client with axioms that have different confidence."""
         from api.quantum_router import kos
+        orig_ledger = kos.ledger
+        orig_booted = kos.is_booted
+        orig_branches = kos.branches
+        orig_algebra = kos.algebra
+
         db_path = str(tmp_path / "test_ask.db")
         kos.ledger = AkashicLedger(db_path)
         kos.is_booted = True
@@ -251,7 +268,12 @@ class TestAskProvenance:
 
         from fastapi.testclient import TestClient
         from quantum_main import app
-        return TestClient(app)
+        yield TestClient(app)
+
+        kos.ledger = orig_ledger
+        kos.is_booted = orig_booted
+        kos.branches = orig_branches
+        kos.algebra = orig_algebra
 
     def test_ask_includes_provenance(self, booted_app):
         """Matches include source_url and confidence."""
@@ -289,6 +311,11 @@ class TestProvenanceEndpoint:
     @pytest.fixture
     def booted_app(self, tmp_path):
         from api.quantum_router import kos
+        orig_ledger = kos.ledger
+        orig_booted = kos.is_booted
+        orig_branches = kos.branches
+        orig_algebra = kos.algebra
+
         db_path = str(tmp_path / "test_prov.db")
         kos.ledger = AkashicLedger(db_path)
         kos.is_booted = True
@@ -311,7 +338,12 @@ class TestProvenanceEndpoint:
 
         from fastapi.testclient import TestClient
         from quantum_main import app
-        return TestClient(app)
+        yield TestClient(app)
+
+        kos.ledger = orig_ledger
+        kos.is_booted = orig_booted
+        kos.branches = orig_branches
+        kos.algebra = orig_algebra
 
     def test_provenance_returns_chain(self, booted_app):
         """GET /provenance/earth||is_a||planet returns the chain."""

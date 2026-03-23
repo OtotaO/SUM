@@ -136,8 +136,13 @@ class TestAskEndpoint:
     def booted_app(self):
         """Create a test client with a booted KOS."""
         from api.quantum_router import kos
+        orig_booted = kos.is_booted
+        orig_branches = kos.branches
+        orig_algebra = kos.algebra
+
         kos.is_booted = True
         kos.branches = {"main": 1}
+        kos.algebra = GodelStateAlgebra()
 
         # Ingest some test axioms
         p1 = kos.algebra.get_or_mint_prime("python", "is_a", "programming_language")
@@ -147,7 +152,11 @@ class TestAskEndpoint:
 
         from fastapi.testclient import TestClient
         from quantum_main import app
-        return TestClient(app)
+        yield TestClient(app)
+
+        kos.is_booted = orig_booted
+        kos.branches = orig_branches
+        kos.algebra = orig_algebra
 
     def test_ask_returns_matches(self, booted_app):
         """Asking about 'python' should return python-related axioms."""
