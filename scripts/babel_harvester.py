@@ -34,7 +34,7 @@ from internal.algorithms.syntactic_sieve import DeterministicSieve
 # Generate a long-lived harvester service token offline using the same
 # secret as the API.  This gives the harvester its own isolated branch.
 
-SECRET_KEY = os.getenv("SUM_JWT_SECRET", "quantum_supremacy_secret")
+SECRET_KEY = os.getenv("SUM_JWT_SECRET", "quantum_supremacy_secret_key_minimum_32b")
 harvester_token = jwt.encode(
     {"sub": "babel_harvester", "exp": datetime.utcnow() + timedelta(days=365)},
     SECRET_KEY,

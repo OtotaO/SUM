@@ -181,7 +181,7 @@ kos = GlobalKnowledgeOS()
 
 # ─── JWT Sovereign Tenancy ────────────────────────────────────────────
 
-SECRET_KEY = os.getenv("SUM_JWT_SECRET", "quantum_supremacy_secret")
+SECRET_KEY = os.getenv("SUM_JWT_SECRET", "quantum_supremacy_secret_key_minimum_32b")
 ALGORITHM = "HS256"
 
 
