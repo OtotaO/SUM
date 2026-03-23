@@ -126,7 +126,7 @@ git clone https://github.com/OtotaO/SUM.git
 cd SUM
 pip install -r requirements-prod.txt
 
-# Run the 354-test verification suite
+# Run the 376-test verification suite
 python -m pytest Tests/ -v
 
 # Run the 21-check Fortress gate
@@ -223,7 +223,7 @@ SUM/
 ├── experiments.tsv                   # Autoresearch experiment ledger
 └── Tests/
     ├── fixtures/                      # Frozen golden reference vectors
-    └── test_*.py                      # 354 Passing Verification Tests
+    └── test_*.py                      # 376 Passing Verification Tests
 ```
 
 ---
@@ -231,7 +231,7 @@ SUM/
 ## 🛡️ Mathematical Verification Suite
 
 ```text
-354 passed · 21/21 fortress checks
+376 passed · 21/21 fortress checks
 
 ─── Core Hardening (Process Intensification) ───
 ZK Semantic Proofs .................... 16 ✓  (round-trip, tamper, non-linkability, stress)
@@ -244,6 +244,7 @@ Rate Limiter .......................... 8  ✓  (sliding window, per-IP, burst p
 Cross-Instance & Stability ............ 24 ✓  (collision, tome ordering, timestamp, version)
 
 ─── Phase Tests ───
+Phase 17b — BigInt Zig C-ABI .......... 22 ✓  (LCM, GCD, mod, divisibility, consistency)
 Phase 17 — Horizon III ................ 15 ✓  (affine alignment, Zig FFI, Strangler Fig)
 Phase 16 — Independent Witness ........ 21 ✓  (cross-runtime verification, frozen vectors)
 Phase 15 — Canonical Semantic ABI ..... 22 ✓  (versioning, bundles, JWT, multi-hop)

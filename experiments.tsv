@@ -19,3 +19,4 @@ b13858b	245	15/15	keep	dos defense bundle size limits
 -------32421/21keepthreat model update + CI fortress gate
 -------	339	21/21	keep	deterministic arbiter + rate limiter (15 tests)
 ec87815	354	21/21	keep	Phase 17: Horizon III — Zig C-ABI + affine vector alignment (15 tests)
+abc0cf7	376	21/21	keep	Phase 17b: Strangler Fig BigInt — LCM/GCD/mod/divisibility (22 tests)
