@@ -233,7 +233,7 @@ SUM/
 ├── experiments.tsv                   # Autoresearch experiment ledger
 └── Tests/
     ├── fixtures/                      # Frozen golden reference vectors
-    └── test_*.py                      # 591 Passing Verification Tests
+    └── test_*.py                      # 608 Passing Verification Tests
 ```
 
 ---
@@ -281,6 +281,7 @@ Stage 1 — Dual-Format Transport ....... 18 ✓  (hex companion fields, parse_s
 Stage 2 — Scheme Versioning ........... 27 ✓  (scheme registry, protocol enforcement, hex cross-check)
 Stage 3A — 128-Bit Shadow ............. 28 ✓  (v2 reference vectors, Python↔Node parity, BPSW, collision policy)
 Stage 4 — Evidence Enrichment ......... 12 ✓  (hedging detection, certainty calibration, annotated triplets)
+Stage 5 — Resource Guards ............. 17 ✓  (payload limits, HTTP 413, operator-readable errors)
 ```
 
 ### Threat Model Coverage
