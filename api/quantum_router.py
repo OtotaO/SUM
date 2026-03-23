@@ -51,7 +51,7 @@ from internal.ensemble.tome_generator import AutoregressiveTomeGenerator
 from internal.ensemble.ouroboros import OuroborosVerifier
 from internal.algorithms.zk_semantics import ZKSemanticProver
 from internal.infrastructure.p2p_mesh import EpistemicMeshNetwork
-from mass_semantic_engine import MassSemanticEngine
+from internal.legacy_api.mass_semantic_engine import MassSemanticEngine
 
 logger = logging.getLogger(__name__)
 

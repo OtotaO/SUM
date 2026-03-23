@@ -7,7 +7,7 @@ from typing import Dict, Any, Optional
 import json
 import time
 from functools import wraps
-from knowledge_crystallizer import (
+from internal.legacy_api.knowledge_crystallizer import (
     KnowledgeCrystallizer, 
     CrystallizationConfig,
     DensityLevel,

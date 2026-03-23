@@ -27,7 +27,7 @@ jobs:
       working-directory: core-zig
 
   mathematical-verification:
-    name: Python Gödel-State Algebra (376 tests)
+    name: Python Gödel-State Algebra (384 tests)
     needs: zig-core
     runs-on: ubuntu-latest
     steps:

@@ -18,8 +18,8 @@ from flask import Blueprint, request, jsonify, Response, stream_with_context
 from threading import Lock
 
 from web.middleware import rate_limit, validate_json_input
-from config import active_config
-from summarization_engine import BasicSummarizationEngine, AdvancedSummarizationEngine, HierarchicalDensificationEngine
+from internal.legacy_api.config import active_config
+from internal.legacy_api.summarization_engine import BasicSummarizationEngine, AdvancedSummarizationEngine, HierarchicalDensificationEngine
 from unlimited_text_processor import process_unlimited_text, get_unlimited_processor
 from api.auth import optional_api_key, require_api_key
 
@@ -276,7 +276,7 @@ def analyze_topics():
 def get_cache_stats():
     """Get cache statistics."""
     try:
-        from smart_cache import get_cache
+        from internal.legacy_api.smart_cache import get_cache
         cache = get_cache()
         stats = cache.get_stats()
         return jsonify(stats)
@@ -290,7 +290,7 @@ def get_cache_stats():
 def clear_cache():
     """Clear the cache."""
     try:
-        from smart_cache import get_cache
+        from internal.legacy_api.smart_cache import get_cache
         cache = get_cache()
 
         # Get optional parameters

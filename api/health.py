@@ -131,7 +131,7 @@ class HealthMonitor:
         
         # Check summarization engine
         try:
-            from summarization_engine import BasicSummarizationEngine
+            from internal.legacy_api.summarization_engine import BasicSummarizationEngine
             engine = BasicSummarizationEngine()
             test_result = engine.process_text("Test", {"maxTokens": 10})
             components['summarization_engine'] = {

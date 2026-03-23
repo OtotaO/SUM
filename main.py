@@ -4,7 +4,7 @@ Simple main entry point without circular imports
 import time
 import logging
 from flask import Flask
-from config import active_config
+from internal.legacy_api.config import active_config
 
 # Import only the working blueprints
 from api.summarization import summarization_bp

@@ -18,7 +18,7 @@ import time
 from typing import Dict, Any, List
 
 from mass_document_engine import MassDocumentEngine, StreamingMassProcessor
-from config import active_config
+from internal.legacy_api.config import active_config
 
 logger = logging.getLogger(__name__)
 mass_bp = Blueprint('mass_processing', __name__)

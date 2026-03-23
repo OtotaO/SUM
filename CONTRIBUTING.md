@@ -24,7 +24,7 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-prod.txt
 python -m spacy download en_core_web_sm
 
-# Run the 376-test verification suite
+# Run the 384-test verification suite
 python -m pytest Tests/ -v
 
 # Run the 21-check Fortress gate
@@ -50,7 +50,7 @@ python -m pytest Tests/ -v  # Look for "⚡ BARE-METAL ZIG CORE ENGAGED ⚡"
 
 | Gate | Command | Expected |
 |------|---------|----------|
-| Test Suite | `python -m pytest Tests/ -v` | 376 passed |
+| Test Suite | `python -m pytest Tests/ -v` | 384 passed |
 | Fortress | `python scripts/verify_fortress.py --json` | 21/21 |
 | Zig Tests | `cd core-zig && zig build test` | All pass |
 
@@ -64,7 +64,7 @@ internal/
 ├── ensemble/       # Higher-order systems (arbiter, ouroboros, triggers)
 ├── infrastructure/ # Persistence, FFI, transport (akashic, zig_bridge, codec)
 core-zig/           # Bare-metal Zig core (C-ABI exports)
-Tests/              # 376 verified tests
+Tests/              # 384 verified tests
 scripts/            # Fortress gate, swarm launchers
 ```
 

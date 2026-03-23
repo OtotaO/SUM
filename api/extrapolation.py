@@ -11,8 +11,8 @@ from typing import Dict, Any, List, Optional
 import json
 
 # Import the core extrapolation engine
-from extrapolation_engine import ExtrapolationEngine, ExtrapolationConfig
-from llm_backend import llm_backend
+from internal.legacy_api.extrapolation_engine import ExtrapolationEngine, ExtrapolationConfig
+from internal.legacy_api.llm_backend import llm_backend
 
 logger = logging.getLogger(__name__)
 

@@ -16,9 +16,9 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # from graph_rag_crystallizer import GraphRAGCrystallizer
-from multi_agent_orchestrator import MultiAgentOrchestrator
+from internal.legacy_api.multi_agent_orchestrator import MultiAgentOrchestrator
 from raptor_hierarchical import RAPTORBuilder, RAPTORQueryEngine
-from knowledge_crystallizer import KnowledgeCrystallizer, CrystallizationConfig, DensityLevel
+from internal.legacy_api.knowledge_crystallizer import KnowledgeCrystallizer, CrystallizationConfig, DensityLevel
 
 logger = logging.getLogger(__name__)
 

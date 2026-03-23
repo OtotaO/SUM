@@ -19,8 +19,8 @@ from flask import Blueprint, request, jsonify, current_app
 from werkzeug.utils import secure_filename
 
 from web.middleware import rate_limit, allowed_file
-from config import active_config
-from summarization_engine import (
+from internal.legacy_api.config import active_config
+from internal.legacy_api.summarization_engine import (
     SummarizationEngine, 
     BasicSummarizationEngine, 
     AdvancedSummarizationEngine, 

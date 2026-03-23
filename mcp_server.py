@@ -28,15 +28,15 @@ except ImportError:
     class ToolResult:
         pass
 
-from summarization_engine import (
+from internal.legacy_api.summarization_engine import (
     BasicSummarizationEngine,
     AdvancedSummarizationEngine,
     HierarchicalDensificationEngine
 )
-from extrapolation_engine import ExtrapolationEngine, ExtrapolationConfig
+from internal.legacy_api.extrapolation_engine import ExtrapolationEngine, ExtrapolationConfig
 from unlimited_text_processor import get_unlimited_processor
-from language_detector import detect_language
-from smart_cache import get_cache
+from internal.legacy_api.language_detector import detect_language
+from internal.legacy_api.smart_cache import get_cache
 
 logger = logging.getLogger(__name__)
 

@@ -1,0 +1,5 @@
+{
+  "executionEnvironments": [{ "root": "." }],
+  "extraPaths": ["."],
+  "reportMissingImports": "warning"
+}

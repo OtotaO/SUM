@@ -17,7 +17,7 @@ import traceback
 from asgiref.sync import async_to_sync
 
 # Import llm_backend for streaming support
-from llm_backend import llm_backend, ModelProvider
+from internal.legacy_api.llm_backend import llm_backend, ModelProvider
 
 web_compat_bp = Blueprint('web_compat', __name__)
 
