@@ -127,7 +127,7 @@ git clone https://github.com/OtotaO/SUM.git
 cd SUM
 pip install -r requirements-prod.txt
 
-# Run the 579 tests verification suite
+# Run the 641 tests verification suite
 python -m pytest Tests/ -v
 
 # Run the 21-check Fortress gate
@@ -185,6 +185,7 @@ SUM/
 │   │   ├── semantic_arithmetic.py    # GodelStateAlgebra, SPNT, Fractal Zoom
 │   │   ├── syntactic_sieve.py        # DeterministicSieve — spaCy NLP → (S,P,O) triplets
 │   │   ├── zk_semantics.py           # Zero-Knowledge Entailment Proofs
+│   │   ├── predicate_canon.py        # PredicateCanonicalizer — synonym normalization
 │   │   └── causal_discovery.py       # Topological inference via transitive closure
 │   ├── ensemble/
 │   │   ├── epistemic_loop.py         # Hallucination-proof generation loop
@@ -195,6 +196,9 @@ SUM/
 │   │   ├── causal_triggers.py        # Semantic Smart Contracts (deductive cascades)
 │   │   ├── ouroboros.py              # OuroborosVerifier — round-trip conservation proof
 │   │   ├── tome_generator.py         # AutoregressiveTomeGenerator — canonical tomes
+│   │   ├── confidence_calibrator.py  # Multi-signal confidence scoring
+│   │   ├── mass_semantic_engine.py   # Mass semantic operations engine
+│   │   ├── semantic_dedup.py         # Predicate-aware deduplication
 │   │   ├── live_llm_adapter.py       # OpenAI structured outputs adapter
 │   │   └── automated_scientist.py    # Autonomous deduction daemon (15s cycles)
 │   └── infrastructure/
@@ -203,6 +207,9 @@ SUM/
 │       ├── canonical_codec.py        # Signed bundle transport (HMAC + Ed25519)
 │       ├── key_manager.py            # Ed25519 keypair lifecycle management
 │       ├── rate_limiter.py           # Sliding window per-IP rate limiter
+│       ├── resource_guards.py       # Payload-size guards (fail-closed, HTTP 413)
+│       ├── scheme_registry.py       # Prime scheme versioning & compatibility
+│       ├── state_encoding.py        # Hex/decimal state encoding utilities
 │       ├── zig_bridge.py            # Horizon III: Zig C-ABI FFI bridge (ctypes)
 │       └── telemetry.py             # @trace_zig_ffi observability decorator
 ├── core-zig/
@@ -241,7 +248,7 @@ SUM/
 ## 🛡️ Mathematical Verification Suite
 
 ```text
-579 passed · 21/21 fortress checks
+641 passed · 21/21 fortress checks
 
 ─── Core Hardening (Process Intensification) ───
 ZK Semantic Proofs .................... 16 ✓  (round-trip, tamper, non-linkability, stress)
