@@ -108,6 +108,25 @@ The `GodelStateAlgebra` core is being progressively migrated to **Zig** via the 
 
 ---
 
+## 🎯 Concrete Use Cases
+
+| Use Case | Key Capability | Why SUM |
+|----------|---------------|---------|
+| **Personal Knowledge Base** | `/ingest` + `/ask` + epistemic loop | Answers are **mathematically verified** against your corpus — `State % Prime ≠ 0` catches hallucinations. No vector DB can prove groundedness. |
+| **Decentralized Knowledge Sync** | `/sync/state` + P2P mesh | Sync two nodes by sending **one integer**. `GCD` computes the exact delta. No JSON diffing, no conflict heuristics. |
+| **Tamper-Evident Knowledge Transport** | `canonical_codec` + `verify.js` | Export signed bundles (HMAC + Ed25519). An independent Node.js verifier confirms integrity — different runtime, same math. |
+| **Zero-Knowledge Fact Verification** | `/zk/prove` | Prove you know a fact without revealing your knowledge state. Salted SHA-256 of the quotient — algebraically sufficient. |
+| **Contradiction Detection & Resolution** | Gauge orchestrator + arbiter | Conflicting facts are **algebraically detectable** (both primes in state). The arbiter collapses to a single truth, streamed live via SSE. |
+| **Temporal Audit Trail** | Akashic Ledger + `/time-travel` | Every operation is event-sourced. Rebuild state at any historical tick. Branch timelines, merge via LCM. Full provenance per axiom. |
+| **LLM-Free Math Ingestion** | `/ingest/math` + Babel harvester | Raw `(S, P, O)` triplets → primes. Zero LLM calls, zero API cost. Works entirely offline. |
+| **Autonomous Deduction** | Automated Scientist + causal triggers | Background daemon discovers entailed-but-unminted axioms via transitive closure. Learning one fact cascades logical consequences. |
+| **Multi-LLM Knowledge Fusion** | Vector Bridge + affine alignment | Nodes using different LLMs (Llama, Qwen, Mistral) share a canonical prime layer. The Gödel integer is model-agnostic consensus. |
+| **Semantic Compression** | Fractal crystallization | Replace 100 micro-primes with 1 macro-prime. Decompress on demand. Lossless — single division + multiplication. |
+
+> **The common thread:** Knowledge state is a single integer. Verification is deterministic, sync is minimal, proofs are algebraic, contradictions are structural. None of this is true for vector databases.
+
+---
+
 ## 🌅 Future Horizons
 
 SUM has completed its genesis and hardening phases. The road ahead expands into three frontiers:

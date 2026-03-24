@@ -136,3 +136,7 @@ dmypy.json
 # Security / Credentials (never track)
 .master_key
 admin_api_key.txt
+
+# Zig build artifacts
+core-zig/.zig-cache/
+core-zig/zig-out/
