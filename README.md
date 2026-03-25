@@ -271,7 +271,7 @@ SUM/
 ## 🛡️ Mathematical Verification Suite
 
 ```text
-696+ passed · 21/21 fortress checks
+712+ passed · 21/21 fortress checks
 
 ─── Core Hardening ───
 ZK Semantic Proofs .................... 16 ✓  (round-trip, tamper, non-linkability, stress)
@@ -288,6 +288,7 @@ Phase 0 — Durability Contract ......... 8  ✓  (crash recovery, branch isolat
 Phase 0.1 — Durability Integrity ...... 6  ✓  (branch rebuild, import materialization, gossip)
 Phase 19A — Extraction Validator ...... 25 ✓  (structural gate, canonicalization, dedup)
 Phase 19C — Merkle Hash-Chain ......... 16 ✓  (tamper, deletion, injection detection)
+Phase 19D — Active Prime Index ........ 16 ✓  (lifecycle, queries, consistency, performance)
 
 ─── Phase Tests ───
 Phase 17b — BigInt Zig C-ABI .......... 22 ✓  (LCM, GCD, mod, divisibility, consistency)
@@ -327,7 +328,8 @@ Final Integration — Operational ....... 20 ✓  (guards in handlers, evidence 
 > - **v2 activation:** gated behind `SUM_PRIME_SCHEME=sha256_128_v2` env var; default is v1
 > - **Extraction gating (19A):** structural validator rejects malformed/duplicate triplets before algebra ingestion
 > - **Golden benchmark (19B):** 50 annotated documents, 100 gold-standard triplets, 7 adversarial categories
-> - **Merkle chain (19C):** SHA-256 hash-chain on event log; tamper detection on boot
+> - **Merkle chain (19C):** SHA-256 hash-chain on event log; 3-tier enforcement policy (`warn`/`degraded`/`strict` via `SUM_MERKLE_POLICY`)
+> - **Active Prime Index (19D):** O(1) active-prime lookup per branch; eliminates O(n) scan over `prime_to_axiom`
 > - **Evidence enrichment:** affects `/ingest` (LLM path) and `/ingest/math` (direct path); other ingestion surfaces not yet covered
 > - **Linguistic certainty:** document-level (coarse-grained) in `/ingest`; `/ingest/math` defaults to 1.0 (definitional)
 

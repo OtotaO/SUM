@@ -741,3 +741,94 @@ class GodelStateAlgebra:
         # Restore the micro-prime cluster
         return math.lcm(global_state, self.macro_provenance[macro_prime])
 
+
+# ======================================================================
+# Phase 19D: Active Prime Set Index
+# ======================================================================
+
+class ActivePrimeIndex:
+    """O(1) active-prime lookup per branch.
+
+    Maintains a ``Set[int]`` of primes known to divide each branch's
+    state integer.  This eliminates the O(n) scan over
+    ``prime_to_axiom`` that dominated profiling at scale:
+
+        get_active_axioms     : 700 ms → O(k)  where k = active primes
+        calculate_network_delta: 3.7 s → O(k)
+
+    Lifecycle:
+        rebuild()  — cold-start from a state integer (boot / merge)
+        add()      — O(1) on ingest
+        remove()   — O(1) on delete
+        fork()     — O(k) on branch creation
+    """
+
+    def __init__(self):
+        self._branches: Dict[str, Set[int]] = {}
+
+    def rebuild(
+        self, branch: str, state: int, algebra: GodelStateAlgebra
+    ) -> None:
+        """Cold-start: scan once to populate the index from a state integer."""
+        if state <= 1:
+            self._branches[branch] = set()
+            return
+        self._branches[branch] = {
+            p for p in algebra.prime_to_axiom if state % p == 0
+        }
+
+    def add(self, branch: str, prime: int) -> None:
+        """Register a newly-minted prime as active in a branch."""
+        self._branches.setdefault(branch, set()).add(prime)
+
+    def remove(self, branch: str, prime: int) -> None:
+        """Remove a prime from a branch (deletion / DIV)."""
+        if branch in self._branches:
+            self._branches[branch].discard(prime)
+
+    def fork(self, source: str, target: str) -> None:
+        """Copy the active set from one branch to another."""
+        self._branches[target] = set(self._branches.get(source, set()))
+
+    def merge(self, target: str, *sources: str) -> None:
+        """Union active sets from multiple branches into target."""
+        merged: Set[int] = set()
+        for src in sources:
+            merged |= self._branches.get(src, set())
+        self._branches[target] = merged
+
+    def get_active_primes(self, branch: str) -> Set[int]:
+        """Return the set of active primes for a branch."""
+        return self._branches.get(branch, set())
+
+    def get_active_axioms(
+        self, branch: str, algebra: GodelStateAlgebra
+    ) -> list:
+        """Return axiom key strings for all active primes in a branch."""
+        return [
+            algebra.prime_to_axiom[p]
+            for p in self._branches.get(branch, set())
+            if p in algebra.prime_to_axiom
+        ]
+
+    def extract_axioms_from_product(
+        self, product: int, algebra: GodelStateAlgebra,
+        candidate_primes: Set[int] = None,
+    ) -> List[str]:
+        """Extract axiom keys from a quotient product, optionally narrowed.
+
+        When ``candidate_primes`` is provided, only those primes are
+        checked — O(k) instead of O(n).  Falls back to full scan if
+        no candidates are given.
+        """
+        axioms: List[str] = []
+        primes_to_check = candidate_primes or set(algebra.prime_to_axiom.keys())
+        for prime in primes_to_check:
+            if product % prime == 0:
+                if prime in algebra.prime_to_axiom:
+                    axioms.append(algebra.prime_to_axiom[prime])
+                while product % prime == 0:
+                    product //= prime
+            if product == 1:
+                break
+        return axioms

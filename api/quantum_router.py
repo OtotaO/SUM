@@ -40,7 +40,7 @@ from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Header, 
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from internal.algorithms.semantic_arithmetic import GodelStateAlgebra, ActivePrimeIndex
 from internal.algorithms.syntactic_sieve import DeterministicSieve
 from internal.algorithms.syntactic_sieve import detect_hedging
 from internal.ensemble.vector_bridge import ContinuousDiscreteBridge
@@ -94,6 +94,7 @@ class GlobalKnowledgeOS:
             cls._instance.mesh = None
             cls._instance.is_booted = False
             cls._instance.is_chain_valid = True  # Set by boot_sequence()
+            cls._instance.prime_index = ActivePrimeIndex()  # Phase 19D
         return cls._instance
 
     @property
@@ -162,6 +163,14 @@ class GlobalKnowledgeOS:
             else:
                 # warn (default): log and continue normally
                 logger.warning(msg + " — continuing (warn-only mode)")
+
+        # Phase 19D: Rebuild active prime index for all branches
+        for branch_name, branch_state in self.branches.items():
+            self.prime_index.rebuild(branch_name, branch_state, self.algebra)
+        logger.info(
+            "Phase 19D: Active Prime Index rebuilt — %d branches indexed",
+            len(self.branches),
+        )
 
         # Interacting Theory Setup (Causal Engine)
         self.trigger_map = CausalTriggerMap(self.algebra, self.ledger)
@@ -687,6 +696,10 @@ async def ingest_math_direct(
 
         kos.branches[branch] = new_state
 
+        # Phase 19D: Update active prime index
+        for prime, _axiom in added_axioms:
+            kos.prime_index.add(branch, prime)
+
         # Phase 0.1: Save branch head after math ingest
         await kos.ledger.save_branch_head(branch, new_state)
 
@@ -805,6 +818,9 @@ async def create_branch(req: BranchRequest):
 
     kos.branches[req.new_branch] = kos.branches[req.source_branch]
 
+    # Phase 19D: Fork active prime index
+    kos.prime_index.fork(req.source_branch, req.new_branch)
+
     # Phase 0: Persist the branch head snapshot
     await kos.ledger.save_branch_head(
         req.new_branch, kos.branches[req.new_branch]
@@ -851,6 +867,9 @@ async def merge_branches(req: MergeRequest):
     paradoxes = kos.algebra.detect_curvature_paradoxes(merged_state)
 
     kos.branches[req.target_branch] = merged_state
+
+    # Phase 19D: Rebuild index for merged branch
+    kos.prime_index.merge(req.target_branch, req.source_branch, req.target_branch)
 
     # Phase 0: Persist the merged branch head
     await kos.ledger.save_branch_head(req.target_branch, merged_state)
