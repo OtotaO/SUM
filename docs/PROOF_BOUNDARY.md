@@ -1,7 +1,7 @@
 # Proof Boundary
 
-**Version:** 1.0.0
-**Date:** 2026-03-22
+**Version:** 1.1.0
+**Date:** 2026-03-25
 
 This document explicitly separates what the SUM engine **proves mechanically**, what it **measures empirically**, and what remains **aspirational or future work**.
 
@@ -51,6 +51,30 @@ reconstruct(parse(canonical_tome(S))) == S
 | Delta correctness | `lcm(source, delta) == target` | Tested |
 | Deletion correctness | `(state * p) // p == state` when `p | state` | Tested |
 
+### 1.5. Durability Contract (Phase 0)
+
+**Claim:** The Gödel state survives process crashes and restarts without data loss or branch bleed.
+
+**Proof mechanism:** Event-sourced replay via the Akashic Ledger. Branch-scoped events are replayed with `branch=` filter. Branch head snapshots provide instant boot. 14 boundary tests verify: restart semantics, branch isolation, novel import materialization, gossip callback persistence.
+
+**Boundary:** Durability depends on SQLite's fsync guarantees. Does NOT protect against disk corruption or hardware failure.
+
+### 1.6. Extraction Structural Gating (Phase 19A)
+
+**Claim:** Malformed, underspecified, or duplicate triplets are rejected before entering the Gödel algebra.
+
+**Proof mechanism:** `ExtractionValidator` enforces: non-empty fields, length bounds (1–500 chars), illegal character rejection (control chars, JSON fragments), predicate canonicalization, and within-batch deduplication. 25 unit tests cover all gating logic.
+
+**Boundary:** This is structural validation, not semantic validation. A structurally valid triplet can still be semantically wrong (e.g., "cat||is_a||number"). Semantic validation requires the confidence calibration and deduplication layers, which are separate.
+
+### 1.7. Merkle Hash-Chain Integrity (Phase 19C)
+
+**Claim:** Any modification, deletion, or injection of events in the Akashic Ledger is detectable.
+
+**Proof mechanism:** Each event stores `prev_hash = SHA-256(prev_hash + operation + prime + axiom_key + branch)`. Genesis seed: `SHA-256("SUM_GENESIS_BLOCK")`. `verify_chain()` walks the full chain on boot, reporting the first broken link. 16 tests verify: tamper detection (mutation, deletion, hash overwrite, injection), chain construction, and chain tip.
+
+**Boundary:** This is tamper detection, not prevention. A local attacker with write access to SQLite can rewrite the entire chain. The hash chain proves that no event was modified after the fact by an actor without full database write access.
+
 ---
 
 ## 2. Empirically Measured
@@ -64,7 +88,7 @@ The quality of semantic extraction from natural language depends on:
 - Input text structure and complexity
 - Domain vocabulary coverage
 
-**Current status:** No formal extraction benchmark exists. Extraction quality is the acknowledged weakest link. Phase 18 (future) targets a multi-pass extraction ensemble with precision/recall measurement.
+**Current status:** A 50-document golden benchmark corpus exists (Phase 19B) spanning 7 adversarial categories (factual, hedged, negation, adversarial punctuation, duplicate phrasing, contradiction, list/table) with 100 gold-standard triplets. A scoring harness measures precision, recall, and F1. Structural gating (Phase 19A) rejects malformed triplets. Pure semantic quality remains the acknowledged weakest link.
 
 ### 2.2. Operation Performance
 
@@ -87,14 +111,12 @@ These are design goals, NOT current capabilities.
 
 | Goal | Status | Target Phase |
 |------|--------|-------------|
-| Public-key bundle provenance | Not implemented | Phase 17+ |
-| Richer semantic IR (qualifiers, time, negation) | Not implemented | Phase 17+ |
-| Multi-pass extraction ensemble | Not implemented | Phase 18+ |
-| Hierarchical semantic compression (motifs, chapters) | Not implemented | Phase 19+ |
-| Multi-renderer rehydration (textbook, quiz, study guide) | Not implemented | Phase 20+ |
-| Curriculum sequencing / learning OS | Not implemented | Phase 21+ |
-| Federation with trust policies | Not implemented | Phase 22+ |
-| Scientific/technical corpora support | Not implemented | Phase 23+ |
+| Richer semantic IR (qualifiers, time, negation) | Not implemented | Future |
+| Multi-pass extraction ensemble | Partially addressed (structural gating, benchmark) | Future |
+| Hierarchical semantic compression (motifs, chapters) | Not implemented | Future |
+| Multi-renderer rehydration (textbook, quiz, study guide) | Not implemented | Future |
+| Federation with trust policies | Not implemented | Future |
+| Scientific/technical corpora support | Not implemented | Future |
 
 ---
 

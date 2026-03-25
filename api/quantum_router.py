@@ -1180,20 +1180,11 @@ async def import_knowledge_bundle(
 
     # Phase 0.1: Materialize novel axioms from the bundle's canonical tome
     # Parse the tome to register axiom↔prime mappings locally
+    from internal.infrastructure.tome_parser import parse_canonical_tome
     bundle_tome = req.bundle.get("canonical_tome", "")
-    for line in bundle_tome.splitlines():
-        line = line.strip()
-        # Canonical format: "- subject||predicate||object [prime: NNN]"
-        if line.startswith("- ") and "||" in line:
-            axiom_part = line[2:].strip()
-            # Strip optional prime annotation
-            if " [prime:" in axiom_part:
-                axiom_part = axiom_part[:axiom_part.index(" [prime:")].strip()
-            parts = axiom_part.split("||")
-            if len(parts) == 3:
-                s, p, o = [x.strip().lower() for x in parts]
-                # get_or_mint_prime is idempotent — will reuse existing mapping
-                kos.algebra.get_or_mint_prime(s, p, o)
+    for s, p, o in parse_canonical_tome(bundle_tome):
+        # get_or_mint_prime is idempotent — will reuse existing mapping
+        kos.algebra.get_or_mint_prime(s, p, o)
 
     # Phase 0: Persist imported axioms via MUL events
     for prime, axiom in kos.algebra.prime_to_axiom.items():

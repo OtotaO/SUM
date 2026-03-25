@@ -1,7 +1,7 @@
 # Threat Model
 
-**Version:** 1.0.0
-**Date:** 2026-03-22
+**Version:** 1.1.0
+**Date:** 2026-03-25
 
 This document describes what the SUM engine's security and integrity mechanisms protect against, and — critically — what they do NOT protect against.
 
@@ -76,13 +76,15 @@ Producer ──(shared key)──> Bundle ──(shared key)──> Consumer
 
 **Residual risk:** There is no real-time revocation mechanism. If a key is compromised, bundles signed with it remain valid until the operator manually invalidates them. A future PKI or key revocation list (KRL) would address this.
 
-### 3.3. Extraction Manipulation (❌ Not Protected)
+### 3.3. Extraction Manipulation (⚠️ Partially Protected)
 
 **Threat:** An attacker crafts input text designed to produce misleading extractions (adversarial NLP).
 
 **Impact:** The sieve may extract incorrect or misleading axioms. These become part of the canonical state and appear legitimate.
 
-**Mitigation:** Extraction is the weakest link. Future phases target multi-pass extraction with confidence scoring and human-review lanes. Currently, extraction output is trusted without independent verification.
+**Defense (Phase 19A):** `ExtractionValidator` provides structural gating: non-empty fields, length bounds, control character rejection, JSON fragment rejection, predicate canonicalization, and batch deduplication. 25 unit tests verify gating logic. A 50-document golden benchmark corpus (Phase 19B) measures extraction precision/recall/F1 across 7 adversarial categories.
+
+**Residual risk:** Structural gating catches malformed triplets but cannot detect semantically incorrect or misleading extractions. A structurally valid but factually wrong triplet passes the gate. Full semantic validation requires multi-pass extraction with confidence scoring and human-review lanes.
 
 ### 3.4. Semantic Collision Replay (✅ Now Protected)
 
@@ -110,6 +112,14 @@ Producer ──(shared key)──> Bundle ──(shared key)──> Consumer
 
 **Residual risk:** In-memory rate limiter does not persist across restarts. Distributed DDoS requires upstream infrastructure (CDN, WAF).
 
+### 3.7. Ledger Tampering (✅ Detectable)
+
+**Threat:** An attacker with database access modifies, deletes, or inserts events in the Akashic Ledger to alter the reconstructed knowledge state.
+
+**Defense (Phase 19C):** SHA-256 Merkle hash-chain on every event. Each event stores `prev_hash = SHA-256(prev_hash + payload)` from a deterministic genesis seed. `verify_chain()` walks the full chain on boot and reports the first broken link. 16 tests verify tamper detection (mutation, deletion, injection, hash overwrite).
+
+**Residual risk:** A local attacker with full database write access can recompute the entire chain from genesis. The hash chain protects against partial tampering, not full database replacement.
+
 ---
 
 ## 4. Attack Surface Summary
@@ -122,7 +132,8 @@ Producer ──(shared key)──> Bundle ──(shared key)──> Consumer
 | Malformed bundles | ✅ | Field validation |
 | Public authenticity | ✅ | Ed25519 signatures (self-asserted key) |
 | Key compromise | ✅ | Key rotation + archive (no real-time revocation) |
-| Adversarial extraction | ⚠️ | Hardened (15 adversarial tests), needs confidence scoring |
+| Adversarial extraction | ⚠️ | Structural gating (19A) + benchmark (19B); semantic validation pending |
 | Collision replay | ✅ | 1000-axiom cross-instance stress test |
 | Contradiction governance | ✅ | DeterministicArbiter (SHA-256 ordering, no LLM) |
 | Resource exhaustion | ✅ | Bundle size limits + sliding window rate limiter |
+| Ledger tampering | ✅ | SHA-256 Merkle hash-chain (detect partial tamper) |

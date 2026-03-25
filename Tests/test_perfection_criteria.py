@@ -83,6 +83,7 @@ class TestEvidenceClean:
 
     def test_hedging_detector_exists(self):
         """detect_hedging function must be importable."""
+        pytest.importorskip("spacy", reason="spacy not installed — hedging tests require it")
         from internal.algorithms.syntactic_sieve import detect_hedging
         assert callable(detect_hedging)
 

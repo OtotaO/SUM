@@ -36,8 +36,10 @@ Built on the formalisms of the **Semantic Prime Number Theorem** and **Gauge-The
 │  │ • Zig C-ABI Fast Path  │ • Deterministic     │                     │  │
 │  │   (Strangler Fig)      │   Arbiter (SHA-256) │                     │  │
 │  ├─────────────────────────┴─────────────────────┴────────────────────┤  │
+│  │    Extraction Validator (Structural Gate → Algebra)                  │  │
+│  ├────────────────────────────────────────────────────────────────────┤  │
 │  │                      Akashic Ledger (SQLite)                       │  │
-│  │         Event-sourced • Crash-safe • Historically Replayable       │  │
+│  │  Event-sourced • Crash-safe • Merkle Hash-Chain • Replayable      │  │
 │  └────────────────────────────────────────────────────────────────────┘  │
 └────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -73,7 +75,7 @@ Maps the absolute certainty of discrete Gödel Primes to the fuzzy continuous sp
 
 ### 4. The Akashic Ledger (Fidelity Persistence)
 
-An append-only SQLite event log (`MINT`, `MUL`, `DIV`, `SYNC`, `DEDUCED`). Provides **crash recovery** — the RAM-based Gödel BigInt can be perfectly reconstructed by replaying the mathematical trace.
+An append-only SQLite event log (`MINT`, `MUL`, `DIV`, `SYNC`, `DEDUCED`). Provides **crash recovery** — the RAM-based Gödel BigInt can be perfectly reconstructed by replaying the mathematical trace. A **SHA-256 Merkle hash-chain** makes every event tamper-evident: modification, deletion, or injection of events is detectable on boot.
 
 ### 5. The Gödel Sync Protocol
 
@@ -146,7 +148,7 @@ git clone https://github.com/OtotaO/SUM.git
 cd SUM
 pip install -r requirements-prod.txt
 
-# Run the 641 tests verification suite
+# Run the verification suite
 python -m pytest Tests/ -v
 
 # Run the 21-check Fortress gate
@@ -219,9 +221,10 @@ SUM/
 │   │   ├── mass_semantic_engine.py   # Mass semantic operations engine
 │   │   ├── semantic_dedup.py         # Predicate-aware deduplication
 │   │   ├── live_llm_adapter.py       # OpenAI structured outputs adapter
+│   │   ├── extraction_validator.py   # Structural gate: rejects malformed triplets
 │   │   └── automated_scientist.py    # Autonomous deduction daemon (15s cycles)
 │   └── infrastructure/
-│       ├── akashic_ledger.py         # Event-sourced crash recovery & Time Travel
+│       ├── akashic_ledger.py         # Event-sourced crash recovery, Time Travel, Merkle Chain
 │       ├── p2p_mesh.py               # Decentralized Gossip Protocol
 │       ├── canonical_codec.py        # Signed bundle transport (HMAC + Ed25519)
 │       ├── key_manager.py            # Ed25519 keypair lifecycle management
@@ -259,7 +262,8 @@ SUM/
 ├── experiments.tsv                   # Autoresearch experiment ledger
 └── Tests/
     ├── fixtures/                      # Frozen golden reference vectors
-    └── test_*.py                      # 641 Passing Verification Tests
+    ├── benchmarks/                    # Golden corpus & scoring harness
+    └── test_*.py                      # Verification Tests
 ```
 
 ---
@@ -267,9 +271,9 @@ SUM/
 ## 🛡️ Mathematical Verification Suite
 
 ```text
-641 passed · 21/21 fortress checks
+578+ passed · 21/21 fortress checks
 
-─── Core Hardening (Process Intensification) ───
+─── Core Hardening ───
 ZK Semantic Proofs .................... 16 ✓  (round-trip, tamper, non-linkability, stress)
 Akashic Ledger Replay ................. 8  ✓  (crash recovery, time-travel, DIV)
 Causal Cascade Verification ........... 6  ✓  (multi-hop, cycle termination, idempotency)
@@ -278,6 +282,12 @@ Extraction Adversarial ................ 15 ✓  (HTML/SQL injection, Unicode, 10
 Deterministic Arbiter ................. 7  ✓  (SHA-256 lexicographic, no LLM dependency)
 Rate Limiter .......................... 8  ✓  (sliding window, per-IP, burst protection)
 Cross-Instance & Stability ............ 24 ✓  (collision, tome ordering, timestamp, version)
+
+─── Architectural Hardening ───
+Phase 0 — Durability Contract ......... 8  ✓  (crash recovery, branch isolation, boot)
+Phase 0.1 — Durability Integrity ...... 6  ✓  (branch rebuild, import materialization, gossip)
+Phase 19A — Extraction Validator ...... 25 ✓  (structural gate, canonicalization, dedup)
+Phase 19C — Merkle Hash-Chain ......... 16 ✓  (tamper, deletion, injection detection)
 
 ─── Phase Tests ───
 Phase 17b — BigInt Zig C-ABI .......... 22 ✓  (LCM, GCD, mod, divisibility, consistency)
@@ -315,6 +325,9 @@ Final Integration — Operational ....... 20 ✓  (guards in handlers, evidence 
 > **Honest status notes:**
 > - **Zig v2 parity:** ✅ confirmed — Zig 0.15.2, `zig build test` passes, Python↔Zig v2 primes match on frozen vectors
 > - **v2 activation:** gated behind `SUM_PRIME_SCHEME=sha256_128_v2` env var; default is v1
+> - **Extraction gating (19A):** structural validator rejects malformed/duplicate triplets before algebra ingestion
+> - **Golden benchmark (19B):** 50 annotated documents, 100 gold-standard triplets, 7 adversarial categories
+> - **Merkle chain (19C):** SHA-256 hash-chain on event log; tamper detection on boot
 > - **Evidence enrichment:** affects `/ingest` (LLM path) and `/ingest/math` (direct path); other ingestion surfaces not yet covered
 > - **Linguistic certainty:** document-level (coarse-grained) in `/ingest`; `/ingest/math` defaults to 1.0 (definitional)
 
@@ -328,10 +341,11 @@ Final Integration — Operational ....... 20 ✓  (guards in handlers, evidence 
 | Malformed bundles | ✅ Field validation |
 | Public authenticity | ✅ Ed25519 (self-asserted) |
 | Key compromise | ✅ Rotation + archive |
-| Adversarial extraction | ✅ Hardened sieve + stress tests |
+| Adversarial extraction | ⚠️ Structural gating (19A) + benchmark (19B) |
 | Collision replay | ✅ 1000-axiom cross-instance test |
 | Contradiction governance | ✅ DeterministicArbiter (SHA-256) |
 | Resource exhaustion | ✅ Bundle limits + rate limiter |
+| Ledger tampering | ✅ Merkle hash-chain (19C) |
 
 ---
 

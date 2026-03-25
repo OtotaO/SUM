@@ -199,7 +199,7 @@ class TestBenchSummary:
         # Detect Zig status
         try:
             from internal.infrastructure.zig_bridge import zig_engine
-            zig_status = "⚡ ZIG ACTIVE" if zig_engine and zig_engine._lib else "🐍 Python fallback"
+            zig_status = "⚡ ZIG ACTIVE" if zig_engine and zig_engine.lib else "🐍 Python fallback"
         except ImportError:
             zig_status = "🐍 Python fallback"
 

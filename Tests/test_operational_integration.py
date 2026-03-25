@@ -134,6 +134,7 @@ class TestEvidenceInLivePaths:
 
     def test_hedging_reduces_confidence(self):
         """A hedged sentence must produce lower calibrated confidence than a definite one."""
+        pytest.importorskip("spacy", reason="spacy not installed — hedging tests require it")
         from internal.algorithms.syntactic_sieve import detect_hedging
         from internal.ensemble.confidence_calibrator import ConfidenceCalibrator
 
