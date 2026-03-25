@@ -1,114 +1,57 @@
-# Docker ignore file for SUM project
+# Docker build context exclusions for SUM
+# Keep in sync with .gitignore
 
-# Python cache
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# Virtual environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# IDE files
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Git
+# Version control
 .git
 .gitignore
+.github
 
-# Logs
-*.log
-logs/
-server.log
-sum_service.log
-
-# Temporary files
-temp/
-*.tmp
-*.temp
-
-# Test files
+# Python environments & cache
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
 .pytest_cache/
 .coverage
 htmlcov/
-.tox/
+.mypy_cache/
+.pyre/
 
-# Backup files
-backup_local_changes/
-*.bak
-*.old
-
-# Documentation build
-docs/_build/
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# PyCharm
+# IDE & OS
+.vscode/
 .idea/
+.DS_Store
+*.swp
 
-# Local development
-.env.local
-.env.development
-.env.test
+# Logs & temp
+*.log
+logs/
+temp/
+tmp/
 
-# Node modules (if any)
-node_modules/
-npm-debug.log
-yarn-error.log
+# Documentation & config not needed at runtime
+docs/
+*.md
+!requirements-prod.txt
+.coveragerc
+.gemini/
+experiments.tsv
 
-# Uploaded files (in development)
-uploads/*
-!uploads/.gitkeep
+# Zig build artifacts (rebuilt in Docker Stage 1)
+core-zig/.zig-cache/
+core-zig/zig-out/
 
-# Output files
-Output/*
-!Output/.gitkeep
+# Security (never ship)
+.master_key
+admin_api_key.txt
+*.pem
+*.key
 
-# Large model files
-*.pkl
-*.joblib
-*.model
+# Test fixtures (not needed in production image)
+Tests/benchmarks/
+Tests/fixtures/
 
-# Page files
-*.pages
-Untitled.pages
-changelog\ of\ sorts.pages
-
-# React files
-react-frontend.txt
+# Database files (created at runtime)
+*.db
+*.sqlite
+*.sqlite3

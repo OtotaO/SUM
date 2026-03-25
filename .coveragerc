@@ -1,19 +1,22 @@
 [run]
 source = .
-omit = 
-    */tests/*
-    */test_*
-    setup.py
-    */migrations/*
-    */venv/*
-    */env/*
-    */__pycache__/*
-    */node_modules/*
+omit =
+    Tests/*
+    scripts/*
+    .venv/*
+    __pycache__/*
+    core-zig/*
+    standalone_verifier/*
 
 [report]
 precision = 2
 show_missing = True
 skip_covered = False
+exclude_lines =
+    pragma: no cover
+    if __name__ == .__main__.:
+    pass
+    raise NotImplementedError
 
 [html]
 directory = htmlcov
