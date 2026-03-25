@@ -107,16 +107,27 @@ class GlobalKnowledgeOS:
         """
         Replay the Akashic Ledger to restore the full Gödel state, then
         wire up the LLM adapter for live extraction and search.
+
+        Phase 0: Loads all durable branch heads from the snapshot table
+        for instant multi-branch recovery.
         """
         if self.is_booted:
             return
 
-        # Crash recovery
+        # Crash recovery: rebuild main branch from event log
         self.branches["main"] = await self.ledger.rebuild_state(self.algebra)
+
+        # Phase 0: Restore all durable branch heads from snapshots
+        saved_heads = await self.ledger.load_branch_heads()
+        for branch_name, state_int in saved_heads.items():
+            if branch_name != "main":  # main already rebuilt from events
+                self.branches[branch_name] = state_int
+
         logger.info(
-            "KOS boot complete — state bit-length=%d, axioms=%d",
+            "KOS boot complete — state bit-length=%d, axioms=%d, branches=%d",
             self.branches["main"].bit_length(),
             len(self.algebra.prime_to_axiom),
+            len(self.branches),
         )
 
         # Interacting Theory Setup (Causal Engine)
@@ -344,6 +355,8 @@ async def generate_token(req: TokenRequest):
     token = create_access_token(req.username)
     if req.username not in kos.branches:
         kos.branches[req.username] = 1
+        # Phase 0: Persist the empty branch head
+        await kos.ledger.save_branch_head(req.username, 1)
     return {
         "access_token": token,
         "token_type": "bearer",
@@ -726,6 +739,11 @@ async def create_branch(req: BranchRequest):
 
     kos.branches[req.new_branch] = kos.branches[req.source_branch]
 
+    # Phase 0: Persist the branch head snapshot
+    await kos.ledger.save_branch_head(
+        req.new_branch, kos.branches[req.new_branch]
+    )
+
     from internal.ensemble.epistemic_arbiter import kos_telemetry
     await kos_telemetry.broadcast(
         f"🔗 Branch Created: '{req.new_branch}' from '{req.source_branch}'"
@@ -767,6 +785,9 @@ async def merge_branches(req: MergeRequest):
     paradoxes = kos.algebra.detect_curvature_paradoxes(merged_state)
 
     kos.branches[req.target_branch] = merged_state
+
+    # Phase 0: Persist the merged branch head
+    await kos.ledger.save_branch_head(req.target_branch, merged_state)
 
     from internal.ensemble.epistemic_arbiter import kos_telemetry
     await kos_telemetry.broadcast(
@@ -831,6 +852,11 @@ async def time_travel(
         historical_algebra, max_seq_id=req.target_tick
     )
     kos.branches[req.new_branch_name] = past_state
+
+    # Phase 0: Save as ephemeral (transient — can be re-derived from tick)
+    await kos.ledger.save_branch_head(
+        req.new_branch_name, past_state, is_ephemeral=True
+    )
 
     from internal.ensemble.epistemic_arbiter import kos_telemetry
     await kos_telemetry.broadcast(
@@ -1106,6 +1132,16 @@ async def import_knowledge_bundle(
     new_state = math.lcm(current, imported_state)
     kos.branches[user_id] = new_state
 
+    # Phase 0: Persist imported axioms via MINT+MUL events
+    # Factor the delta primes from the imported state
+    for prime, axiom in kos.algebra.prime_to_axiom.items():
+        if imported_state % prime == 0 and current % prime != 0:
+            # This axiom is new from the import
+            await kos.ledger.append_event(
+                "MUL", prime, branch=user_id
+            )
+    await kos.ledger.save_branch_head(user_id, new_state)
+
     return {
         "imported": True,
         "user_id": user_id,
@@ -1189,9 +1225,14 @@ async def sync_peer_state(
 
     if new_state != current_state:
         kos.branches[effective_branch] = new_state
-        await kos.ledger.append_event(
-            "SYNC", 1, f"Merged peer state from {user_id}"
-        )
+
+        # Phase 0: Persist synced axioms via proper MUL events
+        for prime in kos.algebra.prime_to_axiom:
+            if peer_int % prime == 0 and current_state % prime != 0:
+                await kos.ledger.append_event(
+                    "MUL", prime, branch=effective_branch
+                )
+        await kos.ledger.save_branch_head(effective_branch, new_state)
 
         from internal.ensemble.epistemic_arbiter import kos_telemetry
         await kos_telemetry.broadcast(

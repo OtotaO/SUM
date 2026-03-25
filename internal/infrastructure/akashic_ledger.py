@@ -13,6 +13,12 @@ Operations:
 The Chronos Engine (Phase 10) adds time-travel capability by allowing
 historical state rebuilds up to any specific ledger tick (``max_seq_id``).
 
+Phase 0 Durability Contract:
+    All branch state changes are now persisted via:
+    - ``branch`` column on events for branch-scoped replay
+    - ``branch_heads`` snapshot table for instant boot
+    Model C (Hybrid): event log = source of truth, snapshots = fast cache.
+
 Author: ototao
 License: Apache License 2.0
 """
@@ -68,9 +74,21 @@ class AkashicLedger:
                     axiom_key   TEXT
                 )
             """)
+            # Phase 0: Branch head snapshot table for instant boot
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS branch_heads (
+                    branch_name   TEXT PRIMARY KEY,
+                    state_integer TEXT NOT NULL DEFAULT '1',
+                    last_event_id INTEGER,
+                    is_ephemeral  INTEGER DEFAULT 0,
+                    created_at    TEXT DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
             conn.commit()
             # Phase 22: Provenance + Confidence migration
             self._migrate_provenance(conn)
+            # Phase 0: Branch column migration
+            self._migrate_branch_column(conn)
 
     def _migrate_provenance(self, conn: sqlite3.Connection) -> None:
         """Idempotent migration: add provenance columns if missing."""
@@ -88,6 +106,16 @@ class AkashicLedger:
                 pass  # Column already exists — safe to ignore
         conn.commit()
 
+    def _migrate_branch_column(self, conn: sqlite3.Connection) -> None:
+        """Phase 0: Idempotent migration — add branch column if missing."""
+        try:
+            conn.execute(
+                "ALTER TABLE semantic_events ADD COLUMN branch TEXT DEFAULT 'main'"
+            )
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass  # Column already exists
+
     # ------------------------------------------------------------------
     # Append
     # ------------------------------------------------------------------
@@ -98,6 +126,7 @@ class AkashicLedger:
         prime: int,
         axiom_key: str = "",
         *,
+        branch: str = "main",
         source_url: str = "",
         confidence: float = 0.5,
         ingested_at: str = "",
@@ -110,6 +139,7 @@ class AkashicLedger:
                          ``'SYNC'``, ``'DEDUCED'``.
             prime:       The semantic prime involved.
             axiom_key:   Human-readable axiom key (for ``MINT``/``DEDUCED`` events).
+            branch:      Branch this event belongs to (default: 'main').
             source_url:  Origin URL or identifier for this axiom.
             confidence:  Trust score in [0.0, 1.0], default 0.5.
             ingested_at: ISO timestamp (YYYY-MM-DDTHH:MM:SS).
@@ -118,16 +148,16 @@ class AkashicLedger:
             with sqlite3.connect(self.db_path) as conn:
                 conn.execute(
                     "INSERT INTO semantic_events "
-                    "(operation, prime, axiom_key, source_url, confidence, ingested_at) "
-                    "VALUES (?, ?, ?, ?, ?, ?)",
-                    (operation, str(prime), axiom_key,
+                    "(operation, prime, axiom_key, branch, source_url, confidence, ingested_at) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    (operation, str(prime), axiom_key, branch,
                      source_url, confidence, ingested_at),
                 )
 
         await asyncio.to_thread(_write)
         logger.debug(
-            "Ledger ← %s prime=%s axiom=%s source=%s conf=%.2f",
-            operation, prime, axiom_key, source_url, confidence,
+            "Ledger ← %s prime=%s axiom=%s branch=%s source=%s conf=%.2f",
+            operation, prime, axiom_key, branch, source_url, confidence,
         )
 
     # ------------------------------------------------------------------
@@ -211,11 +241,75 @@ class AkashicLedger:
         return await asyncio.to_thread(_read)
 
     # ------------------------------------------------------------------
+    # Branch Head Snapshots (Phase 0: Durability Contract)
+    # ------------------------------------------------------------------
+
+    async def save_branch_head(
+        self,
+        branch_name: str,
+        state_integer: int,
+        is_ephemeral: bool = False,
+    ) -> None:
+        """
+        Upsert a branch head snapshot for instant boot recovery.
+
+        Args:
+            branch_name:    Name of the branch.
+            state_integer:  Current Gödel BigInt for this branch.
+            is_ephemeral:   If True, branch is transient (e.g. time-travel)
+                            and will NOT be restored on boot.
+        """
+        def _write():
+            with sqlite3.connect(self.db_path) as conn:
+                conn.execute(
+                    "INSERT INTO branch_heads "
+                    "(branch_name, state_integer, is_ephemeral) "
+                    "VALUES (?, ?, ?) "
+                    "ON CONFLICT(branch_name) DO UPDATE SET "
+                    "state_integer = excluded.state_integer, "
+                    "is_ephemeral = excluded.is_ephemeral",
+                    (branch_name, str(state_integer), int(is_ephemeral)),
+                )
+
+        await asyncio.to_thread(_write)
+        logger.debug("Branch head saved: %s (ephemeral=%s)", branch_name, is_ephemeral)
+
+    async def load_branch_heads(self) -> dict:
+        """
+        Load all durable (non-ephemeral) branch head snapshots.
+
+        Returns:
+            Dict mapping branch_name → state integer.
+        """
+        def _read():
+            with sqlite3.connect(self.db_path) as conn:
+                rows = conn.execute(
+                    "SELECT branch_name, state_integer FROM branch_heads "
+                    "WHERE is_ephemeral = 0"
+                ).fetchall()
+                return {name: int(state) for name, state in rows}
+
+        return await asyncio.to_thread(_read)
+
+    async def delete_branch_head(self, branch_name: str) -> None:
+        """Remove a branch head snapshot (e.g. cleanup of ephemeral branches)."""
+        def _write():
+            with sqlite3.connect(self.db_path) as conn:
+                conn.execute(
+                    "DELETE FROM branch_heads WHERE branch_name = ?",
+                    (branch_name,),
+                )
+
+        await asyncio.to_thread(_write)
+        logger.debug("Branch head deleted: %s", branch_name)
+
+    # ------------------------------------------------------------------
     # Crash recovery & Time Travel (Chronos Engine)
     # ------------------------------------------------------------------
 
     async def rebuild_state(
-        self, algebra: GodelStateAlgebra, max_seq_id: int = None
+        self, algebra: GodelStateAlgebra, max_seq_id: int = None,
+        branch: str = None,
     ) -> int:
         """
         Replay the event trace to reconstruct the Gödel BigInt.
@@ -225,12 +319,16 @@ class AkashicLedger:
         of knowledge at any historical moment can be reconstructed
         into an alternate timeline branch.
 
+        When ``branch`` is provided, only events for that branch are
+        replayed (Phase 0 Durability Contract).
+
         Primes are deterministic (SHA-256 seeded), so no sequential
         watermark needs to be tracked.
 
         Args:
             algebra:    A GodelStateAlgebra to populate.
             max_seq_id: Optional tick limit for time-travel rebuilds.
+            branch:     Optional branch filter (default: replay all).
 
         Returns:
             The reconstructed global state integer.
@@ -241,10 +339,16 @@ class AkashicLedger:
                     "SELECT seq_id, operation, prime, axiom_key "
                     "FROM semantic_events"
                 )
+                conditions = []
                 params = []
                 if max_seq_id is not None:
-                    query += " WHERE seq_id <= ?"
+                    conditions.append("seq_id <= ?")
                     params.append(max_seq_id)
+                if branch is not None:
+                    conditions.append("(branch = ? OR branch = 'main' OR branch IS NULL)")
+                    params.append(branch)
+                if conditions:
+                    query += " WHERE " + " AND ".join(conditions)
                 query += " ORDER BY seq_id ASC"
                 return conn.execute(query, params).fetchall()
 
