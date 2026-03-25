@@ -16,6 +16,8 @@ from api.quantum_router import kos
 from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
 from internal.algorithms.syntactic_sieve import DeterministicSieve
 
+spacy = pytest.importorskip("spacy", reason="spacy not installed")
+
 
 client = TestClient(app)
 

@@ -15,7 +15,6 @@ License: Apache License 2.0
 """
 
 import re
-import spacy
 from typing import Dict, List, Tuple
 
 
@@ -80,6 +79,8 @@ class DeterministicSieve:
     """
 
     def __init__(self):
+        import spacy  # Lazy import: only required when sieve is instantiated
+
         try:
             self.nlp = spacy.load("en_core_web_sm")
         except OSError:

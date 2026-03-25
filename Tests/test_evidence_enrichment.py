@@ -19,6 +19,8 @@ from internal.algorithms.syntactic_sieve import (
 )
 from internal.ensemble.confidence_calibrator import ConfidenceCalibrator
 
+spacy = pytest.importorskip("spacy", reason="spacy not installed")
+
 
 # ─── Hedging Detection Tests ─────────────────────────────────────────
 
