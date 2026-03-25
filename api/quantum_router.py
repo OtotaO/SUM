@@ -93,6 +93,7 @@ class GlobalKnowledgeOS:
             cls._instance.branches = {"main": 1}  # Multiverse State
             cls._instance.mesh = None
             cls._instance.is_booted = False
+            cls._instance.is_chain_valid = True  # Set by boot_sequence()
         return cls._instance
 
     @property
@@ -134,14 +135,33 @@ class GlobalKnowledgeOS:
         )
 
         # Phase 19C: Verify Merkle hash-chain integrity
+        # 3-tier env-gated enforcement policy:
+        #   warn     — log only (default for dev / local)
+        #   degraded — flag kos as untrusted, refuse writes (production default)
+        #   strict   — fail-closed, raise and refuse to boot
+        merkle_policy = os.getenv("SUM_MERKLE_POLICY", "warn").lower()
         chain_valid, break_at = await self.ledger.verify_chain()
+        self.is_chain_valid = chain_valid
+
         if chain_valid:
             logger.info("Merkle chain: ✅ verified — ledger integrity intact")
         else:
-            logger.warning(
-                "Merkle chain: ⚠️ TAMPER DETECTED at seq_id=%d — "
-                "operating in degraded trust mode", break_at
+            msg = (
+                f"Merkle chain: ⚠️ TAMPER DETECTED at seq_id={break_at} "
+                f"— policy={merkle_policy}"
             )
+            if merkle_policy == "strict":
+                logger.critical(msg + " — REFUSING TO BOOT")
+                raise RuntimeError(
+                    f"Merkle chain tamper detected at seq_id={break_at}. "
+                    f"SUM_MERKLE_POLICY=strict requires an intact chain. "
+                    f"Restore from a clean backup or set policy to 'degraded'."
+                )
+            elif merkle_policy == "degraded":
+                logger.warning(msg + " — operating in READ-ONLY mode")
+            else:
+                # warn (default): log and continue normally
+                logger.warning(msg + " — continuing (warn-only mode)")
 
         # Interacting Theory Setup (Causal Engine)
         self.trigger_map = CausalTriggerMap(self.algebra, self.ledger)
