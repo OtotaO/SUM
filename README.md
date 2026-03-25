@@ -271,7 +271,7 @@ SUM/
 ## 🛡️ Mathematical Verification Suite
 
 ```text
-578+ passed · 21/21 fortress checks
+696+ passed · 21/21 fortress checks
 
 ─── Core Hardening ───
 ZK Semantic Proofs .................... 16 ✓  (round-trip, tamper, non-linkability, stress)
