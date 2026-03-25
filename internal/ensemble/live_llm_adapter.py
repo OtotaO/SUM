@@ -11,7 +11,7 @@ License: Apache License 2.0
 
 import os
 import logging
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 from pydantic import BaseModel, Field
 from openai import AsyncOpenAI
@@ -23,9 +23,32 @@ logger = logging.getLogger(__name__)
 
 class SemanticTriplet(BaseModel):
     """A single irreducible fact as a subject-predicate-object triple."""
-    subject: str = Field(description="The core entity or subject")
-    predicate: str = Field(description="The relational verb or attribute")
-    object_: str = Field(alias="object", description="The target entity or value")
+    subject: str = Field(
+        min_length=2, max_length=200,
+        description="The core entity or subject (lowercased, concise)",
+    )
+    predicate: str = Field(
+        min_length=2, max_length=200,
+        description="The relational verb or attribute (snake_case)",
+    )
+    object_: str = Field(
+        alias="object",
+        min_length=2, max_length=200,
+        description="The target entity or value (lowercased, concise)",
+    )
+    # Phase 19A: Metadata fields — do NOT alter algebra semantics
+    source_span: Optional[str] = Field(
+        default=None,
+        description="The exact text span this triplet was extracted from",
+    )
+    certainty: Optional[str] = Field(
+        default=None,
+        description="Model's assessment: 'definite', 'hedged', or 'speculative'",
+    )
+    extraction_notes: Optional[str] = Field(
+        default=None,
+        description="Any caveats about this extraction (negation, conditional, etc.)",
+    )
 
     model_config = {"populate_by_name": True}
 
@@ -70,6 +93,9 @@ class LiveLLMAdapter:
         """
         Maps natural language into strict topological triplets via
         Pydantic-constrained structured output.
+
+        Phase 19A: Enhanced prompt with negation awareness, certainty
+        metadata, and source span tracking.
         """
         response = await self.client.beta.chat.completions.parse(
             model=self.model,
@@ -78,8 +104,17 @@ class LiveLLMAdapter:
                     "role": "system",
                     "content": (
                         "Extract all distinct factual claims from the text "
-                        "as subject-predicate-object triplets. Keep strings "
-                        "highly concise and lowercased."
+                        "as subject-predicate-object triplets.\n\n"
+                        "Rules:\n"
+                        "- Keep subject, predicate, and object concise and lowercased\n"
+                        "- Use snake_case for multi-word predicates (e.g., 'is_part_of')\n"
+                        "- Do NOT extract opinions, questions, or hypotheticals as facts\n"
+                        "- If a statement is negated (e.g., 'X does NOT cause Y'), "
+                        "set certainty to 'speculative' and note 'negation' in extraction_notes\n"
+                        "- If language is hedged ('may', 'might', 'possibly'), "
+                        "set certainty to 'hedged'\n"
+                        "- For definite factual statements, set certainty to 'definite'\n"
+                        "- Include the source_span: the exact phrase from the text"
                     ),
                 },
                 {"role": "user", "content": chunk},
@@ -91,6 +126,8 @@ class LiveLLMAdapter:
         return [
             (t.subject.lower(), t.predicate.lower(), t.object_.lower())
             for t in parsed.triplets
+            # Phase 19A: Skip speculative extractions (negations)
+            if t.certainty != "speculative"
         ]
 
     # ------------------------------------------------------------------

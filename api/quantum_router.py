@@ -55,6 +55,7 @@ from internal.infrastructure.p2p_mesh import EpistemicMeshNetwork
 from internal.ensemble.mass_semantic_engine import MassSemanticEngine
 from internal.ensemble.confidence_calibrator import ConfidenceCalibrator
 from internal.ensemble.semantic_dedup import SemanticDeduplicator
+from internal.ensemble.extraction_validator import ExtractionValidator
 from internal.infrastructure.state_encoding import dual_field, parse_state, to_hex
 from internal.infrastructure.scheme_registry import CURRENT_SCHEME, validate_scheme_or_raise
 from internal.infrastructure.resource_guards import (
@@ -580,30 +581,40 @@ async def ingest_math_direct(
     existing_axioms = kos.algebra.get_active_axioms(current_state) if current_state > 1 else []
     skipped_duplicates = []
 
-    for t in request.triplets:
-        if len(t) == 3:
-            s, p, o = [x.strip().lower() for x in t]
-            axiom = f"{s}||{p}||{o}"
+    # Phase 19A: Structural validation gate
+    extraction_validator = ExtractionValidator()
+    raw_triplets = [
+        (x[0].strip().lower(), x[1].strip().lower(), x[2].strip().lower())
+        for x in request.triplets if len(x) == 3
+    ]
+    validated = extraction_validator.validate_batch(raw_triplets)
+    rejected_by_validator = [
+        {"triplet": f"{r.subject}||{r.predicate}||{r.object_}", "reason": r.reason}
+        for r in validated.rejected
+    ]
 
-            # Check for near-duplicate before minting
-            if existing_axioms:
-                result = dedup.deduplicate(axiom, existing_axioms)
-                if result.is_duplicate:
-                    skipped_duplicates.append({
-                        "axiom": axiom,
-                        "duplicate_of": result.duplicate_of,
-                        "similarity": round(result.similarity, 3),
-                        "method": result.method,
-                    })
-                    continue
+    for s, p, o in validated.accepted:
+        axiom = f"{s}||{p}||{o}"
 
-            prime = kos.algebra.get_or_mint_prime(s, p, o)
+        # Check for near-duplicate before minting
+        if existing_axioms:
+            result = dedup.deduplicate(axiom, existing_axioms)
+            if result.is_duplicate:
+                skipped_duplicates.append({
+                    "axiom": axiom,
+                    "duplicate_of": result.duplicate_of,
+                    "similarity": round(result.similarity, 3),
+                    "method": result.method,
+                })
+                continue
 
-            # Only process if genuinely new to both current state and this batch
-            if current_state % prime != 0 and new_state_product % prime != 0:
-                new_state_product = math.lcm(new_state_product, prime)
-                added_axioms.append((prime, axiom))
-                existing_axioms.append(axiom)  # track within batch
+        prime = kos.algebra.get_or_mint_prime(s, p, o)
+
+        # Only process if genuinely new to both current state and this batch
+        if current_state % prime != 0 and new_state_product % prime != 0:
+            new_state_product = math.lcm(new_state_product, prime)
+            added_axioms.append((prime, axiom))
+            existing_axioms.append(axiom)  # track within batch
 
     if added_axioms:
         new_state = math.lcm(current_state, new_state_product)
@@ -659,7 +670,9 @@ async def ingest_math_direct(
         **dual_field("new_global_state", kos.branches.get(branch, 1)),
         "axioms_added": len(added_axioms),
         "duplicates_skipped": len(skipped_duplicates),
+        "validation_rejected": len(rejected_by_validator),
         "skipped_details": skipped_duplicates,
+        "rejected_details": rejected_by_validator,
         "user_id": user_id,
     }
 

@@ -1,0 +1,349 @@
+{
+  "version": "1.0",
+  "description": "Golden Benchmark Corpus for SUM Extraction Validation (Phase 19B)",
+  "categories": ["factual", "hedged", "negation", "adversarial_punctuation", "duplicate_phrasing", "contradiction", "list_table"],
+  "documents": [
+    {
+      "id": "fact_01",
+      "category": "factual",
+      "text": "The Earth orbits the Sun at an average distance of 149.6 million kilometers.",
+      "gold_triplets": [["earth", "orbits", "sun"], ["earth", "has_property", "149.6 million km orbital distance"]]
+    },
+    {
+      "id": "fact_02",
+      "category": "factual",
+      "text": "Water consists of two hydrogen atoms and one oxygen atom.",
+      "gold_triplets": [["water", "has_part", "hydrogen atom"], ["water", "has_part", "oxygen atom"]]
+    },
+    {
+      "id": "fact_03",
+      "category": "factual",
+      "text": "Photosynthesis converts carbon dioxide and water into glucose and oxygen using sunlight.",
+      "gold_triplets": [["photosynthesis", "uses", "carbon dioxide"], ["photosynthesis", "uses", "water"], ["photosynthesis", "uses", "sunlight"], ["photosynthesis", "causes", "glucose"], ["photosynthesis", "causes", "oxygen"]]
+    },
+    {
+      "id": "fact_04",
+      "category": "factual",
+      "text": "DNA stores genetic information in all known living organisms.",
+      "gold_triplets": [["dna", "has_property", "stores genetic information"], ["dna", "located_in", "living organisms"]]
+    },
+    {
+      "id": "fact_05",
+      "category": "factual",
+      "text": "Gravity is a fundamental force that attracts objects with mass toward each other.",
+      "gold_triplets": [["gravity", "is_a", "fundamental force"], ["gravity", "causes", "mass attraction"]]
+    },
+    {
+      "id": "fact_06",
+      "category": "factual",
+      "text": "The speed of light in a vacuum is approximately 299,792 kilometers per second.",
+      "gold_triplets": [["speed of light", "has_property", "299792 km/s in vacuum"]]
+    },
+    {
+      "id": "fact_07",
+      "category": "factual",
+      "text": "Mitochondria produce ATP through cellular respiration.",
+      "gold_triplets": [["mitochondria", "causes", "atp production"], ["mitochondria", "uses", "cellular respiration"]]
+    },
+    {
+      "id": "fact_08",
+      "category": "factual",
+      "text": "Penicillin was discovered by Alexander Fleming in 1928.",
+      "gold_triplets": [["alexander fleming", "causes", "penicillin discovery"], ["penicillin", "has_property", "discovered 1928"]]
+    },
+    {
+      "id": "fact_09",
+      "category": "factual",
+      "text": "The human brain contains approximately 86 billion neurons.",
+      "gold_triplets": [["human brain", "has_part", "neurons"], ["human brain", "has_property", "86 billion neurons"]]
+    },
+    {
+      "id": "fact_10",
+      "category": "factual",
+      "text": "Iron is the most abundant element in the Earth's core.",
+      "gold_triplets": [["iron", "is_a", "most abundant element in earth core"], ["iron", "located_in", "earth core"]]
+    },
+    {
+      "id": "hedge_01",
+      "category": "hedged",
+      "text": "Dark matter may account for approximately 27% of the universe's mass-energy.",
+      "gold_triplets": [["dark matter", "has_property", "27% universe mass-energy"]],
+      "expected_certainty": "hedged"
+    },
+    {
+      "id": "hedge_02",
+      "category": "hedged",
+      "text": "Some researchers suggest that gut microbiome might influence mental health outcomes.",
+      "gold_triplets": [["gut microbiome", "implies", "mental health outcomes"]],
+      "expected_certainty": "hedged"
+    },
+    {
+      "id": "hedge_03",
+      "category": "hedged",
+      "text": "It is possible that quantum entanglement could enable faster-than-light communication, though most physicists consider this unlikely.",
+      "gold_triplets": [["quantum entanglement", "implies", "faster-than-light communication"]],
+      "expected_certainty": "hedged"
+    },
+    {
+      "id": "hedge_04",
+      "category": "hedged",
+      "text": "Preliminary evidence indicates that intermittent fasting may reduce inflammation markers.",
+      "gold_triplets": [["intermittent fasting", "inhibits", "inflammation markers"]],
+      "expected_certainty": "hedged"
+    },
+    {
+      "id": "hedge_05",
+      "category": "hedged",
+      "text": "The protein could potentially serve as a biomarker for early Alzheimer's detection.",
+      "gold_triplets": [["protein", "implies", "alzheimer biomarker"]],
+      "expected_certainty": "hedged"
+    },
+    {
+      "id": "hedge_06",
+      "category": "hedged",
+      "text": "Scientists believe that approximately 95% of the ocean floor remains unexplored.",
+      "gold_triplets": [["ocean floor", "has_property", "95% unexplored"]],
+      "expected_certainty": "hedged"
+    },
+    {
+      "id": "hedge_07",
+      "category": "hedged",
+      "text": "This compound appears to inhibit tumor growth in vitro, but clinical trials are needed.",
+      "gold_triplets": [["compound", "inhibits", "tumor growth"]],
+      "expected_certainty": "hedged"
+    },
+    {
+      "id": "hedge_08",
+      "category": "hedged",
+      "text": "There is growing consensus that sleep deprivation likely impairs cognitive function.",
+      "gold_triplets": [["sleep deprivation", "inhibits", "cognitive function"]],
+      "expected_certainty": "hedged"
+    },
+    {
+      "id": "neg_01",
+      "category": "negation",
+      "text": "Mercury does not have any moons.",
+      "gold_triplets": [],
+      "expected_certainty": "speculative",
+      "notes": "Negation should be flagged, not extracted as positive fact"
+    },
+    {
+      "id": "neg_02",
+      "category": "negation",
+      "text": "Vaccines do not cause autism. This has been confirmed by multiple large-scale studies.",
+      "gold_triplets": [],
+      "expected_certainty": "speculative",
+      "notes": "Negation of causal claim"
+    },
+    {
+      "id": "neg_03",
+      "category": "negation",
+      "text": "The study found no significant correlation between phone usage and cancer rates.",
+      "gold_triplets": [],
+      "expected_certainty": "speculative",
+      "notes": "Absence of correlation"
+    },
+    {
+      "id": "neg_04",
+      "category": "negation",
+      "text": "Unlike popular belief, cracking knuckles does not lead to arthritis.",
+      "gold_triplets": [],
+      "expected_certainty": "speculative",
+      "notes": "Negation with contrary-to-expectation framing"
+    },
+    {
+      "id": "neg_05",
+      "category": "negation",
+      "text": "The experiment failed to demonstrate that the drug reduces blood pressure.",
+      "gold_triplets": [],
+      "expected_certainty": "speculative",
+      "notes": "Failure to demonstrate = implicit negation"
+    },
+    {
+      "id": "neg_06",
+      "category": "negation",
+      "text": "There is no evidence that homeopathy is more effective than placebo.",
+      "gold_triplets": [],
+      "expected_certainty": "speculative",
+      "notes": "No evidence claim"
+    },
+    {
+      "id": "neg_07",
+      "category": "negation",
+      "text": "Goldfish do not have a three-second memory. They can remember things for months.",
+      "gold_triplets": [["goldfish", "has_property", "months-long memory"]],
+      "expected_certainty": "mixed",
+      "notes": "First sentence is negation, second is positive fact"
+    },
+    {
+      "id": "neg_08",
+      "category": "negation",
+      "text": "The Great Wall of China is not visible from space with the naked eye.",
+      "gold_triplets": [],
+      "expected_certainty": "speculative",
+      "notes": "Negation of common misconception"
+    },
+    {
+      "id": "adv_01",
+      "category": "adversarial_punctuation",
+      "text": "The enzyme — which was first isolated in 1953 — catalyzes the hydrolysis of ATP; this process releases energy for cellular work.",
+      "gold_triplets": [["enzyme", "causes", "atp hydrolysis"], ["enzyme", "has_property", "isolated 1953"], ["atp hydrolysis", "causes", "energy release"]]
+    },
+    {
+      "id": "adv_02",
+      "category": "adversarial_punctuation",
+      "text": "According to Smith et al. (2019), \"the compound exhibits remarkable selectivity\" for dopamine receptors (D2 subtype).",
+      "gold_triplets": [["compound", "has_property", "dopamine receptor selectivity"], ["compound", "has_property", "d2 subtype selectivity"]]
+    },
+    {
+      "id": "adv_03",
+      "category": "adversarial_punctuation",
+      "text": "Temperature (measured in °C) affects reaction rate: higher temps → faster reactions; lower temps → slower reactions.",
+      "gold_triplets": [["temperature", "causes", "reaction rate change"], ["higher temperature", "causes", "faster reactions"], ["lower temperature", "causes", "slower reactions"]]
+    },
+    {
+      "id": "adv_04",
+      "category": "adversarial_punctuation",
+      "text": "The patient's symptoms included: (1) fever, (2) cough, and (3) shortness of breath — all consistent with pneumonia.",
+      "gold_triplets": [["pneumonia", "causes", "fever"], ["pneumonia", "causes", "cough"], ["pneumonia", "causes", "shortness of breath"]]
+    },
+    {
+      "id": "adv_05",
+      "category": "adversarial_punctuation",
+      "text": "CO₂ + H₂O ⇌ H₂CO₃ (carbonic acid); this equilibrium is critical for blood pH regulation.",
+      "gold_triplets": [["co2", "causes", "carbonic acid"], ["carbonic acid equilibrium", "enables", "blood ph regulation"]]
+    },
+    {
+      "id": "adv_06",
+      "category": "adversarial_punctuation",
+      "text": "The protein (MW: ~67 kDa) binds to the receptor's extracellular domain; Kd = 2.3 nM.",
+      "gold_triplets": [["protein", "has_property", "67 kda molecular weight"], ["protein", "has_property", "binds receptor extracellular domain"], ["protein", "has_property", "2.3 nm binding affinity"]]
+    },
+    {
+      "id": "dup_01",
+      "category": "duplicate_phrasing",
+      "text": "Aspirin reduces fever. Acetylsalicylic acid lowers body temperature.",
+      "gold_triplets": [["aspirin", "inhibits", "fever"]],
+      "notes": "Same fact phrased differently — should collapse"
+    },
+    {
+      "id": "dup_02",
+      "category": "duplicate_phrasing",
+      "text": "The heart pumps blood throughout the body. Blood is circulated by the heart to all organs.",
+      "gold_triplets": [["heart", "causes", "blood circulation"]],
+      "notes": "Active vs passive voice, same fact"
+    },
+    {
+      "id": "dup_03",
+      "category": "duplicate_phrasing",
+      "text": "Insulin regulates blood sugar levels. Blood glucose is controlled by insulin. The hormone insulin manages blood sugar concentration.",
+      "gold_triplets": [["insulin", "causes", "blood sugar regulation"]],
+      "notes": "Three phrasings of the same fact"
+    },
+    {
+      "id": "dup_04",
+      "category": "duplicate_phrasing",
+      "text": "Lions are carnivores. Lions eat meat. The diet of lions consists of animal flesh.",
+      "gold_triplets": [["lions", "is_a", "carnivore"]],
+      "notes": "Three phrasings of the same classification"
+    },
+    {
+      "id": "dup_05",
+      "category": "duplicate_phrasing",
+      "text": "The Sun is a star. Our Sun is classified as a G-type main-sequence star.",
+      "gold_triplets": [["sun", "is_a", "star"], ["sun", "is_a", "g-type main-sequence star"]],
+      "notes": "Second is more specific — both valid, not true duplicates"
+    },
+    {
+      "id": "dup_06",
+      "category": "duplicate_phrasing",
+      "text": "Caffeine stimulates the central nervous system. Coffee's active ingredient excites neural pathways.",
+      "gold_triplets": [["caffeine", "causes", "cns stimulation"]],
+      "notes": "Same mechanism, different vocabulary"
+    },
+    {
+      "id": "contra_01",
+      "category": "contradiction",
+      "text": "The study found that coffee increases heart attack risk. However, a larger meta-analysis concluded that moderate coffee consumption decreases cardiovascular risk.",
+      "gold_triplets": [["coffee", "causes", "heart attack risk"], ["coffee consumption", "inhibits", "cardiovascular risk"]],
+      "expected_paradox": true,
+      "notes": "Direct contradiction within one document"
+    },
+    {
+      "id": "contra_02",
+      "category": "contradiction",
+      "text": "Vitamin C cures the common cold. Clinical trials show Vitamin C does not cure colds but may slightly reduce symptom duration.",
+      "gold_triplets": [["vitamin c", "treats", "common cold"], ["vitamin c", "inhibits", "cold symptom duration"]],
+      "expected_paradox": true,
+      "notes": "Claim then refutation"
+    },
+    {
+      "id": "contra_03",
+      "category": "contradiction",
+      "text": "The Earth is 4.5 billion years old. Young Earth creationists claim the Earth is 6,000 years old.",
+      "gold_triplets": [["earth", "has_property", "4.5 billion years old"], ["earth", "has_property", "6000 years old"]],
+      "expected_paradox": true,
+      "notes": "Contradictory age claims"
+    },
+    {
+      "id": "contra_04",
+      "category": "contradiction",
+      "text": "Salt raises blood pressure. A 2023 study found that moderate salt intake has no significant effect on blood pressure in healthy adults.",
+      "gold_triplets": [["salt", "causes", "high blood pressure"], ["moderate salt intake", "has_property", "no blood pressure effect"]],
+      "expected_paradox": true,
+      "notes": "Blanket vs qualified claim"
+    },
+    {
+      "id": "contra_05",
+      "category": "contradiction",
+      "text": "Exercise is beneficial for depression. Overtraining can worsen depressive symptoms.",
+      "gold_triplets": [["exercise", "treats", "depression"], ["overtraining", "causes", "depression"]],
+      "expected_paradox": true,
+      "notes": "Nuanced contradiction — dose-dependent"
+    },
+    {
+      "id": "contra_06",
+      "category": "contradiction",
+      "text": "Red wine is good for heart health due to resveratrol. The WHO classifies alcohol as a Group 1 carcinogen.",
+      "gold_triplets": [["red wine", "enables", "heart health"], ["alcohol", "is_a", "group 1 carcinogen"]],
+      "expected_paradox": true,
+      "notes": "Beneficial vs carcinogenic"
+    },
+    {
+      "id": "list_01",
+      "category": "list_table",
+      "text": "Essential amino acids include: leucine, isoleucine, valine, lysine, methionine, phenylalanine, threonine, tryptophan, and histidine.",
+      "gold_triplets": [["leucine", "is_a", "essential amino acid"], ["isoleucine", "is_a", "essential amino acid"], ["valine", "is_a", "essential amino acid"], ["lysine", "is_a", "essential amino acid"], ["methionine", "is_a", "essential amino acid"], ["phenylalanine", "is_a", "essential amino acid"], ["threonine", "is_a", "essential amino acid"], ["tryptophan", "is_a", "essential amino acid"], ["histidine", "is_a", "essential amino acid"]]
+    },
+    {
+      "id": "list_02",
+      "category": "list_table",
+      "text": "The noble gases are helium, neon, argon, krypton, xenon, and radon. They are characterized by full outer electron shells.",
+      "gold_triplets": [["helium", "is_a", "noble gas"], ["neon", "is_a", "noble gas"], ["argon", "is_a", "noble gas"], ["krypton", "is_a", "noble gas"], ["xenon", "is_a", "noble gas"], ["radon", "is_a", "noble gas"], ["noble gases", "has_property", "full outer electron shells"]]
+    },
+    {
+      "id": "list_03",
+      "category": "list_table",
+      "text": "Three types of rock: igneous (formed from magma), sedimentary (layered deposits), and metamorphic (transformed by heat/pressure).",
+      "gold_triplets": [["igneous rock", "is_a", "rock type"], ["sedimentary rock", "is_a", "rock type"], ["metamorphic rock", "is_a", "rock type"], ["igneous rock", "causes", "formed from magma"], ["metamorphic rock", "causes", "transformed by heat and pressure"]]
+    },
+    {
+      "id": "list_04",
+      "category": "list_table",
+      "text": "The four fundamental forces of nature are: gravitational force, electromagnetic force, strong nuclear force, and weak nuclear force.",
+      "gold_triplets": [["gravitational force", "is_a", "fundamental force"], ["electromagnetic force", "is_a", "fundamental force"], ["strong nuclear force", "is_a", "fundamental force"], ["weak nuclear force", "is_a", "fundamental force"]]
+    },
+    {
+      "id": "list_05",
+      "category": "list_table",
+      "text": "RNA polymerase transcribes DNA into mRNA. Ribosomes then translate mRNA into proteins. tRNA carries amino acids to the ribosome.",
+      "gold_triplets": [["rna polymerase", "causes", "dna to mrna transcription"], ["ribosomes", "causes", "mrna to protein translation"], ["trna", "causes", "amino acid transport to ribosome"]]
+    },
+    {
+      "id": "list_06",
+      "category": "list_table",
+      "text": "Vitamins are classified as either fat-soluble (A, D, E, K) or water-soluble (B-complex, C).",
+      "gold_triplets": [["vitamin a", "is_a", "fat-soluble vitamin"], ["vitamin d", "is_a", "fat-soluble vitamin"], ["vitamin e", "is_a", "fat-soluble vitamin"], ["vitamin k", "is_a", "fat-soluble vitamin"], ["b-complex", "is_a", "water-soluble vitamin"], ["vitamin c", "is_a", "water-soluble vitamin"]]
+    }
+  ]
+}

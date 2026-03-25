@@ -23,6 +23,7 @@ from internal.algorithms.semantic_arithmetic import (
     GodelStateAlgebra,
     SemanticPrimeNumberTheorem,
 )
+from internal.ensemble.extraction_validator import ExtractionValidator
 
 logger = logging.getLogger(__name__)
 
@@ -77,10 +78,26 @@ class MassSemanticEngine:
             await asyncio.gather(*tasks)
         )
 
-        # ── 2. ENCODE: Convert string triplets to Gödel integers ───
+        # ── 1.5 VALIDATE: Structural gate (Phase 19A) ─────────────
+        validator = ExtractionValidator()
+        validated_chunks = []
+        total_rejected = 0
+        all_rejection_reasons = []
+
+        for chunk_triplets in extracted_chunks:
+            result = validator.validate_batch(chunk_triplets)
+            validated_chunks.append(result.accepted)
+            total_rejected += result.rejected_count
+            for rej in result.rejected:
+                all_rejection_reasons.append({
+                    "triplet": f"{rej.subject}||{rej.predicate}||{rej.object_}",
+                    "reason": rej.reason,
+                })
+
+        # ── 2. ENCODE: Convert validated triplets to Gödel integers ──
         chunk_states = [
             self.algebra.encode_chunk_state(triplets)
-            for triplets in extracted_chunks
+            for triplets in validated_chunks
         ]
 
         # ── 3. REDUCE: Mathematical Merge via LCM ──────────────────
@@ -116,4 +133,6 @@ class MassSemanticEngine:
             "spnt_limit": spnt_limit,
             "compression_ok": compression_ok,
             "paradoxes": paradoxes,
+            "rejected_count": total_rejected,
+            "rejection_reasons": all_rejection_reasons,
         }
