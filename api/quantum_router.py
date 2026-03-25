@@ -114,8 +114,10 @@ class GlobalKnowledgeOS:
         if self.is_booted:
             return
 
-        # Crash recovery: rebuild main branch from event log
-        self.branches["main"] = await self.ledger.rebuild_state(self.algebra)
+        # Crash recovery: rebuild main branch from event log (branch-filtered)
+        self.branches["main"] = await self.ledger.rebuild_state(
+            self.algebra, branch="main"
+        )
 
         # Phase 0: Restore all durable branch heads from snapshots
         saved_heads = await self.ledger.load_branch_heads()
@@ -191,8 +193,21 @@ class GlobalKnowledgeOS:
         self.is_booted = True
 
     def _update_branch_state(self, branch: str, new_state: int):
-        """Callback for the P2P mesh to update branch states."""
+        """Callback for the P2P mesh to update branch states.
+
+        Phase 0.1: Also persists the snapshot so gossip-acquired
+        knowledge survives restart.
+        """
         self.branches[branch] = new_state
+        # Fire-and-forget persistence (mesh runs in async context)
+        asyncio.ensure_future(self._persist_branch_update(branch, new_state))
+
+    async def _persist_branch_update(self, branch: str, new_state: int):
+        """Persist branch head after mesh gossip update."""
+        try:
+            await self.ledger.save_branch_head(branch, new_state)
+        except Exception as e:
+            logger.warning("Failed to persist mesh branch update: %s", e)
 
 
 # Singleton instance used by route handlers
@@ -506,11 +521,12 @@ async def ingest_document(
             )
             await kos.ledger.append_event(
                 "MINT", prime, axiom,
+                branch=branch,
                 source_url=request.source_url,
                 confidence=conf,
                 ingested_at=_now,
             )
-            await kos.ledger.append_event("MUL", prime)
+            await kos.ledger.append_event("MUL", prime, branch=branch)
             delta_axioms.append(axiom)
 
     # 5. Apply Interacting Theory (Causal Cascades)
@@ -519,7 +535,10 @@ async def ingest_document(
             kos.branches[branch], delta_axioms
         )
 
-    # 6. Background vector indexing
+    # 6. Phase 0.1: Save branch head after ingest (includes cascade result)
+    await kos.ledger.save_branch_head(branch, kos.branches[branch])
+
+    # 7. Background vector indexing
     if hasattr(kos, "vector_bridge"):
         background_tasks.add_task(kos.vector_bridge.index_new_primes)
 
@@ -611,11 +630,12 @@ async def ingest_math_direct(
                 )
             await kos.ledger.append_event(
                 "MINT", prime, axiom,
+                branch=branch,
                 source_url=request.source_url,
                 confidence=conf,
                 ingested_at=_now,
             )
-            await kos.ledger.append_event("MUL", prime)
+            await kos.ledger.append_event("MUL", prime, branch=branch)
 
         # Apply Interacting Theory (Causal Cascades)
         axioms_strs = [a[1] for a in added_axioms]
@@ -625,6 +645,9 @@ async def ingest_math_direct(
             )
 
         kos.branches[branch] = new_state
+
+        # Phase 0.1: Save branch head after math ingest
+        await kos.ledger.save_branch_head(branch, new_state)
 
         # Background vector indexing
         if hasattr(kos, "vector_bridge"):
@@ -1132,11 +1155,29 @@ async def import_knowledge_bundle(
     new_state = math.lcm(current, imported_state)
     kos.branches[user_id] = new_state
 
-    # Phase 0: Persist imported axioms via MINT+MUL events
-    # Factor the delta primes from the imported state
+    # Phase 0.1: Materialize novel axioms from the bundle's canonical tome
+    # Parse the tome to register axiom↔prime mappings locally
+    bundle_tome = req.bundle.get("canonical_tome", "")
+    for line in bundle_tome.splitlines():
+        line = line.strip()
+        # Canonical format: "- subject||predicate||object [prime: NNN]"
+        if line.startswith("- ") and "||" in line:
+            axiom_part = line[2:].strip()
+            # Strip optional prime annotation
+            if " [prime:" in axiom_part:
+                axiom_part = axiom_part[:axiom_part.index(" [prime:")].strip()
+            parts = axiom_part.split("||")
+            if len(parts) == 3:
+                s, p, o = [x.strip().lower() for x in parts]
+                # get_or_mint_prime is idempotent — will reuse existing mapping
+                kos.algebra.get_or_mint_prime(s, p, o)
+
+    # Phase 0: Persist imported axioms via MUL events
     for prime, axiom in kos.algebra.prime_to_axiom.items():
         if imported_state % prime == 0 and current % prime != 0:
-            # This axiom is new from the import
+            await kos.ledger.append_event(
+                "MINT", prime, axiom, branch=user_id
+            )
             await kos.ledger.append_event(
                 "MUL", prime, branch=user_id
             )
