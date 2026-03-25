@@ -285,6 +285,7 @@ async def get_current_user(authorization: str = Header(None)) -> str:
         user_id = payload.get("sub", "main")
         if user_id not in kos.branches:
             kos.branches[user_id] = 1
+            kos.prime_index.rebuild(user_id, 1, kos.algebra)  # 19D coherence
         return user_id
     except Exception:
         raise HTTPException(
@@ -410,6 +411,7 @@ async def generate_token(req: TokenRequest):
     token = create_access_token(req.username)
     if req.username not in kos.branches:
         kos.branches[req.username] = 1
+        kos.prime_index.rebuild(req.username, 1, kos.algebra)  # 19D coherence
         # Phase 0: Persist the empty branch head
         await kos.ledger.save_branch_head(req.username, 1)
     return {
@@ -538,6 +540,7 @@ async def ingest_document(
 
     # 3. Mathematical merge
     kos.branches[branch] = math.lcm(branch_state, new_state)
+    kos.prime_index.rebuild(branch, kos.branches[branch], kos.algebra)  # 19D coherence
 
     # 4. Akashic trace — log new primes (Phase 22: with provenance)
     #    Stage 4: Run hedging detection on the raw text for linguistic certainty.
@@ -574,6 +577,8 @@ async def ingest_document(
         kos.branches[branch] = await kos.trigger_map.apply_cascade(
             kos.branches[branch], delta_axioms
         )
+        # 19D coherence: cascade may mint new primes
+        kos.prime_index.rebuild(branch, kos.branches[branch], kos.algebra)
 
     # 6. Phase 0.1: Save branch head after ingest (includes cascade result)
     await kos.ledger.save_branch_head(branch, kos.branches[branch])
@@ -937,6 +942,8 @@ async def time_travel(
         historical_algebra, max_seq_id=req.target_tick
     )
     kos.branches[req.new_branch_name] = past_state
+    # 19D coherence: historical algebra is separate, rebuild from main algebra
+    kos.prime_index.rebuild(req.new_branch_name, past_state, kos.algebra)
 
     # Phase 0: Save as ephemeral (transient — can be re-derived from tick)
     await kos.ledger.save_branch_head(
@@ -1216,6 +1223,7 @@ async def import_knowledge_bundle(
     current = kos.branches.get(user_id, 1)
     new_state = math.lcm(current, imported_state)
     kos.branches[user_id] = new_state
+    kos.prime_index.rebuild(user_id, new_state, kos.algebra)  # 19D coherence
 
     # Phase 0.1: Materialize novel axioms from the bundle's canonical tome
     # Parse the tome to register axiom↔prime mappings locally
@@ -1319,6 +1327,8 @@ async def sync_peer_state(
 
     if new_state != current_state:
         kos.branches[effective_branch] = new_state
+        # 19D coherence: P2P sync may introduce novel primes
+        kos.prime_index.rebuild(effective_branch, new_state, kos.algebra)
 
         # Phase 0: Persist synced axioms via proper MUL events
         for prime in kos.algebra.prime_to_axiom:
