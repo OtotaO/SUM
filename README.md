@@ -2,7 +2,7 @@
 
 [![Quantum Knowledge OS CI](https://github.com/OtotaO/SUM/actions/workflows/quantum-ci.yml/badge.svg)](https://github.com/OtotaO/SUM/actions/workflows/quantum-ci.yml)
 
-> **From Atomic Tags to Structured Books. Mathematically Verified within the Canonical Semantic Boundary.**
+> **Distill the Universe. Expand the Atom. Mathematically Verified within the Canonical Semantic Boundary.**
 
 SUM is a **Gödel-State Knowledge Engine** — a system that encodes semantic content as prime-factored integers and performs semantic operations (merge, entailment, paradox detection, graph traversal) using pure number theory, avoiding corpus-scale scanning.
 
