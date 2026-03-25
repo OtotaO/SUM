@@ -329,7 +329,7 @@ Final Integration — Operational ....... 20 ✓  (guards in handlers, evidence 
 > - **Extraction gating (19A):** structural validator rejects malformed/duplicate triplets before algebra ingestion
 > - **Golden benchmark (19B):** 50 annotated documents, 100 gold-standard triplets, 7 adversarial categories
 > - **Merkle chain (19C):** SHA-256 hash-chain on event log; 3-tier enforcement policy (`warn`/`degraded`/`strict` via `SUM_MERKLE_POLICY`)
-> - **Active Prime Index (19D):** O(1) active-prime lookup per branch; eliminates O(n) scan over `prime_to_axiom`
+> - **Active Prime Index (19D):** O(1) active-prime lookup per branch; coherence-validated across 13 mutation paths. Hot-path callers not yet migrated — adoption is profiling-driven
 > - **Evidence enrichment:** affects `/ingest` (LLM path) and `/ingest/math` (direct path); other ingestion surfaces not yet covered
 > - **Linguistic certainty:** document-level (coarse-grained) in `/ingest`; `/ingest/math` defaults to 1.0 (definitional)
 
