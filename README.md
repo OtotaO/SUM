@@ -271,7 +271,7 @@ SUM/
 ## 🛡️ Mathematical Verification Suite
 
 ```text
-712+ passed · 21/21 fortress checks
+726+ passed · 21/21 fortress checks
 
 ─── Core Hardening ───
 ZK Semantic Proofs .................... 16 ✓  (round-trip, tamper, non-linkability, stress)
@@ -288,7 +288,7 @@ Phase 0 — Durability Contract ......... 8  ✓  (crash recovery, branch isolat
 Phase 0.1 — Durability Integrity ...... 6  ✓  (branch rebuild, import materialization, gossip)
 Phase 19A — Extraction Validator ...... 25 ✓  (structural gate, canonicalization, dedup)
 Phase 19C — Merkle Hash-Chain ......... 16 ✓  (tamper, deletion, injection detection)
-Phase 19D — Active Prime Index ........ 16 ✓  (lifecycle, queries, consistency, performance)
+Phase 19D — Active Prime Index ........ 30 ✓  (lifecycle, queries, consistency, coherence invariant)
 
 ─── Phase Tests ───
 Phase 17b — BigInt Zig C-ABI .......... 22 ✓  (LCM, GCD, mod, divisibility, consistency)
