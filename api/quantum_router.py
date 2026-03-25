@@ -133,6 +133,16 @@ class GlobalKnowledgeOS:
             len(self.branches),
         )
 
+        # Phase 19C: Verify Merkle hash-chain integrity
+        chain_valid, break_at = await self.ledger.verify_chain()
+        if chain_valid:
+            logger.info("Merkle chain: ✅ verified — ledger integrity intact")
+        else:
+            logger.warning(
+                "Merkle chain: ⚠️ TAMPER DETECTED at seq_id=%d — "
+                "operating in degraded trust mode", break_at
+            )
+
         # Interacting Theory Setup (Causal Engine)
         self.trigger_map = CausalTriggerMap(self.algebra, self.ledger)
 

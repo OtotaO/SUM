@@ -19,11 +19,17 @@ Phase 0 Durability Contract:
     - ``branch_heads`` snapshot table for instant boot
     Model C (Hybrid): event log = source of truth, snapshots = fast cache.
 
+Phase 19C Merkle Hash-Chain:
+    Each event stores ``prev_hash = SHA-256(prev_hash + payload)``.
+    The chain is verified on boot for tamper detection.
+    Genesis seed: SHA-256("SUM_GENESIS_BLOCK").
+
 Author: ototao
 License: Apache License 2.0
 """
 
 import math
+import hashlib
 import sqlite3
 import asyncio
 import logging
@@ -31,6 +37,16 @@ import logging
 from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
 
 logger = logging.getLogger(__name__)
+
+# Phase 19C: Merkle Hash-Chain
+GENESIS_HASH = hashlib.sha256(b"SUM_GENESIS_BLOCK").hexdigest()
+
+
+def compute_event_hash(prev_hash: str, operation: str, prime: str,
+                       axiom_key: str, branch: str) -> str:
+    """Compute SHA-256 hash for an event in the Merkle chain."""
+    payload = f"{prev_hash}|{operation}|{prime}|{axiom_key}|{branch}"
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def _zig():
@@ -89,6 +105,8 @@ class AkashicLedger:
             self._migrate_provenance(conn)
             # Phase 0: Branch column migration
             self._migrate_branch_column(conn)
+            # Phase 19C: Merkle hash-chain migration
+            self._migrate_hash_chain(conn)
 
     def _migrate_provenance(self, conn: sqlite3.Connection) -> None:
         """Idempotent migration: add provenance columns if missing."""
@@ -111,6 +129,16 @@ class AkashicLedger:
         try:
             conn.execute(
                 "ALTER TABLE semantic_events ADD COLUMN branch TEXT DEFAULT 'main'"
+            )
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass  # Column already exists
+
+    def _migrate_hash_chain(self, conn: sqlite3.Connection) -> None:
+        """Phase 19C: Idempotent migration — add prev_hash column if missing."""
+        try:
+            conn.execute(
+                "ALTER TABLE semantic_events ADD COLUMN prev_hash TEXT DEFAULT ''"
             )
             conn.commit()
         except sqlite3.OperationalError:
@@ -146,12 +174,23 @@ class AkashicLedger:
         """
         def _write():
             with sqlite3.connect(self.db_path) as conn:
+                # Phase 19C: Compute Merkle hash chain
+                row = conn.execute(
+                    "SELECT prev_hash FROM semantic_events "
+                    "ORDER BY seq_id DESC LIMIT 1"
+                ).fetchone()
+                prev_hash = row[0] if row and row[0] else GENESIS_HASH
+                event_hash = compute_event_hash(
+                    prev_hash, operation, str(prime), axiom_key, branch
+                )
+
                 conn.execute(
                     "INSERT INTO semantic_events "
-                    "(operation, prime, axiom_key, branch, source_url, confidence, ingested_at) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    "(operation, prime, axiom_key, branch, source_url, "
+                    "confidence, ingested_at, prev_hash) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                     (operation, str(prime), axiom_key, branch,
-                     source_url, confidence, ingested_at),
+                     source_url, confidence, ingested_at, event_hash),
                 )
 
         await asyncio.to_thread(_write)
@@ -396,5 +435,60 @@ class AkashicLedger:
                     "SELECT MAX(seq_id) FROM semantic_events"
                 ).fetchone()
                 return res[0] if res[0] else 0
+
+        return await asyncio.to_thread(_read)
+
+    # ------------------------------------------------------------------
+    # Phase 19C: Merkle Hash-Chain Verification
+    # ------------------------------------------------------------------
+
+    async def verify_chain(self) -> tuple:
+        """
+        Walk the entire event hash chain and verify integrity.
+
+        Returns:
+            (is_valid: bool, break_seq_id: int | None)
+            If valid, break_seq_id is None.
+            If tampered, break_seq_id is the first corrupted event.
+        """
+        def _verify():
+            with sqlite3.connect(self.db_path) as conn:
+                rows = conn.execute(
+                    "SELECT seq_id, operation, prime, axiom_key, branch, prev_hash "
+                    "FROM semantic_events ORDER BY seq_id ASC"
+                ).fetchall()
+
+            if not rows:
+                return (True, None)
+
+            prev_hash = GENESIS_HASH
+            for seq_id, operation, prime, axiom_key, branch, stored_hash in rows:
+                expected = compute_event_hash(
+                    prev_hash, operation, prime, axiom_key or "", branch or "main"
+                )
+                if stored_hash != expected:
+                    return (False, seq_id)
+                prev_hash = stored_hash
+
+            return (True, None)
+
+        return await asyncio.to_thread(_verify)
+
+    async def get_chain_tip(self) -> str:
+        """
+        Return the hash of the most recent event (chain tip).
+
+        Useful for sync protocols and integrity checks.
+
+        Returns:
+            The latest prev_hash, or GENESIS_HASH if the ledger is empty.
+        """
+        def _read():
+            with sqlite3.connect(self.db_path) as conn:
+                row = conn.execute(
+                    "SELECT prev_hash FROM semantic_events "
+                    "ORDER BY seq_id DESC LIMIT 1"
+                ).fetchone()
+                return row[0] if row and row[0] else GENESIS_HASH
 
         return await asyncio.to_thread(_read)
