@@ -171,7 +171,7 @@ class TestAPIDualFormat:
         """After ingest, all hex fields are consistent with their decimal counterparts."""
         booted_app.post(
             "/api/v1/quantum/ingest/math",
-            json={"triplets": [["x", "y", "z"]]},
+            json={"triplets": [["earth", "orbits", "sun"]]},
         )
         # Check /state
         state_resp = booted_app.get("/api/v1/quantum/state")
