@@ -115,6 +115,9 @@ class AutomatedScientistDaemon:
             await self.kos.ledger.append_event("MUL", prime)
 
         self.kos.branches["main"] = new_state
+        # 19D coherence: daemon mutation must update index
+        if hasattr(self.kos, 'prime_index'):
+            self.kos.prime_index.rebuild("main", new_state, self.kos.algebra)
         self.total_discoveries += len(novel_triplets)
 
         logger.info(

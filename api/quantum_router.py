@@ -105,6 +105,7 @@ class GlobalKnowledgeOS:
     @global_state.setter
     def global_state(self, value):
         self.branches["main"] = value
+        self.prime_index.rebuild("main", value, self.algebra)  # 19D coherence
 
     async def boot_sequence(self, llm_adapter=None):
         """
@@ -239,6 +240,7 @@ class GlobalKnowledgeOS:
         knowledge survives restart.
         """
         self.branches[branch] = new_state
+        self.prime_index.rebuild(branch, new_state, self.algebra)  # 19D coherence
         # Fire-and-forget persistence (mesh runs in async context)
         asyncio.ensure_future(self._persist_branch_update(branch, new_state))
 
