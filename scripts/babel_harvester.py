@@ -24,7 +24,7 @@ import os
 import httpx
 import feedparser
 import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 # Allow importing from project root
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -36,7 +36,7 @@ from internal.algorithms.syntactic_sieve import DeterministicSieve
 
 SECRET_KEY = os.getenv("SUM_JWT_SECRET", "quantum_supremacy_secret_key_minimum_32b")
 harvester_token = jwt.encode(
-    {"sub": "babel_harvester", "exp": datetime.utcnow() + timedelta(days=365)},
+    {"sub": "babel_harvester", "exp": datetime.now(timezone.utc) + timedelta(days=365)},
     SECRET_KEY,
     algorithm="HS256",
 )

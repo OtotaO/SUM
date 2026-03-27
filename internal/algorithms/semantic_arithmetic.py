@@ -811,6 +811,34 @@ class ActivePrimeIndex:
             if p in algebra.prime_to_axiom
         ]
 
+    def assert_coherent(
+        self,
+        branch: str,
+        state: int,
+        algebra: "GodelStateAlgebra",
+        context: str = "",
+    ) -> None:
+        """Debug assertion: verify index matches brute-force scan."""
+        import os
+        if not os.getenv("SUM_DEBUG_INDEX"):
+            return
+
+        indexed = sorted(self.get_active_axioms(branch, algebra))
+        brute = sorted(algebra.get_active_axioms(state))
+        if indexed != brute:
+            indexed_set = set(indexed)
+            brute_set = set(brute)
+            missing = brute_set - indexed_set
+            extra = indexed_set - brute_set
+            raise AssertionError(
+                f"INDEX COHERENCE VIOLATION [{context}] "
+                f"branch={branch}: "
+                f"index has {len(indexed)} axioms, "
+                f"brute-force has {len(brute)} axioms. "
+                f"Missing from index: {missing}. "
+                f"Extra in index: {extra}."
+            )
+
     def extract_axioms_from_product(
         self, product: int, algebra: GodelStateAlgebra,
         candidate_primes: Set[int] = None,

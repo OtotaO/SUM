@@ -133,8 +133,8 @@ def ingest(source, source_url, confidence):
         raise SystemExit(1)
 
     # Ingest
-    from datetime import datetime
-    now = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
     added = 0
 
     async def _ingest():
@@ -213,8 +213,8 @@ def ask(question, top_k):
     if scored:
         axiom_keys = [item[4] for item in scored]
         prov_map = asyncio.run(ledger.get_provenance_batch(axiom_keys))
-        from datetime import datetime as _dt
-        _now = _dt.utcnow()
+        from datetime import datetime as _dt, timezone as _tz
+        _now = _dt.now(_tz.utc)
 
         weighted = []
         for score, s, p, o, ax in scored:

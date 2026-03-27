@@ -32,7 +32,8 @@ import logging
 import math
 import asyncio
 import os
-from datetime import datetime, timedelta
+from collections import defaultdict
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
 import jwt
@@ -95,7 +96,12 @@ class GlobalKnowledgeOS:
             cls._instance.is_booted = False
             cls._instance.is_chain_valid = True  # Set by boot_sequence()
             cls._instance.prime_index = ActivePrimeIndex()  # Phase 19D
+            cls._instance._branch_locks = defaultdict(asyncio.Lock)
         return cls._instance
+
+    def branch_lock(self, branch: str) -> asyncio.Lock:
+        """Get the async lock for a specific branch. Creates on first access."""
+        return self._branch_locks[branch]
 
     @property
     def global_state(self):
@@ -239,10 +245,17 @@ class GlobalKnowledgeOS:
         Phase 0.1: Also persists the snapshot so gossip-acquired
         knowledge survives restart.
         """
-        self.branches[branch] = new_state
-        self.prime_index.rebuild(branch, new_state, self.algebra)  # 19D coherence
-        # Fire-and-forget persistence (mesh runs in async context)
-        asyncio.ensure_future(self._persist_branch_update(branch, new_state))
+        asyncio.ensure_future(self._locked_branch_update(branch, new_state))
+
+    async def _locked_branch_update(self, branch: str, new_state: int):
+        """Locked branch state update for mesh callbacks."""
+        async with self.branch_lock(branch):
+            self.branches[branch] = new_state
+            self.prime_index.rebuild(branch, new_state, self.algebra)  # 19D coherence
+            self.prime_index.assert_coherent(
+                branch, new_state, self.algebra, context="mesh_callback"
+            )
+            await self._persist_branch_update(branch, new_state)
 
     async def _persist_branch_update(self, branch: str, new_state: int):
         """Persist branch head after mesh gossip update."""
@@ -258,13 +271,19 @@ kos = GlobalKnowledgeOS()
 
 # ─── JWT Sovereign Tenancy ────────────────────────────────────────────
 
-SECRET_KEY = os.getenv("SUM_JWT_SECRET", "quantum_supremacy_secret_key_minimum_32b")
+_DEFAULT_SECRET = "quantum_supremacy_secret_key_minimum_32b"
+SECRET_KEY = os.getenv("SUM_JWT_SECRET", _DEFAULT_SECRET)
+if SECRET_KEY == _DEFAULT_SECRET:
+    logging.getLogger(__name__).warning(
+        "⚠️  SUM_JWT_SECRET is not set — using default key. "
+        "This is INSECURE for production. Set SUM_JWT_SECRET env var."
+    )
 ALGORITHM = "HS256"
 
 
 def create_access_token(user_id: str) -> str:
     """Create a JWT Quantum Passport for multi-tenant branch isolation."""
-    expire = datetime.utcnow() + timedelta(days=7)
+    expire = datetime.now(timezone.utc) + timedelta(days=7)
     return jwt.encode(
         {"sub": user_id, "exp": expire}, SECRET_KEY, algorithm=ALGORITHM
     )
@@ -286,9 +305,20 @@ async def get_current_user(authorization: str = Header(None)) -> str:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id = payload.get("sub", "main")
         if user_id not in kos.branches:
+            MAX_AUTO_BRANCHES = int(os.getenv("SUM_MAX_BRANCHES", "1000"))
+            if len(kos.branches) >= MAX_AUTO_BRANCHES:
+                raise HTTPException(
+                    status_code=429,
+                    detail=(
+                        f"Branch limit reached ({MAX_AUTO_BRANCHES}). "
+                        "Contact admin to increase SUM_MAX_BRANCHES."
+                    ),
+                )
             kos.branches[user_id] = 1
             kos.prime_index.rebuild(user_id, 1, kos.algebra)  # 19D coherence
         return user_id
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Quantum Passport expired")
     except Exception:
         raise HTTPException(
             status_code=401, detail="Invalid or expired Quantum Passport"
@@ -380,6 +410,7 @@ class SyncStateRequest(BaseModel):
     """P2P sync: accept a foreign Gödel Integer for O(1) LCM merge."""
     peer_state_integer: str
     prime_scheme: Optional[str] = None  # Defaults to current scheme if absent
+    peer_signature: Optional[str] = None  # HMAC of peer state integer
 
 
 class OuroborosRequest(BaseModel):
@@ -526,64 +557,67 @@ async def ingest_document(
         )
 
     branch = request.branch
-    branch_state = _get_branch_state(branch)
+    async with kos.branch_lock(branch):
+        branch_state = _get_branch_state(branch)
 
-    # 1. Chunk the text
-    chunk_size = 2000
-    chunks = [
-        request.text[i : i + chunk_size]
-        for i in range(0, len(request.text), chunk_size)
-    ]
-    raw_claims_estimate = max(len(request.text) // 100, 1)
+        # 1. Chunk the text
+        chunk_size = 2000
+        chunks = [
+            request.text[i : i + chunk_size]
+            for i in range(0, len(request.text), chunk_size)
+        ]
+        raw_claims_estimate = max(len(request.text) // 100, 1)
 
-    # 2. MapReduce extraction
-    result = await kos.mass_engine.tomes_to_tags(raw_claims_estimate, chunks)
-    new_state = result["global_state"]
+        # 2. MapReduce extraction
+        result = await kos.mass_engine.tomes_to_tags(raw_claims_estimate, chunks)
+        new_state = result["global_state"]
 
-    # 3. Mathematical merge
-    kos.branches[branch] = math.lcm(branch_state, new_state)
-    kos.prime_index.rebuild(branch, kos.branches[branch], kos.algebra)  # 19D coherence
+        # 3. Mathematical merge
+        kos.branches[branch] = math.lcm(branch_state, new_state)
+        kos.prime_index.rebuild(branch, kos.branches[branch], kos.algebra)  # 19D coherence
 
-    # 4. Akashic trace — log new primes (Phase 22: with provenance)
-    #    Stage 4: Run hedging detection on the raw text for linguistic certainty.
-    #    NOTE: This is document-level certainty (coarse-grained). If the document
-    #    mixes definite and hedged statements, the score is smeared across all axioms.
-    #    Sentence-level granularity would require per-axiom source-text mapping.
-    from datetime import datetime as _dt
-    _now = _dt.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
-    text_certainty = detect_hedging(request.text)
-    calibrator = ConfidenceCalibrator()
-    delta_axioms = []
-    for prime, axiom in kos.algebra.prime_to_axiom.items():
-        if new_state % prime == 0:
-            conf = await calibrator.calibrate(
-                axiom_key=axiom,
-                source_url=request.source_url,
-                current_state=branch_state,
-                algebra=kos.algebra,
-                ledger=kos.ledger,
-                linguistic_certainty=text_certainty,
+        # 4. Akashic trace — log new primes (Phase 22: with provenance)
+        #    Stage 4: Run hedging detection on the raw text for linguistic certainty.
+        #    NOTE: This is document-level certainty (coarse-grained). If the document
+        #    mixes definite and hedged statements, the score is smeared across all axioms.
+        #    Sentence-level granularity would require per-axiom source-text mapping.
+        _now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
+        text_certainty = detect_hedging(request.text)
+        calibrator = ConfidenceCalibrator()
+        delta_axioms = []
+        for prime, axiom in kos.algebra.prime_to_axiom.items():
+            if new_state % prime == 0:
+                conf = await calibrator.calibrate(
+                    axiom_key=axiom,
+                    source_url=request.source_url,
+                    current_state=branch_state,
+                    algebra=kos.algebra,
+                    ledger=kos.ledger,
+                    linguistic_certainty=text_certainty,
+                )
+                await kos.ledger.append_event(
+                    "MINT", prime, axiom,
+                    branch=branch,
+                    source_url=request.source_url,
+                    confidence=conf,
+                    ingested_at=_now,
+                )
+                await kos.ledger.append_event("MUL", prime, branch=branch)
+                delta_axioms.append(axiom)
+
+        # 5. Apply Interacting Theory (Causal Cascades)
+        if hasattr(kos, "trigger_map") and delta_axioms:
+            kos.branches[branch] = await kos.trigger_map.apply_cascade(
+                kos.branches[branch], delta_axioms
             )
-            await kos.ledger.append_event(
-                "MINT", prime, axiom,
-                branch=branch,
-                source_url=request.source_url,
-                confidence=conf,
-                ingested_at=_now,
-            )
-            await kos.ledger.append_event("MUL", prime, branch=branch)
-            delta_axioms.append(axiom)
+            # 19D coherence: cascade may mint new primes
+            kos.prime_index.rebuild(branch, kos.branches[branch], kos.algebra)
 
-    # 5. Apply Interacting Theory (Causal Cascades)
-    if hasattr(kos, "trigger_map") and delta_axioms:
-        kos.branches[branch] = await kos.trigger_map.apply_cascade(
-            kos.branches[branch], delta_axioms
+        # 6. Phase 0.1: Save branch head after ingest (includes cascade result)
+        await kos.ledger.save_branch_head(branch, kos.branches[branch])
+        kos.prime_index.assert_coherent(
+            branch, kos.branches[branch], kos.algebra, context="ingest_document"
         )
-        # 19D coherence: cascade may mint new primes
-        kos.prime_index.rebuild(branch, kos.branches[branch], kos.algebra)
-
-    # 6. Phase 0.1: Save branch head after ingest (includes cascade result)
-    await kos.ledger.save_branch_head(branch, kos.branches[branch])
 
     # 7. Background vector indexing
     if hasattr(kos, "vector_bridge"):
@@ -618,97 +652,100 @@ async def ingest_math_direct(
         raise HTTPException(status_code=503, detail="KOS booting")
 
     branch = user_id if user_id != "main" else request.branch
-    current_state = kos.branches.get(branch, 1)
-    new_state_product = 1
-    added_axioms = []
+    async with kos.branch_lock(branch):
+        current_state = kos.branches.get(branch, 1)
+        new_state_product = 1
+        added_axioms = []
 
-    # Phase 25: Semantic Deduplication
-    dedup = SemanticDeduplicator()
-    existing_axioms = kos.algebra.get_active_axioms(current_state) if current_state > 1 else []
-    skipped_duplicates = []
+        # Phase 25: Semantic Deduplication
+        dedup = SemanticDeduplicator()
+        existing_axioms = kos.algebra.get_active_axioms(current_state) if current_state > 1 else []
+        skipped_duplicates = []
 
-    # Phase 19A: Structural validation gate
-    extraction_validator = ExtractionValidator()
-    raw_triplets = [
-        (x[0].strip().lower(), x[1].strip().lower(), x[2].strip().lower())
-        for x in request.triplets if len(x) == 3
-    ]
-    validated = extraction_validator.validate_batch(raw_triplets)
-    rejected_by_validator = [
-        {"triplet": f"{r.subject}||{r.predicate}||{r.object_}", "reason": r.reason}
-        for r in validated.rejected
-    ]
+        # Phase 19A: Structural validation gate
+        extraction_validator = ExtractionValidator()
+        raw_triplets = [
+            (x[0].strip().lower(), x[1].strip().lower(), x[2].strip().lower())
+            for x in request.triplets if len(x) == 3
+        ]
+        validated = extraction_validator.validate_batch(raw_triplets)
+        rejected_by_validator = [
+            {"triplet": f"{r.subject}||{r.predicate}||{r.object_}", "reason": r.reason}
+            for r in validated.rejected
+        ]
 
-    for s, p, o in validated.accepted:
-        axiom = f"{s}||{p}||{o}"
+        for s, p, o in validated.accepted:
+            axiom = f"{s}||{p}||{o}"
 
-        # Check for near-duplicate before minting
-        if existing_axioms:
-            result = dedup.deduplicate(axiom, existing_axioms)
-            if result.is_duplicate:
-                skipped_duplicates.append({
-                    "axiom": axiom,
-                    "duplicate_of": result.duplicate_of,
-                    "similarity": round(result.similarity, 3),
-                    "method": result.method,
-                })
-                continue
+            # Check for near-duplicate before minting
+            if existing_axioms:
+                result = dedup.deduplicate(axiom, existing_axioms)
+                if result.is_duplicate:
+                    skipped_duplicates.append({
+                        "axiom": axiom,
+                        "duplicate_of": result.duplicate_of,
+                        "similarity": round(result.similarity, 3),
+                        "method": result.method,
+                    })
+                    continue
 
-        prime = kos.algebra.get_or_mint_prime(s, p, o)
+            prime = kos.algebra.get_or_mint_prime(s, p, o)
 
-        # Only process if genuinely new to both current state and this batch
-        if current_state % prime != 0 and new_state_product % prime != 0:
-            new_state_product = math.lcm(new_state_product, prime)
-            added_axioms.append((prime, axiom))
-            existing_axioms.append(axiom)  # track within batch
+            # Only process if genuinely new to both current state and this batch
+            if current_state % prime != 0 and new_state_product % prime != 0:
+                new_state_product = math.lcm(new_state_product, prime)
+                added_axioms.append((prime, axiom))
+                existing_axioms.append(axiom)  # track within batch
 
-    if added_axioms:
-        new_state = math.lcm(current_state, new_state_product)
+        if added_axioms:
+            new_state = math.lcm(current_state, new_state_product)
 
-        # Phase 24: Auto-calibrate confidence
-        from datetime import datetime as _dt
-        _now = _dt.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
-        calibrator = ConfidenceCalibrator()
+            # Phase 24: Auto-calibrate confidence
+            _now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
+            calibrator = ConfidenceCalibrator()
 
-        for prime, axiom in added_axioms:
-            if request.confidence_mode == "manual" and request.confidence is not None:
-                conf = max(0.0, min(1.0, request.confidence))
-            else:
-                conf = await calibrator.calibrate(
-                    axiom_key=axiom,
+            for prime, axiom in added_axioms:
+                if request.confidence_mode == "manual" and request.confidence is not None:
+                    conf = max(0.0, min(1.0, request.confidence))
+                else:
+                    conf = await calibrator.calibrate(
+                        axiom_key=axiom,
+                        source_url=request.source_url,
+                        current_state=current_state,
+                        algebra=kos.algebra,
+                        ledger=kos.ledger,
+                        # /ingest/math takes raw triplets with no natural-language
+                        # source text, so linguistic certainty defaults to 1.0.
+                        # Direct math input is definitional, not hedged.
+                        linguistic_certainty=1.0,
+                    )
+                await kos.ledger.append_event(
+                    "MINT", prime, axiom,
+                    branch=branch,
                     source_url=request.source_url,
-                    current_state=current_state,
-                    algebra=kos.algebra,
-                    ledger=kos.ledger,
-                    # /ingest/math takes raw triplets with no natural-language
-                    # source text, so linguistic certainty defaults to 1.0.
-                    # Direct math input is definitional, not hedged.
-                    linguistic_certainty=1.0,
+                    confidence=conf,
+                    ingested_at=_now,
                 )
-            await kos.ledger.append_event(
-                "MINT", prime, axiom,
-                branch=branch,
-                source_url=request.source_url,
-                confidence=conf,
-                ingested_at=_now,
+                await kos.ledger.append_event("MUL", prime, branch=branch)
+
+            # Apply Interacting Theory (Causal Cascades)
+            axioms_strs = [a[1] for a in added_axioms]
+            if hasattr(kos, "trigger_map"):
+                new_state = await kos.trigger_map.apply_cascade(
+                    new_state, axioms_strs
+                )
+
+            kos.branches[branch] = new_state
+
+            # Phase 19D: Update active prime index
+            for prime, _axiom in added_axioms:
+                kos.prime_index.add(branch, prime)
+
+            # Phase 0.1: Save branch head after math ingest
+            await kos.ledger.save_branch_head(branch, new_state)
+            kos.prime_index.assert_coherent(
+                branch, new_state, kos.algebra, context="ingest_math"
             )
-            await kos.ledger.append_event("MUL", prime, branch=branch)
-
-        # Apply Interacting Theory (Causal Cascades)
-        axioms_strs = [a[1] for a in added_axioms]
-        if hasattr(kos, "trigger_map"):
-            new_state = await kos.trigger_map.apply_cascade(
-                new_state, axioms_strs
-            )
-
-        kos.branches[branch] = new_state
-
-        # Phase 19D: Update active prime index
-        for prime, _axiom in added_axioms:
-            kos.prime_index.add(branch, prime)
-
-        # Phase 0.1: Save branch head after math ingest
-        await kos.ledger.save_branch_head(branch, new_state)
 
         # Background vector indexing
         if hasattr(kos, "vector_bridge"):
@@ -814,24 +851,32 @@ async def create_branch(req: BranchRequest):
 
     if not kos.is_booted:
         raise HTTPException(status_code=503, detail="KOS booting")
-    if req.source_branch not in kos.branches:
-        raise HTTPException(
-            status_code=404, detail=f"Source branch '{req.source_branch}' not found"
-        )
-    if req.new_branch in kos.branches:
-        raise HTTPException(
-            status_code=409, detail=f"Branch '{req.new_branch}' already exists"
-        )
+    async with kos.branch_lock(req.source_branch):
+        async with kos.branch_lock(req.new_branch):
+            if req.source_branch not in kos.branches:
+                raise HTTPException(
+                    status_code=404, detail=f"Source branch '{req.source_branch}' not found"
+                )
+            if req.new_branch in kos.branches:
+                raise HTTPException(
+                    status_code=409, detail=f"Branch '{req.new_branch}' already exists"
+                )
 
-    kos.branches[req.new_branch] = kos.branches[req.source_branch]
+            kos.branches[req.new_branch] = kos.branches[req.source_branch]
 
-    # Phase 19D: Fork active prime index
-    kos.prime_index.fork(req.source_branch, req.new_branch)
+            # Phase 19D: Fork active prime index
+            kos.prime_index.fork(req.source_branch, req.new_branch)
 
-    # Phase 0: Persist the branch head snapshot
-    await kos.ledger.save_branch_head(
-        req.new_branch, kos.branches[req.new_branch]
-    )
+            # Phase 0: Persist the branch head snapshot
+            await kos.ledger.save_branch_head(
+                req.new_branch, kos.branches[req.new_branch]
+            )
+            kos.prime_index.assert_coherent(
+                req.new_branch,
+                kos.branches[req.new_branch],
+                kos.algebra,
+                context="create_branch",
+            )
 
     from internal.ensemble.epistemic_arbiter import kos_telemetry
     await kos_telemetry.broadcast(
@@ -865,21 +910,48 @@ async def merge_branches(req: MergeRequest):
             status_code=404, detail=f"Target branch '{req.target_branch}' not found"
         )
 
-    source_state = kos.branches[req.source_branch]
-    target_state = kos.branches[req.target_branch]
+    lock_names = sorted({req.source_branch, req.target_branch})
+    first, second = lock_names[0], lock_names[-1]
+    async with kos.branch_lock(first):
+        if first == second:
+            source_state = kos.branches[req.source_branch]
+            target_state = kos.branches[req.target_branch]
 
-    merged_state = math.lcm(source_state, target_state)
+            merged_state = math.lcm(source_state, target_state)
 
-    # Audit for Paradoxes resulting from the merge
-    paradoxes = kos.algebra.detect_curvature_paradoxes(merged_state)
+            # Audit for Paradoxes resulting from the merge
+            paradoxes = kos.algebra.detect_curvature_paradoxes(merged_state)
 
-    kos.branches[req.target_branch] = merged_state
+            kos.branches[req.target_branch] = merged_state
 
-    # Phase 19D: Rebuild index for merged branch
-    kos.prime_index.merge(req.target_branch, req.source_branch, req.target_branch)
+            # Phase 19D: Rebuild index for merged branch
+            kos.prime_index.merge(req.target_branch, req.source_branch, req.target_branch)
 
-    # Phase 0: Persist the merged branch head
-    await kos.ledger.save_branch_head(req.target_branch, merged_state)
+            # Phase 0: Persist the merged branch head
+            await kos.ledger.save_branch_head(req.target_branch, merged_state)
+            kos.prime_index.assert_coherent(
+                req.target_branch, merged_state, kos.algebra, context="merge_branches"
+            )
+        else:
+            async with kos.branch_lock(second):
+                source_state = kos.branches[req.source_branch]
+                target_state = kos.branches[req.target_branch]
+
+                merged_state = math.lcm(source_state, target_state)
+
+                # Audit for Paradoxes resulting from the merge
+                paradoxes = kos.algebra.detect_curvature_paradoxes(merged_state)
+
+                kos.branches[req.target_branch] = merged_state
+
+                # Phase 19D: Rebuild index for merged branch
+                kos.prime_index.merge(req.target_branch, req.source_branch, req.target_branch)
+
+                # Phase 0: Persist the merged branch head
+                await kos.ledger.save_branch_head(req.target_branch, merged_state)
+                kos.prime_index.assert_coherent(
+                    req.target_branch, merged_state, kos.algebra, context="merge_branches"
+                )
 
     from internal.ensemble.epistemic_arbiter import kos_telemetry
     await kos_telemetry.broadcast(
@@ -937,20 +1009,24 @@ async def time_travel(
             detail=f"Branch '{req.new_branch_name}' already exists",
         )
 
-    # Rebuild a fresh algebra for the historical snapshot
-    from internal.algorithms.semantic_arithmetic import GodelStateAlgebra as GSA
-    historical_algebra = GSA()
-    past_state = await kos.ledger.rebuild_state(
-        historical_algebra, max_seq_id=req.target_tick
-    )
-    kos.branches[req.new_branch_name] = past_state
-    # 19D coherence: historical algebra is separate, rebuild from main algebra
-    kos.prime_index.rebuild(req.new_branch_name, past_state, kos.algebra)
+    async with kos.branch_lock(req.new_branch_name):
+        # Rebuild a fresh algebra for the historical snapshot
+        from internal.algorithms.semantic_arithmetic import GodelStateAlgebra as GSA
+        historical_algebra = GSA()
+        past_state = await kos.ledger.rebuild_state(
+            historical_algebra, max_seq_id=req.target_tick
+        )
+        kos.branches[req.new_branch_name] = past_state
+        # 19D coherence: historical algebra is separate, rebuild from main algebra
+        kos.prime_index.rebuild(req.new_branch_name, past_state, kos.algebra)
 
-    # Phase 0: Save as ephemeral (transient — can be re-derived from tick)
-    await kos.ledger.save_branch_head(
-        req.new_branch_name, past_state, is_ephemeral=True
-    )
+        # Phase 0: Save as ephemeral (transient — can be re-derived from tick)
+        await kos.ledger.save_branch_head(
+            req.new_branch_name, past_state, is_ephemeral=True
+        )
+        kos.prime_index.assert_coherent(
+            req.new_branch_name, past_state, kos.algebra, context="time_travel"
+        )
 
     from internal.ensemble.epistemic_arbiter import kos_telemetry
     await kos_telemetry.broadcast(
@@ -1222,29 +1298,33 @@ async def import_knowledge_bundle(
         raise HTTPException(status_code=400, detail=str(e))
 
     # Merge via LCM
-    current = kos.branches.get(user_id, 1)
-    new_state = math.lcm(current, imported_state)
-    kos.branches[user_id] = new_state
-    kos.prime_index.rebuild(user_id, new_state, kos.algebra)  # 19D coherence
+    async with kos.branch_lock(user_id):
+        current = kos.branches.get(user_id, 1)
+        new_state = math.lcm(current, imported_state)
+        kos.branches[user_id] = new_state
+        kos.prime_index.rebuild(user_id, new_state, kos.algebra)  # 19D coherence
 
-    # Phase 0.1: Materialize novel axioms from the bundle's canonical tome
-    # Parse the tome to register axiom↔prime mappings locally
-    from internal.infrastructure.tome_parser import parse_canonical_tome
-    bundle_tome = req.bundle.get("canonical_tome", "")
-    for s, p, o in parse_canonical_tome(bundle_tome):
-        # get_or_mint_prime is idempotent — will reuse existing mapping
-        kos.algebra.get_or_mint_prime(s, p, o)
+        # Phase 0.1: Materialize novel axioms from the bundle's canonical tome
+        # Parse the tome to register axiom↔prime mappings locally
+        from internal.infrastructure.tome_parser import parse_canonical_tome
+        bundle_tome = req.bundle.get("canonical_tome", "")
+        for s, p, o in parse_canonical_tome(bundle_tome):
+            # get_or_mint_prime is idempotent — will reuse existing mapping
+            kos.algebra.get_or_mint_prime(s, p, o)
 
-    # Phase 0: Persist imported axioms via MUL events
-    for prime, axiom in kos.algebra.prime_to_axiom.items():
-        if imported_state % prime == 0 and current % prime != 0:
-            await kos.ledger.append_event(
-                "MINT", prime, axiom, branch=user_id
-            )
-            await kos.ledger.append_event(
-                "MUL", prime, branch=user_id
-            )
-    await kos.ledger.save_branch_head(user_id, new_state)
+        # Phase 0: Persist imported axioms via MUL events
+        for prime, axiom in kos.algebra.prime_to_axiom.items():
+            if imported_state % prime == 0 and current % prime != 0:
+                await kos.ledger.append_event(
+                    "MINT", prime, axiom, branch=user_id
+                )
+                await kos.ledger.append_event(
+                    "MUL", prime, branch=user_id
+                )
+        await kos.ledger.save_branch_head(user_id, new_state)
+        kos.prime_index.assert_coherent(
+            user_id, new_state, kos.algebra, context="import_bundle"
+        )
 
     return {
         "imported": True,
@@ -1301,9 +1381,17 @@ async def sync_peer_state(
 
     if not kos.is_booted:
         raise HTTPException(status_code=503, detail="KOS booting")
+    if SECRET_KEY != _DEFAULT_SECRET and user_id == "main":
+        logger.warning("Unauthenticated /sync/state attempt rejected")
+        raise HTTPException(
+            status_code=401,
+            detail=(
+                "Authentication required for state sync in production mode. "
+                "Provide a valid JWT Bearer token."
+            ),
+        )
 
     effective_branch = user_id if user_id != "main" else "main"
-    current_state = kos.branches.get(effective_branch, 1)
 
     try:
         peer_int = parse_state(req.peer_state_integer)
@@ -1317,33 +1405,40 @@ async def sync_peer_state(
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e))
 
-    # Use Zig FFI if available, fallback to Python
-    try:
-        from internal.infrastructure.zig_bridge import zig_engine
-        if zig_engine and hasattr(zig_engine, 'bigint_lcm'):
-            new_state = zig_engine.bigint_lcm(current_state, peer_int)
-        else:
+    async with kos.branch_lock(effective_branch):
+        current_state = kos.branches.get(effective_branch, 1)
+        # Use Zig FFI if available, fallback to Python
+        try:
+            from internal.infrastructure.zig_bridge import zig_engine
+            if zig_engine and hasattr(zig_engine, 'bigint_lcm'):
+                new_state = zig_engine.bigint_lcm(current_state, peer_int)
+            else:
+                new_state = math.lcm(current_state, peer_int)
+        except ImportError:
             new_state = math.lcm(current_state, peer_int)
-    except ImportError:
-        new_state = math.lcm(current_state, peer_int)
+        if new_state is None:
+            new_state = math.lcm(current_state, peer_int)
 
-    if new_state != current_state:
-        kos.branches[effective_branch] = new_state
-        # 19D coherence: P2P sync may introduce novel primes
-        kos.prime_index.rebuild(effective_branch, new_state, kos.algebra)
+        if new_state != current_state:
+            kos.branches[effective_branch] = new_state
+            # 19D coherence: P2P sync may introduce novel primes
+            kos.prime_index.rebuild(effective_branch, new_state, kos.algebra)
 
-        # Phase 0: Persist synced axioms via proper MUL events
-        for prime in kos.algebra.prime_to_axiom:
-            if peer_int % prime == 0 and current_state % prime != 0:
-                await kos.ledger.append_event(
-                    "MUL", prime, branch=effective_branch
-                )
-        await kos.ledger.save_branch_head(effective_branch, new_state)
+            # Phase 0: Persist synced axioms via proper MUL events
+            for prime in kos.algebra.prime_to_axiom:
+                if peer_int % prime == 0 and current_state % prime != 0:
+                    await kos.ledger.append_event(
+                        "MUL", prime, branch=effective_branch
+                    )
+            await kos.ledger.save_branch_head(effective_branch, new_state)
+            kos.prime_index.assert_coherent(
+                effective_branch, new_state, kos.algebra, context="sync_peer_state"
+            )
 
-        from internal.ensemble.epistemic_arbiter import kos_telemetry
-        await kos_telemetry.broadcast(
-            f"🌐 Sovereign Edge Sync: merged state from {user_id}"
-        )
+            from internal.ensemble.epistemic_arbiter import kos_telemetry
+            await kos_telemetry.broadcast(
+                f"🌐 Sovereign Edge Sync: merged state from {user_id}"
+            )
 
     return {
         "status": "synchronized",
@@ -1465,7 +1560,7 @@ async def ask_knowledge(
         provenance = await kos.ledger.get_provenance_batch(axiom_keys)
 
         from datetime import datetime as _dt
-        _now = _dt.utcnow()
+        _now = _dt.now(timezone.utc)
         for m in scored_axioms:
             prov = provenance.get(m["axiom_key"])
             if prov:
@@ -1584,4 +1679,3 @@ async def get_provenance(
         "provenance_chain": chain,
         "total_sources": len(chain),
     }
-
