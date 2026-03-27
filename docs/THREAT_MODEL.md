@@ -120,6 +120,18 @@ Producer ──(shared key)──> Bundle ──(shared key)──> Consumer
 
 **Residual risk:** A local attacker with full database write access can recompute the entire chain from genesis. The hash chain protects against partial tampering, not full database replacement.
 
+### 3.8. P2P Mesh Authentication (⚠️ Partial)
+
+**Threat:** An unauthenticated party injects arbitrary axioms via `/sync/state`.
+
+**Defense (current):** In production mode (non-default JWT secret), `/sync/state`
+requires JWT authentication. This prevents anonymous state injection but does not
+provide mutual peer authentication.
+
+**Residual risk:** Any party with a valid JWT can inject axioms. A compromised peer
+node with valid credentials can bloat state indefinitely via LCM (can add axioms
+but cannot delete). Full mutual TLS or peer certificate pinning would address this.
+
 ---
 
 ## 4. Attack Surface Summary

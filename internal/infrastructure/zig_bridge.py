@@ -227,14 +227,14 @@ class ZigMathEngine:
 
         Returns list of u64 primes, or None if Zig is unavailable.
         """
-        if not self._lib:
+        if not self.lib:
             return None
         try:
             # Concatenate with null separators
             joined = b'\x00'.join(k.encode('utf-8') for k in axiom_keys) + b'\x00'
             out_cap = len(axiom_keys)
             out_primes = (ctypes.c_uint64 * out_cap)()
-            count = self._lib.sum_batch_mint_primes(
+            count = self.lib.sum_batch_mint_primes(
                 joined, len(joined), out_primes, out_cap
             )
             if count < 0:

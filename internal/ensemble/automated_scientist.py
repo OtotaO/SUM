@@ -107,17 +107,21 @@ class AutomatedScientistDaemon:
                 for s, p, o in novel_triplets
             ]
 
-        # LCM into global state + Akashic trace
-        new_state = current_state
-        for prime, axiom_str in zip(new_primes, axiom_strings):
-            new_state = math.lcm(new_state, prime)
-            await self.kos.ledger.append_event("DEDUCED", prime, axiom_str)
-            await self.kos.ledger.append_event("MUL", prime)
+        async with self.kos.branch_lock("main"):
+            current_state = self.kos.branches.get("main", 1)
+            new_state = current_state
+            for prime, axiom_str in zip(new_primes, axiom_strings):
+                new_state = math.lcm(new_state, prime)
+                await self.kos.ledger.append_event("DEDUCED", prime, axiom_str)
+                await self.kos.ledger.append_event("MUL", prime)
 
-        self.kos.branches["main"] = new_state
-        # 19D coherence: daemon mutation must update index
-        if hasattr(self.kos, 'prime_index'):
-            self.kos.prime_index.rebuild("main", new_state, self.kos.algebra)
+            self.kos.branches["main"] = new_state
+            # 19D coherence: daemon mutation must update index
+            if hasattr(self.kos, 'prime_index'):
+                self.kos.prime_index.rebuild("main", new_state, self.kos.algebra)
+                self.kos.prime_index.assert_coherent(
+                    "main", new_state, self.kos.algebra, context="automated_scientist"
+                )
         self.total_discoveries += len(novel_triplets)
 
         logger.info(

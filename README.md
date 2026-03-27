@@ -1,6 +1,6 @@
 # SUM — The Quantum Knowledge OS
 
-[![Quantum Knowledge OS CI](https://github.com/OtotaO/SUM/actions/workflows/quantum-ci.yml/badge.svg)](https://github.com/OtotaO/SUM/actions/workflows/quantum-ci.yml)
+[![SUM Knowledge OS CI](https://github.com/OtotaO/SUM/actions/workflows/quantum-ci.yml/badge.svg)](https://github.com/OtotaO/SUM/actions/workflows/quantum-ci.yml)
 
 > **Distill the Universe. Expand the Atom. Mathematically Verified within the Canonical Semantic Boundary.**
 
@@ -52,16 +52,16 @@ Built on the formalisms of the **Semantic Prime Number Theorem** and **Gauge-The
 
 Every irreducible fact ("Alice age 30") is assigned a unique, deterministic **prime number** via SHA-256 hashing. The entire knowledge state of the universe is a single massive integer — the product of all active primes.
 
-| Semantic Operation | Mathematical Equivalent | Complexity† |
-|--------------------|-------------------------|-------------|
-| **Branch / Fork** | Integer Copy: `Branch_B = Branch_A` | O(n) copy |
-| **Merge States** | Least Common Multiple: `math.lcm(A, B)` | O(n²) GCD |
-| **Verify a Fact** | Modulo Entailment: `Global_State % Prime == 0` | O(n) modulo |
-| **Delete a Fact** | Integer Division: `Global_State // Prime` | O(n) division |
-| **Update a Fact** | `lcm(State // Old_Prime, New_Prime)`| O(n²) GCD |
-| **GraphRAG Traversal** | `math.gcd(Global, Node_Integer)` | O(n²) GCD |
+| Semantic Operation | Mathematical Equivalent | Complexity |
+|--------------------|-------------------------|------------|
+| **Branch / Fork** | Integer Copy: `Branch_B = Branch_A` | O(n) copy where n = bit length |
+| **Merge States** | Least Common Multiple: `math.lcm(A, B)` | O(n²) via GCD on n-bit integers |
+| **Verify a Fact** | Modulo Entailment: `Global_State % Prime == 0` | O(n) modulo on n-bit integer |
+| **Delete a Fact** | Integer Division: `Global_State // Prime` | O(n) division on n-bit integer |
+| **Update a Fact** | `lcm(State // Old_Prime, New_Prime)` | O(n²) via GCD |
+| **GraphRAG Traversal** | `math.gcd(Global, Node_Integer)` | O(n²) via GCD |
 
-†n = bit length of the integer, NOT axiom count. No corpus scanning required.
+> **Complexity note:** All complexities are in integer **bit length** (n), which grows with each axiom. Operations avoid corpus-scale document scanning. At 10,000 axioms the state integer is ~640K bits; GCD/LCM complete in milliseconds on modern hardware. See [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) for empirical benchmarks.
 
 ### 2. The Epistemic Feedback Loop
 
@@ -135,7 +135,7 @@ SUM has completed its genesis and hardening phases. The road ahead expands into 
 
 1.  **Horizon I: Project EXOCORTEX (Continuous Human Digitization):** Wiring desktop and browser companion clients to stream daily human life directly into the `/ingest` API, compressing personal reality into a single, ever-growing Gödel Integer.
 2.  **Horizon II: The Babel Protocol (Planetary-Scale Truth):** Deploying thousands of headless `SUM` nodes to ingest Wikipedia, ArXiv, and global news—forcing the Epistemic Arbiter to collapse historical and scientific paradoxes into a Single Master Integer (Planetary Truth).
-3.  **Horizon III: Bare-Metal Supremacy (Zig → WASM → Quantum):** The Strangler Fig migration progressively replaces Python's math engine with Zig's zero-cost C-ABI. Deterministic primes, LCM/GCD, mod, divisibility, and batch minting are all live in Zig. First-class **WebAssembly compilation** enables the math core to run natively inside a browser tab via `sum_wasm.js`. The **Automated Scientist daemon** continuously sweeps the global state for logically entailed but unminted axioms, performing autonomous deduction via transitive closure. The ultimate terminus: porting to physical quantum hardware via Shor's Algorithm for instantaneous semantic routing.
+3.  **Horizon III: Bare-Metal Supremacy (Zig → WASM → Quantum):** The Strangler Fig migration progressively replaces Python's math engine with Zig's zero-cost C-ABI. Deterministic primes, LCM/GCD, mod, divisibility, and batch minting are all live in Zig. First-class **WebAssembly compilation** enables the math core to run natively inside a browser tab via `sum_wasm.js`. The **Automated Scientist daemon** continuously sweeps the global state for logically entailed but unminted axioms, performing autonomous deduction via transitive closure. Future quantum-resistant considerations: if large-scale quantum computers become practical, the prime factoring assumption underlying Gödel integers would need to be revisited with lattice-based or hash-based alternatives.
 
 ---
 
@@ -174,6 +174,8 @@ cd core-zig && zig build -Doptimize=ReleaseFast && cd ..
 ## 📡 Quantum API Endpoints
 
 All endpoints are mounted under `/api/v1/quantum/`. Every endpoint accepts an optional `?branch=main` parameter.
+
+> **Deprecation note:** The `/api/v1/quantum/` prefix is legacy naming retained for backward compatibility; a neutral alias may be introduced in a future major release.
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -270,9 +272,9 @@ SUM/
 
 ## 🛡️ Mathematical Verification Suite
 
-```text
-726+ passed · 21/21 fortress checks
+> **Current test count:** Run `python -m pytest Tests/ -q` for the live count. The fortress gate is `python scripts/verify_fortress.py --json`.
 
+```text
 ─── Core Hardening ───
 ZK Semantic Proofs .................... 16 ✓  (round-trip, tamper, non-linkability, stress)
 Akashic Ledger Replay ................. 8  ✓  (crash recovery, time-travel, DIV)

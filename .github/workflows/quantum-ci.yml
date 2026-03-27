@@ -1,4 +1,4 @@
-name: Quantum Knowledge OS CI
+name: SUM Knowledge OS CI
 
 on:
   push:
@@ -27,7 +27,7 @@ jobs:
       working-directory: core-zig
 
   mathematical-verification:
-    name: Python Gödel-State Algebra (726+ tests)
+    name: Python Gödel-State Algebra
     needs: zig-core
     runs-on: ubuntu-latest
     steps:
@@ -57,10 +57,11 @@ jobs:
       run: python -m spacy download en_core_web_sm
 
     - name: Run Gödel-State Algebra Bounds
+      env:
+        SUM_DEBUG_INDEX: "1"
       run: |
         python -m pytest Tests/ -v
 
     - name: Run Fortress Gate (21 checks)
       run: |
         python scripts/verify_fortress.py --json
-

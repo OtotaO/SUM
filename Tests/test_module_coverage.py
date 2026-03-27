@@ -165,3 +165,12 @@ class TestZigBridge:
         assert len(primes) == 2
         assert all(p > 1 for p in primes)
         assert len(set(primes)) == 2
+
+    def test_batch_mint_attribute_correct(self):
+        """batch_mint_primes must reference self.lib, not self._lib."""
+        import inspect
+        from internal.infrastructure.zig_bridge import ZigMathEngine
+        source = inspect.getsource(ZigMathEngine.batch_mint_primes)
+        assert "self._lib" not in source, (
+            "batch_mint_primes references self._lib instead of self.lib"
+        )
