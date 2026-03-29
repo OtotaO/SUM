@@ -13,10 +13,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Install Zig 0.13
+    - name: Install Zig 0.15
       uses: mlugg/setup-zig@v1
       with:
-        version: 0.13.0
+        version: 0.15.2
 
     - name: Build libsum_core (ReleaseFast)
       run: zig build -Doptimize=ReleaseFast
@@ -39,10 +39,10 @@ jobs:
         python-version: "3.12"
         cache: 'pip'
 
-    - name: Install Zig 0.13
+    - name: Install Zig 0.15
       uses: mlugg/setup-zig@v1
       with:
-        version: 0.13.0
+        version: 0.15.2
 
     - name: Build Zig Core for Python FFI
       run: zig build -Doptimize=ReleaseFast
