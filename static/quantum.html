@@ -63,7 +63,7 @@
         .logo {
             font-size: 26px; font-weight: 700; letter-spacing: -1.5px;
             background: linear-gradient(135deg, var(--accent-cyan), var(--accent-indigo));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent;
             user-select: none;
         }
 
@@ -458,7 +458,7 @@
         .empty-state .empty-logo {
             font-size: 48px; font-weight: 700; letter-spacing: -3px;
             background: linear-gradient(135deg, var(--accent-cyan), var(--accent-indigo));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent;
             margin-bottom: 12px;
         }
         .empty-state .empty-tagline {
@@ -802,21 +802,33 @@ async function depositKnowledge() {
             data = await res.json();
             if (!res.ok) throw new Error(data.detail || 'Ingestion failed');
 
-            // Show crystallization
-            const count = data.axioms_ingested || 0;
-            for (let i = 0; i < Math.min(count, 12); i++) {
+            // Show crystallization with real axiom labels
+            const axioms = data.delta_axioms || [];
+            const count = data.axioms_ingested || axioms.length || 0;
+            const displayAxioms = axioms.slice(0, 12);
+            displayAxioms.forEach((ax, i) => {
                 setTimeout(() => {
                     const c = document.createElement('span');
                     c.className = 'crystal';
-                    c.innerText = 'fact ' + (i + 1);
+                    const parts = ax.split('||');
+                    c.innerText = parts.length === 3
+                        ? parts[0] + ' → ' + parts[1] + ' → ' + parts[2]
+                        : ax;
                     crystallization.appendChild(c);
                 }, i * 120);
+            });
+            // Fallback: if backend didn't return axiom keys, show count
+            if (axioms.length === 0 && count > 0) {
+                const c = document.createElement('span');
+                c.className = 'crystal';
+                c.innerText = count + ' facts crystallized';
+                crystallization.appendChild(c);
             }
-            if (count > 12) {
+            if (axioms.length > 12) {
                 setTimeout(() => {
                     const c = document.createElement('span');
                     c.className = 'crystal';
-                    c.innerText = '+' + (count - 12) + ' more';
+                    c.innerText = '+' + (axioms.length - 12) + ' more';
                     crystallization.appendChild(c);
                 }, 12 * 120);
             }
@@ -899,7 +911,7 @@ async function executeAsk(question) {
         const data = await res.json();
 
         askResults.innerHTML = '';
-        const facts = data.results || data.axioms || [];
+        const facts = data.matches || data.results || data.axioms || [];
 
         if (facts.length === 0) {
             askResults.innerHTML = '<div class="fact-card"><span class="fact-text" style="color:var(--text-muted);">No verified facts found for this query.</span></div>';

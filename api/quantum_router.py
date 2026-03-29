@@ -628,6 +628,7 @@ async def ingest_document(
         "branch": branch,
         **dual_field("new_global_state", kos.branches[branch]),
         "axioms_ingested": result["total_unique_primes"],
+        "delta_axioms": delta_axioms,
         "paradoxes": result["paradoxes"],
     }
 
