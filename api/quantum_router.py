@@ -757,6 +757,8 @@ async def ingest_math_direct(
         "branch": branch,
         **dual_field("new_global_state", kos.branches.get(branch, 1)),
         "axioms_added": len(added_axioms),
+        "axioms_ingested": len(added_axioms),
+        "delta_axioms": [a[1] for a in added_axioms],
         "duplicates_skipped": len(skipped_duplicates),
         "validation_rejected": len(rejected_by_validator),
         "skipped_details": skipped_duplicates,

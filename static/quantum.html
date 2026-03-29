@@ -1039,10 +1039,8 @@ function updateStats() {
     document.getElementById('stat-entities').innerText = client.nodes.length + ' entities';
 }
 
-// Watch for graph changes to update stats + empty state
-const origSync = client.syncWithServer.bind(client);
-client.syncWithServer = async function() {
-    await origSync();
+// Use native onSync callback (no monkey-patching)
+client.onSync = () => {
     updateStats();
     if (client.edges.length > 0) hideEmptyState();
 };

@@ -11,6 +11,7 @@ class GodelClient {
         this.nodes = new vis.DataSet();
         this.edges = new vis.DataSet();
         this.token = token;
+        this.onSync = null; // callback: (client) => void
     }
 
     async syncWithServer() {
@@ -62,7 +63,7 @@ class GodelClient {
 
             this.localState = BigInt(data.new_global_state);
 
-            // Update HUD
+            // Update legacy HUD elements (if present)
             const stateDisplay = document.getElementById('state-display');
             if (stateDisplay) {
                 const s = this.localState.toString();
@@ -75,6 +76,9 @@ class GodelClient {
             if (axiomCount) {
                 axiomCount.innerText = `Axioms: ${this.edges.length}`;
             }
+
+            // Fire sync callback
+            if (this.onSync) this.onSync(this);
 
         } catch (error) {
             console.error("Gödel Sync Error:", error);
