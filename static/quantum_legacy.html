@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SUM | Quantum Knowledge OS</title>
+    <meta name="description" content="Gödel-State Engine — O(1) semantic operations over a mathematically verified knowledge graph">
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            margin: 0; padding: 0;
+            background: #050510;
+            color: #e2e8f0;
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            overflow: hidden;
+        }
+
+        #network-container {
+            width: 100vw; height: 100vh;
+            position: absolute; top: 0; left: 0; z-index: 1;
+        }
+
+        .hud {
+            position: absolute; z-index: 10;
+            top: 20px; left: 20px;
+            background: rgba(10, 15, 30, 0.88);
+            padding: 24px;
+            border-radius: 16px;
+            border: 1px solid rgba(56, 189, 248, 0.15);
+            backdrop-filter: blur(16px);
+            width: 380px;
+            box-shadow: 0 8px 48px rgba(0, 0, 0, 0.7),
+                        0 0 80px rgba(56, 189, 248, 0.05);
+            display: flex; flex-direction: column; gap: 18px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+
+        .hud::-webkit-scrollbar { width: 4px; }
+        .hud::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+
+        .hud h1 {
+            margin: 0; font-size: 28px; letter-spacing: -1.5px;
+            background: linear-gradient(135deg, #38bdf8, #818cf8);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            font-weight: 700;
+        }
+        .hud h1 span { -webkit-text-fill-color: #94a3b8; font-weight: 400; }
+
+        #state-display, #axiom-count {
+            font-family: 'JetBrains Mono', monospace;
+            color: #64748b; font-size: 11px;
+            word-break: break-all;
+        }
+        #axiom-count { color: #38bdf8; font-size: 12px; font-weight: 500; }
+
+        .section-label {
+            margin: 0 0 8px; font-size: 11px; font-weight: 600;
+            color: #94a3b8; text-transform: uppercase; letter-spacing: 1px;
+        }
+
+        textarea {
+            width: 100%; height: 80px;
+            background: #0c1222; border: 1px solid #1e293b;
+            color: #f1f5f9; border-radius: 10px;
+            padding: 12px; font-family: inherit; font-size: 13px;
+            resize: none; outline: none;
+            transition: border 0.3s, box-shadow 0.3s;
+        }
+        textarea:focus {
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12);
+        }
+        textarea::placeholder { color: #475569; }
+
+        button {
+            background: linear-gradient(135deg, #2563eb, #4f46e5);
+            color: #fff; border: none;
+            padding: 11px 16px; border-radius: 10px;
+            cursor: pointer; font-weight: 600; font-size: 13px;
+            width: 100%;
+            transition: all 0.25s;
+            letter-spacing: 0.3px;
+        }
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(37, 99, 235, 0.4);
+        }
+        button:active { transform: translateY(0); }
+
+        .result-box {
+            background: #080e1a; padding: 12px;
+            border-radius: 10px; font-size: 13px;
+            color: #cbd5e1; min-height: 50px;
+            border: 1px solid #1e293b;
+            line-height: 1.6;
+            max-height: 200px; overflow-y: auto;
+        }
+
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #1e293b, transparent);
+        }
+
+        .sync-dot {
+            display: inline-block;
+            width: 8px; height: 8px;
+            background: #22c55e; border-radius: 50%;
+            margin-right: 6px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+            50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+        }
+
+        .terminal {
+            background: #020617; border: 1px solid #1e293b;
+            border-radius: 8px; padding: 10px;
+            font-family: 'JetBrains Mono', monospace; font-size: 11px;
+            color: #10b981; height: 140px; overflow-y: auto;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+        .terminal p { margin: 2px 0; }
+        .log-warn { color: #f59e0b; }
+        .log-superposition { color: #8b5cf6; }
+        .log-collapse { color: #0ea5e9; font-weight: bold; }
+        .log-inference { color: #f472b6; font-style: italic; font-weight: bold; }
+        .log-p2p { color: #34d399; font-weight: bold; }
+        .log-chronos { color: #fbbf24; font-style: italic; }
+    </style>
+</head>
+<body>
+    <div class="hud">
+        <div>
+            <h1>SUM<span>_OS</span></h1>
+            <div style="margin-top: 8px; font-size: 12px; color: #475569;">
+                <span class="sync-dot"></span>Live Gödel Sync
+            </div>
+        </div>
+
+        <div id="auth-panel" style="display: flex; gap: 8px; align-items: center;">
+            <input type="text" id="auth-username" placeholder="Username" style="flex: 1; background: #0f172a; border: 1px solid #334155; color: #e2e8f0; padding: 7px 10px; border-radius: 8px; outline: none; font-size: 12px; font-family: 'JetBrains Mono', monospace;">
+            <button id="auth-btn" onclick="getPassport()" style="padding: 7px 12px; background: linear-gradient(135deg, #f59e0b, #d97706); font-size: 11px; width: auto; min-width: 100px; border-radius: 8px;">🔑 Get Passport</button>
+        </div>
+        <div id="auth-status" style="font-family: 'JetBrains Mono', monospace; color: #64748b; font-size: 11px;">Not authenticated</div>
+
+        <div id="state-display">Gödel State: 1</div>
+        <div id="axiom-count">Axioms: 0</div>
+
+        <div class="divider"></div>
+
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <select id="branch-selector" style="flex: 1; background: #0f172a; color: #e2e8f0; border: 1px solid #334155; padding: 7px 10px; border-radius: 8px; outline: none; font-size: 12px; font-family: 'JetBrains Mono', monospace;" onchange="changeBranch()">
+                <option value="main">main</option>
+            </select>
+            <button onclick="createNewBranch()" style="padding: 7px 12px; background: linear-gradient(135deg, #059669, #10b981); font-size: 11px; width: auto; min-width: 70px; border-radius: 8px;">+ Branch</button>
+            <button onclick="timeTravel()" style="padding: 7px 12px; background: linear-gradient(135deg, #d97706, #f59e0b); font-size: 11px; width: auto; min-width: 60px; border-radius: 8px;">⏳ Travel</button>
+        </div>
+
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <input type="text" id="peer-url" placeholder="http://remote-node:8000" style="flex: 1; background: #0f172a; border: 1px solid #334155; color: #e2e8f0; padding: 7px 10px; border-radius: 8px; outline: none; font-size: 12px; font-family: 'JetBrains Mono', monospace;">
+            <button onclick="connectPeer()" style="padding: 7px 12px; background: linear-gradient(135deg, #7c3aed, #8b5cf6); font-size: 11px; width: auto; min-width: 80px; border-radius: 8px;">🌐 Add Peer</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <div>
+            <p class="section-label">① Tomes → Tags (Ingest)</p>
+            <textarea id="ingest-box" placeholder="Paste raw text to crystallize into exact mathematics..."></textarea>
+            <button id="ingest-btn" onclick="ingestText()">Extract to Gödel State</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <div>
+            <p class="section-label">② Tags → Tomes (Extrapolate)</p>
+            <textarea id="extrapolate-tags" placeholder="Enter comma-separated axiom keys&#10;e.g. alice||age||30, bob||role||admin"></textarea>
+            <button id="extrapolate-btn" onclick="extrapolateTags()">Generate Verified Tome</button>
+            <div id="extrapolate-result" class="result-box" style="margin-top: 10px;">
+                Awaiting extrapolation…
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div>
+            <p class="section-label">③ Rehydrate (Tags → Tome)</p>
+            <input type="text" id="rehydrate-title" placeholder="Tome title (optional)" style="width: 100%; background: #0c1222; border: 1px solid #1e293b; color: #f1f5f9; padding: 10px; border-radius: 10px; margin-bottom: 8px; font-size: 13px; outline: none; font-family: inherit;">
+            <button id="rehydrate-btn" onclick="rehydrateTome()" style="background: linear-gradient(135deg, #059669, #10b981);">Rehydrate Gödel State</button>
+            <div id="rehydrate-result" class="result-box" style="margin-top: 10px; white-space: pre-wrap;">
+                Awaiting rehydration…
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div>
+            <p class="section-label">④ Epistemic Delta (Learn)</p>
+            <input type="text" id="learn-topic" placeholder="Topic entity (e.g. alice, quantum, gravity)" style="width: 100%; background: #0c1222; border: 1px solid #1e293b; color: #f1f5f9; padding: 10px; border-radius: 10px; margin-bottom: 8px; font-size: 13px; outline: none; font-family: inherit;">
+            <button id="learn-btn" onclick="learnTopic()" style="background: linear-gradient(135deg, #7c3aed, #8b5cf6);">Generate Delta Tome</button>
+            <div id="learn-result" class="result-box" style="margin-top: 10px; white-space: pre-wrap;">
+                Awaiting epistemic delta…
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div>
+            <p class="section-label">⑥ Sovereign Edge (WASM)</p>
+            <div style="margin-bottom: 12px; display: flex; gap: 8px;">
+                <div style="flex: 1; padding: 10px; background: #0f172a; border: 1px solid #1e293b; border-radius: 8px;">
+                    <div style="font-size: 10px; color: #94a3b8; margin-bottom: 4px;">💻 LOCAL STATE</div>
+                    <div id="local-state-display" style="color: #10b981; font-weight: bold; word-break: break-all; font-size: 11px;">1</div>
+                </div>
+                <div style="flex: 1; padding: 10px; background: #0f172a; border: 1px solid #1e293b; border-radius: 8px;">
+                    <div style="font-size: 10px; color: #94a3b8; margin-bottom: 4px;">🌍 GLOBAL STATE</div>
+                    <div id="global-state-display" style="color: #38bdf8; font-weight: bold; word-break: break-all; font-size: 11px;">1</div>
+                    <button onclick="syncWithSwarm()" style="margin-top: 6px; width: 100%; background: #3b82f6; color: white; border: none; padding: 5px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">O(1) Merge to Swarm</button>
+                </div>
+            </div>
+            <textarea id="local-ingest-text" placeholder="Enter facts: [alice||knows||bob] [bob||causes||event]" style="width: 100%; height: 50px; background: #0f172a; border: 1px solid #334155; color: #fff; padding: 8px; border-radius: 8px; margin-bottom: 8px; font-size: 12px; outline: none; resize: none; box-sizing: border-box;"></textarea>
+            <button id="local-ingest-btn" onclick="ingestLocally()" style="background: #10b981; color: #fff; border: none; padding: 8px; border-radius: 8px; cursor: pointer; font-weight: 600; width: 100%; font-size: 13px;">Mint Primes Locally ⚡</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <div>
+            <p class="section-label">⑦ System Telemetry</p>
+            <div id="telemetry-terminal" class="terminal">
+                <p style="color: #475569;">Awaiting system events…</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="network-container"></div>
+
+    <script src="/static/js/godel_client.js"></script>
+    <script src="/static/js/sum_wasm.js"></script>
+    <script>
+        // ─── WASM Initialization ────────────────────────────
+        let sumWasm = null;
+        (async () => {
+            sumWasm = await SumWasm.init('/static/sum_core.wasm');
+            if (sumWasm) {
+                const dot = document.querySelector('.sync-dot');
+                dot.style.background = '#f59e0b';
+                dot.parentElement.innerHTML = '<span class="sync-dot" style="background:#22c55e;"></span>Live Gödel Sync <span style="color:#f59e0b; font-weight:600;">⚡ WASM</span>';
+            }
+        })();
+
+        // ─── Auth Layer ──────────────────────────────────────
+        let currentToken = localStorage.getItem('sum_jwt') || null;
+        let currentUser = localStorage.getItem('sum_user') || null;
+
+        function updateAuthUI() {
+            const status = document.getElementById('auth-status');
+            const panel = document.getElementById('auth-panel');
+            if (currentToken && currentUser) {
+                status.innerHTML = '🔐 <span style="color: #38bdf8;">' + currentUser + '</span>';
+                status.style.color = '#22c55e';
+            } else {
+                status.innerText = 'Not authenticated';
+                status.style.color = '#64748b';
+            }
+        }
+
+        async function getPassport() {
+            const username = document.getElementById('auth-username').value.trim();
+            if (!username) return;
+            try {
+                const res = await fetch('/api/v1/quantum/auth/token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: username })
+                });
+                if (!res.ok) throw new Error(await res.text());
+                const data = await res.json();
+                currentToken = data.access_token;
+                currentUser = username;
+                localStorage.setItem('sum_jwt', currentToken);
+                localStorage.setItem('sum_user', currentUser);
+                updateAuthUI();
+                // Reinit client with token
+                client.token = currentToken;
+                client.syncWithServer();
+            } catch (e) { alert('Auth failed: ' + e.message); }
+        }
+
+        async function authFetch(url, opts = {}) {
+            if (!opts.headers) opts.headers = {};
+            opts.headers['Content-Type'] = opts.headers['Content-Type'] || 'application/json';
+            if (currentToken) {
+                opts.headers['Authorization'] = 'Bearer ' + currentToken;
+            }
+            return fetch(url, opts);
+        }
+
+        updateAuthUI();
+
+        // ─── Sovereign Edge (Local WASM State) ─────────────────
+        let localGodelState = BigInt(localStorage.getItem('sum_local_state') || '1');
+
+        function updateLocalUI() {
+            const str = localGodelState.toString();
+            const display = str.length > 40
+                ? str.substring(0, 18) + '......' + str.substring(str.length - 18)
+                : str;
+            document.getElementById('local-state-display').innerText =
+                '[Len: ' + str.length + '] ' + display;
+            localStorage.setItem('sum_local_state', str);
+        }
+
+        async function ingestLocally() {
+            const text = document.getElementById('local-ingest-text').value;
+            if (!text || !sumWasm) {
+                alert('WASM module not loaded yet!');
+                return;
+            }
+            const regex = /\[(.*?)\]/g;
+            let match;
+            let count = 0;
+            while ((match = regex.exec(text)) !== null) {
+                const parts = match[1].split('||');
+                if (parts.length === 3) {
+                    const axiomStr = parts.map(p => p.trim().toLowerCase()).join('||');
+                    const prime = BigInt(sumWasm.getDeterministicPrime(axiomStr));
+                    if (localGodelState % prime !== 0n) {
+                        // LCM via WASM if possible, fallback to JS
+                        try {
+                            localGodelState = sumWasm.bigintLcm(localGodelState, prime);
+                        } catch (e) {
+                            // JS fallback LCM
+                            function gcd(a, b) { return b === 0n ? a : gcd(b, a % b); }
+                            localGodelState = (localGodelState / gcd(localGodelState, prime)) * prime;
+                        }
+                        count++;
+                    }
+                }
+            }
+            document.getElementById('local-ingest-text').value = '';
+            updateLocalUI();
+            if (count > 0) {
+                const term = document.getElementById('telemetry-terminal');
+                term.innerHTML += '<p style="color:#10b981;">⚡ WASM: Minted ' + count + ' primes locally</p>';
+                term.scrollTop = term.scrollHeight;
+            }
+        }
+
+        async function syncWithSwarm() {
+            try {
+                const res = await authFetch('/api/v1/quantum/sync/state', {
+                    method: 'POST',
+                    body: JSON.stringify({ peer_state_integer: localGodelState.toString() })
+                });
+                const data = await res.json();
+                localGodelState = BigInt(data.global_state_integer);
+                updateLocalUI();
+                const stateStr = data.global_state_integer;
+                const display = stateStr.length > 40
+                    ? stateStr.substring(0, 18) + '......' + stateStr.substring(stateStr.length - 18)
+                    : stateStr;
+                document.getElementById('global-state-display').innerText =
+                    '[Len: ' + stateStr.length + '] ' + display;
+                const term = document.getElementById('telemetry-terminal');
+                term.innerHTML += '<p style="color:#38bdf8;">🌐 Synced with swarm — state merged</p>';
+                term.scrollTop = term.scrollHeight;
+            } catch (e) { console.error('Swarm sync failed', e); }
+        }
+
+        setTimeout(updateLocalUI, 500);
+
+        const container = document.getElementById('network-container');
+        const client = new GodelClient(currentToken);
+        const data = { nodes: client.nodes, edges: client.edges };
+        const options = {
+            nodes: {
+                shape: 'dot', size: 16,
+                font: { color: '#e2e8f0', size: 13, face: 'Inter', strokeWidth: 3, strokeColor: '#050510' },
+                color: { background: '#38bdf8', border: '#0284c7', highlight: { background: '#60a5fa', border: '#3b82f6' } },
+                borderWidth: 2
+            },
+            edges: {
+                font: { color: '#94a3b8', size: 10, face: 'Inter', align: 'top', strokeWidth: 0 },
+                color: { color: '#1e3a5f', highlight: '#60a5fa', opacity: 0.7 },
+                smooth: { type: 'continuous' }, width: 1.5
+            },
+            physics: {
+                forceAtlas2Based: { gravitationalConstant: -45, centralGravity: 0.005, springLength: 100, springConstant: 0.07, damping: 0.4 },
+                solver: 'forceAtlas2Based'
+            },
+            interaction: { hover: true, tooltipDelay: 200 }
+        };
+
+        const network = new vis.Network(container, data, options);
+        network.on("selectEdge", function (params) {
+            if (params.edges.length > 0) {
+                const box = document.getElementById('extrapolate-tags');
+                const edgeId = params.edges[0];
+                box.value = box.value ? box.value + ", " + edgeId : edgeId;
+            }
+        });
+        client.startAutoSync(2000);
+
+        async function ingestText() {
+            const btn = document.getElementById('ingest-btn');
+            const box = document.getElementById('ingest-box');
+            const text = box.value.trim();
+            if (!text) return;
+            btn.innerText = "Crystallizing…"; btn.style.opacity = "0.6"; btn.style.pointerEvents = "none";
+            try {
+                const res = await authFetch('/api/v1/quantum/ingest', { method: 'POST', body: JSON.stringify({ text }) });
+                if (!res.ok) throw new Error(await res.text());
+                box.value = '';
+                await client.syncWithServer();
+            } catch (e) { console.error(e); alert("Ingestion failed: " + e.message); }
+            finally { btn.innerText = "Extract to Gödel State"; btn.style.opacity = "1"; btn.style.pointerEvents = "auto"; }
+        }
+
+        async function extrapolateTags() {
+            const btn = document.getElementById('extrapolate-btn');
+            const box = document.getElementById('extrapolate-tags');
+            const result = document.getElementById('extrapolate-result');
+            const tags = box.value.split(',').map(t => t.trim()).filter(Boolean);
+            if (!tags.length) return;
+            btn.innerText = "Running Epistemic Loop…"; btn.style.opacity = "0.6"; btn.style.pointerEvents = "none";
+            result.innerText = "Proving mathematical fidelity…";
+            try {
+                const res = await authFetch('/api/v1/quantum/extrapolate', { method: 'POST', body: JSON.stringify({ target_axioms: tags }) });
+                const data = await res.json();
+                result.innerText = data.verified_narrative || data.detail || "No response.";
+            } catch (e) { console.error(e); result.innerText = "Extrapolation failed: " + e.message; }
+            finally { btn.innerText = "Generate Verified Tome"; btn.style.opacity = "1"; btn.style.pointerEvents = "auto"; }
+        }
+
+        // ─── Phase 14: Rehydrate + Learn ─────────────────────
+        async function rehydrateTome() {
+            const btn = document.getElementById('rehydrate-btn');
+            const result = document.getElementById('rehydrate-result');
+            const title = document.getElementById('rehydrate-title').value.trim() || "The Rehydrated Codex";
+            btn.innerText = "Rehydrating…"; btn.style.opacity = "0.6"; btn.style.pointerEvents = "none";
+            result.innerText = "Unpacking Gödel Integer…";
+            try {
+                const res = await authFetch('/api/v1/quantum/rehydrate', {
+                    method: 'POST',
+                    body: JSON.stringify({ title: title, mode: "proof" })
+                });
+                const data = await res.json();
+                result.innerText = data.tome + "\n\n[" + (data.axiom_count || 0) + " axioms, " + (data.state_digits || 0) + " digits]";
+            } catch (e) { result.innerText = "Rehydration failed: " + e.message; }
+            finally { btn.innerText = "Rehydrate Gödel State"; btn.style.opacity = "1"; btn.style.pointerEvents = "auto"; }
+        }
+
+        async function learnTopic() {
+            const btn = document.getElementById('learn-btn');
+            const result = document.getElementById('learn-result');
+            const topic = document.getElementById('learn-topic').value.trim().toLowerCase();
+            if (!topic) return;
+            btn.innerText = "Computing Delta…"; btn.style.opacity = "0.6"; btn.style.pointerEvents = "none";
+            result.innerText = "Calculating epistemic gap…";
+            try {
+                const res = await authFetch('/api/v1/quantum/learn', {
+                    method: 'POST',
+                    body: JSON.stringify({ target_topic_node: topic })
+                });
+                const data = await res.json();
+                result.innerText = data.educational_tome + "\n\n[" + (data.delta_axiom_count || 0) + " new axioms]";
+            } catch (e) { result.innerText = "Learning failed: " + e.message; }
+            finally { btn.innerText = "Generate Delta Tome"; btn.style.opacity = "1"; btn.style.pointerEvents = "auto"; }
+        }
+
+        // ─── SSE Telemetry ────────────────────────────────
+        const evtSource = new EventSource("/api/v1/quantum/telemetry");
+        const terminal = document.getElementById("telemetry-terminal");
+
+        evtSource.onmessage = function(event) {
+            const p = document.createElement("p");
+            p.innerText = "> " + event.data;
+            if (event.data.includes("⚠")) p.className = "log-warn";
+            else if (event.data.includes("🌀")) p.className = "log-superposition";
+            else if (event.data.includes("⚡")) p.className = "log-collapse";
+            else if (event.data.includes("🔗")) p.className = "log-inference";
+            else if (event.data.includes("🌐") || event.data.includes("🚨")) p.className = "log-p2p";
+            else if (event.data.includes("⏳")) p.className = "log-chronos";
+            terminal.appendChild(p);
+            terminal.scrollTop = terminal.scrollHeight;
+        };
+        evtSource.onerror = function() { console.log("Telemetry stream disconnected, retrying..."); };
+
+        // ─── Multiverse Controls ─────────────────────────
+        async function fetchBranches() {
+            try {
+                const res = await authFetch('/api/v1/quantum/branches');
+                const data = await res.json();
+                const selector = document.getElementById('branch-selector');
+                const current = selector.value;
+                selector.innerHTML = '';
+                Object.keys(data.branches).forEach(b => {
+                    const opt = document.createElement('option');
+                    opt.value = b;
+                    opt.innerText = b;
+                    selector.appendChild(opt);
+                });
+                if (Object.keys(data.branches).includes(current)) selector.value = current;
+            } catch (e) {}
+        }
+        fetchBranches();
+        setInterval(fetchBranches, 5000);
+
+        function changeBranch() {
+            client.localState = 1n;
+            client.nodes.clear();
+            client.edges.clear();
+            client.syncWithServer();
+        }
+
+        async function createNewBranch() {
+            const newBranch = prompt("Enter new branch name:");
+            if (!newBranch) return;
+            const currentBranch = document.getElementById('branch-selector').value;
+            await authFetch('/api/v1/quantum/branch', {
+                method: 'POST',
+                body: JSON.stringify({ source_branch: currentBranch, new_branch: newBranch })
+            });
+            await fetchBranches();
+            document.getElementById('branch-selector').value = newBranch;
+            changeBranch();
+        }
+
+        async function timeTravel() {
+            const tick = prompt("Enter historical tick ID to time-travel to:");
+            if (!tick) return;
+            const newBranch = prompt("Name this alternate timeline branch:");
+            if (!newBranch) return;
+            await authFetch('/api/v1/quantum/time-travel', {
+                method: 'POST',
+                body: JSON.stringify({ target_tick: parseInt(tick), new_branch_name: newBranch })
+            });
+            await fetchBranches();
+            document.getElementById('branch-selector').value = newBranch;
+            changeBranch();
+        }
+
+        async function connectPeer() {
+            const url = document.getElementById('peer-url').value.trim();
+            if (!url) return;
+            await authFetch('/api/v1/quantum/peers', {
+                method: 'POST',
+                body: JSON.stringify({ peer_url: url })
+            });
+            document.getElementById('peer-url').value = '';
+        }
+    </script>
+</body>
+</html>

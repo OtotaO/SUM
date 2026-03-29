@@ -3,557 +3,1240 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SUM | Quantum Knowledge OS</title>
-    <meta name="description" content="Gödel-State Engine — O(1) semantic operations over a mathematically verified knowledge graph">
+    <title>SUM — Your Knowledge, Mathematically Alive</title>
+    <meta name="description" content="Deposit knowledge you can't afford to lose. Retrieve it with mathematical certainty.">
     <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
-        *, *::before, *::after { box-sizing: border-box; }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        body {
-            margin: 0; padding: 0;
-            background: #050510;
-            color: #e2e8f0;
-            font-family: 'Inter', -apple-system, system-ui, sans-serif;
-            overflow: hidden;
+        :root {
+            --bg-deep: #06091a;
+            --bg-surface: rgba(12, 18, 40, 0.92);
+            --bg-card: rgba(15, 23, 42, 0.85);
+            --bg-input: #0c1222;
+            --border-subtle: rgba(56, 189, 248, 0.08);
+            --border-active: rgba(56, 189, 248, 0.25);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #475569;
+            --accent-cyan: #38bdf8;
+            --accent-indigo: #818cf8;
+            --accent-green: #22c55e;
+            --accent-amber: #f59e0b;
+            --accent-violet: #8b5cf6;
+            --accent-rose: #f472b6;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+            --shadow-glow: 0 0 60px rgba(56, 189, 248, 0.06);
+            --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
+        body {
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* ─── Graph Canvas ─────────────────────────────── */
         #network-container {
             width: 100vw; height: 100vh;
             position: absolute; top: 0; left: 0; z-index: 1;
         }
 
-        .hud {
-            position: absolute; z-index: 10;
-            top: 20px; left: 20px;
-            background: rgba(10, 15, 30, 0.88);
-            padding: 24px;
-            border-radius: 16px;
-            border: 1px solid rgba(56, 189, 248, 0.15);
-            backdrop-filter: blur(16px);
-            width: 380px;
-            box-shadow: 0 8px 48px rgba(0, 0, 0, 0.7),
-                        0 0 80px rgba(56, 189, 248, 0.05);
-            display: flex; flex-direction: column; gap: 18px;
-            max-height: calc(100vh - 40px);
-            overflow-y: auto;
+        /* ─── Top Bar ──────────────────────────────────── */
+        .top-bar {
+            position: fixed; top: 0; left: 0; right: 0;
+            z-index: 100;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 20px 28px;
+            pointer-events: none;
         }
+        .top-bar > * { pointer-events: auto; }
 
-        .hud::-webkit-scrollbar { width: 4px; }
-        .hud::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
-
-        .hud h1 {
-            margin: 0; font-size: 28px; letter-spacing: -1.5px;
-            background: linear-gradient(135deg, #38bdf8, #818cf8);
+        .logo {
+            font-size: 26px; font-weight: 700; letter-spacing: -1.5px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-indigo));
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            font-weight: 700;
-        }
-        .hud h1 span { -webkit-text-fill-color: #94a3b8; font-weight: 400; }
-
-        #state-display, #axiom-count {
-            font-family: 'JetBrains Mono', monospace;
-            color: #64748b; font-size: 11px;
-            word-break: break-all;
-        }
-        #axiom-count { color: #38bdf8; font-size: 12px; font-weight: 500; }
-
-        .section-label {
-            margin: 0 0 8px; font-size: 11px; font-weight: 600;
-            color: #94a3b8; text-transform: uppercase; letter-spacing: 1px;
+            user-select: none;
         }
 
-        textarea {
-            width: 100%; height: 80px;
-            background: #0c1222; border: 1px solid #1e293b;
-            color: #f1f5f9; border-radius: 10px;
-            padding: 12px; font-family: inherit; font-size: 13px;
-            resize: none; outline: none;
-            transition: border 0.3s, box-shadow 0.3s;
+        .stats-badge {
+            display: flex; align-items: center; gap: 16px;
+            font-size: 12px; font-weight: 500; color: var(--text-secondary);
+            background: var(--bg-surface);
+            backdrop-filter: blur(20px);
+            padding: 10px 18px;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-subtle);
         }
-        textarea:focus {
-            border-color: #38bdf8;
-            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12);
+        .stats-badge .verified {
+            color: var(--accent-green);
+            display: flex; align-items: center; gap: 4px;
         }
-        textarea::placeholder { color: #475569; }
-
-        button {
-            background: linear-gradient(135deg, #2563eb, #4f46e5);
-            color: #fff; border: none;
-            padding: 11px 16px; border-radius: 10px;
-            cursor: pointer; font-weight: 600; font-size: 13px;
-            width: 100%;
-            transition: all 0.25s;
-            letter-spacing: 0.3px;
-        }
-        button:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 20px rgba(37, 99, 235, 0.4);
-        }
-        button:active { transform: translateY(0); }
-
-        .result-box {
-            background: #080e1a; padding: 12px;
-            border-radius: 10px; font-size: 13px;
-            color: #cbd5e1; min-height: 50px;
-            border: 1px solid #1e293b;
-            line-height: 1.6;
-            max-height: 200px; overflow-y: auto;
-        }
-
-        .divider {
-            height: 1px;
-            background: linear-gradient(90deg, transparent, #1e293b, transparent);
-        }
-
-        .sync-dot {
-            display: inline-block;
-            width: 8px; height: 8px;
-            background: #22c55e; border-radius: 50%;
-            margin-right: 6px;
+        .stats-badge .dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: var(--accent-green);
             animation: pulse 2s ease-in-out infinite;
         }
+
+        /* ─── Command Bar ──────────────────────────────── */
+        .command-bar-container {
+            position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
+            z-index: 100; width: min(600px, calc(100vw - 120px));
+        }
+
+        .command-bar {
+            width: 100%;
+            background: var(--bg-surface);
+            backdrop-filter: blur(24px);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+            padding: 14px 20px;
+            display: flex; align-items: center; gap: 12px;
+            box-shadow: var(--shadow-glow), 0 16px 48px rgba(0,0,0,0.5);
+            transition: border var(--transition), box-shadow var(--transition);
+        }
+        .command-bar:focus-within {
+            border-color: var(--border-active);
+            box-shadow: var(--shadow-glow), 0 0 0 3px rgba(56, 189, 248, 0.08);
+        }
+
+        .command-bar svg { flex-shrink: 0; color: var(--text-muted); }
+
+        .command-bar input {
+            flex: 1; background: none; border: none; outline: none;
+            color: var(--text-primary); font-size: 15px; font-family: inherit;
+        }
+        .command-bar input::placeholder { color: var(--text-muted); }
+
+        .command-bar .shortcut {
+            font-size: 11px; color: var(--text-muted);
+            background: rgba(255,255,255,0.05);
+            padding: 3px 8px; border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            white-space: nowrap;
+        }
+
+        /* ─── Ask Results ──────────────────────────────── */
+        .ask-results {
+            position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+            z-index: 99; width: min(600px, calc(100vw - 120px));
+            max-height: 50vh; overflow-y: auto;
+            display: none; flex-direction: column; gap: 8px;
+        }
+        .ask-results.visible { display: flex; }
+        .ask-results::-webkit-scrollbar { width: 4px; }
+        .ask-results::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+
+        .fact-card {
+            background: var(--bg-surface);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 14px 18px;
+            display: flex; justify-content: space-between; align-items: center;
+            animation: slideUp 0.3s var(--transition) both;
+            cursor: pointer;
+            transition: border var(--transition);
+        }
+        .fact-card:hover { border-color: var(--border-active); }
+
+        .fact-card .fact-text {
+            font-size: 14px; color: var(--text-primary); font-weight: 500;
+        }
+        .fact-card .fact-meta {
+            display: flex; align-items: center; gap: 10px;
+            font-size: 11px; flex-shrink: 0;
+        }
+        .fact-card .badge-verified {
+            color: var(--accent-green);
+            display: flex; align-items: center; gap: 3px;
+            font-weight: 600;
+        }
+        .fact-card .confidence {
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* ─── FAB (Add Button) ─────────────────────────── */
+        .fab {
+            position: fixed; bottom: 32px; right: 32px;
+            z-index: 100;
+            width: 56px; height: 56px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-indigo));
+            border: none; border-radius: 50%;
+            color: white; font-size: 24px;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 24px rgba(56, 189, 248, 0.3);
+            transition: transform var(--transition), box-shadow var(--transition);
+        }
+        .fab:hover {
+            transform: scale(1.08);
+            box-shadow: 0 6px 32px rgba(56, 189, 248, 0.45);
+        }
+        .fab:active { transform: scale(0.96); }
+
+        /* ─── Settings Button ──────────────────────────── */
+        .settings-btn {
+            position: fixed; top: 20px; right: 28px;
+            z-index: 101;
+            width: 40px; height: 40px;
+            background: var(--bg-surface);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all var(--transition);
+        }
+        .settings-btn:hover { color: var(--text-primary); border-color: var(--border-active); }
+
+        /* ─── Modal Overlay ────────────────────────────── */
+        .modal-overlay {
+            position: fixed; inset: 0; z-index: 200;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            display: none; align-items: center; justify-content: center;
+            animation: fadeIn 0.2s ease;
+        }
+        .modal-overlay.visible { display: flex; }
+
+        .modal {
+            background: var(--bg-surface);
+            backdrop-filter: blur(24px);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+            padding: 36px;
+            width: min(520px, calc(100vw - 48px));
+            max-height: calc(100vh - 48px);
+            overflow-y: auto;
+            box-shadow: 0 24px 80px rgba(0,0,0,0.6), var(--shadow-glow);
+            animation: scaleIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .modal h2 {
+            font-size: 24px; font-weight: 600; letter-spacing: -0.5px;
+            margin-bottom: 20px;
+        }
+
+        .modal textarea {
+            width: 100%; height: 140px;
+            background: var(--bg-input);
+            border: 1px solid rgba(30, 41, 59, 0.8);
+            color: var(--text-primary);
+            border-radius: var(--radius-md);
+            padding: 16px; font-family: inherit; font-size: 14px;
+            resize: none; outline: none; line-height: 1.6;
+            transition: border var(--transition);
+        }
+        .modal textarea:focus { border-color: var(--accent-cyan); }
+        .modal textarea::placeholder { color: var(--text-muted); }
+
+        .modal .mode-toggle {
+            display: flex; gap: 8px; margin: 12px 0 16px;
+        }
+        .mode-btn {
+            padding: 6px 14px; border-radius: var(--radius-sm);
+            border: 1px solid rgba(30, 41, 59, 0.5);
+            background: transparent; color: var(--text-muted);
+            font-size: 12px; font-weight: 500; cursor: pointer;
+            transition: all var(--transition);
+        }
+        .mode-btn.active {
+            background: rgba(56, 189, 248, 0.1);
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        .crystallization {
+            min-height: 48px;
+            display: flex; flex-wrap: wrap; gap: 6px;
+            margin: 16px 0;
+            font-size: 11px;
+        }
+        .crystal {
+            background: rgba(56, 189, 248, 0.08);
+            border: 1px solid rgba(56, 189, 248, 0.15);
+            color: var(--accent-cyan);
+            padding: 4px 10px; border-radius: 20px;
+            font-family: 'JetBrains Mono', monospace;
+            animation: crystalIn 0.4s ease both;
+            font-size: 11px;
+        }
+
+        .btn-primary {
+            width: 100%; padding: 14px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-indigo));
+            border: none; border-radius: var(--radius-md);
+            color: white; font-size: 15px; font-weight: 600;
+            cursor: pointer; transition: all var(--transition);
+            letter-spacing: 0.2px;
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 24px rgba(56, 189, 248, 0.3);
+        }
+        .btn-primary:active { transform: translateY(0); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        /* ─── Settings Panel (Slide-out) ───────────────── */
+        .settings-panel {
+            position: fixed; top: 0; right: -440px;
+            z-index: 300;
+            width: 420px; height: 100vh;
+            background: var(--bg-surface);
+            backdrop-filter: blur(24px);
+            border-left: 1px solid var(--border-subtle);
+            padding: 24px;
+            overflow-y: auto;
+            transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: -16px 0 48px rgba(0, 0, 0, 0.4);
+        }
+        .settings-panel.open { right: 0; }
+        .settings-panel::-webkit-scrollbar { width: 4px; }
+        .settings-panel::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+
+        .settings-panel .panel-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 24px;
+        }
+        .settings-panel h3 {
+            font-size: 18px; font-weight: 600; letter-spacing: -0.3px;
+        }
+        .close-btn {
+            width: 32px; height: 32px;
+            background: rgba(255,255,255,0.05); border: none;
+            border-radius: var(--radius-sm);
+            color: var(--text-muted); cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; transition: all var(--transition);
+        }
+        .close-btn:hover { color: var(--text-primary); background: rgba(255,255,255,0.1); }
+
+        .settings-section {
+            margin-bottom: 20px;
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+        }
+        .settings-section-header {
+            padding: 14px 16px;
+            background: rgba(255,255,255,0.02);
+            cursor: pointer;
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 13px; font-weight: 600; color: var(--text-secondary);
+            text-transform: uppercase; letter-spacing: 0.8px;
+            transition: background var(--transition);
+            user-select: none;
+        }
+        .settings-section-header:hover { background: rgba(255,255,255,0.04); }
+        .settings-section-header .chevron {
+            transition: transform var(--transition);
+            font-size: 12px; color: var(--text-muted);
+        }
+        .settings-section.expanded .chevron { transform: rotate(180deg); }
+        .settings-section-body {
+            display: none; padding: 16px;
+            border-top: 1px solid var(--border-subtle);
+        }
+        .settings-section.expanded .settings-section-body { display: block; }
+
+        .settings-section input[type="text"],
+        .settings-section select {
+            width: 100%; padding: 10px 12px;
+            background: var(--bg-input);
+            border: 1px solid rgba(30, 41, 59, 0.8);
+            color: var(--text-primary);
+            border-radius: var(--radius-sm);
+            font-size: 12px; font-family: 'JetBrains Mono', monospace;
+            outline: none; transition: border var(--transition);
+        }
+        .settings-section input:focus,
+        .settings-section select:focus { border-color: var(--accent-cyan); }
+        .settings-section textarea {
+            width: 100%; height: 80px; padding: 10px 12px;
+            background: var(--bg-input);
+            border: 1px solid rgba(30, 41, 59, 0.8);
+            color: var(--text-primary);
+            border-radius: var(--radius-sm);
+            font-size: 12px; font-family: inherit;
+            resize: none; outline: none;
+        }
+
+        .settings-section label {
+            display: block; font-size: 11px; font-weight: 600;
+            color: var(--text-muted); text-transform: uppercase;
+            letter-spacing: 0.5px; margin-bottom: 6px;
+        }
+
+        .btn-sm {
+            padding: 8px 14px;
+            border: none; border-radius: var(--radius-sm);
+            font-size: 12px; font-weight: 600; cursor: pointer;
+            transition: all var(--transition);
+        }
+        .btn-cyan { background: var(--accent-cyan); color: #000; }
+        .btn-green { background: var(--accent-green); color: #000; }
+        .btn-amber { background: var(--accent-amber); color: #000; }
+        .btn-violet { background: var(--accent-violet); color: #fff; }
+        .btn-sm:hover { transform: translateY(-1px); opacity: 0.9; }
+
+        .inline-group {
+            display: flex; gap: 8px; align-items: center;
+            margin-bottom: 10px;
+        }
+        .inline-group input { flex: 1; margin: 0; }
+
+        .result-box {
+            background: var(--bg-input);
+            border: 1px solid rgba(30, 41, 59, 0.8);
+            border-radius: var(--radius-sm);
+            padding: 10px 12px; font-size: 12px;
+            color: var(--text-secondary);
+            min-height: 40px; max-height: 160px;
+            overflow-y: auto; line-height: 1.6;
+            margin-top: 8px; white-space: pre-wrap;
+        }
+
+        /* ─── Telemetry Terminal ────────────────────────── */
+        .terminal {
+            background: #020617;
+            border: 1px solid rgba(30, 41, 59, 0.8);
+            border-radius: var(--radius-sm);
+            padding: 10px; font-family: 'JetBrains Mono', monospace;
+            font-size: 10px; color: var(--accent-green);
+            height: 160px; overflow-y: auto;
+        }
+        .terminal p { margin: 2px 0; }
+        .log-warn { color: var(--accent-amber); }
+        .log-superposition { color: var(--accent-violet); }
+        .log-collapse { color: var(--accent-cyan); font-weight: bold; }
+        .log-inference { color: var(--accent-rose); font-style: italic; font-weight: bold; }
+        .log-p2p { color: #34d399; font-weight: bold; }
+        .log-chronos { color: var(--accent-amber); font-style: italic; }
+
+        /* ─── WASM Status ──────────────────────────────── */
+        .wasm-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+            margin-bottom: 10px;
+        }
+        .wasm-cell {
+            padding: 10px; background: var(--bg-input);
+            border: 1px solid rgba(30, 41, 59, 0.8);
+            border-radius: var(--radius-sm);
+        }
+        .wasm-cell .wasm-label {
+            font-size: 9px; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        .wasm-cell .wasm-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px; font-weight: 600;
+            word-break: break-all;
+        }
+
+        /* ─── Empty State ──────────────────────────────── */
+        .empty-state {
+            position: fixed; inset: 0; z-index: 50;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            pointer-events: none;
+            opacity: 1; transition: opacity 0.6s ease;
+        }
+        .empty-state.hidden { opacity: 0; pointer-events: none; }
+
+        .empty-state .empty-logo {
+            font-size: 48px; font-weight: 700; letter-spacing: -3px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-indigo));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            margin-bottom: 12px;
+        }
+        .empty-state .empty-tagline {
+            font-size: 16px; color: var(--text-secondary); font-weight: 300;
+            margin-bottom: 32px; letter-spacing: 0.3px;
+        }
+        .empty-state .empty-cta {
+            font-size: 14px; color: var(--text-muted);
+            max-width: 320px; text-align: center; line-height: 1.7;
+        }
+        .empty-state .empty-cta strong { color: var(--text-secondary); }
+
+        /* ─── Settings Overlay (backdrop) ──────────────── */
+        .settings-backdrop {
+            position: fixed; inset: 0; z-index: 250;
+            background: rgba(0,0,0,0.4);
+            display: none;
+        }
+        .settings-backdrop.visible { display: block; }
+
+        /* ─── Animations ───────────────────────────────── */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes scaleIn { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes crystalIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
         @keyframes pulse {
             0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
             50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
         }
-
-        .terminal {
-            background: #020617; border: 1px solid #1e293b;
-            border-radius: 8px; padding: 10px;
-            font-family: 'JetBrains Mono', monospace; font-size: 11px;
-            color: #10b981; height: 140px; overflow-y: auto;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
-        }
-        .terminal p { margin: 2px 0; }
-        .log-warn { color: #f59e0b; }
-        .log-superposition { color: #8b5cf6; }
-        .log-collapse { color: #0ea5e9; font-weight: bold; }
-        .log-inference { color: #f472b6; font-style: italic; font-weight: bold; }
-        .log-p2p { color: #34d399; font-weight: bold; }
-        .log-chronos { color: #fbbf24; font-style: italic; }
     </style>
 </head>
 <body>
-    <div class="hud">
-        <div>
-            <h1>SUM<span>_OS</span></h1>
-            <div style="margin-top: 8px; font-size: 12px; color: #475569;">
-                <span class="sync-dot"></span>Live Gödel Sync
+
+<!-- ─── Graph Canvas ──────────────────────────────── -->
+<div id="network-container"></div>
+
+<!-- ─── Empty State ───────────────────────────────── -->
+<div class="empty-state" id="empty-state">
+    <div class="empty-logo">SUM</div>
+    <div class="empty-tagline">Your knowledge, mathematically alive</div>
+    <div class="empty-cta">
+        Paste something you've learned today.<br>
+        SUM will <strong>remember</strong> it forever — and<br>
+        <strong>prove</strong> it when you ask.
+    </div>
+</div>
+
+<!-- ─── Top Bar ───────────────────────────────────── -->
+<div class="top-bar">
+    <div class="logo">SUM</div>
+    <div class="stats-badge" id="stats-badge">
+        <span><span class="dot"></span></span>
+        <span id="stat-facts">0 facts</span>
+        <span>·</span>
+        <span id="stat-entities">0 entities</span>
+        <span>·</span>
+        <span class="verified" id="stat-verified">✓ verified</span>
+    </div>
+</div>
+
+<!-- ─── Settings Gear (top-right, offset from stats) -->
+<button class="settings-btn" id="settings-btn" title="Power Tools">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+</button>
+
+<!-- ─── Command Bar (Ask) ─────────────────────────── -->
+<div class="command-bar-container">
+    <div class="command-bar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input type="text" id="ask-input" placeholder="What do you know about..." autocomplete="off">
+        <span class="shortcut">⌘K</span>
+    </div>
+</div>
+
+<!-- ─── Ask Results ───────────────────────────────── -->
+<div class="ask-results" id="ask-results"></div>
+
+<!-- ─── FAB (Deposit) ─────────────────────────────── -->
+<button class="fab" id="fab-deposit" title="Deposit Knowledge">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+</button>
+
+<!-- ─── Deposit Modal ─────────────────────────────── -->
+<div class="modal-overlay" id="deposit-overlay">
+    <div class="modal">
+        <h2>What did you learn?</h2>
+        <div class="mode-toggle">
+            <button class="mode-btn active" id="mode-text" onclick="setDepositMode('text')">Natural Text</button>
+            <button class="mode-btn" id="mode-math" onclick="setDepositMode('math')">Structured Facts</button>
+        </div>
+        <textarea id="deposit-input" placeholder="Paste a paragraph, an article, or anything you want to remember..."></textarea>
+        <div class="crystallization" id="crystallization"></div>
+        <button class="btn-primary" id="deposit-btn" onclick="depositKnowledge()">Remember This</button>
+    </div>
+</div>
+
+<!-- ─── Settings Backdrop ─────────────────────────── -->
+<div class="settings-backdrop" id="settings-backdrop"></div>
+
+<!-- ─── Settings Panel ────────────────────────────── -->
+<div class="settings-panel" id="settings-panel">
+    <div class="panel-header">
+        <h3>⚙ Power Tools</h3>
+        <button class="close-btn" onclick="toggleSettings()">✕</button>
+    </div>
+
+    <!-- Auth -->
+    <div class="settings-section expanded" id="sect-auth">
+        <div class="settings-section-header" onclick="toggleSection('sect-auth')">
+            🔐 Identity <span class="chevron">▼</span>
+        </div>
+        <div class="settings-section-body">
+            <div class="inline-group">
+                <input type="text" id="auth-username" placeholder="Username">
+                <button class="btn-sm btn-amber" onclick="getPassport()">Get Passport</button>
             </div>
+            <div id="auth-status" style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">Not authenticated</div>
         </div>
+    </div>
 
-        <div id="auth-panel" style="display: flex; gap: 8px; align-items: center;">
-            <input type="text" id="auth-username" placeholder="Username" style="flex: 1; background: #0f172a; border: 1px solid #334155; color: #e2e8f0; padding: 7px 10px; border-radius: 8px; outline: none; font-size: 12px; font-family: 'JetBrains Mono', monospace;">
-            <button id="auth-btn" onclick="getPassport()" style="padding: 7px 12px; background: linear-gradient(135deg, #f59e0b, #d97706); font-size: 11px; width: auto; min-width: 100px; border-radius: 8px;">🔑 Get Passport</button>
+    <!-- Branches -->
+    <div class="settings-section" id="sect-branches">
+        <div class="settings-section-header" onclick="toggleSection('sect-branches')">
+            🌿 Branches (Git for Truth) <span class="chevron">▼</span>
         </div>
-        <div id="auth-status" style="font-family: 'JetBrains Mono', monospace; color: #64748b; font-size: 11px;">Not authenticated</div>
-
-        <div id="state-display">Gödel State: 1</div>
-        <div id="axiom-count">Axioms: 0</div>
-
-        <div class="divider"></div>
-
-        <div style="display: flex; gap: 8px; align-items: center;">
-            <select id="branch-selector" style="flex: 1; background: #0f172a; color: #e2e8f0; border: 1px solid #334155; padding: 7px 10px; border-radius: 8px; outline: none; font-size: 12px; font-family: 'JetBrains Mono', monospace;" onchange="changeBranch()">
-                <option value="main">main</option>
-            </select>
-            <button onclick="createNewBranch()" style="padding: 7px 12px; background: linear-gradient(135deg, #059669, #10b981); font-size: 11px; width: auto; min-width: 70px; border-radius: 8px;">+ Branch</button>
-            <button onclick="timeTravel()" style="padding: 7px 12px; background: linear-gradient(135deg, #d97706, #f59e0b); font-size: 11px; width: auto; min-width: 60px; border-radius: 8px;">⏳ Travel</button>
-        </div>
-
-        <div style="display: flex; gap: 8px; align-items: center;">
-            <input type="text" id="peer-url" placeholder="http://remote-node:8000" style="flex: 1; background: #0f172a; border: 1px solid #334155; color: #e2e8f0; padding: 7px 10px; border-radius: 8px; outline: none; font-size: 12px; font-family: 'JetBrains Mono', monospace;">
-            <button onclick="connectPeer()" style="padding: 7px 12px; background: linear-gradient(135deg, #7c3aed, #8b5cf6); font-size: 11px; width: auto; min-width: 80px; border-radius: 8px;">🌐 Add Peer</button>
-        </div>
-
-        <div class="divider"></div>
-
-        <div>
-            <p class="section-label">① Tomes → Tags (Ingest)</p>
-            <textarea id="ingest-box" placeholder="Paste raw text to crystallize into exact mathematics..."></textarea>
-            <button id="ingest-btn" onclick="ingestText()">Extract to Gödel State</button>
-        </div>
-
-        <div class="divider"></div>
-
-        <div>
-            <p class="section-label">② Tags → Tomes (Extrapolate)</p>
-            <textarea id="extrapolate-tags" placeholder="Enter comma-separated axiom keys&#10;e.g. alice||age||30, bob||role||admin"></textarea>
-            <button id="extrapolate-btn" onclick="extrapolateTags()">Generate Verified Tome</button>
-            <div id="extrapolate-result" class="result-box" style="margin-top: 10px;">
-                Awaiting extrapolation…
+        <div class="settings-section-body">
+            <label>Active Branch</label>
+            <div class="inline-group">
+                <select id="branch-selector" onchange="changeBranch()">
+                    <option value="main">main</option>
+                </select>
+                <button class="btn-sm btn-green" onclick="createNewBranch()">+ New</button>
             </div>
-        </div>
-
-        <div class="divider"></div>
-
-        <div>
-            <p class="section-label">③ Rehydrate (Tags → Tome)</p>
-            <input type="text" id="rehydrate-title" placeholder="Tome title (optional)" style="width: 100%; background: #0c1222; border: 1px solid #1e293b; color: #f1f5f9; padding: 10px; border-radius: 10px; margin-bottom: 8px; font-size: 13px; outline: none; font-family: inherit;">
-            <button id="rehydrate-btn" onclick="rehydrateTome()" style="background: linear-gradient(135deg, #059669, #10b981);">Rehydrate Gödel State</button>
-            <div id="rehydrate-result" class="result-box" style="margin-top: 10px; white-space: pre-wrap;">
-                Awaiting rehydration…
-            </div>
-        </div>
-
-        <div class="divider"></div>
-
-        <div>
-            <p class="section-label">④ Epistemic Delta (Learn)</p>
-            <input type="text" id="learn-topic" placeholder="Topic entity (e.g. alice, quantum, gravity)" style="width: 100%; background: #0c1222; border: 1px solid #1e293b; color: #f1f5f9; padding: 10px; border-radius: 10px; margin-bottom: 8px; font-size: 13px; outline: none; font-family: inherit;">
-            <button id="learn-btn" onclick="learnTopic()" style="background: linear-gradient(135deg, #7c3aed, #8b5cf6);">Generate Delta Tome</button>
-            <div id="learn-result" class="result-box" style="margin-top: 10px; white-space: pre-wrap;">
-                Awaiting epistemic delta…
-            </div>
-        </div>
-
-        <div class="divider"></div>
-
-        <div>
-            <p class="section-label">⑥ Sovereign Edge (WASM)</p>
-            <div style="margin-bottom: 12px; display: flex; gap: 8px;">
-                <div style="flex: 1; padding: 10px; background: #0f172a; border: 1px solid #1e293b; border-radius: 8px;">
-                    <div style="font-size: 10px; color: #94a3b8; margin-bottom: 4px;">💻 LOCAL STATE</div>
-                    <div id="local-state-display" style="color: #10b981; font-weight: bold; word-break: break-all; font-size: 11px;">1</div>
-                </div>
-                <div style="flex: 1; padding: 10px; background: #0f172a; border: 1px solid #1e293b; border-radius: 8px;">
-                    <div style="font-size: 10px; color: #94a3b8; margin-bottom: 4px;">🌍 GLOBAL STATE</div>
-                    <div id="global-state-display" style="color: #38bdf8; font-weight: bold; word-break: break-all; font-size: 11px;">1</div>
-                    <button onclick="syncWithSwarm()" style="margin-top: 6px; width: 100%; background: #3b82f6; color: white; border: none; padding: 5px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">O(1) Merge to Swarm</button>
-                </div>
-            </div>
-            <textarea id="local-ingest-text" placeholder="Enter facts: [alice||knows||bob] [bob||causes||event]" style="width: 100%; height: 50px; background: #0f172a; border: 1px solid #334155; color: #fff; padding: 8px; border-radius: 8px; margin-bottom: 8px; font-size: 12px; outline: none; resize: none; box-sizing: border-box;"></textarea>
-            <button id="local-ingest-btn" onclick="ingestLocally()" style="background: #10b981; color: #fff; border: none; padding: 8px; border-radius: 8px; cursor: pointer; font-weight: 600; width: 100%; font-size: 13px;">Mint Primes Locally ⚡</button>
-        </div>
-
-        <div class="divider"></div>
-
-        <div>
-            <p class="section-label">⑦ System Telemetry</p>
-            <div id="telemetry-terminal" class="terminal">
-                <p style="color: #475569;">Awaiting system events…</p>
+            <label style="margin-top:10px">Merge Branches</label>
+            <div class="inline-group">
+                <input type="text" id="merge-source" placeholder="Source branch">
+                <input type="text" id="merge-target" placeholder="Target branch">
+                <button class="btn-sm btn-cyan" onclick="mergeBranches()">Merge</button>
             </div>
         </div>
     </div>
 
-    <div id="network-container"></div>
+    <!-- Time Travel -->
+    <div class="settings-section" id="sect-timetravel">
+        <div class="settings-section-header" onclick="toggleSection('sect-timetravel')">
+            ⏳ Time Travel <span class="chevron">▼</span>
+        </div>
+        <div class="settings-section-body">
+            <div class="inline-group">
+                <input type="text" id="tt-tick" placeholder="Tick ID">
+                <input type="text" id="tt-branch" placeholder="New branch name">
+                <button class="btn-sm btn-amber" onclick="timeTravel()">Travel</button>
+            </div>
+        </div>
+    </div>
 
-    <script src="/static/js/godel_client.js"></script>
-    <script src="/static/js/sum_wasm.js"></script>
-    <script>
-        // ─── WASM Initialization ────────────────────────────
-        let sumWasm = null;
-        (async () => {
-            sumWasm = await SumWasm.init('/static/sum_core.wasm');
-            if (sumWasm) {
-                const dot = document.querySelector('.sync-dot');
-                dot.style.background = '#f59e0b';
-                dot.parentElement.innerHTML = '<span class="sync-dot" style="background:#22c55e;"></span>Live Gödel Sync <span style="color:#f59e0b; font-weight:600;">⚡ WASM</span>';
-            }
-        })();
+    <!-- P2P -->
+    <div class="settings-section" id="sect-p2p">
+        <div class="settings-section-header" onclick="toggleSection('sect-p2p')">
+            🌐 P2P Mesh <span class="chevron">▼</span>
+        </div>
+        <div class="settings-section-body">
+            <div class="inline-group">
+                <input type="text" id="peer-url" placeholder="http://remote-node:8000">
+                <button class="btn-sm btn-violet" onclick="connectPeer()">Add Peer</button>
+            </div>
+        </div>
+    </div>
 
-        // ─── Auth Layer ──────────────────────────────────────
-        let currentToken = localStorage.getItem('sum_jwt') || null;
-        let currentUser = localStorage.getItem('sum_user') || null;
+    <!-- WASM -->
+    <div class="settings-section" id="sect-wasm">
+        <div class="settings-section-header" onclick="toggleSection('sect-wasm')">
+            ⚡ Sovereign Edge (WASM) <span class="chevron">▼</span>
+        </div>
+        <div class="settings-section-body">
+            <div class="wasm-grid">
+                <div class="wasm-cell">
+                    <div class="wasm-label">💻 Local State</div>
+                    <div class="wasm-value" id="local-state-display" style="color:var(--accent-green);">1</div>
+                </div>
+                <div class="wasm-cell">
+                    <div class="wasm-label">🌍 Global State</div>
+                    <div class="wasm-value" id="global-state-display" style="color:var(--accent-cyan);">1</div>
+                </div>
+            </div>
+            <textarea id="local-ingest-text" placeholder="[alice||knows||bob] [bob||causes||event]" style="height:50px;margin-bottom:8px;"></textarea>
+            <div class="inline-group" style="margin:0;">
+                <button class="btn-sm btn-green" onclick="ingestLocally()" style="flex:1;">Mint Locally ⚡</button>
+                <button class="btn-sm btn-cyan" onclick="syncWithSwarm()" style="flex:1;">Merge to Swarm</button>
+            </div>
+        </div>
+    </div>
 
-        function updateAuthUI() {
-            const status = document.getElementById('auth-status');
-            const panel = document.getElementById('auth-panel');
-            if (currentToken && currentUser) {
-                status.innerHTML = '🔐 <span style="color: #38bdf8;">' + currentUser + '</span>';
-                status.style.color = '#22c55e';
-            } else {
-                status.innerText = 'Not authenticated';
-                status.style.color = '#64748b';
-            }
-        }
+    <!-- Extrapolate -->
+    <div class="settings-section" id="sect-extrapolate">
+        <div class="settings-section-header" onclick="toggleSection('sect-extrapolate')">
+            📝 Extrapolate (Tags → Tome) <span class="chevron">▼</span>
+        </div>
+        <div class="settings-section-body">
+            <textarea id="extrapolate-tags" placeholder="Comma-separated axiom keys&#10;e.g. alice||age||30, bob||role||admin"></textarea>
+            <button class="btn-sm btn-cyan" onclick="extrapolateTags()" style="margin-top:8px;width:100%;" id="extrapolate-btn">Generate Verified Tome</button>
+            <div class="result-box" id="extrapolate-result">Awaiting extrapolation…</div>
+        </div>
+    </div>
 
-        async function getPassport() {
-            const username = document.getElementById('auth-username').value.trim();
-            if (!username) return;
-            try {
-                const res = await fetch('/api/v1/quantum/auth/token', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: username })
-                });
-                if (!res.ok) throw new Error(await res.text());
-                const data = await res.json();
-                currentToken = data.access_token;
-                currentUser = username;
-                localStorage.setItem('sum_jwt', currentToken);
-                localStorage.setItem('sum_user', currentUser);
-                updateAuthUI();
-                // Reinit client with token
-                client.token = currentToken;
-                client.syncWithServer();
-            } catch (e) { alert('Auth failed: ' + e.message); }
-        }
+    <!-- Rehydrate -->
+    <div class="settings-section" id="sect-rehydrate">
+        <div class="settings-section-header" onclick="toggleSection('sect-rehydrate')">
+            💧 Rehydrate (State → Tome) <span class="chevron">▼</span>
+        </div>
+        <div class="settings-section-body">
+            <input type="text" id="rehydrate-title" placeholder="Tome title (optional)" style="margin-bottom:8px;">
+            <button class="btn-sm btn-green" onclick="rehydrateTome()" style="width:100%;" id="rehydrate-btn">Rehydrate</button>
+            <div class="result-box" id="rehydrate-result">Awaiting rehydration…</div>
+        </div>
+    </div>
 
-        async function authFetch(url, opts = {}) {
-            if (!opts.headers) opts.headers = {};
-            opts.headers['Content-Type'] = opts.headers['Content-Type'] || 'application/json';
-            if (currentToken) {
-                opts.headers['Authorization'] = 'Bearer ' + currentToken;
-            }
-            return fetch(url, opts);
-        }
+    <!-- Learn -->
+    <div class="settings-section" id="sect-learn">
+        <div class="settings-section-header" onclick="toggleSection('sect-learn')">
+            🎓 Learn (Epistemic Delta) <span class="chevron">▼</span>
+        </div>
+        <div class="settings-section-body">
+            <input type="text" id="learn-topic" placeholder="Topic entity (e.g. einstein)" style="margin-bottom:8px;">
+            <button class="btn-sm btn-violet" onclick="learnTopic()" style="width:100%;" id="learn-btn">Generate Delta Tome</button>
+            <div class="result-box" id="learn-result">Awaiting epistemic delta…</div>
+        </div>
+    </div>
 
+    <!-- Telemetry -->
+    <div class="settings-section" id="sect-telemetry">
+        <div class="settings-section-header" onclick="toggleSection('sect-telemetry')">
+            📡 System Telemetry <span class="chevron">▼</span>
+        </div>
+        <div class="settings-section-body">
+            <div class="terminal" id="telemetry-terminal">
+                <p style="color:var(--text-muted);">Awaiting system events…</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ─── Scripts ───────────────────────────────────── -->
+<script src="/static/js/godel_client.js"></script>
+<script src="/static/js/sum_wasm.js"></script>
+<script>
+// ─── WASM ───────────────────────────────────────────
+let sumWasm = null;
+(async () => {
+    sumWasm = await SumWasm.init('/static/sum_core.wasm');
+    if (sumWasm) {
+        const term = document.getElementById('telemetry-terminal');
+        term.innerHTML += '<p style="color:var(--accent-amber);">⚡ WASM core loaded — offline math enabled</p>';
+    }
+})();
+
+// ─── Auth ───────────────────────────────────────────
+let currentToken = localStorage.getItem('sum_jwt') || null;
+let currentUser = localStorage.getItem('sum_user') || null;
+
+function updateAuthUI() {
+    const status = document.getElementById('auth-status');
+    if (currentToken && currentUser) {
+        status.innerHTML = '🔐 <span style="color:var(--accent-cyan);">' + currentUser + '</span>';
+    } else {
+        status.innerText = 'Not authenticated';
+    }
+}
+
+async function getPassport() {
+    const username = document.getElementById('auth-username').value.trim();
+    if (!username) return;
+    try {
+        const res = await fetch('/api/v1/quantum/auth/token', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username })
+        });
+        if (!res.ok) throw new Error(await res.text());
+        const data = await res.json();
+        currentToken = data.access_token;
+        currentUser = username;
+        localStorage.setItem('sum_jwt', currentToken);
+        localStorage.setItem('sum_user', currentUser);
         updateAuthUI();
+        client.token = currentToken;
+        client.syncWithServer();
+    } catch (e) { alert('Auth failed: ' + e.message); }
+}
 
-        // ─── Sovereign Edge (Local WASM State) ─────────────────
-        let localGodelState = BigInt(localStorage.getItem('sum_local_state') || '1');
+async function authFetch(url, opts = {}) {
+    if (!opts.headers) opts.headers = {};
+    opts.headers['Content-Type'] = opts.headers['Content-Type'] || 'application/json';
+    if (currentToken) opts.headers['Authorization'] = 'Bearer ' + currentToken;
+    return fetch(url, opts);
+}
 
-        function updateLocalUI() {
-            const str = localGodelState.toString();
-            const display = str.length > 40
-                ? str.substring(0, 18) + '......' + str.substring(str.length - 18)
-                : str;
-            document.getElementById('local-state-display').innerText =
-                '[Len: ' + str.length + '] ' + display;
-            localStorage.setItem('sum_local_state', str);
-        }
+updateAuthUI();
 
-        async function ingestLocally() {
-            const text = document.getElementById('local-ingest-text').value;
-            if (!text || !sumWasm) {
-                alert('WASM module not loaded yet!');
-                return;
+// ─── Deposit Modal ──────────────────────────────────
+let depositMode = 'text';
+const depositOverlay = document.getElementById('deposit-overlay');
+const depositInput = document.getElementById('deposit-input');
+const crystallization = document.getElementById('crystallization');
+
+document.getElementById('fab-deposit').addEventListener('click', () => {
+    depositOverlay.classList.add('visible');
+    setTimeout(() => depositInput.focus(), 100);
+});
+
+depositOverlay.addEventListener('click', (e) => {
+    if (e.target === depositOverlay) {
+        depositOverlay.classList.remove('visible');
+        crystallization.innerHTML = '';
+    }
+});
+
+function setDepositMode(mode) {
+    depositMode = mode;
+    document.getElementById('mode-text').classList.toggle('active', mode === 'text');
+    document.getElementById('mode-math').classList.toggle('active', mode === 'math');
+    depositInput.placeholder = mode === 'text'
+        ? 'Paste a paragraph, an article, or anything you want to remember...'
+        : 'Enter structured facts:\n[alice||knows||bob]\n[einstein||discovered||photon]';
+}
+
+async function depositKnowledge() {
+    const btn = document.getElementById('deposit-btn');
+    const text = depositInput.value.trim();
+    if (!text) return;
+
+    btn.disabled = true;
+    btn.innerText = 'Crystallizing…';
+    crystallization.innerHTML = '';
+
+    try {
+        let res, data;
+        if (depositMode === 'text') {
+            res = await authFetch('/api/v1/quantum/ingest', {
+                method: 'POST', body: JSON.stringify({ text })
+            });
+            data = await res.json();
+            if (!res.ok) throw new Error(data.detail || 'Ingestion failed');
+
+            // Show crystallization
+            const count = data.axioms_ingested || 0;
+            for (let i = 0; i < Math.min(count, 12); i++) {
+                setTimeout(() => {
+                    const c = document.createElement('span');
+                    c.className = 'crystal';
+                    c.innerText = 'fact ' + (i + 1);
+                    crystallization.appendChild(c);
+                }, i * 120);
             }
+            if (count > 12) {
+                setTimeout(() => {
+                    const c = document.createElement('span');
+                    c.className = 'crystal';
+                    c.innerText = '+' + (count - 12) + ' more';
+                    crystallization.appendChild(c);
+                }, 12 * 120);
+            }
+        } else {
+            // Math mode: parse [s||p||o] patterns
             const regex = /\[(.*?)\]/g;
+            const triplets = [];
             let match;
-            let count = 0;
             while ((match = regex.exec(text)) !== null) {
                 const parts = match[1].split('||');
-                if (parts.length === 3) {
-                    const axiomStr = parts.map(p => p.trim().toLowerCase()).join('||');
-                    const prime = BigInt(sumWasm.getDeterministicPrime(axiomStr));
-                    if (localGodelState % prime !== 0n) {
-                        // LCM via WASM if possible, fallback to JS
-                        try {
-                            localGodelState = sumWasm.bigintLcm(localGodelState, prime);
-                        } catch (e) {
-                            // JS fallback LCM
-                            function gcd(a, b) { return b === 0n ? a : gcd(b, a % b); }
-                            localGodelState = (localGodelState / gcd(localGodelState, prime)) * prime;
-                        }
-                        count++;
-                    }
-                }
+                if (parts.length === 3) triplets.push(parts.map(p => p.trim()));
             }
-            document.getElementById('local-ingest-text').value = '';
-            updateLocalUI();
-            if (count > 0) {
-                const term = document.getElementById('telemetry-terminal');
-                term.innerHTML += '<p style="color:#10b981;">⚡ WASM: Minted ' + count + ' primes locally</p>';
-                term.scrollTop = term.scrollHeight;
-            }
+            if (!triplets.length) throw new Error('No valid [s||p||o] triplets found');
+
+            res = await authFetch('/api/v1/quantum/ingest/math', {
+                method: 'POST', body: JSON.stringify({ triplets })
+            });
+            data = await res.json();
+            if (!res.ok) throw new Error(data.detail || 'Ingestion failed');
+
+            triplets.forEach((t, i) => {
+                setTimeout(() => {
+                    const c = document.createElement('span');
+                    c.className = 'crystal';
+                    c.innerText = t.join(' → ');
+                    crystallization.appendChild(c);
+                }, i * 150);
+            });
         }
 
-        async function syncWithSwarm() {
-            try {
-                const res = await authFetch('/api/v1/quantum/sync/state', {
-                    method: 'POST',
-                    body: JSON.stringify({ peer_state_integer: localGodelState.toString() })
-                });
-                const data = await res.json();
-                localGodelState = BigInt(data.global_state_integer);
-                updateLocalUI();
-                const stateStr = data.global_state_integer;
-                const display = stateStr.length > 40
-                    ? stateStr.substring(0, 18) + '......' + stateStr.substring(stateStr.length - 18)
-                    : stateStr;
-                document.getElementById('global-state-display').innerText =
-                    '[Len: ' + stateStr.length + '] ' + display;
-                const term = document.getElementById('telemetry-terminal');
-                term.innerHTML += '<p style="color:#38bdf8;">🌐 Synced with swarm — state merged</p>';
-                term.scrollTop = term.scrollHeight;
-            } catch (e) { console.error('Swarm sync failed', e); }
-        }
+        depositInput.value = '';
+        await client.syncWithServer();
+        updateStats();
+        hideEmptyState();
 
-        setTimeout(updateLocalUI, 500);
+        setTimeout(() => {
+            btn.disabled = false;
+            btn.innerText = 'Remember This';
+        }, 1500);
 
-        const container = document.getElementById('network-container');
-        const client = new GodelClient(currentToken);
-        const data = { nodes: client.nodes, edges: client.edges };
-        const options = {
-            nodes: {
-                shape: 'dot', size: 16,
-                font: { color: '#e2e8f0', size: 13, face: 'Inter', strokeWidth: 3, strokeColor: '#050510' },
-                color: { background: '#38bdf8', border: '#0284c7', highlight: { background: '#60a5fa', border: '#3b82f6' } },
-                borderWidth: 2
-            },
-            edges: {
-                font: { color: '#94a3b8', size: 10, face: 'Inter', align: 'top', strokeWidth: 0 },
-                color: { color: '#1e3a5f', highlight: '#60a5fa', opacity: 0.7 },
-                smooth: { type: 'continuous' }, width: 1.5
-            },
-            physics: {
-                forceAtlas2Based: { gravitationalConstant: -45, centralGravity: 0.005, springLength: 100, springConstant: 0.07, damping: 0.4 },
-                solver: 'forceAtlas2Based'
-            },
-            interaction: { hover: true, tooltipDelay: 200 }
-        };
+    } catch (e) {
+        alert('Deposit failed: ' + e.message);
+        btn.disabled = false;
+        btn.innerText = 'Remember This';
+    }
+}
 
-        const network = new vis.Network(container, data, options);
-        network.on("selectEdge", function (params) {
-            if (params.edges.length > 0) {
-                const box = document.getElementById('extrapolate-tags');
-                const edgeId = params.edges[0];
-                box.value = box.value ? box.value + ", " + edgeId : edgeId;
-            }
+// ─── Ask Bar ────────────────────────────────────────
+const askInput = document.getElementById('ask-input');
+const askResults = document.getElementById('ask-results');
+let askTimeout = null;
+
+askInput.addEventListener('input', () => {
+    clearTimeout(askTimeout);
+    const q = askInput.value.trim();
+    if (!q) { askResults.classList.remove('visible'); return; }
+    askTimeout = setTimeout(() => executeAsk(q), 500);
+});
+
+askInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        clearTimeout(askTimeout);
+        const q = askInput.value.trim();
+        if (q) executeAsk(q);
+    }
+    if (e.key === 'Escape') {
+        askInput.value = '';
+        askInput.blur();
+        askResults.classList.remove('visible');
+    }
+});
+
+async function executeAsk(question) {
+    try {
+        const branch = document.getElementById('branch-selector').value;
+        const res = await authFetch('/api/v1/quantum/ask', {
+            method: 'POST',
+            body: JSON.stringify({ question, branch, top_k: 10 })
         });
-        client.startAutoSync(2000);
+        const data = await res.json();
 
-        async function ingestText() {
-            const btn = document.getElementById('ingest-btn');
-            const box = document.getElementById('ingest-box');
-            const text = box.value.trim();
-            if (!text) return;
-            btn.innerText = "Crystallizing…"; btn.style.opacity = "0.6"; btn.style.pointerEvents = "none";
-            try {
-                const res = await authFetch('/api/v1/quantum/ingest', { method: 'POST', body: JSON.stringify({ text }) });
-                if (!res.ok) throw new Error(await res.text());
-                box.value = '';
-                await client.syncWithServer();
-            } catch (e) { console.error(e); alert("Ingestion failed: " + e.message); }
-            finally { btn.innerText = "Extract to Gödel State"; btn.style.opacity = "1"; btn.style.pointerEvents = "auto"; }
-        }
+        askResults.innerHTML = '';
+        const facts = data.results || data.axioms || [];
 
-        async function extrapolateTags() {
-            const btn = document.getElementById('extrapolate-btn');
-            const box = document.getElementById('extrapolate-tags');
-            const result = document.getElementById('extrapolate-result');
-            const tags = box.value.split(',').map(t => t.trim()).filter(Boolean);
-            if (!tags.length) return;
-            btn.innerText = "Running Epistemic Loop…"; btn.style.opacity = "0.6"; btn.style.pointerEvents = "none";
-            result.innerText = "Proving mathematical fidelity…";
-            try {
-                const res = await authFetch('/api/v1/quantum/extrapolate', { method: 'POST', body: JSON.stringify({ target_axioms: tags }) });
-                const data = await res.json();
-                result.innerText = data.verified_narrative || data.detail || "No response.";
-            } catch (e) { console.error(e); result.innerText = "Extrapolation failed: " + e.message; }
-            finally { btn.innerText = "Generate Verified Tome"; btn.style.opacity = "1"; btn.style.pointerEvents = "auto"; }
-        }
+        if (facts.length === 0) {
+            askResults.innerHTML = '<div class="fact-card"><span class="fact-text" style="color:var(--text-muted);">No verified facts found for this query.</span></div>';
+        } else {
+            facts.forEach((fact, i) => {
+                const card = document.createElement('div');
+                card.className = 'fact-card';
+                card.style.animationDelay = (i * 0.06) + 's';
 
-        // ─── Phase 14: Rehydrate + Learn ─────────────────────
-        async function rehydrateTome() {
-            const btn = document.getElementById('rehydrate-btn');
-            const result = document.getElementById('rehydrate-result');
-            const title = document.getElementById('rehydrate-title').value.trim() || "The Rehydrated Codex";
-            btn.innerText = "Rehydrating…"; btn.style.opacity = "0.6"; btn.style.pointerEvents = "none";
-            result.innerText = "Unpacking Gödel Integer…";
-            try {
-                const res = await authFetch('/api/v1/quantum/rehydrate', {
-                    method: 'POST',
-                    body: JSON.stringify({ title: title, mode: "proof" })
+                const axiom = typeof fact === 'string' ? fact : (fact.axiom || fact.axiom_key || '');
+                const conf = fact.confidence || fact.score || null;
+                const parts = axiom.split('||');
+                const display = parts.length === 3
+                    ? parts[0] + ' → ' + parts[1] + ' → ' + parts[2]
+                    : axiom;
+
+                card.innerHTML = `
+                    <span class="fact-text">${display}</span>
+                    <span class="fact-meta">
+                        <span class="badge-verified">✓ verified</span>
+                        ${conf ? '<span class="confidence">' + (typeof conf === 'number' ? conf.toFixed(2) : conf) + '</span>' : ''}
+                    </span>
+                `;
+
+                card.addEventListener('click', () => {
+                    if (parts.length === 3) {
+                        // Highlight node in graph
+                        try { network.selectNodes([parts[0], parts[2]]); } catch(e) {}
+                    }
                 });
-                const data = await res.json();
-                result.innerText = data.tome + "\n\n[" + (data.axiom_count || 0) + " axioms, " + (data.state_digits || 0) + " digits]";
-            } catch (e) { result.innerText = "Rehydration failed: " + e.message; }
-            finally { btn.innerText = "Rehydrate Gödel State"; btn.style.opacity = "1"; btn.style.pointerEvents = "auto"; }
-        }
 
-        async function learnTopic() {
-            const btn = document.getElementById('learn-btn');
-            const result = document.getElementById('learn-result');
-            const topic = document.getElementById('learn-topic').value.trim().toLowerCase();
-            if (!topic) return;
-            btn.innerText = "Computing Delta…"; btn.style.opacity = "0.6"; btn.style.pointerEvents = "none";
-            result.innerText = "Calculating epistemic gap…";
-            try {
-                const res = await authFetch('/api/v1/quantum/learn', {
-                    method: 'POST',
-                    body: JSON.stringify({ target_topic_node: topic })
-                });
-                const data = await res.json();
-                result.innerText = data.educational_tome + "\n\n[" + (data.delta_axiom_count || 0) + " new axioms]";
-            } catch (e) { result.innerText = "Learning failed: " + e.message; }
-            finally { btn.innerText = "Generate Delta Tome"; btn.style.opacity = "1"; btn.style.pointerEvents = "auto"; }
-        }
-
-        // ─── SSE Telemetry ────────────────────────────────
-        const evtSource = new EventSource("/api/v1/quantum/telemetry");
-        const terminal = document.getElementById("telemetry-terminal");
-
-        evtSource.onmessage = function(event) {
-            const p = document.createElement("p");
-            p.innerText = "> " + event.data;
-            if (event.data.includes("⚠")) p.className = "log-warn";
-            else if (event.data.includes("🌀")) p.className = "log-superposition";
-            else if (event.data.includes("⚡")) p.className = "log-collapse";
-            else if (event.data.includes("🔗")) p.className = "log-inference";
-            else if (event.data.includes("🌐") || event.data.includes("🚨")) p.className = "log-p2p";
-            else if (event.data.includes("⏳")) p.className = "log-chronos";
-            terminal.appendChild(p);
-            terminal.scrollTop = terminal.scrollHeight;
-        };
-        evtSource.onerror = function() { console.log("Telemetry stream disconnected, retrying..."); };
-
-        // ─── Multiverse Controls ─────────────────────────
-        async function fetchBranches() {
-            try {
-                const res = await authFetch('/api/v1/quantum/branches');
-                const data = await res.json();
-                const selector = document.getElementById('branch-selector');
-                const current = selector.value;
-                selector.innerHTML = '';
-                Object.keys(data.branches).forEach(b => {
-                    const opt = document.createElement('option');
-                    opt.value = b;
-                    opt.innerText = b;
-                    selector.appendChild(opt);
-                });
-                if (Object.keys(data.branches).includes(current)) selector.value = current;
-            } catch (e) {}
-        }
-        fetchBranches();
-        setInterval(fetchBranches, 5000);
-
-        function changeBranch() {
-            client.localState = 1n;
-            client.nodes.clear();
-            client.edges.clear();
-            client.syncWithServer();
-        }
-
-        async function createNewBranch() {
-            const newBranch = prompt("Enter new branch name:");
-            if (!newBranch) return;
-            const currentBranch = document.getElementById('branch-selector').value;
-            await authFetch('/api/v1/quantum/branch', {
-                method: 'POST',
-                body: JSON.stringify({ source_branch: currentBranch, new_branch: newBranch })
+                askResults.appendChild(card);
             });
-            await fetchBranches();
-            document.getElementById('branch-selector').value = newBranch;
-            changeBranch();
         }
 
-        async function timeTravel() {
-            const tick = prompt("Enter historical tick ID to time-travel to:");
-            if (!tick) return;
-            const newBranch = prompt("Name this alternate timeline branch:");
-            if (!newBranch) return;
-            await authFetch('/api/v1/quantum/time-travel', {
-                method: 'POST',
-                body: JSON.stringify({ target_tick: parseInt(tick), new_branch_name: newBranch })
-            });
-            await fetchBranches();
-            document.getElementById('branch-selector').value = newBranch;
-            changeBranch();
-        }
+        askResults.classList.add('visible');
+    } catch (e) {
+        console.error('Ask failed:', e);
+    }
+}
 
-        async function connectPeer() {
-            const url = document.getElementById('peer-url').value.trim();
-            if (!url) return;
-            await authFetch('/api/v1/quantum/peers', {
-                method: 'POST',
-                body: JSON.stringify({ peer_url: url })
-            });
-            document.getElementById('peer-url').value = '';
+// ⌘K shortcut
+document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        askInput.focus();
+    }
+});
+
+// ─── Settings Panel ─────────────────────────────────
+function toggleSettings() {
+    const panel = document.getElementById('settings-panel');
+    const backdrop = document.getElementById('settings-backdrop');
+    panel.classList.toggle('open');
+    backdrop.classList.toggle('visible');
+}
+
+document.getElementById('settings-btn').addEventListener('click', toggleSettings);
+document.getElementById('settings-backdrop').addEventListener('click', toggleSettings);
+
+function toggleSection(id) {
+    document.getElementById(id).classList.toggle('expanded');
+}
+
+// ─── Graph ──────────────────────────────────────────
+const container = document.getElementById('network-container');
+const client = new GodelClient(currentToken);
+const graphData = { nodes: client.nodes, edges: client.edges };
+const graphOptions = {
+    nodes: {
+        shape: 'dot', size: 18,
+        font: {
+            color: '#e2e8f0', size: 13, face: 'Inter',
+            strokeWidth: 3, strokeColor: '#06091a'
+        },
+        color: {
+            background: '#38bdf8', border: '#0ea5e9',
+            highlight: { background: '#60a5fa', border: '#3b82f6' },
+            hover: { background: '#60a5fa', border: '#3b82f6' }
+        },
+        borderWidth: 2, shadow: { enabled: true, color: 'rgba(56, 189, 248, 0.15)', size: 12 }
+    },
+    edges: {
+        font: { color: '#64748b', size: 10, face: 'Inter', align: 'top', strokeWidth: 0 },
+        color: { color: '#1e3a5f', highlight: '#60a5fa', hover: '#38bdf8', opacity: 0.6 },
+        smooth: { type: 'continuous' }, width: 1.5,
+        arrows: { to: { scaleFactor: 0.5 } }
+    },
+    physics: {
+        forceAtlas2Based: {
+            gravitationalConstant: -50, centralGravity: 0.005,
+            springLength: 120, springConstant: 0.06, damping: 0.45
+        },
+        solver: 'forceAtlas2Based'
+    },
+    interaction: { hover: true, tooltipDelay: 200, zoomView: true, dragView: true }
+};
+
+const network = new vis.Network(container, graphData, graphOptions);
+
+// Click edge → populate extrapolate box
+network.on("selectEdge", (params) => {
+    if (params.edges.length > 0) {
+        const box = document.getElementById('extrapolate-tags');
+        const edgeId = params.edges[0];
+        box.value = box.value ? box.value + ", " + edgeId : edgeId;
+    }
+});
+
+client.startAutoSync(2000);
+
+function updateStats() {
+    document.getElementById('stat-facts').innerText = client.edges.length + ' facts';
+    document.getElementById('stat-entities').innerText = client.nodes.length + ' entities';
+}
+
+// Watch for graph changes to update stats + empty state
+const origSync = client.syncWithServer.bind(client);
+client.syncWithServer = async function() {
+    await origSync();
+    updateStats();
+    if (client.edges.length > 0) hideEmptyState();
+};
+
+function hideEmptyState() {
+    document.getElementById('empty-state').classList.add('hidden');
+}
+
+// ─── Sovereign Edge (WASM) ──────────────────────────
+let localGodelState = BigInt(localStorage.getItem('sum_local_state') || '1');
+
+function updateLocalUI() {
+    const str = localGodelState.toString();
+    const d = str.length > 30 ? str.substring(0, 14) + '…' + str.substring(str.length - 14) : str;
+    document.getElementById('local-state-display').innerText = '[' + str.length + 'd] ' + d;
+    localStorage.setItem('sum_local_state', str);
+}
+
+async function ingestLocally() {
+    const text = document.getElementById('local-ingest-text').value;
+    if (!text || !sumWasm) { alert('WASM module not loaded!'); return; }
+    const regex = /\[(.*?)\]/g;
+    let match, count = 0;
+    while ((match = regex.exec(text)) !== null) {
+        const parts = match[1].split('||');
+        if (parts.length === 3) {
+            const axiom = parts.map(p => p.trim().toLowerCase()).join('||');
+            const prime = BigInt(sumWasm.getDeterministicPrime(axiom));
+            if (localGodelState % prime !== 0n) {
+                try { localGodelState = sumWasm.bigintLcm(localGodelState, prime); }
+                catch { function gcd(a,b){return b===0n?a:gcd(b,a%b);} localGodelState=(localGodelState/gcd(localGodelState,prime))*prime; }
+                count++;
+            }
         }
-    </script>
+    }
+    document.getElementById('local-ingest-text').value = '';
+    updateLocalUI();
+    if (count > 0) logTelemetry('⚡ WASM: Minted ' + count + ' primes locally', 'accent-green');
+}
+
+async function syncWithSwarm() {
+    try {
+        const res = await authFetch('/api/v1/quantum/sync/state', {
+            method: 'POST', body: JSON.stringify({ peer_state_integer: localGodelState.toString() })
+        });
+        const data = await res.json();
+        localGodelState = BigInt(data.global_state_integer);
+        updateLocalUI();
+        const s = data.global_state_integer;
+        const d = s.length > 30 ? s.substring(0, 14) + '…' + s.substring(s.length - 14) : s;
+        document.getElementById('global-state-display').innerText = '[' + s.length + 'd] ' + d;
+        logTelemetry('🌐 Synced with swarm — state merged', 'accent-cyan');
+    } catch (e) { console.error('Swarm sync failed', e); }
+}
+
+setTimeout(updateLocalUI, 500);
+
+// ─── Extrapolate ────────────────────────────────────
+async function extrapolateTags() {
+    const btn = document.getElementById('extrapolate-btn');
+    const box = document.getElementById('extrapolate-tags');
+    const result = document.getElementById('extrapolate-result');
+    const tags = box.value.split(',').map(t => t.trim()).filter(Boolean);
+    if (!tags.length) return;
+    btn.disabled = true; btn.innerText = 'Running…';
+    result.innerText = 'Proving mathematical fidelity…';
+    try {
+        const res = await authFetch('/api/v1/quantum/extrapolate', {
+            method: 'POST', body: JSON.stringify({ target_axioms: tags })
+        });
+        const data = await res.json();
+        result.innerText = data.verified_narrative || data.detail || 'No response.';
+    } catch (e) { result.innerText = 'Failed: ' + e.message; }
+    finally { btn.disabled = false; btn.innerText = 'Generate Verified Tome'; }
+}
+
+// ─── Rehydrate ──────────────────────────────────────
+async function rehydrateTome() {
+    const btn = document.getElementById('rehydrate-btn');
+    const result = document.getElementById('rehydrate-result');
+    const title = document.getElementById('rehydrate-title').value.trim() || 'The Rehydrated Codex';
+    btn.disabled = true; btn.innerText = 'Rehydrating…';
+    try {
+        const res = await authFetch('/api/v1/quantum/rehydrate', {
+            method: 'POST', body: JSON.stringify({ title, mode: 'proof' })
+        });
+        const data = await res.json();
+        result.innerText = data.tome + '\n\n[' + (data.axiom_count || 0) + ' axioms, ' + (data.state_digits || 0) + ' digits]';
+    } catch (e) { result.innerText = 'Failed: ' + e.message; }
+    finally { btn.disabled = false; btn.innerText = 'Rehydrate'; }
+}
+
+// ─── Learn ──────────────────────────────────────────
+async function learnTopic() {
+    const btn = document.getElementById('learn-btn');
+    const result = document.getElementById('learn-result');
+    const topic = document.getElementById('learn-topic').value.trim().toLowerCase();
+    if (!topic) return;
+    btn.disabled = true; btn.innerText = 'Computing…';
+    try {
+        const res = await authFetch('/api/v1/quantum/learn', {
+            method: 'POST', body: JSON.stringify({ target_topic_node: topic })
+        });
+        const data = await res.json();
+        result.innerText = data.educational_tome + '\n\n[' + (data.delta_axiom_count || 0) + ' new axioms]';
+    } catch (e) { result.innerText = 'Failed: ' + e.message; }
+    finally { btn.disabled = false; btn.innerText = 'Generate Delta Tome'; }
+}
+
+// ─── Branches ───────────────────────────────────────
+async function fetchBranches() {
+    try {
+        const res = await authFetch('/api/v1/quantum/branches');
+        const data = await res.json();
+        const sel = document.getElementById('branch-selector');
+        const cur = sel.value;
+        sel.innerHTML = '';
+        Object.keys(data.branches).forEach(b => {
+            const opt = document.createElement('option');
+            opt.value = b; opt.innerText = b; sel.appendChild(opt);
+        });
+        if (Object.keys(data.branches).includes(cur)) sel.value = cur;
+    } catch (e) {}
+}
+fetchBranches();
+setInterval(fetchBranches, 5000);
+
+function changeBranch() {
+    client.localState = 1n;
+    client.nodes.clear(); client.edges.clear();
+    client.syncWithServer();
+}
+
+async function createNewBranch() {
+    const newBranch = prompt('Enter new branch name:');
+    if (!newBranch) return;
+    const cur = document.getElementById('branch-selector').value;
+    await authFetch('/api/v1/quantum/branch', {
+        method: 'POST', body: JSON.stringify({ source_branch: cur, new_branch: newBranch })
+    });
+    await fetchBranches();
+    document.getElementById('branch-selector').value = newBranch;
+    changeBranch();
+}
+
+async function mergeBranches() {
+    const src = document.getElementById('merge-source').value.trim();
+    const tgt = document.getElementById('merge-target').value.trim();
+    if (!src || !tgt) return;
+    try {
+        await authFetch('/api/v1/quantum/merge', {
+            method: 'POST', body: JSON.stringify({ source_branch: src, target_branch: tgt })
+        });
+        logTelemetry('🔀 Merged ' + src + ' → ' + tgt, 'accent-cyan');
+        await fetchBranches();
+    } catch (e) { alert('Merge failed: ' + e.message); }
+}
+
+// ─── Time Travel ────────────────────────────────────
+async function timeTravel() {
+    const tick = document.getElementById('tt-tick').value.trim();
+    const branch = document.getElementById('tt-branch').value.trim();
+    if (!tick || !branch) { alert('Please enter tick ID and branch name.'); return; }
+    await authFetch('/api/v1/quantum/time-travel', {
+        method: 'POST', body: JSON.stringify({ target_tick: parseInt(tick), new_branch_name: branch })
+    });
+    await fetchBranches();
+    document.getElementById('branch-selector').value = branch;
+    changeBranch();
+    logTelemetry('⏳ Time-traveled to tick ' + tick + ' → ' + branch, 'accent-amber');
+}
+
+// ─── P2P ────────────────────────────────────────────
+async function connectPeer() {
+    const url = document.getElementById('peer-url').value.trim();
+    if (!url) return;
+    await authFetch('/api/v1/quantum/peers', {
+        method: 'POST', body: JSON.stringify({ peer_url: url })
+    });
+    document.getElementById('peer-url').value = '';
+    logTelemetry('🌐 Connected to peer: ' + url, 'accent-green');
+}
+
+// ─── SSE Telemetry ──────────────────────────────────
+function logTelemetry(msg, color) {
+    const term = document.getElementById('telemetry-terminal');
+    const p = document.createElement('p');
+    p.innerText = '> ' + msg;
+    if (color) p.style.color = 'var(--' + color + ')';
+    term.appendChild(p);
+    term.scrollTop = term.scrollHeight;
+}
+
+const evtSource = new EventSource('/api/v1/quantum/telemetry');
+evtSource.onmessage = function(event) {
+    const p = document.createElement('p');
+    p.innerText = '> ' + event.data;
+    if (event.data.includes('⚠')) p.className = 'log-warn';
+    else if (event.data.includes('🌀')) p.className = 'log-superposition';
+    else if (event.data.includes('⚡')) p.className = 'log-collapse';
+    else if (event.data.includes('🔗')) p.className = 'log-inference';
+    else if (event.data.includes('🌐') || event.data.includes('🚨')) p.className = 'log-p2p';
+    else if (event.data.includes('⏳')) p.className = 'log-chronos';
+    document.getElementById('telemetry-terminal').appendChild(p);
+    document.getElementById('telemetry-terminal').scrollTop = document.getElementById('telemetry-terminal').scrollHeight;
+};
+evtSource.onerror = () => console.log('Telemetry stream disconnected, retrying...');
+
+// ─── Global keyboard shortcuts ──────────────────────
+document.addEventListener('keydown', (e) => {
+    // Escape closes modals
+    if (e.key === 'Escape') {
+        depositOverlay.classList.remove('visible');
+        crystallization.innerHTML = '';
+        if (document.getElementById('settings-panel').classList.contains('open')) toggleSettings();
+    }
+});
+</script>
 </body>
 </html>
