@@ -949,7 +949,9 @@ async function executeAsk(question) {
 
         askResults.classList.add('visible');
     } catch (e) {
-        console.error('Ask failed:', e);
+        askResults.innerHTML = '<div class="fact-card"><span class="fact-text" style="color:var(--accent-amber);">⚠ ' +
+            (e.message || 'Connection failed — is the server running?') + '</span></div>';
+        askResults.classList.add('visible');
     }
 }
 
@@ -1018,6 +1020,15 @@ network.on("selectEdge", (params) => {
         const box = document.getElementById('extrapolate-tags');
         const edgeId = params.edges[0];
         box.value = box.value ? box.value + ", " + edgeId : edgeId;
+    }
+});
+
+// Click a node → ask bar shows all facts about that entity
+network.on("selectNode", (params) => {
+    if (params.nodes.length > 0) {
+        const nodeId = params.nodes[0];
+        askInput.value = nodeId;
+        executeAsk(nodeId);
     }
 });
 
