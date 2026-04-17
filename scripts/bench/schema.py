@@ -3,11 +3,20 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal, Mapping, Sequence
 
-SCHEMA_VERSION = "0.1.0"
+SCHEMA_VERSION = "0.2.0"
 
 RegenerationPath = Literal["canonical", "freeform"]
 InputKind = Literal["prose", "canonical"]
 PerfOperation = Literal["ingest", "encode", "merge", "entail"]
+
+# Polytaxis-aligned honesty label on every metric record.
+# "provable"           — mathematically proven (e.g., LCM commutativity).
+# "certified"          — verified by external algorithm (α,β-CROWN, SMT, zk-proof).
+# "empirical-benchmark"— measured on a corpus; no formal guarantee.
+# "expert-opinion"     — human curator judgment.
+EpistemicStatus = Literal[
+    "provable", "certified", "empirical-benchmark", "expert-opinion"
+]
 
 
 @dataclass(frozen=True)
@@ -19,6 +28,7 @@ class ExtractionMetrics:
     n_predicted: int
     n_gold: int
     n_correct: int
+    epistemic_status: EpistemicStatus = "empirical-benchmark"
 
 
 @dataclass(frozen=True)
@@ -30,6 +40,7 @@ class RegenerationMetrics:
     n_generations: int
     n_supported_claims: int
     n_total_claims: int
+    epistemic_status: EpistemicStatus = "empirical-benchmark"
 
 
 @dataclass(frozen=True)
@@ -40,6 +51,7 @@ class RoundtripMetrics:
     n_roundtrips: int
     source_axioms_avg: float
     reconstructed_axioms_avg: float
+    epistemic_status: EpistemicStatus = "empirical-benchmark"
 
 
 @dataclass(frozen=True)
@@ -49,6 +61,7 @@ class PerformanceMetrics:
     p50_ms: float
     p99_ms: float
     n_samples: int
+    epistemic_status: EpistemicStatus = "empirical-benchmark"
 
 
 @dataclass(frozen=True)
