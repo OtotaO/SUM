@@ -34,6 +34,7 @@ from .ci_contract import (
 from .corpus import JsonCorpus
 from .runners.extraction import SumExtractionRunner
 from .runners.performance import SumPerformanceRunner
+from .runners.roundtrip import SumRoundtripRunner
 from .schema import (
     SCHEMA_VERSION,
     BenchReport,
@@ -171,6 +172,7 @@ def build_report(args: CliArgs) -> BenchReport:
     performance: list[PerformanceMetrics] = []
 
     extraction.append(SumExtractionRunner().run(corpus))
+    roundtrip.extend(SumRoundtripRunner().run(corpus))
 
     if not args.no_perf:
         perf_runner = (
@@ -185,10 +187,10 @@ def build_report(args: CliArgs) -> BenchReport:
         performance.extend(perf_runner.run())
 
     if not args.no_llm:
-        # STATE 4-B: wire regeneration + roundtrip runners here.
-        # Until then, --no-llm is the only supported path for full report.
         raise SystemExit(
-            "LLM runners not yet implemented (STATE 4-B). Pass --no-llm for now."
+            "LLM-gated regeneration runner not yet implemented. "
+            "Pass --no-llm for the fully-offline measurement set "
+            "(extraction + canonical/prose roundtrip + perf)."
         )
 
     return BenchReport(
