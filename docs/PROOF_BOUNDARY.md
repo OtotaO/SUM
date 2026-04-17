@@ -136,7 +136,16 @@ At N=10,000 with 200 samples the harness run did not converge inside a 10-minute
 
 The canonical-template round-trip (§1.1) is **proven**; the round-trip over arbitrary natural-language prose is **not**. The latter is what a reader usually assumes when they hear "conservation," and honesty requires a separate treatment.
 
-**Current status:** A `SumRoundtripRunner` stub exists in `scripts/bench/runners/roundtrip.py` and is scheduled for wiring in STATE 4-B of the harness buildout. It will report the symmetric-difference percent of entailed-axiom sets across `text → axioms → tome → re-extracted axioms` on `input_kind="prose"` inputs. Until wired, SUM makes NO claim — formal or empirical — about prose round-trip fidelity.
+**Current status:** Wired in commit `a6606eb` via `SumRoundtripRunner`. Two paths measured per corpus run:
+
+| path | drift (seed_tiny_v1) | epistemic_status | interpretation |
+|---|---|---|---|
+| `input_kind="canonical"` | **0.00 %** | `provable` | Ouroboros proof (§1.1) verified per-document on every CI run. Symmetric difference of axiom sets is identically zero by construction; any non-zero value is a codec regression alarm. |
+| `input_kind="prose"` | **42.86 %** | `empirical-benchmark` | Sieve re-extraction of the system's own canonical-template output (`generate_canonical` → `extract_triplets`) loses ~43 % of axioms. Reconstructed axioms/doc = 0.57 vs source = 1.00. |
+
+The 42.86 % drift on the prose path is not a bug in the canonical codec — it is a direct empirical confirmation that **the NLP sieve is not a bijective codec, even on the system's own deterministic output**. `generate_canonical` emits `"The {s} {p} {o}."` with already-canonicalized (lowercased, lemmatized) keys; on that atypical text, spaCy's dependency parser frequently tags `"like"` in `"X like Y"` as a preposition rather than a verb, so no ROOT verb is found and the triplet is dropped.
+
+**What this measurement does NOT cover:** the full LLM narrative round-trip (`text → triples → LLM-rendered prose → triples'`). That path requires the regeneration runner with pinned MiniCheck and FActScore models; it is tracked as the remaining LLM-gated measurement. Until wired, SUM makes **no empirical claim** about LLM-rendered prose conservation — only the `0.00 %` canonical result and the `42.86 %` sieve-self-parse result are on record.
 
 ### 2.4. Bench Harness Substrate
 
@@ -218,8 +227,9 @@ SUM's ultimate goal is a **bidirectional knowledge distillation engine**: turn n
 | Tome → Tag (extraction) | Partial | F1=0.933 on seed_tiny; Phase 19B corpus separately maintained |
 | Tag → Tome (canonical, deterministic) | Working | Mathematically proven round-trip (§1.1) |
 | Tag → Tome (narrative, prose) | Requires LLM extrapolator | No empirical measurement yet |
-| Round-trip conservation (canonical) | Proven | See §1.1 |
-| Round-trip conservation (prose) | Not yet measured | `SumRoundtripRunner` stub exists; STATE 4-B |
+| Round-trip conservation (canonical) | Proven + empirically verified per-run | §1.1; 0.00% drift on `seed_tiny_v1` (commit `a6606eb`) |
+| Round-trip conservation (sieve re-extract of canonical text) | Measured | 42.86% drift on `seed_tiny_v1` (commit `a6606eb`); sieve is not bijective even on its own output |
+| Round-trip conservation (LLM narrative prose) | Not yet measured | Needs LLM extrapolator + MiniCheck + pinned model IDs |
 | Sliding-scale rendering parameters | Not implemented | Phase 30+ |
 | Cryptographic attestation | Working | Ed25519 + HMAC-SHA256 + Merkle chain |
 | Epistemic-status labeling | Shipped v1.2.0 | See §5 |
