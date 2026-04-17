@@ -188,7 +188,7 @@ These are design goals, NOT current capabilities.
 | Federation with trust policies | Not implemented | Future |
 | Scientific/technical corpora support | Not implemented | Future |
 | **Bidirectional distillation with sliding-scale parameters** (density, formality, audience, perspective) | **Aspirational — core founder's dream, orthogonal to classification** | **Phase 30+** |
-| **Polytaxis Bucket A absorption** (SHACL, conformal prediction sets, VC 2.0 with `eddsa-rdfc-2022`, RFC 3161 timestamping, RFC 9162 CT v2 proofs, PROV-O/PROV-STAR, polyglot RDF/JSON-LD/Turtle emission) | **In progress — `epistemic_status` field shipped in v1.2.0** | **Phase 25** |
+| **Polytaxis Bucket A absorption** (SHACL, conformal prediction sets, VC 2.0 with `eddsa-rdfc-2022`, RFC 3161 timestamping, RFC 9162 CT v2 proofs, PROV-O/PROV-STAR, polyglot RDF/JSON-LD/Turtle emission) | **In progress — `epistemic_status` field shipped in v1.2.0; Venn-Abers conformal-interval algorithm + tests shipped as standalone module; production integration pending** | **Phase 25** |
 | Prose round-trip conservation measurement (via `SumRoundtripRunner` + LLM extrapolator + MiniCheck gate) | Stubbed in bench harness; pending LLM wiring | STATE 4-B |
 | Property-graph backing store for corpora above ~10k axioms (prime encoding demoted to signed witness) | Design decision pending empirical confirmation (now confirmed — see §2.2) | Phase 26 |
 
@@ -251,7 +251,7 @@ SUM's ultimate goal is a **bidirectional knowledge distillation engine**: turn n
 | Cryptographic attestation | Working | Ed25519 + HMAC-SHA256 + Merkle chain |
 | Epistemic-status labeling | Shipped v1.2.0 | See §5 |
 | SHACL structural validation (Polytaxis Bucket A) | Not yet | Phase 25 |
-| Conformal prediction confidence (Polytaxis Bucket A) | Not yet — still bare scalars | Phase 25 |
+| Conformal prediction confidence (Polytaxis Bucket A) | Algorithm + 18 tests shipped (`internal/ensemble/venn_abers.py`); production wiring into `ConfidenceCalibrator` pending | Phase 25 |
 | VC 2.0 `eddsa-rdfc-2022` emission | Not yet | Phase 25 |
 
 The gap from `current honest state` to `ultimate goal` is the refactor roadmap of record. Any PR that claims to close part of this gap must update this section with the new measurement.
