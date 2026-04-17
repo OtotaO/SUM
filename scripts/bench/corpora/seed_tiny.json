@@ -1,0 +1,45 @@
+{
+  "id": "seed_tiny_v1",
+  "documents": [
+    {
+      "id": "doc_01",
+      "text": "Alice likes cats.",
+      "gold_triples": [["alice", "like", "cat"]]
+    },
+    {
+      "id": "doc_02",
+      "text": "Bob owns a dog.",
+      "gold_triples": [["bob", "own", "dog"]]
+    },
+    {
+      "id": "doc_03",
+      "text": "Paris is a city.",
+      "gold_triples": [["paris", "be", "city"]]
+    },
+    {
+      "id": "doc_04",
+      "text": "Einstein proposed relativity.",
+      "gold_triples": [["einstein", "propose", "relativity"]]
+    },
+    {
+      "id": "doc_05",
+      "text": "Water contains hydrogen.",
+      "gold_triples": [["water", "contain", "hydrogen"]]
+    },
+    {
+      "id": "doc_06",
+      "text": "The sun emits light.",
+      "gold_triples": [["sun", "emit", "light"]]
+    },
+    {
+      "id": "doc_07",
+      "text": "Plants produce oxygen.",
+      "gold_triples": [["plant", "produce", "oxygen"]]
+    },
+    {
+      "id": "doc_08",
+      "text": "Dogs chase cats.",
+      "gold_triples": [["dog", "chase", "cat"]]
+    }
+  ]
+}
