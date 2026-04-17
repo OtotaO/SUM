@@ -90,25 +90,40 @@ The quality of semantic extraction from natural language depends on:
 - Input text structure and complexity
 - Domain vocabulary coverage
 
-**Bench harness measurements (as of commit `321e573`, schema v0.2.0):**
+**Bench harness measurements (schema v0.2.0):**
 
-| corpus | precision | recall | F1 | correct / gold |
-|---|---|---|---|---|
-| `seed_tiny_v1` (8 SVO sentences, pre-lemmatized gold) | 1.000 | 0.875 | **0.933** | 7 / 8 |
+| corpus | size | precision | recall | F1 | correct / gold |
+|---|---|---|---|---|---|
+| `seed_tiny_v1` | 8 SVO sentences | 1.000 | 0.875 | 0.933 | 7 / 8 |
+| `seed_v1` | 50 SVO sentences | 1.000 | 0.840 | **0.913** | 42 / 50 |
 
 Reproduce via:
 ```
 python -m scripts.bench.run_bench \
     --out bench_report.json \
-    --corpus scripts/bench/corpora/seed_tiny.json \
+    --corpus scripts/bench/corpora/seed_v1.json \
     --no-llm
 ```
 
-**Known limitations surfaced by the harness:**
-- `spaCy en_core_web_sm` parses "Dogs chase cats." as a compound noun phrase (`cats` as ROOT noun), dropping the SVO interpretation. This is a parser-level failure, not a sieve bug. Addressable only via model upgrade (`en_core_web_trf`, transformer-based) or LLM extraction fallback. Tracked as a known ceiling.
-- spaCy's npadvmod dep is now accepted as a subject signal (commit `9aea41e`) to recover past-participle parses like "Einstein proposed relativity"; the broader false-positive risk from this relaxation is filtered by the existing span-length gate.
+`seed_tiny_v1` remains as a fast-feedback smoke baseline (<30 s including spaCy bootstrap). `seed_v1` is the statistically-meaningful benchmark and is the source of record for the published F1 number.
 
-**Prior documented benchmark:** A 50-document golden benchmark corpus exists (Phase 19B) spanning 7 adversarial categories with 100 gold-standard triplets. That corpus remains the source of truth for Phase 19B claims; `seed_tiny_v1` is a fast-feedback smoke baseline for the bench harness, not a replacement for Phase 19B.
+**Known limitations surfaced by the harness (8 / 50 `seed_v1` documents):**
+
+All 8 extraction failures share one root cause: `spaCy en_core_web_sm` parses sentences of the form `<plural-noun> <verb> <noun>` (no article, no modifier) as compound noun phrases rather than SVO clauses. Failures on `seed_v1`:
+
+```
+Dogs chase cats.          Copper carries current.     Electrons orbit nuclei.
+Diamond cuts glass.       Iron forms rust.            Enzymes catalyze reactions.
+Muscles contract fibers.  Engineers design bridges.
+```
+
+In each case, the middle token is analyzed as NOUN (not VERB) and the third token becomes ROOT. No verb predicate is detected; no triplet is extracted. Precision stays at 1.000 because the sieve never produces a wrong triplet — it simply returns `[]`.
+
+This is a **parser-level failure**, not a sieve bug. Addressing it requires either a model upgrade (`en_core_web_trf`, transformer-based, ~500 MB, much more robust parsing) or an LLM-based extraction fallback. Tracked as the current extraction recall ceiling (~84 %) for `en_core_web_sm` on simple declarative SVO inputs.
+
+The sieve's npadvmod subject-dep relaxation (commit `9aea41e`) correctly recovers past-participle parses like "Einstein proposed relativity"; no false positives have surfaced from that change on `seed_v1`.
+
+**Prior documented benchmark:** A 50-document golden benchmark corpus exists (Phase 19B) spanning 7 adversarial categories with 100 gold-standard triplets. That corpus remains the source of truth for Phase 19B claims; `seed_v1` is the bench-harness benchmark and complements Phase 19B rather than replacing it.
 
 Structural gating (Phase 19A) rejects malformed triplets. Semantic quality on non-trivial inputs remains the acknowledged weakest link.
 
@@ -138,12 +153,12 @@ The canonical-template round-trip (§1.1) is **proven**; the round-trip over arb
 
 **Current status:** Wired in commit `a6606eb` via `SumRoundtripRunner`. Two paths measured per corpus run:
 
-| path | drift (seed_tiny_v1) | epistemic_status | interpretation |
-|---|---|---|---|
-| `input_kind="canonical"` | **0.00 %** | `provable` | Ouroboros proof (§1.1) verified per-document on every CI run. Symmetric difference of axiom sets is identically zero by construction; any non-zero value is a codec regression alarm. |
-| `input_kind="prose"` | **42.86 %** | `empirical-benchmark` | Sieve re-extraction of the system's own canonical-template output (`generate_canonical` → `extract_triplets`) loses ~43 % of axioms. Reconstructed axioms/doc = 0.57 vs source = 1.00. |
+| path | drift (`seed_tiny_v1`) | drift (`seed_v1`) | epistemic_status | interpretation |
+|---|---|---|---|---|
+| `input_kind="canonical"` | **0.00 %** | **0.00 %** | `provable` | Ouroboros proof (§1.1) verified per-document on every CI run. Symmetric difference of axiom sets is identically zero by construction; any non-zero value is a codec regression alarm. |
+| `input_kind="prose"` | 42.86 % | **50.00 %** | `empirical-benchmark` | Sieve re-extraction of the system's own canonical-template output (`generate_canonical` → `extract_triplets`) loses half the axioms on the larger corpus. Reconstructed axioms/doc = 0.60 vs source = 1.00 on `seed_v1`. |
 
-The 42.86 % drift on the prose path is not a bug in the canonical codec — it is a direct empirical confirmation that **the NLP sieve is not a bijective codec, even on the system's own deterministic output**. `generate_canonical` emits `"The {s} {p} {o}."` with already-canonicalized (lowercased, lemmatized) keys; on that atypical text, spaCy's dependency parser frequently tags `"like"` in `"X like Y"` as a preposition rather than a verb, so no ROOT verb is found and the triplet is dropped.
+The prose drift rising from 42.86 % to 50.00 % on the larger corpus is not statistical noise — it is a direct empirical confirmation that **the NLP sieve is not a bijective codec, even on the system's own deterministic output**, and that the failure rate tracks the fraction of input sentences spaCy parses atypically. `generate_canonical` emits `"The {s} {p} {o}."` with already-canonicalized (lowercased, lemmatized) keys; on that atypical text, spaCy's dependency parser frequently tags `"like"` in `"X like Y"` as a preposition rather than a verb, so no ROOT verb is found and the triplet is dropped.
 
 **What this measurement does NOT cover:** the full LLM narrative round-trip (`text → triples → LLM-rendered prose → triples'`). That path requires the regeneration runner with pinned MiniCheck and FActScore models; it is tracked as the remaining LLM-gated measurement. Until wired, SUM makes **no empirical claim** about LLM-rendered prose conservation — only the `0.00 %` canonical result and the `42.86 %` sieve-self-parse result are on record.
 
@@ -224,12 +239,13 @@ SUM's ultimate goal is a **bidirectional knowledge distillation engine**: turn n
 
 | Capability | Status | Measurement |
 |---|---|---|
-| Tome → Tag (extraction) | Partial | F1=0.933 on seed_tiny; Phase 19B corpus separately maintained |
+| Tome → Tag (extraction) | Partial | F1=0.913 on seed_v1 (50 docs, 42/50 correct); F1=0.933 on seed_tiny (8 docs); Phase 19B corpus separately maintained |
 | Tag → Tome (canonical, deterministic) | Working | Mathematically proven round-trip (§1.1) |
 | Tag → Tome (narrative, prose) | Requires LLM extrapolator | No empirical measurement yet |
-| Round-trip conservation (canonical) | Proven + empirically verified per-run | §1.1; 0.00% drift on `seed_tiny_v1` (commit `a6606eb`) |
-| Round-trip conservation (sieve re-extract of canonical text) | Measured | 42.86% drift on `seed_tiny_v1` (commit `a6606eb`); sieve is not bijective even on its own output |
+| Round-trip conservation (canonical) | Proven + empirically verified per-run | §1.1; 0.00% drift on `seed_tiny_v1` and `seed_v1` (commits `a6606eb`, current) |
+| Round-trip conservation (sieve re-extract of canonical text) | Measured | 42.86% (seed_tiny) / 50.00% (seed_v1) drift; sieve is not bijective even on its own output |
 | Round-trip conservation (LLM narrative prose) | Not yet measured | Needs LLM extrapolator + MiniCheck + pinned model IDs |
+| Extraction ceiling investigation (en_core_web_trf upgrade or LLM fallback) | 8 / 50 seed_v1 failures all fit one spaCy parse pattern; architectural decision pending | User call |
 | Sliding-scale rendering parameters | Not implemented | Phase 30+ |
 | Cryptographic attestation | Working | Ed25519 + HMAC-SHA256 + Merkle chain |
 | Epistemic-status labeling | Shipped v1.2.0 | See §5 |
