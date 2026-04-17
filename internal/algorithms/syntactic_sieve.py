@@ -121,7 +121,7 @@ class DeterministicSieve:
 
                     # Find subject
                     for child in token.children:
-                        if child.dep_ in ("nsubj", "nsubjpass", "csubj"):
+                        if child.dep_ in ("nsubj", "nsubjpass", "csubj", "npadvmod"):
                             modifiers = [
                                 c.text
                                 for c in child.children
@@ -180,7 +180,7 @@ class DeterministicSieve:
                 if token.dep_ == "ROOT" or token.pos_ == "VERB":
                     predicate = token.lemma_
                     for child in token.children:
-                        if child.dep_ in ("nsubj", "nsubjpass", "csubj"):
+                        if child.dep_ in ("nsubj", "nsubjpass", "csubj", "npadvmod"):
                             modifiers = [
                                 c.text for c in child.children
                                 if c.dep_ in ("amod", "compound")
