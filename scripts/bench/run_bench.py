@@ -34,6 +34,7 @@ from .ci_contract import (
 from .corpus import JsonCorpus
 from .runners.extraction import SumExtractionRunner
 from .runners.performance import SumPerformanceRunner
+from .runners.regeneration import OpenAiRegenerationRunner
 from .runners.roundtrip import SumRoundtripRunner
 from .schema import (
     SCHEMA_VERSION,
@@ -187,11 +188,11 @@ def build_report(args: CliArgs) -> BenchReport:
         performance.extend(perf_runner.run())
 
     if not args.no_llm:
-        raise SystemExit(
-            "LLM-gated regeneration runner not yet implemented. "
-            "Pass --no-llm for the fully-offline measurement set "
-            "(extraction + canonical/prose roundtrip + perf)."
+        regen_runner = OpenAiRegenerationRunner(
+            generator_model_id=model_snapshots["generator"],
+            entailment_model_id=model_snapshots["minicheck"],
         )
+        regeneration.extend(regen_runner.run(corpus))
 
     return BenchReport(
         schema_version=SCHEMA_VERSION,
