@@ -1,0 +1,63 @@
+{
+  "id": "seed_v1",
+  "documents": [
+    {"id": "doc_001", "text": "Alice likes cats.",               "gold_triples": [["alice", "like", "cat"]]},
+    {"id": "doc_002", "text": "Bob owns a dog.",                 "gold_triples": [["bob", "own", "dog"]]},
+    {"id": "doc_003", "text": "Paris is a city.",                "gold_triples": [["paris", "be", "city"]]},
+    {"id": "doc_004", "text": "Einstein proposed relativity.",   "gold_triples": [["einstein", "propose", "relativity"]]},
+    {"id": "doc_005", "text": "Water contains hydrogen.",        "gold_triples": [["water", "contain", "hydrogen"]]},
+    {"id": "doc_006", "text": "The sun emits light.",            "gold_triples": [["sun", "emit", "light"]]},
+    {"id": "doc_007", "text": "Plants produce oxygen.",          "gold_triples": [["plant", "produce", "oxygen"]]},
+    {"id": "doc_008", "text": "Dogs chase cats.",                "gold_triples": [["dog", "chase", "cat"]]},
+    {"id": "doc_009", "text": "Fish eat plankton.",              "gold_triples": [["fish", "eat", "plankton"]]},
+    {"id": "doc_010", "text": "Birds build nests.",              "gold_triples": [["bird", "build", "nest"]]},
+
+    {"id": "doc_011", "text": "Shakespeare wrote Hamlet.",       "gold_triples": [["shakespeare", "write", "hamlet"]]},
+    {"id": "doc_012", "text": "Tesla invented motors.",          "gold_triples": [["tesla", "invent", "motor"]]},
+    {"id": "doc_013", "text": "Darwin studied finches.",         "gold_triples": [["darwin", "study", "finch"]]},
+    {"id": "doc_014", "text": "Newton described gravity.",       "gold_triples": [["newton", "describe", "gravity"]]},
+    {"id": "doc_015", "text": "Kepler discovered orbits.",       "gold_triples": [["kepler", "discover", "orbit"]]},
+
+    {"id": "doc_016", "text": "Gold conducts electricity.",      "gold_triples": [["gold", "conduct", "electricity"]]},
+    {"id": "doc_017", "text": "Steel resists corrosion.",        "gold_triples": [["steel", "resist", "corrosion"]]},
+    {"id": "doc_018", "text": "Diamond cuts glass.",             "gold_triples": [["diamond", "cut", "glass"]]},
+    {"id": "doc_019", "text": "Copper carries current.",         "gold_triples": [["copper", "carry", "current"]]},
+    {"id": "doc_020", "text": "Iron forms rust.",                "gold_triples": [["iron", "form", "rust"]]},
+
+    {"id": "doc_021", "text": "Rome built roads.",               "gold_triples": [["rome", "build", "road"]]},
+    {"id": "doc_022", "text": "Greece founded democracy.",       "gold_triples": [["greece", "found", "democracy"]]},
+    {"id": "doc_023", "text": "Egypt constructed pyramids.",     "gold_triples": [["egypt", "construct", "pyramid"]]},
+    {"id": "doc_024", "text": "Persia invaded Greece.",          "gold_triples": [["persia", "invade", "greece"]]},
+    {"id": "doc_025", "text": "Vikings explored continents.",    "gold_triples": [["viking", "explore", "continent"]]},
+
+    {"id": "doc_026", "text": "Electrons orbit nuclei.",         "gold_triples": [["electron", "orbit", "nucleus"]]},
+    {"id": "doc_027", "text": "Enzymes catalyze reactions.",     "gold_triples": [["enzyme", "catalyze", "reaction"]]},
+    {"id": "doc_028", "text": "Viruses infect cells.",           "gold_triples": [["virus", "infect", "cell"]]},
+    {"id": "doc_029", "text": "Neurons transmit signals.",       "gold_triples": [["neuron", "transmit", "signal"]]},
+    {"id": "doc_030", "text": "Muscles contract fibers.",        "gold_triples": [["muscle", "contract", "fiber"]]},
+
+    {"id": "doc_031", "text": "Teachers explain lessons.",       "gold_triples": [["teacher", "explain", "lesson"]]},
+    {"id": "doc_032", "text": "Scientists discover particles.",  "gold_triples": [["scientist", "discover", "particle"]]},
+    {"id": "doc_033", "text": "Engineers design bridges.",       "gold_triples": [["engineer", "design", "bridge"]]},
+    {"id": "doc_034", "text": "Farmers grow wheat.",             "gold_triples": [["farmer", "grow", "wheat"]]},
+    {"id": "doc_035", "text": "Chefs prepare meals.",            "gold_triples": [["chef", "prepare", "meal"]]},
+
+    {"id": "doc_036", "text": "Cars emit exhaust.",              "gold_triples": [["car", "emit", "exhaust"]]},
+    {"id": "doc_037", "text": "Rivers reach oceans.",            "gold_triples": [["river", "reach", "ocean"]]},
+    {"id": "doc_038", "text": "Students study subjects.",        "gold_triples": [["student", "study", "subject"]]},
+    {"id": "doc_039", "text": "Mothers love children.",          "gold_triples": [["mother", "love", "child"]]},
+    {"id": "doc_040", "text": "Writers create stories.",         "gold_triples": [["writer", "create", "story"]]},
+
+    {"id": "doc_041", "text": "Musicians compose symphonies.",   "gold_triples": [["musician", "compose", "symphony"]]},
+    {"id": "doc_042", "text": "Architects draw plans.",          "gold_triples": [["architect", "draw", "plan"]]},
+    {"id": "doc_043", "text": "Painters mix colors.",            "gold_triples": [["painter", "mix", "color"]]},
+    {"id": "doc_044", "text": "Doctors treat patients.",         "gold_triples": [["doctor", "treat", "patient"]]},
+    {"id": "doc_045", "text": "Lawyers defend clients.",         "gold_triples": [["lawyer", "defend", "client"]]},
+
+    {"id": "doc_046", "text": "Judges interpret laws.",          "gold_triples": [["judge", "interpret", "law"]]},
+    {"id": "doc_047", "text": "Hope inspires action.",           "gold_triples": [["hope", "inspire", "action"]]},
+    {"id": "doc_048", "text": "Music expresses emotion.",        "gold_triples": [["music", "express", "emotion"]]},
+    {"id": "doc_049", "text": "Knowledge requires effort.",      "gold_triples": [["knowledge", "require", "effort"]]},
+    {"id": "doc_050", "text": "Fear paralyzes movement.",        "gold_triples": [["fear", "paralyze", "movement"]]}
+  ]
+}
