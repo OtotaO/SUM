@@ -166,7 +166,7 @@ SUM's `tag → tome` direction measured end-to-end: for each source axiom set, `
 |---|---|---|---|---|---|---|---|
 | `seed_v1` | `gpt-4o-mini-2024-07-18` | `gpt-4o-mini-2024-07-18` | 50 / 50 gen | 50 | 48 | **0.960** | **0.960** |
 
-**Interpretation:** LLM-rendered narratives conditioned on SUM's structured axioms preserve 96 % of source claims under independent entailment judgement. The 4 % gap (2 of 50) is the empirical ceiling of the `LiveLLMAdapter` + `LlmEntailmentChecker` stack on simple SVO inputs; per-document error attribution requires the per-doc logging extension not yet shipped.
+**Interpretation:** LLM-rendered narratives conditioned on SUM's structured axioms preserve 96 % of source claims under independent entailment judgement. The 4 % gap (2 of 50) is the empirical ceiling of the `LiveLLMAdapter` + `LlmEntailmentChecker` stack on simple SVO inputs. Per-document attribution is now emitted in the report: every `RegenerationMetrics` record carries a `per_doc` sequence naming each document's n_claims / n_supported / per_claim_rate and the specific (s, p, o) triples that failed entailment (with a 200-char narrative excerpt), so the aggregate FActScore gap is debuggable at the generator-prompt layer rather than opaque. Introduced alongside a bench schema bump to `0.3.0`.
 
 **Boundary:** FActScore is empirical, not provable. The generator could be swapped for a stricter constrained-decoding pipeline (XGrammar + WebNLG-fine-tuned T5) that raises this number, and the checker could be swapped for a specialist like MiniCheck-FT5. Both are roadmap items. Until then, the 0.96 number stands as the honest measurement of the current stack.
 
