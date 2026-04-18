@@ -3,10 +3,95 @@ from __future__ import annotations
 import asyncio
 import statistics
 from dataclasses import dataclass
-from typing import Sequence
+from typing import Protocol, Sequence
 
-from ..corpus import Corpus
-from ..schema import RegenerationMetrics
+from ..corpus import Corpus, CorpusDocument
+from ..schema import PerDocRegeneration, RegenerationMetrics
+
+_EXCERPT_LEN = 200
+
+
+class _SieveLike(Protocol):
+    def extract_triplets(self, text: str) -> list[tuple[str, str, str]]: ...
+
+
+class _GeneratorLike(Protocol):
+    async def generate_text(
+        self, axiom_keys: list[str], tags: list[str]
+    ) -> str: ...
+
+
+class _EntailmentResultLike(Protocol):
+    @property
+    def entailed(self) -> bool: ...
+
+
+class _CheckerLike(Protocol):
+    async def check(
+        self, passage: str, claim: tuple[str, str, str]
+    ) -> _EntailmentResultLike: ...
+
+
+async def _process_doc(
+    sieve: _SieveLike,
+    generator: _GeneratorLike,
+    checker: _CheckerLike,
+    doc: CorpusDocument,
+) -> PerDocRegeneration | None:
+    """Process one document. Returns None if no triples were extracted."""
+    triples = sieve.extract_triplets(doc.text)
+    if not triples:
+        return None
+
+    axiom_keys = [f"{s}||{p}||{o}" for s, p, o in triples]
+    narrative = await generator.generate_text(axiom_keys, [])
+    n_claims = len(triples)
+    excerpt = (narrative or "")[:_EXCERPT_LEN]
+
+    if not narrative:
+        return PerDocRegeneration(
+            doc_id=doc.id,
+            n_claims=n_claims,
+            n_supported=0,
+            per_claim_rate=0.0,
+            unsupported_claims=tuple(triples),
+            narrative_excerpt=excerpt,
+        )
+
+    unsupported: list[tuple[str, str, str]] = []
+    for t in triples:
+        result = await checker.check(narrative, t)
+        if not result.entailed:
+            unsupported.append(t)
+    n_supported = n_claims - len(unsupported)
+    return PerDocRegeneration(
+        doc_id=doc.id,
+        n_claims=n_claims,
+        n_supported=n_supported,
+        per_claim_rate=n_supported / n_claims,
+        unsupported_claims=tuple(unsupported),
+        narrative_excerpt=excerpt,
+    )
+
+
+def _aggregate(
+    corpus_id: str, per_doc: Sequence[PerDocRegeneration]
+) -> RegenerationMetrics:
+    n_supported_total = sum(p.n_supported for p in per_doc)
+    n_claims_total = sum(p.n_claims for p in per_doc)
+    rates = [p.per_claim_rate for p in per_doc]
+    rate = statistics.mean(rates) if rates else 0.0
+    return RegenerationMetrics(
+        corpus_id=corpus_id,
+        path="freeform",
+        factscore=rate,
+        minicheck_entailment_rate=rate,
+        n_generations=len(per_doc),
+        n_supported_claims=n_supported_total,
+        n_total_claims=n_claims_total,
+        epistemic_status="empirical-benchmark",
+        per_doc=tuple(per_doc),
+    )
 
 
 @dataclass(frozen=True)
@@ -18,13 +103,16 @@ class OpenAiRegenerationRunner:
       2. Render prose narrative via LiveLLMAdapter.generate_text().
       3. Independently check entailment of each source triple against the
          generated prose via LlmEntailmentChecker.
-      4. Report per-document rate; aggregate across corpus.
+      4. Emit a PerDocRegeneration record naming the unsupported triples, so
+         the aggregate FActScore gap is attributable at the doc level; aggregate
+         across the corpus.
 
     Output:
       - factscore: mean per-document entailment rate (in [0, 1])
       - minicheck_entailment_rate: same measurement, different name, one checker
       - n_supported_claims / n_total_claims: aggregate support counts
       - n_generations: docs where narrative was produced (non-empty input)
+      - per_doc: per-document attribution (which claims failed, which doc)
 
     Requires pinned model IDs:
       - generator_model_id  (narrative synthesis — SUM_BENCH_GENERATOR_MODEL)
@@ -53,47 +141,10 @@ class OpenAiRegenerationRunner:
         generator = LiveLLMAdapter(model=self.generator_model_id)
         checker = LlmEntailmentChecker(model_id=self.entailment_model_id)
 
-        per_doc_rates: list[float] = []
-        n_supported_total = 0
-        n_claims_total = 0
-        n_generations = 0
-
+        per_doc: list[PerDocRegeneration] = []
         for doc in corpus.documents:
-            triples = sieve.extract_triplets(doc.text)
-            if not triples:
-                continue
+            record = await _process_doc(sieve, generator, checker, doc)
+            if record is not None:
+                per_doc.append(record)
 
-            axiom_keys = [f"{s}||{p}||{o}" for s, p, o in triples]
-            narrative = await generator.generate_text(axiom_keys, [])
-            n_generations += 1
-            if not narrative:
-                per_doc_rates.append(0.0)
-                n_claims_total += len(triples)
-                continue
-
-            n_supported_doc = 0
-            for t in triples:
-                result = await checker.check(narrative, t)
-                if result.entailed:
-                    n_supported_doc += 1
-
-            n_claims_total += len(triples)
-            n_supported_total += n_supported_doc
-            per_doc_rates.append(
-                n_supported_doc / len(triples) if triples else 0.0
-            )
-
-        rate = statistics.mean(per_doc_rates) if per_doc_rates else 0.0
-
-        return (
-            RegenerationMetrics(
-                corpus_id=corpus.id,
-                path="freeform",
-                factscore=rate,
-                minicheck_entailment_rate=rate,
-                n_generations=n_generations,
-                n_supported_claims=n_supported_total,
-                n_total_claims=n_claims_total,
-                epistemic_status="empirical-benchmark",
-            ),
-        )
+        return (_aggregate(corpus.id, per_doc),)

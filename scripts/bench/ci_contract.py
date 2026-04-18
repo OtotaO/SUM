@@ -9,6 +9,7 @@ from typing import Any, Sequence
 from .schema import (
     BenchReport,
     ExtractionMetrics,
+    PerDocRegeneration,
     PerformanceMetrics,
     RegenerationMetrics,
     RoundtripMetrics,
@@ -135,6 +136,24 @@ def load_latest(history_path: str | Path) -> BenchReport | None:
     return _report_from_dict(json.loads(last_line))
 
 
+def _regeneration_from_dict(m: dict[str, Any]) -> RegenerationMetrics:
+    per_doc = tuple(
+        PerDocRegeneration(
+            doc_id=p["doc_id"],
+            n_claims=p["n_claims"],
+            n_supported=p["n_supported"],
+            per_claim_rate=p["per_claim_rate"],
+            unsupported_claims=tuple(
+                tuple(t) for t in p.get("unsupported_claims", ())
+            ),
+            narrative_excerpt=p.get("narrative_excerpt", ""),
+        )
+        for p in m.get("per_doc", ())
+    )
+    fields = {k: v for k, v in m.items() if k != "per_doc"}
+    return RegenerationMetrics(**fields, per_doc=per_doc)
+
+
 def _report_from_dict(d: dict[str, Any]) -> BenchReport:
     return BenchReport(
         schema_version=d["schema_version"],
@@ -146,7 +165,7 @@ def _report_from_dict(d: dict[str, Any]) -> BenchReport:
         model_snapshots=dict(d["model_snapshots"]),
         extraction=tuple(ExtractionMetrics(**m) for m in d.get("extraction", [])),
         regeneration=tuple(
-            RegenerationMetrics(**m) for m in d.get("regeneration", [])
+            _regeneration_from_dict(m) for m in d.get("regeneration", [])
         ),
         roundtrip=tuple(RoundtripMetrics(**m) for m in d.get("roundtrip", [])),
         performance=tuple(PerformanceMetrics(**m) for m in d.get("performance", [])),

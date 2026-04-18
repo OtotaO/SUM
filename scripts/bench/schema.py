@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal, Mapping, Sequence
 
-SCHEMA_VERSION = "0.2.0"
+SCHEMA_VERSION = "0.3.0"
 
 RegenerationPath = Literal["canonical", "freeform"]
 InputKind = Literal["prose", "canonical"]
@@ -32,6 +32,23 @@ class ExtractionMetrics:
 
 
 @dataclass(frozen=True)
+class PerDocRegeneration:
+    """Per-document regeneration attribution.
+
+    Surfaces which specific (s,p,o) claims failed LLM entailment so the
+    aggregate FActScore gap can be debugged at the generator-prompt layer
+    instead of treated as an opaque corpus-level number.
+    """
+
+    doc_id: str
+    n_claims: int
+    n_supported: int
+    per_claim_rate: float
+    unsupported_claims: Sequence[tuple[str, str, str]] = field(default_factory=tuple)
+    narrative_excerpt: str = ""
+
+
+@dataclass(frozen=True)
 class RegenerationMetrics:
     corpus_id: str
     path: RegenerationPath
@@ -41,6 +58,7 @@ class RegenerationMetrics:
     n_supported_claims: int
     n_total_claims: int
     epistemic_status: EpistemicStatus = "empirical-benchmark"
+    per_doc: Sequence[PerDocRegeneration] = field(default_factory=tuple)
 
 
 @dataclass(frozen=True)
