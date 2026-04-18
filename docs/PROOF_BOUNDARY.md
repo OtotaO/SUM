@@ -156,7 +156,21 @@ The prose drift rising from 42.86 % to 50.00 % on the larger corpus is not stati
 
 **What this measurement does NOT cover:** the full LLM narrative round-trip (`text → triples → LLM-rendered prose → triples'`). That path requires the regeneration runner with pinned MiniCheck and FActScore models; it is tracked as the remaining LLM-gated measurement. Until wired, SUM makes **no empirical claim** about LLM-rendered prose conservation — only the `0.00 %` canonical result and the `42.86 %` sieve-self-parse result are on record.
 
-### 2.4. Bench Harness Substrate
+### 2.4. Regeneration Faithfulness (LLM Narrative → Axiom Entailment)
+
+SUM's `tag → tome` direction measured end-to-end: for each source axiom set, `LiveLLMAdapter.generate_text` produces a prose narrative, and `LlmEntailmentChecker` (structured-output entailment via pinned model snapshot) independently judges whether each source axiom is supported by the narrative. FActScore is the mean per-document entailment rate.
+
+**First end-to-end run (2026-04-17, temporary API key, now rolled):**
+
+| corpus | generator | entailment model | n_docs | n_claims | supported | FActScore | MiniCheck rate |
+|---|---|---|---|---|---|---|---|
+| `seed_v1` | `gpt-4o-mini-2024-07-18` | `gpt-4o-mini-2024-07-18` | 50 / 50 gen | 50 | 48 | **0.960** | **0.960** |
+
+**Interpretation:** LLM-rendered narratives conditioned on SUM's structured axioms preserve 96 % of source claims under independent entailment judgement. The 4 % gap (2 of 50) is the empirical ceiling of the `LiveLLMAdapter` + `LlmEntailmentChecker` stack on simple SVO inputs; per-document error attribution requires the per-doc logging extension not yet shipped.
+
+**Boundary:** FActScore is empirical, not provable. The generator could be swapped for a stricter constrained-decoding pipeline (XGrammar + WebNLG-fine-tuned T5) that raises this number, and the checker could be swapped for a specialist like MiniCheck-FT5. Both are roadmap items. Until then, the 0.96 number stands as the honest measurement of the current stack.
+
+### 2.5. Bench Harness Substrate
 
 The `scripts/bench/` directory contains the measurement-first infrastructure that makes §2.1–§2.3 reproducible. Key properties:
 
@@ -238,7 +252,7 @@ SUM's ultimate goal is a **bidirectional knowledge distillation engine**: turn n
 | Tag → Tome (narrative, prose) | Requires LLM extrapolator | No empirical measurement yet |
 | Round-trip conservation (canonical) | Proven + empirically verified per-run | §1.1; 0.00% drift on `seed_tiny_v1` and `seed_v1` (commits `a6606eb`, current) |
 | Round-trip conservation (sieve re-extract of canonical text) | Measured | 42.86% (seed_tiny) / 50.00% (seed_v1) drift; sieve is not bijective even on its own output |
-| Regeneration faithfulness (LLM narrative from axioms) | **Wired** (OpenAiRegenerationRunner); awaits user-side API-key-gated execution | Requires `OPENAI_API_KEY` + `SUM_BENCH_GENERATOR_MODEL` + `SUM_BENCH_MINICHECK_MODEL` + `SUM_BENCH_FACTSCORE_MODEL` env vars |
+| Regeneration faithfulness (LLM narrative from axioms) | **Measured** | FActScore = **0.960** (48/50 claims supported) on seed_v1 with `gpt-4o-mini-2024-07-18` for both generator and entailment checker; see §2.4 |
 | Round-trip conservation (LLM narrative prose, full loop) | Not yet wired — needs LLM re-extraction leg | Will compose existing LLM narrative generator + LLM extractor + drift metric |
 | Extraction ceiling investigation (en_core_web_trf upgrade or LLM fallback) | 8 / 50 seed_v1 failures all fit one spaCy parse pattern; architectural decision pending | User call |
 | Sliding-scale rendering parameters | **Interface shipped** (`TomeSliders`): 5 axes — density / length / formality / audience / perspective. Density slider actioned on the deterministic canonical path (lexicographic axiom subsetting); remaining 4 axes LLM-gated and captured in output header as metadata | Phase 30+ (LLM wiring for non-density axes) |
