@@ -176,6 +176,90 @@ class AutoregressiveTomeGenerator:
         return "\n".join(lines)
 
     # ------------------------------------------------------------------
+    # Controlled rendering — TomeSliders (founder's dream surface)
+    # ------------------------------------------------------------------
+
+    def generate_controlled(
+        self,
+        target_state: int,
+        sliders: "Optional[object]" = None,
+        title: str = "Controlled Tome",
+    ) -> str:
+        """Parameterized canonical rendering under TomeSliders control.
+
+        The density slider is actioned here: axioms are deterministically
+        subsetted by lexicographic order before canonical rendering. The
+        remaining sliders (length, formality, audience, perspective) are
+        LLM-gated; their values are captured in the output header so a
+        downstream narrative generator can honour them while the
+        deterministic path remains unchanged.
+
+        Args:
+            target_state: The Gödel integer to unpack.
+            sliders:      A TomeSliders instance. Defaults to all-balanced
+                          (equivalent to generate_canonical).
+            title:        Human-readable title.
+
+        Returns:
+            A canonical-format tome reflecting the density slider. Output
+            includes the slider header so the rendering is reproducible.
+        """
+        from internal.ensemble.tome_sliders import (
+            TomeSliders,
+            apply_density,
+        )
+
+        cfg = sliders if sliders is not None else TomeSliders()
+        if not isinstance(cfg, TomeSliders):
+            raise TypeError(
+                "sliders must be a TomeSliders instance or None"
+            )
+
+        active_axioms = self.extract_active_axioms(target_state)
+        selected = apply_density(active_axioms, cfg.density)
+
+        header = [
+            f"@canonical_version: {CANONICAL_FORMAT_VERSION}",
+            cfg.header_line(),
+            f"# {title}",
+            "",
+        ]
+
+        if not selected:
+            header.append(
+                f"No axioms survive at density={cfg.density:.3f} "
+                f"(source had {len(active_axioms)})."
+            )
+            return "\n".join(header)
+
+        chapters: Dict[str, List[str]] = {}
+        for axiom in selected:
+            parts = axiom.split("||")
+            if len(parts) == 3:
+                subject = parts[0].strip()
+                chapters.setdefault(subject, []).append(axiom)
+
+        lines = list(header)
+        for subject in sorted(chapters.keys()):
+            axioms = sorted(chapters[subject])
+            lines.append(f"## {subject.title()}")
+            lines.append("")
+            for axiom in axioms:
+                parts = axiom.split("||")
+                if len(parts) == 3:
+                    s, p, o = parts
+                    lines.append(f"The {s} {p} {o}.")
+            lines.append("")
+
+        if cfg.requires_extrapolator() and self.extrapolator is None:
+            logger.info(
+                "TomeSliders non-density axes set but no extrapolator present; "
+                "non-density sliders are recorded in the header as metadata only."
+            )
+
+        return "\n".join(lines)
+
+    # ------------------------------------------------------------------
     # Unified entry point
     # ------------------------------------------------------------------
 
