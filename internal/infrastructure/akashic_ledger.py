@@ -280,6 +280,61 @@ class AkashicLedger:
         return await asyncio.to_thread(_read)
 
     # ------------------------------------------------------------------
+    # PROV-O Export (Polytaxis Bucket A §4)
+    # ------------------------------------------------------------------
+
+    async def to_prov_jsonld(
+        self, branch: str = "main", graph_iri: str = "urn:sum:audit"
+    ) -> str:
+        """Serialize every event on a branch as a W3C PROV-O JSON-LD graph.
+
+        Convenience wrapper that joins the ledger's event table with the
+        stateless PROV-O adapter in ``internal.infrastructure.prov_o``.
+        The returned string is a valid JSON-LD document any PROV-compliant
+        tool can consume without SUM-specific knowledge.
+
+        Args:
+            branch:    Branch to export (default 'main').
+            graph_iri: IRI for the outer named graph.
+
+        Returns:
+            A pretty-printed JSON-LD document string.
+        """
+        from internal.infrastructure.prov_o import dump_prov_jsonld
+
+        def _read():
+            with sqlite3.connect(self.db_path) as conn:
+                rows = conn.execute(
+                    "SELECT seq_id, operation, prime, axiom_key, branch, "
+                    "source_url, confidence, ingested_at, prev_hash "
+                    "FROM semantic_events WHERE branch = ? "
+                    "ORDER BY seq_id ASC",
+                    (branch,),
+                ).fetchall()
+                events = []
+                prev_seq_id = None
+                for r in rows:
+                    event = {
+                        "seq_id": r[0],
+                        "operation": r[1],
+                        "prime": r[2],
+                        "axiom_key": r[3] or "",
+                        "branch": r[4] or "main",
+                        "source_url": r[5] or "",
+                        "confidence": r[6],
+                        "ingested_at": r[7] or "",
+                        "prev_hash": r[8] or "",
+                    }
+                    if prev_seq_id is not None:
+                        event["prev_seq_id"] = prev_seq_id
+                    prev_seq_id = r[0]
+                    events.append(event)
+                return events
+
+        events = await asyncio.to_thread(_read)
+        return dump_prov_jsonld(events, graph_iri=graph_iri)
+
+    # ------------------------------------------------------------------
     # Branch Head Snapshots (Phase 0: Durability Contract)
     # ------------------------------------------------------------------
 
