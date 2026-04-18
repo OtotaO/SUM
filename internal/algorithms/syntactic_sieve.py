@@ -45,6 +45,49 @@ HEDGE_PENALTY_PER_MARKER = 0.15
 HEDGE_FLOOR = 0.20  # minimum confidence from hedging alone
 
 
+_FALLBACK_CONTENT_POS = frozenset({"NOUN", "PROPN", "VERB", "ADJ"})
+
+
+def _pos_fallback_triplet(sent):
+    """POS-based fallback extraction for sentences the dep parser misparses.
+
+    Activates only when dep-based extraction yielded nothing for the sentence.
+    Strategy: if the sentence contains EXACTLY three content tokens
+    (NOUN / PROPN / VERB / ADJ — excluding DET / AUX / ADV / ADP / PUNCT / PART),
+    emit them in order as (subject, predicate, object).
+
+    This targets the known spaCy en_core_web_sm failure mode on sentences
+    like "Dogs chase cats" where the verb is mis-tagged as NOUN and the
+    ROOT is shifted to the object noun. Conservative: the exact three-content
+    rule refuses to fire on sentences with adverbial modifiers, adjectives
+    stacking on the object, passive-voice auxiliaries, or prepositional
+    phrases — all of which the dep-based path handles correctly.
+
+    Returns (subject_lemma, predicate_lemma, object_lemma) all lowercased,
+    or None if the pattern does not match.
+    """
+    content = [t for t in sent if t.pos_ in _FALLBACK_CONTENT_POS]
+    if len(content) != 3:
+        return None
+    s, p, o = content
+    if not (p.lemma_.isalpha() and 1 < len(p.lemma_) <= 20):
+        return None
+
+    # When spaCy mis-tags a plural noun as ADJ (e.g. "Dogs" in "Dogs chase
+    # cats"), the token lemma preserves the plural form. Reverse the
+    # common -s plural so the canonical key matches the expected singular.
+    s_lemma = s.lemma_.lower()
+    if (
+        s.tag_.startswith("JJ")
+        and s_lemma.endswith("s")
+        and len(s_lemma) > 2
+        and s_lemma[:-1].isalpha()
+    ):
+        s_lemma = s_lemma[:-1]
+
+    return (s_lemma, p.lemma_.lower(), o.lemma_.lower())
+
+
 def detect_hedging(text: str) -> float:
     """Score the linguistic certainty of a text.
 
@@ -143,12 +186,19 @@ class DeterministicSieve:
                                 modifiers + [child.lemma_]
                             ).strip()
 
+            extracted = False
             if subject and predicate and object_:
                 # Filter out massive run-on parses
                 if len(subject.split()) <= 5 and len(object_.split()) <= 8:
                     triplets.append(
                         (subject.lower(), predicate.lower(), object_.lower())
                     )
+                    extracted = True
+
+            if not extracted:
+                fallback = _pos_fallback_triplet(sent)
+                if fallback is not None:
+                    triplets.append(fallback)
 
         return list(set(triplets))  # Deduplicate
 
