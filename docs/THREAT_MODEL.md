@@ -1,7 +1,7 @@
 # Threat Model
 
-**Version:** 1.1.0
-**Date:** 2026-03-25
+**Version:** 1.2.0
+**Date:** 2026-04-18
 
 This document describes what the SUM engine's security and integrity mechanisms protect against, and — critically — what they do NOT protect against.
 
@@ -82,9 +82,9 @@ Producer ──(shared key)──> Bundle ──(shared key)──> Consumer
 
 **Impact:** The sieve may extract incorrect or misleading axioms. These become part of the canonical state and appear legitimate.
 
-**Defense (Phase 19A):** `ExtractionValidator` provides structural gating: non-empty fields, length bounds, control character rejection, JSON fragment rejection, predicate canonicalization, and batch deduplication. 25 unit tests verify gating logic. A 50-document golden benchmark corpus (Phase 19B) measures extraction precision/recall/F1 across 7 adversarial categories.
+**Defense (Phase 19A + bench harness):** `ExtractionValidator` provides structural gating: non-empty fields, length bounds, control character rejection, JSON fragment rejection, predicate canonicalization, and batch deduplication. 25 unit tests verify gating logic. A 50-document golden benchmark corpus (Phase 19B) measures extraction precision/recall/F1 across 7 adversarial categories. As of 2026-04-18 the bench harness at `scripts/bench/` provides continuous empirical monitoring — extraction F1 regressions are caught at CI time against a `seed_v1` baseline (current: F1=1.000, precision=1.000), and LLM-narrative regeneration faithfulness is measured via `OpenAiRegenerationRunner` (current: FActScore=0.960).
 
-**Residual risk:** Structural gating catches malformed triplets but cannot detect semantically incorrect or misleading extractions. A structurally valid but factually wrong triplet passes the gate. Full semantic validation requires multi-pass extraction with confidence scoring and human-review lanes.
+**Residual risk:** Structural gating catches malformed triplets but cannot detect semantically incorrect or misleading extractions. A structurally valid but factually wrong triplet passes the gate. The bench harness catches degradation over time against a fixed corpus but does not substitute for semantic validation on fresh inputs. Full semantic validation requires multi-pass extraction with confidence scoring (Venn-Abers `ConfidenceInterval` shipped; calibration fixture pending) and human-review lanes.
 
 ### 3.4. Semantic Collision Replay (✅ Now Protected)
 

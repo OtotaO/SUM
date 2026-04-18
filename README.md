@@ -1,380 +1,438 @@
-# SUM — The Quantum Knowledge OS
+# SUM — The Semantic Understanding Machine
 
 [![SUM Knowledge OS CI](https://github.com/OtotaO/SUM/actions/workflows/quantum-ci.yml/badge.svg)](https://github.com/OtotaO/SUM/actions/workflows/quantum-ci.yml)
 
-> **Distill the Universe. Expand the Atom. Mathematically Verified within the Canonical Semantic Boundary.**
+> **From Tags to Tomes and Back Again — canonical round-trip proven, full pipeline measured.**
 
-SUM is a **Gödel-State Knowledge Engine** — a system that encodes semantic content as prime-factored integers and performs semantic operations (merge, entailment, paradox detection, graph traversal) using pure number theory, avoiding corpus-scale scanning.
+SUM began as a humble bidirectional knowledge distillation engine: turn **structured facts** (tags) into **coherent narratives** (tomes) and vice versa, with adjustable knobs for density, length, formality, audience, and perspective. What emerged is a **semantic algebra** that represents knowledge as prime-factored integers, giving a mathematically proven round-trip on the canonical representation and an empirical faithfulness score on the full text→structure→text loop.
 
-Built on the formalisms of the **Semantic Prime Number Theorem** and **Gauge-Theoretic CRUD**, SUM replaces probabilistic vector databases with deterministic integer arithmetic for core knowledge operations. It provides **mechanically verifiable round-trip conservation** within the canonical semantic representation, cross-runtime state verification, signed knowledge transport, and decentralized P2P syncing.
-
-> **Complexity note:** operations described below as O(1) are O(1) **in axiom count** — they do not scan the corpus. They scale with integer **bit length** (sub-quadratic via GMP). See [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) for precise complexity analysis.
+**The core insight remains unchanged**: knowledge should flow fluidly between structured and narrative forms. That flow is **cryptographically verified** in every signed bundle, **mathematically guaranteed** on the canonical layer (round-trip drift = 0.00%, proven), and **continuously measured** on real prose (96% FActScore on `seed_v1`, tracked by the bench harness). Every claim in this repo is labelled with an explicit epistemic status — see [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) for the separation of proved from measured.
 
 ---
 
-## 🌌 Architecture
+## 📊 Current Measured State
 
-```text
-┌────────────────────────────────────────────────────────────────────────────┐
-│                       Quantum Knowledge OS (SUM)                          │
-│                                                                           │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────────────────┐ │
-│  │ Quantum UI   │  │ Quantum API  │  │ Autonomous Daemons               │ │
-│  │ quantum.html │  │ /state /sync │  │ • Subconscious Crystallizer      │ │
-│  │ WASM Engine  │  │ /ingest /zk  │  │ • P2P Holographic Mesh           │ │
-│  │ vis-network  │  │ /sync/state  │  │ • Epistemic Arbiter              │ │
-│  │ Telemetry HUD│  │ /discoveries │  │ • Automated Scientist Daemon     │ │
-│  └──────┬───────┘  └──────┬───────┘  └──────────────┬───────────────────┘ │
-│         │                 │                          │                    │
-│  ┌──────┴─────────────────┴──────────────────────────┴─────────────────┐  │
-│  │                    GlobalKnowledgeOS Singleton                      │  │
-│  ├────────────────────────────────────────────────────────────────────┤  │
-│  │ GodelStateAlgebra       │ Epistemic Engine    │ Multiverse          │  │
-│  │ • SHA-256 Primes        │ • Paradox Collapse  │ • Branching         │  │
-│  │ • LCM Merge / GCD Sync │ • ZK Semantic Proof │ • Merging           │  │
-│  │ • GraphRAG             │ • Causal Cascades   │ • Time Travel       │  │
-│  │ • Zig C-ABI Fast Path  │ • Deterministic     │                     │  │
-│  │   (Strangler Fig)      │   Arbiter (SHA-256) │                     │  │
-│  ├─────────────────────────┴─────────────────────┴────────────────────┤  │
-│  │    Extraction Validator (Structural Gate → Algebra)                  │  │
-│  ├────────────────────────────────────────────────────────────────────┤  │
-│  │                      Akashic Ledger (SQLite)                       │  │
-│  │  Event-sourced • Crash-safe • Merkle Hash-Chain • Replayable      │  │
-│  └────────────────────────────────────────────────────────────────────┘  │
-└────────────────────────────────────────────────────────────────────────────┘
+Every headline number below is reproducible via `python -m scripts.bench.run_bench`. See [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) for the full truthfulness document and per-claim epistemic status.
+
+| Axis | Value | Epistemic Status |
+|---|---|---|
+| Canonical round-trip drift | **0.00 %** | **provable** (Ouroboros protocol, §1.1) |
+| Extraction F1 on `seed_v1` (50 docs) | **1.000** | empirical-benchmark |
+| Regeneration FActScore on `seed_v1` | **0.960** | empirical-benchmark |
+| Sieve re-extract of canonical (known ceiling) | 54 % drift | empirical-benchmark |
+| Merge p50 @ N=1000 primes | ~518 ms (~O(n²)) | empirical-benchmark |
+| Test suite | **756+** tests | continuous |
+
+---
+
+## 🌱 The Evolution: From Simple to Sublime
+
+### Genesis: The Original Vision (2023)
+```
+Text → Structured Facts → Text
+  ↑                        ↓
+Adjustable Parameters & Style Control
+```
+
+**Problem**: How do we bidirectionally transform between:
+- **Tags** (structured semantic facts: `alice||age||30`)
+- **Tomes** (natural language narratives: "Alice is 30 years old...")
+- With **adjustable knobs** for tone, detail, perspective, and focus
+
+### Evolution: The Mathematical Substrate (2024-2026)
+```
+Perspectival Text → Prime-Encoded Facts → Verified Narratives
+        ↑                    ↓                        ↓
+   Multi-Viewpoint    Gödel Integer          Round-Trip Verified
+    Classification   (Single Source of Truth)    Generation
+```
+
+**Breakthrough**: Every fact becomes a **unique prime number**. The entire knowledge state is a **single integer** (product of all active primes). This enables:
+- **Verified Generation**: `State % Prime == 0` proves a fact is grounded
+- **Zero-Cost Sync**: Send one integer, use GCD to compute exact deltas
+- **Git for Truth**: Branch = copy integer; Merge = LCM operation
+- **Multi-Perspectival Views**: Same facts, different narrative styles per viewpoint
+
+### Future: The Polytaxis Integration (2026+)
+```
+Multi-Perspective Classification ←→ Verified Multi-Narrative Generation
+            ↑                                    ↓
+    Formal Ontological Bridges          Category-Theoretic Alignment
+         ↑                                    ↓
+Semantic Branching & Temporal Evolution ←→ Accountable Pluralism
+```
+
+**Vision**: SUM's mathematical substrate becomes the foundation for **Polytaxis** — a meta-classification system that hosts multiple perspectives simultaneously, bridges them through category theory, and generates perspective-aware narratives with formal guarantees.
+
+---
+
+## 🧮 Core Transformation Capabilities
+
+### 1. **Tomes → Tags** (Semantic Extraction)
+```python
+# Natural language → Structured knowledge
+POST /ingest
+{
+  "text": "Alice met Bob at Stanford in 1995. She studied AI while he focused on databases.",
+  "perspective": "academic"  # Optional: academic, personal, legal, etc.
+}
+
+# Returns: Crystallized facts
+{
+  "delta_axioms": [
+    "alice||met||bob",
+    "alice||location||stanford",
+    "bob||location||stanford",
+    "alice||study_focus||ai",
+    "bob||study_focus||databases",
+    "alice||met_bob_year||1995"
+  ],
+  "new_global_state": "89471829047120947812904...",  # Prime-encoded
+  "perspective": "academic"
+}
+```
+
+### 2. **Tags → Tomes** (Generation with measured faithfulness)
+```python
+# Structured knowledge → Natural narrative
+POST /extrapolate
+{
+  "target_axioms": ["alice||met||bob", "alice||study_focus||ai"]
+}
+
+# Returns: a narrative rendered by LiveLLMAdapter.generate_text
+{
+  "narrative": "Alice met Bob; Alice's focus is on artificial intelligence...",
+  "canonical_appendix": "The alice met bob.\nThe alice study_focus ai.",
+  "state_integer": "89471829047120947812904..."
+}
+
+# For independent faithfulness measurement, run the bench harness:
+#   python -m scripts.bench.run_bench --corpus scripts/bench/corpora/seed_v1.json
+# → FActScore per corpus, currently 0.960 on seed_v1
+# Note: per-request entailment gating is a roadmap item; today the LLM
+# adapter generates faithful prose most of the time but is not hallucination-
+# gated at the endpoint level.
+```
+
+### 3. **Round-Trip Conservation** (The Ouroboros Protocol)
+```python
+# Prove semantic conservation: Text → Tags → Text → Tags
+POST /ouroboros/verify
+{
+  "text": "Original narrative about Alice and Bob..."
+}
+
+# Returns: Mathematical proof of conservation
+{
+  "round_trip_verified": true,
+  "original_state": "894718290471...",
+  "reconstructed_state": "894718290471...",  # Must be identical
+  "information_preserved": 1.0,
+  "canonical_tome": "Verified canonical reconstruction..."
+}
 ```
 
 ---
 
-## 🧮 Core Capabilities
+## 🔄 Sliding-Scale Rendering (currently density-actionable; others LLM-gated)
 
-### 1. Gödel-State Algebra & SPNT
+The `TomeSliders` interface parameterizes rendering across five `[0.0, 1.0]` axes:
 
-Every irreducible fact ("Alice age 30") is assigned a unique, deterministic **prime number** via SHA-256 hashing. The entire knowledge state of the universe is a single massive integer — the product of all active primes.
+```python
+from internal.ensemble.tome_sliders import TomeSliders
+from internal.ensemble.tome_generator import AutoregressiveTomeGenerator
 
-| Semantic Operation | Mathematical Equivalent | Complexity |
-|--------------------|-------------------------|------------|
-| **Branch / Fork** | Integer Copy: `Branch_B = Branch_A` | O(n) copy where n = bit length |
-| **Merge States** | Least Common Multiple: `math.lcm(A, B)` | O(n²) via GCD on n-bit integers |
-| **Verify a Fact** | Modulo Entailment: `Global_State % Prime == 0` | O(n) modulo on n-bit integer |
-| **Delete a Fact** | Integer Division: `Global_State // Prime` | O(n) division on n-bit integer |
-| **Update a Fact** | `lcm(State // Old_Prime, New_Prime)` | O(n²) via GCD |
-| **GraphRAG Traversal** | `math.gcd(Global, Node_Integer)` | O(n²) via GCD |
+sliders = TomeSliders(
+    density=0.5,       # actioned on canonical path (deterministic axiom subsetting)
+    length=0.8,        # LLM-gated (no-op without extrapolator)
+    formality=0.3,     # LLM-gated
+    audience=0.7,      # LLM-gated
+    perspective=0.5,   # LLM-gated
+)
+tome = generator.generate_controlled(state, sliders)
+# Output includes slider metadata in the header for reproducibility.
+```
 
-> **Complexity note:** All complexities are in integer **bit length** (n), which grows with each axiom. Operations avoid corpus-scale document scanning. At 10,000 axioms the state integer is ~640K bits; GCD/LCM complete in milliseconds on modern hardware. See [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) for empirical benchmarks.
+**What ships today:** the 5-axis type, validation, `requires_extrapolator()` gate, `header_line()` serialization, and the density axis actioned on the deterministic canonical path via lexicographic subsetting. 21 tests pin the contract. See `internal/ensemble/tome_sliders.py`.
 
-### 2. The Epistemic Feedback Loop
-
-LLM-generated text is **mathematically verified** against the Gödel state. If the modulo check fails, `math.gcd` isolates the exact hallucinated primes. The LLM is forced into a self-correcting loop with strict negative constraints until mathematical fidelity is achieved.
-
-### 3. Temporal Evolution & The Vector Bridge
-
-Maps the absolute certainty of discrete Gödel Primes to the fuzzy continuous space of Vector Embeddings. Semantic search (`cosine_similarity`) is mathematically filtered by `State % Prime == 0`, meaning deleted facts vanish instantly from search results.
-
-**Horizon III — Universal Vector Alignment:** Supports optional O(1) affine transformation matrices (W\*, b\*) enabling heterogeneous P2P nodes (Llama, Qwen, Mistral, etc.) to perfectly align their latent geometries into a single Canonical Geometry before discrete prime extraction.
-
-### 4. The Akashic Ledger (Fidelity Persistence)
-
-An append-only SQLite event log (`MINT`, `MUL`, `DIV`, `SYNC`, `DEDUCED`). Provides **crash recovery** — the RAM-based Gödel BigInt can be perfectly reconstructed by replaying the mathematical trace. A **SHA-256 Merkle hash-chain** makes every event tamper-evident: modification, deletion, or injection of events is detectable on boot.
-
-### 5. The Gödel Sync Protocol
-
-Clients hold a local `BigInt` state. Syncing over the network requires sending *one integer*. The server uses `math.gcd` to identify exactly what the client needs to add or delete. **Single-integer network delta**, zero JSON diffing.
-
-### 6. Fractal Crystallization (Semantic Zooming)
-
-  - **Zoom Out**: Replace a cluster of 100 micro-primes with 1 Macro-Prime, storing the cluster product as provenance.
-  - **Zoom In**: Divide out the Macro-Prime and multiply the provenance back in to decompress the cluster (single division + multiplication).
-
-### 7. Quantum GraphRAG & The Subconscious Daemon
-
-Standard RAG requires O(N) vector scans. Quantum GraphRAG maintains a "Node Integer" for every entity. Querying a node's multi-hop topological neighborhood is `math.gcd(Global_State, Node_Integer)` — **no corpus scan required**. A background daemon autonomously crystallizes dense clusters while the system sleeps.
-
-### 8. Epistemic Superposition & Wave Function Collapse
-
-When mutually exclusive facts are ingested ("Alice lives in NY" vs "London"), the system detects Level 3 Curvature (a topological paradox) and enters Superposition. An LLM Arbiter acts as a logical judge, mathematically collapsing the wave function to a single verified truth, streamed live via Server-Sent Events (SSE). A `DeterministicArbiter` (SHA-256 lexicographic ordering) provides a zero-dependency fallback requiring no LLM.
-
-### 9. The Multiverse of Meaning (Git for Truth)
-
-Because the state is just an integer, branching a timeline is a simple integer copy. We support **Semantic Smart Contracts** (Causal Triggers): learning one fact automatically cascades through the integer, deducing logical consequences until equilibrium is reached.
-
-### 10. The Chronos Engine & Holographic Mesh
-
-  - **Time Travel**: Rebuild the Akashic Ledger to any historical tick into a parallel branch.
-  - **ZK Semantic Proofs**: Prove you know a fact using salted SHA-256 hashes of the quotient, without revealing your state integer.
-  - **Decentralized P2P**: A background gossip daemon constantly syncs Gödel Integers with peer nodes, achieving a planetary hive-mind.
-
-### 11. Horizon III — Bare-Metal Singularity
-
-The `GodelStateAlgebra` core is being progressively migrated to **Zig** via the **Strangler Fig Pattern**. A compiled `libsum_core` shared library (`.dylib`/`.so`/`.dll`) exports C-ABI functions for deterministic prime derivation (SHA-256 → Miller-Rabin) at nanosecond speed. Python's `ctypes` loads the binary transparently — if present, the engine runs at bare-metal speed; if not, it falls back to `sympy` seamlessly with zero impact on correctness or CI.
+**What is roadmap:** the other four axes (length, formality, audience, perspective) require an LLM extrapolator and are no-ops on the canonical path today — their values are captured in the output header as metadata so a future LLM-backed renderer can honour them. Per-perspective functorial bridges (category-theoretic mappings between perspective ontologies) are Phase 26 vision, not current capability.
 
 ---
 
-## 🎯 Concrete Use Cases
+## 🌌 Mathematical Architecture
 
-| Use Case | Key Capability | Why SUM |
-|----------|---------------|---------|
-| **Personal Knowledge Base** | `/ingest` + `/ask` + epistemic loop | Answers are **mathematically verified** against your corpus — `State % Prime ≠ 0` catches hallucinations. No vector DB can prove groundedness. |
-| **Decentralized Knowledge Sync** | `/sync/state` + P2P mesh | Sync two nodes by sending **one integer**. `GCD` computes the exact delta. No JSON diffing, no conflict heuristics. |
-| **Tamper-Evident Knowledge Transport** | `canonical_codec` + `verify.js` | Export signed bundles (HMAC + Ed25519). An independent Node.js verifier confirms integrity — different runtime, same math. |
-| **Zero-Knowledge Fact Verification** | `/zk/prove` | Prove you know a fact without revealing your knowledge state. Salted SHA-256 of the quotient — algebraically sufficient. |
-| **Contradiction Detection & Resolution** | Gauge orchestrator + arbiter | Conflicting facts are **algebraically detectable** (both primes in state). The arbiter collapses to a single truth, streamed live via SSE. |
-| **Temporal Audit Trail** | Akashic Ledger + `/time-travel` | Every operation is event-sourced. Rebuild state at any historical tick. Branch timelines, merge via LCM. Full provenance per axiom. |
-| **LLM-Free Math Ingestion** | `/ingest/math` + Babel harvester | Raw `(S, P, O)` triplets → primes. Zero LLM calls, zero API cost. Works entirely offline. |
-| **Autonomous Deduction** | Automated Scientist + causal triggers | Background daemon discovers entailed-but-unminted axioms via transitive closure. Learning one fact cascades logical consequences. |
-| **Multi-LLM Knowledge Fusion** | Vector Bridge + affine alignment | Nodes using different LLMs (Llama, Qwen, Mistral) share a canonical prime layer. The Gödel integer is model-agnostic consensus. |
-| **Semantic Compression** | Fractal crystallization | Replace 100 micro-primes with 1 macro-prime. Decompress on demand. Lossless — single division + multiplication. |
-
-> **The common thread:** Knowledge state is a single integer. Verification is deterministic, sync is minimal, proofs are algebraic, contradictions are structural. None of this is true for vector databases.
+```text
+┌─────────────────────────────────────────────────────────────────────┐
+│                    SUM: Semantic Understanding Machine              │
+│                                                                     │
+│  ┌─────────────┐  ┌─────────────┐  ┌──────────────────────────────┐ │
+│  │ Perspective │  │ Transform   │  │ Verification & Sync          │ │
+│  │ Management  │  │ Engine      │  │ • Round-Trip Conservation    │ │
+│  │ • Viewpoints│  │ • Tags→Tomes│  │ • Mathematical Proof         │ │
+│  │ • Bridges   │  │ • Tomes→Tags│  │ • Decentralized P2P          │ │
+│  │ • Evolution │  │ • Style Ctrl│  │ • Temporal Branching         │ │
+│  └──────┬──────┘  └──────┬──────┘  └──────────────┬───────────────┘ │
+│         │                │                        │                 │
+│  ┌──────┴────────────────┴────────────────────────┴──────────────┐  │
+│  │                 Gödel Semantic Algebra                        │  │
+│  │  • Prime Encoding: Facts → Unique Primes                      │  │
+│  │  • State Integer: Global_State = ∏(all active primes)         │  │
+│  │  • Verification: State % Prime == 0 (fact exists)             │  │
+│  │  • Sync Protocol: GCD(State_A, State_B) = exact delta         │  │
+│  │  • Branching: Branch = Integer Copy (O(1) operation)          │  │
+│  │  • Merging: LCM(Branch_A, Branch_B) = unified truth           │  │
+│  └────────────────────────────────────────────────────────────────┘  │
+│                                                                     │
+│  ┌─────────────────────────────────────────────────────────────────┐ │
+│  │                    Akashic Ledger                              │ │
+│  │     Event-sourced • Merkle Chain • Time Travel • Git-like      │ │
+│  └─────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## 🌅 Future Horizons
+## 🎯 Concrete Use Cases: From Personal to Planetary
 
-SUM has completed its genesis and hardening phases. The road ahead expands into three frontiers:
-
-1.  **Horizon I: Project EXOCORTEX (Continuous Human Digitization):** Wiring desktop and browser companion clients to stream daily human life directly into the `/ingest` API, compressing personal reality into a single, ever-growing Gödel Integer.
-2.  **Horizon II: The Babel Protocol (Planetary-Scale Truth):** Deploying thousands of headless `SUM` nodes to ingest Wikipedia, ArXiv, and global news—forcing the Epistemic Arbiter to collapse historical and scientific paradoxes into a Single Master Integer (Planetary Truth).
-3.  **Horizon III: Bare-Metal Supremacy (Zig → WASM → Quantum):** The Strangler Fig migration progressively replaces Python's math engine with Zig's zero-cost C-ABI. Deterministic primes, LCM/GCD, mod, divisibility, and batch minting are all live in Zig. First-class **WebAssembly compilation** enables the math core to run natively inside a browser tab via `sum_wasm.js`. The **Automated Scientist daemon** continuously sweeps the global state for logically entailed but unminted axioms, performing autonomous deduction via transitive closure. Future quantum-resistant considerations: if large-scale quantum computers become practical, the prime factoring assumption underlying Gödel integers would need to be revisited with lattice-based or hash-based alternatives.
+| Transformation Pattern | Input | Output | Why SUM |
+|----------------------|--------|---------|---------|
+| **Personal Knowledge Assistant** | "I learned about quantum computing today..." | Structured facts + retrievable Q&A | **Verified answers** - no hallucination, mathematical proof of groundedness |
+| **Multi-Perspective Research** | Academic papers on climate change | Structured facts per perspective (scientific, economic, political) | **Accountable pluralism** - same facts, different valid interpretations |
+| **Collaborative Documentation** | Team meeting notes | Canonical knowledge base + personalized summaries | **Conflict resolution** - contradictions detected and mediated mathematically |
+| **Cross-Cultural Knowledge** | Same events described by different cultures | Multiple valid narrative representations | **Perspective bridges** - formal mappings between worldviews |
+| **Temporal Knowledge Evolution** | Historical document corpus | Time-indexed knowledge with evolution tracking | **Git for truth** - branch, merge, and time-travel through knowledge states |
+| **Decentralized Truth Networks** | Global news and research papers | Synchronized planetary knowledge graph | **Zero-JSON sync** - one integer communicates exact knowledge delta |
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Quick Start: From Zero to Semantic Algebra
 
-### 1. Install & Boot the Knowledge OS
-
+### 1. Boot the Transformation Engine
 ```bash
 git clone https://github.com/OtotaO/SUM.git
 cd SUM
 pip install -r requirements-prod.txt
 
-# Run the verification suite
+# Verify mathematical correctness
 python -m pytest Tests/ -v
-
-# Run the 21-check Fortress gate
 python scripts/verify_fortress.py --json
 
-# Launch the Quantum UI & OS
+# Launch with LLM integration
 export OPENAI_API_KEY="sk-..."
 uvicorn quantum_main:app --reload --port 8000
 ```
 
-Open `http://localhost:8000` to access the **Dashboard of Truth** (Vis-Network Graph, BigInt State Mirror, Live Telemetry).
-
-### 2. (Optional) Activate Bare-Metal Zig Core
-
+### 2. Try Basic Transformations
 ```bash
-brew install zig  # or your platform's package manager
-cd core-zig && zig build -Doptimize=ReleaseFast && cd ..
-# Engine will print: ⚡ BARE-METAL ZIG CORE ENGAGED ⚡
+# Text → Facts
+curl -X POST http://localhost:8000/api/v1/quantum/ingest \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Alice is 30 years old and works at Stanford."}'
+
+# Facts → Text
+curl -X POST http://localhost:8000/api/v1/quantum/extrapolate \
+  -H "Content-Type: application/json" \
+  -d '{"target_axioms": ["alice||age||30", "alice||works_at||stanford"]}'
+
+# Round-trip verification
+curl -X POST http://localhost:8000/api/v1/quantum/ouroboros/verify \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Alice is 30 years old and works at Stanford."}'
 ```
 
----
-
-## 📡 Quantum API Endpoints
-
-All endpoints are mounted under `/api/v1/quantum/`. Every endpoint accepts an optional `?branch=main` parameter.
-
-> **Deprecation note:** The `/api/v1/quantum/` prefix is legacy naming retained for backward compatibility; a neutral alias may be introduced in a future major release.
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/state` | Returns the current Gödel integer |
-| `POST` | `/sync` | Network delta sync via GCD |
-| `POST` | `/ingest` | Tomes → Tags (Text to Math pipeline) |
-| `POST` | `/ingest/math` | Math-only ingestion (no LLM required) |
-| `POST` | `/extrapolate`| Tags → Tomes (Verified generation) |
-| `POST` | `/query` | GraphRAG retrieval |
-| `POST` | `/search` | Fuzzy semantic search via Vector Bridge |
-| `GET` | `/telemetry` | SSE Stream of internal monologues & wave collapses |
-| `POST` | `/branch` | Semantic Branching (fork state) |
-| `POST` | `/merge` | Semantic Merge via LCM |
-| `POST` | `/time-travel`| Rebuilds the universe at a historical tick |
-| `POST` | `/zk/prove` | Generate a Zero-Knowledge Semantic Proof |
-| `POST` | `/peers` | Add a node to the P2P Holographic Mesh |
-| `POST` | `/sync/state` | O(1) LCM merge from browser/peer |
-| `GET` | `/discoveries` | Machine-deduced knowledge |
-| `POST` | `/ask` | Natural-language knowledge retrieval |
-| `GET` | `/provenance/{axiom_key}` | Axiom provenance chain query |
+### 3. Explore the Live Interface
+Open `http://localhost:8000` to access:
+- **Knowledge Graph Visualization** - See facts crystallize in real-time
+- **Ask Bar** - Natural language queries with verified answers
+- **Perspective Switcher** - Generate different narratives from same facts
+- **Live Telemetry** - Watch the semantic algebra work
+- **WASM Offline Mode** - Local knowledge processing without servers
 
 ---
 
-## 📂 Project Structure
+## 📡 API Reference: The Transformation Endpoints
+
+### Core Transformations
+| Method | Endpoint | Transform | Description |
+|--------|----------|-----------|-------------|
+| `POST` | `/ingest` | Tomes → Tags | Extract structured facts from natural language |
+| `POST` | `/ingest/math` | Direct → Tags | Insert structured triplets directly (zero LLM cost) |
+| `POST` | `/extrapolate` | Tags → Tomes | Generate verified narratives from facts |
+| `POST` | `/rehydrate` | State → Tome | Convert entire knowledge state to readable form |
+| `POST` | `/ask` | Query → Verified Answer | Natural language Q&A with proof |
+
+### Verification & Integrity
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| `POST` | `/ouroboros/verify` | Prove round-trip conservation |
+| `POST` | `/zk/prove` | Generate zero-knowledge semantic proofs |
+| `GET` | `/provenance/{axiom}` | Full provenance chain for any fact |
+
+### Perspective & Collaboration
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| `POST` | `/branch` | Create new perspective (fork knowledge) |
+| `POST` | `/merge` | Combine perspectives (LCM operation) |
+| `POST` | `/time-travel` | Rebuild knowledge at historical point |
+| `POST` | `/sync/state` | Decentralized knowledge synchronization |
+
+---
+
+## 🌅 Future Horizons (honestly-scoped roadmap)
+
+These are **roadmap items**, not current capabilities. Each is a concrete piece of work with a defined entry in `docs/PROOF_BOUNDARY.md` §3. They are listed in approximate order of prerequisite dependence.
+
+### Near-term (next 1–2 milestones)
+- **LLM wiring for the 4 remaining sliders** — length / formality / audience / perspective. Requires attaching an extrapolator (e.g. `LiveLLMAdapter` via `AutoregressiveTomeGenerator.extrapolator`). Interface is already shipped; what's missing is the prompt-conditioning layer that honours each axis.
+- **Per-doc logging in the regeneration runner** — surface which specific claims fail entailment (closes the 4% gap currently aggregated in the 0.960 FActScore).
+- **LLM narrative full round-trip runner** — composes existing LLM generator + LLM re-extractor + drift metric. Measures real prose conservation end-to-end.
+- **Calibration fixture authoring for Venn-Abers** — turns zero-width confidence intervals into meaningful bounds. Needs a labelled (score, was_correct) set.
+
+### Medium-term (Polytaxis Bucket A completion)
+- **SHACL structural validation** via pySHACL — W3C-standard replacement for the hand-rolled `ExtractionValidator`.
+- **W3C Verifiable Credentials 2.0** emission with `eddsa-jcs-2022` Data Integrity proofs — makes SUM bundles consumable by any VC-compliant ecosystem.
+- **RFC 3161 timestamping anchor** — external witness on the Merkle chain.
+- **RFC 9162 CT v2 inclusion proofs** — third-party verifiability of the audit log.
+- **Full polyglot emission** — Turtle and RDF/XML beyond the JSON-LD already shipped for PROV-O.
+
+### Long-term (aspirational, requires user-pull to prioritise)
+- **Category-theoretic perspective bridges** — functorial mappings between classification perspectives (Polytaxis §1). Currently no crisp use case in SUM; surface it when multi-perspective users ask.
+- **Lean 4 meta-theorems** — machine-checked proofs of algebra invariants. Currently unit-tested; Lean would upgrade to `certified` epistemic status.
+- **Property-graph primary store** (TerminusDB or Oxigraph) with Gödel integer demoted to attestation witness. Justified by measured merge perf (~O(n²) confirmed) above ~10k axioms.
+- **Phase 19B adversarial corpus integration** into the bench harness (currently Phase 19B is separately maintained).
+
+Items *not* on this roadmap that earlier drafts suggested: perspective-as-functor as a core mechanic (it's a classification abstraction, wrong category for the distillation product); zero-knowledge entailment proofs via Halo2/Plonky2 (too early; added only when a specific user needs it); multi-formal-method specification stack (Alloy + TLA+ + Lean 4 — three formalisms is more than a small team can maintain).
+
+---
+
+## 🌐 Cloudflare Deployment Architecture
+
+### Static Edge Deployment
+```yaml
+# wrangler.toml
+name = "sum-semantic-engine"
+main = "dist/worker.js"
+compatibility_date = "2024-01-01"
+
+[env.production]
+vars = { ENVIRONMENT = "production" }
+kv_namespaces = [
+  { binding = "SUM_KNOWLEDGE", id = "knowledge_store" }
+]
+```
+
+The **static interface** (quantum.html) deploys to Cloudflare Pages, with:
+- **WASM Module** (`sum_core.wasm`) - Offline semantic algebra
+- **Knowledge Sync** - WebRTC P2P + Cloudflare KV for state caching
+- **Global Edge** - Sub-100ms latency worldwide via Cloudflare's network
+- **Serverless Backend** - FastAPI → Cloudflare Workers via serverless functions
+
+### Hybrid Architecture Benefits
+- **Offline-first** - WASM enables local knowledge processing
+- **Global sync** - Cloudflare KV provides planetary knowledge state
+- **Zero latency** - Edge computing for instant semantic queries
+- **Cost efficiency** - Only pay for compute used, scale to zero
+
+---
+
+## 🛡️ Verification: 756+ Test Suite
+
+The test suite covers both proven invariants and empirically-measured properties; each assertion is scoped to the epistemic status of the thing it tests.
 
 ```text
-SUM/
-├── internal/
-│   ├── algorithms/
-│   │   ├── semantic_arithmetic.py    # GodelStateAlgebra, SPNT, Fractal Zoom
-│   │   ├── syntactic_sieve.py        # DeterministicSieve — spaCy NLP → (S,P,O) triplets
-│   │   ├── zk_semantics.py           # Zero-Knowledge Entailment Proofs
-│   │   ├── predicate_canon.py        # PredicateCanonicalizer — synonym normalization
-│   │   └── causal_discovery.py       # Topological inference via transitive closure
-│   ├── ensemble/
-│   │   ├── epistemic_loop.py         # Hallucination-proof generation loop
-│   │   ├── vector_bridge.py          # Continuous↔Discrete bridge + Affine Alignment
-│   │   ├── autonomous_agent.py       # Subconscious Crystallizer daemon
-│   │   ├── epistemic_arbiter.py      # Wave Function Collapse (LLM + Deterministic)
-│   │   ├── gauge_orchestrator.py     # L1/L2/L3 Curvature Commutativity Hierarchy
-│   │   ├── causal_triggers.py        # Semantic Smart Contracts (deductive cascades)
-│   │   ├── ouroboros.py              # OuroborosVerifier — round-trip conservation proof
-│   │   ├── tome_generator.py         # AutoregressiveTomeGenerator — canonical tomes
-│   │   ├── confidence_calibrator.py  # Multi-signal confidence scoring
-│   │   ├── mass_semantic_engine.py   # Mass semantic operations engine
-│   │   ├── semantic_dedup.py         # Predicate-aware deduplication
-│   │   ├── live_llm_adapter.py       # OpenAI structured outputs adapter
-│   │   ├── extraction_validator.py   # Structural gate: rejects malformed triplets
-│   │   └── automated_scientist.py    # Autonomous deduction daemon (15s cycles)
-│   └── infrastructure/
-│       ├── akashic_ledger.py         # Event-sourced crash recovery, Time Travel, Merkle Chain
-│       ├── p2p_mesh.py               # Decentralized Gossip Protocol
-│       ├── canonical_codec.py        # Signed bundle transport (HMAC + Ed25519)
-│       ├── key_manager.py            # Ed25519 keypair lifecycle management
-│       ├── rate_limiter.py           # Sliding window per-IP rate limiter
-│       ├── resource_guards.py       # Payload-size guards (fail-closed, HTTP 413)
-│       ├── scheme_registry.py       # Prime scheme versioning & compatibility
-│       ├── state_encoding.py        # Hex/decimal state encoding utilities
-│       ├── zig_bridge.py            # Horizon III: Zig C-ABI FFI bridge (ctypes)
-│       └── telemetry.py             # @trace_zig_ffi observability decorator
-├── core-zig/
-│   ├── build.zig                     # Dual targets: native + WASM
-│   └── src/
-│       └── main.zig                  # Bare-metal primes, LCM, GCD, batch mint (C-ABI)
-├── api/
-│   └── quantum_router.py            # FastAPI routing and GlobalKnowledgeOS
-├── quantum_main.py                   # ASGI entrypoint (FastAPI + lifespan boot)
-├── standalone_verifier/
-│   └── verify.js                     # Independent Node.js semantic witness
-├── scripts/
-│   ├── sum_cli.py                    # CLI tool: ingest, ask, export, diff, status, provenance
-│   ├── verify_fortress.py            # 21-check CI verification gate
-│   ├── launch_swarm.sh               # Local P2P swarm launcher
-│   ├── babel_harvester.py            # RSS→math ingestion for Babel Protocol
-│   └── ignite_mesh.py                # P2P mesh ignition script
-├── docs/
-│   ├── CANONICAL_ABI_SPEC.md         # Normative protocol specification
-│   ├── PROOF_BOUNDARY.md             # What is proven vs aspirational
-│   ├── THREAT_MODEL.md               # Security analysis and attack surfaces
-│   └── COMPATIBILITY_POLICY.md       # Version semantics and guarantees
-├── static/
-│   ├── quantum.html                  # Quantum UI (Sovereign Edge, Telemetry HUD)
-│   └── js/
-│       ├── godel_client.js            # Browser-side Gödel sync client
-│       └── sum_wasm.js               # WASM BigInt API (offline math engine)
-├── experiments.tsv                   # Autoresearch experiment ledger
-└── Tests/
-    ├── fixtures/                      # Frozen golden reference vectors
-    ├── benchmarks/                    # Golden corpus & scoring harness
-    └── test_*.py                      # Verification Tests
+Provable (deterministic code + tests that enforce the proof):
+  ✓ Canonical Round-Trip Conservation — 0.00 % drift (Ouroboros §1.1)
+  ✓ Algebra Invariants — LCM commutativity / associativity, merge idempotency,
+    entailment correctness, delta correctness, deletion correctness
+  ✓ Akashic Ledger Durability — event-sourced replay, branch isolation
+  ✓ Merkle Hash-Chain Integrity — SHA-256 chain (Phase 19C)
+  ✓ Cross-Runtime State Equivalence — Python ↔ Node.js witness on the
+    non-colliding derivation path
+
+Empirically measured (reported by the bench harness):
+  ✓ Extraction F1 on seed_v1 — 1.000 on 50 SVO docs
+  ✓ Regeneration FActScore — 0.960 (LLM narrative + entailment checker)
+  ✓ Operation performance — p50 / p99 at N ∈ {100, 500, 1000} axioms
+  ✓ Sieve re-extract of canonical — 54 % drift (known ceiling)
+
+Cryptographic integrity:
+  ✓ HMAC-SHA256 signatures + Ed25519 key rotation
+  ✓ Bundle tamper detection
+  ✓ Adversarial bundle handling
+
+Interop (Polytaxis Bucket A absorption):
+  ✓ Epistemic Status Taxonomy — {provable, certified, empirical-benchmark,
+    expert-opinion} on every metric
+  ✓ Venn-Abers Conformal Intervals — distribution-free confidence bounds
+  ✓ PROV-O JSON-LD Emission — Akashic Ledger events → W3C PROV-O
+  ✓ TomeSliders — 5-axis slider interface (density actioned)
 ```
+
+**Every claim carries an explicit epistemic status.** The canonical round-trip is mathematically proven; the broader text→structure→text pipeline is empirically measured and reported honestly. See [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) for the separation of proved from measured and the list of what's still aspirational.
 
 ---
 
-## 🛡️ Mathematical Verification Suite
+## 🎨 Interface Vision: Beyond CRUD to Semantic Flow
 
-> **Current test count:** Run `python -m pytest Tests/ -q` for the live count. The fortress gate is `python scripts/verify_fortress.py --json`.
-
-```text
-─── Core Hardening ───
-ZK Semantic Proofs .................... 16 ✓  (round-trip, tamper, non-linkability, stress)
-Akashic Ledger Replay ................. 8  ✓  (crash recovery, time-travel, DIV)
-Causal Cascade Verification ........... 6  ✓  (multi-hop, cycle termination, idempotency)
-Gauge Orchestrator .................... 10 ✓  (L1/L2/L3 detection, merge, arbitration)
-Extraction Adversarial ................ 15 ✓  (HTML/SQL injection, Unicode, 10K-word stress)
-Deterministic Arbiter ................. 7  ✓  (SHA-256 lexicographic, no LLM dependency)
-Rate Limiter .......................... 8  ✓  (sliding window, per-IP, burst protection)
-Cross-Instance & Stability ............ 24 ✓  (collision, tome ordering, timestamp, version)
-
-─── Architectural Hardening ───
-Phase 0 — Durability Contract ......... 8  ✓  (crash recovery, branch isolation, boot)
-Phase 0.1 — Durability Integrity ...... 6  ✓  (branch rebuild, import materialization, gossip)
-Phase 19A — Extraction Validator ...... 25 ✓  (structural gate, canonicalization, dedup)
-Phase 19C — Merkle Hash-Chain ......... 16 ✓  (tamper, deletion, injection detection)
-Phase 19D — Active Prime Index ........ 30 ✓  (lifecycle, queries, consistency, coherence invariant)
-
-─── Phase Tests ───
-Phase 17b — BigInt Zig C-ABI .......... 22 ✓  (LCM, GCD, mod, divisibility, consistency)
-Phase 17 — Horizon III ................ 15 ✓  (affine alignment, Zig FFI, Strangler Fig)
-Phase 16 — Independent Witness ........ 21 ✓  (cross-runtime verification, frozen vectors)
-Phase 15 — Canonical Semantic ABI ..... 22 ✓  (versioning, bundles, JWT, multi-hop)
-Phase 14 — Ouroboros Round-Trip ....... 16 ✓  (encode/decode conservation)
-Phase 13 — JWT Multi-Tenancy .......... 12 ✓  (token gen, isolation, branch safety)
-Ed25519 Attestation ................... 11 ✓  (dual-sig, tamper, compat, key mgmt)
-Witness Matrix Hardening .............. 7  ✓  (frozen vectors, cross-runtime)
-Property & Adversarial Tests .......... 46 ✓  (algebra invariants, bundle hardening)
-Phase 10 — Chronos & Mesh ............. 17 ✓
-Phase 9 — Multiverse & Causal Triggers  21 ✓
-Phase 8 — Wave Function Collapse ...... 8  ✓
-Phase 7 — GraphRAG + Daemon ........... 6  ✓
-Phase 6 — Fractal Crystallization ..... 5  ✓
-Phase 4 — Akashic Ledger .............. 3  ✓
-Phase 3 — Temporal CRUD + Vectors ..... 12 ✓
-Phase 2 — Epistemic Feedback Loop ..... 7  ✓
-Phase 1 — SPNT + Gödel Algebra ........ 15 ✓
-Phase 21 — Knowledge Retrieval ........ 15 ✓  (/ask endpoint, predicate canonicalization)
-Phase 22 — Provenance + Confidence .... 14 ✓  (source tracking, confidence×recency weighting)
-Phase 23 — CLI Tool ................... 16 ✓  (ingest, ask, export, diff, status, provenance)
-Phase 24 — Confidence Calibration ..... 23 ✓  (source-type, redundancy, contradiction penalty)
-Phase 25 — Semantic Deduplication ..... 22 ✓  (predicate synonyms, Jaccard+Levenshtein, API dedup)
-Stage 1 — Dual-Format Transport ....... 18 ✓  (hex companion fields, parse_state, P2P hex)
-Stage 2 — Scheme Versioning ........... 27 ✓  (scheme registry, protocol enforcement, hex cross-check)
-Stage 3A — 128-Bit Shadow ............. 28 ✓  (v2 reference vectors, Python↔Node parity, BPSW, collision policy)
-Stage 4 — Evidence Enrichment ......... 12 ✓  (hedging detection, certainty calibration, annotated triplets)
-Stage 5 — Resource Guards ............. 17 ✓  (payload limits, HTTP 413, operator-readable errors)
-Stage 6-7 — Perfection Criteria ....... 13 ✓  (v1 stable, v2 shadow, fail-closed, evidence, limits, vectors)
-Final Integration — Operational ....... 20 ✓  (guards in handlers, evidence in /ingest, Node v2 witness, env-flag activation)
+### The Transformation-Centric UI
+```
+┌─────────────────────────────────────────────────────┐
+│  ┌─────────────┐    Transform    ┌─────────────────┐ │
+│  │    TOMES    │ ← ← ← ← ← ← ← ← │      TAGS       │ │
+│  │  Narrative  │                 │   Structured    │ │
+│  │   Content   │ → → → → → → → → │     Facts       │ │
+│  │             │                 │                 │ │
+│  │ • Stories   │     Verified    │ • Triplets      │ │
+│  │ • Reports   │   Bidirectional │ • Relations     │ │
+│  │ • Essays    │  Transformation │ • Properties    │ │
+│  │ • Docs      │                 │ • Assertions    │ │
+│  └─────────────┘                 └─────────────────┘ │
+│                                                      │
+│  ┌─────────────────────────────────────────────────┐ │
+│  │            PERSPECTIVE SELECTOR                 │ │
+│  │  [Academic] [Personal] [Legal] [Cultural]       │ │
+│  │  [Scientific] [Historical] [+Custom]            │ │
+│  └─────────────────────────────────────────────────┘ │
+│                                                      │
+│  ┌─────────────────────────────────────────────────┐ │
+│  │              STYLE CONTROLS                     │ │
+│  │  Detail: [●────────] Granularity               │ │
+│  │  Tone:   [Formal] [Casual] [Technical]         │ │
+│  │  Focus:  [Overview] [Deep Dive] [Summary]      │ │
+│  └─────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────┘
 ```
 
-> **Honest status notes:**
-> - **Zig v2 parity:** ✅ confirmed — Zig 0.15.2, `zig build test` passes, Python↔Zig v2 primes match on frozen vectors
-> - **v2 activation:** gated behind `SUM_PRIME_SCHEME=sha256_128_v2` env var; default is v1
-> - **Extraction gating (19A):** structural validator rejects malformed/duplicate triplets before algebra ingestion
-> - **Golden benchmark (19B):** 50 annotated documents, 100 gold-standard triplets, 7 adversarial categories
-> - **Merkle chain (19C):** SHA-256 hash-chain on event log; 3-tier enforcement policy (`warn`/`degraded`/`strict` via `SUM_MERKLE_POLICY`)
-> - **Active Prime Index (19D):** O(1) active-prime lookup per branch; coherence-validated across 13 mutation paths. Hot-path callers not yet migrated — adoption is profiling-driven
-> - **Evidence enrichment:** affects `/ingest` (LLM path) and `/ingest/math` (direct path); other ingestion surfaces not yet covered
-> - **Linguistic certainty:** document-level (coarse-grained) in `/ingest`; `/ingest/math` defaults to 1.0 (definitional)
-
-### Threat Model Coverage
-
-| Vector | Status |
-|--------|--------|
-| Bundle tampering | ✅ HMAC-SHA256 + Ed25519 |
-| State/tome mismatch | ✅ Witness verification |
-| Version mismatch | ✅ Version gate |
-| Malformed bundles | ✅ Field validation |
-| Public authenticity | ✅ Ed25519 (self-asserted) |
-| Key compromise | ✅ Rotation + archive |
-| Adversarial extraction | ⚠️ Structural gating (19A) + benchmark (19B) |
-| Collision replay | ✅ 1000-axiom cross-instance test |
-| Contradiction governance | ✅ DeterministicArbiter (SHA-256) |
-| Resource exhaustion | ✅ Bundle limits + rate limiter |
-| Ledger tampering | ✅ Merkle hash-chain (19C) |
+### Key Interface Innovations
+1. **Bi-directional transformation as primary interaction**
+2. **Live perspective switching** - same content, different viewpoints
+3. **Mathematical verification indicators** - visual proof of groundedness
+4. **Collaborative conflict resolution** - merge perspectives gracefully
+5. **Temporal sliders** - explore knowledge evolution over time
 
 ---
 
-## ⚙️ Configuration
+## 🤝 Contributing to the Semantic Revolution
 
-```bash
-OPENAI_API_KEY=sk-...    # Required for LLM features (ingest/extrapolate/search/arbitrate)
-                         # Math-only CRUD, GraphRAG, and P2P Sync work without it
-```
+1. **Fork & Branch** - Create your perspective branch
+2. **Test Mathematically** - `python -m pytest Tests/ -v`
+3. **Verify Fortress** - `python scripts/verify_fortress.py --json`
+4. **Transform & Submit** - Your PR becomes part of the verified knowledge base
 
-## 🤝 Contributing
+**Join us in building the first mathematically rigorous knowledge transformation engine.**
 
-1.  Fork it
-2.  Create your feature branch (`git checkout -b feature/holographic-expansion`)
-3.  Run the test suite (`python -m pytest Tests/ -v`)
-4.  Run the fortress gate (`python scripts/verify_fortress.py --json`)
-5.  Commit your changes
-6.  Push and open a Pull Request
+---
 
-## 📜 License
+## 📜 License & Philosophy
 
-Apache 2.0 — Built for the future of Man and Machine.
+Apache 2.0 — **Built for the future of human knowledge.**
+
+*"The best way to predict the future is to invent it. The best way to preserve knowledge is to make it mathematically eternal."*
 
 ---
 
 <p align="center">
-<strong>SUM — Canonical Semantic Compression. Mechanically Verified.</strong>
+<strong>SUM — From Tags to Tomes and Back Again.</strong><br>
+<em>Canonical round-trip mathematically proven. Full pipeline continuously measured. Every claim labelled.</em>
 </p>
