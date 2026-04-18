@@ -73,6 +73,45 @@ class RoundtripMetrics:
 
 
 @dataclass(frozen=True)
+class PerDocLlmRoundtrip:
+    """Per-document attribution for the LLM narrative round-trip.
+
+    Captures the symmetric-difference between the source axiom set (LLM-extracted
+    from doc.text) and the reconstructed axiom set (LLM-extracted from the
+    LLM-generated narrative that was itself conditioned on the source set).
+    """
+
+    doc_id: str
+    n_source_axioms: int
+    n_reconstructed_axioms: int
+    drift_pct: float
+    missing_claims: Sequence[tuple[str, str, str]] = field(default_factory=tuple)
+    extra_claims: Sequence[tuple[str, str, str]] = field(default_factory=tuple)
+    narrative_excerpt: str = ""
+
+
+@dataclass(frozen=True)
+class LlmRoundtripMetrics:
+    """Aggregate drift across a corpus for the LLM narrative full loop.
+
+    Pipeline (per doc): doc.text → LLM.extract → axioms → LLM.generate → prose'
+    → LLM.extract → axioms'. drift_pct is the mean of 100 × |axioms Δ axioms'|
+    / max(|axioms|, |axioms'|). Both extractions go through the same LLM
+    extractor, so canonicalization is consistent across the comparison — the
+    drift measures what the generator+extractor pair preserves through the
+    prose intermediary, not sieve/LLM disagreement.
+    """
+
+    corpus_id: str
+    drift_pct: float
+    n_roundtrips: int
+    n_source_axioms_total: int
+    n_reconstructed_axioms_total: int
+    epistemic_status: EpistemicStatus = "empirical-benchmark"
+    per_doc: Sequence[PerDocLlmRoundtrip] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True)
 class PerformanceMetrics:
     operation: PerfOperation
     corpus_size: int
@@ -94,4 +133,5 @@ class BenchReport:
     extraction: Sequence[ExtractionMetrics] = field(default_factory=tuple)
     regeneration: Sequence[RegenerationMetrics] = field(default_factory=tuple)
     roundtrip: Sequence[RoundtripMetrics] = field(default_factory=tuple)
+    llm_roundtrip: Sequence[LlmRoundtripMetrics] = field(default_factory=tuple)
     performance: Sequence[PerformanceMetrics] = field(default_factory=tuple)

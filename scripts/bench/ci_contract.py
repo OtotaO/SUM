@@ -9,6 +9,8 @@ from typing import Any, Sequence
 from .schema import (
     BenchReport,
     ExtractionMetrics,
+    LlmRoundtripMetrics,
+    PerDocLlmRoundtrip,
     PerDocRegeneration,
     PerformanceMetrics,
     RegenerationMetrics,
@@ -20,6 +22,10 @@ REGRESSION_THRESHOLD_DRIFT_PCT: float = 1.0
 REGRESSION_THRESHOLD_FACTSCORE: float = 0.03
 REGRESSION_THRESHOLD_MINICHECK: float = 0.03
 REGRESSION_THRESHOLD_PERF_P99_RATIO: float = 0.15
+# LLM narrative round-trip drift is noisier than the sieve-only prose
+# re-extract (stochastic generator + stochastic extractor compound), so the
+# threshold is intentionally wider than the canonical/prose drift threshold.
+REGRESSION_THRESHOLD_LLM_DRIFT_PCT: float = 5.0
 
 HISTORY_PATH_RELATIVE = "bench_history.jsonl"
 
@@ -90,6 +96,23 @@ def detect_regressions(
                 )
             )
 
+    prev_llm_drift = {m.corpus_id: m.drift_pct for m in previous.llm_roundtrip}
+    for lrm in current.llm_roundtrip:
+        prev = prev_llm_drift.get(lrm.corpus_id)
+        if (
+            prev is not None
+            and lrm.drift_pct > prev + REGRESSION_THRESHOLD_LLM_DRIFT_PCT
+        ):
+            findings.append(
+                RegressionFinding(
+                    metric_path=f"llm_roundtrip[{lrm.corpus_id}].drift_pct",
+                    previous=prev,
+                    current=lrm.drift_pct,
+                    threshold=REGRESSION_THRESHOLD_LLM_DRIFT_PCT,
+                    direction="regression",
+                )
+            )
+
     prev_p99 = {
         (m.operation, m.corpus_size): m.p99_ms for m in previous.performance
     }
@@ -154,6 +177,23 @@ def _regeneration_from_dict(m: dict[str, Any]) -> RegenerationMetrics:
     return RegenerationMetrics(**fields, per_doc=per_doc)
 
 
+def _llm_roundtrip_from_dict(m: dict[str, Any]) -> LlmRoundtripMetrics:
+    per_doc = tuple(
+        PerDocLlmRoundtrip(
+            doc_id=p["doc_id"],
+            n_source_axioms=p["n_source_axioms"],
+            n_reconstructed_axioms=p["n_reconstructed_axioms"],
+            drift_pct=p["drift_pct"],
+            missing_claims=tuple(tuple(t) for t in p.get("missing_claims", ())),
+            extra_claims=tuple(tuple(t) for t in p.get("extra_claims", ())),
+            narrative_excerpt=p.get("narrative_excerpt", ""),
+        )
+        for p in m.get("per_doc", ())
+    )
+    fields = {k: v for k, v in m.items() if k != "per_doc"}
+    return LlmRoundtripMetrics(**fields, per_doc=per_doc)
+
+
 def _report_from_dict(d: dict[str, Any]) -> BenchReport:
     return BenchReport(
         schema_version=d["schema_version"],
@@ -168,5 +208,8 @@ def _report_from_dict(d: dict[str, Any]) -> BenchReport:
             _regeneration_from_dict(m) for m in d.get("regeneration", [])
         ),
         roundtrip=tuple(RoundtripMetrics(**m) for m in d.get("roundtrip", [])),
+        llm_roundtrip=tuple(
+            _llm_roundtrip_from_dict(m) for m in d.get("llm_roundtrip", [])
+        ),
         performance=tuple(PerformanceMetrics(**m) for m in d.get("performance", [])),
     )

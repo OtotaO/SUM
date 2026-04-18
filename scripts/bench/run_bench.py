@@ -33,6 +33,7 @@ from .ci_contract import (
 )
 from .corpus import JsonCorpus
 from .runners.extraction import SumExtractionRunner
+from .runners.llm_roundtrip import LlmRoundtripRunner
 from .runners.performance import SumPerformanceRunner
 from .runners.regeneration import OpenAiRegenerationRunner
 from .runners.roundtrip import SumRoundtripRunner
@@ -40,6 +41,7 @@ from .schema import (
     SCHEMA_VERSION,
     BenchReport,
     ExtractionMetrics,
+    LlmRoundtripMetrics,
     PerformanceMetrics,
     RegenerationMetrics,
     RoundtripMetrics,
@@ -145,6 +147,7 @@ def _resolve_model_snapshots(no_llm: bool) -> dict[str, str]:
         "factscore": "SUM_BENCH_FACTSCORE_MODEL",
         "minicheck": "SUM_BENCH_MINICHECK_MODEL",
         "generator": "SUM_BENCH_GENERATOR_MODEL",
+        "extractor": "SUM_BENCH_EXTRACTOR_MODEL",
     }
     for name, env_var in required.items():
         val = os.environ.get(env_var, "").strip()
@@ -170,6 +173,7 @@ def build_report(args: CliArgs) -> BenchReport:
     extraction: list[ExtractionMetrics] = []
     regeneration: list[RegenerationMetrics] = []
     roundtrip: list[RoundtripMetrics] = []
+    llm_roundtrip: list[LlmRoundtripMetrics] = []
     performance: list[PerformanceMetrics] = []
 
     extraction.append(SumExtractionRunner().run(corpus))
@@ -194,6 +198,12 @@ def build_report(args: CliArgs) -> BenchReport:
         )
         regeneration.extend(regen_runner.run(corpus))
 
+        llm_rt_runner = LlmRoundtripRunner(
+            generator_model_id=model_snapshots["generator"],
+            extractor_model_id=model_snapshots["extractor"],
+        )
+        llm_roundtrip.extend(llm_rt_runner.run(corpus))
+
     return BenchReport(
         schema_version=SCHEMA_VERSION,
         run_id=uuid.uuid4().hex,
@@ -205,6 +215,7 @@ def build_report(args: CliArgs) -> BenchReport:
         extraction=tuple(extraction),
         regeneration=tuple(regeneration),
         roundtrip=tuple(roundtrip),
+        llm_roundtrip=tuple(llm_roundtrip),
         performance=tuple(performance),
     )
 
