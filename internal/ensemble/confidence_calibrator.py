@@ -25,10 +25,14 @@ Author: ototao
 License: Apache License 2.0
 """
 
+import json
 import re
 import logging
-from typing import Optional
+from pathlib import Path
+from typing import Optional, Union
 from urllib.parse import urlparse
+
+from internal.ensemble.venn_abers import ConfidenceInterval, VennAbersCalibrator
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +64,24 @@ REDUNDANCY_CAP = 1.0
 CONTRADICTION_PENALTY = 0.5
 
 
+def load_venn_abers_fixture(path: Union[str, Path]) -> VennAbersCalibrator:
+    """Load a Venn-Abers calibration fixture from JSON.
+
+    Expected JSON shape:
+        {"scores": [0.10, 0.55, 0.82, ...], "labels": [0, 1, 1, ...]}
+
+    Scores are typically the output of ``ConfidenceCalibrator.calibrate``
+    on a held-out set; labels are 1 if the calibrator was right about the
+    axiom (ground truth confirmed), 0 otherwise. Fixture files should be
+    regenerated whenever the calibrator's signals or coefficients change.
+    """
+    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    return VennAbersCalibrator(
+        calibration_scores=data["scores"],
+        calibration_labels=data["labels"],
+    )
+
+
 class ConfidenceCalibrator:
     """Multi-signal automatic confidence scoring engine.
 
@@ -68,7 +90,19 @@ class ConfidenceCalibrator:
     2. Redundancy across independent sources
     3. Contradiction detection against existing state
     4. Linguistic certainty (hedging markers in source text)
+
+    Optional Venn-Abers distribution-free interval via constructor injection.
+    When a VennAbersCalibrator is provided, ``calibrate_interval`` returns a
+    two-sided probability bound. Otherwise that method degrades to a
+    zero-width interval around the scalar, making the lack of calibration
+    data explicit rather than silently claiming certainty.
     """
+
+    def __init__(
+        self,
+        venn_abers: Optional[VennAbersCalibrator] = None,
+    ) -> None:
+        self._venn_abers = venn_abers
 
     def source_type_score(self, source_url: str) -> float:
         """Score confidence based on the URL's domain type.
@@ -214,3 +248,37 @@ class ConfidenceCalibrator:
 
         # Clamp
         return max(0.0, min(REDUNDANCY_CAP, score))
+
+    async def calibrate_interval(
+        self,
+        axiom_key: str,
+        source_url: str = "",
+        current_state: int = 1,
+        algebra=None,
+        ledger=None,
+        manual_confidence: Optional[float] = None,
+        linguistic_certainty: float = 1.0,
+    ) -> ConfidenceInterval:
+        """Distribution-free calibrated-confidence interval for an axiom.
+
+        Computes the multi-signal scalar via ``calibrate`` and then wraps it
+        in a Venn-Abers interval if a calibration fixture is present.
+        Absent a fixture, returns the zero-width interval ``[scalar, scalar]``
+        to signal that no distribution-free coverage guarantee is available.
+
+        This method is additive — the existing scalar ``calibrate`` remains
+        as-is for downstream callers that assume a float. New callers that
+        want calibrated bounds (Polytaxis §2 discipline) should prefer this.
+        """
+        scalar = await self.calibrate(
+            axiom_key=axiom_key,
+            source_url=source_url,
+            current_state=current_state,
+            algebra=algebra,
+            ledger=ledger,
+            manual_confidence=manual_confidence,
+            linguistic_certainty=linguistic_certainty,
+        )
+        if self._venn_abers is None:
+            return ConfidenceInterval(lower=scalar, upper=scalar)
+        return self._venn_abers.predict_interval(scalar)

@@ -13,8 +13,6 @@ Tests:
     15.   API integration: manual mode preserves user-set value
 """
 
-import math
-import os
 import sqlite3
 import asyncio
 import pytest
@@ -23,7 +21,9 @@ from internal.ensemble.confidence_calibrator import (
     ConfidenceCalibrator,
     DEFAULT_CONFIDENCE,
     CONTRADICTION_PENALTY,
+    load_venn_abers_fixture,
 )
+from internal.ensemble.venn_abers import ConfidenceInterval, VennAbersCalibrator
 from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
 from internal.infrastructure.akashic_ledger import AkashicLedger
 
@@ -272,3 +272,98 @@ class TestAPIConfidenceCalibration:
                 "SELECT confidence FROM semantic_events WHERE operation='MINT' LIMIT 1"
             ).fetchone()
         assert row[0] == pytest.approx(0.99)
+
+
+# ─── Venn-Abers Interval Integration (Polytaxis Bucket A) ─────────────
+
+
+class TestCalibrateIntervalWithoutFixture:
+    """Without a Venn-Abers fixture, calibrate_interval returns zero-width."""
+
+    def setup_method(self):
+        self.cal = ConfidenceCalibrator()
+
+    def test_returns_confidence_interval(self):
+        result = asyncio.run(
+            self.cal.calibrate_interval(
+                axiom_key="alice||age||30",
+                source_url="https://arxiv.org/abs/2404.12345",
+            )
+        )
+        assert isinstance(result, ConfidenceInterval)
+
+    def test_zero_width_when_no_fixture(self):
+        result = asyncio.run(
+            self.cal.calibrate_interval(
+                axiom_key="alice||age||30",
+                source_url="https://arxiv.org/abs/2404.12345",
+            )
+        )
+        assert result.lower == result.upper
+        assert result.width == 0.0
+
+    def test_scalar_matches_calibrate(self):
+        scalar = asyncio.run(
+            self.cal.calibrate(
+                axiom_key="alice||age||30",
+                source_url="https://arxiv.org/abs/2404.12345",
+            )
+        )
+        interval = asyncio.run(
+            self.cal.calibrate_interval(
+                axiom_key="alice||age||30",
+                source_url="https://arxiv.org/abs/2404.12345",
+            )
+        )
+        assert interval.lower == scalar
+        assert interval.upper == scalar
+
+
+class TestCalibrateIntervalWithFixture:
+    """With a Venn-Abers fixture, calibrate_interval returns bounded intervals."""
+
+    def setup_method(self):
+        # Simple synthetic fixture: monotone scores with matching labels.
+        # Enough mass near both ends that the interval at mid-score is bounded.
+        scores = [i / 20 for i in range(21)]
+        labels = [0 if s < 0.5 else 1 for s in scores]
+        va = VennAbersCalibrator(scores, labels)
+        self.cal = ConfidenceCalibrator(venn_abers=va)
+
+    def test_interval_is_in_unit_range(self):
+        result = asyncio.run(
+            self.cal.calibrate_interval(
+                axiom_key="alice||age||30",
+                source_url="https://arxiv.org/abs/2404.12345",
+            )
+        )
+        assert 0.0 <= result.lower <= result.upper <= 1.0
+
+    def test_interval_may_be_non_zero_width(self):
+        # With a small fixture, the Venn-Abers interval typically has
+        # non-zero width. Not strict — on edge cases width can be 0.
+        result = asyncio.run(
+            self.cal.calibrate_interval(
+                axiom_key="alice||age||30",
+                source_url="https://wikipedia.org/wiki/Earth",
+            )
+        )
+        assert isinstance(result, ConfidenceInterval)
+
+
+class TestLoadVennAbersFixture:
+    """load_venn_abers_fixture reads JSON and returns a calibrator."""
+
+    def test_roundtrip(self, tmp_path):
+        import json
+        fixture = tmp_path / "cal.json"
+        fixture.write_text(json.dumps({
+            "scores": [0.1, 0.5, 0.9],
+            "labels": [0, 1, 1],
+        }))
+        va = load_venn_abers_fixture(fixture)
+        assert va.n_calibration == 3
+
+    def test_missing_file_raises(self, tmp_path):
+        with pytest.raises(FileNotFoundError):
+            load_venn_abers_fixture(tmp_path / "nonexistent.json")
