@@ -181,7 +181,7 @@ These are design goals, NOT current capabilities.
 | Multi-renderer rehydration (textbook, quiz, study guide) | Not implemented | Future |
 | Federation with trust policies | Not implemented | Future |
 | Scientific/technical corpora support | Not implemented | Future |
-| **Bidirectional distillation with sliding-scale parameters** (density, formality, audience, perspective) | **Aspirational — core founder's dream, orthogonal to classification** | **Phase 30+** |
+| **Bidirectional distillation with sliding-scale parameters** (density, formality, audience, perspective) | **Interface + density shipped** (`internal/ensemble/tome_sliders.py`, `AutoregressiveTomeGenerator.generate_controlled`, 21 tests). Non-density axes await LLM extrapolator wiring. | **Phase 30+ for full-LLM slider product** |
 | **Polytaxis Bucket A absorption** (SHACL, conformal prediction sets, VC 2.0 with `eddsa-rdfc-2022`, RFC 3161 timestamping, RFC 9162 CT v2 proofs, PROV-O/PROV-STAR, polyglot RDF/JSON-LD/Turtle emission) | **In progress — `epistemic_status` field shipped in v1.2.0; Venn-Abers conformal-interval algorithm + tests shipped as standalone module; production integration pending** | **Phase 25** |
 | Prose round-trip conservation measurement (via `SumRoundtripRunner` + LLM extrapolator + MiniCheck gate) | Stubbed in bench harness; pending LLM wiring | STATE 4-B |
 | Property-graph backing store for corpora above ~10k axioms (prime encoding demoted to signed witness) | Design decision pending empirical confirmation (now confirmed — see §2.2) | Phase 26 |
@@ -241,7 +241,7 @@ SUM's ultimate goal is a **bidirectional knowledge distillation engine**: turn n
 | Regeneration faithfulness (LLM narrative from axioms) | **Wired** (OpenAiRegenerationRunner); awaits user-side API-key-gated execution | Requires `OPENAI_API_KEY` + `SUM_BENCH_GENERATOR_MODEL` + `SUM_BENCH_MINICHECK_MODEL` + `SUM_BENCH_FACTSCORE_MODEL` env vars |
 | Round-trip conservation (LLM narrative prose, full loop) | Not yet wired — needs LLM re-extraction leg | Will compose existing LLM narrative generator + LLM extractor + drift metric |
 | Extraction ceiling investigation (en_core_web_trf upgrade or LLM fallback) | 8 / 50 seed_v1 failures all fit one spaCy parse pattern; architectural decision pending | User call |
-| Sliding-scale rendering parameters | Not implemented | Phase 30+ |
+| Sliding-scale rendering parameters | **Interface shipped** (`TomeSliders`): 5 axes — density / length / formality / audience / perspective. Density slider actioned on the deterministic canonical path (lexicographic axiom subsetting); remaining 4 axes LLM-gated and captured in output header as metadata | Phase 30+ (LLM wiring for non-density axes) |
 | Cryptographic attestation | Working | Ed25519 + HMAC-SHA256 + Merkle chain |
 | Epistemic-status labeling | Shipped v1.2.0 | See §5 |
 | SHACL structural validation (Polytaxis Bucket A) | Not yet | Phase 25 |
