@@ -94,8 +94,8 @@ The quality of semantic extraction from natural language depends on:
 
 | corpus | size | precision | recall | F1 | correct / gold |
 |---|---|---|---|---|---|
-| `seed_tiny_v1` | 8 SVO sentences | 1.000 | 0.875 | 0.933 | 7 / 8 |
-| `seed_v1` | 50 SVO sentences | 1.000 | 0.840 | **0.913** | 42 / 50 |
+| `seed_tiny_v1` | 8 SVO sentences | 1.000 | 1.000 | **1.000** | 8 / 8 |
+| `seed_v1` | 50 SVO sentences | 1.000 | 1.000 | **1.000** | 50 / 50 |
 
 Reproduce via:
 ```
@@ -107,21 +107,15 @@ python -m scripts.bench.run_bench \
 
 `seed_tiny_v1` remains as a fast-feedback smoke baseline (<30 s including spaCy bootstrap). `seed_v1` is the statistically-meaningful benchmark and is the source of record for the published F1 number.
 
-**Known limitations surfaced by the harness (8 / 50 `seed_v1` documents):**
+**Historical note — 8 previously-failing patterns now recovered by a POS fallback:**
 
-All 8 extraction failures share one root cause: `spaCy en_core_web_sm` parses sentences of the form `<plural-noun> <verb> <noun>` (no article, no modifier) as compound noun phrases rather than SVO clauses. Failures on `seed_v1`:
+Earlier measurements (commits before the sieve POS-fallback landing) showed 8 systematic `seed_v1` failures with F1 = 0.913 and recall = 0.840. All 8 shared one root cause: `spaCy en_core_web_sm` parses `<plural-noun> <verb> <noun>` (no article, no modifier) as compound noun phrases rather than SVO clauses. Examples: "Dogs chase cats.", "Diamond cuts glass.", "Copper carries current.", "Iron forms rust.", "Electrons orbit nuclei.", "Enzymes catalyze reactions.", "Muscles contract fibers.", "Engineers design bridges."
 
-```
-Dogs chase cats.          Copper carries current.     Electrons orbit nuclei.
-Diamond cuts glass.       Iron forms rust.            Enzymes catalyze reactions.
-Muscles contract fibers.  Engineers design bridges.
-```
+The POS fallback in `_pos_fallback_triplet()` now fires *only when the dep-based path yields nothing for a sentence*, and only when the sentence contains exactly three content tokens (NOUN / PROPN / VERB / ADJ — excluding DET / AUX / ADV / ADP / PUNCT / PART). All 8 previously-failing cases now recover correctly, with an auxiliary plural-singularizer for spaCy's occasional "plural-noun misparsed as ADJ" failure (e.g. "Dogs" → "dog").
 
-In each case, the middle token is analyzed as NOUN (not VERB) and the third token becomes ROOT. No verb predicate is detected; no triplet is extracted. Precision stays at 1.000 because the sieve never produces a wrong triplet — it simply returns `[]`.
+Precision stayed at 1.000 through the recovery — the fallback's three-content-token gate refuses to fire on sentences with adverbial modifiers, stacked adjectives, auxiliaries, or prepositional phrases, which the dep-based path handles correctly. The sieve's npadvmod subject-dep relaxation (commit `9aea41e`) and the POS fallback (this section) together close every failure mode observed on `seed_v1` without introducing any false positive.
 
-This is a **parser-level failure**, not a sieve bug. Addressing it requires either a model upgrade (`en_core_web_trf`, transformer-based, ~500 MB, much more robust parsing) or an LLM-based extraction fallback. Tracked as the current extraction recall ceiling (~84 %) for `en_core_web_sm` on simple declarative SVO inputs.
-
-The sieve's npadvmod subject-dep relaxation (commit `9aea41e`) correctly recovers past-participle parses like "Einstein proposed relativity"; no false positives have surfaced from that change on `seed_v1`.
+**Residual ceiling:** the current 100 % F1 on `seed_v1` reflects that corpus's scope (simple declarative SVO). Non-SVO constructions (passives with agent phrases, relative clauses, compound predicates, implicit subjects) remain untested; they are deliberately excluded from `seed_v1` and handled by Phase 19B's separate adversarial corpus.
 
 **Prior documented benchmark:** A 50-document golden benchmark corpus exists (Phase 19B) spanning 7 adversarial categories with 100 gold-standard triplets. That corpus remains the source of truth for Phase 19B claims; `seed_v1` is the bench-harness benchmark and complements Phase 19B rather than replacing it.
 
@@ -239,7 +233,7 @@ SUM's ultimate goal is a **bidirectional knowledge distillation engine**: turn n
 
 | Capability | Status | Measurement |
 |---|---|---|
-| Tome → Tag (extraction) | Partial | F1=0.913 on seed_v1 (50 docs, 42/50 correct); F1=0.933 on seed_tiny (8 docs); Phase 19B corpus separately maintained |
+| Tome → Tag (extraction) | **F1 = 1.000** | 50/50 on seed_v1; 8/8 on seed_tiny; Phase 19B adversarial corpus separately maintained; non-SVO constructions still untested on the bench |
 | Tag → Tome (canonical, deterministic) | Working | Mathematically proven round-trip (§1.1) |
 | Tag → Tome (narrative, prose) | Requires LLM extrapolator | No empirical measurement yet |
 | Round-trip conservation (canonical) | Proven + empirically verified per-run | §1.1; 0.00% drift on `seed_tiny_v1` and `seed_v1` (commits `a6606eb`, current) |
@@ -251,7 +245,7 @@ SUM's ultimate goal is a **bidirectional knowledge distillation engine**: turn n
 | Cryptographic attestation | Working | Ed25519 + HMAC-SHA256 + Merkle chain |
 | Epistemic-status labeling | Shipped v1.2.0 | See §5 |
 | SHACL structural validation (Polytaxis Bucket A) | Not yet | Phase 25 |
-| Conformal prediction confidence (Polytaxis Bucket A) | Algorithm + 18 tests shipped (`internal/ensemble/venn_abers.py`); production wiring into `ConfidenceCalibrator` pending | Phase 25 |
+| Conformal prediction confidence (Polytaxis Bucket A) | Algorithm shipped (`internal/ensemble/venn_abers.py`, 18 tests); **production wiring via `ConfidenceCalibrator.calibrate_interval()` shipped** with `load_venn_abers_fixture()` helper and fixture tests; calibration-set authoring is the remaining step | Phase 25 |
 | VC 2.0 `eddsa-rdfc-2022` emission | Not yet | Phase 25 |
 
 The gap from `current honest state` to `ultimate goal` is the refactor roadmap of record. Any PR that claims to close part of this gap must update this section with the new measurement.
