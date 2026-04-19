@@ -196,7 +196,7 @@ These are design goals, NOT current capabilities.
 | Federation with trust policies | Not implemented | Future |
 | Scientific/technical corpora support | Not implemented | Future |
 | **Bidirectional distillation with sliding-scale parameters** (density, formality, audience, perspective) | **Interface + density shipped** (`internal/ensemble/tome_sliders.py`, `AutoregressiveTomeGenerator.generate_controlled`, 21 tests). Non-density axes await LLM extrapolator wiring. | **Phase 30+ for full-LLM slider product** |
-| **Polytaxis Bucket A absorption** (SHACL, conformal prediction sets, VC 2.0 with `eddsa-rdfc-2022`, RFC 3161 timestamping, RFC 9162 CT v2 proofs, PROV-O/PROV-STAR, polyglot RDF/JSON-LD/Turtle emission) | **In progress** — shipped: `epistemic_status` field (v1.2.0), Venn-Abers conformal-interval algorithm + `ConfidenceCalibrator` wiring, PROV-O JSON-LD adapter for Akashic Ledger events. **Pending:** SHACL, VC 2.0 Ed25519 Data Integrity, RFC 3161 TSA anchor, RFC 9162 CT v2 proofs, full polyglot emission | **Phase 25** |
+| **Polytaxis Bucket A absorption** (SHACL, conformal prediction sets, VC 2.0 with `eddsa-jcs-2022`, RFC 3161 timestamping, RFC 9162 CT v2 proofs, PROV-O/PROV-STAR, polyglot RDF/JSON-LD/Turtle emission) | **In progress** — shipped: `epistemic_status` field (v1.2.0), Venn-Abers conformal-interval algorithm + `ConfidenceCalibrator` wiring, PROV-O JSON-LD adapter for Akashic Ledger events, W3C VC 2.0 Data Integrity emission + verification under `eddsa-jcs-2022` (`internal/infrastructure/verifiable_credential.py` + pure-Python RFC 8785 JCS at `internal/infrastructure/jcs.py`, 58 tests). **Pending:** SHACL, RFC 3161 TSA anchor, RFC 9162 CT v2 proofs, full polyglot emission (Turtle/RDF-XML beyond JSON-LD) | **Phase 25** |
 | Prose round-trip conservation measurement (via `SumRoundtripRunner` + LLM extrapolator + MiniCheck gate) | Stubbed in bench harness; pending LLM wiring | STATE 4-B |
 | Property-graph backing store for corpora above ~10k axioms (prime encoding demoted to signed witness) | Design decision pending empirical confirmation (now confirmed — see §2.2) | Phase 26 |
 
@@ -260,6 +260,6 @@ SUM's ultimate goal is a **bidirectional knowledge distillation engine**: turn n
 | Epistemic-status labeling | Shipped v1.2.0 | See §5 |
 | SHACL structural validation (Polytaxis Bucket A) | Not yet | Phase 25 |
 | Conformal prediction confidence (Polytaxis Bucket A) | Algorithm shipped (`internal/ensemble/venn_abers.py`, 18 tests); **production wiring via `ConfidenceCalibrator.calibrate_interval()` shipped** with `load_venn_abers_fixture()` helper and fixture tests; calibration-set authoring is the remaining step | Phase 25 |
-| VC 2.0 `eddsa-rdfc-2022` emission | Not yet | Phase 25 |
+| VC 2.0 `eddsa-jcs-2022` emission + verification | **Shipped** (`internal/infrastructure/verifiable_credential.py` + pure-Python RFC 8785 JCS at `internal/infrastructure/jcs.py`, 58 tests: 30 JCS + 28 VC covering sign/verify round-trip, tamper detection, JSON-on-disk persistence, multibase base58btc round-trip, key-reordering resilience) | Phase 25 |
 
 The gap from `current honest state` to `ultimate goal` is the refactor roadmap of record. Any PR that claims to close part of this gap must update this section with the new measurement.
