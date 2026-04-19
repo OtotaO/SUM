@@ -27,8 +27,20 @@ def ledger(tmp_path):
 
 
 def run(coro):
-    """Run an async coroutine synchronously."""
-    return asyncio.get_event_loop().run_until_complete(coro)
+    """Run an async coroutine synchronously.
+
+    Uses a fresh event loop per invocation rather than ``asyncio.get_event_loop()``.
+    The latter raises ``RuntimeError: There is no current event loop`` once any
+    other test in the same pytest session has called ``asyncio.run()``, because
+    that call closes the implicitly-created loop and the next
+    ``get_event_loop()`` cannot resurrect it. A fresh loop is immune to that
+    pollution and is cheap to create — O(μs).
+    """
+    loop = asyncio.new_event_loop()
+    try:
+        return loop.run_until_complete(coro)
+    finally:
+        loop.close()
 
 
 class TestGenesisHash:
