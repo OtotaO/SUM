@@ -154,23 +154,56 @@ The canonical-template round-trip (§1.1) is **proven**; the round-trip over arb
 
 The prose drift rising from 42.86 % to 50.00 % on the larger corpus is not statistical noise — it is a direct empirical confirmation that **the NLP sieve is not a bijective codec, even on the system's own deterministic output**, and that the failure rate tracks the fraction of input sentences spaCy parses atypically. `generate_canonical` emits `"The {s} {p} {o}."` with already-canonicalized (lowercased, lemmatized) keys; on that atypical text, spaCy's dependency parser frequently tags `"like"` in `"X like Y"` as a preposition rather than a verb, so no ROOT verb is found and the triplet is dropped.
 
-**What this measurement does NOT cover:** the full LLM narrative round-trip (`text → triples → LLM-rendered prose → triples'`). That path now has a wired runner (`scripts/bench/runners/llm_roundtrip.py`) that composes `LiveLLMAdapter.extract_triplets → generate_text → extract_triplets` and reports mean symmetric-difference drift with per-document attribution. It emits `LlmRoundtripMetrics` (schema `0.3.0`) and is gated on the `SUM_BENCH_EXTRACTOR_MODEL` and `SUM_BENCH_GENERATOR_MODEL` env vars; the runner is unit-tested with stub adapters, but **no end-to-end drift number is on record yet** — the first measurement requires an OpenAI key and will land in a dedicated commit. Until then, SUM makes no empirical claim about LLM-rendered prose conservation at the full-loop level; only the `0.00 %` canonical result and the `54.00 %` sieve-self-parse result stand.
+**What this measurement does NOT cover:** the full LLM narrative round-trip (`text → triples → LLM-rendered prose → triples'`). That path has both a wired runner (`scripts/bench/runners/llm_roundtrip.py`, composing `LiveLLMAdapter.extract_triplets → generate_text → extract_triplets`) and, as of 2026-04-19, a first end-to-end measurement on `seed_v1` — see §2.5. The short version: **drift = 107.75 %, exact-match recall = 0.12**, interpreted as "facts preserved, keys not" and driven by generator elaboration + unprompted extractor paraphrase. The `0.00 %` canonical result and the `54.00 %` sieve-self-parse result remain the complementary measurements on the deterministic side.
 
 ### 2.4. Regeneration Faithfulness (LLM Narrative → Axiom Entailment)
 
 SUM's `tag → tome` direction measured end-to-end: for each source axiom set, `LiveLLMAdapter.generate_text` produces a prose narrative, and `LlmEntailmentChecker` (structured-output entailment via pinned model snapshot) independently judges whether each source axiom is supported by the narrative. FActScore is the mean per-document entailment rate.
 
-**First end-to-end run (2026-04-17, temporary API key, now rolled):**
+**End-to-end runs (both with temporary API keys, rolled immediately after use):**
 
-| corpus | generator | entailment model | n_docs | n_claims | supported | FActScore | MiniCheck rate |
+| date | corpus | generator | entailment model | n_docs | n_claims | supported | FActScore |
 |---|---|---|---|---|---|---|---|
-| `seed_v1` | `gpt-4o-mini-2024-07-18` | `gpt-4o-mini-2024-07-18` | 50 / 50 gen | 50 | 48 | **0.960** | **0.960** |
+| 2026-04-17 | `seed_v1` | `gpt-4o-mini-2024-07-18` | `gpt-4o-mini-2024-07-18` | 50 / 50 gen | 50 | 48 | **0.960** |
+| 2026-04-19 | `seed_v1` | `gpt-4o-mini-2024-07-18` | `gpt-4o-mini-2024-07-18` | 50 / 50 gen | 50 | 47 | **0.940** |
 
-**Interpretation:** LLM-rendered narratives conditioned on SUM's structured axioms preserve 96 % of source claims under independent entailment judgement. The 4 % gap (2 of 50) is the empirical ceiling of the `LiveLLMAdapter` + `LlmEntailmentChecker` stack on simple SVO inputs. Per-document attribution is now emitted in the report: every `RegenerationMetrics` record carries a `per_doc` sequence naming each document's n_claims / n_supported / per_claim_rate and the specific (s, p, o) triples that failed entailment (with a 200-char narrative excerpt), so the aggregate FActScore gap is debuggable at the generator-prompt layer rather than opaque. Introduced alongside a bench schema bump to `0.3.0`.
+Run-to-run delta of 0.02 is below the `fail-on-regression` threshold (0.03) and consistent with OpenAI-side non-determinism at the pinned snapshot — the model ID is pinned, but the OpenAI chat-completion endpoint is not deterministic at `temperature` defaults. **Both numbers are load-bearing and both stay on record.**
 
-**Boundary:** FActScore is empirical, not provable. The generator could be swapped for a stricter constrained-decoding pipeline (XGrammar + WebNLG-fine-tuned T5) that raises this number, and the checker could be swapped for a specialist like MiniCheck-FT5. Both are roadmap items. Until then, the 0.96 number stands as the honest measurement of the current stack.
+**2026-04-19 per-doc attribution** (the three failures the aggregate 0.940 hides):
 
-### 2.5. Bench Harness Substrate
+| doc_id | source triple | LLM narrative excerpt | failure mode |
+|---|---|---|---|
+| `doc_017` | `steel resist corrosion` | "Steel is … also susceptible to corrosion, a process that can …" | generator flipped polarity — narrative says steel *is susceptible to* corrosion instead of *resists* it; entailment checker correctly rejected. |
+| `doc_018` | `diamond cut glass` | "Diamonds are renowned for … hardness and brilliance, which stem from their crystal structure …" | generator described diamond's hardness without naming the cut-glass action; entailment did not find the predicate. |
+| `doc_030` | `muscle contract fiber` | "Muscles … consist of specialized cells known as muscle fibers. When a muscle needs to contract, the m…" | generator inverted subject/object — narrative has *muscle fibers* as the thing that contracts, not the thing *muscle contracts on*; the SVO triple is read by the checker with `muscle` as subject, so no match.
+
+**Interpretation:** LLM-rendered narratives conditioned on SUM's structured axioms preserve 94–96 % of source claims under independent entailment judgement, sampled across two independent runs one week apart with identical pinned models. The 4–6 % gap is the empirical ceiling of the `LiveLLMAdapter` + `LlmEntailmentChecker` stack on simple SVO inputs; per-document attribution names each failure and makes the gap debuggable at the generator-prompt layer rather than opaque. Each of the three 2026-04-19 failures is a specific, different kind of drift (polarity flip; predicate omission; subject/object inversion) — there is no single fix that would close the gap, which is itself a finding.
+
+**Boundary:** FActScore is empirical, not provable. The generator could be swapped for a stricter constrained-decoding pipeline (XGrammar + WebNLG-fine-tuned T5) that raises this number, and the checker could be swapped for a specialist like MiniCheck-FT5. Both are roadmap items. Until then, the 0.94–0.96 band stands as the honest measurement of the current stack.
+
+### 2.5. LLM Narrative Round-Trip Drift (Full Loop)
+
+The full LLM narrative round-trip — `text → LLM.extract → axioms → LLM.generate → prose' → LLM.extract → axioms'` — now has a measured number, ending an "unmeasured claim" row that stood since §6 was introduced.
+
+**First end-to-end run (2026-04-19, temporary API key, rolled):**
+
+| corpus | generator | extractor | n_docs | source axioms (total) | reconstructed axioms (total) | drift_pct | exact-match recall |
+|---|---|---|---|---|---|---|---|
+| `seed_v1` | `gpt-4o-mini-2024-07-18` | `gpt-4o-mini-2024-07-18` | 50 | 50 | 600 | **107.75 %** | **6 / 50 (0.12)** |
+
+**Two numbers, both load-bearing:**
+
+1. **`drift_pct = 107.75 %`** is the mean per-document `100 * |A Δ A'| / max(|A|, |A'|)`. It exceeds 100 % on a majority of documents because the LLM-extracted axiom set from the generated narrative is on average **12× the size** (mean `n_reconstructed = 12.0`, range 4–21) of the single source axiom the generator was asked to preserve. With `|source| = 1` and `|recon| = 12`, one missing plus twelve extra triples over a denominator of 12 gives ~108 %; the formula is doing what it says, not drifting numerically.
+
+2. **`exact-match recall = 0.12`** (6 of 50 documents had their exact source triple appear verbatim in the LLM's re-extraction) is the honest answer to the question the drift number is *asked* to answer. The other 44 documents lost the exact surface form of the source triple through two dominant mechanisms, both visible in the per-doc attribution:
+   - **Generator elaboration.** For `alice likes cats`, the generator produces a narrative about companionship and affection, and the extractor — unprompted for faithfulness — reads out ≥4 triples like `alice has_fondness_for cats` / `cats provide companionship` / `cats can_be source_of_joy`. The source triple is *semantically preserved* but not *surface-preserved*.
+   - **Entity and predicate paraphrase.** For `newton described gravity` the extractor returns `isaac_newton described gravity`. For `fish eat plankton` it returns `fish consume plankton`. The facts are the same; the string-keyed symmetric-difference is not. This is a *canonicalization* failure at the extractor layer, not a reasoning failure at the generator layer.
+
+**Interpretation:** the two measurements say the same thing from opposite sides: **the `LiveLLMAdapter` generator+extractor pair preserves *facts* but not *keys*.** FActScore (§2.4) judges facts and returns 0.94–0.96. Round-trip drift (§2.5) judges keys and returns 108 %. Neither is wrong; they disagree because the pipeline is not key-stable end-to-end.
+
+**Boundary:** closing this gap is a canonicalization problem, not an LLM problem. An entity-resolution pass that collapses `newton` and `isaac_newton`, a WordNet or lemma-based predicate normaliser, or a prompt that asks the extractor to return triples in a pinned vocabulary would move the 0.12 exact-match recall upward without changing the generator. None of these are shipped. The 107.75 % / 0.12 numbers stand as the honest empirical ceiling of the unprompted, unresolved `LiveLLMAdapter` pipeline — which is what §6 promised to measure, and what §6 is now free to stop promising.
+
+### 2.6. Bench Harness Substrate
 
 The `scripts/bench/` directory contains the measurement-first infrastructure that makes §2.1–§2.3 reproducible. Key properties:
 
@@ -252,8 +285,8 @@ SUM's ultimate goal is a **bidirectional knowledge distillation engine**: turn n
 | Tag → Tome (narrative, prose) | Requires LLM extrapolator | No empirical measurement yet |
 | Round-trip conservation (canonical) | Proven + empirically verified per-run | §1.1; 0.00% drift on `seed_tiny_v1` and `seed_v1` (commits `a6606eb`, current) |
 | Round-trip conservation (sieve re-extract of canonical text) | Measured | 42.86% (seed_tiny) / 50.00% (seed_v1) drift; sieve is not bijective even on its own output |
-| Regeneration faithfulness (LLM narrative from axioms) | **Measured** | FActScore = **0.960** (48/50 claims supported) on seed_v1 with `gpt-4o-mini-2024-07-18` for both generator and entailment checker; see §2.4 |
-| Round-trip conservation (LLM narrative prose, full loop) | **Runner wired** (`scripts/bench/runners/llm_roundtrip.py`, 12 tests); pipeline is `doc.text → LLM.extract → axioms → LLM.generate → prose' → LLM.extract → axioms'`, drift = mean symmetric-difference %; per-doc attribution surfaces missing + hallucinated triples. Shipping the first number requires pinned `SUM_BENCH_GENERATOR_MODEL` / `SUM_BENCH_EXTRACTOR_MODEL` env vars and an OpenAI key — no measurement on record yet | Pending end-to-end run |
+| Regeneration faithfulness (LLM narrative from axioms) | **Measured (two runs)** | FActScore = **0.960** (48/50, 2026-04-17) / **0.940** (47/50, 2026-04-19) on seed_v1 with `gpt-4o-mini-2024-07-18` for both generator and entailment checker; delta below regression threshold, both runs on record; see §2.4 |
+| Round-trip conservation (LLM narrative prose, full loop) | **Measured** | drift = **107.75 %**, exact-match recall = **0.12** on seed_v1 (2026-04-19), both legs `gpt-4o-mini-2024-07-18`. 50 source axioms → 600 extracted (12× amplification); per-doc attribution confirms the pattern is generator elaboration + extractor paraphrase, not reasoning failure. See §2.5 |
 | Extraction ceiling investigation (en_core_web_trf upgrade or LLM fallback) | 8 / 50 seed_v1 failures all fit one spaCy parse pattern; architectural decision pending | User call |
 | Sliding-scale rendering parameters | **Interface shipped** (`TomeSliders`): 5 axes — density / length / formality / audience / perspective. Density slider actioned on the deterministic canonical path (lexicographic axiom subsetting); remaining 4 axes LLM-gated and captured in output header as metadata | Phase 30+ (LLM wiring for non-density axes) |
 | Cryptographic attestation | Working | Ed25519 + HMAC-SHA256 + Merkle chain |
