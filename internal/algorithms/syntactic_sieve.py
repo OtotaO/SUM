@@ -48,6 +48,34 @@ HEDGE_FLOOR = 0.20  # minimum confidence from hedging alone
 _FALLBACK_CONTENT_POS = frozenset({"NOUN", "PROPN", "VERB", "ADJ"})
 
 
+def _is_negated(sent) -> bool:
+    """Return True iff the sentence contains a negation particle scoping the
+    main predication.
+
+    spaCy tags ``not``, ``n't``, ``never`` (and similar) as ``dep_ == "neg"``
+    attached to the ROOT verb or copular AUX. When a negation is present,
+    the SVO structure still parses — but its semantic polarity is inverted
+    relative to what the bare triple would assert. Emitting a positive
+    (s, p, o) from a negated source sentence is worse than emitting nothing:
+    it silently ships a false assertion into the Gödel state with no
+    surface marker that the original sentence denied it.
+
+    The hedging detector (``detect_hedging``) handles the weaker modal
+    class (``may``, ``might``, ``possibly``) by lowering a certainty score.
+    Negation is not uncertainty — it is an inversion — so the correct
+    response is to refuse extraction, not to annotate it.
+
+    Scope: any ``dep_ == "neg"`` anywhere in the sentence triggers suppression.
+    This is intentionally aggressive: a doubly-negated sentence is ambiguous
+    under SUM's SVO frame, and false negatives (missing a triple) are
+    strictly preferable to false positives (asserting an inverted fact).
+    """
+    for token in sent:
+        if token.dep_ == "neg":
+            return True
+    return False
+
+
 def _pos_fallback_triplet(sent):
     """POS-based fallback extraction for sentences the dep parser misparses.
 
@@ -153,6 +181,12 @@ class DeterministicSieve:
         triplets = []
 
         for sent in doc.sents:
+            # Refuse to extract from negated sentences: a bare (s, p, o)
+            # emitted from "Diamonds cannot cut through steel." would assert
+            # the inverted claim (diamond, cut, steel). See _is_negated docstring.
+            if _is_negated(sent):
+                continue
+
             subject = None
             predicate = None
             object_ = None
@@ -229,6 +263,10 @@ class DeterministicSieve:
         results = []
 
         for sent in doc.sents:
+            # Negated sentences produce no triple — see _is_negated.
+            if _is_negated(sent):
+                continue
+
             subject = None
             predicate = None
             object_ = None
