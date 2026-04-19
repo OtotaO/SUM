@@ -1,0 +1,51 @@
+{
+  "id": "seed_v2",
+  "documents": [
+    {"id": "doc_001", "text": "Newton wrote Principia.",
+     "gold_triples": [["newton", "write", "principia"]]},
+    {"id": "doc_002", "text": "The moon orbits Earth.",
+     "gold_triples": [["moon", "orbit", "earth"]]},
+    {"id": "doc_003", "text": "Dolphins are mammals.",
+     "gold_triples": [["dolphin", "be", "mammal"]]},
+
+    {"id": "doc_004", "text": "Marie Curie, a physicist, won Nobel Prizes.",
+     "gold_triples": [["marie_curie", "win", "nobel prizes"], ["marie_curie", "be", "physicist"]]},
+    {"id": "doc_005", "text": "The sun, a star, emits light.",
+     "gold_triples": [["sun", "emit", "light"], ["sun", "be", "star"]]},
+    {"id": "doc_006", "text": "Alice, my sister, loves music.",
+     "gold_triples": [["alice", "love", "music"], ["alice", "be", "sister"]]},
+
+    {"id": "doc_007", "text": "Hamlet was written by Shakespeare.",
+     "gold_triples": [["shakespeare", "write", "hamlet"]]},
+    {"id": "doc_008", "text": "Rome was founded by Romulus.",
+     "gold_triples": [["romulus", "found", "rome"]]},
+    {"id": "doc_009", "text": "The book was read by many students.",
+     "gold_triples": [["student", "read", "book"]]},
+
+    {"id": "doc_010", "text": "Einstein, who proposed relativity, won the Nobel Prize.",
+     "gold_triples": [["einstein", "propose", "relativity"], ["einstein", "win", "nobel prize"]]},
+    {"id": "doc_011", "text": "Darwin, who studied finches, developed evolution theory.",
+     "gold_triples": [["darwin", "study", "finch"], ["darwin", "develop", "evolution theory"]]},
+    {"id": "doc_012", "text": "Newton, who wrote Principia, described gravity.",
+     "gold_triples": [["newton", "write", "principia"], ["newton", "describe", "gravity"]]},
+
+    {"id": "doc_013", "text": "Shakespeare wrote Hamlet and Macbeth.",
+     "gold_triples": [["shakespeare", "write", "hamlet"], ["shakespeare", "write", "macbeth"]]},
+    {"id": "doc_014", "text": "Cats and dogs are mammals.",
+     "gold_triples": [["cat", "be", "mammal"], ["dog", "be", "mammal"]]},
+    {"id": "doc_015", "text": "Alice and Bob visited Paris.",
+     "gold_triples": [["alice", "visit", "paris"], ["bob", "visit", "paris"]]},
+
+    {"id": "doc_016", "text": "Water does not freeze above zero degrees.",
+     "gold_triples": []},
+    {"id": "doc_017", "text": "Diamonds cannot cut through steel.",
+     "gold_triples": []},
+    {"id": "doc_018", "text": "Dark matter may exist in galactic halos.",
+     "gold_triples": []},
+
+    {"id": "doc_019", "text": "Gravity attracts objects toward Earth.",
+     "gold_triples": [["gravity", "attract", "object"]]},
+    {"id": "doc_020", "text": "Photosynthesis converts sunlight into energy.",
+     "gold_triples": [["photosynthesis", "convert", "sunlight"]]}
+  ]
+}
