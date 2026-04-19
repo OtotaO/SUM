@@ -162,7 +162,14 @@ class DeterministicSieve:
                 if token.dep_ == "ROOT" or token.pos_ == "VERB":
                     predicate = token.lemma_
 
-                    # Find subject
+                    # Find subject.
+                    # Compound modifiers are joined with '_' (not space) so
+                    # multi-word subjects satisfy the canonical template's
+                    # "\S+" parser in OuroborosVerifier — space-joined
+                    # subjects break round-trip at the canonical layer by
+                    # bleeding into subsequent parser capture groups. The
+                    # object keeps space-joining because the canonical regex
+                    # for object is ".+" (greedy) and accommodates spaces.
                     for child in token.children:
                         if child.dep_ in ("nsubj", "nsubjpass", "csubj", "npadvmod"):
                             modifiers = [
@@ -170,7 +177,7 @@ class DeterministicSieve:
                                 for c in child.children
                                 if c.dep_ in ("amod", "compound")
                             ]
-                            subject = " ".join(
+                            subject = "_".join(
                                 modifiers + [child.lemma_]
                             ).strip()
 
@@ -235,7 +242,8 @@ class DeterministicSieve:
                                 c.text for c in child.children
                                 if c.dep_ in ("amod", "compound")
                             ]
-                            subject = " ".join(modifiers + [child.lemma_]).strip()
+                            # '_'-joined to satisfy canonical "\S+" subject invariant.
+                            subject = "_".join(modifiers + [child.lemma_]).strip()
                     for child in token.children:
                         if child.dep_ in ("dobj", "pobj", "attr", "acomp"):
                             modifiers = [
