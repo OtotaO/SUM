@@ -34,7 +34,7 @@ import json
 import sqlite3
 import asyncio
 import logging
-from typing import Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
 from internal.infrastructure.provenance import (
@@ -55,7 +55,13 @@ def compute_event_hash(prev_hash: str, operation: str, prime: str,
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
-def _zig():
+def _zig() -> Optional[Any]:
+    """Return the Zig engine module if available on this host, else None.
+
+    Typed as ``Any`` because ``zig_bridge.zig_engine`` is a C-FFI-backed
+    object with attributes defined at runtime; pinning a stricter type
+    would require stubs for the Zig core. Callers gate on truthiness.
+    """
     try:
         from internal.infrastructure.zig_bridge import zig_engine
         return zig_engine
@@ -222,7 +228,7 @@ class AkashicLedger:
             confidence:  Trust score in [0.0, 1.0], default 0.5.
             ingested_at: ISO timestamp (YYYY-MM-DDTHH:MM:SS).
         """
-        def _write():
+        def _write() -> None:
             with sqlite3.connect(self.db_path) as conn:
                 # Phase 19C: Compute Merkle hash chain
                 row = conn.execute(
@@ -346,7 +352,9 @@ class AkashicLedger:
     # Provenance queries (Phase 22 — flat-column legacy surface)
     # ------------------------------------------------------------------
 
-    async def get_axiom_provenance(self, axiom_key: str) -> list:
+    async def get_axiom_provenance(
+        self, axiom_key: str
+    ) -> List[Dict[str, Any]]:
         """
         Retrieve provenance metadata for a specific axiom.
 
@@ -361,7 +369,7 @@ class AkashicLedger:
             List of dicts with ``source_url``, ``confidence``,
             ``ingested_at``, ``seq_id``.
         """
-        def _read():
+        def _read() -> List[Dict[str, Any]]:
             with sqlite3.connect(self.db_path) as conn:
                 rows = conn.execute(
                     "SELECT seq_id, source_url, confidence, ingested_at "
@@ -382,7 +390,9 @@ class AkashicLedger:
 
         return await asyncio.to_thread(_read)
 
-    async def get_provenance_batch(self, axiom_keys: list) -> dict:
+    async def get_provenance_batch(
+        self, axiom_keys: List[str]
+    ) -> Dict[str, Dict[str, Any]]:
         """
         Batch provenance lookup for multiple axioms.
 
@@ -393,12 +403,14 @@ class AkashicLedger:
             axiom_keys: List of axiom key strings.
 
         Returns:
-            Dict mapping axiom_key → provenance dict (or None if not found).
+            Dict mapping axiom_key → provenance dict. Axioms with no
+            recorded provenance are omitted from the result (not mapped
+            to ``None``).
         """
         if not axiom_keys:
             return {}
 
-        def _read():
+        def _read() -> Dict[str, Dict[str, Any]]:
             with sqlite3.connect(self.db_path) as conn:
                 placeholders = ",".join("?" for _ in axiom_keys)
                 rows = conn.execute(
@@ -410,7 +422,7 @@ class AkashicLedger:
                 ).fetchall()
 
                 # Keep the latest record per axiom_key
-                result = {}
+                result: Dict[str, Dict[str, Any]] = {}
                 for axiom_key, source_url, confidence, ingested_at in rows:
                     if axiom_key not in result:
                         result[axiom_key] = {
@@ -445,7 +457,7 @@ class AkashicLedger:
         """
         from internal.infrastructure.prov_o import dump_prov_jsonld
 
-        def _read():
+        def _read() -> List[Dict[str, Any]]:
             with sqlite3.connect(self.db_path) as conn:
                 rows = conn.execute(
                     "SELECT seq_id, operation, prime, axiom_key, branch, "
@@ -454,10 +466,10 @@ class AkashicLedger:
                     "ORDER BY seq_id ASC",
                     (branch,),
                 ).fetchall()
-                events = []
-                prev_seq_id = None
+                events: List[Dict[str, Any]] = []
+                prev_seq_id: Optional[int] = None
                 for r in rows:
-                    event = {
+                    event: Dict[str, Any] = {
                         "seq_id": r[0],
                         "operation": r[1],
                         "prime": r[2],
@@ -496,7 +508,7 @@ class AkashicLedger:
             is_ephemeral:   If True, branch is transient (e.g. time-travel)
                             and will NOT be restored on boot.
         """
-        def _write():
+        def _write() -> None:
             with sqlite3.connect(self.db_path) as conn:
                 conn.execute(
                     "INSERT INTO branch_heads "
@@ -511,14 +523,14 @@ class AkashicLedger:
         await asyncio.to_thread(_write)
         logger.debug("Branch head saved: %s (ephemeral=%s)", branch_name, is_ephemeral)
 
-    async def load_branch_heads(self) -> dict:
+    async def load_branch_heads(self) -> Dict[str, int]:
         """
         Load all durable (non-ephemeral) branch head snapshots.
 
         Returns:
             Dict mapping branch_name → state integer.
         """
-        def _read():
+        def _read() -> Dict[str, int]:
             with sqlite3.connect(self.db_path) as conn:
                 rows = conn.execute(
                     "SELECT branch_name, state_integer FROM branch_heads "
@@ -530,7 +542,7 @@ class AkashicLedger:
 
     async def delete_branch_head(self, branch_name: str) -> None:
         """Remove a branch head snapshot (e.g. cleanup of ephemeral branches)."""
-        def _write():
+        def _write() -> None:
             with sqlite3.connect(self.db_path) as conn:
                 conn.execute(
                     "DELETE FROM branch_heads WHERE branch_name = ?",
@@ -545,8 +557,9 @@ class AkashicLedger:
     # ------------------------------------------------------------------
 
     async def rebuild_state(
-        self, algebra: GodelStateAlgebra, max_seq_id: int = None,
-        branch: str = None,
+        self, algebra: GodelStateAlgebra,
+        max_seq_id: Optional[int] = None,
+        branch: Optional[str] = None,
     ) -> int:
         """
         Replay the event trace to reconstruct the Gödel BigInt.
@@ -570,14 +583,18 @@ class AkashicLedger:
         Returns:
             The reconstructed global state integer.
         """
-        def _read():
+        def _read() -> List[Tuple[Any, ...]]:
             with sqlite3.connect(self.db_path) as conn:
                 query = (
                     "SELECT seq_id, operation, prime, axiom_key "
                     "FROM semantic_events"
                 )
-                conditions = []
-                params = []
+                conditions: List[str] = []
+                # SQLite accepts int or str bind parameters interchangeably, so
+                # params is heterogeneous by design — mypy's naive inference
+                # from the first append would lock it to list[int] and then
+                # flag the str append below. Annotate explicitly.
+                params: List[Any] = []
                 if max_seq_id is not None:
                     conditions.append("seq_id <= ?")
                     params.append(max_seq_id)
@@ -587,7 +604,7 @@ class AkashicLedger:
                 if conditions:
                     query += " WHERE " + " AND ".join(conditions)
                 query += " ORDER BY seq_id ASC"
-                return conn.execute(query, params).fetchall()
+                return list(conn.execute(query, params).fetchall())
 
         events = await asyncio.to_thread(_read)
 
@@ -627,12 +644,12 @@ class AkashicLedger:
         Returns:
             The highest ``seq_id``, or 0 if the ledger is empty.
         """
-        def _read():
+        def _read() -> int:
             with sqlite3.connect(self.db_path) as conn:
                 res = conn.execute(
                     "SELECT MAX(seq_id) FROM semantic_events"
                 ).fetchone()
-                return res[0] if res[0] else 0
+                return int(res[0]) if res and res[0] else 0
 
         return await asyncio.to_thread(_read)
 
@@ -640,7 +657,7 @@ class AkashicLedger:
     # Phase 19C: Merkle Hash-Chain Verification
     # ------------------------------------------------------------------
 
-    async def verify_chain(self) -> tuple:
+    async def verify_chain(self) -> Tuple[bool, Optional[int]]:
         """
         Walk the entire event hash chain and verify integrity.
 
@@ -649,7 +666,7 @@ class AkashicLedger:
             If valid, break_seq_id is None.
             If tampered, break_seq_id is the first corrupted event.
         """
-        def _verify():
+        def _verify() -> Tuple[bool, Optional[int]]:
             with sqlite3.connect(self.db_path) as conn:
                 rows = conn.execute(
                     "SELECT seq_id, operation, prime, axiom_key, branch, prev_hash "
@@ -665,7 +682,7 @@ class AkashicLedger:
                     prev_hash, operation, prime, axiom_key or "", branch or "main"
                 )
                 if stored_hash != expected:
-                    return (False, seq_id)
+                    return (False, int(seq_id))
                 prev_hash = stored_hash
 
             return (True, None)
@@ -681,12 +698,12 @@ class AkashicLedger:
         Returns:
             The latest prev_hash, or GENESIS_HASH if the ledger is empty.
         """
-        def _read():
+        def _read() -> str:
             with sqlite3.connect(self.db_path) as conn:
                 row = conn.execute(
                     "SELECT prev_hash FROM semantic_events "
                     "ORDER BY seq_id DESC LIMIT 1"
                 ).fetchone()
-                return row[0] if row and row[0] else GENESIS_HASH
+                return str(row[0]) if row and row[0] else GENESIS_HASH
 
         return await asyncio.to_thread(_read)
