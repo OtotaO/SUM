@@ -15,7 +15,16 @@ License: Apache License 2.0
 """
 
 import re
-from typing import Dict, List, Tuple
+from datetime import datetime, timezone
+from typing import Dict, List, Optional, Tuple
+
+from internal.infrastructure.provenance import (
+    EXCERPT_MAX_CHARS,
+    ProvenanceRecord,
+    sha256_uri_for_text,
+)
+
+SIEVE_EXTRACTOR_ID = "sum.sieve:deterministic_v1"
 
 
 # ─── Hedging / Epistemic Markers ──────────────────────────────────────
@@ -74,6 +83,54 @@ def _is_negated(sent) -> bool:
         if token.dep_ == "neg":
             return True
     return False
+
+
+def _extract_from_sent(sent) -> Optional[Tuple[str, str, str]]:
+    """Extract at most one (subject, predicate, object) triple from a sentence.
+
+    Returns None if the sentence is negated, produces no valid ROOT verb, or
+    yields a parse whose subject/object exceed the size filters. The POS
+    fallback is consulted only when dependency-based extraction fails.
+
+    This helper is the single source of truth for per-sentence extraction.
+    ``extract_triplets`` and ``extract_with_provenance`` both call it, so
+    their outputs remain triple-for-triple identical — the provenance path
+    just adds metadata around the same extraction decisions.
+    """
+    if _is_negated(sent):
+        return None
+
+    subject = None
+    predicate = None
+    object_ = None
+
+    for token in sent:
+        if token.dep_ == "ROOT" or token.pos_ == "VERB":
+            predicate = token.lemma_
+            # Compound modifiers are joined with '_' for subject (not space)
+            # so multi-word subjects satisfy the canonical template's "\S+"
+            # parser in OuroborosVerifier. Object keeps space-joining because
+            # the canonical regex for object is ".+" and accommodates spaces.
+            for child in token.children:
+                if child.dep_ in ("nsubj", "nsubjpass", "csubj", "npadvmod"):
+                    modifiers = [
+                        c.text for c in child.children
+                        if c.dep_ in ("amod", "compound")
+                    ]
+                    subject = "_".join(modifiers + [child.lemma_]).strip()
+            for child in token.children:
+                if child.dep_ in ("dobj", "pobj", "attr", "acomp"):
+                    modifiers = [
+                        c.text for c in child.children
+                        if c.dep_ in ("amod", "compound")
+                    ]
+                    object_ = " ".join(modifiers + [child.lemma_]).strip()
+
+    if subject and predicate and object_:
+        if len(subject.split()) <= 5 and len(object_.split()) <= 8:
+            return (subject.lower(), predicate.lower(), object_.lower())
+
+    return _pos_fallback_triplet(sent)
 
 
 def _pos_fallback_triplet(sent):
@@ -179,69 +236,66 @@ class DeterministicSieve:
         """
         doc = self.nlp(text)
         triplets = []
-
         for sent in doc.sents:
-            # Refuse to extract from negated sentences: a bare (s, p, o)
-            # emitted from "Diamonds cannot cut through steel." would assert
-            # the inverted claim (diamond, cut, steel). See _is_negated docstring.
-            if _is_negated(sent):
-                continue
-
-            subject = None
-            predicate = None
-            object_ = None
-
-            # Find the ROOT of the sentence (usually the main verb)
-            for token in sent:
-                if token.dep_ == "ROOT" or token.pos_ == "VERB":
-                    predicate = token.lemma_
-
-                    # Find subject.
-                    # Compound modifiers are joined with '_' (not space) so
-                    # multi-word subjects satisfy the canonical template's
-                    # "\S+" parser in OuroborosVerifier — space-joined
-                    # subjects break round-trip at the canonical layer by
-                    # bleeding into subsequent parser capture groups. The
-                    # object keeps space-joining because the canonical regex
-                    # for object is ".+" (greedy) and accommodates spaces.
-                    for child in token.children:
-                        if child.dep_ in ("nsubj", "nsubjpass", "csubj", "npadvmod"):
-                            modifiers = [
-                                c.text
-                                for c in child.children
-                                if c.dep_ in ("amod", "compound")
-                            ]
-                            subject = "_".join(
-                                modifiers + [child.lemma_]
-                            ).strip()
-
-                    # Find object
-                    for child in token.children:
-                        if child.dep_ in ("dobj", "pobj", "attr", "acomp"):
-                            modifiers = [
-                                c.text
-                                for c in child.children
-                                if c.dep_ in ("amod", "compound")
-                            ]
-                            object_ = " ".join(
-                                modifiers + [child.lemma_]
-                            ).strip()
-
-            extracted = False
-            if subject and predicate and object_:
-                # Filter out massive run-on parses
-                if len(subject.split()) <= 5 and len(object_.split()) <= 8:
-                    triplets.append(
-                        (subject.lower(), predicate.lower(), object_.lower())
-                    )
-                    extracted = True
-
-            if not extracted:
-                fallback = _pos_fallback_triplet(sent)
-                if fallback is not None:
-                    triplets.append(fallback)
-
+            triple = _extract_from_sent(sent)
+            if triple is not None:
+                triplets.append(triple)
         return list(set(triplets))  # Deduplicate
+
+    def extract_with_provenance(
+        self,
+        text: str,
+        source_uri: Optional[str] = None,
+        timestamp: Optional[str] = None,
+    ) -> List[Tuple[Tuple[str, str, str], ProvenanceRecord]]:
+        """Extract (s, p, o) triples paired with per-sentence ProvenanceRecords.
+
+        Each returned record locates the originating sentence's byte range in
+        ``source_uri``'s bytes, names the extractor version, and carries a
+        literal text excerpt (up to EXCERPT_MAX_CHARS) so third-party auditors
+        can validate the claim without refetching the source.
+
+        Args:
+            text:        Input text. Also becomes the content-addressable
+                         source if ``source_uri`` is omitted.
+            source_uri:  Optional override. Defaults to ``sha256:<hex>`` of
+                         ``text``'s UTF-8 bytes, which makes the byte
+                         ranges self-consistent and third-party-verifiable
+                         without any network dependency.
+            timestamp:   Optional ISO-8601 UTC timestamp. Defaults to
+                         ``datetime.now(timezone.utc).isoformat()``.
+
+        Returns:
+            List of ``((s, p, o), ProvenanceRecord)`` pairs — NOT deduplicated
+            at the triple level. Two sentences producing the same triple yield
+            two records with different byte ranges and different prov_ids.
+            The AkashicLedger is the dedup boundary, not this method.
+        """
+        src = source_uri or sha256_uri_for_text(text)
+        ts = timestamp or datetime.now(timezone.utc).isoformat()
+        doc = self.nlp(text)
+        out: List[Tuple[Tuple[str, str, str], ProvenanceRecord]] = []
+        for sent in doc.sents:
+            triple = _extract_from_sent(sent)
+            if triple is None:
+                continue
+            # spaCy's sent.start_char / end_char are character offsets in
+            # the original text; convert to byte offsets in the UTF-8
+            # representation so the byte_range is correct for any consumer
+            # that stores bytes, not Python strings.
+            byte_start = len(text[: sent.start_char].encode("utf-8"))
+            byte_end = len(text[: sent.end_char].encode("utf-8"))
+            excerpt = sent.text[:EXCERPT_MAX_CHARS]
+            record = ProvenanceRecord(
+                source_uri=src,
+                byte_start=byte_start,
+                byte_end=byte_end,
+                extractor_id=SIEVE_EXTRACTOR_ID,
+                timestamp=ts,
+                text_excerpt=excerpt,
+            )
+            out.append((triple, record))
+        return out
 
     def extract_annotated_triplets(
         self, text: str

@@ -30,11 +30,17 @@ License: Apache License 2.0
 
 import math
 import hashlib
+import json
 import sqlite3
 import asyncio
 import logging
+from typing import Optional
 
 from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from internal.infrastructure.provenance import (
+    ProvenanceRecord,
+    compute_prov_id,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -107,6 +113,8 @@ class AkashicLedger:
             self._migrate_branch_column(conn)
             # Phase 19C: Merkle hash-chain migration
             self._migrate_hash_chain(conn)
+            # M1: Structured ProvenanceRecord side-table
+            self._migrate_structured_provenance(conn)
 
     def _migrate_provenance(self, conn: sqlite3.Connection) -> None:
         """Idempotent migration: add provenance columns if missing."""
@@ -143,6 +151,48 @@ class AkashicLedger:
             conn.commit()
         except sqlite3.OperationalError:
             pass  # Column already exists
+
+    def _migrate_structured_provenance(self, conn: sqlite3.Connection) -> None:
+        """M1: Structured ProvenanceRecord side-table + axiom linking.
+
+        Normalises evidence into a content-addressable table keyed by
+        ``prov_id``. The legacy flat columns (``source_url``, ``confidence``,
+        ``ingested_at``) stay in place so existing callers and PROV-O
+        emission are untouched; new provenance-aware code writes to both.
+
+        Tables:
+          provenance_records(prov_id PRIMARY KEY, record_json TEXT) — one
+            row per unique evidence span. Dedup is automatic via PRIMARY
+            KEY because prov_id is content-addressable.
+          axiom_provenance(axiom_key, prov_id, PRIMARY KEY(axiom_key, prov_id))
+            — many-to-many. An axiom extracted from multiple sources has
+            one entry per source. Queryable both directions.
+
+        Idempotent — safe to run on an existing DB.
+        """
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS provenance_records (
+                prov_id     TEXT PRIMARY KEY,
+                record_json TEXT NOT NULL
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS axiom_provenance (
+                axiom_key TEXT NOT NULL,
+                prov_id   TEXT NOT NULL,
+                PRIMARY KEY (axiom_key, prov_id),
+                FOREIGN KEY (prov_id) REFERENCES provenance_records(prov_id)
+            )
+            """
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_axiom_provenance_prov "
+            "ON axiom_provenance(prov_id)"
+        )
+        conn.commit()
 
     # ------------------------------------------------------------------
     # Append
@@ -200,7 +250,100 @@ class AkashicLedger:
         )
 
     # ------------------------------------------------------------------
-    # Provenance queries (Phase 22)
+    # Structured provenance (M1)
+    # ------------------------------------------------------------------
+
+    async def record_provenance(
+        self, provenance: ProvenanceRecord, axiom_key: str
+    ) -> str:
+        """Persist a structured ProvenanceRecord and link it to an axiom.
+
+        Returns the content-addressable ``prov_id``. Safe to call repeatedly
+        with identical (record, axiom_key) pairs — both underlying inserts
+        are idempotent (``INSERT OR IGNORE``), so the same evidence span is
+        never double-counted regardless of ingestion retries.
+
+        Args:
+            provenance: A validated ProvenanceRecord. Its shape is the
+                authoritative evidence unit; see provenance.py.
+            axiom_key:  The normalised axiom string (``subject||predicate||object``)
+                whose prime this evidence attests.
+        """
+        prov_id = compute_prov_id(provenance)
+        record_json = json.dumps(
+            provenance.to_dict(), separators=(",", ":"), sort_keys=True
+        )
+
+        def _write() -> None:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.execute(
+                    "INSERT OR IGNORE INTO provenance_records "
+                    "(prov_id, record_json) VALUES (?, ?)",
+                    (prov_id, record_json),
+                )
+                conn.execute(
+                    "INSERT OR IGNORE INTO axiom_provenance "
+                    "(axiom_key, prov_id) VALUES (?, ?)",
+                    (axiom_key, prov_id),
+                )
+
+        await asyncio.to_thread(_write)
+        logger.debug(
+            "Ledger ← provenance axiom=%s prov_id=%s extractor=%s",
+            axiom_key, prov_id, provenance.extractor_id,
+        )
+        return prov_id
+
+    async def get_provenance_record(
+        self, prov_id: str
+    ) -> Optional[ProvenanceRecord]:
+        """Fetch a single ProvenanceRecord by its content-addressable id.
+
+        Returns None if the id is unknown. The returned record re-validates
+        on construction via ``ProvenanceRecord.__post_init__``, so any
+        corrupted row in the DB will raise rather than silently return bad
+        evidence.
+        """
+        def _read() -> Optional[str]:
+            with sqlite3.connect(self.db_path) as conn:
+                row = conn.execute(
+                    "SELECT record_json FROM provenance_records WHERE prov_id = ?",
+                    (prov_id,),
+                ).fetchone()
+                return row[0] if row else None
+
+        record_json = await asyncio.to_thread(_read)
+        if record_json is None:
+            return None
+        payload = json.loads(record_json)
+        return ProvenanceRecord(**payload)
+
+    async def get_structured_provenance_for_axiom(
+        self, axiom_key: str
+    ) -> list[ProvenanceRecord]:
+        """Return every ProvenanceRecord linked to ``axiom_key``.
+
+        Order: ascending prov_id (stable across runs; content-addressed).
+        An axiom extracted from the same span by the same extractor at the
+        same instant with the same excerpt collapses to one row by
+        construction — no duplicate evidence ever appears in the result.
+        """
+        def _read() -> list[str]:
+            with sqlite3.connect(self.db_path) as conn:
+                rows = conn.execute(
+                    "SELECT pr.record_json FROM axiom_provenance ap "
+                    "JOIN provenance_records pr ON ap.prov_id = pr.prov_id "
+                    "WHERE ap.axiom_key = ? "
+                    "ORDER BY ap.prov_id ASC",
+                    (axiom_key,),
+                ).fetchall()
+                return [r[0] for r in rows]
+
+        rows = await asyncio.to_thread(_read)
+        return [ProvenanceRecord(**json.loads(j)) for j in rows]
+
+    # ------------------------------------------------------------------
+    # Provenance queries (Phase 22 — flat-column legacy surface)
     # ------------------------------------------------------------------
 
     async def get_axiom_provenance(self, axiom_key: str) -> list:
