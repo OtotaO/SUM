@@ -1,7 +1,7 @@
 # Proof Boundary
 
-**Version:** 1.2.0
-**Date:** 2026-04-17
+**Version:** 1.3.0
+**Date:** 2026-04-20
 
 This document explicitly separates what the SUM engine **proves mechanically**, what it **measures empirically**, and what remains **aspirational or future work**.
 
@@ -26,11 +26,14 @@ reconstruct(parse(canonical_tome(S))) == S
 
 ### 1.2. Cross-Runtime State Equivalence
 
-**Claim:** The Gödel State Integer is runtime-independent. Given the same canonical tome, Python (sympy) and Node.js (BigInt + Miller-Rabin) produce identical state integers.
+**Claim:** The Gödel State Integer is runtime-independent. Given the same canonical tome, Python (sympy), Node.js (BigInt + Miller-Rabin via `standalone_verifier/math.js`), and in-browser JavaScript (the inlined copy in `single_file_demo/index.html`) all produce byte-identical state integers.
 
-**Proof mechanism:** The Phase 16 standalone Node.js witness independently reconstructs the state from bundle canonical tomes and asserts exact match.
+**Proof mechanism:** Three independent harnesses lock the contract in CI:
+- `scripts/verify_cross_runtime.py` — Python mints a CanonicalBundle via `CanonicalCodec.export_bundle`; Node.js reconstructs via `standalone_verifier/verify.js`; state integers must match byte-for-byte.
+- `scripts/verify_godel_cross_runtime.py` — 12 axiom keys (including UTF-8 and multi-word cases) minted in both Python and Node; 6 triple-lists encoded to state integers in both. 18 / 18 fixtures byte-identical.
+- Browser-minted bundle → `node standalone_verifier/verify.js` — the inlined JavaScript in the single-file demo produces a CanonicalBundle that validates under the Node verifier unchanged, closing the three-runtime loop.
 
-**Boundary:** Both implementations use the same deterministic prime derivation algorithm (SHA-256 → 8-byte seed → nextprime). Cross-runtime equivalence is proven for the default (non-colliding) derivation path. The collision-resolution path depends on minting order and is NOT independently verified across runtimes in the current test suite.
+**Boundary:** All three implementations use the same deterministic prime derivation (`SHA-256(axiom_key) → first 8 bytes big-endian → seed → nextprime(seed)`) via the `sha256_64_v1` scheme. The collision-resolution path depends on minting order; it has cross-*instance* coverage (two `GodelStateAlgebra` instances minting in different orders produce identical primes for identical keys, stress-tested at 1,000 axioms) but is not yet cross-*runtime* collision-verified. Production corpora up to ~2³² axioms have birthday-bound collision probability < 10⁻⁹; the path is not load-bearing at current scale.
 
 ### 1.3. Bundle Tamper Detection (Trusted Peers)
 
@@ -71,11 +74,13 @@ reconstruct(parse(canonical_tome(S))) == S
 
 ### 1.7. Merkle Hash-Chain Integrity (Phase 19C)
 
-**Claim:** Any modification, deletion, or injection of events in the Akashic Ledger is detectable.
+**Claim:** Any modification, deletion, or injection of events in the Akashic Ledger is detectable, and this property now holds under concurrent writers.
 
-**Proof mechanism:** Each event stores `prev_hash = SHA-256(prev_hash + operation + prime + axiom_key + branch)`. Genesis seed: `SHA-256("SUM_GENESIS_BLOCK")`. `verify_chain()` walks the full chain on boot, reporting the first broken link. 16 tests verify: tamper detection (mutation, deletion, hash overwrite, injection), chain construction, and chain tip.
+**Proof mechanism:** Each event stores `prev_hash = SHA-256(prev_hash + operation + prime + axiom_key + branch)`. Genesis seed: `SHA-256("SUM_GENESIS_BLOCK")`. `verify_chain()` walks the full chain on boot, reporting the first broken link. 16 tests in `test_merkle_chain.py` verify single-writer tamper detection (mutation, deletion, hash overwrite, injection). An additional 6 concurrency tests in `test_ledger_concurrency.py` verify the invariant holds under 50-200 parallel `append_event` calls.
 
-**Boundary:** This is tamper detection, not prevention. A local attacker with write access to SQLite can rewrite the entire chain. The hash chain proves that no event was modified after the fact by an actor without full database write access.
+**Concurrency hardening (commit `9c4139d`):** Until this fix, `append_event` read `prev_hash` in autocommit mode (Python's sqlite3 default) and only began a transaction on the subsequent INSERT. Two concurrent writers could both observe the same `prev_hash`, compute event hashes against the same stale parent, and both commit — leaving `verify_chain()` reporting `is_valid=False` on a perfectly well-behaved multi-writer pipeline. The fix wraps every writer in `BEGIN IMMEDIATE`, acquiring the reserved write-lock before the SELECT and serialising writers at the SQLite boundary. The discipline is now centralised in `AkashicLedger._write_txn` (commit `76ceb40`) so future writers inherit it automatically.
+
+**Boundary:** This is tamper detection, not prevention. A local attacker with full SQLite write access can rewrite the entire chain from genesis. The hash chain proves no event was modified after the fact by an actor without that access.
 
 ---
 
@@ -90,12 +95,13 @@ The quality of semantic extraction from natural language depends on:
 - Input text structure and complexity
 - Domain vocabulary coverage
 
-**Bench harness measurements (schema v0.2.0):**
+**Bench harness measurements (schema v0.3.0):**
 
 | corpus | size | precision | recall | F1 | correct / gold |
 |---|---|---|---|---|---|
 | `seed_tiny_v1` | 8 SVO sentences | 1.000 | 1.000 | **1.000** | 8 / 8 |
 | `seed_v1` | 50 SVO sentences | 1.000 | 1.000 | **1.000** | 50 / 50 |
+| `seed_v2` | 20 difficulty-corpus docs | **1.000** | 0.615 | **0.762** | 16 / 26 |
 
 Reproduce via:
 ```
@@ -115,7 +121,7 @@ The POS fallback in `_pos_fallback_triplet()` now fires *only when the dep-based
 
 Precision stayed at 1.000 through the recovery — the fallback's three-content-token gate refuses to fire on sentences with adverbial modifiers, stacked adjectives, auxiliaries, or prepositional phrases, which the dep-based path handles correctly. The sieve's npadvmod subject-dep relaxation (commit `9aea41e`) and the POS fallback (this section) together close every failure mode observed on `seed_v1` without introducing any false positive.
 
-**Residual ceiling:** the current 100 % F1 on `seed_v1` reflects that corpus's scope (simple declarative SVO). Non-SVO constructions (passives with agent phrases, relative clauses, compound predicates, implicit subjects) remain untested; they are deliberately excluded from `seed_v1` and handled by Phase 19B's separate adversarial corpus.
+**Residual ceiling (now measured):** `seed_v1`'s 100 % F1 reflects that corpus's scope — simple declarative SVO, one fact per document. `seed_v2` was authored specifically to exercise the parse patterns `seed_v1` deliberately excludes: apposition, passive voice (with and without agent), relative clauses, conjunction (compound subject + object), negation, modal hedging, and prepositional-complement verbs. `seed_v2`'s **0.762 F1 with precision = 1.000** is the honest empirical ceiling of the current sieve on real-prose constructions. Every remaining `seed_v2` failure is a RECALL miss (a fact dropped), never a TRUTH inversion (a fact asserted wrong) — the two truth-layer bug classes that used to corrupt the Gödel state are now closed: negation is intentionally suppressed (commit `ef392cb`) and passive-with-agent is now semantically inverted to active form (commit `b751222`).
 
 **Prior documented benchmark:** A 50-document golden benchmark corpus exists (Phase 19B) spanning 7 adversarial categories with 100 gold-standard triplets. That corpus remains the source of truth for Phase 19B claims; `seed_v1` is the bench-harness benchmark and complements Phase 19B rather than replacing it.
 
@@ -128,7 +134,9 @@ Gödel arithmetic operations (LCM, GCD, modulo) operate on arbitrary-precision i
 - LCM: O(n²) (reduces to GCD)
 - Modulo: O(n²)
 
-**Bench harness measurements (commit `321e573`, Darwin arm64 / Python 3.10.14 / CPython / no Zig):**
+**Bench harness measurements (commit `9ed49bf` and later, Darwin arm64 / Python 3.10.14 / CPython / no Zig):**
+
+Core algebra operations (via `scripts/bench/runners/performance.py`):
 
 | operation | N=100 | N=500 | N=1000 | empirical scaling |
 |---|---|---|---|---|
@@ -136,6 +144,17 @@ Gödel arithmetic operations (LCM, GCD, modulo) operate on arbitrary-precision i
 | encode (p50) | 0.131 ms | 1.552 ms | 5.107 ms | ~O(n²) |
 | merge (p50) | 28.4 ms | 206.4 ms | **518.8 ms** | ~O(n²) — bottleneck |
 | entail (p50) | 0.014 ms | 0.062 ms | 0.123 ms | ~O(n) |
+
+Provenance path (via `scripts/bench_provenance_path.py`, N=100/1000/5000):
+
+| operation | p50 | p99 | steady ops/sec | scaling |
+|---|---|---|---|---|
+| `compute_prov_id` (JCS + SHA-256) | 35 µs | 45 µs | ~28 k | flat — crypto ceiling |
+| `record_provenance` (single-tx write) | 460 µs | 1 ms | ~2 k | flat — SQLite-bound |
+| `record_provenance_batch` (single-tx N-insert) | 45 µs amortised | 45 µs | **~22 k** | flat — within 30% of crypto ceiling (**10.2× the single-write path**) |
+| `get_structured_provenance_for_axiom` | 128 µs | 170–600 µs | ~7 k | flat — indexed lookup |
+
+The batch path (`record_provenance_batch`, commit `9ed49bf`) lifts sustained ingest from ~2 k/sec to ~22 k/sec on a single ledger handle, closing the gap to the prov_id compute ceiling. For machine-consumer pipelines above ~100 k docs/min, shard by axiom_key hash or move storage off SQLite; for human-scale use cases, the single-write path is already sub-millisecond.
 
 Extrapolating the merge curve: N=10,000 primes → ~50 s/op wall-clock; N=100,000 → >1 hr/op. This is the empirical basis for the guidance that **prime encoding is a viable substrate up to low-thousands of axioms and an attestation artifact above that**. For corpora above that ceiling, plug in a property-graph backing store and retain the Gödel integer as a signed witness, not as the primary query path.
 
@@ -221,7 +240,7 @@ The `scripts/bench/` directory contains the measurement-first infrastructure tha
 - **`PerformanceRunner` uses synthetic triples** `(s_i, p, o_i)` for deterministic, non-colliding primes; exercises the pure-Python path even when the Zig core is absent.
 - **`ExtractionRunner` uses set-comparison on canonical keys** (no post-hoc lemmatization reconciliation). Gold-triple mismatches with sieve output count as false negatives. Honesty over flattery.
 - **CI regression detection** compares each new report against the most recent history entry; `--fail-on-regression` exits non-zero on any F1 drop > 0.02, drift increase > 1%, FActScore drop > 0.03, or p99 ratio > 1.15.
-- **LLM-gated runners** (`regeneration.py`, `roundtrip.py`) require `SUM_BENCH_FACTSCORE_MODEL`, `SUM_BENCH_MINICHECK_MODEL`, `SUM_BENCH_GENERATOR_MODEL` env vars with pinned IDs.
+- **LLM-gated runners** (`regeneration.py`, `roundtrip.py`, `llm_roundtrip.py`) require `SUM_BENCH_FACTSCORE_MODEL`, `SUM_BENCH_MINICHECK_MODEL`, `SUM_BENCH_GENERATOR_MODEL`, and `SUM_BENCH_EXTRACTOR_MODEL` env vars, each with a pinned snapshot ID (e.g. `gpt-4o-mini-2024-07-18`). Unpinned identifiers raise `SystemExit` before any work begins.
 
 ---
 
@@ -239,7 +258,7 @@ These are design goals, NOT current capabilities.
 | Scientific/technical corpora support | Not implemented | Future |
 | **Bidirectional distillation with sliding-scale parameters** (density, formality, audience, perspective) | **Interface + density shipped** (`internal/ensemble/tome_sliders.py`, `AutoregressiveTomeGenerator.generate_controlled`, 21 tests). Non-density axes await LLM extrapolator wiring. | **Phase 30+ for full-LLM slider product** |
 | **Polytaxis Bucket A absorption** (SHACL, conformal prediction sets, VC 2.0 with `eddsa-jcs-2022`, RFC 3161 timestamping, RFC 9162 CT v2 proofs, PROV-O/PROV-STAR, polyglot RDF/JSON-LD/Turtle emission) | **In progress** — shipped: `epistemic_status` field (v1.2.0), Venn-Abers conformal-interval algorithm + `ConfidenceCalibrator` wiring, PROV-O JSON-LD adapter for Akashic Ledger events, W3C VC 2.0 Data Integrity emission + verification under `eddsa-jcs-2022` (`internal/infrastructure/verifiable_credential.py` + pure-Python RFC 8785 JCS at `internal/infrastructure/jcs.py`, 58 tests). **Pending:** SHACL, RFC 3161 TSA anchor, RFC 9162 CT v2 proofs, full polyglot emission (Turtle/RDF-XML beyond JSON-LD) | **Phase 25** |
-| Prose round-trip conservation measurement (via `SumRoundtripRunner` + LLM extrapolator + MiniCheck gate) | Stubbed in bench harness; pending LLM wiring | STATE 4-B |
+| Prose round-trip conservation measurement (via `SumRoundtripRunner` + LLM extrapolator + MiniCheck gate) | **Measured** — see §2.5 | STATE 4-B (shipped) |
 | Property-graph backing store for corpora above ~10k axioms (prime encoding demoted to signed witness) | Design decision pending empirical confirmation (now confirmed — see §2.2) | Phase 26 |
 
 ---
@@ -275,7 +294,7 @@ Absorbed from the Polytaxis formal specification v0.1 §2 as the single highest-
 | `empirical-benchmark` | Measured on a fixed corpus or benchmark. Reproducible, not provable. | Extraction F1; wall-clock p50/p99; regeneration faithfulness (when wired); round-trip drift on prose. |
 | `expert-opinion` | Human curator judgment. Lowest formal weight. | Curator-promoted category assignments (future). |
 
-The `epistemic_status` field is mandatory on every `BenchReport` metric record as of schema v0.2.0 (commit `321e573`). Future upgrades: every signed Verifiable Credential emitted by SUM will carry the same field; every claim returned by `/ask` and `/extrapolate` endpoints will carry the same field in the response envelope.
+The `epistemic_status` field is mandatory on every `BenchReport` metric record as of schema v0.3.0 (introduced v0.2.0 in commit `321e573`, carried forward through the per-doc regeneration and llm_roundtrip additions in `02b4413` and `9fd232d`). Future upgrades: every signed Verifiable Credential emitted by SUM will carry the same field; every claim returned by `/ask` and `/extrapolate` endpoints will carry the same field in the response envelope.
 
 **Conflation rule:** A summary or marketing surface that quotes an `empirical-benchmark` number alongside language like "mathematically guaranteed" or "proven" is a policy violation and must be corrected. The README, THREAT_MODEL, and CANONICAL_ABI_SPEC are required to observe this rule; `PROOF_BOUNDARY.md` is its arbiter.
 
@@ -285,18 +304,18 @@ The `epistemic_status` field is mandatory on every `BenchReport` metric record a
 
 SUM's ultimate goal is a **bidirectional knowledge distillation engine**: turn narrative tomes into structured tags and vice versa, with tunable sliders for density, formality, perspective, and audience — truthful in every claim it purports.
 
-**Current honest state (commit `321e573`):**
+**Current honest state (commit `3ade8c9` and later — see the git log for the running tip):**
 
 | Capability | Status | Measurement |
 |---|---|---|
 | Tome → Tag (extraction) | **F1 = 1.000** on seed_v1, **F1 = 0.762** on seed_v2 | seed_v1: 50/50 simple SVO. seed_v2 (difficulty corpus, 20 docs × 7 parse patterns — apposition, passive voice, relative clause, conjunction, negation, hedging, complex PP): **precision 1.000, recall 0.615, TP=16/26, predicted=16**. The sieve now emits ZERO false positives on seed_v2 — every remaining failure is a RECALL miss (dropped fact), not a TRUTH inversion (asserted-wrong fact). Truth-layer classes closed: negation (doc_016, doc_017) and modal hedging (doc_018) suppressed; passive voice with agent (doc_007-009) now swaps the grammatical subject/object via the `agent → pobj` spaCy dep path to recover active-form triples; agentless passive suppressed. Remaining RECALL-reducing failure modes: relative clauses drop the subordinate fact (doc_010-012); apposition drops the "X be Y" fact (doc_004-006); compound subject/object drops all but the first conjunct (doc_013-015); prepositional-complement verbs return empty (doc_020). These are misses, not lies — the Gödel state is no longer corrupted by surface-voice parsing choices. |
 | Tag → Tome (canonical, deterministic) | Working | Mathematically proven round-trip (§1.1) |
-| Tag → Tome (narrative, prose) | Requires LLM extrapolator | No empirical measurement yet |
+| Tag → Tome (narrative, prose) | **Measured** | FActScore 0.940 / 0.960 on seed_v1 via `LiveLLMAdapter.generate_text` + `LlmEntailmentChecker`, both legs `gpt-4o-mini-2024-07-18`; see §2.4 |
 | Round-trip conservation (canonical) | Proven + empirically verified per-run | §1.1; 0.00% drift on `seed_tiny_v1` and `seed_v1` (commits `a6606eb`, current) |
-| Round-trip conservation (sieve re-extract of canonical text) | Measured | 42.86% (seed_tiny) / 50.00% (seed_v1) drift; sieve is not bijective even on its own output |
+| Round-trip conservation (sieve re-extract of canonical text) | Measured | 42.86 % (seed_tiny) / 54.00 % (seed_v1) / 56.25 % (seed_v2) drift; sieve is not bijective even on its own canonical output — monotonic with corpus difficulty, see §2.3 |
 | Regeneration faithfulness (LLM narrative from axioms) | **Measured (two runs)** | FActScore = **0.960** (48/50, 2026-04-17) / **0.940** (47/50, 2026-04-19) on seed_v1 with `gpt-4o-mini-2024-07-18` for both generator and entailment checker; delta below regression threshold, both runs on record; see §2.4 |
 | Round-trip conservation (LLM narrative prose, full loop) | **Measured** | drift = **107.75 %**, exact-match recall = **0.12** on seed_v1 (2026-04-19), both legs `gpt-4o-mini-2024-07-18`. 50 source axioms → 600 extracted (12× amplification); per-doc attribution confirms the pattern is generator elaboration + extractor paraphrase, not reasoning failure. See §2.5 |
-| Extraction ceiling investigation (en_core_web_trf upgrade or LLM fallback) | 8 / 50 seed_v1 failures all fit one spaCy parse pattern; architectural decision pending | User call |
+| Extraction ceiling investigation (en_core_web_trf upgrade or LLM fallback) | seed_v1 at F1 = 1.000 (no remaining failures); seed_v2 at F1 = 0.762 with precision = 1.000 — every remaining failure is a RECALL miss not a TRUTH inversion (apposition secondary, relative-clause subordinate, compound non-head conjuncts). Architectural decision pending on whether to address via `en_core_web_trf` upgrade or LLM fallback at the sieve boundary | User call |
 | Sliding-scale rendering parameters | **Interface shipped** (`TomeSliders`): 5 axes — density / length / formality / audience / perspective. Density slider actioned on the deterministic canonical path (lexicographic axiom subsetting); remaining 4 axes LLM-gated and captured in output header as metadata | Phase 30+ (LLM wiring for non-density axes) |
 | Cryptographic attestation | Working | Ed25519 + HMAC-SHA256 + Merkle chain |
 | Epistemic-status labeling | Shipped v1.2.0 | See §5 |
