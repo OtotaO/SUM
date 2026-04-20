@@ -24,7 +24,9 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-prod.txt
 python -m spacy download en_core_web_sm
 
-# Run the 641-test verification suite
+# Run the test suite (907 tests collected as of 2026-04-20 — 4 known
+# collection errors are the jwt-missing issue in quantum-router-dependent
+# phase tests, tracked as ops, not a regression)
 python -m pytest Tests/ -v
 
 # Run the 21-check Fortress gate

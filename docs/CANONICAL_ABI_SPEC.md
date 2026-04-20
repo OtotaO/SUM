@@ -54,10 +54,11 @@ fact_line   = "The " SUBJECT " " PREDICATE " " OBJECT "."
 ```
 
 Where:
-- `SUBJECT`, `PREDICATE`, `OBJECT` are single whitespace-free tokens (no internal spaces)
-- All tokens are lowercase
-- Sections are sorted lexicographically by subject
-- Fact lines within a section are sorted lexicographically by full axiom key
+- `SUBJECT` and `PREDICATE` are single whitespace-free tokens matching the parser regex `\S+`. Multi-word entities at the sieve/LLM extraction boundary MUST be underscore-joined (e.g. `marie_curie`, `albert_einstein`) — see `internal/algorithms/syntactic_sieve.py` (commit `0f3f12d` fixed a latent canonical-round-trip drift caused by space-joined subjects bleeding into the parser's predicate capture group).
+- `OBJECT` matches the parser regex `.+` (greedy) and MAY contain whitespace. Multi-word objects (e.g. `nobel prizes`, `evolution theory`) are permitted and canonicalise without modification.
+- All tokens are lowercase.
+- Sections are sorted lexicographically by subject.
+- Fact lines within a section are sorted lexicographically by full axiom key.
 
 ### 3.3. Canonical Line Extraction Rule
 
