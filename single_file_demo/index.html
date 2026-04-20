@@ -7,8 +7,9 @@
 <style>
   :root { color-scheme: light dark; font-family: ui-sans-serif, system-ui, -apple-system; }
   body { max-width: 720px; margin: 40px auto; padding: 0 16px; line-height: 1.5; }
-  h1 { font-weight: 600; margin: 0 0 8px; font-size: 20px; }
-  .sub { opacity: 0.65; margin-bottom: 24px; font-size: 13px; }
+  h1 { font-weight: 600; margin: 0 0 12px; font-size: 28px; letter-spacing: -0.01em; line-height: 1.2; }
+  .sub { opacity: 0.7; margin-bottom: 24px; font-size: 14px; line-height: 1.5; max-width: 62ch; }
+  .sub em { font-style: italic; opacity: 0.95; font-weight: 500; }
   textarea { width: 100%; min-height: 140px; padding: 12px; font: 14px/1.45 ui-monospace, monospace; border: 1px solid #8886; border-radius: 6px; box-sizing: border-box; resize: vertical; background: transparent; color: inherit; }
   textarea:focus { outline: 2px solid #4a90e2; outline-offset: 0; border-color: transparent; }
   .row { display: flex; gap: 12px; align-items: center; margin: 12px 0; }
@@ -39,10 +40,10 @@
 </head>
 <body>
 
-<h1>SUM — paste a paragraph, attest every fact</h1>
-<p class="sub">Every fact becomes a prime number. Every paragraph becomes a product of primes. Sign the number, share the number, merge the numbers — math does the trust.</p>
+<h1>Every fact becomes a prime number.</h1>
+<p class="sub"><em>Math does the trust.</em> Paste any paragraph, mint the facts, download a signed JSON — anyone can verify it on their own machine with no SUM software installed.</p>
 
-<textarea id="prose" placeholder="Alice likes cats. Bob owns a dog. Newton wrote Principia."></textarea>
+<textarea id="prose" placeholder="The printing press was invented by Johannes Gutenberg around 1440. Marie Curie, a pioneering physicist, won two Nobel Prizes. Ada Lovelace wrote the first computer algorithm."></textarea>
 
 <div class="row">
   <label for="density">density</label>
