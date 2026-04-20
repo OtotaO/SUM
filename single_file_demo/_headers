@@ -1,0 +1,53 @@
+# Cloudflare Pages headers for the SUM single-file demo.
+#
+# This file is interpreted ONLY by Cloudflare Pages (or a Pages-compatible
+# platform like Netlify — the grammar is shared). It has no effect on the
+# artifact when pasted into a Claude conversation; Claude's artifact
+# runtime serves the HTML under its own origin and CSP.
+#
+# Rule order matters: the first pattern that matches a request wins.
+# `/*` is the global fallback.
+
+/*
+  # ── Cache policy ────────────────────────────────────────────────────
+  # HTML is content-addressed by git commit but not by URL (there's no
+  # hash in the filename), so `immutable` would prevent a bugfix from
+  # reaching users. 1 hour strikes the balance: edits propagate within
+  # the hour, most sessions hit the cache.
+  # Bump to `public, max-age=31536000, immutable` if/when the filename
+  # gains a content hash (e.g. moves to a versioned path like
+  # /v1/index.html).
+  Cache-Control: public, max-age=3600, must-revalidate
+
+  # ── Baseline hardening ──────────────────────────────────────────────
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: no-referrer
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+
+  # ── Content Security Policy ────────────────────────────────────────
+  # The demo is intentionally self-contained: one inline <style>, one
+  # inline <script>, zero external resources. `'unsafe-inline'` on
+  # script-src and style-src is the price of the single-file property
+  # and is mitigated by `default-src 'none'` locking everything else
+  # down. `connect-src 'self'` allows a future v1 Pages Function at
+  # /api/* on the same origin without requiring a CSP update.
+  # `frame-ancestors 'none'` blocks embedding the Pages deployment in
+  # a third-party iframe (clickjacking defense); Claude artifact use
+  # is unaffected because those headers only apply to the Pages origin.
+  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; font-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+
+  # ── Permissions Policy ─────────────────────────────────────────────
+  # Deny every browser capability the demo does not use. Fewer
+  # attack-surfaces, smaller audit.
+  Permissions-Policy: accelerometer=(), autoplay=(), camera=(), cross-origin-isolated=(), display-capture=(), encrypted-media=(), fullscreen=(self), geolocation=(), gyroscope=(), keyboard-map=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(), publickey-credentials-get=(), screen-wake-lock=(), sync-xhr=(), usb=(), web-share=(), xr-spatial-tracking=()
+
+  # ── Cross-origin isolation (sets us up for a future WASM path) ─────
+  # COOP=same-origin + COEP=require-corp unlocks SharedArrayBuffer, which
+  # the `core-zig/` WASM build will want when it activates. Safe to turn
+  # on now because the demo loads zero cross-origin resources today —
+  # if that ever changes, these headers will loudly fail first at the
+  # dev stage rather than at a user's browser.
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: require-corp
+  Cross-Origin-Resource-Policy: same-origin
