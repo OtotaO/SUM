@@ -31,6 +31,10 @@
   .good { color: #27ae60; }
   .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; background: #8882; margin-left: 6px; }
   details summary { cursor: pointer; opacity: 0.75; font-size: 12px; margin-top: 8px; }
+  .extractor-src { font-size: 11px; opacity: 0.7; margin: 8px 0 4px; font-style: italic; }
+  .extractor-src.claude { color: #2e86ab; opacity: 0.9; font-style: normal; }
+  .extractor-src.claude::before { content: "✶ "; }
+  .extractor-src.naive::before { content: "· "; }
 </style>
 </head>
 <body>
@@ -53,6 +57,7 @@
 <div id="result" style="display:none;">
   <div class="card">
     <h3>Facts <span class="pill" id="fact-count">0</span></h3>
+    <div class="extractor-src naive" id="extractor-source"></div>
     <ul class="facts" id="facts"></ul>
   </div>
   <div class="card">
@@ -80,7 +85,7 @@
 </div>
 
 <p class="footer">
-  This is v0 — extraction uses a naive tokeniser intended as a placeholder. The production path runs the sieve (deterministic, ~10 k tokens/sec) or an LLM (higher recall, network-bound) behind the same attestation layer. Source + harnesses: <a href="https://github.com/OtotaO/SUM">github.com/OtotaO/SUM</a>.
+  This file is both a standalone HTML page AND a Claude artifact. Paste it into a Claude artifact conversation and extraction upgrades automatically to Claude-grade recall (SVO, lowercased, underscore-joined subjects, negation suppressed, passive inverted — the same rules SUM's Python sieve enforces). Outside an artifact it uses a naive tokeniser; the attestation layer is identical either way. Source + cross-runtime harnesses: <a href="https://github.com/OtotaO/SUM">github.com/OtotaO/SUM</a>.
 </p>
 
 <script>
@@ -215,14 +220,20 @@ async function encodeChunkState(triples) {
   return state;
 }
 
-// ─── Naive extractor (v0 placeholder) ────────────────────────────────
-// Upgrade path: swap for Claude artifact-runtime call (window.claude.complete)
-// or server-side sieve. Contract: returns [[s, p, o], ...].
+// ─── Extraction ──────────────────────────────────────────────────────
+// Two paths, decided at runtime:
+//   1. Claude artifact — if window.claude.complete is available, prompt
+//      Claude to extract SVO triples under SUM's sieve conventions
+//      (lowercase, underscore-joined multi-word subjects, verb-lemma
+//      predicates, skip negation, skip hedging, invert passive).
+//      Yields LLM-grade recall and truth-safety on real prose.
+//   2. Naive tokeniser — fallback when not running inside a Claude
+//      artifact (plain browser, hosted static page, offline). Sentence
+//      split + stopword strip + first-three-content-words heuristic.
+//      Deliberately shallow; makes the flow runnable without any LLM.
 //
-// Heuristic: split on sentence terminators; for each sentence, split on
-// whitespace, lowercase, strip articles/auxiliaries, take first three
-// content words as (s, p, o). Good enough for the demo baseline; real
-// extraction would use the Python sieve or an LLM.
+// Either path returns {triples, source}. Source is shown in the UI so
+// the user knows which extractor produced the attestation.
 
 const STOP = new Set(['a','an','the','is','are','was','were','be','been','being','has','have','had','do','does','did','will','would','can','could','may','might','shall','should','to','of','in','on','at','by','for','with','from','into','through','and','but','or','so','also','his','her','their','its','my','your','our']);
 
@@ -236,6 +247,109 @@ function naiveExtract(text) {
     }
   }
   return triples;
+}
+
+const CLAUDE_PROMPT_TEMPLATE = `You are an SVO triple extractor for SUM, a bidirectional knowledge distillation engine. Extract factual claims from the text below as (subject, predicate, object) triples following these rules:
+
+- Lowercase every component.
+- Multi-word subject: join with underscores (e.g. "marie_curie", "isaac_newton").
+- Multi-word object: join with spaces (e.g. "nobel prizes").
+- Predicate: single-word verb lemma (e.g. "write" not "wrote", "be" not "is").
+- SKIP negated sentences: do NOT emit "diamonds cut steel" from "diamonds cannot cut steel".
+- SKIP hedged or modal claims: do NOT emit "dark_matter exist" from "dark matter may exist".
+- Invert passive voice: from "Hamlet was written by Shakespeare" emit ["shakespeare", "write", "hamlet"].
+
+Output ONLY a JSON array of triples. No prose, no markdown fences, no commentary. If no extractable facts, output [].
+
+Example input: "Alice likes cats. Bob owns a dog."
+Example output: [["alice", "like", "cat"], ["bob", "own", "dog"]]
+
+Text:
+<<<
+{{TEXT}}
+>>>
+
+JSON:`;
+
+function buildClaudePrompt(text) {
+  return CLAUDE_PROMPT_TEMPLATE.replace('{{TEXT}}', text);
+}
+
+/**
+ * Extract the first balanced JSON array from a response string.
+ * Handles responses that include surrounding prose or code fences —
+ * Claude occasionally decorates output despite the "only JSON" instruction.
+ *
+ * Uses a bracket counter with string-awareness so `]` inside a string
+ * doesn't confuse depth tracking. Returns the parsed value or null.
+ */
+function extractJsonArray(text) {
+  const start = text.indexOf('[');
+  if (start === -1) return null;
+  let depth = 0, inString = false, escape = false;
+  for (let i = start; i < text.length; i++) {
+    const c = text[i];
+    if (escape) { escape = false; continue; }
+    if (c === '\\') { escape = true; continue; }
+    if (c === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (c === '[') depth++;
+    else if (c === ']') {
+      depth--;
+      if (depth === 0) {
+        try { return JSON.parse(text.substring(start, i + 1)); }
+        catch { return null; }
+      }
+    }
+  }
+  return null;
+}
+
+/** Filter a parsed array to well-formed triples. Drops anything that
+ *  isn't a 3-element array of non-empty strings. */
+function validateTriples(arr) {
+  if (!Array.isArray(arr)) return [];
+  const out = [];
+  for (const item of arr) {
+    if (!Array.isArray(item) || item.length !== 3) continue;
+    const [s, p, o] = item;
+    if (typeof s !== 'string' || typeof p !== 'string' || typeof o !== 'string') continue;
+    if (!s.trim() || !p.trim() || !o.trim()) continue;
+    out.push([s.trim(), p.trim(), o.trim()]);
+  }
+  return out;
+}
+
+/**
+ * Try Claude extraction via the artifact runtime. Returns triples on
+ * success, null on any failure (missing API, bad JSON, zero triples —
+ * caller falls back to naive).
+ */
+async function tryClaudeExtract(text) {
+  const hasClaude = typeof window !== 'undefined'
+    && window.claude
+    && typeof window.claude.complete === 'function';
+  if (!hasClaude) return null;
+  try {
+    const response = await window.claude.complete(buildClaudePrompt(text));
+    const parsed = extractJsonArray(response);
+    const triples = validateTriples(parsed);
+    return triples.length > 0 ? triples : null;
+  } catch (e) {
+    console.warn('[SUM] Claude extraction failed, falling back:', e);
+    return null;
+  }
+}
+
+/**
+ * Main extraction entry point. Returns {triples, source} where source
+ * is either "claude" or "naive" — shown in the UI so the user knows
+ * which extractor produced the attestation.
+ */
+async function extractTriples(text) {
+  const claude = await tryClaudeExtract(text);
+  if (claude !== null) return { triples: claude, source: 'claude' };
+  return { triples: naiveExtract(text), source: 'naive' };
 }
 
 // ─── Bundle emit (CanonicalBundle-compatible) ────────────────────────
@@ -336,9 +450,15 @@ $('attest').addEventListener('click', async () => {
   if (!text) return;
 
   const btn = $('attest');
-  btn.disabled = true; btn.textContent = 'Minting primes…';
+  btn.disabled = true; btn.textContent = 'Extracting…';
   try {
-    const all = naiveExtract(text);
+    const { triples: all, source } = await extractTriples(text);
+    if (all.length === 0) {
+      alert('No extractable facts in the input. Try adding clear SVO sentences (e.g. "Alice likes cats.").');
+      return;
+    }
+
+    btn.textContent = 'Minting primes…';
     const d = parseFloat($('density').value);
     const keep = Math.max(1, Math.ceil(all.length * d));
     // Density applies by lexicographic order of the axiom key — matches
@@ -361,6 +481,11 @@ $('attest').addEventListener('click', async () => {
     }
     $('fact-count').textContent = triples.length;
     $('state-int').textContent = bundle.state_integer;
+    const srcEl = $('extractor-source');
+    srcEl.textContent = source === 'claude'
+      ? 'extracted by Claude (artifact runtime)'
+      : 'extracted by naive tokeniser — paste this page into a Claude artifact for LLM-grade recall';
+    srcEl.className = source === 'claude' ? 'extractor-src claude' : 'extractor-src naive';
     $('result').style.display = 'block';
   } catch (e) {
     alert('Attest failed: ' + e.message);
