@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SUM — paste, attest, verify</title>
+<style>
+  :root { color-scheme: light dark; font-family: ui-sans-serif, system-ui, -apple-system; }
+  body { max-width: 720px; margin: 40px auto; padding: 0 16px; line-height: 1.5; }
+  h1 { font-weight: 600; margin: 0 0 8px; font-size: 20px; }
+  .sub { opacity: 0.65; margin-bottom: 24px; font-size: 13px; }
+  textarea { width: 100%; min-height: 140px; padding: 12px; font: 14px/1.45 ui-monospace, monospace; border: 1px solid #8886; border-radius: 6px; box-sizing: border-box; resize: vertical; background: transparent; color: inherit; }
+  textarea:focus { outline: 2px solid #4a90e2; outline-offset: 0; border-color: transparent; }
+  .row { display: flex; gap: 12px; align-items: center; margin: 12px 0; }
+  .row label { font-size: 13px; opacity: 0.8; min-width: 90px; }
+  input[type=range] { flex: 1; accent-color: #4a90e2; }
+  .v { font: 13px ui-monospace, monospace; opacity: 0.75; min-width: 44px; text-align: right; }
+  button { padding: 10px 18px; border: 1px solid #8886; border-radius: 6px; background: #4a90e2; color: white; font: inherit; font-weight: 500; cursor: pointer; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  button.ghost { background: transparent; color: inherit; }
+  .card { border: 1px solid #8884; border-radius: 8px; padding: 16px; margin: 16px 0; background: #8881; }
+  .card h3 { margin: 0 0 10px; font-size: 14px; font-weight: 600; letter-spacing: 0.02em; opacity: 0.8; text-transform: uppercase; }
+  ul.facts { list-style: none; padding: 0; margin: 0; }
+  ul.facts li { font: 13px/1.7 ui-monospace, monospace; padding: 4px 0; border-bottom: 1px solid #8882; }
+  ul.facts li:last-child { border-bottom: none; }
+  ul.facts .prime { opacity: 0.55; margin-left: 10px; }
+  .state-int { font: 12px/1.4 ui-monospace, monospace; word-break: break-all; opacity: 0.85; background: #8881; padding: 8px; border-radius: 4px; border: 1px solid #8883; max-height: 120px; overflow-y: auto; }
+  .footer { opacity: 0.5; font-size: 11px; margin-top: 40px; border-top: 1px solid #8883; padding-top: 12px; }
+  .footer a { color: inherit; }
+  .bad { color: #c0392b; }
+  .good { color: #27ae60; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; background: #8882; margin-left: 6px; }
+  details summary { cursor: pointer; opacity: 0.75; font-size: 12px; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<h1>SUM — paste a paragraph, attest every fact</h1>
+<p class="sub">Every fact becomes a prime number. Every paragraph becomes a product of primes. Sign the number, share the number, merge the numbers — math does the trust.</p>
+
+<textarea id="prose" placeholder="Alice likes cats. Bob owns a dog. Newton wrote Principia."></textarea>
+
+<div class="row">
+  <label for="density">density</label>
+  <input type="range" id="density" min="0.1" max="1.0" step="0.05" value="1.0">
+  <span class="v" id="density-val">1.00</span>
+</div>
+
+<div class="row" style="justify-content: flex-end;">
+  <button id="attest">Attest</button>
+</div>
+
+<div id="result" style="display:none;">
+  <div class="card">
+    <h3>Facts <span class="pill" id="fact-count">0</span></h3>
+    <ul class="facts" id="facts"></ul>
+  </div>
+  <div class="card">
+    <h3>Gödel state integer</h3>
+    <div class="state-int" id="state-int">—</div>
+    <details><summary>what is this</summary>
+      <p style="font-size:12px;opacity:0.75">Each fact (subject, predicate, object) is deterministically mapped to a unique prime via SHA-256(axiom_key) → seed → nextprime(seed). The state integer is the LCM of every prime. Two SUM states merge losslessly by taking their LCM. Entailment: <code>state % prime == 0</code> answers "does this knowledge base contain fact X?"</p>
+    </details>
+  </div>
+  <div class="row" style="justify-content: flex-end; gap: 8px;">
+    <button id="download" class="ghost">Download bundle</button>
+  </div>
+</div>
+
+<hr style="margin: 40px 0; border: none; border-top: 1px solid #8883;">
+
+<div class="card">
+  <h3>Verify a bundle</h3>
+  <p style="font-size:12px;opacity:0.7;margin:0 0 10px">Paste a SUM bundle JSON. The verifier recomputes the state integer from the canonical tome and confirms it matches the claimed value. No server, no network, no keys — math.</p>
+  <textarea id="verify-input" placeholder='{"bundle_version":"1.1.0","canonical_format_version":"1.0.0",...}'></textarea>
+  <div class="row" style="justify-content: flex-end; margin-top: 8px;">
+    <button id="verify" class="ghost">Verify</button>
+    <span id="verify-result"></span>
+  </div>
+</div>
+
+<p class="footer">
+  This is v0 — extraction uses a naive tokeniser intended as a placeholder. The production path runs the sieve (deterministic, ~10 k tokens/sec) or an LLM (higher recall, network-bound) behind the same attestation layer. Source + harnesses: <a href="https://github.com/OtotaO/SUM">github.com/OtotaO/SUM</a>.
+</p>
+
+<script>
+'use strict';
+
+// ─── RFC 8785 JCS — byte-identical to internal/infrastructure/jcs.py ─
+
+function canonicalize(obj) {
+  return new TextEncoder().encode(canonicalizeToStr(obj));
+}
+
+function canonicalizeToStr(obj) {
+  if (obj === true) return 'true';
+  if (obj === false) return 'false';
+  if (obj === null || obj === undefined) return 'null';
+  const t = typeof obj;
+  if (t === 'string') return encodeJcsString(obj);
+  if (t === 'number') {
+    if (!Number.isFinite(obj)) throw new TypeError('JCS: non-finite');
+    if (!Number.isInteger(obj)) throw new TypeError('JCS: floats unsupported');
+    return String(obj);
+  }
+  if (t === 'bigint') return obj.toString();
+  if (Array.isArray(obj)) {
+    return '[' + obj.map(canonicalizeToStr).join(',') + ']';
+  }
+  if (t === 'object') {
+    const keys = Object.keys(obj).sort();
+    return '{' + keys.map(k => encodeJcsString(k) + ':' + canonicalizeToStr(obj[k])).join(',') + '}';
+  }
+  throw new TypeError('JCS: unsupported type ' + t);
+}
+
+function encodeJcsString(s) {
+  let out = '"';
+  for (let i = 0; i < s.length; i++) {
+    const cp = s.charCodeAt(i);
+    if (cp === 0x22) out += '\\"';
+    else if (cp === 0x5C) out += '\\\\';
+    else if (cp === 0x08) out += '\\b';
+    else if (cp === 0x09) out += '\\t';
+    else if (cp === 0x0A) out += '\\n';
+    else if (cp === 0x0C) out += '\\f';
+    else if (cp === 0x0D) out += '\\r';
+    else if (cp < 0x20) out += '\\u' + cp.toString(16).padStart(4, '0');
+    else out += s[i];
+  }
+  return out + '"';
+}
+
+// ─── BigInt primality — ported from single_file_demo/godel.js ────────
+
+function modPow(base, exp, mod) {
+  base = ((base % mod) + mod) % mod;
+  let r = 1n;
+  while (exp > 0n) {
+    if (exp & 1n) r = (r * base) % mod;
+    exp >>= 1n;
+    base = (base * base) % mod;
+  }
+  return r;
+}
+
+const SMALL_PRIMES = [5n,7n,11n,13n,17n,19n,23n,29n,31n,37n,41n,43n];
+const MR_WITNESSES = [2n,3n,5n,7n,11n,13n,17n,19n,23n,29n,31n,37n];
+
+function isPrime(n) {
+  if (n < 2n) return false;
+  if (n < 4n) return true;
+  if (n % 2n === 0n || n % 3n === 0n) return false;
+  for (const sp of SMALL_PRIMES) {
+    if (n === sp) return true;
+    if (n % sp === 0n) return false;
+  }
+  let d = n - 1n, r = 0n;
+  while (d % 2n === 0n) { d >>= 1n; r++; }
+  for (const a of MR_WITNESSES) {
+    if (a >= n) continue;
+    let x = modPow(a, d, n);
+    if (x === 1n || x === n - 1n) continue;
+    let composite = true;
+    for (let i = 0n; i < r - 1n; i++) {
+      x = (x * x) % n;
+      if (x === n - 1n) { composite = false; break; }
+    }
+    if (composite) return false;
+  }
+  return true;
+}
+
+function nextPrime(n) {
+  let c = n + 1n;
+  if (c < 2n) return 2n;
+  if (c === 2n) return 2n;
+  if (c % 2n === 0n) c++;
+  while (!isPrime(c)) c += 2n;
+  return c;
+}
+
+function gcd(a, b) {
+  a = a < 0n ? -a : a; b = b < 0n ? -b : b;
+  while (b > 0n) [a, b] = [b, a % b];
+  return a;
+}
+
+function lcm(a, b) {
+  if (a === 0n || b === 0n) return 0n;
+  return (a / gcd(a, b)) * b;
+}
+
+// ─── Prime derivation (sha256_64_v1) ──────────────────────────────────
+
+async function derivePrime(axiomKey) {
+  const enc = new TextEncoder();
+  const buf = await crypto.subtle.digest('SHA-256', enc.encode(axiomKey));
+  const bytes = new Uint8Array(buf);
+  let hex = '';
+  for (let i = 0; i < 8; i++) hex += bytes[i].toString(16).padStart(2, '0');
+  return nextPrime(BigInt('0x' + hex));
+}
+
+function axiomKey(s, p, o) {
+  return `${s.trim().toLowerCase()}||${p.trim().toLowerCase()}||${o.trim().toLowerCase()}`;
+}
+
+async function encodeChunkState(triples) {
+  let state = 1n;
+  for (const [s, p, o] of triples) {
+    const prime = await derivePrime(axiomKey(s, p, o));
+    state = lcm(state, prime);
+  }
+  return state;
+}
+
+// ─── Naive extractor (v0 placeholder) ────────────────────────────────
+// Upgrade path: swap for Claude artifact-runtime call (window.claude.complete)
+// or server-side sieve. Contract: returns [[s, p, o], ...].
+//
+// Heuristic: split on sentence terminators; for each sentence, split on
+// whitespace, lowercase, strip articles/auxiliaries, take first three
+// content words as (s, p, o). Good enough for the demo baseline; real
+// extraction would use the Python sieve or an LLM.
+
+const STOP = new Set(['a','an','the','is','are','was','were','be','been','being','has','have','had','do','does','did','will','would','can','could','may','might','shall','should','to','of','in','on','at','by','for','with','from','into','through','and','but','or','so','also','his','her','their','its','my','your','our']);
+
+function naiveExtract(text) {
+  const sentences = text.split(/[.!?]\s+|[.!?]$/).map(s => s.trim()).filter(Boolean);
+  const triples = [];
+  for (const sent of sentences) {
+    const tokens = sent.toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/).filter(w => w && !STOP.has(w));
+    if (tokens.length >= 3) {
+      triples.push([tokens[0], tokens[1], tokens.slice(2).join(' ')]);
+    }
+  }
+  return triples;
+}
+
+// ─── Bundle emit (CanonicalBundle-compatible) ────────────────────────
+
+function generateCanonicalTome(triples, title) {
+  const lines = [
+    '@canonical_version: 1.0.0',
+    `# ${title}`,
+    '',
+  ];
+  // Group by subject, sort subjects + axioms (matches Python generate_canonical).
+  const bySubject = new Map();
+  for (const [s, p, o] of triples) {
+    const sl = s.trim().toLowerCase();
+    if (!bySubject.has(sl)) bySubject.set(sl, []);
+    bySubject.get(sl).push([sl, p.trim().toLowerCase(), o.trim().toLowerCase()]);
+  }
+  const subjects = [...bySubject.keys()].sort();
+  for (const subj of subjects) {
+    const axioms = bySubject.get(subj)
+      .map(([s,p,o]) => `${s}||${p}||${o}`)
+      .sort();
+    const titleCase = subj.charAt(0).toUpperCase() + subj.slice(1);
+    lines.push(`## ${titleCase}`, '');
+    for (const ak of axioms) {
+      const [s,p,o] = ak.split('||');
+      lines.push(`The ${s} ${p} ${o}.`);
+    }
+    lines.push('');
+  }
+  return lines.join('\n');
+}
+
+async function makeBundle(triples, title) {
+  if (triples.length === 0) return null;
+  const canonicalTome = generateCanonicalTome(triples, title);
+  const state = await encodeChunkState(triples);
+  return {
+    bundle_version: '1.1.0',
+    canonical_format_version: '1.0.0',
+    branch: 'main',
+    axiom_count: triples.length,
+    canonical_tome: canonicalTome,
+    state_integer: state.toString(),
+    timestamp: new Date().toISOString(),
+    signature: 'unsigned:v0',
+    prime_scheme: 'sha256_64_v1',
+    state_integer_hex: state.toString(16),
+    is_delta: false,
+  };
+}
+
+// Verify: re-derive state from canonical_tome, compare to claimed value.
+// Matches standalone_verifier/verify.js logic.
+async function verifyBundle(b) {
+  try {
+    if (b.canonical_format_version !== '1.0.0') {
+      return { ok: false, reason: `unsupported format: ${b.canonical_format_version}` };
+    }
+    if (b.prime_scheme && b.prime_scheme !== 'sha256_64_v1') {
+      return { ok: false, reason: `unsupported scheme: ${b.prime_scheme}` };
+    }
+    const re = /^The (\S+) (\S+) (.+)\.$/;
+    const axiomKeys = [];
+    for (const line of b.canonical_tome.split('\n')) {
+      const m = line.trim().match(re);
+      if (m) axiomKeys.push(`${m[1]}||${m[2]}||${m[3]}`);
+    }
+    if (axiomKeys.length !== b.axiom_count) {
+      return { ok: false, reason: `axiom count mismatch: parsed ${axiomKeys.length}, claimed ${b.axiom_count}` };
+    }
+    let state = 1n;
+    for (const key of axiomKeys) {
+      const prime = await derivePrime(key);
+      state = lcm(state, prime);
+    }
+    const reconstructed = state.toString();
+    if (reconstructed !== b.state_integer) {
+      return { ok: false, reason: `state mismatch: claimed ${b.state_integer.slice(0,32)}… vs reconstructed ${reconstructed.slice(0,32)}…` };
+    }
+    return { ok: true, reason: `verified ${axiomKeys.length} axioms, state integer matches` };
+  } catch (e) {
+    return { ok: false, reason: `parse/crypto error: ${e.message}` };
+  }
+}
+
+// ─── UI wiring ───────────────────────────────────────────────────────
+
+const $ = id => document.getElementById(id);
+let lastBundle = null;
+
+$('density').addEventListener('input', () => {
+  $('density-val').textContent = Number($('density').value).toFixed(2);
+});
+
+$('attest').addEventListener('click', async () => {
+  const text = $('prose').value.trim();
+  if (!text) return;
+
+  const btn = $('attest');
+  btn.disabled = true; btn.textContent = 'Minting primes…';
+  try {
+    const all = naiveExtract(text);
+    const d = parseFloat($('density').value);
+    const keep = Math.max(1, Math.ceil(all.length * d));
+    // Density applies by lexicographic order of the axiom key — matches
+    // Python apply_density's deterministic subset rule.
+    const sorted = [...all].sort((a, b) =>
+      axiomKey(...a).localeCompare(axiomKey(...b))
+    );
+    const triples = sorted.slice(0, keep);
+
+    const bundle = await makeBundle(triples, 'Attested Tome');
+    lastBundle = bundle;
+
+    const listEl = $('facts');
+    listEl.innerHTML = '';
+    for (const [s, p, o] of triples) {
+      const prime = await derivePrime(axiomKey(s, p, o));
+      const li = document.createElement('li');
+      li.innerHTML = `${s} <b>${p}</b> ${o} <span class="prime">#${prime.toString().slice(0, 16)}…</span>`;
+      listEl.appendChild(li);
+    }
+    $('fact-count').textContent = triples.length;
+    $('state-int').textContent = bundle.state_integer;
+    $('result').style.display = 'block';
+  } catch (e) {
+    alert('Attest failed: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Attest';
+  }
+});
+
+$('download').addEventListener('click', () => {
+  if (!lastBundle) return;
+  const blob = new Blob([JSON.stringify(lastBundle, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'sum-bundle.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+$('verify').addEventListener('click', async () => {
+  const raw = $('verify-input').value.trim();
+  const resultEl = $('verify-result');
+  if (!raw) { resultEl.innerHTML = ''; return; }
+
+  let bundle;
+  try { bundle = JSON.parse(raw); }
+  catch (e) {
+    resultEl.innerHTML = `<span class="bad">✗ JSON parse error: ${e.message}</span>`;
+    return;
+  }
+
+  resultEl.textContent = 'verifying…';
+  const r = await verifyBundle(bundle);
+  resultEl.innerHTML = r.ok
+    ? `<span class="good">✓ ${r.reason}</span>`
+    : `<span class="bad">✗ ${r.reason}</span>`;
+});
+</script>
+
+</body>
+</html>
