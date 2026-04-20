@@ -230,7 +230,20 @@ class AkashicLedger:
         """
         def _write() -> None:
             with sqlite3.connect(self.db_path) as conn:
-                # Phase 19C: Compute Merkle hash chain
+                # Merkle-chain integrity under concurrent writers requires
+                # that the SELECT of the previous prev_hash and the INSERT
+                # of the new event happen atomically under a reserved
+                # write-lock. Python's sqlite3 module defaults to
+                # autocommit for SELECTs (the transaction begins only
+                # on the first INSERT/UPDATE/DELETE), which means two
+                # concurrent writers can both observe the SAME prev_hash
+                # before either commits — both then chain on stale state
+                # and verify_chain() subsequently reports divergence.
+                # BEGIN IMMEDIATE acquires the reserved lock NOW, queuing
+                # other writers at the SQLite boundary until this
+                # transaction commits. Verified by
+                # Tests/test_ledger_concurrency.py.
+                conn.execute("BEGIN IMMEDIATE")
                 row = conn.execute(
                     "SELECT prev_hash FROM semantic_events "
                     "ORDER BY seq_id DESC LIMIT 1"
