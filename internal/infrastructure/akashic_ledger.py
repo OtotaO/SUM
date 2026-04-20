@@ -34,7 +34,8 @@ import json
 import sqlite3
 import asyncio
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from contextlib import contextmanager
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
 from internal.infrastructure.provenance import (
@@ -158,6 +159,35 @@ class AkashicLedger:
         except sqlite3.OperationalError:
             pass  # Column already exists
 
+    # ------------------------------------------------------------------
+    # Transaction helpers — concurrency discipline in one place
+    # ------------------------------------------------------------------
+
+    @contextmanager
+    def _write_txn(self) -> Iterator[sqlite3.Connection]:
+        """Open a SQLite connection under a reserved write-lock.
+
+        Every writer in this class acquires the write-lock via
+        ``BEGIN IMMEDIATE`` before running any SQL. That serialises all
+        writers at the SQLite file boundary, which is load-bearing for
+        the Merkle hash-chain (the SELECT of prev_hash and the INSERT
+        of the new event must be atomic) and for INSERT OR IGNORE
+        dedup under concurrent identical writes.
+
+        Python's sqlite3 defaults to ``isolation_level="DEFERRED"``,
+        which means the transaction begins only on the first
+        INSERT/UPDATE/DELETE — any SELECT before that runs in
+        autocommit and sees stale snapshots under contention. Using
+        this helper guarantees every writer starts inside a real
+        transaction; missing the BEGIN IMMEDIATE is no longer
+        something a new writer has to remember.
+
+        Tests/test_ledger_concurrency.py exercises this discipline.
+        """
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            yield conn
+
     def _migrate_structured_provenance(self, conn: sqlite3.Connection) -> None:
         """M1: Structured ProvenanceRecord side-table + axiom linking.
 
@@ -229,21 +259,7 @@ class AkashicLedger:
             ingested_at: ISO timestamp (YYYY-MM-DDTHH:MM:SS).
         """
         def _write() -> None:
-            with sqlite3.connect(self.db_path) as conn:
-                # Merkle-chain integrity under concurrent writers requires
-                # that the SELECT of the previous prev_hash and the INSERT
-                # of the new event happen atomically under a reserved
-                # write-lock. Python's sqlite3 module defaults to
-                # autocommit for SELECTs (the transaction begins only
-                # on the first INSERT/UPDATE/DELETE), which means two
-                # concurrent writers can both observe the SAME prev_hash
-                # before either commits — both then chain on stale state
-                # and verify_chain() subsequently reports divergence.
-                # BEGIN IMMEDIATE acquires the reserved lock NOW, queuing
-                # other writers at the SQLite boundary until this
-                # transaction commits. Verified by
-                # Tests/test_ledger_concurrency.py.
-                conn.execute("BEGIN IMMEDIATE")
+            with self._write_txn() as conn:
                 row = conn.execute(
                     "SELECT prev_hash FROM semantic_events "
                     "ORDER BY seq_id DESC LIMIT 1"
@@ -252,7 +268,6 @@ class AkashicLedger:
                 event_hash = compute_event_hash(
                     prev_hash, operation, str(prime), axiom_key, branch
                 )
-
                 conn.execute(
                     "INSERT INTO semantic_events "
                     "(operation, prime, axiom_key, branch, source_url, "
@@ -294,7 +309,7 @@ class AkashicLedger:
         )
 
         def _write() -> None:
-            with sqlite3.connect(self.db_path) as conn:
+            with self._write_txn() as conn:
                 conn.execute(
                     "INSERT OR IGNORE INTO provenance_records "
                     "(prov_id, record_json) VALUES (?, ?)",
@@ -522,7 +537,7 @@ class AkashicLedger:
                             and will NOT be restored on boot.
         """
         def _write() -> None:
-            with sqlite3.connect(self.db_path) as conn:
+            with self._write_txn() as conn:
                 conn.execute(
                     "INSERT INTO branch_heads "
                     "(branch_name, state_integer, is_ephemeral) "
@@ -556,7 +571,7 @@ class AkashicLedger:
     async def delete_branch_head(self, branch_name: str) -> None:
         """Remove a branch head snapshot (e.g. cleanup of ephemeral branches)."""
         def _write() -> None:
-            with sqlite3.connect(self.db_path) as conn:
+            with self._write_txn() as conn:
                 conn.execute(
                     "DELETE FROM branch_heads WHERE branch_name = ?",
                     (branch_name,),
