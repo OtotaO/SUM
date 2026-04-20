@@ -6,22 +6,28 @@
 
 SUM began as a humble bidirectional knowledge distillation engine: turn **structured facts** (tags) into **coherent narratives** (tomes) and vice versa, with adjustable knobs for density, length, formality, audience, and perspective. What emerged is a **semantic algebra** that represents knowledge as prime-factored integers, giving a mathematically proven round-trip on the canonical representation and an empirical faithfulness score on the full text→structure→text loop.
 
-**The core insight remains unchanged**: knowledge should flow fluidly between structured and narrative forms. That flow is **cryptographically verified** in every signed bundle, **mathematically guaranteed** on the canonical layer (round-trip drift = 0.00%, proven), and **continuously measured** on real prose (96% FActScore on `seed_v1`, tracked by the bench harness). Every claim in this repo is labelled with an explicit epistemic status — see [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) for the separation of proved from measured.
+**The core insight remains unchanged**: knowledge should flow fluidly between structured and narrative forms. That flow is **cryptographically verified** in every signed bundle, **mathematically guaranteed** on the canonical layer (round-trip drift = 0.00 %, proven), and **continuously measured** on real prose (FActScore 0.94–0.96 on `seed_v1`, 0.762 F1 with precision 1.000 on `seed_v2`, tracked by the bench harness). Every claim in this repo is labelled with an explicit epistemic status — see [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) for the separation of proved from measured.
 
 ---
 
 ## 📊 Current Measured State
 
-Every headline number below is reproducible via `python -m scripts.bench.run_bench`. See [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) for the full truthfulness document and per-claim epistemic status.
+Every headline number below is reproducible via `python -m scripts.bench.run_bench` or the harnesses in `scripts/verify_*.py`. See [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) for the full truthfulness document and per-claim epistemic status.
 
 | Axis | Value | Epistemic Status |
 |---|---|---|
-| Canonical round-trip drift | **0.00 %** | **provable** (Ouroboros protocol, §1.1) |
-| Extraction F1 on `seed_v1` (50 docs) | **1.000** | empirical-benchmark |
-| Regeneration FActScore on `seed_v1` | **0.960** | empirical-benchmark |
-| Sieve re-extract of canonical (known ceiling) | 54 % drift | empirical-benchmark |
+| Canonical round-trip drift | **0.00 %** on seed_tiny / seed_v1 / seed_v2 | **provable** (Ouroboros protocol, §1.1) |
+| Extraction F1 on `seed_v1` (50 simple-SVO docs) | **1.000** | empirical-benchmark |
+| Extraction F1 on `seed_v2` (20-doc difficulty corpus) | **0.762** (precision **1.000**, recall 0.615) | empirical-benchmark |
+| Regeneration FActScore on `seed_v1` | **0.940–0.960** (two runs, one week apart, same pinned model) | empirical-benchmark |
+| LLM narrative round-trip drift on `seed_v1` | **107.75 %** (facts preserved, keys not — see §2.5) | empirical-benchmark |
+| LLM narrative exact-match recall on `seed_v1` | **0.12** (6/50 source triples surface-preserved) | empirical-benchmark |
+| Sieve re-extract of canonical (known ceiling) | **54.00 %** (seed_v1) / 56.25 % (seed_v2) | empirical-benchmark |
 | Merge p50 @ N=1000 primes | ~518 ms (~O(n²)) | empirical-benchmark |
-| Test suite | **756+** tests | continuous |
+| `record_provenance_batch` sustained throughput | **~22 k ops/sec** (10.2× the single-write path) | empirical-benchmark |
+| Merkle-chain integrity under concurrent writers | holds (50–200-event bursts) | **provable** (post `9c4139d`) |
+| Cross-runtime byte-identity fixtures | **131 / 131 passing** across Python ↔ Node.js ↔ Browser JS | empirical-benchmark |
+| Test suite | **907 collected** (4 known jwt-missing collection errors) | continuous |
 
 ---
 
@@ -283,18 +289,26 @@ Open `http://localhost:8000` to access:
 
 These are **roadmap items**, not current capabilities. Each is a concrete piece of work with a defined entry in `docs/PROOF_BOUNDARY.md` §3. They are listed in approximate order of prerequisite dependence.
 
-### Near-term (next 1–2 milestones)
-- **LLM wiring for the 4 remaining sliders** — length / formality / audience / perspective. Requires attaching an extrapolator (e.g. `LiveLLMAdapter` via `AutoregressiveTomeGenerator.extrapolator`). Interface is already shipped; what's missing is the prompt-conditioning layer that honours each axis.
-- **Per-doc logging in the regeneration runner** — surface which specific claims fail entailment (closes the 4% gap currently aggregated in the 0.960 FActScore).
-- **LLM narrative full round-trip runner** — composes existing LLM generator + LLM re-extractor + drift metric. Measures real prose conservation end-to-end.
-- **Calibration fixture authoring for Venn-Abers** — turns zero-width confidence intervals into meaningful bounds. Needs a labelled (score, was_correct) set.
+### Shipped since the last README pass
+- ✅ **Per-doc logging in the regeneration runner** (commit `02b4413`) — `RegenerationMetrics.per_doc` names the specific (s, p, o) triples that failed entailment so the aggregate FActScore gap is debuggable at the generator-prompt layer.
+- ✅ **LLM narrative full round-trip runner** (commit `9fd232d`, first measurement `2c252f0`) — composes `LiveLLMAdapter.extract_triplets → generate_text → extract_triplets`, reports per-doc drift. Measured on `seed_v1`: 107.75 % drift / 0.12 exact-match recall. See PROOF_BOUNDARY §2.5.
+- ✅ **W3C Verifiable Credentials 2.0 emission + verification** (commit `e007f94`) — pure-Python `eddsa-jcs-2022` Data Integrity path at `internal/infrastructure/verifiable_credential.py` + RFC 8785 JCS at `internal/infrastructure/jcs.py`. 58 tests. Bundles consumable by any VC-compliant ecosystem.
+- ✅ **Passive-voice truth fix** (commit `b751222`) — sieve now swaps `agent → pobj` into the subject slot and suppresses agentless passives; seed_v2 F1 rose 0.634 → 0.762, precision to 1.000, zero false positives on the difficulty corpus.
+- ✅ **`record_provenance_batch`** (commit `9ed49bf`) — single-transaction batched ingest; 10.2× throughput (2 k → 22 k ops/sec), within 30 % of the crypto ceiling.
+- ✅ **Merkle-chain concurrency fix** (commit `9c4139d`) — `BEGIN IMMEDIATE` serialises writers at the SQLite boundary; tamper-detection invariant now holds under concurrent writers (previously silently broke at two-plus parallel appends).
+- ✅ **Cross-runtime byte-identity substrate** — shared `standalone_verifier/math.js` consumed by both `verify.js` and `single_file_demo/godel.js` (commit `7ca3e56`); 131 fixtures assert Python ↔ Node ↔ Browser agreement across JCS canonicalisation, prov_id computation, prime derivation, and state-integer encoding.
+- ✅ **Single-file browser demo** (`single_file_demo/index.html`) — paste any paragraph, press Attest, download a CanonicalBundle JSON; hand it to anyone with Node + `verify.js` for independent verification. Upgrades automatically to LLM-grade extraction when pasted into a Claude artifact conversation via `window.claude.complete` (commit `e5e57b6`).
 
-### Medium-term (Polytaxis Bucket A completion)
+### Near-term (next 1–2 milestones)
+- **LLM wiring for the 4 remaining sliders** — length / formality / audience / perspective. Interface is already shipped in `internal/ensemble/tome_sliders.py`; what's missing is the prompt-conditioning layer that honours each axis.
+- **Calibration fixture authoring for Venn-Abers** — turns zero-width confidence intervals into meaningful bounds. Needs a labelled `(score, was_correct)` set.
+- **Remaining sieve recall work** — seed_v2 precision is 1.000, recall 0.615; closing the recall gap means apposition / relative-clause / compound-conjunct extraction. All are RECALL misses now, not truth inversions.
+
+### Medium-term (remaining Polytaxis Bucket A items)
 - **SHACL structural validation** via pySHACL — W3C-standard replacement for the hand-rolled `ExtractionValidator`.
-- **W3C Verifiable Credentials 2.0** emission with `eddsa-jcs-2022` Data Integrity proofs — makes SUM bundles consumable by any VC-compliant ecosystem.
 - **RFC 3161 timestamping anchor** — external witness on the Merkle chain.
 - **RFC 9162 CT v2 inclusion proofs** — third-party verifiability of the audit log.
-- **Full polyglot emission** — Turtle and RDF/XML beyond the JSON-LD already shipped for PROV-O.
+- **Full polyglot emission** — Turtle and RDF/XML beyond the JSON-LD already shipped for PROV-O and VC 2.0.
 
 ### Long-term (aspirational, requires user-pull to prioritise)
 - **Category-theoretic perspective bridges** — functorial mappings between classification perspectives (Polytaxis §1). Currently no crisp use case in SUM; surface it when multi-perspective users ask.
@@ -306,67 +320,118 @@ Items *not* on this roadmap that earlier drafts suggested: perspective-as-functo
 
 ---
 
-## 🌐 Cloudflare Deployment Architecture
+## 🌐 Single-File Deployment — Cloudflare Pages
 
-### Static Edge Deployment
-```yaml
-# wrangler.toml
-name = "sum-semantic-engine"
-main = "dist/worker.js"
-compatibility_date = "2024-01-01"
+SUM's user-facing demo is one self-contained HTML file: [`single_file_demo/index.html`](single_file_demo/index.html). No build step, no framework, no server. It runs in any modern browser and in the Claude artifact runtime without modification.
 
-[env.production]
-vars = { ENVIRONMENT = "production" }
-kv_namespaces = [
-  { binding = "SUM_KNOWLEDGE", id = "knowledge_store" }
-]
+### What the demo does
+
+1. User pastes any paragraph into a textarea.
+2. A density slider (0.1 → 1.0) subsets the extracted triples lexicographically — same deterministic rule as Python's `tome_sliders.apply_density`.
+3. "Attest" mints a prime per triple via `sha256_64_v1` in-browser (BigInt + WebCrypto), LCMs them into a Gödel state integer, and emits a `CanonicalBundle` JSON with the canonical tome, axiom count, state integer (decimal + hex), timestamp, and version headers.
+4. "Download" hands the user the `.json` file. "Verify" recomputes the state integer from the canonical tome in-page and confirms the match.
+5. The same `.json` file validates under `node standalone_verifier/verify.js bundle.json` for anyone who prefers an independent runtime — ✅ WITNESS VERIFICATION PASSED is the expected output.
+
+### Deployment recipe
+
+Cloudflare Pages is the chosen host — recommended after comparing Vercel, Netlify, GitHub Pages, and an R2 bucket for this specific (static, zero-backend, optionally-LLM) shape:
+
+- **Why Pages over Vercel:** free-tier bandwidth is unmetered (Vercel's hobby tier soft-caps at 100 GB/month with overage risk). ~330 edge PoPs vs Vercel's narrower free-tier anycast. Framework preset "None" means we ship `single_file_demo/` as-is with no Next.js mirror — the file is already a complete product.
+- **Why Pages over GitHub Pages:** Pages Functions gives the v1 upgrade path (a `functions/api/complete.ts` drops in alongside the static assets as a colocated Worker isolate; same deploy, same domain, same dashboard) without migrating platforms when the Claude-proxy endpoint is added for users outside the Claude artifact runtime.
+
+Minimum setup:
+
+```bash
+# One-time: link the repo on dash.cloudflare.com → Pages → "Connect to Git"
+#   Framework preset:    None
+#   Build command:       (leave empty)
+#   Build output:        single_file_demo
+
+# Every push to main auto-deploys. Or CLI:
+npx wrangler pages deploy single_file_demo --project-name sum-demo
 ```
 
-The **static interface** (quantum.html) deploys to Cloudflare Pages, with:
-- **WASM Module** (`sum_core.wasm`) - Offline semantic algebra
-- **Knowledge Sync** - WebRTC P2P + Cloudflare KV for state caching
-- **Global Edge** - Sub-100ms latency worldwide via Cloudflare's network
-- **Serverless Backend** - FastAPI → Cloudflare Workers via serverless functions
+No environment variables required. No KV / R2 / D1 attached. The demo is 100 % client-side.
 
-### Hybrid Architecture Benefits
-- **Offline-first** - WASM enables local knowledge processing
-- **Global sync** - Cloudflare KV provides planetary knowledge state
-- **Zero latency** - Edge computing for instant semantic queries
-- **Cost efficiency** - Only pay for compute used, scale to zero
+### v1 upgrade path (Claude proxy for non-artifact users)
+
+The current file upgrades extraction to LLM-grade *automatically* when pasted into a Claude artifact (commit `e5e57b6` — `window.claude.complete` is detected at runtime). For users on the plain Cloudflare Pages URL without a Claude account, extraction falls back to a naive tokeniser and a "paste into a Claude artifact for LLM-grade recall" hint is shown.
+
+When demand justifies it, a colocated Pages Function at `functions/api/complete.ts` proxies Claude or OpenAI calls using the user's own API key (stored in the browser, never on the server). Same deploy, no platform migration.
+
+### Roadmap — hybrid edge architecture (not shipped today)
+
+- **WASM module** from the `core-zig/` tree — browser-side LCM/GCD for BigInt arithmetic. Infrastructure exists (the Zig core has WASM exports); the Python fallback path is what runs in production today.
+- **Cloudflare KV** — cross-device state sync for an optional "my attested knowledge graph" layer.
+- **Cloudflare Durable Objects** — real-time multiplayer merges of attested bundles across peers.
+
+These are vision items; the shipped today is the static artifact above.
 
 ---
 
-## 🛡️ Verification: 756+ Test Suite
+## 🛡️ Verification: 907-Test Suite + 131 Cross-Runtime Fixtures
 
-The test suite covers both proven invariants and empirically-measured properties; each assertion is scoped to the epistemic status of the thing it tests.
+The test suite covers both proven invariants and empirically-measured properties; each assertion is scoped to the epistemic status of the thing it tests. 907 tests collected; 4 known collection errors are the jwt-module-missing issue in the quantum-router test stack, tracked as an ops item, not a regression.
 
 ```text
 Provable (deterministic code + tests that enforce the proof):
-  ✓ Canonical Round-Trip Conservation — 0.00 % drift (Ouroboros §1.1)
+  ✓ Canonical Round-Trip Conservation — 0.00 % drift on seed_tiny / seed_v1
+    / seed_v2 (Ouroboros §1.1)
   ✓ Algebra Invariants — LCM commutativity / associativity, merge idempotency,
     entailment correctness, delta correctness, deletion correctness
   ✓ Akashic Ledger Durability — event-sourced replay, branch isolation
-  ✓ Merkle Hash-Chain Integrity — SHA-256 chain (Phase 19C)
-  ✓ Cross-Runtime State Equivalence — Python ↔ Node.js witness on the
-    non-colliding derivation path
+  ✓ Merkle Hash-Chain Integrity — SHA-256 chain (Phase 19C) — now holds
+    under concurrent writers (commit 9c4139d, BEGIN IMMEDIATE discipline
+    centralised in AkashicLedger._write_txn)
+  ✓ Cross-Runtime State Equivalence — THREE runtimes agree byte-for-byte:
+    Python (sympy) ↔ Node.js (BigInt Miller-Rabin via math.js) ↔ in-browser
+    JavaScript (single_file_demo/index.html). 131 fixtures across:
+      – 26 JCS byte-identity (scripts/verify_jcs_byte_identity.py)
+      –  7 prov_id byte-identity (scripts/verify_prov_id_cross_runtime.py)
+      – 18 prime-derivation + state-encoding (scripts/verify_godel_cross_runtime.py)
+      –  2 CanonicalBundle K-tests (scripts/verify_cross_runtime.py)
+      – 30 JS-local JCS tests + 20 JS-local provenance tests
+      – 10 verify.js self-test + 18 v2-parity tests
 
 Empirically measured (reported by the bench harness):
-  ✓ Extraction F1 on seed_v1 — 1.000 on 50 SVO docs
-  ✓ Regeneration FActScore — 0.960 (LLM narrative + entailment checker)
-  ✓ Operation performance — p50 / p99 at N ∈ {100, 500, 1000} axioms
-  ✓ Sieve re-extract of canonical — 54 % drift (known ceiling)
+  ✓ Extraction F1 on seed_v1 — 1.000 on 50 simple-SVO docs
+  ✓ Extraction F1 on seed_v2 — 0.762 with precision 1.000 on the 20-doc
+    difficulty corpus (apposition, passive, relative-clause, conjunction,
+    negation, hedging, complex-PP). Every failure is a recall miss, never
+    a truth inversion.
+  ✓ Regeneration FActScore — 0.940 / 0.960 (LLM narrative + entailment
+    checker, two runs one week apart at the same pinned model; see
+    PROOF_BOUNDARY §2.4)
+  ✓ LLM narrative full round-trip drift — 107.75 % / 0.12 exact-match
+    recall on seed_v1 (see §2.5). Facts preserved, keys not.
+  ✓ Operation performance — p50 / p99 at N ∈ {100, 500, 1000, 5000}
+    including the provenance path: 22 k ops/sec batched ingest, within
+    30 % of the 28 k/sec crypto ceiling.
+  ✓ Sieve re-extract of canonical — 54.00 % (seed_v1) / 56.25 % (seed_v2)
+    drift
 
 Cryptographic integrity:
   ✓ HMAC-SHA256 signatures + Ed25519 key rotation
-  ✓ Bundle tamper detection
+  ✓ Bundle tamper detection (CanonicalBundle + VC 2.0)
   ✓ Adversarial bundle handling
+  ✓ W3C Verifiable Credentials 2.0 — eddsa-jcs-2022 Data Integrity suite,
+    pure-Python RFC 8785 JCS, 58 tests covering sign/verify round-trip,
+    tamper detection, JSON-on-disk persistence, multibase base58btc
+    round-trip, key-reordering resilience
+
+Ledger concurrency:
+  ✓ 6 stress tests under 50-200 parallel append_event calls — Merkle chain
+    stays verifiable; INSERT-OR-IGNORE dedup collapses concurrent
+    identical writes; 1000 distinct concurrent writes land exactly
+    1000 rows (no drops)
 
 Interop (Polytaxis Bucket A absorption):
   ✓ Epistemic Status Taxonomy — {provable, certified, empirical-benchmark,
     expert-opinion} on every metric
   ✓ Venn-Abers Conformal Intervals — distribution-free confidence bounds
-  ✓ PROV-O JSON-LD Emission — Akashic Ledger events → W3C PROV-O
-  ✓ TomeSliders — 5-axis slider interface (density actioned)
+  ✓ PROV-O JSON-LD Emission — Akashic Ledger events → W3C PROV-O graph
+  ✓ TomeSliders — 5-axis slider interface (density actioned on canonical
+    path; four LLM-gated axes captured as metadata in the output header)
 ```
 
 **Every claim carries an explicit epistemic status.** The canonical round-trip is mathematically proven; the broader text→structure→text pipeline is empirically measured and reported honestly. See [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) for the separation of proved from measured and the list of what's still aspirational.
