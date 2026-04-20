@@ -20,7 +20,7 @@
     {"id": "doc_008", "text": "Rome was founded by Romulus.",
      "gold_triples": [["romulus", "found", "rome"]]},
     {"id": "doc_009", "text": "The book was read by many students.",
-     "gold_triples": [["student", "read", "book"]]},
+     "gold_triples": [["many_student", "read", "book"]]},
 
     {"id": "doc_010", "text": "Einstein, who proposed relativity, won the Nobel Prize.",
      "gold_triples": [["einstein", "propose", "relativity"], ["einstein", "win", "nobel prize"]]},

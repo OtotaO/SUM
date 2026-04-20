@@ -85,6 +85,79 @@ def _is_negated(sent) -> bool:
     return False
 
 
+def _is_passive(sent) -> bool:
+    """Return True iff the sentence's ROOT verb carries a passive-voice
+    grammatical subject (``dep_ == "nsubjpass"``).
+
+    A passive construction inverts the surface order: the grammatical
+    subject is the semantic OBJECT, and the semantic subject (if
+    recoverable) lives inside the agent prepositional phrase — spaCy
+    tags ``by`` with ``dep_ == "agent"`` and the agent noun as a
+    ``pobj`` child of the ``by`` token. Emitting a triple in surface
+    (s,p,o) order from such a sentence produces the inverted fact —
+    "Hamlet was written by Shakespeare" → (hamlet, write, shakespeare)
+    which asserts the opposite of the source. The POS fallback is
+    especially dangerous here because for three-content-token passives
+    (e.g. "Hamlet/written/Shakespeare") it produces the inverted
+    triple even when the dep-based path bails out. Callers that detect
+    passive should either run the swap-and-emit path below
+    (``_extract_passive``) or refuse to extract at all.
+    """
+    for child in sent.root.children:
+        if child.dep_ == "nsubjpass":
+            return True
+    return False
+
+
+def _extract_passive(sent) -> Optional[Tuple[str, str, str]]:
+    """Extract an active-form triple from a passive-voice sentence.
+
+    Strategy (works for both "Hamlet was written by Shakespeare" and
+    any other ``nsubjpass + agent-by-pobj`` surface):
+
+        real subject = the pobj under the agent ``by`` (semantic agent)
+        real object  = the nsubjpass noun (semantic patient)
+        predicate    = ROOT verb's lemma
+
+    If the passive is agentless ("The paper was submitted."), the
+    agent is grammatically absent and the semantic subject cannot be
+    recovered — return None. This is the same discipline as negation:
+    refusing to extract is strictly preferable to asserting an
+    inverted fact.
+    """
+    root = sent.root
+    subj_token = None
+    obj_token = None
+    for child in root.children:
+        if child.dep_ == "nsubjpass" and obj_token is None:
+            obj_token = child
+        elif child.dep_ == "agent":
+            for grandchild in child.children:
+                if grandchild.dep_ == "pobj":
+                    subj_token = grandchild
+                    break
+    if subj_token is None or obj_token is None:
+        return None
+
+    subj_modifiers = [
+        c.text for c in subj_token.children
+        if c.dep_ in ("amod", "compound")
+    ]
+    subject = "_".join(subj_modifiers + [subj_token.lemma_]).strip()
+    obj_modifiers = [
+        c.text for c in obj_token.children
+        if c.dep_ in ("amod", "compound")
+    ]
+    object_ = " ".join(obj_modifiers + [obj_token.lemma_]).strip()
+    predicate = root.lemma_
+
+    if not (subject and predicate and object_):
+        return None
+    if len(subject.split("_")) > 5 or len(object_.split()) > 8:
+        return None
+    return (subject.lower(), predicate.lower(), object_.lower())
+
+
 def _extract_from_sent(sent) -> Optional[Tuple[str, str, str]]:
     """Extract at most one (subject, predicate, object) triple from a sentence.
 
@@ -99,6 +172,17 @@ def _extract_from_sent(sent) -> Optional[Tuple[str, str, str]]:
     """
     if _is_negated(sent):
         return None
+
+    # Passive voice inverts surface (s,p,o) order. Handle it with a
+    # dedicated extractor that swaps the agent phrase's pobj into the
+    # subject position and the nsubjpass into the object position. An
+    # agentless passive ("The paper was submitted.") cannot recover
+    # its semantic subject, so _extract_passive returns None and the
+    # sentence is suppressed — the POS fallback is skipped because its
+    # left-to-right heuristic would re-emit the inverted triple for
+    # three-content-token passives.
+    if _is_passive(sent):
+        return _extract_passive(sent)
 
     subject = None
     predicate = None
