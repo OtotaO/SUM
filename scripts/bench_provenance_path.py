@@ -149,6 +149,40 @@ def bench_record_provenance(size: int) -> tuple[PhaseMetric, AkashicLedger, str]
     )
 
 
+def bench_record_provenance_batch(
+    size: int,
+) -> tuple[PhaseMetric, AkashicLedger, str]:
+    """Batch-ingest path: one BEGIN IMMEDIATE transaction holding N
+    INSERTs. Measures amortised per-record latency (total_ms / size)
+    rather than per-op latency since the whole batch is one operation
+    from the caller's perspective."""
+    import asyncio
+
+    fd, path = tempfile.mkstemp(suffix=".db", prefix="prov_bench_batch_")
+    os.close(fd)
+    ledger = AkashicLedger(db_path=path)
+
+    records = [_make_record(i) for i in range(size)]
+    axiom_keys = [_axiom_key_for(i) for i in range(size)]
+    pairs = list(zip(records, axiom_keys))
+
+    async def _run() -> int:
+        t0 = time.monotonic_ns()
+        await ledger.record_provenance_batch(pairs)
+        return time.monotonic_ns() - t0
+
+    total_ns = asyncio.run(_run())
+    # For the batch path, every record is the "sample" from the caller's
+    # perspective. Report amortised per-record cost as the p50.
+    per_record_ns = total_ns // max(1, size)
+    samples = [per_record_ns] * size
+    return (
+        _summarize("record_provenance_batch", size, samples, total_ns),
+        ledger,
+        path,
+    )
+
+
 def bench_get_provenance(
     ledger: AkashicLedger, size: int, n_queries: int
 ) -> PhaseMetric:
@@ -222,6 +256,9 @@ def main() -> int:
         db_paths.append(db_path)
         read_metric = bench_get_provenance(ledger, size, args.queries)
         all_metrics.append(read_metric)
+        batch_metric, batch_ledger, batch_path = bench_record_provenance_batch(size)
+        all_metrics.append(batch_metric)
+        db_paths.append(batch_path)
 
     _print_table(all_metrics)
 

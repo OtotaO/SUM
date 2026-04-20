@@ -356,6 +356,86 @@ class TestLedgerStructuredProvenance:
 # byte range. If this chain closes, M1 is credible.
 
 
+class TestBatchRecordProvenance:
+    """record_provenance_batch: N pairs in one transaction, semantically
+    identical to N single calls but much faster under load."""
+
+    def test_empty_batch_returns_empty(self, ledger: AkashicLedger) -> None:
+        async def run() -> None:
+            out = await ledger.record_provenance_batch([])
+            assert out == []
+
+        asyncio.run(run())
+
+    def test_batch_persists_all(self, ledger: AkashicLedger) -> None:
+        async def run() -> None:
+            recs = [
+                ProvenanceRecord(
+                    source_uri="sha256:" + f"{i:064x}"[:64],
+                    byte_start=0, byte_end=17,
+                    extractor_id="sum.test.batch",
+                    timestamp="2026-04-19T00:00:00+00:00",
+                    text_excerpt=f"span {i}",
+                )
+                for i in range(10)
+            ]
+            keys = [f"s{i}||p||o{i}" for i in range(10)]
+            pairs = list(zip(recs, keys))
+
+            prov_ids = await ledger.record_provenance_batch(pairs)
+            assert len(prov_ids) == 10
+            assert len(set(prov_ids)) == 10
+
+            # Every record retrievable by axiom_key
+            for rec, key in pairs:
+                back = await ledger.get_structured_provenance_for_axiom(key)
+                assert back == [rec]
+
+        asyncio.run(run())
+
+    def test_batch_dedup_on_duplicate_pairs(
+        self, ledger: AkashicLedger
+    ) -> None:
+        async def run() -> None:
+            rec = ProvenanceRecord(
+                source_uri="sha256:" + "e" * 64,
+                byte_start=0, byte_end=17,
+                extractor_id="sum.test.batch",
+                timestamp="2026-04-19T00:00:00+00:00",
+                text_excerpt="span",
+            )
+            key = "dup||p||o"
+
+            # Same pair three times in the same batch.
+            ids = await ledger.record_provenance_batch(
+                [(rec, key), (rec, key), (rec, key)]
+            )
+            assert ids[0] == ids[1] == ids[2]
+
+            recs = await ledger.get_structured_provenance_for_axiom(key)
+            assert len(recs) == 1  # INSERT OR IGNORE collapsed
+
+        asyncio.run(run())
+
+    def test_batch_matches_single_call_semantics(
+        self, ledger: AkashicLedger
+    ) -> None:
+        async def run() -> None:
+            rec = ProvenanceRecord(
+                source_uri="sha256:" + "f" * 64,
+                byte_start=0, byte_end=17,
+                extractor_id="sum.test.batch",
+                timestamp="2026-04-19T00:00:00+00:00",
+                text_excerpt="span",
+            )
+            key = "equiv||p||o"
+            single_id = await ledger.record_provenance(rec, key)
+            [batch_id] = await ledger.record_provenance_batch([(rec, key)])
+            assert single_id == batch_id
+
+        asyncio.run(run())
+
+
 class TestEndToEndKillExperiment:
     def test_full_chain_closes(
         self, sieve: DeterministicSieve, ledger: AkashicLedger

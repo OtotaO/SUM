@@ -35,7 +35,7 @@ import sqlite3
 import asyncio
 import logging
 from contextlib import contextmanager
-from typing import Any, Dict, Iterator, List, Optional, Tuple
+from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple
 
 from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
 from internal.infrastructure.provenance import (
@@ -327,6 +327,81 @@ class AkashicLedger:
             axiom_key, prov_id, provenance.extractor_id,
         )
         return prov_id
+
+    async def record_provenance_batch(
+        self,
+        pairs: Sequence[Tuple[ProvenanceRecord, str]],
+    ) -> List[str]:
+        """Persist N (ProvenanceRecord, axiom_key) pairs in one transaction.
+
+        Semantically identical to calling ``record_provenance`` for each
+        pair in order, but the whole batch commits under a single
+        BEGIN IMMEDIATE write-lock. For ingest-heavy workloads this
+        removes (N-1) transaction overheads, which on SQLite dominates
+        per-record wall-clock at sizes above ~10.
+
+        Performance characterisation (see scripts/bench_provenance_path.py):
+
+            single-write p50 ≈ 460 µs per record, ≈ 2,000 ops/sec.
+            batch-write p50 ≈ 20-60 µs amortised per record at batch
+                             sizes ≥ 100, i.e. roughly an order of
+                             magnitude higher sustained throughput.
+
+        Prov_ids are computed outside the transaction (pure CPU work —
+        JCS + SHA-256, ≈ 35 µs each) and collected; the transaction
+        only holds the lock for the SQLite-bound portion. Return order
+        matches the input pairs.
+
+        INSERT OR IGNORE semantics carry over from the single-write
+        path: duplicated pairs within the batch collapse to one row,
+        and a subsequent batch that re-submits existing records is a
+        no-op at the DB layer (idempotent).
+
+        Args:
+            pairs: Sequence of (ProvenanceRecord, axiom_key) tuples.
+                   Empty sequence is a valid no-op (returns []).
+
+        Returns:
+            List of prov_ids in the same order as ``pairs``. Duplicate
+            input pairs emit their shared prov_id at each position
+            (the DB collapses storage; the return value preserves the
+            caller's index-into-batch contract).
+        """
+        if not pairs:
+            return []
+
+        # Compute all prov_ids + canonical JSONs up front (outside the
+        # transaction). This is pure CPU and parallelizable; holding
+        # the write-lock during it would be wasteful contention.
+        materialised: List[Tuple[str, str, str]] = []  # (prov_id, json, axiom_key)
+        prov_ids: List[str] = []
+        for rec, axiom_key in pairs:
+            prov_id = compute_prov_id(rec)
+            rec_json = json.dumps(
+                rec.to_dict(), separators=(",", ":"), sort_keys=True
+            )
+            materialised.append((prov_id, rec_json, axiom_key))
+            prov_ids.append(prov_id)
+
+        def _write() -> None:
+            with self._write_txn() as conn:
+                conn.executemany(
+                    "INSERT OR IGNORE INTO provenance_records "
+                    "(prov_id, record_json) VALUES (?, ?)",
+                    [(pid, rec_json) for pid, rec_json, _ in materialised],
+                )
+                conn.executemany(
+                    "INSERT OR IGNORE INTO axiom_provenance "
+                    "(axiom_key, prov_id) VALUES (?, ?)",
+                    [(ak, pid) for pid, _, ak in materialised],
+                )
+
+        await asyncio.to_thread(_write)
+        logger.debug(
+            "Ledger ← provenance batch n=%d first_prov_id=%s",
+            len(pairs), prov_ids[0] if prov_ids else "",
+        )
+        return prov_ids
 
     async def get_provenance_record(
         self, prov_id: str
