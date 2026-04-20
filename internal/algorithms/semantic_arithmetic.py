@@ -10,7 +10,10 @@ entailment checking is Modulo arithmetic.
 
 Mathematical foundations:
     - SPNT Bound: π_sem(N) ~ N / ln(N)
-    - Gödel Encoding: state = ∏ prime_i for each axiom_i
+    - Gödel Encoding: state = lcm(prime_1, prime_2, ...) for each distinct
+                       axiom. Primes are pairwise coprime so this equals
+                       the product for a set, but is idempotent under
+                       duplicates (a *set* of axioms, not a multiset).
     - Lock-Free Merge: LCM(state_A, state_B) deduplicates automatically
     - Entailment: global_state % hypothesis_state == 0
 
@@ -348,8 +351,33 @@ class GodelStateAlgebra:
 
     def encode_chunk_state(self, axioms: List[Tuple[str, str, str]]) -> int:
         """
-        Convert a local parallel LLM extraction into a single Gödel State
-        Integer — the product of each axiom's prime.
+        Convert a list of axioms into a single Gödel State Integer via
+        iterative LCM over each axiom's derived prime.
+
+        Idempotent under duplicates: encoding the same triple twice
+        produces the same state as encoding it once, because
+        ``math.lcm(prime, prime) == prime``. This matches the semantic
+        model of a *set* of axioms and aligns with every other merge
+        operation in the codebase (``math.lcm`` on lines 287, 331, 391,
+        399, 592, 617, 706, 742).
+
+        Historical note (pre-M1c cross-runtime harness): this function
+        used raw multiplicative accumulation (``state *= prime``), which
+        produced ``prime^n`` for duplicated triples. All production
+        callers pre-deduplicated their input (the sieve returns
+        ``list(set(triples))``), so the difference was invisible in
+        running code. The JS port at ``single_file_demo/godel.js`` used
+        LCM from day one, and the cross-runtime byte-identity harness
+        at ``scripts/verify_godel_cross_runtime.py`` caught the drift
+        on the "repeated triple" fixture. The fix aligns the two
+        implementations and removes a latent source of non-determinism
+        (re-encoding a non-deduplicated list no longer perturbs the
+        state integer).
+
+        For input with only distinct triples (the sieve's output shape),
+        ``math.lcm(*primes) == product(primes)`` because the primes are
+        pairwise coprime, so every existing test observes identical
+        state integers before and after this change.
 
         Args:
             axioms: List of (subject, predicate, object) triples.
@@ -359,7 +387,7 @@ class GodelStateAlgebra:
         """
         state = 1
         for subj, pred, obj in axioms:
-            state *= self.get_or_mint_prime(subj, pred, obj)
+            state = math.lcm(state, self.get_or_mint_prime(subj, pred, obj))
         return state
 
     # ------------------------------------------------------------------
