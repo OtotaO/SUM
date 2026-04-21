@@ -16,6 +16,11 @@
  *
  * Honesty notes:
  *   - This verifies cross-runtime SEMANTIC STATE EQUIVALENCE.
+ *   - Ed25519 signatures (if present) ARE verified here via Node's
+ *     WebCrypto SubtleCrypto — the same API the browser demo uses. A
+ *     tampered bundle with a valid tome but a mismatched signature
+ *     fails. Requires Node 18.4+; older Node falls back to a
+ *     'present (upgrade Node to verify)' report without false ✓.
  *   - HMAC signatures are NOT verified here (shared-secret, not public witness).
  *   - Collision resolution: Python uses sympy.nextprime with a while-loop for
  *     collisions. This verifier implements the same deterministic derivation.
@@ -299,9 +304,45 @@ function runV2SelfTest() {
   return failed === 0;
 }
 
+// ─── Ed25519 Signature Verification ────────────────────────────────
+//
+// Uses Node's WebCrypto SubtleCrypto — the same API the browser demo
+// uses (see single_file_demo/index.html::verifyEd25519InBrowser). By
+// sharing the surface, the Python ↔ Node ↔ Browser trust triangle is
+// symmetric: any bundle verifiable in one is verifiable in the other
+// two.
+//
+// Node 18.4+ ships Ed25519 in WebCrypto. On older Node, importKey
+// throws and we report 'unsupported' — never a false ✓.
+
+function decodeEd25519Field(s) {
+  const b64 = s.split(':', 2)[1] || '';
+  return new Uint8Array(Buffer.from(b64, 'base64'));
+}
+
+async function verifyEd25519(bundle) {
+  if (!bundle.public_signature || !bundle.public_key) return 'absent';
+  try {
+    const subtle = (crypto.webcrypto && crypto.webcrypto.subtle) || null;
+    if (!subtle) return 'unsupported';
+    const pubBytes = decodeEd25519Field(bundle.public_key);
+    const sigBytes = decodeEd25519Field(bundle.public_signature);
+    const payload = new TextEncoder().encode(
+      `${bundle.canonical_tome}|${bundle.state_integer}|${bundle.timestamp}`
+    );
+    const key = await subtle.importKey(
+      'raw', pubBytes, { name: 'Ed25519' }, false, ['verify']
+    );
+    const ok = await subtle.verify({ name: 'Ed25519' }, key, sigBytes, payload);
+    return ok ? 'verified' : 'invalid';
+  } catch (e) {
+    return 'unsupported';
+  }
+}
+
 // ─── Bundle Verification ───────────────────────────────────────────
 
-function verifyBundle(bundlePath) {
+async function verifyBundle(bundlePath) {
   console.log('═══════════════════════════════════════════════════════════');
   console.log('  Independent Semantic Witness — Phase 16');
   console.log('  Cross-Runtime Canonical ABI Verification');
@@ -380,14 +421,29 @@ function verifyBundle(bundlePath) {
   console.log(`  Exported Digits:       ${exportDigits}`);
   console.log(`  Reconstructed Digits:  ${reconDigits}`);
 
-  // 6. Compare
+  // 6. Compare state integer
   const match = reconstructed === exported;
 
+  // 7. Ed25519 signature (optional) — verified with Node SubtleCrypto.
+  //    If present and invalid, the whole verify fails even when state
+  //    reconstruction matches; a bundle with a tampered tome and a
+  //    patched state_integer could otherwise pass step 6 while carrying
+  //    a stale Ed25519 signature, and that must be caught here.
+  const ed25519Status = await verifyEd25519(bundle);
+  let ed25519Label;
+  if (ed25519Status === 'verified') ed25519Label = '✓ verified (Node SubtleCrypto)';
+  else if (ed25519Status === 'invalid') ed25519Label = '✗ INVALID — signature does not match public key';
+  else if (ed25519Status === 'unsupported') ed25519Label = 'present (Node lacks Ed25519 in WebCrypto; upgrade to ≥18.4)';
+  else ed25519Label = 'absent';
+
+  const overallMatch = match && ed25519Status !== 'invalid';
+
   console.log('\n═══════════════════════════════════════════════════════════');
-  if (match) {
+  if (overallMatch) {
     console.log('  ✅ WITNESS VERIFICATION PASSED');
     console.log('');
-    console.log(`  Scheme:  ${scheme}`);
+    console.log(`  Scheme:   ${scheme}`);
+    console.log(`  Ed25519:  ${ed25519Label}`);
     console.log('  The JavaScript-reconstructed Gödel State Integer');
     console.log('  exactly matches the Python-exported state.');
     console.log('');
@@ -395,6 +451,9 @@ function verifyBundle(bundlePath) {
     console.log('  • Canonical semantic content is runtime-independent');
     console.log('  • Deterministic prime derivation reproduces across languages');
     console.log('  • The Gödel Integer is NOT a Python-specific artifact');
+    if (ed25519Status === 'verified') {
+      console.log('  • Ed25519 public-key attestation holds cross-runtime');
+    }
     console.log('');
     console.log('  Caveats:');
     console.log('  • HMAC signature NOT verified (shared-secret, not public witness)');
@@ -406,10 +465,18 @@ function verifyBundle(bundlePath) {
   } else {
     console.log('  ❌ WITNESS VERIFICATION FAILED');
     console.log('');
-    console.log(`  Scheme: ${scheme}`);
-    console.log('  The reconstructed state does NOT match the exported state.');
-    console.log(`  Exported:      ${exported.toString().substring(0, 40)}...`);
-    console.log(`  Reconstructed: ${reconstructed.toString().substring(0, 40)}...`);
+    console.log(`  Scheme:   ${scheme}`);
+    console.log(`  Ed25519:  ${ed25519Label}`);
+    if (!match) {
+      console.log('  The reconstructed state does NOT match the exported state.');
+      console.log(`  Exported:      ${exported.toString().substring(0, 40)}...`);
+      console.log(`  Reconstructed: ${reconstructed.toString().substring(0, 40)}...`);
+    }
+    if (ed25519Status === 'invalid') {
+      console.log('  The embedded Ed25519 signature does NOT match the public key.');
+      console.log('  Either the tome was tampered with after signing, or the');
+      console.log('  public_key field was swapped. Do not trust this bundle.');
+    }
   }
   console.log('═══════════════════════════════════════════════════════════');
 
@@ -418,7 +485,7 @@ function verifyBundle(bundlePath) {
 
 // ─── Main ──────────────────────────────────────────────────────────
 
-function main() {
+async function main() {
   const args = process.argv.slice(2);
 
   if (args.length === 0) {
@@ -438,8 +505,11 @@ function main() {
     process.exit(ok ? 0 : 1);
   }
 
-  const ok = verifyBundle(args[0]);
+  const ok = await verifyBundle(args[0]);
   process.exit(ok ? 0 : 1);
 }
 
-main();
+main().catch((err) => {
+  console.error('❌ verify.js: unexpected error:', err);
+  process.exit(2);
+});

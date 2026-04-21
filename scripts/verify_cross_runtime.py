@@ -53,6 +53,8 @@ VERIFIER = REPO_ROOT / "standalone_verifier" / "verify.js"
 
 K1_EXPECTED_BANNER = "WITNESS VERIFICATION PASSED"
 K2_EXPECTED_REJECTION = "Missing required field"
+K3_EXPECTED_ED25519_LINE = "Ed25519:  ✓ verified"
+K4_EXPECTED_INVALID_LINE = "Ed25519:  ✗ INVALID"
 
 
 def _run_verifier(bundle_path: Path) -> subprocess.CompletedProcess[str]:
@@ -64,18 +66,26 @@ def _run_verifier(bundle_path: Path) -> subprocess.CompletedProcess[str]:
     )
 
 
-def _mint_bundle(triples: list[tuple[str, str, str]], title: str) -> dict:
+def _mint_bundle(
+    triples: list[tuple[str, str, str]],
+    title: str,
+    key_manager=None,
+) -> dict:
     """Helper: mint a CanonicalBundle from the given triples via the
     production codec path. Factored so K1 + K1-multiword share the same
     mint logic and we know they're testing the cross-runtime parser
-    under identical bundle shape."""
+    under identical bundle shape.
+
+    Pass ``key_manager`` to add an Ed25519 signature — used by K3/K4
+    to exercise the Node verifier's SubtleCrypto path.
+    """
     from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
     from internal.ensemble.tome_generator import AutoregressiveTomeGenerator
     from internal.infrastructure.canonical_codec import CanonicalCodec
 
     algebra = GodelStateAlgebra()
     gen = AutoregressiveTomeGenerator(algebra)
-    codec = CanonicalCodec(algebra, gen)
+    codec = CanonicalCodec(algebra, gen, key_manager=key_manager)
     state = algebra.encode_chunk_state(triples)
     return codec.export_bundle(state, branch="main", title=title)
 
@@ -224,6 +234,102 @@ def k1_multiword_object_round_trip() -> bool:
     return ok
 
 
+def k3_ed25519_round_trip() -> bool:
+    """Python mints Ed25519-signed bundle → Node verifier's SubtleCrypto
+    accepts the signature → exit 0 with '✓ verified (Node SubtleCrypto)'
+    on stdout.
+
+    This locks the public-key attestation trust triangle: Python signs,
+    Browser SubtleCrypto verifies (demo), Node SubtleCrypto verifies
+    (this check). If any leg drifts, this test surfaces it before
+    release.
+    """
+    import tempfile as _tempfile
+
+    from internal.infrastructure.key_manager import KeyManager
+
+    km = KeyManager(key_dir=_tempfile.mkdtemp())
+    bundle = _mint_bundle(
+        [("alice", "like", "cat"), ("bob", "own", "dog")],
+        title="cross-runtime harness K3 (Ed25519)",
+        key_manager=km,
+    )
+    fd, path_str = tempfile.mkstemp(suffix=".json")
+    os.close(fd)
+    path = Path(path_str)
+    try:
+        path.write_text(json.dumps(bundle), encoding="utf-8")
+        result = _run_verifier(path)
+    finally:
+        path.unlink(missing_ok=True)
+
+    if result.returncode != 0:
+        print(f"[K3 FAIL] verify.js exited {result.returncode}", file=sys.stderr)
+        print(f"[K3 stdout] {result.stdout}", file=sys.stderr)
+        return False
+    if K3_EXPECTED_ED25519_LINE not in result.stdout:
+        print(
+            f"[K3 FAIL] expected {K3_EXPECTED_ED25519_LINE!r} "
+            f"not in stdout. Node may lack Ed25519 in WebCrypto "
+            f"(upgrade to ≥18.4) or verify.js may have regressed.",
+            file=sys.stderr,
+        )
+        print(f"[K3 stdout] {result.stdout}", file=sys.stderr)
+        return False
+    print("[K3 PASS] Ed25519-signed bundle verifies Python → verify.js (SubtleCrypto)")
+    return True
+
+
+def k4_tampered_ed25519_rejected() -> bool:
+    """Python mints Ed25519-signed bundle, tome is tampered post-sign →
+    Node verifier catches the mismatch → exit 1 with 'Ed25519: ✗ INVALID'.
+
+    Mirror of K3: if K3 proves the positive path, K4 proves the signature
+    is actually being checked and not just reported. Without K4, verify.js
+    could silently skip Ed25519 verification and K3 would still appear to
+    pass by reporting 'verified' unconditionally.
+    """
+    import tempfile as _tempfile
+
+    from internal.infrastructure.key_manager import KeyManager
+
+    km = KeyManager(key_dir=_tempfile.mkdtemp())
+    bundle = _mint_bundle(
+        [("alice", "like", "cat")],
+        title="cross-runtime harness K4 (tampered Ed25519)",
+        key_manager=km,
+    )
+    bundle["canonical_tome"] += "\nThe evil injected axiom."
+
+    fd, path_str = tempfile.mkstemp(suffix=".json")
+    os.close(fd)
+    path = Path(path_str)
+    try:
+        path.write_text(json.dumps(bundle), encoding="utf-8")
+        result = _run_verifier(path)
+    finally:
+        path.unlink(missing_ok=True)
+
+    if result.returncode == 0:
+        print(
+            "[K4 FAIL] verify.js returned 0 on a tampered Ed25519 bundle — "
+            "signature verification is NOT actually happening. This is a "
+            "cryptographic regression; do not ship.",
+            file=sys.stderr,
+        )
+        print(f"[K4 stdout] {result.stdout}", file=sys.stderr)
+        return False
+    if K4_EXPECTED_INVALID_LINE not in result.stdout:
+        print(
+            f"[K4 FAIL] expected {K4_EXPECTED_INVALID_LINE!r} not in stdout",
+            file=sys.stderr,
+        )
+        print(f"[K4 stdout] {result.stdout}", file=sys.stderr)
+        return False
+    print("[K4 PASS] tampered Ed25519 bundle rejected by verify.js (signature mismatch detected)")
+    return True
+
+
 def main() -> int:
     if not VERIFIER.exists():
         print(
@@ -252,8 +358,10 @@ def main() -> int:
     ok_k1 = k1_canonical_bundle_round_trip()
     ok_k1_mw = k1_multiword_object_round_trip()
     ok_k2 = k2_vc2_named_rejection()
+    ok_k3 = k3_ed25519_round_trip()
+    ok_k4 = k4_tampered_ed25519_rejected()
 
-    if ok_k1 and ok_k1_mw and ok_k2:
+    if all([ok_k1, ok_k1_mw, ok_k2, ok_k3, ok_k4]):
         print("\nCROSS-RUNTIME PORTABILITY HARNESS: ALL CHECKS PASSED")
         return 0
     print("\nCROSS-RUNTIME PORTABILITY HARNESS: REGRESSION", file=sys.stderr)
