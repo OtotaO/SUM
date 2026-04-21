@@ -114,13 +114,17 @@ class OpenAiRegenerationRunner:
       - n_generations: docs where narrative was produced (non-empty input)
       - per_doc: per-document attribution (which claims failed, which doc)
 
-    Requires pinned model IDs:
-      - generator_model_id  (narrative synthesis — SUM_BENCH_GENERATOR_MODEL)
-      - entailment_model_id (entailment judgement — SUM_BENCH_MINICHECK_MODEL)
+    Requires pinned model IDs, resolved by run_bench.py from the
+    environment. Default source: SUM_BENCH_MODEL (one pinned snapshot
+    used for every role). Per-role overrides still honored:
 
-    The SUM_BENCH_FACTSCORE_MODEL env var is reserved for a future atomic-claim
-    decomposition stage. On the current seed_v1 corpus (one triple per doc)
-    decomposition is identity, so the generator+entailment pair is sufficient.
+      - generator_model_id  SUM_BENCH_GENERATOR_MODEL (narrative synthesis)
+      - entailment_model_id SUM_BENCH_MINICHECK_MODEL (entailment judgement)
+
+    The SUM_BENCH_FACTSCORE_MODEL env var is reserved for a future
+    atomic-claim decomposition stage. On the current seed_v1 corpus
+    (one triple per doc) decomposition is identity, so the
+    generator+entailment pair is sufficient.
     """
 
     name: str = "sum.regeneration.openai"

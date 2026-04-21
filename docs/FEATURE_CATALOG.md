@@ -502,7 +502,7 @@ Result: **PASS**.
 
 ### 58. Pinned model IDs enforcement ✅
 
-Bench harness raises `SystemExit` on unpinned model strings (`gpt-4o` without date suffix). Four env vars required for LLM runs: `SUM_BENCH_FACTSCORE_MODEL`, `SUM_BENCH_MINICHECK_MODEL`, `SUM_BENCH_GENERATOR_MODEL`, `SUM_BENCH_EXTRACTOR_MODEL`.
+Bench harness raises `SystemExit` on unpinned model strings (`gpt-4o` without date suffix). One env var covers the common case: `SUM_BENCH_MODEL` (e.g. `gpt-4o-mini-2024-07-18`) applies to every role. Per-role overrides — `SUM_BENCH_FACTSCORE_MODEL`, `SUM_BENCH_MINICHECK_MODEL`, `SUM_BENCH_GENERATOR_MODEL`, `SUM_BENCH_EXTRACTOR_MODEL` — remain honored and take precedence over the global default.
 
 Verify: (behaviour in `run_bench.py::_resolve_model_snapshots`; exercised on every LLM-gated CI run).
 Result: **PASS**.

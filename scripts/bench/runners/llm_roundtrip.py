@@ -12,8 +12,8 @@ generator+extractor pair preserves through a prose intermediary, not
 sieve-vs-LLM tokenization disagreement.
 
 Requires pinned model IDs (SystemExit if unpinned — see run_bench.py):
-    generator_model_id  SUM_BENCH_GENERATOR_MODEL
-    extractor_model_id  SUM_BENCH_EXTRACTOR_MODEL
+    generator_model_id  SUM_BENCH_MODEL (or SUM_BENCH_GENERATOR_MODEL override)
+    extractor_model_id  SUM_BENCH_MODEL (or SUM_BENCH_EXTRACTOR_MODEL override)
 """
 from __future__ import annotations
 

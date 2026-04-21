@@ -240,7 +240,7 @@ The `scripts/bench/` directory contains the measurement-first infrastructure tha
 - **`PerformanceRunner` uses synthetic triples** `(s_i, p, o_i)` for deterministic, non-colliding primes; exercises the pure-Python path even when the Zig core is absent.
 - **`ExtractionRunner` uses set-comparison on canonical keys** (no post-hoc lemmatization reconciliation). Gold-triple mismatches with sieve output count as false negatives. Honesty over flattery.
 - **CI regression detection** compares each new report against the most recent history entry; `--fail-on-regression` exits non-zero on any F1 drop > 0.02, drift increase > 1%, FActScore drop > 0.03, or p99 ratio > 1.15.
-- **LLM-gated runners** (`regeneration.py`, `roundtrip.py`, `llm_roundtrip.py`) require `SUM_BENCH_FACTSCORE_MODEL`, `SUM_BENCH_MINICHECK_MODEL`, `SUM_BENCH_GENERATOR_MODEL`, and `SUM_BENCH_EXTRACTOR_MODEL` env vars, each with a pinned snapshot ID (e.g. `gpt-4o-mini-2024-07-18`). Unpinned identifiers raise `SystemExit` before any work begins.
+- **LLM-gated runners** (`regeneration.py`, `roundtrip.py`, `llm_roundtrip.py`) require a pinned snapshot ID (e.g. `gpt-4o-mini-2024-07-18`). The harness reads `SUM_BENCH_MODEL` as the single default applied to every role; per-role overrides `SUM_BENCH_FACTSCORE_MODEL`, `SUM_BENCH_MINICHECK_MODEL`, `SUM_BENCH_GENERATOR_MODEL`, and `SUM_BENCH_EXTRACTOR_MODEL` take precedence when set. Unpinned or missing identifiers raise `SystemExit` before any work begins.
 
 ---
 

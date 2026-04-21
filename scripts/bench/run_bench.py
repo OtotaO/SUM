@@ -135,34 +135,55 @@ def _looks_unpinned(model_id: str) -> bool:
     return model_id.strip().lower() in _UNPINNED_SUSPECTS
 
 
+_ROLE_OVERRIDE_ENV = {
+    "factscore": "SUM_BENCH_FACTSCORE_MODEL",
+    "minicheck": "SUM_BENCH_MINICHECK_MODEL",
+    "generator": "SUM_BENCH_GENERATOR_MODEL",
+    "extractor": "SUM_BENCH_EXTRACTOR_MODEL",
+}
+
+
 def _resolve_model_snapshots(no_llm: bool) -> dict[str, str]:
-    """Collect and validate pinned model IDs from environment."""
+    """Collect and validate pinned model IDs from environment.
+
+    Resolution order (per role):
+      1. Role-specific override env var (SUM_BENCH_<ROLE>_MODEL) if set.
+      2. Global default SUM_BENCH_MODEL if set.
+      3. SystemExit.
+
+    The four role-specific vars remain honored for backwards compat —
+    runs that used to set all four keep working — but a single
+    SUM_BENCH_MODEL is now sufficient for the common case where all
+    four roles should use the same pinned snapshot.
+    """
     snapshots: dict[str, str] = {
         "sum.sieve": "deterministic_v1",
     }
     if no_llm:
         return snapshots
 
-    required = {
-        "factscore": "SUM_BENCH_FACTSCORE_MODEL",
-        "minicheck": "SUM_BENCH_MINICHECK_MODEL",
-        "generator": "SUM_BENCH_GENERATOR_MODEL",
-        "extractor": "SUM_BENCH_EXTRACTOR_MODEL",
-    }
-    for name, env_var in required.items():
-        val = os.environ.get(env_var, "").strip()
+    global_default = os.environ.get("SUM_BENCH_MODEL", "").strip()
+
+    for role, override_var in _ROLE_OVERRIDE_ENV.items():
+        override = os.environ.get(override_var, "").strip()
+        val = override or global_default
+        source = override_var if override else "SUM_BENCH_MODEL"
+
         if not val:
             raise SystemExit(
-                f"Model {name!r} not pinned. Set {env_var} to a specific "
-                f"snapshot id (e.g. 'gpt-4o-2024-08-06'), or pass --no-llm "
-                f"to skip LLM runners."
+                f"Model {role!r} not pinned. Set SUM_BENCH_MODEL to a "
+                f"specific snapshot id (e.g. 'gpt-4o-mini-2024-07-18') "
+                f"to use one model for every role, or set the role-specific "
+                f"{override_var} to override that role. Pass --no-llm to "
+                f"skip LLM runners entirely."
             )
         if _looks_unpinned(val):
             raise SystemExit(
-                f"Model {name!r}={val!r} looks unpinned (no version/date suffix). "
-                f"Use an explicit snapshot id for deterministic benchmarking."
+                f"Model {role!r}={val!r} (from {source}) looks unpinned "
+                f"(no version/date suffix). Use an explicit snapshot id "
+                f"for deterministic benchmarking."
             )
-        snapshots[name] = val
+        snapshots[role] = val
     return snapshots
 
 
