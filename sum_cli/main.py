@@ -165,6 +165,80 @@ def cmd_attest(args: argparse.Namespace) -> int:
 
 # ─── verify ──────────────────────────────────────────────────────────
 
+_SUPPORTED_CANONICAL_FORMAT = "1.0.0"
+_SUPPORTED_PRIME_SCHEME = "sha256_64_v1"
+
+
+def _verify_ed25519_bundle(bundle: dict) -> str:
+    """Verify the embedded Ed25519 signature over the SUM payload line.
+
+    Returns one of:
+      * "absent"    — no Ed25519 fields present; nothing to verify.
+      * "verified"  — signature validates against the embedded pubkey.
+      * "invalid"   — fields are present but verification failed.
+
+    Self-contained — no key lookup, no network. The bundle embeds the
+    Ed25519 public key alongside its signature; a verifier needs only
+    the public key's hex and the standard Ed25519 primitive.
+    """
+    pub_sig = bundle.get("public_signature")
+    pub_key = bundle.get("public_key")
+    if not pub_sig or not pub_key:
+        return "absent"
+    try:
+        import base64
+
+        from cryptography.exceptions import InvalidSignature
+        from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+
+        sig_b64 = pub_sig.split(":", 1)[1]
+        pub_b64 = pub_key.split(":", 1)[1]
+        sig_bytes = base64.b64decode(sig_b64)
+        pub_bytes = base64.b64decode(pub_b64)
+        key = Ed25519PublicKey.from_public_bytes(pub_bytes)
+        payload = (
+            f"{bundle['canonical_tome']}|"
+            f"{bundle['state_integer']}|"
+            f"{bundle['timestamp']}"
+        ).encode("utf-8")
+        key.verify(sig_bytes, payload)
+        return "verified"
+    except (InvalidSignature, Exception):
+        return "invalid"
+
+
+def _verify_hmac_bundle(bundle: dict, signing_key: Optional[str]) -> str:
+    """Verify the HMAC-SHA256 signature over the SUM payload line.
+
+    Returns one of:
+      * "absent"    — no signature field present.
+      * "skipped"   — field present but no --signing-key supplied.
+      * "verified"  — field present and verifies under the supplied key.
+      * "invalid"   — field present but does not verify.
+
+    Truthful: "skipped" is not a pass. In --strict mode the caller
+    must treat it as a failure.
+    """
+    sig = bundle.get("signature")
+    if not sig:
+        return "absent"
+    if signing_key is None:
+        return "skipped"
+    import hashlib
+    import hmac as _hmac
+
+    payload = (
+        f"{bundle['canonical_tome']}|"
+        f"{bundle['state_integer']}|"
+        f"{bundle['timestamp']}"
+    ).encode("utf-8")
+    expected = (
+        "hmac-sha256:"
+        + _hmac.new(signing_key.encode("utf-8"), payload, hashlib.sha256).hexdigest()
+    )
+    return "verified" if _hmac.compare_digest(expected, sig) else "invalid"
+
+
 def cmd_verify(args: argparse.Namespace) -> int:
     raw = _read_input(args.input)
     try:
@@ -173,20 +247,68 @@ def cmd_verify(args: argparse.Namespace) -> int:
         print(f"sum: bundle is not valid JSON: {e}", file=sys.stderr)
         return 2
 
-    # Required fields per the Phase 16 ABI. Keep the check explicit rather
-    # than pulling in CanonicalCodec's import machinery (faster cold start).
+    # Required fields per the Phase 16 ABI.
     for field in ("canonical_tome", "state_integer", "canonical_format_version"):
         if field not in bundle:
             print(f"sum: bundle missing required field: {field}", file=sys.stderr)
             return 2
 
-    if bundle["canonical_format_version"] != "1.0.0":
+    if bundle["canonical_format_version"] != _SUPPORTED_CANONICAL_FORMAT:
         print(
             f"sum: unsupported canonical_format_version "
-            f"{bundle['canonical_format_version']!r} (this CLI speaks 1.0.0)",
+            f"{bundle['canonical_format_version']!r} "
+            f"(this CLI speaks {_SUPPORTED_CANONICAL_FORMAT})",
             file=sys.stderr,
         )
         return 2
+
+    # Prime-scheme gate: the reconstruction below assumes sha256_64_v1. A
+    # bundle under any other scheme would factor differently and silently
+    # produce a state-integer mismatch. Reject up front with a clear
+    # pointer rather than let the error surface as "state integer mismatch".
+    declared_scheme = bundle.get("prime_scheme", _SUPPORTED_PRIME_SCHEME)
+    if declared_scheme != _SUPPORTED_PRIME_SCHEME:
+        print(
+            f"sum: unsupported prime_scheme {declared_scheme!r} "
+            f"(this CLI speaks {_SUPPORTED_PRIME_SCHEME}). "
+            f"See docs/PROOF_BOUNDARY.md for the active scheme registry.",
+            file=sys.stderr,
+        )
+        return 2
+
+    # Signature verification runs BEFORE reconstruction — a forged bundle
+    # with a valid-looking tome but mismatched signatures should fail on
+    # the cryptographic gate first, before we spend CPU on factoring.
+    ed25519_status = _verify_ed25519_bundle(bundle)
+    hmac_status = _verify_hmac_bundle(bundle, args.signing_key)
+
+    if ed25519_status == "invalid":
+        print(
+            "sum: ✗ Ed25519 signature invalid — "
+            "bundle content does not match the embedded public key",
+            file=sys.stderr,
+        )
+        return 1
+    if hmac_status == "invalid":
+        print(
+            "sum: ✗ HMAC signature invalid — "
+            "bundle tampered or signed with a different key",
+            file=sys.stderr,
+        )
+        return 1
+    if args.strict:
+        if ed25519_status == "absent" and hmac_status == "absent":
+            print(
+                "sum: ✗ --strict: no signatures present to verify",
+                file=sys.stderr,
+            )
+            return 1
+        if hmac_status == "skipped":
+            print(
+                "sum: ✗ --strict: HMAC signature present but no --signing-key supplied",
+                file=sys.stderr,
+            )
+            return 1
 
     # Reconstruct the state integer from the canonical tome lines — same
     # logic verify.js runs in Node, same bytes Python produces.
@@ -239,10 +361,15 @@ def cmd_verify(args: argparse.Namespace) -> int:
         "state_integer_digits": len(claimed_state_str),
         "branch": bundle.get("branch", "main"),
         "bundle_version": bundle.get("bundle_version", "unknown"),
+        "signatures": {"hmac": hmac_status, "ed25519": ed25519_status},
     }
     json.dump(result, sys.stdout, indent=2 if args.pretty else None)
     sys.stdout.write("\n")
-    print(f"sum: ✓ verified {axioms} axiom(s), state integer matches", file=sys.stderr)
+    marks = f"hmac={hmac_status}, ed25519={ed25519_status}"
+    print(
+        f"sum: ✓ verified {axioms} axiom(s), state integer matches ({marks})",
+        file=sys.stderr,
+    )
     return 0
 
 
@@ -329,16 +456,39 @@ def build_parser() -> argparse.ArgumentParser:
     # verify
     p_verify = subparsers.add_parser(
         "verify",
-        help="Verify a CanonicalBundle: reconstruct state integer from canonical tome, compare.",
+        help="Verify a CanonicalBundle: signatures + state-integer reconstruction.",
         description=(
-            "Reads a CanonicalBundle JSON from stdin (or --input/arg), "
-            "parses the canonical tome, re-derives primes via sha256_64_v1, "
-            "LCMs them to a reconstructed state integer, and compares to the "
-            "claimed state_integer. Exits 0 on match, 1 on mismatch, 2 on "
-            "malformed input."
+            "Reads a CanonicalBundle JSON from stdin (or --input/arg) and "
+            "verifies, in order: "
+            "(1) Ed25519 signature over the payload line, if present. "
+            "Self-contained — the public key is embedded in the bundle. "
+            "(2) HMAC-SHA256 signature, if --signing-key is supplied. "
+            "Without the key, a present HMAC is reported as 'skipped' "
+            "(not a pass). "
+            "(3) Canonical tome reconstruction — re-derive primes via "
+            "sha256_64_v1, LCM them, compare to the claimed state_integer. "
+            "Exits 0 on match, 1 on signature or state mismatch, 2 on "
+            "malformed input. The JSON result on stdout reports which "
+            "signatures were verified vs absent vs skipped."
         ),
     )
     p_verify.add_argument("--input", "-i", help="Read from this path instead of stdin ('-' for stdin).")
+    p_verify.add_argument(
+        "--signing-key", default=None,
+        help=(
+            "HMAC key to verify the bundle's 'signature' field against. "
+            "Omit for Ed25519-only or unsigned bundles."
+        ),
+    )
+    p_verify.add_argument(
+        "--strict", action="store_true",
+        help=(
+            "Require at least one verifiable signature. Fail if a "
+            "signature field is present but not verifiable "
+            "(e.g. HMAC present without --signing-key), or if the bundle "
+            "has no signatures at all."
+        ),
+    )
     p_verify.add_argument("--pretty", action="store_true", help="Pretty-print result JSON on stdout.")
     p_verify.set_defaults(func=cmd_verify)
 
