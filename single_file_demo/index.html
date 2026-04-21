@@ -36,12 +36,14 @@
   .extractor-src.claude { color: #2e86ab; opacity: 0.9; font-style: normal; }
   .extractor-src.claude::before { content: "✶ "; }
   .extractor-src.naive::before { content: "· "; }
+  .sig-note { font-size: 11px; opacity: 0.65; font-style: italic; }
+  .sig-note code { font-style: normal; }
 </style>
 </head>
 <body>
 
 <h1>Every fact becomes a prime number.</h1>
-<p class="sub"><em>Math does the trust.</em> Paste any paragraph, mint the facts, download a signed JSON — anyone can verify it on their own machine with no SUM software installed.</p>
+<p class="sub"><em>Math does the trust.</em> Paste any paragraph, mint the facts, download a self-verifying JSON — anyone can recompute the state integer on their own machine with no SUM software installed.</p>
 
 <textarea id="prose" placeholder="The printing press was invented by Johannes Gutenberg around 1440. Marie Curie, a pioneering physicist, won two Nobel Prizes. Ada Lovelace wrote the first computer algorithm."></textarea>
 
@@ -68,7 +70,13 @@
       <p style="font-size:12px;opacity:0.75">Each fact (subject, predicate, object) is deterministically mapped to a unique prime via SHA-256(axiom_key) → seed → nextprime(seed). The state integer is the LCM of every prime. Two SUM states merge losslessly by taking their LCM. Entailment: <code>state % prime == 0</code> answers "does this knowledge base contain fact X?"</p>
     </details>
   </div>
-  <div class="row" style="justify-content: flex-end; gap: 8px;">
+  <div class="row" style="justify-content: space-between; gap: 8px;">
+    <span class="sig-note">
+      unsigned in-browser mint — bundle carries <code>signature: "unsigned:v0"</code>.
+      Structural integrity (state integer ↔ tome) is still verifiable by anyone.
+      For HMAC or Ed25519 signatures, run <code>sum attest --signing-key …</code>
+      (see <a href="https://github.com/OtotaO/SUM/blob/main/docs/DID_SETUP.md">DID_SETUP.md</a>).
+    </span>
     <button id="download" class="ghost">Download bundle</button>
   </div>
 </div>
@@ -77,7 +85,7 @@
 
 <div class="card">
   <h3>Verify a bundle</h3>
-  <p style="font-size:12px;opacity:0.7;margin:0 0 10px">Paste a SUM bundle JSON. The verifier recomputes the state integer from the canonical tome and confirms it matches the claimed value. No server, no network, no keys — math.</p>
+  <p style="font-size:12px;opacity:0.7;margin:0 0 10px">Paste a SUM bundle JSON. This in-browser verifier recomputes the state integer from the canonical tome and confirms it matches the claimed value — that's the <strong>structural</strong> check, and it runs with no server, no network, no keys. Cryptographic signatures (HMAC, Ed25519) require <code>sum verify</code> with a key; see the CLI for the full check.</p>
   <textarea id="verify-input" placeholder='{"bundle_version":"1.1.0","canonical_format_version":"1.0.0",...}'></textarea>
   <div class="row" style="justify-content: flex-end; margin-top: 8px;">
     <button id="verify" class="ghost">Verify</button>
@@ -436,8 +444,25 @@ async function makeBundle(triples, title) {
   };
 }
 
+// Report the signatures this bundle carries. The in-browser verifier
+// does NOT have key input, so it cannot verify HMAC; a follow-up
+// commit will wire Ed25519 verification via SubtleCrypto (browsers
+// support it natively since Chrome 113 / Firefox 129 / Safari 17).
+// Until then, honest status > "verified".
+function inspectSignatures(b) {
+  const out = {};
+  if (typeof b.signature === 'string' && b.signature && b.signature !== 'unsigned:v0') {
+    out.hmac = 'present (use `sum verify --signing-key …`)';
+  }
+  if (b.public_signature && b.public_key) {
+    out.ed25519 = 'present (use `sum verify` or a W3C VC 2.0 verifier)';
+  }
+  return out;
+}
+
 // Verify: re-derive state from canonical_tome, compare to claimed value.
-// Matches standalone_verifier/verify.js logic.
+// Matches standalone_verifier/verify.js logic. Also inspects signature
+// fields so the UI can tell the user what it did and did not check.
 async function verifyBundle(b) {
   try {
     if (b.canonical_format_version !== '1.0.0') {
@@ -464,7 +489,11 @@ async function verifyBundle(b) {
     if (reconstructed !== b.state_integer) {
       return { ok: false, reason: `state mismatch: claimed ${b.state_integer.slice(0,32)}… vs reconstructed ${reconstructed.slice(0,32)}…` };
     }
-    return { ok: true, reason: `verified ${axiomKeys.length} axioms, state integer matches` };
+    return {
+      ok: true,
+      reason: `verified ${axiomKeys.length} axioms, state integer matches`,
+      signatures: inspectSignatures(b),
+    };
   } catch (e) {
     return { ok: false, reason: `parse/crypto error: ${e.message}` };
   }
@@ -555,9 +584,19 @@ $('verify').addEventListener('click', async () => {
 
   resultEl.textContent = 'verifying…';
   const r = await verifyBundle(bundle);
-  resultEl.innerHTML = r.ok
+  let html = r.ok
     ? `<span class="good">✓ ${r.reason}</span>`
     : `<span class="bad">✗ ${r.reason}</span>`;
+  if (r.ok && r.signatures) {
+    // Show which cryptographic signatures the bundle CARRIES but the
+    // browser did NOT verify. Truthful: structure is verified; these
+    // require the CLI or a W3C verifier and are reported, not claimed.
+    const notes = Object.entries(r.signatures).map(
+      ([k, v]) => `<div class="sig-note">• ${k}: ${v}</div>`
+    ).join('');
+    if (notes) html += notes;
+  }
+  resultEl.innerHTML = html;
 });
 </script>
 
