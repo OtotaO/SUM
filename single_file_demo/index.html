@@ -85,7 +85,7 @@
 
 <div class="card">
   <h3>Verify a bundle</h3>
-  <p style="font-size:12px;opacity:0.7;margin:0 0 10px">Paste a SUM bundle JSON. This in-browser verifier recomputes the state integer from the canonical tome and confirms it matches the claimed value — that's the <strong>structural</strong> check, and it runs with no server, no network, no keys. Cryptographic signatures (HMAC, Ed25519) require <code>sum verify</code> with a key; see the CLI for the full check.</p>
+  <p style="font-size:12px;opacity:0.7;margin:0 0 10px">Paste a SUM bundle JSON. This in-browser verifier runs two checks: <strong>structural</strong> — recomputes the state integer from the canonical tome and confirms it matches the claim; <strong>Ed25519</strong> — if the bundle carries a <code>public_signature</code> and <code>public_key</code>, the signature is verified natively via SubtleCrypto (Chrome 113+, Firefox 129+, Safari 17+). No server, no network, no keys to supply. HMAC (shared-secret) signatures still require <code>sum verify --signing-key …</code>.</p>
   <textarea id="verify-input" placeholder='{"bundle_version":"1.1.0","canonical_format_version":"1.0.0",...}'></textarea>
   <div class="row" style="justify-content: flex-end; margin-top: 8px;">
     <button id="verify" class="ghost">Verify</button>
@@ -444,19 +444,57 @@ async function makeBundle(triples, title) {
   };
 }
 
-// Report the signatures this bundle carries. The in-browser verifier
-// does NOT have key input, so it cannot verify HMAC; a follow-up
-// commit will wire Ed25519 verification via SubtleCrypto (browsers
-// support it natively since Chrome 113 / Firefox 129 / Safari 17).
-// Until then, honest status > "verified".
-function inspectSignatures(b) {
+// Decode "ed25519:<base64>" → Uint8Array (just the key/signature bytes).
+function decodeEd25519Field(s) {
+  const b64 = s.split(':', 2)[1] ?? '';
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+// Verify the embedded Ed25519 signature via Web Crypto SubtleCrypto.
+// Ships natively in Chrome 113+, Firefox 129+, Safari 17+. On older
+// browsers (or non-secure contexts) importKey throws and we fall back
+// to "present (use CLI)" — never a false positive.
+//
+// Returns one of: 'verified', 'invalid', 'unsupported' (API missing),
+// or 'absent' (no Ed25519 fields in the bundle).
+async function verifyEd25519InBrowser(b) {
+  if (!b.public_signature || !b.public_key) return 'absent';
+  if (!(globalThis.crypto && crypto.subtle && crypto.subtle.importKey)) {
+    return 'unsupported';
+  }
+  try {
+    const pubBytes = decodeEd25519Field(b.public_key);
+    const sigBytes = decodeEd25519Field(b.public_signature);
+    const payload = new TextEncoder().encode(
+      `${b.canonical_tome}|${b.state_integer}|${b.timestamp}`
+    );
+    const key = await crypto.subtle.importKey(
+      'raw', pubBytes, { name: 'Ed25519' }, false, ['verify']
+    );
+    const ok = await crypto.subtle.verify({ name: 'Ed25519' }, key, sigBytes, payload);
+    return ok ? 'verified' : 'invalid';
+  } catch {
+    // Browser lacks Ed25519 in SubtleCrypto, or crypto threw on the
+    // key shape. Caller will report "present (use CLI)".
+    return 'unsupported';
+  }
+}
+
+// Report the signatures this bundle carries. HMAC cannot be verified
+// in-browser (no key input); Ed25519 is self-contained and, when the
+// browser supports it, is actually verified by verifyEd25519InBrowser.
+async function inspectSignatures(b) {
   const out = {};
   if (typeof b.signature === 'string' && b.signature && b.signature !== 'unsigned:v0') {
     out.hmac = 'present (use `sum verify --signing-key …`)';
   }
-  if (b.public_signature && b.public_key) {
-    out.ed25519 = 'present (use `sum verify` or a W3C VC 2.0 verifier)';
-  }
+  const ed = await verifyEd25519InBrowser(b);
+  if (ed === 'verified') out.ed25519 = '✓ verified in-browser (SubtleCrypto)';
+  else if (ed === 'invalid') out.ed25519 = '✗ INVALID — signature does not match public key';
+  else if (ed === 'unsupported') out.ed25519 = 'present (browser lacks Ed25519; use `sum verify` or a W3C VC 2.0 verifier)';
   return out;
 }
 
@@ -489,10 +527,20 @@ async function verifyBundle(b) {
     if (reconstructed !== b.state_integer) {
       return { ok: false, reason: `state mismatch: claimed ${b.state_integer.slice(0,32)}… vs reconstructed ${reconstructed.slice(0,32)}…` };
     }
+    const signatures = await inspectSignatures(b);
+    if (signatures.ed25519 && signatures.ed25519.startsWith('✗')) {
+      // Ed25519 was actually checked and failed — a forged bundle with
+      // a valid tome structure but a tampered signature must not pass.
+      return {
+        ok: false,
+        reason: 'Ed25519 signature INVALID — content does not match embedded public key',
+        signatures,
+      };
+    }
     return {
       ok: true,
       reason: `verified ${axiomKeys.length} axioms, state integer matches`,
-      signatures: inspectSignatures(b),
+      signatures,
     };
   } catch (e) {
     return { ok: false, reason: `parse/crypto error: ${e.message}` };
