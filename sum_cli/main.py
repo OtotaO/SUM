@@ -96,6 +96,64 @@ def _read_input(path: Optional[str]) -> str:
         return f.read()
 
 
+class _PemFileKeyManager:
+    """Single-file Ed25519 KeyManager adapter.
+
+    Satisfies the surface CanonicalCodec actually uses — ``ensure_keypair``
+    and ``get_public_key_bytes`` — by loading a PKCS8 Ed25519 PEM file
+    produced by ``python -m scripts.generate_did_web``. No rotation, no
+    archive: a bundle mint is a single point-in-time act, and key
+    management lives in the generator script, not in this CLI.
+    """
+
+    def __init__(self, pem_path):
+        from pathlib import Path
+
+        self._path = Path(pem_path)
+        self._private_key = None
+        self._public_key = None
+
+    def ensure_keypair(self):
+        from cryptography.hazmat.primitives import serialization
+        from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+        if self._private_key is not None and self._public_key is not None:
+            return self._private_key, self._public_key
+        sk = serialization.load_pem_private_key(self._path.read_bytes(), password=None)
+        if not isinstance(sk, Ed25519PrivateKey):
+            raise SystemExit(
+                f"sum: {self._path} is not an Ed25519 private key "
+                f"(CanonicalCodec's public-key attestation is Ed25519-only). "
+                f"Regenerate with `python -m scripts.generate_did_web`."
+            )
+        self._private_key = sk
+        self._public_key = sk.public_key()
+        return self._private_key, self._public_key
+
+    def get_public_key_bytes(self) -> bytes:
+        from cryptography.hazmat.primitives import serialization
+
+        _, pub = self.ensure_keypair()
+        return pub.public_bytes(
+            serialization.Encoding.Raw,
+            serialization.PublicFormat.Raw,
+        )
+
+
+def _load_ed25519_key(pem_path: str) -> _PemFileKeyManager:
+    from pathlib import Path
+
+    path = Path(pem_path)
+    if not path.exists():
+        raise SystemExit(
+            f"sum: Ed25519 key not found at {path}. "
+            f"Generate one with: python -m scripts.generate_did_web "
+            f"--domain YOUR.DOMAIN --private-key-out {path} "
+            f"(see docs/DID_SETUP.md)."
+        )
+    return _PemFileKeyManager(path)
+
+
 def cmd_attest(args: argparse.Namespace) -> int:
     text = _read_input(args.input).strip()
     if not text:
@@ -130,9 +188,16 @@ def cmd_attest(args: argparse.Namespace) -> int:
     from internal.ensemble.tome_generator import AutoregressiveTomeGenerator
     from internal.infrastructure.canonical_codec import CanonicalCodec
 
+    key_manager = _load_ed25519_key(args.ed25519_key) if args.ed25519_key else None
+
     algebra = GodelStateAlgebra()  # type: ignore[no-untyped-call]
     tome_generator = AutoregressiveTomeGenerator(algebra)
-    codec = CanonicalCodec(algebra, tome_generator, signing_key=args.signing_key)
+    codec = CanonicalCodec(
+        algebra,
+        tome_generator,
+        signing_key=args.signing_key,
+        key_manager=key_manager,
+    )
     state = algebra.encode_chunk_state(list(triples))
     bundle = codec.export_bundle(
         state,
@@ -447,6 +512,16 @@ def build_parser() -> argparse.ArgumentParser:
             "no HMAC is emitted. Set this only for shared-secret peers; "
             "for public-domain transport, rely on Ed25519 + did:web / "
             "did:key (see docs/DID_SETUP.md)."
+        ),
+    )
+    p_attest.add_argument(
+        "--ed25519-key", default=None, metavar="PEM",
+        help=(
+            "PATH to an Ed25519 PEM private key. When set, the emitted "
+            "bundle carries public_signature + public_key, verifiable by "
+            "`sum verify` or any W3C VC 2.0 verifier with no shared "
+            "secret. Generate a key with: python -m scripts.generate_did_web "
+            "(see docs/DID_SETUP.md)."
         ),
     )
     p_attest.add_argument("--pretty", action="store_true", help="Pretty-print output JSON.")
