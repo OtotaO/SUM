@@ -222,18 +222,22 @@ async function encodeChunkState(triples) {
 }
 
 // ─── Extraction ──────────────────────────────────────────────────────
-// Two paths, decided at runtime:
+// Three paths, decided at runtime in this order:
 //   1. Claude artifact — if window.claude.complete is available, prompt
 //      Claude to extract SVO triples under SUM's sieve conventions
 //      (lowercase, underscore-joined multi-word subjects, verb-lemma
 //      predicates, skip negation, skip hedging, invert passive).
 //      Yields LLM-grade recall and truth-safety on real prose.
-//   2. Naive tokeniser — fallback when not running inside a Claude
-//      artifact (plain browser, hosted static page, offline). Sentence
-//      split + stopword strip + first-three-content-words heuristic.
-//      Deliberately shallow; makes the flow runnable without any LLM.
+//   2. Pages Function — if the demo is hosted on Cloudflare Pages (or
+//      any platform that ships /api/complete alongside the HTML) with
+//      an LLM API key bound to the environment, POST the same prompt
+//      to /api/complete. See functions/api/complete.ts.
+//   3. Naive tokeniser — last-resort fallback (plain static host with
+//      no /api/*, or offline). Sentence split + stopword strip +
+//      first-three-content-words heuristic. Deliberately shallow;
+//      makes the flow runnable without any LLM.
 //
-// Either path returns {triples, source}. Source is shown in the UI so
+// Each path returns {triples, source}. Source is shown in the UI so
 // the user knows which extractor produced the attestation.
 
 const STOP = new Set(['a','an','the','is','are','was','were','be','been','being','has','have','had','do','does','did','will','would','can','could','may','might','shall','should','to','of','in','on','at','by','for','with','from','into','through','and','but','or','so','also','his','her','their','its','my','your','our']);
@@ -343,13 +347,42 @@ async function tryClaudeExtract(text) {
 }
 
 /**
+ * Try the same-origin /api/complete Pages Function. Returns triples on
+ * success, null on any failure (404 = not deployed, 503 = no API key
+ * bound, bad JSON, zero triples). Caller falls through to naive.
+ *
+ * Same prompt as tryClaudeExtract so the extractor semantics stay
+ * identical across artifact runtime and hosted deployment.
+ */
+async function tryPagesFunctionExtract(text) {
+  try {
+    const res = await fetch('/api/complete', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ prompt: buildClaudePrompt(text) }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (typeof data?.completion !== 'string') return null;
+    const parsed = extractJsonArray(data.completion);
+    const triples = validateTriples(parsed);
+    return triples.length > 0 ? triples : null;
+  } catch (e) {
+    console.warn('[SUM] Pages Function extraction failed, falling back:', e);
+    return null;
+  }
+}
+
+/**
  * Main extraction entry point. Returns {triples, source} where source
- * is either "claude" or "naive" — shown in the UI so the user knows
- * which extractor produced the attestation.
+ * is "claude-artifact", "claude-pages-fn", or "naive" — shown in the UI
+ * so the user knows which extractor produced the attestation.
  */
 async function extractTriples(text) {
   const claude = await tryClaudeExtract(text);
-  if (claude !== null) return { triples: claude, source: 'claude' };
+  if (claude !== null) return { triples: claude, source: 'claude-artifact' };
+  const pagesFn = await tryPagesFunctionExtract(text);
+  if (pagesFn !== null) return { triples: pagesFn, source: 'claude-pages-fn' };
   return { triples: naiveExtract(text), source: 'naive' };
 }
 
@@ -483,10 +516,13 @@ $('attest').addEventListener('click', async () => {
     $('fact-count').textContent = triples.length;
     $('state-int').textContent = bundle.state_integer;
     const srcEl = $('extractor-source');
-    srcEl.textContent = source === 'claude'
-      ? 'extracted by Claude (artifact runtime)'
-      : 'extracted by naive tokeniser — paste this page into a Claude artifact for LLM-grade recall';
-    srcEl.className = source === 'claude' ? 'extractor-src claude' : 'extractor-src naive';
+    const SOURCE_LABEL = {
+      'claude-artifact': 'extracted by Claude (artifact runtime)',
+      'claude-pages-fn': 'extracted by Claude via Pages Function (/api/complete)',
+      'naive': 'extracted by naive tokeniser — paste this page into a Claude artifact for LLM-grade recall',
+    };
+    srcEl.textContent = SOURCE_LABEL[source] ?? SOURCE_LABEL.naive;
+    srcEl.className = source === 'naive' ? 'extractor-src naive' : 'extractor-src claude';
     $('result').style.display = 'block';
   } catch (e) {
     alert('Attest failed: ' + e.message);
