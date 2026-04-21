@@ -314,8 +314,13 @@ def build_parser() -> argparse.ArgumentParser:
     p_attest.add_argument("--branch", default="main", help="Branch name for the bundle. Default: main.")
     p_attest.add_argument("--title", default="Attested Tome", help="Tome title. Default: 'Attested Tome'.")
     p_attest.add_argument(
-        "--signing-key", default="sum-default-key",
-        help="HMAC signing key for bundle signature. Default: 'sum-default-key' (demo only — rotate in production).",
+        "--signing-key", default=None,
+        help=(
+            "HMAC signing key for the bundle signature. Default: unset — "
+            "no HMAC is emitted. Set this only for shared-secret peers; "
+            "for public-domain transport, rely on Ed25519 + did:web / "
+            "did:key (see docs/DID_SETUP.md)."
+        ),
     )
     p_attest.add_argument("--pretty", action="store_true", help="Pretty-print output JSON.")
     p_attest.add_argument("--verbose", "-v", action="store_true", help="Emit diagnostics on stderr.")

@@ -22,8 +22,15 @@ Signature layers:
     2. Ed25519 (public key) — provenance verification by any third party
 
 Both signatures cover the same payload: ``canonical_tome|state_integer|timestamp``.
-HMAC remains mandatory for backward compatibility. Ed25519 is added when a
-KeyManager is provided.
+Both are optional — pass ``signing_key`` for HMAC, a ``KeyManager`` for Ed25519,
+or both. A codec instance with neither configured still validates structure +
+Ed25519-if-embedded, which is the right posture for public-domain transport
+where the HMAC shared-secret model does not apply (did:web / did:key flows).
+
+Security note: when ``signing_key`` is configured on the importer, any bundle
+missing a ``signature`` field is rejected. This is the downgrade-protection
+contract — a peer that expects shared-secret tamper-detection must not silently
+accept unsigned bundles.
 
 Phase 15: Canonical Semantic ABI.
 Phase 17: Ed25519 Public-Key Attestation.
@@ -79,7 +86,7 @@ class CanonicalBundle:
     canonical_tome: str
     state_integer: str  # String for BigInt JSON safety
     timestamp: str
-    signature: str
+    signature: Optional[str] = None  # HMAC-SHA256; omitted when no signing_key
     prime_scheme: str = CURRENT_SCHEME
     state_integer_hex: Optional[str] = None
     is_delta: bool = False
@@ -105,20 +112,32 @@ class CanonicalCodec:
         self,
         algebra: GodelStateAlgebra,
         tome_generator: AutoregressiveTomeGenerator,
-        signing_key: str = "sum-default-key",
+        signing_key: Optional[str] = None,
         key_manager: Optional["KeyManager"] = None,
     ):
         self.algebra = algebra
         self.tome_generator = tome_generator
-        self.signing_key = signing_key.encode("utf-8")
+        # signing_key=None means HMAC is disabled on this codec: export emits
+        # no "signature" field and import tolerates its absence. The old
+        # "sum-default-key" placeholder was cryptographic theater (publicly
+        # known), so its removal is an honest improvement, not a regression.
+        self.signing_key: Optional[bytes] = (
+            signing_key.encode("utf-8") if signing_key else None
+        )
         self.key_manager = key_manager
 
     # ------------------------------------------------------------------
     # HMAC Signing
     # ------------------------------------------------------------------
 
-    def _sign(self, canonical_tome: str, state_str: str, timestamp: str) -> str:
-        """Produce HMAC-SHA256 signature over the proof-critical fields."""
+    def _sign(self, canonical_tome: str, state_str: str, timestamp: str) -> Optional[str]:
+        """Produce HMAC-SHA256 signature over the proof-critical fields.
+
+        Returns ``None`` when this codec has no signing_key — caller must
+        omit the signature field from the emitted bundle.
+        """
+        if self.signing_key is None:
+            return None
         payload = f"{canonical_tome}|{state_str}|{timestamp}"
         sig = hmac.new(
             self.signing_key,
@@ -130,8 +149,10 @@ class CanonicalCodec:
     def _verify_signature(
         self, canonical_tome: str, state_str: str, timestamp: str, signature: str
     ) -> bool:
-        """Verify HMAC-SHA256 signature."""
+        """Verify HMAC-SHA256 signature. Caller must gate on signing_key."""
         expected = self._sign(canonical_tome, state_str, timestamp)
+        if expected is None:
+            return False
         return hmac.compare_digest(expected, signature)
 
     # ------------------------------------------------------------------
@@ -273,7 +294,15 @@ class CanonicalCodec:
             InvalidSignatureError: If any signature doesn't match.
             ValueError: If required fields are missing.
         """
-        required = {"canonical_tome", "state_integer", "timestamp", "signature"}
+        # Structural fields are always required. The HMAC "signature" field
+        # is only required when this codec was configured with a signing_key
+        # — an importer that expects shared-secret tamper-detection refuses
+        # to silently accept unsigned bundles (downgrade protection). An
+        # importer with no signing_key relies on Ed25519 (if present) or
+        # accepts the bundle on structural grounds alone.
+        required = {"canonical_tome", "state_integer", "timestamp"}
+        if self.signing_key is not None:
+            required = required | {"signature"}
         missing = required - set(bundle_dict.keys())
         if missing:
             raise ValueError(f"Bundle missing required fields: {missing}")
@@ -324,14 +353,21 @@ class CanonicalCodec:
         canonical_tome = bundle_dict["canonical_tome"]
         state_str = bundle_dict["state_integer"]
         timestamp = bundle_dict["timestamp"]
-        signature = bundle_dict["signature"]
+        signature = bundle_dict.get("signature")
 
-        # Verify HMAC (mandatory)
-        if not self._verify_signature(canonical_tome, state_str, timestamp, signature):
-            raise InvalidSignatureError(
-                "Bundle HMAC signature verification failed. "
-                "The content may have been tampered with."
-            )
+        # Verify HMAC when this codec has a signing_key configured. The
+        # "required" check above already guarantees signature is present
+        # in that branch. If no signing_key is configured, we ignore the
+        # field entirely — no verification, no downgrade attack possible
+        # against a codec that explicitly opted out of HMAC.
+        if self.signing_key is not None:
+            if not self._verify_signature(
+                canonical_tome, state_str, timestamp, signature
+            ):
+                raise InvalidSignatureError(
+                    "Bundle HMAC signature verification failed. "
+                    "The content may have been tampered with."
+                )
 
         # Verify Ed25519 (if present)
         pub_sig = bundle_dict.get("public_signature")
@@ -367,10 +403,11 @@ class CanonicalCodec:
                     f"state_integer ({state_str}). Possible tampering."
                 )
         logger.info(
-            "Bundle imported: branch=%s, axioms=%s, scheme=%s, hmac=✓, ed25519=%s",
+            "Bundle imported: branch=%s, axioms=%s, scheme=%s, hmac=%s, ed25519=%s",
             bundle_dict.get("branch", "unknown"),
             bundle_dict.get("axiom_count", "?"),
             bundle_scheme,
+            "✓" if self.signing_key is not None else "n/a",
             "✓" if pub_sig else "n/a",
         )
         return state
