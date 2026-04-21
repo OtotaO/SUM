@@ -1,7 +1,9 @@
 """SUM CLI entry point.
 
 Subcommands:
-    sum attest   — stdin prose → signed CanonicalBundle JSON on stdout
+    sum attest   — stdin prose → CanonicalBundle JSON on stdout (optionally
+                   signed with HMAC via --signing-key and/or Ed25519 via
+                   --ed25519-key; unsigned by default)
     sum verify   — stdin/file bundle → exit 0 on match, 1 on mismatch
     sum resolve  — prov_id → ProvenanceRecord JSON (local ledger lookup)
     sum version  — print version string
@@ -462,14 +464,21 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="sum",
         description=(
-            "SUM — bidirectional knowledge distillation with cryptographic "
-            "attestation. Pipe prose, get a signed bundle, verify anywhere."
+            "SUM — bidirectional knowledge distillation with optional "
+            "cryptographic attestation. Pipe prose, get a CanonicalBundle "
+            "whose state integer anyone can re-derive, verify anywhere."
         ),
         epilog=(
             "Examples:\n"
             "  echo 'Alice likes cats.' | sum attest > bundle.json\n"
-            "  sum verify < bundle.json\n"
+            "  sum verify < bundle.json                 # structural only\n"
+            "  sum attest --ed25519-key keys/issuer.pem | sum verify --strict\n"
             "  sum resolve prov:abc123... --db akashic.db\n"
+            "\n"
+            "Attestation layers (all optional, compose freely):\n"
+            "  state integer   — content-addressed integrity (always present)\n"
+            "  --signing-key   — HMAC-SHA256 for shared-secret peers\n"
+            "  --ed25519-key   — Ed25519 public-key attestation (W3C VC 2.0)\n"
             "\n"
             "For the full feature catalog, see "
             "https://github.com/OtotaO/SUM/blob/main/docs/FEATURE_CATALOG.md"
@@ -484,13 +493,18 @@ def build_parser() -> argparse.ArgumentParser:
     # attest
     p_attest = subparsers.add_parser(
         "attest",
-        help="Extract facts from stdin prose and emit a signed CanonicalBundle.",
+        help="Extract facts from stdin prose and emit a CanonicalBundle (optionally signed).",
         description=(
             "Reads prose from stdin (or --input), extracts (subject, predicate, "
             "object) triples, mints a prime per triple via sha256_64_v1, LCMs "
-            "them into a Gödel state integer, and emits the signed "
-            "CanonicalBundle as JSON on stdout. Exits non-zero if extraction "
-            "yields zero triples."
+            "them into a Gödel state integer, and emits a CanonicalBundle as "
+            "JSON on stdout. Signatures are OPT-IN: add --signing-key for HMAC "
+            "or --ed25519-key for Ed25519 public-key attestation (the two "
+            "compose). Without either flag the bundle is unsigned — the state "
+            "integer still content-addresses the axiom set, so structural "
+            "integrity is verifiable by anyone. Exit codes: 0 on success, 2 "
+            "on malformed input, 3 when extraction yields zero triples (with "
+            "diagnostic on stderr; stdout stays empty)."
         ),
     )
     p_attest.add_argument("--input", "-i", help="Read from this path instead of stdin ('-' for stdin).")
