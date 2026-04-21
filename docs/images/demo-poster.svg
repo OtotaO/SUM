@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 720" width="1080" height="720" role="img" aria-labelledby="title desc">
+  <title id="title">SUM demo — paste a paragraph, attest every fact, verify anywhere.</title>
+  <desc id="desc">Static first-frame of the SUM single-file demo showing the hero claim, a civilian-prose placeholder, a density slider, and the Attest button. Replaces itself with the real 15-second recording once captured; see docs/DEMO_RECORDING.md for the runbook.</desc>
+
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fafbfd"/>
+      <stop offset="100%" stop-color="#f1f4f9"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f6f8fb"/>
+    </linearGradient>
+    <filter id="soft" x="-5%" y="-5%" width="110%" height="110%">
+      <feGaussianBlur stdDeviation="3"/>
+    </filter>
+  </defs>
+
+  <!-- Canvas -->
+  <rect width="1080" height="720" fill="url(#bg)"/>
+
+  <!-- Browser chrome hint — three dots and a URL bar for context -->
+  <rect x="180" y="40" width="720" height="36" rx="8" fill="#e6ecf3" stroke="#d6dde6" stroke-width="1"/>
+  <circle cx="198" cy="58" r="4.5" fill="#ed6a5e"/>
+  <circle cx="214" cy="58" r="4.5" fill="#f5bf4f"/>
+  <circle cx="230" cy="58" r="4.5" fill="#62c654"/>
+  <rect x="260" y="48" width="620" height="20" rx="6" fill="#ffffff" stroke="#e0e6ec" stroke-width="0.5"/>
+  <text x="275" y="62" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="12" fill="#556377">
+    sum-demo.pages.dev
+  </text>
+
+  <!-- Page body card -->
+  <rect x="180" y="96" width="720" height="580" rx="12" fill="url(#card)" stroke="#e2e7ed" stroke-width="1"/>
+
+  <!-- Hero title -->
+  <text x="220" y="158" font-family="ui-sans-serif, -apple-system, system-ui, sans-serif" font-size="32" font-weight="600" fill="#0f1724" letter-spacing="-0.3">
+    Every fact becomes a prime number.
+  </text>
+
+  <!-- Subhead -->
+  <text x="220" y="192" font-family="ui-sans-serif, -apple-system, system-ui, sans-serif" font-size="14" fill="#4b5662">
+    <tspan font-style="italic" font-weight="500" fill="#2d3748">Math does the trust.</tspan>
+    <tspan dx="4">Paste any paragraph, mint the facts, download a signed JSON —</tspan>
+  </text>
+  <text x="220" y="212" font-family="ui-sans-serif, -apple-system, system-ui, sans-serif" font-size="14" fill="#4b5662">
+    anyone can verify it on their own machine with no SUM software installed.
+  </text>
+
+  <!-- Textarea with placeholder prose -->
+  <rect x="220" y="236" width="640" height="130" rx="6" fill="#ffffff" stroke="#c7d0d9" stroke-width="1"/>
+  <text x="236" y="262" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" fill="#4b5662">
+    The printing press was invented by Johannes Gutenberg around
+  </text>
+  <text x="236" y="282" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" fill="#4b5662">
+    1440. Marie Curie, a pioneering physicist, won two Nobel
+  </text>
+  <text x="236" y="302" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" fill="#4b5662">
+    Prizes. Ada Lovelace wrote the first computer algorithm.
+  </text>
+  <!-- Blinking cursor bar -->
+  <rect x="602" y="290" width="2" height="14" fill="#2d3748">
+    <animate attributeName="opacity" values="0;0;1;1" dur="1s" repeatCount="indefinite"/>
+  </rect>
+
+  <!-- Density slider -->
+  <text x="220" y="396" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#4b5662">
+    density
+  </text>
+  <line x1="300" y1="392" x2="800" y2="392" stroke="#c7d0d9" stroke-width="3" stroke-linecap="round"/>
+  <line x1="300" y1="392" x2="800" y2="392" stroke="#4a90e2" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="800" cy="392" r="8" fill="#4a90e2" stroke="#ffffff" stroke-width="2"/>
+  <text x="820" y="396" font-family="ui-monospace, monospace" font-size="12" fill="#4b5662">
+    1.00
+  </text>
+
+  <!-- Attest button -->
+  <rect x="742" y="430" width="118" height="44" rx="8" fill="#4a90e2"/>
+  <rect x="742" y="430" width="118" height="44" rx="8" fill="#4a90e2" filter="url(#soft)" opacity="0.25">
+    <animate attributeName="opacity" values="0.25;0.45;0.25" dur="2s" repeatCount="indefinite"/>
+  </rect>
+  <text x="801" y="458" font-family="ui-sans-serif, system-ui, sans-serif" font-size="15" font-weight="500" fill="#ffffff" text-anchor="middle">
+    Attest
+  </text>
+
+  <!-- Proof hint strip -->
+  <rect x="220" y="504" width="640" height="120" rx="8" fill="#ffffff" stroke="#e2e7ed" stroke-width="1"/>
+  <text x="236" y="532" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="600" fill="#6b7480" letter-spacing="1.2">
+    WHAT ATTEST DOES (PREVIEW)
+  </text>
+  <text x="236" y="556" font-family="ui-monospace, monospace" font-size="12" fill="#2d3748">
+    johannes_gutenberg <tspan font-weight="700">invent</tspan> printing_press
+    <tspan fill="#99a4b2" dx="8">#7c21f3a0…</tspan>
+  </text>
+  <text x="236" y="576" font-family="ui-monospace, monospace" font-size="12" fill="#2d3748">
+    marie_curie <tspan font-weight="700">win</tspan> nobel_prizes
+    <tspan fill="#99a4b2" dx="8">#b4e5a92c…</tspan>
+  </text>
+  <text x="236" y="596" font-family="ui-monospace, monospace" font-size="12" fill="#2d3748">
+    marie_curie <tspan font-weight="700">be</tspan> physicist
+    <tspan fill="#99a4b2" dx="8">#d1e0f24a…</tspan>
+  </text>
+  <text x="236" y="616" font-family="ui-monospace, monospace" font-size="12" fill="#2d3748">
+    ada_lovelace <tspan font-weight="700">write</tspan> first_computer_algorithm
+    <tspan fill="#99a4b2" dx="8">#a05f1e77…</tspan>
+  </text>
+
+  <!-- Footer note -->
+  <text x="540" y="696" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#99a4b2" text-anchor="middle" font-style="italic">
+    Static poster frame — replaces with live GIF per docs/DEMO_RECORDING.md
+  </text>
+</svg>
