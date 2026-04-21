@@ -66,3 +66,69 @@ jobs:
     - name: Run Fortress Gate (21 checks)
       run: |
         python scripts/verify_fortress.py --json
+
+  cross-runtime-harness:
+    name: Cross-Runtime Trust Triangle (Python ↔ Node)
+    needs: zig-core
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+        cache: 'pip'
+        cache-dependency-path: 'requirements-prod.txt'
+
+    # Node 22 ships Ed25519 in WebCrypto (required since 18.4). Pin to
+    # a specific LTS so K3 ('Ed25519-signed bundle verifies Python →
+    # verify.js via SubtleCrypto') and K4 ('tampered bundle rejected')
+    # exercise the positive and negative Ed25519 paths, not the
+    # 'unsupported' fallback.
+    - name: Set up Node.js 22
+      uses: actions/setup-node@v4
+      with:
+        node-version: "22"
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements-prod.txt
+
+    - name: Run K1/K1-multiword/K2/K3/K4 kill-experiments
+      # K1 + K1-multiword: CanonicalBundle structural round-trip
+      # K2:               verify.js cleanly rejects VC 2.0 (named error)
+      # K3:               Ed25519-signed bundle verifies Python → Node
+      # K4:               Tampered Ed25519 bundle fails at Node verifier
+      # Non-zero exit here means the trust triangle drifted — hard-stop merge.
+      run: python -m scripts.verify_cross_runtime
+
+  pypi-install-smoke:
+    name: pip install sum-engine (fresh venv smoke)
+    needs: zig-core
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Build sdist + wheel
+      run: |
+        python -m pip install --upgrade pip build
+        python -m build --sdist --wheel --outdir dist
+
+    - name: Install wheel in clean venv and run attest | verify
+      # Lock the shipping promise: every commit on main must survive a
+      # cold-install attest→verify round-trip in a venv that shares
+      # nothing with the repo checkout (no PYTHONPATH, no dev deps).
+      # Catches packaging regressions before PyPI publish.
+      run: |
+        python -m venv /tmp/sumtest
+        /tmp/sumtest/bin/pip install --quiet "dist/$(ls dist | grep '.whl$')[sieve]"
+        /tmp/sumtest/bin/sum --version
+        echo "Alice likes cats. Bob owns a dog." | /tmp/sumtest/bin/sum attest --extractor=sieve > /tmp/bundle.json
+        /tmp/sumtest/bin/sum verify --input /tmp/bundle.json
