@@ -119,11 +119,13 @@ tmp/
 temp/
 cache/
 
-# Security
+# Security — never commit private keys. Rotate per deployment.
+# See docs/DID_SETUP.md for the did:web issuer setup.
 *.pem
 *.key
 *.crt
 *.csr
+keys/
 
 # Python type checking
 .mypy_cache/

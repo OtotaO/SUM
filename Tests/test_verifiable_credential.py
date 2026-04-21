@@ -19,8 +19,14 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from internal.infrastructure.verifiable_credential import (
     CRYPTOSUITE,
     DATA_INTEGRITY_PROOF_TYPE,
+    DID_CONTEXT,
+    ED25519_MULTICODEC_PREFIX,
     VC_V2_CONTEXT,
     VerificationError,
+    build_did_web_document,
+    did_web_verification_method,
+    ed25519_public_key_multibase,
+    ed25519_to_did_key,
     make_credential,
     multibase_base58btc_decode,
     multibase_base58btc_encode,
@@ -346,3 +352,123 @@ class TestOnDiskRoundtrip:
             },
         }
         assert verify_credential(reordered, pk) is True
+
+
+# ─── DID helpers (did:key + did:web) ─────────────────────────────────
+
+
+class TestEd25519DidKeyEncoding:
+    def test_multibase_has_z_prefix(self) -> None:
+        sk, pk = _keypair()
+        mb = ed25519_public_key_multibase(pk)
+        assert mb.startswith("z")
+        # z-prefix + multicodec-encoded-in-base58 payload. Ed25519 keys
+        # always produce a string that begins with z6Mk because the
+        # 0xed 0x01 multicodec prefix + 32 bytes encodes to that form.
+        assert mb.startswith("z6Mk")
+
+    def test_did_key_format(self) -> None:
+        sk, pk = _keypair()
+        did = ed25519_to_did_key(pk)
+        assert did.startswith("did:key:z6Mk")
+
+    def test_multibase_decode_yields_prefix_plus_key(self) -> None:
+        sk, pk = _keypair()
+        mb = ed25519_public_key_multibase(pk)
+        decoded = multibase_base58btc_decode(mb)
+        assert decoded.startswith(ED25519_MULTICODEC_PREFIX)
+        assert len(decoded) == len(ED25519_MULTICODEC_PREFIX) + 32
+
+    def test_distinct_keys_distinct_dids(self) -> None:
+        sk1, pk1 = _keypair()
+        sk2, pk2 = _keypair()
+        assert ed25519_to_did_key(pk1) != ed25519_to_did_key(pk2)
+
+
+class TestDidWebVerificationMethod:
+    def test_basic(self) -> None:
+        assert did_web_verification_method("sum-demo.pages.dev") == "did:web:sum-demo.pages.dev#key-1"
+
+    def test_custom_key_id(self) -> None:
+        assert did_web_verification_method("example.org", "key-42") == "did:web:example.org#key-42"
+
+    def test_rejects_scheme(self) -> None:
+        with pytest.raises(ValueError, match="scheme"):
+            did_web_verification_method("https://example.org")
+
+    def test_rejects_trailing_slash(self) -> None:
+        with pytest.raises(ValueError, match="scheme"):
+            did_web_verification_method("example.org/")
+
+
+class TestBuildDidWebDocument:
+    def test_basic_shape(self) -> None:
+        _, pk = _keypair()
+        doc = build_did_web_document("sum-demo.pages.dev", pk)
+        assert doc["@context"] == DID_CONTEXT
+        assert doc["id"] == "did:web:sum-demo.pages.dev"
+        assert len(doc["verificationMethod"]) == 1
+        vm = doc["verificationMethod"][0]
+        assert vm["id"] == "did:web:sum-demo.pages.dev#key-1"
+        assert vm["type"] == "Multikey"
+        assert vm["controller"] == "did:web:sum-demo.pages.dev"
+        assert vm["publicKeyMultibase"].startswith("z6Mk")
+        assert doc["assertionMethod"] == ["did:web:sum-demo.pages.dev#key-1"]
+        assert doc["authentication"] == ["did:web:sum-demo.pages.dev#key-1"]
+
+    def test_custom_key_id_propagates(self) -> None:
+        _, pk = _keypair()
+        doc = build_did_web_document("example.org", pk, key_id="issuer-2026")
+        assert doc["verificationMethod"][0]["id"] == "did:web:example.org#issuer-2026"
+        assert doc["assertionMethod"] == ["did:web:example.org#issuer-2026"]
+
+    def test_also_known_as_included_when_given(self) -> None:
+        _, pk = _keypair()
+        did_key = ed25519_to_did_key(pk)
+        doc = build_did_web_document("example.org", pk, also_known_as=[did_key])
+        assert doc["alsoKnownAs"] == [did_key]
+
+    def test_also_known_as_omitted_when_empty(self) -> None:
+        _, pk = _keypair()
+        doc = build_did_web_document("example.org", pk)
+        assert "alsoKnownAs" not in doc
+
+
+class TestDidBasedCredentialSigning:
+    """Signing a credential with did:web / did:key verificationMethod
+    still round-trips cleanly. The DID is an opaque string at the
+    crypto layer — the verifier still needs the public key out-of-band
+    today — but the `verificationMethod` IRI is now dereferenceable by
+    any W3C-compliant resolver (DIF Universal Resolver, Veramo, etc.)."""
+
+    def test_did_web_verification_method_signs_and_verifies(self) -> None:
+        sk, pk = _keypair()
+        cred = make_credential(
+            subject={"axiom": "alice||like||cat"},
+            issuer="did:web:sum-demo.pages.dev",
+            valid_from="2026-04-20T00:00:00Z",
+        )
+        signed = sign_credential(
+            cred,
+            sk,
+            did_web_verification_method("sum-demo.pages.dev"),
+            created="2026-04-20T00:00:00Z",
+        )
+        assert signed["proof"]["verificationMethod"] == "did:web:sum-demo.pages.dev#key-1"
+        assert verify_credential(signed, pk) is True
+
+    def test_did_key_self_resolving_verification_method(self) -> None:
+        sk, pk = _keypair()
+        did_key = ed25519_to_did_key(pk)
+        # did:key's verificationMethod convention is `did:key:z...#z...`
+        # (the fragment equals the multibase-encoded key). For SUM's
+        # purposes the DID itself is enough — verifiers derive the key
+        # from it directly.
+        vm = f"{did_key}#{did_key.split(':')[-1]}"
+        cred = make_credential(
+            subject={"axiom": "alice||like||cat"},
+            issuer=did_key,
+            valid_from="2026-04-20T00:00:00Z",
+        )
+        signed = sign_credential(cred, sk, vm, created="2026-04-20T00:00:00Z")
+        assert verify_credential(signed, pk) is True
