@@ -348,6 +348,23 @@ function derivePrimeV2(axiomKey) {
   return nextPrimeBPSW(seed);
 }
 
+// ─── Canonical ABI line regex — one source of truth for JS ─────────
+//
+// CANONICAL_FORMAT_VERSION 1.0.0 specifies fact lines as
+//   "The {subject} {predicate} {object}."
+// where SUBJECT and PREDICATE are \S+ (single token, underscore-joined
+// for multi-word entities at the sieve boundary) and OBJECT is .+
+// (whitespace-permitted — multi-word nouns like "nobel prizes" are
+// valid). See CANONICAL_ABI_SPEC.md §3.2 and the Python mirror at
+// internal/ensemble/ouroboros.py:108.
+//
+// This regex is exported so verify.js, the single-file-demo HTML's
+// inlined parser, and any future JS consumer share one literal.
+// Drift between verifier parsers caused the bug fixed in commit
+// 2e4188c (verify.js had used \S+ for the object capture); factoring
+// here eliminates the second copy.
+const CANONICAL_LINE_REGEX = /^The\s+(\S+)\s+(\S+)\s+(.+)\.$/;
+
 module.exports = {
   // Arithmetic
   modPow,
@@ -366,4 +383,6 @@ module.exports = {
   // Derivation
   derivePrime,
   derivePrimeV2,
+  // Canonical ABI regex (single source of truth for JS)
+  CANONICAL_LINE_REGEX,
 };
