@@ -1,0 +1,373 @@
+"""SUM CLI entry point.
+
+Subcommands:
+    sum attest   — stdin prose → signed CanonicalBundle JSON on stdout
+    sum verify   — stdin/file bundle → exit 0 on match, 1 on mismatch
+    sum resolve  — prov_id → ProvenanceRecord JSON (local ledger lookup)
+    sum version  — print version string
+    sum --help   — auto-generated usage
+
+Design notes (read once, explained here so the code stays terse):
+
+  - argparse only. No click, no typer. Stdlib keeps the install minimal and
+    cold-start fast (`python -c "import sum_cli"` must stay under 100 ms).
+  - Heavy imports (spacy, openai, akashic ledger) are lazy. Loading the
+    module to call --version or --help must NOT drag the whole
+    internal.algorithms.* tree into memory.
+  - Stdin / stdout / stderr contract is Unix-shaped: one thing in, one
+    thing out, diagnostics on stderr, exit code signals success/failure.
+    Agents can pipe sum into jq, into file > bundle.json, into
+    curl -d @bundle.json, etc. — standard tool composition.
+  - Every command prints machine-readable output on stdout (JSON) and
+    human-readable context on stderr. Quiet by default unless --verbose.
+  - No surprises. `sum attest` exits with non-zero if extraction yielded
+    zero triples (nothing to attest is a failure, not a success).
+"""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+import sys
+from datetime import datetime, timezone
+from typing import Any, Optional
+
+from sum_cli import __version__
+
+
+# ─── Extractor selection (lazy, dependency-aware) ────────────────────
+
+def _pick_extractor(override: Optional[str] = None) -> str:
+    """Pick the extractor at runtime. Honors --extractor override; otherwise
+    adapts to whichever dependency is installed.
+
+    Rules:
+      1. If --extractor is given, honor it (fail fast if deps missing).
+      2. If spaCy + en_core_web_sm are importable, prefer 'sieve' (offline).
+      3. If OPENAI_API_KEY is set, use 'llm' (network-dependent).
+      4. Otherwise, fail with a helpful install hint.
+    """
+    if override:
+        return override
+    try:
+        import spacy  # noqa: F401 — availability check only
+        spacy.load("en_core_web_sm")
+        return "sieve"
+    except Exception:
+        pass
+    if os.environ.get("OPENAI_API_KEY"):
+        return "llm"
+    raise SystemExit(
+        "sum: no extractor available. Install one of:\n"
+        "    pip install 'sum-engine[sieve]' && python -m spacy download en_core_web_sm\n"
+        "    pip install 'sum-engine[llm]'   && export OPENAI_API_KEY=...\n"
+        "Or pass --extractor explicitly."
+    )
+
+
+def _extract_sieve(text: str) -> list[tuple[str, str, str]]:
+    from internal.algorithms.syntactic_sieve import DeterministicSieve
+    sieve = DeterministicSieve()  # type: ignore[no-untyped-call]
+    return sieve.extract_triplets(text)
+
+
+def _extract_llm(text: str, model: str) -> list[tuple[str, str, str]]:
+    import asyncio
+    from internal.ensemble.live_llm_adapter import LiveLLMAdapter
+    adapter = LiveLLMAdapter(model=model)
+    return asyncio.run(adapter.extract_triplets(text))
+
+
+def _extract(text: str, extractor: str, model: Optional[str]) -> list[tuple[str, str, str]]:
+    if extractor == "sieve":
+        return _extract_sieve(text)
+    if extractor == "llm":
+        return _extract_llm(text, model or "gpt-4o-mini-2024-07-18")
+    raise SystemExit(f"sum: unknown extractor {extractor!r}")
+
+
+# ─── attest ──────────────────────────────────────────────────────────
+
+def _read_input(path: Optional[str]) -> str:
+    if path is None or path == "-":
+        return sys.stdin.read()
+    with open(path, "r", encoding="utf-8") as f:
+        return f.read()
+
+
+def cmd_attest(args: argparse.Namespace) -> int:
+    text = _read_input(args.input).strip()
+    if not text:
+        print("sum: empty input", file=sys.stderr)
+        return 2
+
+    # Source URI: either user-supplied or derived from a SHA-256 of the input
+    # bytes (content-addressable by default — matches provenance.py's
+    # sha256_uri_for_text helper).
+    source_uri = args.source or (
+        "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest()
+    )
+
+    extractor = _pick_extractor(args.extractor)
+    if args.verbose:
+        print(f"sum: extractor={extractor} source={source_uri}", file=sys.stderr)
+
+    triples = _extract(text, extractor, args.model)
+    if not triples:
+        print(
+            "sum: extractor returned zero triples. "
+            "Input may be too short, negated, or hedged — "
+            "see docs/FEATURE_CATALOG.md entries 6-9 for the suppression rules.",
+            file=sys.stderr,
+        )
+        return 3
+
+    # Build the CanonicalBundle via the existing codec path — no
+    # reimplementation of Ed25519/HMAC, no reimplementation of canonical
+    # tome generation. The CLI is a thin wrapper.
+    from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+    from internal.ensemble.tome_generator import AutoregressiveTomeGenerator
+    from internal.infrastructure.canonical_codec import CanonicalCodec
+
+    algebra = GodelStateAlgebra()  # type: ignore[no-untyped-call]
+    tome_generator = AutoregressiveTomeGenerator(algebra)
+    codec = CanonicalCodec(algebra, tome_generator, signing_key=args.signing_key)
+    state = algebra.encode_chunk_state(list(triples))
+    bundle = codec.export_bundle(
+        state,
+        branch=args.branch,
+        title=args.title,
+    )
+
+    # Optional: attach a lightweight sidecar naming the extractor + source
+    # URI so downstream consumers can trace provenance without the full
+    # AkashicLedger. This is additive — the CanonicalBundle schema
+    # ignores unknown keys, so adding them is forward-compatible.
+    bundle["sum_cli"] = {
+        "extractor": extractor,
+        "source_uri": source_uri,
+        "cli_version": __version__,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    json.dump(bundle, sys.stdout, indent=2 if args.pretty else None)
+    sys.stdout.write("\n")
+
+    if args.verbose:
+        print(
+            f"sum: minted {len(triples)} axiom(s), state_integer has "
+            f"{len(bundle['state_integer'])} digits",
+            file=sys.stderr,
+        )
+    return 0
+
+
+# ─── verify ──────────────────────────────────────────────────────────
+
+def cmd_verify(args: argparse.Namespace) -> int:
+    raw = _read_input(args.input)
+    try:
+        bundle = json.loads(raw)
+    except json.JSONDecodeError as e:
+        print(f"sum: bundle is not valid JSON: {e}", file=sys.stderr)
+        return 2
+
+    # Required fields per the Phase 16 ABI. Keep the check explicit rather
+    # than pulling in CanonicalCodec's import machinery (faster cold start).
+    for field in ("canonical_tome", "state_integer", "canonical_format_version"):
+        if field not in bundle:
+            print(f"sum: bundle missing required field: {field}", file=sys.stderr)
+            return 2
+
+    if bundle["canonical_format_version"] != "1.0.0":
+        print(
+            f"sum: unsupported canonical_format_version "
+            f"{bundle['canonical_format_version']!r} (this CLI speaks 1.0.0)",
+            file=sys.stderr,
+        )
+        return 2
+
+    # Reconstruct the state integer from the canonical tome lines — same
+    # logic verify.js runs in Node, same bytes Python produces.
+    import math
+    import re
+    from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+
+    algebra = GodelStateAlgebra()  # type: ignore[no-untyped-call]
+    pattern = re.compile(r"^The (\S+) (\S+) (.+)\.$")
+    state = 1
+    axioms = 0
+    for line in bundle["canonical_tome"].splitlines():
+        match = pattern.match(line.strip())
+        if not match:
+            continue
+        subj, pred, obj = match.group(1), match.group(2), match.group(3)
+        prime = algebra.get_or_mint_prime(subj, pred, obj)
+        state = math.lcm(state, prime)
+        axioms += 1
+
+    claimed_state_str = bundle["state_integer"]
+    try:
+        claimed_state = int(claimed_state_str)
+    except ValueError:
+        print(f"sum: state_integer is not an integer: {claimed_state_str!r}", file=sys.stderr)
+        return 2
+
+    expected_count = bundle.get("axiom_count")
+    if expected_count is not None and axioms != expected_count:
+        print(
+            f"sum: ✗ axiom count mismatch (parsed {axioms}, claimed {expected_count})",
+            file=sys.stderr,
+        )
+        return 1
+
+    if state != claimed_state:
+        short_got = str(state)[:32]
+        short_claim = claimed_state_str[:32]
+        print(
+            f"sum: ✗ state integer mismatch: "
+            f"claimed {short_claim}…, reconstructed {short_got}…",
+            file=sys.stderr,
+        )
+        return 1
+
+    # Machine-readable success payload on stdout; human message on stderr.
+    result = {
+        "ok": True,
+        "axioms": axioms,
+        "state_integer_digits": len(claimed_state_str),
+        "branch": bundle.get("branch", "main"),
+        "bundle_version": bundle.get("bundle_version", "unknown"),
+    }
+    json.dump(result, sys.stdout, indent=2 if args.pretty else None)
+    sys.stdout.write("\n")
+    print(f"sum: ✓ verified {axioms} axiom(s), state integer matches", file=sys.stderr)
+    return 0
+
+
+# ─── resolve ─────────────────────────────────────────────────────────
+
+def cmd_resolve(args: argparse.Namespace) -> int:
+    import asyncio
+    from internal.infrastructure.akashic_ledger import AkashicLedger
+
+    ledger = AkashicLedger(db_path=args.db)
+    record = asyncio.run(ledger.get_provenance_record(args.prov_id))
+    if record is None:
+        print(f"sum: prov_id {args.prov_id!r} not found in {args.db}", file=sys.stderr)
+        return 1
+
+    payload = record.to_dict() if hasattr(record, "to_dict") else dict(record.__dict__)
+    json.dump(payload, sys.stdout, indent=2)
+    sys.stdout.write("\n")
+    return 0
+
+
+# ─── Argparse wiring ─────────────────────────────────────────────────
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="sum",
+        description=(
+            "SUM — bidirectional knowledge distillation with cryptographic "
+            "attestation. Pipe prose, get a signed bundle, verify anywhere."
+        ),
+        epilog=(
+            "Examples:\n"
+            "  echo 'Alice likes cats.' | sum attest > bundle.json\n"
+            "  sum verify < bundle.json\n"
+            "  sum resolve prov:abc123... --db akashic.db\n"
+            "\n"
+            "For the full feature catalog, see "
+            "https://github.com/OtotaO/SUM/blob/main/docs/FEATURE_CATALOG.md"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "--version", action="version", version=f"sum {__version__}"
+    )
+    subparsers = parser.add_subparsers(dest="cmd", required=True, metavar="<command>")
+
+    # attest
+    p_attest = subparsers.add_parser(
+        "attest",
+        help="Extract facts from stdin prose and emit a signed CanonicalBundle.",
+        description=(
+            "Reads prose from stdin (or --input), extracts (subject, predicate, "
+            "object) triples, mints a prime per triple via sha256_64_v1, LCMs "
+            "them into a Gödel state integer, and emits the signed "
+            "CanonicalBundle as JSON on stdout. Exits non-zero if extraction "
+            "yields zero triples."
+        ),
+    )
+    p_attest.add_argument("--input", "-i", help="Read from this path instead of stdin ('-' for stdin).")
+    p_attest.add_argument(
+        "--extractor", choices=["sieve", "llm"],
+        help="Override extractor selection. Default: auto-detect (sieve if spaCy installed, llm if OPENAI_API_KEY set).",
+    )
+    p_attest.add_argument(
+        "--model",
+        help="LLM model ID (pinned snapshot) for --extractor=llm. Default: gpt-4o-mini-2024-07-18.",
+    )
+    p_attest.add_argument("--source", help="Source URI for the bundle. Default: sha256: of input bytes.")
+    p_attest.add_argument("--branch", default="main", help="Branch name for the bundle. Default: main.")
+    p_attest.add_argument("--title", default="Attested Tome", help="Tome title. Default: 'Attested Tome'.")
+    p_attest.add_argument(
+        "--signing-key", default="sum-default-key",
+        help="HMAC signing key for bundle signature. Default: 'sum-default-key' (demo only — rotate in production).",
+    )
+    p_attest.add_argument("--pretty", action="store_true", help="Pretty-print output JSON.")
+    p_attest.add_argument("--verbose", "-v", action="store_true", help="Emit diagnostics on stderr.")
+    p_attest.set_defaults(func=cmd_attest)
+
+    # verify
+    p_verify = subparsers.add_parser(
+        "verify",
+        help="Verify a CanonicalBundle: reconstruct state integer from canonical tome, compare.",
+        description=(
+            "Reads a CanonicalBundle JSON from stdin (or --input/arg), "
+            "parses the canonical tome, re-derives primes via sha256_64_v1, "
+            "LCMs them to a reconstructed state integer, and compares to the "
+            "claimed state_integer. Exits 0 on match, 1 on mismatch, 2 on "
+            "malformed input."
+        ),
+    )
+    p_verify.add_argument("--input", "-i", help="Read from this path instead of stdin ('-' for stdin).")
+    p_verify.add_argument("--pretty", action="store_true", help="Pretty-print result JSON on stdout.")
+    p_verify.set_defaults(func=cmd_verify)
+
+    # resolve
+    p_resolve = subparsers.add_parser(
+        "resolve",
+        help="Look up a ProvenanceRecord by prov_id in a local Akashic ledger.",
+        description=(
+            "Opens the SQLite ledger at --db (default: ./akashic.db) and "
+            "returns the ProvenanceRecord matching the given prov_id. Exits "
+            "0 if found, 1 if not."
+        ),
+    )
+    p_resolve.add_argument("prov_id", help="Content-addressable provenance id (e.g. 'prov:abc123...').")
+    p_resolve.add_argument("--db", default="akashic.db", help="Path to the SQLite ledger. Default: ./akashic.db.")
+    p_resolve.set_defaults(func=cmd_resolve)
+
+    return parser
+
+
+def main(argv: Optional[list[str]] = None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    try:
+        return int(args.func(args))
+    except KeyboardInterrupt:
+        print("sum: interrupted", file=sys.stderr)
+        return 130
+    except SystemExit:
+        raise
+    except Exception as e:  # noqa: BLE001 — CLI is the top-level boundary.
+        print(f"sum: {type(e).__name__}: {e}", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

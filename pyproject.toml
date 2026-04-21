@@ -1,0 +1,92 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sum-engine"
+version = "0.1.0"
+description = "SUM — bidirectional knowledge distillation with cryptographic attestation. Pipe prose, get a signed bundle, verify anywhere."
+readme = "README.md"
+license = { text = "Apache-2.0" }
+authors = [{ name = "ototao" }]
+requires-python = ">=3.10"
+keywords = [
+    "knowledge-graph",
+    "verifiable-credentials",
+    "attestation",
+    "godel-encoding",
+    "semantic-web",
+    "agent-cli",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Security :: Cryptography",
+    "Environment :: Console",
+]
+# Core dependencies — enough for the default `sum attest` and `sum verify`
+# paths. Optional extras below add the heavy NLP / LLM paths.
+dependencies = [
+    "cryptography>=41.0.0",
+    "sympy>=1.12",
+]
+
+[project.optional-dependencies]
+# Dependency-injection extras. Users pick the extractor they want:
+#   pip install sum-engine[sieve]   # deterministic, offline spaCy path
+#   pip install sum-engine[llm]     # OpenAI structured-output path
+#   pip install sum-engine[all]     # both, plus dev tooling
+sieve = ["spacy>=3.7.0"]
+llm = ["openai>=1.0.0", "pydantic>=2.0.0"]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "mypy>=1.0.0",
+    "ruff>=0.1.0",
+    "types-setuptools",
+]
+all = [
+    "sum-engine[sieve]",
+    "sum-engine[llm]",
+    "sum-engine[dev]",
+]
+
+[project.scripts]
+# `sum` on PATH after installation. Subcommands: attest, verify, resolve, version.
+sum = "sum_cli.main:main"
+
+[project.urls]
+Homepage = "https://github.com/OtotaO/SUM"
+Repository = "https://github.com/OtotaO/SUM"
+"Proof Boundary" = "https://github.com/OtotaO/SUM/blob/main/docs/PROOF_BOUNDARY.md"
+"Feature Catalog" = "https://github.com/OtotaO/SUM/blob/main/docs/FEATURE_CATALOG.md"
+
+[tool.setuptools.packages.find]
+# Include the CLI and the core engine modules it depends on. Tests and
+# scripts are dev-time only and excluded from the distribution.
+include = ["sum_cli*", "internal*"]
+exclude = ["Tests*", "Tests.*", "scripts*", "api*", "single_file_demo*"]
+
+[tool.setuptools.package-data]
+# Ship nothing binary by default. spaCy models are user-installed via
+# `python -m spacy download en_core_web_sm`.
+"*" = ["py.typed"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+follow_imports = "silent"
+explicit_package_bases = true
