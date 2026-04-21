@@ -126,9 +126,16 @@ jobs:
       # cold-install attest→verify round-trip in a venv that shares
       # nothing with the repo checkout (no PYTHONPATH, no dev deps).
       # Catches packaging regressions before PyPI publish.
+      #
+      # The spaCy model is pre-downloaded into the smoke venv so the
+      # attest step exercises the happy path, not the auto-download
+      # fallback. (The auto-download path is also safe — syntactic_sieve
+      # routes it to stderr — but pre-downloading is faster and lets the
+      # attest|verify redirect test stdout cleanliness specifically.)
       run: |
         python -m venv /tmp/sumtest
         /tmp/sumtest/bin/pip install --quiet "dist/$(ls dist | grep '.whl$')[sieve]"
+        /tmp/sumtest/bin/python -m spacy download en_core_web_sm
         /tmp/sumtest/bin/sum --version
         echo "Alice likes cats. Bob owns a dog." | /tmp/sumtest/bin/sum attest --extractor=sieve > /tmp/bundle.json
         /tmp/sumtest/bin/sum verify --input /tmp/bundle.json

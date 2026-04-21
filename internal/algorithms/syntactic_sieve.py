@@ -299,8 +299,19 @@ class DeterministicSieve:
             import subprocess
             import sys
 
+            # CRITICAL: route spaCy's download progress to stderr so it does
+            # not contaminate the CLI's stdout. `sum attest > bundle.json`
+            # must emit nothing but the CanonicalBundle JSON; the CI's
+            # pip-install smoke test catches this regression. Announcing the
+            # fallback on stderr is also more honest than silent auto-install.
+            print(
+                "sum: spaCy model 'en_core_web_sm' missing; downloading "
+                "(~50 MB, one-time)…",
+                file=sys.stderr,
+            )
             subprocess.check_call(
-                [sys.executable, "-m", "spacy", "download", "en_core_web_sm"]
+                [sys.executable, "-m", "spacy", "download", "en_core_web_sm"],
+                stdout=sys.stderr,
             )
             self.nlp = spacy.load("en_core_web_sm")
 
