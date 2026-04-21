@@ -79,7 +79,13 @@ function parseCanonicalTome(tomeText) {
   for (const line of lines) {
     const trimmed = line.trim();
     // Match canonical fact lines: "The subject predicate object."
-    const match = trimmed.match(/^The\s+(\S+)\s+(\S+)\s+(\S+)\.$/);
+    // Per CANONICAL_ABI_SPEC §3.2: subject and predicate are \S+ (single
+    // token each); OBJECT is .+ (greedy) and MAY contain whitespace
+    // ("nobel prizes", "computer algorithm", "printing press"). The
+    // Python Ouroboros parser at internal/ensemble/ouroboros.py line 108
+    // uses the same shape; this parser must match or cross-runtime
+    // reconstruction drifts silently on any multi-word-object corpus.
+    const match = trimmed.match(/^The\s+(\S+)\s+(\S+)\s+(.+)\.$/);
     if (match) {
       const [, subject, predicate, object] = match;
       const axiomKey = `${subject.toLowerCase()}||${predicate.toLowerCase()}||${object.toLowerCase()}`;

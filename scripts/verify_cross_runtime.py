@@ -64,8 +64,11 @@ def _run_verifier(bundle_path: Path) -> subprocess.CompletedProcess[str]:
     )
 
 
-def k1_canonical_bundle_round_trip() -> bool:
-    """Python mints CanonicalBundle → JS verifies → exit 0 expected."""
+def _mint_bundle(triples: list[tuple[str, str, str]], title: str) -> dict:
+    """Helper: mint a CanonicalBundle from the given triples via the
+    production codec path. Factored so K1 + K1-multiword share the same
+    mint logic and we know they're testing the cross-runtime parser
+    under identical bundle shape."""
     from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
     from internal.ensemble.tome_generator import AutoregressiveTomeGenerator
     from internal.infrastructure.canonical_codec import CanonicalCodec
@@ -73,13 +76,40 @@ def k1_canonical_bundle_round_trip() -> bool:
     algebra = GodelStateAlgebra()
     gen = AutoregressiveTomeGenerator(algebra)
     codec = CanonicalCodec(algebra, gen)
-    state = algebra.encode_chunk_state(
-        [("alice", "like", "cat"), ("bob", "own", "dog")]
-    )
-    bundle = codec.export_bundle(
-        state, branch="main", title="cross-runtime harness K1"
-    )
+    state = algebra.encode_chunk_state(triples)
+    return codec.export_bundle(state, branch="main", title=title)
 
+
+def _verify_bundle(bundle: dict, label: str, expected_banner: str) -> bool:
+    fd, path_str = tempfile.mkstemp(suffix=".json")
+    os.close(fd)
+    path = Path(path_str)
+    try:
+        path.write_text(json.dumps(bundle), encoding="utf-8")
+        result = _run_verifier(path)
+    finally:
+        path.unlink(missing_ok=True)
+
+    if result.returncode != 0:
+        print(f"[{label} FAIL] verify.js exited {result.returncode}", file=sys.stderr)
+        print(f"[{label} stdout] {result.stdout}", file=sys.stderr)
+        print(f"[{label} stderr] {result.stderr}", file=sys.stderr)
+        return False
+    if expected_banner not in result.stdout:
+        print(
+            f"[{label} FAIL] expected banner {expected_banner!r} not in stdout",
+            file=sys.stderr,
+        )
+        return False
+    return True
+
+
+def k1_canonical_bundle_round_trip() -> bool:
+    """Python mints single-token-object CanonicalBundle → JS verifies → exit 0 expected."""
+    bundle = _mint_bundle(
+        [("alice", "like", "cat"), ("bob", "own", "dog")],
+        title="cross-runtime harness K1",
+    )
     fd, path_str = tempfile.mkstemp(suffix=".json")
     os.close(fd)
     path = Path(path_str)
@@ -169,6 +199,31 @@ def k2_vc2_named_rejection() -> bool:
     return True
 
 
+def k1_multiword_object_round_trip() -> bool:
+    """Python mints a bundle with MULTI-WORD OBJECTS → JS verifies → exit 0 expected.
+
+    This is the regression guard for the real bug caught by the `sum`
+    CLI's first kill-experiment on 2026-04-21: `verify.js` used
+    ``(\\S+)`` for the object capture while the Python parser used
+    ``(.+)``, so every tome with objects like "nobel prizes" or
+    "printing press" reconstructed to state=1 in Node while Python
+    produced the correct state. Fixed in the same session; this fixture
+    guarantees the drift cannot resurface.
+    """
+    bundle = _mint_bundle(
+        [
+            ("marie_curie", "win", "nobel prizes"),
+            ("johannes_gutenberg", "invent", "printing press"),
+            ("ada_lovelace", "write", "computer algorithm"),
+        ],
+        title="cross-runtime harness K1-multiword",
+    )
+    ok = _verify_bundle(bundle, "K1-multiword", K1_EXPECTED_BANNER)
+    if ok:
+        print("[K1-multiword PASS] multi-word-object tome round-trips Python → verify.js")
+    return ok
+
+
 def main() -> int:
     if not VERIFIER.exists():
         print(
@@ -195,9 +250,10 @@ def main() -> int:
         return 4
 
     ok_k1 = k1_canonical_bundle_round_trip()
+    ok_k1_mw = k1_multiword_object_round_trip()
     ok_k2 = k2_vc2_named_rejection()
 
-    if ok_k1 and ok_k2:
+    if ok_k1 and ok_k1_mw and ok_k2:
         print("\nCROSS-RUNTIME PORTABILITY HARNESS: ALL CHECKS PASSED")
         return 0
     print("\nCROSS-RUNTIME PORTABILITY HARNESS: REGRESSION", file=sys.stderr)
