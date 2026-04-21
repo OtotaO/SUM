@@ -148,7 +148,7 @@ class TestEpistemicLoop:
             llm_extractor=mock_llms.mock_extractor,
         )
 
-        verified = asyncio.get_event_loop().run_until_complete(
+        verified = asyncio.run(
             extrapolator.extrapolate_with_proof(global_state, target_axioms)
         )
 
@@ -174,7 +174,7 @@ class TestEpistemicLoop:
         )
 
         with pytest.raises(RuntimeError, match="Epistemic Failure"):
-            asyncio.get_event_loop().run_until_complete(
+            asyncio.run(
                 extrapolator.extrapolate_with_proof(global_state, ["alice||age||30"])
             )
 
@@ -192,6 +192,6 @@ class TestEpistemicLoop:
         )
 
         with pytest.raises(RuntimeError, match="Epistemic Failure"):
-            asyncio.get_event_loop().run_until_complete(
+            asyncio.run(
                 extrapolator.extrapolate_with_proof(global_state, ["alice||age||30"])
             )

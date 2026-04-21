@@ -196,7 +196,7 @@ class TestMassSemanticEngine:
 
         engine = MassSemanticEngine(extractor_llm_func=mock_extractor)
 
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             engine.tomes_to_tags(
                 raw_claims_count=20,
                 chunks=["Alice has key 8F4C", "Bob has key A1B2"],
@@ -219,7 +219,7 @@ class TestMassSemanticEngine:
         engine = MassSemanticEngine(extractor_llm_func=greedy_extractor)
 
         # Claim only 10 raw claims but extract 50 unique primes
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             engine.tomes_to_tags(raw_claims_count=10, chunks=["big chunk"])
         )
 

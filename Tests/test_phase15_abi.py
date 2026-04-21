@@ -44,7 +44,7 @@ def boot_kos():
     """Ensure KOS is booted before every test."""
     if not kos.is_booted:
         import asyncio
-        asyncio.get_event_loop().run_until_complete(kos.boot_sequence())
+        asyncio.run(kos.boot_sequence())
     # Ensure Phase 15 components exist even if KOS was booted by earlier tests
     if not hasattr(kos, 'codec') or kos.codec is None:
         from api.quantum_router import SECRET_KEY

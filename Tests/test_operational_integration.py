@@ -166,8 +166,8 @@ class TestEvidenceInLivePaths:
                 linguistic_certainty=certainty,
             )
 
-        conf_definite = asyncio.get_event_loop().run_until_complete(measure(definite_certainty))
-        conf_hedged = asyncio.get_event_loop().run_until_complete(measure(hedged_certainty))
+        conf_definite = asyncio.run(measure(definite_certainty))
+        conf_hedged = asyncio.run(measure(hedged_certainty))
 
         assert conf_definite > conf_hedged, (
             f"Definite confidence ({conf_definite}) must exceed hedged ({conf_hedged})"
