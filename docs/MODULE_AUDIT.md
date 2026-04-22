@@ -36,7 +36,7 @@ Each of these is tested (so it works), intentional (each header docstring names 
 
 ### Cross-cutting checks run during the audit
 
-- **907 tests collect** (4 known jwt-missing collection errors, pre-existing; not caused or resolved by this audit).
+- **907 tests collect at audit time** (4 known jwt-missing collection errors, pre-existing; not caused or resolved by this audit). Post-audit, the 2026-04-22 release added `PyJWT` to the `[dev]` extra so `pytest --collect-only` reports **1021 tests** cleanly; the four phase-router-dependent files now run as part of the standard suite.
 - **Zero test files import a nonexistent module** — no stale `from internal.foo.removed_thing import X` lurking anywhere.
 - **Zero production files import a test-only module** — the test-only / production boundary is clean in both directions.
 - **No dynamic-import / string-based references** to orphan module names were found via `grep` across the full codebase.

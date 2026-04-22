@@ -749,12 +749,12 @@ Result: **PASS** (self-referential).
 
 ### 93. `README.md` truth-pass ✅
 
-Current Measured State table matches bench output this session; Future Horizons list names only unshipped work; Cloudflare section describes the actually-shipped single-file demo + Pages-vs-Vercel rationale; 907-test count accurate.
+Current Measured State table matches bench output this session; Future Horizons list names only unshipped work; Cloudflare section describes the actually-shipped single-file demo + Pages-vs-Vercel rationale; **1021-test count** accurate (was 907 when this entry was first written; bumped post `sum-engine 0.1.0` release 2026-04-22 after `PyJWT` moved into the `[dev]` extra and the four phase-router test files joined the standard suite).
 Result: **PASS**.
 
 ### 94. `CONTRIBUTING.md` ✅
 
-Test count updated; fortress gate command present; Zig build optional path.
+Test count **1000+** (via `make test`); fortress gate via `make fortress`; Zig build optional path; new verification-gate rows for cross-runtime harness, PORTFOLIO contract, pip-install smoke.
 Result: **PASS**.
 
 ---
