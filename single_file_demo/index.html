@@ -38,6 +38,63 @@
   .extractor-src.naive::before { content: "· "; }
   .sig-note { font-size: 11px; opacity: 0.65; font-style: italic; }
   .sig-note code { font-style: normal; }
+
+  /* ─── Polish ──────────────────────────────────────────────────── */
+  button { transition: filter 120ms ease, transform 80ms ease, background-color 160ms ease; }
+  button:hover:not(:disabled) { filter: brightness(1.06); }
+  button:active:not(:disabled) { transform: translateY(1px); }
+  button:focus-visible { outline: 2px solid #4a90e2; outline-offset: 2px; }
+  button.primary { box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+
+  @keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0);  }
+  }
+  .animate-in { animation: fade-in-up 240ms ease-out; }
+  ul.facts li.animate-in { animation-duration: 180ms; }
+
+  .copy-btn {
+    font: 500 11px ui-sans-serif, system-ui;
+    padding: 3px 8px;
+    border: 1px solid #8886;
+    border-radius: 4px;
+    background: transparent;
+    color: inherit;
+    opacity: 0.7;
+    cursor: pointer;
+  }
+  .copy-btn:hover:not(:disabled) { opacity: 1; background: #8881; }
+  .copy-btn.copied {
+    background: #27ae60;
+    color: #fff;
+    border-color: #27ae60;
+    opacity: 1;
+  }
+
+  .kbd {
+    font: 500 11px ui-monospace, monospace;
+    padding: 1px 6px;
+    border: 1px solid currentColor;
+    border-radius: 3px;
+    opacity: 0.45;
+    margin-left: 8px;
+    vertical-align: 1px;
+  }
+
+  .state-int-row { display: flex; align-items: flex-start; gap: 8px; }
+  .state-int-row .state-int { flex: 1; }
+
+  .link-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    color: #4a90e2;
+    cursor: pointer;
+    font: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .link-btn:hover { filter: brightness(0.9); }
 </style>
 </head>
 <body>
@@ -47,6 +104,11 @@
 
 <textarea id="prose" placeholder="The printing press was invented by Johannes Gutenberg around 1440. Marie Curie, a pioneering physicist, won two Nobel Prizes. Ada Lovelace wrote the first computer algorithm."></textarea>
 
+<div class="row" style="justify-content: space-between; margin-top: 4px;">
+  <button id="try-example" type="button" class="link-btn" style="font-size: 12px;">↳ try the example</button>
+  <span id="char-count" style="font-size: 11px; opacity: 0.55; font: 11px ui-monospace, monospace;">0</span>
+</div>
+
 <div class="row">
   <label for="density">density</label>
   <input type="range" id="density" min="0.1" max="1.0" step="0.05" value="1.0">
@@ -54,7 +116,7 @@
 </div>
 
 <div class="row" style="justify-content: flex-end;">
-  <button id="attest">Attest</button>
+  <button id="attest" class="primary">Attest<span class="kbd">⌘↵</span></button>
 </div>
 
 <div id="result" style="display:none;">
@@ -64,8 +126,10 @@
     <ul class="facts" id="facts"></ul>
   </div>
   <div class="card">
-    <h3>Gödel state integer</h3>
-    <div class="state-int" id="state-int">—</div>
+    <h3>Gödel state integer <button id="copy-state" class="copy-btn" type="button" style="float: right; text-transform: none; letter-spacing: 0;">copy</button></h3>
+    <div class="state-int-row">
+      <div class="state-int" id="state-int">—</div>
+    </div>
     <details><summary>what is this</summary>
       <p style="font-size:12px;opacity:0.75">Each fact (subject, predicate, object) is deterministically mapped to a unique prime via SHA-256(axiom_key) → seed → nextprime(seed). The state integer is the LCM of every prime. Two SUM states merge losslessly by taking their LCM. Entailment: <code>state % prime == 0</code> answers "does this knowledge base contain fact X?"</p>
     </details>
@@ -551,6 +615,57 @@ async function verifyBundle(b) {
 
 const $ = id => document.getElementById(id);
 let lastBundle = null;
+const ATTEST_LABEL = $('attest').innerHTML;  // preserve label + kbd hint
+
+// Live char count — low-stakes affordance but makes the surface feel alive.
+function updateCharCount() {
+  const n = $('prose').value.length;
+  $('char-count').textContent = n ? `${n.toLocaleString()} chars` : '0 chars';
+}
+$('prose').addEventListener('input', updateCharCount);
+updateCharCount();
+
+// Example-prefill: if the textarea is empty, fill with the placeholder
+// text; otherwise no-op (never clobber user input silently).
+$('try-example').addEventListener('click', () => {
+  if ($('prose').value.trim()) return;
+  $('prose').value = $('prose').placeholder;
+  $('prose').focus();
+  updateCharCount();
+});
+
+// ⌘/Ctrl+Enter triggers attest when the prose textarea is focused.
+// Agentic muscle-memory: the same shortcut that submits messages in most
+// chat UIs, mint a bundle here.
+$('prose').addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+    e.preventDefault();
+    $('attest').click();
+  }
+});
+
+// Copy helper: flashes the button green for 1.2 s on success. Used on
+// the state integer (big number, users want to paste it elsewhere).
+async function copyText(btn, text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    const old = btn.textContent;
+    btn.textContent = 'copied!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = old;
+      btn.classList.remove('copied');
+    }, 1200);
+  } catch (e) {
+    console.warn('[SUM] clipboard write failed:', e);
+    alert('Copy failed — your browser may have blocked clipboard access on non-HTTPS origins.');
+  }
+}
+
+$('copy-state').addEventListener('click', () => {
+  const v = $('state-int').textContent;
+  if (v && v !== '—') copyText($('copy-state'), v);
+});
 
 $('density').addEventListener('input', () => {
   $('density-val').textContent = Number($('density').value).toFixed(2);
@@ -584,11 +699,15 @@ $('attest').addEventListener('click', async () => {
 
     const listEl = $('facts');
     listEl.innerHTML = '';
+    let delay = 0;
     for (const [s, p, o] of triples) {
       const prime = await derivePrime(axiomKey(s, p, o));
       const li = document.createElement('li');
+      li.className = 'animate-in';
+      li.style.animationDelay = `${delay}ms`;
       li.innerHTML = `${s} <b>${p}</b> ${o} <span class="prime">#${prime.toString().slice(0, 16)}…</span>`;
       listEl.appendChild(li);
+      delay += 24;  // cascade effect — brief, not annoying
     }
     $('fact-count').textContent = triples.length;
     $('state-int').textContent = bundle.state_integer;
@@ -600,11 +719,19 @@ $('attest').addEventListener('click', async () => {
     };
     srcEl.textContent = SOURCE_LABEL[source] ?? SOURCE_LABEL.naive;
     srcEl.className = source === 'naive' ? 'extractor-src naive' : 'extractor-src claude';
-    $('result').style.display = 'block';
+
+    // Retrigger the fade-in-up animation whenever the result re-appears.
+    const resultEl = $('result');
+    resultEl.style.display = 'block';
+    resultEl.classList.remove('animate-in');
+    // Force reflow so the next class add actually restarts the keyframe.
+    void resultEl.offsetWidth;
+    resultEl.classList.add('animate-in');
   } catch (e) {
     alert('Attest failed: ' + e.message);
   } finally {
-    btn.disabled = false; btn.textContent = 'Attest';
+    btn.disabled = false;
+    btn.innerHTML = ATTEST_LABEL;
   }
 });
 
