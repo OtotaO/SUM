@@ -49,6 +49,13 @@ dev = [
     "mypy>=1.0.0",
     "ruff>=0.1.0",
     "types-setuptools",
+    # Required to collect Tests/test_phase13_zenith.py, test_phase14_ouroboros.py,
+    # test_phase15_abi.py, test_browser_extension.py — they reach through
+    # api/quantum_router.py which imports jwt. In CI, requirements-prod.txt
+    # pulls PyJWT in as a transitive; `pip install -e .[dev]` on a fresh
+    # clone should not silently skip those four test files.
+    "PyJWT>=2.8.0",
+    "build>=1.0.0",
 ]
 all = [
     "sum-engine[sieve]",

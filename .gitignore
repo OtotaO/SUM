@@ -142,3 +142,8 @@ admin_api_key.txt
 # Zig build artifacts
 core-zig/.zig-cache/
 core-zig/zig-out/
+
+# Bench harness local history (append-only audit log; regression detection
+# is machine-local, not repo-wide — do not commit).
+bench_history.jsonl
+bench_report.json
