@@ -104,6 +104,20 @@ jobs:
       # Non-zero exit here means the trust triangle drifted — hard-stop merge.
       run: python -m scripts.verify_cross_runtime
 
+  portfolio-contract:
+    name: PORTFOLIO.md epistemic-label contract
+    # Cheap fast-fail — runs before the expensive jobs finish so a
+    # missing `**proved**` / `**empirical-benchmark**` label reports
+    # within seconds. No Python deps needed (stdlib-only checker).
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+    - name: Enforce metric-table labels
+      run: python -m scripts.check_portfolio_contract
+
   pypi-install-smoke:
     name: pip install sum-engine (fresh venv smoke)
     needs: zig-core

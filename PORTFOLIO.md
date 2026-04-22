@@ -15,7 +15,7 @@ SUM shipped as `sum-engine 0.1.0` on PyPI on 2026-04-22. What's locked in code t
 | Cross-runtime kill-experiments (Python ↔ Node ↔ Browser) | 5 / 5 green (K1 / K1-multiword / K2 / K3 / K4) | **proved** — [`scripts/verify_cross_runtime.py`](scripts/verify_cross_runtime.py), CI-gated |
 | Merkle-chain integrity under concurrent writers | holds (50–200-event bursts) | **proved** — [`Tests/test_akashic_ledger.py`](Tests/test_akashic_ledger.py), post commit `9c4139d` |
 | Test suite size | 963 collected | **proved** — `python -m pytest Tests/ --collect-only -q` |
-| Feature catalog entries | 82 Production ✅, 14 Scaffolded 🔧, 2 Designed 📄 | [`docs/FEATURE_CATALOG.md`](docs/FEATURE_CATALOG.md) |
+| Feature catalog entries | 82 Production, 14 Scaffolded, 2 Designed | **proved** — [`docs/FEATURE_CATALOG.md`](docs/FEATURE_CATALOG.md), every row has a named verification command |
 
 **Agentic CLI surface (v0.1.0, on PyPI):**
 

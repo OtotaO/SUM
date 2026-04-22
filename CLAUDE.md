@@ -60,18 +60,26 @@ PORTFOLIO.md is body-only.
 
 ### Enforcement
 
-Two soft gates recommended; add in a follow-up PR (see below):
+Two gates, one hard, one soft:
 
-- **Pre-commit hook (warn, do not block):** if files under `sum_cli/`,
-  `internal/`, `scripts/bench/`, `Tests/`, `core-zig/`, or `api/` change
-  and `PORTFOLIO.md` does not, print a reminder. Human judgment decides
-  whether the change is portfolio-relevant.
-- **CI check (block on violation):** every non-header line in
-  `PORTFOLIO.md` that contains a numeric metric must also contain
-  `**proved**` or `**empirical-benchmark**` (case-sensitive). Fail the
-  merge if not. Implementation: a short Python script in a new
-  `portfolio-contract` job under `.github/workflows/quantum-ci.yml`.
+- **CI check (blocking):** [`scripts/check_portfolio_contract.py`](scripts/check_portfolio_contract.py)
+  enforces the labelling rule on every row of the metric table under
+  `## Current State` in `PORTFOLIO.md`. Any row containing a digit must
+  also carry `**proved**` or `**empirical-benchmark**`. Wired into
+  `.github/workflows/quantum-ci.yml` as the `portfolio-contract` job —
+  blocks merge on violation.
 
-The enforcement gates are not in place as of this writing; they are a
-follow-up. Until they land, Claude Code sessions must manually check these
-invariants before pushing.
+- **Pre-commit hook (warn, not block):** [`scripts/hooks/pre-commit`](scripts/hooks/pre-commit)
+  prints a reminder when files under `sum_cli/`, `internal/`,
+  `scripts/bench/`, `Tests/`, `core-zig/`, `api/`, `single_file_demo/`,
+  or `standalone_verifier/` change and `PORTFOLIO.md` does not. Human
+  judgment decides whether the change is portfolio-relevant. Install
+  once per clone with:
+
+      bash scripts/install-hooks.sh
+
+  Uninstall with `git config --unset core.hooksPath`. One-shot skip:
+  `git commit --no-verify`.
+
+The hard gate protects the portfolio narrative integrity on merge; the
+soft gate nudges authors at commit time without ever blocking them.
