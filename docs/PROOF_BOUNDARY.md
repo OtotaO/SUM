@@ -43,6 +43,19 @@ reconstruct(parse(canonical_tome(S))) == S
 
 **Boundary:** This is tamper detection, not authenticity. Both producer and consumer must share the HMAC key. A party with the key can forge signatures. See `THREAT_MODEL.md`.
 
+### 1.3.1. Bundle Public-Key Attestation (Any Third-Party Verifier)
+
+**Claim:** Ed25519-signed CanonicalBundles are tamper-detectable by any third party with no shared secret. The same bundle bytes verify identically in Python, Node.js, and modern browsers — the three-runtime trust triangle is byte-symmetric.
+
+**Proof mechanism:** Three cross-runtime gates:
+- `sum verify` (Python, `sum_cli/main.py::_verify_ed25519_bundle`) — decodes the embedded `public_key` and `public_signature`, re-computes the `{tome|state|timestamp}` payload, verifies with `cryptography.Ed25519PublicKey.verify`.
+- `standalone_verifier/verify.js` (Node ≥ 18.4, `verifyEd25519`) — same payload, same key bytes, `crypto.webcrypto.subtle.verify({name:'Ed25519'})`.
+- `single_file_demo/index.html` (Browser Chrome 113+ / Firefox 129+ / Safari 17+, `verifyEd25519InBrowser`) — same payload, same key bytes, `crypto.subtle.verify({name:'Ed25519'})`.
+
+Locked in CI by the cross-runtime harness K3 (positive: Python mints Ed25519 bundle → Node verifies ✓) and K4 (negative: tampered tome → Node reports `✗ INVALID`). K4 is what proves verify.js actually runs the signature check rather than reporting `verified` unconditionally.
+
+**Boundary:** The signature authenticates the Gödel state + tome + timestamp. It does NOT authenticate the source of the prose the tome was extracted from — that's what the `AkashicLedger` provenance layer (feature 101) exists for. Bundles without Ed25519 fields fall back to structural verification only; `--strict` enforces at least one verifiable signature.
+
 ### 1.4. Algebra Invariants
 
 **Claim:** The Gödel-State algebra satisfies standard mathematical properties.
@@ -317,7 +330,7 @@ SUM's ultimate goal is a **bidirectional knowledge distillation engine**: turn n
 | Round-trip conservation (LLM narrative prose, full loop) | **Measured** | drift = **107.75 %**, exact-match recall = **0.12** on seed_v1 (2026-04-19), both legs `gpt-4o-mini-2024-07-18`. 50 source axioms → 600 extracted (12× amplification); per-doc attribution confirms the pattern is generator elaboration + extractor paraphrase, not reasoning failure. See §2.5 |
 | Extraction ceiling investigation (en_core_web_trf upgrade or LLM fallback) | seed_v1 at F1 = 1.000 (no remaining failures); seed_v2 at F1 = 0.762 with precision = 1.000 — every remaining failure is a RECALL miss not a TRUTH inversion (apposition secondary, relative-clause subordinate, compound non-head conjuncts). Architectural decision pending on whether to address via `en_core_web_trf` upgrade or LLM fallback at the sieve boundary | User call |
 | Sliding-scale rendering parameters | **Interface shipped** (`TomeSliders`): 5 axes — density / length / formality / audience / perspective. Density slider actioned on the deterministic canonical path (lexicographic axiom subsetting); remaining 4 axes LLM-gated and captured in output header as metadata | Phase 30+ (LLM wiring for non-density axes) |
-| Cryptographic attestation | Working | Ed25519 + HMAC-SHA256 + Merkle chain |
+| Cryptographic attestation | Working, cross-runtime | Ed25519 + HMAC-SHA256 + Merkle chain. Ed25519 verified in all three shipping runtimes against the same bundle bytes: Python (`sum verify`), Node (`standalone_verifier/verify.js` via WebCrypto), Browser (`single_file_demo/index.html` via SubtleCrypto). Locked by cross-runtime K3/K4 harness + CI. |
 | Epistemic-status labeling | Shipped v1.2.0 | See §5 |
 | SHACL structural validation (Polytaxis Bucket A) | Not yet | Phase 25 |
 | Conformal prediction confidence (Polytaxis Bucket A) | Algorithm shipped (`internal/ensemble/venn_abers.py`, 18 tests); **production wiring via `ConfidenceCalibrator.calibrate_interval()` shipped** with `load_venn_abers_fixture()` helper and fixture tests; calibration-set authoring is the remaining step | Phase 25 |
