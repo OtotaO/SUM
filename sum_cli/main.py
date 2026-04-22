@@ -74,6 +74,25 @@ def _extract_sieve(text: str) -> list[tuple[str, str, str]]:
     return sieve.extract_triplets(text)
 
 
+def _extract_sieve_with_provenance(text: str, source_uri: str):
+    """Sieve extraction that also returns per-triple ProvenanceRecords.
+
+    Used by the --ledger path so every triple comes with its
+    originating byte range in the source. Returns a pair:
+
+        (triples, [(triple, ProvenanceRecord), …])
+
+    Triples are the same list _extract_sieve would return; the paired
+    form carries the extra evidence the ledger needs.
+    """
+    from internal.algorithms.syntactic_sieve import DeterministicSieve
+
+    sieve = DeterministicSieve()  # type: ignore[no-untyped-call]
+    pairs = sieve.extract_with_provenance(text, source_uri=source_uri)
+    triples = [triple for triple, _ in pairs]
+    return triples, pairs
+
+
 def _extract_llm(text: str, model: str) -> list[tuple[str, str, str]]:
     import asyncio
     from internal.ensemble.live_llm_adapter import LiveLLMAdapter
@@ -173,7 +192,21 @@ def cmd_attest(args: argparse.Namespace) -> int:
     if args.verbose:
         print(f"sum: extractor={extractor} source={source_uri}", file=sys.stderr)
 
-    triples = _extract(text, extractor, args.model)
+    # Provenance-tracking path: when --ledger is set, we need per-triple
+    # byte ranges + ProvenanceRecords. Today only the sieve extractor
+    # produces those; the LLM path has no byte-offset story yet.
+    prov_records = None
+    if args.ledger:
+        if extractor != "sieve":
+            raise SystemExit(
+                f"sum: --ledger requires --extractor=sieve (today's only "
+                f"provenance-producing extractor). Got extractor={extractor!r}. "
+                f"Re-run with --extractor=sieve, or omit --ledger."
+            )
+        triples, prov_records = _extract_sieve_with_provenance(text, source_uri)
+    else:
+        triples = _extract(text, extractor, args.model)
+
     if not triples:
         print(
             "sum: extractor returned zero triples. "
@@ -217,6 +250,33 @@ def cmd_attest(args: argparse.Namespace) -> int:
         "cli_version": __version__,
         "generated_at": datetime.now(timezone.utc).isoformat(),
     }
+
+    # Ledger path: record byte-level provenance for every extracted
+    # triple and attach the returned prov_ids to the bundle so downstream
+    # tools (sum resolve, other AkashicLedger clients) can walk from an
+    # axiom back to its source byte range and original sentence excerpt.
+    if args.ledger and prov_records is not None:
+        import asyncio
+        from internal.infrastructure.akashic_ledger import AkashicLedger
+
+        ledger = AkashicLedger(db_path=args.ledger)
+
+        async def _record_all():
+            ids = []
+            for (s, p, o), rec in prov_records:
+                axiom_key = f"{s.lower()}||{p.lower()}||{o.lower()}"
+                pid = await ledger.record_provenance(rec, axiom_key=axiom_key)
+                ids.append(pid)
+            return ids
+
+        prov_ids = asyncio.run(_record_all())
+        bundle["sum_cli"]["prov_ids"] = prov_ids
+        bundle["sum_cli"]["ledger"] = args.ledger
+        if args.verbose:
+            print(
+                f"sum: recorded {len(prov_ids)} provenance entries → {args.ledger}",
+                file=sys.stderr,
+            )
 
     json.dump(bundle, sys.stdout, indent=2 if args.pretty else None)
     sys.stdout.write("\n")
@@ -536,6 +596,17 @@ def build_parser() -> argparse.ArgumentParser:
             "`sum verify` or any W3C VC 2.0 verifier with no shared "
             "secret. Generate a key with: python -m scripts.generate_did_web "
             "(see docs/DID_SETUP.md)."
+        ),
+    )
+    p_attest.add_argument(
+        "--ledger", default=None, metavar="DB",
+        help=(
+            "PATH to an AkashicLedger SQLite file. When set, record per-"
+            "triple byte-level ProvenanceRecords (source URI, byte range, "
+            "sentence excerpt, extractor ID) and attach the resulting "
+            "prov_ids to bundle.sum_cli.prov_ids. Later: `sum resolve "
+            "<prov_id> --db <DB>` retrieves the evidence span. Requires "
+            "--extractor=sieve (today's only provenance-producing extractor)."
         ),
     )
     p_attest.add_argument("--pretty", action="store_true", help="Pretty-print output JSON.")

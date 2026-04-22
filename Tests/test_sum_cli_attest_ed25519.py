@@ -56,6 +56,7 @@ def _run_attest(
         title="Attested Tome",
         signing_key=signing_key,
         ed25519_key=ed25519_key,
+        ledger=None,
         pretty=False,
         verbose=False,
     )
@@ -147,6 +148,7 @@ class TestAttestEd25519:
             title="t",
             signing_key=None,
             ed25519_key=str(tmp_path / "nonexistent.pem"),
+            ledger=None,
             pretty=False,
             verbose=False,
         )
@@ -175,6 +177,7 @@ class TestAttestEd25519:
             title="t",
             signing_key=None,
             ed25519_key=str(pem_path),
+            ledger=None,
             pretty=False,
             verbose=False,
         )
