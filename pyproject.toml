@@ -76,7 +76,7 @@ Repository = "https://github.com/OtotaO/SUM"
 [tool.setuptools.packages.find]
 # Include the CLI and the core engine modules it depends on. Tests and
 # scripts are dev-time only and excluded from the distribution.
-include = ["sum_cli*", "internal*"]
+include = ["sum_cli*", "sum_engine_internal*"]
 exclude = ["Tests*", "Tests.*", "scripts*", "api*", "single_file_demo*"]
 
 [tool.setuptools.package-data]

@@ -29,8 +29,8 @@ from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.quantum_router import router as quantum_router, kos
-from internal.ensemble.live_llm_adapter import LiveLLMAdapter
-from internal.ensemble.autonomous_agent import AutonomousCrystallizer
+from sum_engine_internal.ensemble.live_llm_adapter import LiveLLMAdapter
+from sum_engine_internal.ensemble.autonomous_agent import AutonomousCrystallizer
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -83,7 +83,7 @@ async def lifespan(app: FastAPI):
         )
 
     # Wire the Epistemic Arbiter (Wave Function Collapse)
-    from internal.ensemble.epistemic_arbiter import EpistemicArbiter
+    from sum_engine_internal.ensemble.epistemic_arbiter import EpistemicArbiter
 
     async def llm_judge(prompt: str) -> str:
         if llm_adapter and hasattr(llm_adapter, "client"):

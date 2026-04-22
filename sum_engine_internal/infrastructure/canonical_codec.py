@@ -49,26 +49,26 @@ from datetime import datetime, timezone
 from dataclasses import dataclass, asdict, field
 from typing import List, Optional, TYPE_CHECKING
 
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
-from internal.ensemble.tome_generator import (
+from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from sum_engine_internal.ensemble.tome_generator import (
     AutoregressiveTomeGenerator,
     CANONICAL_FORMAT_VERSION,
 )
-from internal.infrastructure.scheme_registry import (
+from sum_engine_internal.infrastructure.scheme_registry import (
     CURRENT_SCHEME,
     validate_scheme_or_raise,
 )
-from internal.infrastructure.state_encoding import to_hex
+from sum_engine_internal.infrastructure.state_encoding import to_hex
 
 if TYPE_CHECKING:
-    from internal.infrastructure.key_manager import KeyManager
+    from sum_engine_internal.infrastructure.key_manager import KeyManager
 
 logger = logging.getLogger(__name__)
 
 
 def _zig():
     try:
-        from internal.infrastructure.zig_bridge import zig_engine
+        from sum_engine_internal.infrastructure.zig_bridge import zig_engine
         return zig_engine
     except ImportError:
         return None

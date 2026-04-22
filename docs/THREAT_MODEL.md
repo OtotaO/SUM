@@ -108,7 +108,7 @@ Producer ──(shared key)──> Bundle ──(shared key)──> Consumer
 
 **Defense (shipped):** Bundle limits — canonical tome max 10 MB, state integer max 100,000 digits, axiom count max 10,000. These are enforced at the import boundary.
 
-**Defense (not shipped — latent):** `internal/infrastructure/rate_limiter.py` implements a sliding-window per-IP limiter. **This module is not yet wired into `api/quantum_router.py`** — see `docs/MODULE_AUDIT.md` for the full accounting. The implementation works and is tested (`Tests/test_rate_limiter.py`), but the API does not call into it, so volumetric abuse at the request boundary is not blocked today. Wiring is a single-file change; this threat model will be updated when the import lands.
+**Defense (not shipped — latent):** `sum_engine_internal/infrastructure/rate_limiter.py` implements a sliding-window per-IP limiter. **This module is not yet wired into `api/quantum_router.py`** — see `docs/MODULE_AUDIT.md` for the full accounting. The implementation works and is tested (`Tests/test_rate_limiter.py`), but the API does not call into it, so volumetric abuse at the request boundary is not blocked today. Wiring is a single-file change; this threat model will be updated when the import lands.
 
 **Residual risk:** Volumetric request-layer DoS is unprotected until the rate limiter is wired. Distributed DDoS additionally requires upstream infrastructure (CDN, WAF). The Cloudflare Pages deployment path for the single-file demo inherits Cloudflare's edge rate-limiting by default, independent of the application layer — see `README.md` "Single-File Deployment" section.
 
@@ -152,4 +152,4 @@ but cannot delete). Full mutual TLS or peer certificate pinning would address th
 | Resource exhaustion | ✅ | Bundle size limits + sliding window rate limiter |
 | Ledger tampering | ✅ | SHA-256 Merkle hash-chain (holds under concurrent writers post `9c4139d`; detect partial tamper) |
 | VC 2.0 bundle forgery | ✅ | Ed25519 signature over SHA-256(JCS(proofConfig)) ‖ SHA-256(JCS(document)) per W3C Data Integrity 1.0 + `eddsa-jcs-2022`; 58 tests including tamper detection, key-reordering resilience, JSON-on-disk persistence |
-| Request-layer volumetric DoS | ⚠️ | Rate limiter implemented (`internal/infrastructure/rate_limiter.py`) but NOT WIRED into `api/quantum_router.py`; see §3.6 |
+| Request-layer volumetric DoS | ⚠️ | Rate limiter implemented (`sum_engine_internal/infrastructure/rate_limiter.py`) but NOT WIRED into `api/quantum_router.py`; see §3.6 |

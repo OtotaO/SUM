@@ -20,7 +20,7 @@ import pytest
 # Ensure project root is importable
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from internal.algorithms.semantic_arithmetic import (
+from sum_engine_internal.algorithms.semantic_arithmetic import (
     SemanticPrimeNumberTheorem,
     GodelStateAlgebra,
 )
@@ -186,7 +186,7 @@ class TestMassSemanticEngine:
 
     def test_full_pipeline(self):
         """MAP → ENCODE → REDUCE → AUDIT end-to-end."""
-        from internal.ensemble.mass_semantic_engine import MassSemanticEngine
+        from sum_engine_internal.ensemble.mass_semantic_engine import MassSemanticEngine
 
         # Mock extractor: returns fixed triplets per chunk
         async def mock_extractor(chunk: str):
@@ -210,7 +210,7 @@ class TestMassSemanticEngine:
 
     def test_spnt_overclaim_warning(self):
         """Pipeline flags overclaim when primes exceed SPNT bound."""
-        from internal.ensemble.mass_semantic_engine import MassSemanticEngine
+        from sum_engine_internal.ensemble.mass_semantic_engine import MassSemanticEngine
 
         # Return many unique axioms from a single chunk
         async def greedy_extractor(chunk: str):

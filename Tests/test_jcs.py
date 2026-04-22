@@ -1,4 +1,4 @@
-"""Tests for internal.infrastructure.jcs — RFC 8785 JSON Canonicalization.
+"""Tests for sum_engine_internal.infrastructure.jcs — RFC 8785 JSON Canonicalization.
 
 Covers:
 - Key sort by UTF-16 code units (RFC 8785 §3.2.3)
@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import pytest
 
-from internal.infrastructure.jcs import canonicalize, canonicalize_to_str
+from sum_engine_internal.infrastructure.jcs import canonicalize, canonicalize_to_str
 
 
 class TestPrimitives:

@@ -14,15 +14,15 @@ Tests:
 import math
 import pytest
 
-from internal.infrastructure.state_encoding import (
+from sum_engine_internal.infrastructure.state_encoding import (
     to_hex,
     from_hex,
     parse_state,
     to_dual,
     dual_field,
 )
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
-from internal.infrastructure.akashic_ledger import AkashicLedger
+from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from sum_engine_internal.infrastructure.akashic_ledger import AkashicLedger
 
 
 # ─── Unit Tests: state_encoding ──────────────────────────────────────

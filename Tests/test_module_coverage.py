@@ -21,7 +21,7 @@ class TestTelemetry:
     """@trace_zig_ffi(label) decorator tests."""
 
     def test_decorator_preserves_return_value(self):
-        from internal.infrastructure.telemetry import trace_zig_ffi
+        from sum_engine_internal.infrastructure.telemetry import trace_zig_ffi
 
         @trace_zig_ffi("add_op")
         def add(a, b):
@@ -30,7 +30,7 @@ class TestTelemetry:
         assert add(2, 3) == 5
 
     def test_decorator_preserves_function_name(self):
-        from internal.infrastructure.telemetry import trace_zig_ffi
+        from sum_engine_internal.infrastructure.telemetry import trace_zig_ffi
 
         @trace_zig_ffi("special")
         def my_special_function():
@@ -39,7 +39,7 @@ class TestTelemetry:
         assert my_special_function() == 42
 
     def test_decorator_handles_exceptions(self):
-        from internal.infrastructure.telemetry import trace_zig_ffi
+        from sum_engine_internal.infrastructure.telemetry import trace_zig_ffi
 
         @trace_zig_ffi("boom_op")
         def explode():
@@ -49,8 +49,8 @@ class TestTelemetry:
             explode()
 
     def test_counter_increments(self):
-        import internal.infrastructure.telemetry as telem
-        from internal.infrastructure.telemetry import trace_zig_ffi
+        import sum_engine_internal.infrastructure.telemetry as telem
+        from sum_engine_internal.infrastructure.telemetry import trace_zig_ffi
 
         before = telem._python_calls + telem._zig_calls
 
@@ -69,13 +69,13 @@ class TestAutonomousAgent:
     """AutonomousCrystallizer tests."""
 
     def test_import_crystallizer(self):
-        from internal.ensemble.autonomous_agent import AutonomousCrystallizer
+        from sum_engine_internal.ensemble.autonomous_agent import AutonomousCrystallizer
         assert AutonomousCrystallizer is not None
 
     def test_crystallizer_init(self):
-        from internal.ensemble.autonomous_agent import AutonomousCrystallizer
-        from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
-        from internal.infrastructure.akashic_ledger import AkashicLedger
+        from sum_engine_internal.ensemble.autonomous_agent import AutonomousCrystallizer
+        from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+        from sum_engine_internal.infrastructure.akashic_ledger import AkashicLedger
         import tempfile, os
 
         algebra = GodelStateAlgebra()
@@ -96,8 +96,8 @@ class TestP2PMesh:
     """EpistemicMeshNetwork lifecycle tests."""
 
     def _make_mesh(self):
-        from internal.infrastructure.p2p_mesh import EpistemicMeshNetwork
-        from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+        from sum_engine_internal.infrastructure.p2p_mesh import EpistemicMeshNetwork
+        from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
 
         algebra = GodelStateAlgebra()
         state = [1]
@@ -109,7 +109,7 @@ class TestP2PMesh:
         return mesh
 
     def test_import_mesh(self):
-        from internal.infrastructure.p2p_mesh import EpistemicMeshNetwork
+        from sum_engine_internal.infrastructure.p2p_mesh import EpistemicMeshNetwork
         assert EpistemicMeshNetwork is not None
 
     def test_mesh_init(self):
@@ -133,12 +133,12 @@ class TestZigBridge:
     """ZigEngine fallback path tests."""
 
     def test_import_zig_engine(self):
-        from internal.infrastructure.zig_bridge import zig_engine
+        from sum_engine_internal.infrastructure.zig_bridge import zig_engine
         # zig_engine may be None if .dylib not present — that's OK
 
     def test_fallback_deterministic_prime(self):
         """Python fallback must produce a valid prime."""
-        from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+        from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
         from sympy import isprime
 
         algebra = GodelStateAlgebra()
@@ -154,7 +154,7 @@ class TestZigBridge:
 
     def test_batch_mint_python_fallback(self):
         """Batch minting falls back to Python correctly."""
-        from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+        from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
 
         algebra = GodelStateAlgebra()
         axioms = [
@@ -169,7 +169,7 @@ class TestZigBridge:
     def test_batch_mint_attribute_correct(self):
         """batch_mint_primes must reference self.lib, not self._lib."""
         import inspect
-        from internal.infrastructure.zig_bridge import ZigMathEngine
+        from sum_engine_internal.infrastructure.zig_bridge import ZigMathEngine
         source = inspect.getsource(ZigMathEngine.batch_mint_primes)
         assert "self._lib" not in source, (
             "batch_mint_primes references self._lib instead of self.lib"

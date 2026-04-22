@@ -1,7 +1,7 @@
 """JCS cross-runtime byte-identity harness.
 
 For every fixture in a deliberately-tricky corpus, canonicalize in Python
-(``internal.infrastructure.jcs.canonicalize``) and in JavaScript
+(``sum_engine_internal.infrastructure.jcs.canonicalize``) and in JavaScript
 (``single_file_demo/jcs.js`` via ``node``) and assert the emitted UTF-8
 byte sequences are equal. Any divergence is a correctness regression
 before merge — the load-bearing assumption for every signed bundle,
@@ -35,7 +35,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from internal.infrastructure.jcs import canonicalize
+from sum_engine_internal.infrastructure.jcs import canonicalize
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 JS_RUNNER = REPO_ROOT / "single_file_demo" / "jcs_cli.js"

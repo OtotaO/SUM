@@ -23,7 +23,7 @@ License: Apache License 2.0
 import logging
 from typing import Dict, List, Optional
 
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
 
 logger = logging.getLogger(__name__)
 
@@ -204,7 +204,7 @@ class AutoregressiveTomeGenerator:
             A canonical-format tome reflecting the density slider. Output
             includes the slider header so the rendering is reproducible.
         """
-        from internal.ensemble.tome_sliders import (
+        from sum_engine_internal.ensemble.tome_sliders import (
             TomeSliders,
             apply_density,
         )

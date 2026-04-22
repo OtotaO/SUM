@@ -1,4 +1,4 @@
-"""Tests for internal.infrastructure.verifiable_credential.
+"""Tests for sum_engine_internal.infrastructure.verifiable_credential.
 
 Covers:
 - Unsigned credential construction (types, contexts, subject copy semantics)
@@ -16,7 +16,7 @@ import json
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-from internal.infrastructure.verifiable_credential import (
+from sum_engine_internal.infrastructure.verifiable_credential import (
     CRYPTOSUITE,
     DATA_INTEGRITY_PROOF_TYPE,
     DID_CONTEXT,

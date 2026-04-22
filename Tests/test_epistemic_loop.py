@@ -16,8 +16,8 @@ import asyncio
 # Ensure project root is importable
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
-from internal.ensemble.epistemic_loop import QuantumExtrapolator
+from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from sum_engine_internal.ensemble.epistemic_loop import QuantumExtrapolator
 
 
 # ─── Hallucination Isolation (unit) ────────────────────────────────────

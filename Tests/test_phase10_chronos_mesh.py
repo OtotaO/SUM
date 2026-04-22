@@ -17,10 +17,10 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
-from internal.algorithms.zk_semantics import ZKSemanticProver
-from internal.infrastructure.akashic_ledger import AkashicLedger
-from internal.infrastructure.p2p_mesh import EpistemicMeshNetwork
+from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from sum_engine_internal.algorithms.zk_semantics import ZKSemanticProver
+from sum_engine_internal.infrastructure.akashic_ledger import AkashicLedger
+from sum_engine_internal.infrastructure.p2p_mesh import EpistemicMeshNetwork
 
 
 # ─── 1. Zero-Knowledge Semantic Proofs ───────────────────────────────

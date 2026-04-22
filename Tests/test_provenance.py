@@ -23,8 +23,8 @@ import sqlite3
 import tempfile
 import pytest
 
-from internal.infrastructure.akashic_ledger import AkashicLedger
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from sum_engine_internal.infrastructure.akashic_ledger import AkashicLedger
+from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
 
 
 # ─── Akashic Ledger Unit Tests ───────────────────────────────────────

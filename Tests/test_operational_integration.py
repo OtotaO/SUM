@@ -45,7 +45,7 @@ class TestGuardsWiredIntoHandlers:
         router_path = os.path.join("api", "quantum_router.py")
         with open(router_path) as f:
             source = f.read()
-        assert "from internal.infrastructure.resource_guards import" in source
+        assert "from sum_engine_internal.infrastructure.resource_guards import" in source
 
     def test_guards_fire_before_boot_check(self):
         """Guards must appear before 'if not kos.is_booted' in at least /ingest."""
@@ -74,7 +74,7 @@ class TestGuardsWiredIntoHandlers:
 
     def test_resource_limit_error_is_413(self):
         """ResourceLimitError must produce HTTP 413."""
-        from internal.infrastructure.resource_guards import ResourceLimitError
+        from sum_engine_internal.infrastructure.resource_guards import ResourceLimitError
         try:
             raise ResourceLimitError(
                 resource="test", actual=999, limit=10, detail="reduce"
@@ -84,7 +84,7 @@ class TestGuardsWiredIntoHandlers:
 
     def test_oversized_ingest_raises(self):
         """guard_ingest_text rejects text > limit."""
-        from internal.infrastructure.resource_guards import (
+        from sum_engine_internal.infrastructure.resource_guards import (
             guard_ingest_text, ResourceLimitError, MAX_INGEST_TEXT_CHARS
         )
         big_text = "x" * (MAX_INGEST_TEXT_CHARS + 1)
@@ -93,7 +93,7 @@ class TestGuardsWiredIntoHandlers:
 
     def test_oversized_ask_raises(self):
         """guard_ask_query rejects oversized queries."""
-        from internal.infrastructure.resource_guards import (
+        from sum_engine_internal.infrastructure.resource_guards import (
             guard_ask_query, ResourceLimitError, MAX_ASK_QUERY_LENGTH
         )
         big_query = "q" * (MAX_ASK_QUERY_LENGTH + 1)
@@ -102,7 +102,7 @@ class TestGuardsWiredIntoHandlers:
 
     def test_pathological_branch_name_raises(self):
         """guard_branch_name rejects names with path traversal."""
-        from internal.infrastructure.resource_guards import (
+        from sum_engine_internal.infrastructure.resource_guards import (
             guard_branch_name, ResourceLimitError
         )
         with pytest.raises(ResourceLimitError):
@@ -135,8 +135,8 @@ class TestEvidenceInLivePaths:
     def test_hedging_reduces_confidence(self):
         """A hedged sentence must produce lower calibrated confidence than a definite one."""
         pytest.importorskip("spacy", reason="spacy not installed — hedging tests require it")
-        from internal.algorithms.syntactic_sieve import detect_hedging
-        from internal.ensemble.confidence_calibrator import ConfidenceCalibrator
+        from sum_engine_internal.algorithms.syntactic_sieve import detect_hedging
+        from sum_engine_internal.ensemble.confidence_calibrator import ConfidenceCalibrator
 
         definite_certainty = detect_hedging("The Earth orbits the Sun.")
         hedged_certainty = detect_hedging("The Earth might orbit the Sun perhaps.")
@@ -236,7 +236,7 @@ class TestActivationStrategy:
 
         r = subprocess.run(
             [sys.executable, "-c",
-             "from internal.infrastructure.scheme_registry import CURRENT_SCHEME; print(CURRENT_SCHEME)"],
+             "from sum_engine_internal.infrastructure.scheme_registry import CURRENT_SCHEME; print(CURRENT_SCHEME)"],
             capture_output=True, text=True, env=env, timeout=10,
         )
         return r
@@ -271,7 +271,7 @@ class TestActivationStrategy:
         env["SUM_PRIME_SCHEME"] = "sha256_128_v2"
         r = subprocess.run(
             [sys.executable, "-c",
-             "from internal.infrastructure.scheme_registry import is_compatible; "
+             "from sum_engine_internal.infrastructure.scheme_registry import is_compatible; "
              "print(is_compatible('sha256_128_v2'), is_compatible('sha256_64_v1'))"],
             capture_output=True, text=True, env=env, timeout=10,
         )

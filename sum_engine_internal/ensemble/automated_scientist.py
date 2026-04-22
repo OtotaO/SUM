@@ -18,7 +18,7 @@ import asyncio
 import logging
 from typing import Optional
 
-from internal.algorithms.causal_discovery import CausalDiscoveryEngine
+from sum_engine_internal.algorithms.causal_discovery import CausalDiscoveryEngine
 
 logger = logging.getLogger("sum.scientist")
 
@@ -45,7 +45,7 @@ class AutomatedScientistDaemon:
 
         # Broadcast startup
         try:
-            from internal.ensemble.epistemic_arbiter import kos_telemetry
+            from sum_engine_internal.ensemble.epistemic_arbiter import kos_telemetry
             await kos_telemetry.broadcast(
                 "🔬 Automated Scientist initialized. Awaiting REM sleep cycles..."
             )
@@ -82,7 +82,7 @@ class AutomatedScientistDaemon:
 
         # Broadcast discovery
         try:
-            from internal.ensemble.epistemic_arbiter import kos_telemetry
+            from sum_engine_internal.ensemble.epistemic_arbiter import kos_telemetry
             await kos_telemetry.broadcast(
                 f"🧠 EUREKA! Synthesizing {len(novel_triplets)} novel discoveries..."
             )
@@ -93,7 +93,7 @@ class AutomatedScientistDaemon:
 
         # Batch mint — Zig bare-metal if available
         try:
-            from internal.infrastructure.zig_bridge import zig_engine
+            from sum_engine_internal.infrastructure.zig_bridge import zig_engine
             if zig_engine and hasattr(zig_engine, 'batch_mint_primes'):
                 new_primes = zig_engine.batch_mint_primes(axiom_strings)
             else:
@@ -130,7 +130,7 @@ class AutomatedScientistDaemon:
         )
 
         try:
-            from internal.ensemble.epistemic_arbiter import kos_telemetry
+            from sum_engine_internal.ensemble.epistemic_arbiter import kos_telemetry
             await kos_telemetry.broadcast(
                 f"🧬 State multiplied. Total autonomous discoveries: {self.total_discoveries}"
             )

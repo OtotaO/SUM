@@ -27,7 +27,7 @@ import os
 import inspect
 import pytest
 
-from internal.infrastructure.scheme_registry import (
+from sum_engine_internal.infrastructure.scheme_registry import (
     CURRENT_SCHEME,
     SCHEMES,
     get_current_scheme,
@@ -77,14 +77,14 @@ class TestMixedSchemeRejection:
 class TestEvidenceClean:
     def test_calibrator_accepts_linguistic_certainty(self):
         """calibrate() method must accept linguistic_certainty parameter."""
-        from internal.ensemble.confidence_calibrator import ConfidenceCalibrator
+        from sum_engine_internal.ensemble.confidence_calibrator import ConfidenceCalibrator
         sig = inspect.signature(ConfidenceCalibrator.calibrate)
         assert "linguistic_certainty" in sig.parameters
 
     def test_hedging_detector_exists(self):
         """detect_hedging function must be importable."""
         pytest.importorskip("spacy", reason="spacy not installed — hedging tests require it")
-        from internal.algorithms.syntactic_sieve import detect_hedging
+        from sum_engine_internal.algorithms.syntactic_sieve import detect_hedging
         assert callable(detect_hedging)
 
 
@@ -93,7 +93,7 @@ class TestEvidenceClean:
 class TestResourceLimitsExist:
     def test_all_guards_importable(self):
         """All resource guard functions must be importable."""
-        from internal.infrastructure.resource_guards import (
+        from sum_engine_internal.infrastructure.resource_guards import (
             guard_ingest_text,
             guard_bundle_import,
             guard_sync_state_digits,
@@ -128,7 +128,7 @@ class TestReferenceVectorsFrozen:
 class TestCodecConsistency:
     def test_codec_defaults_to_current_scheme(self):
         """CanonicalBundle defaults to CURRENT_SCHEME."""
-        from internal.infrastructure.canonical_codec import CanonicalBundle
+        from sum_engine_internal.infrastructure.canonical_codec import CanonicalBundle
         sig = inspect.signature(CanonicalBundle)
         ps = sig.parameters.get("prime_scheme")
         if ps and ps.default is not inspect.Parameter.empty:

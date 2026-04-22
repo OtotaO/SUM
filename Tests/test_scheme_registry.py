@@ -14,7 +14,7 @@ Tests:
 
 import pytest
 
-from internal.infrastructure.scheme_registry import (
+from sum_engine_internal.infrastructure.scheme_registry import (
     CURRENT_SCHEME,
     SCHEMES,
     get_scheme,
@@ -22,8 +22,8 @@ from internal.infrastructure.scheme_registry import (
     is_compatible,
     validate_scheme_or_raise,
 )
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
-from internal.infrastructure.akashic_ledger import AkashicLedger
+from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from sum_engine_internal.infrastructure.akashic_ledger import AkashicLedger
 
 
 # ─── Unit Tests: scheme_registry ─────────────────────────────────────
@@ -79,8 +79,8 @@ class TestSchemeRegistry:
 class TestBundleScheme:
     @pytest.fixture
     def codec(self, tmp_path):
-        from internal.ensemble.tome_generator import AutoregressiveTomeGenerator
-        from internal.infrastructure.canonical_codec import CanonicalCodec
+        from sum_engine_internal.ensemble.tome_generator import AutoregressiveTomeGenerator
+        from sum_engine_internal.infrastructure.canonical_codec import CanonicalCodec
         algebra = GodelStateAlgebra()
         tome_gen = AutoregressiveTomeGenerator(algebra)
         return CanonicalCodec(algebra, tome_gen, signing_key="test-key")
@@ -265,8 +265,8 @@ class TestBundleHexCrossCheck:
 
     @pytest.fixture
     def codec(self, tmp_path):
-        from internal.ensemble.tome_generator import AutoregressiveTomeGenerator
-        from internal.infrastructure.canonical_codec import CanonicalCodec
+        from sum_engine_internal.ensemble.tome_generator import AutoregressiveTomeGenerator
+        from sum_engine_internal.infrastructure.canonical_codec import CanonicalCodec
         algebra = GodelStateAlgebra()
         tome_gen = AutoregressiveTomeGenerator(algebra)
         return CanonicalCodec(algebra, tome_gen, signing_key="test-key")

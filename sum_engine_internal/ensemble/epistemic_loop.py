@@ -21,7 +21,7 @@ License: Apache License 2.0
 import logging
 from typing import Callable, Awaitable, List, Tuple, Dict, Any
 
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
 
 logger = logging.getLogger(__name__)
 

@@ -28,7 +28,7 @@ from datetime import datetime, timedelta, timezone
 
 # Allow importing from project root
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from internal.algorithms.syntactic_sieve import DeterministicSieve
+from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
 
 # ─── JWT Service Token ────────────────────────────────────────────────
 # Generate a long-lived harvester service token offline using the same

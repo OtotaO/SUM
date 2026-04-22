@@ -200,8 +200,8 @@ POST /ouroboros/verify
 The `TomeSliders` interface parameterizes rendering across five `[0.0, 1.0]` axes:
 
 ```python
-from internal.ensemble.tome_sliders import TomeSliders
-from internal.ensemble.tome_generator import AutoregressiveTomeGenerator
+from sum_engine_internal.ensemble.tome_sliders import TomeSliders
+from sum_engine_internal.ensemble.tome_generator import AutoregressiveTomeGenerator
 
 sliders = TomeSliders(
     density=0.5,       # actioned on canonical path (deterministic axiom subsetting)
@@ -214,7 +214,7 @@ tome = generator.generate_controlled(state, sliders)
 # Output includes slider metadata in the header for reproducibility.
 ```
 
-**What ships today:** the 5-axis type, validation, `requires_extrapolator()` gate, `header_line()` serialization, and the density axis actioned on the deterministic canonical path via lexicographic subsetting. 21 tests pin the contract. See `internal/ensemble/tome_sliders.py`.
+**What ships today:** the 5-axis type, validation, `requires_extrapolator()` gate, `header_line()` serialization, and the density axis actioned on the deterministic canonical path via lexicographic subsetting. 21 tests pin the contract. See `sum_engine_internal/ensemble/tome_sliders.py`.
 
 **What is roadmap:** the other four axes (length, formality, audience, perspective) require an LLM extrapolator and are no-ops on the canonical path today — their values are captured in the output header as metadata so a future LLM-backed renderer can honour them. Per-perspective functorial bridges (category-theoretic mappings between perspective ontologies) are Phase 26 vision, not current capability.
 
@@ -348,7 +348,7 @@ These are **roadmap items**, not current capabilities. Each is a concrete piece 
 ### Shipped since the last README pass
 - ✅ **Per-doc logging in the regeneration runner** (commit `02b4413`) — `RegenerationMetrics.per_doc` names the specific (s, p, o) triples that failed entailment so the aggregate FActScore gap is debuggable at the generator-prompt layer.
 - ✅ **LLM narrative full round-trip runner** (commit `9fd232d`, first measurement `2c252f0`) — composes `LiveLLMAdapter.extract_triplets → generate_text → extract_triplets`, reports per-doc drift. Measured on `seed_v1`: 107.75 % drift / 0.12 exact-match recall. See PROOF_BOUNDARY §2.5.
-- ✅ **W3C Verifiable Credentials 2.0 emission + verification** (commit `e007f94`) — pure-Python `eddsa-jcs-2022` Data Integrity path at `internal/infrastructure/verifiable_credential.py` + RFC 8785 JCS at `internal/infrastructure/jcs.py`. 58 tests. Bundles consumable by any VC-compliant ecosystem.
+- ✅ **W3C Verifiable Credentials 2.0 emission + verification** (commit `e007f94`) — pure-Python `eddsa-jcs-2022` Data Integrity path at `sum_engine_internal/infrastructure/verifiable_credential.py` + RFC 8785 JCS at `sum_engine_internal/infrastructure/jcs.py`. 58 tests. Bundles consumable by any VC-compliant ecosystem.
 - ✅ **Passive-voice truth fix** (commit `b751222`) — sieve now swaps `agent → pobj` into the subject slot and suppresses agentless passives; seed_v2 F1 rose 0.634 → 0.762, precision to 1.000, zero false positives on the difficulty corpus.
 - ✅ **`record_provenance_batch`** (commit `9ed49bf`) — single-transaction batched ingest; 10.2× throughput (2 k → 22 k ops/sec), within 30 % of the crypto ceiling.
 - ✅ **Merkle-chain concurrency fix** (commit `9c4139d`) — `BEGIN IMMEDIATE` serialises writers at the SQLite boundary; tamper-detection invariant now holds under concurrent writers (previously silently broke at two-plus parallel appends).
@@ -356,7 +356,7 @@ These are **roadmap items**, not current capabilities. Each is a concrete piece 
 - ✅ **Single-file browser demo** (`single_file_demo/index.html`) — paste any paragraph, press Attest, download a CanonicalBundle JSON; hand it to anyone with Node + `verify.js` for independent verification. Upgrades automatically to LLM-grade extraction when pasted into a Claude artifact conversation via `window.claude.complete` (commit `e5e57b6`).
 
 ### Near-term (next 1–2 milestones)
-- **LLM wiring for the 4 remaining sliders** — length / formality / audience / perspective. Interface is already shipped in `internal/ensemble/tome_sliders.py`; what's missing is the prompt-conditioning layer that honours each axis.
+- **LLM wiring for the 4 remaining sliders** — length / formality / audience / perspective. Interface is already shipped in `sum_engine_internal/ensemble/tome_sliders.py`; what's missing is the prompt-conditioning layer that honours each axis.
 - **Calibration fixture authoring for Venn-Abers** — turns zero-width confidence intervals into meaningful bounds. Needs a labelled `(score, was_correct)` set.
 - **Remaining sieve recall work** — seed_v2 precision is 1.000, recall 0.615; closing the recall gap means apposition / relative-clause / compound-conjunct extraction. All are RECALL misses now, not truth inversions.
 

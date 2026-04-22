@@ -36,8 +36,8 @@ import sqlite3
 
 import pytest
 
-from internal.infrastructure.akashic_ledger import AkashicLedger
-from internal.infrastructure.provenance import (
+from sum_engine_internal.infrastructure.akashic_ledger import AkashicLedger
+from sum_engine_internal.infrastructure.provenance import (
     ProvenanceRecord,
     compute_prov_id,
 )

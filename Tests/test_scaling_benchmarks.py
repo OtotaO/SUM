@@ -13,7 +13,7 @@ import time
 import statistics
 import pytest
 
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
 
 
 def _bench(fn, iterations=10):

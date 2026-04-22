@@ -70,7 +70,7 @@ def trace_zig_ffi(operation_name: str) -> Callable:
 
             # Detect path by checking if zig_engine is loaded
             try:
-                from internal.infrastructure.zig_bridge import zig_engine
+                from sum_engine_internal.infrastructure.zig_bridge import zig_engine
                 if zig_engine is not None and zig_engine.available:
                     _zig_calls += 1
                     path = "⚡zig"

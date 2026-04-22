@@ -29,10 +29,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from sympy import nextprime
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
-from internal.ensemble.tome_generator import AutoregressiveTomeGenerator
-from internal.infrastructure.canonical_codec import CanonicalCodec
-from internal.infrastructure.key_manager import KeyManager
+from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from sum_engine_internal.ensemble.tome_generator import AutoregressiveTomeGenerator
+from sum_engine_internal.infrastructure.canonical_codec import CanonicalCodec
+from sum_engine_internal.infrastructure.key_manager import KeyManager
 
 FIXTURE_DIR = Path(__file__).parent.parent / "Tests" / "fixtures"
 VERIFIER = Path(__file__).parent.parent / "standalone_verifier" / "verify.js"
@@ -159,7 +159,7 @@ def main():
 
     # ── 6. ZK Semantic Proof ──────────────────────────────────
     print("\n[6] ZK Semantic Proof Round-Trip")
-    from internal.algorithms.zk_semantics import ZKSemanticProver
+    from sum_engine_internal.algorithms.zk_semantics import ZKSemanticProver
     zk_alg = GodelStateAlgebra()
     zk_p = zk_alg.get_or_mint_prime("fortress", "zk", "proof")
     zk_proof = ZKSemanticProver.generate_proof(zk_p, zk_p)
@@ -171,7 +171,7 @@ def main():
     # ── 7. Akashic Ledger Replay ──────────────────────────────
     print("\n[7] Akashic Ledger Replay")
     import asyncio, os
-    from internal.infrastructure.akashic_ledger import AkashicLedger
+    from sum_engine_internal.infrastructure.akashic_ledger import AkashicLedger
 
     async def _ledger_check():
         with tempfile.TemporaryDirectory() as td:
@@ -189,7 +189,7 @@ def main():
 
     # ── 8. End-to-End Pipeline ────────────────────────────────
     print("\n[8] End-to-End Pipeline (text → sieve → algebra → codec → reimport)")
-    from internal.algorithms.syntactic_sieve import DeterministicSieve
+    from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
     sieve = DeterministicSieve()
     triplets = sieve.extract_triplets("Alice likes cats. Bob knows Python.")
     e2e_alg = GodelStateAlgebra()

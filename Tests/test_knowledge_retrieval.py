@@ -15,8 +15,8 @@ import math
 import pytest
 from unittest.mock import patch, MagicMock, AsyncMock
 
-from internal.algorithms.predicate_canon import canonicalize, CANONICAL_MAP
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from sum_engine_internal.algorithms.predicate_canon import canonicalize, CANONICAL_MAP
+from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
 
 
 # ─── Predicate Canonicalization Unit Tests ────────────────────────────
@@ -105,7 +105,7 @@ class TestCausalWithCanon:
 
     def test_transitive_after_canonicalization(self):
         """If A leads_to B (→causes) and B triggers C (→causes), discover A→C."""
-        from internal.algorithms.causal_discovery import CausalDiscoveryEngine
+        from sum_engine_internal.algorithms.causal_discovery import CausalDiscoveryEngine
 
         algebra = GodelStateAlgebra()
         # These will be canonicalized to "causes"

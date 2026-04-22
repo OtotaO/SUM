@@ -29,7 +29,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 GODEL_CLI = REPO_ROOT / "single_file_demo" / "godel_cli.js"

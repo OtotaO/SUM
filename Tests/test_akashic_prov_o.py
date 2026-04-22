@@ -5,7 +5,7 @@ import json
 
 import pytest
 
-from internal.infrastructure.akashic_ledger import AkashicLedger
+from sum_engine_internal.infrastructure.akashic_ledger import AkashicLedger
 
 
 @pytest.mark.asyncio

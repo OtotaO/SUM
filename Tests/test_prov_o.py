@@ -1,9 +1,9 @@
-"""Tests for internal.infrastructure.prov_o — PROV-O JSON-LD emission."""
+"""Tests for sum_engine_internal.infrastructure.prov_o — PROV-O JSON-LD emission."""
 from __future__ import annotations
 
 import json
 
-from internal.infrastructure.prov_o import (
+from sum_engine_internal.infrastructure.prov_o import (
     SUM_VOCAB,
     _axiom_iri,
     _event_iri,

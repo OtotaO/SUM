@@ -13,9 +13,9 @@ import math
 import pytest
 from datetime import datetime, timezone, timedelta
 
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
-from internal.ensemble.tome_generator import AutoregressiveTomeGenerator
-from internal.infrastructure.canonical_codec import CanonicalCodec
+from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from sum_engine_internal.ensemble.tome_generator import AutoregressiveTomeGenerator
+from sum_engine_internal.infrastructure.canonical_codec import CanonicalCodec
 
 
 SIGNING_KEY = "timestamp-test-key-32-bytes!!!!!"
@@ -80,6 +80,6 @@ class TestTimestampValidation:
         past = datetime(2020, 1, 1, tzinfo=timezone.utc)
         tampered["timestamp"] = past.isoformat()
         # Will fail HMAC (timestamp changed), which is correct
-        from internal.infrastructure.canonical_codec import InvalidSignatureError
+        from sum_engine_internal.infrastructure.canonical_codec import InvalidSignatureError
         with pytest.raises(InvalidSignatureError):
             codec.import_bundle(tampered)

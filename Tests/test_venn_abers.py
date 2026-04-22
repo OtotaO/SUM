@@ -1,9 +1,9 @@
-"""Tests for internal.ensemble.venn_abers."""
+"""Tests for sum_engine_internal.ensemble.venn_abers."""
 from __future__ import annotations
 
 import pytest
 
-from internal.ensemble.venn_abers import (
+from sum_engine_internal.ensemble.venn_abers import (
     ConfidenceInterval,
     VennAbersCalibrator,
     _pava_fit,

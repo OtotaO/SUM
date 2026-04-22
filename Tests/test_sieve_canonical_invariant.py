@@ -15,10 +15,10 @@ from __future__ import annotations
 
 import re
 
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
-from internal.algorithms.syntactic_sieve import DeterministicSieve
-from internal.ensemble.ouroboros import OuroborosVerifier
-from internal.ensemble.tome_generator import AutoregressiveTomeGenerator
+from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
+from sum_engine_internal.ensemble.ouroboros import OuroborosVerifier
+from sum_engine_internal.ensemble.tome_generator import AutoregressiveTomeGenerator
 
 
 _SUBJECT_PREDICATE_RE = re.compile(r"^\S+$")

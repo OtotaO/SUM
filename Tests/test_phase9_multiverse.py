@@ -18,8 +18,8 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
-from internal.ensemble.causal_triggers import CausalTriggerMap
+from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from sum_engine_internal.ensemble.causal_triggers import CausalTriggerMap
 
 
 # ─── Mock Ledger ──────────────────────────────────────────────────────

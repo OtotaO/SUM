@@ -20,11 +20,11 @@ import subprocess
 import pytest
 import sympy
 
-from internal.algorithms.semantic_arithmetic import (
+from sum_engine_internal.algorithms.semantic_arithmetic import (
     GodelStateAlgebra,
     PrimeCollisionError,
 )
-from internal.infrastructure.scheme_registry import CURRENT_SCHEME
+from sum_engine_internal.infrastructure.scheme_registry import CURRENT_SCHEME
 
 
 # ─── Load frozen vectors ──────────────────────────────────────────────

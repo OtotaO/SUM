@@ -37,8 +37,8 @@ import logging
 from contextlib import contextmanager
 from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple
 
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
-from internal.infrastructure.provenance import (
+from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from sum_engine_internal.infrastructure.provenance import (
     ProvenanceRecord,
     compute_prov_id,
 )
@@ -64,7 +64,7 @@ def _zig() -> Optional[Any]:
     would require stubs for the Zig core. Callers gate on truthiness.
     """
     try:
-        from internal.infrastructure.zig_bridge import zig_engine
+        from sum_engine_internal.infrastructure.zig_bridge import zig_engine
         return zig_engine
     except ImportError:
         return None
@@ -547,7 +547,7 @@ class AkashicLedger:
         """Serialize every event on a branch as a W3C PROV-O JSON-LD graph.
 
         Convenience wrapper that joins the ledger's event table with the
-        stateless PROV-O adapter in ``internal.infrastructure.prov_o``.
+        stateless PROV-O adapter in ``sum_engine_internal.infrastructure.prov_o``.
         The returned string is a valid JSON-LD document any PROV-compliant
         tool can consume without SUM-specific knowledge.
 
@@ -558,7 +558,7 @@ class AkashicLedger:
         Returns:
             A pretty-printed JSON-LD document string.
         """
-        from internal.infrastructure.prov_o import dump_prov_jsonld
+        from sum_engine_internal.infrastructure.prov_o import dump_prov_jsonld
 
         def _read() -> List[Dict[str, Any]]:
             with sqlite3.connect(self.db_path) as conn:

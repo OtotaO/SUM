@@ -11,7 +11,7 @@ License: Apache License 2.0
 import time
 import pytest
 
-from internal.infrastructure.rate_limiter import RateLimiter
+from sum_engine_internal.infrastructure.rate_limiter import RateLimiter
 
 
 class TestRateLimiterBasics:

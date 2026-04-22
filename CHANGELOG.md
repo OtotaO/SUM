@@ -4,14 +4,31 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
-(next release will move these entries under a version heading)
+### Changed — BREAKING (for anyone who imported `internal.*` directly)
+
+- The top-level `internal/` package was renamed to `sum_engine_internal/`
+  to remove the PyPI namespace-collision risk. 238 import sites across
+  111 Python files were mechanically rewritten; `pyproject.toml`
+  `packages.find.include` now lists `sum_engine_internal*`. Every test,
+  script, and doc reference updated in the same commit.
+- The CLI's public contract (`sum attest / sum verify / sum resolve`,
+  all flags, the CanonicalBundle JSON schema, the Gödel-state wire
+  format) is unchanged. Anyone using `sum-engine` through the CLI
+  sees no difference. Only consumers who were importing
+  `internal.infrastructure.X` etc. directly — which the CHANGELOG
+  explicitly flagged as unsupported in the 0.1.0 "Known limitations"
+  — need to rename their imports.
+- Next released version will move this entry under its version
+  heading. Until then, `sum-engine 0.1.0` on PyPI remains the
+  latest published release and still works end-to-end.
 
 ## [0.1.0] — 2026-04-22
 
 First public release. Ships the `sum` CLI on PyPI, the Python API
-under `internal.*`, the standalone Node verifier, and the single-
-file browser demo. Cross-runtime trust triangle (Python ↔ Node ↔
-Browser) is complete and locked by CI.
+under `internal.*` (renamed to `sum_engine_internal.*` in the next
+release — see Unreleased above), the standalone Node verifier, and
+the single-file browser demo. Cross-runtime trust triangle
+(Python ↔ Node ↔ Browser) is complete and locked by CI.
 
 ### Added — CLI
 
@@ -34,16 +51,16 @@ Browser) is complete and locked by CI.
 
 ### Added — Python API
 
-- `internal.infrastructure.canonical_codec.CanonicalCodec` — HMAC
+- `sum_engine_internal.infrastructure.canonical_codec.CanonicalCodec` — HMAC
   and Ed25519 are both optional; when neither is configured,
   bundles carry the state integer only (content-addressed
   integrity without shared secrets or keys). Downgrade-protection
   preserved when a signing_key is configured.
-- `internal.infrastructure.verifiable_credential` — W3C VC 2.0
+- `sum_engine_internal.infrastructure.verifiable_credential` — W3C VC 2.0
   emission + verification with `eddsa-jcs-2022` cryptosuite.
   `did:key` and `did:web` issuer helpers; `build_did_web_document`
   emits the DID document for hosting at `/.well-known/did.json`.
-- `internal.infrastructure.akashic_ledger.AkashicLedger` —
+- `sum_engine_internal.infrastructure.akashic_ledger.AkashicLedger` —
   SQLite-backed event log with Merkle hash-chain integrity and
   BEGIN IMMEDIATE concurrency hardening. `record_provenance` +
   `get_provenance_record` power the CLI's attest/resolve loop.

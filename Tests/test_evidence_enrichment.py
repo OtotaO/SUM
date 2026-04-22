@@ -12,12 +12,12 @@ Tests:
 import pytest
 import asyncio
 
-from internal.algorithms.syntactic_sieve import (
+from sum_engine_internal.algorithms.syntactic_sieve import (
     detect_hedging,
     HEDGE_FLOOR,
     DeterministicSieve,
 )
-from internal.ensemble.confidence_calibrator import ConfidenceCalibrator
+from sum_engine_internal.ensemble.confidence_calibrator import ConfidenceCalibrator
 
 spacy = pytest.importorskip("spacy", reason="spacy not installed")
 

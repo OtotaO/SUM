@@ -16,7 +16,7 @@ Tests:
 import pytest
 from fastapi import HTTPException
 
-from internal.infrastructure.resource_guards import (
+from sum_engine_internal.infrastructure.resource_guards import (
     guard_ingest_text,
     guard_bundle_import,
     guard_sync_state_digits,

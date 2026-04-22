@@ -13,8 +13,8 @@ License: Apache License 2.0
 
 import math
 import pytest
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
-from internal.algorithms.causal_discovery import CausalDiscoveryEngine
+from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from sum_engine_internal.algorithms.causal_discovery import CausalDiscoveryEngine
 
 
 # ─── Fixtures ─────────────────────────────────────────────────────────
@@ -137,5 +137,5 @@ def test_non_transitive_predicates_ignored(algebra, engine):
 
 def test_automated_scientist_import():
     """Ensure the daemon can be imported without side effects."""
-    from internal.ensemble.automated_scientist import AutomatedScientistDaemon
+    from sum_engine_internal.ensemble.automated_scientist import AutomatedScientistDaemon
     assert AutomatedScientistDaemon is not None

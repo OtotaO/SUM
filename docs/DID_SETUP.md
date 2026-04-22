@@ -2,7 +2,7 @@
 
 SUM emits W3C Verifiable Credentials 2.0 signed under the `eddsa-jcs-2022` cryptosuite (commit `e007f94`). The default `make_credential(..., issuer="did:example:issuer")` pattern is placeholder-only — no real verifier can resolve `did:example:*`. This document explains how to replace it with a resolvable DID so SUM-issued credentials verify under every W3C-compliant VC 2.0 verifier on the market (DIF Universal Resolver, Digital Bazaar, Spruce ssi, Veramo, Mattr, Microsoft Entra Verified ID).
 
-Two paths. Both are shipped primitives in `internal/infrastructure/verifiable_credential.py`.
+Two paths. Both are shipped primitives in `sum_engine_internal/infrastructure/verifiable_credential.py`.
 
 ---
 
@@ -14,7 +14,7 @@ The entire public key is encoded in the DID identifier. A verifier with only the
 
 ```python
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-from internal.infrastructure.verifiable_credential import (
+from sum_engine_internal.infrastructure.verifiable_credential import (
     ed25519_to_did_key,
     make_credential,
     sign_credential,
@@ -95,7 +95,7 @@ curl -sL https://sum-demo.pages.dev/.well-known/did.json | jq .id
 ```python
 import json
 from cryptography.hazmat.primitives import serialization
-from internal.infrastructure.verifiable_credential import (
+from sum_engine_internal.infrastructure.verifiable_credential import (
     did_web_verification_method,
     make_credential,
     sign_credential,

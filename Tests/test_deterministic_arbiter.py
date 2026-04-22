@@ -11,7 +11,7 @@ License: Apache License 2.0
 import asyncio
 import pytest
 
-from internal.ensemble.epistemic_arbiter import DeterministicArbiter
+from sum_engine_internal.ensemble.epistemic_arbiter import DeterministicArbiter
 
 
 @pytest.fixture

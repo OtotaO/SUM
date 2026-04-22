@@ -41,25 +41,25 @@ from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Header, 
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra, ActivePrimeIndex
-from internal.algorithms.syntactic_sieve import DeterministicSieve
-from internal.algorithms.syntactic_sieve import detect_hedging
-from internal.ensemble.vector_bridge import ContinuousDiscreteBridge
-from internal.infrastructure.akashic_ledger import AkashicLedger
-from internal.infrastructure.canonical_codec import CanonicalCodec, InvalidSignatureError
-from internal.ensemble.epistemic_loop import QuantumExtrapolator
-from internal.ensemble.causal_triggers import CausalTriggerMap
-from internal.ensemble.tome_generator import AutoregressiveTomeGenerator
-from internal.ensemble.ouroboros import OuroborosVerifier
-from internal.algorithms.zk_semantics import ZKSemanticProver
-from internal.infrastructure.p2p_mesh import EpistemicMeshNetwork
-from internal.ensemble.mass_semantic_engine import MassSemanticEngine
-from internal.ensemble.confidence_calibrator import ConfidenceCalibrator
-from internal.ensemble.semantic_dedup import SemanticDeduplicator
-from internal.ensemble.extraction_validator import ExtractionValidator
-from internal.infrastructure.state_encoding import dual_field, parse_state, to_hex
-from internal.infrastructure.scheme_registry import CURRENT_SCHEME, validate_scheme_or_raise
-from internal.infrastructure.resource_guards import (
+from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra, ActivePrimeIndex
+from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
+from sum_engine_internal.algorithms.syntactic_sieve import detect_hedging
+from sum_engine_internal.ensemble.vector_bridge import ContinuousDiscreteBridge
+from sum_engine_internal.infrastructure.akashic_ledger import AkashicLedger
+from sum_engine_internal.infrastructure.canonical_codec import CanonicalCodec, InvalidSignatureError
+from sum_engine_internal.ensemble.epistemic_loop import QuantumExtrapolator
+from sum_engine_internal.ensemble.causal_triggers import CausalTriggerMap
+from sum_engine_internal.ensemble.tome_generator import AutoregressiveTomeGenerator
+from sum_engine_internal.ensemble.ouroboros import OuroborosVerifier
+from sum_engine_internal.algorithms.zk_semantics import ZKSemanticProver
+from sum_engine_internal.infrastructure.p2p_mesh import EpistemicMeshNetwork
+from sum_engine_internal.ensemble.mass_semantic_engine import MassSemanticEngine
+from sum_engine_internal.ensemble.confidence_calibrator import ConfidenceCalibrator
+from sum_engine_internal.ensemble.semantic_dedup import SemanticDeduplicator
+from sum_engine_internal.ensemble.extraction_validator import ExtractionValidator
+from sum_engine_internal.infrastructure.state_encoding import dual_field, parse_state, to_hex
+from sum_engine_internal.infrastructure.scheme_registry import CURRENT_SCHEME, validate_scheme_or_raise
+from sum_engine_internal.infrastructure.resource_guards import (
     guard_ingest_text, guard_bundle_import, guard_ask_query,
     guard_branch_name, guard_axiom_key, guard_sync_state_digits,
 )
@@ -233,7 +233,7 @@ class GlobalKnowledgeOS:
         )
 
         # Phase 19: Automated Scientist Daemon
-        from internal.ensemble.automated_scientist import AutomatedScientistDaemon
+        from sum_engine_internal.ensemble.automated_scientist import AutomatedScientistDaemon
         self.scientist_daemon = AutomatedScientistDaemon(self, interval_seconds=15)
         asyncio.create_task(self.scientist_daemon.start_dreaming())
 
@@ -881,7 +881,7 @@ async def create_branch(req: BranchRequest):
                 context="create_branch",
             )
 
-    from internal.ensemble.epistemic_arbiter import kos_telemetry
+    from sum_engine_internal.ensemble.epistemic_arbiter import kos_telemetry
     await kos_telemetry.broadcast(
         f"🔗 Branch Created: '{req.new_branch}' from '{req.source_branch}'"
     )
@@ -956,7 +956,7 @@ async def merge_branches(req: MergeRequest):
                     req.target_branch, merged_state, kos.algebra, context="merge_branches"
                 )
 
-    from internal.ensemble.epistemic_arbiter import kos_telemetry
+    from sum_engine_internal.ensemble.epistemic_arbiter import kos_telemetry
     await kos_telemetry.broadcast(
         f"🔗 Branch Merged: '{req.source_branch}' → '{req.target_branch}' "
         f"| Paradoxes: {len(paradoxes)}"
@@ -1014,7 +1014,7 @@ async def time_travel(
 
     async with kos.branch_lock(req.new_branch_name):
         # Rebuild a fresh algebra for the historical snapshot
-        from internal.algorithms.semantic_arithmetic import GodelStateAlgebra as GSA
+        from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra as GSA
         historical_algebra = GSA()
         past_state = await kos.ledger.rebuild_state(
             historical_algebra, max_seq_id=req.target_tick
@@ -1031,7 +1031,7 @@ async def time_travel(
             req.new_branch_name, past_state, kos.algebra, context="time_travel"
         )
 
-    from internal.ensemble.epistemic_arbiter import kos_telemetry
+    from sum_engine_internal.ensemble.epistemic_arbiter import kos_telemetry
     await kos_telemetry.broadcast(
         f"⏳ Chronos Time Travel: Branch '{req.new_branch_name}' "
         f"created at tick {req.target_tick}"
@@ -1309,7 +1309,7 @@ async def import_knowledge_bundle(
 
         # Phase 0.1: Materialize novel axioms from the bundle's canonical tome
         # Parse the tome to register axiom↔prime mappings locally
-        from internal.infrastructure.tome_parser import parse_canonical_tome
+        from sum_engine_internal.infrastructure.tome_parser import parse_canonical_tome
         bundle_tome = req.bundle.get("canonical_tome", "")
         for s, p, o in parse_canonical_tome(bundle_tome):
             # get_or_mint_prime is idempotent — will reuse existing mapping
@@ -1351,7 +1351,7 @@ async def telemetry_stream():
     Streams paradox detection, superposition entry, wave function
     collapse, causal inference, time travel, and P2P sync events.
     """
-    from internal.ensemble.epistemic_arbiter import kos_telemetry
+    from sum_engine_internal.ensemble.epistemic_arbiter import kos_telemetry
 
     async def event_generator():
         queue = kos_telemetry.subscribe()
@@ -1412,7 +1412,7 @@ async def sync_peer_state(
         current_state = kos.branches.get(effective_branch, 1)
         # Use Zig FFI if available, fallback to Python
         try:
-            from internal.infrastructure.zig_bridge import zig_engine
+            from sum_engine_internal.infrastructure.zig_bridge import zig_engine
             if zig_engine and hasattr(zig_engine, 'bigint_lcm'):
                 new_state = zig_engine.bigint_lcm(current_state, peer_int)
             else:
@@ -1438,7 +1438,7 @@ async def sync_peer_state(
                 effective_branch, new_state, kos.algebra, context="sync_peer_state"
             )
 
-            from internal.ensemble.epistemic_arbiter import kos_telemetry
+            from sum_engine_internal.ensemble.epistemic_arbiter import kos_telemetry
             await kos_telemetry.broadcast(
                 f"🌐 Sovereign Edge Sync: merged state from {user_id}"
             )
@@ -1526,7 +1526,7 @@ async def ask_knowledge(
     active_axioms = kos.algebra.get_active_axioms(current_state)
 
     # ── 2. Keyword matching (always works, no LLM needed) ────────
-    from internal.algorithms.predicate_canon import canonicalize
+    from sum_engine_internal.algorithms.predicate_canon import canonicalize
     question_lower = req.question.lower()
     keywords = [
         w for w in question_lower.replace("?", "").replace(".", "").split()

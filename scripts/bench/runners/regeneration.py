@@ -137,9 +137,9 @@ class OpenAiRegenerationRunner:
     async def _run_async(
         self, corpus: Corpus
     ) -> Sequence[RegenerationMetrics]:
-        from internal.algorithms.syntactic_sieve import DeterministicSieve
-        from internal.ensemble.live_llm_adapter import LiveLLMAdapter
-        from internal.ensemble.llm_entailment import LlmEntailmentChecker
+        from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
+        from sum_engine_internal.ensemble.live_llm_adapter import LiveLLMAdapter
+        from sum_engine_internal.ensemble.llm_entailment import LlmEntailmentChecker
 
         sieve = DeterministicSieve()  # type: ignore[no-untyped-call]
         generator = LiveLLMAdapter(model=self.generator_model_id)

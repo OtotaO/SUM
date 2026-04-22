@@ -22,9 +22,9 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
-from internal.ensemble.vector_bridge import ContinuousDiscreteBridge
-from internal.infrastructure.zig_bridge import ZigMathEngine
+from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from sum_engine_internal.ensemble.vector_bridge import ContinuousDiscreteBridge
+from sum_engine_internal.infrastructure.zig_bridge import ZigMathEngine
 
 
 # ─── Phase 16 Reference Vectors (Cross-Language Ground Truth) ────────

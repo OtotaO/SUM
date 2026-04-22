@@ -23,7 +23,7 @@ import os
 # Ensure project root is on path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
 
 
 # ─── Configuration ────────────────────────────────────────────────────

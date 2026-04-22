@@ -20,9 +20,9 @@ import pytest
 from pathlib import Path
 from sympy import nextprime
 
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
-from internal.ensemble.tome_generator import AutoregressiveTomeGenerator
-from internal.infrastructure.canonical_codec import CanonicalCodec
+from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from sum_engine_internal.ensemble.tome_generator import AutoregressiveTomeGenerator
+from sum_engine_internal.infrastructure.canonical_codec import CanonicalCodec
 
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures"

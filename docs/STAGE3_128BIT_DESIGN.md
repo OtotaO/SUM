@@ -199,14 +199,14 @@ Complete enumeration of files that must change for v2:
 ### 7.1. Core Algorithm
 | File | Change |
 |------|--------|
-| `internal/algorithms/semantic_arithmetic.py` | `h[:16]` seed extraction, conditional on active scheme |
-| `internal/infrastructure/scheme_registry.py` | `CURRENT_SCHEME` → `sha256_128_v2` when activated |
+| `sum_engine_internal/algorithms/semantic_arithmetic.py` | `h[:16]` seed extraction, conditional on active scheme |
+| `sum_engine_internal/infrastructure/scheme_registry.py` | `CURRENT_SCHEME` → `sha256_128_v2` when activated |
 
 ### 7.2. Zig Core
 | File | Change |
 |------|--------|
 | `core-zig/src/main.zig` | New `modPow128`, `isPrimeBPSW`, `nextPrime128` functions |
-| `internal/infrastructure/zig_bridge.py` | New ctypes binding for `sum_get_deterministic_prime_128` |
+| `sum_engine_internal/infrastructure/zig_bridge.py` | New ctypes binding for `sum_get_deterministic_prime_128` |
 
 ### 7.3. Node.js Verifier
 | File | Change |
@@ -216,9 +216,9 @@ Complete enumeration of files that must change for v2:
 ### 7.4. Bundle/Transport
 | File | Change |
 |------|--------|
-| `internal/infrastructure/canonical_codec.py` | No change (scheme field already present) |
+| `sum_engine_internal/infrastructure/canonical_codec.py` | No change (scheme field already present) |
 | `api/quantum_router.py` | No change (scheme validation already works) |
-| `internal/infrastructure/p2p_mesh.py` | No change (scheme negotiation already works) |
+| `sum_engine_internal/infrastructure/p2p_mesh.py` | No change (scheme negotiation already works) |
 | `docs/CANONICAL_ABI_SPEC.md` | Add §4.5 for v2 derivation rule + reference vectors |
 
 ### 7.5. Tests/Fixtures

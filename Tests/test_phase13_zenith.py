@@ -15,7 +15,7 @@ import pytest
 from fastapi.testclient import TestClient
 from quantum_main import app
 from api.quantum_router import kos
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
 
 
 client = TestClient(app)
@@ -38,7 +38,7 @@ def reset_kos():
 
 class TestDeterministicSieve:
     def test_simple_sentence_extraction(self):
-        from internal.algorithms.syntactic_sieve import DeterministicSieve
+        from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
         sieve = DeterministicSieve()
 
         text = "The scientist discovered a new particle."
@@ -52,7 +52,7 @@ class TestDeterministicSieve:
         assert any("discover" in p for p in predicates)
 
     def test_multiple_sentences(self):
-        from internal.algorithms.syntactic_sieve import DeterministicSieve
+        from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
         sieve = DeterministicSieve()
 
         text = (
@@ -67,7 +67,7 @@ class TestDeterministicSieve:
         assert "telescope" in all_text or "galaxy" in all_text
 
     def test_deduplication(self):
-        from internal.algorithms.syntactic_sieve import DeterministicSieve
+        from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
         sieve = DeterministicSieve()
 
         text = "The cat sat on the mat. The cat sat on the mat."
@@ -78,14 +78,14 @@ class TestDeterministicSieve:
         assert len(triplets) == len(unique)
 
     def test_empty_input(self):
-        from internal.algorithms.syntactic_sieve import DeterministicSieve
+        from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
         sieve = DeterministicSieve()
 
         triplets = sieve.extract_triplets("")
         assert triplets == []
 
     def test_no_triplets_from_fragment(self):
-        from internal.algorithms.syntactic_sieve import DeterministicSieve
+        from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
         sieve = DeterministicSieve()
 
         # A fragment without clear SVO structure

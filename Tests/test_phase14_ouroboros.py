@@ -18,12 +18,12 @@ import pytest
 from fastapi.testclient import TestClient
 from quantum_main import app
 from api.quantum_router import kos
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
-from internal.algorithms.syntactic_sieve import DeterministicSieve
+from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
 
 spacy = pytest.importorskip("spacy", reason="spacy not installed")
-from internal.ensemble.tome_generator import AutoregressiveTomeGenerator
-from internal.ensemble.ouroboros import OuroborosVerifier
+from sum_engine_internal.ensemble.tome_generator import AutoregressiveTomeGenerator
+from sum_engine_internal.ensemble.ouroboros import OuroborosVerifier
 
 client = TestClient(app)
 

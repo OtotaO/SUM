@@ -11,7 +11,7 @@ exercising the exact code paths that would use Zig in production.
 
 import math
 import pytest
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
 
 
 # ─── Reference data (from Phase 16/17 frozen vectors) ────────────
@@ -216,28 +216,28 @@ class TestZigBridgeBigInt:
 
     def test_bridge_bigint_lcm_fallback(self):
         """bigint_lcm returns None when Zig not compiled."""
-        from internal.infrastructure.zig_bridge import ZigMathEngine
+        from sum_engine_internal.infrastructure.zig_bridge import ZigMathEngine
         engine = ZigMathEngine.__new__(ZigMathEngine)
         engine.lib = None
         assert engine.bigint_lcm(6, 10) is None
 
     def test_bridge_bigint_gcd_fallback(self):
         """bigint_gcd returns None when Zig not compiled."""
-        from internal.infrastructure.zig_bridge import ZigMathEngine
+        from sum_engine_internal.infrastructure.zig_bridge import ZigMathEngine
         engine = ZigMathEngine.__new__(ZigMathEngine)
         engine.lib = None
         assert engine.bigint_gcd(12, 8) is None
 
     def test_bridge_bigint_mod_fallback(self):
         """bigint_mod returns None when Zig not compiled."""
-        from internal.infrastructure.zig_bridge import ZigMathEngine
+        from sum_engine_internal.infrastructure.zig_bridge import ZigMathEngine
         engine = ZigMathEngine.__new__(ZigMathEngine)
         engine.lib = None
         assert engine.bigint_mod(100, 7) is None
 
     def test_bridge_divisibility_fallback(self):
         """is_divisible_by returns None when Zig not compiled."""
-        from internal.infrastructure.zig_bridge import ZigMathEngine
+        from sum_engine_internal.infrastructure.zig_bridge import ZigMathEngine
         engine = ZigMathEngine.__new__(ZigMathEngine)
         engine.lib = None
         assert engine.is_divisible_by(100, 5) is None

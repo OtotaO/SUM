@@ -26,7 +26,7 @@ This module pins the evidence unit:
     }
 
 The record is content-addressable: ``prov_id = "prov:" + hex(sha256(JCS(record)))[:32]``.
-Canonicalization uses RFC 8785 JCS (``internal.infrastructure.jcs``) — the
+Canonicalization uses RFC 8785 JCS (``sum_engine_internal.infrastructure.jcs``) — the
 same canonicalizer the VC 2.0 path uses — so prov_ids are stable across any
 JSON parser, any language, any reordering of fields on disk.
 

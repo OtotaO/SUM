@@ -11,7 +11,7 @@ License: Apache License 2.0
 """
 
 import pytest
-from internal.ensemble.extraction_validator import (
+from sum_engine_internal.ensemble.extraction_validator import (
     ExtractionValidator,
     ValidatedExtraction,
     RejectedTriplet,

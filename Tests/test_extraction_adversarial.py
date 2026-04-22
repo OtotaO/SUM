@@ -9,7 +9,7 @@ License: Apache License 2.0
 """
 
 import pytest
-from internal.algorithms.syntactic_sieve import DeterministicSieve
+from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
 
 spacy = pytest.importorskip("spacy", reason="spacy not installed")
 

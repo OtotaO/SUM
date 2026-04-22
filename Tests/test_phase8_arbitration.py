@@ -18,11 +18,11 @@ import asyncio
 import pytest
 import networkx as nx
 
-from internal.ensemble.gauge_orchestrator import (
+from sum_engine_internal.ensemble.gauge_orchestrator import (
     GaugeTheoreticOrchestrator,
     CommutativityLevel,
 )
-from internal.ensemble.epistemic_arbiter import (
+from sum_engine_internal.ensemble.epistemic_arbiter import (
     EpistemicArbiter,
     EventBroadcaster,
 )

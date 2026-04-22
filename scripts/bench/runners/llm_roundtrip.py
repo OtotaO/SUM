@@ -129,7 +129,7 @@ class LlmRoundtripRunner:
     async def _run_async(
         self, corpus: Corpus
     ) -> Sequence[LlmRoundtripMetrics]:
-        from internal.ensemble.live_llm_adapter import LiveLLMAdapter
+        from sum_engine_internal.ensemble.live_llm_adapter import LiveLLMAdapter
 
         generator = LiveLLMAdapter(model=self.generator_model_id)
         extractor = LiveLLMAdapter(

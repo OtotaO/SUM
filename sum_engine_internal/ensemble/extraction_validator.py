@@ -22,7 +22,7 @@ import logging
 from dataclasses import dataclass, field
 from typing import List, Tuple, Optional
 
-from internal.algorithms.predicate_canon import canonicalize
+from sum_engine_internal.algorithms.predicate_canon import canonicalize
 
 logger = logging.getLogger(__name__)
 

@@ -28,7 +28,7 @@ class SumExtractionRunner:
     name: str = "sum.syntactic_sieve"
 
     def run(self, corpus: Corpus) -> ExtractionMetrics:
-        from internal.algorithms.syntactic_sieve import DeterministicSieve
+        from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
 
         sieve = DeterministicSieve()  # type: ignore[no-untyped-call]
 

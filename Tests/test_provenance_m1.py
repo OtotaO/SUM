@@ -16,12 +16,12 @@ import tempfile
 
 import pytest
 
-from internal.algorithms.syntactic_sieve import (
+from sum_engine_internal.algorithms.syntactic_sieve import (
     SIEVE_EXTRACTOR_ID,
     DeterministicSieve,
 )
-from internal.infrastructure.akashic_ledger import AkashicLedger
-from internal.infrastructure.provenance import (
+from sum_engine_internal.infrastructure.akashic_ledger import AkashicLedger
+from sum_engine_internal.infrastructure.provenance import (
     EXCERPT_MAX_CHARS,
     PROVENANCE_SCHEMA_VERSION,
     InvalidProvenanceError,

@@ -18,15 +18,15 @@ import math
 import logging
 from typing import Callable, Optional
 
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
-from internal.infrastructure.akashic_ledger import AkashicLedger
+from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from sum_engine_internal.infrastructure.akashic_ledger import AkashicLedger
 
 logger = logging.getLogger(__name__)
 
 
 def _zig():
     try:
-        from internal.infrastructure.zig_bridge import zig_engine
+        from sum_engine_internal.infrastructure.zig_bridge import zig_engine
         return zig_engine
     except ImportError:
         return None

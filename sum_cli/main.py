@@ -15,7 +15,7 @@ Design notes (read once, explained here so the code stays terse):
     cold-start fast (`python -c "import sum_cli"` must stay under 100 ms).
   - Heavy imports (spacy, openai, akashic ledger) are lazy. Loading the
     module to call --version or --help must NOT drag the whole
-    internal.algorithms.* tree into memory.
+    sum_engine_internal.algorithms.* tree into memory.
   - Stdin / stdout / stderr contract is Unix-shaped: one thing in, one
     thing out, diagnostics on stderr, exit code signals success/failure.
     Agents can pipe sum into jq, into file > bundle.json, into
@@ -69,7 +69,7 @@ def _pick_extractor(override: Optional[str] = None) -> str:
 
 
 def _extract_sieve(text: str) -> list[tuple[str, str, str]]:
-    from internal.algorithms.syntactic_sieve import DeterministicSieve
+    from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
     sieve = DeterministicSieve()  # type: ignore[no-untyped-call]
     return sieve.extract_triplets(text)
 
@@ -85,7 +85,7 @@ def _extract_sieve_with_provenance(text: str, source_uri: str):
     Triples are the same list _extract_sieve would return; the paired
     form carries the extra evidence the ledger needs.
     """
-    from internal.algorithms.syntactic_sieve import DeterministicSieve
+    from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
 
     sieve = DeterministicSieve()  # type: ignore[no-untyped-call]
     pairs = sieve.extract_with_provenance(text, source_uri=source_uri)
@@ -95,7 +95,7 @@ def _extract_sieve_with_provenance(text: str, source_uri: str):
 
 def _extract_llm(text: str, model: str) -> list[tuple[str, str, str]]:
     import asyncio
-    from internal.ensemble.live_llm_adapter import LiveLLMAdapter
+    from sum_engine_internal.ensemble.live_llm_adapter import LiveLLMAdapter
     adapter = LiveLLMAdapter(model=model)
     return asyncio.run(adapter.extract_triplets(text))
 
@@ -219,9 +219,9 @@ def cmd_attest(args: argparse.Namespace) -> int:
     # Build the CanonicalBundle via the existing codec path — no
     # reimplementation of Ed25519/HMAC, no reimplementation of canonical
     # tome generation. The CLI is a thin wrapper.
-    from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
-    from internal.ensemble.tome_generator import AutoregressiveTomeGenerator
-    from internal.infrastructure.canonical_codec import CanonicalCodec
+    from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+    from sum_engine_internal.ensemble.tome_generator import AutoregressiveTomeGenerator
+    from sum_engine_internal.infrastructure.canonical_codec import CanonicalCodec
 
     key_manager = _load_ed25519_key(args.ed25519_key) if args.ed25519_key else None
 
@@ -257,7 +257,7 @@ def cmd_attest(args: argparse.Namespace) -> int:
     # axiom back to its source byte range and original sentence excerpt.
     if args.ledger and prov_records is not None:
         import asyncio
-        from internal.infrastructure.akashic_ledger import AkashicLedger
+        from sum_engine_internal.infrastructure.akashic_ledger import AkashicLedger
 
         ledger = AkashicLedger(db_path=args.ledger)
 
@@ -441,7 +441,7 @@ def cmd_verify(args: argparse.Namespace) -> int:
     # logic verify.js runs in Node, same bytes Python produces.
     import math
     import re
-    from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+    from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
 
     algebra = GodelStateAlgebra()  # type: ignore[no-untyped-call]
     pattern = re.compile(r"^The (\S+) (\S+) (.+)\.$")
@@ -504,7 +504,7 @@ def cmd_verify(args: argparse.Namespace) -> int:
 
 def cmd_resolve(args: argparse.Namespace) -> int:
     import asyncio
-    from internal.infrastructure.akashic_ledger import AkashicLedger
+    from sum_engine_internal.infrastructure.akashic_ledger import AkashicLedger
 
     ledger = AkashicLedger(db_path=args.db)
     record = asyncio.run(ledger.get_provenance_record(args.prov_id))

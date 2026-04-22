@@ -12,7 +12,7 @@ sentence must produce NO triple under either extraction path.
 """
 from __future__ import annotations
 
-from internal.algorithms.syntactic_sieve import DeterministicSieve
+from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
 
 
 def _sieve() -> DeterministicSieve:

@@ -31,10 +31,10 @@ class SumRoundtripRunner:
     name: str = "sum.roundtrip"
 
     def run(self, corpus: Corpus) -> Sequence[RoundtripMetrics]:
-        from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
-        from internal.algorithms.syntactic_sieve import DeterministicSieve
-        from internal.ensemble.ouroboros import OuroborosVerifier
-        from internal.ensemble.tome_generator import AutoregressiveTomeGenerator
+        from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+        from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
+        from sum_engine_internal.ensemble.ouroboros import OuroborosVerifier
+        from sum_engine_internal.ensemble.tome_generator import AutoregressiveTomeGenerator
 
         algebra = GodelStateAlgebra()  # type: ignore[no-untyped-call]
         sieve = DeterministicSieve()  # type: ignore[no-untyped-call]

@@ -19,7 +19,7 @@ import hashlib
 import pytest
 from typing import List, Tuple
 
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
 
 
 # ---------------------------------------------------------------------------
@@ -198,7 +198,7 @@ class TestBenchSummary:
 
         # Detect Zig status
         try:
-            from internal.infrastructure.zig_bridge import zig_engine
+            from sum_engine_internal.infrastructure.zig_bridge import zig_engine
             zig_status = "⚡ ZIG ACTIVE" if zig_engine and zig_engine.lib else "🐍 Python fallback"
         except ImportError:
             zig_status = "🐍 Python fallback"

@@ -38,10 +38,10 @@ from sum_cli.main import cmd_verify
 
 def _mint_signed_bundle(signing_key: str | None, with_ed25519: bool) -> dict:
     """Use CanonicalCodec to mint a real, internally consistent bundle."""
-    from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
-    from internal.ensemble.tome_generator import AutoregressiveTomeGenerator
-    from internal.infrastructure.canonical_codec import CanonicalCodec
-    from internal.infrastructure.key_manager import KeyManager
+    from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+    from sum_engine_internal.ensemble.tome_generator import AutoregressiveTomeGenerator
+    from sum_engine_internal.infrastructure.canonical_codec import CanonicalCodec
+    from sum_engine_internal.infrastructure.key_manager import KeyManager
 
     algebra = GodelStateAlgebra()
     tome_gen = AutoregressiveTomeGenerator(algebra)

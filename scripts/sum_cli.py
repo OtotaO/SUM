@@ -34,9 +34,9 @@ if _project_root not in sys.path:
 
 import click
 
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
-from internal.infrastructure.akashic_ledger import AkashicLedger
-from internal.ensemble.confidence_calibrator import ConfidenceCalibrator
+from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from sum_engine_internal.infrastructure.akashic_ledger import AkashicLedger
+from sum_engine_internal.ensemble.confidence_calibrator import ConfidenceCalibrator
 
 
 # ─── Shared boot context ─────────────────────────────────────────────

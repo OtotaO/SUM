@@ -11,7 +11,7 @@ License: Apache License 2.0
 import pytest
 import networkx as nx
 
-from internal.ensemble.gauge_orchestrator import (
+from sum_engine_internal.ensemble.gauge_orchestrator import (
     GaugeTheoreticOrchestrator,
     CommutativityLevel,
 )

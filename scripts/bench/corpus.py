@@ -57,7 +57,7 @@ class JsonCorpus:
         }
 
     Gold triples MUST be pre-canonicalized: lowercased, stripped, and lemmatized
-    to match the output of internal.algorithms.syntactic_sieve.DeterministicSieve.
+    to match the output of sum_engine_internal.algorithms.syntactic_sieve.DeterministicSieve.
     Mismatches caused by un-lemmatized gold are counted as false negatives, not
     reconciled post-hoc. Honesty over flattery.
     """

@@ -22,11 +22,11 @@ import os
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
-from internal.algorithms.syntactic_sieve import DeterministicSieve
-from internal.ensemble.tome_generator import AutoregressiveTomeGenerator
-from internal.ensemble.ouroboros import OuroborosVerifier
-from internal.infrastructure.canonical_codec import CanonicalCodec
+from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
+from sum_engine_internal.ensemble.tome_generator import AutoregressiveTomeGenerator
+from sum_engine_internal.ensemble.ouroboros import OuroborosVerifier
+from sum_engine_internal.infrastructure.canonical_codec import CanonicalCodec
 
 
 def generate_synthetic_triplets(n: int):

@@ -35,9 +35,9 @@ from datetime import datetime, timezone
 from typing import List, Tuple
 from dataclasses import dataclass, field
 
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
-from internal.algorithms.syntactic_sieve import DeterministicSieve
-from internal.ensemble.tome_generator import (
+from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
+from sum_engine_internal.ensemble.tome_generator import (
     AutoregressiveTomeGenerator,
     CANONICAL_FORMAT_VERSION,
 )
@@ -47,7 +47,7 @@ logger = logging.getLogger(__name__)
 
 def _zig():
     try:
-        from internal.infrastructure.zig_bridge import zig_engine
+        from sum_engine_internal.infrastructure.zig_bridge import zig_engine
         return zig_engine
     except ImportError:
         return None

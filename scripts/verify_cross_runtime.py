@@ -2,7 +2,7 @@
 
 Locks the load-bearing contract for the single-file deployment moonshot:
 SUM's CanonicalBundle wire format must round-trip between the Python
-signer (``internal.infrastructure.canonical_codec.CanonicalCodec``) and
+signer (``sum_engine_internal.infrastructure.canonical_codec.CanonicalCodec``) and
 the JavaScript verifier (``standalone_verifier/verify.js``) at byte level
 on the canonical-tome side and at integer level on the Gödel state side.
 
@@ -79,9 +79,9 @@ def _mint_bundle(
     Pass ``key_manager`` to add an Ed25519 signature — used by K3/K4
     to exercise the Node verifier's SubtleCrypto path.
     """
-    from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
-    from internal.ensemble.tome_generator import AutoregressiveTomeGenerator
-    from internal.infrastructure.canonical_codec import CanonicalCodec
+    from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+    from sum_engine_internal.ensemble.tome_generator import AutoregressiveTomeGenerator
+    from sum_engine_internal.infrastructure.canonical_codec import CanonicalCodec
 
     algebra = GodelStateAlgebra()
     gen = AutoregressiveTomeGenerator(algebra)
@@ -158,7 +158,7 @@ def k2_vc2_named_rejection() -> bool:
         Ed25519PrivateKey,
     )
 
-    from internal.infrastructure.verifiable_credential import (
+    from sum_engine_internal.infrastructure.verifiable_credential import (
         make_credential,
         sign_credential,
     )
@@ -246,7 +246,7 @@ def k3_ed25519_round_trip() -> bool:
     """
     import tempfile as _tempfile
 
-    from internal.infrastructure.key_manager import KeyManager
+    from sum_engine_internal.infrastructure.key_manager import KeyManager
 
     km = KeyManager(key_dir=_tempfile.mkdtemp())
     bundle = _mint_bundle(
@@ -291,7 +291,7 @@ def k4_tampered_ed25519_rejected() -> bool:
     """
     import tempfile as _tempfile
 
-    from internal.infrastructure.key_manager import KeyManager
+    from sum_engine_internal.infrastructure.key_manager import KeyManager
 
     km = KeyManager(key_dir=_tempfile.mkdtemp())
     bundle = _mint_bundle(

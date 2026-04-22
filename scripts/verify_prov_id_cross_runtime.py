@@ -2,7 +2,7 @@
 
 Asserts Python and JavaScript produce the SAME content-addressable
 prov_id for every ProvenanceRecord shape SUM might emit. If Python's
-``internal.infrastructure.provenance.compute_prov_id`` and JS's
+``sum_engine_internal.infrastructure.provenance.compute_prov_id`` and JS's
 ``single_file_demo/provenance.js`` computeProvId ever disagree, every
 future cross-runtime provenance link breaks silently — an axiom
 ingested via the Python ledger and queried via the JS artifact would
@@ -30,7 +30,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from internal.infrastructure.provenance import (
+from sum_engine_internal.infrastructure.provenance import (
     EXCERPT_MAX_CHARS,
     ProvenanceRecord,
     compute_prov_id,

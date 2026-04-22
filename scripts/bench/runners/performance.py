@@ -26,7 +26,7 @@ class SumPerformanceRunner:
     seed: int = 42
 
     def run(self) -> Sequence[PerformanceMetrics]:
-        from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+        from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
 
         results: list[PerformanceMetrics] = []
         for size in self.corpus_sizes:

@@ -13,7 +13,7 @@ import os
 import asyncio
 import sqlite3
 import pytest
-from internal.infrastructure.akashic_ledger import (
+from sum_engine_internal.infrastructure.akashic_ledger import (
     AkashicLedger,
     GENESIS_HASH,
     compute_event_hash,

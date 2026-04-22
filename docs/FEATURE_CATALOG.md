@@ -39,13 +39,13 @@ Results from this pass are inline below. When re-running: match each feature's "
 
 ---
 
-## Layer 1 — Symbolic core (`internal/algorithms/`)
+## Layer 1 — Symbolic core (`sum_engine_internal/algorithms/`)
 
 ### 1. Deterministic prime derivation — `sha256_64_v1` ✅
 
 Maps each canonicalised axiom key to a unique prime via SHA-256 of the key's UTF-8 bytes → first 8 bytes big-endian → next prime ≥ seed (via 12-witness deterministic Miller-Rabin, provably correct for n < 3.3×10²⁴).
 
-Verify: `python -c "from internal.algorithms.semantic_arithmetic import GodelStateAlgebra as G; print(G().get_or_mint_prime('alice','like','cat'))"`
+Verify: `python -c "from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra as G; print(G().get_or_mint_prime('alice','like','cat'))"`
 Expected: `1689700543754894009`
 Result (2026-04-21): **PASS** — byte-identical to Node (`verify.js` self-test vector 3), browser inlined JS, and the 12-fixture Gödel harness (`scripts/verify_godel_cross_runtime.py`).
 
@@ -131,7 +131,7 @@ Result: **PASS** (within broader batch).
 
 ---
 
-## Layer 2 — Ensemble (`internal/ensemble/`)
+## Layer 2 — Ensemble (`sum_engine_internal/ensemble/`)
 
 ### 12. Canonical tome generation ✅
 
@@ -228,7 +228,7 @@ Result: **PASS** (within broader batch).
 
 ### 24. Venn-Abers conformal calibration ✅
 
-`internal/ensemble/venn_abers.py` — distribution-free confidence intervals. 18 tests; fixture loader shipped; calibration-set authoring still pending.
+`sum_engine_internal/ensemble/venn_abers.py` — distribution-free confidence intervals. 18 tests; fixture loader shipped; calibration-set authoring still pending.
 
 Verify: `pytest Tests/test_venn_abers.py -q`
 Expected: 18 passed
@@ -268,7 +268,7 @@ Result: **PASS** in isolation (cross-file polution in full-suite runs).
 
 ### 29. Tome sliders (5-axis UX surface) ✅
 
-`internal/ensemble/tome_sliders.py` — `TomeSliders(density, length, formality, audience, perspective)`. Density slider actioned on the deterministic canonical path via lexicographic axiom subsetting; the other four axes captured as metadata headers for future LLM-gated rendering.
+`sum_engine_internal/ensemble/tome_sliders.py` — `TomeSliders(density, length, formality, audience, perspective)`. Density slider actioned on the deterministic canonical path via lexicographic axiom subsetting; the other four axes captured as metadata headers for future LLM-gated rendering.
 
 Verify: `pytest Tests/test_tome_sliders.py -q`
 Expected: 21 passed
@@ -283,7 +283,7 @@ Result: **PASS**.
 
 ---
 
-## Layer 3 — Infrastructure (`internal/infrastructure/`)
+## Layer 3 — Infrastructure (`sum_engine_internal/infrastructure/`)
 
 ### 31. Akashic Ledger — event-sourced persistence ✅
 
@@ -367,7 +367,7 @@ Result: **PASS**.
 
 ### 41. JCS canonicalisation (RFC 8785, pure Python) ✅
 
-`internal/infrastructure/jcs.py` — byte-identical to single_file_demo/jcs.js across 26 fixtures.
+`sum_engine_internal/infrastructure/jcs.py` — byte-identical to single_file_demo/jcs.js across 26 fixtures.
 
 Verify: `pytest Tests/test_jcs.py -q`
 Expected: 30 passed
@@ -375,7 +375,7 @@ Result: **PASS** — 30/30.
 
 ### 42. W3C Verifiable Credentials 2.0 (`eddsa-jcs-2022`) ✅
 
-`internal/infrastructure/verifiable_credential.py` — Ed25519 Data Integrity proof over SHA-256(JCS(proofConfig)) ‖ SHA-256(JCS(document)). Multibase base58btc `proofValue`.
+`sum_engine_internal/infrastructure/verifiable_credential.py` — Ed25519 Data Integrity proof over SHA-256(JCS(proofConfig)) ‖ SHA-256(JCS(document)). Multibase base58btc `proofValue`.
 
 Verify: `pytest Tests/test_verifiable_credential.py -q`
 Expected: 28 passed
@@ -383,7 +383,7 @@ Result: **PASS** — 28/28.
 
 ### 43. Scheme registry ✅
 
-`internal/infrastructure/scheme_registry.py` — `CURRENT_SCHEME = "sha256_64_v1"`; v2 path plumbed but not current.
+`sum_engine_internal/infrastructure/scheme_registry.py` — `CURRENT_SCHEME = "sha256_64_v1"`; v2 path plumbed but not current.
 
 Verify: `pytest Tests/test_scheme_registry.py -q`
 Expected: pass (deferred — imports jwt-dependent module indirectly).
@@ -391,7 +391,7 @@ Result: deferred.
 
 ### 44. State encoding ✅
 
-`internal/infrastructure/state_encoding.py` — `to_hex`, hex↔int conversions for bundle emission.
+`sum_engine_internal/infrastructure/state_encoding.py` — `to_hex`, hex↔int conversions for bundle emission.
 
 Verify: `pytest Tests/test_128bit_parity.py -q`
 Expected: all pass
@@ -407,7 +407,7 @@ Result: **PASS**.
 
 ### 46. Rate limiter 🔧
 
-`internal/infrastructure/rate_limiter.py` — in-memory sliding-window. **Tested but NOT wired** into `api/quantum_router.py` — THREAT_MODEL §3.6 flags this honestly.
+`sum_engine_internal/infrastructure/rate_limiter.py` — in-memory sliding-window. **Tested but NOT wired** into `api/quantum_router.py` — THREAT_MODEL §3.6 flags this honestly.
 
 Verify: `pytest Tests/test_rate_limiter.py -q`
 Expected: all pass

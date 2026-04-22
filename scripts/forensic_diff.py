@@ -27,8 +27,8 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
-from internal.ensemble.tome_generator import AutoregressiveTomeGenerator
+from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from sum_engine_internal.ensemble.tome_generator import AutoregressiveTomeGenerator
 
 
 def factorize_state(algebra: GodelStateAlgebra, state: int) -> dict:

@@ -22,16 +22,16 @@ from datetime import datetime
 
 from quantum_main import app
 from api.quantum_router import kos
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
-from internal.algorithms.syntactic_sieve import DeterministicSieve
+from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
 
 spacy = pytest.importorskip("spacy", reason="spacy not installed")
-from internal.ensemble.tome_generator import (
+from sum_engine_internal.ensemble.tome_generator import (
     AutoregressiveTomeGenerator,
     CANONICAL_FORMAT_VERSION,
 )
-from internal.ensemble.ouroboros import OuroborosVerifier
-from internal.infrastructure.canonical_codec import (
+from sum_engine_internal.ensemble.ouroboros import OuroborosVerifier
+from sum_engine_internal.infrastructure.canonical_codec import (
     CanonicalCodec,
     InvalidSignatureError,
 )

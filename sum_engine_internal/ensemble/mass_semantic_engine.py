@@ -19,11 +19,11 @@ import asyncio
 import logging
 from typing import Callable, Awaitable, List, Tuple, Dict, Any
 
-from internal.algorithms.semantic_arithmetic import (
+from sum_engine_internal.algorithms.semantic_arithmetic import (
     GodelStateAlgebra,
     SemanticPrimeNumberTheorem,
 )
-from internal.ensemble.extraction_validator import ExtractionValidator
+from sum_engine_internal.ensemble.extraction_validator import ExtractionValidator
 
 logger = logging.getLogger(__name__)
 

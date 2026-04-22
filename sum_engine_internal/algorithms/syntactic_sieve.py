@@ -18,7 +18,7 @@ import re
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
 
-from internal.infrastructure.provenance import (
+from sum_engine_internal.infrastructure.provenance import (
     EXCERPT_MAX_CHARS,
     ProvenanceRecord,
     sha256_uri_for_text,

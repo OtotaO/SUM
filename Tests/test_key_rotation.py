@@ -11,10 +11,10 @@ License: Apache License 2.0
 import math
 import pytest
 
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
-from internal.ensemble.tome_generator import AutoregressiveTomeGenerator
-from internal.infrastructure.canonical_codec import CanonicalCodec
-from internal.infrastructure.key_manager import KeyManager
+from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from sum_engine_internal.ensemble.tome_generator import AutoregressiveTomeGenerator
+from sum_engine_internal.infrastructure.canonical_codec import CanonicalCodec
+from sum_engine_internal.infrastructure.key_manager import KeyManager
 
 
 SIGNING_KEY = "rotation-test-key-32-bytes!!!!!"

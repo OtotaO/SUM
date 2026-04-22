@@ -32,7 +32,7 @@ from pathlib import Path
 from typing import Optional, Union
 from urllib.parse import urlparse
 
-from internal.ensemble.venn_abers import ConfidenceInterval, VennAbersCalibrator
+from sum_engine_internal.ensemble.venn_abers import ConfidenceInterval, VennAbersCalibrator
 
 logger = logging.getLogger(__name__)
 

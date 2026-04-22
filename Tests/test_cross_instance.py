@@ -11,7 +11,7 @@ License: Apache License 2.0
 
 import math
 import pytest
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
 
 
 class TestCrossInstanceConsistency:

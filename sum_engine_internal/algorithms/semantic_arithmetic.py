@@ -28,7 +28,7 @@ from typing import Dict, List, Tuple, Set
 
 import sympy
 
-from internal.infrastructure.scheme_registry import CURRENT_SCHEME
+from sum_engine_internal.infrastructure.scheme_registry import CURRENT_SCHEME
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +48,7 @@ class PrimeCollisionError(Exception):
 def _get_zig_engine():
     """Lazy import of the Zig FFI bridge singleton."""
     try:
-        from internal.infrastructure.zig_bridge import zig_engine
+        from sum_engine_internal.infrastructure.zig_bridge import zig_engine
         return zig_engine
     except ImportError:
         return None
@@ -121,7 +121,7 @@ class GodelStateAlgebra:
     @staticmethod
     def _canonicalize_predicate(predicate: str) -> str:
         """Normalize a free-form predicate to the canonical vocabulary."""
-        from internal.algorithms.predicate_canon import canonicalize
+        from sum_engine_internal.algorithms.predicate_canon import canonicalize
         return canonicalize(predicate)
 
     # ------------------------------------------------------------------

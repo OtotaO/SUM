@@ -17,15 +17,15 @@ import sqlite3
 import asyncio
 import pytest
 
-from internal.ensemble.confidence_calibrator import (
+from sum_engine_internal.ensemble.confidence_calibrator import (
     ConfidenceCalibrator,
     DEFAULT_CONFIDENCE,
     CONTRADICTION_PENALTY,
     load_venn_abers_fixture,
 )
-from internal.ensemble.venn_abers import ConfidenceInterval, VennAbersCalibrator
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
-from internal.infrastructure.akashic_ledger import AkashicLedger
+from sum_engine_internal.ensemble.venn_abers import ConfidenceInterval, VennAbersCalibrator
+from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from sum_engine_internal.infrastructure.akashic_ledger import AkashicLedger
 
 
 # ─── Source-Type Heuristic Tests ─────────────────────────────────────

@@ -25,16 +25,16 @@ from typing import Set, Callable
 
 import httpx
 
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
-from internal.ensemble.epistemic_arbiter import kos_telemetry
-from internal.infrastructure.scheme_registry import CURRENT_SCHEME, is_compatible
+from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from sum_engine_internal.ensemble.epistemic_arbiter import kos_telemetry
+from sum_engine_internal.infrastructure.scheme_registry import CURRENT_SCHEME, is_compatible
 
 logger = logging.getLogger(__name__)
 
 
 def _zig():
     try:
-        from internal.infrastructure.zig_bridge import zig_engine
+        from sum_engine_internal.infrastructure.zig_bridge import zig_engine
         return zig_engine
     except ImportError:
         return None

@@ -15,8 +15,8 @@ import math
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pytest
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
-from internal.ensemble.autonomous_agent import AutonomousCrystallizer
+from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from sum_engine_internal.ensemble.autonomous_agent import AutonomousCrystallizer
 
 
 # ─── Mock helpers ─────────────────────────────────────────────────────

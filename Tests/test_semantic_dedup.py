@@ -16,13 +16,13 @@ Tests:
 import math
 import pytest
 
-from internal.ensemble.semantic_dedup import (
+from sum_engine_internal.ensemble.semantic_dedup import (
     SemanticDeduplicator,
     DedupResult,
     PREDICATE_SYNONYMS,
 )
-from internal.algorithms.semantic_arithmetic import GodelStateAlgebra
-from internal.infrastructure.akashic_ledger import AkashicLedger
+from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from sum_engine_internal.infrastructure.akashic_ledger import AkashicLedger
 
 
 # ─── Normalization Tests ─────────────────────────────────────────────
