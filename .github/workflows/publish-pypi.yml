@@ -1,0 +1,79 @@
+name: Publish to PyPI
+
+# Triggered by pushing a version tag (vX.Y.Z). Two jobs, in order:
+#   1. build    — produce sdist + wheel from pyproject.toml and upload
+#                 as an artifact.
+#   2. publish  — download the artifact and upload to PyPI via OIDC
+#                 trusted publishing (no API token stored in the repo).
+#
+# Uses PyPI's Trusted Publisher feature: the `publish` job claims an
+# OIDC token, PyPI verifies it matches the registered pending publisher
+# (project=sum-engine, owner=OtotaO, repo=SUM, workflow=publish-pypi.yml,
+# environment=pypi), and the upload proceeds. No PYPI_API_TOKEN secret
+# needed — the trust relationship is established once in the PyPI UI.
+#
+# The `pypi` GitHub Actions environment gates the publish step behind
+# optional required-reviewers / wait-timer rules you configure in the
+# repo settings — protects against a rogue merge publishing an
+# unintended release.
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build distribution
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Build sdist + wheel
+      run: |
+        python -m pip install --upgrade pip build
+        python -m build --sdist --wheel --outdir dist
+
+    - name: Sanity-check wheel installs and sum binary works
+      # Belt-and-suspenders — pypi-install-smoke in quantum-ci.yml runs
+      # on every push, but the release path is rare and expensive. If
+      # something slipped between the last main-branch smoke and the
+      # tag, catch it here before uploading to the permanent record.
+      run: |
+        python -m venv /tmp/release-smoke
+        /tmp/release-smoke/bin/pip install --quiet "dist/$(ls dist | grep '\.whl$')"
+        /tmp/release-smoke/bin/sum --version
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: dist
+        path: dist/
+
+  publish:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/sum-engine
+    permissions:
+      id-token: write  # Required for OIDC trusted-publisher auth.
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        name: dist
+        path: dist/
+
+    - name: Publish to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      # No `password:` — OIDC handles it. No `repository-url:` — the
+      # action defaults to https://upload.pypi.org/legacy/ which is
+      # correct for the production index. TestPyPI dry-runs get their
+      # own tag/workflow if/when we want them.
