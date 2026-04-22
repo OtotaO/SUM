@@ -47,7 +47,7 @@ Every headline number below is reproducible via `python -m scripts.bench.run_ben
 | `record_provenance_batch` sustained throughput | **~22 k ops/sec** (10.2× the single-write path) | empirical-benchmark |
 | Merkle-chain integrity under concurrent writers | holds (50–200-event bursts) | **provable** (post `9c4139d`) |
 | Cross-runtime byte-identity fixtures | **131 / 131 passing** across Python ↔ Node.js ↔ Browser JS | empirical-benchmark |
-| Test suite | **907 collected** (4 known jwt-missing collection errors) | continuous |
+| Test suite | **1021 collected** (post v0.1.0, with `.[dev]` extras installed) | **provable** |
 
 ---
 
@@ -425,9 +425,9 @@ These are vision items; the shipped today is the static artifact above.
 
 ---
 
-## 🛡️ Verification: 907-Test Suite + 131 Cross-Runtime Fixtures
+## 🛡️ Verification: 1021-Test Suite + 131 Cross-Runtime Fixtures
 
-The test suite covers both proven invariants and empirically-measured properties; each assertion is scoped to the epistemic status of the thing it tests. 907 tests collected; 4 known collection errors are the jwt-module-missing issue in the quantum-router test stack, tracked as an ops item, not a regression.
+The test suite covers both proven invariants and empirically-measured properties; each assertion is scoped to the epistemic status of the thing it tests. 1021 tests collected with the `[dev]` extras installed (`pip install -e '.[sieve,dev]'` or `make install`). CI runs the full suite every push via `.github/workflows/quantum-ci.yml`.
 
 ```text
 Provable (deterministic code + tests that enforce the proof):

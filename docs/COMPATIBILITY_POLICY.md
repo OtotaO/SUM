@@ -1,7 +1,14 @@
 # Compatibility Policy
 
 **Version:** 1.0.0
-**Date:** 2026-03-22
+**Date:** 2026-03-22 (confirmed current as of `sum-engine 0.1.0` — 2026-04-22)
+
+> This policy governs on-wire artifacts (CanonicalBundles, canonical tome
+> format, prime scheme). It is unchanged by the v0.1.0 PyPI release:
+> `sum-engine 0.1.0` ships the existing `sha256_64_v1` scheme and
+> `canonical_format_version 1.0.0` exactly as specified below. The `sum`
+> CLI itself follows the Python-package semver track independently — its
+> breaking-change commitments live in [`CHANGELOG.md`](../CHANGELOG.md).
 
 ---
 

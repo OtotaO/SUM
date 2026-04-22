@@ -5,6 +5,39 @@ short. Repo-wide engineering conventions live in `docs/`; this file is for
 rules a Claude Code session needs to know that are not otherwise obvious from
 the code.
 
+## Onboarding a memory-less session
+
+If this is your first turn in this repo, read these files in order and you
+will have the full picture. Each is under a contract to be honest (see
+contracts below for PORTFOLIO.md specifically); stale claims are bugs.
+
+1. **[`PORTFOLIO.md`](PORTFOLIO.md)** — current-state snapshot. What ships
+   today, what proves it, what's next. Every metric row carries
+   `**proved**` or `**empirical-benchmark**`.
+2. **[`CHANGELOG.md`](CHANGELOG.md)** — release history. The `[0.1.0]`
+   entry is the first PyPI release (2026-04-22); anything since lives
+   under `[Unreleased]`.
+3. **[`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md)** — proved-vs-
+   measured discipline for every claim in the repo. Section 1.3.1 covers
+   the cross-runtime Ed25519 trust triangle (Python ↔ Node ↔ Browser).
+4. **[`docs/FEATURE_CATALOG.md`](docs/FEATURE_CATALOG.md)** — 103 numbered
+   features, each with a reproducible verification command. Summary at
+   the bottom gives the Production / Scaffolded / Designed counts.
+5. **[`Makefile`](Makefile)** — every dev command canonicalised. `make help`
+   renders the full list. Common ones: `make install`, `make test`,
+   `make xruntime`, `make portfolio`, `make smoke`.
+
+Shipping surface at the current HEAD: the `sum` binary on PyPI
+(`pip install sum-engine[sieve]`), the Node verifier in
+`standalone_verifier/`, and the browser demo in `single_file_demo/`.
+All three verify Ed25519 on the same bundle bytes; the cross-runtime
+harness (`make xruntime` → K1 / K1-mw / K2 / K3 / K4) proves this and
+runs on every PR.
+
+If you're about to make a change and want to know what's already deferred,
+check the task list for items marked "deferred" (`internal/` →
+`sum_engine_internal/` rename, Wikidata QIDs, AT Protocol Lexicon).
+
 ## PORTFOLIO.md contract
 
 `PORTFOLIO.md` at the repo root is the body of `sumequities.com/projects/sum`.
