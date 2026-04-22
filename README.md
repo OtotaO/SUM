@@ -40,6 +40,40 @@ Every headline number below is reproducible via `python -m scripts.bench.run_ben
 
 ---
 
+## ⚡ 60-Second Quick Start (CLI)
+
+Three commands, no server, no API keys. The `sum` binary ships the full mint-and-verify loop.
+
+```bash
+# 1. Install (spaCy extractor path; no LLM key required)
+pip install -e '.[sieve]'              # from a repo clone today
+#   (PyPI: `pip install sum-engine[sieve]` — shipping soon)
+
+# 2. Mint a CanonicalBundle from prose on stdin
+echo "Alice likes cats. Bob owns a dog." | sum attest --extractor=sieve > bundle.json
+
+# 3. Verify — structural reconstruction of the Gödel state integer
+sum verify --input bundle.json
+# → sum: ✓ verified 2 axiom(s), state integer matches (hmac=absent, ed25519=absent)
+```
+
+### Want real cryptographic attestation? Two opt-in flags:
+
+```bash
+# Ed25519 public-key (W3C VC 2.0 compatible)
+python -m scripts.generate_did_web --domain your.example --private-key-out keys/issuer.pem
+sum attest --ed25519-key keys/issuer.pem < prose.txt | sum verify --strict
+# → hmac=absent, ed25519=verified   (verifiable by any W3C VC 2.0 verifier)
+
+# HMAC (shared-secret peer)
+sum attest --signing-key "$MY_HMAC_KEY" < prose.txt | sum verify --signing-key "$MY_HMAC_KEY" --strict
+# → hmac=verified, ed25519=absent
+```
+
+The same bundle is verifiable cross-runtime: Python (`sum verify`), Node (`standalone_verifier/verify.js`), and the browser (`single_file_demo/index.html` via SubtleCrypto). See [`docs/DID_SETUP.md`](https://github.com/OtotaO/SUM/blob/main/docs/DID_SETUP.md) for the full did:key / did:web issuer setup.
+
+---
+
 ## 🌱 The Evolution: From Simple to Sublime
 
 ### Genesis: The Original Vision (2023)
@@ -221,7 +255,9 @@ tome = generator.generate_controlled(state, sliders)
 
 ---
 
-## 🚀 Quick Start: From Zero to Semantic Algebra
+## 🚀 Full-Stack Quick Start (API + Web Interface)
+
+*For the agentic CLI path, see the [60-Second Quick Start](#-60-second-quick-start-cli) above.*
 
 ### 1. Boot the Transformation Engine
 ```bash
