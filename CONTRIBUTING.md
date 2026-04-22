@@ -20,14 +20,17 @@ cd SUM
 # Create a virtual environment
 python -m venv .venv && source .venv/bin/activate
 
-# Install dependencies
-pip install -r requirements-prod.txt
+# Install dependencies (or: `make install` does all of this in one shot)
+pip install -e '.[sieve,dev]'
 python -m spacy download en_core_web_sm
 
-# Run the test suite (907 tests collected as of 2026-04-20 — 4 known
-# collection errors are the jwt-missing issue in quantum-router-dependent
-# phase tests, tracked as ops, not a regression)
-python -m pytest Tests/ -v
+# One-time: enable the PORTFOLIO.md warn-hook for local commits
+make install-hooks
+
+# Run the test suite (1000+ tests; see Makefile for shortcuts)
+make test
+# Fast inner loop (CLI + codec + VC only):
+make test-cli
 
 # Run the 21-check Fortress gate
 python scripts/verify_fortress.py --json
@@ -52,9 +55,12 @@ python -m pytest Tests/ -v  # Look for "⚡ BARE-METAL ZIG CORE ENGAGED ⚡"
 
 | Gate | Command | Expected |
 |------|---------|----------|
-| Test Suite | `python -m pytest Tests/ -v` | 641 passed |
-| Fortress | `python scripts/verify_fortress.py --json` | 21/21 |
+| Test Suite | `make test` (or `python -m pytest Tests/ -v`) | 1000+ passed |
+| Fortress | `make fortress` | 21/21 |
 | Zig Tests | `cd core-zig && zig build test` | All pass |
+| Cross-Runtime Harness | `make xruntime` | K1/K1-mw/K2/K3/K4 all PASS |
+| PORTFOLIO contract | `make portfolio` | OK, every metric row labelled |
+| pip install smoke | `make wheel && make smoke` | attest\|verify round-trip ✓ |
 
 ## 📁 Project Structure
 
@@ -66,7 +72,10 @@ internal/
 ├── ensemble/       # Higher-order systems (arbiter, ouroboros, triggers)
 ├── infrastructure/ # Persistence, FFI, transport (akashic, zig_bridge, codec)
 core-zig/           # Bare-metal Zig core (C-ABI exports)
-Tests/              # 641 verified tests
+sum_cli/            # `sum` CLI (attest / verify / resolve)
+standalone_verifier/ # Node.js verifier (zero npm deps)
+single_file_demo/   # Browser demo (SubtleCrypto Ed25519 verify)
+Tests/              # 1000+ tests; see Makefile for fast subsets
 scripts/            # Fortress gate, swarm launchers
 ```
 
