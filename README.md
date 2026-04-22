@@ -10,6 +10,17 @@
 </em></p>
 
 [![SUM Knowledge OS CI](https://github.com/OtotaO/SUM/actions/workflows/quantum-ci.yml/badge.svg)](https://github.com/OtotaO/SUM/actions/workflows/quantum-ci.yml)
+[![PyPI — sum-engine](https://img.shields.io/pypi/v/sum-engine.svg?label=PyPI%20sum-engine)](https://pypi.org/project/sum-engine/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+
+```bash
+pip install 'sum-engine[sieve]'
+echo "Alice likes cats. Bob owns a dog." | sum attest --extractor=sieve | sum verify
+# → sum: ✓ verified 2 axiom(s), state integer matches (hmac=absent, ed25519=absent)
+```
+
+Portfolio-facing overview: [`PORTFOLIO.md`](PORTFOLIO.md). Engineering onboarding + deep-dive: below.
 
 > **From Tags to Tomes and Back Again — canonical round-trip proven, full pipeline measured.**
 
