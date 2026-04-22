@@ -542,12 +542,21 @@ Verify: `python -m scripts.verify_godel_cross_runtime`
 Expected: `ALL FIXTURES AGREE`
 Result: **PASS**.
 
-### 63. CanonicalBundle cross-runtime portability (K1 / K2) ✅
+### 63. CanonicalBundle cross-runtime portability (K1 / K1-mw / K2 / K3 / K4) ✅
 
-`scripts/verify_cross_runtime.py` — K1: Python mints bundle → `node verify.js` verifies ✅. K2: Python mints VC 2.0 → `verify.js` cleanly rejects with named error (not VC 2.0 yet).
+`scripts/verify_cross_runtime.py` exercises five kill-experiments locking the Python ↔ Node trust triangle:
+
+| Check | Mint | Verify | Asserts |
+|---|---|---|---|
+| K1 | Python CanonicalBundle | `node verify.js` | structural round-trip (state integer) |
+| K1-mw | Python, multi-word objects | `node verify.js` | `(.+)` object regex parity on both sides |
+| K2 | Python VC 2.0 | `node verify.js` | clean rejection with named error (verify.js is legacy ABI, not VC 2.0) |
+| K3 | Python CanonicalCodec + KeyManager | `node verify.js` via SubtleCrypto | `Ed25519: ✓ verified (Node SubtleCrypto)` |
+| K4 | K3 mint + post-sign tome tampering | `node verify.js` | `Ed25519: ✗ INVALID` — signature actually checked, not just reported |
 
 Verify: `python -m scripts.verify_cross_runtime`
-Expected: `ALL CHECKS PASSED` (K1 PASS + K2 PASS)
+Expected: `CROSS-RUNTIME PORTABILITY HARNESS: ALL CHECKS PASSED` (K1 / K1-mw / K2 / K3 / K4 all PASS)
+CI: runs on every PR (`.github/workflows/quantum-ci.yml::cross-runtime-harness`, Node 22).
 Result: **PASS**.
 
 ### 64. Browser-minted bundle validates under `node verify.js` ✅
@@ -769,16 +778,67 @@ Status: pending user action.
 
 ---
 
+## Layer 8 — Agentic CLI (`sum_cli/`)
+
+### 98. `sum` CLI binary — agentic-first entry point ✅
+
+`pip install sum-engine` installs the `sum` binary on PATH with subcommands `attest`, `verify`, `resolve`. Stdin/stdout JSON contract, Unix-composable (`sum attest | jq`, `curl -d @bundle.json`). Under 100 ms cold-start for `sum --help` / `sum --version` (heavy imports lazy).
+
+Verify: `pip install -e '.[sieve]' && echo "Alice likes cats." | sum attest --extractor=sieve | sum verify`
+Expected: `sum: ✓ verified 1 axiom(s)`
+Result: **PASS**.
+
+### 99. `sum verify` — cryptographic signature verification ✅
+
+Not just structural reconstruction — verifies HMAC (when `--signing-key` supplied) AND Ed25519 (always, self-contained via embedded public key). `--strict` mode fails if no signature is verifiable. JSON result carries `signatures: {hmac, ed25519}` with values in `{verified, skipped, absent, invalid}`.
+
+Verify: `Tests/test_sum_cli_verify.py` (15 cases pinning every branch)
+Expected: all 15 pass
+Result: **PASS**.
+
+### 100. `sum attest --ed25519-key` — agentic public-key attestation ✅
+
+One flag to mint W3C-VC-2.0-compatible bundles. Pointed at a PEM produced by `python -m scripts.generate_did_web`, emits `public_signature` + `public_key` verifiable by any DIF-conformant verifier. Composes cleanly with `--signing-key` (dual HMAC + Ed25519).
+
+Verify: `Tests/test_sum_cli_attest_ed25519.py` (6 cases — round-trip, dual, tampered, error paths)
+Expected: all 6 pass
+Result: **PASS**.
+
+### 101. `sum attest --ledger` — byte-level provenance recording ✅
+
+Closes the attest → resolve loop. When set, the sieve extractor path writes per-triple ProvenanceRecords (source URI, byte range, sentence excerpt, extractor ID) to an AkashicLedger at the given SQLite path and attaches the content-addressable prov_ids to `bundle.sum_cli.prov_ids`. `sum resolve <prov_id> --db DB` walks from axiom back to originating byte span.
+
+Verify: `Tests/test_sum_cli_ledger.py` (5 cases — prov_ids emitted, resolve round-trip, LLM rejection with pointer, Ed25519 composition)
+Expected: all 5 pass
+Result: **PASS**.
+
+### 102. Ed25519 verification in browser demo (SubtleCrypto) ✅
+
+`single_file_demo/index.html::verifyEd25519InBrowser` uses Web Crypto's native Ed25519 (Chrome 113+, Firefox 129+, Safari 17+). A bundle with a tampered tome and swapped `public_key` now fails the in-browser verify, not just the CLI. Falls back to `'present (browser lacks Ed25519; use CLI)'` on older browsers — never a false ✓.
+
+Verify: Python mints Ed25519 bundle → Node 22's identical SubtleCrypto API (same bytes, same semantics as browser) reports `verified`. Tampered tome → `invalid`. Stripped fields → `absent`.
+Result: **PASS** (covered by cross-runtime harness K3/K4 — feature 63).
+
+### 103. `pip install sum-engine` fresh-venv smoke ✅
+
+CI job `pypi-install-smoke` in `.github/workflows/quantum-ci.yml`: every commit on main runs `python -m build`, pip-installs the wheel in a throw-away venv sharing nothing with the repo, and executes `echo prose | sum attest | sum verify`. Catches packaging regressions before the next PyPI publish rather than during it.
+
+Verify: `gh run view <latest>` on main, job `pypi-install-smoke`
+Expected: job passes with `sum: ✓ verified …`
+Result: **PASS**.
+
+---
+
 ## Summary counts
 
-Production ✅: **76** features tested green this session.
+Production ✅: **82** features tested green (76 from the prior session pass + features 98–103: `sum` CLI binary, signature-verifying `sum verify`, `sum attest --ed25519-key`, `sum attest --ledger`, in-browser Ed25519, PyPI-install smoke CI).
 Scaffolded 🔧: **14** features — tests pass, production activation pending. All catalogued in `docs/MODULE_AUDIT.md` with activation checklists.
 Designed 📄: **2** features (sha256_128_v2 promotion, Pages live URL).
 
 Cross-cutting coverage:
 - pytest batch-1 (core Layer-1–3): **300 passed**
 - pytest batch-2 (broader Layer-1–3 + bench): **291 passed**
-- Cross-runtime harnesses: **4 / 4 green** (CanonicalBundle K1+K2, JCS, prov_id, Gödel)
+- Cross-runtime harnesses: **5 / 5 green** — CanonicalBundle K1/K1-mw/K2/K3/K4 (structural + Ed25519 Python ↔ Node), JCS, prov_id, Gödel
 - JS self-tests: **50 / 50 green** (30 JCS + 20 provenance)
 - Node verifier self-tests: **28 / 28 green** (10 v1 + 18 v2-parity)
 - Bench: **seed_v1 F1 = 1.000 / canonical drift 0.00 %**, **seed_v2 F1 = 0.762 with precision 1.000 / canonical drift 0.00 %**
