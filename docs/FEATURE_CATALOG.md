@@ -768,7 +768,7 @@ Result: **PASS** (file present; no behaviour change required).
 
 ### 96. Deployment runbook ✅
 
-README "Single-File Deployment — Cloudflare Pages" section names the framework preset, output directory, wrangler CLI command, and v1 Pages Function upgrade path.
+README "Single-File Deployment — Cloudflare Pages" section names the framework preset, output directory, wrangler CLI command, and the (now-shipped) Pages Function fallback. The hosted-demo LLM proxy (`single_file_demo/functions/api/complete.ts` — Anthropic preferred / OpenAI fallback / optional CF AI Gateway) ships alongside the static assets and serves as the middle leg between artifact-runtime extraction and the naive-tokeniser fallback. See README §"Hosted-demo LLM proxy".
 Result: **PASS**.
 
 ### 97. Cloudflare Pages live URL 📄

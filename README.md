@@ -47,7 +47,7 @@ Every headline number below is reproducible via `python -m scripts.bench.run_ben
 | `record_provenance_batch` sustained throughput | **~22 k ops/sec** (10.2× the single-write path) | empirical-benchmark |
 | Merkle-chain integrity under concurrent writers | holds (50–200-event bursts) | **provable** (post `9c4139d`) |
 | Cross-runtime byte-identity fixtures | **131 / 131 passing** across Python ↔ Node.js ↔ Browser JS | empirical-benchmark |
-| Test suite | **1021 collected** (post v0.1.0, with `.[dev]` extras installed) | **provable** |
+| Test suite | **1021 collected** / **1013 passed** at v0.2.1, with `.[dev]` extras installed (8-test gap is spacy-skipped when `en_core_web_sm` isn't downloaded) | **provable** |
 
 ---
 
@@ -346,6 +346,20 @@ Open `http://localhost:8000` to access:
 These are **roadmap items**, not current capabilities. Each is a concrete piece of work with a defined entry in `docs/PROOF_BOUNDARY.md` §3. They are listed in approximate order of prerequisite dependence.
 
 ### Shipped since the last README pass
+
+#### v0.1.0 → v0.2.1 release wave (2026-04-22 → 2026-04-23)
+
+- ✅ **`sum-engine` on PyPI.** `pip install sum-engine[sieve]` installs the `sum` CLI binary (subcommands `attest` / `verify` / `resolve`). Three releases: 0.1.0 first public release, 0.2.0 `internal/` → `sum_engine_internal/` namespace rename, 0.2.1 dynamic version-resolution fix (`importlib.metadata.version("sum-engine")`). See [`CHANGELOG.md`](CHANGELOG.md).
+- ✅ **`sum verify` actually verifies signatures** (not just structural reconstruction) — HMAC-SHA256 with `--signing-key`, Ed25519 always when `public_signature` + `public_key` are present. JSON result carries `signatures: {hmac, ed25519}` with values in `{verified, skipped, absent, invalid}`. `--strict` mode requires at least one verifiable signature. 15 cases pinning every branch.
+- ✅ **`sum attest --ed25519-key PEM`** — mints W3C VC 2.0 (`eddsa-jcs-2022`) compatible Ed25519-signed bundles. PEM produced by `python -m scripts.generate_did_web` (did:web bootstrap shipped in [`docs/DID_SETUP.md`](docs/DID_SETUP.md)). Bundles verifiable by any DIF-conformant verifier (Universal Resolver, Digital Bazaar, Spruce ssi, Veramo, Microsoft Entra, Mattr).
+- ✅ **`sum attest --ledger DB`** closes the attest → resolve loop. Per-triple ProvenanceRecords (source URI, byte range, sentence excerpt, extractor ID) recorded into a SQLite AkashicLedger; resulting `prov_id`s attached to `bundle.sum_cli.prov_ids`. `sum resolve <prov_id> --db DB` walks axiom → source byte range.
+- ✅ **Cross-runtime Ed25519 trust triangle.** Same bundle bytes verify identically in Python (`sum verify`), Node (`standalone_verifier/verify.js` via WebCrypto), and modern browsers (`single_file_demo/index.html` via SubtleCrypto — Chrome 113+, Firefox 129+, Safari 17+). Locked in CI by kill-experiments K3 (positive) + K4 (tampered-bundle rejection); the harness also runs K1 + K1-multiword + K2.
+- ✅ **HMAC is now optional** in `CanonicalCodec`. The old `sum-default-key` placebo default is gone (it was a publicly-known shared secret — cryptographic theater). `signing_key=None` emits no `signature` field; downgrade-protection preserved when a key IS configured.
+- ✅ **PORTFOLIO.md + CLAUDE.md contract.** `PORTFOLIO.md` at repo root is the body of [sumequities.com/projects/sum](https://github.com/OtotaO/SUMequities) — verified-claims-only, every metric row labelled `**proved**` or `**empirical-benchmark**`. CI job `portfolio-contract` (blocking) + warn-only pre-commit hook enforce the contract.
+- ✅ **CI gates landed.** `cross-runtime-harness` runs K1-K4 every PR (Node 22). `pypi-install-smoke` builds the wheel and runs `echo prose | sum attest | sum verify` in a fresh venv every push. `publish-pypi.yml` handles OIDC-authenticated PyPI releases on tag pushes.
+
+#### Earlier (substrate work)
+
 - ✅ **Per-doc logging in the regeneration runner** (commit `02b4413`) — `RegenerationMetrics.per_doc` names the specific (s, p, o) triples that failed entailment so the aggregate FActScore gap is debuggable at the generator-prompt layer.
 - ✅ **LLM narrative full round-trip runner** (commit `9fd232d`, first measurement `2c252f0`) — composes `LiveLLMAdapter.extract_triplets → generate_text → extract_triplets`, reports per-doc drift. Measured on `seed_v1`: 107.75 % drift / 0.12 exact-match recall. See PROOF_BOUNDARY §2.5.
 - ✅ **W3C Verifiable Credentials 2.0 emission + verification** (commit `e007f94`) — pure-Python `eddsa-jcs-2022` Data Integrity path at `sum_engine_internal/infrastructure/verifiable_credential.py` + RFC 8785 JCS at `sum_engine_internal/infrastructure/jcs.py`. 58 tests. Bundles consumable by any VC-compliant ecosystem.
@@ -409,11 +423,14 @@ npx wrangler pages deploy single_file_demo --project-name sum-demo
 
 No environment variables required. No KV / R2 / D1 attached. The demo is 100 % client-side.
 
-### v1 upgrade path (Claude proxy for non-artifact users)
+### Hosted-demo LLM proxy (Cloudflare Pages Function — shipped)
 
-The current file upgrades extraction to LLM-grade *automatically* when pasted into a Claude artifact (commit `e5e57b6` — `window.claude.complete` is detected at runtime). For users on the plain Cloudflare Pages URL without a Claude account, extraction falls back to a naive tokeniser and a "paste into a Claude artifact for LLM-grade recall" hint is shown.
+The demo upgrades extraction to LLM-grade *automatically* when pasted into a Claude artifact (commit `e5e57b6` — `window.claude.complete` is detected at runtime). On a plain Cloudflare Pages URL without a Claude account, extraction has two fallbacks, in order:
 
-When demand justifies it, a colocated Pages Function at `functions/api/complete.ts` proxies Claude or OpenAI calls using the user's own API key (stored in the browser, never on the server). Same deploy, no platform migration.
+1. **Pages Function** at [`single_file_demo/functions/api/complete.ts`](single_file_demo/functions/api/complete.ts) — proxies Anthropic (preferred) or OpenAI through the optional Cloudflare AI Gateway. Server-side only reads `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` from the deployment's environment variables; never the user's browser. Returns the same JSON shape `window.claude.complete` would produce, so the in-page extractor doesn't care which path served it.
+2. **Naive tokeniser** — pure-browser sentence-split + stopword-strip fallback when neither the artifact runtime nor the Pages Function path is available. Honest about its limits.
+
+The demo's UI labels which path produced any given result (`extracted by Claude (artifact runtime)` / `extracted by Claude via Pages Function` / `extracted by naive tokeniser`).
 
 ### Roadmap — hybrid edge architecture (not shipped today)
 
@@ -425,9 +442,9 @@ These are vision items; the shipped today is the static artifact above.
 
 ---
 
-## 🛡️ Verification: 1021-Test Suite + 131 Cross-Runtime Fixtures
+## 🛡️ Verification: 1000+-Test Suite + 131 Cross-Runtime Fixtures
 
-The test suite covers both proven invariants and empirically-measured properties; each assertion is scoped to the epistemic status of the thing it tests. 1021 tests collected with the `[dev]` extras installed (`pip install -e '.[sieve,dev]'` or `make install`). CI runs the full suite every push via `.github/workflows/quantum-ci.yml`.
+The test suite covers both proven invariants and empirically-measured properties; each assertion is scoped to the epistemic status of the thing it tests. With the `[dev]` extras installed (`pip install -e '.[sieve,dev]'` or `make install`), `pytest --collect-only` reports **1021 tests**; the full-suite green count at v0.2.1 is **1013 passed** (the 8-test gap is spacy-dependent cases that skip when `en_core_web_sm` isn't downloaded into the venv). CI runs the full suite on every push via `.github/workflows/quantum-ci.yml`.
 
 ```text
 Provable (deterministic code + tests that enforce the proof):
