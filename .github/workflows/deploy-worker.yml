@@ -1,0 +1,57 @@
+name: Deploy Cloudflare Worker
+
+# Manual-dispatch only for now — the first deploy is user-driven
+# (wrangler login + secret put), so CI is the second-and-onward path.
+# Flip to push-on-tag (like publish-pypi.yml) once the deploy cycle
+# is stable and you want automatic releases.
+#
+# Requires two GitHub repository secrets:
+#   CLOUDFLARE_API_TOKEN   — token with "Edit Cloudflare Workers" scope,
+#                            created at dash.cloudflare.com/profile/api-tokens
+#   CLOUDFLARE_ACCOUNT_ID  — visible in the Cloudflare dashboard URL
+#
+# Cloudflare also supports OIDC for Workers now (see cloudflare/
+# wrangler-action@v3), but token auth is simpler for the first pass.
+# OIDC migration is a follow-up when the deploy cadence justifies it.
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment (reserved for future: staging / production)."
+        type: choice
+        default: production
+        options: [production]
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: wrangler deploy
+    runs-on: ubuntu-latest
+    environment:
+      name: cloudflare-worker
+      url: https://sum-demo.workers.dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install worker deps
+        working-directory: worker
+        run: npm install
+
+      - name: Typecheck
+        working-directory: worker
+        run: npm run typecheck
+
+      - name: Deploy to Cloudflare
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: worker
+          command: deploy

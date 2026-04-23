@@ -4,6 +4,47 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Added — hosted-demo infrastructure
+
+- `worker/` directory with a Cloudflare Worker (`src/index.ts`) that
+  serves `../single_file_demo/` as static assets and routes `/api/*`
+  through TypeScript handlers. Migrates the previous Pages deployment
+  to Workers per Cloudflare's April 2026 convergence guidance (Workers
+  has full feature parity for static assets + SSR + custom domains,
+  and every new capability — Secrets Store, Workflows, Durable Objects,
+  Dynamic Workers, Sandboxes — lands Workers-first).
+- `worker/src/routes/complete.ts` — LLM proxy, ported from the Pages
+  Function. Same request/response shape, same fallback semantics; the
+  only user-visible change is that secrets now live in the Workers
+  Secrets Store instead of Pages environment variables.
+- `worker/src/routes/qid.ts` — stub (returns 501) for the Phase 4a
+  Wikidata QID resolver. Contract (request shape, cache key, SPARQL
+  + wbsearchentities pipeline) specified inline so the next session
+  can land the real implementation without re-deriving the design.
+- `.github/workflows/deploy-worker.yml` — manual-dispatch deploy job
+  using `cloudflare/wrangler-action@v3`. Requires repo secrets
+  `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID`. Flip to push-on-tag
+  once the deploy cadence stabilises.
+- `single_file_demo/functions/api/complete.ts` carries a DEPRECATED
+  header pointing at the Worker replacement. Kept in-place so an
+  existing Pages deployment does not 404 overnight during the
+  switchover.
+
+Security baseline (the `_headers` file's CSP, COOP/COEP, HSTS,
+Permissions-Policy) is ported into `worker/src/index.ts` as
+`BASELINE_HEADERS`, applied to every Response.
+
+### Pending user action (for first Worker deploy)
+
+  cd worker/
+  npm install
+  npx wrangler login
+  npx wrangler secret put ANTHROPIC_API_KEY
+  npx wrangler deploy
+
+After the first deploy, subsequent deploys run via the
+`deploy-worker.yml` workflow on manual dispatch.
+
 (next release will move these entries under a version heading)
 
 ## [0.3.0] — 2026-04-23

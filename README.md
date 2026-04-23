@@ -423,14 +423,14 @@ npx wrangler pages deploy single_file_demo --project-name sum-demo
 
 No environment variables required. No KV / R2 / D1 attached. The demo is 100 % client-side.
 
-### Hosted-demo LLM proxy (Cloudflare Pages Function — shipped)
+### Hosted-demo LLM proxy (Cloudflare Worker — shipped)
 
-The demo upgrades extraction to LLM-grade *automatically* when pasted into a Claude artifact (commit `e5e57b6` — `window.claude.complete` is detected at runtime). On a plain Cloudflare Pages URL without a Claude account, extraction has two fallbacks, in order:
+The demo upgrades extraction to LLM-grade *automatically* when pasted into a Claude artifact (commit `e5e57b6` — `window.claude.complete` is detected at runtime). On a plain hosted URL without a Claude account, extraction has two fallbacks, in order:
 
-1. **Pages Function** at [`single_file_demo/functions/api/complete.ts`](single_file_demo/functions/api/complete.ts) — proxies Anthropic (preferred) or OpenAI through the optional Cloudflare AI Gateway. Server-side only reads `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` from the deployment's environment variables; never the user's browser. Returns the same JSON shape `window.claude.complete` would produce, so the in-page extractor doesn't care which path served it.
-2. **Naive tokeniser** — pure-browser sentence-split + stopword-strip fallback when neither the artifact runtime nor the Pages Function path is available. Honest about its limits.
+1. **Worker route** at [`worker/src/routes/complete.ts`](worker/src/routes/complete.ts) (migrated from the prior Pages Function per Cloudflare's April 2026 Pages→Workers convergence) — proxies Anthropic (preferred) or OpenAI through the optional Cloudflare AI Gateway. Server-side only reads `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` from the Worker's Secrets Store; never the user's browser. Returns the same JSON shape `window.claude.complete` would produce, so the in-page extractor doesn't care which path served it.
+2. **Naive tokeniser** — pure-browser sentence-split + stopword-strip fallback when neither the artifact runtime nor the Worker path is available. Honest about its limits.
 
-The demo's UI labels which path produced any given result (`extracted by Claude (artifact runtime)` / `extracted by Claude via Pages Function` / `extracted by naive tokeniser`).
+The demo's UI labels which path produced any given result (`extracted by Claude (artifact runtime)` / `extracted by Claude via Pages Function` / `extracted by naive tokeniser`). The previous Pages Function at `single_file_demo/functions/api/complete.ts` stays in-place (marked DEPRECATED) so an existing Pages deployment keeps working during the switchover; new deploys use the Worker.
 
 ### Roadmap — hybrid edge architecture (not shipped today)
 

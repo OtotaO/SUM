@@ -1,0 +1,66 @@
+#:schema https://unpkg.com/wrangler/config-schema.json
+#
+# Cloudflare Worker config for the SUM hosted demo.
+#
+# This migrates the previous Pages deployment at single_file_demo/ into
+# Workers with static assets. Static HTML/JS at ../single_file_demo/ is
+# served through the [assets] binding; /api/* paths are handled by the
+# Worker's main entry (src/index.ts). The compatibility_date pins the
+# Workers runtime behaviour so a future platform update can't silently
+# change semantics under us.
+#
+# First deploy (user-only, one-time):
+#   cd worker/
+#   npx wrangler login     # OAuth flow in browser
+#   npx wrangler deploy    # ships to https://sum-demo.<account>.workers.dev
+#
+# Subsequent deploys from CI: see .github/workflows/deploy-worker.yml
+# (manual dispatch; requires CF_API_TOKEN + CF_ACCOUNT_ID GH secrets).
+
+name = "sum-demo"
+main = "src/index.ts"
+compatibility_date = "2026-04-23"
+compatibility_flags = ["nodejs_compat"]
+
+# Free plan ceiling is 3 MiB per Worker; this leaves headroom for the
+# core-zig/ WASM module we'll bind in Phase 3b (expected ~1 MB after
+# wasm-opt -Oz). Upgrade to "paid" on the dashboard if we ever cross it.
+
+[assets]
+directory = "../single_file_demo"
+binding = "ASSETS"
+# The demo is one HTML page — any non-/api/* request should serve
+# index.html (or the named file) from the asset bundle. Workers'
+# single-page-application mode handles this by default.
+not_found_handling = "single-page-application"
+# Don't route /api/* through the asset handler; let src/index.ts see
+# those paths so it can proxy LLM calls + serve the QID resolver.
+run_worker_first = ["/api/*"]
+
+# Custom-domain route. Disabled by default — the user needs to
+# associate sumequities.com (or a subdomain like sum-demo.sumequities.com)
+# with the Worker via the Cloudflare dashboard once, then uncomment here
+# so future deploys keep the binding.
+#
+# [[routes]]
+# pattern = "sum-demo.sumequities.com/*"
+# custom_domain = true
+
+# Observability for free — queryable via the dashboard on every deploy.
+[observability]
+enabled = true
+
+# Secrets (set via `wrangler secret put <NAME>` — never committed):
+#   ANTHROPIC_API_KEY      # preferred LLM provider for /api/complete
+#   OPENAI_API_KEY         # fallback if ANTHROPIC not set
+#   CF_AI_GATEWAY_BASE     # optional; routes through Cloudflare AI Gateway
+#
+# Plaintext vars (fine in source control):
+[vars]
+SUM_DEFAULT_MODEL_ANTHROPIC = "claude-haiku-4-5-20251001"
+SUM_DEFAULT_MODEL_OPENAI    = "gpt-4o-mini"
+
+# KV namespaces (for Phase 4a QID cache — uncomment after `wrangler kv:namespace create qid-cache`):
+# [[kv_namespaces]]
+# binding = "QID_CACHE"
+# id = "<paste-from-wrangler-output>"

@@ -1,3 +1,14 @@
+// DEPRECATED AS OF 2026-04-23 — superseded by worker/src/routes/complete.ts.
+//
+// This file still works if you have an active Cloudflare Pages
+// deployment and want to keep serving from there for backward
+// compatibility, but every new capability (secrets store, observability,
+// durable objects, etc.) lands Workers-first per Cloudflare's April 2026
+// convergence guidance. The Worker version at worker/src/routes/
+// complete.ts is the canonical implementation. Keep this file in lock-
+// step with any semantics change in the Worker until the Pages
+// deployment is fully retired.
+//
 // Cloudflare Pages Function — LLM proxy for the SUM single-file demo.
 //
 // When the demo is served outside a Claude artifact runtime (plain
