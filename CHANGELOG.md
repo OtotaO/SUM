@@ -6,6 +6,64 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 (next release will move these entries under a version heading)
 
+## [0.3.0] — 2026-04-23
+
+Minor-bump feature release. Agentic-first introspection surface: three
+new subcommand clusters that let an LLM agent composing SUM into a
+larger pipeline ask questions about ledger state, read bundle shape
+without paying crypto cost, and validate SUM output programmatically.
+Zero breaking changes — every 0.2.1 invocation still works identically.
+
+### Added
+
+- `sum ledger list [--db DB] [--axiom KEY] [--since ISO] [--limit N]`
+  enumerates prov_ids as NDJSON (one JSON object per line), each row
+  carrying prov_id, axiom_key, source_uri, byte_start, byte_end,
+  timestamp, extractor_id. Filters compose with AND. Previously, agents
+  that wanted to introspect a ledger had to craft raw SQL against the
+  SQLite file — now they pipe `sum ledger list | jq …`.
+
+- `sum ledger stats [--db DB] [--pretty]` emits a one-shot summary:
+  `provenance_records_total`, `distinct_axiom_keys`, earliest/latest
+  timestamps (ISO 8601), `chain_tip_hash` (Merkle), and branches with
+  their state-integer digit counts.
+
+- `sum ledger head [--db DB] [--branch NAME] [--pretty]` returns the
+  current state integer for one named branch or every branch. State
+  integers are emitted as strings (never JSON numbers) to preserve
+  arbitrary precision — many agent JSON parsers use 64-bit doubles.
+
+- `sum inspect <bundle.json> [--pretty]` reads a bundle's structural
+  shape without running signature verification or re-deriving primes:
+  axiom counts (claimed + parsed — an agent sees a divergence without
+  invoking `sum verify`), state-integer digit size, signature fields
+  present, bundle/format versions, timestamp, branch, and the sum_cli
+  sidecar (prov_ids, extractor, source_uri) if present.
+
+- `sum schema {bundle|provenance|credential}` prints a JSON Schema
+  (Draft 2020-12) for each shape SUM emits. Agents that want to
+  validate output against a ground-truth contract no longer have to
+  reverse-engineer from prose docs.
+
+### Unchanged
+
+- CLI contract for `attest / verify / resolve` and every flag on them.
+- CanonicalBundle wire format (`canonical_format_version 1.0.0`).
+- Prime scheme (`sha256_64_v1`).
+- Every cryptographic contract (HMAC, Ed25519, VC 2.0).
+- Cross-runtime trust triangle — K1 / K1-mw / K2 / K3 / K4 still green
+  on this commit; same bundle bytes still verify in Python ↔ Node ↔
+  Browser.
+
+### Tests
+
+14 new cases in `Tests/test_sum_cli_agentic.py` pin: NDJSON shape of
+ledger list; filter composition (--axiom, --limit); stats summary
+keys; head branch-not-found error path; inspect on tampered tome
+(reports divergence rather than rejecting — agent's call whether to
+run full verify); inspect on malformed JSON; schema title + required
+subset is actually emitted by attest.
+
 ## [0.2.1] — 2026-04-23
 
 Patch release — fixes a three-minute-old version-reporting bug
@@ -144,7 +202,8 @@ browser demo. Cross-runtime trust triangle
   package. Downstream consumers should depend on the CLI contract,
   not import these modules directly — they may move in 0.2.0.
 
-[Unreleased]: https://github.com/OtotaO/SUM/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/OtotaO/SUM/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/OtotaO/SUM/releases/tag/v0.3.0
 [0.2.1]: https://github.com/OtotaO/SUM/releases/tag/v0.2.1
 [0.2.0]: https://github.com/OtotaO/SUM/releases/tag/v0.2.0
 [0.1.0]: https://github.com/OtotaO/SUM/releases/tag/v0.1.0

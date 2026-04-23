@@ -2,7 +2,7 @@ Knowledge distilled into prime-factored integers, signed, and verified cross-run
 
 ## Current State
 
-SUM is live on PyPI as `sum-engine` — `0.1.0` first release (2026-04-22), `0.2.0` hygiene release (2026-04-23, `internal/` → `sum_engine_internal/` namespace rename). What's locked in code today:
+SUM is live on PyPI as `sum-engine` — `0.1.0` first release (2026-04-22), `0.2.0`/`0.2.1` namespace + version-reporting hygiene (2026-04-23), `0.3.0` agentic introspection (2026-04-23: `sum ledger list|stats|head`, `sum inspect`, `sum schema`). What's locked in code today:
 
 | Metric | Value | Epistemic status |
 |---|---|---|
@@ -14,10 +14,10 @@ SUM is live on PyPI as `sum-engine` — `0.1.0` first release (2026-04-22), `0.2
 | Fortress gate | 21 / 21 passing | **proved** — [`scripts/verify_fortress.py`](scripts/verify_fortress.py) |
 | Cross-runtime kill-experiments (Python ↔ Node ↔ Browser) | 5 / 5 green (K1 / K1-multiword / K2 / K3 / K4) | **proved** — [`scripts/verify_cross_runtime.py`](scripts/verify_cross_runtime.py), CI-gated |
 | Merkle-chain integrity under concurrent writers | holds (50–200-event bursts) | **proved** — [`Tests/test_akashic_ledger.py`](Tests/test_akashic_ledger.py), post commit `9c4139d` |
-| Test suite size | 1000+ collected | **proved** — `python -m pytest Tests/ --collect-only -q` (1013 at v0.2.0, rounded per contract) |
+| Test suite size | 1000+ collected | **proved** — `python -m pytest Tests/ --collect-only -q` (1035 at v0.3.0, rounded per contract) |
 | Feature catalog entries | 82 Production, 14 Scaffolded, 2 Designed | **proved** — [`docs/FEATURE_CATALOG.md`](docs/FEATURE_CATALOG.md), every row has a named verification command |
 
-**Agentic CLI surface (v0.2.0, on PyPI):**
+**Agentic CLI surface (v0.3.0, on PyPI):**
 
 ```bash
 pip install 'sum-engine[sieve]'
@@ -30,6 +30,14 @@ echo "Alice likes cats. Bob owns a dog." | sum attest --extractor=sieve | sum ve
 - `--signing-key KEY` — HMAC-SHA256 for shared-secret peers. **proved** tamper detection via [`Tests/test_adversarial_bundles.py`](Tests/test_adversarial_bundles.py).
 - `--ed25519-key PEM` — Ed25519 signatures under the W3C VC 2.0 `eddsa-jcs-2022` cryptosuite. Bundles verifiable by any DIF-conformant verifier (Universal Resolver, Digital Bazaar, Spruce ssi, Veramo). **proved** round-trip via [`Tests/test_sum_cli_attest_ed25519.py`](Tests/test_sum_cli_attest_ed25519.py) and cross-runtime K3/K4.
 - `--ledger DB` — per-triple byte-level ProvenanceRecords into a SQLite AkashicLedger. `sum resolve <prov_id>` walks axiom → source byte range. **proved** round-trip via [`Tests/test_sum_cli_ledger.py`](Tests/test_sum_cli_ledger.py).
+
+**Agentic introspection (v0.3.0):**
+
+- `sum ledger list --db DB [--axiom KEY] [--since ISO] [--limit N]` — enumerate prov_ids as NDJSON. **proved** via [`Tests/test_sum_cli_agentic.py`](Tests/test_sum_cli_agentic.py) `TestLedgerList`.
+- `sum ledger stats --db DB` — one-shot summary: record counts, timestamp range, Merkle chain tip, branch heads. **proved** via `TestLedgerStats`.
+- `sum ledger head --db DB [--branch NAME]` — current state integer per branch (string-encoded for arbitrary precision). **proved** via `TestLedgerHead`.
+- `sum inspect bundle.json` — structural read of a bundle's shape without running crypto verification. Surfaces axiom-count divergence for agents that want to route before paying the full verify cost. **proved** via `TestInspect`.
+- `sum schema {bundle|provenance|credential}` — JSON Schema (Draft 2020-12) for each output shape, so agents can validate programmatically. **proved** via `TestSchema`, with coverage asserting the bundle schema's required fields are a subset of what `sum attest` actually emits.
 
 **Cross-runtime trust triangle:** the same bundle bytes verify in Python (`sum verify`), Node (`standalone_verifier/verify.js` via WebCrypto), and modern browsers (`single_file_demo/index.html` via SubtleCrypto — Chrome 113+, Firefox 129+, Safari 17+). Tampered-bundle rejection and positive-path acceptance are both locked into CI via kill-experiments K3 (positive) and K4 (negative).
 

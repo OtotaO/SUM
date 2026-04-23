@@ -15,9 +15,10 @@ contracts below for PORTFOLIO.md specifically); stale claims are bugs.
    today, what proves it, what's next. Every metric row carries
    `**proved**` or `**empirical-benchmark**`.
 2. **[`CHANGELOG.md`](CHANGELOG.md)** — release history. `[0.1.0]`
-   was the first PyPI release (2026-04-22); `[0.2.0]` is the
-   `internal/` → `sum_engine_internal/` hygiene rename (same date,
-   later on). Anything after that lives under `[Unreleased]`.
+   was the first PyPI release (2026-04-22); `[0.2.0]` /`[0.2.1]`
+   are hygiene fixes; `[0.3.0]` (2026-04-23) added the agentic
+   introspection surface (`sum ledger`, `sum inspect`, `sum schema`).
+   Anything after that lives under `[Unreleased]`.
 3. **[`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md)** — proved-vs-
    measured discipline for every claim in the repo. Section 1.3.1 covers
    the cross-runtime Ed25519 trust triangle (Python ↔ Node ↔ Browser).

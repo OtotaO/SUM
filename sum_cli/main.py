@@ -1,13 +1,15 @@
 """SUM CLI entry point.
 
 Subcommands:
-    sum attest   — stdin prose → CanonicalBundle JSON on stdout (optionally
-                   signed with HMAC via --signing-key and/or Ed25519 via
-                   --ed25519-key; unsigned by default)
-    sum verify   — stdin/file bundle → exit 0 on match, 1 on mismatch
-    sum resolve  — prov_id → ProvenanceRecord JSON (local ledger lookup)
-    sum version  — print version string
-    sum --help   — auto-generated usage
+    sum attest     — stdin prose → CanonicalBundle JSON on stdout
+                     (optionally HMAC + Ed25519 + per-triple ledger)
+    sum verify     — bundle → exit 0 on match, 1 on signature/state mismatch
+    sum resolve    — prov_id → ProvenanceRecord JSON (ledger lookup)
+    sum ledger     — introspect a ledger: list | stats | head
+    sum inspect    — structural read of a bundle (no crypto, no reconstruction)
+    sum schema     — JSON Schema for bundle | provenance | credential
+    sum --version  — print version string
+    sum --help     — auto-generated usage
 
 Design notes (read once, explained here so the code stays terse):
 
@@ -518,6 +520,354 @@ def cmd_resolve(args: argparse.Namespace) -> int:
     return 0
 
 
+# ─── ledger ──────────────────────────────────────────────────────────
+#
+# Agentic-first introspection for an AkashicLedger. An agent that wants to
+# know "what's in this ledger?" without already having a prov_id in hand
+# previously had no answer — resolve looked up by id, and no other command
+# enumerated. These three subcommands fill that gap: list (NDJSON rows),
+# stats (one-shot summary), head (current state integer per branch).
+#
+# Output discipline: one JSON object per line (NDJSON) for list, a single
+# pretty-printed JSON object for stats and head. Agents can pipe list
+# into jq / jsonl tooling; humans can read stats / head directly.
+
+def _open_ledger_or_exit(db_path: str):
+    """Sanity-check the ledger path. Exit 2 with a clear message if the
+    file does not exist — the ledger auto-creates tables on __init__,
+    so "opening" a nonexistent path would silently make a new empty
+    database, which is almost never what an agent introspecting a
+    ledger wants."""
+    from pathlib import Path
+
+    from sum_engine_internal.infrastructure.akashic_ledger import AkashicLedger
+
+    if not Path(db_path).exists():
+        print(
+            f"sum: ledger not found at {db_path}. "
+            f"Mint one with: sum attest --ledger {db_path} < prose.txt",
+            file=sys.stderr,
+        )
+        raise SystemExit(2)
+    return AkashicLedger(db_path=db_path)
+
+
+def cmd_ledger_list(args: argparse.Namespace) -> int:
+    """Enumerate prov_ids with their linked axiom_keys and evidence spans.
+
+    Output: NDJSON (one record per line). --limit caps output size;
+    --axiom filters to a single axiom_key; --since takes an ISO 8601
+    timestamp and emits only records at-or-after. Combined filters AND.
+    """
+    import sqlite3
+
+    _open_ledger_or_exit(args.db)
+    # Direct SQL — the ledger does not expose a list-all method and
+    # adding one would force an async surface we do not need here.
+    # Two-table join: axiom_provenance (axiom_key → prov_id) +
+    # provenance_records (prov_id → record_json).
+    clauses = []
+    params: list[object] = []
+    if args.axiom:
+        clauses.append("ap.axiom_key = ?")
+        params.append(args.axiom)
+    where = (" WHERE " + " AND ".join(clauses)) if clauses else ""
+    limit_clause = f" LIMIT {int(args.limit)}" if args.limit else ""
+
+    emitted = 0
+    with sqlite3.connect(args.db) as conn:
+        rows = conn.execute(
+            f"SELECT ap.prov_id, ap.axiom_key, pr.record_json "
+            f"FROM axiom_provenance AS ap "
+            f"JOIN provenance_records AS pr ON pr.prov_id = ap.prov_id"
+            f"{where}"
+            f" ORDER BY ap.prov_id{limit_clause}",
+            params,
+        ).fetchall()
+
+        for prov_id, axiom_key, record_json in rows:
+            rec = json.loads(record_json)
+            if args.since and rec.get("timestamp", "") < args.since:
+                continue
+            out = {
+                "prov_id": prov_id,
+                "axiom_key": axiom_key,
+                "source_uri": rec.get("source_uri"),
+                "byte_start": rec.get("byte_start"),
+                "byte_end": rec.get("byte_end"),
+                "timestamp": rec.get("timestamp"),
+                "extractor_id": rec.get("extractor_id"),
+            }
+            json.dump(out, sys.stdout)
+            sys.stdout.write("\n")
+            emitted += 1
+    if args.verbose:
+        print(f"sum: emitted {emitted} record(s) from {args.db}", file=sys.stderr)
+    return 0
+
+
+def cmd_ledger_stats(args: argparse.Namespace) -> int:
+    """Emit a one-shot summary of the ledger's state."""
+    import asyncio
+    import sqlite3
+
+    ledger = _open_ledger_or_exit(args.db)
+
+    with sqlite3.connect(args.db) as conn:
+        total_prov, = conn.execute(
+            "SELECT COUNT(*) FROM provenance_records"
+        ).fetchone()
+        distinct_axioms, = conn.execute(
+            "SELECT COUNT(DISTINCT axiom_key) FROM axiom_provenance"
+        ).fetchone()
+        # Pull min/max timestamp across the stored JSON; SQLite cannot
+        # index inside JSON blobs without a generated column, so we
+        # accept the scan — ledger introspection is not a hot path.
+        ts_rows = conn.execute(
+            "SELECT record_json FROM provenance_records"
+        ).fetchall()
+
+    timestamps = [
+        json.loads(r[0]).get("timestamp", "") for r in ts_rows
+        if r[0]
+    ]
+    timestamps = [t for t in timestamps if t]
+
+    chain_tip = asyncio.run(ledger.get_chain_tip())
+    branch_heads = asyncio.run(ledger.load_branch_heads())
+    # Size in digits, not the integer itself (branch heads get huge and
+    # an agent parsing JSON does not want a megabyte integer inline).
+    branches = {
+        name: {"state_integer_digits": len(str(state_int))}
+        for name, state_int in branch_heads.items()
+    }
+
+    out = {
+        "db_path": args.db,
+        "provenance_records_total": total_prov,
+        "distinct_axiom_keys": distinct_axioms,
+        "earliest_timestamp": min(timestamps) if timestamps else None,
+        "latest_timestamp": max(timestamps) if timestamps else None,
+        "chain_tip_hash": chain_tip,
+        "branches": branches,
+    }
+    json.dump(out, sys.stdout, indent=2 if args.pretty else None)
+    sys.stdout.write("\n")
+    return 0
+
+
+def cmd_ledger_head(args: argparse.Namespace) -> int:
+    """Emit current state integer for one branch (if --branch) or all."""
+    import asyncio
+
+    ledger = _open_ledger_or_exit(args.db)
+    heads = asyncio.run(ledger.load_branch_heads())
+    if args.branch:
+        state = heads.get(args.branch)
+        if state is None:
+            print(
+                f"sum: branch {args.branch!r} not found in {args.db}. "
+                f"Known branches: {sorted(heads)}",
+                file=sys.stderr,
+            )
+            return 1
+        out = {"branch": args.branch, "state_integer": str(state)}
+    else:
+        # String-encode every branch's state integer to avoid JSON
+        # int-precision loss for agents whose parsers use doubles.
+        out = {
+            "branches": {
+                name: {"state_integer": str(state)}
+                for name, state in heads.items()
+            }
+        }
+    json.dump(out, sys.stdout, indent=2 if args.pretty else None)
+    sys.stdout.write("\n")
+    return 0
+
+
+# ─── inspect ─────────────────────────────────────────────────────────
+#
+# Fast, crypto-free read of a bundle's structural shape. Answers "what
+# does this bundle contain?" without running Ed25519 verification,
+# re-deriving primes, or reconstructing the state integer — useful when
+# an agent wants to route based on bundle attributes before deciding
+# whether to pay the full verify cost.
+
+def cmd_inspect(args: argparse.Namespace) -> int:
+    raw = _read_input(args.input)
+    try:
+        b = json.loads(raw)
+    except json.JSONDecodeError as e:
+        print(f"sum: bundle is not valid JSON: {e}", file=sys.stderr)
+        return 2
+
+    # Count axioms by parsing the canonical tome's line structure — same
+    # regex verify uses, but we do not build primes or check the state.
+    import re
+    line_re = re.compile(r"^The (\S+) (\S+) (.+)\.$")
+    tome = b.get("canonical_tome", "")
+    axiom_lines = [
+        line for line in tome.splitlines()
+        if line_re.match(line.strip())
+    ]
+
+    state_str = b.get("state_integer", "")
+    signatures = {
+        "hmac_present": bool(b.get("signature")),
+        "ed25519_present": bool(b.get("public_signature") and b.get("public_key")),
+    }
+
+    out = {
+        "bundle_version": b.get("bundle_version"),
+        "canonical_format_version": b.get("canonical_format_version"),
+        "prime_scheme": b.get("prime_scheme", "sha256_64_v1"),
+        "branch": b.get("branch"),
+        "timestamp": b.get("timestamp"),
+        "is_delta": bool(b.get("is_delta", False)),
+        "axiom_count_claimed": b.get("axiom_count"),
+        "axiom_count_parsed": len(axiom_lines),
+        "state_integer_digits": len(state_str),
+        "signatures": signatures,
+        # Surface sum_cli sidecar if present — agents want to know
+        # whether a bundle carries provenance refs without digging.
+        "sum_cli": b.get("sum_cli"),
+    }
+    json.dump(out, sys.stdout, indent=2 if args.pretty else None)
+    sys.stdout.write("\n")
+    return 0
+
+
+# ─── schema ──────────────────────────────────────────────────────────
+#
+# Print JSON Schema for each output shape. Agents validating SUM output
+# programmatically previously had to reverse-engineer the shape from
+# prose docs; these schemas are the ground truth.
+
+_BUNDLE_SCHEMA = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://github.com/OtotaO/SUM/schemas/canonical-bundle.json",
+    "title": "CanonicalBundle",
+    "description": "A self-contained, optionally-signed SUM knowledge transport unit.",
+    "type": "object",
+    "required": [
+        "bundle_version", "canonical_format_version", "branch",
+        "axiom_count", "canonical_tome", "state_integer", "timestamp",
+    ],
+    "properties": {
+        "bundle_version": {"type": "string", "examples": ["1.1.0"]},
+        "canonical_format_version": {"type": "string", "examples": ["1.0.0"]},
+        "branch": {"type": "string"},
+        "axiom_count": {"type": "integer", "minimum": 0},
+        "canonical_tome": {
+            "type": "string",
+            "description": "Markdown-ish rendering with `The S P O.` lines, one axiom per line.",
+        },
+        "state_integer": {
+            "type": "string",
+            "description": "Decimal-encoded Gödel state integer (string, not number, to preserve precision).",
+            "pattern": "^[0-9]+$",
+        },
+        "state_integer_hex": {"type": "string", "pattern": "^0x[0-9a-f]+$"},
+        "timestamp": {"type": "string", "format": "date-time"},
+        "prime_scheme": {"type": "string", "enum": ["sha256_64_v1", "sha256_128_v2"]},
+        "is_delta": {"type": "boolean"},
+        "signature": {
+            "type": "string",
+            "pattern": "^hmac-sha256:[0-9a-f]{64}$",
+            "description": "Optional HMAC-SHA256 over {tome|state|timestamp}.",
+        },
+        "public_signature": {
+            "type": "string",
+            "pattern": "^ed25519:.+$",
+            "description": "Optional Ed25519 signature (base64) over {tome|state|timestamp}.",
+        },
+        "public_key": {
+            "type": "string",
+            "pattern": "^ed25519:.+$",
+            "description": "Optional embedded Ed25519 public key (base64).",
+        },
+        "sum_cli": {
+            "type": "object",
+            "description": "Non-normative sidecar from the sum CLI: extractor, source_uri, prov_ids, cli_version.",
+            "additionalProperties": True,
+        },
+    },
+    "additionalProperties": True,
+}
+
+_PROVENANCE_SCHEMA = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://github.com/OtotaO/SUM/schemas/provenance-record.json",
+    "title": "ProvenanceRecord",
+    "description": "Byte-level evidence that a given axiom was extracted from a specific source span by a specific extractor.",
+    "type": "object",
+    "required": ["source_uri", "byte_start", "byte_end", "extractor_id", "timestamp", "text_excerpt"],
+    "properties": {
+        "source_uri": {
+            "type": "string",
+            "description": "sha256:<64-hex>, doi:, https://, or urn:sum:source:.",
+        },
+        "byte_start": {"type": "integer", "minimum": 0},
+        "byte_end": {"type": "integer", "minimum": 1},
+        "extractor_id": {"type": "string", "examples": ["sum.sieve:deterministic_v1"]},
+        "timestamp": {"type": "string", "format": "date-time"},
+        "text_excerpt": {"type": "string", "maxLength": 1024},
+        "schema_version": {"type": "string", "examples": ["1.0.0"]},
+    },
+    "additionalProperties": False,
+}
+
+_CREDENTIAL_SCHEMA = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://github.com/OtotaO/SUM/schemas/verifiable-credential.json",
+    "title": "VerifiableCredential 2.0 (eddsa-jcs-2022)",
+    "description": "W3C VC 2.0 credential shape SUM emits via sign_credential. Not a complete VC 2.0 schema — just the subset SUM produces.",
+    "type": "object",
+    "required": ["@context", "type", "issuer", "credentialSubject", "proof"],
+    "properties": {
+        "@context": {"type": "array", "items": {"type": "string"}},
+        "type": {"type": "array", "items": {"type": "string"}},
+        "issuer": {"type": "string", "description": "did:key:, did:web:, or https://"},
+        "validFrom": {"type": "string", "format": "date-time"},
+        "credentialSubject": {"type": "object"},
+        "proof": {
+            "type": "object",
+            "required": ["type", "cryptosuite", "verificationMethod", "proofPurpose", "proofValue"],
+            "properties": {
+                "type": {"const": "DataIntegrityProof"},
+                "cryptosuite": {"const": "eddsa-jcs-2022"},
+                "verificationMethod": {"type": "string"},
+                "proofPurpose": {"const": "assertionMethod"},
+                "proofValue": {"type": "string", "description": "Multibase base58btc-encoded Ed25519 signature."},
+                "created": {"type": "string", "format": "date-time"},
+            },
+        },
+    },
+    "additionalProperties": True,
+}
+
+_SCHEMA_BY_NAME = {
+    "bundle": _BUNDLE_SCHEMA,
+    "provenance": _PROVENANCE_SCHEMA,
+    "credential": _CREDENTIAL_SCHEMA,
+}
+
+
+def cmd_schema(args: argparse.Namespace) -> int:
+    schema = _SCHEMA_BY_NAME.get(args.shape)
+    if schema is None:
+        print(
+            f"sum: unknown schema {args.shape!r}. Known: "
+            f"{sorted(_SCHEMA_BY_NAME)}",
+            file=sys.stderr,
+        )
+        return 2
+    json.dump(schema, sys.stdout, indent=2)
+    sys.stdout.write("\n")
+    return 0
+
+
 # ─── Argparse wiring ─────────────────────────────────────────────────
 
 def build_parser() -> argparse.ArgumentParser:
@@ -531,14 +881,20 @@ def build_parser() -> argparse.ArgumentParser:
         epilog=(
             "Examples:\n"
             "  echo 'Alice likes cats.' | sum attest > bundle.json\n"
-            "  sum verify < bundle.json                 # structural only\n"
+            "  sum verify < bundle.json                  # structural only\n"
             "  sum attest --ed25519-key keys/issuer.pem | sum verify --strict\n"
+            "  sum attest --ledger akashic.db < prose.txt\n"
             "  sum resolve prov:abc123... --db akashic.db\n"
+            "  sum ledger list --db akashic.db           # NDJSON of prov_ids\n"
+            "  sum ledger stats --db akashic.db --pretty\n"
+            "  sum inspect bundle.json --pretty          # no-crypto read\n"
+            "  sum schema bundle                         # JSON Schema stdout\n"
             "\n"
             "Attestation layers (all optional, compose freely):\n"
             "  state integer   — content-addressed integrity (always present)\n"
             "  --signing-key   — HMAC-SHA256 for shared-secret peers\n"
             "  --ed25519-key   — Ed25519 public-key attestation (W3C VC 2.0)\n"
+            "  --ledger        — per-triple byte-level ProvenanceRecords\n"
             "\n"
             "For the full feature catalog, see "
             "https://github.com/OtotaO/SUM/blob/main/docs/FEATURE_CATALOG.md"
@@ -665,6 +1021,88 @@ def build_parser() -> argparse.ArgumentParser:
     p_resolve.add_argument("prov_id", help="Content-addressable provenance id (e.g. 'prov:abc123...').")
     p_resolve.add_argument("--db", default="akashic.db", help="Path to the SQLite ledger. Default: ./akashic.db.")
     p_resolve.set_defaults(func=cmd_resolve)
+
+    # ledger — introspect an AkashicLedger without a prov_id in hand.
+    p_ledger = subparsers.add_parser(
+        "ledger",
+        help="Introspect an AkashicLedger (list prov_ids, stats, branch heads).",
+        description=(
+            "Agentic introspection for an AkashicLedger. Three subcommands: "
+            "list (NDJSON rows, one per prov_id), stats (one-shot summary), "
+            "head (current state integer per branch)."
+        ),
+    )
+    p_ledger_sub = p_ledger.add_subparsers(dest="ledger_cmd", required=True, metavar="<ledger-cmd>")
+
+    p_list = p_ledger_sub.add_parser(
+        "list",
+        help="Enumerate prov_ids in the ledger (NDJSON on stdout).",
+        description=(
+            "Emits one JSON object per line (NDJSON): {prov_id, axiom_key, "
+            "source_uri, byte_start, byte_end, timestamp, extractor_id}. "
+            "Filters compose with AND: --axiom (exact axiom_key match), "
+            "--since (ISO 8601, record timestamp >= since), --limit (max rows)."
+        ),
+    )
+    p_list.add_argument("--db", default="akashic.db", help="SQLite ledger path. Default: ./akashic.db.")
+    p_list.add_argument("--axiom", default=None, help="Filter to this exact axiom_key (e.g. 'alice||like||cat').")
+    p_list.add_argument("--since", default=None, help="Only records with timestamp >= this ISO 8601 string.")
+    p_list.add_argument("--limit", type=int, default=0, help="Max rows to emit (0 = unlimited).")
+    p_list.add_argument("--verbose", "-v", action="store_true", help="Print row count on stderr.")
+    p_list.set_defaults(func=cmd_ledger_list)
+
+    p_stats = p_ledger_sub.add_parser(
+        "stats",
+        help="One-shot summary of ledger state: totals, timestamp range, chain tip, branches.",
+    )
+    p_stats.add_argument("--db", default="akashic.db", help="SQLite ledger path. Default: ./akashic.db.")
+    p_stats.add_argument("--pretty", action="store_true", help="Pretty-print JSON.")
+    p_stats.set_defaults(func=cmd_ledger_stats)
+
+    p_head = p_ledger_sub.add_parser(
+        "head",
+        help="Current state integer for one branch (--branch) or all branches.",
+    )
+    p_head.add_argument("--db", default="akashic.db", help="SQLite ledger path. Default: ./akashic.db.")
+    p_head.add_argument("--branch", default=None, help="Specific branch name. Default: all branches.")
+    p_head.add_argument("--pretty", action="store_true", help="Pretty-print JSON.")
+    p_head.set_defaults(func=cmd_ledger_head)
+
+    # inspect — structural read of a bundle, no crypto, no reconstruction.
+    p_inspect = subparsers.add_parser(
+        "inspect",
+        help="Read bundle metadata without running verification (fast, offline).",
+        description=(
+            "Reads a CanonicalBundle JSON and emits structural metadata: "
+            "axiom counts (claimed + parsed), state integer size in digits, "
+            "signature fields present, bundle + format versions, timestamp, "
+            "branch, sum_cli sidecar if present. Does NOT verify signatures "
+            "or reconstruct the state integer — use `sum verify` for that. "
+            "Useful when an agent wants to route a bundle by shape before "
+            "paying the full verify cost."
+        ),
+    )
+    p_inspect.add_argument("--input", "-i", help="Read from this path instead of stdin ('-' for stdin).")
+    p_inspect.add_argument("--pretty", action="store_true", help="Pretty-print JSON output.")
+    p_inspect.set_defaults(func=cmd_inspect)
+
+    # schema — JSON Schema for each shape SUM emits.
+    p_schema = subparsers.add_parser(
+        "schema",
+        help="Emit JSON Schema for one of SUM's output shapes.",
+        description=(
+            "Prints a JSON Schema (Draft 2020-12) for one of SUM's output "
+            "shapes. Use this to validate agent output before trusting it. "
+            "Shapes: bundle (CanonicalBundle), provenance (ProvenanceRecord), "
+            "credential (W3C VC 2.0 eddsa-jcs-2022)."
+        ),
+    )
+    p_schema.add_argument(
+        "shape",
+        choices=["bundle", "provenance", "credential"],
+        help="Which output shape to emit the schema for.",
+    )
+    p_schema.set_defaults(func=cmd_schema)
 
     return parser
 

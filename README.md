@@ -47,7 +47,7 @@ Every headline number below is reproducible via `python -m scripts.bench.run_ben
 | `record_provenance_batch` sustained throughput | **~22 k ops/sec** (10.2× the single-write path) | empirical-benchmark |
 | Merkle-chain integrity under concurrent writers | holds (50–200-event bursts) | **provable** (post `9c4139d`) |
 | Cross-runtime byte-identity fixtures | **131 / 131 passing** across Python ↔ Node.js ↔ Browser JS | empirical-benchmark |
-| Test suite | **1021 collected** / **1013 passed** at v0.2.1, with `.[dev]` extras installed (8-test gap is spacy-skipped when `en_core_web_sm` isn't downloaded) | **provable** |
+| Test suite | **1035 collected** at v0.3.0, with `.[dev]` extras installed (8-test gap is spacy-skipped when `en_core_web_sm` isn't downloaded) | **provable** |
 
 ---
 
@@ -444,7 +444,7 @@ These are vision items; the shipped today is the static artifact above.
 
 ## 🛡️ Verification: 1000+-Test Suite + 131 Cross-Runtime Fixtures
 
-The test suite covers both proven invariants and empirically-measured properties; each assertion is scoped to the epistemic status of the thing it tests. With the `[dev]` extras installed (`pip install -e '.[sieve,dev]'` or `make install`), `pytest --collect-only` reports **1021 tests**; the full-suite green count at v0.2.1 is **1013 passed** (the 8-test gap is spacy-dependent cases that skip when `en_core_web_sm` isn't downloaded into the venv). CI runs the full suite on every push via `.github/workflows/quantum-ci.yml`.
+The test suite covers both proven invariants and empirically-measured properties; each assertion is scoped to the epistemic status of the thing it tests. With the `[dev]` extras installed (`pip install -e '.[sieve,dev]'` or `make install`), `pytest --collect-only` reports **1035 tests** at v0.3.0; the full-suite green count is **1027 passed** (the 8-test gap is spacy-dependent cases that skip when `en_core_web_sm` isn't downloaded into the venv). CI runs the full suite on every push via `.github/workflows/quantum-ci.yml`.
 
 ```text
 Provable (deterministic code + tests that enforce the proof):
