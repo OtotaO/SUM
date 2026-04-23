@@ -6,6 +6,27 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 (next release will move these entries under a version heading)
 
+## [0.2.1] — 2026-04-23
+
+Patch release — fixes a three-minute-old version-reporting bug
+introduced by 0.2.0.
+
+### Fixed
+
+- `sum --version` and `bundle.sum_cli.cli_version` now track the
+  actually-installed distribution version via
+  `importlib.metadata.version("sum-engine")` instead of a hardcoded
+  string in `sum_cli/__init__.py`. 0.2.0's wheel shipped with
+  `pyproject.toml` at 0.2.0 but the CLI's hardcoded `__version__`
+  still said `"0.1.0"`, so every bundle minted under 0.2.0 carried
+  `sum_cli.cli_version: "0.1.0"` — a silent truth gap inside the
+  very bundles the CLI exists to attest. 0.2.1 closes it at the
+  source: no dual source of truth to drift from again.
+
+### Unchanged
+
+- Everything else. No API/CLI contract changes from 0.2.0.
+
 ## [0.2.0] — 2026-04-23
 
 Hygiene release (one day after 0.1.0). One BREAKING change, zero
@@ -123,6 +144,7 @@ browser demo. Cross-runtime trust triangle
   package. Downstream consumers should depend on the CLI contract,
   not import these modules directly — they may move in 0.2.0.
 
-[Unreleased]: https://github.com/OtotaO/SUM/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/OtotaO/SUM/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/OtotaO/SUM/releases/tag/v0.2.1
 [0.2.0]: https://github.com/OtotaO/SUM/releases/tag/v0.2.0
 [0.1.0]: https://github.com/OtotaO/SUM/releases/tag/v0.1.0
