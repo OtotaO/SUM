@@ -2,7 +2,7 @@ Knowledge distilled into prime-factored integers, signed, and verified cross-run
 
 ## Current State
 
-SUM shipped as `sum-engine 0.1.0` on PyPI on 2026-04-22. What's locked in code today:
+SUM is live on PyPI as `sum-engine` — `0.1.0` first release (2026-04-22), `0.2.0` hygiene release (2026-04-22, `internal/` → `sum_engine_internal/` namespace rename). What's locked in code today:
 
 | Metric | Value | Epistemic status |
 |---|---|---|
@@ -14,10 +14,10 @@ SUM shipped as `sum-engine 0.1.0` on PyPI on 2026-04-22. What's locked in code t
 | Fortress gate | 21 / 21 passing | **proved** — [`scripts/verify_fortress.py`](scripts/verify_fortress.py) |
 | Cross-runtime kill-experiments (Python ↔ Node ↔ Browser) | 5 / 5 green (K1 / K1-multiword / K2 / K3 / K4) | **proved** — [`scripts/verify_cross_runtime.py`](scripts/verify_cross_runtime.py), CI-gated |
 | Merkle-chain integrity under concurrent writers | holds (50–200-event bursts) | **proved** — [`Tests/test_akashic_ledger.py`](Tests/test_akashic_ledger.py), post commit `9c4139d` |
-| Test suite size | 1000+ collected | **proved** — `python -m pytest Tests/ --collect-only -q` (1021 at v0.1.0, rounded per contract) |
+| Test suite size | 1000+ collected | **proved** — `python -m pytest Tests/ --collect-only -q` (1013 at v0.2.0, rounded per contract) |
 | Feature catalog entries | 82 Production, 14 Scaffolded, 2 Designed | **proved** — [`docs/FEATURE_CATALOG.md`](docs/FEATURE_CATALOG.md), every row has a named verification command |
 
-**Agentic CLI surface (v0.1.0, on PyPI):**
+**Agentic CLI surface (v0.2.0, on PyPI):**
 
 ```bash
 pip install 'sum-engine[sieve]'

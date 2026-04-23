@@ -4,6 +4,12 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+(next release will move these entries under a version heading)
+
+## [0.2.0] — 2026-04-22
+
+Hygiene release. One BREAKING change, zero behavior changes.
+
 ### Changed — BREAKING (for anyone who imported `internal.*` directly)
 
 - The top-level `internal/` package was renamed to `sum_engine_internal/`
@@ -15,19 +21,25 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
   all flags, the CanonicalBundle JSON schema, the Gödel-state wire
   format) is unchanged. Anyone using `sum-engine` through the CLI
   sees no difference. Only consumers who were importing
-  `internal.infrastructure.X` etc. directly — which the CHANGELOG
-  explicitly flagged as unsupported in the 0.1.0 "Known limitations"
-  — need to rename their imports.
-- Next released version will move this entry under its version
-  heading. Until then, `sum-engine 0.1.0` on PyPI remains the
-  latest published release and still works end-to-end.
+  `internal.infrastructure.X` etc. directly — which the 0.1.0
+  CHANGELOG's "Known limitations" explicitly flagged as unsupported
+  — need to update their imports to `sum_engine_internal.*`.
+
+### Unchanged
+
+- CanonicalBundle wire format (`canonical_format_version 1.0.0`).
+- Prime scheme (`sha256_64_v1`).
+- All cryptographic contracts (HMAC, Ed25519, VC 2.0 `eddsa-jcs-2022`).
+- Cross-runtime trust triangle (K1 / K1-mw / K2 / K3 / K4 all PASS
+  on this commit; same bundle bytes still verify in Python ↔ Node ↔
+  Browser).
 
 ## [0.1.0] — 2026-04-22
 
 First public release. Ships the `sum` CLI on PyPI, the Python API
-under `internal.*` (renamed to `sum_engine_internal.*` in the next
-release — see Unreleased above), the standalone Node verifier, and
-the single-file browser demo. Cross-runtime trust triangle
+under `internal.*` (renamed to `sum_engine_internal.*` in 0.2.0 —
+see above), the standalone Node verifier, and the single-file
+browser demo. Cross-runtime trust triangle
 (Python ↔ Node ↔ Browser) is complete and locked by CI.
 
 ### Added — CLI
@@ -110,5 +122,6 @@ the single-file browser demo. Cross-runtime trust triangle
   package. Downstream consumers should depend on the CLI contract,
   not import these modules directly — they may move in 0.2.0.
 
-[Unreleased]: https://github.com/OtotaO/SUM/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/OtotaO/SUM/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/OtotaO/SUM/releases/tag/v0.2.0
 [0.1.0]: https://github.com/OtotaO/SUM/releases/tag/v0.1.0
