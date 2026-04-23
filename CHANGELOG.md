@@ -6,9 +6,10 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 (next release will move these entries under a version heading)
 
-## [0.2.0] — 2026-04-22
+## [0.2.0] — 2026-04-23
 
-Hygiene release. One BREAKING change, zero behavior changes.
+Hygiene release (one day after 0.1.0). One BREAKING change, zero
+behavior changes.
 
 ### Changed — BREAKING (for anyone who imported `internal.*` directly)
 

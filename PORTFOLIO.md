@@ -2,7 +2,7 @@ Knowledge distilled into prime-factored integers, signed, and verified cross-run
 
 ## Current State
 
-SUM is live on PyPI as `sum-engine` — `0.1.0` first release (2026-04-22), `0.2.0` hygiene release (2026-04-22, `internal/` → `sum_engine_internal/` namespace rename). What's locked in code today:
+SUM is live on PyPI as `sum-engine` — `0.1.0` first release (2026-04-22), `0.2.0` hygiene release (2026-04-23, `internal/` → `sum_engine_internal/` namespace rename). What's locked in code today:
 
 | Metric | Value | Epistemic status |
 |---|---|---|
