@@ -24,6 +24,12 @@ will have the full picture.
 4. **[`Makefile`](Makefile)** — every dev command canonicalised. `make help`
    renders the full list. Common ones: `make install`, `make test`,
    `make xruntime`, `make smoke`.
+5. **[`docs/NEXT_SESSION_PLAYBOOK.md`](docs/NEXT_SESSION_PLAYBOOK.md)** —
+   ordered work queue (Priorities 1–8), principles you must internalise
+   before editing claims, stop-the-line triggers. Read first if you are
+   picking the thread up cold. The ordering is precedence, not
+   preference: earlier priorities harden existing claims; later ones
+   extend the surface.
 
 Shipping surface at the current HEAD: the `sum` binary on PyPI
 (`pip install sum-engine[sieve]`), the Node verifier in

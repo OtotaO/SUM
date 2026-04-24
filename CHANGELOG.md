@@ -4,6 +4,20 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Added — forward playbook for future sessions
+
+- `docs/NEXT_SESSION_PLAYBOOK.md` — ordered work queue (Priorities
+  1–8) with principles, stop-the-line triggers, and the ordering
+  rationale. Priorities 1–2 harden existing claims (adversarial
+  cross-runtime fuzzing, WASM perf measurement); 3–4 extend them
+  into new regions (`sha256_128_v2`, SPARQL disambiguation); 5–6
+  make the surface self-describing (threat-model validation,
+  delta-bundle semantics); 7–8 broaden the trust base (supply-chain
+  attestation, LLM-extraction honesty guardrails). `CLAUDE.md`
+  onboarding list now points at this file as item #5 so a memory-
+  less session discovers the queue by reading the canonical entry
+  block.
+
 ### Removed — portfolio-site artifacts (separation of concerns)
 
 SUM is a knowledge-distillation engine. The sumequities.com portfolio
