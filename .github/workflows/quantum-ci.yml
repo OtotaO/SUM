@@ -125,13 +125,23 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements-prod.txt
 
-    - name: Run K1/K1-multiword/K2/K3/K4 kill-experiments
+    - name: Run K1/K1-multiword/K2/K3/K4 valid-path kill-experiments
       # K1 + K1-multiword: CanonicalBundle structural round-trip
       # K2:               verify.js cleanly rejects VC 2.0 (named error)
       # K3:               Ed25519-signed bundle verifies Python → Node
       # K4:               Tampered Ed25519 bundle fails at Node verifier
       # Non-zero exit here means the trust triangle drifted — hard-stop merge.
       run: python -m scripts.verify_cross_runtime
+
+    - name: Run A1-A6 adversarial rejection matrix
+      # Companion to the K-matrix: proves the two verifiers agree on
+      # INVALIDITY as well as validity. Each fixture is a deliberately
+      # malformed bundle (missing tome, tampered signature, unknown
+      # format version, …); both verifiers must reject AND classify
+      # the rejection equivalently (structural / signature / scheme /
+      # version). Disagreement = runtime asymmetry; non-zero exit
+      # hard-stops the merge.
+      run: python -m scripts.verify_cross_runtime_adversarial
 
   pypi-install-smoke:
     name: pip install sum-engine (fresh venv smoke)

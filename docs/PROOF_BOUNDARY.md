@@ -28,10 +28,11 @@ reconstruct(parse(canonical_tome(S))) == S
 
 **Claim:** The Gödel State Integer is runtime-independent. Given the same canonical tome, Python (sympy), Node.js (BigInt + Miller-Rabin via `standalone_verifier/math.js`), and in-browser JavaScript (the inlined copy in `single_file_demo/index.html`) all produce byte-identical state integers.
 
-**Proof mechanism:** Three independent harnesses lock the contract in CI:
-- `scripts/verify_cross_runtime.py` — Python mints a CanonicalBundle via `CanonicalCodec.export_bundle`; Node.js reconstructs via `standalone_verifier/verify.js`; state integers must match byte-for-byte.
+**Proof mechanism:** Four independent harnesses lock the contract in CI (the first three cover valid inputs; the fourth covers adversarial inputs):
+- `scripts/verify_cross_runtime.py` — Python mints a CanonicalBundle via `CanonicalCodec.export_bundle`; Node.js reconstructs via `standalone_verifier/verify.js`; state integers must match byte-for-byte. K1 / K1-multiword / K2 / K3 / K4.
 - `scripts/verify_godel_cross_runtime.py` — 12 axiom keys (including UTF-8 and multi-word cases) minted in both Python and Node; 6 triple-lists encoded to state integers in both. 18 / 18 fixtures byte-identical.
 - Browser-minted bundle → `node standalone_verifier/verify.js` — the inlined JavaScript in the single-file demo produces a CanonicalBundle that validates under the Node verifier unchanged, closing the three-runtime loop.
+- `scripts/verify_cross_runtime_adversarial.py` — ADVERSARIAL rejection matrix. Six deliberately-malformed bundles (missing tome, truncated tome, state integer = 0, state integer = -42, canonical_format_version = 99.0.0, Ed25519-signed bundle with tome tampered post-sign). Both verifiers must reject AND classify the rejection equivalently (`structural` / `signature` / `version` / `scheme`). This closes the "agree on invalidity" gap that the first three harnesses left open — see Priority 1 in `docs/NEXT_SESSION_PLAYBOOK.md`.
 
 **Boundary:** All three implementations use the same deterministic prime derivation (`SHA-256(axiom_key) → first 8 bytes big-endian → seed → nextprime(seed)`) via the `sha256_64_v1` scheme. The collision-resolution path depends on minting order; it has cross-*instance* coverage (two `GodelStateAlgebra` instances minting in different orders produce identical primes for identical keys, stress-tested at 1,000 axioms) but is not yet cross-*runtime* collision-verified. Production corpora up to ~2³² axioms have birthday-bound collision probability < 10⁻⁹; the path is not load-bearing at current scale.
 

@@ -4,6 +4,41 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Added — Priority 1: adversarial cross-runtime rejection matrix
+
+- `scripts/verify_cross_runtime_adversarial.py` — companion to the
+  existing K-matrix. Six fixtures (A1-A6) covering the three
+  cross-runtime-equivalent rejection classes: structural (missing
+  tome, truncated tome, state integer = 0, state integer = -42),
+  version (unknown canonical_format_version), signature (Ed25519
+  bundle with post-sign tome tampering). Each fixture is passed
+  through BOTH the Python verifier (`sum verify --input`) and the
+  Node verifier (`standalone_verifier/verify.js`). The harness
+  asserts: (1) both reject; (2) rejection classifications agree.
+- HMAC tampering is intentionally out of scope for this harness —
+  the Node verifier's header docstring is explicit that HMAC is
+  not checked ("shared-secret, not public witness"). HMAC fixtures
+  stay in `Tests/test_adversarial_bundles.py` (Python unit tests).
+- `make xruntime-adversarial` runs it locally.
+- `.github/workflows/quantum-ci.yml` `cross-runtime-harness` job
+  runs A1-A6 alongside the existing K-matrix on every push.
+- `docs/PROOF_BOUNDARY.md` §1.2 updated: the Cross-Runtime State
+  Equivalence claim is now backed by FOUR harnesses, the fourth
+  explicitly "proved on adversarial inputs," closing the
+  valid-only-agreement gap the previous three left open.
+
+Initial run result: **6 / 6 fixtures pass** — the two verifiers
+already agree on rejection class for every adversarial case we
+built. Worth reading as: the valid-input-agreement property
+hasn't been accidentally extending a false claim about invalid-
+input agreement; we checked and the claim holds.
+
+Queue: A7+ fixtures (boundary state integers > 10^5 digits for
+DoS; scheme-downgrade attempts between sha256_64_v1 and an
+as-yet-unshipped v2; empty `{}` bundles; non-object root JSON)
+can be added as single-line `FIXTURES` entries. Priority 1 is
+formally discharged; future fixtures are additive hardening.
+
 ### Added — forward playbook for future sessions
 
 - `docs/NEXT_SESSION_PLAYBOOK.md` — ordered work queue (Priorities
