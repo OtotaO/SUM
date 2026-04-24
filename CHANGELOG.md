@@ -4,6 +4,36 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Added — platform trajectory (Phases A–D) in NEXT_SESSION_PLAYBOOK
+
+- `docs/NEXT_SESSION_PLAYBOOK.md` grew a new
+  "Beyond the priorities — platform trajectory" section after the
+  Priority 1–8 block. Four phases:
+    * **Phase A** — finish the hardening playbook (= Priorities 3–8).
+      No new thinking; exists as a framing anchor for Phases B/C/D.
+    * **Phase B** — platform surface: source anchoring in the bundle
+      schema (B1), bundle explorer / viewer (B2), `sum verify --explain`
+      UX (B3), `sum tutorial` onboarding (B4). Depends on Phase A.
+    * **Phase C** — network layer: well-known bundle discovery (C1),
+      composition UX (C2), cross-attestation graph (C3), W3C VC 2.0
+      full round-trip + PROV-O (C4). Depends on B1 + P6.
+    * **Phase D** — 1.0 stability contract. Not new work; a decision
+      point with a CI-backed promise that 1.0-minted bundles continue
+      to verify 10 years from now.
+- "The greater goal, stated plainly" preface names the three gaps the
+  phases exist to close: trust end-to-end for a specific adversarial
+  user, composability across publishers, engine-itself verifiability.
+- Each phase has an explicit exit gate. "How to use this document"
+  footer names the reading order for memory-less sessions and flags
+  the two common scope-pressure failure modes (ship-faster-skip-gate,
+  ship-more-add-item).
+- `CLAUDE.md` onboarding item #5 expanded to name the new section and
+  its Phase-dependency rule (do not start B-work while A is open).
+
+No immediate execution commitment. Phase A continues through
+Priorities 3–8 in their existing order; the trajectory section exists
+so future sessions don't re-derive the same roadmap from scratch.
+
 ### Added — Priority 2: WASM-vs-JS derivation benchmark harness
 
 - `Tests/benchmarks/browser_wasm_bench.html` — single-file harness that

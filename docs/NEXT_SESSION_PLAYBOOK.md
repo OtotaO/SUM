@@ -325,3 +325,162 @@ SUM's whole thesis is that content-addressed, cryptographically-
 attested, cross-runtime-verified bundles are a truth-telling surface
 because they can't lie without being caught. The repo itself should
 hold to the same standard the bundles do.
+
+---
+
+# Beyond the priorities — platform trajectory
+
+Priorities 1–8 above are the **hardening playbook**: they close known
+truth gaps in the current surface. Everything in this section is
+**post-hardening** and depends on that surface being solid. Don't run
+Phase B or C work while Phase A priorities are still open — a platform
+built on an unstable foundation fails in a way that blames the
+platform, not the foundation.
+
+## The greater goal, stated plainly
+
+SUM today is a cryptographically-attested knowledge-bundle engine with
+a proved cross-runtime verifier triangle. "Extremely useful platform"
+means three things it is *not* yet:
+
+1. **Trustworthy end-to-end for a specific user in a specific
+   adversarial context** (journalist verifying a claim, LLM operator
+   auditing extraction, researcher replicating a cited result).
+2. **Composable across publishers**, so bundles flow and aggregate
+   rather than sit in isolation.
+3. **Self-describing enough that a motivated skeptic can verify the
+   engine itself**, not just the bundles it produces.
+
+Every phase below is an answer to one of those three gaps. Phase A
+finishes the foundation; Phase B puts the first useful surface on top
+of it; Phase C turns the surface into a network; Phase D is the
+stability commitment that makes the network usable as a dependency.
+
+## Phase A — finish the hardening playbook (Priorities 3–8)
+
+No new thinking — everything is already rationalised above. Execute in
+sequence.
+
+| Priority | Effect |
+|---|---|
+| P3 `sha256_128_v2` | Moves prime scheme from "safe for <2³² axioms" to "safe at knowledge-graph scale." |
+| P4 SPARQL disambig | Moves entity resolution from 80% correct to a measured >95% floor. Kills the 1-in-5 lie rate on `/api/qid`. |
+| P5 threat-model validation | Every documented defence gets an executable test. Prose → prose + assertions. |
+| P6 delta semantics | Specifies what composition means. **Precondition for every Phase C item.** |
+| P7 supply-chain attestation | Consumers verify the bytes, not just trust the repo. |
+| P8 LLM honesty guardrails | Signed ≠ true becomes visible at the interface the consumer reads. |
+
+**Gate to exit Phase A.** Every priority's success-criterion line
+above passes. The CI matrix has K1–K5 + A1–A6 + threat-suite +
+supply-chain verify + LLM-guardrail assertions all green on every
+push.
+
+## Phase B — platform surface
+
+These items only make sense *after* A. Shipping them earlier adds
+surface to a foundation still settling.
+
+**B1 — source anchoring in the bundle schema.** Every axiom optionally
+carries `{source_uri, content_hash, byte_range, retrieved_at}`. A
+journalist's attestation survives link-rot because the hash pins the
+content; a fact-checker can re-derive the axiom from the pinned source.
+Backward-compat schema extension: `provenance` becomes required when
+`extractor == "llm"`, optional when `"sieve"`. Builds directly on the
+existing AkashicLedger byte-range machinery.
+
+**B2 — bundle explorer / viewer.** `single_file_demo/index.html`
+extended from "paste → attest" to "open → read → verify → trace
+provenance." Drop-in file, paste-in URL, or QR-scan entry points.
+Shows signer DID, DID resolvability status, per-axiom provenance span,
+verification result. Primary surface through which a non-technical
+reader encounters SUM.
+
+**B3 — `sum verify --explain` on the CLI.** When verification fails,
+the verifier tells the user exactly why in one sentence they can act
+on. Current error output is proof-level detail; `--explain` is the UX
+layer. Same input, new output format; the underlying verify logic is
+unchanged.
+
+**B4 — first-try onboarding.** `pip install sum-engine[sieve]` →
+`echo "…" | sum attest | sum verify` must produce a visibly
+interesting result in under 60 seconds with zero ambiguous steps.
+The current path works but isn't rehearsed. A `sum tutorial`
+subcommand walks a new user through attest → sign → verify →
+view-in-browser in five numbered prompts.
+
+**Gate to exit Phase B.** A fresh user, given only the README, can
+produce a verified signed bundle with source-anchored axioms and open
+it in the explorer without asking a question.
+
+## Phase C — network layer
+
+SUM stops being a tool and starts being a platform. Conditional on
+**B1** (source anchoring) and **P6** (delta semantics) both landing.
+
+**C1 — bundle registry / discovery.** Open index any publisher can
+push to, any consumer can pull from. Simplest shape: a well-known URL
+pattern (`https://{domain}/.well-known/sum/bundles.json`) enumerating
+recent bundles with CIDs + signer DIDs. No centralised server, no
+network-effects mandate — a convention that makes discovery possible
+without infrastructure.
+
+**C2 — bundle composition UX.** B2's explorer learns to open a second
+bundle as a delta over the first and show the composed state. A
+fact-checker's flow becomes: open journalist's bundle → add own
+attestations over a subset → export delta → publish at own well-known
+URL.
+
+**C3 — cross-attestation graph.** Given a root bundle and its deltas,
+produce a traversable graph showing who attested what and when. This
+is the primary artefact that makes SUM *valuable for fact-checking at
+scale* — it surfaces consensus or disagreement between independent
+attestors.
+
+**C4 — standards interop.** Full W3C VC 2.0 emit/verify path (some
+scaffolding exists). PROV-O export. Optional JSON-LD context. A bundle
+survives as a W3C credential in W3C-credential tooling and round-trips
+back to the SUM format unchanged.
+
+**Gate to exit Phase C.** Two independent publishers can produce
+bundles that compose into a third-party aggregate verifier's state,
+and the aggregate verifier agrees with both publishers' local
+verifiers. Disagreement surfaces as a named diagnostic, not as
+silent drift.
+
+## Phase D — 1.0 stability contract
+
+Not a phase of new work so much as a decision point.
+
+Before tagging `v1.0.0`: an explicit compatibility contract. What
+bundles shipping 1.0 will continue to verify 10 years from now. What
+schema fields are frozen. What CLI flags are stable. What wire-format
+guarantees hold across minor versions. What requires a major bump.
+
+This turns the implicit "we won't break things" into a documented
+promise, backed by a corresponding CI gate that tests the promise
+(e.g. a corpus of 1.0-minted bundles that every later release must
+continue to verify). It is the hand-off point between "interesting
+prototype" and "dependency anyone can build on."
+
+Until this is in place, every `sum-engine` release is implicitly
+saying "you should be fine, probably." 1.0 is when that becomes
+"you will be fine, because the test suite asserts so."
+
+## How to use this document
+
+- **Reading order** if you are a memory-less session: Priorities 1–8,
+  then this trajectory section. Don't skip ahead to Phase B work if
+  Phase A priorities are still open.
+- **Phase tags in commits**: optional but useful. Prefix
+  `[P3] …` or `[B1] …` so `git log --grep` finds all work on a given
+  item.
+- **When you discover a dependency** between two items that isn't
+  captured here, add the edge as an explicit sentence in the item
+  text. The ordering here is the best I could make it; future
+  learning refines it.
+- **Scope pressure** comes from two directions — "ship faster, skip
+  the gate" and "ship more, add an item." Both are wrong. The
+  priorities close debts that already exist; the phases add surface
+  that depends on those debts being closed. Shipping anything new
+  before the gates it depends on pass moves the debt, not the
+  value.
