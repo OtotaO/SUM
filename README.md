@@ -2,11 +2,11 @@
 
 <p align="center">
   <a href="https://github.com/OtotaO/SUM/blob/main/single_file_demo/index.html">
-    <img src="https://raw.githubusercontent.com/OtotaO/SUM/main/docs/images/demo-poster.svg" alt="SUM demo preview: paste a paragraph, attest every fact, verify anywhere." width="720">
+    <img src="https://raw.githubusercontent.com/OtotaO/SUM/main/docs/images/demo.gif" alt="SUM demo: paste a paragraph, attest every fact as a prime, verify the Gödel state integer — all offline in one HTML file." width="600">
   </a>
 </p>
 <p align="center"><em>
-  Above: the single-file demo (<code>single_file_demo/index.html</code>). A 15-second recording of the full paste→attest→verify loop is queued — see <a href="https://github.com/OtotaO/SUM/blob/main/docs/DEMO_RECORDING.md">docs/DEMO_RECORDING.md</a> for the one-take runbook; the poster frame fills this slot until the GIF lands.
+  Above: the single-file demo (<code>single_file_demo/index.html</code>) — paste → attest → verify in 15 seconds, entirely in the browser. See <a href="https://github.com/OtotaO/SUM/blob/main/docs/DEMO_RECORDING.md">docs/DEMO_RECORDING.md</a> for the one-take runbook that produced this recording.
 </em></p>
 
 [![SUM Knowledge OS CI](https://github.com/OtotaO/SUM/actions/workflows/quantum-ci.yml/badge.svg)](https://github.com/OtotaO/SUM/actions/workflows/quantum-ci.yml)
