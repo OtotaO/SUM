@@ -5,8 +5,8 @@
 # If you want to know what a target really does, read it below.
 
 .DEFAULT_GOAL := help
-.PHONY: help install install-hooks test test-cli test-codec bench xruntime \
-        portfolio demo wheel sdist smoke fortress clean lint
+.PHONY: help install test test-cli test-codec bench xruntime \
+        demo wheel sdist smoke fortress clean lint wasm
 
 PYTHON ?= python
 
@@ -21,9 +21,6 @@ install:  ## Editable install with sieve extras + dev tools.
 	$(PYTHON) -m pip install --upgrade pip
 	$(PYTHON) -m pip install -e '.[sieve,dev]'
 	$(PYTHON) -m spacy download en_core_web_sm
-
-install-hooks:  ## Enable the warn-only pre-commit hook (PORTFOLIO reminder).
-	bash scripts/install-hooks.sh
 
 test:  ## Full pytest run (1000+ tests).
 	$(PYTHON) -m pytest Tests/ -q
@@ -52,9 +49,6 @@ xruntime:  ## Cross-runtime kill-experiments K1/K1-mw/K2/K3/K4 (Python ↔ Node)
 
 fortress:  ## 21-check fortress gate (pure-math invariants).
 	$(PYTHON) scripts/verify_fortress.py --json
-
-portfolio:  ## Enforce PORTFOLIO.md epistemic-label contract.
-	$(PYTHON) -m scripts.check_portfolio_contract
 
 demo:  ## Open the single-file demo in the default browser.
 	@command -v open >/dev/null && open single_file_demo/index.html || \

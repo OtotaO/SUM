@@ -24,9 +24,6 @@ python -m venv .venv && source .venv/bin/activate
 pip install -e '.[sieve,dev]'
 python -m spacy download en_core_web_sm
 
-# One-time: enable the PORTFOLIO.md warn-hook for local commits
-make install-hooks
-
 # Run the test suite (1000+ tests; see Makefile for shortcuts)
 make test
 # Fast inner loop (CLI + codec + VC only):
@@ -59,7 +56,6 @@ python -m pytest Tests/ -v  # Look for "⚡ BARE-METAL ZIG CORE ENGAGED ⚡"
 | Fortress | `make fortress` | 21/21 |
 | Zig Tests | `cd core-zig && zig build test` | All pass |
 | Cross-Runtime Harness | `make xruntime` | K1/K1-mw/K2/K3/K4 all PASS |
-| PORTFOLIO contract | `make portfolio` | OK, every metric row labelled |
 | pip install smoke | `make wheel && make smoke` | attest\|verify round-trip ✓ |
 
 ## 📁 Project Structure

@@ -4,6 +4,61 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Removed — portfolio-site artifacts (separation of concerns)
+
+SUM is a knowledge-distillation engine. The sumequities.com portfolio
+is a personal-portfolio site that references SUM as one of many
+featured projects. The two should not share governance, CI rules,
+or narrative files — a third-party `pip install sum-engine` consumer
+has no business with a portfolio file, and a fork should not inherit
+rules about a personal portfolio. Earlier commits in this session
+incorrectly coupled them; this entry records the full revert.
+
+- Deleted `PORTFOLIO.md` at repo root.
+- Deleted `scripts/check_portfolio_contract.py`,
+  `scripts/hooks/pre-commit`, `scripts/install-hooks.sh`.
+- Removed the `portfolio-contract` job from
+  `.github/workflows/quantum-ci.yml`.
+- Removed the `## PORTFOLIO.md contract` section from `CLAUDE.md`;
+  replaced the now-stale onboarding list-item #1 (which pointed at
+  `PORTFOLIO.md`) with a shortened 4-file reading list. Added an
+  `## Out of scope — do not cross-repo edit` note naming the
+  portfolio repo as off-limits.
+- Removed `make portfolio` and `make install-hooks` targets from
+  `Makefile`; dropped both from `.PHONY`. Added `wasm` to `.PHONY`
+  (it was listed as a target earlier in the session but never added
+  to the list).
+- `README.md` hero no longer carries the "Portfolio-facing overview:
+  PORTFOLIO.md" pointer. The "Shipped since the last README pass"
+  bullet for "PORTFOLIO.md + CLAUDE.md contract" removed.
+- `CONTRIBUTING.md` setup block no longer tells contributors to run
+  `make install-hooks`; Verification-Gates table no longer carries
+  the `PORTFOLIO contract` row.
+
+### Removed — experimental AT Protocol Lexicon (same-confusion teardown)
+
+Phase C from the same session published
+`com.sumequities.experimental.axiom` as a Lexicon schema on the
+user's Bluesky PDS under the portfolio's domain authority. Same
+portfolio-vs-engine confusion at the namespace layer: SUM the
+engine should not claim a Lexicon under the portfolio's domain.
+External state torn down before this commit landed:
+
+- Bluesky record `at://did:plc:cuqlv67qg6tepr2gjvknajcp/com.atproto.lexicon.schema/com.sumequities.experimental.axiom`
+  deleted via `com.atproto.repo.deleteRecord`. PDS confirms
+  `RecordNotFound`; `listRecords` returns empty.
+- DNS TXT `_lexicon.sumequities.com` (content
+  `did=did:web:sumequities.com`) deleted from Cloudflare DNS.
+  `dig +short TXT _lexicon.sumequities.com` empty.
+- Bluesky app-password `sum-lexicon-publisher` (fragment
+  `24hi-yfrq-3q6r-5ezs`) revoked at `bsky.app/settings/app-passwords`.
+
+In-repo artifacts that were drafted on disk but never committed
+(the C.6 gate was going to hold them; user surfaced the deeper
+issue before C.7 fired) are `rm`'d as working-tree cleanup in this
+commit: `scripts/publish_lexicon_schema.py`, `at_proto/lexicon/`
+directory and its single JSON.
+
 ### Added — `/api/qid` Wikidata resolver (Phase 4a)
 
 - `worker/src/routes/qid.ts` — replaces the 501 stub with a working

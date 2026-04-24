@@ -20,8 +20,6 @@ echo "Alice likes cats. Bob owns a dog." | sum attest --extractor=sieve | sum ve
 # → sum: ✓ verified 2 axiom(s), state integer matches (hmac=absent, ed25519=absent)
 ```
 
-Portfolio-facing overview: [`PORTFOLIO.md`](PORTFOLIO.md). Engineering onboarding + deep-dive: below.
-
 > **From Tags to Tomes and Back Again — canonical round-trip proven, full pipeline measured.**
 
 SUM began as a humble bidirectional knowledge distillation engine: turn **structured facts** (tags) into **coherent narratives** (tomes) and vice versa, with adjustable knobs for density, length, formality, audience, and perspective. What emerged is a **semantic algebra** that represents knowledge as prime-factored integers, giving a mathematically proven round-trip on the canonical representation and an empirical faithfulness score on the full text→structure→text loop.
@@ -355,7 +353,6 @@ These are **roadmap items**, not current capabilities. Each is a concrete piece 
 - ✅ **`sum attest --ledger DB`** closes the attest → resolve loop. Per-triple ProvenanceRecords (source URI, byte range, sentence excerpt, extractor ID) recorded into a SQLite AkashicLedger; resulting `prov_id`s attached to `bundle.sum_cli.prov_ids`. `sum resolve <prov_id> --db DB` walks axiom → source byte range.
 - ✅ **Cross-runtime Ed25519 trust triangle.** Same bundle bytes verify identically in Python (`sum verify`), Node (`standalone_verifier/verify.js` via WebCrypto), and modern browsers (`single_file_demo/index.html` via SubtleCrypto — Chrome 113+, Firefox 129+, Safari 17+). Locked in CI by kill-experiments K3 (positive) + K4 (tampered-bundle rejection); the harness also runs K1 + K1-multiword + K2.
 - ✅ **HMAC is now optional** in `CanonicalCodec`. The old `sum-default-key` placebo default is gone (it was a publicly-known shared secret — cryptographic theater). `signing_key=None` emits no `signature` field; downgrade-protection preserved when a key IS configured.
-- ✅ **PORTFOLIO.md + CLAUDE.md contract.** `PORTFOLIO.md` at repo root is the body of [sumequities.com/projects/sum](https://github.com/OtotaO/SUMequities) — verified-claims-only, every metric row labelled `**proved**` or `**empirical-benchmark**`. CI job `portfolio-contract` (blocking) + warn-only pre-commit hook enforce the contract.
 - ✅ **CI gates landed.** `cross-runtime-harness` runs K1-K4 every PR (Node 22). `pypi-install-smoke` builds the wheel and runs `echo prose | sum attest | sum verify` in a fresh venv every push. `publish-pypi.yml` handles OIDC-authenticated PyPI releases on tag pushes.
 
 #### Earlier (substrate work)
