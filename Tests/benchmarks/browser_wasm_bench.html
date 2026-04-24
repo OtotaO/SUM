@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SUM — WASM vs JS derivation benchmark</title>
+<!--
+  Priority 2 of docs/NEXT_SESSION_PLAYBOOK.md — measure the WASM path.
+
+  What this page benchmarks:
+    The hot path of SUM's axiom attestation: derivePrime(axiomKey) →
+    BigInt (sha256_64_v1 prime). The single-file demo dispatches to
+    either the WASM core (core-zig/, served as sum_core.wasm) or the
+    pure-JS WebCrypto+BigInt fallback. This page runs BOTH paths,
+    independently, on the same input, and reports per-op wall-clock
+    medians across repeated trials.
+
+  What this page does NOT benchmark:
+    - Signature verification (Ed25519 sign/verify). Separate surface.
+    - Full bundle verification (parse + primes + LCM + signature +
+      tome-shape check). Wall-clock there is dominated by Ed25519
+      and JSON parsing, not prime derivation.
+    - Extraction (sieve or LLM). Extraction is IO-bound or API-bound
+      and irrelevant to the WASM claim.
+
+  Methodology, reproduction steps, and the "label every number
+  measured" discipline live in docs/WASM_PERFORMANCE.md.
+
+  To run:
+    $ cd <repo-root>
+    $ python -m http.server 8000
+    then open http://localhost:8000/Tests/benchmarks/browser_wasm_bench.html
+
+  You need a real HTTP server (file:// blocks WebAssembly fetch and
+  crypto.subtle on most engines). The demo fetches sibling files via
+  relative paths from this file's location.
+-->
+<style>
+  :root { color-scheme: light dark; font-family: ui-sans-serif, system-ui, -apple-system; }
+  body { max-width: 900px; margin: 32px auto; padding: 0 20px; line-height: 1.5; }
+  h1 { font-weight: 600; font-size: 22px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .sub { opacity: 0.7; font-size: 13px; margin-bottom: 20px; max-width: 64ch; }
+  button { padding: 9px 16px; border: 1px solid #8886; border-radius: 6px; background: #4a90e2; color: white; font: inherit; font-weight: 500; cursor: pointer; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  button.ghost { background: transparent; color: inherit; margin-left: 8px; }
+  .controls { display: flex; gap: 10px; align-items: center; margin: 14px 0; flex-wrap: wrap; }
+  .pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; background: #8882; font-family: ui-monospace, monospace; }
+  .pill.wasm { background: #27ae6022; color: #27ae60; }
+  .pill.js   { background: #4a90e222; color: #4a90e2; }
+  .pill.bad  { background: #c0392b22; color: #c0392b; }
+  #status { font: 13px/1.5 ui-monospace, monospace; opacity: 0.8; min-height: 1.5em; }
+  table { border-collapse: collapse; width: 100%; font: 13px/1.5 ui-monospace, monospace; margin: 14px 0; }
+  th, td { padding: 7px 10px; text-align: right; border-bottom: 1px solid #8883; }
+  th:first-child, td:first-child { text-align: left; }
+  th { font-size: 11px; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.04em; }
+  tr.header { background: #8881; }
+  .env { font: 12px/1.4 ui-monospace, monospace; opacity: 0.65; margin: 8px 0; word-break: break-all; }
+  pre#result-json { font: 12px/1.4 ui-monospace, monospace; background: #8881; padding: 12px; border-radius: 6px; border: 1px solid #8883; max-height: 360px; overflow: auto; white-space: pre-wrap; word-break: break-all; }
+  .note { font-size: 12px; opacity: 0.7; margin-top: 8px; max-width: 64ch; }
+  .note code { background: #8881; padding: 1px 4px; border-radius: 3px; font-size: 11px; }
+  .warn { color: #c0392b; font-size: 13px; margin: 8px 0; }
+  h2 { font-size: 15px; font-weight: 600; margin: 20px 0 6px; }
+</style>
+
+<!-- WASM loader (same one the single-file demo uses, loaded by
+     relative path so the benchmark exercises the deployed code). -->
+<script src="../../single_file_demo/sum_core_wasm.js"></script>
+</head>
+<body>
+<h1>SUM — WASM vs JS prime-derivation benchmark</h1>
+<div class="sub">
+  Measures <code>derivePrime(axiomKey) → BigInt</code> throughput on both
+  the WebAssembly path (<span class="pill wasm">WASM</span>, core-zig) and
+  the pure-JS fallback (<span class="pill js">JS</span>, WebCrypto + BigInt
+  Miller-Rabin). Same axiom keys, same trial counts, same engine.
+  Methodology: <code>docs/WASM_PERFORMANCE.md</code>.
+</div>
+
+<div class="controls">
+  <button id="run">Run benchmark</button>
+  <button id="copy" class="ghost" disabled>Copy JSON result</button>
+  <span id="fallback-note" class="pill bad" style="display:none">WASM unavailable — only JS path will run</span>
+</div>
+
+<div id="status">idle — click Run benchmark</div>
+<div id="env" class="env"></div>
+
+<h2>Results (wall-clock, per-N, across <span id="trials">5</span> trials)</h2>
+<table id="results">
+  <thead>
+    <tr class="header">
+      <th>N axioms</th>
+      <th>WASM median (ms)</th>
+      <th>WASM per-op (µs)</th>
+      <th>JS median (ms)</th>
+      <th>JS per-op (µs)</th>
+      <th>JS ÷ WASM</th>
+      <th>State agree</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<div class="note">
+  <strong>Reading the numbers.</strong> Each row runs both paths on N
+  deterministically-generated axiom keys, R trials each (warm-up trial
+  discarded). The reported ms is the median of the R trial totals. Per-op
+  is <code>median ÷ N × 1000</code> in microseconds. <strong>State
+  agree</strong> confirms the two paths produced the identical
+  <code>lcm(p₁, …, p_N)</code> BigInt — correctness gate, not speed.
+  A row with <code>agree: false</code> is a cross-runtime bug, not a
+  benchmark result; surface it rather than interpret speeds.
+</div>
+
+<h2>Machine-readable result (paste into the doc / issue)</h2>
+<pre id="result-json">{ "status": "not yet run" }</pre>
+
+<div class="note">
+  Paste this JSON block under the matching browser row in
+  <code>docs/WASM_PERFORMANCE.md</code>. Each browser contributes one
+  block; the doc's table is the aggregation across Chrome 113+, Firefox
+  129+, Safari 17+ (the SUM supported-verifier matrix).
+</div>
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════════════════════
+// Constants — configurable only here, so runs across browsers are
+// byte-identical in methodology.
+// ═══════════════════════════════════════════════════════════════════
+
+const INPUT_SIZES = [10, 100, 1000, 10000];
+const TRIALS_PER_N = 5;           // reported median is over this many trials
+const WARMUP_ITERATIONS = 3;      // separate warm-up, not counted
+const AXIOM_KEY_SEED = 'sum-bench-v1';  // deterministic input
+
+document.getElementById('trials').textContent = String(TRIALS_PER_N);
+
+// ═══════════════════════════════════════════════════════════════════
+// Input generation — deterministic across browsers + across trials.
+// Using a plain counter-based key avoids RNG dependence; every engine
+// hashes the same bytes.
+// ═══════════════════════════════════════════════════════════════════
+
+function axiomKey(i) {
+  // Format mirrors the SVO convention in godel.js's axiomKey(): lower,
+  // '||' separated. Content varies per i so each key maps to a
+  // distinct 8-byte seed ⇒ distinct prime with overwhelming probability.
+  return `${AXIOM_KEY_SEED}_subject_${i}||relates_to||${AXIOM_KEY_SEED}_object_${i}`;
+}
+
+function generateKeys(n) {
+  const out = new Array(n);
+  for (let i = 0; i < n; i++) out[i] = axiomKey(i);
+  return out;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// JS fallback — inlined Miller-Rabin 12-witness nextPrime, mirroring
+// standalone_verifier/math.js and single_file_demo/index.html's
+// inlined copy. Cross-runtime identity is already proved by
+// scripts/verify_godel_cross_runtime.py — this inlined copy exists so
+// the benchmark is single-file once served.
+// ═══════════════════════════════════════════════════════════════════
+
+function modPow(base, exp, mod) {
+  base = ((base % mod) + mod) % mod;
+  let result = 1n;
+  while (exp > 0n) {
+    if (exp & 1n) result = (result * base) % mod;
+    exp >>= 1n;
+    base = (base * base) % mod;
+  }
+  return result;
+}
+
+function gcd(a, b) {
+  a = a < 0n ? -a : a;
+  b = b < 0n ? -b : b;
+  while (b > 0n) { [a, b] = [b, a % b]; }
+  return a;
+}
+
+function lcm(a, b) {
+  if (a === 0n || b === 0n) return 0n;
+  return (a / gcd(a, b)) * b;
+}
+
+const SMALL_PRIMES = [5n, 7n, 11n, 13n, 17n, 19n, 23n, 29n, 31n, 37n, 41n, 43n];
+const MR_WITNESSES = [2n, 3n, 5n, 7n, 11n, 13n, 17n, 19n, 23n, 29n, 31n, 37n];
+
+function isPrime(n) {
+  if (n < 2n) return false;
+  if (n < 4n) return true;
+  if (n % 2n === 0n || n % 3n === 0n) return false;
+  for (const sp of SMALL_PRIMES) {
+    if (n === sp) return true;
+    if (n % sp === 0n) return false;
+  }
+  let d = n - 1n;
+  let r = 0n;
+  while (d % 2n === 0n) { d >>= 1n; r++; }
+  for (const a of MR_WITNESSES) {
+    if (a >= n) continue;
+    let x = modPow(a, d, n);
+    if (x === 1n || x === n - 1n) continue;
+    let composite = true;
+    for (let i = 0n; i < r - 1n; i++) {
+      x = (x * x) % n;
+      if (x === n - 1n) { composite = false; break; }
+    }
+    if (composite) return false;
+  }
+  return true;
+}
+
+function nextPrime(n) {
+  if (n < 2n) return 2n;
+  let c = n + 1n;
+  if (c % 2n === 0n) c++;
+  while (!isPrime(c)) c += 2n;
+  return c;
+}
+
+async function derivePrimeJs(key) {
+  const enc = new TextEncoder();
+  const buf = await crypto.subtle.digest('SHA-256', enc.encode(key));
+  const bytes = new Uint8Array(buf);
+  let hex = '';
+  for (let i = 0; i < 8; i++) hex += bytes[i].toString(16).padStart(2, '0');
+  return nextPrime(BigInt('0x' + hex));
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Timed runs
+// ═══════════════════════════════════════════════════════════════════
+
+function median(xs) {
+  const s = xs.slice().sort((a, b) => a - b);
+  const mid = s.length >> 1;
+  return s.length % 2 === 0 ? (s[mid - 1] + s[mid]) / 2 : s[mid];
+}
+
+function minOf(xs) { return Math.min(...xs); }
+function maxOf(xs) { return Math.max(...xs); }
+
+async function timeOneTrialWasm(wasm, keys) {
+  let sink = 0;
+  let state = 1n;
+  const t0 = performance.now();
+  for (let i = 0; i < keys.length; i++) {
+    const p = wasm.derivePrime(keys[i]);
+    state = lcm(state, p);
+    // Touch the BigInt to frustrate dead-code elimination without
+    // dominating the hot loop.
+    sink ^= Number(p & 0xffffn);
+  }
+  const t1 = performance.now();
+  // Keep sink referenced so the JIT can't elide it.
+  window.__sumBenchSink = (window.__sumBenchSink | 0) ^ sink;
+  return { ms: t1 - t0, state };
+}
+
+async function timeOneTrialJs(keys) {
+  let sink = 0;
+  let state = 1n;
+  const t0 = performance.now();
+  for (let i = 0; i < keys.length; i++) {
+    const p = await derivePrimeJs(keys[i]);
+    state = lcm(state, p);
+    sink ^= Number(p & 0xffffn);
+  }
+  const t1 = performance.now();
+  window.__sumBenchSink = (window.__sumBenchSink | 0) ^ sink;
+  return { ms: t1 - t0, state };
+}
+
+async function runForN(wasm, N, status) {
+  const keys = generateKeys(N);
+
+  // Warm-up (not counted). Warms JIT + any lazy WASM loader caches.
+  if (wasm) {
+    for (let i = 0; i < WARMUP_ITERATIONS; i++) wasm.derivePrime(keys[0]);
+  }
+  for (let i = 0; i < WARMUP_ITERATIONS; i++) await derivePrimeJs(keys[0]);
+
+  // Interleave trials so a transient engine pause (GC, BG task)
+  // doesn't systematically bias one path.
+  const wasmTrials = [];
+  const jsTrials = [];
+  let wasmState = null;
+  let jsState = null;
+  for (let t = 0; t < TRIALS_PER_N; t++) {
+    status(`N=${N}: trial ${t + 1}/${TRIALS_PER_N} (WASM)`);
+    if (wasm) {
+      const r = await timeOneTrialWasm(wasm, keys);
+      wasmTrials.push(r.ms);
+      wasmState = r.state;
+    }
+    status(`N=${N}: trial ${t + 1}/${TRIALS_PER_N} (JS)`);
+    const r = await timeOneTrialJs(keys);
+    jsTrials.push(r.ms);
+    jsState = r.state;
+  }
+
+  const agree = wasmState === null ? null : (wasmState === jsState);
+
+  const summary = {
+    N,
+    trials: TRIALS_PER_N,
+    wasm_ms: wasm ? {
+      median: round(median(wasmTrials), 4),
+      min: round(minOf(wasmTrials), 4),
+      max: round(maxOf(wasmTrials), 4),
+      all: wasmTrials.map((x) => round(x, 4))
+    } : null,
+    js_ms: {
+      median: round(median(jsTrials), 4),
+      min: round(minOf(jsTrials), 4),
+      max: round(maxOf(jsTrials), 4),
+      all: jsTrials.map((x) => round(x, 4))
+    },
+    ratio_js_over_wasm: wasm
+      ? round(median(jsTrials) / Math.max(median(wasmTrials), 1e-9), 3)
+      : null,
+    state_agree: agree,
+    state_integer_first8_hex: jsState
+      ? jsState.toString(16).padStart(16, '0').slice(0, 16)
+      : null
+  };
+  return summary;
+}
+
+function round(x, places) {
+  const m = Math.pow(10, places);
+  return Math.round(x * m) / m;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// UI
+// ═══════════════════════════════════════════════════════════════════
+
+function renderEnv() {
+  const envDiv = document.getElementById('env');
+  envDiv.textContent = [
+    `UA: ${navigator.userAgent}`,
+    `Platform: ${navigator.platform || '(unknown)'}`,
+    `HW concurrency: ${navigator.hardwareConcurrency || '?'}`,
+    `WebAssembly: ${typeof WebAssembly === 'undefined' ? 'NO' : 'yes'}`,
+    `crypto.subtle: ${(globalThis.crypto && crypto.subtle) ? 'yes' : 'NO'}`,
+  ].join(' · ');
+}
+
+function renderRow(r) {
+  const tbody = document.querySelector('#results tbody');
+  const tr = document.createElement('tr');
+  const wasm = r.wasm_ms
+    ? `<td>${r.wasm_ms.median.toFixed(3)} <span style="opacity:0.5">[${r.wasm_ms.min.toFixed(3)}–${r.wasm_ms.max.toFixed(3)}]</span></td>`
+    : `<td style="opacity:0.5">—</td>`;
+  const wasmUs = r.wasm_ms ? `<td>${(r.wasm_ms.median * 1000 / r.N).toFixed(2)}</td>` : `<td>—</td>`;
+  const js = `<td>${r.js_ms.median.toFixed(3)} <span style="opacity:0.5">[${r.js_ms.min.toFixed(3)}–${r.js_ms.max.toFixed(3)}]</span></td>`;
+  const jsUs = `<td>${(r.js_ms.median * 1000 / r.N).toFixed(2)}</td>`;
+  const ratio = r.ratio_js_over_wasm !== null
+    ? `<td>${r.ratio_js_over_wasm.toFixed(2)}×</td>`
+    : `<td>—</td>`;
+  const agree = r.state_agree === null
+    ? `<td style="opacity:0.5">n/a</td>`
+    : r.state_agree
+      ? `<td style="color:#27ae60">✓</td>`
+      : `<td style="color:#c0392b">✗ FAIL</td>`;
+  tr.innerHTML = `<td>${r.N}</td>${wasm}${wasmUs}${js}${jsUs}${ratio}${agree}`;
+  tbody.appendChild(tr);
+}
+
+async function main() {
+  const runBtn = document.getElementById('run');
+  const copyBtn = document.getElementById('copy');
+  const status = (s) => { document.getElementById('status').textContent = s; };
+  runBtn.disabled = true;
+  copyBtn.disabled = true;
+
+  // Clear any previous results from a prior run.
+  document.querySelector('#results tbody').innerHTML = '';
+
+  status('loading WASM…');
+  let wasm = null;
+  try {
+    if (typeof loadSumCoreWasm === 'function') {
+      wasm = await loadSumCoreWasm('../../single_file_demo/sum_core.wasm');
+    }
+  } catch (_) { wasm = null; }
+  if (!wasm) {
+    document.getElementById('fallback-note').style.display = 'inline-block';
+    status('WASM unavailable — benchmarking JS path only.');
+  } else {
+    status('WASM ready. Starting trials…');
+  }
+
+  const results = [];
+  for (const N of INPUT_SIZES) {
+    const r = await runForN(wasm, N, status);
+    results.push(r);
+    renderRow(r);
+  }
+
+  status(`done — ${results.length} sizes × ${TRIALS_PER_N} trials.`);
+
+  const payload = {
+    schema: 'sum.wasm_bench.v1',
+    timestamp: new Date().toISOString(),
+    ua: navigator.userAgent,
+    platform: navigator.platform || null,
+    hw_concurrency: navigator.hardwareConcurrency || null,
+    wasm_available: wasm !== null,
+    trials_per_n: TRIALS_PER_N,
+    axiom_key_seed: AXIOM_KEY_SEED,
+    results
+  };
+  document.getElementById('result-json').textContent = JSON.stringify(payload, null, 2);
+
+  copyBtn.disabled = false;
+  copyBtn.onclick = async () => {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
+      copyBtn.textContent = 'Copied';
+      setTimeout(() => { copyBtn.textContent = 'Copy JSON result'; }, 1500);
+    } catch (e) {
+      copyBtn.textContent = 'Copy failed — select the text manually';
+    }
+  };
+
+  runBtn.disabled = false;
+  runBtn.textContent = 'Run again';
+}
+
+renderEnv();
+document.getElementById('run').onclick = main;
+</script>
+</body>
+</html>

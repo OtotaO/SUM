@@ -4,6 +4,41 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Added — Priority 2: WASM-vs-JS derivation benchmark harness
+
+- `Tests/benchmarks/browser_wasm_bench.html` — single-file harness that
+  runs the deployed WASM core (`sum_core.wasm`) and the pure-JS fallback
+  against identical input across N ∈ {10, 100, 1000, 10000} axiom
+  derivations. Reports median / min / max ms per surface, per-op µs,
+  and the JS ÷ WASM ratio. Also asserts bit-identical state integers
+  across the two paths on every trial (correctness gate, not speed
+  datum). Emits a machine-readable JSON block ready to paste into the
+  methodology doc.
+- `scripts/bench_python_derive.py` — Python-side companion that
+  measures `GodelStateAlgebra.get_or_mint_prime` on the same key
+  generator (`sum-bench-v1` seed), records whether the Zig shared
+  library served or the `sympy.nextprime` fallback did, and emits the
+  same-schema JSON block.
+- `docs/WASM_PERFORMANCE.md` — methodology doc. Declares exactly what
+  is measured (prime derivation alone), what is NOT (Ed25519, extraction,
+  bundle parse), the trial protocol (5 trials, median, 3 warm-ups), the
+  reproduction steps for all four surfaces (Python, Node, Browser-WASM,
+  Browser-JS), and the fallback statement that ships regardless of
+  outcome. Every numeric cell is labelled `measured`; blocks are `"not
+  yet measured"` placeholders until the browser-matrix run happens.
+  Change-control rules forbid adding performance language to
+  `README.md` or a commit message until the corresponding row has data.
+- `make wasm-bench` serves the repo over HTTP so the browser harness
+  has a working `instantiateStreaming` + `crypto.subtle` environment.
+  `make wasm-bench-python` runs the Python companion.
+
+**No performance claim is made by this commit.** Per the playbook's
+"measure before you assert" principle, shipping the harness is
+orthogonal to publishing numbers. The numbers arrive in a later commit
+that pastes concrete JSON blocks under each per-browser section; that
+commit is the one allowed to add "fast" or "X× faster" language to the
+prose.
+
 ### Added — Priority 1: adversarial cross-runtime rejection matrix
 
 - `scripts/verify_cross_runtime_adversarial.py` — companion to the

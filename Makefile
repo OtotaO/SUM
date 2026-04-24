@@ -6,7 +6,7 @@
 
 .DEFAULT_GOAL := help
 .PHONY: help install test test-cli test-codec bench xruntime xruntime-adversarial \
-        demo wheel sdist smoke fortress clean lint wasm
+        demo wheel sdist smoke fortress clean lint wasm wasm-bench wasm-bench-python
 
 PYTHON ?= python
 
@@ -80,6 +80,14 @@ wasm:  ## Build + copy sum_core.wasm into single_file_demo/ (rerun after core-zi
 	cd core-zig && zig build wasm
 	cp core-zig/zig-out/bin/sum_core.wasm single_file_demo/sum_core.wasm
 	node single_file_demo/test_wasm.js
+
+wasm-bench:  ## Serve the WASM-vs-JS browser benchmark (docs/WASM_PERFORMANCE.md).
+	@echo "Open: http://localhost:8000/Tests/benchmarks/browser_wasm_bench.html"
+	@echo "Run in Chrome 113+, Firefox 129+, Safari 17+; paste JSON into docs/WASM_PERFORMANCE.md."
+	$(PYTHON) -m http.server 8000
+
+wasm-bench-python:  ## Run the Python-side derivation benchmark companion (emits JSON).
+	$(PYTHON) scripts/bench_python_derive.py
 
 clean:  ## Remove build artifacts + bench history.
 	rm -rf build dist *.egg-info .pytest_cache .mypy_cache
