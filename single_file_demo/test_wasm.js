@@ -23,7 +23,10 @@
 const fs = require('fs');
 const path = require('path');
 
-const WASM_PATH = path.join(__dirname, 'sum_core.wasm');
+// Path override lets CI point the same test at a freshly-built binary
+// without having to swap the committed blob. Default: the binary
+// that ships in this directory.
+const WASM_PATH = process.env.SUM_WASM_PATH || path.join(__dirname, 'sum_core.wasm');
 
 // Fixture set: each row is [axiom_key, expected_prime_decimal]. The
 // expected values come from verify.js --self-test (vectors 3) and are
