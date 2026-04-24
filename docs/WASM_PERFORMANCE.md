@@ -173,34 +173,129 @@ Every block below is a direct paste of the harness's JSON output.
 Blocks are grouped by surface. Dates and engine versions come from the
 payload; do not hand-edit the numbers.
 
+The skeletons have the correct `sum.wasm_bench.v1` shape with `null`
+numeric fields. To populate: **overwrite the entire fenced block** with
+the JSON emitted by the harness. Do not merge key-by-key; the harness's
+output is already the complete block.
+
 ### Python CLI
 
+Source: `python scripts/bench_python_derive.py --json`
+
 ```json
-{ "status": "not yet measured" }
+{
+  "schema": "sum.wasm_bench.v1",
+  "surface": "python_cli",
+  "timestamp": null,
+  "python_version": null,
+  "platform": null,
+  "machine": null,
+  "derivation_path": null,
+  "trials_per_n": 5,
+  "axiom_key_seed": "sum-bench-v1",
+  "results": [
+    { "N": 10,    "trials": 5, "ms": { "median": null, "min": null, "max": null, "all": [] }, "per_op_us": null, "state_integer_first8_hex": null },
+    { "N": 100,   "trials": 5, "ms": { "median": null, "min": null, "max": null, "all": [] }, "per_op_us": null, "state_integer_first8_hex": null },
+    { "N": 1000,  "trials": 5, "ms": { "median": null, "min": null, "max": null, "all": [] }, "per_op_us": null, "state_integer_first8_hex": null },
+    { "N": 10000, "trials": 5, "ms": { "median": null, "min": null, "max": null, "all": [] }, "per_op_us": null, "state_integer_first8_hex": null }
+  ]
+}
 ```
 
 ### Node verifier (`standalone_verifier/math.js`)
 
+Source: the inline `node -e '…'` one-liner above → `/tmp/node_bench.json`.
+
 ```json
-{ "status": "not yet measured" }
+{
+  "schema": "sum.wasm_bench.v1",
+  "surface": "node_js",
+  "node": null,
+  "timestamp": null,
+  "results": [
+    { "N": 10,    "trials": 5, "ms": { "median": null, "min": null, "max": null, "all": [] }, "per_op_us": null, "state_integer_first8_hex": null },
+    { "N": 100,   "trials": 5, "ms": { "median": null, "min": null, "max": null, "all": [] }, "per_op_us": null, "state_integer_first8_hex": null },
+    { "N": 1000,  "trials": 5, "ms": { "median": null, "min": null, "max": null, "all": [] }, "per_op_us": null, "state_integer_first8_hex": null },
+    { "N": 10000, "trials": 5, "ms": { "median": null, "min": null, "max": null, "all": [] }, "per_op_us": null, "state_integer_first8_hex": null }
+  ]
+}
 ```
 
 ### Browser — Chrome 113+
 
+Source: `http://localhost:8000/Tests/benchmarks/browser_wasm_bench.html` → **Copy JSON result**.
+
 ```json
-{ "status": "not yet measured" }
+{
+  "schema": "sum.wasm_bench.v1",
+  "timestamp": null,
+  "ua": null,
+  "platform": null,
+  "hw_concurrency": null,
+  "wasm_available": null,
+  "trials_per_n": 5,
+  "axiom_key_seed": "sum-bench-v1",
+  "results": [
+    {
+      "N": 10,
+      "trials": 5,
+      "wasm_ms": { "median": null, "min": null, "max": null, "all": [] },
+      "js_ms":   { "median": null, "min": null, "max": null, "all": [] },
+      "ratio_js_over_wasm": null,
+      "state_agree": null,
+      "state_integer_first8_hex": null
+    },
+    { "N": 100,   "trials": 5, "wasm_ms": null, "js_ms": null, "ratio_js_over_wasm": null, "state_agree": null, "state_integer_first8_hex": null },
+    { "N": 1000,  "trials": 5, "wasm_ms": null, "js_ms": null, "ratio_js_over_wasm": null, "state_agree": null, "state_integer_first8_hex": null },
+    { "N": 10000, "trials": 5, "wasm_ms": null, "js_ms": null, "ratio_js_over_wasm": null, "state_agree": null, "state_integer_first8_hex": null }
+  ]
+}
 ```
 
 ### Browser — Firefox 129+
 
+Source: same URL, Firefox.
+
 ```json
-{ "status": "not yet measured" }
+{
+  "schema": "sum.wasm_bench.v1",
+  "timestamp": null,
+  "ua": null,
+  "platform": null,
+  "hw_concurrency": null,
+  "wasm_available": null,
+  "trials_per_n": 5,
+  "axiom_key_seed": "sum-bench-v1",
+  "results": [
+    { "N": 10,    "trials": 5, "wasm_ms": null, "js_ms": null, "ratio_js_over_wasm": null, "state_agree": null, "state_integer_first8_hex": null },
+    { "N": 100,   "trials": 5, "wasm_ms": null, "js_ms": null, "ratio_js_over_wasm": null, "state_agree": null, "state_integer_first8_hex": null },
+    { "N": 1000,  "trials": 5, "wasm_ms": null, "js_ms": null, "ratio_js_over_wasm": null, "state_agree": null, "state_integer_first8_hex": null },
+    { "N": 10000, "trials": 5, "wasm_ms": null, "js_ms": null, "ratio_js_over_wasm": null, "state_agree": null, "state_integer_first8_hex": null }
+  ]
+}
 ```
 
 ### Browser — Safari 17+ (macOS)
 
+Source: same URL, Safari.
+
 ```json
-{ "status": "not yet measured" }
+{
+  "schema": "sum.wasm_bench.v1",
+  "timestamp": null,
+  "ua": null,
+  "platform": null,
+  "hw_concurrency": null,
+  "wasm_available": null,
+  "trials_per_n": 5,
+  "axiom_key_seed": "sum-bench-v1",
+  "results": [
+    { "N": 10,    "trials": 5, "wasm_ms": null, "js_ms": null, "ratio_js_over_wasm": null, "state_agree": null, "state_integer_first8_hex": null },
+    { "N": 100,   "trials": 5, "wasm_ms": null, "js_ms": null, "ratio_js_over_wasm": null, "state_agree": null, "state_integer_first8_hex": null },
+    { "N": 1000,  "trials": 5, "wasm_ms": null, "js_ms": null, "ratio_js_over_wasm": null, "state_agree": null, "state_integer_first8_hex": null },
+    { "N": 10000, "trials": 5, "wasm_ms": null, "js_ms": null, "ratio_js_over_wasm": null, "state_agree": null, "state_integer_first8_hex": null }
+  ]
+}
 ```
 
 ## Interpretation
