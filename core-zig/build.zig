@@ -11,10 +11,15 @@ pub fn build(b: *std.Build) void {
             .root_source_file = b.path("src/main.zig"),
             .target = native_target,
             .optimize = optimize,
+            // zig 0.16 moved libc linkage onto the module (it was a
+            // method on Compile in 0.15). The field exists on both
+            // 0.15.x (added late-cycle) and 0.16, so this form builds
+            // against either — mlugg/setup-zig@v2 pins our CI to
+            // 0.15.2 which supports the field-form.
+            .link_libc = true,
         }),
         .linkage = .dynamic,
     });
-    lib.linkLibC();
     b.installArtifact(lib);
 
     // ── WASM module (for browser-native math) ──

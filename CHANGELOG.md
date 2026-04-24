@@ -4,6 +4,52 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Added — WASM acceleration in the browser demo
+
+- `single_file_demo/sum_core.wasm` (97 KB, committed) — the `core-zig/`
+  module cross-compiled to `wasm32-freestanding` with `ReleaseSmall`.
+  Exports nine functions (`sum_get_deterministic_prime`,
+  `sum_get_deterministic_prime_v2`, `sum_bigint_gcd/lcm/mod`,
+  `sum_bigint_divisible_by_u64`, `sum_batch_mint_primes`,
+  `wasm_alloc_bytes`, `wasm_free_bytes`) plus the linear memory.
+- `single_file_demo/sum_core_wasm.js` — browser-side async loader
+  factory. Returns `{derivePrime, isReady:true}` on success; returns
+  `null` on any failure (WebAssembly unavailable, fetch/compile/
+  instantiate error) so the caller's fallback logic stays trivial.
+  Handles the WebAssembly i64→BigInt signed-surface wrinkle (u64
+  zig returns come back signed in JS; masked with `& 0xffff…ffffn`
+  post-call).
+- `single_file_demo/test_wasm.js` — zero-dep Node self-test pinning
+  the WASM output to the cross-runtime fixture set (same vectors as
+  `verify.js --self-test`). Part of the demo's test triad alongside
+  `test_jcs.js` and `test_provenance.js`.
+- `single_file_demo/index.html` — `derivePrime()` now calls the WASM
+  loader first (single-flight, cached after first load); falls back
+  to the original WebCrypto+JS-BigInt path when WASM isn't reachable
+  (standalone file open, Claude artifact, older browsers). Transparent
+  to every caller — the function still returns the correct BigInt.
+  A `<link rel=preload>` for the `.wasm` fires in the page head so
+  the module is in-flight before the user clicks Attest.
+- `.github/workflows/quantum-ci.yml` `zig-core` job:
+  * Builds the WASM target alongside the native library.
+  * SHA-256-compares the freshly-built `.wasm` against the committed
+    blob — catches source/binary drift (fails with the rebuild
+    command if they don't match).
+  * Runs `node single_file_demo/test_wasm.js` to assert the committed
+    `.wasm` still produces the reference primes.
+- `core-zig/build.zig` — updated `link_libc` syntax to zig 0.16 /
+  0.15.late-cycle module-field form (was `.linkLibC()` method call,
+  which zig 0.16 removed from `Build.Step.Compile`).
+- `Makefile` — new `make wasm` target builds + copies + runs the
+  self-test in one step. Run after any `core-zig/src/main.zig` edit.
+
+Performance: still to be measured on a real workload. The WASM path
+replaces roughly "WebCrypto SHA-256 + O(log² N) Miller-Rabin per
+candidate × ~80 candidates on average" with native Zig on wasm32.
+Expected speedup at 1.5–5× for the prime-minting hot path. Measured
+numbers will land in PROOF_BOUNDARY §2.2 when a browser bench harness
+is wired.
+
 ### Added — hosted-demo infrastructure
 
 - `worker/` directory with a Cloudflare Worker (`src/index.ts`) that

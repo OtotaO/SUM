@@ -79,6 +79,11 @@ smoke:  ## Fresh-venv install + attest|verify round-trip from the built wheel.
 lint:  ## ruff check (same rules as CI).
 	$(PYTHON) -m ruff check sum_cli internal scripts
 
+wasm:  ## Build + copy sum_core.wasm into single_file_demo/ (rerun after core-zig/ edits).
+	cd core-zig && zig build wasm
+	cp core-zig/zig-out/bin/sum_core.wasm single_file_demo/sum_core.wasm
+	node single_file_demo/test_wasm.js
+
 clean:  ## Remove build artifacts + bench history.
 	rm -rf build dist *.egg-info .pytest_cache .mypy_cache
 	rm -f bench_report.json

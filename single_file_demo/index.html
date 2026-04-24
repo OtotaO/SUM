@@ -96,6 +96,12 @@
   }
   .link-btn:hover { filter: brightness(0.9); }
 </style>
+
+<!-- WASM acceleration loader (optional; falls back gracefully when the
+     .wasm fetch isn't reachable — standalone file open, Claude artifact,
+     older browsers). See sum_core_wasm.js for the contract. -->
+<link rel="preload" href="sum_core.wasm" as="fetch" type="application/wasm" crossorigin>
+<script src="sum_core_wasm.js"></script>
 </head>
 <body>
 
@@ -270,8 +276,52 @@ function lcm(a, b) {
 }
 
 // ─── Prime derivation (sha256_64_v1) ──────────────────────────────────
+//
+// Two paths, resolved on first use:
+//   1. WASM core (core-zig/, served as sum_core.wasm) — microsecond
+//      SHA-256 + deterministic Miller-Rabin. Loads on page start;
+//      derivePrimeWasm becomes the hot path once ready. Verified
+//      bit-identical to the JS path against the cross-runtime
+//      fixture set (see scripts/verify_godel_cross_runtime.py).
+//   2. Pure-JS fallback — WebCrypto SHA-256 + JS BigInt nextPrime.
+//      Used on standalone-file opens (no same-origin fetch), Claude
+//      artifacts (no separate asset fetch), and any browser where
+//      WebAssembly.instantiateStreaming fails.
+//
+// The selection is transparent to callers — `derivePrime(key)` returns
+// the correct BigInt either way. Only `sumWasm` gates the fast path.
+
+let sumWasm = null;  // set to {derivePrime, isReady:true} by loadSumCoreWasm()
+let sumWasmLoading = null;
+
+async function ensureSumWasm() {
+  // Lazy, single-flight load. Concurrent calls during page init share
+  // the same in-flight promise; after it resolves (or fails), sumWasm
+  // is set (or stays null) and subsequent calls short-circuit.
+  if (sumWasm || sumWasm === false) return sumWasm;
+  if (sumWasmLoading) return sumWasmLoading;
+  sumWasmLoading = (async () => {
+    try {
+      if (typeof loadSumCoreWasm === 'function') {
+        sumWasm = await loadSumCoreWasm();
+      } else {
+        sumWasm = null;
+      }
+    } catch {
+      sumWasm = null;
+    }
+    sumWasmLoading = null;
+    return sumWasm;
+  })();
+  return sumWasmLoading;
+}
 
 async function derivePrime(axiomKey) {
+  const wasm = await ensureSumWasm();
+  if (wasm && wasm.derivePrime) {
+    return wasm.derivePrime(axiomKey);
+  }
+  // Pure-JS fallback.
   const enc = new TextEncoder();
   const buf = await crypto.subtle.digest('SHA-256', enc.encode(axiomKey));
   const bytes = new Uint8Array(buf);
