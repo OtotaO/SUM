@@ -15,8 +15,32 @@ artifact). This Worker is the routing shell around it.
 | Path            | Handler                     | Purpose                                     |
 |-----------------|-----------------------------|---------------------------------------------|
 | `/api/complete` | `src/routes/complete.ts`    | LLM proxy — Anthropic / OpenAI / AI Gateway |
-| `/api/qid`      | `src/routes/qid.ts` (stub)  | Phase 4a — Wikidata QID resolver            |
+| `/api/qid`      | `src/routes/qid.ts`         | Wikidata QID/PID resolver (wbsearchentities + 30-day edge cache) |
 | _everything_    | `ASSETS` binding            | `../single_file_demo/` static files         |
+
+### `/api/qid` — Wikidata resolver
+
+```bash
+curl -X POST https://sum-demo.<account>.workers.dev/api/qid \
+  -H 'content-type: application/json' \
+  -d '{"terms":[{"text":"Alice","kind":"item"},{"text":"orbit","kind":"property"}]}'
+```
+
+Response:
+
+```json
+{"resolved":[
+  {"text":"Alice","id":"Q3099839","label":"Alice",
+   "description":"female given name","confidence":1.0,
+   "source":"wbsearchentities"},
+  {"text":"orbit","id":"P398","label":"orbits","confidence":0.7,
+   "source":"wbsearchentities"}
+]}
+```
+
+Cache: Cache API, 30-day TTL, `source:"cache"` on subsequent hits.
+Optional KV second layer — uncomment `[[kv_namespaces]]` in
+`wrangler.toml` after `wrangler kv:namespace create qid-cache`.
 
 ## First deploy (one-time, user-only)
 

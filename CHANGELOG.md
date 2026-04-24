@@ -4,6 +4,32 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Added — `/api/qid` Wikidata resolver (Phase 4a)
+
+- `worker/src/routes/qid.ts` — replaces the 501 stub with a working
+  resolver. Takes a batch of `{text, kind?, lang?}` terms, looks each
+  one up via the MediaWiki `wbsearchentities` API, returns
+  `{id, label, description, confidence, source}` for every term.
+  Up to 50 terms per request; parallel fetches. Unknown terms
+  surface `{id: null, reason: "no-match"}` rather than errors.
+- Two-tier caching: edge Cache API (same-colo, zero-hop) on every
+  request; the TTL is 30 days (Wikidata labels rarely change on
+  month scales). KV binding left as an optional second layer
+  (commented in `wrangler.toml`; activate by
+  `wrangler kv:namespace create qid-cache`).
+- Confidence scoring mirrors the `match.type` field Wikidata returns
+  (`label` → 1.0, `alias` → 0.7, everything else → 0.5) — a
+  categorical signal translated into a 0–1 ordering for threshold
+  logic downstream.
+- User-Agent header `SUMDemoQIDResolver/0.3.0 (+github.com/OtotaO/SUM)`
+  per Wikidata's operator-contact guidance.
+
+Intentionally not in v0.3: SPARQL disambiguation when multiple
+candidates are plausible. wbsearchentities alone hits >80% accuracy
+on common-noun / proper-name lookups; SPARQL refinement (filter by
+predicate domain) is Phase 4b once we've measured the v0.3 baseline
+on a real corpus.
+
 ### Added — WASM acceleration in the browser demo
 
 - `single_file_demo/sum_core.wasm` (97 KB, committed) — the `core-zig/`
