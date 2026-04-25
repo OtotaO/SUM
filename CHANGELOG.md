@@ -4,6 +4,98 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Verified — Phase E.1 v0.2 (three-layer fact preservation, honest claim)
+
+The previous "fact preservation = 1.000" headline was wrong twice
+over: first because it computed against `triples_used` (post-density,
+trivially equal to source for non-density axes) instead of
+`reextracted_triples` (the actual round-trip set); then, after
+correcting that, because exact `(s,p,o)` match is too brittle to
+distinguish real fact loss from extraction surface-form drift
+(`graduated` vs `graduated_in`).
+
+This release lands the corrected substrate: three composable
+preservation layers, plus parallel bench execution that cuts wall
+clock 4× without changing token spend.
+
+**Three-layer fact preservation** (all reported per cell, all in
+the JSONL artifact):
+- Strict — exact-key match. Regression check on extractor stability,
+  not the headline.
+- Normalized (A3) — strips auxiliary verb prefixes (was_, has_, ...)
+  and preposition suffixes (_in, _from, ...) from predicates plus
+  articles from entities. Free, deterministic, 50 LOC of rules.
+- Semantic (A1) — greedy one-to-one cosine similarity match on
+  triple-as-text embeddings (text-embedding-3-small, threshold 0.85).
+  This is the load-bearing metric for the slider's product claim.
+
+**Headline result, honestly measured (n=160 LLM-axis cells):**
+- Strict median: 0.333. Brittle to surface-form drift; retained as
+  regression check only.
+- Normalized median: 0.500. A3 lifts strict by ~50% by collapsing
+  preposition / auxiliary drift.
+- **Semantic median: 1.000. p10: 0.455.** Half the cells preserve
+  every source fact; the worst 10% still hold 45%.
+- Order preservation: 1.000 wherever measurable. MontageLie-style
+  reordering attacks are not a present failure mode of good-faith
+  renders.
+
+**Where the slider works perfectly:** all neutral positions (axis=0.5)
+preserve every source fact. `length=0.1` and `length=0.3` (compression
+modes) score ≥0.91 p10 — the LLM loses no facts when asked to be
+brief.
+
+**Where the slider stresses:** `length=0.9` (semantic p10 = 0.00 — the
+LLM expands 6 facts to 600 words and dilutes individual fact identity
+in some renders), `audience=0.1` and `audience=0.3` (general-reader
+mode drops technical specifics — semantic p10 = 0.33). Perspective
+moderate positions (0.3, 0.7) show the LLM committing to one mode
+rather than blending — registered as drift by the coarse pronoun-
+ratio classifier, but order_preservation = 1.000 confirms the facts
+themselves stay in place.
+
+**Bench parallelization** — `slider_drift_bench.py` now runs cells
+concurrently via `asyncio.Semaphore` + `as_completed` (default
+concurrency=16, `--concurrency` CLI arg). Source-extraction is
+hoisted outside the cell loop and parallelized too — eliminates
+~175 of 200 redundant source-extraction LLM calls on an 8-doc /
+25-position run. Wall clock drops from ~7 min to 97.7s. Same total
+token spend (~$0.35 with embedding calls); strictly fewer
+wall-clock seconds.
+
+**MontageLie defense** — `order_preservation(source, reextracted)`
+returns the fraction of preserved-triple pairs that retain their
+relative order from source to tome. Regression test demonstrates a
+timeline-reversed permutation scores 1.0 on set-based fact
+preservation but 0.0 on order_preservation. The defense works as
+designed; the bench data shows order = 1.000 in honest renders, so
+the attack is a v0.3+ frontier concern, not a present failure mode.
+
+**Audience expansion (5000-word table)** — Brown-corpus frequency
+table grew from 2000 to 5000 words. Median audience drift cut
+roughly in half from STATE 5b. Combined with the corrected fact-
+preservation metric, audience axis now reads as the cleanest LLM
+axis on this corpus.
+
+**Files**
+- `sum_engine_internal/ensemble/slider_renderer.py` — adds
+  `_normalize_predicate`, `_normalize_entity`, `_normalize_triple`,
+  `fact_preservation_normalized`, `semantic_fact_preservation`,
+  `order_preservation`. `RenderResult` gains `reextracted_triples`.
+- `sum_engine_internal/ensemble/data/common_english_5000.txt` — new
+  data file; loader prefers 5000 over 2000.
+- `Tests/test_slider_renderer.py` — 43 tests pass (was 22 → 30 →
+  43). New: TestNormalizationLayer (8), TestSemanticPreservation (5),
+  including the headline MontageLie regression test.
+- `Tests/benchmarks/slider_drift_bench.py` — three preservation
+  columns + order column in BenchCell; parallel execution; per-cell
+  progress to stderr; per-axis four-column summary footer.
+- `docs/SLIDER_CONTRACT.md` — version bumped to 0.3; per-axis
+  fact-preservation table now shows all three layers.
+
+**Verification:** 43 unit tests pass; cross-runtime gates green;
+bench re-run in 97.7s (was ~7 min) with 200/200 cells succeeding.
+
 ### Improved — Phase E.1 STATE 5b (classifier upgrades + tightened thresholds)
 
 Two follow-up fixes after STATE 5 surfaced the calibration gaps:

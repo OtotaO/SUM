@@ -45,9 +45,28 @@ future contributors know which choices are load-bearing.
   per-axis drift formulas are the deterministic counterpart —
   process supervision without RL.
 
+## Status as of v0.2 (2026-04-25)
+
+| Item | Status | Where it landed |
+|---|---|---|
+| 1. MontageLie-resistant fact preservation | ✅ shipped | `order_preservation` + regression test; bench reports per cell |
+| 2. Constrained decoding for the renderer | deferred → v0.3 | requires Pydantic schema for render path; out of scope this round |
+| 3. Audience classifier 2000 → 5000 words | ✅ shipped | `data/common_english_5000.txt` (Brown corpus top-5K) |
+| 4. Metamorphic relation tests | deferred → v0.3 | Hypothesis-based property tests not yet written |
+| Bonus — three-layer fact preservation | ✅ shipped | strict / normalized / semantic; v0.2 substrate |
+
+The headline insight from the v0.2 bench run: the original "fact
+preservation = 1.000" claim was an artifact of measuring against
+`triples_used` (trivially equal to source at density=1.0) rather
+than against re-extracted triples. The corrected three-layer metric
+shows median semantic preservation = 1.000 / p10 = 0.455 across 160
+LLM-axis cells. Both the original claim was overconfident AND the
+strict-key correction was over-pessimistic; the semantic layer is
+the honest middle.
+
 ## Actionable in the next 1–3 PRs
 
-### 1. MontageLie-resistant fact preservation *(highest payoff)*
+### 1. MontageLie-resistant fact preservation *(✅ shipped in v0.2)*
 
 **Problem.** Set-based fact preservation is exploitable. The
 MontageLie benchmark (Zheng et al., May 2025) shows fact-decomposition

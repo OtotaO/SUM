@@ -1,23 +1,48 @@
 # Slider Contract
 
-**Version:** 0.2 (Phase E.1 STATE 5 — empirical bench run landed)
-**Status:** density + fact preservation verified; audience + length
-preliminary (classifier upgrades pending v0.2).
+**Version:** 0.3 (Phase E.1 v0.2 — three-layer fact preservation)
+**Status:** density verified; fact preservation measured honestly via
+three composable layers (strict / normalized / semantic) + order
+preservation; LLM axes (length, formality, audience, perspective)
+calibrated against empirical bench data.
 
 The Phase E genesis-vision spec. Five axes, one renderer, per-axis
 drift tolerance. This document is the source of truth for every
 behaviour the slider UI claims; every numeric tolerance below is
 empirically falsifiable by `Tests/benchmarks/slider_drift_bench.py`.
 
-## Headline result (empirically verified)
+## Headline result (honest, empirical)
 
-> **Fact preservation across all four LLM axes is 100% (median, p10).**
+> **Median semantic fact preservation = 1.000 across all 160 LLM-axis
+> cells; p10 = 0.455. Order preservation = 1.000 wherever measurable.**
 
-Measured over 200 cells (8 multi-fact paragraphs × 4 LLM axes × 5 bin
-positions, gpt-4o-mini, $0.30 in tokens). For every axis position
-across every doc, `|source_keys ∩ reextracted_keys| / |source_keys|`
-returned 1.000. The slider's central product claim — *axis changes
-do not lose facts* — holds on this corpus.
+Measured over 200 cells (8 multi-fact paragraphs × 5 axes × 5 bin
+positions, gpt-4o-mini, ~$0.35 in tokens, 97.7s wall clock with
+concurrency=16). Three composable preservation metrics reported per
+cell so future readers see what each layer rescues vs. what's real
+fact loss vs. what's extraction noise:
+
+- **Strict** = `|source_keys ∩ reextracted_keys| / |source_keys|`
+  on exact `(s, p, o)` match. Brittle to surface-form drift —
+  `(alice, graduated, 2012)` vs `(alice, graduated_in, 2012)`
+  reads as fact loss. Retained as a regression check on extractor
+  stability, not as the headline metric.
+- **Normalized (A3)** = same as Strict after stripping auxiliary
+  prefixes (`was_`, `has_`) and preposition suffixes (`_in`, `_from`)
+  from predicates and articles from entities. Free, deterministic,
+  ~50 LOC of rules. Catches the cheap drifts.
+- **Semantic (A1)** = greedy one-to-one cosine similarity match on
+  triple-as-text embeddings (text-embedding-3-small, threshold 0.85).
+  Catches true synonyms and paraphrases that A3 can't. **This is
+  the load-bearing metric for the slider's product claim.**
+- **Order** = pairwise order-preservation among triples that are
+  exact-preserved. Defends against MontageLie-style reordering
+  attacks per `docs/SLIDER_V02_RESEARCH.md`.
+
+The earlier draft claimed "1.000 across the board" — that was an
+artifact of computing against `triples_used` (post-density set
+passed to the LLM) instead of `reextracted_triples` (what survived
+the round-trip). Corrected in v0.2.
 
 Reproduce: `bash scripts/bench/run_paragraphs.sh` after exporting
 `OPENAI_API_KEY`.
@@ -197,55 +222,84 @@ each, median 6).
 200 cells = 8 docs × 5 axes × 5 bin positions. Cost ~$0.30 per run,
 ~7 min sequential.
 
-### STATE 5b — final calibration (current)
+### v0.2 — three-layer fact preservation + 5000-word audience (current)
 
-After swapping to a 2000-word Brown-corpus frequency table for the
-audience classifier and recalibrating length bands against measured
-LLM behaviour:
+**Per-axis drift (median, p75, p90):**
 
 | Axis | 0.1 | 0.3 | 0.5 | 0.7 | 0.9 | Threshold | Status |
 |---|---|---|---|---|---|---|---|
 | density | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | ≤ 0.001 | ✓ verified |
-| length | 0.09 | 0.23 | 0.40 | 0.20 | 0.26 | ≤ 0.60 | ✓ within (recalibrated) |
+| length | 0.12 | 0.21 | 0.18 | 0.16 | 0.16 | ≤ 0.60 | ✓ within |
 | formality | 0.10 | 0.20 | 0.00 | 0.25 | 0.10 | ≤ 0.40 | ✓ within |
-| perspective | 0.30 | 0.20 | 0.00 | 0.30 | 0.10 | ≤ 0.40 | ✓ median; p90 spikes |
-| audience | 0.28 | 0.20 | 0.22 | 0.11 | 0.09 | ≤ 0.40 | ✓ within |
+| perspective | 0.19 | 0.09 | 0.00 | 0.30 | 0.25 | ≤ 0.40 | ✓ median; p90 spikes |
+| audience | 0.13 | 0.10 | 0.10 | 0.03 | 0.04 | ≤ 0.40 | ✓ within (5000-word table) |
 
-**Fact-preservation:** 1.000 median, 1.000 p10 across 198/200 LLM-
-axis cells — the load-bearing claim is verified. (2/200 cells
-errored on `doc_einstein` with `LengthFinishReasonError` — the LLM
-exceeded the 16384-token completion ceiling during re-extraction.
-Robustness item, not a contract violation.)
+**Per-axis fact preservation (three layers, median across 8 docs):**
 
-### What changed between STATE 5a and STATE 5b
+| Axis | Position | Strict | Normalized | Semantic | Order |
+|---|---|---|---|---|---|
+| audience | 0.1 | 0.22 | 0.29 | **0.60** | 1.00 |
+| audience | 0.3 | 0.05 | 0.15 | **0.73** | 1.00 |
+| audience | 0.5 | 1.00 | 1.00 | **1.00** | 1.00 |
+| audience | 0.7 | 0.17 | 0.17 | **0.95** | 1.00 |
+| audience | 0.9 | 0.42 | 0.50 | **0.91** | 1.00 |
+| formality | 0.1 | 0.26 | 0.30 | **0.92** | 1.00 |
+| formality | 0.3 | 0.31 | 0.31 | **0.83** | 1.00 |
+| formality | 0.5 | 1.00 | 1.00 | **1.00** | 1.00 |
+| formality | 0.7 | 0.05 | 0.17 | **0.71** | 1.00 |
+| formality | 0.9 | 0.22 | 0.25 | **0.83** | 1.00 |
+| length | 0.1 | 0.50 | 0.71 | **1.00** | 1.00 |
+| length | 0.3 | 0.71 | 0.81 | **1.00** | 1.00 |
+| length | 0.5 | 1.00 | 1.00 | **1.00** | 1.00 |
+| length | 0.7 | 0.13 | 0.22 | **0.74** | 1.00 |
+| length | 0.9 | 0.00 | 0.00 | **0.61** | n/a |
+| perspective | 0.1 | 0.58 | 0.58 | **0.95** | 1.00 |
+| perspective | 0.3 | 0.29 | 0.29 | **0.92** | 1.00 |
+| perspective | 0.5 | 1.00 | 1.00 | **1.00** | 1.00 |
+| perspective | 0.7 | 0.42 | 0.48 | **0.92** | 1.00 |
+| perspective | 0.9 | 0.25 | 0.25 | **0.92** | 1.00 |
 
-- *Audience classifier:* embedded 200-word list → 2000-word Brown-
-  corpus frequency list. Median drift cut ~50%. Threshold 0.55 →
-  0.40.
-- *Length bands:* per-triple-linear `(5,15)…(80,200)` →
-  empirically-derived `(4,10) / (5,12) / (4,10) / (30,60) / (80,140)`.
-  The LLM has a 6-wpt floor at and below position 0.5 and scales
-  aggressively above. Median drift cut 3× across positions 0.1–0.7.
-  Threshold 0.95 → 0.60.
+**Cross-axis aggregate (160 LLM-axis cells, density excluded):**
+strict median 0.333, normalized median 0.500, **semantic median
+1.000, semantic p10 0.455**.
 
-### Known limitations (carried into v0.2)
+**What this means in product terms:**
 
-1. *Audience tail at neutral.* p90 still touches 0.39 at audience=0.5.
-   Technical prose has a vocabulary tail any small frequency table
-   under-covers. v0.3 candidate: SCOWL or COCA-derived 5000+ word
-   list, OR rescale formula to anchor against measured LLM baseline
-   rather than linear `audience × 0.30`.
-2. *Perspective at moderate positions.* p90 spikes at positions 0.1
-   and 0.3 (0.57, 0.70). The LLM tends to commit to one perspective
-   rather than blending, so moderate positions read as outliers
-   under the pronoun-ratio classifier. Coarse signal; revising
-   requires a richer perspective measurement (clause-level voice
-   detection) — frontier item.
-3. *Set-based fact preservation is MontageLie-vulnerable.* The
-   current `|source_keys ∩ reextracted_keys| / |source_keys|`
-   formula is exploitable by reordering preserved triples into a
-   deceptive narrative. See `docs/SLIDER_V02_RESEARCH.md` for the
-   v0.2 mitigation plan (event-order-aware verifiers).
+- *At neutral positions (0.5):* preservation is perfect across every
+  LLM axis. No directive ⇒ no semantic loss.
+- *Median across all positions:* the slider preserves all source
+  facts in half the cells.
+- *Worst-case axis extremes:* `length=0.9` (essay-length expansion)
+  shows median 0.61 / p10 0.00 — the LLM dilutes individual fact
+  identity when writing 600+ words from 6 facts. `audience=0.1` /
+  `audience=0.3` show 0.60 / 0.73 — writing for general readers
+  drops technical specifics.
+- *Order-of-facts:* preserved 1.000 wherever measurable. MontageLie-
+  style reordering attacks are not a present failure mode of
+  good-faith renders.
+
+### Known limitations (carried into v0.3)
+
+1. *Length axis loses facts at the high end.* `length=0.9` semantic
+   p10 = 0.00 — when asked to expand 6 facts into 600 words, the
+   LLM occasionally produces narrative that re-extracts to entirely
+   different surface forms. Embedding similarity catches most cases
+   but not all. v0.3 candidates: NLI-based fallback when semantic
+   < 0.5, OR a `length=1.0` synthesis-budget cap.
+2. *Perspective at moderate positions.* p90 drift spikes at 0.1
+   and 0.3. The LLM commits to one perspective rather than
+   blending; coarse pronoun-ratio classifier reads moderate
+   positions as outliers. Revising requires clause-level voice
+   detection — v0.3 frontier item.
+3. *Audience extremes still wobble.* `audience=0.1` semantic = 0.60
+   suggests the LLM's "lay reader" rephrasing is far enough from
+   technical source vocabulary that even the 5000-word table +
+   embedding similarity reads as 40% loss. May genuinely be loss
+   (specifics dropped); verifying needs an NLI audit.
+4. *Three-layer measurement is the v0.2 substrate.* The v0.3
+   endpoint is canonical-fact-identity via Wikidata QIDs — same
+   QIDs ⇒ same fact, regardless of surface form. Lands when
+   SUM's QID resolver matures.
 
 ## Stop-the-line conditions
 
