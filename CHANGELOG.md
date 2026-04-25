@@ -4,6 +4,35 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Added — Phase B intensification queue (B5–B7) in playbook
+
+- `docs/NEXT_SESSION_PLAYBOOK.md` Phase B grew three explicit items
+  that collapse multi-step user flows into single gestures (process
+  intensification: combining steps so the user touches the
+  deliverable, not an intermediate):
+    * **B5** — shareable bundle URLs (`/b/{hash}` Worker route +
+      R2 backing). Removes the JSON-file artifact from civilian
+      awareness. Depends on B1.
+    * **B6** — PWA-installable demo (manifest.json + service
+      worker). Phone-screen attestation flow, offline verify after
+      first load. ~40 LOC + a manifest. No dependencies.
+    * **B7** — `sum attest <url>` fetch mode. Eliminates the
+      "open browser → copy text → switch to terminal → paste"
+      five-step pattern. Depends on B1.
+- "Out of Phase B (named so we don't lose them)" subsection captures
+  two items that surfaced in the analysis but belong elsewhere: the
+  browser extension (v0.4 feature, depends on B1+B5+B7) and verify
+  badges (Phase C5, depends on B5).
+- Phase B exit gate updated to include the with-B5–B7 case
+  ("phone-to-phone share + verify, no install").
+- Pinning policy on B5 explicitly forbids long-term retrievability
+  promises under v1 — protects against locking in `sha256_64_v1`
+  after Priority 3 lands `sha256_128_v2`.
+
+No code in this commit. Items are queued, not built. Hardening
+ordering (Phase A priorities first) is unchanged; the
+intensification work is post-hardening.
+
 ### Added — platform trajectory (Phases A–D) in NEXT_SESSION_PLAYBOOK
 
 - `docs/NEXT_SESSION_PLAYBOOK.md` grew a new

@@ -408,9 +408,81 @@ The current path works but isn't rehearsed. A `sum tutorial`
 subcommand walks a new user through attest → sign → verify →
 view-in-browser in five numbered prompts.
 
+### Process-intensification additions (B5 – B7)
+
+The first four Phase B items polish each surface in isolation. The
+next three collapse multi-step user flows into single gestures —
+"process intensification" in the chemical-engineering sense:
+combining steps so the artifact a user touches is the deliverable,
+not an intermediate. Honest analysis lives in chat-archive only;
+the durable form is below.
+
+Each item names the foundation step that must land first. Do not
+skip those dependencies. Doing so ships a more-usable surface on
+top of an unsettled foundation, which is worse than a less-usable
+surface without that risk.
+
+**B5 — shareable bundle URLs (`/b/{hash}`).** Today a CanonicalBundle
+is a JSON file. Civilians do not share JSON files casually. A new
+Worker route `PUT /b/` accepts a bundle, content-addresses it
+(`sha256` over JCS-canonical bytes), stores in R2, returns a short
+URL. `GET /b/{hash}` renders a verified HTML view (signer DID,
+DID resolvability status, axioms, signatures-verified summary)
+using the same SubtleCrypto path the demo already uses. Idempotent
+on identical bundles. Pinning policy must be explicit: do NOT
+promise indefinite retrievability under v1 prime scheme — that
+locks v1 in even after `sha256_128_v2` (Priority 3) lands. Spec a
+soft-expiry of "best-effort 12 months" until 1.0 contract (Phase D)
+freezes the pinning rules.
+**Foundation.** B1 (source anchoring) lands first so URLs carry
+useful provenance.
+**Intensification.** Removes an entire artifact class (the JSON
+file) from civilian awareness. Makes a one-URL-is-the-attestation
+surface possible.
+
+**B6 — PWA-installable demo.** Add `manifest.json` + a service
+worker that caches the static assets (HTML / JS / `sum_core.wasm`)
+to the existing `single_file_demo/` deployment. The demo becomes
+installable on phones via "Add to Home Screen"; offline verify
+works after first load. ~40 lines of code plus the manifest. No
+backend change. **Foundation.** None — purely additive.
+**Intensification.** A journalist at a press briefing can verify a
+bundle from their phone without WiFi. Closes the mobile gap.
+
+**B7 — `sum attest <url>` fetch mode.** Currently `sum attest`
+takes prose on stdin or `--input <file>`. Add a positional URL
+argument: `sum attest https://example.com/article > bundle.json`.
+The CLI fetches with the existing `httpx` dependency, sets
+`source_uri` to the URL and `retrieved_at` to wall-clock time,
+records HTTP status + final URL after redirects in the bundle's
+`sum_cli` sidecar. Per-request timeout default 10 s, configurable.
+Does NOT follow `<noindex>` / `<meta name="robots" content="noindex">`
+out of basic respect. **Foundation.** B1 (source anchoring) ships
+the schema field first.
+**Intensification.** Eliminates the "open browser → copy text →
+switch to terminal → paste → run command" five-step pattern.
+Single invocation from anywhere the URL appears.
+
+### Out of Phase B (named so we don't lose them)
+
+- **Browser extension: "Attest this selection".** Right-click on
+  any web text → mints + signs a bundle with current URL + byte
+  range as provenance → uploads to `/b/` → copies the shareable
+  URL to clipboard. **Depends on B1 + B5 + B7.** Ship as v0.4
+  feature in its own dedicated session — it is not in-scope for
+  Phase B's "polish what already exists" frame.
+- **Verify badges (Shields.io-shaped SVG).** `GET /badge/{hash}.svg`
+  returns a live-verifying badge (✓ verified / ✗ invalidated /
+  ⚠ unreachable). Publishers embed in READMEs, blog posts, papers.
+  **Depends on B5.** Add to Phase C as `C5` once `B5` lands and
+  there's anything to badge against.
+
 **Gate to exit Phase B.** A fresh user, given only the README, can
-produce a verified signed bundle with source-anchored axioms and open
-it in the explorer without asking a question.
+produce a verified signed bundle with source-anchored axioms and
+open it in the explorer without asking a question. With B5–B7
+landed: that user can also produce + share a bundle by URL from
+their phone, and a recipient can verify the URL from their phone
+without installing anything.
 
 ## Phase C — network layer
 
