@@ -101,6 +101,14 @@ def cli() -> argparse.Namespace:
         "--max-docs", type=int, default=0,
         help="Limit corpus size for smoke runs. 0 = no limit.",
     )
+    p.add_argument(
+        "--concurrency", type=int, default=16,
+        help=(
+            "Number of cells to process in parallel. Default 16 — safe "
+            "for OpenAI tier 1+ (500 RPM gpt-4o-mini). Lower if you see "
+            "RateLimitError; raise on higher tiers for faster bench."
+        ),
+    )
     return p.parse_args()
 
 
@@ -121,22 +129,27 @@ async def _bench_one_cell(
     extractor,
     llm_client,
     doc_id: str,
-    doc_text: str,
+    source_triples: list[Triple],
     axis: str,
     position: float,
 ) -> BenchCell:
-    """Extract triples from `doc_text`, render at the given (axis,
-    position), measure drift. One LLM call per cell unless the axis is
-    `density` (canonical path, no LLM). Errors are captured into the
-    cell rather than raised so one failure doesn't kill the run."""
+    """Render at the given (axis, position) against pre-extracted
+    source_triples, measure drift. Two LLM calls per cell on the LLM
+    path (render + re-extraction inside render); zero on the density
+    canonical path. Errors are captured into the cell rather than
+    raised so one failure doesn't kill the run.
+
+    Source extraction is hoisted to main_async — once per doc rather
+    than once per cell — eliminating (n_axes × n_positions − 1)
+    duplicate calls per doc.
+    """
     t_start = time.monotonic()
     try:
-        source_triples: list[Triple] = await extractor(doc_text)
         if not source_triples:
             return BenchCell(
                 doc_id=doc_id, axis=axis, position=position,
                 wall_clock_ms=int((time.monotonic() - t_start) * 1000),
-                error="extractor returned no triples",
+                error="extractor returned no triples (source step)",
             )
 
         sliders = _build_sliders(axis, position)
@@ -201,14 +214,73 @@ async def main_async(args: argparse.Namespace) -> int:
     llm_client = OpenAIChatClient(adapter)
     extractor = adapter.extract_triplets
 
+    # Phase 1: extract source triples for every doc once, in parallel.
+    # Without this hoist the bench re-extracts the same source 25× per
+    # doc (once per axis × position). Eliminates ~125 redundant LLM
+    # calls per 8-doc / 25-position run.
+    sem = asyncio.Semaphore(args.concurrency)
+
+    async def _gated(coro):
+        async with sem:
+            return await coro
+
+    t_extract_start = time.monotonic()
+    src_results = await asyncio.gather(
+        *[_gated(extractor(doc["text"])) for doc in docs],
+        return_exceptions=True,
+    )
+    src_by_doc: dict[str, list[Triple]] = {}
+    src_errors: dict[str, str] = {}
+    for doc, res in zip(docs, src_results):
+        if isinstance(res, Exception):
+            src_errors[doc["id"]] = f"{type(res).__name__}: {res}"
+            src_by_doc[doc["id"]] = []
+        else:
+            src_by_doc[doc["id"]] = list(res)
+    print(
+        f"# slider_drift_bench: extracted source for {len(docs)} docs in "
+        f"{time.monotonic() - t_extract_start:.1f}s "
+        f"(concurrency={args.concurrency})",
+        file=sys.stderr,
+    )
+
+    # Phase 2: build all (doc, axis, position) cells; run with the
+    # same semaphore so per-cell render+re-extract calls share the
+    # rate-limit budget with the source-extraction phase above.
+    t_cells_start = time.monotonic()
     cells: list[BenchCell] = []
+    tasks = []
     for doc in docs:
+        # If source extraction failed for this doc, emit one error row
+        # per cell synchronously rather than running render against an
+        # empty triple set.
+        if doc["id"] in src_errors:
+            for axis in args.axes:
+                for position in args.positions:
+                    cells.append(BenchCell(
+                        doc_id=doc["id"], axis=axis, position=position,
+                        error=f"source-extract-failed: {src_errors[doc['id']]}",
+                    ))
+            continue
+        src = src_by_doc[doc["id"]]
         for axis in args.axes:
             for position in args.positions:
-                cell = await _bench_one_cell(
-                    extractor, llm_client, doc["id"], doc["text"], axis, position,
-                )
-                cells.append(cell)
+                tasks.append(_gated(_bench_one_cell(
+                    extractor, llm_client, doc["id"], src, axis, position,
+                )))
+
+    completed = 0
+    total = len(tasks)
+    for fut in asyncio.as_completed(tasks):
+        cell = await fut
+        cells.append(cell)
+        completed += 1
+        if completed % 25 == 0 or completed == total:
+            print(
+                f"# slider_drift_bench: {completed}/{total} cells done "
+                f"({time.monotonic() - t_cells_start:.1f}s elapsed)",
+                file=sys.stderr,
+            )
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     with args.out.open("w") as f:
