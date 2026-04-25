@@ -24,7 +24,9 @@ from sum_engine_internal.ensemble.slider_renderer import (
     RenderResult,
     Triple,
     cache_key,
+    fact_preservation,
     measure_drift,
+    order_preservation,
     render,
 )
 from sum_engine_internal.ensemble.tome_sliders import (
@@ -175,6 +177,7 @@ def _fake_render_result() -> RenderResult:
     return RenderResult(
         tome="The alice like cat.",
         triples_used=(("alice", "like", "cat"),),
+        reextracted_triples=(("alice", "like", "cat"),),
         drift=(AxisDrift(axis=DriftAxis.DENSITY, value=0.0,
                          threshold=0.001, classification="ok"),),
         cache_status=CacheStatus.MISS,
@@ -233,6 +236,66 @@ class TestRenderPipeline:
 
 
 # ─── measure_drift unit (xfail until EXECUTE) ─────────────────────────
+
+
+class TestFactAndOrderPreservation:
+    """v0.2 round-trip metrics. fact_preservation is set-based and
+    MontageLie-vulnerable; order_preservation defends against the
+    permutation attack."""
+
+    def test_fact_preservation_full_when_identical(self):
+        triples = [("a", "b", "c"), ("d", "e", "f"), ("g", "h", "i")]
+        assert fact_preservation(triples, triples) == 1.0
+
+    def test_fact_preservation_half_when_half_extracted(self):
+        src = [("a", "b", "c"), ("d", "e", "f"), ("g", "h", "i"), ("j", "k", "l")]
+        reext = [("a", "b", "c"), ("d", "e", "f")]
+        assert fact_preservation(src, reext) == 0.5
+
+    def test_fact_preservation_empty_source(self):
+        assert fact_preservation([], []) == 1.0
+        assert fact_preservation([], [("a", "b", "c")]) == 1.0
+
+    def test_order_preservation_perfect_when_same_order(self):
+        triples = [("a", "b", "c"), ("d", "e", "f"), ("g", "h", "i")]
+        assert order_preservation(triples, triples) == 1.0
+
+    def test_order_preservation_zero_when_fully_reversed(self):
+        src = [("a", "b", "c"), ("d", "e", "f"), ("g", "h", "i")]
+        reversed_ = list(reversed(src))
+        assert order_preservation(src, reversed_) == 0.0
+
+    def test_order_preservation_montagelie_attack(self):
+        """The headline regression test: a render that preserves every
+        source triple as a SET but rearranges them into a deceptive
+        order. Set-based fact_preservation is fooled (1.0); pairwise
+        order_preservation correctly detects the attack."""
+        src = [
+            ("alice", "born_in", "1990"),
+            ("alice", "graduated", "2012"),
+            ("alice", "married", "2015"),
+            ("alice", "had_child", "2018"),
+        ]
+        # Adversary preserves every triple but reorders the timeline:
+        # child before marriage before graduation before birth.
+        montagelie = list(reversed(src))
+        assert fact_preservation(src, montagelie) == 1.0  # SET fooled
+        assert order_preservation(src, montagelie) == 0.0  # ORDER catches it
+
+    def test_order_preservation_nan_with_under_two_preserved(self):
+        src = [("a", "b", "c"), ("d", "e", "f")]
+        reext = [("a", "b", "c")]  # only 1 preserved → no pairs
+        import math
+        assert math.isnan(order_preservation(src, reext))
+
+    def test_order_preservation_partial(self):
+        """3 triples preserved, 1 swap: 2 of 3 pairs correct → 0.667."""
+        src = [("a", "b", "c"), ("d", "e", "f"), ("g", "h", "i")]
+        # Swap d and g positions
+        reext = [("a", "b", "c"), ("g", "h", "i"), ("d", "e", "f")]
+        # Pairs in source order: (a,d), (a,g), (d,g)
+        # In reext: (a,g): a before g ✓ ; (a,d): a before d ✓ ; (d,g): d after g ✗
+        assert order_preservation(src, reext) == pytest.approx(2/3, abs=1e-6)
 
 
 class TestMeasureDrift:

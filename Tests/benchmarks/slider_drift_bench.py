@@ -39,6 +39,8 @@ from sum_engine_internal.ensemble.live_llm_adapter import (
 from sum_engine_internal.ensemble.slider_renderer import (
     Triple,
     cache_key,
+    fact_preservation,
+    order_preservation,
     render,
 )
 from sum_engine_internal.ensemble.tome_sliders import TomeSliders
@@ -61,7 +63,8 @@ class BenchCell:
     drift_value: float = float("nan")
     drift_threshold: float = float("nan")
     classification: str = ""           # "ok" | "warn" | "fail"
-    fact_preservation: float = float("nan")  # |source ∩ reextracted| / |source|
+    fact_preservation: float = float("nan")    # |source ∩ reextracted| / |source| (set-based)
+    order_preservation: float = float("nan")   # MontageLie defense (pairwise order, NaN if <2 preserved)
     n_source_triples: int = 0
     n_reextracted_triples: int = 0
     tome_word_count: int = 0           # output length, for length-axis recalibration
@@ -149,12 +152,14 @@ async def _bench_one_cell(
             )
 
         n_source = len(source_triples)
-        n_reextracted = len(result.triples_used)
-        # Fact-preservation per SLIDER_CONTRACT.md §"Fact preservation invariant".
-        source_keys = {f"{s}||{p}||{o}" for (s, p, o) in source_triples}
-        used_keys = {f"{s}||{p}||{o}" for (s, p, o) in result.triples_used}
-        kept = len(source_keys & used_keys)
-        fact_pres = kept / n_source if n_source else 0.0
+        # CORRECTED in v0.2: measure round-trip preservation against the
+        # re-extracted triples (what survived the LLM round-trip), NOT
+        # against triples_used (the post-density set passed TO the LLM,
+        # which is trivially equal to source for non-density axes).
+        # The previous bench reported fact_preservation = 1.000 because
+        # density=1.0 ⇒ triples_used=source by construction.
+        fact_pres = fact_preservation(source_triples, result.reextracted_triples)
+        order_pres = order_preservation(source_triples, result.reextracted_triples)
 
         return BenchCell(
             doc_id=doc_id,
@@ -164,8 +169,9 @@ async def _bench_one_cell(
             drift_threshold=axis_drift.threshold,
             classification=axis_drift.classification,
             fact_preservation=fact_pres,
+            order_preservation=order_pres,
             n_source_triples=n_source,
-            n_reextracted_triples=n_reextracted,
+            n_reextracted_triples=len(result.reextracted_triples),
             tome_word_count=len(result.tome.split()),
             wall_clock_ms=result.wall_clock_ms,
             cache_status=result.cache_status.value,

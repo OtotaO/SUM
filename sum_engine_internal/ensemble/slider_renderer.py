@@ -111,24 +111,31 @@ class AxisDrift:
 class RenderResult:
     """Output of slider_renderer.render().
 
-    `tome`            — the generated narrative text. May be the canonical
-                        deterministic rendering (when all LLM axes are at
-                        neutral) or an LLM-conditioned rendering.
-    `triples_used`    — the post-density triples actually fed to the LLM.
-    `drift`           — per-axis measurement against source triples.
-    `cache_status`    — provenance of the result.
-    `llm_calls_made`  — 0 on cache hit; 1 on miss (one LLM call per render
-                        — the axes condition the system prompt rather than
-                        firing N parallel calls).
-    `wall_clock_ms`   — total time including cache lookup, LLM call, and
-                        drift measurement.
-    `quantized_sliders`— what the cache key actually used (post-snap).
-    `render_id`       — content-addressed identifier of this render
-                        (sha256 of triples_used + quantized_sliders + tome).
+    `tome`              — the generated narrative text. May be the canonical
+                          deterministic rendering (when all LLM axes are at
+                          neutral) or an LLM-conditioned rendering.
+    `triples_used`      — the post-density triples actually fed to the LLM.
+    `reextracted_triples`— triples re-extracted from the rendered tome,
+                          in tome-extraction order. For the canonical path
+                          this equals triples_used (no LLM transformation,
+                          no semantic drift). For the LLM path this is what
+                          actually survived the round-trip — load-bearing
+                          for any honest fact-preservation claim.
+    `drift`             — per-axis measurement against source triples.
+    `cache_status`      — provenance of the result.
+    `llm_calls_made`    — 0 on cache hit; 1 on miss (one LLM call per render
+                          — the axes condition the system prompt rather than
+                          firing N parallel calls).
+    `wall_clock_ms`     — total time including cache lookup, LLM call, and
+                          drift measurement.
+    `quantized_sliders` — what the cache key actually used (post-snap).
+    `render_id`         — content-addressed identifier of this render
+                          (sha256 of triples_used + quantized_sliders + tome).
     """
 
     tome: str
     triples_used: tuple[Triple, ...]
+    reextracted_triples: tuple[Triple, ...]
     drift: tuple[AxisDrift, ...]
     cache_status: CacheStatus
     llm_calls_made: int
@@ -275,31 +282,33 @@ _ALL_PRONOUNS: frozenset[str] = _FIRST_PERSON | frozenset({
 })
 
 def _load_common_words() -> frozenset[str]:
-    """Load the bundled top-2000 frequency-table from the package data
+    """Load the bundled top-5000 frequency-table from the package data
     directory. One-shot at module import; the result is immutable.
 
-    Falls back to a minimal stoplist if the data file isn't present
-    (e.g. when running from a partial source checkout). The bench
-    will report measurement degradation but the renderer keeps working.
+    Tries the 5000-word table first, falls back to the 2000-word table
+    for partial-checkout robustness, then a minimal stoplist as last
+    resort. The bench will report measurement degradation on degraded
+    fallback but the renderer keeps working.
     """
     from importlib.resources import files
-    try:
-        text = (files("sum_engine_internal.ensemble.data") /
-                "common_english_2000.txt").read_text(encoding="utf-8")
-        return frozenset(w.strip().lower() for w in text.splitlines() if w.strip())
-    except (FileNotFoundError, ModuleNotFoundError):
-        # Tiny fallback: the most common 50 English words. Audience drift
-        # measurement will saturate but the renderer still functions.
-        return frozenset((
-            "the of and to in that is was he for it with as his on be at by "
-            "i this had not are but from or have an they which one you were "
-            "her all she there would their we him been has when who will more"
-        ).split())
+    data_pkg = files("sum_engine_internal.ensemble.data")
+    for filename in ("common_english_5000.txt", "common_english_2000.txt"):
+        try:
+            text = (data_pkg / filename).read_text(encoding="utf-8")
+            return frozenset(w.strip().lower() for w in text.splitlines() if w.strip())
+        except (FileNotFoundError, ModuleNotFoundError):
+            continue
+    # Last-resort fallback: most common 50 English words.
+    return frozenset((
+        "the of and to in that is was he for it with as his on be at by "
+        "i this had not are but from or have an they which one you were "
+        "her all she there would their we him been has when who will more"
+    ).split())
 
 
-# Top-2000 most common English words by frequency in the Brown corpus.
+# Top-5000 most common English words by frequency in the Brown corpus.
 # Words NOT in this set AND longer than 4 chars count as "jargon" for
-# the audience-axis density measurement. See data/common_english_2000.txt.
+# the audience-axis density measurement. See data/common_english_5000.txt.
 _COMMON_WORDS: frozenset[str] = _load_common_words()
 
 
@@ -380,6 +389,73 @@ def _classify(value: float, threshold: float) -> str:
     if value <= threshold * 1.5:
         return "warn"
     return "fail"
+
+
+def fact_preservation(
+    source_triples: Sequence[Triple],
+    reextracted_triples: Sequence[Triple],
+) -> float:
+    """Set-based round-trip preservation: fraction of source triples
+    that survived the LLM round-trip (or the canonical path's no-op).
+
+    Returns `|source ∩ reextracted| / |source|`. Returns 1.0 when
+    source is empty (nothing to lose). This is the load-bearing
+    metric for the slider's "axis changes don't drop facts" claim
+    — but it is set-based and therefore vulnerable to MontageLie-
+    style reordering attacks. Pair with `order_preservation` for an
+    honest measurement.
+    """
+    src = {_axiom_key(t) for t in source_triples}
+    if not src:
+        return 1.0
+    reext = {_axiom_key(t) for t in reextracted_triples}
+    return len(src & reext) / len(src)
+
+
+def order_preservation(
+    source_triples: Sequence[Triple],
+    reextracted_triples: Sequence[Triple],
+) -> float:
+    """Pairwise order-preservation: of the triples that survive the
+    round-trip, what fraction retained their relative order from
+    source to tome?
+
+    Defends against the MontageLie attack (Zheng et al., 2025) where
+    an adversarial render preserves every source triple but reorders
+    them into a deceptive narrative. Set-based fact_preservation
+    scores 1.000 on such a render; this metric drops toward 0.5
+    (random shuffling) or below.
+
+    Returns 1.0 when all preserved pairs retained order, 0.0 when
+    all were reversed, NaN when fewer than 2 source triples survive
+    (no pairs to compare).
+
+    Source order is the position of each triple in the input
+    sequence; tome order is the position in the re-extracted
+    sequence (LLM-emitted order during re-extraction).
+    """
+    source_pos: dict[str, int] = {}
+    for i, t in enumerate(source_triples):
+        source_pos.setdefault(_axiom_key(t), i)
+    tome_pos: dict[str, int] = {}
+    for i, t in enumerate(reextracted_triples):
+        tome_pos.setdefault(_axiom_key(t), i)
+
+    preserved = sorted(set(source_pos) & set(tome_pos))
+    if len(preserved) < 2:
+        return float("nan")
+
+    correct = total = 0
+    for i, a in enumerate(preserved):
+        for b in preserved[i + 1:]:
+            sa, sb = source_pos[a], source_pos[b]
+            ta, tb = tome_pos[a], tome_pos[b]
+            if sa == sb or ta == tb:
+                continue
+            if (sa < sb) == (ta < tb):
+                correct += 1
+            total += 1
+    return correct / total if total > 0 else float("nan")
 
 
 def measure_drift(
@@ -474,6 +550,7 @@ async def render(
             return RenderResult(
                 tome=hit.tome,
                 triples_used=hit.triples_used,
+                reextracted_triples=hit.reextracted_triples,
                 drift=hit.drift,
                 cache_status=CacheStatus.HIT,
                 llm_calls_made=0,
@@ -518,6 +595,7 @@ async def render(
     result = RenderResult(
         tome=tome,
         triples_used=kept_triples,
+        reextracted_triples=tuple(tuple(t) for t in reextracted),
         drift=drift,
         cache_status=cache_status,
         llm_calls_made=llm_calls,
