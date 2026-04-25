@@ -83,6 +83,9 @@ exclude = ["Tests*", "Tests.*", "scripts*", "api*", "single_file_demo*"]
 # Ship nothing binary by default. spaCy models are user-installed via
 # `python -m spacy download en_core_web_sm`.
 "*" = ["py.typed"]
+# Bundled frequency-table assets used by the slider renderer's
+# audience-axis classifier (Phase E.1 STATE 5b).
+"sum_engine_internal.ensemble.data" = ["*.txt"]
 
 [tool.ruff]
 line-length = 100

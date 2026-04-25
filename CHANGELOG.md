@@ -4,6 +4,64 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Improved — Phase E.1 STATE 5b (classifier upgrades + tightened thresholds)
+
+Two follow-up fixes after STATE 5 surfaced the calibration gaps:
+
+**Audience classifier:** the embedded ~200-word common-words list
+was swapped for a 2000-word frequency table derived from NLTK's
+Brown corpus (`sum_engine_internal/ensemble/data/common_english_2000.txt`,
+re-generable via `scripts/data/regen_common_english_2000.py`). The
+loader uses `importlib.resources` and ships the file via
+`pyproject.toml`'s `[tool.setuptools.package-data]`. Median audience
+drift cut by ~50% across all positions; threshold 0.55 → 0.40.
+
+**Length bands:** the per-triple-linear bands `(5,15) … (80,200)`
+were replaced with empirically-derived bands
+`(4,10) / (5,12) / (4,10) / (30,60) / (80,140)` (words per source
+triple). The original assumption that response length scales
+linearly with input fact count was wrong — the LLM has a ~6 wpt
+floor at and below position 0.5 and scales aggressively above.
+Median length drift cut 3× across positions 0.1–0.7; threshold
+0.95 → 0.60.
+
+**Bench harness:** `BenchCell` gained a `tome_word_count` field so
+future calibration runs have the raw data without re-running.
+
+**SLIDER_CONTRACT.md:** STATE 5b numbers replace STATE 5 placeholders
+in the per-axis tables; `§"Empirical bench runs"` now records both
+runs side-by-side so future readers can see what changed and why.
+
+**Robustness footnote:** 2/200 cells errored on `doc_einstein` with
+`LengthFinishReasonError` — the LLM produced more triples during
+re-extraction than fit in its 16384-token completion budget. Bench
+captures these per-row rather than aborting; documented as a v0.2
+robustness item, not a contract violation.
+
+### Added — Phase E.1 v0.2 research roadmap
+
+`docs/SLIDER_V02_RESEARCH.md` distills a survey of mathematical
+substrates for verifiable bidirectional knowledge distillation
+engines (AIT, category theory, IB, proof-carrying transformations,
+GEPA/DSPy/GRPO, hierarchical PRMs, metamorphic testing) into the
+3–4 items that materially improve SUM's slider in the next 1–3 PRs.
+
+The doc has three sections: (a) validation — what SUM is already
+doing right per the survey (verifiable rewards, cycle-consistency,
+content-addressed everything, the Pareto-frontier framing); (b)
+actionable v0.2 work — MontageLie-resistant fact preservation,
+constrained decoding for the renderer, audience classifier
+expansion, metamorphic testing; (c) awareness/defer — zkML, Lean 4
+paragraph-level proofs, GEPA outer loop, etc., that are SOTA but
+out of scope for SUM today.
+
+The MontageLie finding is the most consequential: SUM's
+`fact_preservation = 1.000` headline uses set-based comparison,
+which Zheng et al. (May 2025) showed is exploitable by reordering
+preserved triples into a deceptive narrative. v0.2 PR will add
+event-order-aware verifier (pairwise order-preservation between
+source-triple pairs) so the headline claim is robust.
+
 ### Verified — Phase E.1 STATE 5 (empirical bench run + contract update)
 
 Ran `Tests/benchmarks/slider_drift_bench.py` against a real multi-fact

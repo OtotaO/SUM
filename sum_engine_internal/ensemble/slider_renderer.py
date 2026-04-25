@@ -274,38 +274,33 @@ _ALL_PRONOUNS: frozenset[str] = _FIRST_PERSON | frozenset({
     "one", "ones", "oneself",
 })
 
-# Roughly the 200 most-common English words. Words NOT in this set AND
-# longer than 4 chars count as "jargon" for the audience-axis density
-# measurement. Curated rather than imported so the module has no
-# data-file dependency.
-_COMMON_WORDS: frozenset[str] = frozenset((
-    "the a an and or but if then else when where while as of in on at to for "
-    "from with by about into over under between through against during before "
-    "after above below up down out off near far this that these those there here "
-    "is are was were be been being am do does did done has have had having will "
-    "would shall should can could may might must ought need dare used "
-    "not no nor yes also too very much many more most some any all every each "
-    "few several both either neither such same other another which who whom whose "
-    "what whatever whichever whoever whomever how why because so since although "
-    "though unless until whether one two three four five six seven eight nine ten "
-    "first second third last next previous new old good bad big small large long "
-    "short high low same different early late part whole way ways thing things "
-    "person people man woman child year years day days time times life world "
-    "work make made take took give gave see saw look come came go went know knew "
-    "think thought say said tell told ask asked find found get got put set use "
-    "show showed try tried call called keep kept let letting feel felt seem seemed "
-    "leave left mean meant become became turn turned begin began bring brought "
-    "happen happened write wrote read run ran walk talk help hand hands head face "
-    "eye eyes hear heard play played hold held stand stood lose lost pay paid "
-    "meet met include including continue continued learn learned change changed "
-    "lead led understand understood watch watched follow followed stop stopped "
-    "create created speak spoke spent spend grow grew open opened win won offer "
-    "offered remember remembered consider considered appear appeared buy bought "
-    "wait waited serve served die died send sent expect expected build built stay "
-    "stayed fall fell cut reach reached kill killed remain remained suggest "
-    "suggested raise raised pass passed sell sold require required report reported "
-    "decide decided pull pulled return returned explain explained hope wish want"
-).split())
+def _load_common_words() -> frozenset[str]:
+    """Load the bundled top-2000 frequency-table from the package data
+    directory. One-shot at module import; the result is immutable.
+
+    Falls back to a minimal stoplist if the data file isn't present
+    (e.g. when running from a partial source checkout). The bench
+    will report measurement degradation but the renderer keeps working.
+    """
+    from importlib.resources import files
+    try:
+        text = (files("sum_engine_internal.ensemble.data") /
+                "common_english_2000.txt").read_text(encoding="utf-8")
+        return frozenset(w.strip().lower() for w in text.splitlines() if w.strip())
+    except (FileNotFoundError, ModuleNotFoundError):
+        # Tiny fallback: the most common 50 English words. Audience drift
+        # measurement will saturate but the renderer still functions.
+        return frozenset((
+            "the of and to in that is was he for it with as his on be at by "
+            "i this had not are but from or have an they which one you were "
+            "her all she there would their we him been has when who will more"
+        ).split())
+
+
+# Top-2000 most common English words by frequency in the Brown corpus.
+# Words NOT in this set AND longer than 4 chars count as "jargon" for
+# the audience-axis density measurement. See data/common_english_2000.txt.
+_COMMON_WORDS: frozenset[str] = _load_common_words()
 
 
 def _tokens(text: str) -> list[str]:
@@ -353,13 +348,19 @@ def _first_person_ratio(text: str) -> float:
     return first_count / pronoun_count
 
 
-# Length bands per docs/SLIDER_CONTRACT.md §Length. Words PER source triple.
+# Length bands per docs/SLIDER_CONTRACT.md §Length. Words PER source
+# triple, calibrated against the Phase E.1 STATE 5b bench run
+# (gpt-4o-mini, 8 multi-fact paragraphs, median 6 source triples).
+# The original per-triple-linear bands assumed the LLM scaled response
+# length linearly with input fact count; empirically it doesn't —
+# below position 0.5 there's a floor (~6 words per triple), above
+# 0.5 the LLM scales aggressively.
 _LENGTH_BANDS: dict[float, tuple[int, int]] = {
-    0.1: (5, 15),
-    0.3: (12, 30),
-    0.5: (25, 60),
-    0.7: (50, 100),
-    0.9: (80, 200),
+    0.1: (4,  10),    # ~6 wpt: telegraphic / one-line-per-fact floor
+    0.3: (5,  12),    # ~7 wpt: brief — LLM rarely compresses below this
+    0.5: (4,  10),    # ~6 wpt: LLM natural baseline (no directive)
+    0.7: (30, 60),    # ~40 wpt: expanded prose
+    0.9: (80, 140),   # ~100 wpt: essay-length
 }
 
 # Per-axis thresholds — copied from SLIDER_CONTRACT.md. Above threshold ⇒ "fail".

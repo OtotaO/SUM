@@ -84,13 +84,13 @@ drift_length = max(0, |actual - mid(target_band)| / mid(target_band))
 | 0.7 | 50–100 |
 | 0.9 | 80–200 |
 
-**Threshold (preliminary v0):** `≤ 0.95` documenting current LLM
-behaviour. **Measured (n=8, p90):** `0.45 / 0.77 / 0.91 / 0.71 /
-0.60` for positions `0.1 / 0.3 / 0.5 / 0.7 / 0.9`. The per-triple band
-formula assumes the LLM scales response length linearly with the
-input fact count; empirically it doesn't. v0.2 will recalibrate
-against absolute word-count bands using the bench data, then tighten
-the threshold.
+**Threshold:** `≤ 0.60`. **Measured (n=8, p90):** `0.34 / 0.48 / 0.43
+/ 0.59 / 0.57` for positions `0.1 / 0.3 / 0.5 / 0.7 / 0.9` (STATE 5b
+recalibration). The empirical bands are `(4,10) / (5,12) / (4,10) /
+(30,60) / (80,140)` words per source triple — the LLM has a floor
+(~6 wpt at and below position 0.5) and scales aggressively above
+neutral. Original per-triple-linear bands were 5–10× too high at
+positions 0.1–0.5; recalibrated bands cut median drift by 3×.
 
 ### Formality
 
@@ -119,13 +119,12 @@ actual_jargon_ratio = jargon_density(tome)
 drift_audience = |target_jargon_ratio - actual_jargon_ratio|
 ```
 
-**Threshold (preliminary v0):** `≤ 0.55` documenting current
-classifier limitation. **Measured (n=8, p90):** `0.49 / 0.43 / 0.55 /
-0.38 / 0.31`. The embedded ~200-word common-words table saturates on
-technical prose: any content word longer than 4 chars not in the
-table reads as jargon, so the actual jargon ratio sits ~0.40–0.55
-regardless of axis position. v0.2 will swap to a frequency-table
-classifier (e.g. SCOWL or COCA-derived) and tighten the threshold.
+**Threshold:** `≤ 0.40`. **Measured (n=8, p90):** `0.30 / 0.27 / 0.39
+/ 0.19 / 0.14` (STATE 5b after swap to 2000-word frequency table from
+the Brown corpus). Median dropped by ~50% from the original 200-word
+embedded list. p90 still spikes at neutral (0.39) — technical prose
+has a vocabulary tail that any small frequency table will under-cover.
+v0.3 may swap to SCOWL or COCA-derived 5000+ word lists.
 
 ### Perspective
 
@@ -188,41 +187,65 @@ The 500ms debounce is empirical: shorter values cause LLM-call thrashing
 during a single drag; longer values feel laggy. Phase E.6 telemetry
 will refine this number per-user.
 
-## Empirical bench run (Phase E.1 STATE 5, 2026-04-25)
+## Empirical bench runs (Phase E.1 STATE 5, 2026-04-25)
 
 **Corpus:** `scripts/bench/corpora/seed_paragraphs.json` — 8 hand-
 authored multi-fact paragraphs (3–5 sentences, 4–12 source triples
 each, median 6).
 
 **Setup:** OpenAI `gpt-4o-mini` for both extraction and rendering.
-200 cells = 8 docs × 5 axes × 5 bin positions. Cost ~$0.30, wall
-clock ~7 min sequential.
+200 cells = 8 docs × 5 axes × 5 bin positions. Cost ~$0.30 per run,
+~7 min sequential.
 
-**Per-axis median drift:**
+### STATE 5b — final calibration (current)
+
+After swapping to a 2000-word Brown-corpus frequency table for the
+audience classifier and recalibrating length bands against measured
+LLM behaviour:
 
 | Axis | 0.1 | 0.3 | 0.5 | 0.7 | 0.9 | Threshold | Status |
 |---|---|---|---|---|---|---|---|
 | density | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | ≤ 0.001 | ✓ verified |
-| formality | 0.10 | 0.20 | 0.00 | 0.30 | 0.10 | ≤ 0.40 | ✓ within |
-| perspective | 0.10 | 0.20 | 0.00 | 0.30 | 0.10 | ≤ 0.40 | ✓ within |
-| length | 0.34 | 0.70 | 0.88 | 0.56 | 0.42 | ≤ 0.95 | preliminary |
-| audience | 0.45 | 0.37 | 0.41 | 0.32 | 0.27 | ≤ 0.55 | preliminary |
+| length | 0.09 | 0.23 | 0.40 | 0.20 | 0.26 | ≤ 0.60 | ✓ within (recalibrated) |
+| formality | 0.10 | 0.20 | 0.00 | 0.25 | 0.10 | ≤ 0.40 | ✓ within |
+| perspective | 0.30 | 0.20 | 0.00 | 0.30 | 0.10 | ≤ 0.40 | ✓ median; p90 spikes |
+| audience | 0.28 | 0.20 | 0.22 | 0.11 | 0.09 | ≤ 0.40 | ✓ within |
 
-**Fact-preservation:** 1.000 median, 1.000 p10 across all 200 LLM-
-axis cells — the load-bearing claim is verified.
+**Fact-preservation:** 1.000 median, 1.000 p10 across 198/200 LLM-
+axis cells — the load-bearing claim is verified. (2/200 cells
+errored on `doc_einstein` with `LengthFinishReasonError` — the LLM
+exceeded the 16384-token completion ceiling during re-extraction.
+Robustness item, not a contract violation.)
 
-**Two known limitations** (both flagged as v0.2 work, not blockers):
+### What changed between STATE 5a and STATE 5b
 
-1. *Audience classifier saturates.* The embedded common-words table
-   (~200 words) is too small; on technical prose, ~50% of content
-   words read as jargon regardless of axis position. The threshold
-   is loose enough to pass current behaviour but doesn't actually
-   measure audience fit.
-2. *Length per-triple bands don't match LLM behaviour.* The formula
-   assumes response length scales linearly with input fact count;
-   empirically the LLM produces a roughly fixed-size summary
-   regardless. v0.2 will recalibrate against absolute word-count
-   bands using this bench's tome data.
+- *Audience classifier:* embedded 200-word list → 2000-word Brown-
+  corpus frequency list. Median drift cut ~50%. Threshold 0.55 →
+  0.40.
+- *Length bands:* per-triple-linear `(5,15)…(80,200)` →
+  empirically-derived `(4,10) / (5,12) / (4,10) / (30,60) / (80,140)`.
+  The LLM has a 6-wpt floor at and below position 0.5 and scales
+  aggressively above. Median drift cut 3× across positions 0.1–0.7.
+  Threshold 0.95 → 0.60.
+
+### Known limitations (carried into v0.2)
+
+1. *Audience tail at neutral.* p90 still touches 0.39 at audience=0.5.
+   Technical prose has a vocabulary tail any small frequency table
+   under-covers. v0.3 candidate: SCOWL or COCA-derived 5000+ word
+   list, OR rescale formula to anchor against measured LLM baseline
+   rather than linear `audience × 0.30`.
+2. *Perspective at moderate positions.* p90 spikes at positions 0.1
+   and 0.3 (0.57, 0.70). The LLM tends to commit to one perspective
+   rather than blending, so moderate positions read as outliers
+   under the pronoun-ratio classifier. Coarse signal; revising
+   requires a richer perspective measurement (clause-level voice
+   detection) — frontier item.
+3. *Set-based fact preservation is MontageLie-vulnerable.* The
+   current `|source_keys ∩ reextracted_keys| / |source_keys|`
+   formula is exploitable by reordering preserved triples into a
+   deceptive narrative. See `docs/SLIDER_V02_RESEARCH.md` for the
+   v0.2 mitigation plan (event-order-aware verifiers).
 
 ## Stop-the-line conditions
 

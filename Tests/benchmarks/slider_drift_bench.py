@@ -64,6 +64,7 @@ class BenchCell:
     fact_preservation: float = float("nan")  # |source ∩ reextracted| / |source|
     n_source_triples: int = 0
     n_reextracted_triples: int = 0
+    tome_word_count: int = 0           # output length, for length-axis recalibration
     wall_clock_ms: int = 0
     cache_status: str = ""
     error: str = ""                    # populated on failure; otherwise empty
@@ -165,6 +166,7 @@ async def _bench_one_cell(
             fact_preservation=fact_pres,
             n_source_triples=n_source,
             n_reextracted_triples=n_reextracted,
+            tome_word_count=len(result.tome.split()),
             wall_clock_ms=result.wall_clock_ms,
             cache_status=result.cache_status.value,
         )
