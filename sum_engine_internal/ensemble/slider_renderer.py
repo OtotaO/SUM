@@ -502,7 +502,12 @@ async def render(
         reextracted = await extractor(tome)
         llm_calls = 1
 
-    drift = measure_drift(kept_triples, reextracted, tome, quantized)
+    # measure_drift compares re-extracted facts against the ORIGINAL
+    # source set (not the post-density kept set), because density drift
+    # is "did the renderer keep the right COUNT of source facts?" — only
+    # answerable against the original. Passing kept_triples here would
+    # double-apply density and break the formula at non-1.0 settings.
+    drift = measure_drift(triples_tuple, reextracted, tome, quantized)
 
     render_id = hashlib.sha256(
         (key + tome).encode("utf-8")

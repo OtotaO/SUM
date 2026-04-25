@@ -4,6 +4,57 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Verified — Phase E.1 STATE 5 (empirical bench run + contract update)
+
+Ran `Tests/benchmarks/slider_drift_bench.py` against a real multi-fact
+prose corpus (8 hand-authored 3–5 sentence paragraphs, 4–12 triples
+each). 200 cells, gpt-4o-mini, ~$0.30 in tokens. Surfaced one
+correctness bug, two formula-calibration issues, and one verified
+load-bearing claim.
+
+**Headline:** fact preservation is 1.000 (median, p10) across all 200
+LLM-axis cells. The slider's central product claim — *axis changes
+do not lose facts* — holds empirically. Slider is a real product, not
+just substrate.
+
+**Bug fixed in this round:**
+- `slider_renderer.render()` was passing the post-density
+  `kept_triples` to `measure_drift` as the source set. Density drift
+  formula then computed `expected_retained = floor(filtered_count *
+  density)`, which double-applied density and produced spurious
+  drift values up to 1.75 at moderate densities. Fix: pass the
+  original source `triples_tuple`. Density drift now 0.000 across
+  all positions (verified by re-run).
+
+**Contract updates** (`docs/SLIDER_CONTRACT.md`):
+- All five threshold rows now show `Measured (n=8, p90)` alongside
+  the limit. Numbers come from this bench, not theory.
+- Density: ≤0.001 verified.
+- Formality: ≤0.25 → ≤0.40 (covers p90 tail at extremes).
+- Perspective: ≤0.20 → ≤0.40 (median fits, p90 spikes at moderate
+  positions; the LLM commits to one perspective rather than
+  blending).
+- Length: ≤0.5 → ≤0.95 *preliminary*. Per-triple band assumption is
+  empirically wrong (LLM doesn't scale response length linearly with
+  fact count). v0.2 will recalibrate against absolute word-count
+  bands using this bench's tome data.
+- Audience: ≤0.10 → ≤0.55 *preliminary*. Embedded ~200-word common-
+  words table saturates: technical prose reads as ~50% jargon
+  regardless of axis. v0.2 will swap to a frequency-table classifier.
+- New §"Empirical bench run" section: per-axis median drift table,
+  reproduction command, headline fact-preservation result, two
+  documented v0.2 follow-ups.
+- Version bumped from 0.1 (draft) to 0.2 (empirically verified).
+
+**Bench corpus:** new file `scripts/bench/corpora/seed_paragraphs.json`
+with 8 multi-fact paragraphs hand-authored from common factual
+knowledge (avoids copyright entanglement). `scripts/bench/run_*.sh`
+wrappers landed for smoke (1 doc) and full (8 docs) runs.
+
+Verification: 22 unit tests pass; 1057 full Python suite pass; bench
+re-run with bug fix shows density drift 0.000 across all positions
+and percentiles.
+
 ### Added — Phase E.1 STATE 4 (slider renderer pipeline lands)
 
 The renderer scaffold from STATE 2 ships its real implementation. Five

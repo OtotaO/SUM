@@ -1,0 +1,38 @@
+{
+  "schema": "sum.bench_corpus.v1",
+  "description": "Multi-fact paragraph corpus for slider drift bench. Each doc is 3-5 sentences and yields ~4-8 source triples post-extraction. Hand-authored from common factual knowledge to avoid copyright entanglement.",
+  "documents": [
+    {
+      "id": "doc_photosynthesis",
+      "text": "Photosynthesis converts sunlight into chemical energy in plants, algae, and some bacteria. The process occurs in chloroplasts and uses chlorophyll to capture light. Water and carbon dioxide are converted into glucose and oxygen. The oxygen is released as a byproduct, which is essential for most aerobic life."
+    },
+    {
+      "id": "doc_einstein",
+      "text": "Albert Einstein was born in Ulm, Germany in 1879. He developed the theory of special relativity in 1905 and general relativity in 1915. He received the Nobel Prize in Physics in 1921 for his explanation of the photoelectric effect. He emigrated to the United States in 1933 and joined Princeton's Institute for Advanced Study."
+    },
+    {
+      "id": "doc_python",
+      "text": "Python is a high-level programming language created by Guido van Rossum and released in 1991. It emphasizes code readability through significant indentation. Python supports multiple programming paradigms including procedural, object-oriented, and functional programming. It is widely used in data science, web development, and scientific computing."
+    },
+    {
+      "id": "doc_pacific_ocean",
+      "text": "The Pacific Ocean is the largest and deepest of Earth's oceanic divisions. It extends from the Arctic Ocean in the north to the Southern Ocean in the south. Its area is approximately 165 million square kilometers. The Mariana Trench, the deepest known location on Earth, lies in the western Pacific."
+    },
+    {
+      "id": "doc_french_revolution",
+      "text": "The French Revolution began in 1789 with the storming of the Bastille. King Louis XVI was executed by guillotine in 1793. The revolution led to the rise of Napoleon Bonaparte, who became Emperor in 1804. The revolution fundamentally transformed French society and influenced politics worldwide."
+    },
+    {
+      "id": "doc_dna",
+      "text": "DNA is a molecule that carries genetic instructions in nearly all living organisms. It is composed of two strands twisted into a double helix. The structure was identified by Watson and Crick in 1953, building on work by Rosalind Franklin. DNA contains four nucleotide bases: adenine, thymine, cytosine, and guanine."
+    },
+    {
+      "id": "doc_apollo_11",
+      "text": "Apollo 11 was the first crewed mission to land on the Moon. It launched on July 16, 1969 from Kennedy Space Center. Neil Armstrong and Buzz Aldrin walked on the lunar surface while Michael Collins orbited above. The mission returned to Earth on July 24, 1969."
+    },
+    {
+      "id": "doc_amazon_rainforest",
+      "text": "The Amazon rainforest covers approximately 5.5 million square kilometers in South America. It contains roughly ten percent of all known species on Earth. The Amazon River, which flows through the forest, discharges more water than any other river. Deforestation has reduced the forest's area significantly since the 1970s."
+    }
+  ]
+}
