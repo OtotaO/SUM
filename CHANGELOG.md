@@ -4,6 +4,89 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Added — Phase E scaffold (slider as first-class product)
+
+The genesis vision — bidirectional Tags ↔ Tomes with a slider — has
+been substrate-only since the project began (density axis works
+deterministically; the other four axes existed as metadata fields).
+Phase E.1 STATE 2 lands the typed scaffold for the renderer +
+contract doc + tests; STATE 4 fills the per-axis logic.
+
+  sum_engine_internal/ensemble/tome_sliders.py  (extended)
+    + SLIDER_BINS_PER_AXIS = 5                  # 3125 cache cells per triple-set
+    + snap_to_bin(value, bins) -> float         # quantize to bin centre
+    + quantize(TomeSliders) -> TomeSliders      # all-axis snap
+    + length_fragment / formality_fragment /    # axis prompt fragments;
+      audience_fragment / perspective_fragment    fail-loud at non-neutral
+                                                  positions until STATE 4
+    + build_system_prompt(TomeSliders) -> str   # composes neutral base +
+                                                  per-axis fragments
+
+  sum_engine_internal/ensemble/slider_renderer.py  (new)
+    Type contracts:
+      Triple = tuple[str, str, str]
+      CacheStatus = HIT | MISS | BYPASS
+      DriftAxis  = density | length | formality | audience | perspective
+      AxisDrift  = (axis, value, threshold, classification, explanation)
+      RenderResult = (tome, triples_used, drift, cache_status,
+                      llm_calls_made, wall_clock_ms,
+                      quantized_sliders, render_id)
+      SliderCache (Protocol)        = get / put / stats
+      LLMChatClient (Protocol)      = chat_completion(system, user, max_tokens)
+      TripleExtractor (Callable)    = (str) -> awaitable[list[Triple]]
+    Functions:
+      cache_key(triples, sliders)   = sha256(sorted_triples + sliders)[:32]
+      render(...)                   = NotImplementedError until STATE 4
+      measure_drift(...)            = NotImplementedError until STATE 4
+      InMemorySliderCache           = dict-backed reference impl
+
+  worker/src/cache/bin_cache.ts  (new)
+    Cache contract mirror. deriveCacheKey produces the SAME 32-char
+    string the Python cache_key produces for the same input — cross-
+    runtime cache coherence by content-addressed key.
+
+  worker/src/routes/render.ts  (new)
+    POST /api/render route. Quantizes incoming slider position,
+    derives cache key, returns 501 + activation plan until STATE 4.
+    Wired into worker/src/index.ts; KV binding RENDER_CACHE
+    declared (commented) in wrangler.toml.
+
+  Tests/test_slider_renderer.py  (new — 21 tests)
+    16 pass today (snap, quantize, cache_key, InMemorySliderCache).
+    5 xfailed strict (render pipeline + measure_drift) — bodies are
+    spec, not stub. STATE 4 lands the implementation; xfails flip
+    to passes with no test body changes.
+
+  Tests/benchmarks/slider_drift_bench.py  (new)
+    Per-axis drift bench harness. NDJSON output schema
+    sum.slider_drift_bench.v1. STATE 2 returns stub-error rows so
+    the harness structure is exercised end-to-end; STATE 4 wires
+    real measurement.
+
+  docs/SLIDER_CONTRACT.md  (new)
+    Source-of-truth spec. Per-axis drift formulas, thresholds,
+    cache semantics, UX commit-vs-drag decision matrix, stop-the-
+    line conditions. Every numeric tolerance is empirically
+    falsifiable by the bench harness.
+
+Carmack-frame anti-hypotheses captured in the contract:
+  1. Slider may be wrong UX (users want discrete buttons). E.6
+     trial A/B-instruments both control surfaces.
+  2. LLM latency may make drag-and-see undeliverable. 500ms
+     debounce + bin cache + skeleton-loader; commit-on-release
+     fallback.
+  3. Round-trip drift may be wildly variant per axis. Live drift
+     display per axis; "facts preserved within X%" replaces
+     "facts preserved" in product copy.
+  4. Go service rewrite is premature without measured Python
+     bottleneck. Defer until E.6 telemetry decides.
+  5. >10K-axiom scaling is hypothetical. Layered-architecture
+     plan stays in PROOF_BOUNDARY §3; build only when measured.
+
+No render claim made today. STATE 4 implements; STATE 5 verifies
+against the bench harness; only then does the slider become a
+shipping product feature instead of a typed contract.
+
 ### Added — Phase B intensification queue (B5–B7) in playbook
 
 - `docs/NEXT_SESSION_PLAYBOOK.md` Phase B grew three explicit items
