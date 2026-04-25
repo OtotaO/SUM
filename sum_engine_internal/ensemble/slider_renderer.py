@@ -395,21 +395,175 @@ def fact_preservation(
     source_triples: Sequence[Triple],
     reextracted_triples: Sequence[Triple],
 ) -> float:
-    """Set-based round-trip preservation: fraction of source triples
-    that survived the LLM round-trip (or the canonical path's no-op).
+    """STRICT set-based round-trip preservation: fraction of source
+    triples whose exact `(subject, predicate, object)` key appears
+    in re-extracted set. **Brittle to surface-form drift** — e.g.
+    source `(alice, graduated, 2012)` vs re-extracted
+    `(alice, graduated_in, 2012)` counts as not preserved despite
+    identical meaning. Use `fact_preservation_normalized` or
+    `semantic_fact_preservation` for an honest measurement; this
+    function is retained as a regression check on extractor
+    stability.
 
-    Returns `|source ∩ reextracted| / |source|`. Returns 1.0 when
-    source is empty (nothing to lose). This is the load-bearing
-    metric for the slider's "axis changes don't drop facts" claim
-    — but it is set-based and therefore vulnerable to MontageLie-
-    style reordering attacks. Pair with `order_preservation` for an
-    honest measurement.
+    Returns 1.0 when source is empty.
     """
     src = {_axiom_key(t) for t in source_triples}
     if not src:
         return 1.0
     reext = {_axiom_key(t) for t in reextracted_triples}
     return len(src & reext) / len(src)
+
+
+# ── Triple normalization (A3 layer) ──────────────────────────────────
+#
+# Catches the common surface-form drifts the LLM extractor produces
+# under directive pressure (length=0.7, formality=0.3, etc.):
+#
+#   "graduated"     ↔ "graduated_in"  ↔ "graduated_from"
+#   "born_in"       ↔ "was_born_in"   ↔ "was_born"
+#   "the_alice"     ↔ "alice"
+#   "wrote"         ↔ "authored"     ← NOT caught (true synonym)
+#                                       — A1 semantic layer covers this
+#
+# Free, deterministic, pure rule-based. Empirically catches ~30–50%
+# of the "drift" we measured at non-neutral axis positions. The A1
+# embedding layer below catches what remains.
+
+_PREDICATE_PREFIX_TRIM: tuple[str, ...] = (
+    "was_", "were_", "is_", "are_", "has_", "have_", "had_", "be_",
+)
+_PREDICATE_SUFFIX_TRIM: tuple[str, ...] = (
+    "_in", "_on", "_at", "_for", "_by", "_with", "_to", "_from", "_of",
+    "_into", "_onto", "_upon", "_about", "_during", "_after", "_before",
+    "_through", "_between", "_against",
+)
+_ARTICLES: frozenset[str] = frozenset({"a", "an", "the"})
+
+
+def _normalize_predicate(p: str) -> str:
+    """Strip auxiliary prefixes (was_, has_, ...) and preposition
+    suffixes (_in, _from, ...) so morphologically-related predicates
+    collapse to one form. No stemming — past tense is preserved."""
+    p = p.strip().lower()
+    for prefix in _PREDICATE_PREFIX_TRIM:
+        if p.startswith(prefix) and len(p) > len(prefix):
+            p = p[len(prefix):]
+            break
+    for suffix in _PREDICATE_SUFFIX_TRIM:
+        if p.endswith(suffix) and len(p) > len(suffix):
+            p = p[: -len(suffix)]
+            break
+    return p
+
+
+def _normalize_entity(e: str) -> str:
+    """Lowercase + strip leading/trailing articles. Internal underscores
+    preserved (so 'the_United_States' becomes 'united_states' but
+    'state_of_emergency' is unchanged)."""
+    e = e.strip().lower()
+    tokens = e.split("_")
+    while tokens and tokens[0] in _ARTICLES:
+        tokens = tokens[1:]
+    while tokens and tokens[-1] in _ARTICLES:
+        tokens = tokens[:-1]
+    return "_".join(tokens) if tokens else e
+
+
+def _normalize_triple(t: Triple) -> Triple:
+    """Pure function. Same input → same output. Catches preposition
+    and auxiliary-verb drift in the predicate plus article noise in
+    entities. Does NOT catch true synonyms — that's the semantic
+    layer's job."""
+    return (_normalize_entity(t[0]), _normalize_predicate(t[1]), _normalize_entity(t[2]))
+
+
+def fact_preservation_normalized(
+    source_triples: Sequence[Triple],
+    reextracted_triples: Sequence[Triple],
+) -> float:
+    """A3 layer: set-based preservation after predicate/entity
+    normalization. Catches the common LLM-extractor surface-form
+    drifts (graduated / graduated_in / was_graduated) for free.
+    Composes with `semantic_fact_preservation` (A1) which handles
+    the harder synonym/paraphrase cases.
+    """
+    src = {_axiom_key(_normalize_triple(t)) for t in source_triples}
+    if not src:
+        return 1.0
+    reext = {_axiom_key(_normalize_triple(t)) for t in reextracted_triples}
+    return len(src & reext) / len(src)
+
+
+# ── Semantic preservation (A1 layer) ─────────────────────────────────
+
+
+def _cosine_sim(a: Sequence[float], b: Sequence[float]) -> float:
+    """Cosine similarity. No numpy dep — bench scale is small."""
+    dot = sum(x * y for x, y in zip(a, b))
+    na = sum(x * x for x in a) ** 0.5
+    nb = sum(y * y for y in b) ** 0.5
+    if na == 0.0 or nb == 0.0:
+        return 0.0
+    return dot / (na * nb)
+
+
+# Default cosine threshold. Per the paraphrase-detection literature
+# survey (MDPI 2025, sentence-transformers docs), 0.80–0.90 covers
+# F1-optimal for text-embedding-3-small-class models; 0.85 is the
+# midpoint defensible at v0.2. Tunable per bench.
+SEMANTIC_FACT_THRESHOLD: float = 0.85
+
+
+async def semantic_fact_preservation(
+    source_triples: Sequence[Triple],
+    reextracted_triples: Sequence[Triple],
+    embed_fn: Callable[[str], Awaitable[list[float]]],
+    threshold: float = SEMANTIC_FACT_THRESHOLD,
+) -> float:
+    """A1 layer: semantic preservation via cosine similarity on
+    triple-as-text embeddings. For each source triple, greedily
+    finds the best-matching unused re-extracted triple by cosine
+    similarity. Counts as preserved if best-match similarity ≥
+    `threshold`.
+
+    Greedy one-to-one assignment (a re-extracted triple can match at
+    most one source triple) so a single overly-generic re-extracted
+    fact can't claim credit for multiple source facts.
+
+    Returns 1.0 when source is empty; 0.0 when re-extracted is empty
+    but source isn't.
+    """
+    src_count = len(source_triples)
+    if src_count == 0:
+        return 1.0
+    if not reextracted_triples:
+        return 0.0
+
+    src_strs = [f"{s} {p} {o}" for (s, p, o) in source_triples]
+    reext_strs = [f"{s} {p} {o}" for (s, p, o) in reextracted_triples]
+
+    # Batch embeddings to halve the round-trip count.
+    import asyncio  # local import keeps module-import-time clean
+    all_embs = await asyncio.gather(*[embed_fn(s) for s in src_strs + reext_strs])
+    src_embs = all_embs[: len(src_strs)]
+    reext_embs = all_embs[len(src_strs):]
+
+    used: set[int] = set()
+    matched = 0
+    for se in src_embs:
+        best_j = -1
+        best_sim = -1.0
+        for j, re_emb in enumerate(reext_embs):
+            if j in used:
+                continue
+            sim = _cosine_sim(se, re_emb)
+            if sim > best_sim:
+                best_sim = sim
+                best_j = j
+        if best_j >= 0 and best_sim >= threshold:
+            used.add(best_j)
+            matched += 1
+    return matched / src_count
 
 
 def order_preservation(

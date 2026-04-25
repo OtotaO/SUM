@@ -40,8 +40,10 @@ from sum_engine_internal.ensemble.slider_renderer import (
     Triple,
     cache_key,
     fact_preservation,
+    fact_preservation_normalized,
     order_preservation,
     render,
+    semantic_fact_preservation,
 )
 from sum_engine_internal.ensemble.tome_sliders import TomeSliders
 
@@ -63,8 +65,13 @@ class BenchCell:
     drift_value: float = float("nan")
     drift_threshold: float = float("nan")
     classification: str = ""           # "ok" | "warn" | "fail"
-    fact_preservation: float = float("nan")    # |source ∩ reextracted| / |source| (set-based)
-    order_preservation: float = float("nan")   # MontageLie defense (pairwise order, NaN if <2 preserved)
+    # Three-layer fact preservation per docs/SLIDER_V02_RESEARCH.md.
+    # All three reported so future readers can see what each layer
+    # contributes and where extraction noise vs real loss live.
+    fact_preservation_strict: float = float("nan")     # exact (s,p,o) key match (regression check on extractor stability)
+    fact_preservation_normalized: float = float("nan") # A3: after predicate / entity normalization
+    fact_preservation_semantic: float = float("nan")   # A1: cosine similarity ≥ τ on triple-as-text embeddings
+    order_preservation: float = float("nan")           # MontageLie defense (pairwise order, NaN if <2 preserved)
     n_source_triples: int = 0
     n_reextracted_triples: int = 0
     tome_word_count: int = 0           # output length, for length-axis recalibration
@@ -128,6 +135,7 @@ def _build_sliders(axis: str, position: float) -> TomeSliders:
 async def _bench_one_cell(
     extractor,
     llm_client,
+    embed_fn,
     doc_id: str,
     source_triples: list[Triple],
     axis: str,
@@ -165,13 +173,17 @@ async def _bench_one_cell(
             )
 
         n_source = len(source_triples)
-        # CORRECTED in v0.2: measure round-trip preservation against the
-        # re-extracted triples (what survived the LLM round-trip), NOT
-        # against triples_used (the post-density set passed TO the LLM,
-        # which is trivially equal to source for non-density axes).
-        # The previous bench reported fact_preservation = 1.000 because
-        # density=1.0 ⇒ triples_used=source by construction.
-        fact_pres = fact_preservation(source_triples, result.reextracted_triples)
+        # Three-layer fact preservation. Strict is the regression-check
+        # on extractor stability; normalized (A3) catches preposition /
+        # auxiliary-verb / article drift; semantic (A1) catches the
+        # remaining synonym / paraphrase cases via embedding similarity.
+        fact_strict = fact_preservation(source_triples, result.reextracted_triples)
+        fact_normalized = fact_preservation_normalized(
+            source_triples, result.reextracted_triples,
+        )
+        fact_semantic = await semantic_fact_preservation(
+            source_triples, result.reextracted_triples, embed_fn,
+        )
         order_pres = order_preservation(source_triples, result.reextracted_triples)
 
         return BenchCell(
@@ -181,7 +193,9 @@ async def _bench_one_cell(
             drift_value=axis_drift.value,
             drift_threshold=axis_drift.threshold,
             classification=axis_drift.classification,
-            fact_preservation=fact_pres,
+            fact_preservation_strict=fact_strict,
+            fact_preservation_normalized=fact_normalized,
+            fact_preservation_semantic=fact_semantic,
             order_preservation=order_pres,
             n_source_triples=n_source,
             n_reextracted_triples=len(result.reextracted_triples),
@@ -207,12 +221,14 @@ async def main_async(args: argparse.Namespace) -> int:
     if args.max_docs:
         docs = docs[: args.max_docs]
 
-    # The bench needs both an extractor (for source + re-extracted triples)
-    # and an LLM chat client (for the render path). Both come from
+    # The bench needs an extractor (for source + re-extracted triples),
+    # an LLM chat client (for the render path), and an embedder (for
+    # the A1 semantic fact-preservation layer). All come from
     # LiveLLMAdapter, which requires OPENAI_API_KEY in the environment.
     adapter = LiveLLMAdapter()
     llm_client = OpenAIChatClient(adapter)
     extractor = adapter.extract_triplets
+    embed_fn = adapter.get_embedding
 
     # Phase 1: extract source triples for every doc once, in parallel.
     # Without this hoist the bench re-extracts the same source 25× per
@@ -266,7 +282,8 @@ async def main_async(args: argparse.Namespace) -> int:
         for axis in args.axes:
             for position in args.positions:
                 tasks.append(_gated(_bench_one_cell(
-                    extractor, llm_client, doc["id"], src, axis, position,
+                    extractor, llm_client, embed_fn,
+                    doc["id"], src, axis, position,
                 )))
 
     completed = 0
@@ -303,6 +320,34 @@ async def main_async(args: argparse.Namespace) -> int:
         p75 = s[int(len(s) * 0.75)]
         p90 = s[int(len(s) * 0.90)] if len(s) >= 10 else s[-1]
         print(f"# {axis},{pos},{len(s)},{median:.4f},{p75:.4f},{p90:.4f}", file=sys.stderr)
+
+    # Per-axis fact preservation (three layers, median across docs).
+    print(
+        "# fact_preservation by axis,position — strict / normalized / semantic / order",
+        file=sys.stderr,
+    )
+    by_fact: dict[tuple[str, float], list[tuple[float, float, float, float]]] = {}
+    for c in cells:
+        if c.error:
+            continue
+        by_fact.setdefault((c.axis, c.position), []).append((
+            c.fact_preservation_strict,
+            c.fact_preservation_normalized,
+            c.fact_preservation_semantic,
+            c.order_preservation,
+        ))
+    for (axis, pos), tuples in sorted(by_fact.items()):
+        # Filter NaN per column when computing medians.
+        cols = list(zip(*tuples))
+        med_strs = []
+        for col in cols:
+            valid = [v for v in col if v == v]  # drop NaN
+            med_strs.append(f"{statistics.median(valid):.3f}" if valid else "n/a")
+        print(
+            f"# {axis},{pos}  strict={med_strs[0]}  norm={med_strs[1]}  "
+            f"semantic={med_strs[2]}  order={med_strs[3]}",
+            file=sys.stderr,
+        )
 
     # Stop-the-line: any failure-error row → exit 1 so CI surfaces.
     failures = [c for c in cells if c.error]

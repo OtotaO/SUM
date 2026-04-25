@@ -23,11 +23,15 @@ from sum_engine_internal.ensemble.slider_renderer import (
     InMemorySliderCache,
     RenderResult,
     Triple,
+    _normalize_predicate,
+    _normalize_triple,
     cache_key,
     fact_preservation,
+    fact_preservation_normalized,
     measure_drift,
     order_preservation,
     render,
+    semantic_fact_preservation,
 )
 from sum_engine_internal.ensemble.tome_sliders import (
     SLIDER_BINS_PER_AXIS,
@@ -296,6 +300,111 @@ class TestFactAndOrderPreservation:
         # Pairs in source order: (a,d), (a,g), (d,g)
         # In reext: (a,g): a before g ✓ ; (a,d): a before d ✓ ; (d,g): d after g ✗
         assert order_preservation(src, reext) == pytest.approx(2/3, abs=1e-6)
+
+
+class TestNormalizationLayer:
+    """A3 — surface-form normalization. Catches preposition / auxiliary-
+    verb / article drift without LLM calls."""
+
+    def test_preposition_suffix_stripped(self):
+        assert _normalize_predicate("graduated_in") == "graduated"
+        assert _normalize_predicate("born_on") == "born"
+        assert _normalize_predicate("traveled_through") == "traveled"
+
+    def test_auxiliary_prefix_stripped(self):
+        assert _normalize_predicate("was_born") == "born"
+        assert _normalize_predicate("has_written") == "written"
+        assert _normalize_predicate("are_located") == "located"
+
+    def test_combined_prefix_and_suffix(self):
+        assert _normalize_predicate("was_born_in") == "born"
+        assert _normalize_predicate("has_traveled_to") == "traveled"
+
+    def test_short_predicates_not_overstripped(self):
+        # 'in' shouldn't strip down to empty
+        assert _normalize_predicate("in") == "in"
+        # 'is' alone shouldn't strip down to empty
+        assert _normalize_predicate("is") == "is"
+
+    def test_articles_stripped_from_entities(self):
+        t = ("the_alice", "graduated_in", "the_year_2012")
+        n = _normalize_triple(t)
+        assert n[0] == "alice"
+        assert n[1] == "graduated"
+        assert n[2] == "year_2012"
+
+    def test_normalization_preserves_meaning_difference(self):
+        """Different predicates must NOT collapse — even after stripping."""
+        a = _normalize_triple(("alice", "loves", "bob"))
+        b = _normalize_triple(("alice", "hates", "bob"))
+        assert a != b
+
+    def test_fact_preservation_normalized_catches_preposition_drift(self):
+        """The exact failure mode found in the bench: source has
+        'graduated', re-extraction emits 'graduated_in'. Strict scores
+        0; normalized scores 1."""
+        source = [("alice", "graduated", "2012")]
+        reextracted = [("alice", "graduated_in", "2012")]
+        assert fact_preservation(source, reextracted) == 0.0
+        assert fact_preservation_normalized(source, reextracted) == 1.0
+
+    def test_fact_preservation_normalized_catches_auxiliary_drift(self):
+        source = [("alice", "born", "1990")]
+        reextracted = [("alice", "was_born_in", "1990")]
+        assert fact_preservation(source, reextracted) == 0.0
+        assert fact_preservation_normalized(source, reextracted) == 1.0
+
+
+# ── A1 semantic layer ────────────────────────────────────────────────
+
+
+async def _identity_embed(text: str) -> list[float]:
+    """Deterministic test embedder: same text → same vector. Built so
+    identical strings cosine-sim to 1.0 and different strings to ~0.0."""
+    import hashlib
+    h = hashlib.sha256(text.encode("utf-8")).digest()
+    # 32-byte hash → 8-dim float vector. Identical inputs ⇒ identical
+    # vectors ⇒ cosine sim = 1.0. Different inputs ⇒ nearly-orthogonal.
+    return [b / 255.0 - 0.5 for b in h[:8]]
+
+
+class TestSemanticPreservation:
+
+    @pytest.mark.asyncio
+    async def test_identical_triples_score_one(self):
+        triples = [("alice", "loves", "bob"), ("carol", "owns", "house")]
+        score = await semantic_fact_preservation(triples, triples, _identity_embed)
+        assert score == 1.0
+
+    @pytest.mark.asyncio
+    async def test_disjoint_triples_score_zero(self):
+        src = [("alice", "loves", "bob")]
+        reext = [("xyz", "abc", "def")]
+        score = await semantic_fact_preservation(src, reext, _identity_embed,
+                                                 threshold=0.85)
+        assert score == 0.0
+
+    @pytest.mark.asyncio
+    async def test_empty_source_returns_one(self):
+        score = await semantic_fact_preservation([], [], _identity_embed)
+        assert score == 1.0
+
+    @pytest.mark.asyncio
+    async def test_empty_reextracted_with_nonempty_source_returns_zero(self):
+        score = await semantic_fact_preservation(
+            [("a", "b", "c")], [], _identity_embed,
+        )
+        assert score == 0.0
+
+    @pytest.mark.asyncio
+    async def test_greedy_one_to_one_assignment(self):
+        """Two source triples, one re-extracted that matches both
+        identically — only ONE should claim it."""
+        src = [("alice", "loves", "bob"), ("alice", "loves", "bob")]
+        reext = [("alice", "loves", "bob")]
+        score = await semantic_fact_preservation(src, reext, _identity_embed)
+        # One matched out of two source triples ⇒ 0.5
+        assert score == 0.5
 
 
 class TestMeasureDrift:
