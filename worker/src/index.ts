@@ -16,6 +16,7 @@
 
 import { handleComplete } from "./routes/complete";
 import { handleQid } from "./routes/qid";
+import { handleRender } from "./routes/render";
 
 export interface Env {
   // Static-asset binding — resolves to the ../single_file_demo/
@@ -34,6 +35,10 @@ export interface Env {
 
   // KV — optional until Phase 4a goes live.
   QID_CACHE?: KVNamespace;
+
+  // KV — optional until Phase E render route goes live.
+  // Stores RenderResult JSON keyed by sha256(triples + quantized sliders).
+  RENDER_CACHE?: KVNamespace;
 }
 
 // Security-baseline Response headers — ported from the Pages `_headers`
@@ -90,6 +95,9 @@ export default {
       }
       if (url.pathname === "/api/qid") {
         return withBaselineHeaders(await handleQid(request, env, ctx));
+      }
+      if (url.pathname === "/api/render") {
+        return withBaselineHeaders(await handleRender(request, env, ctx));
       }
 
       // Fall through to static assets. `run_worker_first` in

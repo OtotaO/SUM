@@ -4,6 +4,358 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Verified — Phase E.1 v0.2 (three-layer fact preservation, honest claim)
+
+The previous "fact preservation = 1.000" headline was wrong twice
+over: first because it computed against `triples_used` (post-density,
+trivially equal to source for non-density axes) instead of
+`reextracted_triples` (the actual round-trip set); then, after
+correcting that, because exact `(s,p,o)` match is too brittle to
+distinguish real fact loss from extraction surface-form drift
+(`graduated` vs `graduated_in`).
+
+This release lands the corrected substrate: three composable
+preservation layers, plus parallel bench execution that cuts wall
+clock 4× without changing token spend.
+
+**Three-layer fact preservation** (all reported per cell, all in
+the JSONL artifact):
+- Strict — exact-key match. Regression check on extractor stability,
+  not the headline.
+- Normalized (A3) — strips auxiliary verb prefixes (was_, has_, ...)
+  and preposition suffixes (_in, _from, ...) from predicates plus
+  articles from entities. Free, deterministic, 50 LOC of rules.
+- Semantic (A1) — greedy one-to-one cosine similarity match on
+  triple-as-text embeddings (text-embedding-3-small, threshold 0.85).
+  This is the load-bearing metric for the slider's product claim.
+
+**Headline result, honestly measured (n=160 LLM-axis cells):**
+- Strict median: 0.333. Brittle to surface-form drift; retained as
+  regression check only.
+- Normalized median: 0.500. A3 lifts strict by ~50% by collapsing
+  preposition / auxiliary drift.
+- **Semantic median: 1.000. p10: 0.455.** Half the cells preserve
+  every source fact; the worst 10% still hold 45%.
+- Order preservation: 1.000 wherever measurable. MontageLie-style
+  reordering attacks are not a present failure mode of good-faith
+  renders.
+
+**Where the slider works perfectly:** all neutral positions (axis=0.5)
+preserve every source fact. `length=0.1` and `length=0.3` (compression
+modes) score ≥0.91 p10 — the LLM loses no facts when asked to be
+brief.
+
+**Where the slider stresses:** `length=0.9` (semantic p10 = 0.00 — the
+LLM expands 6 facts to 600 words and dilutes individual fact identity
+in some renders), `audience=0.1` and `audience=0.3` (general-reader
+mode drops technical specifics — semantic p10 = 0.33). Perspective
+moderate positions (0.3, 0.7) show the LLM committing to one mode
+rather than blending — registered as drift by the coarse pronoun-
+ratio classifier, but order_preservation = 1.000 confirms the facts
+themselves stay in place.
+
+**Bench parallelization** — `slider_drift_bench.py` now runs cells
+concurrently via `asyncio.Semaphore` + `as_completed` (default
+concurrency=16, `--concurrency` CLI arg). Source-extraction is
+hoisted outside the cell loop and parallelized too — eliminates
+~175 of 200 redundant source-extraction LLM calls on an 8-doc /
+25-position run. Wall clock drops from ~7 min to 97.7s. Same total
+token spend (~$0.35 with embedding calls); strictly fewer
+wall-clock seconds.
+
+**MontageLie defense** — `order_preservation(source, reextracted)`
+returns the fraction of preserved-triple pairs that retain their
+relative order from source to tome. Regression test demonstrates a
+timeline-reversed permutation scores 1.0 on set-based fact
+preservation but 0.0 on order_preservation. The defense works as
+designed; the bench data shows order = 1.000 in honest renders, so
+the attack is a v0.3+ frontier concern, not a present failure mode.
+
+**Audience expansion (5000-word table)** — Brown-corpus frequency
+table grew from 2000 to 5000 words. Median audience drift cut
+roughly in half from STATE 5b. Combined with the corrected fact-
+preservation metric, audience axis now reads as the cleanest LLM
+axis on this corpus.
+
+**Files**
+- `sum_engine_internal/ensemble/slider_renderer.py` — adds
+  `_normalize_predicate`, `_normalize_entity`, `_normalize_triple`,
+  `fact_preservation_normalized`, `semantic_fact_preservation`,
+  `order_preservation`. `RenderResult` gains `reextracted_triples`.
+- `sum_engine_internal/ensemble/data/common_english_5000.txt` — new
+  data file; loader prefers 5000 over 2000.
+- `Tests/test_slider_renderer.py` — 43 tests pass (was 22 → 30 →
+  43). New: TestNormalizationLayer (8), TestSemanticPreservation (5),
+  including the headline MontageLie regression test.
+- `Tests/benchmarks/slider_drift_bench.py` — three preservation
+  columns + order column in BenchCell; parallel execution; per-cell
+  progress to stderr; per-axis four-column summary footer.
+- `docs/SLIDER_CONTRACT.md` — version bumped to 0.3; per-axis
+  fact-preservation table now shows all three layers.
+
+**Verification:** 43 unit tests pass; cross-runtime gates green;
+bench re-run in 97.7s (was ~7 min) with 200/200 cells succeeding.
+
+### Improved — Phase E.1 STATE 5b (classifier upgrades + tightened thresholds)
+
+Two follow-up fixes after STATE 5 surfaced the calibration gaps:
+
+**Audience classifier:** the embedded ~200-word common-words list
+was swapped for a 2000-word frequency table derived from NLTK's
+Brown corpus (`sum_engine_internal/ensemble/data/common_english_2000.txt`,
+re-generable via `scripts/data/regen_common_english_2000.py`). The
+loader uses `importlib.resources` and ships the file via
+`pyproject.toml`'s `[tool.setuptools.package-data]`. Median audience
+drift cut by ~50% across all positions; threshold 0.55 → 0.40.
+
+**Length bands:** the per-triple-linear bands `(5,15) … (80,200)`
+were replaced with empirically-derived bands
+`(4,10) / (5,12) / (4,10) / (30,60) / (80,140)` (words per source
+triple). The original assumption that response length scales
+linearly with input fact count was wrong — the LLM has a ~6 wpt
+floor at and below position 0.5 and scales aggressively above.
+Median length drift cut 3× across positions 0.1–0.7; threshold
+0.95 → 0.60.
+
+**Bench harness:** `BenchCell` gained a `tome_word_count` field so
+future calibration runs have the raw data without re-running.
+
+**SLIDER_CONTRACT.md:** STATE 5b numbers replace STATE 5 placeholders
+in the per-axis tables; `§"Empirical bench runs"` now records both
+runs side-by-side so future readers can see what changed and why.
+
+**Robustness footnote:** 2/200 cells errored on `doc_einstein` with
+`LengthFinishReasonError` — the LLM produced more triples during
+re-extraction than fit in its 16384-token completion budget. Bench
+captures these per-row rather than aborting; documented as a v0.2
+robustness item, not a contract violation.
+
+### Added — Phase E.1 v0.2 research roadmap
+
+`docs/SLIDER_V02_RESEARCH.md` distills a survey of mathematical
+substrates for verifiable bidirectional knowledge distillation
+engines (AIT, category theory, IB, proof-carrying transformations,
+GEPA/DSPy/GRPO, hierarchical PRMs, metamorphic testing) into the
+3–4 items that materially improve SUM's slider in the next 1–3 PRs.
+
+The doc has three sections: (a) validation — what SUM is already
+doing right per the survey (verifiable rewards, cycle-consistency,
+content-addressed everything, the Pareto-frontier framing); (b)
+actionable v0.2 work — MontageLie-resistant fact preservation,
+constrained decoding for the renderer, audience classifier
+expansion, metamorphic testing; (c) awareness/defer — zkML, Lean 4
+paragraph-level proofs, GEPA outer loop, etc., that are SOTA but
+out of scope for SUM today.
+
+The MontageLie finding is the most consequential: SUM's
+`fact_preservation = 1.000` headline uses set-based comparison,
+which Zheng et al. (May 2025) showed is exploitable by reordering
+preserved triples into a deceptive narrative. v0.2 PR will add
+event-order-aware verifier (pairwise order-preservation between
+source-triple pairs) so the headline claim is robust.
+
+### Verified — Phase E.1 STATE 5 (empirical bench run + contract update)
+
+Ran `Tests/benchmarks/slider_drift_bench.py` against a real multi-fact
+prose corpus (8 hand-authored 3–5 sentence paragraphs, 4–12 triples
+each). 200 cells, gpt-4o-mini, ~$0.30 in tokens. Surfaced one
+correctness bug, two formula-calibration issues, and one verified
+load-bearing claim.
+
+**Headline:** fact preservation is 1.000 (median, p10) across all 200
+LLM-axis cells. The slider's central product claim — *axis changes
+do not lose facts* — holds empirically. Slider is a real product, not
+just substrate.
+
+**Bug fixed in this round:**
+- `slider_renderer.render()` was passing the post-density
+  `kept_triples` to `measure_drift` as the source set. Density drift
+  formula then computed `expected_retained = floor(filtered_count *
+  density)`, which double-applied density and produced spurious
+  drift values up to 1.75 at moderate densities. Fix: pass the
+  original source `triples_tuple`. Density drift now 0.000 across
+  all positions (verified by re-run).
+
+**Contract updates** (`docs/SLIDER_CONTRACT.md`):
+- All five threshold rows now show `Measured (n=8, p90)` alongside
+  the limit. Numbers come from this bench, not theory.
+- Density: ≤0.001 verified.
+- Formality: ≤0.25 → ≤0.40 (covers p90 tail at extremes).
+- Perspective: ≤0.20 → ≤0.40 (median fits, p90 spikes at moderate
+  positions; the LLM commits to one perspective rather than
+  blending).
+- Length: ≤0.5 → ≤0.95 *preliminary*. Per-triple band assumption is
+  empirically wrong (LLM doesn't scale response length linearly with
+  fact count). v0.2 will recalibrate against absolute word-count
+  bands using this bench's tome data.
+- Audience: ≤0.10 → ≤0.55 *preliminary*. Embedded ~200-word common-
+  words table saturates: technical prose reads as ~50% jargon
+  regardless of axis. v0.2 will swap to a frequency-table classifier.
+- New §"Empirical bench run" section: per-axis median drift table,
+  reproduction command, headline fact-preservation result, two
+  documented v0.2 follow-ups.
+- Version bumped from 0.1 (draft) to 0.2 (empirically verified).
+
+**Bench corpus:** new file `scripts/bench/corpora/seed_paragraphs.json`
+with 8 multi-fact paragraphs hand-authored from common factual
+knowledge (avoids copyright entanglement). `scripts/bench/run_*.sh`
+wrappers landed for smoke (1 doc) and full (8 docs) runs.
+
+Verification: 22 unit tests pass; 1057 full Python suite pass; bench
+re-run with bug fix shows density drift 0.000 across all positions
+and percentiles.
+
+### Added — Phase E.1 STATE 4 (slider renderer pipeline lands)
+
+The renderer scaffold from STATE 2 ships its real implementation. Five
+xfailed tests flip to passes; one failing test surfaces a design bug
+that the fix kills outright.
+
+  sum_engine_internal/ensemble/tome_sliders.py
+    + length_fragment / formality_fragment / audience_fragment /
+      perspective_fragment now return real prompt strings keyed by bin
+      centre (5 positions × 4 axes = 20 fragments). Empty string at
+      neutral midpoint to keep the prompt lean at default.
+    * quantize() no longer bins density. Density is deterministic and
+      binning 1.0→0.9 made "request all triples" un-expressible. The
+      cache key includes raw density (unique per density level).
+
+  sum_engine_internal/ensemble/slider_renderer.py
+    + render() pipeline: cache-first → quantize → apply_density →
+      canonical-vs-LLM branch → measure_drift → cache-write → return.
+      Canonical path skips LLM and re-extraction entirely when only
+      density is non-default (no drift introduced).
+    + measure_drift() implements all five SLIDER_CONTRACT formulas:
+      density (set comparison), length (word-count band), formality
+      (register marker classifier), audience (jargon density),
+      perspective (first-person pronoun ratio). Pure function;
+      embedded lookup tables (no data-file deps).
+    * measure_drift signature gained `tome: str` — needed for the
+      four LLM axes whose drift is measured against tome content,
+      not triple sets.
+
+  sum_engine_internal/ensemble/live_llm_adapter.py
+    + OpenAIChatClient: thin adapter from LiveLLMAdapter to the
+      slider_renderer.LLMChatClient Protocol. Lives in live_llm_adapter
+      so the renderer module stays openai-dep-free.
+
+  Tests/test_slider_renderer.py
+    * xfail strict markers removed from TestRenderPipeline (3 tests)
+      and TestMeasureDrift (2 tests). All 22 tests pass.
+    + test_quantize_preserves_density_endpoints — new regression
+      test for the density-not-binned fix.
+
+  Tests/benchmarks/slider_drift_bench.py
+    + _bench_one_cell now extracts source triples, calls render(),
+      computes per-axis drift + fact-preservation per
+      SLIDER_CONTRACT.md. main_async wires LiveLLMAdapter +
+      OpenAIChatClient. Errors captured per-row rather than raising.
+
+  worker/src/routes/render.ts
+    * quantizeSliders mirrors the Python density-exemption.
+
+  worker/src/cache/bin_cache.ts
+    * deriveCacheKey now constructs the payload with alphabetical key
+      order (matches Python json.dumps sort_keys=True). Outstanding gap
+      documented inline: floating-point repr (`1.0` Python vs `1` JS)
+      will need normalisation when the Worker actually shares cache
+      cells with Python in STATE 4.B.
+
+  docs/SLIDER_CONTRACT.md
+    * §"Axis definitions" notes density is exempt from binning.
+
+Verification: 1057 Python tests pass; worker typecheck clean;
+make xruntime (K1/K1-mw/K2/K3/K4) PASS; make xruntime-adversarial
+(A1–A6) PASS.
+
+STATE 4.B (next): Worker handleRender real LLM call (replace 501
+stub) + numeric normalisation in deriveCacheKey for Python↔TS cache
+coherence. STATE 5: bench harness against seed_v1 to populate
+threshold columns in the contract.
+
+### Added — Phase E scaffold (slider as first-class product)
+
+The genesis vision — bidirectional Tags ↔ Tomes with a slider — has
+been substrate-only since the project began (density axis works
+deterministically; the other four axes existed as metadata fields).
+Phase E.1 STATE 2 lands the typed scaffold for the renderer +
+contract doc + tests; STATE 4 fills the per-axis logic.
+
+  sum_engine_internal/ensemble/tome_sliders.py  (extended)
+    + SLIDER_BINS_PER_AXIS = 5                  # 3125 cache cells per triple-set
+    + snap_to_bin(value, bins) -> float         # quantize to bin centre
+    + quantize(TomeSliders) -> TomeSliders      # all-axis snap
+    + length_fragment / formality_fragment /    # axis prompt fragments;
+      audience_fragment / perspective_fragment    fail-loud at non-neutral
+                                                  positions until STATE 4
+    + build_system_prompt(TomeSliders) -> str   # composes neutral base +
+                                                  per-axis fragments
+
+  sum_engine_internal/ensemble/slider_renderer.py  (new)
+    Type contracts:
+      Triple = tuple[str, str, str]
+      CacheStatus = HIT | MISS | BYPASS
+      DriftAxis  = density | length | formality | audience | perspective
+      AxisDrift  = (axis, value, threshold, classification, explanation)
+      RenderResult = (tome, triples_used, drift, cache_status,
+                      llm_calls_made, wall_clock_ms,
+                      quantized_sliders, render_id)
+      SliderCache (Protocol)        = get / put / stats
+      LLMChatClient (Protocol)      = chat_completion(system, user, max_tokens)
+      TripleExtractor (Callable)    = (str) -> awaitable[list[Triple]]
+    Functions:
+      cache_key(triples, sliders)   = sha256(sorted_triples + sliders)[:32]
+      render(...)                   = NotImplementedError until STATE 4
+      measure_drift(...)            = NotImplementedError until STATE 4
+      InMemorySliderCache           = dict-backed reference impl
+
+  worker/src/cache/bin_cache.ts  (new)
+    Cache contract mirror. deriveCacheKey produces the SAME 32-char
+    string the Python cache_key produces for the same input — cross-
+    runtime cache coherence by content-addressed key.
+
+  worker/src/routes/render.ts  (new)
+    POST /api/render route. Quantizes incoming slider position,
+    derives cache key, returns 501 + activation plan until STATE 4.
+    Wired into worker/src/index.ts; KV binding RENDER_CACHE
+    declared (commented) in wrangler.toml.
+
+  Tests/test_slider_renderer.py  (new — 21 tests)
+    16 pass today (snap, quantize, cache_key, InMemorySliderCache).
+    5 xfailed strict (render pipeline + measure_drift) — bodies are
+    spec, not stub. STATE 4 lands the implementation; xfails flip
+    to passes with no test body changes.
+
+  Tests/benchmarks/slider_drift_bench.py  (new)
+    Per-axis drift bench harness. NDJSON output schema
+    sum.slider_drift_bench.v1. STATE 2 returns stub-error rows so
+    the harness structure is exercised end-to-end; STATE 4 wires
+    real measurement.
+
+  docs/SLIDER_CONTRACT.md  (new)
+    Source-of-truth spec. Per-axis drift formulas, thresholds,
+    cache semantics, UX commit-vs-drag decision matrix, stop-the-
+    line conditions. Every numeric tolerance is empirically
+    falsifiable by the bench harness.
+
+Carmack-frame anti-hypotheses captured in the contract:
+  1. Slider may be wrong UX (users want discrete buttons). E.6
+     trial A/B-instruments both control surfaces.
+  2. LLM latency may make drag-and-see undeliverable. 500ms
+     debounce + bin cache + skeleton-loader; commit-on-release
+     fallback.
+  3. Round-trip drift may be wildly variant per axis. Live drift
+     display per axis; "facts preserved within X%" replaces
+     "facts preserved" in product copy.
+  4. Go service rewrite is premature without measured Python
+     bottleneck. Defer until E.6 telemetry decides.
+  5. >10K-axiom scaling is hypothetical. Layered-architecture
+     plan stays in PROOF_BOUNDARY §3; build only when measured.
+
+No render claim made today. STATE 4 implements; STATE 5 verifies
+against the bench harness; only then does the slider become a
+shipping product feature instead of a typed contract.
+
 ### Added — Phase B intensification queue (B5–B7) in playbook
 
 - `docs/NEXT_SESSION_PLAYBOOK.md` Phase B grew three explicit items

@@ -181,3 +181,28 @@ class LiveLLMAdapter:
             input=text,
         )
         return response.data[0].embedding
+
+
+class OpenAIChatClient:
+    """Adapts ``LiveLLMAdapter`` to the ``LLMChatClient`` Protocol used by
+    ``slider_renderer.render``. Kept here (not in slider_renderer.py) so
+    the renderer module stays free of the ``openai`` dep."""
+
+    def __init__(self, adapter: "LiveLLMAdapter"):
+        self._adapter = adapter
+
+    async def chat_completion(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        max_tokens: int = 2048,
+    ) -> str:
+        response = await self._adapter.client.chat.completions.create(
+            model=self._adapter.model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            max_tokens=max_tokens,
+        )
+        return response.choices[0].message.content or ""
