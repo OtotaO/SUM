@@ -4,6 +4,61 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Improved — Phase E.1 v0.3 (constrained-decoding render path)
+
+Switches the renderer's LLM call from free-form `chat.completions.
+create` to `beta.chat.completions.parse` with a Pydantic-enforced
+`RenderedTome` schema (tome + claimed_triples). The LLM now emits
+both the narrative AND its self-attested list of preserved triples
+in one structured response.
+
+**Two confirmed wins:**
+- *Reliability:* 0/200 cells errored vs 2/200 in v0.2 on `doc_einstein`
+  (`LengthFinishReasonError` from token-budget truncation). Schema-
+  enforced output makes parse-failure-class bugs impossible.
+- *Adversarial signal:* `claim_reextract_jaccard` records divergence
+  between LLM self-attestation and independent re-extraction.
+
+**One surprising negative finding (documented honestly):** the LLM
+does NOT reliably itemise what it just wrote in the same canonical
+form the extractor uses. Cross-axis median `claim_jaccard` = 0.286
+(range 0.00–1.00). Counts match (n_claimed ≈ n_reextracted ≈
+n_source) — it's surface-form divergence, not list-size mismatch.
+Practical implication: **LLM self-attestation is NOT a free fact-
+preservation oracle.** Independent re-extraction remains the source
+of truth.
+
+**Latency cost:** +16% (97.7s → 113.6s for 200 cells). Net trade
+accepted for the format-validity guarantee + signal density.
+
+**Drift secondary effects:** structured output subtly changes how
+the LLM allocates tokens between tome and claimed-triples list,
+shifting axis-directive adherence on some positions (formality=0.1
+went 0.10 → 0.40; perspective=0.3 went 0.09 → 0.50). Semantic fact
+preservation cross-axis median unchanged at 1.000; order preservation
+unchanged at 1.000. Product claim intact.
+
+**Files**
+- `live_llm_adapter.py`: + `RenderedTome` Pydantic model;
+  `OpenAIChatClient.chat_completion_structured` returning
+  (tome, triples).
+- `slider_renderer.py`: `LLMChatClient` Protocol gains
+  `chat_completion_structured`; `RenderResult` gains
+  `claimed_triples`; `render()` prefers structured path with
+  `hasattr` fallback for legacy clients.
+- `Tests/test_slider_renderer.py`: 46 pass (+3 structured-path
+  tests); legacy chat-only client fallback verified.
+- `Tests/benchmarks/slider_drift_bench.py`: BenchCell gains
+  `claim_reextract_jaccard` + `n_claimed_triples`; per-axis stderr
+  summary includes `claim_jaccard` column.
+
+Recommended downstream use: trust independent re-extraction for
+fact preservation claims; use claim_jaccard for outlier detection
+(low jaccard at non-neutral positions = LLM allocating canonicalisation
+attention away from itemising). Don't ship a "fast mode" that skips
+re-extraction in favour of claimed_triples — the bench data shows
+that mode would systematically under-report preservation.
+
 ### Verified — Phase E.1 v0.2 (three-layer fact preservation, honest claim)
 
 The previous "fact preservation = 1.000" headline was wrong twice
