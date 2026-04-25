@@ -121,6 +121,15 @@ class RenderResult:
                           no semantic drift). For the LLM path this is what
                           actually survived the round-trip — load-bearing
                           for any honest fact-preservation claim.
+    `claimed_triples`   — v0.3: LLM self-attestation of triples it
+                          considered preserved in the tome. Empty tuple
+                          on the canonical path (no LLM call) and on
+                          legacy `chat_completion`-only renders. Cross-
+                          checked against `reextracted_triples` for an
+                          adversarial-divergence signal: claimed but not
+                          re-extracted = LLM hallucinated preservation;
+                          re-extracted but not claimed = LLM encoded
+                          facts it didn't itemise.
     `drift`             — per-axis measurement against source triples.
     `cache_status`      — provenance of the result.
     `llm_calls_made`    — 0 on cache hit; 1 on miss (one LLM call per render
@@ -136,6 +145,7 @@ class RenderResult:
     tome: str
     triples_used: tuple[Triple, ...]
     reextracted_triples: tuple[Triple, ...]
+    claimed_triples: tuple[Triple, ...]
     drift: tuple[AxisDrift, ...]
     cache_status: CacheStatus
     llm_calls_made: int
@@ -168,6 +178,12 @@ class LLMChatClient(Protocol):
     Renderer never imports `LiveLLMAdapter` directly — it depends on
     this protocol so tests can inject a deterministic fake without
     pulling in the real LLM call path.
+
+    v0.3: gained `chat_completion_structured` for constrained-decoding
+    rendering. The renderer prefers structured when available; the
+    plain `chat_completion` is retained for backwards compatibility
+    and as a fallback path for caller-supplied LLM clients that don't
+    yet support structured outputs.
     """
 
     async def chat_completion(
@@ -176,6 +192,13 @@ class LLMChatClient(Protocol):
         user_prompt: str,
         max_tokens: int = 2048,
     ) -> str: ...
+
+    async def chat_completion_structured(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        max_tokens: int = 2048,
+    ) -> tuple[str, list[Triple]]: ...
 
 
 # ─── Extractor protocol ───────────────────────────────────────────────
@@ -705,6 +728,7 @@ async def render(
                 tome=hit.tome,
                 triples_used=hit.triples_used,
                 reextracted_triples=hit.reextracted_triples,
+                claimed_triples=hit.claimed_triples,
                 drift=hit.drift,
                 cache_status=CacheStatus.HIT,
                 llm_calls_made=0,
@@ -721,16 +745,32 @@ async def render(
     )
 
     # ── Choose path: canonical (deterministic) vs LLM ────────────────
+    claimed: list[Triple] = []
     if not sliders.requires_extrapolator():
         # All LLM axes are neutral ⇒ skip LLM entirely. The deterministic
-        # tome is its own re-extraction (no drift introduced).
+        # tome is its own re-extraction (no drift introduced). Claimed
+        # equals re-extracted equals the post-density set on this path.
         tome = _deterministic_tome(kept_triples)
         reextracted: list[Triple] = list(kept_triples)
+        claimed = list(kept_triples)
         llm_calls = 0
     else:
         sys_prompt = build_system_prompt(quantized)
         user_prompt = _format_triples_for_llm(kept_triples)
-        tome = await llm.chat_completion(sys_prompt, user_prompt)
+        # v0.3: prefer structured decoding when the LLM client supports
+        # it. Pydantic-schema-enforced render returns (tome, claimed)
+        # in one call; we still cross-check via independent re-extraction
+        # so the LLM's self-attestation is a signal, not the source of
+        # truth. Falls back to plain chat_completion + empty claimed
+        # for legacy clients (e.g. tests without the structured method).
+        if hasattr(llm, "chat_completion_structured"):
+            tome, claimed_raw = await llm.chat_completion_structured(
+                sys_prompt, user_prompt,
+            )
+            claimed = [tuple(t) for t in claimed_raw]
+        else:
+            tome = await llm.chat_completion(sys_prompt, user_prompt)
+            claimed = []
         reextracted = await extractor(tome)
         llm_calls = 1
 
@@ -750,6 +790,7 @@ async def render(
         tome=tome,
         triples_used=kept_triples,
         reextracted_triples=tuple(tuple(t) for t in reextracted),
+        claimed_triples=tuple(tuple(t) for t in claimed),
         drift=drift,
         cache_status=cache_status,
         llm_calls_made=llm_calls,

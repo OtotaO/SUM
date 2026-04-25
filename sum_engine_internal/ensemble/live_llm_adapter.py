@@ -11,7 +11,7 @@ License: Apache License 2.0
 
 import os
 import logging
-from typing import List, Tuple, Optional
+from typing import List, Optional, Tuple
 
 from pydantic import BaseModel, Field
 from openai import AsyncOpenAI
@@ -56,6 +56,34 @@ class SemanticTriplet(BaseModel):
 class ExtractionResponse(BaseModel):
     """Structured output wrapper for a list of extracted triplets."""
     triplets: List[SemanticTriplet]
+
+
+class RenderedTome(BaseModel):
+    """Phase E.1 v0.3 structured-render schema. The renderer constrains
+    the LLM to emit both the narrative tome AND the explicit list of
+    triples it considers preserved in that tome. The bench treats
+    `claimed_triples` as an LLM self-attestation, cross-checked
+    against an independent re-extraction — divergence between the two
+    is an adversarial signal (claimed-but-not-reextracted = LLM
+    hallucinated preservation; reextracted-but-not-claimed = LLM
+    encoded facts it didn't know it encoded)."""
+
+    tome: str = Field(
+        min_length=1,
+        description=(
+            "The rendered narrative prose. Should faithfully present "
+            "every input fact while honouring the system prompt's axis "
+            "directives (length, formality, audience, perspective)."
+        ),
+    )
+    claimed_triples: List[SemanticTriplet] = Field(
+        description=(
+            "The (subject, predicate, object) triples explicitly preserved "
+            "in the tome above. List every input fact that appears, even "
+            "if rephrased. Use the same canonicalisation rules as extraction "
+            "(lowercase, snake_case predicates)."
+        ),
+    )
 
 
 # ─── Adapter ─────────────────────────────────────────────────────────
@@ -206,3 +234,34 @@ class OpenAIChatClient:
             max_tokens=max_tokens,
         )
         return response.choices[0].message.content or ""
+
+    async def chat_completion_structured(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        max_tokens: int = 2048,
+    ) -> Tuple[str, List[Tuple[str, str, str]]]:
+        """v0.3 structured render path. Returns (tome, claimed_triples)
+        where claimed_triples is the LLM's self-attestation of which
+        source facts survived the round-trip. Cross-runtime guarantee:
+        OpenAI's ``beta.chat.completions.parse`` enforces the
+        RenderedTome schema, so the returned tuple is always the right
+        shape — no parse errors possible."""
+        response = await self._adapter.client.beta.chat.completions.parse(
+            model=self._adapter.model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            response_format=RenderedTome,
+            max_tokens=max_tokens,
+        )
+        parsed = response.choices[0].message.parsed
+        if parsed is None:
+            return "", []
+        triples: List[Tuple[str, str, str]] = [
+            (t.subject.lower(), t.predicate.lower(), t.object_.lower())
+            for t in parsed.claimed_triples
+            if t.certainty != "speculative"
+        ]
+        return parsed.tome, triples
