@@ -11,8 +11,12 @@ empirically falsifiable by `Tests/benchmarks/slider_drift_bench.py`.
 ## Axis definitions
 
 Every axis is a continuous value in `[0.0, 1.0]`. The renderer
-quantizes to 5 bins per axis (`SLIDER_BINS_PER_AXIS = 5`) for cache
-purposes; the UI's slider is continuous but the cache cells are not.
+quantizes the **four LLM axes** to 5 bins per axis
+(`SLIDER_BINS_PER_AXIS = 5`) for cache purposes; the UI's slider is
+continuous but the cache cells are not. **Density passes through
+unbinned** — it's deterministic (no LLM call to dedupe), and binning
+1.0→0.9 would make "request all triples" un-expressible. The cache
+key includes the raw density value, which is unique per density level.
 
 | Axis | 0.0 | 1.0 | Mechanism |
 |---|---|---|---|

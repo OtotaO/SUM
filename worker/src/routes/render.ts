@@ -44,8 +44,14 @@ function snapToBin(value: number, bins: number = SLIDER_BINS_PER_AXIS): number {
 }
 
 function quantizeSliders(sliders: RenderRequest["slider_position"]): RenderResult["quantized_sliders"] {
+  // Density is deterministic and exempt from binning so users can
+  // request endpoint values (1.0 = all triples, 0.0 = none). Mirror of
+  // sum_engine_internal.ensemble.tome_sliders.quantize.
+  if (sliders.density < 0 || sliders.density > 1) {
+    throw new Error(`density out of [0, 1]: ${sliders.density}`);
+  }
   return {
-    density: snapToBin(sliders.density),
+    density: sliders.density,
     length: snapToBin(sliders.length),
     formality: snapToBin(sliders.formality),
     audience: snapToBin(sliders.audience),

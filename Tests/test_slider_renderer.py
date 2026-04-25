@@ -58,17 +58,26 @@ class TestSnapAndQuantize:
         with pytest.raises(ValueError):
             snap_to_bin(1.01)
 
-    def test_quantize_returns_frozen_with_all_axes_snapped(self):
+    def test_quantize_snaps_llm_axes_and_passes_density_through(self):
         sliders = TomeSliders(
             density=0.42, length=0.42, formality=0.42,
             audience=0.42, perspective=0.42,
         )
         q = quantize(sliders)
-        assert q.density == pytest.approx(0.5)
+        # density is deterministic ⇒ exempt from binning so 1.0 stays 1.0.
+        assert q.density == pytest.approx(0.42)
+        # The four LLM axes snap to their bin centres.
         assert q.length == pytest.approx(0.5)
         assert q.formality == pytest.approx(0.5)
         assert q.audience == pytest.approx(0.5)
         assert q.perspective == pytest.approx(0.5)
+
+    def test_quantize_preserves_density_endpoints(self):
+        """Density 1.0 must stay 1.0 so users can request full coverage."""
+        s = TomeSliders(density=1.0, length=0.5, formality=0.5, audience=0.5, perspective=0.5)
+        assert quantize(s).density == 1.0
+        s0 = TomeSliders(density=0.0, length=0.5, formality=0.5, audience=0.5, perspective=0.5)
+        assert quantize(s0).density == 0.0
 
 
 # ─── Cache key derivation ────────────────────────────────────────────
@@ -176,11 +185,6 @@ def _fake_render_result() -> RenderResult:
     )
 
 
-@pytest.mark.xfail(
-    reason="STATE 4 — render() raises NotImplementedError until the "
-           "pipeline is filled. Test bodies are spec, not stub.",
-    strict=True,
-)
 class TestRenderPipeline:
 
     @pytest.mark.asyncio
@@ -231,13 +235,13 @@ class TestRenderPipeline:
 # ─── measure_drift unit (xfail until EXECUTE) ─────────────────────────
 
 
-@pytest.mark.xfail(reason="STATE 4 — measure_drift raises NotImplementedError.", strict=True)
 class TestMeasureDrift:
 
     def test_density_drift_zero_when_canonical(self):
         triples = [("a", "b", "c"), ("d", "e", "f")]
         sliders = TomeSliders(density=1.0)
-        drift = measure_drift(triples, triples, sliders)
+        # Tome content irrelevant to density drift; pass any string.
+        drift = measure_drift(triples, triples, "the a b c. the d e f.", sliders)
         density_d = next(d for d in drift if d.axis == DriftAxis.DENSITY)
         assert density_d.value == pytest.approx(0.0, abs=1e-6)
 
@@ -247,6 +251,6 @@ class TestMeasureDrift:
         # If 1 was retained, drift = 0.
         retained = [("a", "b", "c")]
         sliders = TomeSliders(density=0.5)
-        drift = measure_drift(triples, retained, sliders)
+        drift = measure_drift(triples, retained, "the a b c.", sliders)
         density_d = next(d for d in drift if d.axis == DriftAxis.DENSITY)
         assert density_d.value <= 0.5  # within tolerance per SLIDER_CONTRACT.md

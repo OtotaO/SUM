@@ -41,26 +41,38 @@ export interface RenderResult {
 // ─── Cache contract ───────────────────────────────────────────────
 
 /**
- * Cache key derivation. MUST match
+ * Cache key derivation. Intended to match
  * sum_engine_internal.ensemble.slider_renderer.cache_key byte-for-byte
  * so a Python-rendered RenderResult can be served by the Worker-side
- * cache and vice versa. Same JSON canonicalisation, same SHA-256,
- * same 32-char truncation.
+ * cache and vice versa.
  *
- * STATE 4 deliverable. Until then, throws to fail loud rather than
- * silently produce a key that diverges from the Python side.
+ * Coherence status:
+ *   ✓ Triple sort order matches (lex on tuples).
+ *   ✓ Outer key order matches (alphabetical: "sliders" then "triples").
+ *   ✓ Inner slider keys match (alphabetical).
+ *   ✗ Floating-point repr: Python emits `1.0`, JS emits `1`. STATE 4.B
+ *     deliverable — when the Worker renderer ships and actually shares
+ *     the cache with Python, every slider value must be normalised to
+ *     a fixed-precision string representation on both sides. Until
+ *     then the Worker handler returns 501 on cache miss, so this gap
+ *     is observable but not load-bearing.
  */
 export async function deriveCacheKey(
   triples: Array<[string, string, string]>,
   quantizedSliders: RenderResult["quantized_sliders"],
 ): Promise<string> {
-  // Sort triples lexicographically (matches Python `sorted()`).
   const sortedTriples = [...triples].sort();
-  const payload = {
-    triples: sortedTriples,
-    sliders: quantizedSliders,
+  // Construct with keys in alphabetical order so JSON.stringify
+  // preserves the same ordering as Python's sort_keys=True.
+  const sliders = {
+    audience: quantizedSliders.audience,
+    density: quantizedSliders.density,
+    formality: quantizedSliders.formality,
+    length: quantizedSliders.length,
+    perspective: quantizedSliders.perspective,
   };
-  const canonical = JSON.stringify(payload);  // not JCS — Python uses json.dumps with sort_keys
+  const payload = { sliders, triples: sortedTriples };
+  const canonical = JSON.stringify(payload);
   const enc = new TextEncoder().encode(canonical);
   const hashBuf = await crypto.subtle.digest("SHA-256", enc);
   return Array.from(new Uint8Array(hashBuf))

@@ -4,6 +4,74 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Added — Phase E.1 STATE 4 (slider renderer pipeline lands)
+
+The renderer scaffold from STATE 2 ships its real implementation. Five
+xfailed tests flip to passes; one failing test surfaces a design bug
+that the fix kills outright.
+
+  sum_engine_internal/ensemble/tome_sliders.py
+    + length_fragment / formality_fragment / audience_fragment /
+      perspective_fragment now return real prompt strings keyed by bin
+      centre (5 positions × 4 axes = 20 fragments). Empty string at
+      neutral midpoint to keep the prompt lean at default.
+    * quantize() no longer bins density. Density is deterministic and
+      binning 1.0→0.9 made "request all triples" un-expressible. The
+      cache key includes raw density (unique per density level).
+
+  sum_engine_internal/ensemble/slider_renderer.py
+    + render() pipeline: cache-first → quantize → apply_density →
+      canonical-vs-LLM branch → measure_drift → cache-write → return.
+      Canonical path skips LLM and re-extraction entirely when only
+      density is non-default (no drift introduced).
+    + measure_drift() implements all five SLIDER_CONTRACT formulas:
+      density (set comparison), length (word-count band), formality
+      (register marker classifier), audience (jargon density),
+      perspective (first-person pronoun ratio). Pure function;
+      embedded lookup tables (no data-file deps).
+    * measure_drift signature gained `tome: str` — needed for the
+      four LLM axes whose drift is measured against tome content,
+      not triple sets.
+
+  sum_engine_internal/ensemble/live_llm_adapter.py
+    + OpenAIChatClient: thin adapter from LiveLLMAdapter to the
+      slider_renderer.LLMChatClient Protocol. Lives in live_llm_adapter
+      so the renderer module stays openai-dep-free.
+
+  Tests/test_slider_renderer.py
+    * xfail strict markers removed from TestRenderPipeline (3 tests)
+      and TestMeasureDrift (2 tests). All 22 tests pass.
+    + test_quantize_preserves_density_endpoints — new regression
+      test for the density-not-binned fix.
+
+  Tests/benchmarks/slider_drift_bench.py
+    + _bench_one_cell now extracts source triples, calls render(),
+      computes per-axis drift + fact-preservation per
+      SLIDER_CONTRACT.md. main_async wires LiveLLMAdapter +
+      OpenAIChatClient. Errors captured per-row rather than raising.
+
+  worker/src/routes/render.ts
+    * quantizeSliders mirrors the Python density-exemption.
+
+  worker/src/cache/bin_cache.ts
+    * deriveCacheKey now constructs the payload with alphabetical key
+      order (matches Python json.dumps sort_keys=True). Outstanding gap
+      documented inline: floating-point repr (`1.0` Python vs `1` JS)
+      will need normalisation when the Worker actually shares cache
+      cells with Python in STATE 4.B.
+
+  docs/SLIDER_CONTRACT.md
+    * §"Axis definitions" notes density is exempt from binning.
+
+Verification: 1057 Python tests pass; worker typecheck clean;
+make xruntime (K1/K1-mw/K2/K3/K4) PASS; make xruntime-adversarial
+(A1–A6) PASS.
+
+STATE 4.B (next): Worker handleRender real LLM call (replace 501
+stub) + numeric normalisation in deriveCacheKey for Python↔TS cache
+coherence. STATE 5: bench harness against seed_v1 to populate
+threshold columns in the contract.
+
 ### Added — Phase E scaffold (slider as first-class product)
 
 The genesis vision — bidirectional Tags ↔ Tomes with a slider — has

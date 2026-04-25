@@ -44,6 +44,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
+import re
+import time
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Awaitable, Callable, Optional, Protocol, Sequence
@@ -51,7 +54,10 @@ from typing import Awaitable, Callable, Optional, Protocol, Sequence
 from sum_engine_internal.ensemble.tome_sliders import (
     SLIDER_BINS_PER_AXIS,
     TomeSliders,
+    apply_density,
+    build_system_prompt,
     quantize,
+    snap_to_bin,
 )
 
 
@@ -205,6 +211,241 @@ def cache_key(triples: Sequence[Triple], quantized: TomeSliders) -> str:
     return hashlib.sha256(blob).hexdigest()[:32]
 
 
+def _axiom_key(t: Triple) -> str:
+    return f"{t[0]}||{t[1]}||{t[2]}"
+
+
+def _format_triples_for_llm(triples: Sequence[Triple]) -> str:
+    """Render triples as a numbered list for the LLM user prompt. The
+    LLM is instructed (via the system prompt from build_system_prompt)
+    to preserve every fact, so the format only needs to be unambiguous."""
+    return "FACTS:\n" + "\n".join(
+        f"{i+1}. ({s}, {p}, {o})" for i, (s, p, o) in enumerate(triples)
+    )
+
+
+def _deterministic_tome(triples: Sequence[Triple]) -> str:
+    """Canonical-path tome generator: one sentence per triple, no LLM.
+    Used when all LLM-axes are at neutral (sliders.requires_extrapolator()
+    is False) — i.e. only density is non-default."""
+    if not triples:
+        return ""
+    return " ".join(f"The {s} {p} {o}." for (s, p, o) in triples)
+
+
+# ─── Lookup tables for register / jargon / pronoun classifiers ─────────
+#
+# These are deliberately small and hand-curated. The contract doc says
+# "lookup table" not "comprehensive dictionary"; STATE 5 bench data will
+# tell us if they're sufficient. Replacing with a Wikipedia-derived
+# frequency table is a v0.2 swap that doesn't change the API.
+
+_FORMAL_MARKERS: frozenset[str] = frozenset({
+    "moreover", "furthermore", "thus", "hence", "therefore", "subsequently",
+    "demonstrate", "demonstrates", "established", "indicate", "indicates",
+    "constitute", "constitutes", "exhibit", "exhibits", "facilitate",
+    "facilitates", "utilize", "utilizes", "wherein", "whereby", "whereas",
+    "notwithstanding", "consequently", "accordingly", "respectively",
+    "approximately", "considerable", "considerably", "substantial",
+    "observed", "noted", "presented",
+})
+
+_CASUAL_MARKERS: frozenset[str] = frozenset({
+    "stuff", "things", "really", "pretty", "kinda", "gonna", "wanna",
+    "lots", "tons", "loads", "ok", "okay", "yeah", "yep", "nope",
+    "bunch", "bit", "guy", "guys", "folks", "huge", "totally",
+    "basically", "honestly", "literally", "cool", "awesome",
+})
+
+# First-person pronouns. Lowercased; matched against tokenised words.
+_FIRST_PERSON: frozenset[str] = frozenset({
+    "i", "me", "my", "mine", "myself",
+    "we", "us", "our", "ours", "ourselves",
+    "i'm", "i've", "i'd", "i'll", "we're", "we've", "we'd", "we'll",
+})
+
+# All English pronouns we count toward the denominator.
+_ALL_PRONOUNS: frozenset[str] = _FIRST_PERSON | frozenset({
+    "you", "your", "yours", "yourself", "yourselves",
+    "he", "him", "his", "himself",
+    "she", "her", "hers", "herself",
+    "it", "its", "itself",
+    "they", "them", "their", "theirs", "themselves",
+    "one", "ones", "oneself",
+})
+
+# Roughly the 200 most-common English words. Words NOT in this set AND
+# longer than 4 chars count as "jargon" for the audience-axis density
+# measurement. Curated rather than imported so the module has no
+# data-file dependency.
+_COMMON_WORDS: frozenset[str] = frozenset((
+    "the a an and or but if then else when where while as of in on at to for "
+    "from with by about into over under between through against during before "
+    "after above below up down out off near far this that these those there here "
+    "is are was were be been being am do does did done has have had having will "
+    "would shall should can could may might must ought need dare used "
+    "not no nor yes also too very much many more most some any all every each "
+    "few several both either neither such same other another which who whom whose "
+    "what whatever whichever whoever whomever how why because so since although "
+    "though unless until whether one two three four five six seven eight nine ten "
+    "first second third last next previous new old good bad big small large long "
+    "short high low same different early late part whole way ways thing things "
+    "person people man woman child year years day days time times life world "
+    "work make made take took give gave see saw look come came go went know knew "
+    "think thought say said tell told ask asked find found get got put set use "
+    "show showed try tried call called keep kept let letting feel felt seem seemed "
+    "leave left mean meant become became turn turned begin began bring brought "
+    "happen happened write wrote read run ran walk talk help hand hands head face "
+    "eye eyes hear heard play played hold held stand stood lose lost pay paid "
+    "meet met include including continue continued learn learned change changed "
+    "lead led understand understood watch watched follow followed stop stopped "
+    "create created speak spoke spent spend grow grew open opened win won offer "
+    "offered remember remembered consider considered appear appeared buy bought "
+    "wait waited serve served die died send sent expect expected build built stay "
+    "stayed fall fell cut reach reached kill killed remain remained suggest "
+    "suggested raise raised pass passed sell sold require required report reported "
+    "decide decided pull pulled return returned explain explained hope wish want"
+).split())
+
+
+def _tokens(text: str) -> list[str]:
+    """Lowercase token stream. Apostrophes preserved so contractions like
+    'i'm' match _FIRST_PERSON entries."""
+    return re.findall(r"[a-z]+(?:'[a-z]+)?", text.lower())
+
+
+def _formal_score(text: str) -> float:
+    """Map text to [0,1] register score. 1.0 = pure formal markers, 0.0 =
+    pure casual markers, 0.5 = equal or no markers found.
+
+    Deterministic; pure function of token contents."""
+    toks = _tokens(text)
+    if not toks:
+        return 0.5
+    formal_hits = sum(1 for t in toks if t in _FORMAL_MARKERS)
+    casual_hits = sum(1 for t in toks if t in _CASUAL_MARKERS)
+    total_marker_hits = formal_hits + casual_hits
+    if total_marker_hits == 0:
+        return 0.5
+    return formal_hits / total_marker_hits
+
+
+def _jargon_density(text: str) -> float:
+    """Ratio of jargon tokens to total tokens. Jargon = not in
+    _COMMON_WORDS AND longer than 4 chars. Returns 0.0 for empty text."""
+    toks = _tokens(text)
+    if not toks:
+        return 0.0
+    jargon = sum(1 for t in toks if len(t) > 4 and t not in _COMMON_WORDS)
+    return jargon / len(toks)
+
+
+def _first_person_ratio(text: str) -> float:
+    """Ratio of first-person pronouns to all pronouns. Returns 0.5 (the
+    neutral midpoint) when no pronouns appear, so absence of pronouns
+    doesn't read as 'pure third-person' (which would be a false positive
+    for the perspective=1.0 contract)."""
+    toks = _tokens(text)
+    pronoun_count = sum(1 for t in toks if t in _ALL_PRONOUNS)
+    if pronoun_count == 0:
+        return 0.5
+    first_count = sum(1 for t in toks if t in _FIRST_PERSON)
+    return first_count / pronoun_count
+
+
+# Length bands per docs/SLIDER_CONTRACT.md §Length. Words PER source triple.
+_LENGTH_BANDS: dict[float, tuple[int, int]] = {
+    0.1: (5, 15),
+    0.3: (12, 30),
+    0.5: (25, 60),
+    0.7: (50, 100),
+    0.9: (80, 200),
+}
+
+# Per-axis thresholds — copied from SLIDER_CONTRACT.md. Above threshold ⇒ "fail".
+_THRESHOLDS: dict[str, float] = {
+    "density": 0.001,
+    "length": 0.5,
+    "formality": 0.25,
+    "audience": 0.10,
+    "perspective": 0.20,
+}
+
+
+def _classify(value: float, threshold: float) -> str:
+    """Three-band classifier: ok ≤ threshold, warn ≤ 1.5×threshold, fail beyond."""
+    if value <= threshold:
+        return "ok"
+    if value <= threshold * 1.5:
+        return "warn"
+    return "fail"
+
+
+def measure_drift(
+    source_triples: Sequence[Triple],
+    reextracted_triples: Sequence[Triple],
+    tome: str,
+    sliders: TomeSliders,
+) -> tuple[AxisDrift, ...]:
+    """Per-axis drift between source and re-extracted triples + the tome
+    text. Pure function. Deterministic per input. Formulas in
+    docs/SLIDER_CONTRACT.md.
+
+    Note: callers must pass `quantized` sliders for thresholds to map
+    onto the 5-bin grid. Passing un-quantized sliders works but length
+    band lookup will fail with KeyError if value isn't a bin centre."""
+    source_keys = {_axiom_key(t) for t in source_triples}
+    reextracted_keys = {_axiom_key(t) for t in reextracted_triples}
+
+    # ── Density ──────────────────────────────────────────────────────
+    n_source = len(source_keys)
+    expected_retained = math.floor(n_source * sliders.density) if n_source else 0
+    actual_retained = len(source_keys & reextracted_keys)
+    if expected_retained == 0:
+        # density rounds to 0 ⇒ no triples expected to survive; drift is
+        # zero unless the LLM hallucinated some in.
+        density_drift = 0.0 if actual_retained == 0 else float(actual_retained)
+    else:
+        density_drift = abs(1.0 - (actual_retained / expected_retained))
+
+    # ── Length ───────────────────────────────────────────────────────
+    n_words = len(tome.split())
+    band_lo, band_hi = _LENGTH_BANDS[snap_to_bin(sliders.length)]
+    target_words = ((band_lo + band_hi) / 2) * max(n_source, 1)
+    if target_words == 0:
+        length_drift = 0.0
+    else:
+        length_drift = abs(n_words - target_words) / target_words
+
+    # ── Formality ────────────────────────────────────────────────────
+    target_formal = sliders.formality
+    actual_formal = _formal_score(tome)
+    formality_drift = abs(target_formal - actual_formal)
+
+    # ── Audience ─────────────────────────────────────────────────────
+    target_jargon = sliders.audience * 0.30  # contract: max ~30% at audience=1.0
+    actual_jargon = _jargon_density(tome)
+    audience_drift = abs(target_jargon - actual_jargon)
+
+    # ── Perspective ──────────────────────────────────────────────────
+    target_first_person = 1.0 - sliders.perspective
+    actual_first_person = _first_person_ratio(tome)
+    perspective_drift = abs(target_first_person - actual_first_person)
+
+    return (
+        AxisDrift(DriftAxis.DENSITY, density_drift, _THRESHOLDS["density"],
+                  _classify(density_drift, _THRESHOLDS["density"])),
+        AxisDrift(DriftAxis.LENGTH, length_drift, _THRESHOLDS["length"],
+                  _classify(length_drift, _THRESHOLDS["length"])),
+        AxisDrift(DriftAxis.FORMALITY, formality_drift, _THRESHOLDS["formality"],
+                  _classify(formality_drift, _THRESHOLDS["formality"])),
+        AxisDrift(DriftAxis.AUDIENCE, audience_drift, _THRESHOLDS["audience"],
+                  _classify(audience_drift, _THRESHOLDS["audience"])),
+        AxisDrift(DriftAxis.PERSPECTIVE, perspective_drift, _THRESHOLDS["perspective"],
+                  _classify(perspective_drift, _THRESHOLDS["perspective"])),
+    )
+
+
 async def render(
     triples: Sequence[Triple],
     sliders: TomeSliders,
@@ -215,40 +456,74 @@ async def render(
 ) -> RenderResult:
     """Render a tome from triples at the requested slider position.
 
-    Pipeline (STATE 4):
-        1. Quantize sliders → cache key.
-        2. cache.get(key) — return on hit.
-        3. apply_density(triples, sliders.density) → kept_triples.
-        4. build_system_prompt(quantized_sliders) → system_prompt.
-        5. format triples into user_prompt.
-        6. llm.chat_completion(system_prompt, user_prompt) → tome.
-        7. extractor(tome) → reextracted_triples.
-        8. measure_drift(triples, reextracted_triples, sliders) → AxisDrift list.
-        9. Build RenderResult, cache.put, return.
+    Cache-first; canonical path (no LLM) when only density is non-default;
+    LLM path otherwise. See module docstring for the pipeline diagram and
+    docs/SLIDER_CONTRACT.md for the per-axis drift contract."""
+    t_start = time.monotonic()
+    quantized = quantize(sliders)
+    triples_tuple = tuple(tuple(t) for t in triples)
+    key = cache_key(triples_tuple, quantized)
 
-    STATE 2 stub: raises NotImplementedError. Type signature is the
-    deliverable; logic ships in STATE 4.
-    """
-    raise NotImplementedError(
-        "slider_renderer.render — STATE 4 deliverable. "
-        "Type signature stable; pipeline implementation pending."
+    # ── Cache lookup ─────────────────────────────────────────────────
+    if cache is not None:
+        hit = await cache.get(key)
+        if hit is not None:
+            # Re-stamp cache_status without rebuilding the rest. Frozen
+            # dataclass ⇒ construct a new copy.
+            return RenderResult(
+                tome=hit.tome,
+                triples_used=hit.triples_used,
+                drift=hit.drift,
+                cache_status=CacheStatus.HIT,
+                llm_calls_made=0,
+                wall_clock_ms=int((time.monotonic() - t_start) * 1000),
+                quantized_sliders=hit.quantized_sliders,
+                render_id=hit.render_id,
+            )
+
+    # ── Apply density (deterministic axiom subset) ───────────────────
+    keys_in_order = [_axiom_key(t) for t in triples_tuple]
+    kept_key_set = set(apply_density(keys_in_order, sliders.density))
+    kept_triples: tuple[Triple, ...] = tuple(
+        t for t in triples_tuple if _axiom_key(t) in kept_key_set
     )
 
+    # ── Choose path: canonical (deterministic) vs LLM ────────────────
+    if not sliders.requires_extrapolator():
+        # All LLM axes are neutral ⇒ skip LLM entirely. The deterministic
+        # tome is its own re-extraction (no drift introduced).
+        tome = _deterministic_tome(kept_triples)
+        reextracted: list[Triple] = list(kept_triples)
+        llm_calls = 0
+    else:
+        sys_prompt = build_system_prompt(quantized)
+        user_prompt = _format_triples_for_llm(kept_triples)
+        tome = await llm.chat_completion(sys_prompt, user_prompt)
+        reextracted = await extractor(tome)
+        llm_calls = 1
 
-def measure_drift(
-    source_triples: Sequence[Triple],
-    reextracted_triples: Sequence[Triple],
-    sliders: TomeSliders,
-) -> tuple[AxisDrift, ...]:
-    """Per-axis drift between source and re-extracted triples.
+    drift = measure_drift(kept_triples, reextracted, tome, quantized)
 
-    Pure function. Deterministic per input. STATE 4 fills the actual
-    per-axis arithmetic per docs/SLIDER_CONTRACT.md.
-    """
-    raise NotImplementedError(
-        "slider_renderer.measure_drift — STATE 4 deliverable. "
-        "Per-axis drift formulas are in docs/SLIDER_CONTRACT.md."
+    render_id = hashlib.sha256(
+        (key + tome).encode("utf-8")
+    ).hexdigest()[:16]
+
+    cache_status = CacheStatus.MISS if cache is not None else CacheStatus.BYPASS
+    result = RenderResult(
+        tome=tome,
+        triples_used=kept_triples,
+        drift=drift,
+        cache_status=cache_status,
+        llm_calls_made=llm_calls,
+        wall_clock_ms=int((time.monotonic() - t_start) * 1000),
+        quantized_sliders=quantized,
+        render_id=render_id,
     )
+
+    if cache is not None:
+        await cache.put(key, result, cache_ttl_seconds)
+
+    return result
 
 
 # ─── In-memory cache (default for tests + single-process use) ─────────

@@ -136,11 +136,18 @@ def snap_to_bin(value: float, bins: int = SLIDER_BINS_PER_AXIS) -> float:
 
 
 def quantize(sliders: TomeSliders, bins: int = SLIDER_BINS_PER_AXIS) -> TomeSliders:
-    """Snap every axis of a TomeSliders to its bin centre. Returns a new
-    frozen TomeSliders. Used as the cache-key derivation for renderer
-    requests so two near-identical drag positions hit the same cache."""
+    """Snap the four LLM axes to their bin centres. Density passes through
+    unchanged. Returns a new frozen TomeSliders.
+
+    Why density is exempt: density is deterministic — the canonical path
+    selects exactly floor(N * density) triples per the lexicographic
+    prefix. Binning would cost UX (1.0 silently maps to 0.9 ⇒ user can
+    never request 'all triples') without saving cache space (no LLM call
+    to dedupe; the cache cell is a tiny dict lookup either way). Only
+    the four LLM axes need binning to collapse near-identical drag
+    positions onto the same expensive LLM call."""
     return TomeSliders(
-        density=snap_to_bin(sliders.density, bins),
+        density=sliders.density,
         length=snap_to_bin(sliders.length, bins),
         formality=snap_to_bin(sliders.formality, bins),
         audience=snap_to_bin(sliders.audience, bins),
@@ -148,57 +155,77 @@ def quantize(sliders: TomeSliders, bins: int = SLIDER_BINS_PER_AXIS) -> TomeSlid
     )
 
 
-def length_fragment(value: float) -> str:
-    """Prompt fragment for the length axis. 0.0 = telegraphic, 1.0 =
-    expansive. Returned string is appended to the system prompt of the
-    LLM extrapolator. Empirical contract: at value=0.5, the fragment
-    should be neutral (no length pressure either way).
+# Per-axis fragments are keyed by bin centre (5-bin grid). The renderer
+# only ever calls these with quantized values — i.e. one of {0.1, 0.3,
+# 0.5, 0.7, 0.9}. Direct dict lookup is faster than range checks and
+# guarantees identical output for identical input. Mid-band (0.5) is
+# always the empty string so we don't bloat the system prompt at default.
 
-    NOTE: implemented in STATE 4. Stub returns the deterministic empty
-    string at value=0.5 only; raises NotImplementedError otherwise so
-    a half-finished slider call fails loudly rather than silently
-    producing length-uncontrolled output.
-    """
-    if abs(value - 0.5) < 1e-6:
-        return ""
-    raise NotImplementedError(
-        f"length_fragment(value={value}) — STATE 4 deliverable. "
-        "See docs/SLIDER_CONTRACT.md §Length."
-    )
+_LENGTH_FRAGMENTS: dict[float, str] = {
+    0.1: "Use the most concise prose possible: each fact in one short sentence, no elaboration.",
+    0.3: "Be brief. Prefer short sentences. Minimal connective tissue between facts.",
+    0.5: "",
+    0.7: "Expand each fact with relevant elaboration and context.",
+    0.9: "Write expansively: develop each fact into a detailed paragraph with rich context and examples.",
+}
+
+_FORMALITY_FRAGMENTS: dict[float, str] = {
+    0.1: "Use casual, conversational tone. Contractions are encouraged. Address the reader directly.",
+    0.3: "Use a friendly, approachable tone. Light contractions are fine.",
+    0.5: "",
+    0.7: "Use formal academic register. Prefer precise vocabulary. Avoid contractions.",
+    0.9: "Write in strict academic register: passive voice where appropriate, no contractions, measured hedging language.",
+}
+
+_AUDIENCE_FRAGMENTS: dict[float, str] = {
+    0.1: "Write for a curious general reader. Avoid all domain-specific jargon. Use everyday words.",
+    0.3: "Write for an interested non-specialist. Define any technical terms inline on first use.",
+    0.5: "",
+    0.7: "Write for a domain practitioner. Use field-specific terminology freely.",
+    0.9: "Write for a domain expert. Use precise technical jargon without explanation.",
+}
+
+_PERSPECTIVE_FRAGMENTS: dict[float, str] = {
+    0.1: "Write in first person throughout ('I observed', 'we found', 'our data shows').",
+    0.3: "Write primarily in first person, with occasional third-person framing.",
+    0.5: "",
+    0.7: "Write in third-person omniscient. Avoid first-person pronouns.",
+    0.9: "Write in pure third-person omniscient narration. Use no first-person pronouns at all.",
+}
+
+
+def _lookup_fragment(table: dict[float, str], value: float, axis_name: str) -> str:
+    """Quantize-then-lookup. Tolerates floating-point noise around bin
+    centres so callers can pass either snapped or near-snapped values."""
+    snapped = snap_to_bin(value)
+    for centre, fragment in table.items():
+        if abs(snapped - centre) < 1e-6:
+            return fragment
+    raise ValueError(f"{axis_name}_fragment: value {value} (snapped {snapped}) not in 5-bin grid")
+
+
+def length_fragment(value: float) -> str:
+    """Prompt fragment for the length axis. 0.0=telegraphic, 1.0=expansive.
+    Returns the empty string at the neutral midpoint. See SLIDER_CONTRACT.md §Length."""
+    return _lookup_fragment(_LENGTH_FRAGMENTS, value, "length")
 
 
 def formality_fragment(value: float) -> str:
-    """Prompt fragment for the formality axis. 0.0 = casual / colloquial,
-    1.0 = academic / passive-voice / hedge-laden. STATE 4 deliverable;
-    same fail-loud semantics as length_fragment."""
-    if abs(value - 0.5) < 1e-6:
-        return ""
-    raise NotImplementedError(
-        f"formality_fragment(value={value}) — STATE 4 deliverable. "
-        "See docs/SLIDER_CONTRACT.md §Formality."
-    )
+    """Prompt fragment for the formality axis. 0.0=casual, 1.0=academic.
+    See SLIDER_CONTRACT.md §Formality."""
+    return _lookup_fragment(_FORMALITY_FRAGMENTS, value, "formality")
 
 
 def audience_fragment(value: float) -> str:
-    """Prompt fragment for the audience axis. 0.0 = lay reader / no
-    jargon, 1.0 = domain expert / jargon-dense. STATE 4 deliverable."""
-    if abs(value - 0.5) < 1e-6:
-        return ""
-    raise NotImplementedError(
-        f"audience_fragment(value={value}) — STATE 4 deliverable. "
-        "See docs/SLIDER_CONTRACT.md §Audience."
-    )
+    """Prompt fragment for the audience axis. 0.0=lay reader, 1.0=domain expert.
+    See SLIDER_CONTRACT.md §Audience."""
+    return _lookup_fragment(_AUDIENCE_FRAGMENTS, value, "audience")
 
 
 def perspective_fragment(value: float) -> str:
-    """Prompt fragment for the perspective axis. 0.0 = first-person /
-    subjective, 1.0 = omniscient / third-person. STATE 4 deliverable."""
-    if abs(value - 0.5) < 1e-6:
-        return ""
-    raise NotImplementedError(
-        f"perspective_fragment(value={value}) — STATE 4 deliverable. "
-        "See docs/SLIDER_CONTRACT.md §Perspective."
-    )
+    """Prompt fragment for the perspective axis. 0.0=first-person, 1.0=omniscient third-person.
+    See SLIDER_CONTRACT.md §Perspective."""
+    return _lookup_fragment(_PERSPECTIVE_FRAGMENTS, value, "perspective")
 
 
 def build_system_prompt(sliders: TomeSliders) -> str:
