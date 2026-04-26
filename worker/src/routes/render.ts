@@ -33,6 +33,7 @@ import {
 } from "../render/axis_prompts";
 import {
   DIGITAL_SOURCE_TYPE_AI,
+  DIGITAL_SOURCE_TYPE_DETERMINISTIC,
   hashTome,
   hashTriples,
   signReceipt,
@@ -85,18 +86,29 @@ function formatTriplesForLLM(triples: Array<[string, string, string]>): string {
   return `FACTS:\n${lines.join("\n")}`;
 }
 
+interface LLMRenderResult {
+  tome: string;
+  /** What actually served the call. Comes from the API response's
+   *  `model` field, not the requested model — Anthropic and OpenAI
+   *  may resolve a tag to a more specific snapshot id. The receipt
+   *  signs THIS value so the audit trail matches reality. */
+  model_used: string;
+  provider: "anthropic" | "openai" | "cf-ai-gateway-anthropic" | "canonical-path";
+}
+
 async function callAnthropic(
   env: Env,
   systemPrompt: string,
   userPrompt: string,
-): Promise<string> {
+): Promise<LLMRenderResult> {
   if (!env.ANTHROPIC_API_KEY) {
     throw new Error("ANTHROPIC_API_KEY not set; render requires an LLM provider");
   }
-  const base = env.CF_AI_GATEWAY_BASE
-    ? `${env.CF_AI_GATEWAY_BASE.replace(/\/$/, "")}/anthropic/v1/messages`
+  const usingGateway = Boolean(env.CF_AI_GATEWAY_BASE);
+  const base = usingGateway
+    ? `${env.CF_AI_GATEWAY_BASE!.replace(/\/$/, "")}/anthropic/v1/messages`
     : "https://api.anthropic.com/v1/messages";
-  const model = env.SUM_DEFAULT_MODEL_ANTHROPIC ?? ANTHROPIC_DEFAULT;
+  const requestedModel = env.SUM_DEFAULT_MODEL_ANTHROPIC ?? ANTHROPIC_DEFAULT;
 
   const res = await fetch(base, {
     method: "POST",
@@ -106,7 +118,7 @@ async function callAnthropic(
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
-      model,
+      model: requestedModel,
       max_tokens: MAX_OUTPUT_TOKENS,
       system: systemPrompt,
       messages: [{ role: "user", content: userPrompt }],
@@ -118,10 +130,22 @@ async function callAnthropic(
     throw new Error(`anthropic ${res.status}: ${text.slice(0, 500)}`);
   }
 
-  const data = (await res.json()) as { content?: Array<{ type: string; text?: string }> };
+  const data = (await res.json()) as {
+    content?: Array<{ type: string; text?: string }>;
+    model?: string;
+  };
   const block = (data.content ?? []).find((b) => b.type === "text");
   if (!block?.text) throw new Error("anthropic: empty completion");
-  return block.text;
+  // Honest model identifier: prefer the API's reported model (which
+  // may be a more specific snapshot id than the requested tag); fall
+  // back to the requested model with `_inferred` suffix when absent
+  // so the inference itself is visible in the signed receipt.
+  const modelUsed = data.model ?? `${requestedModel}_inferred`;
+  return {
+    tome: block.text,
+    model_used: modelUsed,
+    provider: usingGateway ? "cf-ai-gateway-anthropic" : "anthropic",
+  };
 }
 
 async function sha256Hex32(s: string): Promise<string> {
@@ -185,6 +209,12 @@ export async function handleRender(
 
   let tome: string;
   let llmCallsMade = 0;
+  // Honest provenance: track exactly which model + provider produced
+  // the tome. Receipt signs THESE values, never the configured-default
+  // values (which can drift from reality on provider fallback or model
+  // snapshot resolution).
+  let modelUsed: string = "canonical-deterministic-v0";
+  let providerUsed: LLMRenderResult["provider"] = "canonical-path";
   if (!requiresExtrapolator(quantized)) {
     // Canonical path: deterministic tome from kept triples; no LLM.
     tome = deterministicTome(keptTriples);
@@ -192,7 +222,10 @@ export async function handleRender(
     const systemPrompt = buildSystemPrompt(quantized);
     const userPrompt = formatTriplesForLLM(keptTriples);
     try {
-      tome = await callAnthropic(env, systemPrompt, userPrompt);
+      const llmResult = await callAnthropic(env, systemPrompt, userPrompt);
+      tome = llmResult.tome;
+      modelUsed = llmResult.model_used;
+      providerUsed = llmResult.provider;
       llmCallsMade = 1;
     } catch (e) {
       return json(
@@ -214,15 +247,20 @@ export async function handleRender(
       const signingJWK: JWK = JSON.parse(env.RENDER_RECEIPT_SIGNING_JWK);
       const triplesHash = await hashTriples(keptTriples);
       const tomeHash = await hashTome(tome);
-      const model = env.SUM_DEFAULT_MODEL_ANTHROPIC ?? "unknown";
       const payload: ReceiptPayload = {
         render_id: renderId,
         sliders_quantized: quantized,
         triples_hash: triplesHash,
         tome_hash: tomeHash,
-        model,
+        // Honest provenance: what actually served, not what was
+        // configured. See LLMRenderResult.model_used.
+        model: modelUsed,
+        provider: providerUsed,
         signed_at: new Date().toISOString(),
-        digital_source_type: DIGITAL_SOURCE_TYPE_AI,
+        digital_source_type:
+          providerUsed === "canonical-path"
+            ? DIGITAL_SOURCE_TYPE_DETERMINISTIC
+            : DIGITAL_SOURCE_TYPE_AI,
       };
       renderReceipt = await signReceipt(payload, signingJWK, env.RENDER_RECEIPT_SIGNING_KID);
     } catch (e) {

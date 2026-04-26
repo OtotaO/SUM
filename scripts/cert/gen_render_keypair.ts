@@ -4,14 +4,18 @@
 //   /tmp/render_receipt_private.jwk  — single-line JSON, the secret half
 //   /tmp/render_receipt_public.jwks  — single-line JSON of the {keys: [...]} JWKS
 //
-// Usage (from repo root):
-//   bun scripts/cert/gen_render_keypair.ts [kid]
+// Usage (from repo root, run from inside `worker/` so tsx resolves):
+//   cd worker
+//   npx tsx ../scripts/cert/gen_render_keypair.ts [kid]
 //   wrangler secret put RENDER_RECEIPT_SIGNING_JWK < /tmp/render_receipt_private.jwk
 //   wrangler secret put RENDER_RECEIPT_SIGNING_KID    # paste the kid printed below
-//   # then either:
-//   #   - paste the contents of /tmp/render_receipt_public.jwks into the
-//   #     CF dashboard as the RENDER_RECEIPT_PUBLIC_JWKS plaintext var, or
-//   #   - put it in wrangler.toml [vars] (uncomment the line) and re-deploy.
+//   # then publish the public JWKS — preferred:
+//   #   CF dashboard → Worker → Settings → Variables → add
+//   #   RENDER_RECEIPT_PUBLIC_JWKS as plaintext, paste contents of
+//   #   /tmp/render_receipt_public.jwks. (Avoid putting JSON in
+//   #   wrangler.toml [vars] — escaping nightmare on merge.)
+//   # alternative one-shot at deploy time:
+//   #   wrangler deploy --var RENDER_RECEIPT_PUBLIC_JWKS:"$(cat /tmp/render_receipt_public.jwks)"
 //
 // Reversibility: deleting the secret invalidates already-issued receipts
 // that reference this kid. To rotate without breaking old receipts, run
