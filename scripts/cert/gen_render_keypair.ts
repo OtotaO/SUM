@@ -64,6 +64,11 @@ async function main(): Promise<void> {
   console.log(`  wrangler secret put RENDER_RECEIPT_SIGNING_KID  # paste: ${kid}`);
   console.log(`  # then publish the public JWKS as RENDER_RECEIPT_PUBLIC_JWKS:`);
   console.log(`  cat ${pubPath}`);
+  console.log();
+  console.log("AFTER the secret upload succeeds — wipe the private-key tempfile:");
+  console.log(`  rm -P ${privPath}      # macOS / BSD: overwrite then unlink`);
+  console.log(`  shred -u ${privPath}   # GNU/Linux equivalent`);
+  console.log("Leaving uncovered key material on local disk is a pd_8 violation.");
 }
 
 main().catch((e) => {
