@@ -4,6 +4,53 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Improved — Phase E.1 v0.7 (prompt hardening eliminates catastrophic failure mode)
+
+The v0.6 scale bench surfaced two catastrophic outlier cells where
+the LLM dropped 80%+ of source facts on technically-dense documents
+at extreme `formality=0.1` / `audience=0.3` positions. v0.7 adds a
+deterministic prompt mechanism that targets exactly that failure
+mode and re-runs the same bench to verify.
+
+**Before / after on the same 16-document long bench:**
+
+| Metric | v0.6 (no hardening) | v0.7 (with reinforcement) | Change |
+|---|---|---|---|
+| Real losses on LLM axes | 36 | **1** | −97% |
+| Cells with ≥5 facts lost | 2 | **0** | eliminated |
+| Min preservation | 0.111 | **0.700** | 6× floor lift |
+| Median preservation | 1.000 | 1.000 | held |
+| p10 | 0.769 | 0.750 | −0.019 (noise) |
+
+**The mechanism (deterministic, no LLM cost):**
+`build_system_prompt` in `tome_sliders.py` (and its TS mirror in
+`worker/src/render/axis_prompts.ts`) now appends a
+`FACT_PRESERVATION_REINFORCEMENT` clause when any non-density axis
+is at ≤ 0.3. The clause explicitly tells the LLM "An output that
+follows the directives but loses input facts is a FAILED render."
+Pure data; same output for same input.
+
+**The trade-off:** 52% of cells score 1.000 perfectly (down from
+60%). The reinforcement makes the LLM's surface forms slightly
+more defensive, so the strict embedding layer triggers NLI audit
+more often. The audit rescues every flagged fact (rescue rate
+99.8%). Net: more cells get verified rigorously, real losses
+near-zero. This is the right trade — we'd rather verify ten more
+cells than miss one catastrophic loss.
+
+**Files**
+- `sum_engine_internal/ensemble/tome_sliders.py`:
+  `FACT_PRESERVATION_REINFORCEMENT` constant + extension in
+  `build_system_prompt`.
+- `worker/src/render/axis_prompts.ts`: TS mirror.
+- `docs/SLIDER_CONTRACT.md`: version bumped to 0.6; v0.7 results
+  table next to v0.6 baseline.
+
+**Verification:** 51 unit tests pass; cross-runtime gates green;
+bench shows 399/400 cells succeed (1 errored on
+`LengthFinishReasonError` — unrelated robustness issue from prior
+benches, not a v0.7 regression).
+
 ### Verified — Phase E.1 v0.6 (scale verification on long-document corpus)
 
 The slider's preservation claim was previously verified on 8 short
