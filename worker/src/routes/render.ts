@@ -1,12 +1,21 @@
 // /api/render — Slider-conditioned tome rendering.
 //
-// Phase E.3 endpoint. POST {triples, slider_position, force_render?}
+// POST {triples, slider_position, force_render?}
 // → RenderResult per worker/src/cache/bin_cache.ts. Cache-first; LLM
-// call only on cache miss. Drift measured server-side; UI just
-// displays.
+// call only on cache miss. Anthropic is the LLM provider; the render
+// path mirrors sum_engine_internal.ensemble.slider_renderer.render
+// in shape — same cache key, same canonical-vs-LLM branch, same
+// quantization rules.
 //
-// SCAFFOLD STATE: handler returns 501 with the activation plan
-// inline. Logic ships in EXECUTE state.
+// What this Worker DOES NOT do (yet):
+//   - Re-extraction of triples from the rendered tome. The Python
+//     bench is the canonical source for fact-preservation metrics.
+//     The Worker returns the tome and lets the caller decide.
+//   - Per-axis drift measurement. The contract bench produces those
+//     numbers ahead of time; live renders just expose the rendered
+//     tome and the cache_status.
+// Both are deferred to a future revision when the verifier substrate
+// can run on Worker (or the demo proxies to a Python service).
 
 import type { Env } from "../index";
 import {
@@ -15,47 +24,41 @@ import {
   putCached,
   type RenderResult,
 } from "../cache/bin_cache";
+import {
+  applyDensity,
+  buildSystemPrompt,
+  deterministicTome,
+  requiresExtrapolator,
+  type SlidersForPrompt,
+} from "../render/axis_prompts";
 
 interface RenderRequest {
   triples: Array<[string, string, string]>;
-  slider_position: {
-    density: number;
-    length: number;
-    formality: number;
-    audience: number;
-    perspective: number;
-  };
-  force_render?: boolean;       // bypass cache; always re-LLM
-  cache_ttl_seconds?: number;   // override default 24h
+  slider_position: SlidersForPrompt;
+  force_render?: boolean;
+  cache_ttl_seconds?: number;
 }
 
 const DEFAULT_TTL_SECONDS = 24 * 60 * 60;
-const SLIDER_BINS_PER_AXIS = 5;
+const MAX_OUTPUT_TOKENS = 2048;
+const ANTHROPIC_DEFAULT = "claude-haiku-4-5-20251001";
 
-/**
- * Snap a continuous [0, 1] value to the centre of one of N bins.
- * Mirror of sum_engine_internal.ensemble.tome_sliders.snap_to_bin.
- * Pure function. Same input → same output; identical to Python side.
- */
-function snapToBin(value: number, bins: number = SLIDER_BINS_PER_AXIS): number {
+function snapToBin(value: number, bins = 5): number {
   if (value < 0 || value > 1) throw new Error(`slider value out of [0, 1]: ${value}`);
   const idx = Math.min(Math.floor(value * bins), bins - 1);
   return (idx + 0.5) / bins;
 }
 
-function quantizeSliders(sliders: RenderRequest["slider_position"]): RenderResult["quantized_sliders"] {
-  // Density is deterministic and exempt from binning so users can
-  // request endpoint values (1.0 = all triples, 0.0 = none). Mirror of
-  // sum_engine_internal.ensemble.tome_sliders.quantize.
-  if (sliders.density < 0 || sliders.density > 1) {
-    throw new Error(`density out of [0, 1]: ${sliders.density}`);
+function quantizeSliders(s: SlidersForPrompt): RenderResult["quantized_sliders"] {
+  if (s.density < 0 || s.density > 1) {
+    throw new Error(`density out of [0, 1]: ${s.density}`);
   }
   return {
-    density: sliders.density,
-    length: snapToBin(sliders.length),
-    formality: snapToBin(sliders.formality),
-    audience: snapToBin(sliders.audience),
-    perspective: snapToBin(sliders.perspective),
+    density: s.density,
+    length: snapToBin(s.length),
+    formality: snapToBin(s.formality),
+    audience: snapToBin(s.audience),
+    perspective: snapToBin(s.perspective),
   };
 }
 
@@ -67,6 +70,58 @@ function json(body: unknown, status = 200): Response {
       "cache-control": "no-store",
     },
   });
+}
+
+function formatTriplesForLLM(triples: Array<[string, string, string]>): string {
+  const lines = triples.map((t, i) => `${i + 1}. (${t[0]}, ${t[1]}, ${t[2]})`);
+  return `FACTS:\n${lines.join("\n")}`;
+}
+
+async function callAnthropic(
+  env: Env,
+  systemPrompt: string,
+  userPrompt: string,
+): Promise<string> {
+  if (!env.ANTHROPIC_API_KEY) {
+    throw new Error("ANTHROPIC_API_KEY not set; render requires an LLM provider");
+  }
+  const base = env.CF_AI_GATEWAY_BASE
+    ? `${env.CF_AI_GATEWAY_BASE.replace(/\/$/, "")}/anthropic/v1/messages`
+    : "https://api.anthropic.com/v1/messages";
+  const model = env.SUM_DEFAULT_MODEL_ANTHROPIC ?? ANTHROPIC_DEFAULT;
+
+  const res = await fetch(base, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-api-key": env.ANTHROPIC_API_KEY,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: MAX_OUTPUT_TOKENS,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userPrompt }],
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`anthropic ${res.status}: ${text.slice(0, 500)}`);
+  }
+
+  const data = (await res.json()) as { content?: Array<{ type: string; text?: string }> };
+  const block = (data.content ?? []).find((b) => b.type === "text");
+  if (!block?.text) throw new Error("anthropic: empty completion");
+  return block.text;
+}
+
+async function sha256Hex32(s: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("")
+    .slice(0, 16);
 }
 
 export async function handleRender(
@@ -92,7 +147,7 @@ export async function handleRender(
     return json({ error: "missing 'slider_position'" }, 400);
   }
 
-  // Quantize → cache key.
+  const tStart = Date.now();
   let quantized: RenderResult["quantized_sliders"];
   try {
     quantized = quantizeSliders(body.slider_position);
@@ -102,47 +157,60 @@ export async function handleRender(
 
   const key = await deriveCacheKey(body.triples, quantized);
 
-  // Cache-first path (unless force_render).
+  // Cache-first.
   if (!body.force_render) {
     const cached = await getCached(env, key);
     if (cached) {
-      return json({ ...cached, cache_status: "hit" });
+      return json({
+        ...cached,
+        cache_status: "hit",
+        wall_clock_ms: Date.now() - tStart,
+      });
     }
   }
 
-  // SCAFFOLD STATE: no LLM call yet. Return 501 with the activation plan.
-  // STATE 4 will:
-  //   1. Build system_prompt via build_system_prompt(quantized) shipped
-  //      from a Pythonic /api/internal/render-prompt route OR replicate
-  //      the prompt-building logic in TS to keep the Worker self-
-  //      contained. Decision deferred to EXECUTE.
-  //   2. Call /api/complete (existing Anthropic/OpenAI proxy) with the
-  //      conditioned prompts.
-  //   3. Re-extract triples from the returned tome (sieve via
-  //      something we don't have on the Worker; or fall back to
-  //      asking the LLM to re-extract).
-  //   4. Compute drift per axis per docs/SLIDER_CONTRACT.md.
-  //   5. Build RenderResult and cache it.
-  return json(
-    {
-      error: "not implemented",
-      status: "phase-e-scaffold",
-      cache_key: key,
-      quantized_sliders: quantized,
-      next: {
-        action: "Implement render pipeline in worker/src/routes/render.ts",
-        spec: "See docs/SLIDER_CONTRACT.md for axis semantics + drift formulas.",
-        depends_on: [
-          "Decide: server-side drift measurement (needs sieve in TS) " +
-            "or client-side (browser already has WASM core).",
-          "Wire RENDER_CACHE KV namespace in wrangler.toml.",
-        ],
-      },
-    },
-    501,
-  );
-}
+  // Apply density (deterministic axiom subset).
+  const keptTriples = applyDensity(body.triples, quantized.density);
 
-// Suppress unused-warnings until EXECUTE wires these in.
-void putCached;
-void DEFAULT_TTL_SECONDS;
+  let tome: string;
+  let llmCallsMade = 0;
+  if (!requiresExtrapolator(quantized)) {
+    // Canonical path: deterministic tome from kept triples; no LLM.
+    tome = deterministicTome(keptTriples);
+  } else {
+    const systemPrompt = buildSystemPrompt(quantized);
+    const userPrompt = formatTriplesForLLM(keptTriples);
+    try {
+      tome = await callAnthropic(env, systemPrompt, userPrompt);
+      llmCallsMade = 1;
+    } catch (e) {
+      return json(
+        { error: `render failed: ${(e as Error).message}`, cache_key: key },
+        502,
+      );
+    }
+  }
+
+  const renderId = await sha256Hex32(key + tome);
+
+  // Build the result. NB: Worker's RenderResult does NOT populate
+  // reextracted_triples / claimed_triples / drift — those come from
+  // the Python bench. Returns empty arrays / placeholder drift so
+  // the schema shape matches across runtimes.
+  const result: RenderResult = {
+    tome,
+    triples_used: keptTriples,
+    drift: [],
+    cache_status: "miss",
+    llm_calls_made: llmCallsMade,
+    wall_clock_ms: Date.now() - tStart,
+    quantized_sliders: quantized,
+    render_id: renderId,
+  };
+
+  // Best-effort cache write.
+  const ttl = body.cache_ttl_seconds ?? DEFAULT_TTL_SECONDS;
+  await putCached(env, key, result, ttl);
+
+  return json(result);
+}
