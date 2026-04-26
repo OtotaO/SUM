@@ -21,6 +21,7 @@ from sum_engine_internal.ensemble.slider_renderer import (
     CacheStatus,
     DriftAxis,
     InMemorySliderCache,
+    NLIFactBreakdown,
     RenderResult,
     Triple,
     _normalize_predicate,
@@ -29,6 +30,7 @@ from sum_engine_internal.ensemble.slider_renderer import (
     fact_preservation,
     fact_preservation_normalized,
     measure_drift,
+    nli_fact_preservation,
     order_preservation,
     render,
     semantic_fact_preservation,
@@ -253,6 +255,98 @@ class TestRenderPipeline:
 
 
 # ─── measure_drift unit (xfail until EXECUTE) ─────────────────────────
+
+
+class TestNLIFactPreservation:
+    """v0.4 — NLI audit disentangles real fact loss from embedding-
+    similarity false negatives. Tests use a deterministic identity
+    embedder + a stub entailment function."""
+
+    @pytest.mark.asyncio
+    async def test_no_nli_calls_when_semantic_matches_all(self):
+        """Phase 2 (NLI) is skipped entirely when phase 1 (semantic)
+        catches every source fact — keeps audit cost bounded."""
+        triples = [("a", "b", "c"), ("d", "e", "f")]
+        nli_call_count = 0
+        async def entail(_fact, _passage):
+            nonlocal nli_call_count
+            nli_call_count += 1
+            return True
+        result = await nli_fact_preservation(
+            triples, triples, "a b c. d e f.", _identity_embed, entail,
+        )
+        assert nli_call_count == 0
+        assert result.n_matched_semantic == 2
+        assert result.n_matched_nli_only == 0
+        assert result.n_lost == 0
+        assert result.nli_fact_preservation == 1.0
+        assert result.nli_calls_made == 0
+
+    @pytest.mark.asyncio
+    async def test_nli_rescues_embedding_false_negative(self):
+        """Source has a fact, re-extracted is empty (so semantic
+        misses everything), but NLI says yes — every fact is rescued
+        as 'matched_nli_only'. This is the headline use case."""
+        triples = [("alice", "graduated", "2012")]
+        async def entail(_fact, _passage):
+            return True
+        result = await nli_fact_preservation(
+            triples, [], "alice received her diploma in 2012",
+            _identity_embed, entail,
+        )
+        assert result.n_matched_semantic == 0
+        assert result.n_matched_nli_only == 1
+        assert result.n_lost == 0
+        assert result.nli_fact_preservation == 1.0
+        assert result.nli_calls_made == 1
+
+    @pytest.mark.asyncio
+    async def test_real_loss_when_neither_layer_catches(self):
+        triples = [("alice", "graduated", "2012"), ("bob", "married", "2015")]
+        async def entail(_fact, _passage):
+            return False
+        result = await nli_fact_preservation(
+            triples, [], "unrelated text", _identity_embed, entail,
+        )
+        assert result.n_matched_semantic == 0
+        assert result.n_matched_nli_only == 0
+        assert result.n_lost == 2
+        assert result.nli_fact_preservation == 0.0
+        assert result.nli_calls_made == 2
+
+    @pytest.mark.asyncio
+    async def test_partial_real_loss(self):
+        """3 source facts, 1 matched by embedding, 1 rescued by NLI,
+        1 truly lost. Validates the three-bucket accounting."""
+        triples = [
+            ("alice", "graduated", "2012"),
+            ("bob", "married", "2015"),
+            ("carol", "born", "1990"),
+        ]
+        # Embedding-matched: only alice's triple (identity match).
+        reext = [("alice", "graduated", "2012")]
+        async def entail(fact, _passage):
+            # NLI rescues bob; says no for carol.
+            return fact[0] == "bob"
+        result = await nli_fact_preservation(
+            triples, reext, "alice graduated 2012, bob got married",
+            _identity_embed, entail,
+        )
+        assert result.n_matched_semantic == 1
+        assert result.n_matched_nli_only == 1
+        assert result.n_lost == 1
+        assert result.nli_fact_preservation == pytest.approx(2/3, abs=1e-6)
+        assert result.nli_calls_made == 2  # only fired on the 2 unmatched
+
+    @pytest.mark.asyncio
+    async def test_empty_source_returns_perfect(self):
+        async def entail(_fact, _passage):
+            raise AssertionError("should not be called")
+        result = await nli_fact_preservation(
+            [], [], "any tome", _identity_embed, entail,
+        )
+        assert result.nli_fact_preservation == 1.0
+        assert result.nli_calls_made == 0
 
 
 class TestStructuredRenderPath:

@@ -41,6 +41,7 @@ from sum_engine_internal.ensemble.slider_renderer import (
     cache_key,
     fact_preservation,
     fact_preservation_normalized,
+    nli_fact_preservation,
     order_preservation,
     render,
     semantic_fact_preservation,
@@ -74,6 +75,11 @@ class BenchCell:
     order_preservation: float = float("nan")           # MontageLie defense (pairwise order, NaN if <2 preserved)
     # v0.3 — constrained-decoding self-attestation signal.
     claim_reextract_jaccard: float = float("nan")      # |claimed ∩ reextracted| / |claimed ∪ reextracted|
+    # v0.4 — NLI audit (only populated when cell's semantic < audit_threshold).
+    fact_preservation_nli: float = float("nan")        # (semantic_matched + nli_rescued) / n_source
+    n_matched_nli_only: int = 0                        # embedding said no, NLI said yes (false negatives of A1 layer)
+    n_lost_real: int = 0                               # neither layer matched (real fact loss)
+    nli_calls_made: int = 0                            # cost-tracking; 0 if cell wasn't audited
     n_source_triples: int = 0
     n_reextracted_triples: int = 0
     n_claimed_triples: int = 0          # 0 on legacy chat-only path; populated on structured path
@@ -119,6 +125,16 @@ def cli() -> argparse.Namespace:
             "RateLimitError; raise on higher tiers for faster bench."
         ),
     )
+    p.add_argument(
+        "--audit-threshold", type=float, default=0.7,
+        help=(
+            "v0.4 NLI audit: when a cell's semantic fact preservation "
+            "is below this threshold, run an NLI judge on each unmatched "
+            "source fact to disentangle real loss from embedding false "
+            "negatives. Default 0.7. Set to 0.0 to disable, 1.0 to audit "
+            "every cell (more LLM calls, ~2-3× cost)."
+        ),
+    )
     return p.parse_args()
 
 
@@ -139,6 +155,8 @@ async def _bench_one_cell(
     extractor,
     llm_client,
     embed_fn,
+    entail_fn,
+    audit_threshold: float,
     doc_id: str,
     source_triples: list[Triple],
     axis: str,
@@ -205,6 +223,24 @@ async def _bench_one_cell(
                 union = len(claimed_keys | reext_keys)
                 claim_jaccard = inter / union if union else float("nan")
 
+        # v0.4: NLI audit on cells where semantic preservation is weak.
+        # Disentangles real fact loss from embedding-similarity false
+        # negatives. Audit cost: one entail_fn call per unmatched
+        # source fact, only on flagged cells.
+        nli_pres = float("nan")
+        n_nli_only = 0
+        n_lost = 0
+        nli_calls = 0
+        if audit_threshold > 0.0 and fact_semantic < audit_threshold:
+            breakdown = await nli_fact_preservation(
+                source_triples, result.reextracted_triples,
+                result.tome, embed_fn, entail_fn,
+            )
+            nli_pres = breakdown.nli_fact_preservation
+            n_nli_only = breakdown.n_matched_nli_only
+            n_lost = breakdown.n_lost
+            nli_calls = breakdown.nli_calls_made
+
         return BenchCell(
             doc_id=doc_id,
             axis=axis,
@@ -217,6 +253,10 @@ async def _bench_one_cell(
             fact_preservation_semantic=fact_semantic,
             order_preservation=order_pres,
             claim_reextract_jaccard=claim_jaccard,
+            fact_preservation_nli=nli_pres,
+            n_matched_nli_only=n_nli_only,
+            n_lost_real=n_lost,
+            nli_calls_made=nli_calls,
             n_source_triples=n_source,
             n_reextracted_triples=len(result.reextracted_triples),
             n_claimed_triples=len(result.claimed_triples),
@@ -250,6 +290,7 @@ async def main_async(args: argparse.Namespace) -> int:
     llm_client = OpenAIChatClient(adapter)
     extractor = adapter.extract_triplets
     embed_fn = adapter.get_embedding
+    entail_fn = adapter.check_entailment  # v0.4 NLI audit
 
     # Phase 1: extract source triples for every doc once, in parallel.
     # Without this hoist the bench re-extracts the same source 25× per
@@ -303,7 +344,8 @@ async def main_async(args: argparse.Namespace) -> int:
         for axis in args.axes:
             for position in args.positions:
                 tasks.append(_gated(_bench_one_cell(
-                    extractor, llm_client, embed_fn,
+                    extractor, llm_client, embed_fn, entail_fn,
+                    args.audit_threshold,
                     doc["id"], src, axis, position,
                 )))
 
@@ -342,12 +384,12 @@ async def main_async(args: argparse.Namespace) -> int:
         p90 = s[int(len(s) * 0.90)] if len(s) >= 10 else s[-1]
         print(f"# {axis},{pos},{len(s)},{median:.4f},{p75:.4f},{p90:.4f}", file=sys.stderr)
 
-    # Per-axis fact preservation (three layers + claim/reextract agreement).
+    # Per-axis fact preservation (three layers + claim/reextract + NLI).
     print(
-        "# fact_preservation by axis,position — strict / normalized / semantic / order / claim_jaccard",
+        "# fact_preservation by axis,position — strict / norm / semantic / order / claim_jacc / NLI(audited)",
         file=sys.stderr,
     )
-    by_fact: dict[tuple[str, float], list[tuple[float, float, float, float, float]]] = {}
+    by_fact: dict[tuple[str, float], list[tuple[float, float, float, float, float, float, int]]] = {}
     for c in cells:
         if c.error:
             continue
@@ -357,17 +399,37 @@ async def main_async(args: argparse.Namespace) -> int:
             c.fact_preservation_semantic,
             c.order_preservation,
             c.claim_reextract_jaccard,
+            c.fact_preservation_nli,
+            c.nli_calls_made,
         ))
+    total_nli_calls = 0
+    total_real_lost = 0
+    total_nli_rescued = 0
     for (axis, pos), tuples in sorted(by_fact.items()):
-        # Filter NaN per column when computing medians.
         cols = list(zip(*tuples))
         med_strs = []
-        for col in cols:
+        # First six columns use median (drift values).
+        for col in cols[:6]:
             valid = [v for v in col if v == v]  # drop NaN
             med_strs.append(f"{statistics.median(valid):.3f}" if valid else "n/a")
+        # nli_calls_made is a sum, not a median.
+        nli_audited_count = sum(1 for v in cols[6] if v > 0)
         print(
             f"# {axis},{pos}  strict={med_strs[0]}  norm={med_strs[1]}  "
-            f"semantic={med_strs[2]}  order={med_strs[3]}  claim_jaccard={med_strs[4]}",
+            f"semantic={med_strs[2]}  order={med_strs[3]}  "
+            f"claim_jacc={med_strs[4]}  nli={med_strs[5]} ({nli_audited_count}/{len(tuples)} audited)",
+            file=sys.stderr,
+        )
+    for c in cells:
+        if c.error: continue
+        total_nli_calls += c.nli_calls_made
+        total_real_lost += c.n_lost_real
+        total_nli_rescued += c.n_matched_nli_only
+    if total_nli_calls > 0:
+        print(
+            f"# NLI audit summary: {total_nli_calls} entailment calls; "
+            f"{total_nli_rescued} facts rescued from semantic-FN; "
+            f"{total_real_lost} facts confirmed real loss.",
             file=sys.stderr,
         )
 
