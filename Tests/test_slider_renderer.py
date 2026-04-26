@@ -157,18 +157,30 @@ class TestInMemoryCache:
 class _FakeLLM:
     """Deterministic LLM stub. Returns a tome built from the input
     facts joined with the system prompt — guarantees identity for
-    correctness tests without requiring a real API call."""
+    correctness tests without requiring a real API call.
+
+    v0.3: gained `chat_completion_structured` so tests can exercise
+    the constrained-decoding path. Returns the same echo-tome plus an
+    empty claimed-triples list (tests that care about claimed_triples
+    use a richer fake)."""
     last_system_prompt: str = ""
     last_user_prompt: str = ""
     call_count: int = 0
+    structured_calls: int = 0
+    claimed_triples_to_return: list = []
 
     async def chat_completion(self, system_prompt, user_prompt, max_tokens=2048):
         self.call_count += 1
         self.last_system_prompt = system_prompt
         self.last_user_prompt = user_prompt
-        # Simple deterministic stub: echo the facts as sentences.
-        # Real STATE-4 tests inject deterministic templates per axis.
         return user_prompt
+
+    async def chat_completion_structured(self, system_prompt, user_prompt, max_tokens=2048):
+        self.call_count += 1
+        self.structured_calls += 1
+        self.last_system_prompt = system_prompt
+        self.last_user_prompt = user_prompt
+        return user_prompt, list(self.claimed_triples_to_return)
 
 
 async def _fake_extractor(_text: str) -> list[Triple]:
@@ -182,6 +194,7 @@ def _fake_render_result() -> RenderResult:
         tome="The alice like cat.",
         triples_used=(("alice", "like", "cat"),),
         reextracted_triples=(("alice", "like", "cat"),),
+        claimed_triples=(("alice", "like", "cat"),),
         drift=(AxisDrift(axis=DriftAxis.DENSITY, value=0.0,
                          threshold=0.001, classification="ok"),),
         cache_status=CacheStatus.MISS,
@@ -240,6 +253,53 @@ class TestRenderPipeline:
 
 
 # ─── measure_drift unit (xfail until EXECUTE) ─────────────────────────
+
+
+class TestStructuredRenderPath:
+    """v0.3 — render() prefers chat_completion_structured when the
+    LLM client provides it; falls back to chat_completion otherwise."""
+
+    @pytest.mark.asyncio
+    async def test_structured_path_called_on_llm_axis(self):
+        triples: list[Triple] = [("alice", "like", "cat")]
+        sliders = TomeSliders(density=1.0, length=0.7, formality=0.5,
+                              audience=0.5, perspective=0.5)
+        llm = _FakeLLM()
+        llm.claimed_triples_to_return = [("alice", "like", "cat")]
+        result = await render(triples, sliders, llm, _fake_extractor)
+        assert llm.structured_calls == 1
+        # claimed_triples surfaced in RenderResult.
+        assert result.claimed_triples == (("alice", "like", "cat"),)
+
+    @pytest.mark.asyncio
+    async def test_canonical_path_no_llm_claimed_equals_kept(self):
+        """Canonical path (all neutral) bypasses LLM but still populates
+        claimed_triples = kept_triples so downstream readers can rely
+        on the field never being empty for a successful render."""
+        triples: list[Triple] = [("alice", "like", "cat"), ("bob", "own", "dog")]
+        sliders = TomeSliders()  # all neutral, density=1.0
+        llm = _FakeLLM()
+        result = await render(triples, sliders, llm, _fake_extractor)
+        assert llm.structured_calls == 0  # canonical path
+        assert result.claimed_triples == result.triples_used
+
+    @pytest.mark.asyncio
+    async def test_legacy_chat_completion_only_client_falls_back(self):
+        """A bare-minimum LLM client without chat_completion_structured
+        still works — render() falls back to plain chat_completion and
+        leaves claimed_triples empty."""
+        class LegacyLLM:
+            call_count = 0
+            async def chat_completion(self, system_prompt, user_prompt, max_tokens=2048):
+                self.call_count += 1
+                return user_prompt
+        triples: list[Triple] = [("alice", "like", "cat")]
+        sliders = TomeSliders(density=1.0, length=0.7, formality=0.5,
+                              audience=0.5, perspective=0.5)
+        llm = LegacyLLM()
+        result = await render(triples, sliders, llm, _fake_extractor)
+        assert llm.call_count == 1
+        assert result.claimed_triples == ()
 
 
 class TestFactAndOrderPreservation:

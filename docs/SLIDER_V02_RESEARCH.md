@@ -49,11 +49,12 @@ future contributors know which choices are load-bearing.
 
 | Item | Status | Where it landed |
 |---|---|---|
-| 1. MontageLie-resistant fact preservation | ✅ shipped | `order_preservation` + regression test; bench reports per cell |
-| 2. Constrained decoding for the renderer | deferred → v0.3 | requires Pydantic schema for render path; out of scope this round |
-| 3. Audience classifier 2000 → 5000 words | ✅ shipped | `data/common_english_5000.txt` (Brown corpus top-5K) |
-| 4. Metamorphic relation tests | deferred → v0.3 | Hypothesis-based property tests not yet written |
-| Bonus — three-layer fact preservation | ✅ shipped | strict / normalized / semantic; v0.2 substrate |
+| 1. MontageLie-resistant fact preservation | ✅ shipped v0.2 | `order_preservation` + regression test; bench reports per cell |
+| 2. Constrained decoding for the renderer | ✅ shipped v0.3 | `RenderedTome` Pydantic schema; format-validity guarantee; `claim_jaccard` adversarial signal |
+| 3. Audience classifier 2000 → 5000 words | ✅ shipped v0.2 | `data/common_english_5000.txt` (Brown corpus top-5K) |
+| 4. Metamorphic relation tests | deferred → v0.4 | Hypothesis-based property tests not yet written |
+| Bonus — three-layer fact preservation | ✅ shipped v0.2 | strict / normalized / semantic; v0.2 substrate |
+| v0.3 finding — LLM self-attestation unreliable | documented | `claim_jaccard` median 0.286; LLM under-itemises in canonical form. Don't trust `claimed_triples` as a free preservation oracle. |
 
 The headline insight from the v0.2 bench run: the original "fact
 preservation = 1.000" claim was an artifact of measuring against

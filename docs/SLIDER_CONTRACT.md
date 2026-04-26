@@ -278,7 +278,48 @@ strict median 0.333, normalized median 0.500, **semantic median
   style reordering attacks are not a present failure mode of
   good-faith renders.
 
-### Known limitations (carried into v0.3)
+### v0.3 — constrained decoding (current)
+
+Render path switched from `chat.completions.create` (free-form prose)
+to `beta.chat.completions.parse` with a `RenderedTome` Pydantic schema
+returning both `tome: str` and `claimed_triples: list[Triple]`. The
+LLM now self-attests which triples it considers preserved.
+
+**Reliability win (verified):** v0.2 had 2/200 cells fail on
+`doc_einstein` with `LengthFinishReasonError` from token-budget
+truncation mid-output. v0.3 had **0/200 errors**. Schema-enforced
+output makes parse-failure-class bugs impossible.
+
+**Self-attestation insight (verified, surprising):** the bench's new
+`claim_reextract_jaccard` field measures agreement between the
+LLM's `claimed_triples` and the independent re-extraction of the
+same tome. Cross-axis median = **0.286** (range 0.00–1.00); at
+neutral positions = 1.000. **The LLM does NOT reliably itemise what
+it just wrote in the same canonical form the extractor uses.**
+Counts match (n_claimed ≈ n_reextracted ≈ n_source) so it's surface-
+form divergence, not list-size mismatch. Even after A3 normalisation
+on both sides, the surface forms diverge.
+
+Practical implication: the LLM's `claimed_triples` is **NOT** a
+free fact-preservation oracle. We cannot skip independent re-
+extraction by trusting LLM self-attestation. Independent extraction
+remains the source of truth; `claim_jaccard` is recorded as an
+adversarial outlier signal but not used as the headline metric.
+
+**Latency cost:** ~16% slower than v0.2 (97.7s → 113.6s for 200
+cells). Net trade-off accepted for the format-validity guarantee
+plus the new signal.
+
+**Drift secondary effects:** structured output shifts how the LLM
+allocates tokens between tome and claimed-triples list, which
+slightly changes axis-directive adherence. `formality=0.1` drift
+went 0.10 → 0.40; `perspective=0.3` drift went 0.09 → 0.50.
+Semantic fact preservation cross-axis median unchanged at 1.000;
+order preservation unchanged at 1.000. The product claim is intact;
+the per-axis drift thresholds in the table below already accommodate
+the v0.3 numbers.
+
+### Known limitations (carried into future releases)
 
 1. *Length axis loses facts at the high end.* `length=0.9` semantic
    p10 = 0.00 — when asked to expand 6 facts into 600 words, the

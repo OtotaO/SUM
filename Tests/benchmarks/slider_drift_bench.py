@@ -72,8 +72,11 @@ class BenchCell:
     fact_preservation_normalized: float = float("nan") # A3: after predicate / entity normalization
     fact_preservation_semantic: float = float("nan")   # A1: cosine similarity ≥ τ on triple-as-text embeddings
     order_preservation: float = float("nan")           # MontageLie defense (pairwise order, NaN if <2 preserved)
+    # v0.3 — constrained-decoding self-attestation signal.
+    claim_reextract_jaccard: float = float("nan")      # |claimed ∩ reextracted| / |claimed ∪ reextracted|
     n_source_triples: int = 0
     n_reextracted_triples: int = 0
+    n_claimed_triples: int = 0          # 0 on legacy chat-only path; populated on structured path
     tome_word_count: int = 0           # output length, for length-axis recalibration
     wall_clock_ms: int = 0
     cache_status: str = ""
@@ -186,6 +189,22 @@ async def _bench_one_cell(
         )
         order_pres = order_preservation(source_triples, result.reextracted_triples)
 
+        # v0.3: claim-vs-reextract agreement. Jaccard over normalized-key
+        # sets (A3 normalization keeps surface-form drift from making the
+        # LLM's self-attestation look worse than it is). NaN when the
+        # render didn't go through the structured path (legacy clients).
+        claim_jaccard = float("nan")
+        if result.claimed_triples or result.reextracted_triples:
+            from sum_engine_internal.ensemble.slider_renderer import _normalize_triple
+            claimed_keys = {f"{a}||{b}||{c}" for (a, b, c) in
+                            (_normalize_triple(t) for t in result.claimed_triples)}
+            reext_keys = {f"{a}||{b}||{c}" for (a, b, c) in
+                          (_normalize_triple(t) for t in result.reextracted_triples)}
+            if claimed_keys or reext_keys:
+                inter = len(claimed_keys & reext_keys)
+                union = len(claimed_keys | reext_keys)
+                claim_jaccard = inter / union if union else float("nan")
+
         return BenchCell(
             doc_id=doc_id,
             axis=axis,
@@ -197,8 +216,10 @@ async def _bench_one_cell(
             fact_preservation_normalized=fact_normalized,
             fact_preservation_semantic=fact_semantic,
             order_preservation=order_pres,
+            claim_reextract_jaccard=claim_jaccard,
             n_source_triples=n_source,
             n_reextracted_triples=len(result.reextracted_triples),
+            n_claimed_triples=len(result.claimed_triples),
             tome_word_count=len(result.tome.split()),
             wall_clock_ms=result.wall_clock_ms,
             cache_status=result.cache_status.value,
@@ -321,12 +342,12 @@ async def main_async(args: argparse.Namespace) -> int:
         p90 = s[int(len(s) * 0.90)] if len(s) >= 10 else s[-1]
         print(f"# {axis},{pos},{len(s)},{median:.4f},{p75:.4f},{p90:.4f}", file=sys.stderr)
 
-    # Per-axis fact preservation (three layers, median across docs).
+    # Per-axis fact preservation (three layers + claim/reextract agreement).
     print(
-        "# fact_preservation by axis,position — strict / normalized / semantic / order",
+        "# fact_preservation by axis,position — strict / normalized / semantic / order / claim_jaccard",
         file=sys.stderr,
     )
-    by_fact: dict[tuple[str, float], list[tuple[float, float, float, float]]] = {}
+    by_fact: dict[tuple[str, float], list[tuple[float, float, float, float, float]]] = {}
     for c in cells:
         if c.error:
             continue
@@ -335,6 +356,7 @@ async def main_async(args: argparse.Namespace) -> int:
             c.fact_preservation_normalized,
             c.fact_preservation_semantic,
             c.order_preservation,
+            c.claim_reextract_jaccard,
         ))
     for (axis, pos), tuples in sorted(by_fact.items()):
         # Filter NaN per column when computing medians.
@@ -345,7 +367,7 @@ async def main_async(args: argparse.Namespace) -> int:
             med_strs.append(f"{statistics.median(valid):.3f}" if valid else "n/a")
         print(
             f"# {axis},{pos}  strict={med_strs[0]}  norm={med_strs[1]}  "
-            f"semantic={med_strs[2]}  order={med_strs[3]}",
+            f"semantic={med_strs[2]}  order={med_strs[3]}  claim_jaccard={med_strs[4]}",
             file=sys.stderr,
         )
 
