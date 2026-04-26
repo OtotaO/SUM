@@ -9,14 +9,23 @@ Author: ototao
 License: Apache License 2.0
 """
 
-import os
+import json
 import logging
+import os
 from typing import List, Optional, Tuple
 
+from openai import AsyncOpenAI, LengthFinishReasonError
 from pydantic import BaseModel, Field
-from openai import AsyncOpenAI
 
 logger = logging.getLogger(__name__)
+
+# v0.8 layered-defense cap. Prompt-side instruction; not enforced
+# by OpenAI's structured-output schema validator (which doesn't honor
+# `maxItems` per https://community.openai.com/t/min-maxitems-are-not-
+# supported-in-structured-output/958567). LLM compliance with
+# stated numerical caps is empirically high under structured output.
+EXTRACTION_TRIPLE_CAP = 64
+EXTRACTION_RETRY_CAP = 32
 
 
 # ─── Pydantic schemas for structured LLM output ──────────────────────
@@ -56,6 +65,66 @@ class SemanticTriplet(BaseModel):
 class ExtractionResponse(BaseModel):
     """Structured output wrapper for a list of extracted triplets."""
     triplets: List[SemanticTriplet]
+
+
+def salvage_partial_triplets(partial_json: str) -> List[SemanticTriplet]:
+    """Best-effort recovery of complete triplet objects from a
+    truncated structured-output response.
+
+    OpenAI's `beta.chat.completions.parse` raises
+    LengthFinishReasonError when the LLM's emission exceeds the
+    completion-token ceiling mid-output. The exception's
+    `e.completion.choices[0].message.content` carries the partial
+    JSON string, truncated mid-token. This helper walks the partial,
+    returns whatever complete triplet objects appear before the
+    truncation point, and gives up cleanly if salvage finds nothing.
+
+    Pure function. No I/O. Returns empty list when input is malformed
+    or contains no closed triplet objects (caller decides whether to
+    retry, fall back, or raise).
+    """
+    arr_pos = partial_json.find('"triplets"')
+    if arr_pos == -1:
+        return []
+    bracket_start = partial_json.find('[', arr_pos)
+    if bracket_start == -1:
+        return []
+
+    items: List[SemanticTriplet] = []
+    depth = 0
+    obj_start = -1
+    in_string = False
+    escape = False
+    for i in range(bracket_start + 1, len(partial_json)):
+        c = partial_json[i]
+        if escape:
+            escape = False
+            continue
+        if c == "\\" and in_string:
+            escape = True
+            continue
+        if c == '"':
+            in_string = not in_string
+            continue
+        if in_string:
+            continue
+        if c == "{":
+            if depth == 0:
+                obj_start = i
+            depth += 1
+        elif c == "}":
+            depth -= 1
+            if depth == 0 and obj_start >= 0:
+                obj_text = partial_json[obj_start:i + 1]
+                try:
+                    obj_data = json.loads(obj_text)
+                    items.append(SemanticTriplet.model_validate(obj_data))
+                except (json.JSONDecodeError, ValueError):
+                    pass  # malformed object, skip
+                obj_start = -1
+            elif depth < 0:
+                break  # array closed; done
+    return items
 
 
 class EntailmentResponse(BaseModel):
@@ -146,39 +215,102 @@ class LiveLLMAdapter:
 
         Phase 19A: Enhanced prompt with negation awareness, certainty
         metadata, and source span tracking.
-        """
-        response = await self.client.beta.chat.completions.parse(
-            model=self.model,
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "Extract all distinct factual claims from the text "
-                        "as subject-predicate-object triplets.\n\n"
-                        "Rules:\n"
-                        "- Keep subject, predicate, and object concise and lowercased\n"
-                        "- Use snake_case for multi-word predicates (e.g., 'is_part_of')\n"
-                        "- Do NOT extract opinions, questions, or hypotheticals as facts\n"
-                        "- If a statement is negated (e.g., 'X does NOT cause Y'), "
-                        "set certainty to 'speculative' and note 'negation' in extraction_notes\n"
-                        "- If language is hedged ('may', 'might', 'possibly'), "
-                        "set certainty to 'hedged'\n"
-                        "- For definite factual statements, set certainty to 'definite'\n"
-                        "- Include the source_span: the exact phrase from the text"
-                    ),
-                },
-                {"role": "user", "content": chunk},
-            ],
-            response_format=ExtractionResponse,
-        )
 
-        parsed = response.choices[0].message.parsed
+        v0.8 layered defense against `LengthFinishReasonError` on
+        long / triple-dense documents:
+            1. Prompt-stated cap of 64 triplets (LLM compliance is
+               empirically high; OpenAI's schema validator does NOT
+               honor maxItems, so this is the only count knob).
+            2. On `LengthFinishReasonError`, salvage complete
+               triplets from `e.completion.choices[0].message.content`
+               via `salvage_partial_triplets`. Free — same response.
+            3. If salvage yields nothing, retry once with a tighter
+               cap (32) and an explicit overshoot note.
+            4. If retry also overflows, re-raise.
+        """
+        triplets = await self._extract_triplets_with_recovery(
+            chunk, cap=EXTRACTION_TRIPLE_CAP, retry_attempted=False,
+        )
         return [
             (t.subject.lower(), t.predicate.lower(), t.object_.lower())
-            for t in parsed.triplets
+            for t in triplets
             # Phase 19A: Skip speculative extractions (negations)
             if t.certainty != "speculative"
         ]
+
+    async def _extract_triplets_with_recovery(
+        self,
+        chunk: str,
+        cap: int,
+        retry_attempted: bool,
+    ) -> List[SemanticTriplet]:
+        """Inner extraction with `LengthFinishReasonError` recovery.
+        Returns SemanticTriplet objects pre-canonicalisation so the
+        caller controls lowercasing and certainty filtering."""
+        sys_prompt = (
+            "Extract all distinct factual claims from the text "
+            "as subject-predicate-object triplets.\n\n"
+            f"Return at most {cap} triplets. If the source contains "
+            "more, return the most semantically distinct, prioritising "
+            "load-bearing facts (subject + predicate + object that "
+            "are essential to the document's claims).\n\n"
+            "Rules:\n"
+            "- Keep subject, predicate, and object concise and lowercased\n"
+            "- Use snake_case for multi-word predicates (e.g., 'is_part_of')\n"
+            "- Do NOT extract opinions, questions, or hypotheticals as facts\n"
+            "- If a statement is negated (e.g., 'X does NOT cause Y'), "
+            "set certainty to 'speculative' and note 'negation' in extraction_notes\n"
+            "- If language is hedged ('may', 'might', 'possibly'), "
+            "set certainty to 'hedged'\n"
+            "- For definite factual statements, set certainty to 'definite'\n"
+            "- Include the source_span: the exact phrase from the text"
+        )
+        user_prompt = chunk
+        if retry_attempted:
+            user_prompt = (
+                f"{chunk}\n\n"
+                "[NOTE: prior extraction attempt exceeded the response "
+                f"budget. Return at most {cap} most-essential triplets.]"
+            )
+        try:
+            response = await self.client.beta.chat.completions.parse(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": sys_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                response_format=ExtractionResponse,
+            )
+            parsed = response.choices[0].message.parsed
+            if parsed is None:
+                return []
+            return list(parsed.triplets)
+        except LengthFinishReasonError as e:
+            partial = e.completion.choices[0].message.content or ""
+            salvaged = salvage_partial_triplets(partial)
+            if salvaged:
+                logger.warning(
+                    "extract_triplets salvaged %d triplets from a "
+                    "LengthFinishReasonError partial response (cap=%d, "
+                    "completion_tokens=%s).",
+                    len(salvaged), cap,
+                    e.completion.usage.completion_tokens if e.completion.usage else "?",
+                )
+                return salvaged
+            if retry_attempted:
+                logger.error(
+                    "extract_triplets: LengthFinishReasonError on retry; "
+                    "no salvage. Re-raising.",
+                )
+                raise
+            logger.warning(
+                "extract_triplets: first attempt overflowed with no "
+                "salvage. Retrying with tighter cap=%d.",
+                EXTRACTION_RETRY_CAP,
+            )
+            return await self._extract_triplets_with_recovery(
+                chunk, cap=EXTRACTION_RETRY_CAP, retry_attempted=True,
+            )
 
     # ------------------------------------------------------------------
     # Generation (Tomes)

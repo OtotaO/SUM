@@ -42,7 +42,7 @@ dependencies = [
 #   pip install sum-engine[llm]     # OpenAI structured-output path
 #   pip install sum-engine[all]     # both, plus dev tooling
 sieve = ["spacy>=3.7.0"]
-llm = ["openai>=1.0.0", "pydantic>=2.0.0"]
+llm = ["openai>=1.40.0,<3.0.0", "pydantic>=2.0.0"]
 dev = [
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",
