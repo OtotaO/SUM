@@ -65,11 +65,10 @@ SUM_DEFAULT_MODEL_OPENAI    = "gpt-4o-mini"
 # binding = "QID_CACHE"
 # id = "<paste-from-wrangler-output>"
 
-# KV — Phase E slider-render bin cache. Uncomment after
-# `wrangler kv:namespace create render-cache`. Holds RenderResult JSON
-# keyed by sha256(sorted_triples + quantized_sliders)[:32]. TTL 24h.
+# KV — Phase E slider-render bin cache. Holds RenderResult JSON keyed
+# by sha256(sorted_triples + quantized_sliders)[:32]. TTL 24h.
 # Cache-coherent with the Python InMemorySliderCache via identical key
 # derivation (see worker/src/cache/bin_cache.ts::deriveCacheKey).
-# [[kv_namespaces]]
-# binding = "RENDER_CACHE"
-# id = "<paste-from-wrangler-output>"
+[[kv_namespaces]]
+binding = "RENDER_CACHE"
+id = "314f046b5e0b4c0ba6a5c8283e57b781"
