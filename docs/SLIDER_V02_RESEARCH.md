@@ -52,9 +52,11 @@ future contributors know which choices are load-bearing.
 | 1. MontageLie-resistant fact preservation | ✅ shipped v0.2 | `order_preservation` + regression test; bench reports per cell |
 | 2. Constrained decoding for the renderer | ✅ shipped v0.3 | `RenderedTome` Pydantic schema; format-validity guarantee; `claim_jaccard` adversarial signal |
 | 3. Audience classifier 2000 → 5000 words | ✅ shipped v0.2 | `data/common_english_5000.txt` (Brown corpus top-5K) |
-| 4. Metamorphic relation tests | deferred → v0.4 | Hypothesis-based property tests not yet written |
+| 4. Metamorphic relation tests | deferred → v0.5 | Hypothesis-based property tests; lower priority now that fact-preservation is verified |
+| 5. NLI audit on weak cells | ✅ shipped v0.4 | `check_entailment` + `nli_fact_preservation`; **0/45 audited LLM-axis cells showed real loss** |
 | Bonus — three-layer fact preservation | ✅ shipped v0.2 | strict / normalized / semantic; v0.2 substrate |
 | v0.3 finding — LLM self-attestation unreliable | documented | `claim_jaccard` median 0.286; LLM under-itemises in canonical form. Don't trust `claimed_triples` as a free preservation oracle. |
+| **v0.4 finding — slider product claim verified** | **shipped** | Every embedding-flagged "loss" was an NLI rescue. Median fact preservation = 1.000; p10 = 0.818; min = 0.727. |
 
 The headline insight from the v0.2 bench run: the original "fact
 preservation = 1.000" claim was an artifact of measuring against
