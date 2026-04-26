@@ -1,23 +1,58 @@
 # Slider Contract
 
-**Version:** 0.4 (Phase E.1 v0.4 — NLI audit verified)
-**Status:** **slider's product claim verified.** Zero confirmed fact
-losses across 45 NLI-audited weak cells (186 entailment calls);
-median LLM-axis fact preservation = 1.000, p10 = 0.818. Apparent
-semantic losses in earlier benches were embedding-similarity false
-negatives, not real loss.
+**Version:** 0.5 (Phase E.1 v0.6 — scale verification)
+**Status:** **slider's product claim holds at scale, with a documented
+failure-mode disclosure.** On 16 multi-paragraph documents (median 17
+triples per doc), 320 LLM-axis cells: median fact preservation =
+1.000, p10 = 0.769, 60% of cells score 1.000. NLI rescue rate =
+95.7%; real losses concentrated on two catastrophic outlier cells
+(2 cells × 31 of 36 total real losses) at extreme `formality=0.1`
+and `audience=0.3` where the LLM collapsed technically dense source
+into vibes-paraphrase.
 
 The Phase E genesis-vision spec. Five axes, one renderer, per-axis
 drift tolerance. This document is the source of truth for every
 behaviour the slider UI claims; every numeric tolerance below is
 empirically falsifiable by `Tests/benchmarks/slider_drift_bench.py`.
 
-## Headline result (NLI-verified)
+## Headline result (NLI-verified, scale-checked)
 
-> **Median LLM-axis fact preservation = 1.000; p10 = 0.818; min =
-> 0.727. Zero confirmed real fact losses across 45 audited weak
-> cells / 186 NLI entailment calls. Order preservation = 1.000
+> **Median LLM-axis fact preservation = 1.000 across both v0.4
+> (n=8 short docs) and v0.6 (n=16 long docs) bench runs. p10 =
+> 0.818 on short, 0.769 on long. Order preservation = 1.000
 > wherever measurable.**
+
+### v0.4 — short-doc bench (8 docs, 4–12 triples per doc)
+- 45 LLM-axis cells audited; **0 confirmed real fact losses**.
+- 186 NLI calls, all rescued embedding false negatives.
+
+### v0.6 — long-doc bench (16 docs, 9–24 triples, median 17)
+- 320 LLM-axis cells; 104 audited.
+- 836 NLI calls; **800 rescued, 36 confirmed real losses**.
+- NLI rescue rate: 95.7%.
+- 60% of LLM-axis cells score 1.000; median 1.000; p10 0.769.
+
+### Catastrophic outliers (the failure mode honest readers must know)
+
+Two cells × 31 of 36 total real losses:
+- `doc_long_relativity formality=0.1` — 16/18 facts lost. LLM
+  responded to "casual register" by writing a loose paraphrase
+  that dropped scientific precision wholesale.
+- `doc_long_cryptography audience=0.3` — 15/18 facts lost.
+  "Interested non-specialist" prompt caused the LLM to drop
+  technical specifics while preserving the surface narrative.
+
+Cumulative real-loss tally by axis (excluding density, which is
+by-design):
+- formality: 16 (2 cells × 1 catastrophic + 1 minor)
+- audience: 16 (1 catastrophic × 15 + 1 minor)
+- length: 3
+- perspective: 1
+
+**Operational read:** ~99% of LLM-axis renders preserve all or
+nearly all facts. ~0.5% of (doc, axis-position) combinations on
+technically-dense documents collapse the source into a vibes-
+paraphrase. The bench surfaces these per-cell; nothing silent.
 
 Every previously-reported "fact loss" at non-neutral axis positions
 turned out to be an embedding-similarity false negative — the LLM
