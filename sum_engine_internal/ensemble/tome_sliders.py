@@ -228,15 +228,28 @@ def perspective_fragment(value: float) -> str:
     return _lookup_fragment(_PERSPECTIVE_FRAGMENTS, value, "perspective")
 
 
+FACT_PRESERVATION_REINFORCEMENT = (
+    "CRITICAL FACT-PRESERVATION INSTRUCTION: regardless of the register, "
+    "audience, length, or perspective directives above, every input fact "
+    "(subject, predicate, object) MUST appear in your output. Rephrase "
+    "facts to fit the directives — but never omit them. If a directive "
+    "seems to require dropping a fact, find a way to include it anyway. "
+    "An output that follows the directives but loses input facts is a "
+    "FAILED render."
+)
+
+
 def build_system_prompt(sliders: TomeSliders) -> str:
     """Assemble the LLM system prompt for a styled render. Always starts
     with the truth-preservation contract; appends per-axis fragments only
     when the axis deviates from neutral (avoids prompt bloat at default).
+    v0.7: appends a FACT_PRESERVATION_REINFORCEMENT when any non-density
+    axis is at an extreme low position (≤ 0.3) — empirically those are
+    where the LLM over-complies with the register directive at the cost
+    of dropping source facts. See SLIDER_CONTRACT.md §"Catastrophic
+    outliers" for the v0.6 bench finding that motivated the reinforcement.
 
     Pure function (no LLM call). Deterministic per input.
-
-    STATE 4 will fill the per-axis fragments. STATE 2 ships the
-    skeleton so the renderer module can import + type-check.
     """
     base = (
         "You are a precise technical writer. Render the following "
@@ -253,4 +266,11 @@ def build_system_prompt(sliders: TomeSliders) -> str:
         fragments.append(audience_fragment(sliders.audience))
     if abs(sliders.perspective - 0.5) >= 1e-6:
         fragments.append(perspective_fragment(sliders.perspective))
+    # Reinforcement on extreme low axis positions (the empirical
+    # failure modes: formality=0.1, audience=0.3 in the v0.6 bench).
+    if any(
+        getattr(sliders, axis) <= 0.3 + 1e-6
+        for axis in ("length", "formality", "audience", "perspective")
+    ):
+        fragments.append(FACT_PRESERVATION_REINFORCEMENT)
     return base if not fragments else base + " " + " ".join(fragments)
