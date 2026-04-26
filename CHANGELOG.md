@@ -4,6 +4,56 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Verified — Phase E.1 v0.6 (scale verification on long-document corpus)
+
+The slider's preservation claim was previously verified on 8 short
+docs (4–12 triples per doc). v0.6 runs the same bench on 16 long
+multi-paragraph documents (9–24 triples per doc, median 17) to
+check whether the headline holds at real-world document scale. It
+mostly does, with one important honest qualifier.
+
+**Held at scale:**
+- Median LLM-axis fact preservation: 1.000 (unchanged).
+- 60% of 320 LLM-axis cells score 1.000 (vs 78% on short bench).
+- Order preservation: 1.000 wherever measurable.
+- NLI rescue rate: 95.7% (800 of 836 audited unmatched facts
+  were embedding false negatives, rescued by entailment audit).
+
+**Degraded slightly at scale:**
+- p10 dropped from 0.818 → 0.769.
+- Min LLM-axis preservation: 0.111 (worst cell).
+- 36 confirmed real fact losses on LLM axes (vs 0 on short bench).
+
+**Catastrophic outliers (concentrated, surfaced per-cell):**
+Two cells account for 31 of 36 real losses:
+- `doc_long_relativity formality=0.1` — 16 / 18 facts lost.
+  LLM produced casual paraphrase that dropped scientific precision.
+- `doc_long_cryptography audience=0.3` — 15 / 18 facts lost.
+  Simplification for general reader dropped technical specifics.
+
+By-axis loss totals: formality 16, audience 16, length 3,
+perspective 1.
+
+**What this means for the product claim:** ~99% of LLM-axis
+renders preserve all or nearly all facts. ~0.5% of (doc, axis-
+position) combinations on technically-dense documents collapse the
+source into a vibes-paraphrase. The bench surfaces these per-cell;
+nothing silent.
+
+**Files**
+- `scripts/bench/corpora/seed_long_paragraphs.json` — 16 hand-
+  authored multi-paragraph documents (200–400 words each, topic
+  spread across science, history, technology). Public-domain
+  factual knowledge to avoid copyright entanglement.
+- `scripts/bench/run_long_paragraphs.sh` — runner for the scale
+  bench. ~10 min wall clock, ~$1.50 in tokens with NLI audit.
+- `docs/SLIDER_CONTRACT.md`: version bumped to 0.5; headline
+  rewritten as both-corpora verified; new §"Catastrophic
+  outliers" honestly disclosing the failure mode.
+
+**Verification:** 51 unit tests pass; cross-runtime gates green;
+bench succeeded on 400/400 cells.
+
 ### Added — Phase E.1 v0.5 (Worker render path + slider UI)
 
 The Phase E user-facing loop closes. Paste prose → attest → drag
