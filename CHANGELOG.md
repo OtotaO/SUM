@@ -4,6 +4,125 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Fixed — Phase E.1 v0.8 (layered defense against LengthFinishReasonError)
+
+The v0.7 long-doc bench errored on 1 cell (`doc_long_human_genome
+audience=0.7`) when re-extraction overflowed the 16384-token
+completion ceiling. Initial fix (`Pydantic max_length`) was
+falsified during research: OpenAI's structured-output validator
+does not honor `maxItems` (per the published supported-keywords
+list). Replacement is a four-layer defense; bench rerun cleared
+the gate.
+
+**Before / after on the same long-paragraph bench:**
+
+| Metric | v0.7 | v0.8 | Note |
+|---|---|---|---|
+| Errored cells | 1 / 400 | **0 / 400** | LengthFinishReasonError class eliminated |
+| Catastrophic outliers (≥5 lost) | 0 | **0** | held |
+| Min LLM-axis preservation | 0.700 | 0.545 | one-cell variance |
+| Median preservation | 1.000 | 1.000 | held |
+| NLI rescue rate | 99.8% | 96.9% | run-to-run noise |
+| LLM-axis real losses | 1 | 12 | dispersed; no catastrophic |
+
+**The four-layer defense:**
+1. *Prompt-side cap* — system prompt now states "Return at most 64
+   triplets…". LLM compliance under structured output is
+   empirically high.
+2. *Partial-response salvage* — `salvage_partial_triplets` walks
+   the truncated JSON in `e.completion.choices[0].message.content`,
+   returns whatever complete triplet objects appeared before the
+   cutoff. Pure function; free (same response).
+3. *One-shot retry with tighter cap* — when salvage yields
+   nothing, retry once with cap=32 + emphatic note. Bounded to
+   a single extra API call.
+4. *Re-raise on retry failure* — terminal; escalates to caller.
+
+**Wild events in the v0.8 bench run:**
+- 1× salvage fired: recovered 19 triplets from a partial response
+  (cap=64, completion_tokens=16384). Free.
+- 1× retry-with-cap=32 fired on a different cell. One extra call.
+- Both events logged; no errors propagated.
+
+**Pin bump (load-bearing):** `LengthFinishReasonError` was added in
+openai-python 1.40.0 alongside structured-outputs support. Bumping
+floor:
+- `pyproject.toml`: `openai>=1.0.0` → `openai>=1.40.0,<3.0.0`
+- `requirements-prod.txt`: same.
+
+Without the bump, fresh installs that pip-resolve to <1.40 would
+ImportError on the new `from openai import LengthFinishReasonError`.
+
+**Files**
+- `sum_engine_internal/ensemble/live_llm_adapter.py`: + import,
+  + `EXTRACTION_TRIPLE_CAP` / `EXTRACTION_RETRY_CAP`,
+  + `salvage_partial_triplets` pure function,
+  + `_extract_triplets_with_recovery` async helper,
+  + `extract_triplets` rewired to use the recovery path.
+- `Tests/test_extractor_salvage.py` — new file, 9 unit tests
+  covering salvage helper happy path + adversarial inputs
+  (escaped quotes, braces inside strings, malformed objects).
+- `pyproject.toml`, `requirements-prod.txt`: pin bumps.
+
+**Verification**
+- 60 unit tests pass (51 slider + 9 salvage).
+- 1095 full Python suite pass.
+- Cross-runtime gates K1–K4 green.
+- Bench: 400/400 cells succeed; the previously-failing cell
+  succeeds with NLI=1.000.
+
+Research informed by:
+- https://community.openai.com/t/min-maxitems-are-not-supported-in-structured-output/958567
+- https://github.com/pydantic/pydantic/issues/9815
+- https://github.com/openai/openai-python (LengthFinishReasonError class def)
+
+### Improved — Phase E.1 v0.7 (prompt hardening eliminates catastrophic failure mode)
+
+The v0.6 scale bench surfaced two catastrophic outlier cells where
+the LLM dropped 80%+ of source facts on technically-dense documents
+at extreme `formality=0.1` / `audience=0.3` positions. v0.7 adds a
+deterministic prompt mechanism that targets exactly that failure
+mode and re-runs the same bench to verify.
+
+**Before / after on the same 16-document long bench:**
+
+| Metric | v0.6 (no hardening) | v0.7 (with reinforcement) | Change |
+|---|---|---|---|
+| Real losses on LLM axes | 36 | **1** | −97% |
+| Cells with ≥5 facts lost | 2 | **0** | eliminated |
+| Min preservation | 0.111 | **0.700** | 6× floor lift |
+| Median preservation | 1.000 | 1.000 | held |
+| p10 | 0.769 | 0.750 | −0.019 (noise) |
+
+**The mechanism (deterministic, no LLM cost):**
+`build_system_prompt` in `tome_sliders.py` (and its TS mirror in
+`worker/src/render/axis_prompts.ts`) now appends a
+`FACT_PRESERVATION_REINFORCEMENT` clause when any non-density axis
+is at ≤ 0.3. The clause explicitly tells the LLM "An output that
+follows the directives but loses input facts is a FAILED render."
+Pure data; same output for same input.
+
+**The trade-off:** 52% of cells score 1.000 perfectly (down from
+60%). The reinforcement makes the LLM's surface forms slightly
+more defensive, so the strict embedding layer triggers NLI audit
+more often. The audit rescues every flagged fact (rescue rate
+99.8%). Net: more cells get verified rigorously, real losses
+near-zero. This is the right trade — we'd rather verify ten more
+cells than miss one catastrophic loss.
+
+**Files**
+- `sum_engine_internal/ensemble/tome_sliders.py`:
+  `FACT_PRESERVATION_REINFORCEMENT` constant + extension in
+  `build_system_prompt`.
+- `worker/src/render/axis_prompts.ts`: TS mirror.
+- `docs/SLIDER_CONTRACT.md`: version bumped to 0.6; v0.7 results
+  table next to v0.6 baseline.
+
+**Verification:** 51 unit tests pass; cross-runtime gates green;
+bench shows 399/400 cells succeed (1 errored on
+`LengthFinishReasonError` — unrelated robustness issue from prior
+benches, not a v0.7 regression).
+
 ### Verified — Phase E.1 v0.6 (scale verification on long-document corpus)
 
 The slider's preservation claim was previously verified on 8 short

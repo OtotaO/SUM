@@ -44,6 +44,20 @@ const NEUTRAL_BASE =
   "omit facts. Preserve every (subject, predicate, object) " +
   "relationship in the input.";
 
+// v0.7 hardening — appended to the system prompt when any non-density
+// axis is at an extreme low position. Empirically (v0.6 bench) those
+// are where the LLM over-complies with register/audience directives
+// at the cost of dropping source facts. See SLIDER_CONTRACT.md
+// §"Catastrophic outliers".
+const FACT_PRESERVATION_REINFORCEMENT =
+  "CRITICAL FACT-PRESERVATION INSTRUCTION: regardless of the register, " +
+  "audience, length, or perspective directives above, every input fact " +
+  "(subject, predicate, object) MUST appear in your output. Rephrase " +
+  "facts to fit the directives — but never omit them. If a directive " +
+  "seems to require dropping a fact, find a way to include it anyway. " +
+  "An output that follows the directives but loses input facts is a " +
+  "FAILED render.";
+
 function snapToBin(value: number, bins: number = SLIDER_BINS_PER_AXIS): number {
   if (value < 0 || value > 1) throw new Error(`slider value out of [0, 1]: ${value}`);
   const idx = Math.min(Math.floor(value * bins), bins - 1);
@@ -81,6 +95,11 @@ export function buildSystemPrompt(sliders: SlidersForPrompt): string {
   }
   if (Math.abs(sliders.perspective - 0.5) >= 1e-6) {
     fragments.push(lookupFragment(PERSPECTIVE_FRAGMENTS, sliders.perspective, "perspective"));
+  }
+  // v0.7 hardening: extreme low positions are the empirical failure mode.
+  const lowAxes: Array<keyof SlidersForPrompt> = ["length", "formality", "audience", "perspective"];
+  if (lowAxes.some((axis) => sliders[axis] <= 0.3 + 1e-6)) {
+    fragments.push(FACT_PRESERVATION_REINFORCEMENT);
   }
   return fragments.length === 0 ? NEUTRAL_BASE : NEUTRAL_BASE + " " + fragments.join(" ");
 }
