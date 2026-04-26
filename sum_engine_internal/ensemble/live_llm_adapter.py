@@ -58,6 +58,28 @@ class ExtractionResponse(BaseModel):
     triplets: List[SemanticTriplet]
 
 
+class EntailmentResponse(BaseModel):
+    """v0.4 NLI audit schema. Used to disentangle real fact loss from
+    embedding-similarity false negatives in the slider drift bench."""
+
+    is_supported: bool = Field(
+        description=(
+            "True if and only if the passage explicitly states or "
+            "directly implies the given (subject, predicate, object) "
+            "fact. Be strict: rephrasings that preserve meaning count "
+            "as supported; loose associations or topic-similarity do "
+            "not."
+        ),
+    )
+    rationale: str = Field(
+        default="",
+        description=(
+            "One-sentence justification. Helps audit tracing when the "
+            "judgement disagrees with embedding similarity."
+        ),
+    )
+
+
 class RenderedTome(BaseModel):
     """Phase E.1 v0.3 structured-render schema. The renderer constrains
     the LLM to emit both the narrative tome AND the explicit list of
@@ -209,6 +231,48 @@ class LiveLLMAdapter:
             input=text,
         )
         return response.data[0].embedding
+
+    # ------------------------------------------------------------------
+    # Entailment / NLI (v0.4 audit layer)
+    # ------------------------------------------------------------------
+
+    async def check_entailment(
+        self,
+        fact: Tuple[str, str, str],
+        passage: str,
+    ) -> bool:
+        """Yes/no NLI judgement: does ``passage`` express the
+        ``(subject, predicate, object)`` fact?
+
+        Used by the slider bench's audit pass to distinguish real fact
+        loss from embedding-similarity false negatives. Costs one LLM
+        call per (fact, passage) pair; the bench scopes audits to
+        cells where semantic preservation < threshold so cost stays
+        bounded (~30 weak cells × ~6 facts × $0.001 ≈ $0.18 per
+        audit run on the standard paragraph corpus).
+        """
+        s, p, o = fact
+        sys_prompt = (
+            "You are an NLI judge. Decide whether a passage supports a "
+            "specific fact. Be strict: rephrasings that preserve meaning "
+            "count as supported; loose topic-similarity does not."
+        )
+        user_prompt = (
+            f"FACT: {s} {p} {o}\n\n"
+            f"PASSAGE:\n{passage}\n\n"
+            "Does the passage state or directly imply this fact?"
+        )
+        response = await self.client.beta.chat.completions.parse(
+            model=self.model,
+            messages=[
+                {"role": "system", "content": sys_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            response_format=EntailmentResponse,
+            max_tokens=200,
+        )
+        parsed = response.choices[0].message.parsed
+        return bool(parsed and parsed.is_supported)
 
 
 class OpenAIChatClient:

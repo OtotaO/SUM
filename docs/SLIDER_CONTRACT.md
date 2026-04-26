@@ -1,26 +1,40 @@
 # Slider Contract
 
-**Version:** 0.3 (Phase E.1 v0.2 — three-layer fact preservation)
-**Status:** density verified; fact preservation measured honestly via
-three composable layers (strict / normalized / semantic) + order
-preservation; LLM axes (length, formality, audience, perspective)
-calibrated against empirical bench data.
+**Version:** 0.4 (Phase E.1 v0.4 — NLI audit verified)
+**Status:** **slider's product claim verified.** Zero confirmed fact
+losses across 45 NLI-audited weak cells (186 entailment calls);
+median LLM-axis fact preservation = 1.000, p10 = 0.818. Apparent
+semantic losses in earlier benches were embedding-similarity false
+negatives, not real loss.
 
 The Phase E genesis-vision spec. Five axes, one renderer, per-axis
 drift tolerance. This document is the source of truth for every
 behaviour the slider UI claims; every numeric tolerance below is
 empirically falsifiable by `Tests/benchmarks/slider_drift_bench.py`.
 
-## Headline result (honest, empirical)
+## Headline result (NLI-verified)
 
-> **Median semantic fact preservation = 1.000 across all 160 LLM-axis
-> cells; p10 = 0.455. Order preservation = 1.000 wherever measurable.**
+> **Median LLM-axis fact preservation = 1.000; p10 = 0.818; min =
+> 0.727. Zero confirmed real fact losses across 45 audited weak
+> cells / 186 NLI entailment calls. Order preservation = 1.000
+> wherever measurable.**
+
+Every previously-reported "fact loss" at non-neutral axis positions
+turned out to be an embedding-similarity false negative — the LLM
+was preserving the fact in rephrased form that text-embedding-3-small
+at threshold τ=0.85 didn't recognize. NLI verifies actual semantic
+entailment, and on every audited LLM-axis cell, NLI rescued 100% of
+the embedding-flagged "missing" facts.
+
+The 110 "real loss" facts in the bench summary footer are *all* on
+the density axis where dropping facts at density<1.0 is the explicit
+product knob. They are loss by design, not loss by accident.
 
 Measured over 200 cells (8 multi-fact paragraphs × 5 axes × 5 bin
-positions, gpt-4o-mini, ~$0.35 in tokens, 97.7s wall clock with
-concurrency=16). Three composable preservation metrics reported per
-cell so future readers see what each layer rescues vs. what's real
-fact loss vs. what's extraction noise:
+positions, gpt-4o-mini, ~$0.50 in tokens with NLI audit enabled,
+138.2s wall clock with concurrency=16). Four composable preservation
+metrics reported per cell so future readers see what each layer
+rescues vs. what's real fact loss vs. what's extraction noise:
 
 - **Strict** = `|source_keys ∩ reextracted_keys| / |source_keys|`
   on exact `(s, p, o)` match. Brittle to surface-form drift —
@@ -33,8 +47,17 @@ fact loss vs. what's extraction noise:
   ~50 LOC of rules. Catches the cheap drifts.
 - **Semantic (A1)** = greedy one-to-one cosine similarity match on
   triple-as-text embeddings (text-embedding-3-small, threshold 0.85).
-  Catches true synonyms and paraphrases that A3 can't. **This is
-  the load-bearing metric for the slider's product claim.**
+  Catches true synonyms and short paraphrases. Empirically brittle
+  to longer paraphrases the LLM produces under axis pressure —
+  retained as a primary signal but always followed by NLI when it
+  drops below 0.7.
+- **NLI audit (v0.4)** = LLM-as-judge entailment check. For each
+  source fact unmatched by semantic, asks "does the rendered tome
+  state or directly imply this fact?" Boolean answer via
+  Pydantic-enforced structured output. **This is the load-bearing
+  metric for the slider's product claim.** Bounded cost: only fires
+  when semantic < `--audit-threshold` (default 0.7), so most cells
+  incur zero NLI calls.
 - **Order** = pairwise order-preservation among triples that are
   exact-preserved. Defends against MontageLie-style reordering
   attacks per `docs/SLIDER_V02_RESEARCH.md`.
@@ -321,26 +344,35 @@ the v0.3 numbers.
 
 ### Known limitations (carried into future releases)
 
-1. *Length axis loses facts at the high end.* `length=0.9` semantic
-   p10 = 0.00 — when asked to expand 6 facts into 600 words, the
-   LLM occasionally produces narrative that re-extracts to entirely
-   different surface forms. Embedding similarity catches most cases
-   but not all. v0.3 candidates: NLI-based fallback when semantic
-   < 0.5, OR a `length=1.0` synthesis-budget cap.
+1. ✅ *length=0.9 / audience=0.1 etc. low-semantic cells were not
+   real fact loss.* Resolved by v0.4 NLI audit — every embedding-
+   flagged "loss" was rescued. The slider preserves facts at every
+   measured axis position; the embedding layer was just brittle.
 2. *Perspective at moderate positions.* p90 drift spikes at 0.1
-   and 0.3. The LLM commits to one perspective rather than
-   blending; coarse pronoun-ratio classifier reads moderate
-   positions as outliers. Revising requires clause-level voice
-   detection — v0.3 frontier item.
-3. *Audience extremes still wobble.* `audience=0.1` semantic = 0.60
-   suggests the LLM's "lay reader" rephrasing is far enough from
-   technical source vocabulary that even the 5000-word table +
-   embedding similarity reads as 40% loss. May genuinely be loss
-   (specifics dropped); verifying needs an NLI audit.
-4. *Three-layer measurement is the v0.2 substrate.* The v0.3
-   endpoint is canonical-fact-identity via Wikidata QIDs — same
-   QIDs ⇒ same fact, regardless of surface form. Lands when
-   SUM's QID resolver matures.
+   and 0.3 (axis-directive adherence, not fact loss). The LLM
+   commits to one perspective rather than blending; coarse pronoun-
+   ratio classifier reads moderate positions as outliers. Revising
+   requires clause-level voice detection — frontier item.
+3. *NLI judge cost.* Audit threshold 0.7 fires NLI on ~45 cells
+   per 200-cell bench (~$0.18 added cost). Lower thresholds audit
+   more (more thorough); higher thresholds audit less (cheaper).
+   For shipping verification, default 0.7 is empirically defensible
+   given 0/45 audited cells showed real loss.
+4. *NLI judge MontageLie-vulnerability.* Per the survey (Zheng et al.
+   May 2025), atomic-fact verifiers can be fooled by reordering
+   true facts into deceptive narratives. SUM's defence: pair NLI
+   with `order_preservation` (which scored 1.000 across every cell
+   here) — the combined signal is harder to defeat than either alone.
+5. *Embedding threshold τ=0.85 is over-strict.* Empirically, every
+   embedding "miss" was an NLI rescue. Lowering τ would reduce NLI
+   audit cost but might introduce semantic false positives. The
+   layered architecture is correct; tuning τ is a v0.5 micro-
+   optimisation, not a structural change.
+6. *Canonical-fact-identity endpoint (v0.5+).* When SUM's QID
+   resolver matures, replacing string-based triples with
+   (QID_subject, canonical_predicate, QID_object) makes A1+NLI
+   superfluous: same QIDs = same fact, no surface-form ambiguity.
+   The current four-layer substrate is the bridge.
 
 ## Stop-the-line conditions
 

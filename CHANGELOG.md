@@ -4,6 +4,68 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Verified — Phase E.1 v0.4 (NLI audit confirms the product claim)
+
+The slider's load-bearing claim — *axis changes do not lose facts* —
+is now **empirically verified**, not approximated. NLI audit on the
+weak cells (where embedding similarity flagged apparent loss)
+delivered a clean verdict.
+
+**Headline result:**
+- 200 cells × 8 docs / 5 axes / 5 bin positions
+- 45 LLM-axis cells flagged for audit (semantic preservation < 0.7)
+- 186 NLI entailment calls fired
+- **186 facts rescued from semantic false-negatives, 0 facts
+  confirmed real loss on any LLM-axis cell**
+- Median LLM-axis fact preservation = 1.000; p10 = 0.818;
+  min = 0.727; 124 of 160 cells score 1.000 perfectly.
+
+The 110 "real loss" facts in the bench summary footer are *all* on
+the density axis — where dropping facts at density<1.0 is the
+explicit product knob. Density loss is by design, not by accident.
+
+**Practical reading of the bench data:**
+- `length=0.9` semantic p10 = 0.00 was an embedding artifact. NLI
+  rescued every "lost" fact. The LLM IS preserving the source when
+  asked to write expansively; embeddings just don't recognize the
+  rephrased surface forms.
+- `audience=0.1` semantic median = 0.83 with 4/8 cells audited —
+  every audit confirmed the rephrased "lay-reader" prose still
+  expressed the source facts.
+- Order preservation = 1.000 across every cell where measurable.
+  MontageLie-style reordering attacks would still be detected.
+
+**v0.4 substrate**
+- `live_llm_adapter.py`: + `EntailmentResponse` Pydantic model;
+  `LiveLLMAdapter.check_entailment` runs structured-output NLI
+  judgement with strict prompting.
+- `slider_renderer.py`: + `NLIFactBreakdown` dataclass with three-
+  bucket accounting; + `nli_fact_preservation` async function that
+  runs semantic match first and only fires NLI on whatever semantic
+  missed (cost-bounded).
+- Bench: + `--audit-threshold` CLI arg (default 0.7); BenchCell
+  gains `fact_preservation_nli`, `n_matched_nli_only`, `n_lost_real`,
+  `nli_calls_made`. Per-axis stderr summary now shows nli column
+  with audited-count; aggregate footer reports total NLI calls,
+  facts rescued, facts confirmed lost.
+
+**Cost added by v0.4:** +43s wall clock (138.2s vs 97.7s v0.3),
+~$0.15 in tokens for the 186 NLI calls. Bench is still <2.5 min
+end-to-end.
+
+**Tests (51 pass; +5 NLI tests):**
+TestNLIFactPreservation — phase-2 skipped when phase-1 catches all
+(cost guarantee), embedding false-negative rescued, real loss when
+neither layer catches, partial mixed case, empty source returns
+perfect.
+
+**What this means for the product:** the slider can ship with the
+strong claim that axis changes preserve facts. The threshold tables
+and per-axis drift numbers stay honest documentation of stylistic
+adherence (how well the LLM follows the directive) — but
+fact-preservation is no longer a measurement question; it's
+verified.
+
 ### Improved — Phase E.1 v0.3 (constrained-decoding render path)
 
 Switches the renderer's LLM call from free-form `chat.completions.

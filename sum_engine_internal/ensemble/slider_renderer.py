@@ -537,6 +537,120 @@ def _cosine_sim(a: Sequence[float], b: Sequence[float]) -> float:
 SEMANTIC_FACT_THRESHOLD: float = 0.85
 
 
+@dataclass(frozen=True)
+class NLIFactBreakdown:
+    """v0.4 audit result. Disentangles real fact loss from embedding-
+    similarity false negatives by NLI-checking each unmatched source
+    fact against the rendered tome.
+
+    Three categories sum to len(source_triples):
+        n_matched_semantic  — caught by embedding similarity ≥ τ
+        n_matched_nli_only  — embedding said no, NLI said yes ⇒
+                              false negative of embedding layer
+        n_lost              — neither layer matched ⇒ real fact loss
+
+    `nli_fact_preservation = (matched_semantic + matched_nli_only) / n_source`
+    is the most permissive preservation metric; if even this drops
+    below 1.0, the missing facts are not present in the tome at all.
+    """
+
+    n_source: int
+    n_matched_semantic: int
+    n_matched_nli_only: int
+    n_lost: int
+    nli_fact_preservation: float
+    nli_calls_made: int
+
+
+async def nli_fact_preservation(
+    source_triples: Sequence[Triple],
+    reextracted_triples: Sequence[Triple],
+    tome: str,
+    embed_fn: Callable[[str], Awaitable[list[float]]],
+    entail_fn: Callable[[Triple, str], Awaitable[bool]],
+    threshold: float = SEMANTIC_FACT_THRESHOLD,
+) -> NLIFactBreakdown:
+    """v0.4 audit: run semantic match first, then NLI on whatever
+    semantic missed. The result categorises each source fact into
+    semantic-matched / NLI-rescued / really-lost.
+
+    Cost: one entail_fn call per source fact UNMATCHED by semantic.
+    For high-preservation cells most facts are matched by the cheap
+    embedding layer and NLI fires on a small remainder. For known-
+    weak cells (length=0.9, audience=0.1) more NLI calls happen.
+
+    Returns a `NLIFactBreakdown` so callers see the breakdown, not
+    just the final score. Used by the slider bench's audit pass
+    when `--audit-threshold` flags a cell as worth investigating.
+    """
+    src_count = len(source_triples)
+    if src_count == 0:
+        return NLIFactBreakdown(
+            n_source=0, n_matched_semantic=0, n_matched_nli_only=0,
+            n_lost=0, nli_fact_preservation=1.0, nli_calls_made=0,
+        )
+
+    # Phase 1 — semantic match (greedy one-to-one), tracking which
+    # source triples remain unmatched.
+    src_strs = [f"{s} {p} {o}" for (s, p, o) in source_triples]
+    reext_strs = [f"{s} {p} {o}" for (s, p, o) in reextracted_triples]
+
+    import asyncio
+    src_embs: list[list[float]] = []
+    reext_embs: list[list[float]] = []
+    if reext_strs:
+        all_embs = await asyncio.gather(*[embed_fn(s) for s in src_strs + reext_strs])
+        src_embs = all_embs[: len(src_strs)]
+        reext_embs = all_embs[len(src_strs):]
+    else:
+        src_embs = list(await asyncio.gather(*[embed_fn(s) for s in src_strs]))
+
+    used: set[int] = set()
+    semantic_matched: list[bool] = [False] * src_count
+    for i, se in enumerate(src_embs):
+        best_j = -1
+        best_sim = -1.0
+        for j, re_emb in enumerate(reext_embs):
+            if j in used:
+                continue
+            sim = _cosine_sim(se, re_emb)
+            if sim > best_sim:
+                best_sim = sim
+                best_j = j
+        if best_j >= 0 and best_sim >= threshold:
+            used.add(best_j)
+            semantic_matched[i] = True
+
+    n_matched_semantic = sum(semantic_matched)
+
+    # Phase 2 — NLI audit on unmatched source facts only.
+    unmatched_indices = [i for i, m in enumerate(semantic_matched) if not m]
+    if not unmatched_indices:
+        return NLIFactBreakdown(
+            n_source=src_count,
+            n_matched_semantic=n_matched_semantic,
+            n_matched_nli_only=0,
+            n_lost=0,
+            nli_fact_preservation=1.0,
+            nli_calls_made=0,
+        )
+
+    nli_results = await asyncio.gather(*[
+        entail_fn(source_triples[i], tome) for i in unmatched_indices
+    ])
+    n_matched_nli_only = sum(1 for r in nli_results if r)
+    n_lost = len(unmatched_indices) - n_matched_nli_only
+
+    return NLIFactBreakdown(
+        n_source=src_count,
+        n_matched_semantic=n_matched_semantic,
+        n_matched_nli_only=n_matched_nli_only,
+        n_lost=n_lost,
+        nli_fact_preservation=(n_matched_semantic + n_matched_nli_only) / src_count,
+        nli_calls_made=len(unmatched_indices),
+    )
+
+
 async def semantic_fact_preservation(
     source_triples: Sequence[Triple],
     reextracted_triples: Sequence[Triple],
