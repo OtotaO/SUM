@@ -149,6 +149,43 @@
     </span>
     <button id="download" class="ghost">Download bundle</button>
   </div>
+
+  <div class="card" style="margin-top: 16px;">
+    <h3>Render tome with sliders <span class="pill" id="render-cache-status" style="display:none;"></span></h3>
+    <p style="font-size:12px;opacity:0.7;margin:0 0 12px;">
+      Five axes shape the tome from the same facts. Density (above) is deterministic — selects which facts to include.
+      The four below condition an LLM render via <code>/api/render</code>. Fact preservation across non-density axes
+      is empirically verified at median 1.000, p10 0.818 (see
+      <a href="https://github.com/OtotaO/SUM/blob/main/docs/SLIDER_CONTRACT.md">SLIDER_CONTRACT.md</a>).
+    </p>
+    <div class="row">
+      <label for="length">length</label>
+      <input type="range" id="length" min="0.0" max="1.0" step="0.05" value="0.5">
+      <span class="v" id="length-val">0.50</span>
+    </div>
+    <div class="row">
+      <label for="formality">formality</label>
+      <input type="range" id="formality" min="0.0" max="1.0" step="0.05" value="0.5">
+      <span class="v" id="formality-val">0.50</span>
+    </div>
+    <div class="row">
+      <label for="audience">audience</label>
+      <input type="range" id="audience" min="0.0" max="1.0" step="0.05" value="0.5">
+      <span class="v" id="audience-val">0.50</span>
+    </div>
+    <div class="row">
+      <label for="perspective">perspective</label>
+      <input type="range" id="perspective" min="0.0" max="1.0" step="0.05" value="0.5">
+      <span class="v" id="perspective-val">0.50</span>
+    </div>
+    <div class="row" style="justify-content: flex-end; margin-top: 8px;">
+      <button id="render-btn" class="ghost">Render tome</button>
+    </div>
+    <div id="render-output" style="display:none; margin-top: 12px;">
+      <div class="extractor-src claude" id="render-meta"></div>
+      <pre id="render-tome" style="white-space: pre-wrap; word-wrap: break-word; background: #8881; padding: 12px; border-radius: 4px; font-size: 13px; line-height: 1.5; margin: 0;"></pre>
+    </div>
+  </div>
 </div>
 
 <hr style="margin: 40px 0; border: none; border-top: 1px solid #8883;">
@@ -746,6 +783,8 @@ $('attest').addEventListener('click', async () => {
 
     const bundle = await makeBundle(triples, 'Attested Tome');
     lastBundle = bundle;
+    // Stash the post-density triples so the render panel below can use them.
+    window.__sumLastTriples = triples;
 
     const listEl = $('facts');
     listEl.innerHTML = '';
@@ -782,6 +821,67 @@ $('attest').addEventListener('click', async () => {
   } finally {
     btn.disabled = false;
     btn.innerHTML = ATTEST_LABEL;
+  }
+});
+
+// ── Phase E render panel: live slider value display + /api/render call ──
+
+for (const axis of ['length', 'formality', 'audience', 'perspective']) {
+  const slider = $(axis);
+  const valEl = $(`${axis}-val`);
+  if (!slider || !valEl) continue;
+  slider.addEventListener('input', () => {
+    valEl.textContent = parseFloat(slider.value).toFixed(2);
+  });
+}
+
+$('render-btn').addEventListener('click', async () => {
+  const triples = window.__sumLastTriples;
+  if (!triples || triples.length === 0) {
+    alert('Attest a tome first — the render panel uses the extracted triples as input.');
+    return;
+  }
+  const btn = $('render-btn');
+  btn.disabled = true;
+  const original = btn.textContent;
+  btn.textContent = 'Rendering…';
+  const meta = $('render-meta');
+  const out = $('render-output');
+  const tomeEl = $('render-tome');
+  const cacheBadge = $('render-cache-status');
+
+  const sliderPosition = {
+    density: parseFloat($('density').value),
+    length: parseFloat($('length').value),
+    formality: parseFloat($('formality').value),
+    audience: parseFloat($('audience').value),
+    perspective: parseFloat($('perspective').value),
+  };
+
+  try {
+    const res = await fetch('/api/render', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ triples, slider_position: sliderPosition }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || `render failed (${res.status})`);
+    }
+    tomeEl.textContent = data.tome || '(empty tome)';
+    const ms = data.wall_clock_ms ?? 0;
+    const calls = data.llm_calls_made ?? 0;
+    meta.textContent = `${data.cache_status} · ${calls} LLM call${calls === 1 ? '' : 's'} · ${ms} ms · render_id ${(data.render_id || '').slice(0, 12)}`;
+    cacheBadge.style.display = '';
+    cacheBadge.textContent = data.cache_status;
+    out.style.display = '';
+  } catch (e) {
+    meta.textContent = `render failed: ${e.message}`;
+    tomeEl.textContent = '';
+    out.style.display = '';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = original;
   }
 });
 
