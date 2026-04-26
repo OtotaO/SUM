@@ -36,6 +36,10 @@ export interface RenderResult {
     perspective: number;
   };
   render_id: string;
+  // v0.9.A: signed receipt for the render. Optional in the type so
+  // pre-receipt cache entries (from older deploys) still deserialise;
+  // present on every fresh render produced by Worker code at v0.9.A+.
+  render_receipt?: unknown;
 }
 
 // ─── Cache contract ───────────────────────────────────────────────

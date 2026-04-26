@@ -31,6 +31,14 @@ import {
   requiresExtrapolator,
   type SlidersForPrompt,
 } from "../render/axis_prompts";
+import {
+  DIGITAL_SOURCE_TYPE_AI,
+  hashTome,
+  hashTriples,
+  signReceipt,
+  type ReceiptPayload,
+} from "../receipt/sign";
+import type { JWK } from "jose";
 
 interface RenderRequest {
   triples: Array<[string, string, string]>;
@@ -157,7 +165,10 @@ export async function handleRender(
 
   const key = await deriveCacheKey(body.triples, quantized);
 
-  // Cache-first.
+  // Cache-first. The cached value already carries its render_receipt
+  // (signed at the time of the original miss render); HIT path
+  // re-serves the same receipt verbatim so the kid + signed_at +
+  // tome_hash all remain consistent with the issuance.
   if (!body.force_render) {
     const cached = await getCached(env, key);
     if (cached) {
@@ -193,6 +204,33 @@ export async function handleRender(
 
   const renderId = await sha256Hex32(key + tome);
 
+  // v0.9.A — sign a render receipt if a signing JWK is configured.
+  // Absence of the signing config is non-fatal: receipt is omitted,
+  // render still returns. Lets the deploy stage roll out without
+  // the receipt path being a hard dependency.
+  let renderReceipt: unknown = undefined;
+  if (env.RENDER_RECEIPT_SIGNING_JWK && env.RENDER_RECEIPT_SIGNING_KID) {
+    try {
+      const signingJWK: JWK = JSON.parse(env.RENDER_RECEIPT_SIGNING_JWK);
+      const triplesHash = await hashTriples(keptTriples);
+      const tomeHash = await hashTome(tome);
+      const model = env.SUM_DEFAULT_MODEL_ANTHROPIC ?? "unknown";
+      const payload: ReceiptPayload = {
+        render_id: renderId,
+        sliders_quantized: quantized,
+        triples_hash: triplesHash,
+        tome_hash: tomeHash,
+        model,
+        signed_at: new Date().toISOString(),
+        digital_source_type: DIGITAL_SOURCE_TYPE_AI,
+      };
+      renderReceipt = await signReceipt(payload, signingJWK, env.RENDER_RECEIPT_SIGNING_KID);
+    } catch (e) {
+      // Signing failure is non-fatal — log and continue without receipt.
+      console.error("render_receipt signing failed:", (e as Error).message);
+    }
+  }
+
   // Build the result. NB: Worker's RenderResult does NOT populate
   // reextracted_triples / claimed_triples / drift — those come from
   // the Python bench. Returns empty arrays / placeholder drift so
@@ -206,6 +244,7 @@ export async function handleRender(
     wall_clock_ms: Date.now() - tStart,
     quantized_sliders: quantized,
     render_id: renderId,
+    render_receipt: renderReceipt,
   };
 
   // Best-effort cache write.
