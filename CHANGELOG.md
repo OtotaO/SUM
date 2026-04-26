@@ -4,6 +4,62 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Added — Phase E.1 v0.5 (Worker render path + slider UI)
+
+The Phase E user-facing loop closes. Paste prose → attest → drag
+five sliders → see the tome regenerate at the requested axis
+position, with cache-status feedback in real time.
+
+**Worker side:**
+- `worker/src/render/axis_prompts.ts` — TypeScript port of the
+  Python axis-fragment lookup tables and `build_system_prompt`,
+  byte-for-byte equivalent so a Python-rendered tome and a
+  Worker-rendered tome from the same input are interchangeable.
+  Plus `applyDensity`, `requiresExtrapolator`, `deterministicTome`
+  for the canonical (no-LLM) branch.
+- `worker/src/routes/render.ts` — replaces the 501 stub with the
+  working render path:
+    POST → validate → quantize → cache_key → (cache hit?) →
+    applyDensity → canonical-or-LLM → cache write → JSON RenderResult.
+  Anthropic is the LLM provider (uses `ANTHROPIC_API_KEY` + the
+  optional Cloudflare AI Gateway). System prompt comes from
+  `buildSystemPrompt`; user prompt is the numbered FACTS list.
+  Canonical path skips the LLM entirely when only density is
+  non-default. 502 on LLM failure with a clean error message.
+- The Worker does NOT compute fact preservation, drift, or
+  re-extraction in this revision. The Python bench is the
+  canonical source for those metrics; the Worker exposes the
+  live render and lets the contract bench verify ahead of time.
+
+**Demo side (`single_file_demo/index.html`):**
+- New "Render tome with sliders" card inside the existing result
+  block — visible only after a successful attestation.
+- Four sliders (length / formality / audience / perspective) with
+  live decimal labels. Density (above) is unchanged; it still
+  gates which facts get fed to the renderer.
+- "Render tome" button POSTs to `/api/render`, swaps the tome
+  text into a `<pre>` output area along with cache_status badge,
+  `llm_calls_made`, wall-clock ms, and truncated `render_id`.
+- A short note links the panel to `SLIDER_CONTRACT.md` and
+  surfaces the empirically-verified preservation claim (median
+  1.000, p10 0.818).
+
+After Attest, the post-density triples are stashed at
+`window.__sumLastTriples` so the render handler can pick them
+up without re-extracting.
+
+**Operational notes:**
+- Worker requires `ANTHROPIC_API_KEY` secret (`wrangler secret put
+  ANTHROPIC_API_KEY`). The demo's existing fall-back path for
+  /api/complete is independent.
+- `RENDER_CACHE` KV binding is still commented out in
+  `wrangler.toml`. Demo works without it (cache misses always
+  re-render); enabling the binding makes repeated slider positions
+  near-instant.
+
+**Verification:** `npm run typecheck` clean across the new TS;
+end-to-end smoke against a deployed Worker pending.
+
 ### Verified — Phase E.1 v0.4 (NLI audit confirms the product claim)
 
 The slider's load-bearing claim — *axis changes do not lose facts* —
