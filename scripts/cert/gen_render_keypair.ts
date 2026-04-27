@@ -59,11 +59,12 @@ async function main(): Promise<void> {
   console.log(`private JWK written: ${privPath}`);
   console.log(`public JWKS written: ${pubPath}`);
   console.log();
-  console.log("Next steps:");
-  console.log(`  wrangler secret put RENDER_RECEIPT_SIGNING_JWK < ${privPath}`);
-  console.log(`  wrangler secret put RENDER_RECEIPT_SIGNING_KID  # paste: ${kid}`);
-  console.log(`  # then publish the public JWKS as RENDER_RECEIPT_PUBLIC_JWKS:`);
-  console.log(`  cat ${pubPath}`);
+  console.log("Next steps (run from worker/ — wrangler is via npx, not on PATH):");
+  console.log(`  cd worker`);
+  console.log(`  npx wrangler secret put RENDER_RECEIPT_SIGNING_JWK < ${privPath}`);
+  console.log(`  printf '%s' '${kid}' | npx wrangler secret put RENDER_RECEIPT_SIGNING_KID`);
+  console.log(`  # Deploy with the public JWKS inline (or set via CF dashboard):`);
+  console.log(`  npx wrangler deploy --var "RENDER_RECEIPT_PUBLIC_JWKS:$(cat ${pubPath})"`);
   console.log();
   console.log("AFTER the secret upload succeeds — wipe the private-key tempfile:");
   console.log(`  rm -P ${privPath}      # macOS / BSD: overwrite then unlink`);

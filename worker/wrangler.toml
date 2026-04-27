@@ -35,7 +35,7 @@ binding = "ASSETS"
 not_found_handling = "single-page-application"
 # Don't route /api/* through the asset handler; let src/index.ts see
 # those paths so it can proxy LLM calls + serve the QID resolver.
-run_worker_first = ["/api/*"]
+run_worker_first = ["/api/*", "/.well-known/*"]
 
 # Custom-domain route. Disabled by default — the user needs to
 # associate sumequities.com (or a subdomain like sum-demo.sumequities.com)
