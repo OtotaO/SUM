@@ -1,6 +1,6 @@
 # Feature Catalog
 
-**Generated 2026-04-21, extended 2026-04-27 with the Phase E.1 v0.4 → v0.9.A.2 surface (Layer 10 + select Layer 2 / Layer 4 / Layer 9 updates).** One pass across the codebase, one verification test per feature, actual test output recorded below each. Intent: no more "shipped or not?" ambiguity, no more stale pointers in the README or PROOF_BOUNDARY. A new contributor can read this file and reproduce every claim in under fifteen minutes.
+**Generated 2026-04-21, extended 2026-04-27 with the Phase E.1 v0.4 → v0.9.A.2 surface (Layer 10 added; Layer 9 feature 97 promoted to ✅).** One pass across the codebase, one verification test per feature, actual test output recorded below each. Intent: no more "shipped or not?" ambiguity, no more stale pointers in the README or PROOF_BOUNDARY. A new contributor can read this file and reproduce every claim in under fifteen minutes.
 
 ## Status tiers
 
@@ -829,8 +829,6 @@ CI job `pypi-install-smoke` in `.github/workflows/quantum-ci.yml`: every commit 
 Verify: `gh run view <latest>` on main, job `pypi-install-smoke`
 Expected: job passes with `sum: ✓ verified …`
 Result: **PASS**.
-
----
 
 ---
 

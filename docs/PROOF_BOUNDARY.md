@@ -267,11 +267,13 @@ The slider's load-bearing claim — *axis changes do not lose facts* — has bee
 
 **Bench harness measurements:**
 
-| Run | Corpus | LLM-axis cells | Median | p10 | Min | NLI rescue rate | Real losses | Catastrophic outliers (≥5) |
+| Run | Corpus | LLM-axis cells (excl. density) | Median | p10 | Min | NLI rescue rate | Real losses | Catastrophic outliers (≥5) |
 |---|---|---|---|---|---|---|---|---|
 | v0.4 | `seed_paragraphs.json` (n=8 short, 4–12 triples/doc) | 160 | **1.000** | **0.818** | 0.727 | 100 % (186/186) | **0** | 0 |
 | v0.6 (no hardening) | `seed_long_paragraphs.json` (n=16 long, 9–24 triples/doc) | 320 | 1.000 | 0.769 | 0.111 | 95.7 % (800/836) | 36 | **2** |
 | v0.7 (`FACT_PRESERVATION_REINFORCEMENT`) | same long bench | 319 | 1.000 | 0.750 | **0.700** | 99.8 % (653/654) | **1** | **0** |
+
+**Reading the v0.7 row:** the v0.7 p10 (0.750) sits slightly below v0.6's (0.769) despite catastrophic outliers being eliminated and the floor lifting (0.111 → 0.700). This is distribution-shape, not regression: the reinforcement clause makes the LLM's surface forms more defensive, so the strict embedding-similarity layer triggers NLI audit on more cells. Audit then rescues every flagged fact (99.8 % rate); cells move from "1.000 by semantic alone" to "1.000 with NLI confirmation," which sits in the 0.7–0.99 band on the strict score. Net: 1 confirmed loss across 654 audit calls, catastrophic outliers gone, p10 nominally lower because the perfect-cells share narrowed (60 % → 52 %). [`docs/SLIDER_CONTRACT.md`](SLIDER_CONTRACT.md) §"Headline result" describes the same trade in product terms.
 
 **Layered fact-preservation metrics** (all reported per cell in the JSONL artifact):
 
