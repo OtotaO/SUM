@@ -73,6 +73,18 @@ Repository = "https://github.com/OtotaO/SUM"
 "Proof Boundary" = "https://github.com/OtotaO/SUM/blob/main/docs/PROOF_BOUNDARY.md"
 "Feature Catalog" = "https://github.com/OtotaO/SUM/blob/main/docs/FEATURE_CATALOG.md"
 
+[tool.check-wheel-contents]
+# The wheel intentionally ships TWO top-level packages:
+#   sum_cli                — the CLI entry point (provides the `sum`
+#                            console script via [project.scripts]).
+#   sum_engine_internal    — the implementation modules consumers
+#                            `import` from (the public Python API).
+# Without this whitelist, check-wheel-contents fires W009 on every
+# build. Whitelisting by name (rather than ignoring W009 globally)
+# preserves the gate: if a future build accidentally adds an
+# unexpected third top-level package, this config still catches it.
+toplevel = ["sum_cli", "sum_engine_internal"]
+
 [tool.setuptools.packages.find]
 # Include the CLI and the core engine modules it depends on. Tests and
 # scripts are dev-time only and excluded from the distribution.
