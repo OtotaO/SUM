@@ -143,6 +143,65 @@ jobs:
       # hard-stops the merge.
       run: python -m scripts.verify_cross_runtime_adversarial
 
+  release-machinery-validation:
+    name: Release machinery validation (no publish)
+    # Validates the v0.3.1 hygiene gates on every push/PR so the FIRST
+    # tag push isn't the FIRST real test of the release pipeline. Runs
+    # the build + pre-publish gates verbatim from publish-pypi.yml's
+    # `build` job, but never publishes and never calls live-index
+    # verification. publish-pypi.yml's tag-version guard is excluded
+    # here (it's tag-only by design) — the rest is exercised on every
+    # commit so a hygiene-script bug surfaces in PR review, not at
+    # release time.
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Install build + hygiene tools
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install build twine check-wheel-contents
+
+    - name: Build sdist + wheel
+      run: python -m build --sdist --wheel --outdir dist
+
+    - name: twine check (renderability)
+      run: twine check dist/*
+
+    - name: check-wheel-contents (file-tree validity)
+      run: check-wheel-contents dist/*.whl
+
+    - name: README ↔ wheel METADATA + sdist PKG-INFO sync
+      run: python scripts/check_long_description_sync.py
+
+    - name: hash_dist.py emits valid sum.dist_hashes.v1
+      run: |
+        python scripts/hash_dist.py --out dist_hashes.json
+        # Sanity-check the schema field; the verify script demands it
+        # be exactly sum.dist_hashes.v1 and will SystemExit otherwise.
+        python -c "
+        import json
+        d = json.load(open('dist_hashes.json'))
+        assert d['schema'] == 'sum.dist_hashes.v1', d['schema']
+        assert d['artifacts'], 'no artifacts'
+        assert any(a['filename'].endswith('.whl') for a in d['artifacts']), 'no wheel'
+        assert any(a['filename'].endswith('.tar.gz') for a in d['artifacts']), 'no sdist'
+        print('OK:', len(d['artifacts']), 'artifact(s)', 'schema=', d['schema'])
+        "
+
+    - name: Smoke-compile all release scripts
+      # Catches syntax-class bugs (missing imports, typos, etc.) before
+      # they break a real release.
+      run: |
+        python -m py_compile scripts/hash_dist.py
+        python -m py_compile scripts/check_long_description_sync.py
+        python -m py_compile scripts/verify_pypi_attestation.py
+
   pypi-install-smoke:
     name: pip install sum-engine (fresh venv smoke)
     needs: zig-core

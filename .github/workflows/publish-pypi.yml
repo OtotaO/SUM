@@ -47,7 +47,25 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         python -m pip install build twine check-wheel-contents
-        python -m pip install "pypi-attestations==0.0.20"
+        python -m pip install "pypi-attestations==0.0.29"
+
+    - name: Pre-publish gate — tag matches pyproject version
+      # Cheap; prevents the "tag v0.3.2 published from a v0.3.0 pyproject"
+      # release mistake. Runs before any build so a mismatch fails the
+      # pipeline before bytes are spent.
+      run: |
+        tag_version="${GITHUB_REF_NAME#v}"
+        project_version="$(python - <<'PY'
+        import tomllib
+        with open("pyproject.toml", "rb") as f:
+            print(tomllib.load(f)["project"]["version"])
+        PY
+        )"
+        if [ "$tag_version" != "$project_version" ]; then
+          echo "tag version $tag_version != pyproject version $project_version" >&2
+          exit 1
+        fi
+        echo "tag $GITHUB_REF_NAME matches pyproject version $project_version"
 
     - name: Build sdist + wheel
       run: |
@@ -105,13 +123,29 @@ jobs:
         name: dist
         path: .
 
+    - name: Verify downloaded artifact layout
+      # Belt-and-suspenders: the upload action defaults to dist/, but if
+      # an artifact-shape change ever lands silently, fail closed here
+      # rather than silently uploading nothing or wrong contents.
+      run: |
+        test -f dist_hashes.json || { echo "missing dist_hashes.json"; exit 1; }
+        test -d dist || { echo "missing dist/ directory"; exit 1; }
+        ls dist/*.whl > /dev/null || { echo "no .whl in dist/"; exit 1; }
+        ls dist/*.tar.gz > /dev/null || { echo "no .tar.gz in dist/"; exit 1; }
+
     - name: Upload to TestPyPI
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         repository-url: https://test.pypi.org/legacy/
-        # PEP 740 attestations are generated and uploaded automatically
-        # by default when Trusted Publishing is configured on the
-        # target index.
+        packages-dir: dist/
+        # skip-existing is safe on TestPyPI ONLY because verify-testpypi
+        # below sha256-checks the index artifact against the local
+        # dist_hashes.json — a stale TestPyPI artifact from a previous
+        # failed run would fail the verify step. Without skip-existing,
+        # re-running a tag after a verify-step bug fails the upload
+        # step instead, masking the real bug. Production never gets
+        # skip-existing for any reason.
+        skip-existing: true
 
   verify-testpypi:
     name: Verify TestPyPI provenance (PRE-PROMOTION GATE — fail closed)
@@ -132,7 +166,7 @@ jobs:
         python-version: "3.12"
 
     - name: Install pypi-attestations (pinned)
-      run: python -m pip install "pypi-attestations==0.0.20"
+      run: python -m pip install "pypi-attestations==0.0.29"
 
     - name: Resolve release version
       id: ver
@@ -142,10 +176,19 @@ jobs:
         version="${ref#v}"
         echo "version=$version" >> "$GITHUB_OUTPUT"
 
+    - name: Verify downloaded artifact layout
+      run: |
+        test -f dist_hashes.json || { echo "missing dist_hashes.json"; exit 1; }
+
     - name: Verify TestPyPI artifact + attestation
-      # Three checks: same-bytes (sha256 vs local manifest), attestation
-      # cryptographic verify, repo+workflow identity match. Any failure
-      # fails this job and prevents publish-pypi from running.
+      # FOUR checks: (1) same-bytes — downloaded artifact sha256 matches
+      # the local sum.dist_hashes.v1 manifest; (2) attestation
+      # cryptographically verifies via pypi-attestations CLI;
+      # (3) repository identity matches expected --repository;
+      # (4) workflow identity + ref pattern match expected, parsed
+      # directly from the PyPI Integrity API (the CLI doesn't accept
+      # --workflow, so step 4 is in-script). Any failure fails this
+      # job and prevents publish-pypi from running.
       run: |
         python repo/scripts/verify_pypi_attestation.py \
           --index test \
@@ -153,6 +196,7 @@ jobs:
           --version "${{ steps.ver.outputs.version }}" \
           --repository "https://github.com/${{ github.repository }}" \
           --workflow .github/workflows/publish-pypi.yml \
+          --ref-prefix refs/tags/v \
           --dist-hashes dist_hashes.json
 
   publish-pypi:
@@ -170,11 +214,23 @@ jobs:
         name: dist
         path: .
 
+    - name: Verify downloaded artifact layout
+      run: |
+        test -f dist_hashes.json || { echo "missing dist_hashes.json"; exit 1; }
+        test -d dist || { echo "missing dist/ directory"; exit 1; }
+        ls dist/*.whl > /dev/null || { echo "no .whl in dist/"; exit 1; }
+        ls dist/*.tar.gz > /dev/null || { echo "no .tar.gz in dist/"; exit 1; }
+
     - name: Upload to production PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
-      # No `repository-url:` — defaults to upload.pypi.org/legacy/.
-      # Same local dist/* uploaded to both indexes; TestPyPI and PyPI
-      # are separate indexes, no PyPI-side promote operation exists.
+      with:
+        packages-dir: dist/
+        # No `repository-url:` — defaults to upload.pypi.org/legacy/.
+        # No `skip-existing:` — production NEVER gets skip-existing,
+        # for any reason. A duplicate-version conflict on production
+        # is a real problem that must surface, not be silenced.
+        # Same local dist/* uploaded to both indexes; TestPyPI and PyPI
+        # are separate indexes, no PyPI-side promote operation exists.
 
   verify-pypi:
     name: Verify production PyPI provenance (post-publish detection)
@@ -195,7 +251,7 @@ jobs:
         python-version: "3.12"
 
     - name: Install pypi-attestations (pinned)
-      run: python -m pip install "pypi-attestations==0.0.20"
+      run: python -m pip install "pypi-attestations==0.0.29"
 
     - name: Resolve release version
       id: ver
@@ -218,4 +274,5 @@ jobs:
           --version "${{ steps.ver.outputs.version }}" \
           --repository "https://github.com/${{ github.repository }}" \
           --workflow .github/workflows/publish-pypi.yml \
+          --ref-prefix refs/tags/v \
           --dist-hashes dist_hashes.json
