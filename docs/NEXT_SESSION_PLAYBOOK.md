@@ -160,10 +160,22 @@ These are concrete next-cycle items the render-receipt landing made possible. Th
 **Work.**
 - Cut a v0.3.1 hygiene release that picks up the post-PR-A README. No code changes; `pyproject.toml` version bump only.
 - Add a CI gate that fails if the next wheel's `Description` metadata diverges from `README.md` head: `python -m build` → extract `Description` from the built wheel's `*.dist-info/METADATA` → normalise line endings → diff against `README.md`. Reuse `twine check` to validate the long-description renders on Warehouse, and `check-wheel-contents` to catch wheel-content mistakes. The custom diff gate answers a question those two don't ("is this actually the README we intended to ship") and complements them.
-- **PEP 740 attestation (publish + verify).** Publish via Trusted Publishing with `pypa/gh-action-pypi-publish` — the action generates and uploads PEP 740 attestations automatically by default, binding each wheel/sdist to a cryptographic digest and a GitHub Actions workflow identity. Add a post-publish verify step using the `pypi-attestations` CLI (or PyPI Integrity API) that confirms the published artifact's provenance points at the expected `OtotaO/SUM` repo + workflow identity. This raises v0.3.1's outcome from "the README on PyPI matches" to "the artifact on PyPI is provably built from the repo we say built it."
-- Run sequence in CI: `python -m build --sdist --wheel` → `twine check dist/*` → `check-wheel-contents dist/*.whl` → `python scripts/check_long_description_sync.py` → publish via Trusted Publisher → `python scripts/verify_pypi_attestation.py sum-engine==0.3.1`.
+- **PEP 740 attestation (staged publish + verify).** Publish via Trusted Publishing with `pypa/gh-action-pypi-publish` — the action generates and uploads PEP 740 attestations automatically by default, binding each wheel/sdist to a cryptographic digest and a GitHub Actions workflow identity. The verification flow has to be **pre-promotion**, not post-production-publish: a verifier check that runs after production PyPI publish can only *detect* a misconfigured provenance, it cannot *prevent* the artifact going public. The staging pattern that gives a real fail-closed gate is: build → publish to TestPyPI via Trusted Publishing → fetch the staged attestation, verify it points at the expected `OtotaO/SUM` repo + workflow identity using `pypi-attestations` (or the PyPI Integrity API) → only on success, promote the same artifact to production PyPI. Add a post-publish verify step on production too — that one is post-publish *detection*, documented as such; it catches the case where TestPyPI and production diverge unexpectedly, but the load-bearing gate is the staging step.
+- Run sequence in CI:
+  ```
+  python -m build --sdist --wheel                                  # local build
+  twine check dist/*                                               # pre-publish gate
+  check-wheel-contents dist/*.whl                                  # pre-publish gate
+  python scripts/check_long_description_sync.py                    # pre-publish gate
+  publish to TestPyPI via pypa/gh-action-pypi-publish              # staging
+  python scripts/verify_pypi_attestation.py --index test \
+                                            sum-engine==0.3.1      # pre-promotion gate (FAIL CLOSED)
+  promote same dist/* to production PyPI via pypa/gh-action-pypi-publish
+  python scripts/verify_pypi_attestation.py --index prod \
+                                            sum-engine==0.3.1      # post-publish detection
+  ```
 
-**Success criterion.** v0.3.1 ships with (a) a long-description that matches `README.md` head verbatim, AND (b) a verifiable PyPI provenance attestation pointing at the expected repo+workflow identity. CI fails closed on any future divergence on either property; a deliberate test break in a branch confirms each gate fires before publish.
+**Success criterion.** v0.3.1 ships with (a) a long-description that matches `README.md` head verbatim, AND (b) a verifiable PyPI provenance attestation on the staged TestPyPI artifact pointing at the expected repo+workflow identity, gating production promotion. The pre-publish gates (twine check / wheel contents / README diff) and the pre-promotion gate (TestPyPI provenance verify) all fail closed before any production-PyPI bytes ship. Post-publish detection on production catches TestPyPI/production divergence as an alarm, not as a gate. A deliberate test break in a branch confirms each pre-publish/pre-promotion gate fires before its respective publish step.
 
 **Why before v0.9.A.3.** It's a 1–3 hour cycle, prevents an immediate truthfulness-contract violation, and is independently scoped from any other work. The PEP 740 piece is partial-credit on Priority 7 (supply-chain attestation) for the wheel surface specifically — full P7 still covers the standalone verifier bundle and the Worker bundle, which are out of v0.3.1 scope.
 
@@ -371,7 +383,11 @@ R0 lands as a single short cycle whose goal is "establish the operational primit
   ```
 - Add `scripts/build_trust_manifest.py` to assemble the manifest at release time from CI-known facts (commit SHA, built artifact hashes, current JWKS state, algorithm-registry contents).
 - Sign the manifest with the same Ed25519 substrate the receipts use (or a separate release-signing key — the choice is a documented spec decision; default to a separate release key so render-key compromise doesn't invalidate trust manifests).
-- Publish at `https://github.com/OtotaO/SUM/releases/v<version>/sum.trust_root.v1.json` and at `https://sum-demo.ototao.workers.dev/.well-known/sum-trust-root.json` (current release).
+- Publish as a GitHub release **asset** (not a path under `/releases/v<version>/` — that's not a fetchable URL). Canonical asset-download URLs:
+  - Versioned: `https://github.com/OtotaO/SUM/releases/download/v<version>/sum.trust_root.v1.json`
+  - Latest: `https://github.com/OtotaO/SUM/releases/latest/download/sum.trust_root.v1.json` (302-redirects to the most recent release's asset)
+  - API form (machine-readable enumeration of all release assets, including hash + size): `https://api.github.com/repos/OtotaO/SUM/releases/tags/v<version>`
+- Also publish the *current* release's manifest at `https://sum-demo.ototao.workers.dev/.well-known/sum-trust-root.json` for consumers who want to fetch it from the same origin as the JWKS without dereferencing the GitHub redirect.
 
 **Success criterion.** A skeptic verifying SUM v0.3.1 fetches `sum.trust_root.v1.json` once, checks the signature, and from that one artifact knows: which commit shipped, what artifact hashes to expect, which kids are current, which are revoked, and which prime scheme is in force. The manifest is the one thing they verify *first*; everything else verifies against it.
 
