@@ -202,6 +202,16 @@ jobs:
         python -m py_compile scripts/check_long_description_sync.py
         python -m py_compile scripts/verify_pypi_attestation.py
 
+    - name: Fixture tests for verify_pypi_attestation parsers
+      # Pins assumptions about PyPI Integrity API JSON shape + Sigstore
+      # SAN URI form. Without these, a parser bug + a schema drift can
+      # both pass syntax checks while silently letting the wrong shape
+      # through. Network paths are not exercised here — they compose,
+      # but their happy paths are exercised by the live release pipeline.
+      run: |
+        python -m pip install pytest
+        python -m pytest Tests/test_verify_pypi_attestation.py -q
+
   pypi-install-smoke:
     name: pip install sum-engine (fresh venv smoke)
     needs: zig-core

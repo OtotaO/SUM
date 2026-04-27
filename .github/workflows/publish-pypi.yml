@@ -182,13 +182,14 @@ jobs:
 
     - name: Verify TestPyPI artifact + attestation
       # FOUR checks: (1) same-bytes — downloaded artifact sha256 matches
-      # the local sum.dist_hashes.v1 manifest; (2) attestation
-      # cryptographically verifies via pypi-attestations CLI;
-      # (3) repository identity matches expected --repository;
-      # (4) workflow identity + ref pattern match expected, parsed
-      # directly from the PyPI Integrity API (the CLI doesn't accept
-      # --workflow, so step 4 is in-script). Any failure fails this
-      # job and prevents publish-pypi from running.
+      # the local sum.dist_hashes.v1 manifest; (2) crypto + repo
+      # identity via pypi-attestations CLI in --provenance-file mode;
+      # (3) coarse publisher JSON check (advisory; PyPI's documented
+      # publisher.workflow is basename-only); (4) authoritative
+      # workflow + ref identity from the Sigstore certificate SAN URI
+      # (https://github.com/OWNER/REPO/<workflow-path>@<ref>). Any
+      # failure on (1), (2), or (4) fails this job and prevents
+      # publish-pypi from running.
       run: |
         python repo/scripts/verify_pypi_attestation.py \
           --index test \
@@ -197,6 +198,7 @@ jobs:
           --repository "https://github.com/${{ github.repository }}" \
           --workflow .github/workflows/publish-pypi.yml \
           --ref-prefix refs/tags/v \
+          --environment testpypi \
           --dist-hashes dist_hashes.json
 
   publish-pypi:
@@ -275,4 +277,5 @@ jobs:
           --repository "https://github.com/${{ github.repository }}" \
           --workflow .github/workflows/publish-pypi.yml \
           --ref-prefix refs/tags/v \
+          --environment pypi \
           --dist-hashes dist_hashes.json
