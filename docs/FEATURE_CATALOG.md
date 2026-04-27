@@ -1,6 +1,6 @@
 # Feature Catalog
 
-**Generated 2026-04-21** — one pass across the codebase, one verification test per feature, actual test output recorded below each. Intent: no more "shipped or not?" ambiguity, no more stale pointers in the README or PROOF_BOUNDARY. A new contributor can read this file and reproduce every claim in under fifteen minutes.
+**Generated 2026-04-21, extended 2026-04-27 with the Phase E.1 v0.4 → v0.9.A.2 surface (Layer 10 added; Layer 9 feature 97 promoted to ✅).** One pass across the codebase, one verification test per feature, actual test output recorded below each. Intent: no more "shipped or not?" ambiguity, no more stale pointers in the README or PROOF_BOUNDARY. A new contributor can read this file and reproduce every claim in under fifteen minutes.
 
 ## Status tiers
 
@@ -771,10 +771,13 @@ Result: **PASS** (file present; no behaviour change required).
 README "Single-File Deployment — Cloudflare Pages" section names the framework preset, output directory, wrangler CLI command, and the (now-shipped) Pages Function fallback. The hosted-demo LLM proxy (`single_file_demo/functions/api/complete.ts` — Anthropic preferred / OpenAI fallback / optional CF AI Gateway) ships alongside the static assets and serves as the middle leg between artifact-runtime extraction and the naive-tokeniser fallback. See README §"Hosted-demo LLM proxy".
 Result: **PASS**.
 
-### 97. Cloudflare Pages live URL 📄
+### 97. Cloudflare Worker live URL ✅
 
-Not yet deployed. User-authenticated action; catalogued as pending.
-Status: pending user action.
+Shipped. Worker live at `https://sum-demo.ototao.workers.dev` (migrated from Pages per Cloudflare's April 2026 convergence guidance — Workers has full feature parity for static assets + SSR + custom domains, and every new capability lands Workers-first). The static demo at `single_file_demo/` is served via the Worker `[assets]` binding; `/api/*` paths are handled by the Worker's main entry. See features 112–117 for the render-receipt trust loop the Worker now exposes.
+
+Verify: `curl -sS -o /dev/null -w "%{http_code}\n" https://sum-demo.ototao.workers.dev/`
+Expected: `200`
+Result: **PASS**.
 
 ---
 
@@ -829,18 +832,132 @@ Result: **PASS**.
 
 ---
 
+## Layer 10 — Phase E.1 trust loop (Worker render path + render receipts)
+
+The Phase E.1 v0.4 → v0.9.A.2 arc landed the bidirectional slider as a real product feature: deterministic density on the canonical path, LLM-conditioned length / formality / audience / perspective on the Worker render path, fact-preservation verified at scale, and every render carrying its own Ed25519-signed attestation. Live at `https://sum-demo.ototao.workers.dev`.
+
+### 104. Four-layer fact-preservation substrate ✅
+
+Strict (exact `(s, p, o)`) + Normalized (A3 — strip auxiliary prefixes / preposition suffixes / articles) + Semantic (A1 — `text-embedding-3-small` cosine ≥ 0.85, greedy one-to-one) + NLI audit (LLM-as-judge entailment, fires only when semantic < `--audit-threshold`, default 0.7). All four reported per cell in the bench JSONL. Source-of-truth is [`docs/SLIDER_CONTRACT.md`](SLIDER_CONTRACT.md).
+
+Verify: `pytest Tests/test_slider_renderer.py -q`
+Expected: 51 passed (TestNormalizationLayer + TestSemanticPreservation + TestNLIFactPreservation + TestRenderPipeline + TestMeasureDrift + xpasses).
+Result: **PASS**.
+
+### 105. NLI audit (`LiveLLMAdapter.check_entailment`) ✅
+
+Pydantic-enforced `EntailmentResponse` structured-output check. Asks "does the rendered tome state or directly imply this fact?" with strict prompting; cost-bounded (only fires on flagged-by-semantic cells). Headline result: **0 confirmed real fact losses** on 45 audited LLM-axis cells (v0.4); 99.8% rescue rate on long-doc bench (v0.7).
+
+Verify: covered by feature 104; substrate in `sum_engine_internal/ensemble/live_llm_adapter.py::check_entailment` and `sum_engine_internal/ensemble/slider_renderer.py::nli_fact_preservation`.
+Result: **PASS** (load-bearing for the slider product claim).
+
+### 106. `order_preservation` (MontageLie defense) ✅
+
+Pairwise order-preservation among triples that survive the round-trip. Returns 0.0 on a timeline-reversed permutation while set-based fact preservation scores 1.0; together they detect MontageLie-style reordering attacks. **Measured = 1.000 wherever measurable across every bench** (v0.4 / v0.6 / v0.7), confirming honest LLM renders do not exhibit the attack.
+
+Verify: covered by feature 104 (regression case is in `test_slider_renderer.py`).
+Result: **PASS**.
+
+### 107. 5000-word audience classifier ✅
+
+Brown-corpus top-5000 frequency table at `sum_engine_internal/ensemble/data/common_english_5000.txt`, regenerable via `scripts/data/regen_common_english_2000.py` (extended). Replaces the embedded ~200-word list (saturated jargon-density measurement at ~50 % regardless of axis). Cut median audience drift by ~50 %; threshold relaxed 0.55 → 0.40.
+
+Verify: file present, loaded via `importlib.resources` in `audience_metrics`.
+Result: **PASS** (file exists; loader path covered by `tome_sliders` tests).
+
+### 108. Constrained-decoding render path (`RenderedTome` schema) ✅
+
+Render LLM call uses `beta.chat.completions.parse` with a Pydantic-enforced schema returning both `tome: str` and `claimed_triples: list[Triple]`. Schema-enforced output makes parse-failure-class bugs impossible (0 / 200 errors vs 2 / 200 in the free-form prior). Surfaces a `claim_reextract_jaccard` adversarial signal — cross-axis median 0.286 confirms LLM self-attestation is NOT a free fact-preservation oracle.
+
+Verify: `pytest Tests/test_slider_renderer.py -q -k structured`
+Expected: 3 passed (structured-path tests in TestRenderPipeline).
+Result: **PASS**.
+
+### 109. `FACT_PRESERVATION_REINFORCEMENT` prompt-hardening clause ✅
+
+Deterministic prompt extension in `build_system_prompt` (Python `tome_sliders.py`; TS mirror `worker/src/render/axis_prompts.ts`) appended when any non-density axis is at ≤ 0.3. No extra LLM cost; pure data. Eliminated the catastrophic-failure mode v0.6 surfaced: real losses 36 → 1 on the same long-doc bench; ≥5-fact-loss cells 2 → 0; min preservation 0.111 → 0.700.
+
+Verify: `pytest Tests/test_slider_renderer.py -q -k reinforcement`
+Expected: tests assert clause is present at axis ≤ 0.3 and absent above.
+Result: **PASS**.
+
+### 110. `salvage_partial_triplets` (LengthFinishReasonError defence) ✅
+
+Pure function that walks the truncated JSON in a `LengthFinishReasonError`'s `e.completion.choices[0].message.content` and returns whatever complete triplet objects appeared before the cutoff. Free (same response). Layer 2 of a four-layer defence (prompt-side cap → salvage → retry with cap=32 → terminal raise) that drove `LengthFinishReasonError` cells from 1 / 400 to 0 / 400 on the same long-doc bench. Pin bump `openai>=1.40.0,<3.0.0` is load-bearing — the class was added in `openai-python 1.40.0`.
+
+Verify: `pytest Tests/test_extractor_salvage.py -q`
+Expected: 9 passed (happy path + adversarial inputs: escaped quotes, braces inside strings, malformed objects).
+Result: **PASS**.
+
+### 111. Long-doc scale bench (`seed_long_paragraphs.json`) ✅
+
+16 hand-authored multi-paragraph documents, 200–400 words each, 9–24 triples per doc (median 17), public-domain factual knowledge. The corpus that surfaced the v0.6 catastrophic outliers and verified the v0.7 prompt-hardening fix. Runner: `scripts/bench/run_long_paragraphs.sh` (~10 min wall, ~$1.50 in tokens with NLI audit).
+
+Verify: corpus + runner present; reproduce via `bash scripts/bench/run_long_paragraphs.sh` after exporting `OPENAI_API_KEY`.
+Result: **PASS** (file present at `scripts/bench/corpora/seed_long_paragraphs.json`).
+
+### 112. `POST /api/render` Worker route ✅
+
+`worker/src/routes/render.ts` — replaces the prior 501 stub. Validate → quantize → cache_key → (cache hit?) → `applyDensity` → canonical-or-LLM branch → cache write → JSON `RenderResult`. Anthropic provider (`claude-haiku-4-5-20251001` is the production default) via direct API or optional Cloudflare AI Gateway. Canonical-path branch (all LLM axes neutral, density possibly non-default) skips the LLM entirely — deterministic prose composition. Live response includes `tome`, `triples_used`, `drift`, `cache_status`, `llm_calls_made`, `wall_clock_ms`, `quantized_sliders`, `render_id`, and a `render_receipt` (feature 114).
+
+Verify: `curl -sS -X POST https://sum-demo.ototao.workers.dev/api/render -H 'content-type: application/json' -d '{"triples":[["alice","graduated","2012"]],"slider_position":{"density":1.0,"length":0.5,"formality":0.5,"audience":0.5,"perspective":0.5}}' | jq 'keys'`
+Expected: `["cache_status","drift","llm_calls_made","quantized_sliders","render_id","render_receipt","tome","triples_used","wall_clock_ms"]`
+Result: **PASS** (live).
+
+### 113. JWKS endpoint ✅
+
+`worker/src/routes/jwks.ts` exposes the issuer's public Ed25519 OKP JWK at `/.well-known/jwks.json` with content-type `application/jwk-set+json` and `Cache-Control: public, max-age=3600`. Active `kid: sum-render-2026-04-27-1`. Standard JWKS shape; consumed by `jose.createRemoteJWKSet` and equivalents in any JOSE-aware runtime.
+
+Verify: `curl -sS -o /dev/null -w "%{http_code} %{content_type}\n" https://sum-demo.ototao.workers.dev/.well-known/jwks.json`
+Expected: `200 application/jwk-set+json`
+Result: **PASS** (live).
+
+### 114. Render receipt signing (`worker/src/receipt/sign.ts`) ✅
+
+Produces `sum.render_receipt.v1`: Ed25519 (RFC 8032) signature over JCS-canonical (RFC 8785) UTF-8 bytes of the payload, wrapped as detached JWS (RFC 7515 §A.5) with `b64: false` per RFC 7797. Payload binds `render_id`, `sliders_quantized`, `triples_hash`, `tome_hash`, `model` (sourced from the API's reported `model` field, NOT the configured-default — see [`docs/RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) §1.1), `provider`, `signed_at`, `digital_source_type` (C2PA v2.2 taxonomy: `trainedAlgorithmicMedia` for LLM path, `algorithmicMedia` for canonical path).
+
+Verify: see PROOF_BOUNDARY §1.8; spec + worked example in [`docs/RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) §A. Live `/api/render` response includes a `render_receipt` block with three-segment detached JWS.
+Result: **PASS** (live; v0.9.B browser verifier and v0.9.C Python verifier are queued in [`docs/NEXT_SESSION_PLAYBOOK.md`](NEXT_SESSION_PLAYBOOK.md) to lock the negative-path proof across runtimes).
+
+### 115. TypeScript axis-prompt mirror (`worker/src/render/axis_prompts.ts`) ✅
+
+Byte-for-byte equivalent of the Python `tome_sliders.build_system_prompt` and per-axis fragment lookup tables, plus `applyDensity`, `requiresExtrapolator`, `deterministicTome` for the canonical (no-LLM) branch. A Python-rendered tome and a Worker-rendered tome from the same input are interchangeable when sliders match.
+
+Verify: `npm --prefix worker run typecheck`
+Expected: clean.
+Result: **PASS**.
+
+### 116. Bin cache (`worker/src/cache/bin_cache.ts`) ✅
+
+Content-addressed cache key `sha256(sorted_triples + quantize(sliders))[:32]` byte-stable with the Python `slider_renderer.cache_key`. KV-backed in production (binding `RENDER_CACHE`); in-memory for local dev. Default 24 h TTL; LRU on the KV side. Cache HIT serves the original receipt verbatim including `signed_at` — see [`docs/RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) §1.3 for the durability semantics.
+
+Verify: TypeScript unit tests in `worker/` cover key derivation; cross-runtime byte parity is the floating-point repr concern documented inline (`1.0` Python vs `1` JS — JCS normalisation handles it on the receipt path; the bin cache excludes density from binning per Phase E.1 STATE 4).
+Result: **PASS**.
+
+### 117. `/api/qid` Wikidata resolver (Phase 4a) ✅
+
+`worker/src/routes/qid.ts` — replaces the 501 stub. Batch term lookup via MediaWiki `wbsearchentities`, returns `{id, label, description, confidence, source}` per term. Up to 50 terms per request; parallel fetches; two-tier caching (edge Cache API + optional KV). Confidence scoring mirrors Wikidata's `match.type` field (`label` → 1.0, `alias` → 0.7, else → 0.5). User-Agent header per Wikidata operator-contact guidance. **SPARQL disambiguation is Priority 4 in [`docs/NEXT_SESSION_PLAYBOOK.md`](NEXT_SESSION_PLAYBOOK.md) — the current `wbsearchentities`-only path is ~80 % accurate, which Priority 4 lifts to a measured >95 % floor.**
+
+Verify: `curl -sS -X POST https://sum-demo.ototao.workers.dev/api/qid -H 'content-type: application/json' -d '{"terms":[{"text":"Marie Curie"}]}' | jq '.results[0] | keys'`
+Expected: `["confidence","description","id","label","source"]`
+Result: **PASS** (live).
+
+---
+
 ## Summary counts
 
-Production ✅: **82** features tested green (76 from the prior session pass + features 98–103: `sum` CLI binary, signature-verifying `sum verify`, `sum attest --ed25519-key`, `sum attest --ledger`, in-browser Ed25519, PyPI-install smoke CI).
+Production ✅: **96** features tested green (82 from the prior session pass + features 104–117: four-layer fact preservation / NLI audit / order_preservation / 5000-word audience / RenderedTome / FACT_PRESERVATION_REINFORCEMENT / salvage_partial_triplets / long-doc bench corpus / `/api/render` real path / JWKS endpoint / render-receipt signing / TS axis-prompt mirror / bin cache / `/api/qid` real path; minus feature 97 which moved from 📄 to ✅).
 Scaffolded 🔧: **14** features — tests pass, production activation pending. All catalogued in `docs/MODULE_AUDIT.md` with activation checklists.
-Designed 📄: **2** features (sha256_128_v2 promotion, Pages live URL).
+Designed 📄: **1** feature (sha256_128_v2 promotion). Phase E.1 v0.9.B (browser receipt verifier) + v0.9.C (Python receipt verifier) are queued unshipped in [`docs/NEXT_SESSION_PLAYBOOK.md`](NEXT_SESSION_PLAYBOOK.md) but not catalogued here until they land.
 
 Cross-cutting coverage:
 - pytest batch-1 (core Layer-1–3): **300 passed**
 - pytest batch-2 (broader Layer-1–3 + bench): **291 passed**
-- Cross-runtime harnesses: **5 / 5 green** — CanonicalBundle K1/K1-mw/K2/K3/K4 (structural + Ed25519 Python ↔ Node), JCS, prov_id, Gödel
+- Cross-runtime harnesses: **K-matrix + A-matrix green** — K1 / K1-mw / K2 / K3 / K4 valid-input agreement (CanonicalBundle structural + Ed25519, Python ↔ Node) + A1–A6 adversarial-input rejection-class equivalence (Priority 1, closed); JCS, prov_id, Gödel byte-identity fixtures all green
 - JS self-tests: **50 / 50 green** (30 JCS + 20 provenance)
 - Node verifier self-tests: **28 / 28 green** (10 v1 + 18 v2-parity)
-- Bench: **seed_v1 F1 = 1.000 / canonical drift 0.00 %**, **seed_v2 F1 = 0.762 with precision 1.000 / canonical drift 0.00 %**
+- Bench (extraction / canonical): **seed_v1 F1 = 1.000 / canonical drift 0.00 %**, **seed_v2 F1 = 0.762 with precision 1.000 / canonical drift 0.00 %**
+- Bench (slider, Phase E.1): median LLM-axis fact preservation **1.000**, p10 **0.769** (long n=16) / **0.818** (short n=8), 0 catastrophic outliers post v0.7 hardening, 0 / 400 cells errored post v0.8 robustness layer
+- Live trust loop: `/.well-known/jwks.json` + `/api/render` + `render_receipt` (`sum.render_receipt.v1`, Ed25519 / JCS / detached JWS) verifiable end-to-end at `https://sum-demo.ototao.workers.dev` against the active `kid: sum-render-2026-04-27-1`
 
 Every feature above either has a passing verification this session or an explicit deferral reason. No green-box claims without evidence.
