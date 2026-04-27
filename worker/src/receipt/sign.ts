@@ -82,13 +82,21 @@ async function sha256Hex(bytes: Uint8Array): Promise<string> {
 export async function hashTriples(
   triples: Array<[string, string, string]>,
 ): Promise<string> {
-  // Sort + JCS for byte-stable cross-runtime hashing. Python's
-  // sorted(tuple(t) for t in triples) + jcs.canonicalize must
-  // produce the same bytes for the same input.
+  // Componentwise tuple-lex sort, then JCS canonicalisation.
+  // Matches Python's `sorted(tuple(t) for t in triples)` byte-for-byte
+  // even when triple components contain separator-like characters
+  // (e.g., '|'). Earlier draft used a `${a[0]}||${a[1]}||${a[2]}`
+  // join-sort which diverged from Python's default tuple ordering
+  // on inputs like `[["a||b","x","y"], ["a","b","y"]]` — the join
+  // leaks rightmost component bytes into the leftmost comparison
+  // space. Componentwise comparison fixes this without losing
+  // determinism. v0.9.A.1 review-pass fix.
   const sorted = [...triples].sort((a, b) => {
-    const ak = `${a[0]}||${a[1]}||${a[2]}`;
-    const bk = `${b[0]}||${b[1]}||${b[2]}`;
-    return ak < bk ? -1 : ak > bk ? 1 : 0;
+    for (let i = 0; i < 3; i++) {
+      if (a[i] < b[i]) return -1;
+      if (a[i] > b[i]) return 1;
+    }
+    return 0;
   });
   const canonical = canonicalize(sorted);
   if (typeof canonical !== "string") throw new Error("canonicalize returned undefined");

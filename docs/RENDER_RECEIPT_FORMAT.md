@@ -55,7 +55,7 @@ The four top-level keys are siblings, not nested:
 |---|---|---|
 | `render_id` | string | First 16 hex chars of `sha256(cache_key ‖ tome_bytes)`. Stable per (triples, sliders, tome) tuple; not a freshness token. |
 | `sliders_quantized` | object | The post-quantize slider values. Density passes through unchanged; LLM axes are snapped to bin centres `{0.1, 0.3, 0.5, 0.7, 0.9}`. See [`SLIDER_CONTRACT.md`](SLIDER_CONTRACT.md). |
-| `triples_hash` | string | `sha256-<hex>` of JCS-canonicalised, lex-sorted triples. Cross-runtime byte-stable: Python `jcs` and TypeScript `canonicalize` produce the same bytes. |
+| `triples_hash` | string | `sha256-<hex>` of JCS-canonicalised triples. Sort order: **componentwise tuple-lex** (matches Python's default `sorted()` on tuples) — NOT a string-join-sort. The componentwise rule keeps separator characters from leaking into the comparison space when triple components contain `|`. Cross-runtime byte-stable: Python `jcs` on `sorted(tuple(t) for t in triples)` and TypeScript `canonicalize` on the componentwise-sorted array produce the same bytes. |
 | `tome_hash` | string | `sha256-<hex>` of the tome's UTF-8 bytes. Verifier rehashes the response's `tome` field and compares. |
 | `model` | string | The model that ACTUALLY served the call, taken from the LLM API response's reported `model` field — NOT the configured-default. May be a more specific snapshot id than the requested tag (e.g., Anthropic resolves `claude-haiku-4-5-20251001` → a dated snapshot). When the API doesn't echo a model, the value is `<requested>_inferred` so the inference itself is visible. For canonical-path renders (no LLM), the value is the literal string `canonical-deterministic-v0`. |
 | `provider` | string | One of the values enumerated in §1.2. |
@@ -185,7 +185,7 @@ Same expected error if `sliders_quantized.formality` is changed, if any characte
 | Runtime | JOSE | JCS |
 |---|---|---|
 | TypeScript / JavaScript (Node ≥ 18, browsers, Cloudflare Workers, Deno, Bun) | [`jose@>=6`](https://github.com/panva/jose) (panva, MIT) | [`canonicalize@>=3`](https://www.npmjs.com/package/canonicalize) (Erdtman, Apache 2.0) |
-| Python (3.10+) | [`joserfc`](https://pypi.org/project/joserfc/) or [`python-jose`](https://pypi.org/project/python-jose/) | [`jcs`](https://pypi.org/project/jcs/) (Erdtman, Apache 2.0) |
+| Python (3.10+) | [`joserfc`](https://pypi.org/project/joserfc/) or [`authlib`](https://pypi.org/project/Authlib/) (both active, both EdDSA + detached JWS) | [`jcs`](https://pypi.org/project/jcs/) (Erdtman, Apache 2.0) |
 | Go | `github.com/go-jose/go-jose/v3` | `github.com/cyberphone/json-canonicalization/go/src/webpki.org/jsoncanonicalizer` |
 | Rust | `josekit` or `jsonwebtoken` | `serde-jcs` |
 
@@ -281,7 +281,7 @@ Rotation is the standard JWKS pattern:
 
 1. Generate a new keypair with `npx tsx scripts/cert/gen_render_keypair.ts <new-kid>`.
 2. ADD the new public JWK to the existing JWKS — DO NOT replace. The JWKS now has two `keys[]` entries.
-3. Upload the new private JWK as the secret: `wrangler secret put RENDER_RECEIPT_SIGNING_JWK < /tmp/...`
+3. Upload the new private JWK as the secret: `wrangler secret put RENDER_RECEIPT_SIGNING_JWK < /tmp/render_receipt_private.jwk`
 4. Update `RENDER_RECEIPT_SIGNING_KID` to the new kid.
 5. Wipe the tempfile: `rm -P /tmp/render_receipt_private.jwk` (macOS / BSD) or `shred -u` (GNU/Linux).
 6. Deploy. New renders sign with the new kid; old receipts continue to verify against the old kid in JWKS.
@@ -386,8 +386,8 @@ Content-Type: application/json
         "length": 0.5,
         "perspective": 0.5
       },
-      "triples_hash": "sha256-7f8a9b...",
-      "tome_hash": "sha256-9b2cd1...",
+      "triples_hash": "sha256-7d3decf66362edbafbb397c1aa5af525e76df3bd666128fcc53aa3baf42e4618",
+      "tome_hash": "sha256-7979a8d1f307bd269a7ea7fb2ecfc121ef80a08fc5b7dfbdb07841d3aabb6b63",
       "model": "claude-haiku-4-5-20251001",
       "provider": "anthropic",
       "signed_at": "2026-04-26T14:23:01.000Z",
@@ -400,13 +400,13 @@ Content-Type: application/json
 
 ### A.4 JCS-canonical bytes of the payload
 
-After running the `payload` object through JCS, the resulting UTF-8 bytes are:
+The `payload` object from §A.3, run through `canonicalize()`, produces exactly these UTF-8 bytes (no whitespace, keys lex-sorted at every level):
 
 ```
-{"digital_source_type":"trainedAlgorithmicMedia","model":"claude-haiku-4-5-20251001","provider":"anthropic","render_id":"e34df444f6ea1c92","signed_at":"2026-04-26T14:23:01.000Z","sliders_quantized":{"audience":0.5,"density":1,"formality":0.7,"length":0.5,"perspective":0.5},"signed_at":...REDUPLICATED — see correction below...
+{"digital_source_type":"trainedAlgorithmicMedia","model":"claude-haiku-4-5-20251001","provider":"anthropic","render_id":"e34df444f6ea1c92","signed_at":"2026-04-26T14:23:01.000Z","sliders_quantized":{"audience":0.5,"density":1,"formality":0.7,"length":0.5,"perspective":0.5},"tome_hash":"sha256-7979a8d1f307bd269a7ea7fb2ecfc121ef80a08fc5b7dfbdb07841d3aabb6b63","triples_hash":"sha256-7d3decf66362edbafbb397c1aa5af525e76df3bd666128fcc53aa3baf42e4618"}
 ```
 
-(Pedantic note: the actual canonicalisation produces exactly one occurrence of every key, lex-sorted. The above is a hand-rolled illustration; run `canonicalize(receipt.payload)` for the real bytes. Note that `density: 1.0` becomes `density:1` in canonical form, per §4.)
+Note `density:1` (not `1.0`) — the JCS integer-float normalisation rule from §4 applied to a real payload. The hashes are computable from §A.3's literals: `tome_hash = sha256(utf8("Alice was born in 1990. She graduated in 2012."))`, and `triples_hash = sha256(canonicalize(componentwise-tuple-lex-sorted §A.3 triples))`. Reproduce both in any JOSE-aware runtime; if your bytes differ, the canonicalisation step is the most likely culprit.
 
 ### A.5 Verification command
 
@@ -464,10 +464,13 @@ VERIFIED: {
 
 ```typescript
 // Take r, mutate any signed field, re-verify.
-r.payload.tome_hash = "sha256-deadbeefdeadbeef" + r.payload.tome_hash.slice(15);
+r.payload.sliders_quantized.formality = 0.6;  // was 0.7
+
 // Repeat steps A.5. Expected stderr:
 //   REJECTED: ERR_JWS_SIGNATURE_VERIFICATION_FAILED
 ```
+
+Same expected outcome from mutating any other signed field: `tome_hash`, `triples_hash`, `model`, `provider`, `signed_at`, `digital_source_type`, or any nested slider value. Every payload field is signed; tampering any one bit invalidates the signature.
 
 If your verifier accepts a receipt with a mutated signed field, it has a defect — the canonicalisation step is the most common culprit. Re-read §4.
 
