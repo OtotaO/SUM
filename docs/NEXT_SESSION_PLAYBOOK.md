@@ -153,6 +153,29 @@ The numbering keeps continuity with the previous playbook so `git log --grep '\[
 
 These are concrete next-cycle items the render-receipt landing made possible. They are *post-hardening* in the sense that they extend the v0.9.A surface; they are *pre-Phase B* in the sense that they close the trust loop the README's load-bearing claim depends on.
 
+### v0.3.1 — PyPI long-description sync + CI gate (micro-cycle)
+
+**Problem.** The `sum-engine` v0.3.0 wheel was published before PR A's README rewrite, so `pypi.org/project/sum-engine` shows a long-description that says "PyPI: `pip install sum-engine[sieve]` — shipping soon" — a tautology against itself, and a drift the truthfulness contract specifically prohibits. PyPA's metadata model freezes the long-description at publish time; the surface rots independently of the GitHub README.
+
+**Work.**
+- Cut a v0.3.1 hygiene release that picks up the post-PR-A README. No code changes; `pyproject.toml` version bump only.
+- Add a CI gate that fails if the next wheel's `Description` metadata diverges from `README.md` head: `python -m build` → extract `Description` from the built wheel's `*.dist-info/METADATA` → normalise line endings → diff against `README.md`. Reuse `twine check` to validate the long-description renders on Warehouse, and `check-wheel-contents` to catch wheel-content mistakes. The custom diff gate answers a question those two don't ("is this actually the README we intended to ship") and complements them.
+- Run sequence in CI: `python -m build --sdist --wheel` → `twine check dist/*` → `check-wheel-contents dist/*.whl` → `python scripts/check_long_description_sync.py`.
+
+**Success criterion.** v0.3.1 ships with a long-description that matches `README.md` head verbatim. CI fails closed on any future divergence; a deliberate test break in a branch confirms the gate fires before publish.
+
+**Why before v0.9.A.3.** It's a 1–3 hour cycle, prevents an immediate truthfulness-contract violation, and is independently scoped from any other work.
+
+### v0.9.A.4 — Demo UI provenance/preservation label (micro-cycle)
+
+**Problem.** The Worker render route doesn't recompute fact preservation per call — preservation is the bench's contract, not a live property of any single render ([`worker/src/routes/render.ts`](../worker/src/routes/render.ts), [`docs/SLIDER_CONTRACT.md`](SLIDER_CONTRACT.md)). A casual user reading the README's "median 1.000 / p10 0.769 measured at scale" claim and then watching a live render could conflate "this receipt verified" with "this render's fact preservation was independently checked." The receipt format spec covers the trust scope in [`docs/RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) §5; the live demo HTML doesn't currently surface that distinction.
+
+**Work.**
+- Add a label in `single_file_demo/index.html` next to the rendered tome + receipt: three lines, no jargon — "Provenance verified." / "Preservation benchmarked, not recomputed." / "Signed does not mean true." Each line points at the spec section that backs it.
+- Confirmation: any user reading the live demo can answer "what does this receipt prove?" without consulting docs, and the answer matches §5 of the receipt spec.
+
+**Why before v0.9.B.** v0.9.B's verifier UI will inherit this labelling pattern; doing it in v0.9.A.4 means v0.9.B doesn't have to retrofit. Lightweight (~1–2 hours) Worker-side change.
+
 ### Phase E.1 v0.9.B — browser receipt verifier
 
 **What.** In-page detached-JWS verification against the same JWKS the Worker publishes. The single-file demo gains a "Verify receipt" pane that:
@@ -176,6 +199,20 @@ These are concrete next-cycle items the render-receipt landing made possible. Th
 Compose v0.9.C into the long-doc bench. Each cell that hits `/api/render` records the receipt and verifies it; a verified receipt with `model: canonical-deterministic-v0` is the canonical-path attestation, with `model: claude-haiku-…` is the LLM-path attestation. Aggregate column: % of receipts verified, % of cells where canonical-path served (sliders all neutral except density).
 
 Unblocks: a bench run becomes its own audit trail. Replay a historical bench run's receipts to confirm the engine produced the claimed renders without re-paying the LLM cost.
+
+### Phase E.1 v0.9.E — local ONNX NLI rescue
+
+**Problem.** The NLI audit is load-bearing: long-doc bench reports 99.8 % rescue rate (653 / 654 audited cells), and the slider's product claim runs through this layer. The current path calls OpenAI per audit, which makes NLI both the largest LLM-cost line in the bench and a coupling point that ties the slider's headline number to a third-party API's availability + pricing. Decoupling is high-leverage.
+
+**Work.**
+- Export a DeBERTa-v3 NLI model to ONNX (`microsoft/deberta-v3-base-mnli` or equivalent that scores well on the bench's audit cases). ONNX Runtime is cross-platform and gives a Python path now and a Node / browser path later if v0.9.B's verifier wants in-page audit.
+- Wire as a swap target behind `LiveLLMAdapter.check_entailment` — same `EntailmentResponse` Pydantic shape, new local backend. Keep the OpenAI path as a fallback; the substrate stays plural until the local path proves out.
+- Calibrate the audit threshold against the existing benchmark corpus: current `--audit-threshold` is 0.7 with `text-embedding-3-small` at τ=0.85. The DeBERTa-v3 entailment confidence distribution is different; threshold needs re-tuning against the same corpus to preserve rescue precision/recall.
+- Validating experiment: replay the v0.7 long-doc bench's audited cells, compare rescue precision + recall + per-1000-pair wall-clock + per-1000-pair cost against the OpenAI path. Ship the swap only if local matches or beats both rescue-precision (currently 99.8 %) and rescue-recall on the calibration set.
+
+**Success criterion.** Local rescue path reproduces the v0.7 long-doc bench's median 1.000 / p10 0.750 / 1 confirmed real loss to within the run-to-run noise band (±0.02 on p10), at materially lower marginal cost. Headline claim in [`docs/SLIDER_CONTRACT.md`](SLIDER_CONTRACT.md) gains a "verified locally + via OpenAI" footnote rather than swapping the canonical path immediately.
+
+**Tradeoff.** Operational complexity goes up: model-file packaging, ONNX runtime version pinning, cold-start behaviour, threshold drift across model upgrades. Worth pinning a model-version contract (`docs/NLI_MODEL_REGISTRY.md` or similar — small, just a kid-shaped pin so rescues across runs are comparable).
 
 ---
 
@@ -236,6 +273,67 @@ The technical trust contract (cryptographic attestation + cross-runtime equivale
 
 ---
 
+## External tooling tracks (parallel / post-Phase A)
+
+The Phase A priorities define *what work* needs doing; this section names *which third-party tools* are the recommended substrates for that work where the choice is now informed enough to commit to. Pinning the substrates here means future cycles don't re-litigate them under scope pressure. Items in this section are categorized by maturity: *recommended now* (production-ready substrates), *prototype first* (architectural research that should be benchmarked before commitment), *research branches* (perf/ergonomics experiments, not migration targets), and *negative recommendations* (paths that look attractive but should not be taken at current maturity).
+
+### Recommended substrates (production-ready, fit existing priorities)
+
+These tools fit cleanly into existing priority work; cycles that touch the corresponding priority should default to these substrates unless a specific reason emerges to choose otherwise.
+
+| Priority | Recommended substrate | Why |
+|---|---|---|
+| P5 — threat-model validation (rate limit wired, abuse controls) | **Cloudflare Workers Rate Limiting + AI Gateway + Turnstile** (the last only on endpoints where user friction is acceptable) | Demo already lives in the Cloudflare universe; native primitives are stronger than rolled-our-own middleware. AI Gateway adds provider-side rate limiting + fallback + caching + observability; Turnstile is the right shape for anonymous-burst endpoints only. |
+| P7 — supply-chain attestation | **Sigstore Cosign + SLSA build provenance** (GitHub Actions integration) | Mirrors the same trust mindset as the receipt layer; transparency log + verifiable build provenance is the standard. Sign the wheel + the standalone verifier JS bundle + the Worker bundle; emit Sigstore bundle and SLSA provenance per release; verify from a clean machine before attaching to the GitHub release. |
+| P8 — LLM-extraction honesty | **Instructor (or Outlines)** for `LiveLLMAdapter.extract_triplets` | Strict triple schema before canonicalization. Instructor is provider-agnostic and integrates cleanly with the existing Pydantic-enforced shape; Outlines is the grammar-constrained alternative if SUM later runs local extraction models. Schema-valid output can still be semantically wrong, so this complements rather than replaces the deterministic sieve and the NLI rescue layer. |
+| Packaging hygiene (v0.3.1 above) | **`build` + `twine check` + `check-wheel-contents` + custom `README ↔ wheel.METADATA` diff** | PyPA-canonical stack. Each tool answers a different question; they compose cleanly. |
+
+### Prototype first — architectural research before commitment
+
+#### M1 — Merkle witness sidecar (RFC 9162)
+
+**Problem.** PROOF_BOUNDARY §2.2 documents the merge ceiling: `p50 ≈ 519 ms` at `N=1000`, extrapolating to `~50 s/op` at `N=10,000` and `>1 hr/op` at `N=100,000`. Above that ceiling, prime encoding is a viable signed witness for compositional reasoning but not the right substrate for efficient third-party verification at scale. A Merkle commitment over the canonical fact-key set gives log-size inclusion proofs and consistency proofs that scale where LCM does not — *without* giving up the algebra LCM provides locally.
+
+**Architecture (sidecar, NOT replacement).** Keep LCM as the algebra for idempotent set union and divisibility-based entailment; add a Merkle commitment alongside, not in place of. A signed bundle carries both the LCM state integer (for divisibility checks + merge composition) and the Merkle root (for log-size inclusion proofs). Verifiers needing fast third-party inclusion use the Merkle path; verifiers needing compositional reasoning use the LCM path. Both signatures live in the same bundle.
+
+**Work.**
+- Define the leaf format: `sha256(canonical_fact_key)` over the same canonical key the prime mapping uses; insertion order canonicalised (lex-sort on canonical key). Locking the leaf format is the most important spec decision — once shipped, it's load-bearing forever.
+- Use a known-good library: `pymerkle` or `ct-merkle` are the candidate Python implementations; both expose RFC 9162-shaped inclusion + consistency proofs. Cross-runtime equivalence demands a TS implementation too — `@transparency-dev/merkle` or equivalent.
+- Benchmark proof size + proof-verify time + state-update cost at `N=100`, `N=1k`, `N=10k` against the LCM-only substrate. Numbers go in `docs/PROOF_BOUNDARY.md` §2.2 alongside the existing N-table.
+- The success criterion is *empirical*: log-size inclusion proofs that verify materially faster than the LCM divisibility path at `N=10k`, with a verifier that's straightforward to implement from spec alone (G2 independence concern).
+
+**Tradeoff.** A Merkle root does not preserve LCM's algebraic composability — adding a fact requires re-inserting a leaf and recomputing inclusion paths, not just multiplying primes. That's why this is a *sidecar*: LCM remains the local algebra; the Merkle path is an external-verification surface.
+
+**Not before:** P3 (`sha256_128_v2`) — the two share the spec-stability surface, and changing the leaf hashing scheme in Merkle land while changing the prime scheme on the LCM side is a multi-axis migration that's better done sequentially.
+
+### Research branches (perf / ergonomics experiments, not migration targets)
+
+These are scoped as **branch-level benchmarks**, not as migration commitments. Run them, post the numbers, decide afterwards. Do not preemptively re-architect around any of them.
+
+#### R1 — GMP / gmpy2 big-int benchmark
+
+Swap the Python hot path to `gmpy2.mpz` wherever the Zig core is not already authoritative; benchmark encode + merge + entail + memory at `N=100 / N=1k / N=10k` against CPython `int` and the current Zig-assisted path. If GMP doesn't materially reduce merge cost, drop it. The Zig path is the existing escape hatch (the README "GMP via Zig" line is honest); GMP-via-Python is a fallback for environments without the Zig core.
+
+**Tradeoff.** GMP-backed paths add system dependencies and complicate packaging. Don't ship GMP as a hard dependency; gate it behind an opt-in extra (`pip install sum-engine[gmp]`).
+
+#### R2 — WIT-based cross-runtime ABI for the Zig/WASM core
+
+Define a minimal WIT world for prime lookup, encode, merge, divisibility checks; generate bindings via `wit-bindgen` for native + `jco` for browser/JS; replay existing cross-runtime fixtures through the typed interface. The current `standalone_verifier/math.js`-shared-source pattern works fine for now; WIT is the upgrade for when polyglot bindings cost more to maintain than re-stating math twice.
+
+**Tradeoff.** `jco` is explicitly experimental, and the component model adds tooling complexity. WIT also pulls SUM toward "one core everywhere" — keep G2 (independent verifier) explicit alongside any WIT migration to avoid monoculture bugs.
+
+### Negative recommendations — paths that look attractive but should not be taken at current maturity
+
+#### Do NOT replace LCM with raw multiplication
+
+LCM gives **set semantics**: adding the same canonical fact twice does not change state. Multiplication encodes **multiset semantics**: duplicates accumulate. SUM's truthfulness contract assumes set semantics throughout (Ouroboros round-trip relies on it; `state % prime == 0` returns the same boolean regardless of how many times the prime entered the state). Switching to multiplication would be a semantic regression sold as a simplification, and would break the algebra invariants in PROOF_BOUNDARY §1.4 that the bench harness pins. **This is a stop-the-line trigger.**
+
+#### Do NOT migrate to RSA accumulators or KZG / vector commitments yet
+
+Both are real research directions; neither has a production-ready, browser-friendly, independently-audited library that fits SUM's "human-auditable spec" posture today. Cambrian-style RSA accumulator implementations explicitly self-label as research-grade. KZG libraries (`c-kzg-4844`, `arkworks-rs/poly-commit`) are Ethereum/zkSNARK-shaped and carry trusted setup + pairing complexity that doesn't pay for itself at SUM's current corpus size. **Run shadow prototypes if curious; do not migrate.** The Merkle sidecar (M1 above) is the path that does pay for itself at SUM's actual scale.
+
+---
+
 ## Ordering rationale
 
 P1 closed the cross-runtime invalidity-agreement gap. P2 stays open on numbers; the harness landing was the larger half. P3 prevents a collision frontier that worsens with success. P4 fixes a 1-in-5 lie rate on a live attestation surface. P5 turns prose threat claims into executable assertions. P6 specifies an under-specified field. P7 raises trust from "trust the repo" to "verify the bytes." P8 makes the signed-vs-true distinction visible at the consumer interface.
@@ -256,6 +354,7 @@ If you discover any of these during the work above, pause and surface it before 
 - **A render receipt with `kid` not present in JWKS while cached responses can still surface that kid.** Rotation grace-window violation per [`docs/RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) §6.
 - **A render receipt that verifies despite its `kid` being on the published revocation list** (once G3 lands). The revocation surface exists to be honoured; a verifier that ignores it is a verifier that cannot be trusted with future revocations.
 - **A render receipt that verifies under an algorithm not declared in the in-tree algorithm registry** (once G3 lands). Fail-closed-on-unknown-alg is load-bearing — implicit trust in unannounced algorithms is the crypto-agility analogue of a TLS downgrade attack.
+- **A proposal that replaces LCM with raw multiplication** (or otherwise removes set semantics from the algebra). LCM is load-bearing for the truthfulness contract: idempotent fact union, no multiset accumulation, `state % prime == 0` invariant on the cardinality of additions. Any "simplification" that breaks this is a semantic regression dressed as cleanup. See External Tooling Tracks §"Negative recommendations."
 - **A claim in `README.md` / `CHANGELOG.md` / docs that you cannot defend** with a test, a measurement, or an explicit "designed, not proved" label. Most common lie to discover; corrodes trust.
 
 ---
