@@ -1011,6 +1011,85 @@ After the first deploy, subsequent deploys run via the
 
 (next release will move these entries under a version heading)
 
+## [0.3.1] — 2026-04-27
+
+Hygiene release. Zero code-semantic changes. Closes a public-surface
+truthfulness drift, locks the failure mode behind a CI gate, and adds
+verifiable provenance on the published artifact.
+
+The v0.3.0 wheel was published before the post-PR-A README rewrite,
+so `pypi.org/project/sum-engine` showed a long-description that said
+`pip install sum-engine[sieve] — shipping soon`: a tautology against
+itself for a project whose brand is truthfulness. PyPA's metadata
+model freezes the long-description at publish time; the surface
+rotted independently of the GitHub README. v0.3.1 picks up the
+current README and adds the gate that prevents recurrence.
+
+### Fixed
+
+- `pyproject.toml` version bump 0.3.0 → 0.3.1; the wheel's
+  `Description` metadata now matches `README.md` head verbatim.
+
+### Added — packaging hygiene gate
+
+- `scripts/hash_dist.py` — emits `sum.dist_hashes.v1` JSON with
+  SHA-256 over each file in `dist/`. Used as the input artifact for
+  TestPyPI verification, production verification, and (eventually)
+  the R0 trust-root manifest. Single source of truth for "the bytes
+  we built locally" across every downstream verification step.
+- `scripts/check_long_description_sync.py` — extracts `Description`
+  from the built wheel's `*.dist-info/METADATA` and diffs against
+  `README.md` after newline normalisation. Fails closed on any
+  divergence. Complements `twine check` (renderability) and
+  `check-wheel-contents` (file-tree validity) by answering a
+  question neither does — "is this actually the README we intended
+  to ship."
+- `scripts/verify_pypi_attestation.py` — verifies a published
+  artifact's PEP 740 attestation against the expected GitHub
+  repo + workflow identity, using `pypi-attestations`. Pinned at
+  invocation; the upstream CLI labels itself experimental, so the
+  release pipeline runs against a pinned version rather than the
+  latest tag.
+- `.github/workflows/publish-pypi.yml` restructured to a staged
+  publish: build dist/* → pre-publish gates (twine check +
+  check-wheel-contents + README diff) → upload SAME local files to
+  TestPyPI via Trusted Publishing → verify staged provenance
+  (FAIL CLOSED here, pre-promotion gate) → upload SAME local files
+  to production PyPI → verify production provenance (post-publish
+  detection; alarm, not gate). The TestPyPI gate is the
+  load-bearing fail-closed step. TestPyPI and production PyPI are
+  separate indexes — the same local `dist/*` is uploaded to each;
+  no PyPI-side promote operation exists. Trust-relationship setup
+  on test.pypi.org is a one-time pre-merge configuration step
+  (documented in PR description).
+
+### Unchanged
+
+- CLI contract for `attest / verify / resolve / ledger / inspect /
+  schema` and every flag on them.
+- CanonicalBundle wire format (`canonical_format_version 1.0.0`).
+- Prime scheme (`sha256_64_v1`).
+- Every cryptographic contract (HMAC, Ed25519, VC 2.0).
+- Cross-runtime trust triangle (K1 / K1-mw / K2 / K3 / K4 + A1–A6
+  green on this commit; same bundle bytes still verify in Python ↔
+  Node ↔ Browser; rejection class symmetric on adversarial input).
+
+### Demo (single_file_demo/index.html)
+
+Provenance / preservation / signed-not-true labelling added next to
+the rendered tome so a casual user reading the live demo can answer
+"what does this receipt prove?" without consulting docs:
+- "Provenance verified" — the receipt proves the issuer signed this
+  render tuple.
+- "Preservation benchmarked: median 1.000; p10 0.769 long / 0.818
+  short. Not recomputed for this render." — normalises the demo's
+  preservation copy to match the README's long+short distinction
+  (the previous copy quoted only the short-corpus p10 0.818).
+- "Signed does not mean true" — the receipt is not a truth oracle.
+
+Each line cross-references the spec section that backs it
+(`docs/RENDER_RECEIPT_FORMAT.md` §5; `docs/SLIDER_CONTRACT.md`).
+
 ## [0.3.0] — 2026-04-23
 
 Minor-bump feature release. Agentic-first introspection surface: three
@@ -1207,7 +1286,8 @@ browser demo. Cross-runtime trust triangle
   package. Downstream consumers should depend on the CLI contract,
   not import these modules directly — they may move in 0.2.0.
 
-[Unreleased]: https://github.com/OtotaO/SUM/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/OtotaO/SUM/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/OtotaO/SUM/releases/tag/v0.3.1
 [0.3.0]: https://github.com/OtotaO/SUM/releases/tag/v0.3.0
 [0.2.1]: https://github.com/OtotaO/SUM/releases/tag/v0.2.1
 [0.2.0]: https://github.com/OtotaO/SUM/releases/tag/v0.2.0
