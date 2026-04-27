@@ -155,8 +155,8 @@
     <p style="font-size:12px;opacity:0.7;margin:0 0 12px;">
       Five axes shape the tome from the same facts. Density (above) is deterministic — selects which facts to include.
       The four below condition an LLM render via <code>/api/render</code>. Fact preservation across non-density axes
-      is empirically verified at median 1.000, p10 0.818 (see
-      <a href="https://github.com/OtotaO/SUM/blob/main/docs/SLIDER_CONTRACT.md">SLIDER_CONTRACT.md</a>).
+      is empirically verified at median 1.000; p10 0.769 long-corpus (n=16), 0.818 short-corpus (n=8) — see
+      <a href="https://github.com/OtotaO/SUM/blob/main/docs/SLIDER_CONTRACT.md">SLIDER_CONTRACT.md</a>.
     </p>
     <div class="row">
       <label for="length">length</label>
@@ -184,6 +184,27 @@
     <div id="render-output" style="display:none; margin-top: 12px;">
       <div class="extractor-src claude" id="render-meta"></div>
       <pre id="render-tome" style="white-space: pre-wrap; word-wrap: break-word; background: #8881; padding: 12px; border-radius: 4px; font-size: 13px; line-height: 1.5; margin: 0;"></pre>
+      <!--
+        Three-line trust label: matches docs/RENDER_RECEIPT_FORMAT.md §5
+        and docs/SLIDER_CONTRACT.md "Headline result" verbatim. Closes the
+        "more verified than it is" misread by separating render-attestation
+        provenance from offline-benchmark fact preservation, and surfacing
+        "signed ≠ true" at point of use.
+      -->
+      <div style="margin-top: 10px; padding: 10px 12px; border: 1px solid #8884; border-radius: 4px; font-size: 11px; line-height: 1.5; opacity: 0.85;">
+        <div style="margin-bottom: 4px;">
+          <strong>Provenance verified:</strong> the receipt proves the issuer signed this render tuple
+          (<a href="https://github.com/OtotaO/SUM/blob/main/docs/RENDER_RECEIPT_FORMAT.md#5-trust-scope">§5 trust scope</a>).
+        </div>
+        <div style="margin-bottom: 4px;">
+          <strong>Preservation benchmarked:</strong> median 1.000; p10 0.769 long / 0.818 short.
+          <em>Not recomputed for this render</em> — see
+          <a href="https://github.com/OtotaO/SUM/blob/main/docs/SLIDER_CONTRACT.md#headline-result-nli-verified-scale-checked">SLIDER_CONTRACT.md</a>.
+        </div>
+        <div>
+          <strong>Signed does not mean true:</strong> the receipt is not a truth oracle.
+        </div>
+      </div>
     </div>
   </div>
 </div>

@@ -1,21 +1,25 @@
 name: Publish to PyPI
 
-# Triggered by pushing a version tag (vX.Y.Z). Two jobs, in order:
-#   1. build    — produce sdist + wheel from pyproject.toml and upload
-#                 as an artifact.
-#   2. publish  — download the artifact and upload to PyPI via OIDC
-#                 trusted publishing (no API token stored in the repo).
+# Triggered by pushing a version tag (vX.Y.Z). The publish flow is
+# staged: build once, gate locally, upload the SAME local dist/* to
+# TestPyPI, verify the staged provenance against the expected GitHub
+# repo+workflow identity (THIS IS THE FAIL-CLOSED PRE-PROMOTION GATE),
+# then upload the SAME local dist/* to production PyPI, then verify
+# production provenance as post-publish detection.
 #
-# Uses PyPI's Trusted Publisher feature: the `publish` job claims an
-# OIDC token, PyPI verifies it matches the registered pending publisher
-# (project=sum-engine, owner=OtotaO, repo=SUM, workflow=publish-pypi.yml,
-# environment=pypi), and the upload proceeds. No PYPI_API_TOKEN secret
-# needed — the trust relationship is established once in the PyPI UI.
+# Note on terminology: "TestPyPI" and "PyPI" are separate indexes. We
+# do not "promote" the TestPyPI artifact to production — we upload the
+# same local bytes to each. The TestPyPI verify step is what gates the
+# production upload; the production verify step is alarm-not-gate
+# (see docs/INCIDENT_RESPONSE.md once R0 lands).
 #
-# The `pypi` GitHub Actions environment gates the publish step behind
-# optional required-reviewers / wait-timer rules you configure in the
-# repo settings — protects against a rogue merge publishing an
-# unintended release.
+# Trusted Publishing requires a one-time pre-merge configuration step
+# on test.pypi.org: register a pending publisher under project=
+# sum-engine, owner=OtotaO, repo=SUM, workflow=publish-pypi.yml,
+# environment=testpypi. Production is already configured under
+# environment=pypi. If the TestPyPI publisher is unconfigured at first
+# tag push, the staging job will fail with an OIDC error before any
+# bytes are uploaded.
 
 on:
   push:
@@ -27,7 +31,7 @@ permissions:
 
 jobs:
   build:
-    name: Build distribution
+    name: Build distribution + local hygiene gates
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -36,44 +40,239 @@ jobs:
       with:
         python-version: "3.12"
 
+    - name: Install build + hygiene tools
+      # pypi-attestations labels itself experimental; pin to a known-
+      # working version rather than tracking the latest tag so a CLI-
+      # surface change can't break a release pipeline unexpectedly.
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install build twine check-wheel-contents
+        python -m pip install "pypi-attestations==0.0.29"
+
+    - name: Pre-publish gate — tag matches pyproject version
+      # Cheap; prevents the "tag v0.3.2 published from a v0.3.0 pyproject"
+      # release mistake. Runs before any build so a mismatch fails the
+      # pipeline before bytes are spent.
+      run: |
+        tag_version="${GITHUB_REF_NAME#v}"
+        project_version="$(python - <<'PY'
+        import tomllib
+        with open("pyproject.toml", "rb") as f:
+            print(tomllib.load(f)["project"]["version"])
+        PY
+        )"
+        if [ "$tag_version" != "$project_version" ]; then
+          echo "tag version $tag_version != pyproject version $project_version" >&2
+          exit 1
+        fi
+        echo "tag $GITHUB_REF_NAME matches pyproject version $project_version"
+
     - name: Build sdist + wheel
       run: |
-        python -m pip install --upgrade pip build
         python -m build --sdist --wheel --outdir dist
 
+    - name: Pre-publish gate — twine check (renderability)
+      run: twine check dist/*
+
+    - name: Pre-publish gate — check-wheel-contents (file-tree validity)
+      run: check-wheel-contents dist/*.whl
+
+    - name: Pre-publish gate — README ↔ wheel METADATA sync
+      # Closes the v0.3.0 failure mode: wheel's `Description` metadata
+      # frozen at publish time, drifting from README.md head silently.
+      run: python scripts/check_long_description_sync.py
+
+    - name: Generate sum.dist_hashes.v1 manifest
+      # Single source of truth for "the bytes we built locally" —
+      # consumed by both verify steps below to detect index-side
+      # substitution.
+      run: |
+        python scripts/hash_dist.py --out dist_hashes.json
+        cat dist_hashes.json
+
     - name: Sanity-check wheel installs and sum binary works
-      # Belt-and-suspenders — pypi-install-smoke in quantum-ci.yml runs
-      # on every push, but the release path is rare and expensive. If
+      # Belt-and-suspenders alongside pypi-install-smoke in
+      # quantum-ci.yml. The release path is rare and expensive; if
       # something slipped between the last main-branch smoke and the
-      # tag, catch it here before uploading to the permanent record.
+      # tag, catch it before any bytes leave the runner.
       run: |
         python -m venv /tmp/release-smoke
-        /tmp/release-smoke/bin/pip install --quiet "dist/$(ls dist | grep '\.whl$')"
+        /tmp/release-smoke/bin/pip install --quiet "$(ls dist/*.whl | head -1)"
         /tmp/release-smoke/bin/sum --version
 
-    - uses: actions/upload-artifact@v4
+    - name: Upload dist + hashes as artifact
+      uses: actions/upload-artifact@v4
       with:
         name: dist
-        path: dist/
+        path: |
+          dist/
+          dist_hashes.json
 
-  publish:
-    name: Publish to PyPI
+  publish-testpypi:
+    name: Publish to TestPyPI (staging)
     needs: build
     runs-on: ubuntu-latest
     environment:
-      name: pypi
-      url: https://pypi.org/p/sum-engine
+      name: testpypi
+      url: https://test.pypi.org/p/sum-engine
     permissions:
       id-token: write  # Required for OIDC trusted-publisher auth.
     steps:
     - uses: actions/download-artifact@v4
       with:
         name: dist
-        path: dist/
+        path: .
 
-    - name: Publish to PyPI
+    - name: Verify downloaded artifact layout
+      # Belt-and-suspenders: the upload action defaults to dist/, but if
+      # an artifact-shape change ever lands silently, fail closed here
+      # rather than silently uploading nothing or wrong contents.
+      run: |
+        test -f dist_hashes.json || { echo "missing dist_hashes.json"; exit 1; }
+        test -d dist || { echo "missing dist/ directory"; exit 1; }
+        ls dist/*.whl > /dev/null || { echo "no .whl in dist/"; exit 1; }
+        ls dist/*.tar.gz > /dev/null || { echo "no .tar.gz in dist/"; exit 1; }
+
+    - name: Upload to TestPyPI
       uses: pypa/gh-action-pypi-publish@release/v1
-      # No `password:` — OIDC handles it. No `repository-url:` — the
-      # action defaults to https://upload.pypi.org/legacy/ which is
-      # correct for the production index. TestPyPI dry-runs get their
-      # own tag/workflow if/when we want them.
+      with:
+        repository-url: https://test.pypi.org/legacy/
+        packages-dir: dist/
+        # skip-existing is safe on TestPyPI ONLY because verify-testpypi
+        # below sha256-checks the index artifact against the local
+        # dist_hashes.json — a stale TestPyPI artifact from a previous
+        # failed run would fail the verify step. Without skip-existing,
+        # re-running a tag after a verify-step bug fails the upload
+        # step instead, masking the real bug. Production never gets
+        # skip-existing for any reason.
+        skip-existing: true
+
+  verify-testpypi:
+    name: Verify TestPyPI provenance (PRE-PROMOTION GATE — fail closed)
+    needs: publish-testpypi
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        path: repo
+
+    - uses: actions/download-artifact@v4
+      with:
+        name: dist
+        path: .
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Install pypi-attestations (pinned)
+      run: python -m pip install "pypi-attestations==0.0.29"
+
+    - name: Resolve release version
+      id: ver
+      run: |
+        # Strip leading "v" from the pushed tag (e.g. v0.3.1 → 0.3.1).
+        ref="${GITHUB_REF#refs/tags/}"
+        version="${ref#v}"
+        echo "version=$version" >> "$GITHUB_OUTPUT"
+
+    - name: Verify downloaded artifact layout
+      run: |
+        test -f dist_hashes.json || { echo "missing dist_hashes.json"; exit 1; }
+
+    - name: Verify TestPyPI artifact + attestation
+      # FOUR checks: (1) same-bytes — downloaded artifact sha256 matches
+      # the local sum.dist_hashes.v1 manifest; (2) attestation
+      # cryptographically verifies via pypi-attestations CLI;
+      # (3) repository identity matches expected --repository;
+      # (4) workflow identity + ref pattern match expected, parsed
+      # directly from the PyPI Integrity API (the CLI doesn't accept
+      # --workflow, so step 4 is in-script). Any failure fails this
+      # job and prevents publish-pypi from running.
+      run: |
+        python repo/scripts/verify_pypi_attestation.py \
+          --index test \
+          --project sum-engine \
+          --version "${{ steps.ver.outputs.version }}" \
+          --repository "https://github.com/${{ github.repository }}" \
+          --workflow .github/workflows/publish-pypi.yml \
+          --ref-prefix refs/tags/v \
+          --dist-hashes dist_hashes.json
+
+  publish-pypi:
+    name: Publish to PyPI (production)
+    needs: verify-testpypi
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/sum-engine
+    permissions:
+      id-token: write
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        name: dist
+        path: .
+
+    - name: Verify downloaded artifact layout
+      run: |
+        test -f dist_hashes.json || { echo "missing dist_hashes.json"; exit 1; }
+        test -d dist || { echo "missing dist/ directory"; exit 1; }
+        ls dist/*.whl > /dev/null || { echo "no .whl in dist/"; exit 1; }
+        ls dist/*.tar.gz > /dev/null || { echo "no .tar.gz in dist/"; exit 1; }
+
+    - name: Upload to production PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        packages-dir: dist/
+        # No `repository-url:` — defaults to upload.pypi.org/legacy/.
+        # No `skip-existing:` — production NEVER gets skip-existing,
+        # for any reason. A duplicate-version conflict on production
+        # is a real problem that must surface, not be silenced.
+        # Same local dist/* uploaded to both indexes; TestPyPI and PyPI
+        # are separate indexes, no PyPI-side promote operation exists.
+
+  verify-pypi:
+    name: Verify production PyPI provenance (post-publish detection)
+    needs: publish-pypi
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        path: repo
+
+    - uses: actions/download-artifact@v4
+      with:
+        name: dist
+        path: .
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Install pypi-attestations (pinned)
+      run: python -m pip install "pypi-attestations==0.0.29"
+
+    - name: Resolve release version
+      id: ver
+      run: |
+        ref="${GITHUB_REF#refs/tags/}"
+        version="${ref#v}"
+        echo "version=$version" >> "$GITHUB_OUTPUT"
+
+    - name: Verify production PyPI artifact + attestation
+      # Post-publish DETECTION, not gating: the production attestation
+      # cannot exist before production upload, so this run cannot
+      # prevent a misconfigured artifact from going public. Failure
+      # here is an alarm — follow the PyPI release-compromise runbook
+      # in docs/INCIDENT_RESPONSE.md (yank / revoke / announce) once
+      # R0 lands. Do not ignore.
+      run: |
+        python repo/scripts/verify_pypi_attestation.py \
+          --index prod \
+          --project sum-engine \
+          --version "${{ steps.ver.outputs.version }}" \
+          --repository "https://github.com/${{ github.repository }}" \
+          --workflow .github/workflows/publish-pypi.yml \
+          --ref-prefix refs/tags/v \
+          --dist-hashes dist_hashes.json
