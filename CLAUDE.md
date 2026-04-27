@@ -33,6 +33,38 @@ will have the full picture.
    extend the surface. Phases B and C depend on Phase A priorities
    being closed first — do not start Phase B work while Phase A
    priorities are still open.
+6. **[`docs/SLIDER_CONTRACT.md`](docs/SLIDER_CONTRACT.md)** — slider
+   product contract. Five axes, per-axis drift formulas, fact-
+   preservation thresholds, the v0.4 → v0.7 NLI-audit / scale-bench /
+   prompt-hardening arc. Canonical source for the headline numbers
+   (median LLM-axis fact preservation = 1.000; p10 = 0.818 short-doc
+   n=8, 0.769 long-doc n=16; min lifted from 0.111 → 0.700 by v0.7
+   prompt hardening; catastrophic outliers eliminated 2 → 0).
+7. **[`docs/SLIDER_V02_RESEARCH.md`](docs/SLIDER_V02_RESEARCH.md)** —
+   research/methodology behind the slider's v0.2+ substrate. Itself
+   stale relative to the current head (pre-v0.7) but useful as
+   context: which choices the survey validated as load-bearing
+   (verifiable rewards, cycle-consistency, content-addressed
+   provenance, IB Pareto frontier), MontageLie threat model,
+   constrained-decoding rationale, NLI audit positioning.
+8. **[`docs/RENDER_RECEIPT_FORMAT.md`](docs/RENDER_RECEIPT_FORMAT.md)** —
+   wire spec for the trust loop. `sum.render_receipt.v1`: Ed25519
+   (RFC 8032) over JCS-canonical bytes (RFC 8785), wrapped as
+   detached JWS (RFC 7515 §A.5) with public keys distributed via
+   JWKS (RFC 7517). Defines payload field semantics, six-step
+   verifier algorithm, cross-runtime canonicalisation rule (the
+   integer-vs-float-zero gotcha), trust scope (what a verified
+   receipt does and does NOT prove), key rotation cadence, C2PA
+   `digital_source_type` alignment. Source-of-truth for every
+   receipt-related claim PR A or any future doc-pass writes.
+9. **[`CHANGELOG.md`](CHANGELOG.md) `[Unreleased]`** — the full
+   v0.4 → v0.9.A.2 arc since the last tagged release. v0.4 NLI audit
+   verified the slider product claim; v0.5 Worker render path + slider
+   UI; v0.6 long-doc scale verification (n=16); v0.7 prompt hardening
+   eliminated catastrophic outliers; v0.8 four-layer defence against
+   `LengthFinishReasonError`; v0.9.A render receipts (signed JWS +
+   JWKS); v0.9.A.1 review-pass triple-sort + doc-bytes regen; v0.9.A.2
+   route `/.well-known/*` through Worker + keygen polish.
 
 Shipping surface at the current HEAD: the `sum` binary on PyPI
 (`pip install sum-engine[sieve]`), the Node verifier in
