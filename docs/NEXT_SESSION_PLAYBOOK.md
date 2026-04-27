@@ -179,6 +179,63 @@ Unblocks: a bench run becomes its own audit trail. Replay a historical bench run
 
 ---
 
+## Governance & continuity tracks (parallel with Phase A)
+
+These three tracks address institutional-durability gaps the Phase A → D trajectory undercounts. They are sized to run **in parallel with Phase A** — none are blocked by P3–P8 — and each costs roughly one short cycle. Run them sooner rather than later: cheap institutional hedges compound, and the bus-factor failure modes they defend against are not the kind that surface in CI.
+
+The technical trust contract (cryptographic attestation + cross-runtime equivalence + bench-verified slider claim) is strong. The institutional trust contract is currently one signing key held by one author plus one repo on one platform. A long-horizon claim ("verifies in 10 years") is undefended against the actor who isn't an attacker — the actor who is just *time*. These tracks are the institutional counterpart to the cryptographic core.
+
+### G1 — Continuity & archival
+
+**Problem.** The repo, the spec mirrors, and the test vectors all live on GitHub today. GitHub is durable but not eternal. A future where this org is dormant, abandoned, or compromised is not adversarial — it is the default outcome for most repos at decade scale.
+
+**Work.**
+- Mirror [`docs/RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md), [`docs/PROOF_BOUNDARY.md`](PROOF_BOUNDARY.md), [`docs/CANONICAL_ABI_SPEC.md`](CANONICAL_ABI_SPEC.md), `CHANGELOG.md`, and the cross-runtime fixtures (`scripts/verify_*.py` reference vectors + the v0.9.B/C fixture set landed by Phase E.1 follow-ups) to at least one third-party archival surface: Software Heritage (free, designed for source-code archival, citation-stable), Zenodo (DOI, decade-plus commitment from CERN), IPFS via a pinning service, or all three.
+- Document the archival policy in `docs/ARCHIVAL.md`: what is mirrored, where, by whom, on what cadence, what cryptographic integrity is preserved on the mirror side, and what a consumer does when GitHub disappears.
+- Document a succession playbook in `docs/SUCCESSION.md`: how the project's signing keys, control of the `sum-engine` PyPI package, control of the `sum-demo.ototao.workers.dev` deployment, and editorial control of this repo transition if the current author is unavailable. "Fork-and-key-rotate-forward" is an acceptable answer; *no* documented answer is not.
+
+**Success criterion.** A third-party reader can recover the spec + reference fixtures + a working verifier from non-GitHub-hosted sources in under 10 minutes. Succession plan exists, has an explicit successor (named or named-by-condition), and lists the cryptographic + infrastructure handoffs required.
+
+**Blast radius if skipped.** When the bus factor hits, every signed receipt + every signed bundle becomes an unverifiable artifact within ~6 months as JWKS endpoints rot, package indexes garbage-collect abandoned releases, and the spec drifts from cited memory.
+
+### G2 — Independent verifier requirement
+
+**Problem.** Python `sum verify`, Node `standalone_verifier/verify.js`, and the in-browser inlined JS all share authorship. Cross-runtime byte-identity is locked by CI, but a bug in the author's understanding of the spec replicates across all three implementations identically — the K-matrix would not catch it. The cross-runtime trust triangle is byte-equivalent but not author-independent; that is a weaker durability claim than the README implies.
+
+**Work.**
+- Source one verifier implementation maintained by an author/team distinct from the engine. Either a third-party-contributed verifier (preferred) or a clean-room re-implementation by an outside author working from [`docs/RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) + [`docs/CANONICAL_ABI_SPEC.md`](CANONICAL_ABI_SPEC.md) alone, with no read access to the in-tree source.
+- Add the independent verifier to the cross-runtime CI matrix as **K6** for CanonicalBundle and as the receipt-verifier counterpart against the v0.9.B/C fixture set. Drift between the independent verifier and the in-tree verifiers is the failure case the K-matrix is currently blind to.
+- Document the spec-only path in `docs/IMPLEMENTERS_GUIDE.md`: how an outside author implements a verifier from the docs without consulting the in-tree source. This doc is the deliverable that proves the spec is implementable from text alone — the strongest test of the spec's completeness.
+
+**Success criterion.** A receipt minted by the Worker verifies in (a) Python `sum verify`, (b) Node `verify.js`, (c) browser SubtleCrypto, AND (d) an independently-authored verifier — same bytes, same outcome on positive AND negative paths. K6 green in CI on every push.
+
+**Blast radius if skipped.** A spec ambiguity that the engine author handled identically in all three in-tree implementations passes CI and ships forever. The "cross-runtime trust triangle" claim becomes one engineer's interpretation of the spec, replicated three times, not three independent witnesses.
+
+### G3 — Revocation & crypto-agility policy
+
+**Problem.** [`docs/RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) §6 specifies key *rotation* but not key *revocation*. A compromised kid issued legitimate-looking receipts during the compromise window; without a revocation surface, those receipts continue to verify forever even after the compromise is detected. Separately, Ed25519 is not quantum-safe; "1.0 bundles verify forever" (Phase D's load-bearing promise) has a 20–30-year asterisk that has not yet been written down.
+
+**Work.**
+
+*Revocation:*
+- Specify a revocation surface: `/.well-known/revoked-kids.json` listing kids that MUST NOT be trusted past their `effective_revocation_at` timestamp, with a `reason` field for audit-trail honesty (`compromise`, `superseded`, `policy`).
+- Define verifier behaviour: a verifier that fetches a revocation list and observes a receipt's kid in it MUST reject the receipt with a `revoked-kid` classification distinct from `signature-invalid`. Verifiers SHOULD fetch the revocation list at the same cadence they fetch JWKS (default 1 h `Cache-Control`).
+- Specify scope explicitly: revocation invalidates *future* trust. A receipt that VERIFIED before revocation can be archived as "verified-as-of timestamp X"; revocation does not retroactively unverify the past, it tells future verifiers not to trust this kid going forward. This distinction matters for archival use cases that pin verification timestamps alongside receipts.
+
+*Crypto-agility:*
+- Specify a dual-sign migration pattern: when migrating from Ed25519 to a successor algorithm (post-quantum signature, larger curve, etc.), receipts emit BOTH signatures during a deprecation window. Verifiers MUST verify at least one and SHOULD verify both; receipts whose only signature is in an unsupported algorithm fail closed with a `unsupported-alg` classification.
+- Define the deprecation-window length policy: ≥ render cache TTL, ≥ documented archival validity window, ≥ ecosystem migration time (give consumers a year, not a month).
+- Maintain an in-tree algorithm registry (`docs/ALGORITHM_REGISTRY.md`): the algorithms a verifier is allowed to accept. An algorithm not in the registry is rejected closed — no implicit trust in unknown algorithms even if the JWS protected header advertises one.
+
+*Spec updates:*
+- Update [`docs/RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) §6 to reference the revocation surface and dual-sign pattern. Update Phase D's 1.0 stability contract to enumerate the crypto-agility migration story explicitly — the "verifies in 10 years" claim must be backed by a written migration path, not by hope.
+
+**Success criterion.** A consumer reading the spec can answer: (a) "what happens to receipts when their kid is revoked?", (b) "how does this engine survive a quantum break of Ed25519?", (c) "what is the verifier's fail-closed behaviour on an unknown algorithm?" — without ambiguity, without consulting the author. **K7 in CI**: tampered = `signature-invalid`; revoked-kid = `revoked-kid`; receipt with only-unsupported-alg = `unsupported-alg`. All three failure classes distinct, all three locked by fixture.
+
+**Blast radius if skipped.** First serious key compromise lacks a revocation mechanism; receipts issued during the compromise window are indistinguishable from honest receipts to every downstream verifier. First quantum-break public demonstration triggers a rush migration with no migration playbook, leaving downstream consumers to choose between fail-closed-on-everything (breaking archives) and trust-anyway (breaking the security claim).
+
+---
+
 ## Ordering rationale
 
 P1 closed the cross-runtime invalidity-agreement gap. P2 stays open on numbers; the harness landing was the larger half. P3 prevents a collision frontier that worsens with success. P4 fixes a 1-in-5 lie rate on a live attestation surface. P5 turns prose threat claims into executable assertions. P6 specifies an under-specified field. P7 raises trust from "trust the repo" to "verify the bytes." P8 makes the signed-vs-true distinction visible at the consumer interface.
@@ -197,6 +254,8 @@ If you discover any of these during the work above, pause and surface it before 
 - **A verifier that accepts a bundle the spec says it must reject.** Same severity.
 - **A render receipt that verifies despite a tampered signed field.** Breaks the canonicalisation contract; almost always a JCS divergence (the integer-vs-float-zero edge case from [`docs/RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) §4). Bundle a regression fixture.
 - **A render receipt with `kid` not present in JWKS while cached responses can still surface that kid.** Rotation grace-window violation per [`docs/RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) §6.
+- **A render receipt that verifies despite its `kid` being on the published revocation list** (once G3 lands). The revocation surface exists to be honoured; a verifier that ignores it is a verifier that cannot be trusted with future revocations.
+- **A render receipt that verifies under an algorithm not declared in the in-tree algorithm registry** (once G3 lands). Fail-closed-on-unknown-alg is load-bearing — implicit trust in unannounced algorithms is the crypto-agility analogue of a TLS downgrade attack.
 - **A claim in `README.md` / `CHANGELOG.md` / docs that you cannot defend** with a test, a measurement, or an explicit "designed, not proved" label. Most common lie to discover; corrodes trust.
 
 ---
@@ -227,6 +286,8 @@ Every phase below is an answer to one of those three gaps.
 | P7 supply-chain attestation | Consumers verify the bytes, not just trust the repo. |
 | P8 LLM honesty guardrails | Signed ≠ true becomes visible at the interface the consumer reads. |
 | Phase E.1 v0.9.B / C / D | Closes the receipt verification loop in browser, Python, and bench. |
+
+**Governance tracks (G1 / G2 / G3) run in parallel with Phase A** — see the section above. They are not Phase A exit gates (so as not to block hardening cycles on third-party-archival logistics), but they SHOULD be substantially landed before Phase B begins. Phase B adds platform surface that consumers depend on; that dependency is much stronger when the institutional hedges (archival, independent verifier, revocation policy) are in place.
 
 **Gate to exit Phase A.** Every priority's success criterion passes. CI matrix has K1–K5 + A1–A6 + threat-suite + supply-chain verify + LLM-guardrail assertions + receipt-verifier fixtures all green on every push. WASM perf numbers are pasted under each per-browser section in `docs/WASM_PERFORMANCE.md`.
 
@@ -275,7 +336,9 @@ SUM stops being a tool and starts being a platform. Conditional on **B1** and **
 
 Not a phase of new work so much as a decision point. Before tagging `v1.0.0`: an explicit compatibility contract. What bundles + receipts shipping 1.0 will continue to verify 10 years from now. What schema fields are frozen. What CLI flags are stable. What wire-format guarantees hold across minor versions. What requires a major bump.
 
-Backed by a CI gate that tests the promise: a corpus of 1.0-minted bundles + receipts that every later release must continue to verify. The hand-off point between "interesting prototype" and "dependency anyone can build on."
+**Crypto-agility is part of the 1.0 contract, not an afterthought.** The "verifies in 10 years" promise is undefended unless G3's revocation surface and dual-sign migration pattern are in the spec by 1.0. Ed25519 is not quantum-safe; the contract must explicitly say what happens when the algorithm needs to be retired (dual-sign window, deprecation policy, fail-closed-on-unknown-alg). Without this, 1.0 is a promise the engine cannot keep at decade scale.
+
+Backed by a CI gate that tests the promise: a corpus of 1.0-minted bundles + receipts that every later release must continue to verify, plus the K6 + K7 invariants from G2 + G3. The hand-off point between "interesting prototype" and "dependency anyone can build on."
 
 ---
 
