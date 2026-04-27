@@ -160,11 +160,12 @@ These are concrete next-cycle items the render-receipt landing made possible. Th
 **Work.**
 - Cut a v0.3.1 hygiene release that picks up the post-PR-A README. No code changes; `pyproject.toml` version bump only.
 - Add a CI gate that fails if the next wheel's `Description` metadata diverges from `README.md` head: `python -m build` → extract `Description` from the built wheel's `*.dist-info/METADATA` → normalise line endings → diff against `README.md`. Reuse `twine check` to validate the long-description renders on Warehouse, and `check-wheel-contents` to catch wheel-content mistakes. The custom diff gate answers a question those two don't ("is this actually the README we intended to ship") and complements them.
-- Run sequence in CI: `python -m build --sdist --wheel` → `twine check dist/*` → `check-wheel-contents dist/*.whl` → `python scripts/check_long_description_sync.py`.
+- **PEP 740 attestation (publish + verify).** Publish via Trusted Publishing with `pypa/gh-action-pypi-publish` — the action generates and uploads PEP 740 attestations automatically by default, binding each wheel/sdist to a cryptographic digest and a GitHub Actions workflow identity. Add a post-publish verify step using the `pypi-attestations` CLI (or PyPI Integrity API) that confirms the published artifact's provenance points at the expected `OtotaO/SUM` repo + workflow identity. This raises v0.3.1's outcome from "the README on PyPI matches" to "the artifact on PyPI is provably built from the repo we say built it."
+- Run sequence in CI: `python -m build --sdist --wheel` → `twine check dist/*` → `check-wheel-contents dist/*.whl` → `python scripts/check_long_description_sync.py` → publish via Trusted Publisher → `python scripts/verify_pypi_attestation.py sum-engine==0.3.1`.
 
-**Success criterion.** v0.3.1 ships with a long-description that matches `README.md` head verbatim. CI fails closed on any future divergence; a deliberate test break in a branch confirms the gate fires before publish.
+**Success criterion.** v0.3.1 ships with (a) a long-description that matches `README.md` head verbatim, AND (b) a verifiable PyPI provenance attestation pointing at the expected repo+workflow identity. CI fails closed on any future divergence on either property; a deliberate test break in a branch confirms each gate fires before publish.
 
-**Why before v0.9.A.3.** It's a 1–3 hour cycle, prevents an immediate truthfulness-contract violation, and is independently scoped from any other work.
+**Why before v0.9.A.3.** It's a 1–3 hour cycle, prevents an immediate truthfulness-contract violation, and is independently scoped from any other work. The PEP 740 piece is partial-credit on Priority 7 (supply-chain attestation) for the wheel surface specifically — full P7 still covers the standalone verifier bundle and the Worker bundle, which are out of v0.3.1 scope.
 
 ### Pre-A3 truthfulness hygiene — Demo UI provenance/preservation label (micro-cycle)
 
@@ -295,6 +296,162 @@ The technical trust contract (cryptographic attestation + cross-runtime equivale
 
 ---
 
+## R0 — Resilience preflight (parallel with Phase A, between Pre-A3 and v0.9.A.3 in the queue)
+
+The Phase A priorities + the Phase E.1 follow-ups + the Governance tracks together define the *verifiable happy path* — what's true when the engine works as designed. R0 is the *verifiable recovery path* — what stays true when something is hostile, broken, or compromised while the algebra remains correct.
+
+The framing question for R0:
+
+> What if the repo, CI, PyPI release, Worker deploy, JWKS, signing key, model provider, or benchmark process is compromised while the algebra remains correct?
+
+G3 (revocation + crypto-agility) covers the receipt-key compromise case cryptographically. G1 (continuity + archival) covers the bus-factor case institutionally. **R0 covers the operational layer** — vulnerability intake, incident response, trust-root manifest, CI blast-radius control, fuzz harnesses for the trust boundaries — that sits between the cryptographic and institutional layers. None of these duplicate G1/G2/G3; they are orthogonal.
+
+R0 lands as a single short cycle whose goal is "establish the operational primitives." The contents are mostly docs and CI configuration; the cost is one cycle, the value is that black-swan recovery has a documented playbook before the black swan arrives. **Insert in the queue between Pre-A3 truthfulness hygiene and v0.9.A.3 (CORS).**
+
+### R0.1 — `SECURITY.md` + `docs/INCIDENT_RESPONSE.md`
+
+**Problem.** No `SECURITY.md` exists at the repo root today. GitHub's own guidance recommends one as the canonical surface for vulnerability reporting; without it, a researcher who finds a real bug has no documented intake path. Separately, the codebase has no incident-response playbook — when (not if) one of the trust surfaces breaks, the response will be improvised under pressure rather than executed from a written reflex.
+
+**Work.**
+- Add `SECURITY.md` at repo root (or `.github/SECURITY.md`). Cover: the supported version range, the vulnerability disclosure email / GitHub private advisory channel, the expected response window, and the public disclosure policy (coordinated disclosure with a documented embargo).
+- Add `docs/INCIDENT_RESPONSE.md` with one short subsection per failure case the existing trust surface admits is possible. Each case carries exactly four fields:
+  ```
+  Detection:
+  Containment:
+  Revocation / correction:
+  Public disclosure wording:
+  ```
+  Cases to cover at minimum:
+  - Render signing key suspected compromised.
+  - JWKS served wrong / stale / revoked key.
+  - PyPI release suspected compromised.
+  - GitHub Actions workflow compromised.
+  - Worker deploy compromised.
+  - Benchmark claim later found wrong.
+  - LLM provider silently changes served-model behavior.
+  - Canonicalization bug discovered in Python / Node / browser verifier.
+- Cross-reference G3's revocation surface (`/.well-known/revoked-kids.json`) from the receipt-key compromise case.
+
+**Success criterion.** A researcher with a real finding has a documented intake path. The author (or a successor under G1) facing any of the listed crisis cases has a written reflex covering the four operational fields, not an improvisation.
+
+### R0.2 — `sum.trust_root.v1.json` release manifest
+
+**Problem.** A skeptic verifying SUM today has to compose the trust chain by hand from multiple surfaces: the GitHub release artifacts, the PyPI wheel, the published JWKS, the Worker bundle, the standalone verifier. There's no single artifact that names "as of release v0.X.Y, here are the bytes I claim to be shipping, here are their hashes, here are the public keys / kids that are current, here is the algorithm registry." The TUF (The Update Framework) project has the right model — root + targets + snapshot + timestamp metadata roles, with the root specifying trusted keys + signature thresholds — but adopting full TUF is overweight for SUM's current scale.
+
+**Work.**
+- Specify `sum.trust_root.v1.json` (TUF-inspired, not full TUF). Minimal shape:
+  ```json
+  {
+    "schema": "sum.trust_root.v1",
+    "issued_at": "2026-04-27T00:00:00Z",
+    "repo": "OtotaO/SUM",
+    "commit": "<release_commit_sha>",
+    "release": "v0.3.1",
+    "artifacts": [
+      {
+        "name": "sum_engine-0.3.1-py3-none-any.whl",
+        "sha256": "...",
+        "pypi_provenance": "present|absent",
+        "github_attestation": "present|absent",
+        "cosign_bundle": "present|absent"
+      },
+      {"name": "standalone_verifier/verify.js", "sha256": "..."},
+      {"name": "worker-bundle.js", "sha256": "..."}
+    ],
+    "render_receipt_jwks": {
+      "current_kids": ["sum-render-2026-04-27-1"],
+      "revoked_kids": [],
+      "jwks_sha256": "..."
+    },
+    "algorithm_registry": {
+      "prime_scheme_current": "sha256_64_v1",
+      "prime_scheme_next": "sha256_128_v2"
+    }
+  }
+  ```
+- Add `scripts/build_trust_manifest.py` to assemble the manifest at release time from CI-known facts (commit SHA, built artifact hashes, current JWKS state, algorithm-registry contents).
+- Sign the manifest with the same Ed25519 substrate the receipts use (or a separate release-signing key — the choice is a documented spec decision; default to a separate release key so render-key compromise doesn't invalidate trust manifests).
+- Publish at `https://github.com/OtotaO/SUM/releases/v<version>/sum.trust_root.v1.json` and at `https://sum-demo.ototao.workers.dev/.well-known/sum-trust-root.json` (current release).
+
+**Success criterion.** A skeptic verifying SUM v0.3.1 fetches `sum.trust_root.v1.json` once, checks the signature, and from that one artifact knows: which commit shipped, what artifact hashes to expect, which kids are current, which are revoked, and which prime scheme is in force. The manifest is the one thing they verify *first*; everything else verifies against it.
+
+### R0.3 — CI/runtime hardening baseline
+
+**Problem.** The release pipeline has the same blast radius as any other GitHub Actions workflow: a compromised third-party action or an over-permissioned `GITHUB_TOKEN` is the default failure mode for supply-chain attacks on small projects. GitHub's own security-hardening guidance is to grant minimum permissions and pin third-party actions; OpenSSF Scorecard and StepSecurity Harden-Runner add advisory + observability layers cheaply.
+
+**Work.**
+- Default every workflow to `permissions: contents: read`. Grant `id-token: write` only in publish jobs; grant other write scopes only where strictly required.
+- Pin every third-party GitHub Action by full commit SHA (not by mutable tag). Add a CI lint that fails on tag-pinned actions.
+- Add OpenSSF Scorecard as an advisory job (non-blocking initially; promote to blocking once known issues are addressed).
+- Add StepSecurity Harden-Runner in audit mode on the release / publish workflows so anomalous network egress, file changes, or process activity inside CI runners produces an audit trail. Compromised CI often looks like "normal build, slightly different network/file behaviour" — Harden-Runner records the baseline so deviations become visible.
+
+**Success criterion.** Every workflow grants the minimum scope it needs. Every third-party action is SHA-pinned. Scorecard runs on every push. Harden-Runner records release-job baselines and surfaces deviations.
+
+### R0.4 — Differential fuzz / property-test harness
+
+**Problem.** SUM's adversarial fixture set covers known failure modes (A1–A6 + the receipt-fixture matrix). Property-based testing is the orthogonal axis — generated inputs at the trust boundaries, with shrinking on counterexamples. This catches the bug nobody predicted.
+
+**Work.**
+- Author a property-based harness using **Hypothesis** (Python) and **fast-check** (TypeScript / JavaScript) over the boundaries where bugs hide:
+  - JCS canonicalization payloads (the integer-vs-float-zero edge case from RENDER_RECEIPT_FORMAT.md §4 is a known foot-gun; property-test for byte equality across Python `jcs` and TS `canonicalize@3`).
+  - Detached JWS receipt verification (one-bit mutations on every signed field → all verifiers MUST reject).
+  - Triple sorting / componentwise tuple-lex ordering (cross-runtime byte-stable, including triples that contain `|` separators in components).
+  - `sha256_64_v1` (current) and `sha256_128_v2` (Priority 3) prime derivation byte-equivalence.
+  - Malformed bundle roots and partial truncations.
+- The properties to assert are *invariants*, not example-equality:
+  - "For all generated valid receipts, Python / Node / browser verifiers produce the same outcome."
+  - "For all one-bit signed-field mutations on a valid receipt, all verifiers reject."
+  - "For all generated valid triple sets, componentwise tuple-lex sort is byte-identical across runtimes."
+- Integrate into CI as a non-flaky job (Hypothesis with a seeded random, fast-check with a fixed `numRuns` budget). Failures are real bugs; pin the failing seed in a regression fixture and resolve.
+
+**Success criterion.** Property-based harness runs in CI on every push. Counterexamples that surface get pinned as regression fixtures and fixed (or documented as known limitations in `docs/PROOF_BOUNDARY.md`). The test suite becomes generative, not just example-based.
+
+**Deferred (post-R0):** stateful REST API fuzzing via RESTler against an OpenAPI spec for the Worker endpoints. Heavier-weight; pin as future work once `/api/render`, `/api/qid`, `/api/complete`, JWKS, and any future bundle routes are stable enough to spec.
+
+### R0.5 — Design-now / prototype-later anchors
+
+These three are scoped as *design notes within R0 v1*, not deliverables of the R0 cycle. Each gets one paragraph in `docs/INCIDENT_RESPONSE.md` or an adjacent doc so the design exists before it's needed; implementation lands as its own cycle.
+
+#### Receipt / JWKS transparency anchoring (Rekor or OpenTimestamps)
+
+**Design.** Daily, collect `{jwks_sha256, trust_root_sha256, release_manifest_sha256}` (and optionally a Merkle root over receipt hashes from that day) and write one external transparency anchor to Sigstore Rekor (immutable transparency log with inclusion proofs) or OpenTimestamps (Bitcoin-anchored timestamping). Publish the pointer in `docs/TRUST_ROOT_LOG.md`. **Do not log raw receipt content** — only hashes / Merkle roots. The anchor gives external attestation of "as of date X, these were the trust-root bytes" — independent of GitHub, Cloudflare, or the repo author.
+
+**When to implement.** Once R0.1–R0.4 are in place and the trust-root manifest (R0.2) has a stable shape. Not before — anchoring an unstable shape just locks the instability.
+
+#### `sum.model_call_evidence.v1` sidecar
+
+**Design.** Optional sidecar that hashes (does not store raw) the model-call provenance: prompt template, axis prompt, request body, provider response ID, model reported, temperature, max_tokens, output tome:
+```json
+{
+  "schema": "sum.model_call_evidence.v1",
+  "render_id": "...",
+  "prompt_template_hash": "sha256-...",
+  "axis_prompt_hash": "sha256-...",
+  "request_body_hash": "sha256-...",
+  "provider_response_id_hash": "sha256-...",
+  "model_reported": "claude-haiku-4-5-20251001",
+  "temperature": 0,
+  "max_tokens": 1234,
+  "output_tome_hash": "sha256-..."
+}
+```
+Hashes are forensic binding without leaking prompts/responses. Protects against future disputes of the form "the receipt says model X produced this — what prompt actually went out, what response came back?" Does not prove semantic truth; proves *process evidence*.
+
+**When to implement.** As an opt-in flag on `/api/render` once v0.9.B/C/D verifiers exist. Don't ship a side-channel before the primary verification surface is fully closed.
+
+#### Bounded formal modeling (TLA+ or Alloy) of three small protocols
+
+**Design.** One-page model, bounded state, CI optional. Three candidates worth modelling:
+1. JWKS rotation / cache TTL / revocation interaction (G3 + receipt cache durability).
+2. Delta-bundle composition semantics (Priority 6).
+3. Trust-root manifest update / rollback prevention (R0.2 lifecycle).
+
+**Strict guardrail.** "If the model becomes a research project, stop." TLA+ and Alloy are tools for finding subtle protocol bugs in small bounded state machines, not for verifying the prime algebra (which is already pinned by tests). The value is exclusively in the protocol surfaces, where the wire-format / lifecycle decisions are easier to reason about formally than to debug after deploy.
+
+**When to implement.** Optional. Pin as a one-week experiment if a future cycle has slack; defer indefinitely if not. Not a Phase A gate.
+
+---
+
 ## External tooling tracks (parallel / post-Phase A)
 
 The Phase A priorities define *what work* needs doing; this section names *which third-party tools* are the recommended substrates for that work where the choice is now informed enough to commit to. Pinning the substrates here means future cycles don't re-litigate them under scope pressure. Items in this section are categorized by maturity: *recommended now* (production-ready substrates), *prototype first* (architectural research that should be benchmarked before commitment), *research branches* (perf/ergonomics experiments, not migration targets), and *negative recommendations* (paths that look attractive but should not be taken at current maturity).
@@ -389,6 +546,7 @@ If you discover any of these during the work above, pause and surface it before 
 - **A render receipt that verifies despite its `kid` being on the published revocation list** (once G3 lands). The revocation surface exists to be honoured; a verifier that ignores it is a verifier that cannot be trusted with future revocations.
 - **A render receipt that verifies under an algorithm not declared in the in-tree algorithm registry** (once G3 lands). Fail-closed-on-unknown-alg is load-bearing — implicit trust in unannounced algorithms is the crypto-agility analogue of a TLS downgrade attack.
 - **A proposal that replaces LCM with raw multiplication** (or otherwise removes set semantics from the algebra). LCM is load-bearing for the truthfulness contract: idempotent fact union, no multiset accumulation, `state % prime == 0` invariant on the cardinality of additions. Any "simplification" that breaks this is a semantic regression dressed as cleanup. See External Tooling Tracks §"Negative recommendations."
+- **A release that ships without a signed `sum.trust_root.v1.json` manifest after R0 has landed.** Once the manifest exists, every release MUST publish one — the manifest is the single artifact downstream consumers verify first. A release without one breaks that contract silently and makes future trust composition impossible.
 - **A claim in `README.md` / `CHANGELOG.md` / docs that you cannot defend** with a test, a measurement, or an explicit "designed, not proved" label. Most common lie to discover; corrodes trust.
 
 ---
@@ -422,7 +580,7 @@ Every phase below is an answer to one of those three gaps.
 
 **Governance tracks (G1 / G2 / G3) run in parallel with Phase A** — see the section above. They are not Phase A exit gates (so as not to block hardening cycles on third-party-archival logistics), but they SHOULD be substantially landed before Phase B begins. Phase B adds platform surface that consumers depend on; that dependency is much stronger when the institutional hedges (archival, independent verifier, revocation policy) are in place.
 
-**Gate to exit Phase A.** Every priority's success criterion passes. CI matrix has K1–K5 + A1–A6 + threat-suite + supply-chain verify + LLM-guardrail assertions + receipt-verifier fixtures all green on every push. WASM perf numbers are pasted under each per-browser section in `docs/WASM_PERFORMANCE.md`.
+**Gate to exit Phase A.** Every priority's success criterion passes. CI matrix has K1–K5 + A1–A6 + threat-suite + supply-chain verify + LLM-guardrail assertions + receipt-verifier fixtures + property-based fuzz harness (R0.4) all green on every push. WASM perf numbers are pasted under each per-browser section in `docs/WASM_PERFORMANCE.md`. R0 deliverables (`SECURITY.md`, `INCIDENT_RESPONSE.md`, signed trust-root manifest, CI permissions baseline) are in place — the recovery path is documented before Phase B platform surface lands on top.
 
 ### Phase B — platform surface
 
