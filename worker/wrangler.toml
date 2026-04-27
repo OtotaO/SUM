@@ -51,14 +51,29 @@ run_worker_first = ["/api/*"]
 enabled = true
 
 # Secrets (set via `wrangler secret put <NAME>` — never committed):
-#   ANTHROPIC_API_KEY      # preferred LLM provider for /api/complete
-#   OPENAI_API_KEY         # fallback if ANTHROPIC not set
-#   CF_AI_GATEWAY_BASE     # optional; routes through Cloudflare AI Gateway
+#   ANTHROPIC_API_KEY              # preferred LLM provider for /api/complete + /api/render
+#   OPENAI_API_KEY                 # fallback if ANTHROPIC not set
+#   CF_AI_GATEWAY_BASE             # optional; routes through Cloudflare AI Gateway
+#   RENDER_RECEIPT_SIGNING_JWK     # private Ed25519 JWK (single-line JSON) — v0.9.A
+#                                    Generate with: bun scripts/cert/gen_render_keypair.ts
+#                                    Then: wrangler secret put RENDER_RECEIPT_SIGNING_JWK < /tmp/private.jwk
+#   RENDER_RECEIPT_SIGNING_KID     # the `kid` of the active signing key (string match
+#                                    against an entry in RENDER_RECEIPT_PUBLIC_JWKS).
 #
 # Plaintext vars (fine in source control):
 [vars]
 SUM_DEFAULT_MODEL_ANTHROPIC = "claude-haiku-4-5-20251001"
 SUM_DEFAULT_MODEL_OPENAI    = "gpt-4o-mini"
+# RENDER_RECEIPT_PUBLIC_JWKS — DO NOT set in this file (escaping is
+#   painful + merge-conflict-hostile). Set via the CF dashboard:
+#     Worker → Settings → Variables → add RENDER_RECEIPT_PUBLIC_JWKS
+#     plaintext, paste the contents of /tmp/render_receipt_public.jwks
+#   from the keygen helper. Survives wrangler.toml edits.
+#   Alternative one-shot at deploy time:
+#     wrangler deploy --var RENDER_RECEIPT_PUBLIC_JWKS:"$(cat /tmp/render_receipt_public.jwks)"
+#   Served at /.well-known/jwks.json. Add new entries to `keys` for
+#   rotation; keep old kids until receipts referencing them age out
+#   of any consumer cache (rotation cadence ≥ render cache TTL).
 
 # KV namespaces (for Phase 4a QID cache — uncomment after `wrangler kv:namespace create qid-cache`):
 # [[kv_namespaces]]

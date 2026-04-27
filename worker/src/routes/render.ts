@@ -31,6 +31,15 @@ import {
   requiresExtrapolator,
   type SlidersForPrompt,
 } from "../render/axis_prompts";
+import {
+  DIGITAL_SOURCE_TYPE_AI,
+  DIGITAL_SOURCE_TYPE_DETERMINISTIC,
+  hashTome,
+  hashTriples,
+  signReceipt,
+  type ReceiptPayload,
+} from "../receipt/sign";
+import type { JWK } from "jose";
 
 interface RenderRequest {
   triples: Array<[string, string, string]>;
@@ -77,18 +86,29 @@ function formatTriplesForLLM(triples: Array<[string, string, string]>): string {
   return `FACTS:\n${lines.join("\n")}`;
 }
 
+interface LLMRenderResult {
+  tome: string;
+  /** What actually served the call. Comes from the API response's
+   *  `model` field, not the requested model — Anthropic and OpenAI
+   *  may resolve a tag to a more specific snapshot id. The receipt
+   *  signs THIS value so the audit trail matches reality. */
+  model_used: string;
+  provider: "anthropic" | "openai" | "cf-ai-gateway-anthropic" | "canonical-path";
+}
+
 async function callAnthropic(
   env: Env,
   systemPrompt: string,
   userPrompt: string,
-): Promise<string> {
+): Promise<LLMRenderResult> {
   if (!env.ANTHROPIC_API_KEY) {
     throw new Error("ANTHROPIC_API_KEY not set; render requires an LLM provider");
   }
-  const base = env.CF_AI_GATEWAY_BASE
-    ? `${env.CF_AI_GATEWAY_BASE.replace(/\/$/, "")}/anthropic/v1/messages`
+  const usingGateway = Boolean(env.CF_AI_GATEWAY_BASE);
+  const base = usingGateway
+    ? `${env.CF_AI_GATEWAY_BASE!.replace(/\/$/, "")}/anthropic/v1/messages`
     : "https://api.anthropic.com/v1/messages";
-  const model = env.SUM_DEFAULT_MODEL_ANTHROPIC ?? ANTHROPIC_DEFAULT;
+  const requestedModel = env.SUM_DEFAULT_MODEL_ANTHROPIC ?? ANTHROPIC_DEFAULT;
 
   const res = await fetch(base, {
     method: "POST",
@@ -98,7 +118,7 @@ async function callAnthropic(
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
-      model,
+      model: requestedModel,
       max_tokens: MAX_OUTPUT_TOKENS,
       system: systemPrompt,
       messages: [{ role: "user", content: userPrompt }],
@@ -110,10 +130,22 @@ async function callAnthropic(
     throw new Error(`anthropic ${res.status}: ${text.slice(0, 500)}`);
   }
 
-  const data = (await res.json()) as { content?: Array<{ type: string; text?: string }> };
+  const data = (await res.json()) as {
+    content?: Array<{ type: string; text?: string }>;
+    model?: string;
+  };
   const block = (data.content ?? []).find((b) => b.type === "text");
   if (!block?.text) throw new Error("anthropic: empty completion");
-  return block.text;
+  // Honest model identifier: prefer the API's reported model (which
+  // may be a more specific snapshot id than the requested tag); fall
+  // back to the requested model with `_inferred` suffix when absent
+  // so the inference itself is visible in the signed receipt.
+  const modelUsed = data.model ?? `${requestedModel}_inferred`;
+  return {
+    tome: block.text,
+    model_used: modelUsed,
+    provider: usingGateway ? "cf-ai-gateway-anthropic" : "anthropic",
+  };
 }
 
 async function sha256Hex32(s: string): Promise<string> {
@@ -157,7 +189,10 @@ export async function handleRender(
 
   const key = await deriveCacheKey(body.triples, quantized);
 
-  // Cache-first.
+  // Cache-first. The cached value already carries its render_receipt
+  // (signed at the time of the original miss render); HIT path
+  // re-serves the same receipt verbatim so the kid + signed_at +
+  // tome_hash all remain consistent with the issuance.
   if (!body.force_render) {
     const cached = await getCached(env, key);
     if (cached) {
@@ -174,6 +209,12 @@ export async function handleRender(
 
   let tome: string;
   let llmCallsMade = 0;
+  // Honest provenance: track exactly which model + provider produced
+  // the tome. Receipt signs THESE values, never the configured-default
+  // values (which can drift from reality on provider fallback or model
+  // snapshot resolution).
+  let modelUsed: string = "canonical-deterministic-v0";
+  let providerUsed: LLMRenderResult["provider"] = "canonical-path";
   if (!requiresExtrapolator(quantized)) {
     // Canonical path: deterministic tome from kept triples; no LLM.
     tome = deterministicTome(keptTriples);
@@ -181,7 +222,10 @@ export async function handleRender(
     const systemPrompt = buildSystemPrompt(quantized);
     const userPrompt = formatTriplesForLLM(keptTriples);
     try {
-      tome = await callAnthropic(env, systemPrompt, userPrompt);
+      const llmResult = await callAnthropic(env, systemPrompt, userPrompt);
+      tome = llmResult.tome;
+      modelUsed = llmResult.model_used;
+      providerUsed = llmResult.provider;
       llmCallsMade = 1;
     } catch (e) {
       return json(
@@ -192,6 +236,38 @@ export async function handleRender(
   }
 
   const renderId = await sha256Hex32(key + tome);
+
+  // v0.9.A — sign a render receipt if a signing JWK is configured.
+  // Absence of the signing config is non-fatal: receipt is omitted,
+  // render still returns. Lets the deploy stage roll out without
+  // the receipt path being a hard dependency.
+  let renderReceipt: unknown = undefined;
+  if (env.RENDER_RECEIPT_SIGNING_JWK && env.RENDER_RECEIPT_SIGNING_KID) {
+    try {
+      const signingJWK: JWK = JSON.parse(env.RENDER_RECEIPT_SIGNING_JWK);
+      const triplesHash = await hashTriples(keptTriples);
+      const tomeHash = await hashTome(tome);
+      const payload: ReceiptPayload = {
+        render_id: renderId,
+        sliders_quantized: quantized,
+        triples_hash: triplesHash,
+        tome_hash: tomeHash,
+        // Honest provenance: what actually served, not what was
+        // configured. See LLMRenderResult.model_used.
+        model: modelUsed,
+        provider: providerUsed,
+        signed_at: new Date().toISOString(),
+        digital_source_type:
+          providerUsed === "canonical-path"
+            ? DIGITAL_SOURCE_TYPE_DETERMINISTIC
+            : DIGITAL_SOURCE_TYPE_AI,
+      };
+      renderReceipt = await signReceipt(payload, signingJWK, env.RENDER_RECEIPT_SIGNING_KID);
+    } catch (e) {
+      // Signing failure is non-fatal — log and continue without receipt.
+      console.error("render_receipt signing failed:", (e as Error).message);
+    }
+  }
 
   // Build the result. NB: Worker's RenderResult does NOT populate
   // reextracted_triples / claimed_triples / drift — those come from
@@ -206,6 +282,7 @@ export async function handleRender(
     wall_clock_ms: Date.now() - tStart,
     quantized_sliders: quantized,
     render_id: renderId,
+    render_receipt: renderReceipt,
   };
 
   // Best-effort cache write.

@@ -15,6 +15,7 @@
 // must touch the other (CI gate in follow-up).
 
 import { handleComplete } from "./routes/complete";
+import { handleJwks } from "./routes/jwks";
 import { handleQid } from "./routes/qid";
 import { handleRender } from "./routes/render";
 
@@ -28,6 +29,15 @@ export interface Env {
   ANTHROPIC_API_KEY?: string;
   OPENAI_API_KEY?: string;
   CF_AI_GATEWAY_BASE?: string;
+
+  // v0.9.A render-receipt signing. Signing JWK is a secret (single-line
+  // JSON of the private JWK with `kty: "OKP"`, `crv: "Ed25519"`, `d`,
+  // `x`). Public JWKS (the other half) is plaintext and served at
+  // /.well-known/jwks.json. Both optional — absence ⇒ /api/render
+  // returns the tome but no `render_receipt` field.
+  RENDER_RECEIPT_SIGNING_JWK?: string;
+  RENDER_RECEIPT_SIGNING_KID?: string;
+  RENDER_RECEIPT_PUBLIC_JWKS?: string;
 
   // Plaintext vars (wrangler.toml [vars]).
   SUM_DEFAULT_MODEL_ANTHROPIC?: string;
@@ -98,6 +108,9 @@ export default {
       }
       if (url.pathname === "/api/render") {
         return withBaselineHeaders(await handleRender(request, env, ctx));
+      }
+      if (url.pathname === "/.well-known/jwks.json") {
+        return withBaselineHeaders(await handleJwks(request, env));
       }
 
       // Fall through to static assets. `run_worker_first` in
