@@ -1,0 +1,39 @@
+{
+  "description": "payload.render_id mutated.",
+  "expected_error_class": "signature_invalid",
+  "expected_outcome": "reject",
+  "jwks": {
+    "keys": [
+      {
+        "alg": "EdDSA",
+        "crv": "Ed25519",
+        "kid": "sum-render-2026-04-27-1",
+        "kty": "OKP",
+        "use": "sig",
+        "x": "MCzgC4fMHtU-_LSASGA7va1F-MSQwKuIiOjKTV8oWK4"
+      }
+    ]
+  },
+  "name": "tampered_render_id",
+  "receipt": {
+    "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6InN1bS1yZW5kZXItMjAyNi0wNC0yNy0xIiwiYjY0IjpmYWxzZSwiY3JpdCI6WyJiNjQiXX0..bEnJgatQJVwdl3A04Zjlct4HS_yTtVOlagBAy0iPsyEDx3Wzuq_oUbBorvN7XOa7u6VqruwvVnG6UYQjwg5zBQ",
+    "kid": "sum-render-2026-04-27-1",
+    "payload": {
+      "digital_source_type": "trainedAlgorithmicMedia",
+      "model": "claude-haiku-4-5-20251001",
+      "provider": "anthropic",
+      "render_id": "0000000000000000",
+      "signed_at": "2026-04-27T00:45:16.849Z",
+      "sliders_quantized": {
+        "audience": 0.5,
+        "density": 1,
+        "formality": 0.7,
+        "length": 0.5,
+        "perspective": 0.5
+      },
+      "tome_hash": "sha256-26fa6b9d0fa7ea1c769fa40cfc6b17f713f37416b59fa5372e44aa97e30e7f5a",
+      "triples_hash": "sha256-7d3decf66362edbafbb397c1aa5af525e76df3bd666128fcc53aa3baf42e4618"
+    },
+    "schema": "sum.render_receipt.v1"
+  }
+}
