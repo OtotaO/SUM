@@ -4,6 +4,67 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Added — `docs/API_REFERENCE.md` — single integration reference for the Worker API
+
+Wire-spec consolidation for external systems calling SUM over
+HTTP. Closes the second leg of the "MCP and API on point"
+directive — `MCP_INTEGRATION.md` covers the local-LLM-client
+surface; this doc covers everything else (web apps, mobile
+apps, server-side services, custom verifiers).
+
+Documents all five Worker routes with exact request/response
+shapes:
+
+* `POST /api/render` — slider-conditioned tome rendering plus
+  the optional signed `render_receipt`. Includes the full
+  `RenderReceipt` payload schema, the detached-JWS envelope
+  format, the six-step client-side verification flow, and the
+  `triples_used` semantics (subset after density-slider
+  filtering, not the input set verbatim).
+* `POST /api/complete` — Anthropic-first / OpenAI-fallback LLM
+  proxy. Marked explicitly as "for the demo UI, not a general
+  LLM proxy for third-party integrations."
+* `POST /api/qid` — Wikidata QID/PID resolver with edge-cached
+  lookups; per-term confidence scoring (1.0 exact, 0.7 alias,
+  0.5 other) and the null-id `reason` taxonomy.
+* `GET /.well-known/jwks.json` — render-receipt public keys.
+  CORS-permissive override of the baseline `same-origin` CORP
+  is documented; the deliberate absence of
+  `Access-Control-Allow-Credentials` is called out.
+* `GET /.well-known/revoked-kids.json` — `sum.revoked_kids.v1`
+  shape with the `effective_revocation_at` semantics (receipts
+  signed before that timestamp remain valid; only on-or-after
+  is rejected).
+
+Also includes:
+
+* The cross-cutting contract — base URL, auth model (none,
+  unauthenticated, edge-rate-limited), baseline security
+  headers (CSP / HSTS / Permissions-Policy / COEP / CORP),
+  error response shape, caching semantics.
+* Operator section — `wrangler secret put` flow for
+  `RENDER_RECEIPT_SIGNING_JWK` + `RENDER_RECEIPT_SIGNING_KID`,
+  the dashboard-vs-wrangler-toml distinction for
+  `RENDER_RECEIPT_PUBLIC_JWKS` (escaping inline JSON in
+  wrangler.toml is fragile), env-var-absence behaviour table.
+* Working integration examples — Node render-and-verify with
+  `jose` + `canonicalize`, Python QID resolution with `httpx`,
+  Python render-only.
+* Cross-references to `RENDER_RECEIPT_FORMAT.md`,
+  `PROOF_BOUNDARY.md` §1.3.1, `MCP_INTEGRATION.md`,
+  `INCIDENT_RESPONSE.md`, `SLIDER_CONTRACT.md`,
+  `COMPATIBILITY_POLICY.md`.
+
+The Node verify example uses an explicit componentwise sort
+comparator for `triples_hash` re-derivation — matches the
+Worker's `hashTriples` helper byte-for-byte. (Default
+`.sort()` works for triples without separator-collisions but
+the explicit version is safe under all string contents; this
+is the v0.9.A.1 fix that locked Python ↔ JS hash parity.)
+
+README gets a short "Calling SUM over HTTP" section pointing
+to the new doc.
+
 ### Added — MCP server v1 (Model Context Protocol integration surface)
 
 `sum-mcp` console script + `sum_engine_internal.mcp_server`

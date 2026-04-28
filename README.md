@@ -90,6 +90,10 @@ pip install 'sum-engine[mcp,sieve]'
 
 `sum-mcp` exposes `extract`, `attest`, `verify`, `inspect`, `schema` as MCP tools. Bundles attested via MCP verify byte-identically through the CLI / Node / browser verifiers — same canonical codec. See [`docs/MCP_INTEGRATION.md`](docs/MCP_INTEGRATION.md) for the full client wiring.
 
+### Calling SUM over HTTP
+
+The hosted Worker at `https://sum.ototao.com` exposes `/api/render`, `/api/complete`, `/api/qid`, and the `/.well-known/{jwks,revoked-kids}.json` verification surfaces. [`docs/API_REFERENCE.md`](docs/API_REFERENCE.md) is the wire spec — request/response shapes, error codes, the six-step receipt-verification flow, working Node + Python examples. Use this when the caller is a web app, mobile app, or server-side service; use the MCP server when the caller is a local LLM client.
+
 ---
 
 ## How the trust loop fits together
