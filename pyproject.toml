@@ -43,6 +43,11 @@ dependencies = [
 #   pip install sum-engine[all]     # both, plus dev tooling
 sieve = ["spacy>=3.7.0"]
 llm = ["openai>=1.40.0,<3.0.0", "pydantic>=2.0.0"]
+# Render-receipt verification (Phase E.1 v0.9.C). joserfc handles the
+# detached-JWS / RFC 7797 b64=false machinery; the existing pure-Python
+# JCS module at sum_engine_internal/infrastructure/jcs.py handles
+# canonicalization. Cryptography is already a hard dep above.
+receipt-verify = ["joserfc>=1.0.0"]
 dev = [
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",
@@ -60,6 +65,7 @@ dev = [
 all = [
     "sum-engine[sieve]",
     "sum-engine[llm]",
+    "sum-engine[receipt-verify]",
     "sum-engine[dev]",
 ]
 

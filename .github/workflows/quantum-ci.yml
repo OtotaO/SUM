@@ -198,14 +198,27 @@ jobs:
         fi
         echo "vendored bytes match committed: OK"
 
-    - name: Receipt-verifier smoke (15 fixtures, all runtimes-neutral)
+    - name: Receipt-verifier smoke — JS (15 fixtures)
       # Exercises receipt_verifier.js against fixtures/render_
       # receipts/. Fails if positive_control doesn't verify or any
-      # tampered fixture produces the wrong error class. Same
-      # fixtures will be consumed by v0.9.C (Python verifier);
-      # cross-runtime equivalence locks once both pass on every
-      # push.
+      # tampered fixture produces the wrong error class.
       run: node single_file_demo/test_render_receipt_verify.js
+
+    - name: Set up Python 3.12 for v0.9.C verifier smoke
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Receipt-verifier smoke — Python (same 15 fixtures)
+      # v0.9.C: cross-runtime equivalence with the JS verifier above.
+      # Same fixture set, same expected error classes; both runtimes
+      # MUST produce byte-identical outcomes on every fixture for
+      # PROOF_BOUNDARY §1.8 to stand at "proved on adversarial inputs
+      # across runtimes."
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest "joserfc>=1.0.0" "cryptography>=41.0.0"
+        python -m pytest Tests/test_render_receipt_verifier.py -q
 
   release-machinery-validation:
     name: Release machinery validation (no publish)

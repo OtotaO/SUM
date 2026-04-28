@@ -37,9 +37,36 @@ class TestPrimitives:
     def test_large_int(self) -> None:
         assert canonicalize_to_str(2**63) == str(2**63)
 
-    def test_float_rejected(self) -> None:
-        with pytest.raises(ValueError, match="floating-point"):
-            canonicalize(1.5)
+    def test_float_integer_valued_normalized(self) -> None:
+        # RFC 8785 §3.2.2.3: integer-valued floats normalize to integer
+        # form. Cross-runtime contract with TS canonicalize@>=2.
+        assert canonicalize_to_str(1.0) == "1"
+        assert canonicalize_to_str(0.0) == "0"
+        assert canonicalize_to_str(-0.0) == "0"
+        assert canonicalize_to_str(42.0) == "42"
+
+    def test_float_simple_decimals(self) -> None:
+        # Slider-quantized values used by the render-receipt verifier.
+        # Python repr matches ECMAScript Number.prototype.toString for
+        # these; the positive-control fixture under fixtures/render_
+        # receipts/ verifies cross-runtime byte equivalence empirically
+        # via signature verification.
+        assert canonicalize_to_str(0.1) == "0.1"
+        assert canonicalize_to_str(0.3) == "0.3"
+        assert canonicalize_to_str(0.5) == "0.5"
+        assert canonicalize_to_str(0.7) == "0.7"
+        assert canonicalize_to_str(0.9) == "0.9"
+        assert canonicalize_to_str(1.5) == "1.5"
+
+    def test_float_nan_and_inf_rejected(self) -> None:
+        # NaN / ±Infinity are not representable in JSON; reject explicitly
+        # rather than emit a non-canonical form.
+        with pytest.raises(ValueError, match="NaN"):
+            canonicalize(float("nan"))
+        with pytest.raises(ValueError, match="Infinity"):
+            canonicalize(float("inf"))
+        with pytest.raises(ValueError, match="Infinity"):
+            canonicalize(float("-inf"))
 
 
 class TestStrings:
