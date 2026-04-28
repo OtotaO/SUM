@@ -4,6 +4,21 @@ SUM ships a Model Context Protocol (MCP) server that exposes its primary verbs (
 
 This is the integration surface for **systems calling SUM** — the most common deployment shape.
 
+## v2 hardening contract
+
+The server is **fail-closed by default**. Eight hardening properties hold under adversarial input from a prompt-injected LLM client:
+
+1. **Input size caps.** `text` is capped at 200 000 chars. Bundles are capped at 10 MB tome, 100 000 axioms, 1 000 000 state-integer digits. Oversized inputs return `error_class: "input_too_large"`.
+2. **Tagged error classes.** Every failure carries `error_class` from a fixed enum: `schema | signature | structural | input_too_large | extractor_unavailable | network_disallowed | revoked | internal`. Branch on the tag, never on the `errors[i]` substring.
+3. **Network opt-in.** The LLM extractor is disabled unless `SUM_MCP_ALLOW_NETWORK=1` was set when the server started. Even then, `extractor="llm"` must be explicit per call. Prevents a prompt-injected client from spending the user's API tokens.
+4. **Concurrency-safe.** spaCy's nlp pipeline is serialised behind an asyncio lock; concurrent `extract`/`attest` calls do not race.
+5. **Catch-all per tool.** Every tool body wraps a `try/except Exception` returning `error_class: "internal"` with the exception type name only — no traceback, no internal paths leaked. Server stays up.
+6. **Forward-compat.** Bundles with unknown top-level fields under `canonical_format_version=1.x` are accepted (additive); future major versions fail closed.
+7. **Structured stderr audit.** Every tool call emits a single JSON line to stderr: `{ts, tool, result_class, duration_ms, shapes}`. Argument *shapes* (lengths, types, dict keys) are logged; argument *values* never are. Log-injection-proof by construction.
+8. **Property-tested.** 800+ adversarial inputs (Hypothesis) per release confirm no tool ever raises uncaught and no tool ever returns a success shape on a malformed payload.
+
+The fuzz suite is `Tests/test_mcp_server_fuzz.py`. Run with `pytest Tests/test_mcp_server_fuzz.py` after `pip install sum-engine[mcp,dev]`.
+
 ## Install
 
 ```bash
@@ -36,10 +51,12 @@ extract(text: str, extractor: "auto" | "sieve" | "llm" = "auto") -> {
   triples: [[s, p, o], ...],
   extractor: <chosen>,
   count: <int>,
-} | { error: <message> }
+} | { error_class: <ErrorClass>, errors: [<message>, ...] }
 ```
 
-Pulls (subject, predicate, object) triples out of natural-language prose. Fast, side-effect-free; no canonical bundle, no signing, no state integer. The fastest tool for "what does this text mean to SUM."
+Pulls (subject, predicate, object) triples out of natural-language prose. Fast, side-effect-free; no canonical bundle, no signing, no state integer.
+
+**v2 default:** `extractor="auto"` resolves to **sieve only** in the MCP path (the CLI's auto falls through to LLM if `OPENAI_API_KEY` is set; the MCP path does not). To reach the LLM extractor: set `SUM_MCP_ALLOW_NETWORK=1` at server start, then pass `extractor="llm"` explicitly. Asking for `extractor="llm"` without the env var returns `error_class: "network_disallowed"`.
 
 ### `attest`
 
@@ -71,11 +88,15 @@ verify(bundle: dict, signing_key: str | None = None, strict: bool = False) -> {
   bundle_version: <str>,
   signatures: { ed25519: "valid" | "invalid" | "absent",
                 hmac: "valid" | "invalid" | "absent" | "skipped" },
+  // On failure additionally:
+  error_class: "schema" | "signature" | "structural" | "input_too_large" | "internal",
   errors: [<reason>, ...],
 }
 ```
 
 Six-step verification: schema-version gate → prime-scheme gate → Ed25519 signature → HMAC signature → canonical-tome → state-integer reconstruction → axiom-count match. Returns a structured dict, never raises on malformed input — "verifier said no" stays distinct from "verifier crashed."
+
+`verify` always carries the `ok: bool` field (its purpose is specifically to return a verdict). Other tools omit `ok`; their failure signal is `"error_class" in result`.
 
 ### `inspect`
 
