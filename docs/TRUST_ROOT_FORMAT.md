@@ -301,3 +301,7 @@ A verified trust-root manifest DOES NOT PROVE:
 ## Appendix A: example end-to-end
 
 A worked example showing the full pipeline — generate keypair → build → sign → verify — lives as the round-trip pytest at `Tests/test_trust_root.py`. Reading that test gives a verifier author concrete byte-level expectations for every step of §2.1 and §4 above.
+
+## Appendix B: future transparency-anchor design
+
+The trust-root manifest is signed by the issuer; no third party today logs that signature anywhere durable. A future addition would anchor each issuance to a Sigstore Rekor entry (or RFC 9162 Certificate Transparency v2 log), giving any verifier a cryptographic witness that the manifest existed at a specific time and was not retroactively re-issued. The longer-form design — Rekor entry types, witness shape, audit-window policy — is preserved at [`docs/archive/TRANSPARENCY_ANCHOR.md`](archive/TRANSPARENCY_ANCHOR.md). Not yet shipped; tracked in `docs/NEXT_SESSION_PLAYBOOK.md` under R0.5.

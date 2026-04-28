@@ -4,6 +4,70 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Consolidated — `docs/` tree reduced from 25 active docs to 17 + index
+
+Newcomer-recommendation #3 from the Operator-Hard fresh-eyes
+audit. `docs/` was 25 files / 7 282 lines, including several
+session-shaped or design-history docs that no current consumer
+read. After this pass: **17 active docs** organised by reader
+(verify / integrate / understand-primitives / operate /
+process), plus a new **`docs/README.md` index** that explains
+which doc to open and why.
+
+**8 docs moved to `docs/archive/`** with `git mv` (history
+preserved as renames):
+
+- `WASM_PERFORMANCE.md` — older WASM benchmark notes, no
+  current consumer.
+- `MODEL_CALL_EVIDENCE_FORMAT.md` — design for an unshipped
+  surface.
+- `DEMO_RECORDING.md` — screen-recording instructions,
+  session-shaped.
+- `STAGE3_128BIT_DESIGN.md` — `sha256_128_v2` design rationale;
+  activation criteria summarised in `ALGORITHM_REGISTRY.md`,
+  full design history preserved in archive for byte-level
+  reference.
+- `SLIDER_V02_RESEARCH.md` — v0.2 slider-substrate research;
+  load-bearing decisions reflected in `SLIDER_CONTRACT.md`,
+  longer-form survey preserved in archive.
+- `NLI_MODEL_REGISTRY.md` — supported NLI models; today's
+  contract lives in `live_llm_adapter.py`'s pinned-snapshot
+  list and `SLIDER_CONTRACT.md`.
+- `FORMAL_MODELS.md` — formal-verification roadmap (TLA+ /
+  SMT / α,β-CROWN); now a single row in `PROOF_BOUNDARY.md`
+  §3 pointing to the archived design.
+- `TRANSPARENCY_ANCHOR.md` — Rekor/CT anchoring design; now
+  Appendix B of `TRUST_ROOT_FORMAT.md` with archive pointer.
+
+**8 forwarding stub files** at the original paths (e.g.
+`docs/STAGE3_128BIT_DESIGN.md`) for external-link continuity:
+each stub is a 5-line file pointing to the archive location
+and the `docs/README.md` index. External readers following
+old links from issues, blog posts, or search engines see the
+forwarding pointer rather than a 404 — public-project
+discipline.
+
+**Fold pointers** added to the four receiving docs
+(`ALGORITHM_REGISTRY.md`, `SLIDER_CONTRACT.md`,
+`PROOF_BOUNDARY.md` §3, `TRUST_ROOT_FORMAT.md` Appendix B)
+so a reader of the receiving doc knows where the longer-form
+material lives.
+
+**Falsification check (Carmack discipline):** every
+fold-target verified ≤500 lines after the fold (threshold
+800), confirming consolidation reduced file count without
+bloating any individual doc into an unreadable wall.
+
+`docs/README.md` is the actual entry-design fix — the reader
+who lands on `github.com/OtotaO/SUM/tree/main/docs` no longer
+sees 25 unsorted markdown files; they see a one-line-per-doc
+index grouped by reader intent.
+
+Net file count: 25 → **17 active + 1 index + 8 stub
+redirects + 12 archive entries**. Doc-tree surface for a
+cold reader: 17 + 1 = **18 visible files** at the top, of
+which 1 is the index that tells them where to go.
+
 ### Reframed — README leads with the cross-runtime trust surface, not the slider numbers
 
 Newcomer-recommendation #4 from the Operator-Hard fresh-eyes
