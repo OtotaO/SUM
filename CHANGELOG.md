@@ -4,6 +4,82 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Scaffolded — §2.5 generator-side intervention runner (live receipt pending operator spend)
+
+The L0–L3 canonicalisation-replay receipt established that
+canonicalisation alone cannot close the §2.5 gap; the dominant
+failure mode is generator elaboration. This PR ships the
+**runner that measures the two interventions named in that
+receipt's "operational read"** — but stops at the spend gate.
+The live measurement against the 50-doc `seed_v1` corpus is one
+command + ~$0.20 of OpenAI budget away, gated on explicit
+operator authorisation rather than burned silently.
+
+**Three ablations registered** (each ships under a distinct
+sibling schema, comparable to the L0 baseline by structural
+encoding in the runner):
+
+| Ablation | Schema | Mechanism |
+|---|---|---|
+| Canonical-first generator | `sum.s25_canonical_first_generator.v1` | Generator system prompt requires surfacing each source claim verbatim before elaborating. Pure prompt change. |
+| Constrained extractor | `sum.s25_constrained_extractor.v1` | Per-doc Pydantic schema with `Literal` enums pinned to source-axiom vocabulary (subject ∈ source_subjects, predicate ∈ source_predicates ∪ canonical_padding, object ∈ source_objects). OpenAI structured-output enforces the constraint at the API. |
+| Combined | `sum.s25_combined.v1` | Both interventions stacked. |
+
+**The runner is offline-testable.** `--dry-run` mode produces a
+structurally-valid receipt with synthetic per-doc records — used
+to verify the JSON schema family, per-doc field shapes, and
+ablation-comparison structure before any spend. The dry-run
+fixture lands at
+`fixtures/bench_receipts/s25_generator_side_DRYRUN.json`.
+
+**To produce the live receipt** (operator decision):
+
+```bash
+OPENAI_API_KEY=... python -m scripts.bench.runners.s25_generator_side \
+    --ablation all --out fixtures/bench_receipts/s25_generator_side_$(date +%Y-%m-%d).json
+```
+
+Estimated cost: ~$0.20 across all three ablations × 50 docs
+(`gpt-4o-mini-2024-07-18`, matching the L0 baseline model). A
+2-doc smoke at ~$0.005 is recommended first via `--max-docs 2`.
+
+**Why this PR stops at the spend gate.** Operator-Hard
+discipline + the public-project credential constraint:
+expending the operator's API budget without explicit
+per-experiment authorisation is the same family of move as
+sharing a secret. The runner is shipped reproducible; the live
+result becomes durable when the operator runs it.
+
+**What the receipt will tell us, regardless of the numbers:**
+- If recall moves from 0.12 → high (≥ 0.5): generator-side
+  intervention works; §2.5 is largely closed.
+- If recall moves modestly (0.20 – 0.40): generator-side helps
+  but doesn't fully close; the remaining unmeasured intervention
+  (fidelity-objective fine-tune) becomes the next cycle.
+- If recall stays near 0.12: generator-side fails like
+  canonicalisation did, and the §2.5 gap is structural — the
+  failure mode is something the LLM extractor's API surface
+  cannot fix; the next investment is symbolic-extraction
+  fallback rather than further LLM tuning.
+
+The receipt is the artifact regardless of which branch lands.
+
+**Tests:** 13/13 in `Tests/test_s25_interventions.py` cover
+prompt construction, schema acceptance / rejection paths,
+empty-source fail-closed posture, and JSON-schema
+serialisation for the OpenAI structured-output validator.
+
+**Files added:**
+- `sum_engine_internal/ensemble/s25_interventions.py` —
+  intervention primitives (prompts + dynamic Pydantic schema
+  builder).
+- `scripts/bench/runners/s25_generator_side.py` — runner with
+  three ablations + offline dry-run mode.
+- `Tests/test_s25_interventions.py` — unit coverage.
+- `fixtures/bench_receipts/s25_generator_side_DRYRUN.json` —
+  dry-run receipt fixture (locks the schema family and per-doc
+  field shape).
+
 ### Measured — §2.5 canonicalisation-replay receipt
 
 The §2.5 LLM round-trip drift attack ships its first measured
