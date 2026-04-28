@@ -781,7 +781,21 @@ Result: **PASS**.
 
 ---
 
-## Layer 8 — Agentic CLI (`sum_cli/`)
+## Appendix A — Agentic CLI (`sum_cli/`)
+
+<!--
+  PR C cleanup: this section was originally authored as a second
+  "Layer 8" — duplicating the existing "Layer 8 — Documentation
+  truthfulness" — and sat between Layer 9 and the later-added
+  Layer 10. PR C reframes as "Appendix A" (supplementary, no layer
+  number) to remove the duplicate-layer ambiguity without churning
+  file order. Feature numbers (98–103) are unchanged.
+
+  Why an appendix rather than another numbered layer: the CLI is a
+  thin user-facing wrapper that consumes Layers 1–3, not a peer
+  abstraction layer. Treating it as supplementary matches its
+  actual role.
+-->
 
 ### 98. `sum` CLI binary — agentic-first entry point ✅
 

@@ -89,3 +89,38 @@ The recording is one asset, re-used in at least three surfaces: the GitHub READM
 ## If you don't record today
 
 `docs/images/demo-poster.svg` (shipping alongside this runbook) is a static first-frame placeholder. Use it as the README hero until a real GIF replaces it. The poster frame is already accurate — same hero copy, same placeholder paragraph, same result-card layout — so a visitor who arrives before the GIF is pinned still sees the intended product surface.
+
+## What's new since this runbook was authored
+
+The single-file demo evolved during the Phase E.1 doc-pass + render-
+receipt arc. A re-recording should exercise the new surfaces:
+
+- **Render-receipt trust label** (Pre-A3 hygiene cycle, merged in
+  PR #48). Three lines next to the rendered tome: "Provenance
+  verified" / "Preservation benchmarked: median 1.000; p10 0.769
+  long / 0.818 short. Not recomputed for this render." / "Signed
+  does not mean true." A re-recording should pause on this label
+  for ~2 seconds so a viewer can read it.
+- **In-page receipt verifier button** (Phase E.1 v0.9.B, merged in
+  PR #52). After a successful `/api/render`, the demo exposes
+  "Verify receipt in-page" — runs the same six-step verifier
+  against the live JWKS using the vendored `jose` + `canonicalize`
+  bundle at `single_file_demo/vendor/sum-verify-deps.js`. A
+  re-recording should click the button and capture the green-check
+  result.
+- **JWKS open-CORS** (Phase E.1 v0.9.A.3, merged in PR #51). The
+  in-page verifier fetches `/.well-known/jwks.json` from the live
+  Worker; this works from `file://` after the Worker is redeployed
+  with the CORS fix.
+
+## Cross-references
+
+- [`docs/RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) — the
+  spec the in-page verifier implements.
+- [`single_file_demo/receipt_verifier.js`](../single_file_demo/receipt_verifier.js)
+  — the verifier wrapper the demo's button calls.
+- [`fixtures/render_receipts/README.md`](../fixtures/render_receipts/README.md)
+  — the receipt-fixture set the verifier is tested against.
+- [`docs/NEXT_SESSION_PLAYBOOK.md`](NEXT_SESSION_PLAYBOOK.md)
+  Pre-A3 hygiene + v0.9.B — the cycles that added the trust label
+  + verifier UI.

@@ -153,3 +153,42 @@ but cannot delete). Full mutual TLS or peer certificate pinning would address th
 | Ledger tampering | ✅ | SHA-256 Merkle hash-chain (holds under concurrent writers post `9c4139d`; detect partial tamper) |
 | VC 2.0 bundle forgery | ✅ | Ed25519 signature over SHA-256(JCS(proofConfig)) ‖ SHA-256(JCS(document)) per W3C Data Integrity 1.0 + `eddsa-jcs-2022`; 58 tests including tamper detection, key-reordering resilience, JSON-on-disk persistence |
 | Request-layer volumetric DoS | ⚠️ | Rate limiter implemented (`sum_engine_internal/infrastructure/rate_limiter.py`) but NOT WIRED into `api/quantum_router.py`; see §3.6 |
+| Render-receipt forgery | ✅ | Ed25519 signature over JCS-canonical payload (Phase E.1 v0.9.A); detached JWS w/ JWKS distribution; verifier rejects every tampered signed-field per the 15-fixture cross-runtime matrix. See `docs/RENDER_RECEIPT_FORMAT.md` §5 + `docs/PROOF_BOUNDARY.md` §1.8 |
+| Trust-root manifest forgery | ✅ | Same Ed25519/JCS/JWS shape as render receipts (R0.2); 17-test round-trip including 9 tampered-payload variants. See `docs/TRUST_ROOT_FORMAT.md` §6 |
+| CI / supply-chain compromise | ✅ | R0.3 hardening: every action SHA-pinned, `permissions: contents: read` defaults, OpenSSF Scorecard advisory, StepSecurity Harden-Runner audit-mode. SHA-pin lint job runs on every push (`scripts/lint_workflow_pins.py`) |
+| Receipt key compromise (post-rotation acceptance) | ⚠️ | Rotation-grace-window only today (`docs/RENDER_RECEIPT_FORMAT.md` §6); explicit revocation surface (`/.well-known/revoked-kids.json`) is queued as G3 in `docs/NEXT_SESSION_PLAYBOOK.md`. Operator runbook in `docs/INCIDENT_RESPONSE.md` case 1 |
+| JWKS endpoint drift | ⚠️ | Detected via the daily transparency anchor's `jwks_sha256` (R0.5 design-now; implementation pending — see `docs/TRANSPARENCY_ANCHOR.md`). Operator runbook in `docs/INCIDENT_RESPONSE.md` case 2 |
+| Cross-runtime verifier divergence | ✅ | 15-fixture matrix consumed unchanged by both Python (`sum_engine_internal.render_receipt`) and JS (`single_file_demo/receipt_verifier.js`) verifiers; cross-runtime byte-identical outcomes locked in CI (`vendor-byte-equivalence` job). PROOF_BOUNDARY §1.8 stands at "proved on adversarial inputs across runtimes" |
+| LLM provider silent model drift | ⚠️ | Receipt's `payload.model` records the model the API actually echoed back (not the configured-default); operator detection runbook in `docs/INCIDENT_RESPONSE.md` case 7. `sum.model_call_evidence.v1` sidecar (R0.5 design-now; implementation pending — see `docs/MODEL_CALL_EVIDENCE_FORMAT.md`) is the planned hash-only forensic-binding surface |
+
+---
+
+## Cross-references
+
+The Phase E.1 / R0 doc-pass arc extended SUM's threat surface
+substantially. Each new artifact has a corresponding spec + the
+operator-side response is documented in `docs/INCIDENT_RESPONSE.md`:
+
+- [`docs/RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) §5 +
+  §7 — render-receipt trust scope + threat model.
+- [`docs/TRUST_ROOT_FORMAT.md`](TRUST_ROOT_FORMAT.md) §6 + §7 —
+  trust-root manifest trust scope + threat model.
+- [`docs/INCIDENT_RESPONSE.md`](INCIDENT_RESPONSE.md) — operator
+  runbook for the eight named crisis cases (render-key compromise,
+  JWKS drift, PyPI release compromise, GHA workflow compromise,
+  Worker deploy compromise, benchmark claim later wrong, LLM
+  provider model drift, canonicalisation bug).
+- [`SECURITY.md`](../SECURITY.md) — researcher → operator
+  vulnerability disclosure policy.
+- [`docs/TRANSPARENCY_ANCHOR.md`](TRANSPARENCY_ANCHOR.md) — R0.5
+  design for daily transparency anchoring; the post-hoc-tampering
+  detection surface for cases 2, 3, 5.
+- [`docs/MODEL_CALL_EVIDENCE_FORMAT.md`](MODEL_CALL_EVIDENCE_FORMAT.md)
+  — R0.5 design for the optional hash-only model-call provenance
+  sidecar; addresses LLM provider drift forensically.
+- [`docs/PROOF_BOUNDARY.md`](PROOF_BOUNDARY.md) §1.8 + §2.6 + §2.7 —
+  what's proved vs measured on the new layers.
+- [`docs/NEXT_SESSION_PLAYBOOK.md`](NEXT_SESSION_PLAYBOOK.md) G3, P5,
+  P7 — open hardening tracks: revocation surface, threat-model-to-
+  test traceability, supply-chain attestation. Each closes a row in
+  the table above.

@@ -476,12 +476,22 @@ The Phase A priorities define *what work* needs doing; this section names *which
 
 These tools fit cleanly into existing priority work; cycles that touch the corresponding priority should default to these substrates unless a specific reason emerges to choose otherwise.
 
-| Priority | Recommended substrate | Why |
+| Priority | Recommended substrate | One-line why |
 |---|---|---|
-| P5 — threat-model validation (rate limit wired, abuse controls) | **Cloudflare Workers Rate Limiting + AI Gateway + Turnstile** (the last only on endpoints where user friction is acceptable) | Demo already lives in the Cloudflare universe; native primitives are stronger than rolled-our-own middleware. AI Gateway adds provider-side rate limiting + fallback + caching + observability; Turnstile is the right shape for anonymous-burst endpoints only. |
-| P7 — supply-chain attestation | **GitHub Artifact Attestations + Sigstore Cosign + SLSA build provenance** | Three substrates, each with a specific scope. Artifact Attestations: native GitHub primitive that captures workflow / repo / org / environment / commit SHA / triggering event / OIDC-derived provenance for GitHub-release artifacts; the canonical "where was this built" answer for the GitHub-hosted release path. Cosign: signs arbitrary blobs and emits a portable bundle (signature + certificate + timestamp + transparency-log inclusion proof) — the right substrate for offline verification, the standalone verifier JS bundle, the Worker bundle, and any artifact published outside a GitHub release. SLSA build provenance: standardises the build-process claim itself ("this artifact traces back through this build to this source"), separate from the signing layer. GitHub's own framing — "attestations are not a guarantee that an artifact is secure, only a verifiable link to where/how it was built" — fits SUM's "signed ≠ true" culture exactly. Verify from a clean machine before attaching to the release. |
-| P8 — LLM-extraction honesty | **Instructor (or Outlines)** for `LiveLLMAdapter.extract_triplets` | Strict triple schema before canonicalization. Instructor is provider-agnostic and integrates cleanly with the existing Pydantic-enforced shape; Outlines is the grammar-constrained alternative if SUM later runs local extraction models. Schema-valid output can still be semantically wrong, so this complements rather than replaces the deterministic sieve and the NLI rescue layer. |
-| Packaging hygiene (v0.3.1 above) | **`build` + `twine check` + `check-wheel-contents` + custom `README ↔ wheel.METADATA` diff** | PyPA-canonical stack. Each tool answers a different question; they compose cleanly. |
+| P5 — threat-model validation (rate-limit wired, abuse controls) | **Cloudflare Workers Rate Limiting + AI Gateway + Turnstile** (Turnstile only on anonymous-burst endpoints) | Demo lives in Cloudflare; native primitives beat rolled-our-own middleware. |
+| P7 — supply-chain attestation | **GitHub Artifact Attestations + Sigstore Cosign + SLSA build provenance** (see subsection below) | Three substrates, three scopes. |
+| P8 — LLM-extraction honesty | **Instructor (or Outlines)** for `LiveLLMAdapter.extract_triplets` | Strict triple schema before canonicalization; complements (not replaces) the deterministic sieve + NLI rescue. |
+| Packaging hygiene (v0.3.1 above) | **`build` + `twine check` + `check-wheel-contents` + custom `README ↔ wheel.METADATA` diff** | PyPA-canonical stack; each tool answers a different question. |
+
+#### P7 substrates in detail
+
+PR #46 review flagged this row as too long for a table. Three substrates with non-overlapping scopes — keeping them as bullets makes the trade-offs visible at a glance:
+
+- **GitHub Artifact Attestations.** Native GitHub primitive. Captures workflow / repo / org / environment / commit SHA / triggering event / OIDC-derived provenance for GitHub-release artifacts. The canonical "where was this built" answer for the GitHub-hosted release path. GitHub's own framing — *"attestations are not a guarantee that an artifact is secure, only a verifiable link to where/how it was built"* — fits SUM's "signed ≠ true" culture exactly.
+- **Sigstore Cosign.** Signs arbitrary blobs and emits a portable bundle (signature + certificate + timestamp + transparency-log inclusion proof). The right substrate for **offline verification**, the standalone verifier JS bundle, the Worker bundle, and any artifact published outside a GitHub release.
+- **SLSA build provenance.** Standardises the build-process claim itself — *"this artifact traces back through this build to its source"* — separate from the signing layer. Cosign signs the artifact; SLSA describes how it was made. The two compose.
+
+Verify all three from a clean machine before attaching to the release.
 
 ### Prototype first — architectural research before commitment
 

@@ -63,3 +63,37 @@ Same shape for each of the other three scaffolds. The audit is a one-command rer
 - After every substantial commit that adds a new `internal/*.py` module.
 - Before any deletion proposal (the audit's `test-only` list is the candidate pool).
 - Once per major release to catch scaffold-drift.
+
+## Modules added since the audit was last regenerated
+
+The Phase E.1 / R0 doc-pass arc added several modules under
+`sum_engine_internal/` that are not yet reflected in the import
+graph above. The next audit rerun will pick them up; documented
+here for reference until then:
+
+- `sum_engine_internal/infrastructure/jose_envelope.py` — shared
+  JWS-over-JCS verifier core consumed by both render-receipt and
+  trust-root verifiers (R0.2). Production-wired via the two
+  consumer modules below.
+- `sum_engine_internal/render_receipt/` — Phase E.1 v0.9.C verifier
+  for `sum.render_receipt.v1`. Consumes `jose_envelope`.
+- `sum_engine_internal/trust_root/` — R0.2 verifier for
+  `sum.trust_root.v1`. Consumes `jose_envelope`.
+
+All three are production-wired (not scaffolded) — exercised by:
+- 16 fixture-based + ~120 property-based tests in
+  `Tests/test_render_receipt_verifier.py` and
+  `Tests/test_property_receipt.py`.
+- 17 round-trip tests in `Tests/test_trust_root.py`.
+- The `vendor-byte-equivalence` CI job runs all three on every push.
+
+## Cross-references
+
+- [`docs/PROOF_BOUNDARY.md`](PROOF_BOUNDARY.md) §1.8 — render-receipt
+  cryptographic binding the new modules implement.
+- [`docs/RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) — wire
+  spec for `sum_engine_internal.render_receipt`.
+- [`docs/TRUST_ROOT_FORMAT.md`](TRUST_ROOT_FORMAT.md) — wire spec for
+  `sum_engine_internal.trust_root`.
+- [`docs/FEATURE_CATALOG.md`](FEATURE_CATALOG.md) Layer 10 — Phase
+  E.1 trust-loop features that consume the new modules.

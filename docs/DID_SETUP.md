@@ -160,3 +160,30 @@ The `DID_CONTEXT` SUM embeds (`https://www.w3.org/ns/did/v1` + `https://w3id.org
 - **Private key disclosure is game over.** Anyone with the `keys/did_web_issuer.pem` can sign bundles as if they were your deployment. Protect accordingly: do not commit, do not share over insecure channels, rotate on any suspected compromise.
 - **Domain takeover enables forgery.** `did:web` trusts whoever controls the domain's `/.well-known/` path. If the domain is lost or hijacked, all credentials signed under it become unverifiable or (worse) forgeable. Consider pairing with `did:key` as an `alsoKnownAs` backup so verifiers can fall back to self-resolution.
 - **No revocation path.** If the key is compromised, you cannot invalidate already-issued credentials retroactively. Rotate the key, update the DID document to remove the compromised `verificationMethod`, and notify downstream consumers. This is the cost of the design's simplicity — VC 2.0 has optional `credentialStatus` primitives for revocation that SUM does not ship by default.
+
+---
+
+## Cross-references
+
+This doc covers VC 2.0 issuer setup for `sum attest --ed25519-key`.
+Phase E.1 added a parallel JWKS-based key-distribution surface for
+the render-receipt and trust-root manifest signing keys; the two
+patterns share Ed25519 primitives + `cryptography` as the hard
+dep, but otherwise serve different audiences (DID-aware verifiers
+vs JOSE-aware verifiers).
+
+- [`docs/RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) §6 —
+  JWKS rotation cadence for the render-receipt signing key. Same
+  rotation discipline as `did:web` `verificationMethod` updates,
+  different distribution channel.
+- [`docs/TRUST_ROOT_FORMAT.md`](TRUST_ROOT_FORMAT.md) §3 —
+  trust-root manifest signing key + JWKS distribution.
+- [`docs/INCIDENT_RESPONSE.md`](INCIDENT_RESPONSE.md) cases 1, 2 —
+  operator runbook for render-key compromise / JWKS drift.
+  Analogous to the `did:web` key-rotation flow above but with
+  concrete Worker-side commands.
+- [`docs/NEXT_SESSION_PLAYBOOK.md`](NEXT_SESSION_PLAYBOOK.md) G3 —
+  revocation surface (`/.well-known/revoked-kids.json`) that, once
+  shipped, gives the JWKS-side keys the explicit revocation path
+  this doc admits VC 2.0's optional `credentialStatus` would
+  provide for the DID-side keys.

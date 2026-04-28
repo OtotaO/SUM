@@ -445,3 +445,37 @@ halt Phase E and reconsider:
 - User-customizable per-axis prompt fragments. The fragments are
   defined in `tome_sliders.py` and shipped as a unit. Customization
   is a v0.2+ feature once we have real users with real preferences.
+
+## Cross-references
+
+The slider's contract sits inside a larger trust loop the Phase E.1
+docs build out — every render that exercises this contract carries
+its own cryptographic attestation, and every release-state of the
+contract is recorded in the trust-root manifest:
+
+- [`docs/RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) — the
+  receipt every `/api/render` response carries; binds the rendered
+  tome to the slider position this contract describes. The receipt
+  proves the render attestation; this contract proves preservation
+  across axes.
+- [`docs/PROOF_BOUNDARY.md`](PROOF_BOUNDARY.md) §2.6 — the canonical
+  source-of-truth for the bench numbers (median 1.000, p10 0.769
+  long / 0.818 short, NLI rescue rate, prompt-hardening before/
+  after) this contract's headline cites.
+- [`docs/PROOF_BOUNDARY.md`](PROOF_BOUNDARY.md) §1.8 — the
+  cryptographic binding (Ed25519 / JCS / detached JWS / JWKS) that
+  attests to every render exercising this contract.
+- [`docs/NLI_MODEL_REGISTRY.md`](NLI_MODEL_REGISTRY.md) — v0.9.E
+  spec for the local ONNX swap target on this contract's NLI audit
+  layer. Decouples the rescue path from OpenAI without changing the
+  preservation contract itself.
+- [`docs/TRUST_ROOT_FORMAT.md`](TRUST_ROOT_FORMAT.md) §1.1.3
+  `algorithm_registry` — names the prime scheme + future prime-
+  scheme transitions that every render bound by this contract uses.
+- [`docs/NEXT_SESSION_PLAYBOOK.md`](NEXT_SESSION_PLAYBOOK.md)
+  v0.9.B / v0.9.C / v0.9.D / v0.9.E — the receipt-trust-loop
+  cycles that operationalise this contract end-to-end (browser
+  verifier, Python verifier, audit runner, local NLI).
+- [`fixtures/render_receipts/`](../fixtures/render_receipts/) — the
+  cross-runtime receipt-fixture set; positive control verifies the
+  same way regardless of which slider position produced it.
