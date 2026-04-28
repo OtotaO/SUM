@@ -479,3 +479,11 @@ contract is recorded in the trust-root manifest:
 - [`fixtures/render_receipts/`](../fixtures/render_receipts/) — the
   cross-runtime receipt-fixture set; positive control verifies the
   same way regardless of which slider position produced it.
+- [`docs/archive/SLIDER_V02_RESEARCH.md`](archive/SLIDER_V02_RESEARCH.md)
+  — research/methodology behind the slider's v0.2+ substrate. The
+  load-bearing decisions (verifiable rewards, cycle-consistency,
+  content-addressed provenance, IB Pareto frontier, constrained-
+  decoding rationale, NLI audit positioning, MontageLie threat
+  model) are reflected in this contract document; the archive
+  preserves the longer-form survey for any reader who wants the
+  source rationale.
