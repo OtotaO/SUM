@@ -262,6 +262,13 @@ jobs:
         pip install "hypothesis>=6.0.0"
         python -m pytest Tests/test_property_jcs.py Tests/test_property_receipt.py -q
 
+    - name: NLI calibration fixture format (v0.9.E)
+      # v0.9.E spec: pins the fixtures/nli_audit_calibration_v1.jsonl
+      # row shape so a future implementation cycle's threshold
+      # calibration can't be silently broken by a schema regression.
+      # Format-only; no model loading, no inference, no extra deps.
+      run: python -m pytest Tests/test_nli_calibration_format.py -q
+
   release-machinery-validation:
     name: Release machinery validation (no publish)
     # Validates the v0.3.1 hygiene gates on every push/PR so the FIRST

@@ -9,7 +9,7 @@
         demo wheel sdist smoke fortress clean lint wasm wasm-bench wasm-bench-python \
         vendor test-receipt-verify test-receipt-verify-py \
         bench-receipt-audit bench-receipt-audit-replay test-trust-root \
-        test-property
+        test-property test-nli-calibration-format
 
 PYTHON ?= python
 
@@ -106,6 +106,9 @@ test-trust-root:  ## R0.2: trust-root manifest round-trip + tampering tests.
 
 test-property:  ## R0.4: Hypothesis fuzz on JCS + verifier surfaces.
 	$(PYTHON) -m pytest Tests/test_property_jcs.py Tests/test_property_receipt.py -q
+
+test-nli-calibration-format:  ## v0.9.E: NLI calibration fixture format validation.
+	$(PYTHON) -m pytest Tests/test_nli_calibration_format.py -q
 
 wasm-bench:  ## Serve the WASM-vs-JS browser benchmark (docs/WASM_PERFORMANCE.md).
 	@echo "Open: http://localhost:8000/Tests/benchmarks/browser_wasm_bench.html"
