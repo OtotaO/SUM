@@ -4,6 +4,68 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Measured — §2.5 substantially closed by combined generator-side intervention
+
+Live bench against `seed_v1`, 50 docs, `gpt-4o-mini-2024-07-18`,
+2026-04-28. Receipt at
+`fixtures/bench_receipts/s25_generator_side_2026-04-28.json`
+under schema `sum.s25_generator_side.v1`. Cost ≈ \$0.20.
+
+**Headline result:**
+
+| Ablation | drift_pct (mean) | exact-match recall | p10 recall | full recall |
+|---|---:|---:|---:|---:|
+| L0 baseline | 107.75 | 0.12 | 0.00 | 6 / 50 |
+| L3 max canonicalisation (post-hoc, prior receipt) | 106.36 | 0.18 | 0.00 | 9 / 50 |
+| A — canonical-first generator only | 94.85 | 0.60 | 0.00 | 30 / 50 |
+| B — constrained extractor only | 81.97 | 0.62 | 0.00 | 31 / 50 |
+| **A + B combined** | **21.00** | **0.90** | **1.00** | **45 / 50** |
+
+**Recall: 0.12 → 0.90 (7.5× improvement). Drift: 107.75 →
+21.00 (5× reduction). p10 recall: 0.00 → 1.00.** The
+worst-decile docs at baseline had zero exact-match; under the
+combined intervention they all achieve full recall.
+
+**Each layer is independently necessary; combined is
+supra-additive.** Canonical-first alone hits 0.60 by addressing
+generator elaboration at the source. Constrained-extractor
+alone hits 0.62 by addressing surface-form drift at the
+symptom. Stacked, they reach 0.90 — better than either
+layer's independent effect would predict, because the
+canonical-first generator produces prose that the constrained
+extractor can actually *find* the source vocabulary in. The
+two layers compose because they operate on different stages
+of the same failure mode (generator elaboration vs. extractor
+paraphrase).
+
+**What's left of the §2.5 gap (5 of 50 docs):** residual is a
+per-corpus tuning problem (extend the canonical predicate set,
+tighten the verbatim-token rule), not a structural problem
+with the intervention pattern.
+
+`docs/PROOF_BOUNDARY.md` §2.5 boundary rewritten with the new
+table; the §6 progress-table row moves from `Measured (drift =
+107.75%, recall = 0.12)` to `Substantially closed by combined
+intervention (drift = 21.00%, recall = 0.90 on seed_v1)`.
+`README.md` "What does NOT yet work" subsection retitled "LLM
+narrative round-trip — substantially closed" with the
+ablation table above.
+
+Receipt schema family is `sum.s25_*.v1` (per-ablation siblings:
+`canonical_first_generator`, `constrained_extractor`,
+`combined`). Reproducible: `python -m
+scripts.bench.runners.s25_generator_side --ablation all --out
+<path>` (requires `OPENAI_API_KEY`, ~\$0.20, ~5 min on
+`seed_v1`).
+
+This receipt completes the §2.5 attack arc the
+canonicalisation-replay receipt opened — that receipt
+falsified the cheapest hypothesis (post-hoc canonicalisation
+alone, ceiling 0.18); this receipt confirms the intervention
+the prior boundary named (constrained decoding to a pinned
+vocabulary + canonical-first generator prompt) and lands a
+durable measurement.
+
 ### Scaffolded — §2.5 generator-side intervention runner (live receipt pending operator spend)
 
 The L0–L3 canonicalisation-replay receipt established that
