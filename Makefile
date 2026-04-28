@@ -7,7 +7,7 @@
 .DEFAULT_GOAL := help
 .PHONY: help install test test-cli test-codec bench xruntime xruntime-adversarial \
         demo wheel sdist smoke fortress clean lint wasm wasm-bench wasm-bench-python \
-        vendor test-receipt-verify
+        vendor test-receipt-verify test-receipt-verify-py
 
 PYTHON ?= python
 
@@ -87,6 +87,9 @@ vendor:  ## Regenerate vendored jose + canonicalize bundle (rerun after dep bump
 
 test-receipt-verify:  ## v0.9.B: Node smoke test against the receipt-fixture set.
 	node single_file_demo/test_render_receipt_verify.js
+
+test-receipt-verify-py:  ## v0.9.C: Python receipt verifier against the same fixture set.
+	$(PYTHON) -m pytest Tests/test_render_receipt_verifier.py -q
 
 wasm-bench:  ## Serve the WASM-vs-JS browser benchmark (docs/WASM_PERFORMANCE.md).
 	@echo "Open: http://localhost:8000/Tests/benchmarks/browser_wasm_bench.html"

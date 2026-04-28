@@ -110,7 +110,11 @@ The cross-runtime canonicalisation rule (JCS normalises integer-valued floats �
 
 **Boundary:** What the signature proves and what it does not is canonical in [`docs/RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) §5 (Trust Scope). The signature authenticates the *render attestation* (issuer signed this tome / triples / sliders / model / time tuple); it does not authenticate the tome's factual content, the freshness of a cache-HIT response, or the issuer's beliefs about what their configured-default model should have been. Issuer key compromise, freshness replay, and issuer collusion are explicitly out of scope (§5.1 threat model).
 
-The cryptographic binding moves to "proved on adversarial inputs" once the v0.9.B browser verifier and v0.9.C Python verifier land with negative-path fixtures (every signed field tampered → `ERR_JWS_SIGNATURE_VERIFICATION_FAILED`); until then, the negative path is exercised in `worker/`-local TypeScript tests but not yet locked across runtimes.
+**Cross-runtime negative-path proof (Phase E.1 v0.9.B + v0.9.C, complete):** The shared receipt-fixture set under [`fixtures/render_receipts/`](../fixtures/render_receipts/) — 15 runtime-neutral JSON cases (positive control + 12 tampered-field variants + 2 forward-compat variants) — is consumed unchanged by both:
+- The JS verifier in [`single_file_demo/receipt_verifier.js`](../single_file_demo/receipt_verifier.js), exercised by `node single_file_demo/test_render_receipt_verify.js` (CI: `vendor-byte-equivalence` job).
+- The Python verifier in [`sum_engine_internal/render_receipt/`](../sum_engine_internal/render_receipt/), exercised by `pytest Tests/test_render_receipt_verifier.py` (CI: same job, parallel step).
+
+Both runtimes MUST produce byte-identical outcomes on every fixture: same error class string for every reject case, signature verifies on the positive control. Cross-runtime divergence on any fixture is a stop-the-line trigger and would invalidate this section's claim. The cryptographic binding is therefore now **proved on adversarial inputs across runtimes** — the K-style equivalence we already have for CanonicalBundle, applied to render receipts.
 
 ---
 
