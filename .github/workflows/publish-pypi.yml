@@ -34,9 +34,20 @@ jobs:
     name: Build distribution + local hygiene gates
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - name: Harden runner (audit-only)
+      # R0.3: StepSecurity Harden-Runner in audit mode. Watches but
+      # doesn't block; records network egress / file changes / process
+      # activity inside the runner so anomalies are visible without
+      # rejecting legitimate traffic. Compromised CI often looks like
+      # "normal build, slightly different network behaviour"; audit
+      # mode establishes the baseline so future deviations stand out.
+      uses: step-security/harden-runner@cb605e52c26070c328afc4562f0b4ada7618a84e  # v2.10.4
+      with:
+        egress-policy: audit
 
-    - uses: actions/setup-python@v5
+    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+    - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5
       with:
         python-version: "3.12"
 
@@ -101,7 +112,7 @@ jobs:
         /tmp/release-smoke/bin/sum --version
 
     - name: Upload dist + hashes as artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
       with:
         name: dist
         path: |
@@ -118,7 +129,12 @@ jobs:
     permissions:
       id-token: write  # Required for OIDC trusted-publisher auth.
     steps:
-    - uses: actions/download-artifact@v4
+    - name: Harden runner (audit-only)
+      uses: step-security/harden-runner@cb605e52c26070c328afc4562f0b4ada7618a84e  # v2.10.4
+      with:
+        egress-policy: audit
+
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4
       with:
         name: dist
         path: .
@@ -134,7 +150,7 @@ jobs:
         ls dist/*.tar.gz > /dev/null || { echo "no .tar.gz in dist/"; exit 1; }
 
     - name: Upload to TestPyPI
-      uses: pypa/gh-action-pypi-publish@release/v1
+      uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b  # release/v1
       with:
         repository-url: https://test.pypi.org/legacy/
         packages-dir: dist/
@@ -152,16 +168,16 @@ jobs:
     needs: publish-testpypi
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
       with:
         path: repo
 
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4
       with:
         name: dist
         path: .
 
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5
       with:
         python-version: "3.12"
 
@@ -211,7 +227,12 @@ jobs:
     permissions:
       id-token: write
     steps:
-    - uses: actions/download-artifact@v4
+    - name: Harden runner (audit-only)
+      uses: step-security/harden-runner@cb605e52c26070c328afc4562f0b4ada7618a84e  # v2.10.4
+      with:
+        egress-policy: audit
+
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4
       with:
         name: dist
         path: .
@@ -224,7 +245,7 @@ jobs:
         ls dist/*.tar.gz > /dev/null || { echo "no .tar.gz in dist/"; exit 1; }
 
     - name: Upload to production PyPI
-      uses: pypa/gh-action-pypi-publish@release/v1
+      uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b  # release/v1
       with:
         packages-dir: dist/
         # No `repository-url:` — defaults to upload.pypi.org/legacy/.
@@ -239,16 +260,16 @@ jobs:
     needs: publish-pypi
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
       with:
         path: repo
 
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4
       with:
         name: dist
         path: .
 
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5
       with:
         python-version: "3.12"
 

@@ -1,0 +1,60 @@
+name: OpenSSF Scorecard (advisory)
+
+# R0.3: OpenSSF Scorecard runs as an advisory job — assesses the repo
+# for risky security practices (mutable action pins, missing branch
+# protection, dependency confusion exposure, etc.) and emits SARIF for
+# the Security tab. Non-blocking by default: a low score doesn't fail
+# CI here. Promoting to blocking is a separate decision once the
+# initial assessment baselines what's actionable vs noise.
+#
+# Schedule + push trigger so the score doesn't go stale, and the
+# default branch's findings stay visible in GitHub's Security tab.
+#
+# Permissions:
+#   security-events: write   — upload SARIF to code scanning
+#   id-token: write          — Sigstore-attested publishing of results
+#                              (Scorecard uses keyless signing for the
+#                              public results.json artifact)
+#   contents: read           — minimum default for everything else
+
+on:
+  branch_protection_rule:
+  schedule:
+    # Weekly, Mondays 06:42 UTC. Off-peak; avoids GitHub's noon-UTC
+    # cron-storm congestion.
+    - cron: '42 6 * * 1'
+  push:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  analysis:
+    name: Scorecard analysis
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write   # SARIF upload to GitHub code scanning
+      id-token: write           # Sigstore keyless signing of results
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+      with:
+        persist-credentials: false
+
+    - name: Run Scorecard analysis
+      uses: ossf/scorecard-action@62b2cac7ed8198b15735ed49ab1e5cf35480ba46  # v2.4.0
+      with:
+        results_file: results.sarif
+        results_format: sarif
+        # Public repos get free, signed publication of results to
+        # api.securityscorecards.dev. Set to false to skip publication
+        # while keeping the SARIF upload. Initial pass: skip publication
+        # so we can see results before publishing them.
+        publish_results: false
+
+    - name: Upload SARIF to GitHub Security tab
+      uses: github/codeql-action@ce64ddcb0d8d890d2df4a9d1c04ff297367dea2a  # v3
+      with:
+        sarif_file: results.sarif

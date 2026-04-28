@@ -34,9 +34,20 @@ jobs:
       name: cloudflare-worker
       url: https://sum-demo.workers.dev
     steps:
-      - uses: actions/checkout@v4
+      - name: Harden runner (audit-only)
+        # R0.3: StepSecurity Harden-Runner in audit mode. Watches but
+        # doesn't block; records network egress / file changes /
+        # process activity so anomalies are visible. Audit mode is
+        # the right default; flip to block-mode once we've confirmed
+        # the legitimate egress allowlist (Cloudflare API, npm
+        # registry).
+        uses: step-security/harden-runner@cb605e52c26070c328afc4562f0b4ada7618a84e  # v2.10.4
+        with:
+          egress-policy: audit
 
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4
         with:
           node-version: "22"
 
@@ -49,7 +60,7 @@ jobs:
         run: npm run typecheck
 
       - name: Deploy to Cloudflare
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd  # v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
