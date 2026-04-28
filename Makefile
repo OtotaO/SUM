@@ -7,7 +7,8 @@
 .DEFAULT_GOAL := help
 .PHONY: help install test test-cli test-codec bench xruntime xruntime-adversarial \
         demo wheel sdist smoke fortress clean lint wasm wasm-bench wasm-bench-python \
-        vendor test-receipt-verify test-receipt-verify-py
+        vendor test-receipt-verify test-receipt-verify-py \
+        bench-receipt-audit bench-receipt-audit-replay
 
 PYTHON ?= python
 
@@ -90,6 +91,14 @@ test-receipt-verify:  ## v0.9.B: Node smoke test against the receipt-fixture set
 
 test-receipt-verify-py:  ## v0.9.C: Python receipt verifier against the same fixture set.
 	$(PYTHON) -m pytest Tests/test_render_receipt_verifier.py -q
+
+bench-receipt-audit:  ## v0.9.D: live audit against /api/render — costs LLM tokens.
+	$(PYTHON) -m scripts.bench.runners.receipt_audit \
+		--cells 8 --out audit_trail.ndjson
+
+bench-receipt-audit-replay:  ## v0.9.D: replay-verify a saved audit trail (no network).
+	$(PYTHON) -m scripts.bench.runners.receipt_audit \
+		--replay audit_trail.ndjson
 
 wasm-bench:  ## Serve the WASM-vs-JS browser benchmark (docs/WASM_PERFORMANCE.md).
 	@echo "Open: http://localhost:8000/Tests/benchmarks/browser_wasm_bench.html"
