@@ -80,6 +80,16 @@ sum attest --ed25519-key keys/issuer.pem < prose.txt | sum verify --strict
 
 The same bundle bytes verify under `sum verify` (Python), `node standalone_verifier/verify.js` (WebCrypto), and the in-browser demo (SubtleCrypto). [`docs/DID_SETUP.md`](docs/DID_SETUP.md) walks the did:key / did:web issuer setup. [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §1.3.1 documents what the cross-runtime Ed25519 contract proves.
 
+### Calling SUM from MCP-aware LLM clients
+
+```bash
+pip install 'sum-engine[mcp,sieve]'
+# Claude Desktop / Claude Code / Cursor / Continue: add to MCP config:
+#   { "mcpServers": { "sum": { "command": "sum-mcp" } } }
+```
+
+`sum-mcp` exposes `extract`, `attest`, `verify`, `inspect`, `schema` as MCP tools. Bundles attested via MCP verify byte-identically through the CLI / Node / browser verifiers — same canonical codec. See [`docs/MCP_INTEGRATION.md`](docs/MCP_INTEGRATION.md) for the full client wiring.
+
 ---
 
 ## How the trust loop fits together

@@ -4,6 +4,62 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Added — MCP server v1 (Model Context Protocol integration surface)
+
+`sum-mcp` console script + `sum_engine_internal.mcp_server`
+package. Exposes SUM's primary verbs as MCP tools so any
+MCP-aware LLM client (Claude Desktop, Claude Code, Cursor,
+Continue, custom agents on the MCP Python / TypeScript SDKs)
+can drive SUM directly without shelling out to the `sum` CLI
+or hitting the hosted Worker API. Closes the highest-leverage
+integration gap for "systems calling SUM."
+
+**Five tools registered** (stdio transport, JSON-RPC 2.0):
+
+- `extract(text, extractor="auto"|"sieve"|"llm")` — text →
+  triples. Fast, side-effect-free.
+- `attest(text, branch, title, signing_key)` — extract +
+  build signed CanonicalBundle. Produces byte-identical bytes
+  to `sum attest`; verifies through every existing
+  Python/Node/browser SUM verifier unchanged.
+- `verify(bundle, signing_key, strict)` — six-step verification
+  (schema gate → prime-scheme gate → Ed25519 → HMAC → state
+  reconstruction → axiom-count match). Returns a structured
+  dict, never raises on malformed input.
+- `inspect(bundle)` — read-only summary; the "what's in this
+  bundle" view an agent calls before paying for `verify`.
+- `schema(name)` — field catalogue for sum.canonical_bundle.v1,
+  sum.render_receipt.v1, sum.merkle_inclusion.v1. The wire
+  spec sources of truth remain the markdown specs; this tool
+  gives an in-band, programmatically-readable summary.
+
+**Trust model:** thin façade over `sum_engine_internal` +
+`sum_cli.main`. No new cryptography, no new canonical codec —
+a bundle attested via MCP verifies byte-identically via the
+CLI surface, locked by the cross-runtime byte-identity test
+in `Tests/test_mcp_server.py`. The cross-runtime trust
+triangle (`PROOF_BOUNDARY.md` §1.3.1) extends transparently
+to MCP-attested bundles.
+
+**Wire scope:** stdio only in v1. A remote-MCP variant
+(SSE / HTTP) is deliberately deferred — `sum-mcp` over the
+network is a different threat model than `sum-mcp` on the
+same host, and the auth design hasn't landed.
+
+**Tests:** 16/16 in `Tests/test_mcp_server.py`. Three layers —
+tool registration, single-tool behaviour, full extract → attest
+→ verify roundtrip, plus the byte-identity check that an
+MCP-attested bundle passes the CLI verifier as a subprocess.
+
+**Install:** `pip install sum-engine[mcp]`. New optional
+dependency: `mcp>=1.0.0` (the official MCP Python SDK with
+FastMCP). New script entry: `sum-mcp` → stdio MCP server.
+`docs/MCP_INTEGRATION.md` covers Claude Desktop, Claude Code,
+Cursor, Continue, and custom agent wiring with concrete config
+snippets. Old `docs/archive/MCP_INTEGRATION.md` is left in
+place as historical record (covers an earlier summarization-
+era SUM and is not the current spec).
+
 ### Added — M1 Merkle set-commitment sidecar (prototype + spec + benchmark)
 
 Companion membership-witness substrate alongside the LCM state

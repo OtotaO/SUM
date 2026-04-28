@@ -48,6 +48,12 @@ llm = ["openai>=1.40.0,<3.0.0", "pydantic>=2.0.0"]
 # JCS module at sum_engine_internal/infrastructure/jcs.py handles
 # canonicalization. Cryptography is already a hard dep above.
 receipt-verify = ["joserfc>=1.0.0"]
+# MCP (Model Context Protocol) server. Exposes SUM verbs as MCP
+# tools so any MCP-aware LLM client (Claude Desktop, Claude Code,
+# Cursor, Continue, custom agents) can call SUM directly. The
+# `mcp` package is the official Python SDK; FastMCP is its
+# decorator-style high-level API. See docs/MCP_INTEGRATION.md.
+mcp = ["mcp>=1.0.0"]
 dev = [
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",
@@ -71,12 +77,18 @@ all = [
     "sum-engine[sieve]",
     "sum-engine[llm]",
     "sum-engine[receipt-verify]",
+    "sum-engine[mcp]",
     "sum-engine[dev]",
 ]
 
 [project.scripts]
 # `sum` on PATH after installation. Subcommands: attest, verify, resolve, version.
 sum = "sum_cli.main:main"
+# `sum-mcp` on PATH after `pip install sum-engine[mcp]`. Stdio-transport
+# MCP server exposing extract / attest / verify / inspect / schema as
+# tools. See docs/MCP_INTEGRATION.md for client wiring (Claude Desktop,
+# Claude Code, Cursor, Continue).
+sum-mcp = "sum_engine_internal.mcp_server.server:main"
 
 [project.urls]
 Homepage = "https://github.com/OtotaO/SUM"
