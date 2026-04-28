@@ -8,7 +8,8 @@
 .PHONY: help install test test-cli test-codec bench xruntime xruntime-adversarial \
         demo wheel sdist smoke fortress clean lint wasm wasm-bench wasm-bench-python \
         vendor test-receipt-verify test-receipt-verify-py \
-        bench-receipt-audit bench-receipt-audit-replay test-trust-root
+        bench-receipt-audit bench-receipt-audit-replay test-trust-root \
+        test-property
 
 PYTHON ?= python
 
@@ -102,6 +103,9 @@ bench-receipt-audit-replay:  ## v0.9.D: replay-verify a saved audit trail (no ne
 
 test-trust-root:  ## R0.2: trust-root manifest round-trip + tampering tests.
 	$(PYTHON) -m pytest Tests/test_trust_root.py -q
+
+test-property:  ## R0.4: Hypothesis fuzz on JCS + verifier surfaces.
+	$(PYTHON) -m pytest Tests/test_property_jcs.py Tests/test_property_receipt.py -q
 
 wasm-bench:  ## Serve the WASM-vs-JS browser benchmark (docs/WASM_PERFORMANCE.md).
 	@echo "Open: http://localhost:8000/Tests/benchmarks/browser_wasm_bench.html"

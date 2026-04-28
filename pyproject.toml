@@ -61,6 +61,11 @@ dev = [
     # clone should not silently skip those four test files.
     "PyJWT>=2.8.0",
     "build>=1.0.0",
+    # R0.4: Hypothesis property-based fuzz harness on JCS + verifier
+    # surfaces. Tests live under Tests/test_property_*.py; without
+    # this, those tests skip via pytest.importorskip and the property
+    # coverage falls off.
+    "hypothesis>=6.0.0",
 ]
 all = [
     "sum-engine[sieve]",

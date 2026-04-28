@@ -252,6 +252,16 @@ jobs:
       # render_receipt.ErrorClass map to the same string values.
       run: python -m pytest Tests/test_trust_root.py -q
 
+    - name: Property-based fuzz tests — Hypothesis (R0.4)
+      # R0.4: Hypothesis property-based tests over JCS canonicalization
+      # and the receipt + trust-root verifiers. Generates hundreds of
+      # cases per property; catches the bug the fixture set didn't
+      # anticipate. derandomize=True so failures are reproducible
+      # across CI runs (no flaky surface).
+      run: |
+        pip install "hypothesis>=6.0.0"
+        python -m pytest Tests/test_property_jcs.py Tests/test_property_receipt.py -q
+
   release-machinery-validation:
     name: Release machinery validation (no publish)
     # Validates the v0.3.1 hygiene gates on every push/PR so the FIRST
