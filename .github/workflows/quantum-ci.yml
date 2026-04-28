@@ -220,6 +220,14 @@ jobs:
         pip install pytest "joserfc>=1.0.0" "cryptography>=41.0.0"
         python -m pytest Tests/test_render_receipt_verifier.py -q
 
+    - name: Trust-root manifest round-trip — Python (R0.2)
+      # R0.2: build → sign → verify round-trip with an in-memory test
+      # keypair. 17 cases including all 9 tampered-payload-field
+      # variants, schema mismatch, unknown kid, wrong key, and a
+      # taxonomy-cross-surface check that trust_root.ErrorClass and
+      # render_receipt.ErrorClass map to the same string values.
+      run: python -m pytest Tests/test_trust_root.py -q
+
   release-machinery-validation:
     name: Release machinery validation (no publish)
     # Validates the v0.3.1 hygiene gates on every push/PR so the FIRST
