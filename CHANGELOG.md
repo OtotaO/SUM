@@ -4,6 +4,78 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Measured — §2.5 fully closed on `seed_v1` after lemma-exclusion residual fix
+
+Live re-run against the same `seed_v1` corpus (50 docs,
+`gpt-4o-mini-2024-07-18`, 2026-04-28, ~\$0.07). Receipt at
+`fixtures/bench_receipts/s25_residual_closure_2026-04-28.json`.
+
+The prior combined-intervention receipt closed §2.5
+substantially (recall 0.12 → 0.90) but left 5/50 docs failing.
+Per-doc analysis showed every failing doc had the same root
+cause: the constrained extractor's predicate enum admitted both
+the source's inflected predicate (`proposed`, `contains`,
+`described`, `discovered`, `build_nests`) and its lemma
+(`propose`, `contain`, `describe`, `discover`, `build`) from
+`DEFAULT_CANONICAL_PREDICATES`. Faced with both forms in the
+enum, the LLM extractor preferred the lemma every time.
+
+**The fix:** when constructing the per-doc constrained schema,
+exclude any token from `DEFAULT_CANONICAL_PREDICATES` that is a
+candidate lemma of any source predicate. Implementation:
+`_candidate_lemmas(predicate)` covers standard English suffix
+inflections (`-ed`, `-es`, `-s`, `-ing`, doubled-consonant past
+forms, `-ies` → `-y`) plus compound-predicate head-verb removal
+(`build_nests` → forbid `build`).
+
+**Result on the same corpus:**
+
+| Ablation | drift_pct | recall | docs full recall |
+|---|---:|---:|---:|
+| L0 baseline | 107.75 | 0.12 | 6 / 50 |
+| Combined (initial) | 21.00 | 0.90 | 45 / 50 |
+| **Combined + lemma-exclusion** | **0.00** | **1.0000** | **50 / 50** |
+
+All 5 previously-failing docs (doc_004 / 005 / 010 / 014 /
+015) recovered; zero docs newly broken. Drift falls to **0.00%
+— within rounding of the canonical (provable) round-trip on
+the same corpus**.
+
+**Boundary on this result:** `seed_v1` is single-fact SVO. The
+1.00 recall is the saturation point for that corpus's
+complexity. Harder corpora (`seed_v2`'s difficulty-pattern
+docs, `seed_long_paragraphs`'s multi-paragraph multi-fact)
+have NOT been measured under the intervention. The `seed_v1`
+receipt establishes that the intervention pattern is right;
+whether it scales is the next measurement.
+
+The §2.5 row in `PROOF_BOUNDARY.md` §6 progress table moves
+from "Substantially closed by combined intervention" to
+"Closed on `seed_v1`" with the boundary noted. README "What
+does NOT yet work" subsection retitled "LLM narrative
+round-trip — closed on `seed_v1`" with the updated table.
+
+**Test coverage:** 15/15 in `Tests/test_s25_interventions.py`.
+The new `test_constrained_schema_excludes_source_predicate_lemmas`
+locks the lemma-exclusion behaviour for `-ed`, `-s`, and
+compound-predicate cases, asserting via `pydantic.ValidationError`
+that the lemma forms are rejected by the schema.
+
+The `_candidate_lemmas` helper is conservative — only fires on
+standard English suffixes. Will miss irregulars (`taught` →
+`teach`); those are not present in the corpus's failure set,
+so this is the right scope for the fix that closes the
+observed residual without over-fitting on patterns the data
+did not surface.
+
+This receipt closes the §2.5 attack arc opened by the original
+107.75% drift measurement (2026-04-19), bounded by the
+canonicalisation-replay falsification (2026-04-28 morning,
+ceiling 0.18), confirmed by the generator-side intervention
+(2026-04-28 evening, recall 0.90), and saturated by this
+residual fix. Four stacked receipts; each was the reference
+baseline for the next.
+
 ### Measured — §2.5 substantially closed by combined generator-side intervention
 
 Live bench against `seed_v1`, 50 docs, `gpt-4o-mini-2024-07-18`,

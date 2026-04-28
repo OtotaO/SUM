@@ -147,6 +147,73 @@ def test_constrained_schema_admits_canonical_predicate(src_axioms):
     assert parsed.triplets[0].predicate == "discover"
 
 
+def test_constrained_schema_excludes_source_predicate_lemmas():
+    """Residual-closure fix: when a source predicate is an inflected
+    form (e.g. ``proposed``, ``contains``, ``described``,
+    ``discovered``), the constrained schema MUST exclude its lemma
+    from the canonical-padding set so the LLM extractor cannot pick
+    the lemma over the source surface form. This was the single root
+    cause of the 5/50 residual after the first §2.5 closure receipt;
+    every failing doc had a source predicate whose lemma sat in
+    DEFAULT_CANONICAL_PREDICATES.
+
+    Verified via the JSON schema export — a Pydantic ValidationError
+    on the `propose` literal is the load-bearing assertion."""
+    from pydantic import ValidationError
+
+    Schema = build_constrained_extraction_schema(
+        [("einstein", "proposed", "relativity")]
+    )
+    # Source surface form admitted.
+    Schema(triplets=[
+        {"subject": "einstein", "predicate": "proposed", "object": "relativity"},
+    ])
+    # Lemma excluded.
+    with pytest.raises(ValidationError):
+        Schema(triplets=[
+            {"subject": "einstein", "predicate": "propose", "object": "relativity"},
+        ])
+
+    # Same shape for `-s` / `-es` 3rd-person singular.
+    Schema = build_constrained_extraction_schema(
+        [("water", "contains", "hydrogen")]
+    )
+    Schema(triplets=[
+        {"subject": "water", "predicate": "contains", "object": "hydrogen"},
+    ])
+    with pytest.raises(ValidationError):
+        Schema(triplets=[
+            {"subject": "water", "predicate": "contain", "object": "hydrogen"},
+        ])
+
+    # Compound predicate: head verb in isolation also excluded.
+    Schema = build_constrained_extraction_schema(
+        [("birds", "build_nests", "nests")]
+    )
+    Schema(triplets=[
+        {"subject": "birds", "predicate": "build_nests", "object": "nests"},
+    ])
+    with pytest.raises(ValidationError):
+        Schema(triplets=[
+            {"subject": "birds", "predicate": "build", "object": "nests"},
+        ])
+
+
+def test_constrained_schema_unrelated_canonical_predicates_survive_lemma_filter():
+    """Lemma exclusion must NOT remove canonical predicates that
+    are unrelated to the source's predicate form. For
+    ``proposed``-as-source, ``discover`` stays in the enum because
+    it is not a lemma of ``proposed``."""
+    Schema = build_constrained_extraction_schema(
+        [("einstein", "proposed", "relativity")]
+    )
+    # `discover` is in DEFAULT_CANONICAL_PREDICATES and is unrelated
+    # to `proposed`'s lemma chain — it must survive.
+    Schema(triplets=[
+        {"subject": "einstein", "predicate": "discover", "object": "relativity"},
+    ])
+
+
 def test_constrained_schema_empty_source_fails_closed():
     """A source with zero axioms produces a schema where the only
     legitimate response is an empty triplets list."""

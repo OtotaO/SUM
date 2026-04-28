@@ -1,0 +1,1633 @@
+{
+  "schema_family": "sum.s25_generator_side.v1",
+  "issued_at": "2026-04-28T22:00:28Z",
+  "corpus": "seed_v1.json",
+  "n_docs": 50,
+  "model": "gpt-4o-mini-2024-07-18",
+  "dry_run": false,
+  "baseline_reference": {
+    "receipt": "fixtures/bench_receipts/s25_canonicalization_replay_2026-04-28.json",
+    "L0_drift_mean": 107.75,
+    "L0_recall_mean": 0.12,
+    "L0_full_recall": "6/50"
+  },
+  "ablations": [
+    {
+      "schema": "sum.s25_combined.v1",
+      "ablation": "combined",
+      "description": "A + B: canonical-first generator + vocab-pinned extractor",
+      "model": "gpt-4o-mini-2024-07-18",
+      "aggregate": {
+        "n_docs": 50,
+        "drift_pct_mean": 0.0,
+        "drift_pct_median": 0.0,
+        "exact_match_recall_mean": 1.0,
+        "exact_match_recall_p10": 1.0,
+        "n_docs_full_recall": 50,
+        "fraction_full_recall": 1.0
+      },
+      "per_doc": [
+        {
+          "doc_id": "doc_001",
+          "source_axioms": [
+            [
+              "alice",
+              "likes",
+              "cats"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "alice",
+              "likes",
+              "cats"
+            ]
+          ],
+          "narrative_excerpt": "The alice likes cats. \n\nAlice's fondness for cats is well-known among her friends. She often shares stories of her experiences with these playful and affectionate animals, reflecting her deep apprecia",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_002",
+          "source_axioms": [
+            [
+              "bob",
+              "owns",
+              "dog"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "bob",
+              "owns",
+              "dog"
+            ]
+          ],
+          "narrative_excerpt": "The bob owns dog.  \nBob is a passionate animal lover and takes great care of his dog, ensuring it has a happy and healthy life.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_003",
+          "source_axioms": [
+            [
+              "paris",
+              "is_a",
+              "city"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "paris",
+              "is_a",
+              "city"
+            ]
+          ],
+          "narrative_excerpt": "The paris is_a city.  \nParis, often referred to as the \"City of Light,\" is renowned for its rich history, culture, and significance in both art and fashion. Situated in northern France, it is a vibran",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_004",
+          "source_axioms": [
+            [
+              "einstein",
+              "proposed",
+              "relativity"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "einstein",
+              "proposed",
+              "relativity"
+            ]
+          ],
+          "narrative_excerpt": "The einstein proposed relativity. \n\nThis significant proposal marked a transformative moment in the field of physics. Albert Einstein's theory of relativity fundamentally altered our understanding of ",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_005",
+          "source_axioms": [
+            [
+              "water",
+              "contains",
+              "hydrogen"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "water",
+              "contains",
+              "hydrogen"
+            ]
+          ],
+          "narrative_excerpt": "The water contains hydrogen.  \nWater, a vital resource for all known forms of life, is composed of two hydrogen atoms bonded to one oxygen atom. This chemical arrangement not only defines its structur",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_006",
+          "source_axioms": [
+            [
+              "the_sun",
+              "emits_light",
+              "light"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "the_sun",
+              "emits_light",
+              "light"
+            ]
+          ],
+          "narrative_excerpt": "The sun emits light. \n\nThe sun, a massive ball of plasma at the center of our solar system, emits light that illuminates the Earth and sustains life. This light is a vital energy source, allowing plan",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_007",
+          "source_axioms": [
+            [
+              "plants",
+              "produce_oxygen",
+              "oxygen"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "plants",
+              "produce_oxygen",
+              "oxygen"
+            ]
+          ],
+          "narrative_excerpt": "The plants produce_oxygen oxygen. \n\nThis fundamental process is essential for life on Earth, as plants play a critical role in maintaining the balance of the ecosystem. Through the process of photosyn",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_008",
+          "source_axioms": [
+            [
+              "dogs",
+              "chase",
+              "cats"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "dogs",
+              "chase",
+              "cats"
+            ]
+          ],
+          "narrative_excerpt": "The dogs chase cats.  \nIn many households, it is a common sight to see dogs energetically pursuing their feline counterparts. The dynamic between dogs and cats often brings a lively energy to the envi",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_009",
+          "source_axioms": [
+            [
+              "fish",
+              "eat",
+              "plankton"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "fish",
+              "eat",
+              "plankton"
+            ]
+          ],
+          "narrative_excerpt": "The fish eat plankton. \n\nThis relationship is fundamental in aquatic ecosystems, where fish often rely on plankton as a primary food source. Plankton consists of tiny organisms that drift in the water",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_010",
+          "source_axioms": [
+            [
+              "birds",
+              "build_nests",
+              "nests"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "birds",
+              "build_nests",
+              "nests"
+            ]
+          ],
+          "narrative_excerpt": "The birds build_nests nests. \n\nIn the natural world, birds engage in a remarkable activity known as nest building. This essential behavior serves various purposes, including providing shelter for thei",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_011",
+          "source_axioms": [
+            [
+              "shakespeare",
+              "wrote",
+              "hamlet"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "shakespeare",
+              "wrote",
+              "hamlet"
+            ]
+          ],
+          "narrative_excerpt": "The shakespeare wrote hamlet.  \nWilliam Shakespeare, an iconic playwright of the Elizabethan era, crafted many enduring works, and \"Hamlet\" is one of his most famous tragedies. This play delves into t",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_012",
+          "source_axioms": [
+            [
+              "tesla",
+              "invented",
+              "motors"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "tesla",
+              "invented",
+              "motors"
+            ]
+          ],
+          "narrative_excerpt": "The tesla invented motors. \n\nNikola Tesla, a renowned inventor and electrical engineer, is often credited with pioneering advancements that led to the development of electric motors. His innovative de",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_013",
+          "source_axioms": [
+            [
+              "darwin",
+              "studied",
+              "finches"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "darwin",
+              "studied",
+              "finches"
+            ]
+          ],
+          "narrative_excerpt": "The darwin studied finches. \n\nThis statement refers to Charles Darwin, the renowned naturalist who is best known for his contributions to the understanding of evolution and natural selection. During h",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_014",
+          "source_axioms": [
+            [
+              "newton",
+              "described",
+              "gravity"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "newton",
+              "described",
+              "gravity"
+            ]
+          ],
+          "narrative_excerpt": "The newton described gravity. This statement highlights Sir Isaac Newton's pivotal work in the 17th century when he formulated the law of universal gravitation. His insights revolutionized the underst",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_015",
+          "source_axioms": [
+            [
+              "kepler",
+              "discovered",
+              "orbits"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "kepler",
+              "discovered",
+              "orbits"
+            ]
+          ],
+          "narrative_excerpt": "The kepler discovered orbits. \n\nJohannes Kepler, the renowned German astronomer, made significant contributions to our understanding of planetary motion during the early 17th century. His discovery of",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_016",
+          "source_axioms": [
+            [
+              "gold",
+              "conducts_electricity",
+              "true"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "gold",
+              "conducts_electricity",
+              "true"
+            ]
+          ],
+          "narrative_excerpt": "The gold conducts_electricity true. \n\nThis fact highlights the remarkable property of gold as a conductor of electricity, which makes it an essential material in various electronics and electrical app",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_017",
+          "source_axioms": [
+            [
+              "steel",
+              "resists_corrosion",
+              "true"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "steel",
+              "resists_corrosion",
+              "true"
+            ]
+          ],
+          "narrative_excerpt": "The steel resists_corrosion true. \n\nThis statement highlights an important property of steel, particularly in its application across various industries. Steel's resistance to corrosion makes it a favo",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_018",
+          "source_axioms": [
+            [
+              "diamond",
+              "cuts",
+              "glass"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "diamond",
+              "cuts",
+              "glass"
+            ]
+          ],
+          "narrative_excerpt": "The diamond cuts glass. \n\nThis fact highlights the exceptional hardness of diamonds, a property that makes them useful not only in jewelry but also in industrial applications. Due to their unique mole",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_019",
+          "source_axioms": [
+            [
+              "copper",
+              "carries_current",
+              "true"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "copper",
+              "carries_current",
+              "true"
+            ]
+          ],
+          "narrative_excerpt": "The copper carries_current true. \n\nCopper is widely recognized for its excellent electrical conductivity, making it a preferred material for wiring and electronic components. When it is stated that \"t",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_020",
+          "source_axioms": [
+            [
+              "iron",
+              "forms_rust",
+              "rust"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "iron",
+              "forms_rust",
+              "rust"
+            ]
+          ],
+          "narrative_excerpt": "The iron forms rust. Rust, a product of the oxidation process, is commonly observed as a reddish-brown corrosion that deteriorates iron-based materials over time. Understanding how iron interacts with",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_021",
+          "source_axioms": [
+            [
+              "rome",
+              "built_roads",
+              "/r/oads/;n/cir"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "rome",
+              "built_roads",
+              "/r/oads/;n/cir"
+            ]
+          ],
+          "narrative_excerpt": "The rome built_roads /r/oads/;n/cir. The intricate network of roads constructed by the Romans played a crucial role in the expansion and administration of their vast empire. These roads facilitated ef",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_022",
+          "source_axioms": [
+            [
+              "greece",
+              "founded",
+              "democracy"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "greece",
+              "founded",
+              "democracy"
+            ]
+          ],
+          "narrative_excerpt": "The Greece founded democracy. \n\nGreece, often celebrated as the cradle of Western civilization, played a pivotal role in the establishment of democratic governance. The political innovations that emer",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_023",
+          "source_axioms": [
+            [
+              "egypt",
+              "constructed",
+              "pyramids"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "egypt",
+              "constructed",
+              "pyramids"
+            ]
+          ],
+          "narrative_excerpt": "The egypt constructed pyramids. The Pyramids of Egypt, especially the Great Pyramid of Giza, are among the most remarkable feats of engineering and architecture in human history. These monumental stru",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_024",
+          "source_axioms": [
+            [
+              "persia",
+              "invaded",
+              "greece"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "persia",
+              "invaded",
+              "greece"
+            ]
+          ],
+          "narrative_excerpt": "The persia invaded greece. \n\nThe Persian invasion of Greece marked a significant event in ancient history, showcasing the vast ambitions of the Persian Empire and the fierce resistance of the Greek ci",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_025",
+          "source_axioms": [
+            [
+              "vikings",
+              "explored",
+              "continents"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "vikings",
+              "explored",
+              "continents"
+            ]
+          ],
+          "narrative_excerpt": "The vikings explored continents. The Vikings, renowned for their seafaring prowess, not only raided coastal settlements but also undertook extensive explorations across various continents. Their journ",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_026",
+          "source_axioms": [
+            [
+              "electrons",
+              "orbit",
+              "nuclei"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "electrons",
+              "orbit",
+              "nuclei"
+            ]
+          ],
+          "narrative_excerpt": "The electrons orbit nuclei. \n\nIn atomic physics, the behavior of electrons is a fundamental concept. These negatively charged particles are not stationary; instead, they move in defined paths, creatin",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_027",
+          "source_axioms": [
+            [
+              "enzymes",
+              "catalyze",
+              "reactions"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "enzymes",
+              "catalyze",
+              "reactions"
+            ]
+          ],
+          "narrative_excerpt": "The enzymes catalyze reactions. Enzymes are biological catalysts that significantly speed up chemical reactions in living organisms. They are essential for various processes, including digestion and m",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_028",
+          "source_axioms": [
+            [
+              "viruses",
+              "infect",
+              "cells"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "viruses",
+              "infect",
+              "cells"
+            ]
+          ],
+          "narrative_excerpt": "The viruses infect cells. Viruses are microscopic pathogens that can only replicate within a host cell. They attach to specific receptor sites on the cell surface, facilitating entry and hijacking the",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_029",
+          "source_axioms": [
+            [
+              "neurons",
+              "transmit_signals",
+              "signals"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "neurons",
+              "transmit_signals",
+              "signals"
+            ]
+          ],
+          "narrative_excerpt": "The neurons transmit_signals signals. \n\nNeurons are specialized cells in the nervous system responsible for processing and transmitting information through electrical and chemical signals. The ability",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_030",
+          "source_axioms": [
+            [
+              "muscles",
+              "contract",
+              "fibers"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "muscles",
+              "contract",
+              "fibers"
+            ]
+          ],
+          "narrative_excerpt": "The muscles contract fibers.  \nMuscles are composed of various types of fibers that play an essential role in movement and strength. When these muscles contract, they pull on bones to create motion, e",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_031",
+          "source_axioms": [
+            [
+              "teachers",
+              "explain_lessons",
+              "lessons"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "teachers",
+              "explain_lessons",
+              "lessons"
+            ]
+          ],
+          "narrative_excerpt": "The teachers explain_lessons lessons. \n\nIn the educational environment, teachers play a crucial role in facilitating understanding and promoting learning. The teachers explain_lessons lessons, which i",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_032",
+          "source_axioms": [
+            [
+              "scientists",
+              "discover",
+              "particles"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "scientists",
+              "discover",
+              "particles"
+            ]
+          ],
+          "narrative_excerpt": "The scientists discover particles. \n\nThis discovery marks a significant breakthrough in the field of physics, enhancing our understanding of the fundamental building blocks of matter. Scientists aroun",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_033",
+          "source_axioms": [
+            [
+              "engineers",
+              "design",
+              "bridges"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "engineers",
+              "design",
+              "bridges"
+            ]
+          ],
+          "narrative_excerpt": "The engineers design bridges. \n\nThis statement highlights the critical role that engineers play in the infrastructure development of society. Bridges are complex structures that require a deep underst",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_034",
+          "source_axioms": [
+            [
+              "farmers",
+              "grow",
+              "wheat"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "farmers",
+              "grow",
+              "wheat"
+            ]
+          ],
+          "narrative_excerpt": "The farmers grow wheat. Farmers play a crucial role in the agricultural sector, working diligently to cultivate crops that feed the population. Wheat, a staple food source, is one of the primary grain",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_035",
+          "source_axioms": [
+            [
+              "chefs",
+              "prepare_meals",
+              "."
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "chefs",
+              "prepare_meals",
+              "."
+            ]
+          ],
+          "narrative_excerpt": "The chefs prepare_meals. \n\nIn the culinary world, chefs are the skilled professionals responsible for creating a wide variety of dishes, ensuring each meal is crafted with precision and creativity. Th",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_036",
+          "source_axioms": [
+            [
+              "cars",
+              "emit_exhaust",
+              "true"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "cars",
+              "emit_exhaust",
+              "true"
+            ]
+          ],
+          "narrative_excerpt": "The cars emit_exhaust true. \n\nThis fact highlights the reality that cars, as a common mode of transportation, release exhaust into the environment. The emissions primarily consist of gases and particu",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_037",
+          "source_axioms": [
+            [
+              "rivers",
+              "reach_oceans",
+              "."
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "rivers",
+              "reach_oceans",
+              "."
+            ]
+          ],
+          "narrative_excerpt": "The rivers reach_oceans. \n\nThis fact highlights a fundamental aspect of Earth's hydrological cycle, where rivers, as vital watercourses, collect and transport water from various sources and ultimately",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_038",
+          "source_axioms": [
+            [
+              "students",
+              "study",
+              "subjects."
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "students",
+              "study",
+              "subjects."
+            ]
+          ],
+          "narrative_excerpt": "The students study subjects. \n\nIn an academic setting, students engage in a variety of subjects as part of their educational curriculum. This process of studying subjects enables them to acquire knowl",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_039",
+          "source_axioms": [
+            [
+              "mothers",
+              "love",
+              "children"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "mothers",
+              "love",
+              "children"
+            ]
+          ],
+          "narrative_excerpt": "The mothers love children. \n\nThis statement encapsulates a fundamental truth about the bond between mothers and their offspring. The affection that mothers have for their children is often characteriz",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_040",
+          "source_axioms": [
+            [
+              "writers",
+              "create_stories",
+              "stories"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "writers",
+              "create_stories",
+              "stories"
+            ]
+          ],
+          "narrative_excerpt": "The writers create_stories stories. \n\nThis fact highlights the fundamental role of writers in the literary world. Writers are the architects of imagination, crafting narratives that transport readers ",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_041",
+          "source_axioms": [
+            [
+              "musicians",
+              "compose",
+              "symphonies"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "musicians",
+              "compose",
+              "symphonies"
+            ]
+          ],
+          "narrative_excerpt": "The musicians compose symphonies. \n\nIn the world of music, the role of musicians is pivotal, as they bring to life the intricate melodies and harmonies that form symphonies. This process involves crea",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_042",
+          "source_axioms": [
+            [
+              "architects",
+              "draw_plans",
+              "plans"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "architects",
+              "draw_plans",
+              "plans"
+            ]
+          ],
+          "narrative_excerpt": "The architects draw_plans plans. \n\nThis statement highlights the fundamental role architects play in the design process. Architects are professionals who specialize in creating the blueprints and layo",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_043",
+          "source_axioms": [
+            [
+              "painters",
+              "mix_colors",
+              "colors"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "painters",
+              "mix_colors",
+              "colors"
+            ]
+          ],
+          "narrative_excerpt": "The painters mix_colors colors.  \nIn the world of art, painters often use a variety of techniques to create the perfect hues for their masterpieces. By mixing colors, they can achieve endless variatio",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_044",
+          "source_axioms": [
+            [
+              "doctors",
+              "treat",
+              "patients"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "doctors",
+              "treat",
+              "patients"
+            ]
+          ],
+          "narrative_excerpt": "The doctors treat patients. Doctors play a vital role in the healthcare system, working diligently to diagnose and manage various health conditions. Their expertise ensures that patients receive the n",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_045",
+          "source_axioms": [
+            [
+              "lawyers",
+              "defend",
+              "clients"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "lawyers",
+              "defend",
+              "clients"
+            ]
+          ],
+          "narrative_excerpt": "The lawyers defend clients.  \nIn the realm of legal practice, the primary role of lawyers is to represent individuals or entities facing various legal challenges. This responsibility involves understa",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_046",
+          "source_axioms": [
+            [
+              "judges",
+              "interpret_laws",
+              "true"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "judges",
+              "interpret_laws",
+              "true"
+            ]
+          ],
+          "narrative_excerpt": "The judges interpret_laws true. \n\nIn the realm of judicial proceedings, judges play a crucial role in ensuring that the legal framework is correctly understood and applied. Their ability to interpret ",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_047",
+          "source_axioms": [
+            [
+              "hope",
+              "inspires",
+              "action"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "hope",
+              "inspires",
+              "action"
+            ]
+          ],
+          "narrative_excerpt": "The hope inspires action. Hope serves as a powerful motivator in various aspects of life. When individuals experience hope, they are more likely to undertake initiatives and strive toward their goals.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_048",
+          "source_axioms": [
+            [
+              "music",
+              "expresses_emotion",
+              "emotion"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "music",
+              "expresses_emotion",
+              "emotion"
+            ]
+          ],
+          "narrative_excerpt": "The music expresses_emotion emotion. \n\nMusic has long been understood as a powerful medium with the ability to convey deep feelings and sentiments. It serves as a universal language that can articulat",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_049",
+          "source_axioms": [
+            [
+              "knowledge",
+              "requires_effort",
+              "true"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "knowledge",
+              "requires_effort",
+              "true"
+            ]
+          ],
+          "narrative_excerpt": "The knowledge requires_effort true. \n\nThis statement underscores the inherent truth that acquiring knowledge is not a passive endeavor; rather, it necessitates a significant investment of effort. With",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_050",
+          "source_axioms": [
+            [
+              "fear",
+              "paralyzes",
+              "movement"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "fear",
+              "paralyzes",
+              "movement"
+            ]
+          ],
+          "narrative_excerpt": "The fear paralyzes movement. This phenomenon is often observed in high-stress situations, where individuals find themselves unable to act due to overwhelming anxiety or apprehension. Such paralysis ca",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        }
+      ]
+    }
+  ]
+}
