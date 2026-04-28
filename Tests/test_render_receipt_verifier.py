@@ -68,14 +68,18 @@ def test_fixture(fixture_path: Path) -> None:
     jwks = fx["jwks"]
     expected_outcome = fx["expected_outcome"]
     expected_error_class = fx["expected_error_class"]
+    # Optional G3 revocation list. Present only on revoked_kid_*
+    # fixtures; absent fixtures verify without revocation (default
+    # behaviour, backwards-compat with v0.9.C).
+    revoked_kids = fx.get("revoked_kids")
 
     if expected_outcome == "verify":
-        result = verify_receipt(receipt, jwks)
+        result = verify_receipt(receipt, jwks, revoked_kids=revoked_kids)
         assert result.verified is True, f"{name}: expected verify, got {result}"
         assert result.kid == receipt["kid"]
     elif expected_outcome == "reject":
         with pytest.raises(VerifyError) as excinfo:
-            verify_receipt(receipt, jwks)
+            verify_receipt(receipt, jwks, revoked_kids=revoked_kids)
         actual = excinfo.value.error_class
         assert actual == expected_error_class, (
             f"{name}: expected error_class={expected_error_class!r}, "
@@ -91,7 +95,7 @@ def test_all_fixtures_iterate() -> None:
     count drifts, that's worth knowing — the cross-runtime contract
     is that BOTH JS and Python run the SAME N fixtures."""
     files = _fixture_files()
-    assert len(files) == 15, (
-        f"expected 15 fixtures, found {len(files)}: "
-        f"{[f.name for f in files]}"
+    assert len(files) == 18, (
+        f"expected 18 fixtures (15 v0.9.C + 3 G3 revocation), "
+        f"found {len(files)}: {[f.name for f in files]}"
     )

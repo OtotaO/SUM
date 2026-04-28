@@ -31,6 +31,9 @@ Outputs (also committed):
   unknown_kid.json
   schema_unknown.json
   crit_unknown_extension.json
+  revoked_kid_active.json
+  revoked_kid_historical.json
+  revoked_kid_unrelated.json
 
 Each fixture file has shape:
   {
@@ -39,7 +42,13 @@ Each fixture file has shape:
     "expected_outcome": "verify" | "reject",
     "expected_error_class": "<err-class>" | null,
     "receipt": { schema, kid, payload, jws },
-    "jwks": { keys: [...] }
+    "jwks": { keys: [...] },
+    "revoked_kids": [...]    // OPTIONAL — present for G3
+                              // revocation cases; absent fixtures
+                              // verify without revocation
+                              // (default behaviour). Verifier
+                              // smoke passes the list to
+                              // verify_receipt only when present.
   }
 
 Error classes (verifier-runtime-neutral):
@@ -320,6 +329,87 @@ def main() -> int:
     # spec ordering puts crit-check first; this fixture pins that.
     f["receipt"]["jws"] = f"{proto_mutated}.{middle}.{sig}"
     write_fixture("crit_unknown_extension", f)
+
+    # ---- G3 revocation: kid actively revoked (reject) ----
+    # Receipt's kid appears on the revocation list with
+    # effective_revocation_at <= receipt.signed_at; verifier rejects
+    # with revoked_kid (distinct from signature_invalid — receipt is
+    # cryptographically valid but operator has marked the kid
+    # untrusted from this point forward).
+    captured_signed_at = receipt["payload"]["signed_at"]
+    f = base_fixture(receipt, jwks)
+    f["name"] = "revoked_kid_active"
+    f["description"] = (
+        f"Receipt's kid ({captured_kid}) is on the supplied revocation "
+        f"list with effective_revocation_at = receipt's own signed_at. "
+        f"Per docs/RENDER_RECEIPT_FORMAT.md §6.1, signed_at >= "
+        f"effective_revocation_at → reject with revoked_kid. "
+        f"Cryptographic signature is still valid; the rejection is "
+        f"about operator intent, not tampering."
+    )
+    f["expected_outcome"] = "reject"
+    f["expected_error_class"] = "revoked_kid"
+    f["revoked_kids"] = [
+        {
+            "kid": captured_kid,
+            "effective_revocation_at": captured_signed_at,
+            "reason": "compromise",
+        }
+    ]
+    write_fixture("revoked_kid_active", f)
+
+    # ---- G3 revocation: kid revoked but receipt predates revocation (verify) ----
+    # Receipt's kid is on the revocation list, BUT receipt's signed_at
+    # is BEFORE effective_revocation_at. Per the spec, revocation
+    # invalidates future trust only — historical receipts signed
+    # legitimately before the compromise window keep verifying. This
+    # fixture pins that distinction (otherwise an aggressive
+    # implementation might reject ALL receipts with a revoked kid,
+    # destroying the audit trail for legitimate historical renders).
+    f = base_fixture(receipt, jwks)
+    f["name"] = "revoked_kid_historical"
+    f["description"] = (
+        f"Receipt's kid ({captured_kid}) is on the revocation list, "
+        f"but effective_revocation_at is set to a future timestamp "
+        f"(2099). Receipt's signed_at < effective_revocation_at, so "
+        f"per spec the receipt retains its original validity — it "
+        f"was signed legitimately before the (future) revocation. "
+        f"Verifier MUST verify successfully."
+    )
+    f["expected_outcome"] = "verify"
+    f["expected_error_class"] = None
+    f["revoked_kids"] = [
+        {
+            "kid": captured_kid,
+            "effective_revocation_at": "2099-01-01T00:00:00.000Z",
+            "reason": "policy",
+        }
+    ]
+    write_fixture("revoked_kid_historical", f)
+
+    # ---- G3 revocation: revocation list names a different kid (verify) ----
+    # The revocation list mentions some-other-kid; the receipt's kid
+    # is not on the list. Verifier MUST NOT reject; this is the
+    # most-common live-traffic case (the revocation list typically
+    # has a small number of entries, most receipts don't match).
+    f = base_fixture(receipt, jwks)
+    f["name"] = "revoked_kid_unrelated"
+    f["description"] = (
+        "Revocation list mentions a different kid (some-other-kid); "
+        "receipt's kid is not on the list. Verifier MUST verify "
+        "successfully — revocation list non-membership is the "
+        "common case."
+    )
+    f["expected_outcome"] = "verify"
+    f["expected_error_class"] = None
+    f["revoked_kids"] = [
+        {
+            "kid": "some-other-kid",
+            "effective_revocation_at": "2026-04-01T00:00:00.000Z",
+            "reason": "compromise",
+        }
+    ]
+    write_fixture("revoked_kid_unrelated", f)
 
     print(f"\nfixtures regenerated. Captured kid: {captured_kid}")
     print(f"Captured at: {receipt['payload']['signed_at']}")

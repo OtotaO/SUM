@@ -35,9 +35,37 @@ The Ed25519 key under the active `kid` (currently `sum-render-2026-04-27-1`, ser
 
 After containment, every new render uses the new kid; old receipts (issued with the compromised kid) still exist in the wild and CAN be re-issued by the compromiser until the old kid is on the revocation list.
 
-**Revocation / correction.** Once G3 (revocation surface) lands, publish the compromised kid to `/.well-known/revoked-kids.json` with `effective_revocation_at` set to the suspected first-compromise timestamp; verifiers seeing receipts with that kid will reject after the effective time.
+**Revocation / correction.** G3 revocation MVP shipped — publish the compromised kid to `/.well-known/revoked-kids.json` via the `RENDER_RECEIPT_REVOKED_KIDS` Worker secret:
 
-Until G3 lands, the only revocation path is the rotation grace window: the old kid stays in JWKS for the documented grace period (≥ render cache TTL = 24 hours), then is removed entirely. After removal, verifiers fetching JWKS no longer see the kid → `unknown_kid` rejection on every receipt referencing it.
+```bash
+# Build the revocation list (sum.revoked_kids.v1 schema):
+cat <<'JSON' > /tmp/revoked_kids.json
+{
+  "schema": "sum.revoked_kids.v1",
+  "issued_at": "<UTC ISO-8601 timestamp NOW>",
+  "revoked": [
+    {
+      "kid": "<compromised-kid>",
+      "effective_revocation_at": "<UTC ISO-8601 of suspected first-compromise>",
+      "reason": "compromise"
+    }
+  ]
+}
+JSON
+
+# Push to the Worker:
+wrangler secret put RENDER_RECEIPT_REVOKED_KIDS < /tmp/revoked_kids.json
+rm -P /tmp/revoked_kids.json   # macOS / BSD; or `shred -u` on Linux
+
+# Deploy:
+gh workflow run deploy-worker.yml
+```
+
+Verifiers fetching `/.well-known/revoked-kids.json` and passing it to `verify_receipt(receipt, jwks, revoked_kids=...)` will reject receipts under the compromised kid whose `signed_at` ≥ `effective_revocation_at` with the `revoked_kid` error class — distinct from `signature_invalid` so the operator-side distinction is visible at the consumer.
+
+Receipts signed BEFORE `effective_revocation_at` retain their original validity (revocation invalidates future trust, not past). This preserves the audit trail for legitimate historical renders signed before the compromise window. Set `effective_revocation_at` to the suspected first-compromise timestamp; receipts before that survive, receipts after reject.
+
+The rotation grace window (case 1's containment step 7) covers the JWKS-side hygiene; the revocation list covers the operator-intent side. Both should be set on a real compromise — JWKS removal stops new responses being issued under the kid; revocation list tells consumers to stop trusting cached / archived receipts under it. See [`docs/RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) §6.1.
 
 **Public disclosure wording.**
 

@@ -1,6 +1,6 @@
 # Receipt-fixture set — shared between v0.9.B (browser) and v0.9.C (Python) verifiers
 
-15 runtime-neutral JSON fixtures pinning every named failure mode of the
+18 runtime-neutral JSON fixtures pinning every named failure mode of the
 render-receipt verifier algorithm from
 [`docs/RENDER_RECEIPT_FORMAT.md`](../../docs/RENDER_RECEIPT_FORMAT.md) §2.1.
 
@@ -21,8 +21,15 @@ Every file has the same shape:
   "description": "<plain-English what was mutated and why>",
   "expected_outcome": "verify" | "reject",
   "expected_error_class": "<err-class>" | null,
-  "receipt": { schema, kid, payload, jws },
-  "jwks":    { keys: [...] }
+  "receipt":      { schema, kid, payload, jws },
+  "jwks":         { keys: [...] },
+  "revoked_kids": [...]    // OPTIONAL — present only on G3
+                           // revocation fixtures. Verifiers MUST
+                           // pass this to verify_receipt's
+                           // optional revoked_kids parameter when
+                           // present; absent fixtures verify
+                           // without revocation (backwards-compat
+                           // with v0.9.C).
 }
 ```
 
@@ -39,6 +46,7 @@ fixture is `"reject"` with a specific `expected_error_class`.
 | `kid_mismatch` | Protected-header `kid` differs from top-level `receipt.kid` (header tampering pattern). |
 | `schema_unknown` | `receipt.schema` is not a value this verifier accepts. Forward-compat lever. |
 | `crit_unknown_extension` | Protected header `crit` array contains an extension this verifier doesn't understand. Per RFC 7515 §4.1.11, fail closed. Forward-compat lever. |
+| `revoked_kid` | (G3) Receipt's kid is on the supplied revocation list with `effective_revocation_at` ≤ `receipt.payload.signed_at`. Distinct from `signature_invalid` so the operator-side distinction between "tampered" and "issued under a now-revoked key" is visible at the consumer. See [`docs/RENDER_RECEIPT_FORMAT.md`](../../docs/RENDER_RECEIPT_FORMAT.md) §6.1. |
 
 ## The 15 fixtures
 
@@ -59,6 +67,9 @@ fixture is `"reject"` with a specific `expected_error_class`.
 | `unknown_kid` | `unknown_kid` | JWKS empty; receipt's kid not findable |
 | `schema_unknown` | `schema_unknown` | `receipt.schema` bumped to `sum.render_receipt.v99` |
 | `crit_unknown_extension` | `crit_unknown_extension` | protected header `crit` extended with an unknown extension |
+| `revoked_kid_active` | `revoked_kid` | (G3) revocation list names the receipt's kid with `effective_revocation_at` = receipt's signed_at |
+| `revoked_kid_historical` | — verify ✓ | (G3) revocation list names the kid but `effective_revocation_at` is in the future; receipt predates revocation |
+| `revoked_kid_unrelated` | — verify ✓ | (G3) revocation list mentions a different kid; receipt's kid not on the list |
 
 ## How to regenerate
 

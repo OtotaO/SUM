@@ -36,6 +36,7 @@ export const ERROR_CLASSES = Object.freeze({
   CRIT_UNKNOWN_EXTENSION: "crit_unknown_extension",
   HEADER_INVARIANT_VIOLATED: "header_invariant_violated",
   SIGNATURE_INVALID: "signature_invalid",
+  REVOKED_KID: "revoked_kid",
 });
 
 export class VerifyError extends Error {
@@ -79,14 +80,77 @@ async function importEd25519Jwk(jwk) {
 }
 
 /**
+ * Check the receipt's kid against a G3 revocation list. Throws
+ * VerifyError(REVOKED_KID) if the kid is on the list AND the
+ * receipt's signed_at is at or after the revocation's
+ * effective_revocation_at. See docs/RENDER_RECEIPT_FORMAT.md §6.1.
+ *
+ * Mirrors sum_engine_internal.render_receipt._check_revoked_kid
+ * exactly so cross-runtime fixtures produce byte-identical
+ * outcomes.
+ *
+ * @param {object} receipt
+ * @param {Array<{kid: string, effective_revocation_at: string, reason?: string}>} revokedKids
+ */
+function checkRevokedKid(receipt, revokedKids) {
+  const kid = receipt && receipt.kid;
+  if (typeof kid !== "string") return;
+  const payload = (receipt && receipt.payload) || {};
+  const signedAt = payload.signed_at;
+
+  for (const entry of revokedKids) {
+    if (!entry || typeof entry !== "object") continue;
+    if (entry.kid !== kid) continue;
+    const effectiveAt = entry.effective_revocation_at;
+    if (typeof effectiveAt !== "string") {
+      throw new VerifyError(
+        ERROR_CLASSES.REVOKED_KID,
+        `kid ${JSON.stringify(kid)} appears on revocation list with malformed ` +
+          `effective_revocation_at=${JSON.stringify(effectiveAt)}; failing closed`,
+      );
+    }
+    if (typeof signedAt !== "string") {
+      throw new VerifyError(
+        ERROR_CLASSES.REVOKED_KID,
+        `kid ${JSON.stringify(kid)} on revocation list and receipt has no ` +
+          `parseable signed_at; failing closed`,
+      );
+    }
+    // ISO-8601 UTC strings compare correctly via lex-order.
+    if (signedAt >= effectiveAt) {
+      throw new VerifyError(
+        ERROR_CLASSES.REVOKED_KID,
+        `kid ${JSON.stringify(kid)} revoked effective ${effectiveAt}; ` +
+          `receipt signed at ${signedAt} (>= effective time)`,
+      );
+    }
+    // signed_at < effective_at: legitimate historical receipt;
+    // continue verification.
+    return;
+  }
+}
+
+/**
  * Verify a SUM render receipt against a JWKS.
  *
  * @param {object} receipt - { schema, kid, payload, jws }
  * @param {object} jwks    - { keys: [...] }
+ * @param {Array=} revokedKids - Optional G3 revocation list. When
+ *   provided, kids on the list with signed_at >= effective_revocation_at
+ *   are rejected with REVOKED_KID. Pass undefined or null to skip
+ *   revocation entirely (default; backwards-compat with v0.9.C).
  * @returns {Promise<{ verified: true, kid: string, protectedHeader: object, payload: object }>}
  * @throws  {VerifyError}  - on any failure, with .errorClass set to one of ERROR_CLASSES.
  */
-export async function verifyReceipt(receipt, jwks) {
+export async function verifyReceipt(receipt, jwks, revokedKids) {
+  // ---- G3 revocation gate (runs BEFORE crypto verify) ----
+  // A kid that was both revoked AND tampered surfaces as
+  // `revoked_kid` (more actionable for an operator — points at
+  // "rotate + revoke" rather than "investigate the signature").
+  if (revokedKids != null) {
+    checkRevokedKid(receipt, revokedKids);
+  }
+
   // ---- Step 0 (shape gate) ----
   if (!receipt || typeof receipt !== "object") {
     throw new VerifyError(

@@ -66,6 +66,12 @@ class JoseEnvelopeErrorClass:
     CRIT_UNKNOWN_EXTENSION = "crit_unknown_extension"
     HEADER_INVARIANT_VIOLATED = "header_invariant_violated"
     SIGNATURE_INVALID = "signature_invalid"
+    REVOKED_KID = "revoked_kid"
+    """G3 revocation: receipt's kid is on the revocation list with
+    effective_revocation_at <= receipt.payload.signed_at. Distinct
+    from signature_invalid so the operator-side distinction between
+    'tampered' and 'issued under a now-revoked key' is visible at
+    the consumer."""
 
 
 class JoseEnvelopeError(Exception):
