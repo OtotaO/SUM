@@ -291,6 +291,45 @@ Rotation is the standard JWKS pattern:
 
 For extended trust windows (e.g., long-term audit logs), the grace window is whatever your downstream consumers expect — there is no fixed number. The conservative rule: never remove a kid from JWKS while any consumer might still try to verify a receipt that references it.
 
+### 6.1 Revocation surface (Phase E.1 G3)
+
+Rotation alone is not revocation. A kid that was compromised mid-window kept signing receipts during the compromise; a verifier with a fresh JWKS still accepts those receipts because the compromised kid is still listed as current. Rotation gracefully transitions to a new kid; revocation tells future verifiers to **stop trusting** a kid effective at a specific timestamp, regardless of whether the kid still appears in JWKS.
+
+The revocation surface lives at `/.well-known/revoked-kids.json`:
+
+```json
+{
+  "schema": "sum.revoked_kids.v1",
+  "issued_at": "2026-04-29T12:00:00.000Z",
+  "revoked": [
+    {
+      "kid": "sum-render-2026-04-15-1",
+      "effective_revocation_at": "2026-04-15T18:00:00.000Z",
+      "reason": "compromise"
+    }
+  ]
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `kid` | The render-receipt kid being revoked. |
+| `effective_revocation_at` | UTC ISO-8601 timestamp. Receipts with `signed_at` **at or after** this moment MUST be rejected. Receipts with `signed_at` **before** this moment retain their original validity (they were signed legitimately, before the compromise window). |
+| `reason` | One of `compromise`, `superseded`, `policy`. Audit-trail honesty; consumers can branch policy on the reason but the verifier reject decision is reason-agnostic. |
+
+**Verifier behaviour.** A verifier given a revocation list:
+
+1. Looks up `receipt.kid` in `revoked[].kid`.
+2. If found, compares `receipt.payload.signed_at` against `effective_revocation_at`.
+3. If `signed_at >= effective_revocation_at` → reject with the `revoked_kid` error class (distinct from `signature_invalid` so the operator-side distinction between "tampered" and "issued under a now-revoked key" is visible at the consumer).
+4. Otherwise (signed_at < effective_revocation_at), continue verification normally.
+
+**Verifier fetch cadence.** Same as JWKS: `Cache-Control: public, max-age=3600` (default 1 h). Verifiers SHOULD treat the revocation list as fail-open on fetch failure (network error, 5xx response) — a network glitch shouldn't reject otherwise-valid receipts. But for trust-critical contexts, callers can opt into fail-closed by passing an empty `{"revoked": []}` only when fetch succeeds.
+
+**Scope:** revocation invalidates **future** trust. A receipt that VERIFIED before its kid was revoked can be archived as "verified-as-of timestamp X"; revocation does not retroactively unverify the past. The before-vs-after-effective-time check is the load-bearing distinction — it preserves the audit trail for legitimate historical renders while still rejecting any new use of the compromised kid.
+
+**Why distinct from JWKS removal:** JWKS removal silently breaks every consumer cached response with the removed kid (verifier sees `unknown_kid`). Revocation surfaces the operator's INTENT — "this kid was compromised" — separately from JWKS hygiene. An operator can leave the kid in JWKS for the rotation grace window AND publish it on the revocation list with `effective_revocation_at` = compromise-detection time; receipts within the legitimate window (signed_at before compromise) keep verifying, receipts after reject with `revoked_kid` instead of being silently accepted.
+
 ---
 
 ## 7. C2PA `digital_source_type` alignment

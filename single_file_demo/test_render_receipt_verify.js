@@ -41,10 +41,17 @@ console.log(`count:    ${fixtureFiles.length}\n`);
 
 for (const filename of fixtureFiles) {
   const fx = JSON.parse(readFileSync(join(FIXTURES_DIR, filename), "utf8"));
-  const { name, expected_outcome, expected_error_class, receipt, jwks } = fx;
+  const {
+    name,
+    expected_outcome,
+    expected_error_class,
+    receipt,
+    jwks,
+    revoked_kids,  // optional G3 revocation list
+  } = fx;
 
   try {
-    await verifyReceipt(receipt, jwks);
+    await verifyReceipt(receipt, jwks, revoked_kids);
     if (expected_outcome === "verify") {
       console.log(`  ✓ ${name} — verified as expected`);
       pass++;

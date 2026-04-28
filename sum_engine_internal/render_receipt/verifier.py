@@ -50,6 +50,7 @@ class ErrorClass:
     CRIT_UNKNOWN_EXTENSION = JoseEnvelopeErrorClass.CRIT_UNKNOWN_EXTENSION
     HEADER_INVARIANT_VIOLATED = JoseEnvelopeErrorClass.HEADER_INVARIANT_VIOLATED
     SIGNATURE_INVALID = JoseEnvelopeErrorClass.SIGNATURE_INVALID
+    REVOKED_KID = JoseEnvelopeErrorClass.REVOKED_KID
 
 
 class VerifyError(JoseEnvelopeError):
@@ -65,7 +66,63 @@ class VerifyError(JoseEnvelopeError):
 VerifyResult = JoseEnvelopeResult
 
 
-def verify_receipt(receipt, jwks) -> VerifyResult:
+def _check_revoked_kid(receipt: dict, revoked_kids: list[dict]) -> None:
+    """Raise VerifyError(REVOKED_KID) if the receipt's kid is on the
+    revocation list AND the receipt's signed_at is at or after the
+    revocation's effective_revocation_at.
+
+    Per docs/RENDER_RECEIPT_FORMAT.md §6.1:
+
+    * A receipt with signed_at BEFORE effective_revocation_at retains
+      its original validity (was signed legitimately before the
+      compromise window). Continue verification normally.
+    * A receipt with signed_at AT OR AFTER effective_revocation_at is
+      rejected with the revoked_kid error class.
+
+    Comparison is on ISO-8601 string lex-order, which matches
+    timestamp ordering for UTC strings. The signed_at field is
+    required by the receipt spec; missing or unparseable signed_at
+    is treated as "cannot determine — fail closed" (reject).
+    """
+    kid = receipt.get("kid")
+    if not isinstance(kid, str):
+        return  # not our problem here; envelope-shape check catches it later
+    payload = receipt.get("payload") or {}
+    signed_at = payload.get("signed_at")
+
+    for entry in revoked_kids:
+        if not isinstance(entry, dict):
+            continue
+        if entry.get("kid") != kid:
+            continue
+        effective_at = entry.get("effective_revocation_at")
+        if not isinstance(effective_at, str):
+            # Malformed revocation entry; defensive fail-closed.
+            raise VerifyError(
+                ErrorClass.REVOKED_KID,
+                f"kid {kid!r} appears on revocation list with malformed "
+                f"effective_revocation_at={effective_at!r}; failing closed",
+            )
+        if not isinstance(signed_at, str):
+            # Receipt has no signed_at; can't compare; fail closed.
+            raise VerifyError(
+                ErrorClass.REVOKED_KID,
+                f"kid {kid!r} on revocation list and receipt has no "
+                f"parseable signed_at; failing closed",
+            )
+        # ISO-8601 UTC strings compare correctly via lex-order.
+        if signed_at >= effective_at:
+            raise VerifyError(
+                ErrorClass.REVOKED_KID,
+                f"kid {kid!r} revoked effective {effective_at}; "
+                f"receipt signed at {signed_at} (>= effective time)",
+            )
+        # signed_at < effective_at: legitimate historical receipt,
+        # continue verification.
+        return
+
+
+def verify_receipt(receipt, jwks, revoked_kids=None) -> VerifyResult:
     """Verify a SUM render receipt against a JWKS.
 
     Parameters
@@ -77,6 +134,15 @@ def verify_receipt(receipt, jwks) -> VerifyResult:
     jwks
         A dict with key ``keys`` containing JWK dicts. Typically the
         parsed body of ``/.well-known/jwks.json``.
+    revoked_kids
+        Optional list of revocation entries
+        ``[{"kid": ..., "effective_revocation_at": ..., "reason": ...}]``
+        as served at ``/.well-known/revoked-kids.json`` (see
+        docs/RENDER_RECEIPT_FORMAT.md §6.1). When provided, kids
+        with signed_at >= effective_revocation_at are rejected with
+        the ``revoked_kid`` error class. Pass ``None`` (default) to
+        skip revocation entirely. Pass an empty list ``[]`` to
+        explicitly assert "fetched the list, no kids revoked."
 
     Returns
     -------
@@ -88,6 +154,14 @@ def verify_receipt(receipt, jwks) -> VerifyResult:
     VerifyError on any failure. ``.error_class`` distinguishes
     between failure modes per ``ErrorClass``.
     """
+    # G3 revocation check runs BEFORE the cryptographic verify so a
+    # kid that was both revoked AND tampered surfaces as
+    # `revoked_kid` (the more actionable error class for an operator
+    # — points at "rotate + revoke" rather than "investigate the
+    # signature").
+    if revoked_kids is not None:
+        _check_revoked_kid(receipt, revoked_kids)
+
     try:
         return verify_jose_envelope(
             receipt,

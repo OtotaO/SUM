@@ -18,6 +18,7 @@ import { handleComplete } from "./routes/complete";
 import { handleJwks } from "./routes/jwks";
 import { handleQid } from "./routes/qid";
 import { handleRender } from "./routes/render";
+import { handleRevokedKids } from "./routes/revoked_kids";
 
 export interface Env {
   // Static-asset binding — resolves to the ../single_file_demo/
@@ -38,6 +39,13 @@ export interface Env {
   RENDER_RECEIPT_SIGNING_JWK?: string;
   RENDER_RECEIPT_SIGNING_KID?: string;
   RENDER_RECEIPT_PUBLIC_JWKS?: string;
+
+  // G3 revocation list. Plaintext JSON matching sum.revoked_kids.v1
+  // shape. Absent ⇒ /.well-known/revoked-kids.json serves an empty
+  // list (no kid revoked). Populating is a deliberate operator
+  // action when a kid is suspected compromised; see
+  // docs/INCIDENT_RESPONSE.md case 1.
+  RENDER_RECEIPT_REVOKED_KIDS?: string;
 
   // Plaintext vars (wrangler.toml [vars]).
   SUM_DEFAULT_MODEL_ANTHROPIC?: string;
@@ -111,6 +119,9 @@ export default {
       }
       if (url.pathname === "/.well-known/jwks.json") {
         return withBaselineHeaders(await handleJwks(request, env));
+      }
+      if (url.pathname === "/.well-known/revoked-kids.json") {
+        return withBaselineHeaders(await handleRevokedKids(request, env));
       }
 
       // Fall through to static assets. `run_worker_first` in
