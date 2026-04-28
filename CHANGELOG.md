@@ -4,6 +4,77 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Honesty pass — Tier 1 placeholder sweep across PROOF_BOUNDARY / FEATURE_CATALOG / README
+
+Six load-bearing edits across the public-doc surface, all motivated
+by the Operator-Hard standard "every number is either a real
+measurement or an explicitly-named strategic placeholder." No
+new measurements, no new code — pure honesty corrections.
+
+1. **PROOF_BOUNDARY §2.2 Merkle table — N=10 000 row removed.**
+   The row reported "3.95× speedup" with a footnote explaining
+   the runner had substituted a 62 k-bit proxy state for the
+   real ~625 k-bit one because the full LCM build at that N
+   takes minutes. A footnoted speedup is not a measurement.
+   The 5 000-row figure (21× faster verify, real LCM state)
+   is the honest production-relevant headline; the doc now
+   explains why the N=10 000 row is omitted and what gates a
+   future real measurement.
+
+2. **PROOF_BOUNDARY §2.2 merge-curve extrapolation marked as
+   extrapolation.** The "N=10 000 → ~50 s/op; N=100 000 → >1
+   hr/op" line was previously stated in declarative voice and
+   cited downstream as a measurement. It is an extrapolation
+   along the measured N=100/500/1 000 trend assuming `O(B²)`
+   scaling and no GMP/sub-quadratic GCD acceleration. The text
+   now says so, and explicitly flags the closest direct
+   measurement (the N=10 000 / 200-sample harness run that
+   did not converge in 10 minutes) as consistent-with but
+   not a pin on the extrapolated value.
+
+3. **README — §2.5 LLM round-trip drift surfaced above the
+   fold.** A new "What does NOT yet work — the honest line"
+   subsection in `## What ships today` cites the **107.75 %
+   drift** and **0.12 exact-match recall** numbers from
+   PROOF_BOUNDARY §2.5, names the generator-elaboration +
+   extractor-paraphrase mechanism, and points to the full
+   attribution. The README previously surfaced only the
+   favourable slider numbers; the most load-bearing
+   honest-status figure in the repo was two clicks away.
+   Now it isn't.
+
+4. **PROOF_BOUNDARY §3 self-contradiction resolved.** The row
+   "Property-graph backing store … Design decision pending
+   empirical confirmation (now confirmed — see §2.2)" was
+   self-contradicting in one cell. Restated as: "Design
+   direction confirmed by §2.2 measurements; implementation
+   not started."
+
+5. **PROOF_BOUNDARY §6 extraction-ceiling row converted to a
+   strategic placeholder with an explicit kill condition.**
+   The "architectural decision pending on whether to address
+   via en_core_web_trf upgrade or LLM fallback" had been a
+   long-standing open decision sitting in the headline
+   progress table. Restated with: "Strategic placeholder:
+   decision deferred until §2.5 LLM round-trip drift attack
+   lands. Kill condition: §2.5 work resolves whether the
+   LLM-as-extractor path is the right fix or whether the
+   sieve needs to stay primary." Status changed from "User
+   call" to "Gated on §2.5."
+
+6. **FEATURE_CATALOG.md summary counts regenerated from the
+   body.** The previous summary said 96 ✅ / 14 🔧 / 1 📄;
+   mechanical recount via
+   `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`
+   gives **103 ✅ / 13 🔧 / 1 📄** (total 117). The doc now
+   states the counts came from the recipe and asks future
+   editors to rerun it on every doc edit. A CI-side check is
+   a follow-on; this PR keeps the diff focused on the
+   substantive correction.
+
+`PROOF_BOUNDARY.md` version bumped 1.4.0 → 1.4.1; date
+stamped 2026-04-28.
+
 ### Hardened — MCP server v2 (unbreakable contract)
 
 Eight-property hardening pass on the MCP server shipped one
