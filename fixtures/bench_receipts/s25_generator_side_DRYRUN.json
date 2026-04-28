@@ -1,0 +1,547 @@
+{
+  "schema_family": "sum.s25_generator_side.v1",
+  "issued_at": "2026-04-28T06:34:30Z",
+  "corpus": "seed_v1.json",
+  "n_docs": 5,
+  "model": "gpt-4o-mini-2024-07-18",
+  "dry_run": true,
+  "baseline_reference": {
+    "receipt": "fixtures/bench_receipts/s25_canonicalization_replay_2026-04-28.json",
+    "L0_drift_mean": 107.75,
+    "L0_recall_mean": 0.12,
+    "L0_full_recall": "6/50"
+  },
+  "ablations": [
+    {
+      "schema": "sum.s25_canonical_first_generator.v1",
+      "ablation": "canonical_first",
+      "description": "Intervention A: canonical-first generator prompt; baseline extractor",
+      "model": "gpt-4o-mini-2024-07-18",
+      "aggregate": {
+        "n_docs": 5,
+        "drift_pct_mean": 0.0,
+        "drift_pct_median": 0.0,
+        "exact_match_recall_mean": 1.0,
+        "exact_match_recall_p10": 1.0,
+        "n_docs_full_recall": 5,
+        "fraction_full_recall": 1.0
+      },
+      "per_doc": [
+        {
+          "doc_id": "doc_001",
+          "source_axioms": [
+            [
+              "alice",
+              "like",
+              "cat"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "alice",
+              "like",
+              "cat"
+            ]
+          ],
+          "narrative_excerpt": "(dry-run; no LLM call)",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_002",
+          "source_axioms": [
+            [
+              "bob",
+              "own",
+              "dog"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "bob",
+              "own",
+              "dog"
+            ]
+          ],
+          "narrative_excerpt": "(dry-run; no LLM call)",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_003",
+          "source_axioms": [
+            [
+              "paris",
+              "be",
+              "city"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "paris",
+              "be",
+              "city"
+            ]
+          ],
+          "narrative_excerpt": "(dry-run; no LLM call)",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_004",
+          "source_axioms": [
+            [
+              "einstein",
+              "propose",
+              "relativity"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "einstein",
+              "propose",
+              "relativity"
+            ]
+          ],
+          "narrative_excerpt": "(dry-run; no LLM call)",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_005",
+          "source_axioms": [
+            [
+              "water",
+              "contain",
+              "hydrogen"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "water",
+              "contain",
+              "hydrogen"
+            ]
+          ],
+          "narrative_excerpt": "(dry-run; no LLM call)",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        }
+      ]
+    },
+    {
+      "schema": "sum.s25_constrained_extractor.v1",
+      "ablation": "constrained_extractor",
+      "description": "Intervention B: baseline generator; vocab-pinned extractor",
+      "model": "gpt-4o-mini-2024-07-18",
+      "aggregate": {
+        "n_docs": 5,
+        "drift_pct_mean": 0.0,
+        "drift_pct_median": 0.0,
+        "exact_match_recall_mean": 1.0,
+        "exact_match_recall_p10": 1.0,
+        "n_docs_full_recall": 5,
+        "fraction_full_recall": 1.0
+      },
+      "per_doc": [
+        {
+          "doc_id": "doc_001",
+          "source_axioms": [
+            [
+              "alice",
+              "like",
+              "cat"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "alice",
+              "like",
+              "cat"
+            ]
+          ],
+          "narrative_excerpt": "(dry-run; no LLM call)",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_002",
+          "source_axioms": [
+            [
+              "bob",
+              "own",
+              "dog"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "bob",
+              "own",
+              "dog"
+            ]
+          ],
+          "narrative_excerpt": "(dry-run; no LLM call)",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_003",
+          "source_axioms": [
+            [
+              "paris",
+              "be",
+              "city"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "paris",
+              "be",
+              "city"
+            ]
+          ],
+          "narrative_excerpt": "(dry-run; no LLM call)",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_004",
+          "source_axioms": [
+            [
+              "einstein",
+              "propose",
+              "relativity"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "einstein",
+              "propose",
+              "relativity"
+            ]
+          ],
+          "narrative_excerpt": "(dry-run; no LLM call)",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_005",
+          "source_axioms": [
+            [
+              "water",
+              "contain",
+              "hydrogen"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "water",
+              "contain",
+              "hydrogen"
+            ]
+          ],
+          "narrative_excerpt": "(dry-run; no LLM call)",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        }
+      ]
+    },
+    {
+      "schema": "sum.s25_combined.v1",
+      "ablation": "combined",
+      "description": "A + B: canonical-first generator + vocab-pinned extractor",
+      "model": "gpt-4o-mini-2024-07-18",
+      "aggregate": {
+        "n_docs": 5,
+        "drift_pct_mean": 0.0,
+        "drift_pct_median": 0.0,
+        "exact_match_recall_mean": 1.0,
+        "exact_match_recall_p10": 1.0,
+        "n_docs_full_recall": 5,
+        "fraction_full_recall": 1.0
+      },
+      "per_doc": [
+        {
+          "doc_id": "doc_001",
+          "source_axioms": [
+            [
+              "alice",
+              "like",
+              "cat"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "alice",
+              "like",
+              "cat"
+            ]
+          ],
+          "narrative_excerpt": "(dry-run; no LLM call)",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_002",
+          "source_axioms": [
+            [
+              "bob",
+              "own",
+              "dog"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "bob",
+              "own",
+              "dog"
+            ]
+          ],
+          "narrative_excerpt": "(dry-run; no LLM call)",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_003",
+          "source_axioms": [
+            [
+              "paris",
+              "be",
+              "city"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "paris",
+              "be",
+              "city"
+            ]
+          ],
+          "narrative_excerpt": "(dry-run; no LLM call)",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_004",
+          "source_axioms": [
+            [
+              "einstein",
+              "propose",
+              "relativity"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "einstein",
+              "propose",
+              "relativity"
+            ]
+          ],
+          "narrative_excerpt": "(dry-run; no LLM call)",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_005",
+          "source_axioms": [
+            [
+              "water",
+              "contain",
+              "hydrogen"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "water",
+              "contain",
+              "hydrogen"
+            ]
+          ],
+          "narrative_excerpt": "(dry-run; no LLM call)",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        }
+      ]
+    }
+  ]
+}
