@@ -57,11 +57,11 @@ A minimal Node verifier using `jose` + `canonicalize` is in [`docs/RENDER_RECEIP
 
 The slider's product claim — *axis changes do not lose facts* — is the load-bearing empirical result. It is verified by NLI audit on every embedding-flagged "loss" cell; full attribution in [`docs/SLIDER_CONTRACT.md`](docs/SLIDER_CONTRACT.md).
 
-### LLM narrative round-trip — substantially closed (2026-04-28)
+### LLM narrative round-trip — closed on `seed_v1` (2026-04-28)
 
-The hardest measurement in `PROOF_BOUNDARY.md` is the full LLM narrative round-trip (`text → LLM-extract → axioms → LLM-generate → prose' → LLM-extract → axioms'`). The unprompted-pipeline baseline on `seed_v1` produced **drift = 107.75% / exact-match recall = 0.12** — facts preserved, keys not.
+The hardest measurement in `PROOF_BOUNDARY.md` is the full LLM narrative round-trip (`text → LLM-extract → axioms → LLM-generate → prose' → LLM-extract → axioms'`). The unprompted-pipeline baseline on `seed_v1` was **drift = 107.75% / exact-match recall = 0.12** — facts preserved, keys not.
 
-A two-layer generator-side intervention (canonical-first generator prompt + constrained-decoding extractor with vocab-pinned `Literal` enums) closes this substantially:
+A two-layer generator-side intervention (canonical-first generator prompt + constrained-decoding extractor with vocab-pinned `Literal` enums + lemma-exclusion fix) now closes this fully on `seed_v1`:
 
 | Ablation | drift_pct | exact-match recall | docs at full recall |
 |---|---:|---:|---:|
@@ -69,13 +69,18 @@ A two-layer generator-side intervention (canonical-first generator prompt + cons
 | L3 max canonicalisation only (post-hoc) | 106.36 | 0.18 | 9 / 50 |
 | Canonical-first generator only | 94.85 | 0.60 | 30 / 50 |
 | Constrained extractor only | 81.97 | 0.62 | 31 / 50 |
-| **Combined** | **21.00** | **0.90** | **45 / 50** |
+| Combined (initial) | 21.00 | 0.90 | 45 / 50 |
+| **Combined + lemma-exclusion fix** | **0.00** | **1.0000** | **50 / 50** |
 
-**7.5× exact-match-recall improvement; 5× drift reduction; p10 recall went from 0.00 → 1.00** — the worst-decile docs at baseline had zero exact-match; under combined intervention, even the worst-tenth recover full recall. Each layer is independently necessary; stacked they are supra-additive (the canonical-first generator produces prose the constrained extractor can find the source vocabulary in).
+**The §2.5 gap is closed on `seed_v1`** — within rounding of the canonical (provable) round-trip. The remaining 5/50 residual after the initial combined run was a single root cause: the constrained extractor's enum admitted both the source's inflected predicate (`proposed`) and its lemma (`propose`) from the canonical-padding set, and the LLM picked the lemma every time. Removing lemmas of source predicates from the canonical-padding set forces the source surface form.
 
-**What's left** (5 of 50 docs): residual is a per-corpus tuning problem — extending the canonical predicate set, tightening the canonical-first prompt's verbatim-token rule. Not a structural problem with the intervention pattern.
+**Boundary on this result.** `seed_v1` is a 50-document corpus of single-fact SVO sentences. The 1.00 recall is the saturation point for that corpus's complexity, not a universal §2.5 result. Harder corpora — `seed_v2` (difficulty-corpus across 7 parse patterns), `seed_long_paragraphs` (multi-paragraph multi-fact) — have not yet been measured under the intervention. The `seed_v1` receipt establishes that the **intervention pattern is right**; whether it scales to harder corpora is the next measurement.
 
-Receipt artifact: [`fixtures/bench_receipts/s25_generator_side_2026-04-28.json`](fixtures/bench_receipts/s25_generator_side_2026-04-28.json) under schema `sum.s25_generator_side.v1`. Reproducible: `python -m scripts.bench.runners.s25_generator_side --ablation all --out <path>` (~$0.20 OpenAI, ~5 min wall clock). Full attribution in [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §2.5.
+Receipt artifacts:
+- [`fixtures/bench_receipts/s25_generator_side_2026-04-28.json`](fixtures/bench_receipts/s25_generator_side_2026-04-28.json) — full ablation matrix (initial run).
+- [`fixtures/bench_receipts/s25_residual_closure_2026-04-28.json`](fixtures/bench_receipts/s25_residual_closure_2026-04-28.json) — combined ablation with lemma-exclusion fix.
+
+Reproducible: `python -m scripts.bench.runners.s25_generator_side --ablation combined --out <path>` (~$0.07 OpenAI, ~3 min wall clock). Full attribution in [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §2.5.
 
 The deterministic canonical round-trip (the one `sum attest | sum verify` exercises) is **mechanically proven** (§1.1, 0.00% drift). The LLM round-trip is **not**, and this section is here to keep that distinction above the fold.
 

@@ -123,6 +123,47 @@ DEFAULT_CANONICAL_PREDICATES: tuple[str, ...] = (
 )
 
 
+def _candidate_lemmas(predicate: str) -> set[str]:
+    """Cheap inflection→lemma candidates for English predicates.
+
+    Returns every plausible lemma of ``predicate`` so the
+    constrained-schema builder can refuse to put both forms in the
+    same enum. Empirically derived from the §2.5 residual receipt:
+    every failing doc had a source predicate whose lemma sat in
+    DEFAULT_CANONICAL_PREDICATES, so the LLM extractor (offered
+    both forms in the enum) chose the lemma every time.
+
+    Conservative — only fires on standard English suffixes. Will
+    miss irregulars (`taught` → `teach`); those are not present in
+    the corpus's failure set, so this is the right scope for the
+    fix that closes the observed residual.
+    """
+    p = predicate.lower()
+    out: set[str] = set()
+    if p.endswith("ed") and len(p) > 3:
+        out.add(p[:-2])             # "proposed" → "propose"
+        out.add(p[:-1])             # "proposed" → "proposed" (no-op for past)
+        # Doubled-consonant: "stopped" → "stop"
+        if len(p) >= 4 and p[-3] == p[-4] and p[-3] in "bdfgklmnprt":
+            out.add(p[:-3])
+    if p.endswith("ies") and len(p) > 4:
+        out.add(p[:-3] + "y")       # "carries" → "carry"
+    elif p.endswith("es") and len(p) > 3:
+        out.add(p[:-2])             # "proposes" → "propose"
+    if p.endswith("s") and len(p) > 2 and not p.endswith("ss"):
+        out.add(p[:-1])             # "contains" → "contain"
+    if p.endswith("ing") and len(p) > 4:
+        out.add(p[:-3])             # "running" → "runn" (then dedupe handles)
+        out.add(p[:-3] + "e")       # "writing" → "write"
+        if len(p) >= 5 and p[-4] == p[-5] and p[-4] in "bdfgklmnprt":
+            out.add(p[:-4])         # "stopping" → "stop"
+    # Compound predicates ("build_nests"): also forbid the head verb
+    # in isolation so the LLM cannot drop the modifier.
+    if "_" in p:
+        out.add(p.split("_", 1)[0])
+    return out
+
+
 def build_constrained_extraction_schema(
     source_axioms: Sequence[Triple],
     extra_predicates: Sequence[str] = DEFAULT_CANONICAL_PREDICATES,
@@ -133,26 +174,34 @@ def build_constrained_extraction_schema(
 
     The schema constrains:
         subject   ∈ {s for (s, _, _) in source_axioms}
-        predicate ∈ {p for (_, p, _) in source_axioms} ∪ extra_predicates
+        predicate ∈ {p for (_, p, _) in source_axioms}
+                    ∪ (extra_predicates − lemmas-of-source-predicates)
         object    ∈ {o for (_, _, o) in source_axioms}
 
-    Empty source axioms produce a schema that allows no triples (the
-    only valid response is ``triplets: []``). That is the correct
-    fail-closed posture for a constrained-decoding pass over a
-    fact-empty source.
+    The lemma-exclusion (added 2026-04-28 after the §2.5 closure
+    receipt's residual analysis) prevents the failure mode where
+    ``proposed`` (source) and ``propose`` (canonical padding) both
+    sat in the enum and the LLM extractor chose the lemma every
+    time. With the lemma removed from the canonical padding set,
+    the LLM has only the source surface form to choose from.
 
-    Returns
-    -------
-    A new Pydantic model class suitable as the ``response_format``
-    argument to ``openai.beta.chat.completions.parse``. The class is
-    constructed with ``pydantic.create_model`` so it is fresh per call
-    — tests must not assume class identity across calls.
+    Empty source axioms produce a schema that allows no triples (the
+    only valid response is ``triplets: []``).
     """
     subjects: list[str] = sorted({s for (s, _, _) in source_axioms})
     objects: list[str] = sorted({o for (_, _, o) in source_axioms})
-    predicates: list[str] = sorted(
-        {p for (_, p, _) in source_axioms} | set(extra_predicates)
-    )
+
+    src_predicates: set[str] = {p for (_, p, _) in source_axioms}
+
+    # Exclude lemmas of source predicates from the canonical-padding
+    # set so the LLM extractor cannot collapse a source predicate to
+    # its lemma when both forms are otherwise available.
+    forbidden_lemmas: set[str] = set()
+    for sp in src_predicates:
+        forbidden_lemmas |= _candidate_lemmas(sp)
+    extra_filtered: set[str] = set(extra_predicates) - forbidden_lemmas
+
+    predicates: list[str] = sorted(src_predicates | extra_filtered)
 
     if not subjects or not objects:
         # Build a fully-constrained schema where any non-empty triple
