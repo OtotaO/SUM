@@ -124,3 +124,57 @@ Found a bug? Let us know with clear steps to reproduce!
 Look for issues labeled `good first issue` or `help wanted`
 
 **Welcome to the revolution! 🚀**
+
+---
+
+## Verification surface (Phase E.1 / R0 additions)
+
+Several new gates landed during the Phase E.1 trust-loop arc + the
+R0 resilience preflight. Contributors touching trust-related code
+or workflow files should know they exist:
+
+- `make test` — full pytest suite (1000+ tests).
+- `make test-receipt-verify` (JS) + `make test-receipt-verify-py`
+  (Python) — receipt-verifier smoke against the 15-fixture
+  cross-runtime matrix under `fixtures/render_receipts/`.
+- `make test-trust-root` — 17 round-trip tests for the trust-root
+  manifest verifier (`sum_engine_internal/trust_root/`).
+- `make test-property` — Hypothesis property-based fuzz on JCS +
+  receipt + trust-root surfaces (~2000 generated cases per run).
+- `make test-nli-calibration-format` — v0.9.E NLI calibration
+  fixture format validation.
+- `make vendor` — regenerate `single_file_demo/vendor/sum-verify-
+  deps.js` (vendored `jose` + `canonicalize`); CI gate
+  `vendor-byte-equivalence` fails closed on drift.
+- `python scripts/lint_workflow_pins.py` — fails closed if any
+  `.github/workflows/*.yml` action is tag-pinned instead of
+  SHA-pinned. Auto-runs as the first CI job.
+
+## Required reading before opening a PR
+
+- [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) — proved /
+  measured / designed taxonomy. Every claim a contributor adds to
+  prose carries one of those three labels implicitly; the README
+  / CHANGELOG / commit-message language MUST match the actual
+  status.
+- [`docs/NEXT_SESSION_PLAYBOOK.md`](docs/NEXT_SESSION_PLAYBOOK.md) —
+  non-negotiable principles + stop-the-line triggers + the work
+  queue's ordering rationale. Read this before picking up any
+  trust-related work.
+- [`SECURITY.md`](SECURITY.md) — vulnerability disclosure policy.
+  If a finding might be a security issue, file via private security
+  advisory rather than a public PR.
+
+## Cross-references
+
+- [`SECURITY.md`](SECURITY.md) — vulnerability reporting.
+- [`docs/INCIDENT_RESPONSE.md`](docs/INCIDENT_RESPONSE.md) —
+  operator response runbook (relevant if a contributor is also an
+  operator).
+- [`docs/TRUST_ROOT_FORMAT.md`](docs/TRUST_ROOT_FORMAT.md) +
+  [`docs/RENDER_RECEIPT_FORMAT.md`](docs/RENDER_RECEIPT_FORMAT.md)
+  — wire specs for the new signed-envelope surfaces.
+- [`docs/FEATURE_CATALOG.md`](docs/FEATURE_CATALOG.md) — every
+  shipped feature with a reproducible verification command.
+- [`docs/MODULE_AUDIT.md`](docs/MODULE_AUDIT.md) — production-wired
+  vs scaffolded modules.
