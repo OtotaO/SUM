@@ -52,6 +52,14 @@ from sum_engine_internal.infrastructure.jcs import canonicalize
 # crit_unknown_extension (RFC 7515 §4.1.11 fail-closed).
 DEFAULT_KNOWN_CRIT_EXTENSIONS: frozenset[str] = frozenset({"b64"})
 
+# G3 crypto-agility: signature algorithms accepted under `current`
+# in the in-tree algorithm registry (docs/ALGORITHM_REGISTRY.md).
+# A `alg` claim outside this set is rejected with `unsupported_alg`,
+# distinct from the `header_invariant_violated` class used for
+# missing/malformed headers. Adding an algorithm requires a spec
+# PR + cross-runtime K-matrix gate; this is not a config knob.
+SUPPORTED_SIGNATURE_ALGORITHMS: frozenset[str] = frozenset({"EdDSA"})
+
 
 class JoseEnvelopeErrorClass:
     """String constants — kept identical across runtimes (mirrored by
@@ -72,6 +80,13 @@ class JoseEnvelopeErrorClass:
     from signature_invalid so the operator-side distinction between
     'tampered' and 'issued under a now-revoked key' is visible at
     the consumer."""
+    UNSUPPORTED_ALG = "unsupported_alg"
+    """G3 crypto-agility: protected header `alg` claim is not in the
+    in-tree algorithm registry under `current`. Distinct from
+    header_invariant_violated so a deprecated/retired/unknown alg
+    fails with a precise classification — operator can act on the
+    specific failure mode (migrate, revoke, or update verifier).
+    See docs/ALGORITHM_REGISTRY.md."""
 
 
 class JoseEnvelopeError(Exception):
@@ -234,6 +249,24 @@ def verify_jose_envelope(
                     f"protected header crit contains unsupported "
                     f"extension: {ext!r}",
                 )
+
+    # ---- Step 3.6: G3 alg-registry check (crypto-agility) ----
+    # Cross-check the protected header's `alg` claim against the
+    # in-tree algorithm registry BEFORE invoking joserfc's verify
+    # (which has its own alg list, but ours is the load-bearing
+    # one — pinned by spec, not by upstream-library default). Any
+    # `alg` not in SUPPORTED_SIGNATURE_ALGORITHMS rejects with
+    # `unsupported_alg`. See docs/ALGORITHM_REGISTRY.md for the
+    # full list + deprecation policy.
+    declared_alg = header.get("alg")
+    if not isinstance(declared_alg, str) or declared_alg not in SUPPORTED_SIGNATURE_ALGORITHMS:
+        raise JoseEnvelopeError(
+            JoseEnvelopeErrorClass.UNSUPPORTED_ALG,
+            f"protected header alg={declared_alg!r} is not in the "
+            f"supported algorithm registry "
+            f"({sorted(SUPPORTED_SIGNATURE_ALGORITHMS)}); see "
+            f"docs/ALGORITHM_REGISTRY.md",
+        )
 
     # ---- Step 4: import key ----
     try:

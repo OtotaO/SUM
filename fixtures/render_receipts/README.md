@@ -1,6 +1,6 @@
 # Receipt-fixture set — shared between v0.9.B (browser) and v0.9.C (Python) verifiers
 
-18 runtime-neutral JSON fixtures pinning every named failure mode of the
+19 runtime-neutral JSON fixtures pinning every named failure mode of the
 render-receipt verifier algorithm from
 [`docs/RENDER_RECEIPT_FORMAT.md`](../../docs/RENDER_RECEIPT_FORMAT.md) §2.1.
 
@@ -47,6 +47,7 @@ fixture is `"reject"` with a specific `expected_error_class`.
 | `schema_unknown` | `receipt.schema` is not a value this verifier accepts. Forward-compat lever. |
 | `crit_unknown_extension` | Protected header `crit` array contains an extension this verifier doesn't understand. Per RFC 7515 §4.1.11, fail closed. Forward-compat lever. |
 | `revoked_kid` | (G3) Receipt's kid is on the supplied revocation list with `effective_revocation_at` ≤ `receipt.payload.signed_at`. Distinct from `signature_invalid` so the operator-side distinction between "tampered" and "issued under a now-revoked key" is visible at the consumer. See [`docs/RENDER_RECEIPT_FORMAT.md`](../../docs/RENDER_RECEIPT_FORMAT.md) §6.1. |
+| `unsupported_alg` | (G3) Protected header `alg` claim is not in the in-tree algorithm registry under `current`. Distinct from `header_invariant_violated` so an alg-downgrade-attempt or unsupported algorithm fails with a precise classification. See [`docs/ALGORITHM_REGISTRY.md`](../../docs/ALGORITHM_REGISTRY.md). |
 
 ## The 15 fixtures
 
@@ -70,6 +71,7 @@ fixture is `"reject"` with a specific `expected_error_class`.
 | `revoked_kid_active` | `revoked_kid` | (G3) revocation list names the receipt's kid with `effective_revocation_at` = receipt's signed_at |
 | `revoked_kid_historical` | — verify ✓ | (G3) revocation list names the kid but `effective_revocation_at` is in the future; receipt predates revocation |
 | `revoked_kid_unrelated` | — verify ✓ | (G3) revocation list mentions a different kid; receipt's kid not on the list |
+| `unsupported_alg` | `unsupported_alg` | (G3) protected header `alg` mutated to `HS256` (not in the EdDSA-only v1 registry) |
 
 ## How to regenerate
 

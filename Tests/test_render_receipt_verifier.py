@@ -95,7 +95,8 @@ def test_all_fixtures_iterate() -> None:
     count drifts, that's worth knowing — the cross-runtime contract
     is that BOTH JS and Python run the SAME N fixtures."""
     files = _fixture_files()
-    assert len(files) == 18, (
-        f"expected 18 fixtures (15 v0.9.C + 3 G3 revocation), "
-        f"found {len(files)}: {[f.name for f in files]}"
+    assert len(files) == 19, (
+        f"expected 19 fixtures (15 v0.9.C + 3 G3 revocation + "
+        f"1 G3 crypto-agility), found {len(files)}: "
+        f"{[f.name for f in files]}"
     )

@@ -655,6 +655,8 @@ Not a phase of new work so much as a decision point. Before tagging `v1.0.0`: an
 
 **Crypto-agility is part of the 1.0 contract, not an afterthought.** The "verifies in 10 years" promise is undefended unless G3's revocation surface and dual-sign migration pattern are in the spec by 1.0. Ed25519 is not quantum-safe; the contract must explicitly say what happens when the algorithm needs to be retired (dual-sign window, deprecation policy, fail-closed-on-unknown-alg). Without this, 1.0 is a promise the engine cannot keep at decade scale.
 
+[`docs/ALGORITHM_REGISTRY.md`](ALGORITHM_REGISTRY.md) is the canonical surface for this — the in-tree allowlist of accepted signature algorithms + prime schemes, the deprecation lifecycle, and the dual-sign migration pattern (envelope shape spec'd; implementation lands when a successor algorithm is chosen). Verifiers fail closed with `unsupported_alg` on any algorithm not under `current` in the registry; the registry is the spec contract that 1.0's "verifies in 10 years" promise rides on.
+
 Backed by a CI gate that tests the promise: a corpus of 1.0-minted bundles + receipts that every later release must continue to verify, plus the K6 + K7 invariants from G2 + G3. The hand-off point between "interesting prototype" and "dependency anyone can build on."
 
 ---
