@@ -6,7 +6,8 @@
 
 .DEFAULT_GOAL := help
 .PHONY: help install test test-cli test-codec bench xruntime xruntime-adversarial \
-        demo wheel sdist smoke fortress clean lint wasm wasm-bench wasm-bench-python
+        demo wheel sdist smoke fortress clean lint wasm wasm-bench wasm-bench-python \
+        vendor test-receipt-verify
 
 PYTHON ?= python
 
@@ -80,6 +81,12 @@ wasm:  ## Build + copy sum_core.wasm into single_file_demo/ (rerun after core-zi
 	cd core-zig && zig build wasm
 	cp core-zig/zig-out/bin/sum_core.wasm single_file_demo/sum_core.wasm
 	node single_file_demo/test_wasm.js
+
+vendor:  ## Regenerate vendored jose + canonicalize bundle (rerun after dep bumps).
+	cd scripts/vendor && npm ci && npm run build
+
+test-receipt-verify:  ## v0.9.B: Node smoke test against the receipt-fixture set.
+	node single_file_demo/test_render_receipt_verify.js
 
 wasm-bench:  ## Serve the WASM-vs-JS browser benchmark (docs/WASM_PERFORMANCE.md).
 	@echo "Open: http://localhost:8000/Tests/benchmarks/browser_wasm_bench.html"
