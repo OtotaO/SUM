@@ -960,9 +960,13 @@ Result: **PASS** (live).
 
 ## Summary counts
 
-Production ✅: **96** features tested green (82 from the prior session pass + features 104–117: four-layer fact preservation / NLI audit / order_preservation / 5000-word audience / RenderedTome / FACT_PRESERVATION_REINFORCEMENT / salvage_partial_triplets / long-doc bench corpus / `/api/render` real path / JWKS endpoint / render-receipt signing / TS axis-prompt mirror / bin cache / `/api/qid` real path; minus feature 97 which moved from 📄 to ✅).
-Scaffolded 🔧: **14** features — tests pass, production activation pending. All catalogued in `docs/MODULE_AUDIT.md` with activation checklists.
-Designed 📄: **1** feature (sha256_128_v2 promotion). Phase E.1 v0.9.B (browser receipt verifier) + v0.9.C (Python receipt verifier) are queued unshipped in [`docs/NEXT_SESSION_PLAYBOOK.md`](NEXT_SESSION_PLAYBOOK.md) but not catalogued here until they land.
+Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **117**.
+
+- **Production ✅: 103 features** — tested green; each has a verification command in its entry.
+- **Scaffolded 🔧: 13 features** — tests pass, production activation pending. All catalogued in `docs/MODULE_AUDIT.md` with activation checklists.
+- **Designed 📄: 1 feature** (sha256_128_v2 promotion).
+
+If the totals above ever disagree with the grep recipe, this file drifted; rerun the recipe and update the prose. Phase E.1 v0.9.B (browser receipt verifier) + v0.9.C (Python receipt verifier) shipped earlier and are catalogued in the body. Future unshipped queue items are tracked in [`docs/NEXT_SESSION_PLAYBOOK.md`](NEXT_SESSION_PLAYBOOK.md) and not catalogued here until they land.
 
 Cross-cutting coverage:
 - pytest batch-1 (core Layer-1–3): **300 passed**

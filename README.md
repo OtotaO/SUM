@@ -55,6 +55,17 @@ A minimal Node verifier using `jose` + `canonicalize` is in [`docs/RENDER_RECEIP
 
 The slider's product claim — *axis changes do not lose facts* — is the load-bearing empirical result. It is verified by NLI audit on every embedding-flagged "loss" cell; the v0.4 → v0.9 arc traces in [`CHANGELOG.md`](CHANGELOG.md) `[Unreleased]`.
 
+### What does NOT yet work — the honest line
+
+SUM measures one capability that the rest of this README's numbers do not yet close: the **full LLM narrative round-trip** (`text → LLM-extract → axioms → LLM-generate → prose' → LLM-extract → axioms'`). On `seed_v1` this loop produces:
+
+- **107.75% drift** (per-document `100 × |A Δ A'| / max(|A|, |A'|)`) and
+- **exact-match recall = 0.12** (6 of 50 source triples appear verbatim after the round trip).
+
+The reason both numbers exist together: the generator preserves *facts* (FActScore 0.94–0.96, §2.4) but the extractor paraphrases *keys* on the way back (`newton` → `isaac_newton`, `eat` → `consume`, `likes cats` → `has_fondness_for cats`). FActScore confirms the underlying claims survive; round-trip drift confirms the surface form does not. Closing this gap is a canonicalisation problem (entity resolution, predicate normalisation, pinned-vocabulary extraction) — none of those passes are shipped yet, and `107.75% / 0.12` stands as the honest empirical ceiling of the unprompted LLM round-trip until they are. Full attribution + per-document failure modes in [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §2.5.
+
+The deterministic canonical round-trip (the one `sum attest | sum verify` exercises) is **mechanically proven** (§1.1, 0.00% drift). The LLM round-trip is **not**, and this section is here to keep that distinction above the fold.
+
 ---
 
 ## CLI quick start
