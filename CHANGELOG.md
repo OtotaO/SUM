@@ -4,6 +4,68 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Added — M1 Merkle set-commitment sidecar (prototype + spec + benchmark)
+
+Companion membership-witness substrate alongside the LCM state
+integer. Pure-Python Merkle tree over canonical fact keys with
+domain-separated SHA-256 (RFC 6962 / RFC 9162-inspired), giving
+external verifiers an `O(log N)` inclusion-proof path that
+bypasses the LCM merge ceiling documented in `PROOF_BOUNDARY.md`
+§2.2 (~50 s/op extrapolated at N=10 000).
+
+**Lands together as one prototype unit:**
+
+- `docs/MERKLE_SIDECAR_FORMAT.md` — wire spec. Locks
+  `LEAF_DOMAIN = b"SUM-MERKLE-FACT-LEAF-v1\0"` and
+  `NODE_DOMAIN = b"SUM-MERKLE-FACT-NODE-v1\0"` at spec time
+  (separates this surface from the Akashic Ledger hash-chain in
+  §1.7), lex-sort canonicalisation, RFC 6962 promote-unchanged
+  on odd levels, all-zeros 32-byte sentinel for the empty-set
+  root, `sum.merkle_inclusion.v1` proof shape.
+- `sum_engine_internal/merkle_sidecar/` — pure-Python
+  implementation, no external dependencies (only `hashlib`).
+  Public surface: `build_tree`, `MerkleTree`,
+  `MerkleTree.inclusion_proof`, `verify_inclusion`,
+  `InclusionProof` (with `to_dict` / `from_dict`).
+- `Tests/test_merkle_sidecar.py` — 27 tests, all passing.
+  Covers determinism + set-semantics dedup, round-trip at N ∈
+  {1, 2, 3, 4, 7, 8, 15, 16, 100, 1000} (exercises both
+  even-numbered and odd-numbered promote-unchanged paths), all
+  tamper-detection paths (wrong key, tampered leaf hash,
+  tampered sibling hash, malformed `position`, wrong root),
+  empty-tree sentinel rejection, single-element edge case,
+  domain-separation invariants pinned.
+- `scripts/bench/runners/merkle_vs_lcm.py` — benchmark runner
+  comparing Merkle inclusion-proof verify vs LCM `state % prime`
+  divisibility check at the same N. JSON output, configurable
+  `--skip-lcm-build-at` for the slow-N proxy mode.
+
+**Headline numbers (50 samples, Darwin arm64 / Python 3.10):**
+
+| N | Merkle verify p50 | LCM `state % p` p50 | speedup |
+|---:|---:|---:|---:|
+| 100    | 4.6 µs | 3.2 µs | 0.7× |
+| 1 000  | 5.8 µs | 29.6 µs | **5.15×** |
+| 5 000  | 7.2 µs | 151.2 µs | **21.1×** |
+| 10 000 | 7.8 µs | 30.7 µs † | 3.95× † |
+
+† At N=10 000 the runner uses LCM(first 1000 primes) as the
+modulo divisor because the full LCM build at this N takes
+minutes per `PROOF_BOUNDARY.md` §2.2 — the projected real-state
+speedup is ≈ 30–40× following the 5 000-row trend. The 21.1×
+figure at N=5 000 is the conservative production-relevant
+headline. The Merkle verify path is empirically flat across the
+range tested (4.6 → 7.8 µs as N grows 100×).
+
+**Status:** prototype-only. Exercised by tests + benchmark; not
+wired into `CanonicalBundle` or render receipts yet. Production
+wiring requires the leaf-format spec lock and a `bundle_version`
+minor bump (`1.0.0` → `1.1.0`) per `docs/COMPATIBILITY_POLICY.md`,
+both gated on review of these numbers.
+
+`PROOF_BOUNDARY.md` §2.2 updated with the comparison table +
+caveat. Closes M1 entry from `docs/NEXT_SESSION_PLAYBOOK.md`.
+
 ### Fixed — Phase E.1 v0.8 (layered defense against LengthFinishReasonError)
 
 The v0.7 long-doc bench errored on 1 cell (`doc_long_human_genome
