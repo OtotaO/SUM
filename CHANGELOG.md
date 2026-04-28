@@ -4,6 +4,59 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Reframed — README leads with the cross-runtime trust surface, not the slider numbers
+
+Newcomer-recommendation #4 from the Operator-Hard fresh-eyes
+audit. The previous lede led with the slider's `median 1.000 /
+p10 0.769` claim and a "verifiable fact preservation" framing
+that conflated the empirical-benchmark surface with the proven
+cryptographic surface. Sophisticated readers — the inner ICP
+of this project — open the README and `PROOF_BOUNDARY.md` in
+adjacent tabs; conflating those two categories costs us them
+in the first 90 seconds.
+
+The new lede leads with the load-bearing differentiator: **a
+cross-runtime trust surface for LLM-rendered text**, three
+runtimes (Python / Node / browser) producing byte-identical
+Ed25519 over JCS bytes, every render carrying a detached-JWS
+receipt verifiable offline against `/.well-known/jwks.json`.
+The slider numbers, the extraction F1, the canonical
+round-trip — all retained, all sourced — but as supporting
+measurements under the headline trust claim, not as the
+headline themselves.
+
+Other edits in the same pass:
+
+* Phase tags scrubbed from public README prose. "shipped on
+  PyPI (v0.3.0)" → "shipped on PyPI"; "shipped (Phase E.1
+  v0.9.A.2)" → "shipped"; "the v0.4 → v0.9 arc" → "full
+  attribution in `docs/SLIDER_CONTRACT.md`". The CHANGELOG
+  retains its phase history; the README does not need to.
+* Browser version floor "Chrome 113+, Firefox 129+, Safari
+  17+" → "Chrome / Firefox / Safari with WebCrypto Ed25519
+  support" (the floor is real but maintaining a static
+  number list against silent browser updates is drift bait).
+* Future-developments section: shipped-already items
+  (`v0.9.B browser receipt verifier`, `v0.9.C Python receipt
+  verifier`) removed — they shipped earlier in this
+  `[Unreleased]` block. The §2.5 LLM round-trip drift attack
+  promoted to the lede of the future-developments section as
+  the headline open problem.
+* MCP server added to the "What ships today" table — it
+  shipped this session and was missing from the surface
+  table.
+* CI badge text "SUM Knowledge OS CI" → "CI". The workflow
+  filename `quantum-ci.yml` is unchanged in this PR (renaming
+  it would break every PR's badge link); a follow-on
+  rename-pass PR addresses the broader naming legacy.
+
+The fresh-eyes audit prescribed three more newcomer
+recommendations: rename pass (drop "Quantum" / "Akashic" /
+"Holographic" / "Ouroboros" / "Chronos" terminology),
+phase-numbering collapse across deeper docs, doc-tree
+consolidation. Each lands as its own focused PR after this
+one merges so the reframe is reviewable as a single decision.
+
 ### Honesty pass — Tier 1 placeholder sweep across PROOF_BOUNDARY / FEATURE_CATALOG / README
 
 Six load-bearing edits across the public-doc surface, all motivated
