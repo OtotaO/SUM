@@ -8,7 +8,7 @@
 .PHONY: help install test test-cli test-codec bench xruntime xruntime-adversarial \
         demo wheel sdist smoke fortress clean lint wasm wasm-bench wasm-bench-python \
         vendor test-receipt-verify test-receipt-verify-py \
-        bench-receipt-audit bench-receipt-audit-replay
+        bench-receipt-audit bench-receipt-audit-replay test-trust-root
 
 PYTHON ?= python
 
@@ -99,6 +99,9 @@ bench-receipt-audit:  ## v0.9.D: live audit against /api/render — costs LLM to
 bench-receipt-audit-replay:  ## v0.9.D: replay-verify a saved audit trail (no network).
 	$(PYTHON) -m scripts.bench.runners.receipt_audit \
 		--replay audit_trail.ndjson
+
+test-trust-root:  ## R0.2: trust-root manifest round-trip + tampering tests.
+	$(PYTHON) -m pytest Tests/test_trust_root.py -q
 
 wasm-bench:  ## Serve the WASM-vs-JS browser benchmark (docs/WASM_PERFORMANCE.md).
 	@echo "Open: http://localhost:8000/Tests/benchmarks/browser_wasm_bench.html"
