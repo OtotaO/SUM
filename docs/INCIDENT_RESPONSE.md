@@ -204,9 +204,11 @@ The Python `jcs` module, the JS `canonicalize` library, or the verifier's handli
 
 - [`SECURITY.md`](../SECURITY.md) — researcher → operator intake (the inbound side).
 - [`docs/RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) — receipt wire format + key rotation cadence (§6).
+- [`docs/TRUST_ROOT_FORMAT.md`](TRUST_ROOT_FORMAT.md) — R0.2 trust-root manifest spec; gives cases 3, 4, and 5 a single signed artifact downstream verifiers can cross-check against once a real release-signing key is in production.
+- [`docs/TRANSPARENCY_ANCHOR.md`](TRANSPARENCY_ANCHOR.md) — R0.5 transparency-anchor design; once implementation lands, the anchor history is the external timestamped record for "what was served when" — the recovery surface for post-hoc tampering detection on cases 2, 3, and 5.
+- [`docs/MODEL_CALL_EVIDENCE_FORMAT.md`](MODEL_CALL_EVIDENCE_FORMAT.md) — R0.5 sidecar design; the `request_body_hash` + `provider_response_id_hash` fields are the forensic binding that detects case 7 once implementation lands.
 - [`docs/PROOF_BOUNDARY.md`](PROOF_BOUNDARY.md) — what's proved vs measured vs designed; arbiter of when a correction is required.
 - [`docs/NEXT_SESSION_PLAYBOOK.md`](NEXT_SESSION_PLAYBOOK.md) G3 — revocation + crypto-agility track that, once shipped, will give cases 1 and 2 a `revoked_kids.json` surface to publish to (instead of relying on JWKS-list timing alone).
-- [`docs/NEXT_SESSION_PLAYBOOK.md`](NEXT_SESSION_PLAYBOOK.md) R0.2 — trust-root manifest that, once shipped, will give cases 3, 4, and 5 a single signed artifact downstream verifiers can cross-check against (instead of trusting the GitHub release URL alone).
 
 ## On the discipline
 
