@@ -198,6 +198,15 @@ jobs:
         fi
         echo "vendored bytes match committed: OK"
 
+    - name: Receipt-verifier smoke (15 fixtures, all runtimes-neutral)
+      # Exercises receipt_verifier.js against fixtures/render_
+      # receipts/. Fails if positive_control doesn't verify or any
+      # tampered fixture produces the wrong error class. Same
+      # fixtures will be consumed by v0.9.C (Python verifier);
+      # cross-runtime equivalence locks once both pass on every
+      # push.
+      run: node single_file_demo/test_render_receipt_verify.js
+
   release-machinery-validation:
     name: Release machinery validation (no publish)
     # Validates the v0.3.1 hygiene gates on every push/PR so the FIRST
