@@ -279,7 +279,24 @@ SUM's numbers here are a specific instance of a phenomenon the distillation lite
 
 The §2.5 numbers do not require a new mechanism story — they are a measurement of SUM's specific pipeline against an already-documented regularity. Note also **Saxe et al., "On the Information Bottleneck Theory of Deep Learning"** (ICLR 2018), which constrains how this should be framed: the information-bottleneck objective remains a legitimate *objective* (min I(X;T), max I(T;Y)), but a causal claim that SGD's compression phase produces generalisation is *refuted* — the compression phase is an artefact of saturating nonlinearities like tanh and vanishes under ReLU. SUM's compression is explicit and symbolic (sieve + prime encoding), not emergent from SGD, so this warning does not wound any claim SUM makes — but it should stop any future claim of "SUM generalises via the information bottleneck mechanism" from being written.
 
-**Boundary:** closing this gap is a canonicalization problem, not an LLM problem. An entity-resolution pass that collapses `newton` and `isaac_newton`, a WordNet or lemma-based predicate normaliser, or a prompt that asks the extractor to return triples in a pinned vocabulary would move the 0.12 exact-match recall upward without changing the generator. None of these are shipped. The 107.75 % / 0.12 numbers stand as the honest empirical ceiling of the unprompted, unresolved `LiveLLMAdapter` pipeline — which is what §6 promised to measure, and what §6 is now free to stop promising.
+**Boundary:** the prior boundary paragraph hypothesised that **canonicalisation alone** (entity resolution + predicate lemma-fold + pinned vocabulary) could move the 0.12 exact-match recall upward "without changing the generator." That hypothesis has now been measured offline against the cached per-doc data and **is partially refuted**.
+
+**§2.5 canonicalisation-replay receipt (`scripts/bench/runners/canonicalization_replay.py`, run 2026-04-28, no LLM cost — operates on the cached `bench_history.jsonl` per-doc `missing_claims` / `extra_claims` arrays, output at `fixtures/bench_receipts/s25_canonicalization_replay_2026-04-28.json`):**
+
+| Regime | Rules | drift_pct (mean) | exact-match recall (mean) | docs at full recall |
+|---|---|---:|---:|---:|
+| **L0 baseline** | none — sanity check | **107.75** | **0.12** | 6 / 50 |
+| **L1 predicate-only** | lowercase + strip aux prefixes (`was_`, `has_`, …) + strip prep suffixes (`_in`, `_to`, …) + strip verb inflection (`-s`, `-ed`, `-ing`) | **107.75** | **0.12** | 6 / 50 |
+| **L2 + subject** | L1 + lowercase / underscore→space / last-word-as-key on subjects (catches `albert_einstein` ≈ `einstein`) | **106.68** | **0.16** | 8 / 50 |
+| **L3 aggressive** | L2 + lowercase / strip articles / first-content-word-as-key on objects (CEILING — risks conflating distinct facts) | **106.36** | **0.18** | 9 / 50 |
+
+**The L1 row is the falsification.** Predicate-only canonicalisation moves zero exact matches because the cached `missing_claims` for failed docs do not have a paraphrase pair in `extra_claims` whose only difference is predicate inflection. The dominant failure mode is **generator elaboration**: the LLM produces an average of 12 reconstructed axioms per source axiom and *elaborates around the source claim rather than paraphrasing it*. There is nothing for predicate normalisation to canonicalise *to*.
+
+L2 (subject canonicalisation) recovers 2 docs — exactly the `newton`/`isaac_newton`-shape cases the prior boundary paragraph cited. L3 (aggressive object collapse) recovers 1 more, at the cost of a regime that conflates legitimately-distinct facts and is reported as the ceiling, not a recommendation.
+
+**The receipt:** canonicalisation alone moves exact-match recall by **at most 0.06 absolute (0.12 → 0.18)** under maximally aggressive rules. The headline drift_pct moves only **1.4 points** (107.75 → 106.36) because the formula is dominated by `|reconstructed| >> |source|` regardless of key alignment. Closing the §2.5 gap requires moving the generator (constrained decoding to a pinned vocabulary, or a fidelity-objective fine-tune), not just the post-hoc key normaliser. Those interventions have NOT been measured; this receipt is one — and the cheapest — of several proposed in the prior boundary paragraph. The cheap one does not close the gap.
+
+The 107.75 % / 0.12 numbers stand as the unprompted-pipeline baseline; the 0.18 figure under L3 stands as the **maximum-canonicalisation ceiling on the same cached run**. The work to move the generator is a future cycle, gated on this receipt as the reference baseline.
 
 ### 2.6. Slider Axis Fact-Preservation (Phase E.1 v0.4 → v0.7)
 

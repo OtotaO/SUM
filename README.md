@@ -64,7 +64,18 @@ SUM measures one capability that the rest of this README's numbers do not yet cl
 - **107.75% drift** (per-document `100 × |A Δ A'| / max(|A|, |A'|)`) and
 - **exact-match recall = 0.12** (6 of 50 source triples appear verbatim after the round trip).
 
-The reason both numbers exist together: the generator preserves *facts* (FActScore 0.94–0.96, §2.4) but the extractor paraphrases *keys* on the way back (`newton` → `isaac_newton`, `eat` → `consume`, `likes cats` → `has_fondness_for cats`). FActScore confirms the underlying claims survive; round-trip drift confirms the surface form does not. Closing this gap is a canonicalisation problem (entity resolution, predicate normalisation, pinned-vocabulary extraction) — none of those passes are shipped yet, and `107.75% / 0.12` stands as the honest empirical ceiling of the unprompted LLM round-trip until they are. Full attribution + per-document failure modes in [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §2.5.
+The reason both numbers exist together: the generator preserves *facts* (FActScore 0.94–0.96, §2.4) but the round-trip is dominated by **generator elaboration** — the LLM produces ~12 reconstructed axioms per source axiom and elaborates *around* the source claim rather than paraphrasing it.
+
+**Canonicalisation alone does not close this gap — measured 2026-04-28** (`scripts/bench/runners/canonicalization_replay.py`, no LLM cost, operates on cached per-doc data):
+
+| Canonicalisation regime | drift_pct | exact-match recall |
+|---|---:|---:|
+| baseline | 107.75 % | 0.12 |
+| + predicate normalisation | 107.75 % | **0.12** *(zero movement — the L1 falsification)* |
+| + subject canonicalisation (last-word-as-key) | 106.68 % | 0.16 |
+| + aggressive object normalisation (ceiling) | 106.36 % | 0.18 |
+
+Closing the §2.5 gap requires moving the generator (constrained decoding to a pinned vocabulary, or a fidelity-objective fine-tune), not just post-hoc key normalisation. The L0–L3 receipt is the reference baseline against which any future generator-side intervention is measured. Full attribution in [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §2.5.
 
 The deterministic canonical round-trip (the one `sum attest | sum verify` exercises) is **mechanically proven** (§1.1, 0.00% drift). The LLM round-trip is **not**, and this section is here to keep that distinction above the fold.
 
