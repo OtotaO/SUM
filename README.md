@@ -1,24 +1,25 @@
 # SUM — verifiable bidirectional knowledge distillation
 
-[![SUM Knowledge OS CI](https://github.com/OtotaO/SUM/actions/workflows/quantum-ci.yml/badge.svg)](https://github.com/OtotaO/SUM/actions/workflows/quantum-ci.yml)
+[![CI](https://github.com/OtotaO/SUM/actions/workflows/quantum-ci.yml/badge.svg)](https://github.com/OtotaO/SUM/actions/workflows/quantum-ci.yml)
 [![PyPI — sum-engine](https://img.shields.io/pypi/v/sum-engine.svg?label=PyPI%20sum-engine)](https://pypi.org/project/sum-engine/)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
-> **NLI audit + 4-layer fact-preservation substrate + cryptographically-signed render receipts = verifiable fact preservation across slider axis changes, with median 1.000 / p10 0.769 measured at scale, catastrophic-failure mode eliminated, and every render carrying its own Ed25519-signed attestation. Live at https://sum-demo.ototao.workers.dev.**
+> **A cross-runtime trust surface for LLM-rendered text.** Three runtimes (Python, Node, modern browsers) produce byte-identical Ed25519 signatures over the same JCS-canonical bytes. Every render through the hosted Worker carries a detached-JWS receipt (`sum.render_receipt.v1`) that any third party can verify offline against `/.well-known/jwks.json`. Live at https://sum-demo.ototao.workers.dev.
 
-Every term in that claim is empirically true at the current `main` head (PR #41 v0.9.A + PR #42 v0.9.A.2) and traces to a source-of-truth document a reader can follow:
+That is the load-bearing claim and what makes SUM different from a generic summarisation tool. The cryptographic side is **mechanically proven** — three independent verifier implementations agreeing byte-for-byte on every signed bundle, locked in CI on every PR. The semantic side (extraction quality, slider fact preservation) is **empirically measured** with explicit per-corpus numbers and explicit per-corpus boundaries; SUM does not blur the line between the two. [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) is the arbiter.
 
-| Claim term | Source of truth |
-|---|---|
-| NLI audit | [`docs/SLIDER_CONTRACT.md`](docs/SLIDER_CONTRACT.md) §"Headline result (NLI-verified, scale-checked)" |
-| 4-layer fact-preservation substrate | strict / normalized / semantic / NLI; defined in [`docs/SLIDER_CONTRACT.md`](docs/SLIDER_CONTRACT.md), v0.4 entry in [`CHANGELOG.md`](CHANGELOG.md) |
-| signed render receipts | [`docs/RENDER_RECEIPT_FORMAT.md`](docs/RENDER_RECEIPT_FORMAT.md) (`sum.render_receipt.v1`, Ed25519/JCS detached JWS, JWKS) |
-| median 1.000 / p10 0.769 | long-doc bench (n=16, 9–24 triples/doc) — [`scripts/bench/corpora/seed_long_paragraphs.json`](scripts/bench/corpora/seed_long_paragraphs.json); short-doc bench p10 = 0.818 (n=8) |
-| catastrophic-failure mode eliminated | v0.7 prompt hardening: `≥5 facts lost` cells went 2 → 0 on the same long-doc bench; min preservation lifted from 0.111 → 0.700 ([`CHANGELOG.md`](CHANGELOG.md) v0.7 entry) |
-| Live at sum-demo.ototao.workers.dev | curl `https://sum-demo.ototao.workers.dev/api/render` |
+Headline supporting numbers (each links to its source of truth):
 
-A render receipt verifies the *render attestation* (issuer signed this tome, these triples, this slider position, this model, at this time). Fact preservation across axes is verified separately by the bench. See [`docs/RENDER_RECEIPT_FORMAT.md`](docs/RENDER_RECEIPT_FORMAT.md) §5 (Trust Scope) for what the receipt does and does not prove.
+| Claim | Status | Source |
+|---|---|---|
+| Three-runtime byte-symmetric Ed25519 over JCS bytes | provable; locked by `make xruntime` (K1–K4) + `make xruntime-adversarial` (A1–A6) | [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §1.2, §1.3.1 |
+| Canonical round-trip `reconstruct(parse(canonical_tome(S))) == S` | provable; 0.00% drift on every CI run | [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §1.1 |
+| Render receipt — `sum.render_receipt.v1`, Ed25519 / JCS / detached JWS | shipped; verifier in three runtimes | [`docs/RENDER_RECEIPT_FORMAT.md`](docs/RENDER_RECEIPT_FORMAT.md) |
+| Slider fact preservation: median 1.000, p10 0.769 (long n=16) / 0.818 (short n=8) | empirical-benchmark | [`docs/SLIDER_CONTRACT.md`](docs/SLIDER_CONTRACT.md) |
+| Extraction F1 = 1.000 (`seed_v1`), 0.762 with precision 1.000 (`seed_v2`) | empirical-benchmark | [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §2.1 |
+
+A render receipt verifies the *render attestation* (issuer signed this tome, these triples, this slider position, this model, at this time). It does not verify the truth of the tome's content — that is what the slider bench measures separately. See [`docs/RENDER_RECEIPT_FORMAT.md`](docs/RENDER_RECEIPT_FORMAT.md) §5 for the explicit trust scope.
 
 ---
 
@@ -47,13 +48,14 @@ A minimal Node verifier using `jose` + `canonicalize` is in [`docs/RENDER_RECEIP
 
 | Surface | Status | Verifies |
 |---|---|---|
-| `pip install 'sum-engine[sieve]'` — `sum attest` / `sum verify` / `sum resolve` / `sum ledger` / `sum inspect` / `sum schema` | shipped on PyPI (v0.3.0) | structural reconstruction; HMAC-SHA256 + Ed25519 signatures (W3C VC 2.0 `eddsa-jcs-2022`) |
-| Cloudflare Worker at `sum-demo.ototao.workers.dev` | shipped (Phase E.1 v0.9.A.2) | `/api/render` → tome + `render_receipt`; `/.well-known/jwks.json` → JWKS; `/api/qid` → Wikidata resolver |
-| Single-file browser demo (`single_file_demo/index.html`) | shipped | paste prose → in-browser attest → CanonicalBundle JSON; same bytes verify under `node standalone_verifier/verify.js` (Chrome 113+, Firefox 129+, Safari 17+) |
+| `pip install 'sum-engine[sieve]'` — `sum attest` / `sum verify` / `sum resolve` / `sum ledger` / `sum inspect` / `sum schema` | shipped on PyPI | structural reconstruction; HMAC-SHA256 + Ed25519 signatures (W3C VC 2.0 `eddsa-jcs-2022`) |
+| Cloudflare Worker at `sum-demo.ototao.workers.dev` | shipped | `/api/render` → tome + `render_receipt`; `/.well-known/jwks.json` → JWKS; `/api/qid` → Wikidata resolver |
+| Single-file browser demo (`single_file_demo/index.html`) | shipped | paste prose → in-browser attest → CanonicalBundle JSON; same bytes verify under `node standalone_verifier/verify.js` (Chrome / Firefox / Safari with WebCrypto Ed25519 support) |
 | Cross-runtime trust triangle | locked by CI (`make xruntime`) | K1 / K1-mw / K2 / K3 / K4 — Python ↔ Node ↔ Browser agree byte-for-byte on valid bundles. `make xruntime-adversarial` adds A1–A6 rejection-class equivalence. |
 | 5-axis slider rendering surface | density actioned deterministically; length / formality / audience / perspective LLM-conditioned via the Worker (Anthropic, Cloudflare AI Gateway optional) | bench: median LLM-axis fact preservation 1.000, p10 0.769 (long, n=16) / 0.818 (short, n=8), order preservation 1.000 wherever measurable |
+| MCP server (`sum-mcp` console script) | shipped | five tools (`extract` / `attest` / `verify` / `inspect` / `schema`) exposed over stdio; bundles attested via MCP verify byte-identically through the CLI / Node / browser verifiers |
 
-The slider's product claim — *axis changes do not lose facts* — is the load-bearing empirical result. It is verified by NLI audit on every embedding-flagged "loss" cell; the v0.4 → v0.9 arc traces in [`CHANGELOG.md`](CHANGELOG.md) `[Unreleased]`.
+The slider's product claim — *axis changes do not lose facts* — is the load-bearing empirical result. It is verified by NLI audit on every embedding-flagged "loss" cell; full attribution in [`docs/SLIDER_CONTRACT.md`](docs/SLIDER_CONTRACT.md).
 
 ### What does NOT yet work — the honest line
 
@@ -159,27 +161,24 @@ Both runners require `OPENAI_API_KEY` (NLI audit + extraction). Pinned model sna
 
 ## Future developments
 
-This roadmap names only unshipped work. Items already landed live in [`CHANGELOG.md`](CHANGELOG.md) `[Unreleased]`.
+This roadmap names only unshipped work. Items already landed live in [`CHANGELOG.md`](CHANGELOG.md) `[Unreleased]`. Detailed sequencing lives in [`docs/NEXT_SESSION_PLAYBOOK.md`](docs/NEXT_SESSION_PLAYBOOK.md).
 
-**Hardening playbook (Priorities 3–8 in [`docs/NEXT_SESSION_PLAYBOOK.md`](docs/NEXT_SESSION_PLAYBOOK.md))**
+**Closing the LLM round-trip drift.** This is the headline open problem. The full LLM round-trip (`text → LLM-extract → axioms → LLM-generate → prose' → LLM-extract → axioms'`) currently produces 107.75 % drift and 0.12 exact-match recall on `seed_v1` — facts preserved, keys not. Closing this gap is a canonicalisation problem (entity resolution, predicate normalisation, pinned-vocabulary extraction); none of those passes are shipped yet. See [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §2.5 for the full attribution and per-document failure modes.
+
+**Hardening backlog**
 
 - `sha256_128_v2` activation — Node side exists, Python side not yet `CURRENT_SCHEME`. Pre-empts the 2³² collision frontier.
-- `/api/qid` SPARQL disambiguation — moves entity resolution from the current `wbsearchentities`-only path to a measured >95% accuracy floor.
+- `/api/qid` SPARQL disambiguation — moves entity resolution from the current `wbsearchentities`-only path to a target >95 % accuracy floor (the floor itself is unmeasured today).
 - Threat-model validation — every documented defence in [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) gets an executable test.
 - Delta-bundle composition semantics — specifies what `bundle.is_delta` means cross-runtime.
 - Sigstore / cosign signing of release artifacts.
 - LLM-extraction honesty guardrails — `extraction.verifiable: true | false` so signed ≠ true is visible at the consumer interface.
+- Calibration-set authoring for the Venn-Abers conformal-interval implementation that already ships.
+- Remaining sieve recall work on `seed_v2` (apposition / relative-clause / compound-conjunct) — gated on the §2.5 work, see [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §6.
 
-**Phase E follow-ups**
+**Platform surface (post-hardening)**
 
-- v0.9.B browser receipt verifier (in-page detached-JWS verify against the same JWKS).
-- v0.9.C Python receipt verifier (`joserfc` + `jcs` against the bench).
-- Calibration-set authoring for Venn-Abers conformal intervals.
-- Remaining sieve recall work on `seed_v2` (apposition / relative-clause / compound-conjunct).
-
-**Phase B platform surface (post-hardening)**
-
-Source anchoring in the bundle schema (B1), bundle explorer / viewer (B2), `sum verify --explain` (B3), `sum tutorial` onboarding (B4), shareable bundle URLs `/b/{hash}` (B5), PWA-installable demo (B6), `sum attest <url>` fetch mode (B7). Each item names its dependency in [`docs/NEXT_SESSION_PLAYBOOK.md`](docs/NEXT_SESSION_PLAYBOOK.md).
+Source anchoring in the bundle schema, bundle explorer / viewer, `sum verify --explain`, `sum tutorial` onboarding, shareable bundle URLs `/b/{hash}`, PWA-installable demo, `sum attest <url>` fetch mode. Each item names its dependency in [`docs/NEXT_SESSION_PLAYBOOK.md`](docs/NEXT_SESSION_PLAYBOOK.md).
 
 ---
 
@@ -215,7 +214,7 @@ If a number in this README disagrees with [`docs/PROOF_BOUNDARY.md`](docs/PROOF_
 
 1. Fork and branch.
 2. `make install && make test && make xruntime`.
-3. Read [`docs/NEXT_SESSION_PLAYBOOK.md`](docs/NEXT_SESSION_PLAYBOOK.md) for principles, stop-the-line triggers, and the Phase A → B → C → D ordering rule.
+3. Read [`docs/NEXT_SESSION_PLAYBOOK.md`](docs/NEXT_SESSION_PLAYBOOK.md) for principles, stop-the-line triggers, and the work-ordering rule.
 4. Open a PR. Every claim added to docs or commit messages must trace to a test, a measurement, or an explicit `designed, not proved` label.
 
 [`CONTRIBUTING.md`](CONTRIBUTING.md) has the test-gate matrix and the verification-gate runbook.
