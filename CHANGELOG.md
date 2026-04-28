@@ -4,6 +4,65 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Measured — §2.5 canonicalisation-replay receipt
+
+The §2.5 LLM round-trip drift attack ships its first measured
+receipt. A new offline runner
+(`scripts/bench/runners/canonicalization_replay.py`) replays the
+cached `bench_history.jsonl` per-doc data under four progressively
+more aggressive canonicalisation regimes — no new LLM cost, no
+nondeterminism — and writes a durable artifact at
+`fixtures/bench_receipts/s25_canonicalization_replay_2026-04-28.json`.
+
+Headline (`seed_v1`, 50 docs, both legs `gpt-4o-mini-2024-07-18`):
+
+| Regime | drift_pct (mean) | exact-match recall | docs full recall |
+|---|---:|---:|---:|
+| L0 baseline | 107.75 | 0.12 | 6 / 50 |
+| L1 predicate-only | **107.75** | **0.12** | 6 / 50 |
+| L2 + subject canonicalisation | 106.68 | 0.16 | 8 / 50 |
+| L3 aggressive (ceiling) | 106.36 | 0.18 | 9 / 50 |
+
+**The L1 row is the falsification.** The prior PROOF_BOUNDARY §2.5
+boundary hypothesised that "an entity-resolution pass + WordNet /
+lemma predicate normaliser would move the 0.12 exact-match recall
+upward without changing the generator." Predicate-only
+canonicalisation moves **zero** exact matches: the cached
+`missing_claims` for failed docs do not have a paraphrase pair in
+`extra_claims` whose only difference is predicate inflection. The
+dominant failure mode is **generator elaboration** — the LLM
+produces ~12 reconstructed axioms per source and elaborates
+*around* the source claim rather than paraphrasing it. There is
+nothing for predicate normalisation to canonicalise *to*.
+
+L2 recovers 2 docs (the `albert_einstein` ≈ `einstein`,
+`isaac_newton` ≈ `newton` cases). L3 recovers 1 more under
+aggressive object collapse. Maximum canonicalisation-only
+ceiling: **0.18 exact-match recall**, +0.06 absolute over
+baseline. Headline drift_pct moves only **1.4 points** because
+the formula is dominated by `|reconstructed| >> |source|`
+regardless of key alignment.
+
+Operational read: canonicalisation alone does not close the §2.5
+gap. The work to move the *generator* (constrained decoding to
+a pinned vocabulary, or a fidelity-objective fine-tune) is a
+future cycle, gated on this receipt as the reference baseline.
+The measurement was deliberately structured to falsify or support
+the prior boundary's hypothesis; it falsifies the cheapest one
+and constrains where further investment goes.
+
+`docs/PROOF_BOUNDARY.md` §2.5 boundary rewritten with the L0–L3
+table. `README.md` "What does NOT yet work" subsection updated
+with the same data. The receipt schema is
+`sum.s25_canonicalization_replay.v1`; future generator-side
+interventions ship under sibling schemas (e.g.
+`sum.s25_constrained_decoding.v1`) and compare against this
+baseline.
+
+Reproducible offline:
+`python -m scripts.bench.runners.canonicalization_replay --out /tmp/replay.json`
+— no API key needed.
+
 ### Consolidated — `docs/` tree reduced from 25 active docs to 17 + index
 
 Newcomer-recommendation #3 from the Operator-Hard fresh-eyes
