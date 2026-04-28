@@ -1,0 +1,3852 @@
+{
+  "schema_family": "sum.s25_generator_side.v1",
+  "issued_at": "2026-04-28T22:12:44Z",
+  "corpus": "seed_v2.json",
+  "n_docs": 20,
+  "model": "gpt-4o-mini-2024-07-18",
+  "dry_run": false,
+  "baseline_reference": {
+    "receipt": "fixtures/bench_receipts/s25_canonicalization_replay_2026-04-28.json",
+    "L0_drift_mean": 107.75,
+    "L0_recall_mean": 0.12,
+    "L0_full_recall": "6/50"
+  },
+  "ablations": [
+    {
+      "schema": "sum.s25_canonical_first_generator.v1",
+      "ablation": "canonical_first",
+      "description": "Intervention A: canonical-first generator prompt; baseline extractor",
+      "model": "gpt-4o-mini-2024-07-18",
+      "aggregate": {
+        "n_docs": 20,
+        "drift_pct_mean": 98.9167,
+        "drift_pct_median": 89.4445,
+        "exact_match_recall_mean": 0.575,
+        "exact_match_recall_p10": 0.0,
+        "n_docs_full_recall": 11,
+        "fraction_full_recall": 0.55
+      },
+      "per_doc": [
+        {
+          "doc_id": "doc_001",
+          "source_axioms": [
+            [
+              "newton",
+              "wrote",
+              "principia"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "newton",
+              "wrote",
+              "principia"
+            ],
+            [
+              "principia",
+              "is_formally_known_as",
+              "philosophi\u00e6 naturalis principia mathematica"
+            ],
+            [
+              "principia",
+              "was_published_in",
+              "1687"
+            ],
+            [
+              "principia",
+              "laid_foundations_for",
+              "classical mechanics"
+            ],
+            [
+              "newton",
+              "introduced",
+              "laws of motion"
+            ],
+            [
+              "newton",
+              "introduced",
+              "law of universal gravitation"
+            ],
+            [
+              "laws of motion",
+              "revolutionized",
+              "understanding of the physical universe"
+            ],
+            [
+              "principia",
+              "remains",
+              "cornerstone of scientific literature"
+            ],
+            [
+              "principia",
+              "is_text_in",
+              "history of science"
+            ]
+          ],
+          "narrative_excerpt": "The newton wrote principia.  \nThis seminal work, formally known as \"Philosophi\u00e6 Naturalis Principia Mathematica,\" was published in 1687 and laid the foundations for classical mechanics. In it, Newton ",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 88.8889,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 9,
+          "missing": [],
+          "extra": [
+            [
+              "laws of motion",
+              "revolutionized",
+              "understanding of the physical universe"
+            ],
+            [
+              "newton",
+              "introduced",
+              "law of universal gravitation"
+            ],
+            [
+              "newton",
+              "introduced",
+              "laws of motion"
+            ],
+            [
+              "principia",
+              "is_formally_known_as",
+              "philosophi\u00e6 naturalis principia mathematica"
+            ],
+            [
+              "principia",
+              "is_text_in",
+              "history of science"
+            ],
+            [
+              "principia",
+              "laid_foundations_for",
+              "classical mechanics"
+            ],
+            [
+              "principia",
+              "remains",
+              "cornerstone of scientific literature"
+            ],
+            [
+              "principia",
+              "was_published_in",
+              "1687"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_002",
+          "source_axioms": [
+            [
+              "moon",
+              "orbits",
+              "earth"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "moon",
+              "orbits",
+              "earth"
+            ],
+            [
+              "moon",
+              "is_a",
+              "natural satellite"
+            ],
+            [
+              "moon",
+              "follows",
+              "elliptical path around planet"
+            ],
+            [
+              "moon",
+              "influences",
+              "tides"
+            ],
+            [
+              "moon",
+              "influences",
+              "lunar phases"
+            ],
+            [
+              "orbit",
+              "is",
+              "key factor in astronomical studies"
+            ],
+            [
+              "orbit",
+              "is",
+              "key factor in cultural significance of moon"
+            ],
+            [
+              "relationship between moon and earth",
+              "is",
+              "fundamental aspect of solar system"
+            ]
+          ],
+          "narrative_excerpt": "The moon orbits earth. \n\nThis relationship between the moon and the earth is a fundamental aspect of our solar system. The moon, a natural satellite, follows an elliptical path around our planet, infl",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 87.5,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 8,
+          "missing": [],
+          "extra": [
+            [
+              "moon",
+              "follows",
+              "elliptical path around planet"
+            ],
+            [
+              "moon",
+              "influences",
+              "lunar phases"
+            ],
+            [
+              "moon",
+              "influences",
+              "tides"
+            ],
+            [
+              "moon",
+              "is_a",
+              "natural satellite"
+            ],
+            [
+              "orbit",
+              "is",
+              "key factor in astronomical studies"
+            ],
+            [
+              "orbit",
+              "is",
+              "key factor in cultural significance of moon"
+            ],
+            [
+              "relationship between moon and earth",
+              "is",
+              "fundamental aspect of solar system"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_003",
+          "source_axioms": [
+            [
+              "dolphins",
+              "are",
+              "mammals"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "dolphins",
+              "are",
+              "mammals"
+            ],
+            [
+              "dolphins",
+              "belong_to_class",
+              "mammals"
+            ],
+            [
+              "dolphins",
+              "share_characteristics_with",
+              "land mammals"
+            ],
+            [
+              "dolphins",
+              "breathe_air_through",
+              "lungs"
+            ],
+            [
+              "dolphins",
+              "are",
+              "warm-blooded"
+            ]
+          ],
+          "narrative_excerpt": "The dolphins are mammals.  \n\nDolphins, often recognized for their intelligence and playful behavior, belong to the class of mammals, distinguishing them from other marine creatures such as fish. This ",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 80.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 5,
+          "missing": [],
+          "extra": [
+            [
+              "dolphins",
+              "are",
+              "warm-blooded"
+            ],
+            [
+              "dolphins",
+              "belong_to_class",
+              "mammals"
+            ],
+            [
+              "dolphins",
+              "breathe_air_through",
+              "lungs"
+            ],
+            [
+              "dolphins",
+              "share_characteristics_with",
+              "land mammals"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_004",
+          "source_axioms": [
+            [
+              "marie curie",
+              "won_nobel_prizes",
+              "true."
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "marie_curie",
+              "won_nobel_prizes",
+              "true"
+            ],
+            [
+              "marie_curie",
+              "made_accomplishments_in",
+              "science"
+            ],
+            [
+              "marie_curie",
+              "worked_on",
+              "radioactivity"
+            ],
+            [
+              "marie_curie",
+              "laid_foundations_for",
+              "significant_advancements"
+            ],
+            [
+              "nobel_prizes",
+              "highlight",
+              "marie_curie's_exceptional_contributions"
+            ],
+            [
+              "marie_curie",
+              "is_a_pioneering_figure_in",
+              "male_dominated_field"
+            ],
+            [
+              "nobel_committee",
+              "recognized",
+              "marie_curie"
+            ],
+            [
+              "marie_curie's_research",
+              "influenced",
+              "subsequent_discoveries"
+            ],
+            [
+              "marie_curie's_research",
+              "influenced",
+              "innovations"
+            ]
+          ],
+          "narrative_excerpt": "The marie curie won_nobel_prizes true. \n\nMarie Curie's accomplishments are monumental in the fields of science, particularly in radioactivity, where her groundbreaking work laid the foundations for si",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 111.1111,
+          "exact_match_recall": 0.0,
+          "matched": 0,
+          "n_source": 1,
+          "n_reconstructed": 9,
+          "missing": [
+            [
+              "marie curie",
+              "won_nobel_prizes",
+              "true."
+            ]
+          ],
+          "extra": [
+            [
+              "marie_curie",
+              "is_a_pioneering_figure_in",
+              "male_dominated_field"
+            ],
+            [
+              "marie_curie",
+              "laid_foundations_for",
+              "significant_advancements"
+            ],
+            [
+              "marie_curie",
+              "made_accomplishments_in",
+              "science"
+            ],
+            [
+              "marie_curie",
+              "won_nobel_prizes",
+              "true"
+            ],
+            [
+              "marie_curie",
+              "worked_on",
+              "radioactivity"
+            ],
+            [
+              "marie_curie's_research",
+              "influenced",
+              "innovations"
+            ],
+            [
+              "marie_curie's_research",
+              "influenced",
+              "subsequent_discoveries"
+            ],
+            [
+              "nobel_committee",
+              "recognized",
+              "marie_curie"
+            ],
+            [
+              "nobel_prizes",
+              "highlight",
+              "marie_curie's_exceptional_contributions"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_005",
+          "source_axioms": [
+            [
+              "the_sun",
+              "emits_light",
+              "light."
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "the_sun",
+              "emits_light",
+              "light"
+            ],
+            [
+              "the_sun",
+              "is",
+              "primary source of energy for our solar system"
+            ],
+            [
+              "nuclear fusion",
+              "occurs_in",
+              "its core"
+            ],
+            [
+              "the_sun",
+              "emits_light",
+              "that reaches earth and sustains life"
+            ],
+            [
+              "this light",
+              "plays_role_in",
+              "photosynthesis"
+            ],
+            [
+              "this light",
+              "influences",
+              "weather patterns"
+            ],
+            [
+              "this light",
+              "defines",
+              "the cycle of day and night"
+            ]
+          ],
+          "narrative_excerpt": "The the_sun emits_light light. \n\nThe sun, a massive ball of hot plasma, is the primary source of energy for our solar system. Through the process of nuclear fusion occurring in its core, it emits ligh",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 114.2857,
+          "exact_match_recall": 0.0,
+          "matched": 0,
+          "n_source": 1,
+          "n_reconstructed": 7,
+          "missing": [
+            [
+              "the_sun",
+              "emits_light",
+              "light."
+            ]
+          ],
+          "extra": [
+            [
+              "nuclear fusion",
+              "occurs_in",
+              "its core"
+            ],
+            [
+              "the_sun",
+              "emits_light",
+              "light"
+            ],
+            [
+              "the_sun",
+              "emits_light",
+              "that reaches earth and sustains life"
+            ],
+            [
+              "the_sun",
+              "is",
+              "primary source of energy for our solar system"
+            ],
+            [
+              "this light",
+              "defines",
+              "the cycle of day and night"
+            ],
+            [
+              "this light",
+              "influences",
+              "weather patterns"
+            ],
+            [
+              "this light",
+              "plays_role_in",
+              "photosynthesis"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_006",
+          "source_axioms": [
+            [
+              "alice",
+              "loves",
+              "music."
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "alice",
+              "loves",
+              "music"
+            ],
+            [
+              "music",
+              "has_impact_on",
+              "many people's lives"
+            ],
+            [
+              "alice",
+              "uses_music_as",
+              "significant source of joy and inspiration"
+            ],
+            [
+              "alice",
+              "attends",
+              "live performances"
+            ],
+            [
+              "alice",
+              "enjoys",
+              "her favorite songs at home"
+            ],
+            [
+              "her passion for music",
+              "enriches",
+              "her daily experiences"
+            ]
+          ],
+          "narrative_excerpt": "The alice loves music.  \nMusic has a profound impact on many people's lives, and for Alice, it serves as a significant source of joy and inspiration. Whether she is attending live performances or enjo",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 116.6667,
+          "exact_match_recall": 0.0,
+          "matched": 0,
+          "n_source": 1,
+          "n_reconstructed": 6,
+          "missing": [
+            [
+              "alice",
+              "loves",
+              "music."
+            ]
+          ],
+          "extra": [
+            [
+              "alice",
+              "attends",
+              "live performances"
+            ],
+            [
+              "alice",
+              "enjoys",
+              "her favorite songs at home"
+            ],
+            [
+              "alice",
+              "loves",
+              "music"
+            ],
+            [
+              "alice",
+              "uses_music_as",
+              "significant source of joy and inspiration"
+            ],
+            [
+              "her passion for music",
+              "enriches",
+              "her daily experiences"
+            ],
+            [
+              "music",
+              "has_impact_on",
+              "many people's lives"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_007",
+          "source_axioms": [
+            [
+              "hamlet",
+              "was_written_by",
+              "shakespeare"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "hamlet",
+              "was_written_by",
+              "shakespeare"
+            ],
+            [
+              "hamlet",
+              "is_considered_one_of",
+              "the greatest works in the english language"
+            ],
+            [
+              "hamlet",
+              "showcases",
+              "shakespeare's profound understanding of human nature"
+            ],
+            [
+              "hamlet",
+              "grapples_with",
+              "moral dilemmas"
+            ],
+            [
+              "hamlet",
+              "grapples_with",
+              "societal expectations"
+            ],
+            [
+              "hamlet",
+              "is_a",
+              "timeless piece"
+            ],
+            [
+              "hamlet",
+              "resonates_with",
+              "audiences even today"
+            ]
+          ],
+          "narrative_excerpt": "The hamlet was_written_by shakespeare.  \nThis iconic play, often considered one of the greatest works in the English language, showcases Shakespeare's profound understanding of human nature and comple",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 85.7143,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 7,
+          "missing": [],
+          "extra": [
+            [
+              "hamlet",
+              "grapples_with",
+              "moral dilemmas"
+            ],
+            [
+              "hamlet",
+              "grapples_with",
+              "societal expectations"
+            ],
+            [
+              "hamlet",
+              "is_a",
+              "timeless piece"
+            ],
+            [
+              "hamlet",
+              "is_considered_one_of",
+              "the greatest works in the english language"
+            ],
+            [
+              "hamlet",
+              "resonates_with",
+              "audiences even today"
+            ],
+            [
+              "hamlet",
+              "showcases",
+              "shakespeare's profound understanding of human nature"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_008",
+          "source_axioms": [
+            [
+              "rome",
+              "was_founded_by",
+              "romulus"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "rome",
+              "was_founded_by",
+              "romulus"
+            ],
+            [
+              "founding_of_rome",
+              "is_attributed_to",
+              "romulus"
+            ],
+            [
+              "romulus",
+              "is_viewed_as",
+              "heroic_personage"
+            ],
+            [
+              "romulus",
+              "established",
+              "city"
+            ],
+            [
+              "founding_of_rome",
+              "marks",
+              "beginnings_of_civilizations"
+            ],
+            [
+              "romulus",
+              "embeds_name_in",
+              "annals_of_roman_heritage"
+            ],
+            [
+              "romulus",
+              "is_a_central_figure_in",
+              "cultural_identity_of_ancient_rome"
+            ]
+          ],
+          "narrative_excerpt": "The rome was_founded_by romulus. \n\nAccording to ancient legends, the founding of Rome is attributed to Romulus, a figure steeped in myth and lore. Romulus, often viewed as a heroic personage, is said ",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 85.7143,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 7,
+          "missing": [],
+          "extra": [
+            [
+              "founding_of_rome",
+              "is_attributed_to",
+              "romulus"
+            ],
+            [
+              "founding_of_rome",
+              "marks",
+              "beginnings_of_civilizations"
+            ],
+            [
+              "romulus",
+              "embeds_name_in",
+              "annals_of_roman_heritage"
+            ],
+            [
+              "romulus",
+              "established",
+              "city"
+            ],
+            [
+              "romulus",
+              "is_a_central_figure_in",
+              "cultural_identity_of_ancient_rome"
+            ],
+            [
+              "romulus",
+              "is_viewed_as",
+              "heroic_personage"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_009",
+          "source_axioms": [
+            [
+              "the_book",
+              "was_read_by",
+              "many_students"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "book",
+              "was_read_by",
+              "many_students},{"
+            ],
+            [
+              "book",
+              "gained_popularity_among",
+              "student_population"
+            ],
+            [
+              "book",
+              "suggests_relevance_or_engaging_content",
+              "null"
+            ],
+            [
+              "collective_reading_experience",
+              "may_have_fostered",
+              "discussions_and_insights"
+            ],
+            [
+              "discussions_and_insights",
+              "enriched_understanding_and_enjoyment_of",
+              "material"
+            ]
+          ],
+          "narrative_excerpt": "The book was read by many students. \n\nThis indicates that the book gained popularity among the student population, suggesting its relevance or engaging content. The collective reading experience may h",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 120.0,
+          "exact_match_recall": 0.0,
+          "matched": 0,
+          "n_source": 1,
+          "n_reconstructed": 5,
+          "missing": [
+            [
+              "the_book",
+              "was_read_by",
+              "many_students"
+            ]
+          ],
+          "extra": [
+            [
+              "book",
+              "gained_popularity_among",
+              "student_population"
+            ],
+            [
+              "book",
+              "suggests_relevance_or_engaging_content",
+              "null"
+            ],
+            [
+              "book",
+              "was_read_by",
+              "many_students},{"
+            ],
+            [
+              "collective_reading_experience",
+              "may_have_fostered",
+              "discussions_and_insights"
+            ],
+            [
+              "discussions_and_insights",
+              "enriched_understanding_and_enjoyment_of",
+              "material"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_010",
+          "source_axioms": [
+            [
+              "einstein",
+              "proposed",
+              "relativity"
+            ],
+            [
+              "einstein",
+              "won",
+              "the nobel prize"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "einstein",
+              "proposed",
+              "theory of relativity"
+            ],
+            [
+              "einstein",
+              "won",
+              "nobel prize"
+            ],
+            [
+              "einstein",
+              "changed",
+              "understanding of space, time, and gravity"
+            ],
+            [
+              "einstein",
+              "received",
+              "nobel prize for contributions to physics"
+            ],
+            [
+              "theory of relativity",
+              "impacted",
+              "contemporary science and technology"
+            ],
+            [
+              "einstein",
+              "received",
+              "nobel prize"
+            ],
+            [
+              "work",
+              "highlighted",
+              "profound impact on science and technology"
+            ],
+            [
+              "einstein",
+              "solidified",
+              "status as a leading scientist"
+            ]
+          ],
+          "narrative_excerpt": "The einstein proposed relativity.  \nThe einstein won the nobel prize.  \n\nAlbert Einstein, a prominent physicist, proposed the theory of relativity, which fundamentally changed our understanding of spa",
+          "vocabulary_summary": {
+            "n_source_axioms": 2,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 2,
+            "n_unique_objects": 2,
+            "n_predicates_with_canonical_padding": 88
+          },
+          "drift_pct": 125.0,
+          "exact_match_recall": 0.0,
+          "matched": 0,
+          "n_source": 2,
+          "n_reconstructed": 8,
+          "missing": [
+            [
+              "einstein",
+              "proposed",
+              "relativity"
+            ],
+            [
+              "einstein",
+              "won",
+              "the nobel prize"
+            ]
+          ],
+          "extra": [
+            [
+              "einstein",
+              "changed",
+              "understanding of space, time, and gravity"
+            ],
+            [
+              "einstein",
+              "proposed",
+              "theory of relativity"
+            ],
+            [
+              "einstein",
+              "received",
+              "nobel prize"
+            ],
+            [
+              "einstein",
+              "received",
+              "nobel prize for contributions to physics"
+            ],
+            [
+              "einstein",
+              "solidified",
+              "status as a leading scientist"
+            ],
+            [
+              "einstein",
+              "won",
+              "nobel prize"
+            ],
+            [
+              "theory of relativity",
+              "impacted",
+              "contemporary science and technology"
+            ],
+            [
+              "work",
+              "highlighted",
+              "profound impact on science and technology"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_011",
+          "source_axioms": [
+            [
+              "darwin",
+              "studied",
+              "finches"
+            ],
+            [
+              "darwin",
+              "developed",
+              "evolution theory"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "darwin",
+              "studied",
+              "finches"
+            ],
+            [
+              "darwin",
+              "developed",
+              "evolution theory"
+            ],
+            [
+              "charles darwin",
+              "is_known_for",
+              "groundbreaking work in the field of biology"
+            ],
+            [
+              "darwin",
+              "made_observations",
+              "gal\u00e1pagos islands"
+            ],
+            [
+              "observations",
+              "led_to",
+              "recognize variations among finches"
+            ],
+            [
+              "finches",
+              "were_adapted_to",
+              "different environments on the islands"
+            ],
+            [
+              "darwin",
+              "recognized",
+              "variations among finches"
+            ],
+            [
+              "theory",
+              "emphasizes",
+              "mechanisms by which species adapt and evolve over time"
+            ],
+            [
+              "theory",
+              "changed",
+              "understanding of diversity of life on earth"
+            ],
+            [
+              "theory",
+              "shaped",
+              "course of biological study for generations"
+            ]
+          ],
+          "narrative_excerpt": "The darwin studied finches.  \nThe darwin developed evolution theory.  \n\nCharles Darwin, an English naturalist, is well known for his groundbreaking work in the field of biology. The darwin studied fin",
+          "vocabulary_summary": {
+            "n_source_axioms": 2,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 2,
+            "n_unique_objects": 2,
+            "n_predicates_with_canonical_padding": 88
+          },
+          "drift_pct": 80.0,
+          "exact_match_recall": 1.0,
+          "matched": 2,
+          "n_source": 2,
+          "n_reconstructed": 10,
+          "missing": [],
+          "extra": [
+            [
+              "charles darwin",
+              "is_known_for",
+              "groundbreaking work in the field of biology"
+            ],
+            [
+              "darwin",
+              "made_observations",
+              "gal\u00e1pagos islands"
+            ],
+            [
+              "darwin",
+              "recognized",
+              "variations among finches"
+            ],
+            [
+              "finches",
+              "were_adapted_to",
+              "different environments on the islands"
+            ],
+            [
+              "observations",
+              "led_to",
+              "recognize variations among finches"
+            ],
+            [
+              "theory",
+              "changed",
+              "understanding of diversity of life on earth"
+            ],
+            [
+              "theory",
+              "emphasizes",
+              "mechanisms by which species adapt and evolve over time"
+            ],
+            [
+              "theory",
+              "shaped",
+              "course of biological study for generations"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_012",
+          "source_axioms": [
+            [
+              "newton",
+              "wrote",
+              "principia"
+            ],
+            [
+              "newton",
+              "described",
+              "gravity"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "the newton",
+              "wrote",
+              "principia"
+            ],
+            [
+              "the newton",
+              "described",
+              "gravity"
+            ],
+            [
+              "isaac newton",
+              "influenced",
+              "understanding of the physical world"
+            ],
+            [
+              "the newton",
+              "laid",
+              "foundations of classical mechanics"
+            ],
+            [
+              "the newton",
+              "introduced",
+              "laws of motion and universal gravitation"
+            ],
+            [
+              "the newton",
+              "explaining",
+              "the force that governs the motion of celestial bodies and objects on earth"
+            ],
+            [
+              "newton's ideas",
+              "continue to be",
+              "fundamental to physics today"
+            ],
+            [
+              "his work",
+              "illustrates",
+              "the lasting impact of his work"
+            ]
+          ],
+          "narrative_excerpt": "The newton wrote principia.  \nThe newton described gravity.  \n\nIsaac Newton, a towering figure in the history of science, profoundly influenced our understanding of the physical world. The newton wrot",
+          "vocabulary_summary": {
+            "n_source_axioms": 2,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 2,
+            "n_unique_objects": 2,
+            "n_predicates_with_canonical_padding": 88
+          },
+          "drift_pct": 125.0,
+          "exact_match_recall": 0.0,
+          "matched": 0,
+          "n_source": 2,
+          "n_reconstructed": 8,
+          "missing": [
+            [
+              "newton",
+              "described",
+              "gravity"
+            ],
+            [
+              "newton",
+              "wrote",
+              "principia"
+            ]
+          ],
+          "extra": [
+            [
+              "his work",
+              "illustrates",
+              "the lasting impact of his work"
+            ],
+            [
+              "isaac newton",
+              "influenced",
+              "understanding of the physical world"
+            ],
+            [
+              "newton's ideas",
+              "continue to be",
+              "fundamental to physics today"
+            ],
+            [
+              "the newton",
+              "described",
+              "gravity"
+            ],
+            [
+              "the newton",
+              "explaining",
+              "the force that governs the motion of celestial bodies and objects on earth"
+            ],
+            [
+              "the newton",
+              "introduced",
+              "laws of motion and universal gravitation"
+            ],
+            [
+              "the newton",
+              "laid",
+              "foundations of classical mechanics"
+            ],
+            [
+              "the newton",
+              "wrote",
+              "principia"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_013",
+          "source_axioms": [
+            [
+              "shakespeare",
+              "wrote",
+              "hamlet"
+            ],
+            [
+              "shakespeare",
+              "wrote",
+              "macbeth"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "william shakespeare",
+              "wrote",
+              "hamlet"
+            ],
+            [
+              "william shakespeare",
+              "wrote",
+              "macbeth"
+            ],
+            [
+              "william shakespeare",
+              "is_renowned_for",
+              "complex characters"
+            ],
+            [
+              "william shakespeare",
+              "is_renowned_for",
+              "intricate plots"
+            ],
+            [
+              "hamlet",
+              "delves_into",
+              "themes of revenge"
+            ],
+            [
+              "hamlet",
+              "delves_into",
+              "madness"
+            ],
+            [
+              "hamlet",
+              "delves_into",
+              "moral corruption"
+            ],
+            [
+              "macbeth",
+              "is_a_tale_of",
+              "ambition"
+            ],
+            [
+              "macbeth",
+              "is_a_tale_of",
+              "destructive consequences"
+            ],
+            [
+              "shakespeare",
+              "left",
+              "indelible mark on the world of theater and literature"
+            ]
+          ],
+          "narrative_excerpt": "The shakespeare wrote hamlet.  \nThe shakespeare wrote macbeth.  \n\nWilliam Shakespeare, one of the most celebrated playwrights in the history of English literature, is renowned for his complex characte",
+          "vocabulary_summary": {
+            "n_source_axioms": 2,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 2,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 120.0,
+          "exact_match_recall": 0.0,
+          "matched": 0,
+          "n_source": 2,
+          "n_reconstructed": 10,
+          "missing": [
+            [
+              "shakespeare",
+              "wrote",
+              "hamlet"
+            ],
+            [
+              "shakespeare",
+              "wrote",
+              "macbeth"
+            ]
+          ],
+          "extra": [
+            [
+              "hamlet",
+              "delves_into",
+              "madness"
+            ],
+            [
+              "hamlet",
+              "delves_into",
+              "moral corruption"
+            ],
+            [
+              "hamlet",
+              "delves_into",
+              "themes of revenge"
+            ],
+            [
+              "macbeth",
+              "is_a_tale_of",
+              "ambition"
+            ],
+            [
+              "macbeth",
+              "is_a_tale_of",
+              "destructive consequences"
+            ],
+            [
+              "shakespeare",
+              "left",
+              "indelible mark on the world of theater and literature"
+            ],
+            [
+              "william shakespeare",
+              "is_renowned_for",
+              "complex characters"
+            ],
+            [
+              "william shakespeare",
+              "is_renowned_for",
+              "intricate plots"
+            ],
+            [
+              "william shakespeare",
+              "wrote",
+              "hamlet"
+            ],
+            [
+              "william shakespeare",
+              "wrote",
+              "macbeth"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_014",
+          "source_axioms": [
+            [
+              "cats",
+              "are",
+              "mammals"
+            ],
+            [
+              "dogs",
+              "are",
+              "mammals"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "cats",
+              "are",
+              "mammals"
+            ],
+            [
+              "dogs",
+              "are",
+              "mammals"
+            ],
+            [
+              "mammals",
+              "are_a_class_of",
+              "animals"
+            ],
+            [
+              "cats",
+              "are_representatives_of",
+              "mammals"
+            ],
+            [
+              "dogs",
+              "are_representatives_of",
+              "mammals"
+            ],
+            [
+              "classification",
+              "signifies",
+              "key_characteristics"
+            ],
+            [
+              "mammals",
+              "are",
+              "warm-blooded"
+            ],
+            [
+              "mammals",
+              "have",
+              "fur"
+            ],
+            [
+              "mammals",
+              "have",
+              "hair"
+            ],
+            [
+              "fur_or_hair",
+              "play_roles_in",
+              "adaptation"
+            ],
+            [
+              "adaptation",
+              "is_to",
+              "different_environments"
+            ],
+            [
+              "mammals",
+              "are",
+              "diverse"
+            ]
+          ],
+          "narrative_excerpt": "The cats are mammals.  \nThe dogs are mammals.  \n\nMammals are a diverse class of animals, which includes various species. Among them, the cats and dogs are prominent representatives. Their classificati",
+          "vocabulary_summary": {
+            "n_source_axioms": 2,
+            "n_unique_subjects": 2,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 83.3333,
+          "exact_match_recall": 1.0,
+          "matched": 2,
+          "n_source": 2,
+          "n_reconstructed": 12,
+          "missing": [],
+          "extra": [
+            [
+              "adaptation",
+              "is_to",
+              "different_environments"
+            ],
+            [
+              "cats",
+              "are_representatives_of",
+              "mammals"
+            ],
+            [
+              "classification",
+              "signifies",
+              "key_characteristics"
+            ],
+            [
+              "dogs",
+              "are_representatives_of",
+              "mammals"
+            ],
+            [
+              "fur_or_hair",
+              "play_roles_in",
+              "adaptation"
+            ],
+            [
+              "mammals",
+              "are",
+              "diverse"
+            ],
+            [
+              "mammals",
+              "are",
+              "warm-blooded"
+            ],
+            [
+              "mammals",
+              "are_a_class_of",
+              "animals"
+            ],
+            [
+              "mammals",
+              "have",
+              "fur"
+            ],
+            [
+              "mammals",
+              "have",
+              "hair"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_015",
+          "source_axioms": [
+            [
+              "alice",
+              "visited",
+              "paris},{"
+            ],
+            [
+              "bob",
+              "visited",
+              "paris"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "alice",
+              "visited",
+              "paris"
+            ],
+            [
+              "bob",
+              "visited",
+              "paris"
+            ],
+            [
+              "paris",
+              "is_renowned_for",
+              "rich history and cultural landmarks"
+            ],
+            [
+              "alice",
+              "explored",
+              "paris"
+            ],
+            [
+              "bob",
+              "explored",
+              "paris"
+            ],
+            [
+              "alice",
+              "experienced",
+              "iconic sights"
+            ],
+            [
+              "bob",
+              "experienced",
+              "iconic sights"
+            ],
+            [
+              "iconic sights",
+              "include",
+              "eiffel tower"
+            ],
+            [
+              "iconic sights",
+              "include",
+              "louvre museum"
+            ],
+            [
+              "paris",
+              "has",
+              "unique atmosphere"
+            ],
+            [
+              "paris",
+              "is",
+              "vibrant locale"
+            ]
+          ],
+          "narrative_excerpt": "The alice visited paris.  \nThe bob visited paris.  \n\nBoth Alice and Bob took the opportunity to explore the enchanting city of Paris, renowned for its rich history and cultural landmarks. Their visits",
+          "vocabulary_summary": {
+            "n_source_axioms": 2,
+            "n_unique_subjects": 2,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 2,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 100.0,
+          "exact_match_recall": 0.5,
+          "matched": 1,
+          "n_source": 2,
+          "n_reconstructed": 11,
+          "missing": [
+            [
+              "alice",
+              "visited",
+              "paris},{"
+            ]
+          ],
+          "extra": [
+            [
+              "alice",
+              "experienced",
+              "iconic sights"
+            ],
+            [
+              "alice",
+              "explored",
+              "paris"
+            ],
+            [
+              "alice",
+              "visited",
+              "paris"
+            ],
+            [
+              "bob",
+              "experienced",
+              "iconic sights"
+            ],
+            [
+              "bob",
+              "explored",
+              "paris"
+            ],
+            [
+              "iconic sights",
+              "include",
+              "eiffel tower"
+            ],
+            [
+              "iconic sights",
+              "include",
+              "louvre museum"
+            ],
+            [
+              "paris",
+              "has",
+              "unique atmosphere"
+            ],
+            [
+              "paris",
+              "is",
+              "vibrant locale"
+            ],
+            [
+              "paris",
+              "is_renowned_for",
+              "rich history and cultural landmarks"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_016",
+          "source_axioms": [
+            [
+              "water",
+              "does_not_freeze_above",
+              "zero_degrees"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "water",
+              "does_not_freeze_above",
+              "zero_degrees"
+            ],
+            [
+              "water",
+              "remains_in_liquid_state_above",
+              "freezing_point_of_zero_degrees_celsius"
+            ],
+            [
+              "certain_conditions",
+              "might_facilitate_freezing",
+              "pressure_changes"
+            ],
+            [
+              "understanding_this_phenomenon",
+              "is_crucial_for",
+              "applications_ranging_from_weather_forecasting_to_climate_change_modeling"
+            ],
+            [
+              "water",
+              "serves_as",
+              "key_foundation_for_various_scientific_principles"
+            ],
+            [
+              "temperature_changes",
+              "affect",
+              "state_of_water"
+            ],
+            [
+              "climate_studies",
+              "rely_on",
+              "properties_of_water"
+            ],
+            [
+              "zero_degrees_celsius",
+              "is_freezing_point_of",
+              "water"
+            ]
+          ],
+          "narrative_excerpt": "The water does_not_freeze_above zero_degrees. This fact highlights an important property of water, which serves as a key foundation for various scientific principles, including climate and environment",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 87.5,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 8,
+          "missing": [],
+          "extra": [
+            [
+              "certain_conditions",
+              "might_facilitate_freezing",
+              "pressure_changes"
+            ],
+            [
+              "climate_studies",
+              "rely_on",
+              "properties_of_water"
+            ],
+            [
+              "temperature_changes",
+              "affect",
+              "state_of_water"
+            ],
+            [
+              "understanding_this_phenomenon",
+              "is_crucial_for",
+              "applications_ranging_from_weather_forecasting_to_climate_change_modeling"
+            ],
+            [
+              "water",
+              "remains_in_liquid_state_above",
+              "freezing_point_of_zero_degrees_celsius"
+            ],
+            [
+              "water",
+              "serves_as",
+              "key_foundation_for_various_scientific_principles"
+            ],
+            [
+              "zero_degrees_celsius",
+              "is_freezing_point_of",
+              "water"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_017",
+          "source_axioms": [
+            [
+              "diamonds",
+              "cannot_cut_through",
+              "steel"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "diamonds",
+              "cannot_cut_through",
+              "steel"
+            ],
+            [
+              "diamonds",
+              "are_touted_for",
+              "hardness"
+            ],
+            [
+              "diamonds",
+              "are_used_in",
+              "cutting tools"
+            ],
+            [
+              "hardness of the diamond",
+              "allows_it_to",
+              "scratch other substances"
+            ],
+            [
+              "cutting through steel",
+              "depends_on",
+              "structure and strength of the steel"
+            ]
+          ],
+          "narrative_excerpt": "The diamonds cannot_cut_through steel. \n\nThis fact underscores the unique properties of both diamonds and steel. While diamonds are often touted for their hardness and are commonly used in cutting too",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 80.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 5,
+          "missing": [],
+          "extra": [
+            [
+              "cutting through steel",
+              "depends_on",
+              "structure and strength of the steel"
+            ],
+            [
+              "diamonds",
+              "are_touted_for",
+              "hardness"
+            ],
+            [
+              "diamonds",
+              "are_used_in",
+              "cutting tools"
+            ],
+            [
+              "hardness of the diamond",
+              "allows_it_to",
+              "scratch other substances"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_018",
+          "source_axioms": [
+            [
+              "dark matter",
+              "may_exist_in",
+              "galactic halos"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "dark_matter",
+              "may_exist_in",
+              "galactic_halos"
+            ],
+            [
+              "dark_matter",
+              "is_a_significant_aspect_of",
+              "modern_astrophysics"
+            ],
+            [
+              "dark_matter",
+              "hypothesized_to_make_up",
+              "27% of the universe's total mass and energy"
+            ],
+            [
+              "dark_matter",
+              "plays_a_critical_role_in",
+              "the formation and structure of galaxies"
+            ],
+            [
+              "dark_matter",
+              "influences",
+              "gravitational dynamics and interactions"
+            ],
+            [
+              "study_of_dark_matter",
+              "is_essential_for",
+              "understanding composition of galaxies"
+            ],
+            [
+              "study_of_dark_matter",
+              "is_essential_for",
+              "understanding larger framework of the universe"
+            ]
+          ],
+          "narrative_excerpt": "The dark matter may_exist_in galactic halos. Dark matter is a significant aspect of modern astrophysics, hypothesized to make up around 27% of the universe's total mass and energy. Its presence in gal",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 114.2857,
+          "exact_match_recall": 0.0,
+          "matched": 0,
+          "n_source": 1,
+          "n_reconstructed": 7,
+          "missing": [
+            [
+              "dark matter",
+              "may_exist_in",
+              "galactic halos"
+            ]
+          ],
+          "extra": [
+            [
+              "dark_matter",
+              "hypothesized_to_make_up",
+              "27% of the universe's total mass and energy"
+            ],
+            [
+              "dark_matter",
+              "influences",
+              "gravitational dynamics and interactions"
+            ],
+            [
+              "dark_matter",
+              "is_a_significant_aspect_of",
+              "modern_astrophysics"
+            ],
+            [
+              "dark_matter",
+              "may_exist_in",
+              "galactic_halos"
+            ],
+            [
+              "dark_matter",
+              "plays_a_critical_role_in",
+              "the formation and structure of galaxies"
+            ],
+            [
+              "study_of_dark_matter",
+              "is_essential_for",
+              "understanding composition of galaxies"
+            ],
+            [
+              "study_of_dark_matter",
+              "is_essential_for",
+              "understanding larger framework of the universe"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_019",
+          "source_axioms": [
+            [
+              "gravity",
+              "attracts_objects_toward",
+              "earth"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "gravity",
+              "attracts_objects_toward",
+              "earth"
+            ],
+            [
+              "gravity",
+              "is_the_force_that_pulls",
+              "objects toward the center of the earth"
+            ],
+            [
+              "gravity",
+              "plays_a_critical_role_in",
+              "shaping our environment"
+            ],
+            [
+              "gravity",
+              "influences",
+              "everything from the trajectory of falling apples to the orbits of planets"
+            ],
+            [
+              "strength_of_gravity",
+              "varies_depends_on",
+              "mass and distance"
+            ],
+            [
+              "gravity",
+              "remains",
+              "a constant"
+            ]
+          ],
+          "narrative_excerpt": "The gravity attracts_objects_toward earth. \n\nGravity is the force that pulls objects toward the center of the Earth. This fundamental phenomenon plays a critical role in shaping our environment, influ",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 83.3333,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 6,
+          "missing": [],
+          "extra": [
+            [
+              "gravity",
+              "influences",
+              "everything from the trajectory of falling apples to the orbits of planets"
+            ],
+            [
+              "gravity",
+              "is_the_force_that_pulls",
+              "objects toward the center of the earth"
+            ],
+            [
+              "gravity",
+              "plays_a_critical_role_in",
+              "shaping our environment"
+            ],
+            [
+              "gravity",
+              "remains",
+              "a constant"
+            ],
+            [
+              "strength_of_gravity",
+              "varies_depends_on",
+              "mass and distance"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_020",
+          "source_axioms": [
+            [
+              "photosynthesis",
+              "converts_sunlight_into",
+              "energy"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "photosynthesis",
+              "converts_sunlight_into",
+              "energy"
+            ],
+            [
+              "photosynthesis",
+              "is_a",
+              "critical process"
+            ],
+            [
+              "sunlight",
+              "is_harnessed_by",
+              "photosynthesis"
+            ],
+            [
+              "carbon dioxide",
+              "is_transformed_into",
+              "glucose"
+            ],
+            [
+              "water",
+              "is_transformed_into",
+              "glucose"
+            ],
+            [
+              "photosynthesis",
+              "provides_energy_for",
+              "organisms"
+            ],
+            [
+              "photosynthesis",
+              "plays_a_role_in",
+              "producing oxygen"
+            ],
+            [
+              "oxygen",
+              "is_a_byproduct_of",
+              "photosynthesis"
+            ],
+            [
+              "photosynthesis",
+              "contributes_to",
+              "overall health of ecosystems"
+            ],
+            [
+              "photosynthesis",
+              "contributes_to",
+              "overall health of the atmosphere"
+            ]
+          ],
+          "narrative_excerpt": "The photosynthesis converts_sunlight_into energy.  \nPhotosynthesis is a critical process utilized by plants, algae, and some bacteria, where sunlight is harnessed to transform carbon dioxide and water",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 90.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 10,
+          "missing": [],
+          "extra": [
+            [
+              "carbon dioxide",
+              "is_transformed_into",
+              "glucose"
+            ],
+            [
+              "oxygen",
+              "is_a_byproduct_of",
+              "photosynthesis"
+            ],
+            [
+              "photosynthesis",
+              "contributes_to",
+              "overall health of ecosystems"
+            ],
+            [
+              "photosynthesis",
+              "contributes_to",
+              "overall health of the atmosphere"
+            ],
+            [
+              "photosynthesis",
+              "is_a",
+              "critical process"
+            ],
+            [
+              "photosynthesis",
+              "plays_a_role_in",
+              "producing oxygen"
+            ],
+            [
+              "photosynthesis",
+              "provides_energy_for",
+              "organisms"
+            ],
+            [
+              "sunlight",
+              "is_harnessed_by",
+              "photosynthesis"
+            ],
+            [
+              "water",
+              "is_transformed_into",
+              "glucose"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "schema": "sum.s25_constrained_extractor.v1",
+      "ablation": "constrained_extractor",
+      "description": "Intervention B: baseline generator; vocab-pinned extractor",
+      "model": "gpt-4o-mini-2024-07-18",
+      "aggregate": {
+        "n_docs": 20,
+        "drift_pct_mean": 52.0833,
+        "drift_pct_median": 25.0,
+        "exact_match_recall_mean": 0.825,
+        "exact_match_recall_p10": 0.0,
+        "n_docs_full_recall": 16,
+        "fraction_full_recall": 0.8
+      },
+      "per_doc": [
+        {
+          "doc_id": "doc_001",
+          "source_axioms": [
+            [
+              "newton",
+              "wrote",
+              "principia"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "newton",
+              "write",
+              "principia"
+            ]
+          ],
+          "narrative_excerpt": "In the realm of scientific literature, one of the most significant works is \"Philosophi\u00e6 Naturalis Principia Mathematica,\" commonly referred to as the Principia. Written by the renowned physicist and ",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 200.0,
+          "exact_match_recall": 0.0,
+          "matched": 0,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [
+            [
+              "newton",
+              "wrote",
+              "principia"
+            ]
+          ],
+          "extra": [
+            [
+              "newton",
+              "write",
+              "principia"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_002",
+          "source_axioms": [
+            [
+              "moon",
+              "orbits",
+              "earth"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "moon",
+              "orbits",
+              "earth"
+            ],
+            [
+              "moon",
+              "influence",
+              "earth"
+            ]
+          ],
+          "narrative_excerpt": "The moon, Earth's natural satellite, maintains a consistent orbit around our planet. This orbital relationship is a result of the gravitational forces acting between the Earth and the moon. The moon's",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 50.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 2,
+          "missing": [],
+          "extra": [
+            [
+              "moon",
+              "influence",
+              "earth"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_003",
+          "source_axioms": [
+            [
+              "dolphins",
+              "are",
+              "mammals"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "dolphins",
+              "are",
+              "mammals"
+            ]
+          ],
+          "narrative_excerpt": "Dolphins are fascinating marine creatures that belong to the class of mammals known as cetaceans. As mammals, dolphins share common characteristics with other members of this class, such as having war",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_004",
+          "source_axioms": [
+            [
+              "marie_curie",
+              "won_nobel_prizes",
+              "true"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "marie_curie",
+              "won_nobel_prizes",
+              "true"
+            ],
+            [
+              "marie_curie",
+              "is_a",
+              "true"
+            ]
+          ],
+          "narrative_excerpt": "Marie Curie, a pioneering scientist known for her groundbreaking work in radioactivity, made history by being awarded Nobel Prizes in two different scientific fields. Her first Nobel Prize came in 190",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 50.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 2,
+          "missing": [],
+          "extra": [
+            [
+              "marie_curie",
+              "is_a",
+              "true"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_005",
+          "source_axioms": [
+            [
+              "the_sun",
+              "emits_light",
+              "light."
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "the_sun",
+              "emits_light",
+              "light."
+            ]
+          ],
+          "narrative_excerpt": "The Sun, a colossal sphere of hot plasma located at the center of our solar system, plays a fundamental role in the sustenance of life on Earth. One of the primary functions of the Sun is its ability ",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_006",
+          "source_axioms": [
+            [
+              "alice",
+              "loves",
+              "music{"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "alice",
+              "loves",
+              "music{"
+            ],
+            [
+              "alice",
+              "influence",
+              "music{"
+            ],
+            [
+              "alice",
+              "grow",
+              "music{"
+            ],
+            [
+              "alice",
+              "get",
+              "music{"
+            ]
+          ],
+          "narrative_excerpt": "Alice has a deep passion for music that permeates various aspects of her life. From an early age, she found comfort and joy in different genres, whether it was through listening to her favorite songs ",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 75.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 4,
+          "missing": [],
+          "extra": [
+            [
+              "alice",
+              "get",
+              "music{"
+            ],
+            [
+              "alice",
+              "grow",
+              "music{"
+            ],
+            [
+              "alice",
+              "influence",
+              "music{"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_007",
+          "source_axioms": [
+            [
+              "hamlet",
+              "was_written_by",
+              "shakespeare"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "hamlet",
+              "was_written_by",
+              "shakespeare"
+            ]
+          ],
+          "narrative_excerpt": "\"Hamlet,\" one of the most significant works of English literature, was written by William Shakespeare. Created during the late 16th to early 17th century, the play explores themes of revenge, madness,",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_008",
+          "source_axioms": [
+            [
+              "rome",
+              "was_founded_by",
+              "romulus"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "rome",
+              "was_founded_by",
+              "romulus"
+            ]
+          ],
+          "narrative_excerpt": "Rome's founding is attributed to Romulus, a legendary figure in ancient history. According to tradition, Romulus established the city in 753 BC, marking the beginning of what would become one of the m",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_009",
+          "source_axioms": [
+            [
+              "the_book",
+              "was_read_by",
+              "many_students"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "the_book",
+              "was_read_by",
+              "many_students"
+            ]
+          ],
+          "narrative_excerpt": "The book has garnered significant attention and has been read by many students. Its wide readership among this demographic highlights its relevance and appeal, suggesting that it resonates with the in",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_010",
+          "source_axioms": [
+            [
+              "einstein",
+              "proposed",
+              "relativity"
+            ],
+            [
+              "einstein",
+              "won",
+              "nobel prize"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "einstein",
+              "proposed",
+              "relativity"
+            ],
+            [
+              "einstein",
+              "won",
+              "nobel prize"
+            ]
+          ],
+          "narrative_excerpt": "Albert Einstein, a prominent theoretical physicist, revolutionized the field of physics with his groundbreaking work on the theory of relativity. Proposed in the early 20th century, relativity fundame",
+          "vocabulary_summary": {
+            "n_source_axioms": 2,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 2,
+            "n_unique_objects": 2,
+            "n_predicates_with_canonical_padding": 88
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 2,
+          "n_source": 2,
+          "n_reconstructed": 2,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_011",
+          "source_axioms": [
+            [
+              "darwin",
+              "studied",
+              "finches"
+            ],
+            [
+              "darwin",
+              "developed",
+              "evolution theory"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "darwin",
+              "study",
+              "finches"
+            ],
+            [
+              "darwin",
+              "developed",
+              "evolution theory"
+            ],
+            [
+              "darwin",
+              "discover",
+              "evolution theory"
+            ],
+            [
+              "darwin",
+              "lead_to",
+              "evolution theory"
+            ],
+            [
+              "darwin",
+              "research",
+              "finches"
+            ]
+          ],
+          "narrative_excerpt": "Charles Darwin, a renowned naturalist and biologist, is most famously known for his groundbreaking work on the theory of evolution. Among the various species he studied during his voyage on the HMS Be",
+          "vocabulary_summary": {
+            "n_source_axioms": 2,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 2,
+            "n_unique_objects": 2,
+            "n_predicates_with_canonical_padding": 88
+          },
+          "drift_pct": 100.0,
+          "exact_match_recall": 0.5,
+          "matched": 1,
+          "n_source": 2,
+          "n_reconstructed": 5,
+          "missing": [
+            [
+              "darwin",
+              "studied",
+              "finches"
+            ]
+          ],
+          "extra": [
+            [
+              "darwin",
+              "discover",
+              "evolution theory"
+            ],
+            [
+              "darwin",
+              "lead_to",
+              "evolution theory"
+            ],
+            [
+              "darwin",
+              "research",
+              "finches"
+            ],
+            [
+              "darwin",
+              "study",
+              "finches"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_012",
+          "source_axioms": [
+            [
+              "newton",
+              "wrote",
+              "principia"
+            ],
+            [
+              "newton",
+              "described",
+              "gravity"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "newton",
+              "wrote",
+              "principia"
+            ],
+            [
+              "newton",
+              "described",
+              "gravity"
+            ]
+          ],
+          "narrative_excerpt": "In 1687, Sir Isaac Newton published one of the most influential works in scientific history, titled *Philosophi\u00e6 Naturalis Principia Mathematica*, commonly referred to as the *Principia*. In this semi",
+          "vocabulary_summary": {
+            "n_source_axioms": 2,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 2,
+            "n_unique_objects": 2,
+            "n_predicates_with_canonical_padding": 88
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 2,
+          "n_source": 2,
+          "n_reconstructed": 2,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_013",
+          "source_axioms": [
+            [
+              "shakespeare",
+              "wrote",
+              "hamlet"
+            ],
+            [
+              "shakespeare",
+              "wrote",
+              "macbeth"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "shakespeare",
+              "write",
+              "hamlet"
+            ],
+            [
+              "shakespeare",
+              "write",
+              "macbeth"
+            ]
+          ],
+          "narrative_excerpt": "William Shakespeare, one of the most renowned playwrights in literary history, authored a multitude of works that have significantly influenced English literature. Among his notable plays are \"Hamlet\"",
+          "vocabulary_summary": {
+            "n_source_axioms": 2,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 2,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 200.0,
+          "exact_match_recall": 0.0,
+          "matched": 0,
+          "n_source": 2,
+          "n_reconstructed": 2,
+          "missing": [
+            [
+              "shakespeare",
+              "wrote",
+              "hamlet"
+            ],
+            [
+              "shakespeare",
+              "wrote",
+              "macbeth"
+            ]
+          ],
+          "extra": [
+            [
+              "shakespeare",
+              "write",
+              "hamlet"
+            ],
+            [
+              "shakespeare",
+              "write",
+              "macbeth"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_014",
+          "source_axioms": [
+            [
+              "cats",
+              "are",
+              "mammals"
+            ],
+            [
+              "dogs",
+              "are",
+              "mammals"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "cats",
+              "are",
+              "mammals"
+            ],
+            [
+              "dogs",
+              "are",
+              "mammals"
+            ]
+          ],
+          "narrative_excerpt": "Cats and dogs are both classified as mammals, a group of warm-blooded vertebrates characterized by their ability to nurse their young with milk produced by mammary glands. This shared classification h",
+          "vocabulary_summary": {
+            "n_source_axioms": 2,
+            "n_unique_subjects": 2,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 2,
+          "n_source": 2,
+          "n_reconstructed": 2,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_015",
+          "source_axioms": [
+            [
+              "alice",
+              "visited",
+              "paris},{"
+            ],
+            [
+              "bob",
+              "visited",
+              "paris"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "alice",
+              "go",
+              "paris"
+            ],
+            [
+              "bob",
+              "go",
+              "paris"
+            ]
+          ],
+          "narrative_excerpt": "In the fall of 2023, both Alice and Bob embarked on journeys to Paris, the iconic capital of France. Their visits to this enchanting city allowed them to explore its rich history, vibrant culture, and",
+          "vocabulary_summary": {
+            "n_source_axioms": 2,
+            "n_unique_subjects": 2,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 2,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 200.0,
+          "exact_match_recall": 0.0,
+          "matched": 0,
+          "n_source": 2,
+          "n_reconstructed": 2,
+          "missing": [
+            [
+              "alice",
+              "visited",
+              "paris},{"
+            ],
+            [
+              "bob",
+              "visited",
+              "paris"
+            ]
+          ],
+          "extra": [
+            [
+              "alice",
+              "go",
+              "paris"
+            ],
+            [
+              "bob",
+              "go",
+              "paris"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_016",
+          "source_axioms": [
+            [
+              "water",
+              "does_not_freeze_above",
+              "zero_degrees"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "water",
+              "does_not_freeze_above",
+              "zero_degrees"
+            ]
+          ],
+          "narrative_excerpt": "Water exhibits a unique behavior when it comes to freezing, as it does not solidify at temperatures above zero degrees Celsius. This characteristic is integral to understanding the physical properties",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_017",
+          "source_axioms": [
+            [
+              "diamonds",
+              "cannot_cut_through",
+              "steel"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "diamonds",
+              "cannot_cut_through",
+              "steel"
+            ],
+            [
+              "diamonds",
+              "be",
+              "steel"
+            ]
+          ],
+          "narrative_excerpt": "Diamonds, renowned for their exceptional hardness and brilliance, are often heralded as the hardest natural material on Earth. This characteristic leads many to assume that diamonds can cut through an",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 50.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 2,
+          "missing": [],
+          "extra": [
+            [
+              "diamonds",
+              "be",
+              "steel"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_018",
+          "source_axioms": [
+            [
+              "dark matter",
+              "may_exist_in",
+              "galactic halos"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "dark matter",
+              "may_exist_in",
+              "galactic halos"
+            ],
+            [
+              "dark matter",
+              "affect",
+              "galactic halos"
+            ],
+            [
+              "dark matter",
+              "is_a",
+              "galactic halos"
+            ]
+          ],
+          "narrative_excerpt": "In the realm of astrophysics, dark matter is a pivotal and intriguing subject of study. It is hypothesized that this elusive substance may exist in galactic halos, which are vast regions of space surr",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 66.6667,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 3,
+          "missing": [],
+          "extra": [
+            [
+              "dark matter",
+              "affect",
+              "galactic halos"
+            ],
+            [
+              "dark matter",
+              "is_a",
+              "galactic halos"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_019",
+          "source_axioms": [
+            [
+              "gravity",
+              "attracts",
+              "objects toward earth."
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "gravity",
+              "attracts",
+              "objects toward earth."
+            ],
+            [
+              "gravity",
+              "affect",
+              "objects toward earth."
+            ]
+          ],
+          "narrative_excerpt": "Gravity is a fundamental force of nature that plays a crucial role in the structure of our universe. It is the force that attracts objects toward the Earth, ensuring that everything from the smallest ",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 50.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 2,
+          "missing": [],
+          "extra": [
+            [
+              "gravity",
+              "affect",
+              "objects toward earth."
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_020",
+          "source_axioms": [
+            [
+              "photosynthesis",
+              "converts_sunlight_into",
+              "energy"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "photosynthesis",
+              "converts_sunlight_into",
+              "energy"
+            ]
+          ],
+          "narrative_excerpt": "Photosynthesis is a vital biological process through which plants, algae, and some bacteria convert sunlight into energy. This process primarily takes place in the chloroplasts of plant cells, where c",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        }
+      ]
+    },
+    {
+      "schema": "sum.s25_combined.v1",
+      "ablation": "combined",
+      "description": "A + B: canonical-first generator + vocab-pinned extractor",
+      "model": "gpt-4o-mini-2024-07-18",
+      "aggregate": {
+        "n_docs": 20,
+        "drift_pct_mean": 5.0,
+        "drift_pct_median": 0.0,
+        "exact_match_recall_mean": 0.975,
+        "exact_match_recall_p10": 1.0,
+        "n_docs_full_recall": 19,
+        "fraction_full_recall": 0.95
+      },
+      "per_doc": [
+        {
+          "doc_id": "doc_001",
+          "source_axioms": [
+            [
+              "newton",
+              "wrote",
+              "principia"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "newton",
+              "wrote",
+              "principia"
+            ]
+          ],
+          "narrative_excerpt": "The newton wrote principia. \n\nSir Isaac Newton, one of the most influential scientists in history, authored his groundbreaking work, Principia Mathematica, commonly referred to as Principia. This form",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_002",
+          "source_axioms": [
+            [
+              "moon",
+              "orbits",
+              "earth"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "moon",
+              "orbits",
+              "earth"
+            ]
+          ],
+          "narrative_excerpt": "The moon orbits earth. \n\nThis relationship between the moon and earth is fundamental to understanding many phenomena, including tides and lunar phases. The moon's orbit is elliptical, with the earth's",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_003",
+          "source_axioms": [
+            [
+              "dolphins",
+              "are",
+              "mammals"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "dolphins",
+              "are",
+              "mammals"
+            ]
+          ],
+          "narrative_excerpt": "The dolphins are mammals. \n\nDolphins, belonging to the family of cetaceans, showcase a variety of fascinating traits and behaviors typical of mammals. Unlike fish, which breathe through gills, dolphin",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_004",
+          "source_axioms": [
+            [
+              "marie curie",
+              "won_nobel_prizes",
+              "true"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "marie curie",
+              "won_nobel_prizes",
+              "true"
+            ]
+          ],
+          "narrative_excerpt": "The marie curie won_nobel_prizes true. \n\nMarie Curie is a renowned scientist in the field of radioactivity, known for her groundbreaking research and contributions to science. Her achievements in this",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_005",
+          "source_axioms": [
+            [
+              "the sun",
+              "emits_light",
+              "light."
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "the sun",
+              "emits_light",
+              "light."
+            ]
+          ],
+          "narrative_excerpt": "The sun emits_light light. \n\nThe sun, a massive ball of gas at the center of our solar system, plays a critical role in sustaining life on Earth. Its ability to emit light is fundamental not only for ",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_006",
+          "source_axioms": [
+            [
+              "alice",
+              "loves",
+              "music."
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "alice",
+              "loves",
+              "music."
+            ]
+          ],
+          "narrative_excerpt": "The alice loves music.  \nAlice has always been passionate about music, finding joy and solace in melodies that can transport her to different places and emotions. Her love for music influences her dai",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_007",
+          "source_axioms": [
+            [
+              "hamlet",
+              "was_written_by",
+              "shakespeare"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "hamlet",
+              "was_written_by",
+              "shakespeare"
+            ]
+          ],
+          "narrative_excerpt": "The hamlet was_written_by shakespeare.  \nThis timeless tragedy, \"Hamlet,\" is among the most famous works in the English language. Written in the early 17th century, it explores profound themes of reve",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_008",
+          "source_axioms": [
+            [
+              "rome",
+              "was_founded_by",
+              "romulus"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "rome",
+              "was_founded_by",
+              "romulus"
+            ]
+          ],
+          "narrative_excerpt": "The rome was_founded_by romulus. Romulus is a legendary figure in ancient Roman history, credited with not only the founding of Rome but also establishing its early social and political structures. Ac",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_009",
+          "source_axioms": [
+            [
+              "the_book",
+              "was_read_by",
+              "many_students"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "the_book",
+              "was_read_by",
+              "many_students"
+            ]
+          ],
+          "narrative_excerpt": "The book was read by many students. This indicates that the book captured the interest of a substantial number of learners, suggesting its relevance and appeal within the academic environment. The ent",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_010",
+          "source_axioms": [
+            [
+              "einstein",
+              "proposed",
+              "relativity"
+            ],
+            [
+              "einstein",
+              "won",
+              "nobel prize"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "einstein",
+              "proposed",
+              "relativity"
+            ],
+            [
+              "einstein",
+              "won",
+              "nobel prize"
+            ]
+          ],
+          "narrative_excerpt": "The einstein proposed relativity.  \nThe einstein won nobel prize.  \n\nIn the realm of theoretical physics, one of the most groundbreaking contributions came when the einstein proposed relativity, funda",
+          "vocabulary_summary": {
+            "n_source_axioms": 2,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 2,
+            "n_unique_objects": 2,
+            "n_predicates_with_canonical_padding": 88
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 2,
+          "n_source": 2,
+          "n_reconstructed": 2,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_011",
+          "source_axioms": [
+            [
+              "darwin",
+              "studied",
+              "finches"
+            ],
+            [
+              "darwin",
+              "developed",
+              "evolution theory"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "darwin",
+              "studied",
+              "finches"
+            ],
+            [
+              "darwin",
+              "developed",
+              "evolution theory"
+            ]
+          ],
+          "narrative_excerpt": "The darwin studied finches.  \nThe darwin developed evolution theory.  \n\nCharles Darwin, a renowned naturalist, famously studied finches during his journey to the Gal\u00e1pagos Islands. These finches exhib",
+          "vocabulary_summary": {
+            "n_source_axioms": 2,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 2,
+            "n_unique_objects": 2,
+            "n_predicates_with_canonical_padding": 88
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 2,
+          "n_source": 2,
+          "n_reconstructed": 2,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_012",
+          "source_axioms": [
+            [
+              "newton",
+              "wrote",
+              "principia"
+            ],
+            [
+              "newton",
+              "described",
+              "gravity"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "newton",
+              "wrote",
+              "principia"
+            ],
+            [
+              "newton",
+              "described",
+              "gravity"
+            ]
+          ],
+          "narrative_excerpt": "The newton wrote principia.  \nThe newton described gravity.  \n\nSir Isaac Newton, a pivotal figure in the scientific revolution, made remarkable contributions to our understanding of the physical world",
+          "vocabulary_summary": {
+            "n_source_axioms": 2,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 2,
+            "n_unique_objects": 2,
+            "n_predicates_with_canonical_padding": 88
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 2,
+          "n_source": 2,
+          "n_reconstructed": 2,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_013",
+          "source_axioms": [
+            [
+              "shakespeare",
+              "wrote",
+              "hamlet"
+            ],
+            [
+              "shakespeare",
+              "wrote",
+              "macbeth"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "shakespeare",
+              "wrote",
+              "hamlet"
+            ],
+            [
+              "shakespeare",
+              "wrote",
+              "macbeth"
+            ]
+          ],
+          "narrative_excerpt": "The shakespeare wrote hamlet.  \nThe shakespeare wrote macbeth.  \n\nWilliam Shakespeare, regarded as one of the greatest playwrights in history, is known for his profound contributions to English litera",
+          "vocabulary_summary": {
+            "n_source_axioms": 2,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 2,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 2,
+          "n_source": 2,
+          "n_reconstructed": 2,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_014",
+          "source_axioms": [
+            [
+              "cats",
+              "are",
+              "mammals"
+            ],
+            [
+              "dogs",
+              "are",
+              "mammals"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "cats",
+              "are",
+              "mammals"
+            ],
+            [
+              "dogs",
+              "are",
+              "mammals"
+            ],
+            [
+              "cats",
+              "are",
+              "mammals"
+            ],
+            [
+              "dogs",
+              "are",
+              "mammals"
+            ]
+          ],
+          "narrative_excerpt": "The cats are mammals.  \nThe dogs are mammals.  \n\nIn the animal kingdom, the classification of species is essential for understanding their characteristics and behaviors. Mammals, a diverse group, are ",
+          "vocabulary_summary": {
+            "n_source_axioms": 2,
+            "n_unique_subjects": 2,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 2,
+          "n_source": 2,
+          "n_reconstructed": 2,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_015",
+          "source_axioms": [
+            [
+              "alice",
+              "visited",
+              "paris},{"
+            ],
+            [
+              "bob",
+              "visited",
+              "paris"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "alice",
+              "visited",
+              "paris"
+            ],
+            [
+              "bob",
+              "visited",
+              "paris"
+            ]
+          ],
+          "narrative_excerpt": "The alice visited paris.  \nThe bob visited paris.  \n\nAlice and Bob both took the opportunity to explore the charming streets of Paris. The city, known for its rich history and stunning architecture, o",
+          "vocabulary_summary": {
+            "n_source_axioms": 2,
+            "n_unique_subjects": 2,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 2,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 100.0,
+          "exact_match_recall": 0.5,
+          "matched": 1,
+          "n_source": 2,
+          "n_reconstructed": 2,
+          "missing": [
+            [
+              "alice",
+              "visited",
+              "paris},{"
+            ]
+          ],
+          "extra": [
+            [
+              "alice",
+              "visited",
+              "paris"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_016",
+          "source_axioms": [
+            [
+              "water",
+              "does_not_freeze_above",
+              "zero_degrees"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "water",
+              "does_not_freeze_above",
+              "zero_degrees"
+            ]
+          ],
+          "narrative_excerpt": "The water does_not_freeze_above zero_degrees. \n\nThis fact is grounded in the fundamental principles of thermodynamics and the behavior of water molecules. At temperatures above zero degrees Celsius, w",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_017",
+          "source_axioms": [
+            [
+              "diamonds",
+              "cannot_cut_through",
+              "steel"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "diamonds",
+              "cannot_cut_through",
+              "steel"
+            ]
+          ],
+          "narrative_excerpt": "The diamonds cannot_cut_through steel. \n\nThis statement highlights a fascinating aspect of both substances. While diamonds are renowned for their exceptional hardness and are often mistakenly perceive",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_018",
+          "source_axioms": [
+            [
+              "dark_matter",
+              "may_exist_in",
+              "galactic_halos"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "dark_matter",
+              "may_exist_in",
+              "galactic_halos"
+            ]
+          ],
+          "narrative_excerpt": "The dark_matter may_exist_in galactic_halos. This statement suggests that dark matter, an elusive component of the universe, is likely to be present in the vast spherical regions surrounding galaxies,",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_019",
+          "source_axioms": [
+            [
+              "gravity",
+              "attracts",
+              "objects toward earth."
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "gravity",
+              "attracts",
+              "objects toward earth."
+            ]
+          ],
+          "narrative_excerpt": "The gravity attracts objects toward earth. \n\nGravity is a fundamental force that plays a crucial role in the behavior of matter in the universe. It causes objects to be pulled towards the center of th",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_020",
+          "source_axioms": [
+            [
+              "photosynthesis",
+              "converts_sunlight_into",
+              "energy"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "photosynthesis",
+              "converts_sunlight_into",
+              "energy"
+            ]
+          ],
+          "narrative_excerpt": "The photosynthesis converts_sunlight_into energy. This process is crucial for life on Earth, as it allows plants to harness sunlight and transform it into chemical energy, which is then used to fuel t",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        }
+      ]
+    }
+  ]
+}
