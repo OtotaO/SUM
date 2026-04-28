@@ -51,6 +51,7 @@ class ErrorClass:
     HEADER_INVARIANT_VIOLATED = JoseEnvelopeErrorClass.HEADER_INVARIANT_VIOLATED
     SIGNATURE_INVALID = JoseEnvelopeErrorClass.SIGNATURE_INVALID
     REVOKED_KID = JoseEnvelopeErrorClass.REVOKED_KID
+    UNSUPPORTED_ALG = JoseEnvelopeErrorClass.UNSUPPORTED_ALG
 
 
 class VerifyError(JoseEnvelopeError):

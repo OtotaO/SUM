@@ -39,6 +39,7 @@ class ErrorClass:
     CRIT_UNKNOWN_EXTENSION = JoseEnvelopeErrorClass.CRIT_UNKNOWN_EXTENSION
     HEADER_INVARIANT_VIOLATED = JoseEnvelopeErrorClass.HEADER_INVARIANT_VIOLATED
     SIGNATURE_INVALID = JoseEnvelopeErrorClass.SIGNATURE_INVALID
+    UNSUPPORTED_ALG = JoseEnvelopeErrorClass.UNSUPPORTED_ALG
 
 
 class VerifyError(JoseEnvelopeError):

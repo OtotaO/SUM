@@ -37,7 +37,15 @@ export const ERROR_CLASSES = Object.freeze({
   HEADER_INVARIANT_VIOLATED: "header_invariant_violated",
   SIGNATURE_INVALID: "signature_invalid",
   REVOKED_KID: "revoked_kid",
+  UNSUPPORTED_ALG: "unsupported_alg",
 });
+
+// G3 crypto-agility: signature algorithms accepted under `current`
+// in the in-tree algorithm registry (docs/ALGORITHM_REGISTRY.md).
+// A `alg` claim outside this set is rejected with `unsupported_alg`,
+// distinct from `header_invariant_violated`. Mirrors
+// SUPPORTED_SIGNATURE_ALGORITHMS in the Python verifier.
+export const SUPPORTED_SIGNATURE_ALGORITHMS = new Set(["EdDSA"]);
 
 export class VerifyError extends Error {
   constructor(errorClass, message) {
@@ -253,6 +261,22 @@ export async function verifyReceipt(receipt, jwks, revokedKids) {
         );
       }
     }
+  }
+
+  // ---- Step 3.6: G3 alg-registry check (crypto-agility) ----
+  // Cross-check the protected header's `alg` against the in-tree
+  // algorithm registry BEFORE signature verification. Mirrors the
+  // Python verifier's pre-jose alg check; defends against the
+  // JWT/JWS classic "alg downgrade" / "alg confusion" attack
+  // pattern. See docs/ALGORITHM_REGISTRY.md.
+  if (typeof header.alg !== "string" || !SUPPORTED_SIGNATURE_ALGORITHMS.has(header.alg)) {
+    throw new VerifyError(
+      ERROR_CLASSES.UNSUPPORTED_ALG,
+      `protected header alg=${JSON.stringify(header.alg)} is not in the ` +
+        `supported algorithm registry ` +
+        `(${JSON.stringify([...SUPPORTED_SIGNATURE_ALGORITHMS])}); see ` +
+        `docs/ALGORITHM_REGISTRY.md`,
+    );
   }
 
   // ---- Step 4: import the key ----

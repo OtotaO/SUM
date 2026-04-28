@@ -330,6 +330,36 @@ def main() -> int:
     f["receipt"]["jws"] = f"{proto_mutated}.{middle}.{sig}"
     write_fixture("crit_unknown_extension", f)
 
+    # ---- G3 crypto-agility: alg not in registry (unsupported_alg) ----
+    # Mutate the protected header's `alg` claim to a value that's
+    # not in the supported algorithm registry (RS256 is HMAC-shaped,
+    # not in the EdDSA-only v1 registry). The verifier's alg-
+    # registry check fires BEFORE signature verification, so this
+    # rejects with `unsupported_alg` rather than `signature_invalid`
+    # — the operator-actionable distinction between "alg downgrade
+    # attempt" and "tampered signature" is visible at the consumer.
+    f = base_fixture(receipt, jwks)
+    f["name"] = "unsupported_alg"
+    f["description"] = (
+        "Protected header `alg` claim mutated to 'HS256'. The "
+        "in-tree algorithm registry "
+        "(docs/ALGORITHM_REGISTRY.md) only lists 'EdDSA' under "
+        "current; the verifier rejects closed with the "
+        "`unsupported_alg` error class. This is the JWT/JWS "
+        "history's classic 'alg downgrade' / 'alg confusion' bug "
+        "pattern — registry-driven fail-closed defends against it."
+    )
+    f["expected_outcome"] = "reject"
+    f["expected_error_class"] = "unsupported_alg"
+    proto, middle, sig = receipt["jws"].split(".")
+    proto_json = json.loads(b64url_decode(proto).decode("utf-8"))
+    proto_json["alg"] = "HS256"
+    proto_mutated = b64url_encode(
+        json.dumps(proto_json, separators=(",", ":")).encode("utf-8")
+    )
+    f["receipt"]["jws"] = f"{proto_mutated}.{middle}.{sig}"
+    write_fixture("unsupported_alg", f)
+
     # ---- G3 revocation: kid actively revoked (reject) ----
     # Receipt's kid appears on the revocation list with
     # effective_revocation_at <= receipt.signed_at; verifier rejects
