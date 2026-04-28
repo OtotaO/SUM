@@ -143,6 +143,70 @@ jobs:
       # hard-stops the merge.
       run: python -m scripts.verify_cross_runtime_adversarial
 
+  vendor-byte-equivalence:
+    name: Vendored jose + canonicalize byte-equivalence
+    # Mirrors the zig-core sum_core.wasm drift gate. Re-runs
+    # scripts/vendor/build.js from the lockfile-pinned dep versions
+    # and asserts the freshly-built single_file_demo/vendor/sum-
+    # verify-deps.js bytes match what's committed. Drift fails the
+    # gate with an actionable remediation message — either re-run
+    # the build locally and commit, or revert the dep bump in
+    # scripts/vendor/package.json + package-lock.json.
+    #
+    # The single-file-demo property + open CORS on JWKS together
+    # mean the verifier code that consumers execute IS the bytes
+    # this gate validates. A silently-drifted vendored bundle
+    # would weaken the whole v0.9.B trust story.
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Node 22
+      uses: actions/setup-node@v4
+      with:
+        node-version: "22"
+
+    - name: npm ci (pinned jose + canonicalize + esbuild)
+      working-directory: scripts/vendor
+      run: npm ci
+
+    - name: Rebuild vendored bundle
+      working-directory: scripts/vendor
+      run: node build.js
+
+    - name: Compare freshly-built bytes against committed
+      run: |
+        if ! git diff --exit-code -- single_file_demo/vendor/sum-verify-deps.js single_file_demo/vendor/LICENSE.txt; then
+          echo ""
+          echo "=== VENDORED BYTES DRIFT ==="
+          echo ""
+          echo "scripts/vendor/build.js produced different bytes than what is"
+          echo "committed under single_file_demo/vendor/. This means either:"
+          echo ""
+          echo "  (a) A dependency was bumped in scripts/vendor/package.json"
+          echo "      or package-lock.json without regenerating the bundle, OR"
+          echo "  (b) The build script itself changed shape, OR"
+          echo "  (c) An esbuild version bump changed bundling output."
+          echo ""
+          echo "Remediation:"
+          echo "  cd scripts/vendor && npm ci && npm run build"
+          echo "  git add single_file_demo/vendor/{sum-verify-deps.js,LICENSE.txt}"
+          echo "  git commit -m 'vendor: regen jose+canonicalize after dep bump'"
+          echo ""
+          echo "Or revert the dep change in scripts/vendor/package.json + lockfile."
+          exit 1
+        fi
+        echo "vendored bytes match committed: OK"
+
+    - name: Receipt-verifier smoke (15 fixtures, all runtimes-neutral)
+      # Exercises receipt_verifier.js against fixtures/render_
+      # receipts/. Fails if positive_control doesn't verify or any
+      # tampered fixture produces the wrong error class. Same
+      # fixtures will be consumed by v0.9.C (Python verifier);
+      # cross-runtime equivalence locks once both pass on every
+      # push.
+      run: node single_file_demo/test_render_receipt_verify.js
+
   release-machinery-validation:
     name: Release machinery validation (no publish)
     # Validates the v0.3.1 hygiene gates on every push/PR so the FIRST

@@ -1,0 +1,17 @@
+{
+  "name": "sum-vendor-build",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Build pinned ESM bundles of jose + canonicalize for single_file_demo/vendor/. Not published; not consumed by sum-engine; only invoked by humans regenerating vendored bytes and by CI verifying byte-equivalence.",
+  "type": "module",
+  "scripts": {
+    "build": "node build.js"
+  },
+  "dependencies": {
+    "canonicalize": "2.0.0",
+    "jose": "5.9.6"
+  },
+  "devDependencies": {
+    "esbuild": "0.24.2"
+  }
+}

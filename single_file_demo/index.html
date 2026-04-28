@@ -205,6 +205,20 @@
           <strong>Signed does not mean true:</strong> the receipt is not a truth oracle.
         </div>
       </div>
+      <!--
+        v0.9.B: in-page receipt verifier. The button runs the same
+        six-step verifier algorithm test_render_receipt_verify.js
+        runs against the captured fixture set, but live: against the
+        receipt the page just received and the JWKS at /.well-
+        known/jwks.json. Cryptographic verification happens in this
+        browser using vendored jose + canonicalize (no CDN). Wiring
+        is in the `<script type="module">` block at the bottom of
+        the page.
+      -->
+      <div class="row" style="justify-content: flex-end; margin-top: 8px;">
+        <button id="verify-receipt-btn" class="ghost" disabled>Verify receipt in-page</button>
+      </div>
+      <div id="verify-receipt-result" style="display:none; margin-top: 8px; padding: 10px 12px; border-radius: 4px; font-size: 11px; line-height: 1.5; font-family: ui-monospace, monospace;"></div>
     </div>
   </div>
 </div>
@@ -896,6 +910,12 @@ $('render-btn').addEventListener('click', async () => {
     cacheBadge.style.display = '';
     cacheBadge.textContent = data.cache_status;
     out.style.display = '';
+    // Stash the full render response so the v0.9.B in-page receipt
+    // verifier (loaded as a module further down) can pick up the
+    // receipt + tome without re-running the API call. The verifier
+    // dispatches a custom event so its handler can refresh state.
+    window.__sumLastRender = data;
+    document.dispatchEvent(new CustomEvent('sum:render', { detail: data }));
   } catch (e) {
     meta.textContent = `render failed: ${e.message}`;
     tomeEl.textContent = '';
@@ -944,6 +964,104 @@ $('verify').addEventListener('click', async () => {
   }
   resultEl.innerHTML = html;
 });
+</script>
+
+<!--
+  v0.9.B in-page render-receipt verifier wiring. ESM module so it
+  can import the vendored jose + canonicalize bundle. Runs the
+  same six-step verifier algorithm as
+  test_render_receipt_verify.js, but against:
+    - the receipt from the page's most recent /api/render call
+    - the live /.well-known/jwks.json (fetched once, cached for
+      the page's lifetime)
+
+  Triggered by the "Verify receipt in-page" button inside the
+  render-output div, which the script enables when a `sum:render`
+  event fires from the existing render handler.
+-->
+<script type="module">
+  import { verifyReceipt, VerifyError } from "./receipt_verifier.js";
+
+  const verifyBtn = document.getElementById("verify-receipt-btn");
+  const resultEl = document.getElementById("verify-receipt-result");
+
+  // JWKS is fetched lazily on first verify and cached for the
+  // page's lifetime. Cache-Control on the response is 3600 s so
+  // a hard reload will refresh it within typical session bounds.
+  let jwksCache = null;
+
+  document.addEventListener("sum:render", () => {
+    verifyBtn.disabled = false;
+  });
+
+  function showResult(kind, html) {
+    resultEl.style.display = "";
+    // Light/dark-friendly: use opacity + colour-coded border. No
+    // hard-coded colour names that fight the page palette.
+    const border = {
+      ok: "rgba(80, 200, 80, 0.8)",
+      reject: "rgba(220, 120, 80, 0.8)",
+      err: "rgba(200, 200, 80, 0.8)",
+    }[kind];
+    resultEl.style.border = `1px solid ${border}`;
+    resultEl.innerHTML = html;
+  }
+
+  async function fetchJwks() {
+    if (jwksCache) return jwksCache;
+    const res = await fetch("/.well-known/jwks.json");
+    if (!res.ok) {
+      throw new Error(`JWKS fetch failed: ${res.status} ${res.statusText}`);
+    }
+    jwksCache = await res.json();
+    return jwksCache;
+  }
+
+  verifyBtn.addEventListener("click", async () => {
+    const data = window.__sumLastRender;
+    if (!data || !data.render_receipt) {
+      showResult(
+        "err",
+        "<strong>No receipt to verify.</strong> Render a tome first.",
+      );
+      return;
+    }
+    verifyBtn.disabled = true;
+    showResult("err", "Verifying…");
+
+    try {
+      const jwks = await fetchJwks();
+      const result = await verifyReceipt(data.render_receipt, jwks);
+      const ph = result.protectedHeader;
+      showResult(
+        "ok",
+        `<div><strong>✓ Receipt verified.</strong> ` +
+          `Issuer signed (kid=<code>${result.kid}</code>) using ` +
+          `<code>${ph.alg}</code> with detached payload (` +
+          `<code>b64=false</code>, <code>crit=${JSON.stringify(ph.crit)}</code>).</div>` +
+          `<div style="margin-top:6px;opacity:0.75;">` +
+          `Verified in-page using vendored <code>jose</code> + <code>canonicalize</code> ` +
+          `(no CDN; same bytes the offline single-file demo carries). ` +
+          `<a href="https://github.com/OtotaO/SUM/blob/main/docs/RENDER_RECEIPT_FORMAT.md">spec</a>.` +
+          `</div>`,
+      );
+    } catch (e) {
+      const cls = e instanceof VerifyError ? e.errorClass : "uncategorized_error";
+      showResult(
+        "reject",
+        `<div><strong>✗ Verification failed.</strong> error class: <code>${cls}</code>.</div>` +
+          `<div style="margin-top:6px;opacity:0.75;">${e.message}</div>` +
+          `<div style="margin-top:6px;opacity:0.75;">` +
+          `Receipts that fail this verifier MUST NOT be trusted as ` +
+          `provenance attestations. See ` +
+          `<a href="https://github.com/OtotaO/SUM/blob/main/fixtures/render_receipts/README.md">` +
+          `the fixture set</a> for what each error class means.` +
+          `</div>`,
+      );
+    } finally {
+      verifyBtn.disabled = false;
+    }
+  });
 </script>
 
 </body>
