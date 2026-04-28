@@ -4,6 +4,67 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Hardened — MCP server v2 (unbreakable contract)
+
+Eight-property hardening pass on the MCP server shipped one
+PR earlier. Default-deny posture against a prompt-injected
+LLM client; fail-closed across the surface; fuzz-tested.
+
+**The eight properties (every one is a regression-test in
+`Tests/test_mcp_server.py` or `Tests/test_mcp_server_fuzz.py`):**
+
+1. **Input size caps.** `text` ≤ 200 000 chars; bundles ≤ 10 MB
+   tome / 100 000 axioms / 1 000 000 state-integer digits.
+   Oversized → `error_class: "input_too_large"`.
+2. **Tagged failure classes.** v1 collapsed every error into
+   `errors: [string]`. v2 emits `error_class` from the fixed
+   enum `schema | signature | structural | input_too_large |
+   extractor_unavailable | network_disallowed | revoked |
+   internal`. Callers branch on the tag, never on substrings.
+3. **Network opt-in.** v1's `extractor="auto"` fell through to
+   the LLM extractor if `OPENAI_API_KEY` was set — a
+   prompt-injected client could drain a wallet via that path.
+   v2 auto resolves to sieve unconditionally; the LLM
+   extractor requires `SUM_MCP_ALLOW_NETWORK=1` at server
+   start AND `extractor="llm"` explicit per call.
+4. **Concurrency-safe.** spaCy's nlp pipeline is serialised
+   behind an asyncio lock; concurrent `extract`/`attest`
+   calls do not race.
+5. **Catch-all per tool.** `try/except Exception` →
+   `error_class: "internal"` with the exception type name
+   only — no traceback, no internal paths leaked. Server
+   stays up under any input.
+6. **Forward-compat policy.** Bundles with unknown top-level
+   fields under `canonical_format_version=1.x` are accepted
+   (additive); future major versions fail closed.
+7. **Structured stderr audit.** One JSON line per tool call:
+   `{ts, tool, result_class, duration_ms, shapes}`. Argument
+   shapes (lengths, types, dict keys) logged; argument
+   *values* never logged. Log-injection-proof by construction
+   — attacker bytes cannot influence the audit record's
+   structure.
+8. **Property-tested.** Hypothesis-based fuzz suite exercises
+   ~800 adversarial inputs per release across every tool's
+   typed parameter. Asserts (a) no tool ever raises uncaught,
+   (b) no tool ever returns a success shape on a malformed
+   payload. Run via `pytest Tests/test_mcp_server_fuzz.py`.
+
+**One-place result construction.** `success_result()` and
+`error_result()` in `sum_engine_internal/mcp_server/errors.py`
+are the only paths that produce tool output. The audit logger
+hooks them. The error-class enum is enforced at construction
+time. Future hardening only needs to change one file.
+
+**Wire-format break vs v1:** v1 callers checking `ok: bool` or
+substring-matching on `errors[i]` will break. v2 uses
+`"error_class" in result` as the failure signal on every tool
+except `verify`, which retains `ok` because its purpose is
+specifically to return a verdict. Migration is one-line.
+
+29/29 unit tests + 13 fuzz tests pass. CHANGELOG entry under
+[Unreleased]. `docs/MCP_INTEGRATION.md` updated with the
+hardening contract section.
+
 ### Added — `docs/API_REFERENCE.md` — single integration reference for the Worker API
 
 Wire-spec consolidation for external systems calling SUM over
