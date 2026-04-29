@@ -119,6 +119,68 @@ def _read_input(path: Optional[str]) -> str:
         return f.read()
 
 
+def _ingest_path(path: str, *, fmt: str = "auto") -> tuple[str, str, dict]:
+    """Read input from *path* and return (text, source_uri, sidecar).
+
+    ``fmt`` controls the omni-format pivot:
+
+      - ``auto`` (default): route by file extension. Plaintext and
+        markdown are read directly; PDF/HTML/DOCX/EPUB/etc. are
+        converted through markitdown (requires
+        ``pip install 'sum-engine[omni-format]'``).
+      - ``raw``: read bytes verbatim, decode as UTF-8 (CRLF→LF
+        normalised). No conversion, no markitdown dep needed.
+      - ``markdown``: same as auto for already-markdown files;
+        for other formats, force-route through markitdown.
+
+    The returned ``sidecar`` is a dict of conversion metadata to
+    attach to the bundle's ``sum_cli`` block so verifiers can
+    replay the conversion: input_format, converter id, markdown
+    sha256, original-bytes length and URI.
+
+    The source URI is anchored to the **original input bytes**,
+    not the markdown — a receipt for a PDF binds to the PDF, not
+    to the markdown intermediate.
+    """
+    from sum_engine_internal.adapters.format_pivot import (
+        ConvertedDocument,
+        convert_to_markdown,
+    )
+
+    if fmt == "raw":
+        text = _read_input(path)
+        # Read the bytes ourselves to anchor source_uri; _read_input
+        # already decoded with UTF-8 strict mode but for source URI
+        # determinism we hash the on-disk bytes.
+        from pathlib import Path
+        raw_bytes = Path(path).read_bytes() if path and path != "-" else text.encode("utf-8")
+        source_uri = "sha256:" + hashlib.sha256(raw_bytes).hexdigest()
+        return text, source_uri, {
+            "input_format": "raw",
+            "converter": "raw-readthrough",
+            "source_bytes_len": len(raw_bytes),
+        }
+
+    if path is None or path == "-":
+        # stdin can't be omni-converted (no extension to route by).
+        text = sys.stdin.read()
+        source_uri = "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest()
+        return text, source_uri, {
+            "input_format": "plaintext",
+            "converter": "stdin-readthrough",
+            "source_bytes_len": len(text.encode("utf-8")),
+        }
+
+    converted: ConvertedDocument = convert_to_markdown(path)
+    sidecar = {
+        "input_format": converted.input_format,
+        "converter": converted.converter,
+        "source_bytes_len": converted.source_bytes_len,
+        "markdown_sha256": converted.markdown_sha256,
+    }
+    return converted.markdown, converted.source_uri, sidecar
+
+
 class _PemFileKeyManager:
     """Single-file Ed25519 KeyManager adapter.
 
@@ -178,21 +240,44 @@ def _load_ed25519_key(pem_path: str) -> _PemFileKeyManager:
 
 
 def cmd_attest(args: argparse.Namespace) -> int:
-    text = _read_input(args.input).strip()
+    fmt = getattr(args, "format", "auto") or "auto"
+    try:
+        if args.input and args.input != "-":
+            text, derived_uri, format_sidecar = _ingest_path(args.input, fmt=fmt)
+            text = text.strip()
+        else:
+            # stdin: no extension to route by; treat as plaintext.
+            text = _read_input(args.input).strip()
+            derived_uri = "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest()
+            format_sidecar = {
+                "input_format": "plaintext",
+                "converter": "stdin-readthrough",
+                "source_bytes_len": len(text.encode("utf-8")),
+            }
+    except RuntimeError as e:
+        # markitdown missing for an omni-format input → actionable error
+        print(f"sum: {e}", file=sys.stderr)
+        return 4
+    except FileNotFoundError as e:
+        print(f"sum: {e}", file=sys.stderr)
+        return 2
+
     if not text:
         print("sum: empty input", file=sys.stderr)
         return 2
 
-    # Source URI: either user-supplied or derived from a SHA-256 of the input
-    # bytes (content-addressable by default — matches provenance.py's
-    # sha256_uri_for_text helper).
-    source_uri = args.source or (
-        "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest()
-    )
+    # Source URI: caller override > original-bytes hash. The original-
+    # bytes hash anchors the bundle to the artifact-as-shipped (the PDF
+    # itself, not the markdown), preserving the verifiable claim.
+    source_uri = args.source or derived_uri
 
     extractor = _pick_extractor(args.extractor)
     if args.verbose:
-        print(f"sum: extractor={extractor} source={source_uri}", file=sys.stderr)
+        print(
+            f"sum: extractor={extractor} format={format_sidecar.get('input_format')} "
+            f"source={source_uri}",
+            file=sys.stderr,
+        )
 
     # Build the CanonicalBundle via the existing codec path — no
     # reimplementation of Ed25519/HMAC, no reimplementation of canonical
@@ -277,6 +362,12 @@ def cmd_attest(args: argparse.Namespace) -> int:
         "source_uri": source_uri,
         "cli_version": __version__,
         "generated_at": datetime.now(timezone.utc).isoformat(),
+        # Omni-format pivot record. ``input_format`` and ``converter``
+        # let a verifier replay the conversion: re-fetch the bytes
+        # whose sha256 matches source_uri, run the named converter
+        # version, hash the markdown, compare to ``markdown_sha256``.
+        # Drift in any of those surfaces immediately.
+        **format_sidecar,
     }
 
     # Ledger path: record byte-level provenance for every extracted
@@ -377,17 +468,25 @@ def cmd_attest_batch(args: argparse.Namespace) -> int:
         key_manager=key_manager,
     )
 
+    fmt = getattr(args, "format", "auto") or "auto"
+
     failed = 0
     succeeded = 0
     for path in files:
         try:
-            with open(path, "r", encoding="utf-8") as f:
-                text = f.read().strip()
+            text, source_uri, format_sidecar = _ingest_path(path, fmt=fmt)
+            text = text.strip()
+        except FileNotFoundError as e:
+            print(f"sum: file={path} error=read_failed: {e}", file=sys.stderr)
+            failed += 1
+            continue
+        except RuntimeError as e:
+            # Conversion failure (markitdown missing or upstream error)
+            print(f"sum: file={path} error=conversion_failed: {e}", file=sys.stderr)
+            failed += 1
+            continue
         except OSError as e:
-            print(
-                f"sum: file={path} error=read_failed: {e}",
-                file=sys.stderr,
-            )
+            print(f"sum: file={path} error=read_failed: {e}", file=sys.stderr)
             failed += 1
             continue
 
@@ -395,8 +494,6 @@ def cmd_attest_batch(args: argparse.Namespace) -> int:
             print(f"sum: file={path} error=empty_input", file=sys.stderr)
             failed += 1
             continue
-
-        source_uri = "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest()
 
         try:
             if extractor == "sieve":
@@ -436,6 +533,9 @@ def cmd_attest_batch(args: argparse.Namespace) -> int:
             "cli_version": __version__,
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "batch": True,
+            # Omni-format pivot metadata (per file): see cmd_attest
+            # for the verifier-replay contract.
+            **format_sidecar,
         }
         # JSONL: compact, one line per record, no pretty-print.
         json.dump(bundle, sys.stdout)
@@ -1149,6 +1249,21 @@ def build_parser() -> argparse.ArgumentParser:
             "--extractor=sieve (today's only provenance-producing extractor)."
         ),
     )
+    p_attest.add_argument(
+        "--format", choices=["auto", "raw"], default="auto",
+        help=(
+            "Input format routing. ``auto`` (default) uses the file "
+            "extension to route through the omni-format pivot: PDF, "
+            "HTML, DOCX, EPUB, .ipynb, .json are converted to markdown "
+            "via markitdown (requires `pip install "
+            "'sum-engine[omni-format]'`); plaintext / .md / .txt / "
+            "stdin pass through unchanged. ``raw`` reads bytes as "
+            "UTF-8 with no conversion (the original behaviour). "
+            "Source URI is anchored to the original input bytes "
+            "either way — a receipt for a PDF binds to the PDF, not "
+            "to its markdown intermediate."
+        ),
+    )
     p_attest.add_argument("--pretty", action="store_true", help="Pretty-print output JSON.")
     p_attest.add_argument("--verbose", "-v", action="store_true", help="Emit diagnostics on stderr.")
     p_attest.set_defaults(func=cmd_attest)
@@ -1189,6 +1304,15 @@ def build_parser() -> argparse.ArgumentParser:
     p_attest_batch.add_argument(
         "--ed25519-key", default=None, metavar="PEM",
         help="PATH to an Ed25519 PEM private key. Applied to every bundle in the batch.",
+    )
+    p_attest_batch.add_argument(
+        "--format", choices=["auto", "raw"], default="auto",
+        help=(
+            "Input format routing. Same semantics as `sum attest --format`. "
+            "Default `auto` routes by extension: PDF/HTML/DOCX/EPUB/etc. "
+            "go through markitdown; plaintext/markdown pass through. "
+            "`raw` disables conversion."
+        ),
     )
     p_attest_batch.add_argument("--verbose", "-v", action="store_true", help="Emit diagnostics on stderr.")
     p_attest_batch.set_defaults(func=cmd_attest_batch)
