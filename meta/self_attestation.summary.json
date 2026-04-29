@@ -1,6 +1,6 @@
 {
   "schema": "sum.self_attestation.v1",
-  "issued_at": "2026-04-29T15:19:34Z",
+  "issued_at": "2026-04-29T15:32:04Z",
   "doc_count": 5,
   "docs": [
     {
@@ -32,12 +32,12 @@
     },
     {
       "path": "docs/FEATURE_CATALOG.md",
-      "source_uri": "sha256:74b661596e638a61d5703b97023ffde10b6127d9b1c6d2e205fcd7f9c87d0f31",
+      "source_uri": "sha256:3d33d1eba3a82af78a4971cd84f6320461972631ca271fddce1f6455532ba535",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "74b661596e638a61d5703b97023ffde10b6127d9b1c6d2e205fcd7f9c87d0f31",
-      "axiom_count": 167,
-      "state_integer_digits": 3144
+      "markdown_sha256": "3d33d1eba3a82af78a4971cd84f6320461972631ca271fddce1f6455532ba535",
+      "axiom_count": 173,
+      "state_integer_digits": 3257
     },
     {
       "path": "docs/RENDER_RECEIPT_FORMAT.md",

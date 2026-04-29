@@ -67,6 +67,7 @@ def _run_batch(files: list[str], **overrides) -> tuple[int, str, str]:
         signing_key=None,
         ed25519_key=None,
         verbose=False,
+        dedup_threshold=None,
     )
     for k, v in overrides.items():
         setattr(args, k, v)
@@ -218,3 +219,69 @@ def test_batch_zero_files_returns_exit_2(tmp_path):
     code, out, err = _run_batch([])
     assert code == 2
     assert "requires at least one input file" in err
+
+
+# --------------------------------------------------------------------------
+# Dedup
+# --------------------------------------------------------------------------
+
+
+def test_batch_dedup_skips_identical_inputs(tmp_path):
+    """Two byte-identical files with --dedup-threshold=0.85 → one
+    bundle on stdout, the duplicate reported on stderr with
+    jaccard=1.000."""
+    files = _make_files(tmp_path, CORPUS_A, CORPUS_A)  # same text twice
+    code, out, err = _run_batch(
+        [str(p) for p in files], dedup_threshold=0.85,
+    )
+    assert code == 0  # no failures, just dedup
+    lines = [ln for ln in out.split("\n") if ln.strip()]
+    assert len(lines) == 1, f"expected 1 bundle (one was dedup'd), got {len(lines)}"
+    assert "dedup_skipped" in err
+    assert "jaccard=1.000" in err
+    assert f"duplicate_of={files[0]}" in err
+
+
+def test_batch_dedup_keeps_distinct_inputs(tmp_path):
+    """Two materially-different files with --dedup-threshold=0.85 →
+    two bundles on stdout, no dedup_skipped on stderr."""
+    files = _make_files(tmp_path, CORPUS_A, CORPUS_B)
+    code, out, err = _run_batch(
+        [str(p) for p in files], dedup_threshold=0.85,
+    )
+    assert code == 0
+    lines = [ln for ln in out.split("\n") if ln.strip()]
+    assert len(lines) == 2, f"expected 2 bundles, got {len(lines)}"
+    assert "dedup_skipped" not in err
+
+
+def test_batch_dedup_default_disabled_keeps_duplicates(tmp_path):
+    """Without --dedup-threshold, identical files are NOT dedup'd —
+    backwards-compat check."""
+    files = _make_files(tmp_path, CORPUS_A, CORPUS_A)
+    code, out, err = _run_batch([str(p) for p in files])  # no dedup_threshold override
+    assert code == 0
+    lines = [ln for ln in out.split("\n") if ln.strip()]
+    assert len(lines) == 2, "without --dedup-threshold, both bundles should mint"
+
+
+def test_batch_dedup_threshold_validation(tmp_path):
+    """A threshold outside (0.0, 1.0] MUST exit 2 with diagnostic."""
+    files = _make_files(tmp_path, CORPUS_A)
+    for bad in (0.0, 1.1, -0.5):
+        code, _, err = _run_batch([str(files[0])], dedup_threshold=bad)
+        assert code == 2, f"threshold {bad} should have been rejected"
+        assert "must be in" in err
+
+
+def test_batch_dedup_strict_threshold_only_drops_byte_identical(tmp_path):
+    """--dedup-threshold=1.0 means 'skip only true byte-identical
+    duplicates'. Near-duplicates (one extra word) MUST mint normally."""
+    near_dup_b = CORPUS_B + " Beethoven composed nine symphonies."
+    files = _make_files(tmp_path, CORPUS_B, near_dup_b)
+    code, out, _ = _run_batch(
+        [str(p) for p in files], dedup_threshold=1.0,
+    )
+    assert code == 0
+    lines = [ln for ln in out.split("\n") if ln.strip()]
+    assert len(lines) == 2, "near-duplicates at threshold=1.0 must both mint"
