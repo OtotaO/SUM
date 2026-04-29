@@ -138,17 +138,35 @@ def test_markdown_input_uses_passthrough(tmp_path):
 def test_format_raw_skips_markitdown_on_html(tmp_path):
     """Escape hatch: --format raw on a .html input MUST NOT route
     through markitdown. The CLI reads the bytes verbatim and the
-    sidecar reports ``converter=raw-readthrough``."""
+    sidecar reports ``converter=raw-readthrough``.
+
+    Test uses a file with .html extension but plaintext content so
+    the sieve actually extracts triples after the noise filter
+    (which rejects components containing ``<``, ``>``, ``[``, etc.,
+    so feeding literal HTML through --format raw correctly produces
+    zero triples as of the sieve-quality filter — that's a real
+    behavioural change, not a regression). The point being tested
+    here is that markitdown is NOT invoked when --format raw is
+    set, which is orthogonal to whether the content parses well."""
+    plaintext_with_html_ext = (
+        b"Marie Curie won two Nobel Prizes. "
+        b"Albert Einstein proposed the theory of relativity. "
+        b"Shakespeare wrote Hamlet. "
+        b"Water contains hydrogen."
+    )
     p = tmp_path / "sample.html"
-    p.write_bytes(SAMPLE_HTML)
+    p.write_bytes(plaintext_with_html_ext)
 
     bundle = _attest(p, fmt="raw")
     sidecar = bundle["sum_cli"]
 
     assert sidecar["input_format"] == "raw"
     assert sidecar["converter"] == "raw-readthrough"
-    # Source URI still anchors to original bytes.
-    assert sidecar["source_uri"] == "sha256:" + hashlib.sha256(SAMPLE_HTML).hexdigest()
+    # Source URI still anchors to original bytes (plaintext here, but
+    # the .html extension is what would normally trigger markitdown).
+    assert sidecar["source_uri"] == "sha256:" + hashlib.sha256(plaintext_with_html_ext).hexdigest()
+    # markdown_sha256 should be absent on the raw path (no conversion happened).
+    assert "markdown_sha256" not in sidecar
 
 
 def test_html_attest_is_deterministic(tmp_path):

@@ -1088,13 +1088,20 @@ Expected: `13 passed` — model-id dispatch parametrized (7 cases), explicit-ref
 Verify: `python -c "import json; r=json.load(open('fixtures/bench_receipts/s25_frontier_models_2026-04-29_opus.json')); [print(f'{a[\"ablation\"]}: drift={a[\"aggregate\"][\"drift_pct_mean\"]:.2f} recall={a[\"aggregate\"][\"exact_match_recall_mean\"]:.4f} full={a[\"aggregate\"][\"n_docs_full_recall\"]}/{a[\"aggregate\"][\"n_docs_measured\"]}') for a in r['ablations']]"`
 Expected: `combined: drift=0.00 recall=1.0000 full=50/50`.
 
+### 136. Sieve quality — upstream noise filter ✅
+
+`DeterministicSieve.extract_triplets` and `extract_with_provenance` now apply `_is_clean_triple` at the extraction boundary so syntactic noise (markdown table cells, code fence residue, link-target fragments, single-character punctuation) never enters the canonical-bundle pipeline. The filter rejects components that are empty/whitespace-only, single-character, contain markdown/code/table punctuation (`|` `\\` `` ` `` `*` `#` `<` `>` `[` `]` `{` `}` `(` `)` `=` `/`), contain path/URL needles (`://`, `.md`, `.py`, `.js`, `](`), or are pure punctuation with no alphanumeric character. Surfaced by the README round-trip in PR #89, where 12 of 56 README-derived triples were noise (e.g., `('|', 'close', 'this')` from a markdown table cell, `('proof_boundary.md`](docs', 'be', 'arbiter')` from a markdown link). After this filter the README extracts 38 clean triples; the algebra-layer defensive filter in `get_or_mint_prime` is preserved as a backstop for non-sieve extractors but no longer fires on sieve output.
+
+Verify: `pytest Tests/test_sieve_noise_filter.py -q`
+Expected: `33 passed` — component-level filter parametrized over 27 cases (clean prose kept, markdown/code/table noise rejected), triple-level rejection if any component is noise, README-corpus integration test confirming known noise patterns are absent and legitimate prose triples survive.
+
 ---
 
 ## Summary counts
 
-Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **135**.
+Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **136**.
 
-- **Production ✅: 121 features** — tested green; each has a verification command in its entry.
+- **Production ✅: 122 features** — tested green; each has a verification command in its entry.
 - **Scaffolded 🔧: 13 features** — tests pass, production activation pending. All catalogued in `docs/MODULE_AUDIT.md` with activation checklists.
 - **Designed 📄: 1 feature** (sha256_128_v2 default-promotion; cross-runtime byte-identity locked, default-flip is a separate operator decision).
 
