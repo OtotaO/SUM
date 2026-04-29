@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-04-29T10:05:28Z",
+  "issued_at": "2026-04-29T10:23:04Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "737abfb0ff25cf940aaf87eb435104fcb1499481",
-    "head_short": "737abfb",
-    "head_subject": "sum attest-batch: per-file batch attestation, JSONL output (#87)",
-    "head_committer_date": "2026-04-29T05:49:57-04:00",
+    "head_sha": "7671add0652faa5ac43777b4363b0ed5116f537f",
+    "head_short": "7671add",
+    "head_subject": "omni-format: markdown-pivot adapter + sum attest --format auto (#88)",
+    "head_committer_date": "2026-04-29T06:11:35-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -22,8 +22,8 @@
     "pypi_published_version": "0.3.0"
   },
   "features": {
-    "total": 131,
-    "production": 117,
+    "total": 133,
+    "production": 119,
     "scaffolded": 13,
     "designed": 1
   },

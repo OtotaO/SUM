@@ -1060,13 +1060,27 @@ Expected: `28 passed` — format detection across 19 extensions, plaintext/markd
 Verify: `pytest Tests/test_sum_cli_omni_format.py -q`
 Expected: `4 passed` — HTML→markitdown routing, markdown pass-through, `--format raw` escape hatch, conversion determinism (same HTML twice → identical state_integer).
 
+### 132. Algebra-level malformed-axiom rejection ✅
+
+`GodelStateAlgebra.get_or_mint_prime` defensively rejects axioms whose components are empty/whitespace-only OR contain a pipe character (which would round-trip-collide with the `||` axiom-key separator). `encode_chunk_state` catches the `ValueError` and skips the malformed axiom silently so the bag-encoding loop survives single-triple noise. The chunked-corpus path filters its returned triple bag to match what was encoded. Surfaced by `sum attest README.md` failing to round-trip when the sieve extracted a `('|', 'close', 'this')` triple from a markdown table cell — the canonical tome line `The | close this.` failed the verifier regex `^The (\S+) (\S+) (.+)\.$`. Now the pipe-bearing triple is dropped at the algebra boundary, and the verifier round-trip is restored. Built-in axiom-key round-trip self-check at mint time (split-and-rebuild) catches any future component shape that escapes the explicit checks.
+
+Verify: `pytest Tests/test_self_attestation.py::test_get_or_mint_prime_rejects_pipe_components Tests/test_self_attestation.py::test_get_or_mint_prime_rejects_empty_components Tests/test_self_attestation.py::test_encode_chunk_state_skips_malformed_axioms_silently -q`
+Expected: `3 passed`.
+
+### 133. Self-attestation pipeline (SUM attests SUM) ✅
+
+`scripts/attest_repo_docs.py` runs SUM's omni-format → sieve → state → bundle pipeline against the repo's own canonical docs (README, CHANGELOG, PROOF_BOUNDARY, FEATURE_CATALOG, RENDER_RECEIPT_FORMAT) and emits one CanonicalBundle per doc to `meta/self_attestation.jsonl` plus a `meta/self_attestation.summary.json` index. Every bundle round-trips through `sum verify` cleanly: state-integer reconstruction matches, axiom count matches. CI gate (`--check` mode) re-runs the pipeline on every PR; if any doc changed without refreshing, the gate fails with the path of the drifted doc and the refresh recipe. First deliberate "use the system to make more systems" move — every claim in the load-bearing docs is now bound to a content-addressable receipt anyone can replay without a secret.
+
+Verify: `pytest Tests/test_self_attestation.py -q && python -m scripts.attest_repo_docs --check`
+Expected: `7 passed`; `meta/self_attestation.* current (5 docs, stable-fields match)`.
+
 ---
 
 ## Summary counts
 
-Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **131**.
+Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **133**.
 
-- **Production ✅: 117 features** — tested green; each has a verification command in its entry.
+- **Production ✅: 119 features** — tested green; each has a verification command in its entry.
 - **Scaffolded 🔧: 13 features** — tests pass, production activation pending. All catalogued in `docs/MODULE_AUDIT.md` with activation checklists.
 - **Designed 📄: 1 feature** (sha256_128_v2 default-promotion; cross-runtime byte-identity locked, default-flip is a separate operator decision).
 
