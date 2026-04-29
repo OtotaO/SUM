@@ -43,6 +43,12 @@ dependencies = [
 #   pip install sum-engine[all]     # both, plus dev tooling
 sieve = ["spacy>=3.7.0"]
 llm = ["openai>=1.40.0,<3.0.0", "pydantic>=2.0.0"]
+# Anthropic Messages-API adapter (Claude family). Installed alongside
+# [llm] for the §2.5 frontier-LLM benchmark runs that compare
+# generator-side interventions across providers. The runner picks
+# OpenAI vs Anthropic by model-id prefix; both extras may be
+# installed at the same time.
+anthropic = ["anthropic>=0.97.0", "pydantic>=2.0.0"]
 # Render-receipt verification (Phase E.1 v0.9.C). joserfc handles the
 # detached-JWS / RFC 7797 b64=false machinery; the existing pure-Python
 # JCS module at sum_engine_internal/infrastructure/jcs.py handles
@@ -92,6 +98,7 @@ dev = [
 all = [
     "sum-engine[sieve]",
     "sum-engine[llm]",
+    "sum-engine[anthropic]",
     "sum-engine[receipt-verify]",
     "sum-engine[mcp]",
     "sum-engine[omni-format]",

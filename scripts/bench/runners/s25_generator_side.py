@@ -225,11 +225,11 @@ async def _with_call_timeout(coro, timeout_s: float, what: str):
 
 
 async def _baseline_extract(
-    client, model: str, text: str, *, call_timeout_s: float = DEFAULT_CALL_TIMEOUT_S
+    adapter, text: str, *, call_timeout_s: float = DEFAULT_CALL_TIMEOUT_S
 ) -> list[Triple]:
     """Baseline (unconstrained) extractor — same shape as
     LiveLLMAdapter.extract_triplets but called inline so the runner
-    owns the experiment."""
+    owns the experiment. Vendor-agnostic via ``adapter``."""
     from sum_engine_internal.ensemble.live_llm_adapter import ExtractionResponse
 
     sys_prompt = (
@@ -237,19 +237,16 @@ async def _baseline_extract(
         "subject-predicate-object triplets. Lowercase. snake_case "
         "for multi-word predicates. At most 64 triplets."
     )
-    response = await _with_call_timeout(
-        client.beta.chat.completions.parse(
-            model=model,
-            messages=[
-                {"role": "system", "content": sys_prompt},
-                {"role": "user", "content": text},
-            ],
-            response_format=ExtractionResponse,
+    parsed = await _with_dispatch_timeout(
+        adapter.parse_structured(
+            system=sys_prompt,
+            user=text,
+            schema=ExtractionResponse,
+            call_timeout_s=call_timeout_s,
         ),
-        timeout_s=call_timeout_s,
         what="baseline_extract",
+        call_timeout_s=call_timeout_s,
     )
-    parsed = response.choices[0].message.parsed
     if parsed is None:
         return []
     return [
@@ -259,8 +256,7 @@ async def _baseline_extract(
 
 
 async def _constrained_extract(
-    client,
-    model: str,
+    adapter,
     text: str,
     source_axioms: Sequence[Triple],
     *,
@@ -275,19 +271,16 @@ async def _constrained_extract(
         "schema. If no triplet's tokens fit the allowed vocabulary, "
         "return an empty list. Lowercase."
     )
-    response = await _with_call_timeout(
-        client.beta.chat.completions.parse(
-            model=model,
-            messages=[
-                {"role": "system", "content": sys_prompt},
-                {"role": "user", "content": text},
-            ],
-            response_format=Schema,
+    parsed = await _with_dispatch_timeout(
+        adapter.parse_structured(
+            system=sys_prompt,
+            user=text,
+            schema=Schema,
+            call_timeout_s=call_timeout_s,
         ),
-        timeout_s=call_timeout_s,
         what="constrained_extract",
+        call_timeout_s=call_timeout_s,
     )
-    parsed = response.choices[0].message.parsed
     if parsed is None:
         return []
     return [
@@ -297,8 +290,7 @@ async def _constrained_extract(
 
 
 async def _baseline_generate(
-    client,
-    model: str,
+    adapter,
     source_axioms: Sequence[Triple],
     *,
     call_timeout_s: float = DEFAULT_CALL_TIMEOUT_S,
@@ -311,41 +303,46 @@ async def _baseline_generate(
     user_prompt = "FACTS TO INCLUDE:\n" + "\n".join(
         f"{s} {p} {o}" for (s, p, o) in source_axioms
     )
-    response = await _with_call_timeout(
-        client.chat.completions.create(
-            model=model,
-            messages=[
-                {"role": "system", "content": sys_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
+    return await _with_dispatch_timeout(
+        adapter.generate_text(
+            system=sys_prompt,
+            user=user_prompt,
+            call_timeout_s=call_timeout_s,
         ),
-        timeout_s=call_timeout_s,
         what="baseline_generate",
+        call_timeout_s=call_timeout_s,
     )
-    return response.choices[0].message.content
 
 
 async def _canonical_first_generate(
-    client,
-    model: str,
+    adapter,
     source_axioms: Sequence[Triple],
     *,
     call_timeout_s: float = DEFAULT_CALL_TIMEOUT_S,
 ) -> str:
     target_axioms_str = [f"{s} {p} {o}" for (s, p, o) in source_axioms]
     user_prompt = build_canonical_first_user_prompt(target_axioms_str)
-    response = await _with_call_timeout(
-        client.chat.completions.create(
-            model=model,
-            messages=[
-                {"role": "system", "content": CANONICAL_FIRST_SYS_PROMPT},
-                {"role": "user", "content": user_prompt},
-            ],
+    return await _with_dispatch_timeout(
+        adapter.generate_text(
+            system=CANONICAL_FIRST_SYS_PROMPT,
+            user=user_prompt,
+            call_timeout_s=call_timeout_s,
         ),
-        timeout_s=call_timeout_s,
         what="canonical_first_generate",
+        call_timeout_s=call_timeout_s,
     )
-    return response.choices[0].message.content
+
+
+async def _with_dispatch_timeout(coro, *, what: str, call_timeout_s: float):
+    """Bridge between the dispatcher's ``LLMCallTimeoutError`` and the
+    runner's ``S25CallTimeoutError``. Both encode the same condition
+    (per-call hard cap exceeded); the rebrand keeps the runner's
+    receipt schema and per-doc skip path unchanged."""
+    from sum_engine_internal.ensemble.llm_dispatch import LLMCallTimeoutError
+    try:
+        return await coro
+    except LLMCallTimeoutError as e:
+        raise S25CallTimeoutError(what, call_timeout_s) from e
 
 
 # ---------------------------------------------------------------------
@@ -354,8 +351,7 @@ async def _canonical_first_generate(
 
 
 async def run_doc(
-    client,
-    model: str,
+    adapter,
     doc: dict,
     ablation: str,
     *,
@@ -389,7 +385,7 @@ async def run_doc(
     try:
         # 1. Source extraction (baseline, all ablations).
         source = await _baseline_extract(
-            client, model, text, call_timeout_s=call_timeout_s
+            adapter, text, call_timeout_s=call_timeout_s
         )
         if not source:
             return {
@@ -403,21 +399,21 @@ async def run_doc(
         # 2. Generator pass.
         if ablation in ("canonical_first", "combined"):
             narrative = await _canonical_first_generate(
-                client, model, source, call_timeout_s=call_timeout_s
+                adapter, source, call_timeout_s=call_timeout_s
             )
         else:  # constrained_only or baseline
             narrative = await _baseline_generate(
-                client, model, source, call_timeout_s=call_timeout_s
+                adapter, source, call_timeout_s=call_timeout_s
             )
 
         # 3. Reconstruction extractor.
         if ablation in ("constrained_extractor", "combined"):
             reconstructed = await _constrained_extract(
-                client, model, narrative, source, call_timeout_s=call_timeout_s
+                adapter, narrative, source, call_timeout_s=call_timeout_s
             )
         else:  # canonical_first or baseline
             reconstructed = await _baseline_extract(
-                client, model, narrative, call_timeout_s=call_timeout_s
+                adapter, narrative, call_timeout_s=call_timeout_s
             )
     except S25CallTimeoutError as e:
         # Per-doc skip on timeout. Tagged so the receipt and aggregate
@@ -456,8 +452,7 @@ _ABLATIONS = {
 
 
 async def run_ablation(
-    client,
-    model: str,
+    adapter,
     corpus: list[dict],
     ablation: str,
     *,
@@ -468,8 +463,7 @@ async def run_ablation(
     per_doc: list[dict] = []
     for doc in corpus:
         result = await run_doc(
-            client,
-            model,
+            adapter,
             doc,
             ablation,
             call_timeout_s=call_timeout_s,
@@ -495,7 +489,7 @@ async def run_ablation(
         "schema": schema,
         "ablation": ablation,
         "description": description,
-        "model": model,
+        "model": getattr(adapter, "model", None),
         "call_timeout_s": call_timeout_s,
         "aggregate": aggregate(per_doc),
         "per_doc": per_doc,
@@ -538,15 +532,26 @@ def main() -> int:
     print(f"corpus: {Path(args.corpus).name} ({len(corpus)} docs)", file=sys.stderr)
 
     if args.dry_run:
-        client = None  # unused
+        adapter = None  # unused
     else:
-        api_key = os.environ.get("OPENAI_API_KEY")
-        if not api_key:
+        from sum_engine_internal.ensemble.llm_dispatch import get_adapter
+        try:
+            adapter = get_adapter(args.model)
+        except ValueError as e:
+            raise SystemExit(str(e))
+        except ImportError as e:
+            raise SystemExit(str(e))
+        # Surface a friendly message if the matching API key is missing.
+        if args.model.lower().startswith("claude-") and not os.environ.get("ANTHROPIC_API_KEY"):
             raise SystemExit(
-                "OPENAI_API_KEY not set. Set it or use --dry-run for offline scaffold check."
+                "ANTHROPIC_API_KEY not set. Required for claude-* models. "
+                "Set it or use --dry-run for offline scaffold check."
             )
-        from openai import AsyncOpenAI
-        client = AsyncOpenAI(api_key=api_key)
+        if not args.model.lower().startswith("claude-") and not os.environ.get("OPENAI_API_KEY"):
+            raise SystemExit(
+                "OPENAI_API_KEY not set. Required for gpt-/o*-* models. "
+                "Set it or use --dry-run for offline scaffold check."
+            )
 
     ablations_to_run = (
         list(_ABLATIONS.keys()) if args.ablation == "all" else [args.ablation]
@@ -557,8 +562,7 @@ def main() -> int:
         print(f"\n=== ablation: {abl} ===", file=sys.stderr)
         result = asyncio.run(
             run_ablation(
-                client,
-                args.model,
+                adapter,
                 corpus,
                 abl,
                 call_timeout_s=args.call_timeout,
@@ -576,12 +580,18 @@ def main() -> int:
             msg += f" [timed_out: {agg['n_docs_timed_out']} doc(s)]"
         print(msg, file=sys.stderr)
 
+    provider = (
+        "anthropic" if args.model.lower().startswith("claude-")
+        else "openai" if args.model.lower().startswith(("gpt-", "o1-", "o3-", "o4-"))
+        else "unknown"
+    )
     payload = {
         "schema_family": "sum.s25_generator_side.v1",
         "issued_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "corpus": Path(args.corpus).name,
         "n_docs": len(corpus),
         "model": args.model,
+        "provider": provider,
         "dry_run": args.dry_run,
         "baseline_reference": {
             "receipt": "fixtures/bench_receipts/s25_canonicalization_replay_2026-04-28.json",
