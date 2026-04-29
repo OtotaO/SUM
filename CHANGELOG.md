@@ -4,6 +4,68 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Doc-channel congruency pass — align surfaces with current shipping state
+
+Following an external audit of cross-channel claims (the
+SUMequities portfolio at `https://www.sumequities.com/projects/sum/`
+vs the SUM repo's docs vs the GitHub repo metadata), this pass
+fixes four divergences:
+
+1. **GitHub repo description** updated from the stale "A
+   mechanically verifiable knowledge engine built on prime-encoded
+   semantic state" to match the README lede: "Cross-runtime
+   trust surface for LLM-rendered text: Python, Node, and
+   browser runtimes produce byte-identical Ed25519 signatures
+   over JCS-canonical bytes." Visible in `gh repo view`, GitHub
+   search results, and any consumer that scrapes repo metadata.
+
+2. **`docs/FEATURE_CATALOG.md` extended with Layer 11** — the
+   measurement-and-hardening infrastructure shipped this
+   session was uncatalogued. New entries (118–126):
+   §2.5 canonicalisation-replay runner, §2.5 generator-side
+   runner + primitives, §2.5 closure receipts (4 corpora),
+   `/api/qid` accuracy floor runner, `sha256_128_v2`
+   cross-runtime byte-identity gate, threat-model traceability
+   test suite, `sum verify` extraction-provenance surface, MCP
+   server v2 (hardened), M1 Merkle set-commitment sidecar
+   prototype. Each entry has a verification command.
+
+   Counts re-regenerated: total **126 features**, Production
+   ✅ **112**, Scaffolded 🔧 **13**, Designed 📄 **1**.
+
+3. **`docs/PROOF_BOUNDARY.md` §2.5.1 added** for the
+   `/api/qid` resolution-accuracy receipt. The empirical-
+   benchmark section was missing this measurement; now
+   surfaced with the two-tier metric (hit-rate 100 %,
+   label-substring match 100 %) and the explicit boundary
+   on what the metric does not test.
+
+4. **`pyproject.toml` version bump 0.3.1 → 0.4.0.** The
+   [Unreleased] block has accumulated 16+ entries since the
+   v0.3.0 PyPI release including the MCP server, threat-model
+   test suite, §2.5 closure pattern across 4 corpora, the
+   sha256_128_v2 byte-identity gate, the `/api/qid` floor, the
+   verify-extraction-provenance surface — all feature-bearing,
+   not bug-fix-shaped. Honest semver: minor bump.
+
+**Audit also surfaced two SUMequities-portfolio discrepancies**
+that I cannot fix from this repo (separate codebase):
+
+- "100 commits / 30d" displayed; actual is **236**.
+- "VERIFIED APR 28" displayed; today is APR 29 (likely a
+  daily-refresh stamp).
+
+These are listed as findings for the operator to handle in
+the SUMequities repo. A future "process intensification" pass
+will add a JSON manifest published from this repo that the
+portfolio reads from, so commit-count drift cannot recur.
+
+This PR ships only the SUM-repo-side fixes; the
+process-intensification automation is deliberately deferred
+per the operator's framing ("first let's just get congruency
+everywhere, then we'll look into mechanisms of maintaining
+those channels").
+
 ### Added — `sha256_128_v2` cross-runtime byte-identity gate (K1-v2 + K2-v2)
 
 The README's hardening backlog said "`sha256_128_v2` activation —

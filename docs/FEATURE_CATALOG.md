@@ -958,13 +958,82 @@ Result: **PASS** (live).
 
 ---
 
+## Layer 11 — Hardening + measurement infrastructure (Phase E.2, 2026-04-28 / 04-29)
+
+This session added a measurement-and-hardening layer that closes hardening-backlog items the prior phases scoped but did not ship. Each entry has a verification command that runs without the OpenAI API where possible.
+
+### 118. §2.5 canonicalisation-replay receipt runner ✅
+
+`scripts/bench/runners/canonicalization_replay.py` — replays cached `bench_history.jsonl` per-doc data under L0/L1/L2/L3 canonicalisation regimes. Falsifies the cheapest §2.5 hypothesis empirically (recall ceiling 0.18 under post-hoc canonicalisation). Receipt schema `sum.s25_canonicalization_replay.v1`. No LLM cost.
+
+Verify: `python -m scripts.bench.runners.canonicalization_replay --out /tmp/replay.json`
+Expected: receipt with 4 regimes, L0 baseline = 107.75 % drift / 0.12 recall reproduced.
+
+### 119. §2.5 generator-side intervention runner + primitives ✅
+
+`scripts/bench/runners/s25_generator_side.py` + `sum_engine_internal/ensemble/s25_interventions.py`. Three ablations (canonical-first generator, constrained-decoding extractor, combined). Receipt schemas `sum.s25_canonical_first_generator.v1` / `sum.s25_constrained_extractor.v1` / `sum.s25_combined.v1`. Per-call timeout (60 s default) + graceful per-doc skip on hang.
+
+Verify: `python -m scripts.bench.runners.s25_generator_side --ablation combined --dry-run --max-docs 3 --out /tmp/dryrun.json` (no API key needed).
+Expected: structurally-valid receipt with 3 per-doc records.
+
+### 120. §2.5 closure receipts (4 corpora) ✅
+
+Live receipts at `fixtures/bench_receipts/`: `s25_generator_side_2026-04-28.json` (seed_v1 ablation matrix), `s25_residual_closure_2026-04-28.json` (seed_v1 + lemma-exclusion), `s25_generator_side_seed_v2_2026-04-28.json` (seed_v2 difficulty corpus), `s25_generator_side_seed_long_combined_2026-04-28.json` (multi-paragraph capstone). Combined recall: 1.0000 / 0.9750 / 0.9972 across the three corpora.
+
+Verify: `python -c "import json; r=json.load(open('fixtures/bench_receipts/s25_residual_closure_2026-04-28.json')); print(r['ablations'][0]['aggregate']['exact_match_recall_mean'])"`
+Expected: `1.0`.
+
+### 121. `/api/qid` accuracy floor receipt runner ✅
+
+`scripts/bench/runners/qid_accuracy.py` — 30-term hand-curated corpus + two-tier metric (hit-rate + label-substring match). Closes the README's "target >95 %" placeholder with measured 100 % / 100 %. Receipt schema `sum.qid_resolution_accuracy.v1`. Cost ~$0 (Wikidata free, Cloudflare free tier).
+
+Verify: `python -m scripts.bench.runners.qid_accuracy --out /tmp/qid.json` (requires network).
+Expected: `hit_rate = 1.0000 (30/30)`.
+
+### 122. `sha256_128_v2` cross-runtime byte-identity gate ✅
+
+`scripts/verify_godel_v2_cross_runtime.py` — K1-v2 (12 axiom-key fixtures) + K2-v2 (6 state-encoding fixtures), Python ↔ Node byte-identical under v2. Wired into CI alongside the v1 K-matrix. Default scheme stays `sha256_64_v1`; this gate locks the v2 migration path.
+
+Verify: `python -m scripts.verify_godel_v2_cross_runtime`
+Expected: `GÖDEL CROSS-RUNTIME (sha256_128_v2): ALL FIXTURES AGREE`.
+
+### 123. Threat-model executable traceability test suite ✅
+
+`Tests/test_threat_model.py` — one test class per `THREAT_MODEL.md` §4 attack-surface row, with a `_THREAT_TO_TEST` index meta-test that fails on drift. 22 passing, 1 skipped, 2 xfailed (residual risks documented).
+
+Verify: `pytest Tests/test_threat_model.py -q`
+Expected: `22 passed, 1 skipped, 2 xfailed`.
+
+### 124. `sum verify` extraction-provenance surface ✅
+
+`sum verify` JSON output now carries an `extraction` block with `extractor` / `verifiable` / `source` fields. Closes `THREAT_MODEL.md` §3.3 "signed ≠ true" visibility gap. Downstream consumers gate with `sum verify -i X | jq -e '.extraction.verifiable'`.
+
+Verify: `pytest Tests/test_verify_extraction_visibility.py -q`
+Expected: `5 passed`.
+
+### 125. MCP server v2 (hardened) ✅
+
+`sum_engine_internal/mcp_server/` + `sum-mcp` console script. Eight-property hardening contract (input-size caps, tagged error classes, network opt-in, concurrency-safe, catch-all per tool, forward-compat policy, structured stderr audit, property-tested via Hypothesis). 16 unit tests + 13 fuzz tests = 29/29 passing on ~800 adversarial inputs per release.
+
+Verify: `pytest Tests/test_mcp_server.py Tests/test_mcp_server_fuzz.py -q`
+Expected: `29 passed`.
+
+### 126. M1 Merkle set-commitment sidecar prototype ✅
+
+`sum_engine_internal/merkle_sidecar/` — pure-Python Merkle tree over canonical fact keys, RFC 9162-inspired, domain-separated SHA-256. 27 tests cover determinism, set semantics, round-trip at multiple sizes, tamper detection, empty/single-element edge cases, domain-separation invariants. Bench at N=5000 shows 21× faster verify than LCM divisibility.
+
+Verify: `pytest Tests/test_merkle_sidecar.py -q && python -m scripts.bench.runners.merkle_vs_lcm --sizes 100 1000 5000 --samples 50 --out /tmp/merkle.json`
+Expected: `27 passed`; bench shows 21× speedup at N=5000.
+
+---
+
 ## Summary counts
 
-Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **117**.
+Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **126**.
 
-- **Production ✅: 103 features** — tested green; each has a verification command in its entry.
+- **Production ✅: 112 features** — tested green; each has a verification command in its entry.
 - **Scaffolded 🔧: 13 features** — tests pass, production activation pending. All catalogued in `docs/MODULE_AUDIT.md` with activation checklists.
-- **Designed 📄: 1 feature** (sha256_128_v2 promotion).
+- **Designed 📄: 1 feature** (sha256_128_v2 default-promotion; cross-runtime byte-identity locked, default-flip is a separate operator decision).
 
 If the totals above ever disagree with the grep recipe, this file drifted; rerun the recipe and update the prose. Phase E.1 v0.9.B (browser receipt verifier) + v0.9.C (Python receipt verifier) shipped earlier and are catalogued in the body. Future unshipped queue items are tracked in [`docs/NEXT_SESSION_PLAYBOOK.md`](NEXT_SESSION_PLAYBOOK.md) and not catalogued here until they land.
 
