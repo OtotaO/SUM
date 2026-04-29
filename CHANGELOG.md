@@ -203,6 +203,53 @@ without a schema change (the field is verifier-output-only;
 the bundle schema is unchanged, so existing bundles continue
 to verify identically).
 
+### Measured — `/api/qid` accuracy floor (closes a "target >95%" placeholder)
+
+The README's "Future developments" section claimed a "target
+>95% accuracy floor" for `/api/qid` SPARQL disambiguation but
+**the floor was never measured**. This closes that placeholder
+with a real number from a 30-term hand-curated corpus across
+four categories (people, places, concepts, common nouns).
+
+`scripts/bench/runners/qid_accuracy.py` runs against the live
+hosted Worker, no API key needed, ~$0 cost (Wikidata is free,
+Cloudflare on free tier covers ~30 requests trivially). Receipt
+at `fixtures/bench_receipts/qid_accuracy_2026-04-28.json` under
+schema `sum.qid_resolution_accuracy.v1`.
+
+**Two-tier metric, run 2026-04-28 against `https://sum-demo.ototao.workers.dev`:**
+
+- **Hit-rate: 30/30 (100%)** — every term resolved to a non-null Wikidata entity.
+- **Label-substring match: 24/24 (100%)** — every returned label contains the input pattern as a case-insensitive substring (excludes 6 common-noun rows from denominator).
+- **Wall-clock p50 ≈ 200ms** per term (Cloudflare cache + Wikidata round-trip).
+
+**Honest finding the receipt surfaces.** Label-substring match
+is robust to wbsearchentities's quirks but does NOT measure
+semantic accuracy against canonical Q-IDs. The receipt records
+`relativity` → `Q201607 (Relativity Records)` — a music-label
+entity, not the physics theory — as a passing label-substring
+match. The two-tier shape is the floor; canonical-QID accuracy
+is a stricter measurement that would need hand-verified
+ground-truth pairs (a follow-on, scoped explicitly in the
+README).
+
+The current resolver is a thin layer over wbsearchentities;
+SPARQL-driven disambiguation that prefers the most-linked-to
+entity for ambiguous terms remains an unshipped enhancement —
+the receipt's `relativity` row demonstrates exactly the case
+SPARQL disambiguation would address.
+
+**Operator note (preserved from the seed_long capstone):** the
+runner sets an explicit `User-Agent` header
+(`sum-qid-accuracy-bench/0.1`) because Cloudflare's edge
+returns 403 Forbidden on the default Python `urllib`
+`Python-urllib/3.10` UA. The same fix applied earlier in this
+session for the receipt-audit runner.
+
+`README.md`'s "Future developments" line replaces "target >95
+% accuracy floor" with the measured numbers + the explicit
+boundary on what the metric does and does not test.
+
 ### Added — threat-model executable traceability test suite
 
 `docs/THREAT_MODEL.md` §4 (Attack Surface Summary) names every
