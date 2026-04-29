@@ -4,6 +4,47 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### §2.5 frontier-LLM refresh — GPT-5.5 (closure pattern is vendor-independent)
+
+Symmetric refresh against OpenAI's `gpt-5.5-2026-04-23` snapshot,
+completing the cross-vendor receipt set the 2026-04-29 external-
+awareness checkpoint queued. Same seed_v1 corpus, same intervention
+ablations, same `sum.s25_generator_side.v1` schema family the
+Opus 4.7 receipt uses (with `provider: "openai"`).
+
+  | Model                       | canonical_first         | constrained_extractor   | combined                |
+  | --------------------------- | ----------------------- | ----------------------- | ----------------------- |
+  | gpt-4o-mini-2024-07-18 (Jul 2024, baseline) | — (closure was at recall ≥ 0.97) | — | — |
+  | Claude Opus 4.7 (Apr 2026)  | drift 94.70 / r 0.96 / 48-50 | drift 9.33  / r 0.96 / 48-50 | **drift 0.00 / r 1.00 / 50-50** |
+  | GPT-5.5 (Apr 2026)          | drift 58.48 / r 0.98 / 49-50 | drift 2.00  / r 1.00 / **50-50** | drift 5.33 / r 1.00 / 50-50 |
+
+**Headlines:**
+
+  - Both 2026-frontier models hit **50/50 perfect recall on the
+    combined ablation** — strictly stronger than the gpt-4o-mini
+    baseline.
+  - GPT-5.5 hits 50/50 with **constrained_extractor alone** (drift
+    2.00%, no canonical-first generator needed). Cleanest single-
+    intervention result on record. Indicates frontier alignment
+    with source vocabulary is now tight enough that one of the two
+    interventions is redundant on the easy half of the corpus.
+  - The intervention pattern is **vendor-independent across the
+    OpenAI ↔ Anthropic frontier as of 2026-04-29**. The §2.5
+    closure isn't an artifact of any single model family.
+
+Receipt: `fixtures/bench_receipts/s25_frontier_models_2026-04-29_gpt55.json`
+(provider `openai`, model `gpt-5.5-2026-04-23`, 50 docs × 3
+ablations, ~$1 spend).
+
+Tooling additions:
+
+  - `scripts/bench/runners/s25_smoke.py` — vendor-agnostic single-
+    doc smoke (renamed from `s25_anthropic_smoke.py`). Routes by
+    model-id prefix; one shared script for all dispatcher targets.
+  - `scripts/bench/runners/list_openai_models.py` — lists the
+    frontier-class snapshots available to the active OpenAI key.
+    Used to verify the `gpt-5.5` snapshot id before spend.
+
 ### §2.5 frontier-LLM refresh — Claude Opus 4.7 (closure pattern transfers)
 
 The §2.5 LLM round-trip closure was originally locked at recall ≥ 0.97

@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-04-29T14:25:20Z",
+  "issued_at": "2026-04-29T15:19:34Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "92e886cd11aa4a065c03e60eba40858d7d107fd2",
-    "head_short": "92e886c",
-    "head_subject": "sieve quality: upstream noise filter (drops markdown/code/table residue) (#91)",
-    "head_committer_date": "2026-04-29T09:31:22-04:00",
+    "head_sha": "e2f1182a1b5fe765160d264beefc389c017a5376",
+    "head_short": "e2f1182",
+    "head_subject": "sieve quality round-2: quantity / decimal / hash filters (#92)",
+    "head_committer_date": "2026-04-29T10:31:10-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -22,8 +22,8 @@
     "pypi_published_version": "0.3.0"
   },
   "features": {
-    "total": 137,
-    "production": 123,
+    "total": 139,
+    "production": 125,
     "scaffolded": 13,
     "designed": 1
   },
@@ -38,6 +38,11 @@
         "path": "fixtures/bench_receipts/s25_canonicalization_replay_2026-04-28.json",
         "schema": "sum.s25_canonicalization_replay.v1",
         "issued_at": "2026-04-28T04:58:03Z"
+      },
+      {
+        "path": "fixtures/bench_receipts/s25_frontier_models_2026-04-29_gpt55.json",
+        "schema": "sum.s25_generator_side.v1",
+        "issued_at": "2026-04-29T15:03:24Z"
       },
       {
         "path": "fixtures/bench_receipts/s25_frontier_models_2026-04-29_opus.json",
