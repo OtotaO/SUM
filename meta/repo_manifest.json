@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-04-29T09:13:03Z",
+  "issued_at": "2026-04-29T09:44:16Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "4e379159c490553ff45fcdf772d38dbf57c9db6b",
-    "head_short": "4e37915",
-    "head_subject": "docs: repo manifest publisher (single source of truth + CI drift gate)",
-    "head_committer_date": "2026-04-29T03:22:37-04:00",
+    "head_sha": "b249677b10a9895be56a63281df96e3763356f94",
+    "head_short": "b249677",
+    "head_subject": "sum attest: route sieve through chunked path; unlock arbitrary-size input (#86)",
+    "head_committer_date": "2026-04-29T05:39:47-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -22,8 +22,8 @@
     "pypi_published_version": "0.3.0"
   },
   "features": {
-    "total": 126,
-    "production": 112,
+    "total": 129,
+    "production": 115,
     "scaffolded": 13,
     "designed": 1
   },

@@ -1025,13 +1025,34 @@ Expected: `29 passed`.
 Verify: `pytest Tests/test_merkle_sidecar.py -q && python -m scripts.bench.runners.merkle_vs_lcm --sizes 100 1000 5000 --samples 50 --out /tmp/merkle.json`
 Expected: `27 passed`; bench shows 21× speedup at N=5000.
 
+### 127. Chunked Gödel-state composition (algebra primitive) ✅
+
+`GodelStateAlgebra.compose_chunk_states(states)` plus `sum_engine_internal/algorithms/chunked_corpus.py` (`state_for_corpus`, `chunk_text_on_sentences`). For any context-local extractor f (`DeterministicSieve` qualifies), `state_for_corpus(text, chunk_chars=N)` produces the same state integer as `algebra.encode_chunk_state(f(text))` for any N — the LCM equivalence is associative + commutative + idempotent. spaCy-based sentencizer keeps chunker and extractor in alignment so even abbreviation-heavy corpora ("Dr./U.S./e.g.") preserve byte-identity. 21 tests across algebra layer (commutativity, associativity, idempotence, math.lcm equality) + corpus layer (parametrized 5 chunk sizes × 2 corpora) + splitter layer.
+
+Verify: `pytest Tests/test_chunked_state_composition.py -q`
+Expected: `21 passed`.
+
+### 128. `sum attest` arbitrary-size input via chunked sieve ✅
+
+`sum_cli/main.py` routes the sieve extractor through `state_for_corpus`. Inputs ≤ 200K chars take the single-chunk fast path with state byte-identity to the previous unchunked path; inputs > 1 MB (spaCy's `nlp.max_length` cap) now attest end-to-end where they previously raised `[E088]`. Ledger and LLM paths deliberately untouched (chunk-equivalence does not hold cross-coreference; provenance recording is one-shot).
+
+Verify: `pytest Tests/test_sum_cli_arbitrary_size.py -q`
+Expected: `2 passed` (short-input byte-identity + 1.2 MB megacorpus attest).
+
+### 129. `sum attest-batch` per-file batch attestation ✅
+
+`sum attest-batch <files...>` mints one CanonicalBundle per input file and emits the bundles as JSONL on stdout. Per-file failures (read errors, zero triples, extraction errors) are reported on stderr in `sum: file=<path> error=<reason>` format and the run continues; exit code is 0 if every file succeeded, 1 if any failed. Each batch bundle carries `sum_cli.source_path` + `sum_cli.source_uri` (sha256: of file bytes) for downstream routing. State integer in a batch-bundle for file F is byte-identical to `sum attest --input F`. Closes the "batches" half of the omni-format goal at the public CLI surface.
+
+Verify: `pytest Tests/test_sum_cli_attest_batch.py -q`
+Expected: `6 passed`.
+
 ---
 
 ## Summary counts
 
-Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **126**.
+Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **129**.
 
-- **Production ✅: 112 features** — tested green; each has a verification command in its entry.
+- **Production ✅: 115 features** — tested green; each has a verification command in its entry.
 - **Scaffolded 🔧: 13 features** — tests pass, production activation pending. All catalogued in `docs/MODULE_AUDIT.md` with activation checklists.
 - **Designed 📄: 1 feature** (sha256_128_v2 default-promotion; cross-runtime byte-identity locked, default-flip is a separate operator decision).
 

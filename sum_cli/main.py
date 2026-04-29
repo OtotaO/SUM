@@ -318,6 +318,144 @@ def cmd_attest(args: argparse.Namespace) -> int:
     return 0
 
 
+# ─── attest-batch ────────────────────────────────────────────────────
+
+
+def cmd_attest_batch(args: argparse.Namespace) -> int:
+    """Attest each input file independently and emit one bundle per
+    line of stdout (JSONL).
+
+    Per-file independence: a parse failure on one file does not abort
+    the batch; the file is reported on stderr and the run continues.
+    Exit code is 0 if every file produced a bundle, 1 if any file
+    failed.
+
+    Constraints (deliberately narrower than ``sum attest``):
+      - ``--ledger`` is unsupported here. Batch ledger writes need a
+        per-file db routing decision; out of scope for this surface.
+        Use ``sum attest --ledger`` per file when provenance is
+        required.
+      - ``--ed25519-key`` and ``--signing-key`` apply to every bundle
+        in the batch (one signing identity for the whole run).
+      - ``--source`` is auto-derived per file (sha256: of the file's
+        bytes); no override (would collide across files).
+
+    Output shape: one bundle JSON per line on stdout, in input
+    order. Stable for piping to ``jq -c`` or further filters.
+    """
+    files: list[str] = list(getattr(args, "files", []) or [])
+    if not files:
+        print(
+            "sum: attest-batch requires at least one input file. "
+            "Use `sum attest` for a single file from stdin.",
+            file=sys.stderr,
+        )
+        return 2
+
+    extractor = _pick_extractor(args.extractor)
+    if args.verbose:
+        print(
+            f"sum: attest-batch extractor={extractor} files={len(files)}",
+            file=sys.stderr,
+        )
+
+    # Build a single algebra + codec for the whole batch. The algebra's
+    # axiom→prime cache is process-local but every prime is deterministic,
+    # so re-encoding the same triple in two files produces the same
+    # prime — no cross-file state pollution to worry about.
+    from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+    from sum_engine_internal.ensemble.tome_generator import AutoregressiveTomeGenerator
+    from sum_engine_internal.infrastructure.canonical_codec import CanonicalCodec
+
+    key_manager = _load_ed25519_key(args.ed25519_key) if args.ed25519_key else None
+    algebra = GodelStateAlgebra()  # type: ignore[no-untyped-call]
+    tome_generator = AutoregressiveTomeGenerator(algebra)
+    codec = CanonicalCodec(
+        algebra,
+        tome_generator,
+        signing_key=args.signing_key,
+        key_manager=key_manager,
+    )
+
+    failed = 0
+    succeeded = 0
+    for path in files:
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                text = f.read().strip()
+        except OSError as e:
+            print(
+                f"sum: file={path} error=read_failed: {e}",
+                file=sys.stderr,
+            )
+            failed += 1
+            continue
+
+        if not text:
+            print(f"sum: file={path} error=empty_input", file=sys.stderr)
+            failed += 1
+            continue
+
+        source_uri = "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+        try:
+            if extractor == "sieve":
+                from sum_engine_internal.algorithms.chunked_corpus import (
+                    state_for_corpus,
+                )
+                state, triples = state_for_corpus(text, algebra)
+            else:
+                triples = _extract(text, extractor, args.model)
+                state = algebra.encode_chunk_state(list(triples))
+        except Exception as e:  # noqa: BLE001 — surface ANY extraction failure
+            print(
+                f"sum: file={path} error=extraction_failed: {e!r}",
+                file=sys.stderr,
+            )
+            failed += 1
+            continue
+
+        if not triples:
+            print(
+                f"sum: file={path} error=zero_triples "
+                f"(input may be too short, negated, or hedged)",
+                file=sys.stderr,
+            )
+            failed += 1
+            continue
+
+        bundle = codec.export_bundle(
+            state,
+            branch=args.branch,
+            title=args.title,
+        )
+        bundle["sum_cli"] = {
+            "extractor": extractor,
+            "source_uri": source_uri,
+            "source_path": path,
+            "cli_version": __version__,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "batch": True,
+        }
+        # JSONL: compact, one line per record, no pretty-print.
+        json.dump(bundle, sys.stdout)
+        sys.stdout.write("\n")
+        succeeded += 1
+        if args.verbose:
+            print(
+                f"sum: file={path} ok triples={len(triples)} "
+                f"digits={len(bundle['state_integer'])}",
+                file=sys.stderr,
+            )
+
+    if args.verbose or failed:
+        print(
+            f"sum: attest-batch done — {succeeded} succeeded, {failed} failed",
+            file=sys.stderr,
+        )
+    return 0 if failed == 0 else 1
+
+
 # ─── verify ──────────────────────────────────────────────────────────
 
 _SUPPORTED_CANONICAL_FORMAT = "1.0.0"
@@ -1014,6 +1152,46 @@ def build_parser() -> argparse.ArgumentParser:
     p_attest.add_argument("--pretty", action="store_true", help="Pretty-print output JSON.")
     p_attest.add_argument("--verbose", "-v", action="store_true", help="Emit diagnostics on stderr.")
     p_attest.set_defaults(func=cmd_attest)
+
+    # attest-batch
+    p_attest_batch = subparsers.add_parser(
+        "attest-batch",
+        help="Attest each input file independently; emit one bundle per line on stdout (JSONL).",
+        description=(
+            "Per-file batch attestation. Reads N file paths as positional "
+            "args, extracts triples from each via the sieve, mints one "
+            "CanonicalBundle per file, and emits the bundles as JSONL on "
+            "stdout (one compact JSON per line, in input order). Per-file "
+            "failures (read errors, zero triples, extraction errors) are "
+            "reported on stderr in `sum: file=<path> error=<reason>` format "
+            "and the run continues. Exit code is 0 if every file produced "
+            "a bundle, 1 if any failed. Signatures (--ed25519-key, "
+            "--signing-key) apply to every bundle in the batch. --ledger "
+            "is unsupported here (use `sum attest --ledger` per file when "
+            "byte-level provenance is required)."
+        ),
+    )
+    p_attest_batch.add_argument("files", nargs="+", help="One or more input file paths.")
+    p_attest_batch.add_argument(
+        "--extractor", choices=["sieve", "llm"],
+        help="Override extractor selection. Default: auto-detect.",
+    )
+    p_attest_batch.add_argument(
+        "--model",
+        help="LLM model ID (pinned snapshot) for --extractor=llm. Default: gpt-4o-mini-2024-07-18.",
+    )
+    p_attest_batch.add_argument("--branch", default="main", help="Branch name. Default: main.")
+    p_attest_batch.add_argument("--title", default="Attested Tome", help="Tome title. Default: 'Attested Tome'.")
+    p_attest_batch.add_argument(
+        "--signing-key", default=None,
+        help="HMAC signing key applied to every bundle in the batch. Default: unset.",
+    )
+    p_attest_batch.add_argument(
+        "--ed25519-key", default=None, metavar="PEM",
+        help="PATH to an Ed25519 PEM private key. Applied to every bundle in the batch.",
+    )
+    p_attest_batch.add_argument("--verbose", "-v", action="store_true", help="Emit diagnostics on stderr.")
+    p_attest_batch.set_defaults(func=cmd_attest_batch)
 
     # verify
     p_verify = subparsers.add_parser(
