@@ -4,6 +4,68 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Added — repo manifest publisher (single source of truth for cross-channel state)
+
+Closes the cross-channel-drift problem the SUMequities portfolio audit
+surfaced ("100 commits / 30d" displayed; actual is 239). The manifest
+publisher emits a JSON file under schema `sum.repo_manifest.v1`
+that downstream consumers (the SUMequities portfolio, dashboards,
+status pages, anyone) fetch and read instead of computing values
+locally.
+
+**The manifest** (`meta/repo_manifest.json`) captures every load-
+bearing public-surface fact in one file:
+
+- Repo metadata (owner, name, license)
+- Git state: `head_sha`, `head_short`, `head_subject`,
+  `head_committer_date`, `commits_last_30d`
+- GitHub stars (live via `gh repo view`)
+- Release: `pyproject_version` + `pypi_published_version`
+- Feature counts: total / production / scaffolded / designed
+  (mechanically derived from FEATURE_CATALOG.md headings)
+- Receipt fixtures catalog (every `fixtures/bench_receipts/*.json`
+  with its schema and `issued_at`)
+- Hosted-demo URLs (worker, JWKS, revocation list)
+
+**Producer**: `python -m scripts.repo_manifest --out meta/repo_manifest.json`
+
+**Consumer**: any HTTP client fetching the file via
+`https://raw.githubusercontent.com/OtotaO/SUM/main/meta/repo_manifest.json`
+(or, for the portfolio's case, the equivalent CDN-backed URL).
+
+**CI gate** — new step in `quantum-ci.yml`:
+`python -m scripts.repo_manifest --check meta/repo_manifest.json`.
+The check strips time-varying fields (`issued_at`, GitHub stars)
+and compares the substantive content. **A PR that changes anything
+the manifest reflects (commit count, feature counts, version,
+receipts) without re-running the publisher fails CI** with a
+one-line refresh recipe in the error output.
+
+**Self-applicable verifiability discipline.** The manifest is
+itself a structured, fetchable, diff-able artifact — verifiable in
+all three operative senses: reproducible by anyone (`gh` + git +
+filesystem only), falsifiable (the CI gate fails on drift), and
+forward-compatible (future operator decision can Ed25519-sign it
+with the trust-root key). SUM's own thesis applied to its own
+repo metadata.
+
+**Tests:** 8 in `Tests/test_repo_manifest.py` cover: schema
+identifier pinned; load-bearing fields present; receipt catalog
+includes session-shipped fixtures; stable-view strips time-
+varying fields and is idempotent; --check passes on
+just-emitted manifest; --check fails on stale `commits_last_30d`
+with refresh recipe in stderr; --check fails on missing file.
+
+**The audit-detected portfolio divergence (100 vs 239 commits)
+will close when the SUMequities portfolio is wired to fetch
+this manifest** — that's an operator-side change in a separate
+repo. The producer side is now in place.
+
+This is the second deliberate "process intensification" move
+(the first was the external-awareness checkpoint in PR #83).
+Both are mechanisms, not just measurements: each runs every PR
+and surfaces drift at CI time.
+
 ### External-awareness pass — track relevant 2026-04 developments
 
 A focused audit of external developments since the current
@@ -260,6 +322,53 @@ one line. Closes a long-standing threat-model side issue
 without a schema change (the field is verifier-output-only;
 the bundle schema is unchanged, so existing bundles continue
 to verify identically).
+
+### Measured — `/api/qid` accuracy floor (closes a "target >95%" placeholder)
+
+The README's "Future developments" section claimed a "target
+>95% accuracy floor" for `/api/qid` SPARQL disambiguation but
+**the floor was never measured**. This closes that placeholder
+with a real number from a 30-term hand-curated corpus across
+four categories (people, places, concepts, common nouns).
+
+`scripts/bench/runners/qid_accuracy.py` runs against the live
+hosted Worker, no API key needed, ~$0 cost (Wikidata is free,
+Cloudflare on free tier covers ~30 requests trivially). Receipt
+at `fixtures/bench_receipts/qid_accuracy_2026-04-28.json` under
+schema `sum.qid_resolution_accuracy.v1`.
+
+**Two-tier metric, run 2026-04-28 against `https://sum-demo.ototao.workers.dev`:**
+
+- **Hit-rate: 30/30 (100%)** — every term resolved to a non-null Wikidata entity.
+- **Label-substring match: 24/24 (100%)** — every returned label contains the input pattern as a case-insensitive substring (excludes 6 common-noun rows from denominator).
+- **Wall-clock p50 ≈ 200ms** per term (Cloudflare cache + Wikidata round-trip).
+
+**Honest finding the receipt surfaces.** Label-substring match
+is robust to wbsearchentities's quirks but does NOT measure
+semantic accuracy against canonical Q-IDs. The receipt records
+`relativity` → `Q201607 (Relativity Records)` — a music-label
+entity, not the physics theory — as a passing label-substring
+match. The two-tier shape is the floor; canonical-QID accuracy
+is a stricter measurement that would need hand-verified
+ground-truth pairs (a follow-on, scoped explicitly in the
+README).
+
+The current resolver is a thin layer over wbsearchentities;
+SPARQL-driven disambiguation that prefers the most-linked-to
+entity for ambiguous terms remains an unshipped enhancement —
+the receipt's `relativity` row demonstrates exactly the case
+SPARQL disambiguation would address.
+
+**Operator note (preserved from the seed_long capstone):** the
+runner sets an explicit `User-Agent` header
+(`sum-qid-accuracy-bench/0.1`) because Cloudflare's edge
+returns 403 Forbidden on the default Python `urllib`
+`Python-urllib/3.10` UA. The same fix applied earlier in this
+session for the receipt-audit runner.
+
+`README.md`'s "Future developments" line replaces "target >95
+% accuracy floor" with the measured numbers + the explicit
+boundary on what the metric does and does not test.
 
 ### Added — threat-model executable traceability test suite
 

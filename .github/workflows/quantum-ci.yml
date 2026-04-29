@@ -176,6 +176,17 @@ jobs:
       # flip the default does not silently regress.
       run: python -m scripts.verify_godel_v2_cross_runtime
 
+    - name: Repo manifest stable-fields drift check
+      # The manifest at meta/repo_manifest.json is the single source
+      # of truth downstream consumers (SUMequities portfolio, status
+      # pages, dashboards) read. If a PR changes anything the manifest
+      # reflects (commit count, feature counts, version, receipts)
+      # without re-running the publisher, this gate fails with a
+      # one-line refresh recipe. Time-varying fields (issued_at,
+      # github stars) are excluded from the drift comparison so the
+      # gate stays stable across minute-by-minute repo state.
+      run: python -m scripts.repo_manifest --check meta/repo_manifest.json
+
   vendor-byte-equivalence:
     name: Vendored jose + canonicalize byte-equivalence
     # Mirrors the zig-core sum_core.wasm drift gate. Re-runs
