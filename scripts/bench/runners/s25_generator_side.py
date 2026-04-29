@@ -138,17 +138,33 @@ def per_doc_metrics(
 
 
 def aggregate(per_doc: list[dict]) -> dict:
-    drifts = [d["drift_pct"] for d in per_doc]
-    recalls = [d["exact_match_recall"] for d in per_doc]
+    """Aggregate per-doc records.
+
+    Timed-out docs (``error_class == "timeout"``) are excluded from
+    recall/drift means so a single hanging API call doesn't poison
+    the headline number. They are counted separately in
+    ``n_docs_timed_out``. The receipt-reader can see at a glance
+    whether the run completed cleanly or had operator-visible
+    errors during execution.
+    """
+    measured = [d for d in per_doc if d.get("error_class") != "timeout"]
+    timed_out = [d for d in per_doc if d.get("error_class") == "timeout"]
+
+    drifts = [d["drift_pct"] for d in measured]
+    recalls = [d["exact_match_recall"] for d in measured]
     n_full = sum(1 for r in recalls if r >= 0.999)
+    n_measured = len(measured)
     return {
         "n_docs": len(per_doc),
+        "n_docs_measured": n_measured,
+        "n_docs_timed_out": len(timed_out),
+        "timed_out_doc_ids": [d["doc_id"] for d in timed_out],
         "drift_pct_mean": round(statistics.mean(drifts), 4) if drifts else 0.0,
         "drift_pct_median": round(statistics.median(drifts), 4) if drifts else 0.0,
         "exact_match_recall_mean": round(statistics.mean(recalls), 4) if recalls else 0.0,
         "exact_match_recall_p10": round(_pct(recalls, 10), 4) if recalls else 0.0,
         "n_docs_full_recall": n_full,
-        "fraction_full_recall": round(n_full / len(recalls), 4) if recalls else 0.0,
+        "fraction_full_recall": round(n_full / n_measured, 4) if n_measured else 0.0,
     }
 
 
@@ -161,11 +177,56 @@ def _pct(values: list[float], pct: int) -> float:
 
 
 # ---------------------------------------------------------------------
+# Per-call timeout discipline
+# ---------------------------------------------------------------------
+#
+# The seed_long capstone surfaced a real failure mode: an OpenAI
+# structured-output call hung for 14+ minutes with the python process
+# alive but no CPU progress (CHANGELOG entry under §2.5 capstone).
+# The OpenAI SDK has its own request timeout but the empirical fail
+# was outside that envelope — likely a stuck websocket on the
+# structured-output response stream.
+#
+# Defence-in-depth: every LLM call goes through ``_with_call_timeout``
+# which wraps the coroutine in ``asyncio.wait_for``. On timeout, raise
+# a tagged ``S25CallTimeoutError`` that ``run_doc`` catches and
+# converts to a per-doc skip — the surrounding ablation continues, the
+# receipt records ``error_class: "timeout"`` for that doc, and the
+# aggregate excludes timed-out docs from recall/drift means while
+# reporting them in a separate ``n_docs_timed_out`` field.
+
+DEFAULT_CALL_TIMEOUT_S: float = 60.0
+
+
+class S25CallTimeoutError(Exception):
+    """Raised when a per-call timeout fires on an LLM API call."""
+
+    def __init__(self, what: str, timeout_s: float):
+        self.what = what
+        self.timeout_s = timeout_s
+        super().__init__(f"{what} timed out after {timeout_s:.1f}s")
+
+
+async def _with_call_timeout(coro, timeout_s: float, what: str):
+    """Wrap an LLM-call coroutine with an asyncio.wait_for hard cap.
+
+    On timeout, raises ``S25CallTimeoutError`` (re-raised cleanly so
+    the caller can convert to a per-doc skip).
+    """
+    try:
+        return await asyncio.wait_for(coro, timeout=timeout_s)
+    except asyncio.TimeoutError:
+        raise S25CallTimeoutError(what, timeout_s) from None
+
+
+# ---------------------------------------------------------------------
 # Async LLM ablation runners
 # ---------------------------------------------------------------------
 
 
-async def _baseline_extract(client, model: str, text: str) -> list[Triple]:
+async def _baseline_extract(
+    client, model: str, text: str, *, call_timeout_s: float = DEFAULT_CALL_TIMEOUT_S
+) -> list[Triple]:
     """Baseline (unconstrained) extractor — same shape as
     LiveLLMAdapter.extract_triplets but called inline so the runner
     owns the experiment."""
@@ -176,13 +237,17 @@ async def _baseline_extract(client, model: str, text: str) -> list[Triple]:
         "subject-predicate-object triplets. Lowercase. snake_case "
         "for multi-word predicates. At most 64 triplets."
     )
-    response = await client.beta.chat.completions.parse(
-        model=model,
-        messages=[
-            {"role": "system", "content": sys_prompt},
-            {"role": "user", "content": text},
-        ],
-        response_format=ExtractionResponse,
+    response = await _with_call_timeout(
+        client.beta.chat.completions.parse(
+            model=model,
+            messages=[
+                {"role": "system", "content": sys_prompt},
+                {"role": "user", "content": text},
+            ],
+            response_format=ExtractionResponse,
+        ),
+        timeout_s=call_timeout_s,
+        what="baseline_extract",
     )
     parsed = response.choices[0].message.parsed
     if parsed is None:
@@ -194,7 +259,12 @@ async def _baseline_extract(client, model: str, text: str) -> list[Triple]:
 
 
 async def _constrained_extract(
-    client, model: str, text: str, source_axioms: Sequence[Triple]
+    client,
+    model: str,
+    text: str,
+    source_axioms: Sequence[Triple],
+    *,
+    call_timeout_s: float = DEFAULT_CALL_TIMEOUT_S,
 ) -> list[Triple]:
     """Constrained extractor — Pydantic schema pinned to source vocabulary."""
     Schema = build_constrained_extraction_schema(source_axioms)
@@ -205,13 +275,17 @@ async def _constrained_extract(
         "schema. If no triplet's tokens fit the allowed vocabulary, "
         "return an empty list. Lowercase."
     )
-    response = await client.beta.chat.completions.parse(
-        model=model,
-        messages=[
-            {"role": "system", "content": sys_prompt},
-            {"role": "user", "content": text},
-        ],
-        response_format=Schema,
+    response = await _with_call_timeout(
+        client.beta.chat.completions.parse(
+            model=model,
+            messages=[
+                {"role": "system", "content": sys_prompt},
+                {"role": "user", "content": text},
+            ],
+            response_format=Schema,
+        ),
+        timeout_s=call_timeout_s,
+        what="constrained_extract",
     )
     parsed = response.choices[0].message.parsed
     if parsed is None:
@@ -222,7 +296,13 @@ async def _constrained_extract(
     ]
 
 
-async def _baseline_generate(client, model: str, source_axioms: Sequence[Triple]) -> str:
+async def _baseline_generate(
+    client,
+    model: str,
+    source_axioms: Sequence[Triple],
+    *,
+    call_timeout_s: float = DEFAULT_CALL_TIMEOUT_S,
+) -> str:
     sys_prompt = (
         "You are a precise technical writer. Extrapolate the "
         "following absolute facts into a cohesive narrative. "
@@ -231,27 +311,39 @@ async def _baseline_generate(client, model: str, source_axioms: Sequence[Triple]
     user_prompt = "FACTS TO INCLUDE:\n" + "\n".join(
         f"{s} {p} {o}" for (s, p, o) in source_axioms
     )
-    response = await client.chat.completions.create(
-        model=model,
-        messages=[
-            {"role": "system", "content": sys_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
+    response = await _with_call_timeout(
+        client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": sys_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+        ),
+        timeout_s=call_timeout_s,
+        what="baseline_generate",
     )
     return response.choices[0].message.content
 
 
 async def _canonical_first_generate(
-    client, model: str, source_axioms: Sequence[Triple]
+    client,
+    model: str,
+    source_axioms: Sequence[Triple],
+    *,
+    call_timeout_s: float = DEFAULT_CALL_TIMEOUT_S,
 ) -> str:
     target_axioms_str = [f"{s} {p} {o}" for (s, p, o) in source_axioms]
     user_prompt = build_canonical_first_user_prompt(target_axioms_str)
-    response = await client.chat.completions.create(
-        model=model,
-        messages=[
-            {"role": "system", "content": CANONICAL_FIRST_SYS_PROMPT},
-            {"role": "user", "content": user_prompt},
-        ],
+    response = await _with_call_timeout(
+        client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": CANONICAL_FIRST_SYS_PROMPT},
+                {"role": "user", "content": user_prompt},
+            ],
+        ),
+        timeout_s=call_timeout_s,
+        what="canonical_first_generate",
     )
     return response.choices[0].message.content
 
@@ -267,9 +359,18 @@ async def run_doc(
     doc: dict,
     ablation: str,
     *,
+    call_timeout_s: float = DEFAULT_CALL_TIMEOUT_S,
     dry_run: bool = False,
 ) -> dict:
-    """Execute one doc round-trip under the chosen ablation."""
+    """Execute one doc round-trip under the chosen ablation.
+
+    Per-call timeouts are enforced at every LLM call site. If any call
+    raises ``S25CallTimeoutError``, this function returns a per-doc
+    record tagged with ``error_class: "timeout"`` rather than letting
+    the exception propagate. The surrounding ablation continues; the
+    aggregate excludes timed-out docs from recall/drift means and
+    counts them in ``n_docs_timed_out``.
+    """
     doc_id = doc["id"]
     text = doc["text"]
 
@@ -285,28 +386,51 @@ async def run_doc(
             **per_doc_metrics(source, source),
         }
 
-    # 1. Source extraction (baseline, all ablations).
-    source = await _baseline_extract(client, model, text)
-    if not source:
+    try:
+        # 1. Source extraction (baseline, all ablations).
+        source = await _baseline_extract(
+            client, model, text, call_timeout_s=call_timeout_s
+        )
+        if not source:
+            return {
+                "doc_id": doc_id,
+                "source_axioms": [],
+                "reconstructed_axioms": [],
+                "narrative_excerpt": "(no source axioms extracted)",
+                **per_doc_metrics([], []),
+            }
+
+        # 2. Generator pass.
+        if ablation in ("canonical_first", "combined"):
+            narrative = await _canonical_first_generate(
+                client, model, source, call_timeout_s=call_timeout_s
+            )
+        else:  # constrained_only or baseline
+            narrative = await _baseline_generate(
+                client, model, source, call_timeout_s=call_timeout_s
+            )
+
+        # 3. Reconstruction extractor.
+        if ablation in ("constrained_extractor", "combined"):
+            reconstructed = await _constrained_extract(
+                client, model, narrative, source, call_timeout_s=call_timeout_s
+            )
+        else:  # canonical_first or baseline
+            reconstructed = await _baseline_extract(
+                client, model, narrative, call_timeout_s=call_timeout_s
+            )
+    except S25CallTimeoutError as e:
+        # Per-doc skip on timeout. Tagged so the receipt and aggregate
+        # can distinguish timeouts from real recall failures.
         return {
             "doc_id": doc_id,
+            "error_class": "timeout",
+            "error_what": e.what,
+            "error_timeout_s": e.timeout_s,
             "source_axioms": [],
             "reconstructed_axioms": [],
-            "narrative_excerpt": "(no source axioms extracted)",
-            **per_doc_metrics([], []),
+            "narrative_excerpt": f"(timeout: {e.what} after {e.timeout_s:.1f}s)",
         }
-
-    # 2. Generator pass.
-    if ablation in ("canonical_first", "combined"):
-        narrative = await _canonical_first_generate(client, model, source)
-    else:  # constrained_only or baseline
-        narrative = await _baseline_generate(client, model, source)
-
-    # 3. Reconstruction extractor.
-    if ablation in ("constrained_extractor", "combined"):
-        reconstructed = await _constrained_extract(client, model, narrative, source)
-    else:  # canonical_first or baseline
-        reconstructed = await _baseline_extract(client, model, narrative)
 
     metrics = per_doc_metrics(source, reconstructed)
     return {
@@ -332,26 +456,47 @@ _ABLATIONS = {
 
 
 async def run_ablation(
-    client, model: str, corpus: list[dict], ablation: str, dry_run: bool
+    client,
+    model: str,
+    corpus: list[dict],
+    ablation: str,
+    *,
+    call_timeout_s: float,
+    dry_run: bool,
 ) -> dict:
     schema, description = _ABLATIONS[ablation]
     per_doc: list[dict] = []
     for doc in corpus:
-        result = await run_doc(client, model, doc, ablation, dry_run=dry_run)
-        per_doc.append(result)
-        recall = result.get("exact_match_recall", 0)
-        print(
-            f"  [{ablation}] {result['doc_id']}: "
-            f"src={result.get('n_source', 0)} "
-            f"rec={result.get('n_reconstructed', 0)} "
-            f"recall={recall:.2f}",
-            flush=True,
+        result = await run_doc(
+            client,
+            model,
+            doc,
+            ablation,
+            call_timeout_s=call_timeout_s,
+            dry_run=dry_run,
         )
+        per_doc.append(result)
+        if result.get("error_class") == "timeout":
+            print(
+                f"  [{ablation}] {result['doc_id']}: "
+                f"TIMEOUT ({result['error_what']} > {result['error_timeout_s']:.0f}s)",
+                flush=True,
+            )
+        else:
+            recall = result.get("exact_match_recall", 0)
+            print(
+                f"  [{ablation}] {result['doc_id']}: "
+                f"src={result.get('n_source', 0)} "
+                f"rec={result.get('n_reconstructed', 0)} "
+                f"recall={recall:.2f}",
+                flush=True,
+            )
     return {
         "schema": schema,
         "ablation": ablation,
         "description": description,
         "model": model,
+        "call_timeout_s": call_timeout_s,
         "aggregate": aggregate(per_doc),
         "per_doc": per_doc,
     }
@@ -371,6 +516,18 @@ def main() -> int:
         help="Pinned model snapshot. MUST match L0 baseline for clean delta.",
     )
     parser.add_argument("--max-docs", type=int, default=None, help="Cap doc count for smoke tests.")
+    parser.add_argument(
+        "--call-timeout",
+        type=float,
+        default=DEFAULT_CALL_TIMEOUT_S,
+        help=(
+            f"Per-LLM-call timeout in seconds (default {DEFAULT_CALL_TIMEOUT_S:.0f}). "
+            f"Each individual extract/generate call is wrapped in asyncio.wait_for; "
+            f"on timeout, the doc gets a per-doc skip with error_class='timeout' "
+            f"and the surrounding ablation continues. The aggregate excludes timed-out "
+            f"docs from recall/drift means and counts them in n_docs_timed_out."
+        ),
+    )
     parser.add_argument("--dry-run", action="store_true", help="Skip LLM calls; verify scaffold only.")
     parser.add_argument("--out", default=None)
     args = parser.parse_args()
@@ -399,16 +556,25 @@ def main() -> int:
     for abl in ablations_to_run:
         print(f"\n=== ablation: {abl} ===", file=sys.stderr)
         result = asyncio.run(
-            run_ablation(client, args.model, corpus, abl, args.dry_run)
+            run_ablation(
+                client,
+                args.model,
+                corpus,
+                abl,
+                call_timeout_s=args.call_timeout,
+                dry_run=args.dry_run,
+            )
         )
         results.append(result)
         agg = result["aggregate"]
-        print(
+        msg = (
             f"  → drift_mean={agg['drift_pct_mean']:.2f} "
             f"recall_mean={agg['exact_match_recall_mean']:.4f} "
-            f"full_recall={agg['n_docs_full_recall']}/{agg['n_docs']}",
-            file=sys.stderr,
+            f"full_recall={agg['n_docs_full_recall']}/{agg['n_docs_measured']}"
         )
+        if agg["n_docs_timed_out"]:
+            msg += f" [timed_out: {agg['n_docs_timed_out']} doc(s)]"
+        print(msg, file=sys.stderr)
 
     payload = {
         "schema_family": "sum.s25_generator_side.v1",

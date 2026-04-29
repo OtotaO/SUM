@@ -4,6 +4,76 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Hardened — `s25_generator_side` runner: per-call timeout + graceful per-doc skip
+
+The seed_long capstone surfaced a real failure mode: an OpenAI
+structured-output call hung for 14+ minutes with the python
+process alive but no CPU progress. The OpenAI SDK has its own
+request timeout but the empirical fail was outside that envelope —
+likely a stuck websocket on the structured-output stream. The
+operator had to `kill -9` the process and re-run. That cost
+research budget on a wasted call and ate operator attention.
+
+**Fix:** every LLM call inside the runner is now wrapped in
+``asyncio.wait_for`` with a 60-second per-call default, raising
+a tagged ``S25CallTimeoutError`` on timeout. ``run_doc``
+catches the exception and returns a per-doc record tagged
+``error_class: "timeout"`` rather than letting it propagate.
+The surrounding ablation continues; the receipt records the
+timeout for that doc; the aggregate excludes timed-out docs
+from drift/recall means and counts them in
+``n_docs_timed_out``. Operator sees at receipt-read time which
+docs (if any) failed during execution.
+
+**Changes:**
+
+* `scripts/bench/runners/s25_generator_side.py` — every call
+  site (`_baseline_extract`, `_constrained_extract`,
+  `_baseline_generate`, `_canonical_first_generate`) now
+  takes a `call_timeout_s` keyword argument that threads
+  through `_with_call_timeout` (a small `asyncio.wait_for`
+  wrapper). `run_doc` catches `S25CallTimeoutError` and
+  returns the timeout record. `aggregate()` excludes timed-
+  out docs from means; new fields `n_docs_measured`,
+  `n_docs_timed_out`, `timed_out_doc_ids`,
+  `fraction_full_recall` (over measured) added.
+* New `--call-timeout` CLI flag, default 60.0s. Operator can
+  tune for slow networks or override for stress tests.
+* The receipt JSON's per-ablation block now includes a
+  `call_timeout_s` field so a future reader knows what
+  timeout the run was conducted under.
+* Per-doc records can carry `error_class: "timeout"`,
+  `error_what` (which call timed out), and `error_timeout_s`
+  (the deadline that fired). Receipt-readers branch on
+  `error_class` presence rather than assuming every per-doc
+  record has `drift_pct`/`exact_match_recall`.
+
+**Test coverage:** 7 new tests in
+`Tests/test_s25_runner_timeout.py`:
+
+  - `_with_call_timeout` passes through on success.
+  - Hangs raise `S25CallTimeoutError` (not bare
+    `asyncio.TimeoutError`).
+  - Other exceptions are NOT swallowed by the timeout wrapper.
+  - `run_doc` returns a tagged timeout record when a call
+    hangs (verified via a mock client whose calls
+    `asyncio.sleep(60)` past the per-call deadline).
+  - `aggregate` excludes timed-out docs from drift/recall
+    means while counting them separately.
+  - All-timed-out edge case does not zero-divide.
+  - The 60s default is pinned (regression catch).
+
+22 of 22 tests across the §2.5 test surface pass
+(`test_s25_interventions.py` 15 + `test_s25_runner_timeout.py`
+7). Existing receipts unchanged — the schema is forward-
+compatible because new aggregate fields are additive.
+
+This closes a hardening-backlog item that the seed_long
+capstone PR explicitly named as a follow-on. No re-run of
+prior measurements is required; the new field is "0 timeouts"
+on every prior receipt, retroactively consistent with the
+new schema.
+
 ### Measured — §2.5 capstone: intervention scales to `seed_long_paragraphs` (multi-paragraph dense-prose)
 
 Capstone receipt for the §2.5 corpus-coverage matrix. Combined
