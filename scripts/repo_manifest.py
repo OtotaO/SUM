@@ -73,27 +73,44 @@ def _git(*args: str) -> str:
     return r.stdout.strip()
 
 
+def _is_shallow_repo() -> bool:
+    """True if the working clone is a shallow checkout (e.g. CI default)."""
+    try:
+        return _git("rev-parse", "--is-shallow-repository") == "true"
+    except RuntimeError:
+        return False
+
+
 def collect_git_state() -> dict:
-    """Git-derived facts. Does not call out to GitHub."""
+    """Git-derived facts. Does not call out to GitHub.
+
+    On shallow clones (default in GitHub Actions ``actions/checkout``)
+    the 30-day commit count is meaningless — only commits in the
+    shallow window are visible. We surface ``None`` in that case so
+    the drift gate doesn't false-positive on shallow CI checkouts.
+    """
     head_sha = _git("rev-parse", "HEAD")
     head_short = _git("rev-parse", "--short", "HEAD")
     head_subject = _git("log", "-1", "--format=%s")
     head_committer_date = _git("log", "-1", "--format=%cI")  # ISO 8601 with TZ
 
-    # Commits in the last 30 days. Use --since="30 days ago" for portability.
-    thirty_d_ago = (datetime.now(timezone.utc) - timedelta(days=30)).strftime(
-        "%Y-%m-%dT%H:%M:%SZ"
-    )
-    commit_lines_30d = _git(
-        "log", f"--since={thirty_d_ago}", "--oneline"
-    ).splitlines()
+    if _is_shallow_repo():
+        commits_last_30d: int | None = None
+    else:
+        # Commits in the last 30 days. Use --since=ISO timestamp for portability.
+        thirty_d_ago = (datetime.now(timezone.utc) - timedelta(days=30)).strftime(
+            "%Y-%m-%dT%H:%M:%SZ"
+        )
+        commits_last_30d = len(
+            _git("log", f"--since={thirty_d_ago}", "--oneline").splitlines()
+        )
 
     return {
         "head_sha": head_sha,
         "head_short": head_short,
         "head_subject": head_subject,
         "head_committer_date": head_committer_date,
-        "commits_last_30d": len(commit_lines_30d),
+        "commits_last_30d": commits_last_30d,
     }
 
 
@@ -219,20 +236,64 @@ def build_manifest() -> dict:
 # ---------------------------------------------------------------------
 
 
+_SNAPSHOT_IDENTITY_FIELDS = (
+    "head_sha",
+    "head_short",
+    "head_subject",
+    "head_committer_date",
+)
+
+
 def _stable_view(manifest: dict) -> dict:
-    """Strip fields that vary by wall-clock time so --check only fails
-    on substantive drift (commits, versions, features, receipts).
+    """Strip fields that vary by wall-clock time / by HEAD identity so
+    --check only fails on substantive drift (features, versions,
+    receipts, commit-velocity when measurable).
 
     Removed:
-      - issued_at
-      - github.stars  (varies independently; checked separately)
-      - any pypi_published_version when offline
+      - ``issued_at``                                   (wall-clock)
+      - ``github.stars``                                (varies independently)
+      - ``git.head_sha`` / ``head_short`` / ``head_subject`` /
+        ``head_committer_date``                          (snapshot identity:
+        a manifest published at SHA X is meant to differ from one published
+        at SHA Y; the drift gate is for *content*, not identity)
+      - ``git.commits_last_30d`` *if either side is None*  (shallow CI clones
+        cannot count 30-day history; we don't false-positive on that)
+      - ``release.pypi_published_version`` *if either side is None* (offline)
     """
     m = json.loads(json.dumps(manifest))  # deep copy via json
     m.pop("issued_at", None)
     if "github" in m and isinstance(m["github"], dict):
         m["github"].pop("stars", None)
+    if "git" in m and isinstance(m["git"], dict):
+        for f in _SNAPSHOT_IDENTITY_FIELDS:
+            m["git"].pop(f, None)
     return m
+
+
+def _reconcile_optional_fields(on_disk: dict, fresh: dict) -> tuple[dict, dict]:
+    """Drop fields that are ``None`` on either side from BOTH copies so
+    --check tolerates partial inputs (shallow CI, offline PyPI).
+
+    The on-disk manifest is the canonical record; the fresh build runs
+    in whatever environment CI gave us. If the canonical says
+    ``commits_last_30d=241`` but the fresh build is shallow and reports
+    ``None``, that's an environment limitation, not drift.
+    """
+    a, b = json.loads(json.dumps(on_disk)), json.loads(json.dumps(fresh))
+
+    # git.commits_last_30d
+    if isinstance(a.get("git"), dict) and isinstance(b.get("git"), dict):
+        if a["git"].get("commits_last_30d") is None or b["git"].get("commits_last_30d") is None:
+            a["git"].pop("commits_last_30d", None)
+            b["git"].pop("commits_last_30d", None)
+
+    # release.pypi_published_version
+    if isinstance(a.get("release"), dict) and isinstance(b.get("release"), dict):
+        if a["release"].get("pypi_published_version") is None or b["release"].get("pypi_published_version") is None:
+            a["release"].pop("pypi_published_version", None)
+            b["release"].pop("pypi_published_version", None)
+
+    return a, b
 
 
 # ---------------------------------------------------------------------
@@ -267,10 +328,11 @@ def main() -> int:
             return 2
         on_disk = json.loads(check_path.read_text(encoding="utf-8"))
         fresh = build_manifest()
-        if _stable_view(on_disk) != _stable_view(fresh):
+        on_disk_stable, fresh_stable = _reconcile_optional_fields(
+            _stable_view(on_disk), _stable_view(fresh)
+        )
+        if on_disk_stable != fresh_stable:
             # Compute a small diff for the failure message.
-            on_disk_stable = _stable_view(on_disk)
-            fresh_stable = _stable_view(fresh)
             diffs: list[str] = []
             for key in set(on_disk_stable.keys()) | set(fresh_stable.keys()):
                 if on_disk_stable.get(key) != fresh_stable.get(key):

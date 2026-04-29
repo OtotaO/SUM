@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-04-29T07:21:36Z",
+  "issued_at": "2026-04-29T09:13:03Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,11 +8,11 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "814e40bcb969f32c8c9bdaa074d2cc12239bef36",
-    "head_short": "814e40b",
-    "head_subject": "Merge pull request #79 from OtotaO/qid-accuracy-floor",
-    "head_committer_date": "2026-04-29T03:21:02-04:00",
-    "commits_last_30d": 241
+    "head_sha": "4e379159c490553ff45fcdf772d38dbf57c9db6b",
+    "head_short": "4e37915",
+    "head_subject": "docs: repo manifest publisher (single source of truth + CI drift gate)",
+    "head_committer_date": "2026-04-29T03:22:37-04:00",
+    "commits_last_30d": null
   },
   "github": {
     "stars": 8
