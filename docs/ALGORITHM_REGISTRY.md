@@ -35,7 +35,7 @@ For every JWS protected header SUM verifies (render receipt, trust-root manifest
 | Scheme | Status | Since | Deprecated | Retired | Notes |
 |---|---|---|---|---|---|
 | `sha256_64_v1` | **current** | v0.1.0 (2026-04-22) | — | — | The default prime scheme; SHA-256 of axiom key → first 8 bytes big-endian → next prime via 12-witness deterministic Miller-Rabin. Birthday-bound collision-safe < 2³² axioms per branch. |
-| `sha256_128_v2` | **planned** | (Priority 3 in playbook) | — | — | 128-bit seed + Baillie-PSW primality. Implementation exists in `standalone_verifier/math.js`; Python side not yet `CURRENT_SCHEME`. Lifts the collision-safe ceiling to ~2⁶⁴ axioms. |
+| `sha256_128_v2` | **planned (cross-runtime byte-identity locked)** | — | — | — | 128-bit seed + Baillie-PSW primality. Implementation: `standalone_verifier/math.js` (Node) + `sum_engine_internal/algorithms/semantic_arithmetic.py::_deterministic_prime_v2` (Python). Cross-runtime byte-identity locked 2026-04-29 by `scripts/verify_godel_v2_cross_runtime.py` (K1-v2 + K2-v2 gate, runs on every PR). Default scheme stays `sha256_64_v1`; flipping the default is a separate operator decision requiring a `bundle_version` minor bump. Lifts the collision-safe ceiling from ~2³² to ~2⁶⁴ axioms. |
 
 #### Migration policy (prime schemes)
 

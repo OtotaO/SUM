@@ -36,6 +36,8 @@ reconstruct(parse(canonical_tome(S))) == S
 
 **Boundary:** All three implementations use the same deterministic prime derivation (`SHA-256(axiom_key) → first 8 bytes big-endian → seed → nextprime(seed)`) via the `sha256_64_v1` scheme. The collision-resolution path depends on minting order; it has cross-*instance* coverage (two `GodelStateAlgebra` instances minting in different orders produce identical primes for identical keys, stress-tested at 1,000 axioms) but is not yet cross-*runtime* collision-verified. Production corpora up to ~2³² axioms have birthday-bound collision probability < 10⁻⁹; the path is not load-bearing at current scale.
 
+**`sha256_128_v2` cross-runtime byte-identity (locked 2026-04-29):** the future-default prime scheme (`SHA-256 → first 16 bytes → BPSW-nextprime(seed)`) is now byte-identity-locked across Python and Node via `scripts/verify_godel_v2_cross_runtime.py` — 12 axiom-key fixtures (K1-v2) + 6 state-encoding fixtures (K2-v2), all byte-identical. Wired into CI alongside the v1 K-matrix gate. **The default scheme stays `sha256_64_v1`**; flipping it is a separate operator decision that requires a `bundle_version` minor bump per `docs/COMPATIBILITY_POLICY.md`. This gate proves the migration path is open (any future v1 → v2 cutover will not silently regress); the cutover itself is unshipped.
+
 ### 1.3. Bundle Tamper Detection (Trusted Peers)
 
 **Claim:** HMAC-SHA256 signatures detect any modification to the canonical tome, state integer, or timestamp.
