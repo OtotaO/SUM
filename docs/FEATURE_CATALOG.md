@@ -1093,15 +1093,22 @@ Expected: `combined: drift=0.00 recall=1.0000 full=50/50`.
 `DeterministicSieve.extract_triplets` and `extract_with_provenance` now apply `_is_clean_triple` at the extraction boundary so syntactic noise (markdown table cells, code fence residue, link-target fragments, single-character punctuation) never enters the canonical-bundle pipeline. The filter rejects components that are empty/whitespace-only, single-character, contain markdown/code/table punctuation (`|` `\\` `` ` `` `*` `#` `<` `>` `[` `]` `{` `}` `(` `)` `=` `/`), contain path/URL needles (`://`, `.md`, `.py`, `.js`, `](`), or are pure punctuation with no alphanumeric character. Surfaced by the README round-trip in PR #89, where 12 of 56 README-derived triples were noise (e.g., `('|', 'close', 'this')` from a markdown table cell, `('proof_boundary.md`](docs', 'be', 'arbiter')` from a markdown link). After this filter the README extracts 38 clean triples; the algebra-layer defensive filter in `get_or_mint_prime` is preserved as a backstop for non-sieve extractors but no longer fires on sieve output.
 
 Verify: `pytest Tests/test_sieve_noise_filter.py -q`
-Expected: `33 passed` — component-level filter parametrized over 27 cases (clean prose kept, markdown/code/table noise rejected), triple-level rejection if any component is noise, README-corpus integration test confirming known noise patterns are absent and legitimate prose triples survive.
+Expected: 58 passed (33 component-level cases × round-1 + 25 round-2 cases + 4 triple/integration tests).
+
+### 137. Sieve quality — round-2 quantity / hash filters ✅
+
+Tightens entry 136 with three additional reject rules surfaced by surveying post-#91 noise across the 5 self-attested docs (CHANGELOG, PROOF_BOUNDARY, FEATURE_CATALOG, RENDER_RECEIPT_FORMAT, README): **(a) quantity/range markers** (`$`, `%`, `×`, `÷`, `±`, `≈`, `→`, `←`, `↔`, `–`, `—`, `~`, `+`, `°`, `≤`, `≥`, `≠`, `∞`) — components carrying these are measurements, not entities (e.g., `~$0.12`, `21.1×_figure`, `0.94–0.96`, `1.0→0.9`, `80%+`); **(b) pure decimal numerals** matching `^\d+(\.\d+)+$` — bare versions/decimals like `0.5750`, `10.2`, `1.0` (year-like bare integers `2026`, `1989` continue to pass since they're not multi-decimal); **(c) length cap of 80 chars** plus **hex-only string detector** matching `^[0-9a-f]{16,}$` — catches sha256 / nanoid / long path strings that spaCy turns into noun phrases. Empirical impact across the 5 self-attested docs: 33 additional noise triples filtered (README 38→37, CHANGELOG 348→332, PROOF_BOUNDARY 164→153, FEATURE_CATALOG 167→163, RENDER_RECEIPT_FORMAT 90→89). Round-trip via `sum verify` continues to pass on every doc; legitimate version strings like `v0.4.0` and `shipped_v1.2.0` are deliberately kept (the regex requires a leading digit).
+
+Verify: `pytest Tests/test_sieve_noise_filter.py -q`
+Expected: 58 passed.
 
 ---
 
 ## Summary counts
 
-Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **136**.
+Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **137**.
 
-- **Production ✅: 122 features** — tested green; each has a verification command in its entry.
+- **Production ✅: 123 features** — tested green; each has a verification command in its entry.
 - **Scaffolded 🔧: 13 features** — tests pass, production activation pending. All catalogued in `docs/MODULE_AUDIT.md` with activation checklists.
 - **Designed 📄: 1 feature** (sha256_128_v2 default-promotion; cross-runtime byte-identity locked, default-flip is a separate operator decision).
 

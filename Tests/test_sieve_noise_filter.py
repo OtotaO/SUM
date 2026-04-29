@@ -38,6 +38,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 @pytest.mark.parametrize(
     "component,is_noise",
     [
+        # ---- Round-1 (PR #91) ----
         # Empty / whitespace
         ("", True),
         ("   ", True),
@@ -74,7 +75,42 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
         ("§§§", True),
         # Borderline: alphanumeric with one allowed punctuation
         ("bundle.is_delta", False),  # dot is fine; legit code identifier
-        ("v0.4.0", False),            # version-like, all alphanum + dots
+        # ---- Round-2 (this PR) — quantity / range / hash filters ----
+        # Currency / measurement / range markers
+        ("~$0.12", True),       # currency tilde
+        ("21.1×_figure", True), # multiplication sign
+        ("0.94–0.96", True),    # en-dash range
+        ("1.0→0.9", True),      # arrow (transformation)
+        ("80%+", True),         # percent + plus
+        ("%_drift", True),      # bare percent
+        ("$5.00", True),        # currency
+        ("10°C", True),         # degree
+        ("±0.05", True),        # plus-minus
+        ("≈3.14", True),        # approx
+        # Pure decimal numbers (NOT bare integers — those are years)
+        ("0.5750", True),
+        ("10.2", True),
+        ("21.1", True),
+        ("1.0", True),
+        # Letter-prefixed versions like ``v0.4.0`` are intentionally kept:
+        # the bare-decimal regex requires a leading digit, and these
+        # often appear as legitimate semantic content in release notes.
+        ("v0.4.0", False),
+        ("shipped_v1.2.0", False),
+        # Bare integer (year-like) — KEPT, legit semantic content
+        ("2026", False),
+        ("1989", False),
+        # Long hash / hex strings
+        ("a" * 81, True),       # over length cap
+        ("deadbeefdeadbeefdeadbeef", True),  # hex-only ≥16 chars
+        ("0123456789abcdef0123456789", True),  # hex-only sha-ish
+        # Hex < 16 chars: kept (could be a real word like 'cafe')
+        ("cafe", False),
+        ("dead", False),
+        # Reasonable-length tokens that mix digits + letters but no noise marker
+        ("v1", False),         # short version → kept
+        ("ipv6", False),
+        ("3d_render", False),
     ],
 )
 def test_is_noise_component(component, is_noise):

@@ -82,17 +82,36 @@ _FALLBACK_CONTENT_POS = frozenset({"NOUN", "PROPN", "VERB", "ADJ"})
 
 _NOISE_PUNCT_CHARS = frozenset("|\\`*<>[]{}()=/")  # markdown / code / table noise
 
+# Round-2 (post-#91): quantity / measurement / range markers. Components
+# carrying these are numeric values, not semantic entities. Surfaced by
+# survey across README + CHANGELOG + PROOF_BOUNDARY: `~$0.12`, `21.1×`,
+# `0.94–0.96`, `1.0→0.9`, `80%+`, `%_drift`. Adding `+` is conservative
+# (rules out "C++" but typical SUM corpora don't carry that).
+_QUANTITY_CHARS = frozenset("$%×÷±≈→←↔–—~+°≤≥≠∞")
+
 # Tokens that signal the component is a path/URL/file reference rather
 # than a semantic entity. Substring match — generous on purpose.
 _PATH_LIKE_NEEDLES = ("://", ".md", ".py", ".js", ".json", "](", "**(", "**[")
+
+# Round-2: components longer than this are almost always hashes, IDs,
+# or path strings — never legitimate noun phrases. spaCy parses such
+# tokens as a single noun and uses them whole as a subject/object.
+_MAX_COMPONENT_LEN = 80
+
+# Round-2: pure-numeric matches like '0.5750', '10.2', '1.0', '21.1'.
+# Years like '2026' are bare integers, not multi-decimal — they pass.
+_DECIMAL_NUMBER_RE = re.compile(r"^\d+(\.\d+)+$")
+
+# Round-2: long hex-only strings (sha256, sha1, ed25519 hex, …). 16+
+# chars with no other characters confirms a hash, not a word.
+_HEX_HASH_RE = re.compile(r"^[0-9a-fA-F]{16,}$")
 
 
 def _is_noise_component(s: str) -> bool:
     """Return True if *s* is syntactic noise that should not enter
     the extracted-triple bag.
 
-    Reject conditions (all evaluated on the stripped form):
-
+    Round-1 (PR #91) reject conditions:
       - Empty / whitespace-only.
       - Single character that isn't a multi-letter abbreviation
         (catches stray '#', '*', '\\', '|', '§', '✓', and bare digits).
@@ -100,18 +119,39 @@ def _is_noise_component(s: str) -> bool:
         backtick, footnote asterisk, link bracket, etc.).
       - Contains a path/URL needle from ``_PATH_LIKE_NEEDLES``.
       - No alphanumeric character at all (pure punctuation).
+
+    Round-2 (this PR) additional reject conditions:
+      - Contains any of ``_QUANTITY_CHARS`` (currency/math/range
+        symbols indicate measurements, not entities).
+      - Pure decimal-number form like ``0.5750`` or ``21.1``
+        (matches ``_DECIMAL_NUMBER_RE``); years like ``2026`` pass
+        because they're bare integers without the decimal pattern.
+      - Length exceeds ``_MAX_COMPONENT_LEN`` (hashes, IDs, paths).
+      - Hex-only string of 16+ chars (matches ``_HEX_HASH_RE``).
     """
     s = s.strip()
     if not s:
         return True
     if len(s) <= 1:
         return True
+    # Round-2: length cap (catches long hash / nanoid / path strings).
+    if len(s) > _MAX_COMPONENT_LEN:
+        return True
     if any(c in _NOISE_PUNCT_CHARS for c in s):
+        return True
+    # Round-2: quantity / measurement markers.
+    if any(c in _QUANTITY_CHARS for c in s):
         return True
     s_lower = s.lower()
     if any(needle in s_lower for needle in _PATH_LIKE_NEEDLES):
         return True
     if not any(c.isalnum() for c in s):
+        return True
+    # Round-2: pure decimal-number form (`0.5750`, `21.1`).
+    if _DECIMAL_NUMBER_RE.match(s):
+        return True
+    # Round-2: hex-only hash form (16+ hex chars with no other content).
+    if _HEX_HASH_RE.match(s):
         return True
     return False
 
