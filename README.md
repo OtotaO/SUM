@@ -180,7 +180,7 @@ This roadmap names only unshipped work. Items already landed live in [`CHANGELOG
 
 **Hardening backlog**
 
-- `sha256_128_v2` activation — Node side exists, Python side not yet `CURRENT_SCHEME`. Pre-empts the 2³² collision frontier.
+- `sha256_128_v2` default-activation — Python ↔ Node byte-identity now locked (12-key K1-v2 + 6-state K2-v2 gate runs on every PR; `scripts/verify_godel_v2_cross_runtime.py`). The default scheme stays `sha256_64_v1`; flipping the default is a separate operator decision that requires a `bundle_version` minor bump per `docs/COMPATIBILITY_POLICY.md`. The migration path is now empirically open.
 - `/api/qid` SPARQL disambiguation — moves entity resolution from the current `wbsearchentities`-only path to a target >95 % accuracy floor (the floor itself is unmeasured today).
 - Threat-model validation — every documented defence in [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) gets an executable test.
 - Delta-bundle composition semantics — specifies what `bundle.is_delta` means cross-runtime.

@@ -4,6 +4,71 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Added — `sha256_128_v2` cross-runtime byte-identity gate (K1-v2 + K2-v2)
+
+The README's hardening backlog said "`sha256_128_v2` activation —
+Node side exists, Python side not yet `CURRENT_SCHEME`." That
+framing was misleading: the v2 codepath was implemented on **both
+sides** (`derivePrimeV2` in Node's `standalone_verifier/math.js`,
+`_deterministic_prime_v2` in Python's `semantic_arithmetic.py`). The
+real gap was that **no cross-runtime byte-identity gate proved Python
+↔ Node agree under v2**.
+
+This PR closes that gap.
+
+**What ships:**
+
+* `single_file_demo/godel_cli.js` — accepts an optional `scheme`
+  field on the JSON payload (defaults to `sha256_64_v1`); the
+  `sha256_128_v2` value dispatches to `derivePrimeV2`.
+* `scripts/verify_godel_v2_cross_runtime.py` — a sibling of the
+  existing v1 harness that asserts byte-identity for v2:
+  - **K1-v2:** 12 axiom-key fixtures (including UTF-8 + multi-word)
+    minted in Python's `sympy.nextprime(seed_128)` and Node's
+    `derivePrimeV2`. All 12 byte-identical.
+  - **K2-v2:** 6 state-encoding fixtures (single triple, two
+    triples, five triples, repeated triple, two order
+    permutations) under v2's LCM. All 6 byte-identical.
+* CI step in `.github/workflows/quantum-ci.yml` — runs alongside
+  the v1 K-matrix on every PR, hard-stops the merge on
+  divergence.
+* `docs/PROOF_BOUNDARY.md` §1.2 documents the new gate.
+* `docs/ALGORITHM_REGISTRY.md` row for `sha256_128_v2` updated to
+  "planned (cross-runtime byte-identity locked)".
+* `README.md` Future-developments line replaces the misleading
+  "Python side not yet `CURRENT_SCHEME`" with the empirical
+  status: implementations agree byte-for-byte; flipping the
+  default is a separate operator decision.
+
+**What this does NOT do.** This PR does NOT change
+`CURRENT_SCHEME`. The default stays `sha256_64_v1`. Flipping the
+default to v2 requires:
+
+1. A `bundle_version` minor bump per `docs/COMPATIBILITY_POLICY.md`
+   so consumers know which scheme to expect.
+2. A migration story for v1 → v2 bundles (an existing v1 bundle's
+   `state_integer` is incompatible with a v2-derived state on the
+   same axiom keys; consumers cannot mix).
+3. An operator-side decision documented in
+   `docs/INCIDENT_RESPONSE.md`-shape runbook.
+
+This PR proves the migration path is **empirically open** —
+divergence between runtimes would have surfaced as a failing
+gate. The default-flip is a separate operator decision, not
+gated on this PR.
+
+**Why this matters.** v1's 64-bit seed has a birthday-bound
+collision frontier at ~2³² axioms. v2's 128-bit seed lifts that
+to ~2⁶⁴. SUM's current corpora are well below the v1 frontier
+(seed_v1 = 50 axioms; seed_long = 11–28 per doc × 16 docs = ~250
+axioms). v2 is a forward-looking hedge for any future deployment
+that crosses the v1 collision-safe boundary.
+
+The byte-identity proof costs nothing per release (CI runs the
+gate in <2 seconds). The cost of NOT having it is silent
+divergence: a future operator flips the default, the gate
+catches the divergence in CI, and we don't ship a broken bundle.
+
 ### Added — `sum verify` surfaces extraction provenance (closes THREAT_MODEL §3.3 visibility gap)
 
 The signature on a CanonicalBundle proves the canonical tome

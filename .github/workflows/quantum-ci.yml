@@ -167,6 +167,15 @@ jobs:
       # hard-stops the merge.
       run: python -m scripts.verify_cross_runtime_adversarial
 
+    - name: Run K1-v2/K2-v2 sha256_128_v2 byte-identity gate
+      # Cross-runtime parity for the future-default prime scheme.
+      # 12 axiom-key fixtures + 6 state-encoding fixtures, Python's
+      # sympy.nextprime(seed_128) vs Node's derivePrimeV2 (BPSW). The
+      # default scheme stays sha256_64_v1; this gate locks v2 as
+      # cross-runtime byte-identical so a future operator-decision to
+      # flip the default does not silently regress.
+      run: python -m scripts.verify_godel_v2_cross_runtime
+
   vendor-byte-equivalence:
     name: Vendored jose + canonicalize byte-equivalence
     # Mirrors the zig-core sum_core.wasm drift gate. Re-runs
