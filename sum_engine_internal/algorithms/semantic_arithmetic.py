@@ -427,6 +427,52 @@ class GodelStateAlgebra:
         return math.lcm(*state_integers)
 
     # ------------------------------------------------------------------
+    # Chunked-composition (arbitrary-size handling)
+    # ------------------------------------------------------------------
+
+    def compose_chunk_states(self, chunk_states: List[int]) -> int:
+        """
+        Compose per-chunk states into a single corpus-level state.
+
+        This is the chunking primitive: given the Gödel state integers
+        produced from N independently-extracted text chunks, return the
+        single state integer equivalent to encoding the concatenated
+        corpus end-to-end.
+
+        **Algebra invariant** (Item 1 of the arbitrary-size roadmap):
+        for any *context-local* extractor f (one that emits the same
+        triples for a sentence regardless of surrounding sentences —
+        e.g. ``DeterministicSieve``, which walks each ``doc.sents``
+        independently),
+
+            state(f(c1) ++ f(c2) ++ ... ++ f(cn))
+                == compose_chunk_states([state(f(c1)), ..., state(f(cn))])
+
+        because (a) ``encode_chunk_state`` is LCM-based and idempotent
+        under duplicates, and (b) LCM is commutative and associative.
+        Asserted as a property test in
+        ``Tests/test_chunked_state_composition.py``.
+
+        **Boundary**: this guarantee does NOT hold for cross-chunk
+        coreference-aware extractors (e.g. an LLM that resolves "she"
+        in chunk 2 against "Marie Curie" introduced in chunk 1). For
+        those extractors, chunked encoding is an approximation, not
+        an equivalence — see ``docs/PROOF_BOUNDARY.md`` §1.4.
+
+        Implementation note: this is a thin alias of
+        ``merge_parallel_states`` chosen to give the chunking pipeline
+        a name that matches its role at the call site. Both paths
+        prefer the Zig BigInt fast path and fall back to ``math.lcm``.
+
+        Args:
+            chunk_states: One state integer per chunk, in any order.
+
+        Returns:
+            The single corpus-level state integer (== LCM of inputs).
+        """
+        return self.merge_parallel_states(chunk_states)
+
+    # ------------------------------------------------------------------
     # Entailment
     # ------------------------------------------------------------------
 
