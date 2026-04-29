@@ -1,0 +1,6080 @@
+{
+  "schema_family": "sum.s25_generator_side.v1",
+  "issued_at": "2026-04-29T15:03:24Z",
+  "corpus": "seed_v1.json",
+  "n_docs": 50,
+  "model": "gpt-5.5-2026-04-23",
+  "provider": "openai",
+  "dry_run": false,
+  "baseline_reference": {
+    "receipt": "fixtures/bench_receipts/s25_canonicalization_replay_2026-04-28.json",
+    "L0_drift_mean": 107.75,
+    "L0_recall_mean": 0.12,
+    "L0_full_recall": "6/50"
+  },
+  "ablations": [
+    {
+      "schema": "sum.s25_canonical_first_generator.v1",
+      "ablation": "canonical_first",
+      "description": "Intervention A: canonical-first generator prompt; baseline extractor",
+      "model": "gpt-5.5-2026-04-23",
+      "call_timeout_s": 60.0,
+      "aggregate": {
+        "n_docs": 50,
+        "n_docs_measured": 50,
+        "n_docs_timed_out": 0,
+        "timed_out_doc_ids": [],
+        "drift_pct_mean": 58.4833,
+        "drift_pct_median": 66.6667,
+        "exact_match_recall_mean": 0.98,
+        "exact_match_recall_p10": 1.0,
+        "n_docs_full_recall": 49,
+        "fraction_full_recall": 0.98
+      },
+      "per_doc": [
+        {
+          "doc_id": "doc_001",
+          "source_axioms": [
+            [
+              "alice",
+              "likes",
+              "cats"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "alice",
+              "likes",
+              "cats"
+            ]
+          ],
+          "narrative_excerpt": "The alice likes cats.\n\nThis indicates that, in the provided fact, alice has a liking for cats.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_002",
+          "source_axioms": [
+            [
+              "bob",
+              "owns",
+              "dog"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "bob",
+              "owns",
+              "dog"
+            ],
+            [
+              "bob",
+              "is_owner_of",
+              "dog"
+            ],
+            [
+              "dog",
+              "is_owned_by",
+              "bob"
+            ]
+          ],
+          "narrative_excerpt": "The bob owns dog.\n\nThis states a simple ownership relationship: bob is the owner, and dog is the owned entity.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 66.6667,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 3,
+          "missing": [],
+          "extra": [
+            [
+              "bob",
+              "is_owner_of",
+              "dog"
+            ],
+            [
+              "dog",
+              "is_owned_by",
+              "bob"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_003",
+          "source_axioms": [
+            [
+              "paris",
+              "is_a",
+              "city"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "paris",
+              "is_a",
+              "city"
+            ]
+          ],
+          "narrative_excerpt": "The paris is_a city.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_004",
+          "source_axioms": [
+            [
+              "einstein",
+              "proposed",
+              "relativity"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "einstein",
+              "proposed",
+              "relativity"
+            ],
+            [
+              "this",
+              "states",
+              "the provided fact directly in the required canonical form"
+            ]
+          ],
+          "narrative_excerpt": "The einstein proposed relativity.\n\nThis states the provided fact directly in the required canonical form.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 50.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 2,
+          "missing": [],
+          "extra": [
+            [
+              "this",
+              "states",
+              "the provided fact directly in the required canonical form"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_005",
+          "source_axioms": [
+            [
+              "water",
+              "contains",
+              "hydrogen"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "water",
+              "contains",
+              "hydrogen"
+            ],
+            [
+              "hydrogen",
+              "is_component_present_in",
+              "water"
+            ]
+          ],
+          "narrative_excerpt": "The water contains hydrogen.\n\nThis states that hydrogen is one of the components present in water.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 50.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 2,
+          "missing": [],
+          "extra": [
+            [
+              "hydrogen",
+              "is_component_present_in",
+              "water"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_006",
+          "source_axioms": [
+            [
+              "sun",
+              "emits",
+              "light"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "sun",
+              "emits",
+              "light"
+            ]
+          ],
+          "narrative_excerpt": "The sun emits light.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_007",
+          "source_axioms": [
+            [
+              "plants",
+              "produce",
+              "oxygen"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "plants",
+              "produce",
+              "oxygen"
+            ],
+            [
+              "oxygen",
+              "is_a",
+              "gas"
+            ],
+            [
+              "oxygen",
+              "is_essential_for",
+              "many living organisms"
+            ]
+          ],
+          "narrative_excerpt": "The plants produce oxygen.\n\nThis describes the role of plants in generating oxygen, a gas essential for many living organisms.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 66.6667,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 3,
+          "missing": [],
+          "extra": [
+            [
+              "oxygen",
+              "is_a",
+              "gas"
+            ],
+            [
+              "oxygen",
+              "is_essential_for",
+              "many living organisms"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_008",
+          "source_axioms": [
+            [
+              "dogs",
+              "chase",
+              "cats"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "dogs",
+              "chase",
+              "cats"
+            ]
+          ],
+          "narrative_excerpt": "The dogs chase cats.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_009",
+          "source_axioms": [
+            [
+              "fish",
+              "eat",
+              "plankton"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "fish",
+              "eat",
+              "plankton"
+            ],
+            [
+              "this sentence",
+              "describes",
+              "feeding relationship"
+            ],
+            [
+              "fish",
+              "consume",
+              "plankton"
+            ]
+          ],
+          "narrative_excerpt": "The fish eat plankton.\n\nThis sentence describes a feeding relationship in which fish consume plankton.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 66.6667,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 3,
+          "missing": [],
+          "extra": [
+            [
+              "fish",
+              "consume",
+              "plankton"
+            ],
+            [
+              "this sentence",
+              "describes",
+              "feeding relationship"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_010",
+          "source_axioms": [
+            [
+              "birds",
+              "build",
+              "nests"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "birds",
+              "build",
+              "nests"
+            ],
+            [
+              "nests",
+              "associated_with",
+              "sheltering eggs or young"
+            ]
+          ],
+          "narrative_excerpt": "The birds build nests.\n\nThis states that birds construct nests, typically as places associated with sheltering eggs or young.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 50.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 2,
+          "missing": [],
+          "extra": [
+            [
+              "nests",
+              "associated_with",
+              "sheltering eggs or young"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_011",
+          "source_axioms": [
+            [
+              "shakespeare",
+              "wrote",
+              "hamlet"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "shakespeare",
+              "wrote",
+              "hamlet"
+            ],
+            [
+              "this sentence",
+              "records",
+              "stated fact"
+            ],
+            [
+              "stated fact",
+              "has_form",
+              "canonical form"
+            ]
+          ],
+          "narrative_excerpt": "The shakespeare wrote hamlet.\n\nThis sentence records the stated fact in its canonical form.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 66.6667,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 3,
+          "missing": [],
+          "extra": [
+            [
+              "stated fact",
+              "has_form",
+              "canonical form"
+            ],
+            [
+              "this sentence",
+              "records",
+              "stated fact"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_012",
+          "source_axioms": [
+            [
+              "tesla",
+              "invented",
+              "motors"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "tesla",
+              "invented",
+              "motors"
+            ],
+            [
+              "this statement",
+              "presents",
+              "the fact"
+            ],
+            [
+              "the fact",
+              "has_form",
+              "required canonical form"
+            ]
+          ],
+          "narrative_excerpt": "The tesla invented motors.\n\nThis statement presents the fact in the required canonical form.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 66.6667,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 3,
+          "missing": [],
+          "extra": [
+            [
+              "the fact",
+              "has_form",
+              "required canonical form"
+            ],
+            [
+              "this statement",
+              "presents",
+              "the fact"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_013",
+          "source_axioms": [
+            [
+              "darwin",
+              "studied",
+              "finches"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "darwin",
+              "studied",
+              "finches"
+            ],
+            [
+              "this statement",
+              "has_subject",
+              "darwin"
+            ],
+            [
+              "this statement",
+              "has_action",
+              "studied"
+            ],
+            [
+              "this statement",
+              "has_object",
+              "finches"
+            ]
+          ],
+          "narrative_excerpt": "The darwin studied finches.\n\nThis states that the subject, \u201cdarwin,\u201d is associated with the action \u201cstudied\u201d and the object \u201cfinches.\u201d",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 75.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 4,
+          "missing": [],
+          "extra": [
+            [
+              "this statement",
+              "has_action",
+              "studied"
+            ],
+            [
+              "this statement",
+              "has_object",
+              "finches"
+            ],
+            [
+              "this statement",
+              "has_subject",
+              "darwin"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_014",
+          "source_axioms": [
+            [
+              "newton",
+              "described",
+              "gravity"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "newton",
+              "described",
+              "gravity"
+            ],
+            [
+              "this fact",
+              "presents_as",
+              "subject"
+            ],
+            [
+              "this fact",
+              "presents_described_as",
+              "predicate"
+            ],
+            [
+              "this fact",
+              "presents_gravity_as",
+              "object"
+            ]
+          ],
+          "narrative_excerpt": "The newton described gravity.\n\nThis fact presents \u201cnewton\u201d as the subject, \u201cdescribed\u201d as the predicate, and \u201cgravity\u201d as the object.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 75.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 4,
+          "missing": [],
+          "extra": [
+            [
+              "this fact",
+              "presents_as",
+              "subject"
+            ],
+            [
+              "this fact",
+              "presents_described_as",
+              "predicate"
+            ],
+            [
+              "this fact",
+              "presents_gravity_as",
+              "object"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_015",
+          "source_axioms": [
+            [
+              "kepler",
+              "discovered",
+              "orbits"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "kepler",
+              "discovered",
+              "orbits"
+            ],
+            [
+              "this",
+              "states",
+              "the_fact"
+            ],
+            [
+              "the_fact",
+              "is_in",
+              "required_canonical_form"
+            ]
+          ],
+          "narrative_excerpt": "The kepler discovered orbits.\n\nThis states the fact in its required canonical form.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 66.6667,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 3,
+          "missing": [],
+          "extra": [
+            [
+              "the_fact",
+              "is_in",
+              "required_canonical_form"
+            ],
+            [
+              "this",
+              "states",
+              "the_fact"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_016",
+          "source_axioms": [
+            [
+              "gold",
+              "conducts",
+              "electricity"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "gold",
+              "conducts",
+              "electricity"
+            ],
+            [
+              "gold",
+              "is",
+              "electrically conductive material"
+            ]
+          ],
+          "narrative_excerpt": "The gold conducts electricity.\n\nThis means gold is an electrically conductive material.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 50.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 2,
+          "missing": [],
+          "extra": [
+            [
+              "gold",
+              "is",
+              "electrically conductive material"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_017",
+          "source_axioms": [
+            [
+              "steel",
+              "resists",
+              "corrosion"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "steel",
+              "resists",
+              "corrosion"
+            ],
+            [
+              "steel",
+              "is_suitable_in",
+              "contexts_where_durability_against_corrosive_conditions_is_important"
+            ]
+          ],
+          "narrative_excerpt": "The steel resists corrosion.\n\nThis means steel has a resistance to corrosion, making it suitable in contexts where durability against corrosive conditions is important.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 50.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 2,
+          "missing": [],
+          "extra": [
+            [
+              "steel",
+              "is_suitable_in",
+              "contexts_where_durability_against_corrosive_conditions_is_important"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_018",
+          "source_axioms": [
+            [
+              "diamond",
+              "cuts",
+              "glass"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "diamond",
+              "cuts",
+              "glass"
+            ]
+          ],
+          "narrative_excerpt": "The diamond cuts glass.\n\nThis states the fact directly: diamond is capable of cutting glass.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_019",
+          "source_axioms": [
+            [
+              "copper",
+              "carries",
+              "current"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "copper",
+              "carries",
+              "current"
+            ],
+            [
+              "copper",
+              "is_described_in_terms_of",
+              "ability to conduct electrical current"
+            ],
+            [
+              "copper",
+              "can_conduct",
+              "electrical current"
+            ]
+          ],
+          "narrative_excerpt": "The copper carries current.\n\nThis means copper is being described in terms of its ability to conduct electrical current.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 66.6667,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 3,
+          "missing": [],
+          "extra": [
+            [
+              "copper",
+              "can_conduct",
+              "electrical current"
+            ],
+            [
+              "copper",
+              "is_described_in_terms_of",
+              "ability to conduct electrical current"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_020",
+          "source_axioms": [
+            [
+              "iron",
+              "forms",
+              "rust"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "iron",
+              "forms",
+              "rust"
+            ],
+            [
+              "iron",
+              "undergoes",
+              "a process"
+            ],
+            [
+              "process",
+              "results_in",
+              "rust"
+            ]
+          ],
+          "narrative_excerpt": "The iron forms rust.\n\nThis states that iron undergoes a process that results in rust.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 66.6667,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 3,
+          "missing": [],
+          "extra": [
+            [
+              "iron",
+              "undergoes",
+              "a process"
+            ],
+            [
+              "process",
+              "results_in",
+              "rust"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_021",
+          "source_axioms": [
+            [
+              "rome",
+              "built",
+              "roads"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "rome",
+              "built",
+              "roads"
+            ],
+            [
+              "this fact",
+              "presents_as_subject",
+              "rome"
+            ],
+            [
+              "this fact",
+              "presents_as_predicate",
+              "built"
+            ],
+            [
+              "this fact",
+              "presents_as_object",
+              "roads"
+            ]
+          ],
+          "narrative_excerpt": "The rome built roads.\n\nThis fact presents \u201crome\u201d as the subject, \u201cbuilt\u201d as the predicate, and \u201croads\u201d as the object.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 75.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 4,
+          "missing": [],
+          "extra": [
+            [
+              "this fact",
+              "presents_as_object",
+              "roads"
+            ],
+            [
+              "this fact",
+              "presents_as_predicate",
+              "built"
+            ],
+            [
+              "this fact",
+              "presents_as_subject",
+              "rome"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_022",
+          "source_axioms": [
+            [
+              "greece",
+              "founded",
+              "democracy"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "greece",
+              "founded",
+              "democracy"
+            ],
+            [
+              "this",
+              "states",
+              "the fact in the required canonical form"
+            ],
+            [
+              "greece",
+              "is_widely_associated_with",
+              "development of democracy"
+            ],
+            [
+              "ancient athens",
+              "is_widely_associated_with",
+              "development of democracy"
+            ]
+          ],
+          "narrative_excerpt": "The greece founded democracy.\n\nThis states the fact in the required canonical form. Historically, Greece\u2014especially ancient Athens\u2014is widely associated with the development of democracy.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 75.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 4,
+          "missing": [],
+          "extra": [
+            [
+              "ancient athens",
+              "is_widely_associated_with",
+              "development of democracy"
+            ],
+            [
+              "greece",
+              "is_widely_associated_with",
+              "development of democracy"
+            ],
+            [
+              "this",
+              "states",
+              "the fact in the required canonical form"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_023",
+          "source_axioms": [
+            [
+              "egypt",
+              "constructed",
+              "pyramids"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "the egypt",
+              "constructed",
+              "pyramids"
+            ],
+            [
+              "this sentence",
+              "presents",
+              "the fact"
+            ],
+            [
+              "the fact",
+              "has_form",
+              "required canonical form"
+            ],
+            [
+              "this sentence",
+              "preserves",
+              "exact subject, predicate, and object tokens from the input"
+            ]
+          ],
+          "narrative_excerpt": "The egypt constructed pyramids.\n\nThis sentence presents the fact in its required canonical form, preserving the exact subject, predicate, and object tokens from the input.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 125.0,
+          "exact_match_recall": 0.0,
+          "matched": 0,
+          "n_source": 1,
+          "n_reconstructed": 4,
+          "missing": [
+            [
+              "egypt",
+              "constructed",
+              "pyramids"
+            ]
+          ],
+          "extra": [
+            [
+              "the egypt",
+              "constructed",
+              "pyramids"
+            ],
+            [
+              "the fact",
+              "has_form",
+              "required canonical form"
+            ],
+            [
+              "this sentence",
+              "presents",
+              "the fact"
+            ],
+            [
+              "this sentence",
+              "preserves",
+              "exact subject, predicate, and object tokens from the input"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_024",
+          "source_axioms": [
+            [
+              "persia",
+              "invaded",
+              "greece"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "persia",
+              "invaded",
+              "greece"
+            ],
+            [
+              "persia",
+              "is",
+              "subject"
+            ],
+            [
+              "invaded",
+              "is",
+              "predicate"
+            ],
+            [
+              "greece",
+              "is",
+              "object"
+            ]
+          ],
+          "narrative_excerpt": "The persia invaded greece.\n\nThis canonical sentence records the stated fact as a direct relationship: \u201cpersia\u201d is the subject, \u201cinvaded\u201d is the predicate, and \u201cgreece\u201d is the object.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 75.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 4,
+          "missing": [],
+          "extra": [
+            [
+              "greece",
+              "is",
+              "object"
+            ],
+            [
+              "invaded",
+              "is",
+              "predicate"
+            ],
+            [
+              "persia",
+              "is",
+              "subject"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_025",
+          "source_axioms": [
+            [
+              "vikings",
+              "explored",
+              "continents"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "vikings",
+              "explored",
+              "continents"
+            ],
+            [
+              "vikings",
+              "traveled",
+              "beyond their homelands"
+            ],
+            [
+              "vikings",
+              "reached",
+              "multiple continental regions"
+            ],
+            [
+              "multiple continental regions",
+              "reached_through",
+              "exploration"
+            ]
+          ],
+          "narrative_excerpt": "The vikings explored continents.\n\nThis states that the vikings traveled beyond their homelands and reached multiple continental regions through exploration.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 75.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 4,
+          "missing": [],
+          "extra": [
+            [
+              "multiple continental regions",
+              "reached_through",
+              "exploration"
+            ],
+            [
+              "vikings",
+              "reached",
+              "multiple continental regions"
+            ],
+            [
+              "vikings",
+              "traveled",
+              "beyond their homelands"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_026",
+          "source_axioms": [
+            [
+              "electrons",
+              "orbit",
+              "nuclei"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "electrons",
+              "orbit",
+              "nuclei"
+            ]
+          ],
+          "narrative_excerpt": "The electrons orbit nuclei.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_027",
+          "source_axioms": [
+            [
+              "enzymes",
+              "catalyze",
+              "reactions"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "enzymes",
+              "catalyze",
+              "reactions"
+            ],
+            [
+              "enzymes",
+              "act_as",
+              "catalysts"
+            ],
+            [
+              "enzymes",
+              "help",
+              "reactions proceed"
+            ]
+          ],
+          "narrative_excerpt": "The enzymes catalyze reactions.\n\nThis means enzymes help reactions proceed by acting as catalysts.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 66.6667,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 3,
+          "missing": [],
+          "extra": [
+            [
+              "enzymes",
+              "act_as",
+              "catalysts"
+            ],
+            [
+              "enzymes",
+              "help",
+              "reactions proceed"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_028",
+          "source_axioms": [
+            [
+              "viruses",
+              "infect",
+              "cells"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "viruses",
+              "infect",
+              "cells"
+            ],
+            [
+              "viruses",
+              "enter_or_affect",
+              "cells"
+            ],
+            [
+              "viruses entering or affecting cells",
+              "has_context",
+              "biological activity"
+            ]
+          ],
+          "narrative_excerpt": "The viruses infect cells.\n\nThis means that viruses enter or affect cells as part of their biological activity.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 66.6667,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 3,
+          "missing": [],
+          "extra": [
+            [
+              "viruses",
+              "enter_or_affect",
+              "cells"
+            ],
+            [
+              "viruses entering or affecting cells",
+              "has_context",
+              "biological activity"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_029",
+          "source_axioms": [
+            [
+              "neurons",
+              "transmit",
+              "signals"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "neurons",
+              "transmit",
+              "signals"
+            ],
+            [
+              "neurons",
+              "have_basic_role_in",
+              "communication within the nervous system"
+            ]
+          ],
+          "narrative_excerpt": "The neurons transmit signals.\n\nThis describes the basic role of neurons in communication within the nervous system.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 50.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 2,
+          "missing": [],
+          "extra": [
+            [
+              "neurons",
+              "have_basic_role_in",
+              "communication within the nervous system"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_030",
+          "source_axioms": [
+            [
+              "muscles",
+              "contract",
+              "fibers"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "muscles",
+              "contract",
+              "fibers"
+            ],
+            [
+              "this sentence",
+              "presents",
+              "provided fact"
+            ],
+            [
+              "provided fact",
+              "has_form",
+              "canonical form"
+            ],
+            [
+              "this sentence",
+              "preserves",
+              "exact subject, predicate, and object tokens"
+            ]
+          ],
+          "narrative_excerpt": "The muscles contract fibers.\n\nThis sentence presents the provided fact in canonical form, preserving the exact subject, predicate, and object tokens.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 75.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 4,
+          "missing": [],
+          "extra": [
+            [
+              "provided fact",
+              "has_form",
+              "canonical form"
+            ],
+            [
+              "this sentence",
+              "presents",
+              "provided fact"
+            ],
+            [
+              "this sentence",
+              "preserves",
+              "exact subject, predicate, and object tokens"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_031",
+          "source_axioms": [
+            [
+              "teachers",
+              "explain",
+              "lessons"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "teachers",
+              "explain",
+              "lessons"
+            ],
+            [
+              "teachers",
+              "provide",
+              "instruction"
+            ],
+            [
+              "teachers",
+              "provide_instruction_by",
+              "explaining lessons"
+            ]
+          ],
+          "narrative_excerpt": "The teachers explain lessons.\n\nThis states that teachers provide instruction by explaining lessons.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 66.6667,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 3,
+          "missing": [],
+          "extra": [
+            [
+              "teachers",
+              "provide",
+              "instruction"
+            ],
+            [
+              "teachers",
+              "provide_instruction_by",
+              "explaining lessons"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_032",
+          "source_axioms": [
+            [
+              "scientists",
+              "discover",
+              "particles"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "scientists",
+              "discover",
+              "particles"
+            ],
+            [
+              "this sentence",
+              "identifies_as",
+              "actors"
+            ],
+            [
+              "this sentence",
+              "identifies_discover_as",
+              "action"
+            ],
+            [
+              "this sentence",
+              "identifies_particles_as",
+              "object of that action"
+            ]
+          ],
+          "narrative_excerpt": "The scientists discover particles.\n\nThis sentence identifies scientists as the actors, \u201cdiscover\u201d as the action, and particles as the object of that action.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 75.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 4,
+          "missing": [],
+          "extra": [
+            [
+              "this sentence",
+              "identifies_as",
+              "actors"
+            ],
+            [
+              "this sentence",
+              "identifies_discover_as",
+              "action"
+            ],
+            [
+              "this sentence",
+              "identifies_particles_as",
+              "object of that action"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_033",
+          "source_axioms": [
+            [
+              "engineers",
+              "design",
+              "bridges"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "engineers",
+              "design",
+              "bridges"
+            ],
+            [
+              "engineers",
+              "are_responsible_for",
+              "creating bridge designs"
+            ],
+            [
+              "engineers",
+              "apply",
+              "technical knowledge"
+            ],
+            [
+              "engineers",
+              "apply_technical_knowledge_to",
+              "structures"
+            ],
+            [
+              "structures",
+              "are_intended_to_span",
+              "obstacles"
+            ],
+            [
+              "obstacles",
+              "include",
+              "roads"
+            ],
+            [
+              "obstacles",
+              "include",
+              "rivers"
+            ],
+            [
+              "obstacles",
+              "include",
+              "valleys"
+            ]
+          ],
+          "narrative_excerpt": "The engineers design bridges.\n\nThis states that engineers are responsible for creating bridge designs, applying technical knowledge to structures intended to span obstacles such as roads, rivers, or v",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 87.5,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 8,
+          "missing": [],
+          "extra": [
+            [
+              "engineers",
+              "apply",
+              "technical knowledge"
+            ],
+            [
+              "engineers",
+              "apply_technical_knowledge_to",
+              "structures"
+            ],
+            [
+              "engineers",
+              "are_responsible_for",
+              "creating bridge designs"
+            ],
+            [
+              "obstacles",
+              "include",
+              "rivers"
+            ],
+            [
+              "obstacles",
+              "include",
+              "roads"
+            ],
+            [
+              "obstacles",
+              "include",
+              "valleys"
+            ],
+            [
+              "structures",
+              "are_intended_to_span",
+              "obstacles"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_034",
+          "source_axioms": [
+            [
+              "farmers",
+              "grow",
+              "wheat"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "farmers",
+              "grow",
+              "wheat"
+            ],
+            [
+              "this sentence",
+              "identifies",
+              "farmers as the people performing the action"
+            ],
+            [
+              "this sentence",
+              "identifies",
+              "wheat as the crop being grown"
+            ]
+          ],
+          "narrative_excerpt": "The farmers grow wheat.\n\nThis sentence identifies farmers as the people performing the action and wheat as the crop being grown.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 66.6667,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 3,
+          "missing": [],
+          "extra": [
+            [
+              "this sentence",
+              "identifies",
+              "farmers as the people performing the action"
+            ],
+            [
+              "this sentence",
+              "identifies",
+              "wheat as the crop being grown"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_035",
+          "source_axioms": [
+            [
+              "chefs",
+              "prepare",
+              "meals"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "chefs",
+              "prepare",
+              "meals"
+            ]
+          ],
+          "narrative_excerpt": "The chefs prepare meals.\n\nThis describes chefs carrying out the task of preparing meals.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_036",
+          "source_axioms": [
+            [
+              "cars",
+              "emit",
+              "exhaust"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "cars",
+              "emit",
+              "exhaust"
+            ],
+            [
+              "cars",
+              "are_described_as",
+              "producing exhaust"
+            ]
+          ],
+          "narrative_excerpt": "The cars emit exhaust.\n\nThis means that cars are described as producing exhaust.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 50.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 2,
+          "missing": [],
+          "extra": [
+            [
+              "cars",
+              "are_described_as",
+              "producing exhaust"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_037",
+          "source_axioms": [
+            [
+              "rivers",
+              "reach",
+              "oceans"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "rivers",
+              "reach",
+              "oceans"
+            ],
+            [
+              "rivers",
+              "flow_toward",
+              "oceans"
+            ],
+            [
+              "rivers",
+              "eventually_arrive_at",
+              "oceans"
+            ]
+          ],
+          "narrative_excerpt": "The rivers reach oceans.\n\nThis states the general relationship that rivers flow toward and eventually arrive at oceans.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 66.6667,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 3,
+          "missing": [],
+          "extra": [
+            [
+              "rivers",
+              "eventually_arrive_at",
+              "oceans"
+            ],
+            [
+              "rivers",
+              "flow_toward",
+              "oceans"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_038",
+          "source_axioms": [
+            [
+              "students",
+              "study",
+              "subjects"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "students",
+              "study",
+              "subjects"
+            ],
+            [
+              "students",
+              "engage_in",
+              "studying"
+            ],
+            [
+              "things students study",
+              "are",
+              "subjects"
+            ]
+          ],
+          "narrative_excerpt": "The students study subjects.\n\nThis states that students engage in the activity of studying, and the things they study are subjects.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 66.6667,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 3,
+          "missing": [],
+          "extra": [
+            [
+              "students",
+              "engage_in",
+              "studying"
+            ],
+            [
+              "things students study",
+              "are",
+              "subjects"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_039",
+          "source_axioms": [
+            [
+              "mothers",
+              "love",
+              "children"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "mothers",
+              "love",
+              "children"
+            ]
+          ],
+          "narrative_excerpt": "The mothers love children.\n\nThis states the relationship directly: mothers are associated with loving children.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_040",
+          "source_axioms": [
+            [
+              "writers",
+              "create",
+              "stories"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "writers",
+              "create",
+              "stories"
+            ],
+            [
+              "writers",
+              "are_responsible_for",
+              "producing stories"
+            ],
+            [
+              "writers",
+              "shape",
+              "ideas into narrative works"
+            ],
+            [
+              "writers",
+              "shape",
+              "characters into narrative works"
+            ],
+            [
+              "writers",
+              "shape",
+              "events into narrative works"
+            ],
+            [
+              "writers",
+              "shape",
+              "language into narrative works"
+            ]
+          ],
+          "narrative_excerpt": "The writers create stories.\n\nThis means that writers are responsible for producing stories, shaping ideas, characters, events, and language into narrative works.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 83.3333,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 6,
+          "missing": [],
+          "extra": [
+            [
+              "writers",
+              "are_responsible_for",
+              "producing stories"
+            ],
+            [
+              "writers",
+              "shape",
+              "characters into narrative works"
+            ],
+            [
+              "writers",
+              "shape",
+              "events into narrative works"
+            ],
+            [
+              "writers",
+              "shape",
+              "ideas into narrative works"
+            ],
+            [
+              "writers",
+              "shape",
+              "language into narrative works"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_041",
+          "source_axioms": [
+            [
+              "musicians",
+              "compose",
+              "symphonies"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "musicians",
+              "compose",
+              "symphonies"
+            ],
+            [
+              "musicians",
+              "create_or_write",
+              "symphonies"
+            ],
+            [
+              "creating_or_writing_symphonies",
+              "is_part_of",
+              "musical work"
+            ]
+          ],
+          "narrative_excerpt": "The musicians compose symphonies.\n\nThis states that musicians create or write symphonies as part of their musical work.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 66.6667,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 3,
+          "missing": [],
+          "extra": [
+            [
+              "creating_or_writing_symphonies",
+              "is_part_of",
+              "musical work"
+            ],
+            [
+              "musicians",
+              "create_or_write",
+              "symphonies"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_042",
+          "source_axioms": [
+            [
+              "architects",
+              "draw",
+              "plans"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "architects",
+              "draw",
+              "plans"
+            ],
+            [
+              "architects",
+              "create",
+              "plans"
+            ],
+            [
+              "creating plans",
+              "is_part_of",
+              "architects' work"
+            ]
+          ],
+          "narrative_excerpt": "The architects draw plans.\n\nThis states that architects create plans as part of their work.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 66.6667,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 3,
+          "missing": [],
+          "extra": [
+            [
+              "architects",
+              "create",
+              "plans"
+            ],
+            [
+              "creating plans",
+              "is_part_of",
+              "architects' work"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_043",
+          "source_axioms": [
+            [
+              "painters",
+              "mix",
+              "colors"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "painters",
+              "mix",
+              "colors"
+            ],
+            [
+              "painters",
+              "combine",
+              "colors"
+            ],
+            [
+              "combining colors",
+              "is_part_of",
+              "part of their work or creative process"
+            ]
+          ],
+          "narrative_excerpt": "The painters mix colors.\n\nThis states that painters combine colors as part of their work or creative process.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 66.6667,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 3,
+          "missing": [],
+          "extra": [
+            [
+              "combining colors",
+              "is_part_of",
+              "part of their work or creative process"
+            ],
+            [
+              "painters",
+              "combine",
+              "colors"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_044",
+          "source_axioms": [
+            [
+              "doctors",
+              "treat",
+              "patients"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "doctors",
+              "treat",
+              "patients"
+            ],
+            [
+              "doctors",
+              "provide",
+              "care"
+            ],
+            [
+              "doctors",
+              "provide",
+              "medical attention"
+            ]
+          ],
+          "narrative_excerpt": "The doctors treat patients.\n\nThis states the basic relationship that doctors provide care or medical attention to patients.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 66.6667,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 3,
+          "missing": [],
+          "extra": [
+            [
+              "doctors",
+              "provide",
+              "care"
+            ],
+            [
+              "doctors",
+              "provide",
+              "medical attention"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_045",
+          "source_axioms": [
+            [
+              "lawyers",
+              "defend",
+              "clients"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "lawyers",
+              "defend",
+              "clients"
+            ],
+            [
+              "lawyers",
+              "provide",
+              "defense"
+            ],
+            [
+              "lawyers",
+              "provide",
+              "representation"
+            ],
+            [
+              "lawyers",
+              "represent",
+              "clients"
+            ],
+            [
+              "lawyers",
+              "work_in_context_of",
+              "legal matters"
+            ]
+          ],
+          "narrative_excerpt": "The lawyers defend clients.\n\nThis statement describes a central role of lawyers: providing defense and representation for clients in legal matters.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 80.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 5,
+          "missing": [],
+          "extra": [
+            [
+              "lawyers",
+              "provide",
+              "defense"
+            ],
+            [
+              "lawyers",
+              "provide",
+              "representation"
+            ],
+            [
+              "lawyers",
+              "represent",
+              "clients"
+            ],
+            [
+              "lawyers",
+              "work_in_context_of",
+              "legal matters"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_046",
+          "source_axioms": [
+            [
+              "judges",
+              "interpret",
+              "laws"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "judges",
+              "interpret",
+              "laws"
+            ],
+            [
+              "judges",
+              "apply",
+              "legal_interpretation"
+            ],
+            [
+              "judges",
+              "consider",
+              "laws"
+            ],
+            [
+              "laws",
+              "consider_in_context_of",
+              "cases_or_legal_questions"
+            ]
+          ],
+          "narrative_excerpt": "The judges interpret laws.\n\nThis states that judges apply legal interpretation when considering laws in the context of cases or legal questions.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 75.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 4,
+          "missing": [],
+          "extra": [
+            [
+              "judges",
+              "apply",
+              "legal_interpretation"
+            ],
+            [
+              "judges",
+              "consider",
+              "laws"
+            ],
+            [
+              "laws",
+              "consider_in_context_of",
+              "cases_or_legal_questions"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_047",
+          "source_axioms": [
+            [
+              "hope",
+              "inspires",
+              "action"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "hope",
+              "inspires",
+              "action"
+            ],
+            [
+              "hope",
+              "is_framed_as",
+              "motivating force"
+            ],
+            [
+              "hope",
+              "does_not_remain",
+              "passive"
+            ],
+            [
+              "hope",
+              "encourages",
+              "movement"
+            ],
+            [
+              "hope",
+              "encourages",
+              "effort"
+            ],
+            [
+              "hope",
+              "encourages",
+              "purposeful response"
+            ]
+          ],
+          "narrative_excerpt": "The hope inspires action.\n\nThis frames hope as a motivating force: it does not remain passive, but encourages movement, effort, and purposeful response.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 83.3333,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 6,
+          "missing": [],
+          "extra": [
+            [
+              "hope",
+              "does_not_remain",
+              "passive"
+            ],
+            [
+              "hope",
+              "encourages",
+              "effort"
+            ],
+            [
+              "hope",
+              "encourages",
+              "movement"
+            ],
+            [
+              "hope",
+              "encourages",
+              "purposeful response"
+            ],
+            [
+              "hope",
+              "is_framed_as",
+              "motivating force"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_048",
+          "source_axioms": [
+            [
+              "music",
+              "expresses",
+              "emotion"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "music",
+              "expresses",
+              "emotion"
+            ],
+            [
+              "music",
+              "is_presented_as",
+              "medium"
+            ],
+            [
+              "music",
+              "is_capable_of_conveying",
+              "feeling"
+            ],
+            [
+              "music",
+              "is_capable_of_conveying",
+              "mood"
+            ],
+            [
+              "music",
+              "is_capable_of_conveying",
+              "affect"
+            ]
+          ],
+          "narrative_excerpt": "The music expresses emotion.\n\nThis statement presents music as a medium capable of conveying feeling, mood, and affect.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 80.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 5,
+          "missing": [],
+          "extra": [
+            [
+              "music",
+              "is_capable_of_conveying",
+              "affect"
+            ],
+            [
+              "music",
+              "is_capable_of_conveying",
+              "feeling"
+            ],
+            [
+              "music",
+              "is_capable_of_conveying",
+              "mood"
+            ],
+            [
+              "music",
+              "is_presented_as",
+              "medium"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_049",
+          "source_axioms": [
+            [
+              "knowledge",
+              "requires",
+              "effort"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "knowledge",
+              "requires",
+              "effort"
+            ],
+            [
+              "gaining_refining_and_applying_knowledge",
+              "is_not",
+              "passive"
+            ],
+            [
+              "gaining_refining_and_applying_knowledge",
+              "depends_on",
+              "sustained_attention"
+            ],
+            [
+              "gaining_refining_and_applying_knowledge",
+              "depends_on",
+              "practice"
+            ],
+            [
+              "gaining_refining_and_applying_knowledge",
+              "depends_on",
+              "deliberate_engagement"
+            ]
+          ],
+          "narrative_excerpt": "The knowledge requires effort.\n\nThis emphasizes that gaining, refining, and applying knowledge is not passive; it depends on sustained attention, practice, and deliberate engagement.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 80.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 5,
+          "missing": [],
+          "extra": [
+            [
+              "gaining_refining_and_applying_knowledge",
+              "depends_on",
+              "deliberate_engagement"
+            ],
+            [
+              "gaining_refining_and_applying_knowledge",
+              "depends_on",
+              "practice"
+            ],
+            [
+              "gaining_refining_and_applying_knowledge",
+              "depends_on",
+              "sustained_attention"
+            ],
+            [
+              "gaining_refining_and_applying_knowledge",
+              "is_not",
+              "passive"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_050",
+          "source_axioms": [
+            [
+              "fear",
+              "paralyzes",
+              "movement"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "fear",
+              "paralyzes",
+              "movement"
+            ],
+            [
+              "fear",
+              "can_stop",
+              "movement"
+            ],
+            [
+              "fear",
+              "can_inhibit",
+              "movement"
+            ],
+            [
+              "fear",
+              "is_presented_as",
+              "force"
+            ],
+            [
+              "fear",
+              "causes",
+              "immobility"
+            ]
+          ],
+          "narrative_excerpt": "The fear paralyzes movement.\n\nThis states that fear can stop or inhibit movement, presenting fear as a force that causes immobility.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 80.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 5,
+          "missing": [],
+          "extra": [
+            [
+              "fear",
+              "can_inhibit",
+              "movement"
+            ],
+            [
+              "fear",
+              "can_stop",
+              "movement"
+            ],
+            [
+              "fear",
+              "causes",
+              "immobility"
+            ],
+            [
+              "fear",
+              "is_presented_as",
+              "force"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "schema": "sum.s25_constrained_extractor.v1",
+      "ablation": "constrained_extractor",
+      "description": "Intervention B: baseline generator; vocab-pinned extractor",
+      "model": "gpt-5.5-2026-04-23",
+      "call_timeout_s": 60.0,
+      "aggregate": {
+        "n_docs": 50,
+        "n_docs_measured": 50,
+        "n_docs_timed_out": 0,
+        "timed_out_doc_ids": [],
+        "drift_pct_mean": 2.0,
+        "drift_pct_median": 0.0,
+        "exact_match_recall_mean": 1.0,
+        "exact_match_recall_p10": 1.0,
+        "n_docs_full_recall": 50,
+        "fraction_full_recall": 1.0
+      },
+      "per_doc": [
+        {
+          "doc_id": "doc_001",
+          "source_axioms": [
+            [
+              "alice",
+              "likes",
+              "cats"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "alice",
+              "likes",
+              "cats"
+            ]
+          ],
+          "narrative_excerpt": "Alice likes cats.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_002",
+          "source_axioms": [
+            [
+              "bob",
+              "owns",
+              "dog"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "bob",
+              "owns",
+              "dog"
+            ]
+          ],
+          "narrative_excerpt": "Bob owns a dog.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_003",
+          "source_axioms": [
+            [
+              "paris",
+              "is_a",
+              "city"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "paris",
+              "is_a",
+              "city"
+            ]
+          ],
+          "narrative_excerpt": "Paris is a city.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_004",
+          "source_axioms": [
+            [
+              "einstein",
+              "proposed",
+              "relativity"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "einstein",
+              "proposed",
+              "relativity"
+            ]
+          ],
+          "narrative_excerpt": "Albert Einstein proposed relativity.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_005",
+          "source_axioms": [
+            [
+              "water",
+              "contains",
+              "hydrogen"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "water",
+              "contains",
+              "hydrogen"
+            ],
+            [
+              "water",
+              "consist_of",
+              "hydrogen"
+            ]
+          ],
+          "narrative_excerpt": "Water contains hydrogen. This identifies hydrogen as one of the constituent components of water.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 50.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 2,
+          "missing": [],
+          "extra": [
+            [
+              "water",
+              "consist_of",
+              "hydrogen"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_006",
+          "source_axioms": [
+            [
+              "sun",
+              "emits",
+              "light"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "sun",
+              "emits",
+              "light"
+            ]
+          ],
+          "narrative_excerpt": "The sun emits light.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_007",
+          "source_axioms": [
+            [
+              "plants",
+              "produce",
+              "oxygen"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "plants",
+              "produce",
+              "oxygen"
+            ]
+          ],
+          "narrative_excerpt": "Plants produce oxygen.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_008",
+          "source_axioms": [
+            [
+              "dogs",
+              "chase",
+              "cats"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "dogs",
+              "chase",
+              "cats"
+            ]
+          ],
+          "narrative_excerpt": "Dogs chase cats.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_009",
+          "source_axioms": [
+            [
+              "fish",
+              "eat",
+              "plankton"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "fish",
+              "eat",
+              "plankton"
+            ]
+          ],
+          "narrative_excerpt": "Fish eat plankton.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_010",
+          "source_axioms": [
+            [
+              "birds",
+              "build",
+              "nests"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "birds",
+              "build",
+              "nests"
+            ]
+          ],
+          "narrative_excerpt": "Birds build nests.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_011",
+          "source_axioms": [
+            [
+              "shakespeare",
+              "wrote",
+              "hamlet"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "shakespeare",
+              "wrote",
+              "hamlet"
+            ]
+          ],
+          "narrative_excerpt": "Shakespeare wrote *Hamlet*.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_012",
+          "source_axioms": [
+            [
+              "tesla",
+              "invented",
+              "motors"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "tesla",
+              "invented",
+              "motors"
+            ]
+          ],
+          "narrative_excerpt": "Tesla invented motors.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_013",
+          "source_axioms": [
+            [
+              "darwin",
+              "studied",
+              "finches"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "darwin",
+              "studied",
+              "finches"
+            ]
+          ],
+          "narrative_excerpt": "Darwin studied finches. This observation is a concise statement of his work involving these birds, without adding further details beyond the given fact.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_014",
+          "source_axioms": [
+            [
+              "newton",
+              "described",
+              "gravity"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "newton",
+              "described",
+              "gravity"
+            ]
+          ],
+          "narrative_excerpt": "Newton described gravity.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_015",
+          "source_axioms": [
+            [
+              "kepler",
+              "discovered",
+              "orbits"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "kepler",
+              "discovered",
+              "orbits"
+            ]
+          ],
+          "narrative_excerpt": "Kepler discovered orbits. This discovery is the central fact: Kepler identified that celestial bodies follow orbits, providing a foundation for understanding their motion.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_016",
+          "source_axioms": [
+            [
+              "gold",
+              "conducts",
+              "electricity"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "gold",
+              "conducts",
+              "electricity"
+            ]
+          ],
+          "narrative_excerpt": "Gold conducts electricity.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_017",
+          "source_axioms": [
+            [
+              "steel",
+              "resists",
+              "corrosion"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "steel",
+              "resists",
+              "corrosion"
+            ]
+          ],
+          "narrative_excerpt": "Steel resists corrosion.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_018",
+          "source_axioms": [
+            [
+              "diamond",
+              "cuts",
+              "glass"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "diamond",
+              "cuts",
+              "glass"
+            ]
+          ],
+          "narrative_excerpt": "Diamond cuts glass.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_019",
+          "source_axioms": [
+            [
+              "copper",
+              "carries",
+              "current"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "copper",
+              "carries",
+              "current"
+            ]
+          ],
+          "narrative_excerpt": "Copper carries current.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_020",
+          "source_axioms": [
+            [
+              "iron",
+              "forms",
+              "rust"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "iron",
+              "forms",
+              "rust"
+            ]
+          ],
+          "narrative_excerpt": "Iron forms rust.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_021",
+          "source_axioms": [
+            [
+              "rome",
+              "built",
+              "roads"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "rome",
+              "built",
+              "roads"
+            ]
+          ],
+          "narrative_excerpt": "Rome built roads. This fact reflects Rome\u2019s role in creating constructed routes for movement and connection.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_022",
+          "source_axioms": [
+            [
+              "greece",
+              "founded",
+              "democracy"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "greece",
+              "founded",
+              "democracy"
+            ]
+          ],
+          "narrative_excerpt": "Greece is credited with founding democracy.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_023",
+          "source_axioms": [
+            [
+              "egypt",
+              "constructed",
+              "pyramids"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "egypt",
+              "constructed",
+              "pyramids"
+            ]
+          ],
+          "narrative_excerpt": "Egypt constructed pyramids.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_024",
+          "source_axioms": [
+            [
+              "persia",
+              "invaded",
+              "greece"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "persia",
+              "invaded",
+              "greece"
+            ]
+          ],
+          "narrative_excerpt": "Persia invaded Greece, bringing the two powers into direct conflict.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_025",
+          "source_axioms": [
+            [
+              "vikings",
+              "explored",
+              "continents"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "vikings",
+              "explored",
+              "continents"
+            ]
+          ],
+          "narrative_excerpt": "Vikings explored continents, demonstrating a tradition of long-distance travel and navigation across vast regions.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_026",
+          "source_axioms": [
+            [
+              "electrons",
+              "orbit",
+              "nuclei"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "electrons",
+              "orbit",
+              "nuclei"
+            ]
+          ],
+          "narrative_excerpt": "Electrons orbit nuclei.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_027",
+          "source_axioms": [
+            [
+              "enzymes",
+              "catalyze",
+              "reactions"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "enzymes",
+              "catalyze",
+              "reactions"
+            ]
+          ],
+          "narrative_excerpt": "Enzymes catalyze reactions.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_028",
+          "source_axioms": [
+            [
+              "viruses",
+              "infect",
+              "cells"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "viruses",
+              "infect",
+              "cells"
+            ]
+          ],
+          "narrative_excerpt": "Viruses infect cells. This fact describes the central relationship between viruses and living cells: infection occurs when a virus enters or affects a cell as part of its interaction with that cell.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_029",
+          "source_axioms": [
+            [
+              "neurons",
+              "transmit",
+              "signals"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "neurons",
+              "transmit",
+              "signals"
+            ]
+          ],
+          "narrative_excerpt": "Neurons transmit signals.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_030",
+          "source_axioms": [
+            [
+              "muscles",
+              "contract",
+              "fibers"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "muscles",
+              "contract",
+              "fibers"
+            ]
+          ],
+          "narrative_excerpt": "Muscles contract fibers.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_031",
+          "source_axioms": [
+            [
+              "teachers",
+              "explain",
+              "lessons"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "teachers",
+              "explain",
+              "lessons"
+            ]
+          ],
+          "narrative_excerpt": "Teachers explain lessons.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_032",
+          "source_axioms": [
+            [
+              "scientists",
+              "discover",
+              "particles"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "scientists",
+              "discover",
+              "particles"
+            ]
+          ],
+          "narrative_excerpt": "Scientists discover particles. This finding becomes the central fact of the report: researchers identify particles through scientific investigation.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_033",
+          "source_axioms": [
+            [
+              "engineers",
+              "design",
+              "bridges"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "engineers",
+              "design",
+              "bridges"
+            ]
+          ],
+          "narrative_excerpt": "Engineers design bridges.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_034",
+          "source_axioms": [
+            [
+              "farmers",
+              "grow",
+              "wheat"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "farmers",
+              "grow",
+              "wheat"
+            ]
+          ],
+          "narrative_excerpt": "Farmers grow wheat.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_035",
+          "source_axioms": [
+            [
+              "chefs",
+              "prepare",
+              "meals"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "chefs",
+              "prepare",
+              "meals"
+            ]
+          ],
+          "narrative_excerpt": "Chefs prepare meals.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_036",
+          "source_axioms": [
+            [
+              "cars",
+              "emit",
+              "exhaust"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "cars",
+              "emit",
+              "exhaust"
+            ]
+          ],
+          "narrative_excerpt": "Cars emit exhaust.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_037",
+          "source_axioms": [
+            [
+              "rivers",
+              "reach",
+              "oceans"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "rivers",
+              "reach",
+              "oceans"
+            ]
+          ],
+          "narrative_excerpt": "Rivers reach oceans.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_038",
+          "source_axioms": [
+            [
+              "students",
+              "study",
+              "subjects"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "students",
+              "study",
+              "subjects"
+            ]
+          ],
+          "narrative_excerpt": "Students study subjects.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_039",
+          "source_axioms": [
+            [
+              "mothers",
+              "love",
+              "children"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "mothers",
+              "love",
+              "children"
+            ]
+          ],
+          "narrative_excerpt": "Mothers love children. This love is the central fact: it connects mothers and children through care, affection, and devotion.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_040",
+          "source_axioms": [
+            [
+              "writers",
+              "create",
+              "stories"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "writers",
+              "create",
+              "stories"
+            ]
+          ],
+          "narrative_excerpt": "Writers create stories.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_041",
+          "source_axioms": [
+            [
+              "musicians",
+              "compose",
+              "symphonies"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "musicians",
+              "compose",
+              "symphonies"
+            ]
+          ],
+          "narrative_excerpt": "Musicians compose symphonies.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_042",
+          "source_axioms": [
+            [
+              "architects",
+              "draw",
+              "plans"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "architects",
+              "draw",
+              "plans"
+            ]
+          ],
+          "narrative_excerpt": "Architects draw plans.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_043",
+          "source_axioms": [
+            [
+              "painters",
+              "mix",
+              "colors"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "painters",
+              "mix",
+              "colors"
+            ],
+            [
+              "painters",
+              "uses",
+              "colors"
+            ]
+          ],
+          "narrative_excerpt": "Painters mix colors as part of the painting process. By combining colors, they prepare the colors they intend to use.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 50.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 2,
+          "missing": [],
+          "extra": [
+            [
+              "painters",
+              "uses",
+              "colors"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_044",
+          "source_axioms": [
+            [
+              "doctors",
+              "treat",
+              "patients"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "doctors",
+              "treat",
+              "patients"
+            ]
+          ],
+          "narrative_excerpt": "Doctors treat patients.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_045",
+          "source_axioms": [
+            [
+              "lawyers",
+              "defend",
+              "clients"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "lawyers",
+              "defend",
+              "clients"
+            ]
+          ],
+          "narrative_excerpt": "Lawyers defend clients.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_046",
+          "source_axioms": [
+            [
+              "judges",
+              "interpret",
+              "laws"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "judges",
+              "interpret",
+              "laws"
+            ]
+          ],
+          "narrative_excerpt": "Judges interpret laws.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_047",
+          "source_axioms": [
+            [
+              "hope",
+              "inspires",
+              "action"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "hope",
+              "inspires",
+              "action"
+            ]
+          ],
+          "narrative_excerpt": "Hope inspires action.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_048",
+          "source_axioms": [
+            [
+              "music",
+              "expresses",
+              "emotion"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "music",
+              "expresses",
+              "emotion"
+            ]
+          ],
+          "narrative_excerpt": "Music expresses emotion. Through music, emotion can be communicated, recognized, and experienced.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_049",
+          "source_axioms": [
+            [
+              "knowledge",
+              "requires",
+              "effort"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "knowledge",
+              "requires",
+              "effort"
+            ]
+          ],
+          "narrative_excerpt": "Knowledge requires effort. It is not gained passively or without investment; it depends on the willingness to apply attention, persistence, and work.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_050",
+          "source_axioms": [
+            [
+              "fear",
+              "paralyzes",
+              "movement"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "fear",
+              "paralyzes",
+              "movement"
+            ]
+          ],
+          "narrative_excerpt": "Fear paralyzes movement. When fear takes hold, action stops; the body and will become fixed, unable to move forward.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        }
+      ]
+    },
+    {
+      "schema": "sum.s25_combined.v1",
+      "ablation": "combined",
+      "description": "A + B: canonical-first generator + vocab-pinned extractor",
+      "model": "gpt-5.5-2026-04-23",
+      "call_timeout_s": 60.0,
+      "aggregate": {
+        "n_docs": 50,
+        "n_docs_measured": 50,
+        "n_docs_timed_out": 0,
+        "timed_out_doc_ids": [],
+        "drift_pct_mean": 5.3333,
+        "drift_pct_median": 0.0,
+        "exact_match_recall_mean": 1.0,
+        "exact_match_recall_p10": 1.0,
+        "n_docs_full_recall": 50,
+        "fraction_full_recall": 1.0
+      },
+      "per_doc": [
+        {
+          "doc_id": "doc_001",
+          "source_axioms": [
+            [
+              "alice",
+              "likes",
+              "cats"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "alice",
+              "likes",
+              "cats"
+            ]
+          ],
+          "narrative_excerpt": "The alice likes cats.\n\nThis states that alice has a positive preference for cats.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_002",
+          "source_axioms": [
+            [
+              "bob",
+              "owns",
+              "dog"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "bob",
+              "owns",
+              "dog"
+            ]
+          ],
+          "narrative_excerpt": "The bob owns dog.\n\nThis states the relationship directly: bob is the owner, and dog is the owned entity.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_003",
+          "source_axioms": [
+            [
+              "paris",
+              "is_a",
+              "city"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "paris",
+              "is_a",
+              "city"
+            ]
+          ],
+          "narrative_excerpt": "The paris is_a city.\n\nThis states that \u201cparis\u201d is classified as a city.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_004",
+          "source_axioms": [
+            [
+              "einstein",
+              "proposed",
+              "relativity"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "einstein",
+              "proposed",
+              "relativity"
+            ]
+          ],
+          "narrative_excerpt": "The einstein proposed relativity.\n\nThis canonical sentence records the provided fact directly: einstein is the subject, proposed is the predicate, and relativity is the object.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_005",
+          "source_axioms": [
+            [
+              "water",
+              "contains",
+              "hydrogen"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "water",
+              "contains",
+              "hydrogen"
+            ]
+          ],
+          "narrative_excerpt": "The water contains hydrogen.\n\nThis states that hydrogen is a component of water.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_006",
+          "source_axioms": [
+            [
+              "sun",
+              "emits",
+              "light"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "sun",
+              "emits",
+              "light"
+            ],
+            [
+              "sun",
+              "produce",
+              "light"
+            ]
+          ],
+          "narrative_excerpt": "The sun emits light.\n\nThis means that light is described as something produced by the sun.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 50.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 2,
+          "missing": [],
+          "extra": [
+            [
+              "sun",
+              "produce",
+              "light"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_007",
+          "source_axioms": [
+            [
+              "plants",
+              "produce",
+              "oxygen"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "plants",
+              "produce",
+              "oxygen"
+            ]
+          ],
+          "narrative_excerpt": "The plants produce oxygen.\n\nThis means plants contribute oxygen to the environment as part of their natural biological processes.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_008",
+          "source_axioms": [
+            [
+              "dogs",
+              "chase",
+              "cats"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "dogs",
+              "chase",
+              "cats"
+            ]
+          ],
+          "narrative_excerpt": "The dogs chase cats.\n\nThis sentence states a simple relationship: dogs are the subject, chase is the action, and cats are the object of that action.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_009",
+          "source_axioms": [
+            [
+              "fish",
+              "eat",
+              "plankton"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "fish",
+              "eat",
+              "plankton"
+            ]
+          ],
+          "narrative_excerpt": "The fish eat plankton.\n\nThis states a basic feeding relationship: fish consume plankton as part of their diet.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_010",
+          "source_axioms": [
+            [
+              "birds",
+              "build",
+              "nests"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "birds",
+              "build",
+              "nests"
+            ]
+          ],
+          "narrative_excerpt": "The birds build nests.\n\nThis statement describes a common behavior among birds: constructing nests as places for laying eggs, sheltering young, or providing temporary protection.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_011",
+          "source_axioms": [
+            [
+              "shakespeare",
+              "wrote",
+              "hamlet"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "shakespeare",
+              "wrote",
+              "hamlet"
+            ]
+          ],
+          "narrative_excerpt": "The shakespeare wrote hamlet.\n\nThis states the supplied fact in the required canonical form: \u201cshakespeare\u201d is the subject, \u201cwrote\u201d is the predicate, and \u201chamlet\u201d is the object.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_012",
+          "source_axioms": [
+            [
+              "tesla",
+              "invented",
+              "motors"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "tesla",
+              "invented",
+              "motors"
+            ]
+          ],
+          "narrative_excerpt": "The tesla invented motors.\n\nThis canonical sentence captures the provided fact exactly, preserving the subject, predicate, and object as given.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_013",
+          "source_axioms": [
+            [
+              "darwin",
+              "studied",
+              "finches"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "darwin",
+              "studied",
+              "finches"
+            ]
+          ],
+          "narrative_excerpt": "The darwin studied finches.\n\nThis indicates that darwin is associated with studying finches.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_014",
+          "source_axioms": [
+            [
+              "newton",
+              "described",
+              "gravity"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "newton",
+              "described",
+              "gravity"
+            ]
+          ],
+          "narrative_excerpt": "The newton described gravity.\n\nThis states that newton is associated with describing gravity.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_015",
+          "source_axioms": [
+            [
+              "kepler",
+              "discovered",
+              "orbits"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "kepler",
+              "discovered",
+              "orbits"
+            ]
+          ],
+          "narrative_excerpt": "The kepler discovered orbits.\n\nThis states the fact in the requested canonical form.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_016",
+          "source_axioms": [
+            [
+              "gold",
+              "conducts",
+              "electricity"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "gold",
+              "conducts",
+              "electricity"
+            ]
+          ],
+          "narrative_excerpt": "The gold conducts electricity.\n\nThis means gold is an electrical conductor.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_017",
+          "source_axioms": [
+            [
+              "steel",
+              "resists",
+              "corrosion"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "steel",
+              "resists",
+              "corrosion"
+            ]
+          ],
+          "narrative_excerpt": "The steel resists corrosion.\n\nThis means steel has an ability to withstand corrosive effects, helping it maintain its integrity in environments where degradation might otherwise occur.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_018",
+          "source_axioms": [
+            [
+              "diamond",
+              "cuts",
+              "glass"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "diamond",
+              "cuts",
+              "glass"
+            ]
+          ],
+          "narrative_excerpt": "The diamond cuts glass.\n\nThis states that diamond is hard enough to cut glass.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_019",
+          "source_axioms": [
+            [
+              "copper",
+              "carries",
+              "current"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "copper",
+              "carries",
+              "current"
+            ]
+          ],
+          "narrative_excerpt": "The copper carries current.\n\nCopper is commonly used in electrical wiring because it is an effective conductor, allowing electric current to flow through it.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_020",
+          "source_axioms": [
+            [
+              "iron",
+              "forms",
+              "rust"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "iron",
+              "forms",
+              "rust"
+            ],
+            [
+              "iron",
+              "produce",
+              "rust"
+            ]
+          ],
+          "narrative_excerpt": "The iron forms rust.\n\nThis indicates that iron can produce rust under appropriate conditions.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 50.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 2,
+          "missing": [],
+          "extra": [
+            [
+              "iron",
+              "produce",
+              "rust"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_021",
+          "source_axioms": [
+            [
+              "rome",
+              "built",
+              "roads"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "rome",
+              "built",
+              "roads"
+            ]
+          ],
+          "narrative_excerpt": "The rome built roads.\n\nThis states that rome is associated with the construction of roads.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_022",
+          "source_axioms": [
+            [
+              "greece",
+              "founded",
+              "democracy"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "greece",
+              "founded",
+              "democracy"
+            ]
+          ],
+          "narrative_excerpt": "The greece founded democracy.\n\nThis sentence presents the fact in the required canonical form, identifying \u201cgreece\u201d as the subject, \u201cfounded\u201d as the predicate, and \u201cdemocracy\u201d as the object.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_023",
+          "source_axioms": [
+            [
+              "egypt",
+              "constructed",
+              "pyramids"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "egypt",
+              "constructed",
+              "pyramids"
+            ]
+          ],
+          "narrative_excerpt": "The egypt constructed pyramids.\n\nThis states that egypt is associated with the construction of pyramids.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_024",
+          "source_axioms": [
+            [
+              "persia",
+              "invaded",
+              "greece"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "persia",
+              "invaded",
+              "greece"
+            ]
+          ],
+          "narrative_excerpt": "The persia invaded greece.\n\nThis states the fact directly in the required canonical form.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_025",
+          "source_axioms": [
+            [
+              "vikings",
+              "explored",
+              "continents"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "vikings",
+              "explored",
+              "continents"
+            ]
+          ],
+          "narrative_excerpt": "The vikings explored continents.\n\nThis sentence states the provided fact directly in canonical form.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_026",
+          "source_axioms": [
+            [
+              "electrons",
+              "orbit",
+              "nuclei"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "electrons",
+              "orbit",
+              "nuclei"
+            ]
+          ],
+          "narrative_excerpt": "The electrons orbit nuclei.\n\nThis states the fact in a simple, canonical form. In basic atomic descriptions, electrons are associated with nuclei within atoms.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_027",
+          "source_axioms": [
+            [
+              "enzymes",
+              "catalyze",
+              "reactions"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "enzymes",
+              "catalyze",
+              "reactions"
+            ]
+          ],
+          "narrative_excerpt": "The enzymes catalyze reactions.\n\nEnzymes are biological catalysts that help reactions proceed more efficiently, typically by lowering the activation energy required for the reaction to occur.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_028",
+          "source_axioms": [
+            [
+              "viruses",
+              "infect",
+              "cells"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "viruses",
+              "infect",
+              "cells"
+            ],
+            [
+              "viruses",
+              "affect",
+              "cells"
+            ]
+          ],
+          "narrative_excerpt": "The viruses infect cells.\n\nThis means that viruses act by entering or affecting cells as part of their infection process.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 50.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 2,
+          "missing": [],
+          "extra": [
+            [
+              "viruses",
+              "affect",
+              "cells"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_029",
+          "source_axioms": [
+            [
+              "neurons",
+              "transmit",
+              "signals"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "neurons",
+              "transmit",
+              "signals"
+            ]
+          ],
+          "narrative_excerpt": "The neurons transmit signals.\n\nThis means neurons are specialized cells that communicate by carrying information from one part of the nervous system to another.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_030",
+          "source_axioms": [
+            [
+              "muscles",
+              "contract",
+              "fibers"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "muscles",
+              "contract",
+              "fibers"
+            ]
+          ],
+          "narrative_excerpt": "The muscles contract fibers.\n\nThis canonical sentence preserves the provided fact exactly: subject \u201cmuscles,\u201d predicate \u201ccontract,\u201d and object \u201cfibers.\u201d",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_031",
+          "source_axioms": [
+            [
+              "teachers",
+              "explain",
+              "lessons"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "teachers",
+              "explain",
+              "lessons"
+            ]
+          ],
+          "narrative_excerpt": "The teachers explain lessons.\n\nThis describes teachers providing instruction by explaining lessons to learners.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_032",
+          "source_axioms": [
+            [
+              "scientists",
+              "discover",
+              "particles"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "scientists",
+              "discover",
+              "particles"
+            ]
+          ],
+          "narrative_excerpt": "The scientists discover particles.\n\nThis sentence presents the fact directly: scientists are the subject, discover is the predicate, and particles are the object.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_033",
+          "source_axioms": [
+            [
+              "engineers",
+              "design",
+              "bridges"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "engineers",
+              "design",
+              "bridges"
+            ]
+          ],
+          "narrative_excerpt": "The engineers design bridges.\n\nThis states that engineers are responsible for designing bridges, a task that involves applying technical knowledge to create safe and functional structures.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_034",
+          "source_axioms": [
+            [
+              "farmers",
+              "grow",
+              "wheat"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "farmers",
+              "grow",
+              "wheat"
+            ]
+          ],
+          "narrative_excerpt": "The farmers grow wheat.\n\nThis states that farmers are the people carrying out the action, and wheat is the crop being grown.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_035",
+          "source_axioms": [
+            [
+              "chefs",
+              "prepare",
+              "meals"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "chefs",
+              "prepare",
+              "meals"
+            ]
+          ],
+          "narrative_excerpt": "The chefs prepare meals.\n\nThis states that chefs are responsible for preparing meals.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_036",
+          "source_axioms": [
+            [
+              "cars",
+              "emit",
+              "exhaust"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "cars",
+              "emit",
+              "exhaust"
+            ]
+          ],
+          "narrative_excerpt": "The cars emit exhaust.\n\nThis fact identifies exhaust as an output associated with cars.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_037",
+          "source_axioms": [
+            [
+              "rivers",
+              "reach",
+              "oceans"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "rivers",
+              "reach",
+              "oceans"
+            ]
+          ],
+          "narrative_excerpt": "The rivers reach oceans.\n\nThis states the general flow pattern in which rivers move across landscapes and ultimately connect with oceans.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_038",
+          "source_axioms": [
+            [
+              "students",
+              "study",
+              "subjects"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "students",
+              "study",
+              "subjects"
+            ]
+          ],
+          "narrative_excerpt": "The students study subjects.\n\nThis states a general relationship: students engage in the act of studying, and the things they study are subjects.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_039",
+          "source_axioms": [
+            [
+              "mothers",
+              "love",
+              "children"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "mothers",
+              "love",
+              "children"
+            ]
+          ],
+          "narrative_excerpt": "The mothers love children.\n\nThis statement presents a simple relationship: mothers are described as loving children.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_040",
+          "source_axioms": [
+            [
+              "writers",
+              "create",
+              "stories"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "writers",
+              "create",
+              "stories"
+            ],
+            [
+              "writers",
+              "produce",
+              "stories"
+            ]
+          ],
+          "narrative_excerpt": "The writers create stories.\n\nThis states that writers are the agents who produce stories.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 50.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 2,
+          "missing": [],
+          "extra": [
+            [
+              "writers",
+              "produce",
+              "stories"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_041",
+          "source_axioms": [
+            [
+              "musicians",
+              "compose",
+              "symphonies"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "musicians",
+              "compose",
+              "symphonies"
+            ],
+            [
+              "musicians",
+              "create",
+              "symphonies"
+            ],
+            [
+              "musicians",
+              "write",
+              "symphonies"
+            ]
+          ],
+          "narrative_excerpt": "The musicians compose symphonies.\n\nThis states that musicians create or write symphonies as part of their musical work.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 66.6667,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 3,
+          "missing": [],
+          "extra": [
+            [
+              "musicians",
+              "create",
+              "symphonies"
+            ],
+            [
+              "musicians",
+              "write",
+              "symphonies"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_042",
+          "source_axioms": [
+            [
+              "architects",
+              "draw",
+              "plans"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "architects",
+              "draw",
+              "plans"
+            ]
+          ],
+          "narrative_excerpt": "The architects draw plans.\n\nThis states the core relationship: architects are responsible for creating plans as part of their work.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_043",
+          "source_axioms": [
+            [
+              "painters",
+              "mix",
+              "colors"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "painters",
+              "mix",
+              "colors"
+            ]
+          ],
+          "narrative_excerpt": "The painters mix colors.\n\nThis states that painters combine colors as part of their work or creative process.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_044",
+          "source_axioms": [
+            [
+              "doctors",
+              "treat",
+              "patients"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "doctors",
+              "treat",
+              "patients"
+            ]
+          ],
+          "narrative_excerpt": "The doctors treat patients.\n\nThis states the basic relationship between doctors and patients: doctors provide care, treatment, or medical attention to patients.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_045",
+          "source_axioms": [
+            [
+              "lawyers",
+              "defend",
+              "clients"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "lawyers",
+              "defend",
+              "clients"
+            ]
+          ],
+          "narrative_excerpt": "The lawyers defend clients.\n\nThis sentence presents a general relationship: lawyers act in defense of clients.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_046",
+          "source_axioms": [
+            [
+              "judges",
+              "interpret",
+              "laws"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "judges",
+              "interpret",
+              "laws"
+            ]
+          ],
+          "narrative_excerpt": "The judges interpret laws.\n\nThis means that judges apply legal rules by determining their meaning in particular cases.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_047",
+          "source_axioms": [
+            [
+              "hope",
+              "inspires",
+              "action"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "hope",
+              "inspires",
+              "action"
+            ]
+          ],
+          "narrative_excerpt": "The hope inspires action.\n\nThis states that hope can serve as a motivating force, encouraging movement, effort, or change.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_048",
+          "source_axioms": [
+            [
+              "music",
+              "expresses",
+              "emotion"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "music",
+              "expresses",
+              "emotion"
+            ]
+          ],
+          "narrative_excerpt": "The music expresses emotion.\n\nThis statement presents music as a means of conveying feeling.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_049",
+          "source_axioms": [
+            [
+              "knowledge",
+              "requires",
+              "effort"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "knowledge",
+              "requires",
+              "effort"
+            ]
+          ],
+          "narrative_excerpt": "The knowledge requires effort.\n\nThis emphasizes that acquiring, understanding, and applying knowledge is not passive; it depends on deliberate attention, practice, and persistence.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_050",
+          "source_axioms": [
+            [
+              "fear",
+              "paralyzes",
+              "movement"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "fear",
+              "paralyzes",
+              "movement"
+            ]
+          ],
+          "narrative_excerpt": "The fear paralyzes movement.\n\nThis states that fear can stop or inhibit action, making movement difficult or impossible.",
+          "vocabulary_summary": {
+            "n_source_axioms": 1,
+            "n_unique_subjects": 1,
+            "n_unique_predicates": 1,
+            "n_unique_objects": 1,
+            "n_predicates_with_canonical_padding": 87
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 1,
+          "n_source": 1,
+          "n_reconstructed": 1,
+          "missing": [],
+          "extra": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,22 +1,29 @@
-"""§2.5 Anthropic smoke test — one document, ~$0.005 spend.
+"""§2.5 frontier-LLM smoke test — one document, ~$0.005 spend.
 
 Before committing to the full §2.5 frontier-LLM bench (50 docs ×
-3 ablations × ~6 calls each ≈ $0.50–1.50 against Claude Opus 4.7),
-this smoke verifies end-to-end wiring on a single document:
+3 ablations × ~6 calls each), this smoke verifies end-to-end
+wiring on a single document for any frontier model the dispatcher
+supports:
 
-  1. The dispatcher routes a ``claude-*`` model id to AnthropicAdapter.
+  1. The dispatcher routes the model id to the correct provider:
+       claude-*       → AnthropicAdapter (tool-use)
+       gpt-* / o*-*   → OpenAIAdapter    (beta.chat.completions.parse)
   2. ``parse_structured`` returns a populated Pydantic model from
-     the live API (tool-use round-trip works).
+     the live API (structured-output round-trip works).
   3. ``generate_text`` returns non-empty narrative.
   4. The full ``run_doc`` path under the ``combined`` ablation
      produces a per-doc record with measured recall.
 
-Cost: ~6 calls on a small doc → roughly $0.005 at Opus 4.7's
-2026-04 pricing. Negligible.
+Cost: ~3 calls on a small doc → roughly $0.005–0.02 depending on
+the model. Negligible.
 
 Usage::
 
-    ANTHROPIC_API_KEY=... python -m scripts.bench.runners.s25_anthropic_smoke
+    # Anthropic (default):
+    ANTHROPIC_API_KEY=... python -m scripts.bench.runners.s25_smoke
+
+    # OpenAI frontier:
+    OPENAI_API_KEY=... python -m scripts.bench.runners.s25_smoke --model gpt-5.5-2026-04-23
 
     # Different model:
     ANTHROPIC_API_KEY=... python -m scripts.bench.runners.s25_anthropic_smoke \
@@ -82,7 +89,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--model", default="claude-opus-4-7",
-        help="Pinned Claude snapshot. Default: claude-opus-4-7.",
+        help="Pinned model snapshot (claude-* or gpt-/o*-*). "
+             "Default: claude-opus-4-7.",
     )
     parser.add_argument(
         "--call-timeout", type=float, default=DEFAULT_CALL_TIMEOUT_S,
@@ -90,8 +98,18 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        print("smoke: ANTHROPIC_API_KEY not set", file=sys.stderr)
+    # Vendor-agnostic env-key check: dispatch by model-id prefix.
+    m = args.model.lower()
+    if m.startswith("claude-"):
+        if not os.environ.get("ANTHROPIC_API_KEY"):
+            print("smoke: ANTHROPIC_API_KEY not set (required for claude-* models)", file=sys.stderr)
+            return 2
+    elif m.startswith(("gpt-", "o1-", "o3-", "o4-")):
+        if not os.environ.get("OPENAI_API_KEY"):
+            print("smoke: OPENAI_API_KEY not set (required for gpt-/o*-* models)", file=sys.stderr)
+            return 2
+    else:
+        print(f"smoke: cannot route model {args.model!r}", file=sys.stderr)
         return 2
 
     print(

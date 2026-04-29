@@ -1102,13 +1102,27 @@ Tightens entry 136 with three additional reject rules surfaced by surveying post
 Verify: `pytest Tests/test_sieve_noise_filter.py -q`
 Expected: 58 passed.
 
+### 138. §2.5 frontier-LLM refresh — GPT-5.5 (vendor-independent closure) ✅
+
+`fixtures/bench_receipts/s25_frontier_models_2026-04-29_gpt55.json` — symmetric §2.5 refresh against OpenAI's `gpt-5.5-2026-04-23` snapshot, completing the cross-vendor receipt set begun by entry 135 (Claude Opus 4.7). Both 2026-frontier models hit **50/50 full recall on the combined ablation**; GPT-5.5 additionally hits 50/50 with **constrained_extractor alone** (drift 2.00%) — the cleanest single-intervention result on record. The §2.5 closure pattern is **vendor-independent across the OpenAI ↔ Anthropic frontier as of 2026-04-29**, no longer model-family-specific. Same `sum.s25_generator_side.v1` schema family with `provider: "openai"`.
+
+Verify: `python -c "import json; r=json.load(open('fixtures/bench_receipts/s25_frontier_models_2026-04-29_gpt55.json')); [print(f'{a[\"ablation\"]}: drift={a[\"aggregate\"][\"drift_pct_mean\"]:.2f} recall={a[\"aggregate\"][\"exact_match_recall_mean\"]:.4f} full={a[\"aggregate\"][\"n_docs_full_recall\"]}/{a[\"aggregate\"][\"n_docs_measured\"]}') for a in r['ablations']]"`
+Expected: `combined: drift=5.33 recall=1.0000 full=50/50`.
+
+### 139. Vendor-agnostic §2.5 smoke runner + OpenAI model lister ✅
+
+`scripts/bench/runners/s25_smoke.py` (renamed from `s25_anthropic_smoke.py`) — one-doc, ~$0.005 smoke that validates dispatcher routing + structured-output round-trip + narrative generation for any frontier model the dispatcher supports. Routes by model-id prefix (`claude-*` → AnthropicAdapter tool-use; `gpt-*` / `o*-*` → OpenAIAdapter `beta.chat.completions.parse`). Used to verify wiring before each full bench. Companion: `scripts/bench/runners/list_openai_models.py` lists the frontier-class snapshots available to the active OpenAI key (used pre-bench to confirm the right `gpt-5.5` pinned snapshot id).
+
+Verify: `python -m scripts.bench.runners.s25_smoke --help`
+Expected: argparse help text listing `--model`, `--call-timeout`.
+
 ---
 
 ## Summary counts
 
-Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **137**.
+Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **139**.
 
-- **Production ✅: 123 features** — tested green; each has a verification command in its entry.
+- **Production ✅: 125 features** — tested green; each has a verification command in its entry.
 - **Scaffolded 🔧: 13 features** — tests pass, production activation pending. All catalogued in `docs/MODULE_AUDIT.md` with activation checklists.
 - **Designed 📄: 1 feature** (sha256_128_v2 default-promotion; cross-runtime byte-identity locked, default-flip is a separate operator decision).
 
