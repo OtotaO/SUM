@@ -194,30 +194,6 @@ def cmd_attest(args: argparse.Namespace) -> int:
     if args.verbose:
         print(f"sum: extractor={extractor} source={source_uri}", file=sys.stderr)
 
-    # Provenance-tracking path: when --ledger is set, we need per-triple
-    # byte ranges + ProvenanceRecords. Today only the sieve extractor
-    # produces those; the LLM path has no byte-offset story yet.
-    prov_records = None
-    if args.ledger:
-        if extractor != "sieve":
-            raise SystemExit(
-                f"sum: --ledger requires --extractor=sieve (today's only "
-                f"provenance-producing extractor). Got extractor={extractor!r}. "
-                f"Re-run with --extractor=sieve, or omit --ledger."
-            )
-        triples, prov_records = _extract_sieve_with_provenance(text, source_uri)
-    else:
-        triples = _extract(text, extractor, args.model)
-
-    if not triples:
-        print(
-            "sum: extractor returned zero triples. "
-            "Input may be too short, negated, or hedged — "
-            "see docs/FEATURE_CATALOG.md entries 6-9 for the suppression rules.",
-            file=sys.stderr,
-        )
-        return 3
-
     # Build the CanonicalBundle via the existing codec path — no
     # reimplementation of Ed25519/HMAC, no reimplementation of canonical
     # tome generation. The CLI is a thin wrapper.
@@ -228,6 +204,57 @@ def cmd_attest(args: argparse.Namespace) -> int:
     key_manager = _load_ed25519_key(args.ed25519_key) if args.ed25519_key else None
 
     algebra = GodelStateAlgebra()  # type: ignore[no-untyped-call]
+
+    # Three extraction paths, all converging on (state, triples):
+    #
+    #   --ledger             → provenance-recording sieve (per-triple
+    #                          byte ranges; cannot use chunked path
+    #                          because the byte-range extractor is
+    #                          one-shot).
+    #
+    #   --extractor=sieve    → chunked path via state_for_corpus.
+    #                          Single-chunk fast path for inputs ≤
+    #                          chunk_chars (current behaviour); for
+    #                          larger inputs the spaCy sentencizer
+    #                          chunks on sentence boundaries and the
+    #                          state remains byte-identical to the
+    #                          unchunked encoding (Tests/test_chunked_
+    #                          state_composition.py asserts this).
+    #
+    #   --extractor=llm      → unchunked LLM extraction. The chunked
+    #                          equivalence does NOT hold for LLM
+    #                          extractors (they resolve coreference
+    #                          across chunk boundaries) — see
+    #                          compose_chunk_states docstring. Future
+    #                          work could add a chunked LLM path with
+    #                          a different equivalence claim, but it
+    #                          is NOT this PR.
+    prov_records = None
+    if args.ledger:
+        if extractor != "sieve":
+            raise SystemExit(
+                f"sum: --ledger requires --extractor=sieve (today's only "
+                f"provenance-producing extractor). Got extractor={extractor!r}. "
+                f"Re-run with --extractor=sieve, or omit --ledger."
+            )
+        triples, prov_records = _extract_sieve_with_provenance(text, source_uri)
+        state = algebra.encode_chunk_state(list(triples))
+    elif extractor == "sieve":
+        from sum_engine_internal.algorithms.chunked_corpus import state_for_corpus
+        state, triples = state_for_corpus(text, algebra)
+    else:
+        triples = _extract(text, extractor, args.model)
+        state = algebra.encode_chunk_state(list(triples))
+
+    if not triples:
+        print(
+            "sum: extractor returned zero triples. "
+            "Input may be too short, negated, or hedged — "
+            "see docs/FEATURE_CATALOG.md entries 6-9 for the suppression rules.",
+            file=sys.stderr,
+        )
+        return 3
+
     tome_generator = AutoregressiveTomeGenerator(algebra)
     codec = CanonicalCodec(
         algebra,
@@ -235,7 +262,6 @@ def cmd_attest(args: argparse.Namespace) -> int:
         signing_key=args.signing_key,
         key_manager=key_manager,
     )
-    state = algebra.encode_chunk_state(list(triples))
     bundle = codec.export_bundle(
         state,
         branch=args.branch,
