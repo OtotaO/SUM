@@ -362,6 +362,22 @@ The combined intervention lands ≥ 0.97 recall and ≤ 5 % drift on every measu
 
 The receipt schema is `sum.s25_generator_side.v1` (with sibling per-ablation schemas `sum.s25_canonical_first_generator.v1`, `sum.s25_constrained_extractor.v1`, `sum.s25_combined.v1`). Receipts compare cleanly to the prior `sum.s25_canonicalization_replay.v1` receipt — same `seed_v1` corpus, same pinned model, same `n_docs = 50`. Reproducible: `python -m scripts.bench.runners.s25_generator_side --ablation all --out <path>` (requires `OPENAI_API_KEY`).
 
+### 2.5.1. `/api/qid` Resolution Accuracy Floor
+
+The hosted Worker's `/api/qid` route resolves free-text terms to Wikidata QIDs via `wbsearchentities`. The README's "Future developments" historically claimed a "target >95% accuracy floor" but the floor was never measured. Closed 2026-04-28 by `scripts/bench/runners/qid_accuracy.py` against a 30-term hand-curated corpus (8 people / 8 places / 8 concepts / 6 common nouns).
+
+**Receipt** (`fixtures/bench_receipts/qid_accuracy_2026-04-28.json`, schema `sum.qid_resolution_accuracy.v1`, ~$0 cost):
+
+| Metric | Result | Denominator |
+|---|---:|---|
+| Hit-rate (any non-null QID returned) | **30 / 30 = 1.0000** | all terms |
+| Label-substring match | **24 / 24 = 1.0000** | pattern-matchable terms (excludes 6 common-noun rows) |
+| Wall-clock p50 | ~200 ms / term | — |
+
+**Boundary on this measurement.** Label-substring match is robust to wbsearchentities's quirks but does not measure semantic accuracy against canonical Q-IDs. The receipt records `relativity` → `Q201607 (Relativity Records)` — a music-label entity, not the physics theory — as a passing label-substring match. The two-tier metric is the floor; canonical-QID accuracy would require hand-verified ground-truth pairs (a follow-on, scoped explicitly in the README). The current resolver is a thin layer over wbsearchentities; SPARQL-driven disambiguation that prefers the most-linked-to entity for ambiguous terms remains an unshipped enhancement — the `relativity` row demonstrates exactly the case SPARQL would address.
+
+Reproducible: `python -m scripts.bench.runners.qid_accuracy --out <path>` (no API key needed).
+
 ### 2.6. Slider Axis Fact-Preservation (Phase E.1 v0.4 → v0.7)
 
 The slider's load-bearing claim — *axis changes do not lose facts* — has been **empirically verified** across two independently-authored corpora, a four-layer fact-preservation substrate, and a deterministic prompt-hardening mechanism that closed the catastrophic-failure mode v0.6 surfaced. [`docs/SLIDER_CONTRACT.md`](SLIDER_CONTRACT.md) is the canonical contract document; this section pins the load-bearing numbers as `empirical-benchmark` and links the failure-mode arc.
