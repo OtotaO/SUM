@@ -198,12 +198,67 @@ class GodelStateAlgebra:
 
         Returns:
             The prime number assigned to this axiom.
+
+        Raises:
+            ValueError: if any component is empty/whitespace-only OR
+                contains the ``||`` axiom-key separator. Both cases
+                would corrupt the round-trip via the canonical tome:
+                empty components produce ``The  pred obj.`` lines that
+                fail the verifier's ``^The (\\S+) (\\S+) (.+)\\.$`` regex,
+                and ``||`` in a component splits ambiguously when the
+                tome generator parses ``axiom_key.split("||")``. Both
+                arise from real-world noise (markdown table cells whose
+                cell contents look like sentences) and must be rejected
+                at the algebra boundary so verification stays
+                round-trippable.
         """
+        # Defensive validation. Cheap; runs on every prime mint.
+        # Three conditions to reject:
+        #   1. Empty / whitespace-only component (would emit
+        #      ``The  pred obj.`` which fails the verifier regex).
+        #   2. Pipe character in any component. Even a lone ``|`` is
+        #      unsafe: subject=``'|'`` produces axiom_key
+        #      ``'|||close||this'`` which splits to
+        #      ``['', '|close', 'this']`` — round-trip drift. Stripping
+        #      pipes wholesale is conservative but safe; legitimate
+        #      semantic content rarely contains pipes (they're markdown
+        #      table syntax or programming punctuation).
+        s_stripped = subject.strip()
+        p_canon = self._canonicalize_predicate(predicate)
+        o_stripped = object_.strip()
+        if not s_stripped or not p_canon.strip() or not o_stripped:
+            raise ValueError(
+                f"axiom has empty/whitespace component: "
+                f"subject={subject!r} predicate={predicate!r} object={object_!r}"
+            )
+        if "|" in s_stripped or "|" in p_canon or "|" in o_stripped:
+            raise ValueError(
+                f"axiom component contains '|' (would corrupt axiom_key "
+                f"round-trip via the '||' separator): "
+                f"subject={subject!r} predicate={predicate!r} object={object_!r}"
+            )
+
         axiom_key = (
-            f"{subject.strip().lower()}||"
-            f"{self._canonicalize_predicate(predicate)}||"
-            f"{object_.strip().lower()}"
+            f"{s_stripped.lower()}||"
+            f"{p_canon}||"
+            f"{o_stripped.lower()}"
         )
+
+        # Round-trip self-check: the freshly-built axiom_key MUST
+        # split into exactly the components we put in. If not, our
+        # validation above missed something — fail loud rather than
+        # silently corrupt the prime table.
+        round_trip = axiom_key.split("||")
+        if (
+            len(round_trip) != 3
+            or round_trip[0] != s_stripped.lower()
+            or round_trip[1] != p_canon
+            or round_trip[2] != o_stripped.lower()
+        ):
+            raise ValueError(
+                f"axiom_key round-trip failed: built {axiom_key!r}, "
+                f"split returned {round_trip!r}"
+            )
 
         if axiom_key not in self.axiom_to_prime:
             p = self._deterministic_prime(axiom_key)
@@ -387,7 +442,23 @@ class GodelStateAlgebra:
         """
         state = 1
         for subj, pred, obj in axioms:
-            state = math.lcm(state, self.get_or_mint_prime(subj, pred, obj))
+            try:
+                prime = self.get_or_mint_prime(subj, pred, obj)
+            except ValueError:
+                # Malformed component (empty or contains '||'). Drop
+                # silently — we want the bag-of-axioms encoding to
+                # survive single-triple noise without a hard crash.
+                # The triple is removed from the encoded state but
+                # remains in any caller-visible triples list, which is
+                # why ``state_for_corpus`` re-filters its returned bag
+                # below to match what was actually encoded.
+                logger.debug(
+                    "encode_chunk_state: skipping malformed axiom: "
+                    "subject=%r predicate=%r object=%r",
+                    subj, pred, obj,
+                )
+                continue
+            state = math.lcm(state, prime)
         return state
 
     # ------------------------------------------------------------------

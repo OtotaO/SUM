@@ -193,6 +193,13 @@ def state_for_corpus(
     triple_bag: set[Tuple[str, str, str]] = set()
     for chunk in chunk_text_on_sentences(text, chunk_chars=chunk_chars):
         triples = sieve.extract_triplets(chunk)
+        # Drop triples that the algebra would reject (empty / '||' in
+        # component) BEFORE encoding, so the returned bag matches the
+        # encoded state. Otherwise len(triples) overstates axiom_count
+        # and breaks the verifier's round-trip count check. The filter
+        # mirrors get_or_mint_prime's defensive validation; keeping
+        # the two in lockstep is a deliberate dependency.
+        triples = [t for t in triples if _is_valid_triple(t)]
         if not triples:
             continue
         triple_bag.update(triples)
@@ -203,3 +210,17 @@ def state_for_corpus(
 
     state = algebra.compose_chunk_states(chunk_states)
     return state, sorted(triple_bag)
+
+
+def _is_valid_triple(triple: Tuple[str, str, str]) -> bool:
+    """Mirror of ``GodelStateAlgebra.get_or_mint_prime``'s validation
+    contract. Reject triples whose components are empty/whitespace-only
+    or contain a pipe character (which would round-trip-collide with
+    the ``||`` axiom-key separator). Both cases would break canonical-
+    tome round-trip verification."""
+    s, p, o = triple
+    if not s.strip() or not p.strip() or not o.strip():
+        return False
+    if "|" in s or "|" in p or "|" in o:
+        return False
+    return True

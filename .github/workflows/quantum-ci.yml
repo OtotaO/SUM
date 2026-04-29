@@ -148,6 +148,15 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements-prod.txt
+        # markitdown for self-attestation drift gate (omni-format pivot
+        # on README/CHANGELOG/etc.). Pinned to keep markdown output
+        # byte-identical across CI runs — see the FEATURE_CATALOG
+        # entry on the format pivot adapter for the determinism story.
+        pip install 'markitdown==0.1.5'
+        # spaCy English model for the sieve + the chunked sentencizer.
+        # Required by both verify_cross_runtime (sieve extraction in
+        # K-matrix) and attest_repo_docs --check (self-attestation).
+        python -m spacy download en_core_web_sm
 
     - name: Run K1/K1-multiword/K2/K3/K4 valid-path kill-experiments
       # K1 + K1-multiword: CanonicalBundle structural round-trip
@@ -186,6 +195,20 @@ jobs:
       # github stars) are excluded from the drift comparison so the
       # gate stays stable across minute-by-minute repo state.
       run: python -m scripts.repo_manifest --check meta/repo_manifest.json
+
+    - name: Self-attestation drift check (SUM attesting SUM)
+      # meta/self_attestation.jsonl is one CanonicalBundle per
+      # canonical doc (README, CHANGELOG, PROOF_BOUNDARY,
+      # FEATURE_CATALOG, RENDER_RECEIPT_FORMAT). If any of those
+      # docs is edited without refreshing the self-attestation, the
+      # bundle's state_integer no longer matches the doc bytes and
+      # the receipt is silently false. This gate fails the PR with
+      # the refresh recipe (`python -m scripts.attest_repo_docs`)
+      # and surfaces which doc(s) drifted.
+      #
+      # Requires sum-engine[sieve,omni-format] for spaCy +
+      # markitdown (already installed in this job).
+      run: python -m scripts.attest_repo_docs --check
 
   vendor-byte-equivalence:
     name: Vendored jose + canonicalize byte-equivalence
