@@ -470,8 +470,27 @@ def cmd_attest_batch(args: argparse.Namespace) -> int:
 
     fmt = getattr(args, "format", "auto") or "auto"
 
+    # Optional MinHash-based dedup. When --dedup-threshold is set,
+    # each file's text is sketched with a 128-permutation MinHash
+    # over word 3-shingles; files whose Jaccard estimate against any
+    # earlier-accepted file equals or exceeds the threshold are
+    # skipped (reported on stderr in `sum: file=<path> dedup_skipped`
+    # form). Threshold semantics: 1.0 = byte-identical only, 0.0 = nuke
+    # the batch. Empirically, 0.85 catches near-duplicates without
+    # confusing "two docs about the same topic" with "the same doc."
+    # Disabled when --dedup-threshold is None or absent.
+    dedup_threshold: Optional[float] = getattr(args, "dedup_threshold", None)
+    accepted_signatures: list[tuple[str, "object"]] = []  # (path, MinHash)
+    if dedup_threshold is not None and not (0.0 < dedup_threshold <= 1.0):
+        print(
+            f"sum: --dedup-threshold must be in (0.0, 1.0], got {dedup_threshold}",
+            file=sys.stderr,
+        )
+        return 2
+
     failed = 0
     succeeded = 0
+    deduplicated = 0
     for path in files:
         try:
             text, source_uri, format_sidecar = _ingest_path(path, fmt=fmt)
@@ -494,6 +513,28 @@ def cmd_attest_batch(args: argparse.Namespace) -> int:
             print(f"sum: file={path} error=empty_input", file=sys.stderr)
             failed += 1
             continue
+
+        # Dedup pre-check: hash before extracting. Skipping files at
+        # this point saves the expensive sieve / LLM call.
+        if dedup_threshold is not None:
+            from sum_engine_internal.algorithms.minhash import signature_for_text
+            sig = signature_for_text(text)
+            duplicate_of: Optional[str] = None
+            best_jaccard = 0.0
+            for prior_path, prior_sig in accepted_signatures:
+                j = sig.jaccard(prior_sig)
+                if j > best_jaccard:
+                    best_jaccard = j
+                    if j >= dedup_threshold:
+                        duplicate_of = prior_path
+            if duplicate_of is not None:
+                print(
+                    f"sum: file={path} dedup_skipped "
+                    f"jaccard={best_jaccard:.3f} duplicate_of={duplicate_of}",
+                    file=sys.stderr,
+                )
+                deduplicated += 1
+                continue
 
         try:
             if extractor == "sieve":
@@ -520,6 +561,12 @@ def cmd_attest_batch(args: argparse.Namespace) -> int:
             )
             failed += 1
             continue
+
+        # Record the signature only AFTER successful extraction so
+        # files that failed earlier guards (empty input, conversion
+        # error) don't poison the dedup set.
+        if dedup_threshold is not None:
+            accepted_signatures.append((path, sig))
 
         bundle = codec.export_bundle(
             state,
@@ -548,11 +595,11 @@ def cmd_attest_batch(args: argparse.Namespace) -> int:
                 file=sys.stderr,
             )
 
-    if args.verbose or failed:
-        print(
-            f"sum: attest-batch done — {succeeded} succeeded, {failed} failed",
-            file=sys.stderr,
-        )
+    if args.verbose or failed or deduplicated:
+        msg = f"sum: attest-batch done — {succeeded} succeeded, {failed} failed"
+        if deduplicated:
+            msg += f", {deduplicated} dedup_skipped"
+        print(msg, file=sys.stderr)
     return 0 if failed == 0 else 1
 
 
@@ -1312,6 +1359,19 @@ def build_parser() -> argparse.ArgumentParser:
             "Default `auto` routes by extension: PDF/HTML/DOCX/EPUB/etc. "
             "go through markitdown; plaintext/markdown pass through. "
             "`raw` disables conversion."
+        ),
+    )
+    p_attest_batch.add_argument(
+        "--dedup-threshold", type=float, default=None, metavar="J",
+        help=(
+            "Skip near-duplicate inputs whose Jaccard similarity to "
+            "an earlier-accepted file equals or exceeds J (range "
+            "(0.0, 1.0]). Each file is sketched with a 128-permutation "
+            "MinHash over word 3-shingles; skipped files are reported "
+            "on stderr in `sum: file=<path> dedup_skipped jaccard=<j> "
+            "duplicate_of=<earlier_path>` form. Default: disabled. "
+            "Recommended: 0.85 (catches near-dups without mistaking "
+            "two docs about the same topic for the same doc)."
         ),
     )
     p_attest_batch.add_argument("--verbose", "-v", action="store_true", help="Emit diagnostics on stderr.")

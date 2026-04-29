@@ -1116,13 +1116,27 @@ Expected: `combined: drift=5.33 recall=1.0000 full=50/50`.
 Verify: `python -m scripts.bench.runners.s25_smoke --help`
 Expected: argparse help text listing `--model`, `--call-timeout`.
 
+### 140. MinHash near-duplicate primitive ✅
+
+`sum_engine_internal/algorithms/minhash.py` — pure-Python 128-permutation MinHash signatures over word k-shingles (k=3 default), no external dep (uses stdlib `hashlib.blake2b`'s keyed-hash family for the permutation set). `MinHash.jaccard(other)` estimates Jaccard similarity with std-dev `~sqrt(p(1-p)/128)` (≈0.04 at p=0.5, ≈0.026 at p=0.9). Tokenization: lowercased, whitespace-delimited, no punctuation stripping (punctuation differences become real signature differences — sensible default for "are these near-duplicate" decisions). Short texts fall back to k=1 single-word shingles so very short inputs still produce a non-empty signature. Intended for batch-time near-duplicate detection (entry 141); broader uses (similarity search across attested bundles) are downstream possibilities.
+
+Verify: `pytest Tests/test_minhash.py -q`
+Expected: `19 passed` — class invariants (constructor rejects num_perm≤0, signature-size mismatch raises), determinism + permutation-invariance, Jaccard correctness (identical → 1.0, disjoint → ≤0.05, subset → expected band, accuracy at known target Jaccard within 3-sigma), tokenization (k-shingles, fallback for short texts, lowercasing), and edge cases (empty/unicode/short texts).
+
+### 141. `sum attest-batch --dedup-threshold` near-duplicate skip ✅
+
+`sum attest-batch` gains an optional `--dedup-threshold J` flag that signs each input file's text with a MinHash signature (entry 140) and skips files whose Jaccard estimate against any earlier-accepted file equals or exceeds J. Skipped files are reported on stderr in `sum: file=<path> dedup_skipped jaccard=<j> duplicate_of=<earlier_path>` form. Pre-extraction skip — the expensive sieve / LLM call is avoided on detected duplicates. Default is disabled (backwards-compatible). Recommended threshold: 0.85 (catches near-duplicates without confusing "two docs about the same topic" with "the same doc"). Threshold validation rejects values outside (0.0, 1.0] with exit 2.
+
+Verify: `pytest Tests/test_sum_cli_attest_batch.py -q`
+Expected: `11 passed` — original 6 batch contract tests + 5 new dedup tests (skips byte-identical, keeps distinct, default-disabled backwards-compat, threshold validation, strict 1.0 only drops byte-identical).
+
 ---
 
 ## Summary counts
 
-Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **139**.
+Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **141**.
 
-- **Production ✅: 125 features** — tested green; each has a verification command in its entry.
+- **Production ✅: 127 features** — tested green; each has a verification command in its entry.
 - **Scaffolded 🔧: 13 features** — tests pass, production activation pending. All catalogued in `docs/MODULE_AUDIT.md` with activation checklists.
 - **Designed 📄: 1 feature** (sha256_128_v2 default-promotion; cross-runtime byte-identity locked, default-flip is a separate operator decision).
 
