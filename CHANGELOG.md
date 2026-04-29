@@ -4,6 +4,61 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Added — threat-model executable traceability test suite
+
+`docs/THREAT_MODEL.md` §4 (Attack Surface Summary) names every
+defence the SUM engine claims to provide. Underlying defences
+already had test coverage scattered across `test_resource_guards.py`,
+`test_extraction_validator.py`, `test_merkle_chain.py`, etc., but
+**no single file demonstrated the threat-model claims hold**.
+
+This adds `Tests/test_threat_model.py` — one test class per
+attack-surface row, with the §X.Y reference in each docstring.
+The tests intentionally exercise the *primary defence* named in
+each row, not every edge case (those live in their dedicated
+test files). The threat-model-to-test traceability is the
+load-bearing property of this file.
+
+**Coverage** (22 passing, 1 skipped, 2 xfailed):
+
+| Threat row | Defence asserted |
+|---|---|
+| §2.1 Bundle Tampering | HMAC-SHA256 detects tome/state mutation |
+| §2.2 State Integer Forgery | Witness reconstruction without HMAC key |
+| §2.3 Version Mismatch | Future canonical_format_version rejected |
+| §2.4 Malformed Bundles | Missing required fields rejected (parametrised) |
+| §3.3 Extraction Manipulation | Empty / control-char / JSON-fragment / oversized fields rejected by `ExtractionValidator` |
+| §3.4 Semantic Collision Replay | Independent algebra instances mint identical primes |
+| §3.5 Contradiction Governance | DeterministicArbiter resolves order-independent (skipped if module absent) |
+| §3.6 DoS bundle limits | 10 MB tome / 100 K state digits / 50 K tome lines / 200 K ingest chars all gated; ResourceLimitError is HTTP 413 |
+| §3.7 Ledger Tampering | Merkle hash-chain detects mutation; clean chain verifies |
+| Residual risks (xfail) | HMAC real-time revocation NOT shipped; full DB replacement NOT detectable — both documented as intentional residual gaps that flip to passing tests if/when defence ships |
+
+**Discipline:** the file ends with a `_THREAT_TO_TEST` index +
+`test_threat_to_test_index_is_complete` that fails if a test
+class is added without registering it in the index. The index
+exists to enforce that threat-model rows and tests stay in
+1:1 correspondence — adding a test without an index entry, or
+adding a row in `THREAT_MODEL.md` without a test, both
+surface as a failing test.
+
+**Out of scope here** (covered by their own load-bearing files):
+P2P Mesh Auth (`test_phase13_zenith.py`); VC 2.0 forgery
+(`test_verifiable_credential.py`); Render-receipt forgery
+(`test_render_receipt_verifier.py` + cross-runtime fixture
+matrix); Trust-root manifest forgery (`test_trust_root.py`);
+Cross-runtime verifier divergence
+(`scripts/verify_cross_runtime*.py`); CI/supply-chain
+compromise (`scripts/lint_workflow_pins.py` + R0.3 SHA-pin lint
+job in CI).
+
+This closes a hardening-backlog item (P5 in
+`docs/NEXT_SESSION_PLAYBOOK.md`: threat-model-to-test
+traceability). It does not change any defence; it *demonstrates*
+the existing defences. A future change to any defence's
+behaviour surfaces as a failing test in this file with a clear
+"§X.Y" tag.
+
 ### Hardened — `s25_generator_side` runner: per-call timeout + graceful per-doc skip
 
 The seed_long capstone surfaced a real failure mode: an OpenAI
