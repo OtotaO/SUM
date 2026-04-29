@@ -97,30 +97,39 @@ async def test_with_call_timeout_does_not_swallow_other_exceptions():
 # --------------------------------------------------------------------------
 
 
-class _MockHangingClient:
-    """Mock OpenAI client whose calls hang past the test's
-    per-call timeout. Used to drive ``run_doc`` into the timeout
-    code path without making any network call.
+class _MockHangingAdapter:
+    """Mock LLMAdapter whose calls hang past the test's per-call
+    timeout. Used to drive ``run_doc`` into the timeout code path
+    without making any network call. Mirrors the dispatcher's
+    surface (``parse_structured``, ``generate_text``) and surfaces
+    ``LLMCallTimeoutError`` on the per-call budget — exactly what
+    the real adapters do.
     """
 
     def __init__(self):
-        self.beta = self  # client.beta.chat.completions.parse(...)
-        self.chat = self
-        self.completions = self
+        self.model = "test-model"
 
-    def parse(self, **kwargs):
-        # Returns a coroutine that hangs forever (well past the test's
-        # call timeout).
-        async def _hang():
-            await asyncio.sleep(60)
-            raise RuntimeError("should never reach this")
-        return _hang()
+    async def parse_structured(self, *, system, user, schema, call_timeout_s):
+        from sum_engine_internal.ensemble.llm_dispatch import LLMCallTimeoutError
+        try:
+            await asyncio.wait_for(asyncio.sleep(60), timeout=call_timeout_s)
+        except asyncio.TimeoutError as e:
+            raise LLMCallTimeoutError(
+                f"mock.parse_structured: exceeded per-call budget of "
+                f"{call_timeout_s:.1f}s"
+            ) from e
+        raise RuntimeError("should never reach this")
 
-    def create(self, **kwargs):
-        async def _hang():
-            await asyncio.sleep(60)
-            raise RuntimeError("should never reach this")
-        return _hang()
+    async def generate_text(self, *, system, user, call_timeout_s):
+        from sum_engine_internal.ensemble.llm_dispatch import LLMCallTimeoutError
+        try:
+            await asyncio.wait_for(asyncio.sleep(60), timeout=call_timeout_s)
+        except asyncio.TimeoutError as e:
+            raise LLMCallTimeoutError(
+                f"mock.generate_text: exceeded per-call budget of "
+                f"{call_timeout_s:.1f}s"
+            ) from e
+        raise RuntimeError("should never reach this")
 
 
 @pytest.mark.asyncio
@@ -128,12 +137,11 @@ async def test_run_doc_returns_timeout_record_when_extract_hangs():
     """When the source-extract call times out, run_doc returns a
     per-doc record tagged ``error_class="timeout"`` rather than
     letting the exception propagate."""
-    client = _MockHangingClient()
+    adapter = _MockHangingAdapter()
     doc = {"id": "test_doc", "text": "Some test prose here.", "gold_triples": []}
 
     result = await run_doc(
-        client,
-        model="test-model",
+        adapter,
         doc=doc,
         ablation="combined",
         call_timeout_s=0.05,
