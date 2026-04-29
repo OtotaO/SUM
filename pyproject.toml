@@ -54,6 +54,22 @@ receipt-verify = ["joserfc>=1.0.0"]
 # `mcp` package is the official Python SDK; FastMCP is its
 # decorator-style high-level API. See docs/MCP_INTEGRATION.md.
 mcp = ["mcp>=1.0.0"]
+# Omni-format adapter. Markdown is the canonical pivot for the
+# attest pipeline: any input format -> markdown -> existing
+# extract/state/bundle path. Source URI anchors to the original
+# bytes, not the markdown, so receipts remain bound to the
+# artifact-as-shipped. markitdown is MIT, Microsoft-maintained,
+# lean pure-Python core (beautifulsoup4 + markdownify + magika);
+# heavy format-specific deps are gated behind its own extras.
+#
+# What this base extra brings in: HTML / DOCX-via-mammoth-not-
+# included / plaintext / EPUB-without-pandoc / .ipynb / .json.
+# For PDF/DOCX/XLSX/PPTX, install the matching markitdown extra
+# (`pip install 'markitdown[pdf,docx,xlsx,pptx]==0.1.5'`) on top.
+# Pinned hard to keep markdown output byte-identical for receipts.
+omni-format = [
+    "markitdown==0.1.5",
+]
 dev = [
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",
@@ -78,6 +94,7 @@ all = [
     "sum-engine[llm]",
     "sum-engine[receipt-verify]",
     "sum-engine[mcp]",
+    "sum-engine[omni-format]",
     "sum-engine[dev]",
 ]
 

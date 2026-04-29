@@ -1046,13 +1046,27 @@ Expected: `2 passed` (short-input byte-identity + 1.2 MB megacorpus attest).
 Verify: `pytest Tests/test_sum_cli_attest_batch.py -q`
 Expected: `6 passed`.
 
+### 130. Omni-format → markdown pivot adapter ✅
+
+`sum_engine_internal/adapters/format_pivot.py` (`convert_to_markdown`, `ConvertedDocument`) routes arbitrary inputs to a single canonical markdown pivot before the extract / state / bundle pipeline. Implementation uses `markitdown==0.1.5` (Microsoft, MIT, lean pure-Python core: BeautifulSoup + markdownify + magika; heavy format extras opt-in). Plaintext / `.md` / `.txt` use a no-dep pass-through with CRLF→LF normalisation. PDF / HTML / DOCX / EPUB / .ipynb / .json / RTF / XML route through `MarkItDown(enable_plugins=False).convert_stream()` — plugins disabled and no `llm_client` set, keeping conversion deterministic for text-bearing formats. Bundle's `source_uri` is anchored to the **original input bytes** (sha256:), not the markdown — a receipt for a PDF binds to the PDF, not to its markdown intermediate. The `markdown_sha256` field in the sidecar lets a verifier replay the conversion and detect upstream drift (e.g., a markitdown bump that shifts PDF text extraction output).
+
+Verify: `pytest Tests/test_format_pivot.py -q`
+Expected: `28 passed` — format detection across 19 extensions, plaintext/markdown pass-through (incl. CRLF→LF), HTML markitdown routing with deterministic markdown, source-URI anchoring to original bytes, missing-file error, empty input.
+
+### 131. `sum attest --format auto` omni-format CLI surface ✅
+
+`sum attest` and `sum attest-batch` gain a `--format {auto,raw}` flag. `auto` (default) routes by file extension through the format-pivot adapter; `raw` reads bytes verbatim with no conversion (escape hatch for users who want the literal HTML/source attested rather than its semantic content). Bundle's `sum_cli` sidecar carries `input_format` (e.g., `pdf`, `html`, `markdown`, `plaintext`, `raw`), `converter` (e.g., `markitdown@0.1.5`, `passthrough`, `raw-readthrough`), `source_bytes_len`, and `markdown_sha256` so a verifier can replay the full chain: re-fetch the bytes whose sha256 matches `source_uri` → run the named converter version → hash markdown → compare to recorded `markdown_sha256`. Drift in any layer surfaces immediately. Closes the "omni-format" half of the dream at the public CLI surface.
+
+Verify: `pytest Tests/test_sum_cli_omni_format.py -q`
+Expected: `4 passed` — HTML→markitdown routing, markdown pass-through, `--format raw` escape hatch, conversion determinism (same HTML twice → identical state_integer).
+
 ---
 
 ## Summary counts
 
-Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **129**.
+Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **131**.
 
-- **Production ✅: 115 features** — tested green; each has a verification command in its entry.
+- **Production ✅: 117 features** — tested green; each has a verification command in its entry.
 - **Scaffolded 🔧: 13 features** — tests pass, production activation pending. All catalogued in `docs/MODULE_AUDIT.md` with activation checklists.
 - **Designed 📄: 1 feature** (sha256_128_v2 default-promotion; cross-runtime byte-identity locked, default-flip is a separate operator decision).
 
