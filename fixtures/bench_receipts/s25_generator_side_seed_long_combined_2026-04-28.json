@@ -1,0 +1,3287 @@
+{
+  "schema_family": "sum.s25_generator_side.v1",
+  "issued_at": "2026-04-29T01:25:54Z",
+  "corpus": "seed_long_paragraphs.json",
+  "n_docs": 16,
+  "model": "gpt-4o-mini-2024-07-18",
+  "dry_run": false,
+  "baseline_reference": {
+    "receipt": "fixtures/bench_receipts/s25_canonicalization_replay_2026-04-28.json",
+    "L0_drift_mean": 107.75,
+    "L0_recall_mean": 0.12,
+    "L0_full_recall": "6/50"
+  },
+  "ablations": [
+    {
+      "schema": "sum.s25_combined.v1",
+      "ablation": "combined",
+      "description": "A + B: canonical-first generator + vocab-pinned extractor",
+      "model": "gpt-4o-mini-2024-07-18",
+      "aggregate": {
+        "n_docs": 16,
+        "drift_pct_mean": 0.5682,
+        "drift_pct_median": 0.0,
+        "exact_match_recall_mean": 0.9972,
+        "exact_match_recall_p10": 1.0,
+        "n_docs_full_recall": 15,
+        "fraction_full_recall": 0.9375
+      },
+      "per_doc": [
+        {
+          "doc_id": "doc_long_internet_history",
+          "source_axioms": [
+            [
+              "internet",
+              "originated_as",
+              "arpanet},{"
+            ],
+            [
+              "arpanet",
+              "was_a_project_of",
+              "united_states_defense_advanced_research_projects_agency"
+            ],
+            [
+              "first_message",
+              "was_transmitted_between",
+              "ucla_and_stanford_research_institute"
+            ],
+            [
+              "arpanet",
+              "initially_connected",
+              "four_nodes"
+            ],
+            [
+              "vint_cerf_and_bob_kahn",
+              "developed",
+              "tcp_ip_protocol_suite"
+            ],
+            [
+              "tcp_ip_protocol_suite",
+              "became_the_foundation_for",
+              "modern_internet_communication"
+            ],
+            [
+              "protocols",
+              "were_standardised_in",
+              "1983"
+            ],
+            [
+              "arpanet",
+              "transitioned_to",
+              "tcp_ip"
+            ],
+            [
+              "tim_berners_lee",
+              "invented",
+              "world_wide_web"
+            ],
+            [
+              "tim_berners_lee",
+              "introduced",
+              "html_http_and_first_web_browser"
+            ],
+            [
+              "mosaic_browser",
+              "was_released_by",
+              "ncsa"
+            ],
+            [
+              "mosaic_browser",
+              "made_available_to",
+              "non_technical_users"
+            ],
+            [
+              "internet",
+              "became",
+              "global_commercial_network"
+            ],
+            [
+              "restrictions_on_commercial_traffic",
+              "were_deprecated",
+              "mid_1990s"
+            ],
+            [
+              "icann",
+              "was_established_in",
+              "1998"
+            ],
+            [
+              "icann",
+              "coordinates",
+              "allocation_of_domain_names_and_ip_addresses"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "internet",
+              "originated_as",
+              "arpanet},{"
+            ],
+            [
+              "arpanet",
+              "was_a_project_of",
+              "united_states_defense_advanced_research_projects_agency"
+            ],
+            [
+              "first_message",
+              "was_transmitted_between",
+              "ucla_and_stanford_research_institute"
+            ],
+            [
+              "arpanet",
+              "initially_connected",
+              "four_nodes"
+            ],
+            [
+              "vint_cerf_and_bob_kahn",
+              "developed",
+              "tcp_ip_protocol_suite"
+            ],
+            [
+              "tcp_ip_protocol_suite",
+              "became_the_foundation_for",
+              "modern_internet_communication"
+            ],
+            [
+              "protocols",
+              "were_standardised_in",
+              "1983"
+            ],
+            [
+              "arpanet",
+              "transitioned_to",
+              "tcp_ip"
+            ],
+            [
+              "tim_berners_lee",
+              "invented",
+              "world_wide_web"
+            ],
+            [
+              "tim_berners_lee",
+              "introduced",
+              "html_http_and_first_web_browser"
+            ],
+            [
+              "mosaic_browser",
+              "was_released_by",
+              "ncsa"
+            ],
+            [
+              "mosaic_browser",
+              "made_available_to",
+              "non_technical_users"
+            ],
+            [
+              "internet",
+              "became",
+              "global_commercial_network"
+            ],
+            [
+              "restrictions_on_commercial_traffic",
+              "were_deprecated",
+              "mid_1990s"
+            ],
+            [
+              "icann",
+              "was_established_in",
+              "1998"
+            ],
+            [
+              "icann",
+              "coordinates",
+              "allocation_of_domain_names_and_ip_addresses"
+            ]
+          ],
+          "narrative_excerpt": "The internet originated as arpanet. The origin of the internet traces back to a groundbreaking project known as ARPANET, which laid the groundwork for what would eventually evolve into the modern inte",
+          "vocabulary_summary": {
+            "n_source_axioms": 16,
+            "n_unique_subjects": 10,
+            "n_unique_predicates": 16,
+            "n_unique_objects": 16,
+            "n_predicates_with_canonical_padding": 102
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 16,
+          "n_source": 16,
+          "n_reconstructed": 16,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_long_quantum_mechanics",
+          "source_axioms": [
+            [
+              "quantum_mechanics",
+              "emerged_in",
+              "early_twentieth_century"
+            ],
+            [
+              "physicists",
+              "confronted",
+              "phenomena"
+            ],
+            [
+              "classical_mechanics",
+              "could_not_explain",
+              "phenomena"
+            ],
+            [
+              "max_planck",
+              "introduced",
+              "concept_of_quantised_energy"
+            ],
+            [
+              "quantised_energy",
+              "was_introduced_to_resolve",
+              "ultraviolet_catastrophe"
+            ],
+            [
+              "albert_einstein",
+              "extended_idea_in",
+              "1905"
+            ],
+            [
+              "light",
+              "is_quantised_into",
+              "photons"
+            ],
+            [
+              "light",
+              "explains",
+              "photoelectric_effect"
+            ],
+            [
+              "niels_bohr",
+              "formulated",
+              "model_of_hydrogen_atom"
+            ],
+            [
+              "electron_orbits",
+              "are_discrete",
+              "model_of_hydrogen_atom"
+            ],
+            [
+              "louis_de_broglie",
+              "hypothesised",
+              "wave-particle_duality"
+            ],
+            [
+              "all_matter",
+              "exhibits",
+              "wave-like_properties"
+            ],
+            [
+              "werner_heisenberg",
+              "developed",
+              "matrix_mechanics"
+            ],
+            [
+              "werner_heisenberg",
+              "articulated",
+              "uncertainty_principle"
+            ],
+            [
+              "erwin_schr\u00f6dinger",
+              "formulated",
+              "wave_equation"
+            ],
+            [
+              "wave_equation",
+              "provides",
+              "alternative_formalism"
+            ],
+            [
+              "copenhagen_interpretation",
+              "was_articulated_by",
+              "bohr_and_heisenberg"
+            ],
+            [
+              "copenhagen_interpretation",
+              "became",
+              "dominant_philosophical_framework"
+            ],
+            [
+              "paul_dirac",
+              "unified",
+              "quantum_mechanics_with_special_relativity"
+            ],
+            [
+              "paul_dirac",
+              "predicted",
+              "existence_of_antimatter"
+            ],
+            [
+              "carl_anderson",
+              "observed",
+              "antimatter_experimentally"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "quantum_mechanics",
+              "emerged_in",
+              "early_twentieth_century"
+            ],
+            [
+              "physicists",
+              "confronted",
+              "phenomena"
+            ],
+            [
+              "classical_mechanics",
+              "could_not_explain",
+              "phenomena"
+            ],
+            [
+              "max_planck",
+              "introduced",
+              "concept_of_quantised_energy"
+            ],
+            [
+              "quantised_energy",
+              "was_introduced_to_resolve",
+              "ultraviolet_catastrophe"
+            ],
+            [
+              "albert_einstein",
+              "extended_idea_in",
+              "1905"
+            ],
+            [
+              "light",
+              "is_quantised_into",
+              "photons"
+            ],
+            [
+              "light",
+              "explains",
+              "photoelectric_effect"
+            ],
+            [
+              "niels_bohr",
+              "formulated",
+              "model_of_hydrogen_atom"
+            ],
+            [
+              "electron_orbits",
+              "are_discrete",
+              "model_of_hydrogen_atom"
+            ],
+            [
+              "louis_de_broglie",
+              "hypothesised",
+              "wave-particle_duality"
+            ],
+            [
+              "all_matter",
+              "exhibits",
+              "wave-like_properties"
+            ],
+            [
+              "werner_heisenberg",
+              "developed",
+              "matrix_mechanics"
+            ],
+            [
+              "werner_heisenberg",
+              "articulated",
+              "uncertainty_principle"
+            ],
+            [
+              "erwin_schr\u00f6dinger",
+              "formulated",
+              "wave_equation"
+            ],
+            [
+              "wave_equation",
+              "provides",
+              "alternative_formalism"
+            ],
+            [
+              "copenhagen_interpretation",
+              "was_articulated_by",
+              "bohr_and_heisenberg"
+            ],
+            [
+              "copenhagen_interpretation",
+              "became",
+              "dominant_philosophical_framework"
+            ],
+            [
+              "paul_dirac",
+              "unified",
+              "quantum_mechanics_with_special_relativity"
+            ],
+            [
+              "paul_dirac",
+              "predicted",
+              "existence_of_antimatter"
+            ],
+            [
+              "carl_anderson",
+              "observed",
+              "antimatter_experimentally"
+            ]
+          ],
+          "narrative_excerpt": "The quantum_mechanics emerged_in early_twentieth_century. This period marked the beginning of a revolutionary approach to the understanding of physical phenomena. \n\nThe physicists confronted phenomena",
+          "vocabulary_summary": {
+            "n_source_axioms": 21,
+            "n_unique_subjects": 17,
+            "n_unique_predicates": 20,
+            "n_unique_objects": 19,
+            "n_predicates_with_canonical_padding": 106
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 21,
+          "n_source": 21,
+          "n_reconstructed": 21,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_long_evolution",
+          "source_axioms": [
+            [
+              "charles darwin",
+              "published_work",
+              "on the origin of species in 1859"
+            ],
+            [
+              "charles darwin",
+              "presented",
+              "natural selection as the mechanism for evolutionary change"
+            ],
+            [
+              "alfred russel wallace",
+              "independently_arrived_at",
+              "similar conclusions"
+            ],
+            [
+              "alfred russel wallace and charles darwin",
+              "prompted_joint_presentation_to",
+              "the linnean society in 1858"
+            ],
+            [
+              "gregor mendel",
+              "published_work",
+              "foundational work on inheritance in 1866"
+            ],
+            [
+              "gregor mendel",
+              "established",
+              "the basic principles of genetics through his experiments on pea plants"
+            ],
+            [
+              "synthesis of darwinian evolution and mendelian genetics",
+              "formed",
+              "the modern evolutionary synthesis during the 1930s and 1940s"
+            ],
+            [
+              "james watson and francis crick",
+              "determined",
+              "the double-helix structure of dna in 1953"
+            ],
+            [
+              "james watson and francis crick",
+              "built_on",
+              "the x-ray diffraction work of rosalind franklin"
+            ],
+            [
+              "discovery of dna",
+              "enabled",
+              "molecular evolution to become a quantitative discipline"
+            ],
+            [
+              "kimura",
+              "proposed",
+              "the neutral theory of molecular evolution in 1968"
+            ],
+            [
+              "kimura",
+              "argued",
+              "most genetic variation results from random drift rather than selection"
+            ],
+            [
+              "human genome project",
+              "completed_sequencing_of",
+              "the human genome in 2003"
+            ],
+            [
+              "human genome project",
+              "involved_international_collaboration_for",
+              "thirteen years"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "charles darwin",
+              "published_work",
+              "on the origin of species in 1859"
+            ],
+            [
+              "charles darwin",
+              "presented",
+              "natural selection as the mechanism for evolutionary change"
+            ],
+            [
+              "alfred russel wallace",
+              "independently_arrived_at",
+              "similar conclusions"
+            ],
+            [
+              "alfred russel wallace and charles darwin",
+              "prompted_joint_presentation_to",
+              "the linnean society in 1858"
+            ],
+            [
+              "gregor mendel",
+              "published_work",
+              "foundational work on inheritance in 1866"
+            ],
+            [
+              "gregor mendel",
+              "established",
+              "the basic principles of genetics through his experiments on pea plants"
+            ],
+            [
+              "synthesis of darwinian evolution and mendelian genetics",
+              "formed",
+              "the modern evolutionary synthesis during the 1930s and 1940s"
+            ],
+            [
+              "james watson and francis crick",
+              "determined",
+              "the double-helix structure of dna in 1953"
+            ],
+            [
+              "james watson and francis crick",
+              "built_on",
+              "the x-ray diffraction work of rosalind franklin"
+            ],
+            [
+              "discovery of dna",
+              "enabled",
+              "molecular evolution to become a quantitative discipline"
+            ],
+            [
+              "kimura",
+              "proposed",
+              "the neutral theory of molecular evolution in 1968"
+            ],
+            [
+              "kimura",
+              "argued",
+              "most genetic variation results from random drift rather than selection"
+            ],
+            [
+              "human genome project",
+              "completed_sequencing_of",
+              "the human genome in 2003"
+            ],
+            [
+              "human genome project",
+              "involved_international_collaboration_for",
+              "thirteen years"
+            ]
+          ],
+          "narrative_excerpt": "The charles darwin published_work on the origin of species in 1859. This seminal book marked the beginning of a new era in biological understanding, laying the foundation for the study of evolution.\n\n",
+          "vocabulary_summary": {
+            "n_source_axioms": 14,
+            "n_unique_subjects": 9,
+            "n_unique_predicates": 13,
+            "n_unique_objects": 14,
+            "n_predicates_with_canonical_padding": 99
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 14,
+          "n_source": 14,
+          "n_reconstructed": 14,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_long_roman_empire",
+          "source_axioms": [
+            [
+              "rome",
+              "was_founded",
+              "753 bce by romulus in legend"
+            ],
+            [
+              "the roman republic",
+              "was_established",
+              "509 bce following the overthrow of the last etruscan king"
+            ],
+            [
+              "the republic",
+              "governed_through",
+              "elected consuls and the senate"
+            ],
+            [
+              "the punic wars",
+              "occurred_between",
+              "264 and 146 bce"
+            ],
+            [
+              "the punic wars",
+              "ended_with",
+              "the destruction of carthage and roman dominance in the western mediterranean"
+            ],
+            [
+              "julius caesar",
+              "was_assassinated",
+              "in the senate on the ides of march in 44 bce"
+            ],
+            [
+              "caesar's adopted heir octavian",
+              "defeated",
+              "mark antony at the battle of actium in 31 bce"
+            ],
+            [
+              "octavian",
+              "became",
+              "the first roman emperor under the title augustus"
+            ],
+            [
+              "the roman empire",
+              "reached",
+              "its territorial peak under trajans in 117 ce"
+            ],
+            [
+              "constantine the great",
+              "legalised",
+              "christianity through the edict of milan in 313 ce"
+            ],
+            [
+              "the western roman empire",
+              "fell",
+              "in 476 ce when odoacer deposed the last emperor"
+            ],
+            [
+              "odoacer",
+              "deposed",
+              "the last emperor romulus augustulus"
+            ],
+            [
+              "the eastern roman empire",
+              "continued_as",
+              "the byzantine empire until 1453"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "rome",
+              "was_founded",
+              "753 bce by romulus in legend"
+            ],
+            [
+              "the roman republic",
+              "was_established",
+              "509 bce following the overthrow of the last etruscan king"
+            ],
+            [
+              "the republic",
+              "governed_through",
+              "elected consuls and the senate"
+            ],
+            [
+              "the punic wars",
+              "occurred_between",
+              "264 and 146 bce"
+            ],
+            [
+              "the punic wars",
+              "ended_with",
+              "the destruction of carthage and roman dominance in the western mediterranean"
+            ],
+            [
+              "julius caesar",
+              "was_assassinated",
+              "in the senate on the ides of march in 44 bce"
+            ],
+            [
+              "caesar's adopted heir octavian",
+              "defeated",
+              "mark antony at the battle of actium in 31 bce"
+            ],
+            [
+              "octavian",
+              "became",
+              "the first roman emperor under the title augustus"
+            ],
+            [
+              "the roman empire",
+              "reached",
+              "its territorial peak under trajans in 117 ce"
+            ],
+            [
+              "constantine the great",
+              "legalised",
+              "christianity through the edict of milan in 313 ce"
+            ],
+            [
+              "the western roman empire",
+              "fell",
+              "in 476 ce when odoacer deposed the last emperor"
+            ],
+            [
+              "odoacer",
+              "deposed",
+              "the last emperor romulus augustulus"
+            ],
+            [
+              "the eastern roman empire",
+              "continued_as",
+              "the byzantine empire until 1453"
+            ]
+          ],
+          "narrative_excerpt": "The rome was_founded 753 bce by romulus in legend. According to historical accounts, Romulus was a significant figure in Roman mythology, credited with establishing the city of Rome, which would grow ",
+          "vocabulary_summary": {
+            "n_source_axioms": 13,
+            "n_unique_subjects": 12,
+            "n_unique_predicates": 13,
+            "n_unique_objects": 13,
+            "n_predicates_with_canonical_padding": 99
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 13,
+          "n_source": 13,
+          "n_reconstructed": 13,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_long_solar_system",
+          "source_axioms": [
+            [
+              "solar system",
+              "formed_approximately",
+              "4.6 billion years ago},{"
+            ],
+            [
+              "sun",
+              "contains_approximately",
+              "99.86 percent of the system's mass"
+            ],
+            [
+              "sun",
+              "powers_itself_through",
+              "nuclear fusion of hydrogen into helium"
+            ],
+            [
+              "mercury",
+              "is_closest_planet_to",
+              "the sun"
+            ],
+            [
+              "mercury",
+              "is_smallest_in",
+              "the solar system"
+            ],
+            [
+              "venus",
+              "has_densest_atmosphere_of",
+              "any terrestrial planet"
+            ],
+            [
+              "venus",
+              "has_highest_surface_temperature",
+              "exceeding 460 degrees celsius"
+            ],
+            [
+              "earth",
+              "is_only_known_planet_to",
+              "harbour life"
+            ],
+            [
+              "earth",
+              "possesses_natural_satellite",
+              "the moon"
+            ],
+            [
+              "mars",
+              "has_two_moons",
+              "phobos and deimos"
+            ],
+            [
+              "mars",
+              "shows_evidence_of",
+              "past liquid water"
+            ],
+            [
+              "asteroid belt",
+              "contains",
+              "millions of rocky bodies"
+            ],
+            [
+              "asteroid belt",
+              "largest_body_is",
+              "ceres"
+            ],
+            [
+              "jupiter",
+              "is_largest_planet",
+              "true"
+            ],
+            [
+              "jupiter",
+              "has_known_moons",
+              "at least 95"
+            ],
+            [
+              "saturn",
+              "is_famous_for",
+              "its prominent ring system composed primarily of ice particles"
+            ],
+            [
+              "uranus",
+              "rotates_on_its_side",
+              "true"
+            ],
+            [
+              "uranus",
+              "has_axial_tilt_of",
+              "98 degrees"
+            ],
+            [
+              "neptune",
+              "is_windiest_planet",
+              "true"
+            ],
+            [
+              "neptune",
+              "has_winds_reaching",
+              "2100 kilometres per hour"
+            ],
+            [
+              "pluto",
+              "was_reclassified_as",
+              "a dwarf planet"
+            ],
+            [
+              "international astronomical union",
+              "reclassified",
+              "pluto"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "solar system",
+              "formed_approximately",
+              "4.6 billion years ago},{"
+            ],
+            [
+              "sun",
+              "contains_approximately",
+              "99.86 percent of the system's mass"
+            ],
+            [
+              "sun",
+              "powers_itself_through",
+              "nuclear fusion of hydrogen into helium"
+            ],
+            [
+              "mercury",
+              "is_closest_planet_to",
+              "the sun"
+            ],
+            [
+              "mercury",
+              "is_smallest_in",
+              "the solar system"
+            ],
+            [
+              "venus",
+              "has_densest_atmosphere_of",
+              "any terrestrial planet"
+            ],
+            [
+              "venus",
+              "has_highest_surface_temperature",
+              "exceeding 460 degrees celsius"
+            ],
+            [
+              "earth",
+              "is_only_known_planet_to",
+              "harbour life"
+            ],
+            [
+              "earth",
+              "possesses_natural_satellite",
+              "the moon"
+            ],
+            [
+              "mars",
+              "has_known_moons",
+              "phobos and deimos"
+            ],
+            [
+              "mars",
+              "shows_evidence_of",
+              "past liquid water"
+            ],
+            [
+              "asteroid belt",
+              "contains",
+              "millions of rocky bodies"
+            ],
+            [
+              "asteroid belt",
+              "largest_body_is",
+              "ceres"
+            ],
+            [
+              "jupiter",
+              "is_largest_planet",
+              "true"
+            ],
+            [
+              "jupiter",
+              "has_known_moons",
+              "at least 95"
+            ],
+            [
+              "saturn",
+              "is_famous_for",
+              "its prominent ring system composed primarily of ice particles"
+            ],
+            [
+              "uranus",
+              "rotates_on_its_side",
+              "true"
+            ],
+            [
+              "uranus",
+              "has_axial_tilt_of",
+              "98 degrees"
+            ],
+            [
+              "neptune",
+              "is_windiest_planet",
+              "true"
+            ],
+            [
+              "neptune",
+              "has_winds_reaching",
+              "2100 kilometres per hour"
+            ],
+            [
+              "pluto",
+              "was_reclassified_as",
+              "a dwarf planet"
+            ],
+            [
+              "international astronomical union",
+              "reclassified",
+              "pluto"
+            ]
+          ],
+          "narrative_excerpt": "The solar system formed approximately 4.6 billion years ago. This timeframe marks the beginning of a complex arrangement of planetary bodies and celestial phenomena originating from a primordial nebul",
+          "vocabulary_summary": {
+            "n_source_axioms": 22,
+            "n_unique_subjects": 13,
+            "n_unique_predicates": 22,
+            "n_unique_objects": 20,
+            "n_predicates_with_canonical_padding": 108
+          },
+          "drift_pct": 9.0909,
+          "exact_match_recall": 0.9545,
+          "matched": 21,
+          "n_source": 22,
+          "n_reconstructed": 22,
+          "missing": [
+            [
+              "mars",
+              "has_two_moons",
+              "phobos and deimos"
+            ]
+          ],
+          "extra": [
+            [
+              "mars",
+              "has_known_moons",
+              "phobos and deimos"
+            ]
+          ]
+        },
+        {
+          "doc_id": "doc_long_neural_networks",
+          "source_axioms": [
+            [
+              "warren mcculloch",
+              "proposed",
+              "mathematical model of artificial neurons in 1943"
+            ],
+            [
+              "walter pitts",
+              "proposed",
+              "mathematical model of artificial neurons in 1943"
+            ],
+            [
+              "frank rosenblatt",
+              "invented",
+              "perceptron in 1958"
+            ],
+            [
+              "perceptron",
+              "was_exposed_by",
+              "minsky and papert in 1969"
+            ],
+            [
+              "minsky and papert",
+              "exposed",
+              "perceptron's limitations in 1969"
+            ],
+            [
+              "backpropagation algorithm",
+              "was_popularised_by",
+              "rumelhart, hinton, and williams in 1986"
+            ],
+            [
+              "yann lecun",
+              "applied",
+              "convolutional neural networks to handwritten digit recognition in 1989"
+            ],
+            [
+              "convolutional neural networks",
+              "were_applied_to",
+              "handwritten digit recognition in 1989"
+            ],
+            [
+              "long short-term memory networks",
+              "were_introduced_by",
+              "hochreiter and schmidhuber in 1997"
+            ],
+            [
+              "alexnet",
+              "won",
+              "imagenet competition in 2012"
+            ],
+            [
+              "transformer architecture",
+              "was_introduced_by",
+              "vaswani and colleagues in 2017"
+            ],
+            [
+              "gpt-3",
+              "was_released_by",
+              "openai in 2020"
+            ],
+            [
+              "openai",
+              "released",
+              "gpt-3 in 2020"
+            ],
+            [
+              "gpt-3",
+              "demonstrated",
+              "emergent few-shot learning capabilities"
+            ],
+            [
+              "gpt-3",
+              "has",
+              "175 billion parameters"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "warren mcculloch",
+              "proposed",
+              "mathematical model of artificial neurons in 1943"
+            ],
+            [
+              "walter pitts",
+              "proposed",
+              "mathematical model of artificial neurons in 1943"
+            ],
+            [
+              "frank rosenblatt",
+              "invented",
+              "perceptron in 1958"
+            ],
+            [
+              "perceptron",
+              "was_exposed_by",
+              "minsky and papert in 1969"
+            ],
+            [
+              "minsky and papert",
+              "exposed",
+              "perceptron's limitations in 1969"
+            ],
+            [
+              "backpropagation algorithm",
+              "was_popularised_by",
+              "rumelhart, hinton, and williams in 1986"
+            ],
+            [
+              "yann lecun",
+              "applied",
+              "convolutional neural networks to handwritten digit recognition in 1989"
+            ],
+            [
+              "convolutional neural networks",
+              "were_applied_to",
+              "handwritten digit recognition in 1989"
+            ],
+            [
+              "long short-term memory networks",
+              "were_introduced_by",
+              "hochreiter and schmidhuber in 1997"
+            ],
+            [
+              "alexnet",
+              "won",
+              "imagenet competition in 2012"
+            ],
+            [
+              "transformer architecture",
+              "was_introduced_by",
+              "vaswani and colleagues in 2017"
+            ],
+            [
+              "gpt-3",
+              "was_released_by",
+              "openai in 2020"
+            ],
+            [
+              "openai",
+              "released",
+              "gpt-3 in 2020"
+            ],
+            [
+              "gpt-3",
+              "demonstrated",
+              "emergent few-shot learning capabilities"
+            ],
+            [
+              "gpt-3",
+              "has",
+              "175 billion parameters"
+            ]
+          ],
+          "narrative_excerpt": "The warren mcculloch proposed mathematical model of artificial neurons in 1943. This groundbreaking proposal laid the foundation for the conceptual development of artificial neural networks, which sim",
+          "vocabulary_summary": {
+            "n_source_axioms": 15,
+            "n_unique_subjects": 13,
+            "n_unique_predicates": 14,
+            "n_unique_objects": 14,
+            "n_predicates_with_canonical_padding": 100
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 15,
+          "n_source": 15,
+          "n_reconstructed": 15,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_long_climate_change",
+          "source_axioms": [
+            [
+              "svante_arrhenius",
+              "first_calculated_in",
+              "1896  doubling atmospheric carbon dioxide could raise global temperatures."
+            ],
+            [
+              "charles_keeling",
+              "began_measurements_of",
+              "atmospheric co2 at mauna loa observatory in 1958."
+            ],
+            [
+              "keeling_curve",
+              "documents",
+              "steady rise in atmospheric co2 concentration."
+            ],
+            [
+              "intergovernmental_panel_on_climate_change",
+              "was_established_in",
+              "1988 by the united nations environment programme and the world meteorological organization."
+            ],
+            [
+              "ipcc",
+              "publishes",
+              "comprehensive assessment reports synthesising climate science."
+            ],
+            [
+              "kyoto_protocol",
+              "was_adopted_in",
+              "1997 establishing binding emissions reduction targets for developed nations."
+            ],
+            [
+              "paris_agreement",
+              "was_signed_in",
+              "2015 with nearly all nations committing to limit warming below 2 degrees celsius."
+            ],
+            [
+              "global_mean_surface_temperature",
+              "has_risen_since",
+              "late nineteenth century approximately 1.2 degrees celsius."
+            ],
+            [
+              "arctic_sea_ice_extent",
+              "has_declined_since",
+              "1979 approximately 13 percent per decade."
+            ],
+            [
+              "atmospheric_co2_concentration",
+              "exceeded",
+              "420 parts per million in 2024."
+            ],
+            [
+              "atmospheric_co2_concentration",
+              "is_highest_in",
+              "at least 800,000 years."
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "svante_arrhenius",
+              "first_calculated_in",
+              "1896  doubling atmospheric carbon dioxide could raise global temperatures."
+            ],
+            [
+              "charles_keeling",
+              "began_measurements_of",
+              "atmospheric co2 at mauna loa observatory in 1958."
+            ],
+            [
+              "keeling_curve",
+              "documents",
+              "steady rise in atmospheric co2 concentration."
+            ],
+            [
+              "intergovernmental_panel_on_climate_change",
+              "was_established_in",
+              "1988 by the united nations environment programme and the world meteorological organization."
+            ],
+            [
+              "ipcc",
+              "publishes",
+              "comprehensive assessment reports synthesising climate science."
+            ],
+            [
+              "kyoto_protocol",
+              "was_adopted_in",
+              "1997 establishing binding emissions reduction targets for developed nations."
+            ],
+            [
+              "paris_agreement",
+              "was_signed_in",
+              "2015 with nearly all nations committing to limit warming below 2 degrees celsius."
+            ],
+            [
+              "global_mean_surface_temperature",
+              "has_risen_since",
+              "late nineteenth century approximately 1.2 degrees celsius."
+            ],
+            [
+              "arctic_sea_ice_extent",
+              "has_declined_since",
+              "1979 approximately 13 percent per decade."
+            ],
+            [
+              "atmospheric_co2_concentration",
+              "exceeded",
+              "420 parts per million in 2024."
+            ],
+            [
+              "atmospheric_co2_concentration",
+              "is_highest_in",
+              "at least 800,000 years."
+            ]
+          ],
+          "narrative_excerpt": "The svante_arrhenius first_calculated_in 1896 doubling atmospheric carbon dioxide could raise global temperatures. Svante Arrhenius's pioneering work laid the groundwork for our understanding of how g",
+          "vocabulary_summary": {
+            "n_source_axioms": 11,
+            "n_unique_subjects": 10,
+            "n_unique_predicates": 11,
+            "n_unique_objects": 11,
+            "n_predicates_with_canonical_padding": 97
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 11,
+          "n_source": 11,
+          "n_reconstructed": 11,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_long_relativity",
+          "source_axioms": [
+            [
+              "albert einstein",
+              "published",
+              "special theory of relativity in 1905"
+            ],
+            [
+              "special theory of relativity",
+              "abolished",
+              "concept of absolute simultaneity"
+            ],
+            [
+              "special theory of relativity",
+              "established",
+              "constancy of the speed of light in vacuum"
+            ],
+            [
+              "special relativity",
+              "predicts",
+              "moving clocks run slower"
+            ],
+            [
+              "special relativity",
+              "predicts",
+              "mass and energy are equivalent through the equation e equals mc squared"
+            ],
+            [
+              "einstein",
+              "extended",
+              "framework to general relativity in 1915"
+            ],
+            [
+              "general relativity",
+              "described",
+              "gravity as the curvature of spacetime caused by mass and energy"
+            ],
+            [
+              "general relativity",
+              "predicted",
+              "light from distant stars would be deflected by the sun's gravity"
+            ],
+            [
+              "arthur eddington",
+              "confirmed",
+              "deflection of light during the solar eclipse of 1919"
+            ],
+            [
+              "theory",
+              "predicted",
+              "gravitational redshift"
+            ],
+            [
+              "theory",
+              "predicted",
+              "gravitational time dilation"
+            ],
+            [
+              "theory",
+              "predicted",
+              "expansion of the universe"
+            ],
+            [
+              "karl schwarzschild",
+              "derived",
+              "first exact solution to einstein's field equations in 1916"
+            ],
+            [
+              "karl schwarzschild",
+              "described",
+              "what later became known as black holes"
+            ],
+            [
+              "edwin hubble",
+              "observed",
+              "distant galaxies are receding from earth at speeds proportional to their distance"
+            ],
+            [
+              "hubble's observation",
+              "supported",
+              "expansion prediction"
+            ],
+            [
+              "laser interferometer gravitational-wave observatory",
+              "detected",
+              "gravitational waves from merging black holes in september 2015"
+            ],
+            [
+              "detection",
+              "confirmed",
+              "century-old prediction"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "albert einstein",
+              "published",
+              "special theory of relativity in 1905"
+            ],
+            [
+              "special theory of relativity",
+              "abolished",
+              "concept of absolute simultaneity"
+            ],
+            [
+              "special theory of relativity",
+              "established",
+              "constancy of the speed of light in vacuum"
+            ],
+            [
+              "special relativity",
+              "predicts",
+              "moving clocks run slower"
+            ],
+            [
+              "special relativity",
+              "predicts",
+              "mass and energy are equivalent through the equation e equals mc squared"
+            ],
+            [
+              "einstein",
+              "extended",
+              "framework to general relativity in 1915"
+            ],
+            [
+              "general relativity",
+              "described",
+              "gravity as the curvature of spacetime caused by mass and energy"
+            ],
+            [
+              "general relativity",
+              "predicted",
+              "light from distant stars would be deflected by the sun's gravity"
+            ],
+            [
+              "arthur eddington",
+              "confirmed",
+              "deflection of light during the solar eclipse of 1919"
+            ],
+            [
+              "theory",
+              "predicted",
+              "gravitational redshift"
+            ],
+            [
+              "theory",
+              "predicted",
+              "gravitational time dilation"
+            ],
+            [
+              "theory",
+              "predicted",
+              "expansion of the universe"
+            ],
+            [
+              "karl schwarzschild",
+              "derived",
+              "first exact solution to einstein's field equations in 1916"
+            ],
+            [
+              "karl schwarzschild",
+              "described",
+              "what later became known as black holes"
+            ],
+            [
+              "edwin hubble",
+              "observed",
+              "distant galaxies are receding from earth at speeds proportional to their distance"
+            ],
+            [
+              "hubble's observation",
+              "supported",
+              "expansion prediction"
+            ],
+            [
+              "laser interferometer gravitational-wave observatory",
+              "detected",
+              "gravitational waves from merging black holes in september 2015"
+            ],
+            [
+              "detection",
+              "confirmed",
+              "century-old prediction"
+            ]
+          ],
+          "narrative_excerpt": "The albert einstein published special theory of relativity in 1905. This landmark achievement revolutionized the understanding of physics and laid the groundwork for modern theoretical physics.\n\nThe s",
+          "vocabulary_summary": {
+            "n_source_axioms": 18,
+            "n_unique_subjects": 12,
+            "n_unique_predicates": 12,
+            "n_unique_objects": 18,
+            "n_predicates_with_canonical_padding": 98
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 18,
+          "n_source": 18,
+          "n_reconstructed": 18,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_long_french_revolution",
+          "source_axioms": [
+            [
+              "french_revolution",
+              "began_in",
+              "1789"
+            ],
+            [
+              "french_revolution",
+              "occurred_amid",
+              "economic_crisis"
+            ],
+            [
+              "french_revolution",
+              "occurred_amid",
+              "political_grievances"
+            ],
+            [
+              "french_revolution",
+              "occurred_amid",
+              "enlightenment_ideals"
+            ],
+            [
+              "estates-general",
+              "convened_at",
+              "versailles"
+            ],
+            [
+              "estates-general",
+              "convened_in",
+              "may_1789"
+            ],
+            [
+              "estates-general",
+              "last_meeting",
+              "1614"
+            ],
+            [
+              "third_estate",
+              "declared_itself",
+              "national_assembly"
+            ],
+            [
+              "third_estate",
+              "pledged",
+              "tennis_court_oath"
+            ],
+            [
+              "bastille_fortress",
+              "was_stormed_by",
+              "parisians"
+            ],
+            [
+              "bastille_fortress",
+              "stormed_on",
+              "14_july_1789"
+            ],
+            [
+              "bastille_fortress",
+              "became_symbolic_beginning_of",
+              "revolution"
+            ],
+            [
+              "declaration_of_rights_of_man",
+              "was_adopted_in",
+              "august_1789"
+            ],
+            [
+              "declaration_of_rights_of_man",
+              "articulated",
+              "universal_principles_of_liberty"
+            ],
+            [
+              "declaration_of_rights_of_man",
+              "articulated",
+              "legal_equality"
+            ],
+            [
+              "king_louis_xvi",
+              "attempted_to_flee",
+              "france"
+            ],
+            [
+              "king_louis_xvi",
+              "was_captured_at",
+              "varennes"
+            ],
+            [
+              "louis_xvi",
+              "was_tried_for",
+              "treason"
+            ],
+            [
+              "louis_xvi",
+              "was_executed_by",
+              "guillotine"
+            ],
+            [
+              "louis_xvi",
+              "was_executed_in",
+              "january_1793"
+            ],
+            [
+              "maximilien_robespierre",
+              "led",
+              "reign_of_terror"
+            ],
+            [
+              "reign_of_terror",
+              "occurred_from",
+              "1793_to_1794"
+            ],
+            [
+              "thousands",
+              "were_executed_during",
+              "reign_of_terror"
+            ],
+            [
+              "robespierre",
+              "was_executed_in",
+              "july_1794"
+            ],
+            [
+              "robespierre",
+              "ended",
+              "terror"
+            ],
+            [
+              "napoleon_bonaparte",
+              "seized_power_through",
+              "coup_of_18_brumaire"
+            ],
+            [
+              "napoleon_bonaparte",
+              "was_crowned",
+              "emperor_of_the_french"
+            ],
+            [
+              "napoleon_bonaparte",
+              "was_crowned_in",
+              "1804"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "french_revolution",
+              "began_in",
+              "1789"
+            ],
+            [
+              "french_revolution",
+              "occurred_amid",
+              "economic_crisis"
+            ],
+            [
+              "french_revolution",
+              "occurred_amid",
+              "political_grievances"
+            ],
+            [
+              "french_revolution",
+              "occurred_amid",
+              "enlightenment_ideals"
+            ],
+            [
+              "estates-general",
+              "convened_at",
+              "versailles"
+            ],
+            [
+              "estates-general",
+              "convened_in",
+              "may_1789"
+            ],
+            [
+              "estates-general",
+              "last_meeting",
+              "1614"
+            ],
+            [
+              "third_estate",
+              "declared_itself",
+              "national_assembly"
+            ],
+            [
+              "third_estate",
+              "pledged",
+              "tennis_court_oath"
+            ],
+            [
+              "bastille_fortress",
+              "was_stormed_by",
+              "parisians"
+            ],
+            [
+              "bastille_fortress",
+              "stormed_on",
+              "14_july_1789"
+            ],
+            [
+              "bastille_fortress",
+              "became_symbolic_beginning_of",
+              "revolution"
+            ],
+            [
+              "declaration_of_rights_of_man",
+              "was_adopted_in",
+              "august_1789"
+            ],
+            [
+              "declaration_of_rights_of_man",
+              "articulated",
+              "universal_principles_of_liberty"
+            ],
+            [
+              "declaration_of_rights_of_man",
+              "articulated",
+              "legal_equality"
+            ],
+            [
+              "king_louis_xvi",
+              "attempted_to_flee",
+              "france"
+            ],
+            [
+              "king_louis_xvi",
+              "was_captured_at",
+              "varennes"
+            ],
+            [
+              "louis_xvi",
+              "was_tried_for",
+              "treason"
+            ],
+            [
+              "louis_xvi",
+              "was_executed_by",
+              "guillotine"
+            ],
+            [
+              "louis_xvi",
+              "was_executed_in",
+              "january_1793"
+            ],
+            [
+              "maximilien_robespierre",
+              "led",
+              "reign_of_terror"
+            ],
+            [
+              "reign_of_terror",
+              "occurred_from",
+              "1793_to_1794"
+            ],
+            [
+              "thousands",
+              "were_executed_during",
+              "reign_of_terror"
+            ],
+            [
+              "robespierre",
+              "was_executed_in",
+              "july_1794"
+            ],
+            [
+              "robespierre",
+              "ended",
+              "terror"
+            ],
+            [
+              "napoleon_bonaparte",
+              "seized_power_through",
+              "coup_of_18_brumaire"
+            ],
+            [
+              "napoleon_bonaparte",
+              "was_crowned",
+              "emperor_of_the_french"
+            ],
+            [
+              "napoleon_bonaparte",
+              "was_crowned_in",
+              "1804"
+            ]
+          ],
+          "narrative_excerpt": "The french_revolution began_in 1789. The events leading to the french revolution were rooted deeply in the social, economic, and political landscape of France at the time, setting the stage for signif",
+          "vocabulary_summary": {
+            "n_source_axioms": 28,
+            "n_unique_subjects": 12,
+            "n_unique_predicates": 24,
+            "n_unique_objects": 27,
+            "n_predicates_with_canonical_padding": 110
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 28,
+          "n_source": 28,
+          "n_reconstructed": 28,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_long_cell_biology",
+          "source_axioms": [
+            [
+              "cell_theory",
+              "was_formulated_by",
+              "matthias_schleiden_and_theodor_schwann},{"
+            ],
+            [
+              "all_living_organisms",
+              "consist_of",
+              "cells"
+            ],
+            [
+              "robert_hooke",
+              "first_observed",
+              "cells_in_cork_tissue"
+            ],
+            [
+              "robert_hooke",
+              "coined_term",
+              "cells"
+            ],
+            [
+              "anton_van_leeuwenhoek",
+              "observed",
+              "living_single_celled_organisms"
+            ],
+            [
+              "anton_van_leeuwenhoek",
+              "used",
+              "microscopes_of_his_own_design"
+            ],
+            [
+              "rudolf_virchow",
+              "added_principle",
+              "all_cells_arise_from_pre_existing_cells"
+            ],
+            [
+              "eukaryotic_cells",
+              "contain",
+              "membrane_bound_organelles"
+            ],
+            [
+              "eukaryotic_cells",
+              "include",
+              "nucleus_mitochondria_endoplasmic_reticulum"
+            ],
+            [
+              "prokaryotic_cells",
+              "lack",
+              "nucleus_and_other_membrane_bound_organelles"
+            ],
+            [
+              "mitochondria",
+              "contain",
+              "their_own_circular_dna"
+            ],
+            [
+              "mitochondria",
+              "have_originated_through",
+              "endosymbiosis_of_ancient_bacteria"
+            ],
+            [
+              "lynn_margulis",
+              "developed",
+              "endosymbiotic_theory_in_detail"
+            ],
+            [
+              "mitochondrial_genome",
+              "was_first_sequenced_for",
+              "humans_in_1981"
+            ],
+            [
+              "plant_cells",
+              "contain",
+              "chloroplasts"
+            ],
+            [
+              "chloroplasts",
+              "conduct",
+              "photosynthesis"
+            ],
+            [
+              "chloroplasts",
+              "originated_through",
+              "endosymbiosis_from_cyanobacteria_like_ancestors"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "cell_theory",
+              "was_formulated_by",
+              "matthias_schleiden_and_theodor_schwann},{"
+            ],
+            [
+              "all_living_organisms",
+              "consist_of",
+              "cells"
+            ],
+            [
+              "robert_hooke",
+              "first_observed",
+              "cells_in_cork_tissue"
+            ],
+            [
+              "robert_hooke",
+              "coined_term",
+              "cells"
+            ],
+            [
+              "anton_van_leeuwenhoek",
+              "observed",
+              "living_single_celled_organisms"
+            ],
+            [
+              "anton_van_leeuwenhoek",
+              "used",
+              "microscopes_of_his_own_design"
+            ],
+            [
+              "rudolf_virchow",
+              "added_principle",
+              "all_cells_arise_from_pre_existing_cells"
+            ],
+            [
+              "eukaryotic_cells",
+              "contain",
+              "membrane_bound_organelles"
+            ],
+            [
+              "eukaryotic_cells",
+              "include",
+              "nucleus_mitochondria_endoplasmic_reticulum"
+            ],
+            [
+              "prokaryotic_cells",
+              "lack",
+              "nucleus_and_other_membrane_bound_organelles"
+            ],
+            [
+              "mitochondria",
+              "contain",
+              "their_own_circular_dna"
+            ],
+            [
+              "mitochondria",
+              "have_originated_through",
+              "endosymbiosis_of_ancient_bacteria"
+            ],
+            [
+              "lynn_margulis",
+              "developed",
+              "endosymbiotic_theory_in_detail"
+            ],
+            [
+              "mitochondrial_genome",
+              "was_first_sequenced_for",
+              "humans_in_1981"
+            ],
+            [
+              "plant_cells",
+              "contain",
+              "chloroplasts"
+            ],
+            [
+              "chloroplasts",
+              "conduct",
+              "photosynthesis"
+            ],
+            [
+              "chloroplasts",
+              "originated_through",
+              "endosymbiosis_from_cyanobacteria_like_ancestors"
+            ]
+          ],
+          "narrative_excerpt": "The cell_theory was_formulated_by matthias_schleiden_and_theodor_schwann. This foundational theory posits that the cell is the basic unit of life, shaping our understanding of biology.\n\nAll_living_org",
+          "vocabulary_summary": {
+            "n_source_axioms": 17,
+            "n_unique_subjects": 12,
+            "n_unique_predicates": 15,
+            "n_unique_objects": 16,
+            "n_predicates_with_canonical_padding": 101
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 17,
+          "n_source": 17,
+          "n_reconstructed": 17,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_long_world_war_two",
+          "source_axioms": [
+            [
+              "second_world_war",
+              "began_on",
+              "1_september_1939"
+            ],
+            [
+              "germany",
+              "invaded",
+              "poland"
+            ],
+            [
+              "united_kingdom_and_france",
+              "declared_war_on",
+              "germany"
+            ],
+            [
+              "united_kingdom_and_france",
+              "honoured_guarantees_to",
+              "poland"
+            ],
+            [
+              "germany",
+              "conquered",
+              "france"
+            ],
+            [
+              "battle_of_britain",
+              "was_first_major_battle_fought_in",
+              "the_air"
+            ],
+            [
+              "germany",
+              "invaded",
+              "soviet_union"
+            ],
+            [
+              "operation_barbarossa",
+              "opened",
+              "largest_military_front_in_history"
+            ],
+            [
+              "japan",
+              "attacked",
+              "united_states_naval_base_at_pearl_harbor"
+            ],
+            [
+              "attack_on_pearl_harbor",
+              "brought",
+              "united_states_into_the_war"
+            ],
+            [
+              "battle_of_stalingrad",
+              "ended_in",
+              "february_1943"
+            ],
+            [
+              "battle_of_stalingrad",
+              "was_decisive_victory_for",
+              "soviet_union"
+            ],
+            [
+              "allied_invasion_of_normandy",
+              "began_on",
+              "6_june_1944"
+            ],
+            [
+              "invasion_of_normandy",
+              "opened",
+              "western_european_front"
+            ],
+            [
+              "germany",
+              "surrendered",
+              "unconditionally"
+            ],
+            [
+              "surrender_of_germany",
+              "followed",
+              "fall_of_berlin"
+            ],
+            [
+              "united_states",
+              "dropped",
+              "atomic_bombs_on_hiroshima_and_nagasaki"
+            ],
+            [
+              "japan",
+              "formally_surrendered_on",
+              "2_september_1945"
+            ],
+            [
+              "surrender_of_japan",
+              "was_aboard",
+              "uss_missouri"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "second_world_war",
+              "began_on",
+              "1_september_1939"
+            ],
+            [
+              "germany",
+              "invaded",
+              "poland"
+            ],
+            [
+              "united_kingdom_and_france",
+              "declared_war_on",
+              "germany"
+            ],
+            [
+              "united_kingdom_and_france",
+              "honoured_guarantees_to",
+              "poland"
+            ],
+            [
+              "germany",
+              "conquered",
+              "france"
+            ],
+            [
+              "battle_of_britain",
+              "was_first_major_battle_fought_in",
+              "the_air"
+            ],
+            [
+              "germany",
+              "invaded",
+              "soviet_union"
+            ],
+            [
+              "operation_barbarossa",
+              "opened",
+              "largest_military_front_in_history"
+            ],
+            [
+              "japan",
+              "attacked",
+              "united_states_naval_base_at_pearl_harbor"
+            ],
+            [
+              "attack_on_pearl_harbor",
+              "brought",
+              "united_states_into_the_war"
+            ],
+            [
+              "battle_of_stalingrad",
+              "ended_in",
+              "february_1943"
+            ],
+            [
+              "battle_of_stalingrad",
+              "was_decisive_victory_for",
+              "soviet_union"
+            ],
+            [
+              "allied_invasion_of_normandy",
+              "began_on",
+              "6_june_1944"
+            ],
+            [
+              "invasion_of_normandy",
+              "opened",
+              "western_european_front"
+            ],
+            [
+              "germany",
+              "surrendered",
+              "unconditionally"
+            ],
+            [
+              "surrender_of_germany",
+              "followed",
+              "fall_of_berlin"
+            ],
+            [
+              "united_states",
+              "dropped",
+              "atomic_bombs_on_hiroshima_and_nagasaki"
+            ],
+            [
+              "japan",
+              "formally_surrendered_on",
+              "2_september_1945"
+            ],
+            [
+              "surrender_of_japan",
+              "was_aboard",
+              "uss_missouri"
+            ]
+          ],
+          "narrative_excerpt": "The second_world_war began_on 1_september_1939. This date marked the official beginning of one of the most devastating conflicts in human history, igniting a global struggle that would last until 1945",
+          "vocabulary_summary": {
+            "n_source_axioms": 19,
+            "n_unique_subjects": 13,
+            "n_unique_predicates": 16,
+            "n_unique_objects": 17,
+            "n_predicates_with_canonical_padding": 102
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 19,
+          "n_source": 19,
+          "n_reconstructed": 19,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_long_periodic_table",
+          "source_axioms": [
+            [
+              "dmitri mendeleev",
+              "published",
+              "first widely accepted periodic table of the elements in 1869."
+            ],
+            [
+              "elements",
+              "organised_by",
+              "atomic weight and chemical properties"
+            ],
+            [
+              "mendeleev",
+              "left_gaps_in_table_for",
+              "elements not yet discovered"
+            ],
+            [
+              "mendeleev",
+              "predicted",
+              "properties of elements not yet discovered"
+            ],
+            [
+              "gallium",
+              "was_discovered_in",
+              "1875"
+            ],
+            [
+              "germanium",
+              "was_discovered_in",
+              "1886"
+            ],
+            [
+              "scandium",
+              "was_discovered_in",
+              "1879"
+            ],
+            [
+              "gallium",
+              "closely_matching",
+              "mendeleev's predictions"
+            ],
+            [
+              "germanium",
+              "closely_matching",
+              "mendeleev's predictions"
+            ],
+            [
+              "scandium",
+              "closely_matching",
+              "mendeleev's predictions"
+            ],
+            [
+              "henry moseley",
+              "reorganised",
+              "the periodic table by atomic number rather than atomic weight in 1913"
+            ],
+            [
+              "mendeleev's arrangement",
+              "contained_inconsistencies",
+              "resolved by moseley"
+            ],
+            [
+              "frederick soddy",
+              "discovered",
+              "isotopes in 1913"
+            ],
+            [
+              "discovery of isotopes",
+              "explained",
+              "why atomic weights were not always integer values"
+            ],
+            [
+              "glenn seaborg",
+              "discovered",
+              "plutonium in 1940"
+            ],
+            [
+              "glenn seaborg",
+              "contributed_to",
+              "actinide series organisation"
+            ],
+            [
+              "modern periodic table",
+              "contains",
+              "118 confirmed elements as of 2024"
+            ],
+            [
+              "elements 95 through 118",
+              "are",
+              "all synthetic"
+            ],
+            [
+              "elements 95 through 118",
+              "were_created_in",
+              "particle accelerators or nuclear reactors"
+            ],
+            [
+              "iupac",
+              "officially_named",
+              "oganesson element 118 in 2016"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "dmitri mendeleev",
+              "published",
+              "first widely accepted periodic table of the elements in 1869."
+            ],
+            [
+              "elements",
+              "organised_by",
+              "atomic weight and chemical properties"
+            ],
+            [
+              "mendeleev",
+              "left_gaps_in_table_for",
+              "elements not yet discovered"
+            ],
+            [
+              "mendeleev",
+              "predicted",
+              "properties of elements not yet discovered"
+            ],
+            [
+              "gallium",
+              "was_discovered_in",
+              "1875"
+            ],
+            [
+              "germanium",
+              "was_discovered_in",
+              "1886"
+            ],
+            [
+              "scandium",
+              "was_discovered_in",
+              "1879"
+            ],
+            [
+              "gallium",
+              "closely_matching",
+              "mendeleev's predictions"
+            ],
+            [
+              "germanium",
+              "closely_matching",
+              "mendeleev's predictions"
+            ],
+            [
+              "scandium",
+              "closely_matching",
+              "mendeleev's predictions"
+            ],
+            [
+              "henry moseley",
+              "reorganised",
+              "the periodic table by atomic number rather than atomic weight in 1913"
+            ],
+            [
+              "mendeleev's arrangement",
+              "contained_inconsistencies",
+              "resolved by moseley"
+            ],
+            [
+              "frederick soddy",
+              "discovered",
+              "isotopes in 1913"
+            ],
+            [
+              "discovery of isotopes",
+              "explained",
+              "why atomic weights were not always integer values"
+            ],
+            [
+              "glenn seaborg",
+              "discovered",
+              "plutonium in 1940"
+            ],
+            [
+              "glenn seaborg",
+              "contributed_to",
+              "actinide series organisation"
+            ],
+            [
+              "modern periodic table",
+              "contains",
+              "118 confirmed elements as of 2024"
+            ],
+            [
+              "elements 95 through 118",
+              "are",
+              "all synthetic"
+            ],
+            [
+              "elements 95 through 118",
+              "were_created_in",
+              "particle accelerators or nuclear reactors"
+            ],
+            [
+              "iupac",
+              "officially_named",
+              "oganesson element 118 in 2016"
+            ]
+          ],
+          "narrative_excerpt": "The dmitri mendeleev published first widely accepted periodic table of the elements in 1869. This groundbreaking work laid the foundation for modern chemistry, as it systematically organized the eleme",
+          "vocabulary_summary": {
+            "n_source_axioms": 20,
+            "n_unique_subjects": 14,
+            "n_unique_predicates": 15,
+            "n_unique_objects": 18,
+            "n_predicates_with_canonical_padding": 101
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 20,
+          "n_source": 20,
+          "n_reconstructed": 20,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_long_human_genome",
+          "source_axioms": [
+            [
+              "human_genome_project",
+              "was_launched_in",
+              "1990"
+            ],
+            [
+              "human_genome_project",
+              "was_coordinated_by",
+              "united_states_national_institutes_of_health"
+            ],
+            [
+              "human_genome_project",
+              "was_coordinated_by",
+              "department_of_energy"
+            ],
+            [
+              "celera_genomics",
+              "began_sequencing_efforts_in",
+              "1998"
+            ],
+            [
+              "celera_genomics",
+              "used_method",
+              "shotgun_sequencing"
+            ],
+            [
+              "both_efforts",
+              "published_initial_drafts_in",
+              "february_2001"
+            ],
+            [
+              "complete_genome_sequence",
+              "was_declared_finished_in",
+              "april_2003"
+            ],
+            [
+              "human_genome",
+              "contains_approximately",
+              "3_billion_base_pairs"
+            ],
+            [
+              "human_genome",
+              "is_distributed_across",
+              "23_chromosome_pairs"
+            ],
+            [
+              "initial_estimates",
+              "suggested",
+              "100000_genes"
+            ],
+            [
+              "current_estimates",
+              "place_count_at",
+              "approximately_20000_protein_coding_genes"
+            ],
+            [
+              "encyclopedia_of_dna_elements_project",
+              "followed",
+              "human_genome_project"
+            ],
+            [
+              "whole_genome_sequencing_costs",
+              "have_fallen_from",
+              "approximately_3_billion_dollars"
+            ],
+            [
+              "whole_genome_sequencing_costs",
+              "are_under",
+              "1000_dollars_by_2014"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "human_genome_project",
+              "was_launched_in",
+              "1990"
+            ],
+            [
+              "human_genome_project",
+              "was_coordinated_by",
+              "united_states_national_institutes_of_health"
+            ],
+            [
+              "human_genome_project",
+              "was_coordinated_by",
+              "department_of_energy"
+            ],
+            [
+              "celera_genomics",
+              "began_sequencing_efforts_in",
+              "1998"
+            ],
+            [
+              "celera_genomics",
+              "used_method",
+              "shotgun_sequencing"
+            ],
+            [
+              "both_efforts",
+              "published_initial_drafts_in",
+              "february_2001"
+            ],
+            [
+              "complete_genome_sequence",
+              "was_declared_finished_in",
+              "april_2003"
+            ],
+            [
+              "human_genome",
+              "contains_approximately",
+              "3_billion_base_pairs"
+            ],
+            [
+              "human_genome",
+              "is_distributed_across",
+              "23_chromosome_pairs"
+            ],
+            [
+              "initial_estimates",
+              "suggested",
+              "100000_genes"
+            ],
+            [
+              "current_estimates",
+              "place_count_at",
+              "approximately_20000_protein_coding_genes"
+            ],
+            [
+              "encyclopedia_of_dna_elements_project",
+              "followed",
+              "human_genome_project"
+            ],
+            [
+              "whole_genome_sequencing_costs",
+              "have_fallen_from",
+              "approximately_3_billion_dollars"
+            ],
+            [
+              "whole_genome_sequencing_costs",
+              "are_under",
+              "1000_dollars_by_2014"
+            ]
+          ],
+          "narrative_excerpt": "The human_genome_project was_launched_in 1990. The launch of the Human Genome Project marked a significant milestone in genetic research, aiming to map all the genes in the human genome.\n\nThe human_ge",
+          "vocabulary_summary": {
+            "n_source_axioms": 14,
+            "n_unique_subjects": 9,
+            "n_unique_predicates": 13,
+            "n_unique_objects": 14,
+            "n_predicates_with_canonical_padding": 99
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 14,
+          "n_source": 14,
+          "n_reconstructed": 14,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_long_cryptography",
+          "source_axioms": [
+            [
+              "whitfield diffie and martin hellman",
+              "published_first_paper_on",
+              "public-key cryptography in 1976."
+            ],
+            [
+              "whitfield diffie and martin hellman",
+              "proposed",
+              "key exchange without prior shared secrets"
+            ],
+            [
+              "ron rivest, adi shamir, and leonard adleman",
+              "developed",
+              "rsa cryptosystem in 1977"
+            ],
+            [
+              "rsa cryptosystem",
+              "provides",
+              "first practical public-key encryption and signature scheme"
+            ],
+            [
+              "rsa security",
+              "depends_on",
+              "difficulty of factoring large composite numbers"
+            ],
+            [
+              "neal koblitz and victor miller",
+              "proposed_independently",
+              "elliptic curve cryptography in 1985"
+            ],
+            [
+              "elliptic curve cryptography",
+              "offers",
+              "equivalent security with shorter keys"
+            ],
+            [
+              "advanced encryption standard",
+              "was_selected",
+              "in 2001 from the rijndael algorithm"
+            ],
+            [
+              "aes",
+              "became",
+              "united states federal standard for symmetric encryption"
+            ],
+            [
+              "aes",
+              "replaced",
+              "older data encryption standard"
+            ],
+            [
+              "phil zimmermann",
+              "released",
+              "pretty good privacy in 1991"
+            ],
+            [
+              "pretty good privacy",
+              "brought",
+              "public-key cryptography to ordinary computer users"
+            ],
+            [
+              "sha-256 hash function",
+              "was_published_by",
+              "national security agency in 2001"
+            ],
+            [
+              "sha-256 hash function",
+              "is_part_of",
+              "sha-2 family"
+            ],
+            [
+              "quantum computers",
+              "threaten",
+              "current public-key systems through shor's algorithm"
+            ],
+            [
+              "shor's algorithm",
+              "motivates",
+              "ongoing research in post-quantum cryptography"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "whitfield diffie and martin hellman",
+              "published_first_paper_on",
+              "public-key cryptography in 1976."
+            ],
+            [
+              "whitfield diffie and martin hellman",
+              "proposed",
+              "key exchange without prior shared secrets"
+            ],
+            [
+              "ron rivest, adi shamir, and leonard adleman",
+              "developed",
+              "rsa cryptosystem in 1977"
+            ],
+            [
+              "rsa cryptosystem",
+              "provides",
+              "first practical public-key encryption and signature scheme"
+            ],
+            [
+              "rsa security",
+              "depends_on",
+              "difficulty of factoring large composite numbers"
+            ],
+            [
+              "neal koblitz and victor miller",
+              "proposed_independently",
+              "elliptic curve cryptography in 1985"
+            ],
+            [
+              "elliptic curve cryptography",
+              "offers",
+              "equivalent security with shorter keys"
+            ],
+            [
+              "advanced encryption standard",
+              "was_selected",
+              "in 2001 from the rijndael algorithm"
+            ],
+            [
+              "aes",
+              "became",
+              "united states federal standard for symmetric encryption"
+            ],
+            [
+              "aes",
+              "replaced",
+              "older data encryption standard"
+            ],
+            [
+              "phil zimmermann",
+              "released",
+              "pretty good privacy in 1991"
+            ],
+            [
+              "pretty good privacy",
+              "brought",
+              "public-key cryptography to ordinary computer users"
+            ],
+            [
+              "sha-256 hash function",
+              "was_published_by",
+              "national security agency in 2001"
+            ],
+            [
+              "sha-256 hash function",
+              "is_part_of",
+              "sha-2 family"
+            ],
+            [
+              "quantum computers",
+              "threaten",
+              "current public-key systems through shor's algorithm"
+            ],
+            [
+              "shor's algorithm",
+              "motivates",
+              "ongoing research in post-quantum cryptography"
+            ]
+          ],
+          "narrative_excerpt": "The whitfield diffie and martin hellman published_first_paper_on public-key cryptography in 1976. This groundbreaking work laid the foundation for modern cryptography, allowing secure communication ov",
+          "vocabulary_summary": {
+            "n_source_axioms": 16,
+            "n_unique_subjects": 13,
+            "n_unique_predicates": 16,
+            "n_unique_objects": 16,
+            "n_predicates_with_canonical_padding": 102
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 16,
+          "n_source": 16,
+          "n_reconstructed": 16,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_long_industrial_revolution",
+          "source_axioms": [
+            [
+              "industrial_revolution",
+              "began_in",
+              "britain_during_the_late_eighteenth_century"
+            ],
+            [
+              "industrial_revolution",
+              "transformed",
+              "economies_across_europe_and_north_america"
+            ],
+            [
+              "james_watt",
+              "patented",
+              "improved_steam_engine_in_1769"
+            ],
+            [
+              "improved_steam_engine",
+              "increased_efficiency_over",
+              "earlier_designs"
+            ],
+            [
+              "textile_industry",
+              "was_mechanised_through",
+              "inventions_including_spinning_jenny_and_water_frame"
+            ],
+            [
+              "spinning_jenny",
+              "was_invented_by",
+              "james_hargreaves_in_1764"
+            ],
+            [
+              "water_frame",
+              "was_invented_by",
+              "richard_arkwright_in_1769"
+            ],
+            [
+              "edmund_cartwright",
+              "invented",
+              "power_loom_in_1785"
+            ],
+            [
+              "power_loom",
+              "enabled",
+              "automated_weaving"
+            ],
+            [
+              "first_factory_system",
+              "emerged_in",
+              "textile_production"
+            ],
+            [
+              "factory_system",
+              "replaced",
+              "decentralised_cottage_industries"
+            ],
+            [
+              "iron_production",
+              "was_revolutionised_by",
+              "abraham_darby_use_of_coke_in_1709"
+            ],
+            [
+              "iron_production",
+              "was_revolutionised_by",
+              "henry_bessemer_converter_process_patented_in_1856"
+            ],
+            [
+              "stockton_and_darlington_railway",
+              "opened_in",
+              "1825_as_first_public_railway_to_use_steam_locomotives"
+            ],
+            [
+              "liverpool_and_manchester_railway",
+              "began_service_in",
+              "1830"
+            ],
+            [
+              "liverpool_and_manchester_railway",
+              "demonstrated",
+              "commercial_viability_of_railways"
+            ],
+            [
+              "urbanisation",
+              "accelerated",
+              "dramatically_as_workers_migrated_from_rural_areas_to_industrial_cities"
+            ],
+            [
+              "workers",
+              "migrated_from",
+              "rural_areas_to_industrial_cities"
+            ],
+            [
+              "migration_of_workers",
+              "reshaped",
+              "social_structures_across_affected_nations"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "industrial_revolution",
+              "began_in",
+              "britain_during_the_late_eighteenth_century"
+            ],
+            [
+              "industrial_revolution",
+              "transformed",
+              "economies_across_europe_and_north_america"
+            ],
+            [
+              "james_watt",
+              "patented",
+              "improved_steam_engine_in_1769"
+            ],
+            [
+              "improved_steam_engine",
+              "increased_efficiency_over",
+              "earlier_designs"
+            ],
+            [
+              "textile_industry",
+              "was_mechanised_through",
+              "inventions_including_spinning_jenny_and_water_frame"
+            ],
+            [
+              "spinning_jenny",
+              "was_invented_by",
+              "james_hargreaves_in_1764"
+            ],
+            [
+              "water_frame",
+              "was_invented_by",
+              "richard_arkwright_in_1769"
+            ],
+            [
+              "edmund_cartwright",
+              "invented",
+              "power_loom_in_1785"
+            ],
+            [
+              "power_loom",
+              "enabled",
+              "automated_weaving"
+            ],
+            [
+              "first_factory_system",
+              "emerged_in",
+              "textile_production"
+            ],
+            [
+              "factory_system",
+              "replaced",
+              "decentralised_cottage_industries"
+            ],
+            [
+              "iron_production",
+              "was_revolutionised_by",
+              "abraham_darby_use_of_coke_in_1709"
+            ],
+            [
+              "iron_production",
+              "was_revolutionised_by",
+              "henry_bessemer_converter_process_patented_in_1856"
+            ],
+            [
+              "stockton_and_darlington_railway",
+              "opened_in",
+              "1825_as_first_public_railway_to_use_steam_locomotives"
+            ],
+            [
+              "liverpool_and_manchester_railway",
+              "began_service_in",
+              "1830"
+            ],
+            [
+              "liverpool_and_manchester_railway",
+              "demonstrated",
+              "commercial_viability_of_railways"
+            ],
+            [
+              "urbanisation",
+              "accelerated",
+              "dramatically_as_workers_migrated_from_rural_areas_to_industrial_cities"
+            ],
+            [
+              "workers",
+              "migrated_from",
+              "rural_areas_to_industrial_cities"
+            ],
+            [
+              "migration_of_workers",
+              "reshaped",
+              "social_structures_across_affected_nations"
+            ]
+          ],
+          "narrative_excerpt": "The industrial_revolution began_in britain_during_the_late_eighteenth_century. This significant period marked a transition from agrarian economies to industrialized and urban ones. \n\nThe industrial_re",
+          "vocabulary_summary": {
+            "n_source_axioms": 19,
+            "n_unique_subjects": 16,
+            "n_unique_predicates": 17,
+            "n_unique_objects": 19,
+            "n_predicates_with_canonical_padding": 103
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 19,
+          "n_source": 19,
+          "n_reconstructed": 19,
+          "missing": [],
+          "extra": []
+        },
+        {
+          "doc_id": "doc_long_immune_system",
+          "source_axioms": [
+            [
+              "immune_system",
+              "protects_from",
+              "pathogens},{"
+            ],
+            [
+              "innate_immunity",
+              "provides",
+              "immediate_non_specific_defence"
+            ],
+            [
+              "innate_immunity",
+              "includes",
+              "physical_barriers"
+            ],
+            [
+              "innate_immunity",
+              "includes",
+              "phagocytic_cells"
+            ],
+            [
+              "innate_immunity",
+              "includes",
+              "inflammation"
+            ],
+            [
+              "adaptive_immunity",
+              "develops_over_time",
+              "true"
+            ],
+            [
+              "adaptive_immunity",
+              "produces",
+              "highly_specific_responses"
+            ],
+            [
+              "t_cells",
+              "mature_in",
+              "thymus"
+            ],
+            [
+              "t_cells",
+              "recognise",
+              "antigens"
+            ],
+            [
+              "b_cells",
+              "mature_in",
+              "bone_marow"
+            ],
+            [
+              "b_cells",
+              "produce",
+              "antibodies"
+            ],
+            [
+              "antibodies",
+              "target",
+              "extracellular_pathogens"
+            ],
+            [
+              "edward_jenner",
+              "pioneered",
+              "vaccination"
+            ],
+            [
+              "vaccination",
+              "occurred_in",
+              "1796"
+            ],
+            [
+              "cowpox_exposure",
+              "protected_against",
+              "smallpox"
+            ],
+            [
+              "louis_pasteur",
+              "developed",
+              "attenuated_vaccines"
+            ],
+            [
+              "attenuated_vaccines",
+              "target",
+              "rabies"
+            ],
+            [
+              "attenuated_vaccines",
+              "target",
+              "anthrax"
+            ],
+            [
+              "louis_pasteur",
+              "established",
+              "scientific_basis_of_immunisation"
+            ],
+            [
+              "frank_macfarlane_burnet",
+              "proposed",
+              "clonal_selection_theory"
+            ],
+            [
+              "clonal_selection_theory",
+              "explains",
+              "antibody_specificity"
+            ],
+            [
+              "susumu_tonegawa",
+              "elucidated",
+              "genetic_mechanism_of_antibody_diversity"
+            ],
+            [
+              "susumu_tonegawa",
+              "earned",
+              "nobel_prize_for_physiology_or_medicine"
+            ],
+            [
+              "mrna_vaccines_for_covid-19",
+              "received",
+              "emergency_authorisation"
+            ],
+            [
+              "emergency_authorisation",
+              "was_granted_by",
+              "united_states_and_united_kingdom"
+            ],
+            [
+              "emergency_authorisation",
+              "occurred_in",
+              "december_2020"
+            ]
+          ],
+          "reconstructed_axioms": [
+            [
+              "immune_system",
+              "protects_from",
+              "pathogens},{"
+            ],
+            [
+              "innate_immunity",
+              "provides",
+              "immediate_non_specific_defence"
+            ],
+            [
+              "innate_immunity",
+              "includes",
+              "physical_barriers"
+            ],
+            [
+              "innate_immunity",
+              "includes",
+              "phagocytic_cells"
+            ],
+            [
+              "innate_immunity",
+              "includes",
+              "inflammation"
+            ],
+            [
+              "adaptive_immunity",
+              "develops_over_time",
+              "true"
+            ],
+            [
+              "adaptive_immunity",
+              "produces",
+              "highly_specific_responses"
+            ],
+            [
+              "t_cells",
+              "mature_in",
+              "thymus"
+            ],
+            [
+              "t_cells",
+              "recognise",
+              "antigens"
+            ],
+            [
+              "b_cells",
+              "mature_in",
+              "bone_marow"
+            ],
+            [
+              "b_cells",
+              "produce",
+              "antibodies"
+            ],
+            [
+              "antibodies",
+              "target",
+              "extracellular_pathogens"
+            ],
+            [
+              "edward_jenner",
+              "pioneered",
+              "vaccination"
+            ],
+            [
+              "vaccination",
+              "occurred_in",
+              "1796"
+            ],
+            [
+              "cowpox_exposure",
+              "protected_against",
+              "smallpox"
+            ],
+            [
+              "louis_pasteur",
+              "developed",
+              "attenuated_vaccines"
+            ],
+            [
+              "attenuated_vaccines",
+              "target",
+              "rabies"
+            ],
+            [
+              "attenuated_vaccines",
+              "target",
+              "anthrax"
+            ],
+            [
+              "louis_pasteur",
+              "established",
+              "scientific_basis_of_immunisation"
+            ],
+            [
+              "frank_macfarlane_burnet",
+              "proposed",
+              "clonal_selection_theory"
+            ],
+            [
+              "clonal_selection_theory",
+              "explains",
+              "antibody_specificity"
+            ],
+            [
+              "susumu_tonegawa",
+              "elucidated",
+              "genetic_mechanism_of_antibody_diversity"
+            ],
+            [
+              "susumu_tonegawa",
+              "earned",
+              "nobel_prize_for_physiology_or_medicine"
+            ],
+            [
+              "mrna_vaccines_for_covid-19",
+              "received",
+              "emergency_authorisation"
+            ],
+            [
+              "emergency_authorisation",
+              "was_granted_by",
+              "united_states_and_united_kingdom"
+            ],
+            [
+              "emergency_authorisation",
+              "occurred_in",
+              "december_2020"
+            ]
+          ],
+          "narrative_excerpt": "The immune_system protects_from pathogens. The immune system is a complex network of cells and proteins that defends the body against these harmful invaders. \n\nThe innate_immunity provides immediate_n",
+          "vocabulary_summary": {
+            "n_source_axioms": 26,
+            "n_unique_subjects": 16,
+            "n_unique_predicates": 20,
+            "n_unique_objects": 26,
+            "n_predicates_with_canonical_padding": 106
+          },
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "matched": 26,
+          "n_source": 26,
+          "n_reconstructed": 26,
+          "missing": [],
+          "extra": []
+        }
+      ]
+    }
+  ]
+}
