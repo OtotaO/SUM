@@ -4,6 +4,76 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Measured — §2.5 intervention scales to `seed_v2` (difficulty-pattern corpus)
+
+Same combined intervention re-run against `seed_v2` (20 docs,
+7 difficulty parse patterns: apposition, passive voice,
+relative clause, conjunction, negation, hedging, complex PP,
+including multi-fact docs). `gpt-4o-mini-2024-07-18`,
+2026-04-28, ~\$0.12. Receipt at
+`fixtures/bench_receipts/s25_generator_side_seed_v2_2026-04-28.json`.
+
+**Headline:**
+
+| Ablation | drift_pct | recall | docs full recall |
+|---|---:|---:|---:|
+| canonical_first only | 98.92 | 0.5750 | 11 / 20 |
+| constrained_extractor only | 52.08 | 0.8250 | 16 / 20 |
+| **combined** | **5.00** | **0.9750** | **19 / 20** |
+
+**The intervention pattern scales.** Combined goes from
+`seed_v1`'s 1.00 to `seed_v2`'s 0.9750 — a 0.025 absolute drop
+on a corpus that adds difficulty-pattern parses + multi-fact
+docs. The single failing doc (doc_015, "Alice and Bob visited
+Paris.") is **not an intervention failure**: the runner's
+first-pass `_baseline_extract` returned a malformed source
+axiom (`['alice', 'visited', 'paris},{']`); the combined
+ablation correctly preserved the corrupted source through
+the round-trip. The fail-mode is an LLM extraction artifact
+on the source pass, not the intervention.
+
+**Per-ablation shape inverts vs seed_v1.** On `seed_v2`,
+constrained_extractor alone (0.8250) beats canonical_first
+alone (0.5750), where on `seed_v1` they were nearly identical
+(0.62 vs 0.60). The reason is corpus predicate form: seed_v2
+predicates are mostly already lemmas (`win`, `emit`, `orbit`,
+`visit`), so lemma-exclusion has less work to do and the LLM
+naturally selects the source form. Conversely, seed_v1
+predicates are mostly inflected (`proposed`, `contains`,
+`discovered`), so the canonical-first generator prompt
+carries the work there. Different corpora, different layers
+earn their keep — but **combined wins decisively on both**.
+
+**Boundary:** the §2.5 closure now covers single-fact SVO
+(seed_v1) and 20-doc difficulty-corpus (seed_v2) shapes.
+`seed_long_paragraphs.json` (16 hand-authored multi-paragraph
+docs, 9–24 triples each) remains unmeasured under the
+intervention. The seed_v2 result establishes the intervention
+pattern is **structurally right** across difficulty-pattern
+variation; whether it holds on multi-paragraph multi-fact
+docs is the next measurement when budget allows.
+
+`PROOF_BOUNDARY.md` §2.5 gains a "Scaling check on `seed_v2`"
+subsection with the new ablation table and the per-ablation-
+shape-inversion finding. §6 progress-table row updated to
+"Closed on `seed_v1`; scales to `seed_v2`" with both
+measurements named.
+
+This receipt completes the §2.5 attack arc with five stacked
+receipts:
+
+  1. sum.llm_roundtrip.v1 (2026-04-19) — original 107.75 / 0.12
+  2. sum.s25_canonicalization_replay.v1 — falsification, ceiling 0.18
+  3. sum.s25_generator_side.v1 — generator-side, recall 0.90
+  4. sum.s25_residual_closure (lemma-exclusion) — saturation on seed_v1, recall 1.00
+  5. sum.s25_generator_side_seed_v2.v1 — scaling check, recall 0.9750 on harder corpus
+
+Each receipt was the reference baseline for the next. The
+intervention pattern (canonical-first generator + constrained-
+decoding extractor + lemma-exclusion of source-predicate
+lemmas from canonical-padding) is the load-bearing engineering
+finding of this arc.
+
 ### Measured — §2.5 fully closed on `seed_v1` after lemma-exclusion residual fix
 
 Live re-run against the same `seed_v1` corpus (50 docs,
