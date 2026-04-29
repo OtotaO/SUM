@@ -4,6 +4,80 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### §2.5 frontier-LLM refresh — Claude Opus 4.7 (closure pattern transfers)
+
+The §2.5 LLM round-trip closure was originally locked at recall ≥ 0.97
+on `gpt-4o-mini-2024-07-18` (Jul 2024). With Anthropic Claude Opus 4.7
+(Apr 2026) shipping, the question became whether the
+canonical-first-generator + constrained-extractor pattern is model-
+specific or model-independent. Re-measured against Opus 4.7 across
+the same 50-doc seed_v1 corpus:
+
+  | Ablation                | Drift %  | Recall   | Full-recall |
+  | ----------------------- | -------- | -------- | ----------- |
+  | canonical_first only    | 94.70    | 0.9600   | 48/50       |
+  | constrained_extractor   | 9.33     | 0.9600   | 48/50       |
+  | **combined**            | **0.00** | **1.0000** | **50/50**  |
+
+Headline: the **combined ablation hit perfect 50/50 full-recall and
+0.00 drift on Claude Opus 4.7** — strictly stronger than the
+gpt-4o-mini result (which already locked the closure at recall 0.97+).
+The intervention pattern is model-independent across the OpenAI ↔
+Anthropic frontier as of 2026-04-29.
+
+Receipt:
+`fixtures/bench_receipts/s25_frontier_models_2026-04-29_opus.json`
+(schema family `sum.s25_generator_side.v1`, provider `anthropic`,
+50 docs × 3 ablations).
+
+To make the bench vendor-agnostic, this release ships:
+
+  - `sum_engine_internal/ensemble/llm_dispatch.py`: `OpenAIAdapter`
+    and `AnthropicAdapter` behind a single `LLMAdapter` surface
+    (`parse_structured`, `generate_text`). `get_adapter(model_id)`
+    routes by prefix (`gpt-`/`o1-`/`o3-`/`o4-` → OpenAI;
+    `claude-` → Anthropic; unknown → `ValueError`, never silently
+    misroute).
+
+  - Pydantic → Anthropic bridge: `model_json_schema()` becomes the
+    Anthropic tool's `input_schema` with `$defs`/`$ref` inlined;
+    `tool_choice` forces the model to emit a `tool_use` block whose
+    `input` round-trips through `schema.model_validate(...)`.
+
+  - The §2.5 generator-side runner refactored to take an `adapter`
+    instead of a `(client, model)` pair. The four call helpers
+    (`_baseline_extract`, `_constrained_extract`, `_baseline_generate`,
+    `_canonical_first_generate`) call uniform adapter methods. The
+    runner's `S25CallTimeoutError` path is preserved by a thin shim
+    that converts the dispatcher's `LLMCallTimeoutError` back so the
+    per-doc-skip + receipt aggregate paths keep working without
+    changes.
+
+  - New optional extra `[anthropic] = ["anthropic>=0.97.0",
+    "pydantic>=2.0.0"]`. Both `[llm]` (OpenAI) and `[anthropic]` may
+    coexist; users only install the one matching the model id they
+    target.
+
+  - Per-call timeout discipline preserved end-to-end: dispatcher
+    wraps each SDK call in `asyncio.wait_for`; on timeout, raises
+    `LLMCallTimeoutError`; runner converts to `S25CallTimeoutError`;
+    `run_doc` records `error_class: "timeout"` and the aggregate
+    excludes the timed-out doc from means.
+
+  - `scripts/bench/runners/s25_anthropic_smoke.py`: a one-doc
+    (~$0.005, ~30s) smoke that validates dispatcher routing +
+    tool-use round-trip + narrative generation end-to-end on the
+    live API before committing to the full bench. Used to verify
+    wiring before the receipt above was minted.
+
+Tests: `Tests/test_llm_dispatch.py` (13 unit tests with mocked SDK,
+no spend) + `Tests/test_s25_runner_timeout.py` updated to mock the
+new adapter surface. 35 tests green across the dispatch +
+intervention surface.
+
+This closes the §2.5-LLM-refresh item that the 2026-04-29 external-
+awareness checkpoint added to the queue.
+
 ### Added — repo manifest publisher (single source of truth for cross-channel state)
 
 Closes the cross-channel-drift problem the SUMequities portfolio audit

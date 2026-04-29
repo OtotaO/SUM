@@ -1074,13 +1074,27 @@ Expected: `3 passed`.
 Verify: `pytest Tests/test_self_attestation.py -q && python -m scripts.attest_repo_docs --check`
 Expected: `7 passed`; `meta/self_attestation.* current (5 docs, stable-fields match)`.
 
+### 134. Vendor-agnostic LLM dispatcher + Anthropic adapter ✅
+
+`sum_engine_internal/ensemble/llm_dispatch.py` — uniform `LLMAdapter` surface (`parse_structured`, `generate_text`) with `OpenAIAdapter` and `AnthropicAdapter` implementations. `get_adapter(model_id)` routes by prefix (`gpt-`/`o1-`/`o3-`/`o4-` → OpenAI; `claude-` → Anthropic; unknown → `ValueError`, no silent misrouting). Pydantic → Anthropic schema bridge converts `model_json_schema()` to the tool's `input_schema` with `$defs`/`$ref` inlined; `tool_choice` forces structured emission and `tool_use.input` round-trips through `schema.model_validate(...)`. Per-call timeout enforced via `asyncio.wait_for`; surfaces `LLMCallTimeoutError` consistently across providers. New optional extra `[anthropic] = ["anthropic>=0.97.0"]`.
+
+Verify: `pytest Tests/test_llm_dispatch.py -q`
+Expected: `13 passed` — model-id dispatch parametrized (7 cases), explicit-refusal on unknown prefix, Pydantic→Anthropic schema bridge inlines `$defs`, AnthropicAdapter parse_structured extracts tool_use input, returns None on invalid payload, generate_text concatenates text blocks, timeout raises `LLMCallTimeoutError`. Mocked SDK; no API spend in tests.
+
+### 135. §2.5 frontier-LLM refresh receipt (Claude Opus 4.7) ✅
+
+`fixtures/bench_receipts/s25_frontier_models_2026-04-29_opus.json` — the §2.5 generator-side ablation pattern (canonical-first generator + constrained extractor) re-measured against Anthropic Claude Opus 4.7 on the seed_v1 corpus (50 docs × 3 ablations). The combined ablation hit **50/50 full recall, 0.00% drift** — strictly stronger than the gpt-4o-mini-2024-07-18 baseline that originally locked the closure at recall ≥ 0.97. Closes the question of whether the intervention pattern is model-specific (it is not — model-independent across the OpenAI ↔ Anthropic frontier). Same `sum.s25_generator_side.v1` schema family the gpt-4o-mini receipts use, with a `provider: "anthropic"` field added in this release for cross-vendor comparison.
+
+Verify: `python -c "import json; r=json.load(open('fixtures/bench_receipts/s25_frontier_models_2026-04-29_opus.json')); [print(f'{a[\"ablation\"]}: drift={a[\"aggregate\"][\"drift_pct_mean\"]:.2f} recall={a[\"aggregate\"][\"exact_match_recall_mean\"]:.4f} full={a[\"aggregate\"][\"n_docs_full_recall\"]}/{a[\"aggregate\"][\"n_docs_measured\"]}') for a in r['ablations']]"`
+Expected: `combined: drift=0.00 recall=1.0000 full=50/50`.
+
 ---
 
 ## Summary counts
 
-Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **133**.
+Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **135**.
 
-- **Production ✅: 119 features** — tested green; each has a verification command in its entry.
+- **Production ✅: 121 features** — tested green; each has a verification command in its entry.
 - **Scaffolded 🔧: 13 features** — tests pass, production activation pending. All catalogued in `docs/MODULE_AUDIT.md` with activation checklists.
 - **Designed 📄: 1 feature** (sha256_128_v2 default-promotion; cross-runtime byte-identity locked, default-flip is a separate operator decision).
 
