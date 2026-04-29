@@ -33,6 +33,76 @@ The doc-pass cycle completes the truthfulness re-anchor: README + CLAUDE.md (PR 
 
 ---
 
+## External-awareness checkpoint (2026-04-29)
+
+A focused audit of relevant external developments since SUM's
+current substrate decisions. Each item is sized for one cycle
+and orthogonal to the others.
+
+### 🔎 §2.5 LLM-refresh measurement (high leverage, ~$1–3 budget)
+
+The §2.5 round-trip closure is locked at recall ≥ 0.97 across
+three corpora using `gpt-4o-mini-2024-07-18` (Jul 2024). Two
+frontier LLMs have shipped since then — **Anthropic Claude Opus
+4.7** (16 Apr 2026) and **OpenAI GPT-5.5** (23 Apr 2026). The
+intervention pattern (canonical-first generator + constrained-
+decoding extractor + lemma-exclusion) is *probably* model-
+independent; the hypothesis remains unmeasured on frontier models.
+
+**Action:** add Anthropic SDK support to
+`scripts/bench/runners/s25_generator_side.py` (it currently calls
+OpenAI only); re-run combined ablation on `seed_v1` + `seed_long`
+under both new models; ship a `sum.s25_frontier_models_2026.v1`
+receipt. Budget ~$1–3 of API spend (frontier model token rates are
+~3–5× gpt-4o-mini).
+
+### 🔎 Sigstore-signed PyPI uploads (medium leverage, no budget)
+
+The `sigstore` PyPI package is now Production/Stable; PyPI accepts
+Sigstore in-toto attestations; cosign v3 shipped; no 2026
+incidents. The "Sigstore signing of release artifacts"
+hardening-backlog item moves from "wait for maturity" to
+"ship it."
+
+**Action:** add a `sigstore sign` step to `.github/workflows/
+publish-pypi.yml` gated on the GitHub OIDC token; emit a Sigstore
+in-toto attestation alongside the PyPI provenance. Closes
+threat-model row "supply-chain compromise" with a stronger
+guarantee than "trust the GitHub Trusted Publisher."
+
+### 🔎 MCP discovery shim (low leverage, no budget)
+
+MCP next spec drop is **June 2026**; SEP-1649
+(`.well-known/mcp/server-card.json`) is broadly adopted but not
+yet merged. SUM's `sum-mcp` is stdio-only today; an HTTP-MCP
+variant remains deliberately deferred (auth design hasn't
+landed). Worth adding the `.well-known/mcp/server-card.json`
+shim to the Worker so when an HTTP-MCP variant ships the
+discovery URL is conventional.
+
+**Action:** small Worker route under `worker/src/routes/`
+returning the canonical server-card JSON. Track
+SEP-1649 / SEP-1960 progress through June 2026.
+
+### Other external-audit findings (no action needed today)
+
+* **C2PA `digital_source_type`** — taxonomy values unchanged
+  through C2PA 2.4. SUM's `trainedAlgorithmicMedia` and
+  `algorithmicMedia` mappings remain authoritative; documented as
+  deliberate text-on-image-taxonomy mapping in
+  `docs/RENDER_RECEIPT_FORMAT.md` §7.
+* **PQC / Ed25519 / SHA-256 framing** — NIST SP 800-131A r3
+  keeps SHA-256 fully approved through 2030; the 2030 deprecation
+  target is RSA/ECDSA, not Ed25519 explicitly. No code change
+  today; tracking note: Ed25519 will eventually need a hybrid PQC
+  partner (likely ML-DSA) ahead of 2030.
+* **W3C VC 2.0 / Data Integrity 1.1** — `eddsa-jcs-2022`
+  interop tests re-ran 22 Feb 2026 and pass. Data Integrity 1.1's
+  Render Method targets REC in Sept 2026; once it lands, evaluate
+  emitting it alongside the existing detached-JWS receipt.
+
+---
+
 ## Closed since the previous playbook revision
 
 ### ✅ Priority 1 — Cross-runtime adversarial rejection matrix

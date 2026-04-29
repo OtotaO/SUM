@@ -4,6 +4,64 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### External-awareness pass — track relevant 2026-04 developments
+
+A focused audit of external developments since the current
+substrate decisions. Each finding is recorded in
+`docs/NEXT_SESSION_PLAYBOOK.md` under a new
+"External-awareness checkpoint (2026-04-29)" section.
+
+**Three items added to the queue:**
+
+1. **§2.5 LLM-refresh measurement (high-leverage, ~$1–3
+   budget).** SUM's §2.5 round-trip closure is locked at recall
+   ≥ 0.97 across three corpora using `gpt-4o-mini-2024-07-18`
+   (Jul 2024). Two frontier LLMs have shipped since — Anthropic
+   **Claude Opus 4.7** (16 Apr 2026) and OpenAI **GPT-5.5** (23
+   Apr 2026). The intervention pattern is *probably* model-
+   independent but unmeasured on frontier models. Re-run + ship
+   a `sum.s25_frontier_models_2026.v1` receipt; requires
+   Anthropic SDK support in the runner (currently OpenAI-only).
+
+2. **Sigstore-signed PyPI uploads (medium-leverage, no
+   budget).** The `sigstore` PyPI package is now
+   Production/Stable; cosign v3 shipped; PyPI accepts in-toto
+   Sigstore attestations. The "wait for maturity" gate on
+   ship-it has lifted. Add `sigstore sign` step to
+   `publish-pypi.yml` gated on GitHub OIDC.
+
+3. **MCP discovery shim (low-leverage, no budget).** MCP next
+   spec drop is June 2026; SEP-1649
+   (`.well-known/mcp/server-card.json`) is broadly adopted.
+   SUM's `sum-mcp` stays stdio-only (HTTP-MCP deferred until
+   auth design); the discovery shim is forward-compat
+   plumbing for when HTTP-MCP eventually ships.
+
+**Three items audited and confirmed no action needed:**
+
+* **C2PA `digital_source_type`** — taxonomy unchanged across
+  C2PA 2.2 → 2.4. SUM's `trainedAlgorithmicMedia` /
+  `algorithmicMedia` mappings remain authoritative.
+  `docs/RENDER_RECEIPT_FORMAT.md` §7 updated with explicit
+  documentation of the deliberate text-on-image-taxonomy
+  mapping (no formal text-content profile exists in C2PA 2.x;
+  if one ships later, SUM will mint a new field rather than
+  overload the existing one per `COMPATIBILITY_POLICY.md`).
+* **PQC / Ed25519 / SHA-256** — NIST SP 800-131A r3 keeps
+  SHA-256 approved; 2030 deprecation target is RSA/ECDSA,
+  not Ed25519 explicitly. Tracking note added; no code
+  change today.
+* **W3C VC 2.0 / Data Integrity 1.1** — `eddsa-jcs-2022`
+  interop tests re-ran 22 Feb 2026 and pass. Render Method
+  REC targets Sept 2026; evaluate emission alongside the
+  existing receipt when it lands.
+
+This is the first deliberate "process intensification"
+external-awareness checkpoint. Future cycles should run this
+audit at the start of each session-block (every ~15 PRs or
+monthly, whichever comes first) to keep substrate decisions
+informed without drift.
+
 ### Doc-channel congruency pass — align surfaces with current shipping state
 
 Following an external audit of cross-channel claims (the
