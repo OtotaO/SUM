@@ -483,6 +483,22 @@ def cmd_verify(args: argparse.Namespace) -> int:
         )
         return 1
 
+    # Extraction provenance — closes the THREAT_MODEL.md §3.3
+    # "signed ≠ true" visibility gap. The signature proves the
+    # canonical tome maps to the state integer; it does NOT prove
+    # the axioms are factually correct, and it does NOT prove
+    # re-extraction would be reproducible. Surfacing the extractor
+    # as a first-class verify-output field lets a downstream
+    # consumer branch on `extraction.verifiable` without parsing
+    # the sum_cli sidecar by hand.
+    sidecar = bundle.get("sum_cli") if isinstance(bundle.get("sum_cli"), dict) else None
+    extractor = sidecar.get("extractor") if sidecar else None
+    extraction = {
+        "extractor": extractor,                      # "sieve" | "llm" | None
+        "verifiable": extractor == "sieve",          # deterministic re-extraction
+        "source": "sum_cli sidecar" if sidecar else "absent",
+    }
+
     # Machine-readable success payload on stdout; human message on stderr.
     result = {
         "ok": True,
@@ -491,10 +507,14 @@ def cmd_verify(args: argparse.Namespace) -> int:
         "branch": bundle.get("branch", "main"),
         "bundle_version": bundle.get("bundle_version", "unknown"),
         "signatures": {"hmac": hmac_status, "ed25519": ed25519_status},
+        "extraction": extraction,
     }
     json.dump(result, sys.stdout, indent=2 if args.pretty else None)
     sys.stdout.write("\n")
     marks = f"hmac={hmac_status}, ed25519={ed25519_status}"
+    if extractor:
+        verif = "verifiable" if extraction["verifiable"] else "advisory"
+        marks += f", extractor={extractor} ({verif})"
     print(
         f"sum: ✓ verified {axioms} axiom(s), state integer matches ({marks})",
         file=sys.stderr,
