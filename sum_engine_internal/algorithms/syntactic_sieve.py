@@ -57,6 +57,76 @@ HEDGE_FLOOR = 0.20  # minimum confidence from hedging alone
 _FALLBACK_CONTENT_POS = frozenset({"NOUN", "PROPN", "VERB", "ADJ"})
 
 
+# ─── Noise filter ─────────────────────────────────────────────────────
+#
+# The dependency parser was trained on prose. When fed markdown, code
+# fences, table cells, or YAML/TOML blocks, it cheerfully extracts
+# triples like ('|', 'close', 'this') (table-cell pipe), ('#', 'license',
+# 'apache') (heading hash), or ('proof_boundary.md`](docs', 'be',
+# 'arbiter') (link-residue) — all real captures from running on
+# README.md. These triples encode no semantic content and break the
+# canonical-tome round-trip in the algebra layer (the '||' axiom-key
+# separator gets corrupted by stray '|' characters in components,
+# yielding empty fields after split).
+#
+# The right filter point is here, at the extraction boundary: noise
+# never enters the pipeline. The algebra layer keeps a defensive
+# backstop (sum_engine_internal.algorithms.semantic_arithmetic) for
+# inputs from non-sieve extractors, but for sieve outputs this filter
+# fires first.
+#
+# Heuristics chosen to be conservative — drop only what's clearly
+# syntactic noise. Single ASCII letters, short numerics, alphanum-
+# only punctuation-free strings are kept; legitimate facts like
+# ('alice', 'has', '3 cats') survive even though '3' alone wouldn't.
+
+_NOISE_PUNCT_CHARS = frozenset("|\\`*<>[]{}()=/")  # markdown / code / table noise
+
+# Tokens that signal the component is a path/URL/file reference rather
+# than a semantic entity. Substring match — generous on purpose.
+_PATH_LIKE_NEEDLES = ("://", ".md", ".py", ".js", ".json", "](", "**(", "**[")
+
+
+def _is_noise_component(s: str) -> bool:
+    """Return True if *s* is syntactic noise that should not enter
+    the extracted-triple bag.
+
+    Reject conditions (all evaluated on the stripped form):
+
+      - Empty / whitespace-only.
+      - Single character that isn't a multi-letter abbreviation
+        (catches stray '#', '*', '\\', '|', '§', '✓', and bare digits).
+      - Contains any of ``_NOISE_PUNCT_CHARS`` (table pipe, code
+        backtick, footnote asterisk, link bracket, etc.).
+      - Contains a path/URL needle from ``_PATH_LIKE_NEEDLES``.
+      - No alphanumeric character at all (pure punctuation).
+    """
+    s = s.strip()
+    if not s:
+        return True
+    if len(s) <= 1:
+        return True
+    if any(c in _NOISE_PUNCT_CHARS for c in s):
+        return True
+    s_lower = s.lower()
+    if any(needle in s_lower for needle in _PATH_LIKE_NEEDLES):
+        return True
+    if not any(c.isalnum() for c in s):
+        return True
+    return False
+
+
+def _is_clean_triple(triple: Tuple[str, str, str]) -> bool:
+    """Triple-level filter: every component must pass
+    ``_is_noise_component`` (negated)."""
+    s, p, o = triple
+    return not (
+        _is_noise_component(s)
+        or _is_noise_component(p)
+        or _is_noise_component(o)
+    )
+
+
 def _is_negated(sent) -> bool:
     """Return True iff the sentence contains a negation particle scoping the
     main predication.
@@ -323,17 +393,22 @@ class DeterministicSieve:
         then extracts its nominal subject and direct/prepositional
         object, including adjectival and compound modifiers.
 
+        Triples whose components contain markdown/code/table syntactic
+        noise (pipe characters, single-character punctuation, link
+        residue, path-like substrings) are dropped at this boundary.
+        See ``_is_noise_component`` for the filter rules.
+
         Args:
             text: Raw text to parse.
 
         Returns:
-            Deduplicated list of (subject, predicate, object) tuples.
+            Deduplicated list of clean (subject, predicate, object) tuples.
         """
         doc = self.nlp(text)
         triplets = []
         for sent in doc.sents:
             triple = _extract_from_sent(sent)
-            if triple is not None:
+            if triple is not None and _is_clean_triple(triple):
                 triplets.append(triple)
         return list(set(triplets))  # Deduplicate
 
@@ -372,7 +447,7 @@ class DeterministicSieve:
         out: List[Tuple[Tuple[str, str, str], ProvenanceRecord]] = []
         for sent in doc.sents:
             triple = _extract_from_sent(sent)
-            if triple is None:
+            if triple is None or not _is_clean_triple(triple):
                 continue
             # spaCy's sent.start_char / end_char are character offsets in
             # the original text; convert to byte offsets in the UTF-8
