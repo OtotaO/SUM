@@ -23,11 +23,23 @@ Output artifacts (committed to the repo, refreshed by CI):
     downstream consumers route at the path/URI level without
     parsing every bundle.
 
-Drift gate (``--check``): re-runs the attestation in memory,
-strips wall-clock fields, and compares to the on-disk artifacts.
-Exits non-zero if any doc's content has changed without the self-
-attestation being refreshed. Same mechanism as
-``scripts/repo_manifest.py``.
+Drift gate (``--check``): compares the SOURCE URIs (sha256 of
+each canonical doc's bytes) recorded in
+``meta/self_attestation.summary.json`` against the doc bytes at
+HEAD. If they match, the on-disk bundles are still attesting the
+same byte content and are current. Exits non-zero with the path
+of the drifted doc and a refresh recipe otherwise.
+
+Why source URIs and not bundle byte-equality:
+``en_core_web_sm`` (spaCy's small English model) is not promised
+byte-deterministic across Python minor versions or its own patch
+releases — two different environments can mint two different
+(but each internally round-trip-valid) bundles for the same doc
+bytes. The *internal* round-trip — every committed bundle passes
+``sum verify`` — is checked separately by
+``Tests/test_self_attestation.py``. The drift gate's job here is
+narrower: catch "doc edited; self-attestation forgotten,"
+which is exactly the source-URI comparison.
 
 Usage::
 
@@ -229,48 +241,84 @@ def main() -> int:
             )
             return 2
 
-        # Load on-disk
-        on_disk_jsonl = OUT_JSONL.read_text(encoding="utf-8")
+        # Drift-gate semantics: compare the SOURCE URIs (sha256 of
+        # each doc's bytes) on-disk vs at HEAD. If they match, the
+        # bundles are still attesting the same byte content and are
+        # therefore current. We deliberately do NOT compare bundle
+        # ``state_integer`` byte-for-byte: spaCy's ``en_core_web_sm``
+        # is not promised byte-deterministic across Python minor
+        # versions or its own patch versions, so two different
+        # environments can mint two different (but each internally
+        # round-trip-valid) bundles for the same doc bytes. The
+        # *internal* round-trip is verified separately by
+        # ``Tests/test_self_attestation.py::test_every_self_attestation_bundle_verifies``
+        # which runs ``sum verify`` against every committed bundle.
         on_disk_summary = json.loads(OUT_SUMMARY.read_text(encoding="utf-8"))
+        on_disk_uris = {
+            entry["path"]: entry["source_uri"]
+            for entry in on_disk_summary["docs"]
+        }
 
-        # Rebuild
-        fresh_bundles, fresh_summary = build_self_attestation()
+        # Compute current source URIs without invoking the extractor —
+        # cheap, deterministic across all environments.
+        head_uris: dict[str, str] = {}
+        for rel_path in CANONICAL_DOCS:
+            abs_path = REPO_ROOT / rel_path
+            if not abs_path.exists():
+                print(
+                    f"self-attest: missing canonical doc at HEAD: {rel_path}",
+                    file=sys.stderr,
+                )
+                return 1
+            head_uris[rel_path] = (
+                "sha256:" + hashlib.sha256(abs_path.read_bytes()).hexdigest()
+            )
 
-        # Compare bundles (stable view)
-        on_disk_stable = _stable_jsonl(on_disk_jsonl)
-        fresh_stable = [_stable_bundle_view(b) for b in fresh_bundles]
-        if on_disk_stable != fresh_stable:
+        drifted: list[str] = []
+        for path, head_uri in head_uris.items():
+            if on_disk_uris.get(path) != head_uri:
+                drifted.append(path)
+
+        # Detect added or removed canonical docs (catalog edits).
+        on_disk_paths = set(on_disk_uris)
+        head_paths = set(head_uris)
+        added = sorted(head_paths - on_disk_paths)
+        removed = sorted(on_disk_paths - head_paths)
+
+        if drifted or added or removed:
             print(
-                "SELF-ATTESTATION DRIFT: bundles changed without refresh.\n"
+                "SELF-ATTESTATION DRIFT: doc bytes changed without "
+                "refreshing meta/self_attestation.*\n"
                 "Refresh: python -m scripts.attest_repo_docs",
                 file=sys.stderr,
             )
-            # Surface which doc(s) drifted
-            for old, new in zip(on_disk_stable, fresh_stable):
-                if old != new:
-                    path = (new.get("sum_cli") or {}).get("source_path", "?")
-                    old_state = old.get("state_integer", "?")[:16] + "…"
-                    new_state = new.get("state_integer", "?")[:16] + "…"
-                    print(
-                        f"  {path}: state {old_state} → {new_state}",
-                        file=sys.stderr,
-                    )
+            for path in drifted:
+                old_uri = on_disk_uris[path][:24] + "…"
+                new_uri = head_uris[path][:24] + "…"
+                print(f"  {path}: source_uri {old_uri} → {new_uri}", file=sys.stderr)
+            for path in added:
+                print(f"  added: {path}", file=sys.stderr)
+            for path in removed:
+                print(f"  removed: {path}", file=sys.stderr)
             return 1
 
-        # Compare summary (excluding issued_at)
-        on_disk_summary_stable = {k: v for k, v in on_disk_summary.items() if k != "issued_at"}
-        fresh_summary_stable = {k: v for k, v in fresh_summary.items() if k != "issued_at"}
-        if on_disk_summary_stable != fresh_summary_stable:
+        # Sanity: also verify the on-disk JSONL parses + has one
+        # bundle per summary entry. Cheap, catches partial writes.
+        n_lines = sum(
+            1 for ln in OUT_JSONL.read_text(encoding="utf-8").splitlines() if ln.strip()
+        )
+        if n_lines != len(on_disk_summary["docs"]):
             print(
-                "SELF-ATTESTATION DRIFT: summary index changed without refresh.\n"
-                "Refresh: python -m scripts.attest_repo_docs",
+                f"SELF-ATTESTATION DRIFT: summary lists {len(on_disk_summary['docs'])} "
+                f"docs but JSONL has {n_lines} lines.\n"
+                f"Refresh: python -m scripts.attest_repo_docs",
                 file=sys.stderr,
             )
             return 1
 
         print(
             f"self-attest: meta/self_attestation.* current "
-            f"({len(fresh_bundles)} docs, stable-fields match)",
+            f"({len(head_uris)} docs, source URIs match)",
             file=sys.stderr,
         )
         return 0
