@@ -4,6 +4,78 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Added — `sum verify` surfaces extraction provenance (closes THREAT_MODEL §3.3 visibility gap)
+
+The signature on a CanonicalBundle proves the canonical tome
+maps to the state integer + the issuer signed this exact
+content. It does NOT prove the axioms are factually correct,
+and it does NOT prove that re-extracting from the source
+prose would produce the same axioms.
+
+`docs/THREAT_MODEL.md` §3.3 documents this gap as the
+"signed ≠ true" residual risk. The information needed to
+distinguish reproducible (sieve-extracted) from advisory
+(LLM-extracted) bundles already lives in the `sum_cli`
+sidecar — but `sum verify` did not surface it.
+
+This change adds an `extraction` block to the verifier's
+JSON output:
+
+```json
+{
+  "ok": true,
+  "axioms": 2,
+  "signatures": {"hmac": "verified", "ed25519": "absent"},
+  "extraction": {
+    "extractor": "sieve",
+    "verifiable": true,
+    "source": "sum_cli sidecar"
+  }
+}
+```
+
+The `verifiable` boolean is the load-bearing affordance.
+True iff `extractor == "sieve"` (deterministic
+re-extraction); false for `extractor == "llm"` (stochastic)
+and for bundles with no sidecar (fail-closed — verifier
+does not assume reproducibility in the absence of provenance).
+
+Downstream consumers can now branch with one line:
+
+```bash
+sum verify --input bundle.json | jq -e '.extraction.verifiable'
+```
+
+The human-readable stderr line also names the extractor:
+
+    sum: ✓ verified 2 axiom(s), state integer matches
+         (hmac=verified, ed25519=absent, extractor=sieve (verifiable))
+
+**Test coverage:** 5 tests in
+`Tests/test_verify_extraction_visibility.py`:
+
+- Sieve-attested bundle reports `verifiable: true`.
+- Bundle without sidecar reports `verifiable: false` /
+  `source: "absent"` (fail-closed).
+- LLM-sidecar bundle reports `verifiable: false`.
+- Stderr human-readable line names the extractor.
+- Documentation test ties this surface to the THREAT_MODEL
+  §3.3 row that motivated it.
+
+**What this is not.** This is not novel cryptography or
+new science. It is small CLI ergonomics that closes a
+documented threat-model visibility gap. The novelty in SUM
+remains the cross-runtime trust triangle, the §2.5 closure
+pattern, and the render-receipt format; this change is
+plumbing for a downstream-consumer ergonomic affordance.
+
+**What this is.** A 30-LOC CLI fix + 5 tests that lets a
+compliance-audit tool gate on bundle reproducibility with
+one line. Closes a long-standing threat-model side issue
+without a schema change (the field is verifier-output-only;
+the bundle schema is unchanged, so existing bundles continue
+to verify identically).
+
 ### Added — threat-model executable traceability test suite
 
 `docs/THREAT_MODEL.md` §4 (Attack Surface Summary) names every
