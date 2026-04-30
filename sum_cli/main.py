@@ -48,7 +48,14 @@ def _pick_extractor(override: Optional[str] = None) -> str:
 
     Rules:
       1. If --extractor is given, honor it (fail fast if deps missing).
-      2. If spaCy + en_core_web_sm are importable, prefer 'sieve' (offline).
+      2. If spaCy is importable, prefer 'sieve' (offline). The probe
+         constructs ``DeterministicSieve()`` which auto-downloads
+         ``en_core_web_sm`` on first run if missing — surfaces the
+         download as a one-line stderr announcement, then proceeds.
+         Direct ``spacy.load`` would NOT trigger the auto-download
+         and would silently fall through, which broke cold-install
+         onboarding (PyPI install → first ``sum attest`` → "no
+         extractor available" even though [sieve] was just installed).
       3. If OPENAI_API_KEY is set, use 'llm' (network-dependent).
       4. Otherwise, fail with a helpful install hint.
     """
@@ -56,7 +63,12 @@ def _pick_extractor(override: Optional[str] = None) -> str:
         return override
     try:
         import spacy  # noqa: F401 — availability check only
-        spacy.load("en_core_web_sm")
+        # Construct the sieve so its OSError-catching auto-downloader
+        # fires when en_core_web_sm is absent. The sieve instance is
+        # discarded; ``cmd_attest`` will reconstruct it. Cheap because
+        # spaCy caches the loaded model in-process.
+        from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
+        DeterministicSieve()
         return "sieve"
     except Exception:
         pass

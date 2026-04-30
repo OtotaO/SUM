@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-04-29T15:32:05Z",
+  "issued_at": "2026-04-30T04:36:46Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "cdbb4ebe3ff0437358897cb30d95bf1400bec2a4",
-    "head_short": "cdbb4eb",
-    "head_subject": "\u00a72.5 frontier-LLM refresh: GPT-5.5 (cross-vendor closure complete) (#93)",
-    "head_committer_date": "2026-04-29T11:25:33-04:00",
+    "head_sha": "ac5ea6bb5275b3de154232e001e7017de8620f7f",
+    "head_short": "ac5ea6b",
+    "head_subject": "attest-batch: --dedup-threshold via MinHash near-duplicate skip (#94)",
+    "head_committer_date": "2026-04-29T11:38:02-04:00",
     "commits_last_30d": null
   },
   "github": {
