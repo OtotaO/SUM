@@ -4,6 +4,39 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Onboarding fix — cold-install ``sum attest`` now works in 60 seconds
+
+Empirical audit on a fresh venv surfaced that the README's
+"Verify it yourself in 60 seconds" pitch did not actually work:
+
+  $ pip install 'sum-engine[sieve]'      # 15s, fine
+  $ echo "..." | sum attest
+  sum: no extractor available. [...]
+  $ echo $?
+  1
+
+Despite ``[sieve]`` having just installed spaCy, the default
+``sum attest`` errored out. Root cause: ``_pick_extractor``
+probed sieve availability via ``spacy.load("en_core_web_sm")``
+which raises ``OSError`` when the model is absent. The exception
+was caught broadly and the probe fell through to the LLM check,
+then to ``SystemExit`` — never giving the sieve constructor's
+auto-download fallback a chance to fire.
+
+One-line fix: probe via ``DeterministicSieve()`` so its OSError-
+catching auto-downloader runs. Same UX as ``--extractor sieve``
+always had — one stderr announcement of the ~50MB download, then
+the attest proceeds. 13s end-to-end on first call after install,
+instant on subsequent calls.
+
+Tests: ``Tests/test_pick_extractor_cold_install.py`` (4) — probe
+routes through DeterministicSieve, falls back to LLM if sieve
+construction fails, SystemExit carries the install hint string,
+``--extractor`` override short-circuits the probe.
+
+Closes the 90%-of-new-users failure mode. The README's pitch and
+the actual product behaviour now line up.
+
 ### §2.5 frontier-LLM refresh — GPT-5.5 (closure pattern is vendor-independent)
 
 Symmetric refresh against OpenAI's `gpt-5.5-2026-04-23` snapshot,
