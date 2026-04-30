@@ -1,6 +1,6 @@
 # Next-Session Playbook
 
-*Re-authored 2026-04-27 at the close of Phase E doc-pass PR A (`README.md` + `CLAUDE.md` reflect v0.9.A.2). The previous draft was authored 2026-04-24, before the Phase E.1 v0.4 → v0.9.A.2 arc landed; that arc shipped in parallel with the priority queue below and unblocked new work that this revision now names. Read this before touching code in a new Claude Code session.*
+*Re-authored 2026-04-27 at the close of Phase E doc-pass PR A. **State-at-head section refreshed 2026-04-30** to reflect PRs #83–#95 (chunked algebra, omni-format pivot, self-attestation, frontier-LLM cross-vendor closure, sieve-quality rounds 1+2, MinHash dedup, cold-install fix). For a focused handover to the immediately-next session see [`docs/SESSION_HANDOVER_2026-04-30.md`](SESSION_HANDOVER_2026-04-30.md) — read that first if you are picking the thread up cold from this session. This playbook below is long-term priority context.*
 
 ## Non-negotiable principles
 

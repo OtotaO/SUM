@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-04-30T04:36:46Z",
+  "issued_at": "2026-04-30T07:02:40Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "ac5ea6bb5275b3de154232e001e7017de8620f7f",
-    "head_short": "ac5ea6b",
-    "head_subject": "attest-batch: --dedup-threshold via MinHash near-duplicate skip (#94)",
-    "head_committer_date": "2026-04-29T11:38:02-04:00",
+    "head_sha": "8ccf0bb9b26d68d388314ac06d7a9e17451be29c",
+    "head_short": "8ccf0bb",
+    "head_subject": "sum attest: fix cold-install onboarding (auto-download spaCy model on first probe) (#95)",
+    "head_committer_date": "2026-04-30T00:42:30-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -22,8 +22,8 @@
     "pypi_published_version": "0.3.0"
   },
   "features": {
-    "total": 141,
-    "production": 127,
+    "total": 142,
+    "production": 128,
     "scaffolded": 13,
     "designed": 1
   },

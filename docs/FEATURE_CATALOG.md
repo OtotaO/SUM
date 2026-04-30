@@ -1130,13 +1130,20 @@ Expected: `19 passed` — class invariants (constructor rejects num_perm≤0, si
 Verify: `pytest Tests/test_sum_cli_attest_batch.py -q`
 Expected: `11 passed` — original 6 batch contract tests + 5 new dedup tests (skips byte-identical, keeps distinct, default-disabled backwards-compat, threshold validation, strict 1.0 only drops byte-identical).
 
+### 142. Cold-install onboarding fix (sieve auto-download in extractor probe) ✅
+
+`_pick_extractor` now constructs ``DeterministicSieve()`` instead of probing via bare ``spacy.load()``. The sieve constructor's OSError fallback path auto-downloads ``en_core_web_sm`` on cold installs and announces the download on stderr; the previous direct-load probe raised on the missing model, was caught by a broad ``except Exception``, and fell through to a "no extractor available" SystemExit even though ``[sieve]`` had just installed spaCy. Surfaced by an empirical audit on a fresh venv: ``pip install 'sum-engine[sieve]'`` → ``echo "..." | sum attest`` errored with exit 1. Now succeeds in 13s end-to-end on first call, instant on subsequent calls — the README's "Verify it yourself in 60 seconds" pitch lines up with reality.
+
+Verify: `pytest Tests/test_pick_extractor_cold_install.py -q`
+Expected: `4 passed` — probe routes through DeterministicSieve, falls back to LLM if sieve construction fails, SystemExit carries the install hint, ``--extractor`` override short-circuits the probe.
+
 ---
 
 ## Summary counts
 
-Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **141**.
+Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **142**.
 
-- **Production ✅: 127 features** — tested green; each has a verification command in its entry.
+- **Production ✅: 128 features** — tested green; each has a verification command in its entry.
 - **Scaffolded 🔧: 13 features** — tests pass, production activation pending. All catalogued in `docs/MODULE_AUDIT.md` with activation checklists.
 - **Designed 📄: 1 feature** (sha256_128_v2 default-promotion; cross-runtime byte-identity locked, default-flip is a separate operator decision).
 

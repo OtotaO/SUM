@@ -10,6 +10,10 @@ the code.
 If this is your first turn in this repo, read these files in order and you
 will have the full picture.
 
+0. **[`docs/SESSION_HANDOVER_2026-04-30.md`](docs/SESSION_HANDOVER_2026-04-30.md)**
+   — most recent session-block handover (PRs #83–#95). Read this first
+   if you are picking the thread up cold; it carries the open queue,
+   user authority/preferences, and gotchas that don't appear in the code.
 1. **[`CHANGELOG.md`](CHANGELOG.md)** — release history. `[0.1.0]`
    was the first PyPI release (2026-04-22); `[0.2.0]` /`[0.2.1]`
    are hygiene fixes; `[0.3.0]` (2026-04-23) added the agentic
@@ -18,9 +22,11 @@ will have the full picture.
 2. **[`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md)** — proved-vs-
    measured discipline for every claim in the repo. Section 1.3.1 covers
    the cross-runtime Ed25519 trust triangle (Python ↔ Node ↔ Browser).
-3. **[`docs/FEATURE_CATALOG.md`](docs/FEATURE_CATALOG.md)** — 103 numbered
-   features, each with a reproducible verification command. Summary at
-   the bottom gives the Production / Scaffolded / Designed counts.
+3. **[`docs/FEATURE_CATALOG.md`](docs/FEATURE_CATALOG.md)** — **142** numbered
+   features (current at 2026-04-30), each with a reproducible verification
+   command. Summary at the bottom gives the Production / Scaffolded /
+   Designed counts (currently 128 / 13 / 1). Counts are mechanically
+   refreshed; treat them as authoritative over any prose in this file.
 4. **[`Makefile`](Makefile)** — every dev command canonicalised. `make help`
    renders the full list. Common ones: `make install`, `make test`,
    `make xruntime`, `make smoke`.
@@ -66,8 +72,10 @@ will have the full picture.
    JWKS); v0.9.A.1 review-pass triple-sort + doc-bytes regen; v0.9.A.2
    route `/.well-known/*` through Worker + keygen polish.
 
-Shipping surface at the current HEAD: the `sum` binary on PyPI
-(`pip install sum-engine[sieve]`), the Node verifier in
+Shipping surface at the current HEAD: the `sum` binary (currently
+`v0.4.0` on `pyproject.toml`; **PyPI is at `0.3.0` and is stale** —
+PRs #85–#95 have not been published; cutting `v0.4.0` to PyPI is on
+the operator-decision queue), the Node verifier in
 `standalone_verifier/`, and the browser demo in `single_file_demo/`.
 All three verify Ed25519 on the same bundle bytes; the cross-runtime
 harness (`make xruntime` → K1 / K1-mw / K2 / K3 / K4) proves this and
