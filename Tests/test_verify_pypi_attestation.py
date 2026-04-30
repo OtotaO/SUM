@@ -245,6 +245,50 @@ def test_extract_raw_byte_strings_returns_empty_when_absent():
     assert _mod.extract_raw_byte_strings({"unrelated": "field"}) == []
 
 
+def test_extract_raw_byte_strings_pypi_flattened_certificate_string():
+    """Regression: PyPI Integrity API now serialises the leaf
+    certificate as ``verification_material.certificate`` directly as a
+    base64 string (not a sub-object with raw_bytes inside).
+
+    Observed at https://test.pypi.org/integrity/sum-engine/0.4.0/.../provenance
+    on 2026-04-30. The v0.4.0 publish attempt's pre-promotion gate
+    failed because the older walker only matched ``rawBytes``-shaped
+    keys, missed this flattened shape, and reported "no Sigstore
+    certificates extractable" even though a valid cert chain was
+    sitting at this exact path. The fix widens the walker to also
+    collect string values at any ``certificate`` key; non-base64-DER
+    candidates are skipped harmlessly by ``parse_certificates``.
+    """
+    prov = {
+        "attestation_bundles": [{
+            "attestations": [{
+                "envelope": {"signature": "MEUCIQ...", "statement": "eyJfdHl..."},
+                "verification_material": {
+                    "certificate": "MIIGrTCCBjSgAwIBAgIU...",
+                },
+                "version": 1,
+            }],
+            "publisher": {"kind": "GitHub", "repository": "OtotaO/SUM"},
+        }],
+        "version": 1,
+    }
+    assert _mod.extract_raw_byte_strings(prov) == ["MIIGrTCCBjSgAwIBAgIU..."]
+
+
+def test_extract_raw_byte_strings_co_existing_shapes_both_collected():
+    """If a provenance carries both flattened (``certificate``: string)
+    and traditional (``rawBytes``-shaped) certs in the same tree, both
+    must be collected so a multi-cert chain still parses end-to-end.
+    """
+    prov = {
+        "attestations": [
+            {"verification_material": {"certificate": "FLATTENED"}},
+            {"verification_material": {"certificate": {"raw_bytes": "OLD_SHAPE"}}},
+        ]
+    }
+    assert sorted(_mod.extract_raw_byte_strings(prov)) == ["FLATTENED", "OLD_SHAPE"]
+
+
 # --------------------------------------------------------------------------
 # expected_san_prefix
 # --------------------------------------------------------------------------

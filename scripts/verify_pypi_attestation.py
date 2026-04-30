@@ -217,19 +217,32 @@ def check_publisher_coarse(
 
 
 def extract_raw_byte_strings(obj: Any, out: list[str] | None = None) -> list[str]:
-    """Walk a JSON tree collecting every value at a `*[Rr]aw[Bb]ytes` key.
+    """Walk a JSON tree collecting every value at a key that holds a base64
+    DER-encoded certificate.
 
     Resilient to:
-      - PyPI Integrity API snake_case (`raw_bytes`)
-      - Sigstore Bundle JSON camelCase (`rawBytes`)
-      - Either `certificate.*` or `x509CertificateChain.certificates[]` paths
-      - Nested envelopes / future schema drift
+      - PyPI Integrity API snake_case (``raw_bytes``)
+      - Sigstore Bundle JSON camelCase (``rawBytes``)
+      - PyPI Integrity API "flattened" shape (``verification_material.certificate``
+        is a bare base64 string, not a sub-object) — observed at PyPI on
+        the v0.4.0 publish attempt 2026-04-30. The cert chain itself is
+        still cryptographically validated downstream by ``parse_certificates``;
+        this collector merely surfaces the candidate string.
+      - Nested envelopes / lists / future schema drift
+
+    The downstream parser (``parse_certificates``) tolerates
+    non-base64-DER candidates by skipping them, so widening this
+    collector to additional key names cannot turn a tamper signal into
+    an accept — at worst the script ignores noise that doesn't decode.
     """
     if out is None:
         out = []
     if isinstance(obj, dict):
         for k, v in obj.items():
-            if isinstance(v, str) and k.replace("_", "").lower() == "rawbytes":
+            if isinstance(v, str) and (
+                k.replace("_", "").lower() == "rawbytes"
+                or k.lower() == "certificate"
+            ):
                 out.append(v)
             else:
                 extract_raw_byte_strings(v, out)
