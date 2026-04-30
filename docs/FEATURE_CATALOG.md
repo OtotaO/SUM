@@ -1137,13 +1137,20 @@ Expected: `11 passed` — original 6 batch contract tests + 5 new dedup tests (s
 Verify: `pytest Tests/test_pick_extractor_cold_install.py -q`
 Expected: `4 passed` — probe routes through DeterministicSieve, falls back to LLM if sieve construction fails, SystemExit carries the install hint, ``--extractor`` override short-circuits the probe.
 
+### 143. `sum render` CLI verb (bundle → tome under 5-axis slider control) ✅
+
+The inverse of `sum attest` from the shell. Reads a CanonicalBundle from stdin (or `--input`), parses its axioms back from `canonical_tome` via the same regex `sum verify` uses, mints primes into a fresh `GodelStateAlgebra`, and re-emits a tome under the supplied 5-axis slider position via `AutoregressiveTomeGenerator.generate_controlled`. Local path is deterministic and actions only the density slider; non-neutral length / formality / audience / perspective return exit 2 with an actionable message pointing at `--use-worker`. With `--use-worker URL`, POSTs `{triples, slider_position}` to `<URL>/api/render` via stdlib `urllib` (no new runtime dep) and returns the LLM-conditioned tome plus the signed `render_receipt` (`sum.render_receipt.v1`). Default stdout is the tome text; `--json` emits a structured envelope `{tome, sliders, mode, render_receipt?}`; `--output PATH` writes the tome text to a file. Closes the last visible CLI gap on the README's "tags to tomes and vice versa" pitch.
+
+Verify: `pytest Tests/test_sum_cli_render.py -q`
+Expected: `19 passed` — round-trip integrity at density=1.0 (re-extracted state integer matches source), lex-prefix density subsetting, slider-bound validation, malformed-bundle exit codes (2 for invalid JSON / missing field / unsupported version, 3 for zero parseable axioms), `--output` file path writes and trailing newline, `--json` envelope shape with sliders + mode, worker wire contract (POST /api/render with `{triples, slider_position}`), worker HTTP error / unreachable propagation as exit 1, stdin input via `sys.stdin` redirect.
+
 ---
 
 ## Summary counts
 
-Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **142**.
+Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **143**.
 
-- **Production ✅: 128 features** — tested green; each has a verification command in its entry.
+- **Production ✅: 129 features** — tested green; each has a verification command in its entry.
 - **Scaffolded 🔧: 13 features** — tests pass, production activation pending. All catalogued in `docs/MODULE_AUDIT.md` with activation checklists.
 - **Designed 📄: 1 feature** (sha256_128_v2 default-promotion; cross-runtime byte-identity locked, default-flip is a separate operator decision).
 

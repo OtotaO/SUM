@@ -4,6 +4,8 @@ Subcommands:
     sum attest     — stdin prose → CanonicalBundle JSON on stdout
                      (optionally HMAC + Ed25519 + per-triple ledger)
     sum verify     — bundle → exit 0 on match, 1 on signature/state mismatch
+    sum render     — bundle → tome text under 5-axis slider control
+                     (inverse of attest; --use-worker for LLM axes + signed receipt)
     sum resolve    — prov_id → ProvenanceRecord JSON (ledger lookup)
     sum ledger     — introspect a ledger: list | stats | head
     sum inspect    — structural read of a bundle (no crypto, no reconstruction)
@@ -845,6 +847,292 @@ def cmd_verify(args: argparse.Namespace) -> int:
     return 0
 
 
+# ─── render ──────────────────────────────────────────────────────────
+#
+# The inverse of `sum attest`. Reads a CanonicalBundle, parses its
+# triples back from the canonical tome, and re-emits a tome under
+# explicit slider control. Closes the "tags ↔ tomes" symmetry from
+# the shell — the engine and the Worker have always supported it,
+# the CLI did not until now.
+#
+# Two paths:
+#
+#   local (default)
+#     Only the density slider is honoured. Non-density axes default
+#     to 0.5 (neutral); any deviation requires the LLM extrapolator
+#     and is rejected with an actionable error pointing at
+#     --use-worker. Output is the deterministic canonical tome with
+#     the slider header recorded above the body, matching what
+#     `generate_controlled` writes in-process.
+#
+#   --use-worker URL
+#     POSTs {triples, slider_position} to <URL>/api/render and
+#     returns the LLM-conditioned tome plus the signed render_receipt
+#     (sum.render_receipt.v1). Uses urllib so no new runtime
+#     dependency. Errors from the Worker (network, non-2xx, malformed
+#     response) surface on stderr with a non-zero exit.
+#
+# Default stdout is the tome text only — symmetric with `sum attest`'s
+# JSON-on-stdout default for its own native artefact. `--json` returns
+# a structured envelope (`{tome, sliders, mode, render_receipt?}`) for
+# callers that need the receipt. `--output` writes the tome text to a
+# file regardless of `--json`.
+
+_TOME_LINE_RE_RENDER = None  # lazy-compiled below in _parse_tome_triples
+
+
+def _parse_tome_triples(canonical_tome: str) -> list[tuple[str, str, str]]:
+    """Parse `The S P O.` lines from a canonical tome back into triples.
+
+    Same regex `cmd_verify` uses for state reconstruction, kept private
+    here so the render path stays independent of verify's import graph.
+    Lines that don't match the canonical pattern are ignored — the tome
+    may include header lines (`@canonical_version: ...`, `# Title`,
+    `## Subject`) that are not axioms.
+    """
+    global _TOME_LINE_RE_RENDER
+    if _TOME_LINE_RE_RENDER is None:
+        import re
+        _TOME_LINE_RE_RENDER = re.compile(r"^The (\S+) (\S+) (.+)\.$")
+    triples: list[tuple[str, str, str]] = []
+    for line in canonical_tome.splitlines():
+        match = _TOME_LINE_RE_RENDER.match(line.strip())
+        if match:
+            triples.append((match.group(1), match.group(2), match.group(3)))
+    return triples
+
+
+def _post_render_to_worker(
+    worker_url: str,
+    triples: list[tuple[str, str, str]],
+    sliders_dict: dict,
+) -> dict:
+    """POST to <worker_url>/api/render and return the parsed JSON.
+
+    Pure-stdlib (urllib) so the CLI gains no new runtime dep. Raises
+    RuntimeError with an actionable message on network / HTTP / JSON
+    error; the caller surfaces it on stderr and returns non-zero.
+    """
+    import urllib.error
+    import urllib.request
+
+    base = worker_url.rstrip("/")
+    endpoint = f"{base}/api/render"
+    payload = json.dumps({
+        "triples": [list(t) for t in triples],
+        "slider_position": sliders_dict,
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        endpoint,
+        data=payload,
+        method="POST",
+        headers={"content-type": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            body = resp.read().decode("utf-8")
+    except urllib.error.HTTPError as e:
+        # The Worker returns {"error": "..."} on documented failures.
+        try:
+            err_body = e.read().decode("utf-8")
+        except Exception:
+            err_body = ""
+        raise RuntimeError(
+            f"worker {endpoint} returned HTTP {e.code}: {err_body or e.reason}"
+        ) from e
+    except urllib.error.URLError as e:
+        raise RuntimeError(f"worker {endpoint} unreachable: {e.reason}") from e
+
+    try:
+        return json.loads(body)
+    except json.JSONDecodeError as e:
+        raise RuntimeError(
+            f"worker {endpoint} returned non-JSON body: {body[:200]!r} ({e})"
+        ) from e
+
+
+def cmd_render(args: argparse.Namespace) -> int:
+    raw = _read_input(args.input)
+    try:
+        bundle = json.loads(raw)
+    except json.JSONDecodeError as e:
+        print(f"sum: bundle is not valid JSON: {e}", file=sys.stderr)
+        return 2
+
+    for field in ("canonical_tome", "canonical_format_version"):
+        if field not in bundle:
+            print(f"sum: bundle missing required field: {field}", file=sys.stderr)
+            return 2
+
+    if bundle["canonical_format_version"] != _SUPPORTED_CANONICAL_FORMAT:
+        print(
+            f"sum: unsupported canonical_format_version "
+            f"{bundle['canonical_format_version']!r} "
+            f"(this CLI speaks {_SUPPORTED_CANONICAL_FORMAT})",
+            file=sys.stderr,
+        )
+        return 2
+
+    triples = _parse_tome_triples(bundle["canonical_tome"])
+    if not triples:
+        print(
+            "sum: bundle's canonical_tome contains zero parseable axiom lines. "
+            "Nothing to render.",
+            file=sys.stderr,
+        )
+        return 3
+
+    # Build TomeSliders early so out-of-range values fail fast with a
+    # consistent error message before we touch the algebra or network.
+    from sum_engine_internal.ensemble.tome_sliders import TomeSliders
+
+    try:
+        sliders = TomeSliders(
+            density=args.density,
+            length=args.length,
+            formality=args.formality,
+            audience=args.audience,
+            perspective=args.perspective,
+        )
+    except ValueError as e:
+        print(f"sum: invalid slider value: {e}", file=sys.stderr)
+        return 2
+
+    sliders_dict = {
+        "density": sliders.density,
+        "length": sliders.length,
+        "formality": sliders.formality,
+        "audience": sliders.audience,
+        "perspective": sliders.perspective,
+    }
+
+    # ── Worker path ──────────────────────────────────────────────────
+    if args.use_worker:
+        try:
+            response = _post_render_to_worker(args.use_worker, triples, sliders_dict)
+        except RuntimeError as e:
+            print(f"sum: {e}", file=sys.stderr)
+            return 1
+
+        tome_text = response.get("tome", "")
+        if not isinstance(tome_text, str) or not tome_text:
+            print(
+                "sum: worker response missing or empty 'tome' field",
+                file=sys.stderr,
+            )
+            return 1
+
+        envelope = {
+            "tome": tome_text,
+            "sliders": sliders_dict,
+            "mode": "worker",
+            "worker_url": args.use_worker,
+        }
+        # Surface the worker's render-time metadata so the JSON envelope
+        # is self-describing for downstream consumers (cache_status,
+        # drift, render_id, the signed receipt). All optional.
+        for key in (
+            "render_receipt",
+            "render_id",
+            "drift",
+            "cache_status",
+            "llm_calls_made",
+            "wall_clock_ms",
+            "quantized_sliders",
+            "triples_used",
+        ):
+            if key in response:
+                envelope[key] = response[key]
+
+        return _emit_render_output(envelope, args)
+
+    # ── Local deterministic path ─────────────────────────────────────
+    if sliders.requires_extrapolator():
+        non_neutral = [
+            f"{name}={getattr(sliders, name)}"
+            for name in ("length", "formality", "audience", "perspective")
+            if abs(getattr(sliders, name) - 0.5) > 1e-9
+        ]
+        print(
+            "sum: non-neutral LLM-conditioned axes ("
+            + ", ".join(non_neutral)
+            + ") require an LLM extrapolator. The local CLI render path "
+            "actions only the density slider. Either:\n"
+            "  • drop the affected sliders to 0.5 (neutral) for a "
+            "deterministic local render, or\n"
+            "  • pass --use-worker https://sum.ototao.com to render via "
+            "the hosted Worker (returns a signed render_receipt).",
+            file=sys.stderr,
+        )
+        return 2
+
+    from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+    from sum_engine_internal.ensemble.tome_generator import AutoregressiveTomeGenerator
+
+    algebra = GodelStateAlgebra()  # type: ignore[no-untyped-call]
+    import math
+
+    state = 1
+    for s, p, o in triples:
+        prime = algebra.get_or_mint_prime(s, p, o)
+        state = math.lcm(state, prime)
+
+    tome_generator = AutoregressiveTomeGenerator(algebra)
+    tome_text = tome_generator.generate_controlled(
+        state, sliders=sliders, title=args.title,
+    )
+
+    envelope = {
+        "tome": tome_text,
+        "sliders": sliders_dict,
+        "mode": "local-deterministic",
+        "axiom_count_input": len(triples),
+        "title": args.title,
+    }
+    return _emit_render_output(envelope, args)
+
+
+def _emit_render_output(envelope: dict, args: argparse.Namespace) -> int:
+    """Write the rendered tome to --output (or stdout) and emit either
+    plain text or the JSON envelope on stdout depending on --json.
+
+    Both flags compose: `--output tome.md --json` writes the tome text
+    to tome.md AND prints the JSON envelope to stdout, so a caller can
+    keep the receipt while persisting the prose. Without --json the
+    JSON envelope is discarded after extraction.
+    """
+    tome_text = envelope["tome"]
+
+    if args.output:
+        try:
+            with open(args.output, "w", encoding="utf-8") as f:
+                f.write(tome_text)
+                if not tome_text.endswith("\n"):
+                    f.write("\n")
+        except OSError as e:
+            print(f"sum: cannot write --output {args.output!r}: {e}", file=sys.stderr)
+            return 1
+
+    if args.json:
+        json.dump(envelope, sys.stdout, indent=2 if args.pretty else None)
+        sys.stdout.write("\n")
+    elif not args.output:
+        # Default path: tome text on stdout, no metadata. Matches the
+        # `sum render < bundle.json > tome.md` pipeline shape.
+        sys.stdout.write(tome_text)
+        if not tome_text.endswith("\n"):
+            sys.stdout.write("\n")
+
+    if args.verbose:
+        kind = envelope.get("mode", "unknown")
+        msg = f"sum: rendered {len(tome_text)} chars via mode={kind}"
+        if "render_receipt" in envelope:
+            kid = envelope["render_receipt"].get("kid", "?")
+            msg += f", receipt kid={kid}"
+        print(msg, file=sys.stderr)
+    return 0
+
+
 # ─── resolve ─────────────────────────────────────────────────────────
 
 def cmd_resolve(args: argparse.Namespace) -> int:
@@ -1225,6 +1513,9 @@ def build_parser() -> argparse.ArgumentParser:
             "Examples:\n"
             "  echo 'Alice likes cats.' | sum attest > bundle.json\n"
             "  sum verify < bundle.json                  # structural only\n"
+            "  sum render < bundle.json > tome.md        # inverse: bundle → prose\n"
+            "  sum render --density 0.5 < bundle.json    # half the axioms, lex-prefix\n"
+            "  sum render --length 0.9 --use-worker https://sum.ototao.com < bundle.json --json\n"
             "  sum attest --ed25519-key keys/issuer.pem | sum verify --strict\n"
             "  sum attest --ledger akashic.db < prose.txt\n"
             "  sum resolve prov:abc123... --db akashic.db\n"
@@ -1427,6 +1718,69 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_verify.add_argument("--pretty", action="store_true", help="Pretty-print result JSON on stdout.")
     p_verify.set_defaults(func=cmd_verify)
+
+    # render — bundle → tome under explicit slider control. Inverse of attest.
+    p_render = subparsers.add_parser(
+        "render",
+        help="Render a bundle's axioms back into prose under explicit slider control.",
+        description=(
+            "Reads a CanonicalBundle from stdin (or --input), parses its "
+            "axioms back from the canonical tome, and re-emits a tome "
+            "under the supplied 5-axis slider position (density / length "
+            "/ formality / audience / perspective). The local path is "
+            "deterministic and actions only the density slider — "
+            "non-neutral length / formality / audience / perspective "
+            "values are LLM-gated and require --use-worker URL to "
+            "produce. With --use-worker, posts to <URL>/api/render and "
+            "returns the LLM-conditioned tome plus the signed "
+            "render_receipt (sum.render_receipt.v1). "
+            "Default stdout: the tome text. With --json: a structured "
+            "envelope including the receipt when present. --output PATH "
+            "writes the tome text to a file."
+        ),
+    )
+    p_render.add_argument("--input", "-i", help="Read bundle from this path instead of stdin ('-' for stdin).")
+    p_render.add_argument(
+        "--density", type=float, default=1.0, metavar="F",
+        help="Axiom-coverage slider in [0, 1]. 1.0 keeps all axioms (default); 0.0 keeps none.",
+    )
+    p_render.add_argument(
+        "--length", type=float, default=0.5, metavar="F",
+        help="Length slider in [0, 1]. 0.5 = neutral (default). Non-0.5 requires --use-worker.",
+    )
+    p_render.add_argument(
+        "--formality", type=float, default=0.5, metavar="F",
+        help="Formality slider in [0, 1]. 0.5 = neutral (default). Non-0.5 requires --use-worker.",
+    )
+    p_render.add_argument(
+        "--audience", type=float, default=0.5, metavar="F",
+        help="Audience slider in [0, 1]. 0.5 = neutral (default). Non-0.5 requires --use-worker.",
+    )
+    p_render.add_argument(
+        "--perspective", type=float, default=0.5, metavar="F",
+        help="Perspective slider in [0, 1]. 0.5 = neutral (default). Non-0.5 requires --use-worker.",
+    )
+    p_render.add_argument("--title", default="Rendered Tome", help="Tome title. Default: 'Rendered Tome'.")
+    p_render.add_argument(
+        "--output", "-o", metavar="PATH", default=None,
+        help="Write tome text to this path. Without it, tome text goes to stdout.",
+    )
+    p_render.add_argument(
+        "--use-worker", metavar="URL", default=None,
+        help=(
+            "POST triples + slider position to <URL>/api/render and "
+            "return the LLM-conditioned tome + signed render_receipt. "
+            "Required when any non-density slider is non-neutral. "
+            "Hosted Worker: https://sum.ototao.com."
+        ),
+    )
+    p_render.add_argument(
+        "--json", action="store_true",
+        help="Emit a JSON envelope on stdout (tome, sliders, mode, render_receipt if from worker).",
+    )
+    p_render.add_argument("--pretty", action="store_true", help="Pretty-print --json output.")
+    p_render.add_argument("--verbose", "-v", action="store_true", help="Emit diagnostics on stderr.")
+    p_render.set_defaults(func=cmd_render)
 
     # resolve
     p_resolve = subparsers.add_parser(

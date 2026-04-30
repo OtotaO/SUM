@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-04-30T07:02:40Z",
+  "issued_at": "2026-04-30T09:41:22Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "8ccf0bb9b26d68d388314ac06d7a9e17451be29c",
-    "head_short": "8ccf0bb",
-    "head_subject": "sum attest: fix cold-install onboarding (auto-download spaCy model on first probe) (#95)",
-    "head_committer_date": "2026-04-30T00:42:30-04:00",
+    "head_sha": "4076ad21b003c0d203a7f1dfcce6a33ea8866692",
+    "head_short": "4076ad2",
+    "head_subject": "sum render: bidirectional CLI verb (bundle \u2192 tome under 5-axis slider control)",
+    "head_committer_date": "2026-04-30T05:38:42-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -22,8 +22,8 @@
     "pypi_published_version": "0.3.0"
   },
   "features": {
-    "total": 142,
-    "production": 128,
+    "total": 143,
+    "production": 129,
     "scaffolded": 13,
     "designed": 1
   },
