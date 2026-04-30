@@ -4,6 +4,55 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### `sum render` CLI verb — closes "tags ↔ tomes" symmetry from the shell
+
+The reverse direction of the bidirectional engine was reachable from
+Python (`AutoregressiveTomeGenerator.generate_controlled`) and from
+HTTP (`POST /api/render` on the Worker), but had no top-level CLI
+verb. `sum attest < prose.txt > bundle.json` worked; the inverse
+`sum render < bundle.json > tome.md` did not. Non-Python operators
+could not drive the reverse direction from a shell.
+
+`sum render` is now wired:
+
+  $ echo "Alice likes cats. Bob owns a dog." | sum attest > bundle.json
+  $ sum render < bundle.json
+  @canonical_version: 1.0.0
+  @sliders: density=1.000 length=0.500 formality=0.500 audience=0.500 perspective=0.500
+  # Rendered Tome
+  ...
+
+Two paths:
+
+  • **Local (default).** Deterministic, actions only the density
+    slider. Non-neutral length / formality / audience / perspective
+    return exit 2 with a message pointing at `--use-worker`. The
+    rendered tome is the canonical-format output of
+    `generate_controlled`, so re-extracting its lines and re-minting
+    primes reproduces the source bundle's `state_integer` exactly
+    (proof in `Tests/test_sum_cli_render.py::TestRoundTripFullDensity`).
+
+  • **`--use-worker URL`.** POSTs `{triples, slider_position}` to
+    `<URL>/api/render` via stdlib `urllib`, returns the LLM-conditioned
+    tome plus the signed `render_receipt` (`sum.render_receipt.v1`).
+    No new runtime dependency.
+
+Output shapes:
+
+  • Default — tome text on stdout (matches `sum attest` symmetry).
+  • `--output PATH` — write tome to file.
+  • `--json` — structured envelope on stdout
+    (`{tome, sliders, mode, render_receipt?}`); composes with `--output`.
+
+Tests: `Tests/test_sum_cli_render.py` (19) — round-trip integrity at
+density=1.0, lex-prefix density subsetting, slider-bound validation,
+malformed-bundle exit codes, `--output` file path, `--json` envelope
+shape, worker wire contract (stubbed urlopen), worker HTTP error /
+unreachable propagation, stdin input.
+
+Closes the last visible gap between the README's "tags to tomes and
+vice versa" pitch and the CLI surface a daily-use operator can reach.
+
 ### Onboarding fix — cold-install ``sum attest`` now works in 60 seconds
 
 Empirical audit on a fresh venv surfaced that the README's
