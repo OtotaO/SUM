@@ -4,6 +4,77 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+(no entries since the v0.4.0 release-rotation; new work lands here.)
+
+## [0.4.0] — 2026-04-30
+
+Minor-bump feature release. The major arc of the v0.3.0 → v0.4.0 cycle
+is the **bidirectional canonical round-trip closing** at the engine,
+the cross-runtime trust triangle, the rendering surface, and the LLM-
+narrative round-trip — all four made provably or measurably tight, all
+four locked behind CI gates that run on every PR.
+
+Highlight reel (PRs #82–#97; full per-PR detail below):
+
+- **`sum render` CLI verb (#97)** — bidirectional `sum attest` ↔
+  `sum render` symmetry from the shell. Default deterministic path
+  (density-only); `--use-worker URL` returns LLM-conditioned tome +
+  signed `render_receipt` (`sum.render_receipt.v1`). The reverse
+  direction was reachable from Python and HTTP before; now it is
+  reachable from a shell prompt and the README's "tags to tomes and
+  vice versa" pitch lines up with the CLI surface.
+- **Cold-install onboarding fix (#95)** — `pip install
+  'sum-engine[sieve]'` → `sum attest` works in 13 seconds first call,
+  instant after. Closes the 90%-of-new-users failure mode.
+- **`attest-batch --dedup-threshold` (#94)** — 128-permutation MinHash
+  over word 3-shingles, pure stdlib, near-duplicate skip pre-extraction.
+- **§2.5 cross-vendor LLM closure (#90 + #93)** — vendor-agnostic
+  dispatcher (OpenAI ↔ Anthropic), then a frontier-LLM refresh against
+  Claude Opus 4.7 + GPT-5.5. Both 2026-frontier models hit 50/50
+  perfect recall on the combined ablation; constrained-extractor alone
+  hits 50/50 on GPT-5.5. The closure pattern is **vendor-independent**
+  across three model families (gpt-4o-mini, opus-4-7, gpt-5.5).
+- **Self-attestation pipeline (#89)** — SUM attests SUM. Five canonical
+  docs round-trip via `sum verify`; CI gate enforces source-URI
+  coherence; surfaced and fixed a real algebra-level pipe-component
+  round-trip bug along the way.
+- **Omni-format markdown-pivot (#88)** — PDF/HTML/DOCX/EPUB/JSON/IPYNB/
+  RTF/XML route through a deterministic `markitdown==0.1.5` pivot;
+  `markdown_sha256` lets verifiers replay the conversion.
+- **`sum attest-batch` (#87) + `sum attest` arbitrary-size (#86) +
+  chunked Gödel-state composition (#85)** — `compose_chunk_states`
+  algebra primitive with 21 property tests asserting `state(chunked)
+  == state(unchunked)`; CLI now handles inputs above spaCy's 1 MB cap;
+  per-file JSONL batch surface with per-file failure isolation.
+- **Repo manifest publisher + CI drift gate (#84)** —
+  `meta/repo_manifest.json` is the single source of truth for cross-
+  channel state; portfolio + downstream consumers fetch it from a
+  stable raw URL.
+- **External-awareness checkpoint (#83)** — first deliberate "process
+  intensification" cycle; logs frontier developments to track and
+  audited-no-action items.
+
+Pre-#83 (PRs #82 and earlier in the v0.4 cycle): cross-runtime
+sha256_128_v2 byte-identity gate, `sum verify` extraction-provenance
+surfacing (closes THREAT_MODEL §3.3 visibility gap), `/api/qid`
+accuracy floor measurement (100% hit-rate / 100% label-substring on
+30-term corpus), threat-model executable test suite, scaling §2.5 to
+seed_v2 and seed_long_paragraphs, MCP server v1 → v2 hardening,
+docs/API_REFERENCE.md, README rewrite around the cross-runtime trust
+surface, M1 Merkle set-commitment sidecar.
+
+Counts at release: **143 features in FEATURE_CATALOG (129 production,
+13 scaffolded, 1 designed).** Manifest + self-attestation + repo
+manifest all current; CI drift gates green; cross-runtime K-matrix
++ A-matrix locked; release machinery validation green (PEP 740
+attestations + Sigstore via OIDC wired); fresh-venv `pip install`
+smoke green.
+
+Zero breaking changes from v0.3.x. Every v0.3.1 invocation still
+works identically; `sum render` is purely additive.
+
+---
+
 ### `sum render` CLI verb — closes "tags ↔ tomes" symmetry from the shell
 
 The reverse direction of the bidirectional engine was reachable from
@@ -2554,8 +2625,6 @@ Permissions-Policy) is ported into `worker/src/index.ts` as
 
 After the first deploy, subsequent deploys run via the
 `deploy-worker.yml` workflow on manual dispatch.
-
-(next release will move these entries under a version heading)
 
 ## [0.3.1] — 2026-04-27
 
