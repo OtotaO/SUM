@@ -1,25 +1,25 @@
 {
   "schema": "sum.self_attestation.v1",
-  "issued_at": "2026-04-30T07:02:39Z",
+  "issued_at": "2026-04-30T09:44:25Z",
   "doc_count": 5,
   "docs": [
     {
       "path": "README.md",
-      "source_uri": "sha256:5e383a0d4f6bb646e218d053b7861363faa82ff75cf5e434785fe1ae282fac2e",
+      "source_uri": "sha256:d048af6ff175b1c36d895c9c192da174eedf8c9d019626ddf47944725072b5b7",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "5e383a0d4f6bb646e218d053b7861363faa82ff75cf5e434785fe1ae282fac2e",
-      "axiom_count": 37,
-      "state_integer_digits": 698
+      "markdown_sha256": "d048af6ff175b1c36d895c9c192da174eedf8c9d019626ddf47944725072b5b7",
+      "axiom_count": 40,
+      "state_integer_digits": 755
     },
     {
       "path": "CHANGELOG.md",
-      "source_uri": "sha256:312847ce5eaa5962fe0e9995ed1e150753306b5177f1b1d86ce3d14b9cfd1f72",
+      "source_uri": "sha256:81df9c06dbdfb593a8fe96e04ca76ed2bc3263b139fe929630a07ad090e4f03b",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "312847ce5eaa5962fe0e9995ed1e150753306b5177f1b1d86ce3d14b9cfd1f72",
-      "axiom_count": 337,
-      "state_integer_digits": 6341
+      "markdown_sha256": "81df9c06dbdfb593a8fe96e04ca76ed2bc3263b139fe929630a07ad090e4f03b",
+      "axiom_count": 344,
+      "state_integer_digits": 6473
     },
     {
       "path": "docs/PROOF_BOUNDARY.md",
@@ -32,12 +32,12 @@
     },
     {
       "path": "docs/FEATURE_CATALOG.md",
-      "source_uri": "sha256:014bd036a44739f28b4f5edae7b6bb22c0f0471a65367b7938535c727de2a60c",
+      "source_uri": "sha256:9b1ce6b387d096fd0c56c4ecfeeb4e9f92927140b146cccd3400d047552e3d8f",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "014bd036a44739f28b4f5edae7b6bb22c0f0471a65367b7938535c727de2a60c",
-      "axiom_count": 176,
-      "state_integer_digits": 3312
+      "markdown_sha256": "9b1ce6b387d096fd0c56c4ecfeeb4e9f92927140b146cccd3400d047552e3d8f",
+      "axiom_count": 181,
+      "state_integer_digits": 3408
     },
     {
       "path": "docs/RENDER_RECEIPT_FORMAT.md",
