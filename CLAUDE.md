@@ -10,10 +10,16 @@ the code.
 If this is your first turn in this repo, read these files in order and you
 will have the full picture.
 
-0. **[`docs/SESSION_HANDOVER_2026-04-30.md`](docs/SESSION_HANDOVER_2026-04-30.md)**
-   — most recent session-block handover (PRs #83–#95). Read this first
-   if you are picking the thread up cold; it carries the open queue,
-   user authority/preferences, and gotchas that don't appear in the code.
+0. **[`docs/SESSION_HANDOVER_2026-05-01.md`](docs/SESSION_HANDOVER_2026-05-01.md)**
+   — most recent session-block handover (PRs #97–#102 + the v0.4.1
+   PyPI publish). Read this first if you are picking the thread up
+   cold; it carries the closed queue, the v0.4.0 → v0.4.1 publish-
+   path decision (Path A over B′), user authority/preferences, and
+   gotchas that don't appear in the code (workflow_dispatch ref
+   semantics, TestPyPI deletion ergonomics, PyPI Integrity API
+   shape evolution). The prior handover at
+   [`docs/SESSION_HANDOVER_2026-04-30.md`](docs/SESSION_HANDOVER_2026-04-30.md)
+   covers PRs #83–#95 and the v0.3 → v0.4 substrate arc.
 1. **[`CHANGELOG.md`](CHANGELOG.md)** — release history. `[0.1.0]`
    was the first PyPI release (2026-04-22); `[0.2.0]` /`[0.2.1]`
    are hygiene fixes; `[0.3.0]` (2026-04-23) added the agentic

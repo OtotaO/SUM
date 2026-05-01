@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-01T05:48:13Z",
+  "issued_at": "2026-05-01T06:21:50Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "96d75e537e341b90c68268023523bdf8105d9d7f",
-    "head_short": "96d75e5",
-    "head_subject": "release: v0.4.1 \u2014 verifier hygiene fix (Path A for the v0.4.0 unblock) (#101)",
-    "head_committer_date": "2026-05-01T01:39:42-04:00",
+    "head_sha": "281f6243d6c5aeed4ce6929a4ae006fe2560739d",
+    "head_short": "281f624",
+    "head_subject": "docs: post-v0.4.1 polish \u2014 drop \"PyPI 0.3.0 stale\" wording (#102)",
+    "head_committer_date": "2026-05-01T01:53:44-04:00",
     "commits_last_30d": null
   },
   "github": {
