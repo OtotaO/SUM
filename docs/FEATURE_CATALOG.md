@@ -1182,14 +1182,32 @@ The deeper analytical finding (PR #112): the Laplacian quadratic form $x^T L_F x
 Verify: `pytest Tests/research/test_sheaf_laplacian_v2.py::test_v2_2_combined_detector_closes_disconnected_graph_blindspot Tests/research/test_sheaf_laplacian_v2.py::test_v2_2_combined_detector_no_signal_on_clean_render -q`
 Expected: `2 passed` — closure pinned on the v2.1 falsification 4-fact disconnected-graph data ($\lambda = 0.05$ default; clean V = 0.438; dropout V = 0.527; correct sign). The Laplacian-only term still shows the v2.1 falsification signal in isolation (dropout < clean) — the closure comes from the orthogonal deficit term, not the Laplacian. No false-positive on lawful clean renders (deficit = 0; combined V == Laplacian V).
 
+### 148. v2.x A2 predicate-flip + A3 off-graph fabrication detection — empirically verified (research, [research] extras) 🔧
+
+`score_rendered_triple_v2` and `score_rendered_triples_v2` in `sum_engine_internal/research/sheaf_laplacian_v2.py`. The two HYPOTHESISED v2.x wins are now empirically backed for the first time (PR #113):
+
+**A2 predicate-flip — VERIFIED.** Trained v2.1 sheaf on a 4-triple source with two relations (`knows`, `owns`); evaluated `score_rendered_triple_v2` on clean vs predicate-flipped pairs:
+- `(alice, knows, bob)`: V = 0.0163 → flipped `(alice, owns, bob)`: V = 2.0338 (**~125× ratio**)
+- `(bob, knows, carol)`: V = 0.2518 → flipped `(bob, owns, carol)`: V = 2.3302 (~9× ratio)
+- `(alice, owns, dog)`: V = 0.0547 → flipped `(alice, knows, dog)`: V = 2.2146 (~40× ratio)
+
+Even though the LCWA negative sampler perturbs only tails (not predicates), the trained per-relation restriction maps amplify predicate-flip residuals strongly. The contrastive sheaf-embedding training (Gebhart Def. 11, Eq. 4) produces F_h(r), F_t(r) matrices that map an entity's embedding to genuinely-different points under different relations.
+
+**A3 off-graph fabrication — VERIFIED structurally.** A rendered triple with a relation or entity outside the trained vocabulary surfaces `oov_signal=True` from `score_rendered_triple_v2` before any V is computed — no statistical inference needed.
+
+Combined with v2.2's orthogonal presence-deficit term and v1's connected-graph entity-presence drift detection, the detector now has empirical or structural backing for **all four** original v1 blindspot classes plus the disconnected-graph closure: A1 entity-swap (v1), A2 predicate-flip (v2.x, new), A3 off-graph fabrication (v2.x, new), A4 triple-drop (v1), disconnected-graph density-dropout (v2.2).
+
+Verify: `pytest Tests/research/test_sheaf_laplacian_v2.py::test_a3_off_graph_fabrication_via_oov_relation_caught Tests/research/test_sheaf_laplacian_v2.py::test_a3_off_graph_fabrication_via_oov_entity_caught Tests/research/test_sheaf_laplacian_v2.py::test_a2_predicate_flip_caught_via_higher_v_triple Tests/research/test_sheaf_laplacian_v2.py::test_a2_predicate_flip_caught_with_meaningful_margin Tests/research/test_sheaf_laplacian_v2.py::test_render_aggregation_combines_a2_a3_signals_cleanly -q`
+Expected: `5 passed` — A3 oov-relation + oov-entity (structural detection); A2 sign + meaningful-margin (margin > 0.05 on the smallest pair, 9× ratio empirically); render-level aggregation (n_oov + max_in_vocab_v surface both signals without conflating).
+
 ---
 
 ## Summary counts
 
-Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **147**.
+Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **148**.
 
 - **Production ✅: 130 features** — tested green; each has a verification command in its entry.
-- **Scaffolded 🔧: 16 features** — tests pass, production activation pending. All catalogued in `docs/MODULE_AUDIT.md` with activation checklists.
+- **Scaffolded 🔧: 17 features** — tests pass, production activation pending. All catalogued in `docs/MODULE_AUDIT.md` with activation checklists.
 - **Designed 📄: 1 feature** (sha256_128_v2 default-promotion; cross-runtime byte-identity locked, default-flip is a separate operator decision).
 
 If the totals above ever disagree with the grep recipe, this file drifted; rerun the recipe and update the prose. Phase E.1 v0.9.B (browser receipt verifier) + v0.9.C (Python receipt verifier) shipped earlier and are catalogued in the body. Future unshipped queue items are tracked in [`docs/NEXT_SESSION_PLAYBOOK.md`](NEXT_SESSION_PLAYBOOK.md) and not catalogued here until they land.

@@ -225,17 +225,27 @@ The honest split:
   \trianglelefteq r} x_t$ encodes *relation-aware* disagreement
   rather than just naked entity mismatch.
 
-  **What v2.1 with presence-style cochains addresses (and what
-  it does NOT — second falsification, surfaced by the v2.1
-  scaffold's own test on 2026-05-01):**
-  - Predicate-flip (A2): each relation has its own learned
-    F_h, F_t. Flipping the relation in the cochain ought to
-    produce different per-edge residual under the trained sheaf.
-    Hypothesis, not yet measured against ROC.
-  - Off-graph fabrication (A3): a triple with a relation
-    outside the trained vocabulary has no F_h / F_t to apply,
-    surfacing the fabrication at the cochain construction step
-    rather than at scoring. Hypothesis, not yet measured.
+  **What v2.1 with presence-style cochains addresses (with empirical
+  results, all measurements 2026-05-01):**
+  - Predicate-flip (A2): **VERIFIED** ✓. Per-rendered-triple V
+    via ``score_rendered_triple_v2``: trained restriction maps
+    distinguish (alice, knows, bob) at V = 0.0163 from the
+    predicate-flipped (alice, owns, bob) at V = 2.0338 — a
+    **~125× ratio**. Three additional clean / flipped pairs
+    measured: ratios 9×, 40×, 9×. Even though the LCWA negative
+    sampler in the current training loop perturbs only the tail
+    (not the predicate), the Laplacian's per-relation structure
+    suffices to amplify predicate-flip residuals strongly.
+    Pinned in
+    ``test_a2_predicate_flip_caught_with_meaningful_margin``
+    (margin > 0.05 on the smallest pair).
+  - Off-graph fabrication (A3): **VERIFIED** ✓ structurally.
+    A rendered triple with an out-of-vocabulary relation or
+    entity surfaces ``oov_signal=True`` from
+    ``score_rendered_triple_v2`` before any V is computed — no
+    statistical inference needed. Pinned in
+    ``test_a3_off_graph_fabrication_via_oov_relation_caught``
+    and ``test_a3_off_graph_fabrication_via_oov_entity_caught``.
   - **Disconnected-graph density-dropout: NOT closed by v2.1
     with presence-style cochains.** Empirically (the v2.1 test
     suite, ``test_v2_1_does_NOT_close_disconnected_graph_blindspot_with_presence_cochains``):
