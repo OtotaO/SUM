@@ -4,6 +4,84 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+(no entries since the v0.5.0 release-rotation; new work lands here.)
+
+## [0.5.0] — 2026-05-01
+
+Minor-bump feature release. Three substrate-extending PRs land
+together as the v0.4.1 → v0.5.0 cycle:
+
+- **#104 — MCP server `render` tool.** Bidirectional symmetry on the
+  agent surface. The CLI gained `sum render` in v0.4.0; the MCP
+  server's tool surface (`extract / attest / verify / inspect /
+  schema`) now also includes `render`. Tool count 5 → 6. The
+  bidirectional 3×3 grid (CLI/MCP/HTTP × attest/verify/render) is
+  fully populated. MCP-aware LLM clients can drive both directions
+  of the trust loop entirely from inside an LLM session.
+
+- **#105 — Sheaf-Laplacian hallucination detector spec.**
+  Specifies a sheaf-Laplacian consistency score over signed
+  render-receipt manifolds, grounded in Gebhart, Hansen & Schrater
+  (2023, AISTATS, arXiv:2110.03789) "Knowledge Sheaves" and the
+  sheaf-Laplacian theory of Hansen & Ghrist (2019). Mathematical
+  primitive: `x^T L_F x = Σ_e ‖F_v⊵e x_v − F_u⊵e x_u‖²` — the
+  Laplacian quadratic form, zero exactly when the cochain is a
+  global section, strictly positive otherwise. SUM-to-Knowledge-
+  Sheaves mapping charted (state integer ↔ Yoneda token; cross-
+  runtime byte-identity ↔ descent under cover; render-receipt ↔
+  signed cochain witness). v1/v2/v3 procedures specified;
+  falsifiable predictions named; bounded claims set.
+
+- **#106 — v1 sheaf-Laplacian hallucination detector
+  (implementation).** Implements the v1 detector specified in #105,
+  behind the new `[research]` extras flag in `pyproject.toml`.
+  Production install path is unaffected — `numpy` and `scipy` are
+  gated behind `pip install 'sum-engine[research]'`. Math verified:
+  7 sanity properties pinned (symmetric, PSD, ≥0 quadratic form,
+  constant cochain in kernel, single-missing-entity gives V=1,
+  per-edge top-1 finds the missing edge, empty-render false
+  negative pinned). Synthetic micro-benchmark (6 fact-sets × 5
+  perturbation classes, all *connected* graphs): 18/30 catch on
+  entity-presence-affecting perturbations, **18/18 = 100% top-1
+  localization on caught classes**. Spec corrections from
+  empirical run: A5 consistent-hallucination is partially caught
+  (via mean signal); P3 localization actually 100% on synthetic
+  data (target was 70%); empty-render edge case named in bounded
+  claims.
+
+- **#107 — Real-data falsification of v1 on naturalistic prose.**
+  Tested v1 on 4-fact disconnected source graph (real prose, real
+  sieve extraction, no LLM API). **v1's density-dropout signal
+  collapsed to zero on the disconnected graph** because dropping
+  whole components leaves every remaining edge in {(1,1), (0,0)}
+  — never (1,0). The synthetic bench used connected graphs and
+  missed this. Honest framing now in the spec: v1 is a
+  *connected-graph entity-presence drift detector* + a
+  *sieve-canonicalisation-divergence detector across paraphrases*
+  (catches verbose paraphrase 3 producing `python_code` instead of
+  `python`, V=3); v1 is **not** a general hallucination detector
+  for naturalistic prose. v2 motivation strengthened from
+  "addresses A2/A3" to "addresses every v1 blindspot named so far
+  including disconnected-graph density-dropout blindness."
+  Reproducible: ``PYTHONPATH=. python
+  scripts/research/sheaf_real_test.py``. Pinned in code by
+  ``test_disconnected_graph_density_dropout_invisible``.
+
+Counts at release: **145 features** (130 production, 14 scaffolded,
+1 designed). All CI drift gates green; cross-runtime K-matrix +
+A-matrix locked; release machinery validation green; fresh-venv
+``pip install`` smoke green.
+
+New extras group: **``[research]``** (`pip install
+'sum-engine[research]'`) for `numpy`, `scipy` — required by
+``sum_engine_internal/research/sheaf_laplacian.py``. Production
+install path (``pip install sum-engine``) is unaffected.
+
+Zero breaking changes from v0.4.1. Every v0.4.1 invocation still
+works identically.
+
+---
+
 ### v1 sheaf-Laplacian hallucination detector — implementation + spec corrections
 
 Implements the v1 detector specified in
