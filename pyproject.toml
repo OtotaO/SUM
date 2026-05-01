@@ -60,6 +60,16 @@ receipt-verify = ["joserfc>=1.0.0"]
 # `mcp` package is the official Python SDK; FastMCP is its
 # decorator-style high-level API. See docs/MCP_INTEGRATION.md.
 mcp = ["mcp>=1.0.0"]
+# Research-grade modules under sum_engine_internal/research/. NOT on
+# the production install path; APIs may change between minor releases
+# without backwards-compatibility guarantees. Currently provides the
+# v1 sheaf-Laplacian hallucination detector grounded in Gebhart,
+# Hansen & Schrater (2023, AISTATS, arXiv:2110.03789) and the
+# sheaf-Laplacian theory of Hansen & Ghrist (2019). See
+# docs/SHEAF_HALLUCINATION_DETECTOR.md for the spec, including
+# verified blindspots (predicate-flip, off-graph fact-fabrication,
+# empty-render false negative).
+research = ["numpy>=1.24.0", "scipy>=1.10.0"]
 # Omni-format adapter. Markdown is the canonical pivot for the
 # attest pipeline: any input format -> markdown -> existing
 # extract/state/bundle path. Source URI anchors to the original
