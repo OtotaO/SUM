@@ -4,7 +4,89 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
-(no entries since the v0.4.0 release-rotation; new work lands here.)
+(no entries since the v0.4.1 release-rotation; new work lands here.)
+
+## [0.4.1] — 2026-05-01
+
+Patch release. **Wheel content is byte-identical to never-published
+v0.4.0** — the v0.4.0 git tag was pushed on 2026-04-30 but the
+publish workflow fail-closed at the pre-promotion verify gate due
+to a verifier-side bug (PyPI's Integrity API serialises the leaf
+certificate at ``verification_material.certificate`` directly as a
+base64 string rather than under a ``rawBytes``/``raw_bytes`` envelope;
+the script's walker only matched the older shape and reported "no
+Sigstore certificates extractable" even though a valid cert chain
+was sitting at the documented PyPI Integrity API path). Production
+PyPI was correctly never touched. The fail-closed gate did exactly
+what it was designed to do; v0.4.0 stays as a forever-untagged-on-
+PyPI git tag.
+
+This release ships the verifier fix plus a workflow-trigger
+ergonomic improvement, both CI-only changes outside the wheel.
+
+### Fixed
+
+- **`scripts/verify_pypi_attestation.py`: recognise the flattened
+  ``certificate``-string shape (#99).** The walker in
+  ``extract_raw_byte_strings`` now collects string values at any
+  ``certificate`` key in addition to the existing ``rawBytes`` /
+  ``raw_bytes`` matches. Downstream cryptographic checks are
+  unchanged: certs still must parse as DER X.509 and produce a SAN
+  URI matching the expected workflow + tag-ref prefix; the
+  ``parse_certificates`` helper already tolerated non-base64-DER
+  candidates by skipping them, so widening the collector cannot
+  turn a tamper signal into an accept.
+
+  Verified end-to-end against the live TestPyPI provenance at
+  ``https://test.pypi.org/integrity/sum-engine/0.4.0/.../provenance``:
+  one cert extracted, valid SAN, zero failures.
+
+  Tests: ``Tests/test_verify_pypi_attestation.py`` (+2, now 23) —
+  ``test_extract_raw_byte_strings_pypi_flattened_certificate_string``
+  and ``test_extract_raw_byte_strings_co_existing_shapes_both_collected``.
+
+  Plus four adversarial vectors confirmed locally: garbage at the
+  ``certificate`` key, valid base64 / non-DER bytes, valid cert
+  with wrong repo / workflow / ref-prefix SAN — all rejected.
+
+### Added
+
+- **`.github/workflows/publish-pypi.yml`: ``workflow_dispatch``
+  trigger (#100).** Lets an operator re-run an existing tag's
+  publish flow without re-tagging or cutting a patch version when
+  a transient failure (e.g. the verifier-shape bug above) hits.
+  No workflow inputs; the trigger contract stays identical to push
+  (version comes from the ref, no surface for an operator to inject
+  a different version). ``workflow_dispatch`` is gated by repo
+  write access — same baseline as pushing a tag — so this expansion
+  does not widen the attack surface beyond the original trigger;
+  the fail-closed gates protect against index-side substitution
+  regardless of which trigger fired the run.
+
+  **Caveat (documented in the workflow header):** to re-run on the
+  same tag, the operator must first delete the existing TestPyPI
+  release. The rebuild's wheel + sdist will differ byte-for-byte
+  from the staged copy (Python wheel builds embed timestamps unless
+  ``SOURCE_DATE_EPOCH`` is set), so ``skip-existing: true`` on the
+  TestPyPI upload would silently skip, and the verify step's
+  same-bytes check would then fail comparing the new local hashes
+  against the stale TestPyPI bytes. Path A (cut a patch version)
+  is the documented fallback when the operator cannot or does not
+  want to delete the staged TestPyPI release; this very release
+  is an instance of Path A.
+
+### Why no v0.4.0 on PyPI
+
+- Use ``pip install sum-engine==0.4.1`` (or simply
+  ``pip install -U sum-engine``) for the v0.4.0 feature set.
+  v0.4.0 was tagged on git but never published; the v0.4.1 wheel
+  content is identical because ``scripts/`` and ``.github/`` are
+  excluded from the distribution
+  (``[tool.setuptools.packages.find].exclude``).
+
+Zero breaking changes from v0.4.0 (no v0.4.0 wheel exists to
+compare against on production PyPI; the v0.4.1 wheel is what 0.4.0
+*would have been* if the verifier had been current).
 
 ## [0.4.0] — 2026-04-30
 
