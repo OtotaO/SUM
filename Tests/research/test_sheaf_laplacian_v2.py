@@ -382,6 +382,212 @@ def test_v2_2_combined_detector_no_signal_on_clean_render():
     assert score["v_combined"] == score["v_laplacian"]
 
 
+# ── Block 4: A2 predicate-flip + A3 off-graph fabrication empirics ──
+#
+# v2.x's hypothesised wins. Per the spec §3.3 v2.1, learned
+# restriction maps are *expected* to catch:
+#   A2 — predicate-flip: the rendered triple uses a known relation
+#        but a wrong one for that (h, t) pair.
+#   A3 — off-graph fabrication: the rendered triple uses a relation
+#        or entity outside the trained vocabulary.
+#
+# Both are HYPOTHESISED in the spec but were not measured before
+# this PR. The next two tests measure them. Honest framing: if v2.1
+# falsifies on these too, that's another data point and the spec
+# narrows; if it succeeds, the Laplacian-side claim is empirically
+# backed for the first time.
+
+
+def test_a3_off_graph_fabrication_via_oov_relation_caught():
+    """A3 (off-graph fabrication) — rendered triple uses a relation
+    NOT in the trained vocabulary. The score_rendered_triple_v2
+    machinery flags this as out-of-vocab (oov_signal=True) before
+    any V is computed. This is the cheapest A3 detection path —
+    structural, not statistical."""
+    from sum_engine_internal.research.sheaf_laplacian_v2 import (
+        score_rendered_triple_v2, score_rendered_triples_v2,
+    )
+    triples = [
+        ("alice", "knows", "bob"),
+        ("bob", "owns", "dog"),
+    ]
+    trained, embeddings, _ = train_restriction_maps(
+        triples, stalk_dim=8, epochs=200, seed=0,
+    )
+
+    # Rendered triple uses a relation never seen in source/training
+    fabricated = ("alice", "FABRICATED_RELATION", "bob")
+    result = score_rendered_triple_v2(trained, embeddings, fabricated)
+    assert result["oov_signal"] is True
+    assert not result["in_vocab_relation"]
+    assert result["in_vocab_head"]
+    assert result["in_vocab_tail"]
+    assert result["v_triple"] is None
+    assert any("FABRICATED_RELATION" in r for r in result["oov_reasons"])
+
+
+def test_a3_off_graph_fabrication_via_oov_entity_caught():
+    """A3 — rendered triple uses an entity NOT in the trained
+    vocabulary. Surfaces as oov_signal=True with the reason naming
+    the missing entity."""
+    from sum_engine_internal.research.sheaf_laplacian_v2 import score_rendered_triple_v2
+    triples = [("alice", "knows", "bob"), ("bob", "owns", "dog")]
+    trained, embeddings, _ = train_restriction_maps(
+        triples, stalk_dim=8, epochs=200, seed=0,
+    )
+
+    # Rendered triple uses an entity that's not in the trained vertex set
+    fabricated = ("alice", "knows", "GHOST_ENTITY")
+    result = score_rendered_triple_v2(trained, embeddings, fabricated)
+    assert result["oov_signal"] is True
+    assert result["in_vocab_relation"]
+    assert result["in_vocab_head"]
+    assert not result["in_vocab_tail"]
+    assert result["v_triple"] is None
+
+
+def test_a2_predicate_flip_caught_via_higher_v_triple():
+    """**The headline A2 measurement.** Train v2.1 on a 4-triple
+    source with two distinct relations. Then evaluate:
+        - the clean triple (alice, knows, bob)
+        - the predicate-flipped triple (alice, owns, bob)
+
+    The predicate-flipped version uses a relation IN the trained
+    vocabulary but a WRONG one for this (head, tail) pair. The
+    contrastive sheaf-embedding training (Gebhart Def. 11) didn't
+    explicitly include predicate-perturbation negatives — only
+    tail-perturbation negatives — so the question this test answers
+    empirically: does the trained sheaf NEVERTHELESS distinguish
+    (alice, knows, bob) from (alice, owns, bob)?
+
+    Honest possibilities:
+      (a) Yes, V_flipped > V_clean robustly: A2 catches via the
+          tail-only negative sampling alone (good news).
+      (b) Yes, but margin small: A2 catches but training would
+          benefit from explicit predicate-perturbation negatives.
+      (c) No / unpredictable: A2 falsifies; the spec needs
+          another correction; predicate-perturbation negatives
+          must enter the training loop in v2.3.
+
+    Pin the empirical outcome so future v2 changes can't silently
+    flip the result.
+    """
+    from sum_engine_internal.research.sheaf_laplacian_v2 import score_rendered_triple_v2
+    triples = [
+        ("alice", "knows", "bob"),
+        ("bob", "knows", "carol"),
+        ("alice", "owns", "dog"),
+        ("bob", "owns", "cat"),
+    ]
+    trained, embeddings, _ = train_restriction_maps(
+        triples,
+        stalk_dim=8,
+        epochs=400,
+        learning_rate=0.01,
+        margin=0.5,
+        n_negatives_per_positive=5,
+        seed=0,
+    )
+
+    clean = score_rendered_triple_v2(trained, embeddings, ("alice", "knows", "bob"))
+    flipped = score_rendered_triple_v2(trained, embeddings, ("alice", "owns", "bob"))
+
+    # Both are in-vocab (knows and owns are both trained relations;
+    # alice and bob are both trained entities).
+    assert clean["v_triple"] is not None
+    assert flipped["v_triple"] is not None
+
+    # The empirical question: does v2.1 distinguish them?
+    margin = flipped["v_triple"] - clean["v_triple"]
+
+    # Pin the actual empirical outcome. If margin > 0, v2.1 catches
+    # predicate-flip on this synthetic data — Laplacian-side claim
+    # backed for the first time. If margin <= 0, A2 has the same
+    # falsification story v2.1 had on the disconnected-graph case
+    # and the spec needs another correction.
+    assert margin > 0, (
+        f"v2.1 predicate-flip detection (A2): expected V_flipped > "
+        f"V_clean, got V_clean={clean['v_triple']:.4f}, "
+        f"V_flipped={flipped['v_triple']:.4f}, margin={margin:.4f}. "
+        f"If margin <= 0, v2.1 trained without predicate-perturbation "
+        f"negatives FAILS A2 — file a falsification PR with the "
+        f"spec correction adding predicate-perturbation negative "
+        f"sampling to the training loop."
+    )
+
+
+def test_a2_predicate_flip_caught_with_meaningful_margin():
+    """Tighter A2 measurement: not just margin > 0, but
+    margin > some empirical threshold. Pinned at 0.05 by inspection
+    on this seed; if the margin is below 0.05, v2.1 catches A2 but
+    weakly — predicate-perturbation negative sampling is a strong
+    candidate v2.3 improvement.
+
+    Threshold deliberately tight; future v2.x updates that
+    strengthen A2 detection should keep this test passing or
+    update the threshold to reflect an even better margin.
+    """
+    from sum_engine_internal.research.sheaf_laplacian_v2 import score_rendered_triple_v2
+    triples = [
+        ("alice", "knows", "bob"),
+        ("bob", "knows", "carol"),
+        ("alice", "owns", "dog"),
+        ("bob", "owns", "cat"),
+    ]
+    trained, embeddings, _ = train_restriction_maps(
+        triples,
+        stalk_dim=8,
+        epochs=400,
+        learning_rate=0.01,
+        margin=0.5,
+        n_negatives_per_positive=5,
+        seed=0,
+    )
+    clean = score_rendered_triple_v2(trained, embeddings, ("alice", "knows", "bob"))
+    flipped = score_rendered_triple_v2(trained, embeddings, ("alice", "owns", "bob"))
+    margin = flipped["v_triple"] - clean["v_triple"]
+    assert margin > 0.05, (
+        f"weak A2 signal: margin={margin:.4f} (threshold 0.05). "
+        f"Even though v2.1 catches predicate-flip in the right "
+        f"direction, the margin is small. Spec correction: add "
+        f"predicate-perturbation negatives to the training loop's "
+        f"LCWA sampler so F_h(r), F_t(r) are pushed apart from "
+        f"F_h(r'), F_t(r') for r != r' on the same (h, t) pair."
+    )
+
+
+def test_render_aggregation_combines_a2_a3_signals_cleanly():
+    """Aggregation across a render that mixes clean, predicate-
+    flipped, and off-graph-fabricated triples surfaces:
+      - n_oov > 0 (the fabrication)
+      - max_in_vocab_v on the predicate-flipped triple
+    Both signals available without conflating.
+    """
+    from sum_engine_internal.research.sheaf_laplacian_v2 import score_rendered_triples_v2
+    source = [
+        ("alice", "knows", "bob"),
+        ("bob", "knows", "carol"),
+        ("alice", "owns", "dog"),
+        ("bob", "owns", "cat"),
+    ]
+    trained, embeddings, _ = train_restriction_maps(
+        source, stalk_dim=8, epochs=400, seed=0,
+    )
+
+    rendered = [
+        ("alice", "knows", "bob"),                    # clean
+        ("alice", "owns", "bob"),                     # A2 predicate-flip
+        ("alice", "FABRICATED", "bob"),               # A3 oov-relation
+        ("alice", "knows", "GHOST"),                  # A3 oov-entity
+    ]
+    profile = score_rendered_triples_v2(trained, embeddings, rendered)
+    assert profile["n_triples"] == 4
+    assert profile["n_oov"] == 2                      # 2 fabrications
+    assert len(profile["in_vocab_v"]) == 2            # clean + flipped
+    # The flipped triple's V should dominate the in-vocab pair.
+    assert profile["max_in_vocab_v"] > profile["mean_in_vocab_v"]
+
+
 def test_consistency_profile_v2_handles_empty_render_manifold():
     """v2 must inherit v1's PR-#109 honesty pattern: empty render
     manifold returns explicit None scalars, not a fabricated zero

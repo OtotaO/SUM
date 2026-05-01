@@ -184,6 +184,118 @@ def per_edge_discrepancy_v2(sheaf: KnowledgeSheafV2, x: np.ndarray) -> list[tupl
     return contribs
 
 
+def score_rendered_triple_v2(
+    sheaf: KnowledgeSheafV2,
+    embeddings: np.ndarray,
+    triple: Triple,
+) -> dict:
+    """Score a single rendered triple against the trained sheaf.
+
+    For a rendered claim (h, r, t), the trained sheaf provides a
+    consistency score:
+        V_triple = ‖F_h(r) · emb(h) - F_t(r) · emb(t)‖²
+
+    Three OUT-OF-VOCAB conditions surface as separate signals
+    (relevant for A3 off-graph fabrication detection):
+      - relation r not in trained vocabulary
+      - head entity h not in trained vertices
+      - tail entity t not in trained vertices
+
+    For A2 predicate-flip detection: the rendered triple uses a
+    relation that IS in the trained vocabulary, but the (h, r, t)
+    combination wasn't a positive in training, so V_triple should
+    be larger than for the corresponding clean triple.
+
+    Returns:
+        {
+          "v_triple": float | None,    # None if out-of-vocab
+          "in_vocab_relation": bool,
+          "in_vocab_head": bool,
+          "in_vocab_tail": bool,
+          "oov_signal": bool,           # any OOV condition fires
+          "oov_reasons": list[str],
+        }
+
+    Note: this is a DIFFERENT operation from
+    ``laplacian_quadratic_form_v2``. The Laplacian quadratic form
+    evaluates a cochain against the SOURCE graph's edges; this
+    function evaluates a SINGLE rendered triple against the
+    trained sheaf's parameters. The two are complementary.
+    """
+    h, r, t = triple
+    in_vocab_relation = r in sheaf.relation_index
+    in_vocab_head = h in sheaf.vertex_index
+    in_vocab_tail = t in sheaf.vertex_index
+    oov_reasons: list[str] = []
+    if not in_vocab_relation:
+        oov_reasons.append(f"relation {r!r} not in trained vocabulary")
+    if not in_vocab_head:
+        oov_reasons.append(f"head entity {h!r} not in trained vertices")
+    if not in_vocab_tail:
+        oov_reasons.append(f"tail entity {t!r} not in trained vertices")
+
+    if oov_reasons:
+        return {
+            "v_triple": None,
+            "in_vocab_relation": in_vocab_relation,
+            "in_vocab_head": in_vocab_head,
+            "in_vocab_tail": in_vocab_tail,
+            "oov_signal": True,
+            "oov_reasons": oov_reasons,
+        }
+
+    r_idx = sheaf.relation_index[r]
+    h_idx = sheaf.vertex_index[h]
+    t_idx = sheaf.vertex_index[t]
+    residual = sheaf.F_h[r_idx] @ embeddings[h_idx] - sheaf.F_t[r_idx] @ embeddings[t_idx]
+    v_triple = float(np.dot(residual, residual))
+    return {
+        "v_triple": v_triple,
+        "in_vocab_relation": True,
+        "in_vocab_head": True,
+        "in_vocab_tail": True,
+        "oov_signal": False,
+        "oov_reasons": [],
+    }
+
+
+def score_rendered_triples_v2(
+    sheaf: KnowledgeSheafV2,
+    embeddings: np.ndarray,
+    rendered_triples: list[Triple],
+) -> dict:
+    """Score every rendered triple individually; aggregate the
+    per-triple scores into a render-level summary.
+
+    Returns:
+        {
+          "n_triples": int,
+          "n_oov": int,                       # any OOV condition fires
+          "per_triple": list[dict],           # the score_rendered_triple_v2 result for each
+          "in_vocab_v": list[float],          # only V values for in-vocab triples
+          "max_in_vocab_v": float | None,     # worst in-vocab triple
+          "mean_in_vocab_v": float | None,
+        }
+    """
+    per_triple = [score_rendered_triple_v2(sheaf, embeddings, t) for t in rendered_triples]
+    in_vocab_v = [r["v_triple"] for r in per_triple if r["v_triple"] is not None]
+    n_oov = sum(1 for r in per_triple if r["oov_signal"])
+    if in_vocab_v:
+        max_v = max(in_vocab_v)
+        mean_v = sum(in_vocab_v) / len(in_vocab_v)
+    else:
+        max_v = None
+        mean_v = None
+    return {
+        "n_triples": len(rendered_triples),
+        "n_oov": n_oov,
+        "per_triple": per_triple,
+        "in_vocab_v": in_vocab_v,
+        "max_in_vocab_v": max_v,
+        "mean_in_vocab_v": mean_v,
+    }
+
+
 def sheaf_laplacian_v2(sheaf: KnowledgeSheafV2) -> np.ndarray:
     """Full block Laplacian L_F = δ^T δ, materialized as a dense
     matrix of shape (|V|·d, |V|·d).
