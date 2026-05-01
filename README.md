@@ -48,7 +48,7 @@ A minimal Node verifier using `jose` + `canonicalize` is in [`docs/RENDER_RECEIP
 
 | Surface | Status | Verifies |
 |---|---|---|
-| `pip install 'sum-engine[sieve]'` — `sum attest` / `sum verify` / `sum render` / `sum resolve` / `sum ledger` / `sum inspect` / `sum schema` | shipped on `main` (PyPI 0.3.0 stale; 0.4.0 cut on the operator queue) | structural reconstruction; HMAC-SHA256 + Ed25519 signatures (W3C VC 2.0 `eddsa-jcs-2022`); bidirectional `sum attest` ↔ `sum render` symmetry from the shell |
+| `pip install 'sum-engine[sieve]'` — `sum attest` / `sum verify` / `sum render` / `sum resolve` / `sum ledger` / `sum inspect` / `sum schema` | shipped on PyPI ≥ 0.4.1 | structural reconstruction; HMAC-SHA256 + Ed25519 signatures (W3C VC 2.0 `eddsa-jcs-2022`); bidirectional `sum attest` ↔ `sum render` symmetry from the shell |
 | Cloudflare Worker at `sum-demo.ototao.workers.dev` | shipped | `/api/render` → tome + `render_receipt`; `/.well-known/jwks.json` → JWKS; `/api/qid` → Wikidata resolver |
 | Single-file browser demo (`single_file_demo/index.html`) | shipped | paste prose → in-browser attest → CanonicalBundle JSON; same bytes verify under `node standalone_verifier/verify.js` (Chrome / Firefox / Safari with WebCrypto Ed25519 support) |
 | Cross-runtime trust triangle | locked by CI (`make xruntime`) | K1 / K1-mw / K2 / K3 / K4 — Python ↔ Node ↔ Browser agree byte-for-byte on valid bundles. `make xruntime-adversarial` adds A1–A6 rejection-class equivalence. |

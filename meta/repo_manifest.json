@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-01T05:33:19Z",
+  "issued_at": "2026-05-01T05:48:13Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "5087e9f20e9d60ebf5232dbac21c887fa1cead0b",
-    "head_short": "5087e9f",
-    "head_subject": "publish-pypi: add workflow_dispatch trigger for re-running on existing tags (#100)",
-    "head_committer_date": "2026-05-01T00:17:42-04:00",
+    "head_sha": "96d75e537e341b90c68268023523bdf8105d9d7f",
+    "head_short": "96d75e5",
+    "head_subject": "release: v0.4.1 \u2014 verifier hygiene fix (Path A for the v0.4.0 unblock) (#101)",
+    "head_committer_date": "2026-05-01T01:39:42-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -19,7 +19,7 @@
   },
   "release": {
     "pyproject_version": "0.4.1",
-    "pypi_published_version": "0.3.0"
+    "pypi_published_version": "0.4.1"
   },
   "features": {
     "total": 143,

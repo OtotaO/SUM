@@ -73,9 +73,12 @@ will have the full picture.
    route `/.well-known/*` through Worker + keygen polish.
 
 Shipping surface at the current HEAD: the `sum` binary (currently
-`v0.4.0` on `pyproject.toml`; **PyPI is at `0.3.0` and is stale** —
-PRs #85–#95 have not been published; cutting `v0.4.0` to PyPI is on
-the operator-decision queue), the Node verifier in
+`v0.4.1` on `pyproject.toml` and on PyPI; v0.4.0 was tagged on git
+2026-04-30 but never reached PyPI — the publish workflow fail-closed
+at the pre-promotion verify gate due to a verifier-side script bug
+and v0.4.1 ships the verifier fix; the v0.4.1 wheel content is
+byte-identical to the never-published v0.4.0 because `scripts/` and
+`.github/` are excluded from dist), the Node verifier in
 `standalone_verifier/`, and the browser demo in `single_file_demo/`.
 All three verify Ed25519 on the same bundle bytes; the cross-runtime
 harness (`make xruntime` → K1 / K1-mw / K2 / K3 / K4) proves this and
