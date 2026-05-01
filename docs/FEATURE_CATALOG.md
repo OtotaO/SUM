@@ -1144,13 +1144,20 @@ The inverse of `sum attest` from the shell. Reads a CanonicalBundle from stdin (
 Verify: `pytest Tests/test_sum_cli_render.py -q`
 Expected: `19 passed` — round-trip integrity at density=1.0 (re-extracted state integer matches source), lex-prefix density subsetting, slider-bound validation, malformed-bundle exit codes (2 for invalid JSON / missing field / unsupported version, 3 for zero parseable axioms), `--output` file path writes and trailing newline, `--json` envelope shape with sliders + mode, worker wire contract (POST /api/render with `{triples, slider_position}`), worker HTTP error / unreachable propagation as exit 1, stdin input via `sys.stdin` redirect.
 
+### 144. MCP server `render` tool (bundle → tome under 5-axis slider control, agent-callable) ✅
+
+The MCP-side analogue of `sum render`. Closes the bidirectional shell-symmetry that the CLI surface gained at entry 143 *also* on the agent surface, so MCP-aware LLM clients (Claude Desktop, Claude Code, Cursor, Continue) can drive both directions of the trust loop from inside an LLM session. Same algebra, same `generate_controlled`, byte-compatible with the CLI's local path. Local-only by default (actions density deterministically); non-neutral length / formality / audience / perspective return `error_class="schema"` with a message pointing at the Worker's `POST /api/render` for LLM-conditioned rendering — the MCP server stays fully offline by default, preserving the `SUM_MCP_ALLOW_NETWORK` opt-in property. Returns success shape `{tome, sliders, mode, axiom_count_input, title}` or v2-tagged failure `{error_class, errors}`.
+
+Verify: `pytest Tests/test_mcp_server.py -q`
+Expected: `44 passed` — 15 render-specific cases (non-dict bundle, missing canonical_tome, unsupported canonical_format_version, future minor version under 1.x accepted, oversized tome, zero-axiom bundle structural error, density bounds, length bounds, non-neutral-axes-without-worker schema error with actionable message, default-slider canonical output, **round-trip integrity at density=1.0 — rendered tome re-mints to source `state_integer`**, density=0.0 emits no lines, density=0.5 keeps lex-prefix, slider header emitted) plus the 29 prior MCP tests retained green.
+
 ---
 
 ## Summary counts
 
-Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **143**.
+Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **144**.
 
-- **Production ✅: 129 features** — tested green; each has a verification command in its entry.
+- **Production ✅: 130 features** — tested green; each has a verification command in its entry.
 - **Scaffolded 🔧: 13 features** — tests pass, production activation pending. All catalogued in `docs/MODULE_AUDIT.md` with activation checklists.
 - **Designed 📄: 1 feature** (sha256_128_v2 default-promotion; cross-runtime byte-identity locked, default-flip is a separate operator decision).
 

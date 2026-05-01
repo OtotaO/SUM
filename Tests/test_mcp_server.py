@@ -51,7 +51,7 @@ def test_server_boots_with_expected_tools(server):
     import asyncio
     tools = asyncio.run(server.list_tools())
     names = {t.name for t in tools}
-    assert names == {"extract", "attest", "verify", "inspect", "schema"}
+    assert names == {"extract", "attest", "verify", "inspect", "render", "schema"}
 
 
 def test_every_tool_has_a_non_empty_description(server):
@@ -355,3 +355,196 @@ def test_mcp_attested_bundle_verifies_via_cli_surface(attested_bundle, tmp_path)
     cli_payload = json.loads(result.stdout)
     assert cli_payload["ok"] is True
     assert cli_payload["axioms"] == attested_bundle["axioms"]
+
+
+# --------------------------------------------------------------------------
+# render — input validation gates
+# --------------------------------------------------------------------------
+
+
+def _attest_bundle_for_render(server, text: str = "Alice likes cats. Bob owns dogs."):
+    """Helper: attest a small corpus and return the resulting bundle dict.
+    Used as the input for render-tool round-trip tests."""
+    import asyncio
+    result = asyncio.run(_tool(server, "attest")(text=text))
+    assert "error_class" not in result, f"attest helper failed: {result}"
+    return result["bundle"]
+
+
+def test_render_rejects_non_dict_bundle(server):
+    import asyncio
+    result = asyncio.run(_tool(server, "render")(bundle="not a dict"))
+    assert result["error_class"] == "schema"
+
+
+def test_render_rejects_missing_canonical_tome(server):
+    import asyncio
+    result = asyncio.run(_tool(server, "render")(
+        bundle={"canonical_format_version": "1.0.0"}
+    ))
+    assert result["error_class"] == "schema"
+
+
+def test_render_rejects_unsupported_canonical_format(server):
+    import asyncio
+    result = asyncio.run(_tool(server, "render")(
+        bundle={"canonical_tome": "The a p o.", "canonical_format_version": "9.9.9"}
+    ))
+    assert result["error_class"] == "schema"
+
+
+def test_render_accepts_future_minor_version_under_1_x(server):
+    """Forward-compat: a future ``1.X.Y`` bundle should still render
+    (additive minor bumps stay compatible)."""
+    import asyncio
+    bundle = _attest_bundle_for_render(server)
+    bundle["canonical_format_version"] = "1.99.0"  # invent a future minor
+    result = asyncio.run(_tool(server, "render")(bundle=bundle))
+    assert "error_class" not in result, f"unexpected error: {result}"
+    assert "tome" in result
+
+
+def test_render_rejects_oversized_tome(server):
+    import asyncio
+    from sum_engine_internal.mcp_server.server import MAX_TOME_CHARS
+    huge_tome = "a" * (MAX_TOME_CHARS + 1)
+    result = asyncio.run(_tool(server, "render")(
+        bundle={"canonical_tome": huge_tome, "canonical_format_version": "1.0.0"}
+    ))
+    assert result["error_class"] == "input_too_large"
+
+
+def test_render_rejects_zero_axioms(server):
+    """A valid bundle shape but with no parseable ``The S P O.`` lines
+    must surface as STRUCTURAL — silently emitting an empty tome would
+    deceive the caller."""
+    import asyncio
+    result = asyncio.run(_tool(server, "render")(
+        bundle={
+            "canonical_tome": "@canonical_version: 1.0.0\n# Title\n\n",
+            "canonical_format_version": "1.0.0",
+        }
+    ))
+    assert result["error_class"] == "structural"
+
+
+def test_render_rejects_density_above_one(server):
+    import asyncio
+    bundle = _attest_bundle_for_render(server)
+    result = asyncio.run(_tool(server, "render")(bundle=bundle, density=1.5))
+    assert result["error_class"] == "schema"
+
+
+def test_render_rejects_negative_length(server):
+    import asyncio
+    bundle = _attest_bundle_for_render(server)
+    result = asyncio.run(_tool(server, "render")(bundle=bundle, length=-0.1))
+    assert result["error_class"] == "schema"
+
+
+def test_render_rejects_non_neutral_length_with_actionable_message(server):
+    """Local-only path; the error message must point at the Worker so
+    a caller knows where to go for LLM-conditioned rendering."""
+    import asyncio
+    bundle = _attest_bundle_for_render(server)
+    result = asyncio.run(_tool(server, "render")(bundle=bundle, length=0.9))
+    assert result["error_class"] == "schema"
+    msg = " ".join(result["errors"])
+    assert "length=0.9" in msg
+    assert "/api/render" in msg or "Worker" in msg
+
+
+def test_render_rejects_non_neutral_formality(server):
+    import asyncio
+    bundle = _attest_bundle_for_render(server)
+    result = asyncio.run(_tool(server, "render")(bundle=bundle, formality=0.1))
+    assert result["error_class"] == "schema"
+
+
+# --------------------------------------------------------------------------
+# render — happy path + round-trip integrity
+# --------------------------------------------------------------------------
+
+
+def test_render_returns_canonical_tome_at_default_sliders(server):
+    import asyncio
+    bundle = _attest_bundle_for_render(server)
+    result = asyncio.run(_tool(server, "render")(bundle=bundle))
+    assert "error_class" not in result
+    assert result["mode"] == "local-deterministic"
+    assert result["axiom_count_input"] == bundle["axiom_count"]
+    assert result["sliders"] == {
+        "density": 1.0, "length": 0.5, "formality": 0.5,
+        "audience": 0.5, "perspective": 0.5,
+    }
+    tome = result["tome"]
+    # Every input axiom should resurface as a canonical line.
+    assert tome.count("The ") >= bundle["axiom_count"]
+
+
+def test_render_round_trip_state_matches_source_at_full_density(server):
+    """Load-bearing claim: at density=1.0 the rendered tome's axiom
+    set re-mints to the source bundle's state integer, byte-for-byte.
+    This is the MCP analogue of
+    ``Tests/test_sum_cli_render.py::TestRoundTripFullDensity``."""
+    import asyncio
+    import math
+    import re
+    from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+
+    bundle = _attest_bundle_for_render(server)
+    result = asyncio.run(_tool(server, "render")(bundle=bundle))
+    assert "error_class" not in result
+
+    algebra = GodelStateAlgebra()
+    line_re = re.compile(r"^The (\S+) (\S+) (.+)\.$")
+    state = 1
+    axioms = 0
+    for line in result["tome"].splitlines():
+        m = line_re.match(line.strip())
+        if m:
+            state = math.lcm(state, algebra.get_or_mint_prime(*m.groups()))
+            axioms += 1
+    assert axioms == bundle["axiom_count"]
+    assert str(state) == bundle["state_integer"]
+
+
+def test_render_density_zero_emits_no_axiom_lines(server):
+    import asyncio
+    import re
+    bundle = _attest_bundle_for_render(server)
+    result = asyncio.run(_tool(server, "render")(bundle=bundle, density=0.0))
+    assert "error_class" not in result
+    line_re = re.compile(r"^The (\S+) (\S+) (.+)\.$")
+    kept = [
+        ln for ln in result["tome"].splitlines()
+        if line_re.match(ln.strip())
+    ]
+    assert kept == []
+
+
+def test_render_density_keeps_lex_prefix(server):
+    """density=0.5 with three lex-distinct subjects should keep
+    floor(3 * 0.5) = 1 axiom — the lexicographically-first subject."""
+    import asyncio
+    import re
+    bundle = _attest_bundle_for_render(
+        server, text="Carol writes code. Alice likes cats. Bob owns dogs.",
+    )
+    result = asyncio.run(_tool(server, "render")(bundle=bundle, density=0.5))
+    assert "error_class" not in result
+    line_re = re.compile(r"^The (\S+) (\S+) (.+)\.$")
+    kept = [
+        line_re.match(ln.strip()).group(1)
+        for ln in result["tome"].splitlines()
+        if line_re.match(ln.strip())
+    ]
+    assert kept == ["alice"]
+
+
+def test_render_emits_slider_header(server):
+    import asyncio
+    bundle = _attest_bundle_for_render(server)
+    result = asyncio.run(_tool(server, "render")(bundle=bundle, density=0.7))
+    assert "@sliders:" in result["tome"]
+    assert "density=0.700" in result["tome"]

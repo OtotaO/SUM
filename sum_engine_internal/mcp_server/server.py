@@ -92,7 +92,7 @@ def build_server() -> FastMCP:
         name="sum",
         instructions=(
             "SUM verifiable knowledge distillation engine (v2 hardened). "
-            "Tools: extract / attest / verify / inspect / schema. "
+            "Tools: extract / attest / verify / inspect / render / schema. "
             "Default extractor is offline-only (sieve). The LLM extractor "
             "is disabled unless SUM_MCP_ALLOW_NETWORK=1 was set when the "
             "server started. Every tool returns either a tool-specific "
@@ -470,6 +470,155 @@ def build_server() -> FastMCP:
         except Exception as exc:
             return error_result(
                 "inspect", t0, ErrorClass.INTERNAL, type(exc).__name__
+            )
+
+    # ------------------------------------------------------------------
+    # render
+    # ------------------------------------------------------------------
+
+    @mcp.tool()
+    async def render(
+        bundle: dict,
+        density: float = 1.0,
+        length: float = 0.5,
+        formality: float = 0.5,
+        audience: float = 0.5,
+        perspective: float = 0.5,
+        title: str = "Rendered Tome",
+    ) -> dict:
+        """Render a CanonicalBundle's axioms back into prose under
+        explicit slider control. The MCP analogue of ``sum render``.
+
+        Local-only path: actions the density slider deterministically
+        (lex-prefix subsetting); non-neutral length / formality /
+        audience / perspective return ``error_class="schema"`` because
+        the LLM-conditioned axes require a Worker, which the MCP
+        server does not currently broker (see
+        ``docs/MCP_INTEGRATION.md`` for the rationale — keeping the
+        MCP server fully offline by default preserves the
+        ``SUM_MCP_ALLOW_NETWORK`` opt-in property).
+
+        Args:
+            bundle: CanonicalBundle dict (same shape ``verify`` accepts).
+            density: Axiom-coverage slider in [0, 1]. 1.0 keeps all
+                axioms (default); 0.0 keeps none.
+            length / formality / audience / perspective: 0.5 = neutral
+                (default). Non-0.5 rejected with a SCHEMA error
+                pointing at the local-only constraint.
+            title: Tome title. Default: "Rendered Tome".
+
+        Returns:
+            Success: ``{tome, sliders, mode, axiom_count_input, title}``.
+            Failure: ``{error_class, errors}``.
+        """
+        t0 = time.perf_counter()
+        try:
+            if not isinstance(bundle, dict):
+                return error_result(
+                    "render", t0, ErrorClass.SCHEMA,
+                    f"bundle must be a dict, got {type(bundle).__name__}",
+                )
+
+            for field in ("canonical_tome", "canonical_format_version"):
+                if field not in bundle:
+                    return error_result(
+                        "render", t0, ErrorClass.SCHEMA,
+                        f"bundle missing required field: {field}",
+                    )
+
+            ver = str(bundle["canonical_format_version"])
+            if not ver.startswith("1."):
+                return error_result(
+                    "render", t0, ErrorClass.SCHEMA,
+                    f"unsupported canonical_format_version {ver!r} "
+                    f"(this server speaks {_SUPPORTED_CANONICAL_FORMAT})",
+                )
+
+            tome_str = bundle["canonical_tome"]
+            if not isinstance(tome_str, str) or len(tome_str) > MAX_TOME_CHARS:
+                return error_result(
+                    "render", t0, ErrorClass.INPUT_TOO_LARGE,
+                    f"canonical_tome exceeds {MAX_TOME_CHARS} chars",
+                )
+
+            from sum_engine_internal.ensemble.tome_sliders import TomeSliders
+
+            try:
+                sliders = TomeSliders(
+                    density=density, length=length,
+                    formality=formality, audience=audience,
+                    perspective=perspective,
+                )
+            except (ValueError, TypeError) as e:
+                return error_result(
+                    "render", t0, ErrorClass.SCHEMA,
+                    f"invalid slider value: {e}",
+                )
+
+            if sliders.requires_extrapolator():
+                non_neutral = [
+                    f"{name}={getattr(sliders, name)}"
+                    for name in ("length", "formality", "audience", "perspective")
+                    if abs(getattr(sliders, name) - 0.5) > 1e-9
+                ]
+                return error_result(
+                    "render", t0, ErrorClass.SCHEMA,
+                    "non-neutral LLM-conditioned axes ("
+                    + ", ".join(non_neutral)
+                    + ") require an LLM extrapolator. The MCP server's "
+                    "render tool is local-only (deterministic density "
+                    "slider) — drop the affected sliders to 0.5, or "
+                    "use the Worker's POST /api/render endpoint for "
+                    "LLM-conditioned rendering.",
+                )
+
+            triples: list[tuple[str, str, str]] = []
+            for line in tome_str.splitlines():
+                m = _TOME_LINE_PATTERN.match(line.strip())
+                if m:
+                    if len(triples) >= MAX_AXIOM_COUNT:
+                        return error_result(
+                            "render", t0, ErrorClass.INPUT_TOO_LARGE,
+                            f"axiom count exceeds {MAX_AXIOM_COUNT}",
+                        )
+                    triples.append((m.group(1), m.group(2), m.group(3)))
+
+            if not triples:
+                return error_result(
+                    "render", t0, ErrorClass.STRUCTURAL,
+                    "bundle's canonical_tome contains zero parseable "
+                    "axiom lines — nothing to render.",
+                )
+
+            from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+            from sum_engine_internal.ensemble.tome_generator import AutoregressiveTomeGenerator
+
+            algebra = GodelStateAlgebra()
+            state = 1
+            for s, p, o in triples:
+                state = math.lcm(state, algebra.get_or_mint_prime(s, p, o))
+
+            tome_gen = AutoregressiveTomeGenerator(algebra)
+            tome_text = tome_gen.generate_controlled(state, sliders=sliders, title=title)
+
+            return success_result(
+                "render",
+                t0,
+                tome=tome_text,
+                sliders={
+                    "density": sliders.density,
+                    "length": sliders.length,
+                    "formality": sliders.formality,
+                    "audience": sliders.audience,
+                    "perspective": sliders.perspective,
+                },
+                mode="local-deterministic",
+                axiom_count_input=len(triples),
+                title=title,
+            )
+        except Exception as exc:
+            return error_result(
+                "render", t0, ErrorClass.INTERNAL, type(exc).__name__
             )
 
     # ------------------------------------------------------------------

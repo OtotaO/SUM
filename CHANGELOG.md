@@ -4,7 +4,37 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
-(no entries since the v0.4.1 release-rotation; new work lands here.)
+### MCP server `render` tool — bidirectional symmetry on the agent surface
+
+Closes the gap PR #97 left on the MCP side: the CLI gained `sum render`
+in v0.4.0, the MCP server's tool surface (`extract / attest / verify /
+inspect / schema`) didn't follow until now. With this entry, MCP-aware
+LLM clients (Claude Desktop, Claude Code, Cursor, Continue) can drive
+both directions of the trust loop — `attest` to mint a bundle from
+prose, `render` to re-emit a tome from a bundle — entirely from inside
+an LLM session, with byte-compatible artifacts that verify under any
+SUM verifier.
+
+Same algebra, same `generate_controlled`, byte-compatible with the
+CLI's local path. Local-only by default (deterministic density slider);
+non-neutral length / formality / audience / perspective return
+`error_class="schema"` with a message pointing at the Worker's
+`POST /api/render` for LLM-conditioned rendering — the MCP server
+stays fully offline by default, preserving the existing
+`SUM_MCP_ALLOW_NETWORK` opt-in property.
+
+Tool surface now: `extract / attest / verify / inspect / **render** /
+schema`. Tool count goes from 5 to 6.
+
+Tests: `Tests/test_mcp_server.py` (+15, now 44 passing) — 15 render-
+specific cases including round-trip integrity at density=1.0
+(rendered tome re-mints to the source bundle's `state_integer`,
+byte-for-byte), density=0.0 emits no axiom lines, density=0.5 keeps
+the lex-prefix, slider-bound validation, malformed-bundle gates,
+non-neutral-axes-without-worker rejection with actionable error
+message pointing at `/api/render`.
+
+
 
 ## [0.4.1] — 2026-05-01
 

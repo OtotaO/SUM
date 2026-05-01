@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-01T06:21:50Z",
+  "issued_at": "2026-05-01T06:55:10Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "281f6243d6c5aeed4ce6929a4ae006fe2560739d",
-    "head_short": "281f624",
-    "head_subject": "docs: post-v0.4.1 polish \u2014 drop \"PyPI 0.3.0 stale\" wording (#102)",
-    "head_committer_date": "2026-05-01T01:53:44-04:00",
+    "head_sha": "78981a38ca59139b0122cfb674c1b5293908d1ad",
+    "head_short": "78981a3",
+    "head_subject": "docs: session handover (2026-05-01) + read-first pointer refresh (#103)",
+    "head_committer_date": "2026-05-01T02:28:12-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -22,8 +22,8 @@
     "pypi_published_version": "0.4.1"
   },
   "features": {
-    "total": 143,
-    "production": 129,
+    "total": 144,
+    "production": 130,
     "scaffolded": 13,
     "designed": 1
   },
