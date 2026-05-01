@@ -77,6 +77,19 @@ will have the full picture.
    `LengthFinishReasonError`; v0.9.A render receipts (signed JWS +
    JWKS); v0.9.A.1 review-pass triple-sort + doc-bytes regen; v0.9.A.2
    route `/.well-known/*` through Worker + keygen polish.
+10. **[`docs/SHEAF_HALLUCINATION_DETECTOR.md`](docs/SHEAF_HALLUCINATION_DETECTOR.md)** —
+    research direction (2026-05-01). Specifies a sheaf-Laplacian
+    consistency score over signed render-receipt manifolds, grounded
+    in Gebhart, Hansen & Schrater (2023, AISTATS, arXiv:2110.03789)
+    and the sheaf-Laplacian theory of Hansen & Ghrist (2019). The
+    SUM-to-Knowledge-Sheaves mapping is charted concretely (§2.3 of
+    that doc); v1/v2/v3 procedures specified; falsifiable predictions
+    named; bounded claims set. **No code shipped yet** — the present
+    document is the specification; `sum_engine_internal/research/`
+    will scaffold in a separate PR. This is the first artifact that
+    grounds SUM's primitives inside the peer-reviewed categorical-AI
+    conversation; read it before adding new research-flavoured
+    directions to the project.
 
 Shipping surface at the current HEAD: the `sum` binary (currently
 `v0.4.1` on `pyproject.toml` and on PyPI; v0.4.0 was tagged on git
