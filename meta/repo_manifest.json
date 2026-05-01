@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-01T10:32:17Z",
+  "issued_at": "2026-05-01T14:34:09Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "a2ae3ea1e186aed727d1c0014a94dcbd52e1ab57",
-    "head_short": "a2ae3ea",
-    "head_subject": "release: v0.5.0 \u2014 bidirectional MCP + sheaf-Laplacian research substrate (#108)",
-    "head_committer_date": "2026-05-01T06:28:33-04:00",
+    "head_sha": "0ab9265cae75f3f993205044547e74f7a140a2ec",
+    "head_short": "0ab9265",
+    "head_subject": "research: close two v1 sheaf-Laplacian foot-guns surfaced by audit (#109)",
+    "head_committer_date": "2026-05-01T06:38:45-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -19,7 +19,7 @@
   },
   "release": {
     "pyproject_version": "0.5.0",
-    "pypi_published_version": "0.4.1"
+    "pypi_published_version": "0.5.0"
   },
   "features": {
     "total": 145,
