@@ -67,13 +67,35 @@ determinism contract. The omni-format adapter (PR #88) handles every
 text-bearing format users have actually tried. Revisit when a real
 user input demands it.
 
+### Active research direction (specified, not yet implemented)
+
+- **Sheaf-Laplacian hallucination detector** —
+  [`docs/SHEAF_HALLUCINATION_DETECTOR.md`](SHEAF_HALLUCINATION_DETECTOR.md)
+  is the spec, written 2026-05-01 after a session pass over the
+  SCT (Stratified Cognitive Topos) synthesis the user shared.
+  Grounded in Gebhart, Hansen & Schrater (2023, AISTATS,
+  arXiv:2110.03789) "Knowledge Sheaves" — the
+  sheaf-Laplacian quadratic form ``x^T L_F x`` is the
+  mathematical primitive for measuring how badly a render
+  manifold fails to glue. v1 (1-dim presence stalks), v2
+  (text-embedding stalks), v3 (receipt-weighted) procedures
+  specified; v1+v2 is generic Knowledge-Sheaves application;
+  v3 is the SUM-specific extension that does not replicate
+  elsewhere. Three-week scope to a published artifact;
+  the wedges (agent-trust, C2PA-text, compliance) all
+  benefit from the same artifact under different
+  cover-computers. **No code shipped yet** — spec only.
+  Read the spec doc before adding parallel research
+  directions; SCT-flavoured framings should compose with
+  this thread, not branch.
+
 ### Soft follow-ups (small, not load-bearing)
 
-- **`sum-mcp` tool surface gains `render`.** The MCP server exposes
-  `extract / attest / verify / inspect / schema` but not `render` (not
-  shipped at PR #97 time). Now that the CLI verb is in, adding it to
-  MCP is a natural ~30 LOC follow-up so MCP-aware LLM clients can drive
-  the reverse direction without a shell.
+- ~~**`sum-mcp` tool surface gains `render`.**~~ ✓ Shipped in
+  PR #104 — MCP server now exposes `extract / attest / verify /
+  inspect / **render** / schema`. Tool count 5 → 6. The
+  bidirectional 3×3 grid (CLI/MCP/HTTP × attest/verify/render) is
+  fully populated. FEATURE_CATALOG entry 144.
 
 - **`sum render --receipt-out PATH`.** Receipts arrive in the `--json`
   envelope when `--use-worker` is set; a separate file path would be

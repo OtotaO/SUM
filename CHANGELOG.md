@@ -4,6 +4,66 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### Research direction — sheaf-Laplacian hallucination detector spec
+
+Documents (without yet implementing) a mathematically rigorous
+hallucination-consistency score on top of SUM's signed render-receipt
+manifold. Grounded in Gebhart, Hansen & Schrater (2023, AISTATS,
+arXiv:2110.03789) "Knowledge Sheaves" and the sheaf-Laplacian theory
+of Hansen & Ghrist (2019). The mathematical primitive is Equation 1
+of Gebhart et al.: the sheaf-Laplacian quadratic form
+``x^T L_F x = sum_e ‖F_u→e x_u − F_v→e x_v‖^2`` — zero exactly when
+the cochain ``x`` is a global section, strictly positive otherwise.
+Applied to SUM: build a knowledge-sheaf on a bundle's triple set;
+treat each rendered tome (varying slider position, paraphrase,
+model) as a 0-cochain via re-extracted entity presence/embeddings;
+the Laplacian quadratic form measures how badly the rendering
+manifold fails to glue across the cover.
+
+This is the first artifact that grounds SUM's primitives inside the
+peer-reviewed categorical-AI conversation (the substantive 80% of
+the SCT-style synthesis the project's intellectual context points
+toward). Coupled to render-receipt issuer-trust weighting (v3 of
+the spec), the obstruction-class score is the SUM-specific extension
+of the published Knowledge-Sheaves framework; it does not replicate
+elsewhere because no other system has cross-runtime-verified render
+receipts.
+
+The spec includes:
+
+  - Theoretical foundation with verbatim citation of Gebhart et al.
+    Definition 4 (cellular sheaf) and Equation 1 (Laplacian
+    quadratic form).
+  - SUM-to-Knowledge-Sheaves mapping table — mechanical correspondence
+    between SUM primitives (state integer, render receipt, K1–K4
+    cross-runtime byte-identity) and Knowledge-Sheaves primitives
+    (Yoneda token, signed cochain witness, descent under a covering
+    family).
+  - v1 (1-dim presence stalks), v2 (text-embedding-3-small stalks),
+    v3 (receipt-weighted) procedure specs.
+  - Falsifiable predictions: ROC AUC ≥ 0.75 on synthetic
+    adversarial benchmark (entity-swap, predicate-flip, fact-
+    fabrication, negation-injection); per-edge top-k localisation
+    of perturbed triples ≥ 70%; receipt-weighting concentration.
+  - Bounded claims explicitly disclaiming hallucination "solution",
+    correctness proofs, and detection of consistent-hallucination
+    adversarial regimes.
+  - 3-week one-engineer plan: Week 1 references + scaffold; Week 2
+    v1 prototype + synthetic benchmark; Week 3 v2 + arXiv note.
+  - Position vs. the three monetisable wedges (agent-trust,
+    C2PA-text-equivalent, compliance audit) — the same artifact in
+    all three settings; only the cover-computer and score-reader
+    differ.
+
+No code shipped in this entry. The companion implementation will
+land in `sum_engine_internal/research/sheaf_laplacian.py` (behind a
+``[research]`` extras flag so production install is unaffected) in
+a follow-up PR after the spec is reviewed.
+
+CLAUDE.md gains item 10 in the read-first list pointing at the new
+spec doc, so future memory-less sessions do not start a parallel or
+contradictory research direction.
+
 ### MCP server `render` tool — bidirectional symmetry on the agent surface
 
 Closes the gap PR #97 left on the MCP side: the CLI gained `sum render`
