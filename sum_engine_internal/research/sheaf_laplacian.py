@@ -56,11 +56,29 @@ class KnowledgeSheaf:
 
     The vertex order is fixed at construction so cochains are
     indexable as plain numpy arrays.
+
+    Note on ``stalk_dim``: v1 only supports ``stalk_dim=1``.
+    Construction with any other value is rejected at
+    ``__post_init__`` time so callers cannot build a sheaf they
+    can't use. v2 (text-embedding stalks) will lift this constraint;
+    until then, attempting to use higher-dimensional stalks should
+    fail loudly at the boundary — not silently surface as a
+    NotImplementedError mid-pipeline.
     """
     vertices: tuple[str, ...]
     edges: tuple[Triple, ...]            # (subject, predicate, object)
     vertex_index: dict[str, int]         # name → index into cochain vector
     stalk_dim: int                       # = 1 for v1
+
+    def __post_init__(self) -> None:
+        if self.stalk_dim != 1:
+            raise ValueError(
+                f"v1 KnowledgeSheaf supports stalk_dim=1 only "
+                f"(got stalk_dim={self.stalk_dim}). v2 with text-"
+                f"embedding stalks (1536-dim) is the planned "
+                f"successor; see docs/SHEAF_HALLUCINATION_DETECTOR.md "
+                f"§5.3 for the v1 → v2 plan."
+            )
 
     @classmethod
     def from_triples(cls, triples: list[Triple], stalk_dim: int = 1) -> "KnowledgeSheaf":
@@ -85,10 +103,16 @@ def coboundary_matrix(sheaf: KnowledgeSheaf) -> np.ndarray:
     exactly two non-zeros: -1 at u's column, +1 at v's column.
 
     Shape: (|E|, |V|) for stalk_dim=1; (|E|*d, |V|*d) when d>1
-    using a Kronecker product. v1 uses d=1.
+    using a Kronecker product. v1 uses d=1, enforced at sheaf
+    construction time (see ``KnowledgeSheaf.__post_init__``).
     """
-    if sheaf.stalk_dim != 1:
-        raise NotImplementedError("v1 supports stalk_dim=1 only")
+    # Defensive — should be unreachable since KnowledgeSheaf rejects
+    # non-1 stalk_dim at construction. Kept as an invariant so a
+    # future v2 KnowledgeSheaf subclass that lifts the restriction
+    # but forgets to override this function fails loudly here.
+    assert sheaf.stalk_dim == 1, (
+        f"coboundary_matrix v1 requires stalk_dim=1, got {sheaf.stalk_dim}"
+    )
     n_v = len(sheaf.vertices)
     n_e = len(sheaf.edges)
     delta = np.zeros((n_e, n_v), dtype=np.float64)
@@ -162,9 +186,27 @@ def consistency_profile(
     list of (s, p, o) triples extracted from that rendering.
 
     Returns the consistency profile envelope shape from spec §3.5
-    (without the receipt-binding parts, which are v3).
+    (without the receipt-binding parts, which are v3). When the
+    render manifold is empty, returns a profile with explicit
+    null fields rather than a misleading zero score.
     """
     sheaf = KnowledgeSheaf.from_triples(source_triples, stalk_dim=1)
+
+    # Empty manifold has no signal to report; return explicit nulls
+    # so callers can branch on render_count == 0 without having to
+    # interpret a fabricated all-zero profile.
+    if not rendered_extractions:
+        return {
+            "render_count": 0,
+            "stalk_dim": sheaf.stalk_dim,
+            "version": "v1-presence-stalks",
+            "mean_laplacian": None,
+            "std_laplacian": None,
+            "max_per_render": None,
+            "argmax_render_idx": None,
+            "per_render_v": [],
+            "per_edge_top3_argmax_render": [],
+        }
 
     per_render_v: list[float] = []
     per_render_localization: list[list[tuple[Triple, float]]] = []
@@ -174,7 +216,8 @@ def consistency_profile(
         per_render_v.append(v_n)
         per_render_localization.append(per_edge_discrepancy(sheaf, x_n))
 
-    arr = np.array(per_render_v) if per_render_v else np.array([0.0])
+    arr = np.array(per_render_v)
+    argmax_idx = int(arr.argmax())
     return {
         "render_count": len(rendered_extractions),
         "stalk_dim": sheaf.stalk_dim,
@@ -182,9 +225,7 @@ def consistency_profile(
         "mean_laplacian": float(arr.mean()),
         "std_laplacian": float(arr.std()),
         "max_per_render": float(arr.max()),
-        "argmax_render_idx": int(arr.argmax()),
+        "argmax_render_idx": argmax_idx,
         "per_render_v": per_render_v,
-        "per_edge_top3_argmax_render": per_render_localization[
-            int(arr.argmax())
-        ][:3],
+        "per_edge_top3_argmax_render": per_render_localization[argmax_idx][:3],
     }
