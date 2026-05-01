@@ -1171,16 +1171,25 @@ Pure numpy. CPU-only. No external API spend. Default $d \in \{8, 32, 64\}$; test
 **Status: scaffolded with a documented falsification.** Math (Block 1 of tests), training (Block 2), and disconnected-graph behaviour (Block 3) all verified empirically. **The headline finding: v2.1 with presence-style cochains does NOT close the v1 disconnected-graph blindspot from PR #107.** Trained 4-fact disconnected source: clean V = 0.4377; dropout V = 0.3270; margin = −0.1108 (dropout *lower* than clean — wrong direction). Why: when a render drops a whole component, both endpoints zero out in the cochain, the trained restriction maps multiply by zero on both sides, the per-edge residual vanishes regardless of training. **Same structural issue as v1.** v2.2's semantic-context-window cochains are the proposed fix; v2.1 ships as the math + training infrastructure that v2.2 will reuse, not as a working detector for the disconnected-graph case. Spec §3.3 v2.1 has been updated to state this honestly.
 
 Verify: `pytest Tests/research/test_sheaf_laplacian_v2.py -q`
-Expected: `11 passed` — 6 math-sanity properties at d > 1 (Laplacian symmetric / PSD / quadratic-form factorisation matches full Laplacian / constant-cochain global-section property / one-hot residual magnitude / per-edge localization tie-handling) + 2 training-sanity properties (margin-ranking loss decreases monotonically over the second half of training; trained sheaf lowers V on positive triples vs random init) + **the disconnected-graph falsification pinned** (`test_v2_1_does_NOT_close_disconnected_graph_blindspot_with_presence_cochains`) + 2 v2-API guards (empty-manifold None scalars, F_h shape validation).
+Expected: `13 passed` — 6 math-sanity properties at d > 1 + 2 training-sanity properties + the disconnected-graph **v2.1 falsification pinned** (presence cochains do NOT close the blindspot) + the **v2.2 closure pinned** (combined detector flips the sign correctly via the deficit term, with the Laplacian term still showing the v2.1 falsification signal — the closure comes from the orthogonal deficit signal, not from the Laplacian) + 2 v2-API guards (empty-manifold None scalars, F_h shape validation).
+
+### 147. v2.2 sheaf-Laplacian combined detector (research, [research] extras) 🔧
+
+`combined_detector_score` in `sum_engine_internal/research/sheaf_laplacian_v2.py`. Implements `docs/SHEAF_HALLUCINATION_DETECTOR.md` §3.3 v2.2 candidate (c) — combined Laplacian + presence-deficit detector. Math: $V_{\text{total}} = \|\delta x\|^2 + \lambda \cdot (\text{presence\_deficit})^2$ where presence_deficit is the count of source vertices missing from the render. The Laplacian term carries the relation-aware signal (catches A2 / A3 after training); the deficit term carries the presence-pattern signal (catches density-dropout, including on disconnected source graphs which the Laplacian alone cannot detect by design). The two terms are **orthogonal** — combining them is the publishable v2.2 artifact, not a workaround.
+
+The deeper analytical finding (PR #112): the Laplacian quadratic form $x^T L_F x$ is *fundamentally* a measure of cross-edge agreement, not entity presence — it cannot detect "facts missing entirely" by design. v1 / v2.1's disconnected-graph blindspot was a *category mismatch*: trying to use a relation-agreement signal to detect entity-dropout. v2.2's combined detector resolves this by running both signals in parallel; falsification analysis ruled out anti-cochain as a single-term fix (same-magnitude property under sign flip).
+
+Verify: `pytest Tests/research/test_sheaf_laplacian_v2.py::test_v2_2_combined_detector_closes_disconnected_graph_blindspot Tests/research/test_sheaf_laplacian_v2.py::test_v2_2_combined_detector_no_signal_on_clean_render -q`
+Expected: `2 passed` — closure pinned on the v2.1 falsification 4-fact disconnected-graph data ($\lambda = 0.05$ default; clean V = 0.438; dropout V = 0.527; correct sign). The Laplacian-only term still shows the v2.1 falsification signal in isolation (dropout < clean) — the closure comes from the orthogonal deficit term, not the Laplacian. No false-positive on lawful clean renders (deficit = 0; combined V == Laplacian V).
 
 ---
 
 ## Summary counts
 
-Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **146**.
+Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **147**.
 
 - **Production ✅: 130 features** — tested green; each has a verification command in its entry.
-- **Scaffolded 🔧: 15 features** — tests pass, production activation pending. All catalogued in `docs/MODULE_AUDIT.md` with activation checklists.
+- **Scaffolded 🔧: 16 features** — tests pass, production activation pending. All catalogued in `docs/MODULE_AUDIT.md` with activation checklists.
 - **Designed 📄: 1 feature** (sha256_128_v2 default-promotion; cross-runtime byte-identity locked, default-flip is a separate operator decision).
 
 If the totals above ever disagree with the grep recipe, this file drifted; rerun the recipe and update the prose. Phase E.1 v0.9.B (browser receipt verifier) + v0.9.C (Python receipt verifier) shipped earlier and are catalogued in the body. Future unshipped queue items are tracked in [`docs/NEXT_SESSION_PLAYBOOK.md`](NEXT_SESSION_PLAYBOOK.md) and not catalogued here until they land.

@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-01T14:48:01Z",
+  "issued_at": "2026-05-01T14:58:42Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "c6f0a13269992e8b1e153077dd0754fbdd5ef75d",
-    "head_short": "c6f0a13",
-    "head_subject": "docs: split sheaf-Laplacian v2 into v2.0 / v2.1 / v2.2 after Hansen-Ghrist 2019 reading (#110)",
-    "head_committer_date": "2026-05-01T10:40:16-04:00",
+    "head_sha": "b7bd5fb1e1267e8e136b0faf41f70470a77f4913",
+    "head_short": "b7bd5fb",
+    "head_subject": "research: v2.1 sheaf-Laplacian scaffold + headline falsification (presence cochains do NOT close v1's disconnected-graph blindspot) (#111)",
+    "head_committer_date": "2026-05-01T10:54:22-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -22,9 +22,9 @@
     "pypi_published_version": "0.5.0"
   },
   "features": {
-    "total": 146,
+    "total": 147,
     "production": 130,
-    "scaffolded": 15,
+    "scaffolded": 16,
     "designed": 1
   },
   "receipts": {
