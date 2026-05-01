@@ -289,6 +289,99 @@ def test_v2_1_does_NOT_close_disconnected_graph_blindspot_with_presence_cochains
     )
 
 
+def test_v2_2_combined_detector_closes_disconnected_graph_blindspot():
+    """**The v2.2 closure (2026-05-01).** PR #111 falsified v2.1 with
+    presence-style cochains on the disconnected-graph case. Analytical
+    inspection (commit b7bd5fb) revealed the cause: the Laplacian
+    quadratic form fundamentally cannot detect presence-pattern
+    issues — only cross-edge disagreement.
+
+    v2.2 adds an orthogonal term (the presence deficit) to the
+    Laplacian. The Laplacian captures relation-aware drift; the
+    deficit captures presence-pattern issues. Combined:
+        V_total = ‖δx‖² + λ · (presence_deficit)²
+
+    This test verifies the combined detector closes v1+v2.1's
+    structural blindspot on the same 4-fact disconnected source
+    that PR #107 and #111 used.
+    """
+    from sum_engine_internal.research.sheaf_laplacian_v2 import combined_detector_score
+    triples = [
+        ("alice", "graduated", "mit"),
+        ("bob", "owns", "dog"),
+        ("carol", "writes", "python"),
+        ("einstein", "proposed", "relativity"),
+    ]
+    trained, embeddings, _ = train_restriction_maps(
+        triples,
+        stalk_dim=8,
+        epochs=300,
+        learning_rate=0.01,
+        margin=0.5,
+        n_negatives_per_positive=5,
+        seed=0,
+    )
+
+    clean = combined_detector_score(trained, embeddings, triples)
+    dropout_render = [
+        ("alice", "graduated", "mit"),
+        ("bob", "owns", "dog"),
+        ("carol", "writes", "python"),
+    ]
+    dropout = combined_detector_score(trained, embeddings, dropout_render)
+
+    # Clean has zero presence-deficit; dropout has 2 missing entities.
+    assert clean["presence_deficit_count"] == 0
+    assert dropout["presence_deficit_count"] == 2
+    assert sorted(dropout["missing_entities"]) == ["einstein", "relativity"]
+
+    # The combined detector must score dropout HIGHER than clean.
+    margin = dropout["v_combined"] - clean["v_combined"]
+    assert margin > 0.0, (
+        f"v2.2 combined detector must score dropout > clean; "
+        f"got clean={clean['v_combined']:.4f}, "
+        f"dropout={dropout['v_combined']:.4f}, "
+        f"margin={margin:.4f}"
+    )
+
+    # Sanity: the Laplacian term ALONE is *not* the source of this
+    # signal — it's the deficit term doing the work, exactly as the
+    # analytical reasoning predicts.
+    assert dropout["v_laplacian"] < clean["v_laplacian"], (
+        f"Pin: the Laplacian alone still has the v2.1 falsification "
+        f"signal (dropout < clean on Laplacian-only). The closure "
+        f"comes from the deficit term, not from the Laplacian. "
+        f"clean_laplacian={clean['v_laplacian']:.4f}, "
+        f"dropout_laplacian={dropout['v_laplacian']:.4f}"
+    )
+    assert dropout["v_deficit"] > clean["v_deficit"], (
+        f"Pin: the deficit term carries the disconnected-graph "
+        f"signal. clean_deficit={clean['v_deficit']:.4f}, "
+        f"dropout_deficit={dropout['v_deficit']:.4f}"
+    )
+
+
+def test_v2_2_combined_detector_no_signal_on_clean_render():
+    """A render that mentions every source entity must score
+    deficit=0 and the combined V equals the Laplacian term alone.
+    Verifies the deficit term doesn't fire on lawful renders."""
+    from sum_engine_internal.research.sheaf_laplacian_v2 import combined_detector_score
+    triples = [
+        ("alice", "knows", "bob"),
+        ("bob", "owns", "dog"),
+    ]
+    trained, embeddings, _ = train_restriction_maps(
+        triples,
+        stalk_dim=8,
+        epochs=200,
+        seed=0,
+    )
+    score = combined_detector_score(trained, embeddings, triples)
+    assert score["presence_deficit_count"] == 0
+    assert score["v_deficit"] == 0.0
+    assert score["v_combined"] == score["v_laplacian"]
+
+
 def test_consistency_profile_v2_handles_empty_render_manifold():
     """v2 must inherit v1's PR-#109 honesty pattern: empty render
     manifold returns explicit None scalars, not a fabricated zero

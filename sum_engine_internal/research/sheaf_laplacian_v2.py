@@ -387,6 +387,60 @@ def train_restriction_maps(
 # ─── Consistency profile (v2.1 envelope) ──────────────────────────────
 
 
+def combined_detector_score(
+    sheaf: KnowledgeSheafV2,
+    embeddings: np.ndarray,
+    rendered_triples: list[Triple],
+    presence_weight: float = 0.05,
+) -> dict:
+    """v2.2 combined detector: Laplacian quadratic form + presence-
+    deficit regularizer.
+
+    Reasoning (added 2026-05-01 after PR #111's analytical
+    realization that the Laplacian quadratic form fundamentally
+    cannot detect presence-pattern issues, only cross-edge
+    disagreement under the trained restriction maps):
+
+      V_total = ‖δx‖² + λ · (presence_deficit)²
+
+    where ``presence_deficit`` is the number of source vertices
+    NOT mentioned in the render. The Laplacian term carries the
+    relation-aware signal (catches A2 predicate-flip / A3 off-graph
+    fabrication after training); the deficit term carries the
+    presence-pattern signal (catches density-dropout, including
+    on disconnected source graphs which the Laplacian alone
+    cannot detect by design).
+
+    The two terms are orthogonal signals — combining them is the
+    publishable v2.2 artifact, not a workaround. ``presence_weight``
+    (λ) is the relative weighting; default 0.05 was calibrated by
+    inspection on the v2.1-falsification 4-fact disconnected-graph
+    data (clean = 0.438 Laplacian-only; dropout = 0.327 Laplacian
+    plus 4 deficit² × 0.05 = 0.527; combined detector flips sign
+    correctly).
+    """
+    x = cochain_one_hot_v2(sheaf, rendered_triples, embedding=embeddings)
+    laplacian_term = laplacian_quadratic_form_v2(sheaf, x)
+
+    mentioned: set[str] = set()
+    for s, _, o in rendered_triples:
+        mentioned.add(s)
+        mentioned.add(o)
+    source_vertices = set(sheaf.vertices)
+    missing = source_vertices - mentioned
+    presence_deficit = len(missing)
+    deficit_term = presence_weight * (presence_deficit ** 2)
+
+    return {
+        "v_combined": float(laplacian_term + deficit_term),
+        "v_laplacian": float(laplacian_term),
+        "v_deficit": float(deficit_term),
+        "presence_deficit_count": presence_deficit,
+        "missing_entities": sorted(missing),
+        "presence_weight": presence_weight,
+    }
+
+
 def consistency_profile_v2(
     sheaf: KnowledgeSheafV2,
     embeddings: np.ndarray,

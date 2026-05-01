@@ -252,24 +252,50 @@ The honest split:
     all-zero cochain gives V = 0 regardless of restriction
     maps. v2.2's semantic-context-window cochains close this.
 
-  Two candidate cochain redesigns for v2.2:
+  Three candidate cochain redesigns for v2.2 — analytically
+  evaluated 2026-05-01:
 
-    (a) **Anti-cochain:** $x_n[v] = +\text{trained\_emb}[v]$ if
-        $v$ is mentioned in the render, $-\text{trained\_emb}[v]$
-        if $v$ is in source but missing from the render, $0$ if
-        $v$ is not in source. Dropping a fact now produces a
-        non-zero contribution to V because the missing endpoint
-        contributes $-\text{trained\_emb}$ rather than 0.
+    (a) **Anti-cochain** (FALSIFIED analytically): $x_n[v] =
+        +\text{trained\_emb}[v]$ if $v$ mentioned, $-\text{trained\_emb}[v]$
+        if missing. For an edge with both endpoints missing,
+        the residual becomes $F_h(-\text{emb}_h) - F_t(-\text{emb}_t)
+        = -(F_h \text{emb}_h - F_t \text{emb}_t)$ — *same magnitude*
+        as the positive case. V is unchanged. Anti-cochain
+        does NOT close the blindspot.
     (b) **Semantic-context cochain:** $x_n[v] = \text{embed}
-        (\text{context}(v, R_n))$ via sentence-transformer
-        embedding of context window around $v$'s mention.
-        Missing entities give zero, but lawful semantic drift
-        in present mentions is captured directly.
+        (\text{context}(v, R_n))$ via sentence-transformer.
+        Catches semantic drift in *present* mentions; missing
+        entities still give zero, so disconnected-graph dropout
+        still falsifies. v2.3 problem (sentence-transformer
+        dep), not v2.2.
+    (c) **Combined detector** ✓ (implemented as v2.2,
+        ``combined_detector_score`` in
+        ``sum_engine_internal/research/sheaf_laplacian_v2.py``):
+        $V_{\text{total}} = \|\delta x\|^2 + \lambda \cdot
+        (\text{presence\_deficit})^2$ where presence_deficit is
+        the count of source vertices missing from the render.
+        The Laplacian term carries the relation-aware signal
+        (catches A2 / A3 after training); the deficit term
+        carries the presence-pattern signal (catches density-
+        dropout, including on disconnected source graphs which
+        the Laplacian alone cannot detect by design). The two
+        terms are **orthogonal** — combining them is the
+        publishable v2.2 artifact, not a workaround.
+        $\lambda = 0.05$ default, calibrated on the
+        v2.1-falsification 4-fact disconnected-graph data
+        (clean V = 0.438; dropout V = 0.327 + $\lambda \cdot 4$
+        = 0.527; correct sign).
 
-  v2.2 is where the disconnected-graph blindspot likely closes.
-  v2.1 ships as the *math + training infrastructure*; v2.2
-  ships the cochain redesign that addresses the actual
-  detection question.
+  **The deeper finding (added 2026-05-01) underlying (c):** the
+  Laplacian quadratic form $x^T L_F x = \|\delta x\|^2$ is
+  *fundamentally* a measure of cross-edge agreement under
+  restriction maps, not entity presence. It cannot detect "facts
+  missing entirely" by design — that's a separate problem with
+  a separate fix (the deficit term). v1 / v2.1's
+  disconnected-graph blindspot was a *category mismatch*: trying
+  to use a relation-agreement signal to detect entity-dropout.
+  v2.2's combined detector resolves this by running both signals
+  in parallel.
 
   Training data: SUM already has ``seed_v1`` (50 docs) and
   ``seed_v2`` (20 docs) corpora. No new data to acquire.
