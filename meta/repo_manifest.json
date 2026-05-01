@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-01T08:55:08Z",
+  "issued_at": "2026-05-01T10:13:47Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "32124b8e52f47742643fa9e0dcff91d277103435",
-    "head_short": "32124b8",
-    "head_subject": "docs: sheaf-Laplacian hallucination detector \u2014 research direction (specification) (#105)",
-    "head_committer_date": "2026-05-01T04:19:49-04:00",
+    "head_sha": "f92e5f149d87709342de749b42ed264fce885a71",
+    "head_short": "f92e5f1",
+    "head_subject": "research: v1 sheaf-Laplacian hallucination detector \u2014 implementation + spec corrections (#106)",
+    "head_committer_date": "2026-05-01T05:01:35-04:00",
     "commits_last_30d": null
   },
   "github": {

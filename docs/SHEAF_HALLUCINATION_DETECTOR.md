@@ -399,6 +399,27 @@ What this artifact does **not** claim:
   entities present anywhere." Addressing this requires either an
   absolute-presence regulariser ($\|x\|^2$ term) or v2's learned
   stalks, which carry positive activation on mention.
+- **Disconnected source-graph blindspot (added 2026-05-01,
+  surfaced by the real-prose test
+  ``scripts/research/sheaf_real_test.py``).** When the source
+  bundle's induced graph $G_T$ has multiple disconnected
+  components and a density-controlled render drops *entire
+  components* (both endpoints of an edge), every remaining
+  edge is in $\{(1,1), (0,0)\}$ — never $(1,0)$ — so the
+  Laplacian quadratic form is identically zero even though
+  facts have been dropped. The synthetic micro-benchmark
+  (which used connected fact-sets) did not surface this,
+  but naturally-occurring prose often produces sparse,
+  disconnected fact-sets (4 unrelated facts about 4
+  unrelated entities is the textbook case). Real-data
+  measurement: density=0.5 of a 4-fact disconnected graph
+  yielded V = 0, identical to density=1.0. **v1 cannot
+  detect density-controlled axiom dropout on disconnected
+  graphs.** v2's per-vertex learned-embedding stalks
+  address this because each vertex's embedding contributes
+  independently to the cochain even when its graph
+  neighbourhood vanishes. Pinned by
+  ``test_disconnected_graph_density_dropout_invisible``.
 
 What is honestly speculative, pending the benchmark:
 
@@ -490,7 +511,7 @@ properties + 5 micro-benchmark assertions, and a reproducible
 synthetic micro-benchmark in `scripts/research/sheaf_microbench.py`.
 
 **Empirical signal on synthetic data (6 fact-sets × 5
-perturbation classes = 30 trials):**
+perturbation classes = 30 trials, all CONNECTED graphs):**
 
   | Class | Detect rate | Top-1 localization |
   |---|---|---|
@@ -501,18 +522,54 @@ perturbation classes = 30 trials):**
   | A5 consistent-swap (×3) | 6/6 ✓ via mean signal | 6/6 |
   | **Total caught** | **18/30** | **18/18 = 100%** |
 
-The 60% catch rate is precisely the v1 design's claim: catch
-entity-presence-affecting perturbations cleanly, defer predicate-
-and off-graph-sensitive perturbations to v2. Localization is
-strictly better than the spec's P3 prediction (≥70% target;
-actual 100% on caught classes).
+The 60% catch rate is precisely the v1 design's claim on
+connected graphs: catch entity-presence-affecting perturbations
+cleanly, defer predicate- and off-graph-sensitive perturbations
+to v2. Localization is strictly better than the spec's P3
+prediction (≥70% target; actual 100% on caught classes).
+
+**Real-data falsification (2026-05-01, on 4-fact disconnected
+graph from naturalistic prose). The synthetic benchmark missed
+this:**
+
+  - density=1.0 render: V = 0 ✓
+  - density=0.7 render (drops 2 axioms): V = 0 ✗ — should be > 0
+  - density=0.5 render (drops 2 axioms): V = 0 ✗ — should be > 0
+  - paraphrase 2 (reordered): V = 0 ✓
+  - paraphrase 3 (verbose; sieve drift to ``python_code``): V = 3 ✓
+  - paraphrase 4 (lexical variation): V = 0 ✓
+
+**On disconnected source-graphs, v1's density-dropout signal
+collapses to zero** (because dropping a whole component leaves
+every remaining edge in {(1,1), (0,0)} — both endpoints
+either present or both absent, never partially present, so no
+edge contributes to V). The synthetic benchmark used connected
+fact-sets which masked this. The honest one-line summary of v1's
+real-data behaviour:
+
+> **v1 is a connected-graph entity-presence drift detector.** It
+> catches sieve canonicalisation divergence across paraphrases
+> (verbose → predicate/object drift, the paraphrase 3 case). It
+> does NOT catch density-controlled axiom dropout when the source
+> graph is disconnected. Naturally-occurring prose tends to
+> produce sparse, often-disconnected fact-sets, so v1 is **not
+> generally useful as a hallucination detector on naturalistic
+> input** — its useful regime is restricted to source-graphs with
+> high cross-edge connectivity.
+
+This is reproducible: ``PYTHONPATH=. python
+scripts/research/sheaf_real_test.py``. Pinned in code by
+``test_disconnected_graph_density_dropout_invisible``.
 
 **Next concrete step:** v2. Replace 1-dim presence stalks with
 text-embedding-3-small (1536-dim) stalks; train (or fix as
-identity) the per-relation restriction maps. This addresses A2
-and A3 (per the v1→v2 design) and removes the empty-render false
-negative (since per-entity embeddings are non-zero on mention).
-Targeted at Week 2 of the original three-week plan; v3
-(receipt-weighted, the SUM-specific extension) follows v2.
+identity) the per-relation restriction maps. v2 addresses every
+v1 blindspot named so far (A2 predicate-flip, A3 off-graph
+fabrication, empty-render false negative, **disconnected-graph
+density-dropout blindness**) because per-vertex embeddings
+contribute independently to the cochain regardless of graph
+neighbourhood. Targeted at Week 2 of the original three-week
+plan; v3 (receipt-weighted, the SUM-specific extension) follows
+v2.
 
 — end of research direction

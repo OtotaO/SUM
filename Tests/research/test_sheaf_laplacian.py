@@ -230,6 +230,54 @@ def test_microbench_a5_consistent_swap_caught_via_mean_signal():
     )
 
 
+def test_disconnected_graph_density_dropout_invisible():
+    """v1 blindspot surfaced by the real-prose test (2026-05-01):
+    when the source bundle's induced graph has multiple disconnected
+    components and a density-controlled render drops ENTIRE
+    components, the Laplacian quadratic form is zero even though
+    facts have been dropped.
+
+    Construction: 4 unrelated facts about 4 unrelated entity-pairs.
+    The induced graph has 4 disconnected edges. Drop 2 of them
+    entirely (both endpoints vanish). Every remaining edge is in
+    {(1,1), (0,0)} — never (1,0) — so V = 0.
+
+    This is the v1 design's structural limit: the Laplacian on
+    presence stalks measures cross-edge agreement, and an edge with
+    both endpoints absent agrees as cleanly as both endpoints present.
+    v2 (learned-embedding stalks) addresses this because per-vertex
+    embeddings contribute independently regardless of neighbourhood.
+
+    Pinned so a future v1-improver does not silently fix the symptom
+    without understanding the cause.
+    """
+    triples = [
+        ("alice", "graduated", "mit"),
+        ("bob", "owns", "dog"),
+        ("carol", "writes", "python"),
+        ("einstein", "proposed", "relativity"),
+    ]
+    F = KnowledgeSheaf.from_triples(triples)
+
+    # Render at "density 0.5" — drops 2 axioms entirely.
+    # Lex-sorted axioms: alice||graduated||mit, bob||owns||dog,
+    # carol||writes||python, einstein||proposed||relativity.
+    # apply_density(d=0.5) keeps the first floor(4*0.5) = 2:
+    # alice||... and bob||..., dropping carol and einstein entirely.
+    kept_triples = [
+        ("alice", "graduated", "mit"),
+        ("bob", "owns", "dog"),
+    ]
+    x = cochain_from_extracted(F, kept_triples)
+    v = laplacian_quadratic_form(F, x)
+    assert v == 0.0, (
+        f"v1 must show V=0 on disconnected-graph density dropout "
+        f"(structural limit; pinned to surface this in code). "
+        f"If V > 0, either the graph is no longer disconnected or "
+        f"the cochain construction has changed. Got V = {v}"
+    )
+
+
 def test_microbench_top1_localization_perfect_on_caught_classes():
     """Per-edge top-1 localization must correctly identify the
     perturbed edge in every detected adversarial case across A1, A4,
