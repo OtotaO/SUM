@@ -20,11 +20,45 @@ name: Publish to PyPI
 # environment=pypi. If the TestPyPI publisher is unconfigured at first
 # tag push, the staging job will fail with an OIDC error before any
 # bytes are uploaded.
+#
+# ── Re-running on an existing tag (workflow_dispatch) ───────────────
+# When a publish run fails AFTER the TestPyPI upload but BEFORE
+# production (e.g. a pre-promotion gate fired), the existing TestPyPI
+# artifact blocks a clean re-run: the rebuild's wheel + sdist will
+# almost certainly differ byte-for-byte from the staged copy (Python
+# wheel builds embed timestamps unless SOURCE_DATE_EPOCH is set), so
+# `skip-existing: true` on the TestPyPI upload silently skips, and
+# the verify step's same-bytes check then fails comparing the new
+# local hashes against the stale TestPyPI bytes. This is the
+# documented behaviour, not a bug.
+#
+# To re-run on the same tag the operator must:
+#   1. Delete the existing release on test.pypi.org (project-owner
+#      can; TestPyPI explicitly allows release deletion, unlike prod
+#      PyPI).
+#   2. Trigger this workflow on the tag ref:
+#        gh workflow run publish-pypi.yml --ref vX.Y.Z
+#   3. Watch the run; if it lands green and prod PyPI shows the new
+#      version, the re-publish succeeded.
+#
+# workflow_dispatch is gated by repo write access — same baseline as
+# pushing a tag — so this expansion does not widen the attack surface
+# beyond the original tag-push trigger. The fail-closed gates
+# (same-bytes, crypto, repo identity, SAN identity) protect against
+# index-side substitution regardless of which trigger fired the run.
 
 on:
   push:
     tags:
       - "v*.*.*"
+  workflow_dispatch:
+    # Manual trigger for re-running an existing tag's publish flow
+    # after a transient failure. Operator must clear the existing
+    # TestPyPI release first; see the header comment above. The tag
+    # ref is supplied via `--ref vX.Y.Z`; no workflow inputs are
+    # accepted to keep the trigger contract identical to push (no
+    # surface for a malicious operator to inject a different version).
+
 
 permissions:
   contents: read
