@@ -248,6 +248,15 @@ identifies the perturbed triple in $\geq 70\%$ of single-perturbation
 adversarial examples. (Localization is what makes the detector
 *useful* downstream, not just a binary signal.)
 
+**P3 update (2026-05-01):** the synthetic micro-benchmark
+([`scripts/research/sheaf_microbench.py`](../scripts/research/sheaf_microbench.py))
+established this empirically at **18/18 = 100%** top-1 localization on
+catchable classes (A1 entity-swap, A4 triple-drop, A5
+consistent-entity-swap) across 6 fact-sets. The 70% threshold is
+preserved as the bar v1 must clear to be useful; v1's actual
+performance is a strict superset of that bar on synthetic data.
+Real-world benchmark calibration is Week 3 of the plan.
+
 **P4.** Render receipts issued by trusted issuers concentrate
 $x^T L x$ at the low end; unsigned renderings or renderings from
 unknown issuers concentrate at the high end (v3 only, when receipt
@@ -346,9 +355,31 @@ What this artifact does **not** claim:
   retrieval-grounded checks, NLI verifiers, and human review.
 - That it provides correctness proofs. It detects inconsistency in
   the *output manifold*; it does not certify that any single
-  output is *correct*. A perfectly consistent manifold of
-  uniformly-wrong renderings would score zero — *consistent
-  hallucination* is a known adversarial regime not addressed here.
+  output is *correct*.
+- **Consistent-hallucination behaviour (corrected 2026-05-01).**
+  An earlier draft of this section claimed "a perfectly consistent
+  manifold of uniformly-wrong renderings would score zero." That
+  was over-cautious. The empirical decomposition, pinned by
+  ``Tests/research/test_sheaf_laplacian.py``:
+    * Consistent hallucination via *entity substitution* (A5-via-swap)
+      **is caught**. Each render fails the same edges by the same
+      amount; the *mean* Laplacian is positive even though per-render
+      variance is zero. The detector signals on the mean, not just
+      the variance. Verified 6/6 on the synthetic micro-benchmark.
+    * Consistent hallucination via *predicate flip* (A2)
+      **is missed**. v1's presence stalks carry no predicate
+      information; consistency across renders is irrelevant because
+      no per-render signal exists in the first place. v2
+      (learned-embedding stalks) is required.
+    * Consistent hallucination via *off-graph fabrication* (A3)
+      **is missed**. Entities outside the source vertex set are
+      silently ignored by the cochain construction.
+
+  Honest one-line summary: consistent hallucination via classes v1
+  catches (A1 entity-swap, A4 triple-drop, A5-via-swap) is caught
+  by the mean signal; consistent hallucination via classes v1 is
+  structurally blind to (A2 predicate-flip, A3 off-graph fabrication)
+  remains uncaught regardless of consistency.
 - That it generalises across all knowledge-graph schemas. The
   schema choices (single-type vs. typed; restriction-map structure)
   affect the score; calibration is per-schema until robustness is
@@ -358,6 +389,16 @@ What this artifact does **not** claim:
   to need sparse approximations or graph partitioning.
 - That the v1 simple-presence variant captures semantic drift.
   v1 is a coarse pre-filter; v2 is the semantic version.
+- **Empty-render false negative (added 2026-05-01).** A render that
+  extracts zero triples yields the all-zero cochain x = 0, hence
+  $x^T L_{\mathcal{F}} x = 0$ — the same score as a perfectly
+  consistent render. Pinned by
+  ``test_empty_render_maximizes_laplacian``. Callers must treat
+  ``n_extracted == 0`` as a separate signal; the Laplacian alone
+  cannot distinguish "all entities present everywhere" from "no
+  entities present anywhere." Addressing this requires either an
+  absolute-presence regulariser ($\|x\|^2$ term) or v2's learned
+  stalks, which carry positive activation on mention.
 
 What is honestly speculative, pending the benchmark:
 
@@ -437,16 +478,41 @@ differ only in who computes the cover and who reads the score.
 
 ## 9. Status and next concrete step
 
-**Status (2026-05-01):** specification complete; references read
+**Status (2026-05-01, updated):** specification complete with
+empirical corrections from the v1 prototype run; references read
 and verified; SUM-to-Knowledge-Sheaves mapping charted; bounded
-claims set; falsifiable predictions named. **No code shipped yet.**
+claims set; falsifiable predictions named **and partially verified
+on synthetic data**. **v1 implementation shipped** in
+`sum_engine_internal/research/sheaf_laplacian.py` behind the
+`[research]` extras flag, with 12 pinned tests
+(`Tests/research/test_sheaf_laplacian.py`) covering 7 math-sanity
+properties + 5 micro-benchmark assertions, and a reproducible
+synthetic micro-benchmark in `scripts/research/sheaf_microbench.py`.
 
-**Next concrete step:** scaffold
-`sum_engine_internal/research/sheaf_laplacian.py` with type stubs
-and a v1 reference implementation, behind an explicit `[research]`
-extras flag in `pyproject.toml` so the production install path
-is unaffected. This is a separate PR; the present PR ships only
-the research-direction documentation so the plan is reviewable
-and falsifiable before any implementation work is done.
+**Empirical signal on synthetic data (6 fact-sets × 5
+perturbation classes = 30 trials):**
+
+  | Class | Detect rate | Top-1 localization |
+  |---|---|---|
+  | A1 entity-swap | 6/6 ✓ | 6/6 |
+  | A2 predicate-flip | 0/6 — known blind | n/a |
+  | A3 off-graph fabrication | 0/6 — known blind | n/a |
+  | A4 triple-drop | 6/6 ✓ | 6/6 |
+  | A5 consistent-swap (×3) | 6/6 ✓ via mean signal | 6/6 |
+  | **Total caught** | **18/30** | **18/18 = 100%** |
+
+The 60% catch rate is precisely the v1 design's claim: catch
+entity-presence-affecting perturbations cleanly, defer predicate-
+and off-graph-sensitive perturbations to v2. Localization is
+strictly better than the spec's P3 prediction (≥70% target;
+actual 100% on caught classes).
+
+**Next concrete step:** v2. Replace 1-dim presence stalks with
+text-embedding-3-small (1536-dim) stalks; train (or fix as
+identity) the per-relation restriction maps. This addresses A2
+and A3 (per the v1→v2 design) and removes the empty-render false
+negative (since per-entity embeddings are non-zero on mention).
+Targeted at Week 2 of the original three-week plan; v3
+(receipt-weighted, the SUM-specific extension) follows v2.
 
 — end of research direction

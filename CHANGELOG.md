@@ -4,6 +4,81 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+### v1 sheaf-Laplacian hallucination detector — implementation + spec corrections
+
+Implements the v1 detector specified in
+``docs/SHEAF_HALLUCINATION_DETECTOR.md`` §3.2 and verifies the
+spec's mathematical and empirical claims against a reproducible
+synthetic benchmark. Surfaces and corrects two spec
+mischaracterizations against actual measurement.
+
+Module: ``sum_engine_internal/research/sheaf_laplacian.py``,
+behind the new ``[research]`` extras flag in ``pyproject.toml``
+(``pip install 'sum-engine[research]'``). Production install
+path is unaffected — research dependencies (numpy, scipy) are
+not pulled by default.
+
+Math verified — 7 sanity properties pinned in
+``Tests/research/test_sheaf_laplacian.py``:
+
+  1. Laplacian symmetric (L = δ^T δ)
+  2. Laplacian positive-semidefinite
+  3. Quadratic form ≥ 0 on random cochains
+  4. Constant cochains are global sections (kernel of δ)
+  5. Single-missing-entity cochain has predicted V = 1
+  6. Per-edge top-1 localization finds the missing edge
+  7. Empty-render false-negative pinned (V = 0 on x = 0)
+
+Empirical separation verified on 6 fact-sets × 5 perturbation
+classes = 30 trials in ``scripts/research/sheaf_microbench.py``:
+
+  | Class                       | Caught | Localization |
+  | --------------------------- | ------ | ------------ |
+  | A1 entity-swap              | 6/6 ✓  | 6/6          |
+  | A2 predicate-flip           | 0/6 —  | known blind  |
+  | A3 off-graph fabrication    | 0/6 —  | known blind  |
+  | A4 triple-drop              | 6/6 ✓  | 6/6          |
+  | A5 consistent-swap (×3)     | 6/6 ✓  | 6/6          |
+
+Total: **18/30 catch rate; 18/18 = 100% top-1 localization on
+caught classes**. The 60% catch rate is precisely the v1 design's
+claim — catch entity-presence-affecting perturbations cleanly,
+defer predicate-sensitive (A2) and off-graph-sensitive (A3) to
+v2 (learned-embedding stalks, planned).
+
+Spec corrections (now in
+``docs/SHEAF_HALLUCINATION_DETECTOR.md``):
+
+  - **A5 consistent-hallucination** was originally claimed as a
+    blanket v1 blindspot. Empirically: A5 *via entity substitution*
+    is caught (mean Laplacian is positive even when per-render
+    variance is zero). Only A5 *via predicate-flip* (which is A2)
+    or *via off-graph fabrication* (which is A3) is missed. The
+    detector signals on the mean, not just the variance.
+  - **P3 localization** prediction was ≥ 70%; actual is 100% on
+    caught classes. Bar preserved as the threshold v1 must clear;
+    v1's actual performance is a strict superset.
+  - **Empty-render false negative** was not originally named in
+    bounded-claims; now explicit. Callers must treat
+    ``n_extracted == 0`` as a separate signal — the Laplacian
+    alone cannot distinguish "all entities present everywhere"
+    from "no entities present anywhere."
+
+Tests run via ``pytest Tests/research/test_sheaf_laplacian.py``
+(12 passed). Reproducible bench:
+``PYTHONPATH=. python scripts/research/sheaf_microbench.py``.
+
+FEATURE_CATALOG entry 145 (🔧 scaffolded — code tested, no
+production consumer wired). Counts: 144 → 145 total; production
+unchanged at 130; scaffolded 13 → 14.
+
+This implementation grounds SUM's primitives inside the
+peer-reviewed categorical-AI conversation (Knowledge Sheaves,
+Gebhart et al. 2023, AISTATS, arXiv:2110.03789) with a working
+artifact, not just a spec. v2 (learned-embedding stalks) is the
+natural next step; v3 (receipt-weighted, the SUM-specific
+extension) follows v2.
+
 ### Research direction — sheaf-Laplacian hallucination detector spec
 
 Documents (without yet implementing) a mathematically rigorous

@@ -1151,14 +1151,21 @@ The MCP-side analogue of `sum render`. Closes the bidirectional shell-symmetry t
 Verify: `pytest Tests/test_mcp_server.py -q`
 Expected: `44 passed` — 15 render-specific cases (non-dict bundle, missing canonical_tome, unsupported canonical_format_version, future minor version under 1.x accepted, oversized tome, zero-axiom bundle structural error, density bounds, length bounds, non-neutral-axes-without-worker schema error with actionable message, default-slider canonical output, **round-trip integrity at density=1.0 — rendered tome re-mints to source `state_integer`**, density=0.0 emits no lines, density=0.5 keeps lex-prefix, slider header emitted) plus the 29 prior MCP tests retained green.
 
+### 145. v1 sheaf-Laplacian hallucination detector (research-grade, [research] extras) 🔧
+
+Module `sum_engine_internal/research/sheaf_laplacian.py` implements the v1 detector specified in `docs/SHEAF_HALLUCINATION_DETECTOR.md` §3.2: 1-dim presence stalks on the knowledge graph induced by a SUM bundle's triple set, identity restriction maps, the sheaf-Laplacian quadratic form `x^T L_F x = Σ_e ‖F_v⊵e x_v − F_u⊵e x_u‖²` (Gebhart, Hansen & Schrater 2023, AISTATS, arXiv:2110.03789, Eq. 1; foundational sheaf-Laplacian theory in Hansen & Ghrist 2019) as a continuous consistency score over a render manifold. Behind the `[research]` extras flag — production install path is unaffected. **Status: scaffolded** — implementation tested green, no production consumer wired; v2 (learned-embedding stalks) and v3 (receipt-weighted) follow the v1→v2→v3 plan in the spec. Synthetic micro-benchmark: 18/30 catch on entity-presence-affecting perturbations (A1 entity-swap, A4 triple-drop, A5 consistent-entity-swap), 18/18 = 100% top-1 localization on caught classes; 0/12 on known-blind classes (A2 predicate-flip, A3 off-graph fabrication) — exactly as the spec predicts for v1.
+
+Verify: `pytest Tests/research/test_sheaf_laplacian.py -q`
+Expected: `12 passed` — 7 math-sanity properties (Laplacian symmetric / PSD / nonneg quadratic form / constant-cochain is global section / single-missing-entity gives V=1 / per-edge top-1 finds the failing edge / empty-render false-negative pinned) + 5 micro-benchmark assertions (A1 6/6 caught, A2 0/6, A3 0/6, A5 6/6 caught via mean signal, top-1 18/18 = 100% localization on caught classes). Reproducible bench: `PYTHONPATH=. python scripts/research/sheaf_microbench.py`.
+
 ---
 
 ## Summary counts
 
-Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **144**.
+Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **145**.
 
 - **Production ✅: 130 features** — tested green; each has a verification command in its entry.
-- **Scaffolded 🔧: 13 features** — tests pass, production activation pending. All catalogued in `docs/MODULE_AUDIT.md` with activation checklists.
+- **Scaffolded 🔧: 14 features** — tests pass, production activation pending. All catalogued in `docs/MODULE_AUDIT.md` with activation checklists.
 - **Designed 📄: 1 feature** (sha256_128_v2 default-promotion; cross-runtime byte-identity locked, default-flip is a separate operator decision).
 
 If the totals above ever disagree with the grep recipe, this file drifted; rerun the recipe and update the prose. Phase E.1 v0.9.B (browser receipt verifier) + v0.9.C (Python receipt verifier) shipped earlier and are catalogued in the body. Future unshipped queue items are tracked in [`docs/NEXT_SESSION_PLAYBOOK.md`](NEXT_SESSION_PLAYBOOK.md) and not catalogued here until they land.
