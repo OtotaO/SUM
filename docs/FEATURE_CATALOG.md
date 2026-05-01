@@ -1162,14 +1162,25 @@ Module `sum_engine_internal/research/sheaf_laplacian.py` implements the v1 detec
 Verify: `pytest Tests/research/test_sheaf_laplacian.py -q`
 Expected: `13 passed` — 7 math-sanity properties (Laplacian symmetric / PSD / nonneg quadratic form / constant-cochain is global section / single-missing-entity gives V=1 / per-edge top-1 finds the failing edge / empty-render false-negative pinned) + 5 micro-benchmark assertions (A1 6/6 caught, A2 0/6, A3 0/6, A5 6/6 caught via mean signal, top-1 18/18 = 100% localization on caught classes) + **disconnected-graph density-dropout blindspot pinned** (real-data falsification). Reproducible bench: `PYTHONPATH=. python scripts/research/sheaf_microbench.py`. Reproducible real-data test: `PYTHONPATH=. python scripts/research/sheaf_real_test.py`.
 
+### 146. v2.1 sheaf-Laplacian: d-dim stalks + learned restriction maps (research, [research] extras) 🔧
+
+Module `sum_engine_internal/research/sheaf_laplacian_v2.py` implements `docs/SHEAF_HALLUCINATION_DETECTOR.md` §3.3 v2.1: d-dim stalks with per-relation **learned** restriction maps trained via the contrastive sheaf-embedding loss (Gebhart, Hansen & Schrater 2023, AISTATS, arXiv:2110.03789, Definition 11 / Equation 4). Math grounded in Hansen & Ghrist (2019), *Toward a Spectral Theory of Cellular Sheaves* (arXiv:1808.01513, JACT 2019) §3.2 — the d-dim sheaf Laplacian formula and the block-Laplacian factorization.
+
+Pure numpy. CPU-only. No external API spend. Default $d \in \{8, 32, 64\}$; tested at $d=8$. Behind the same `[research]` extras flag as v1.
+
+**Status: scaffolded with a documented falsification.** Math (Block 1 of tests), training (Block 2), and disconnected-graph behaviour (Block 3) all verified empirically. **The headline finding: v2.1 with presence-style cochains does NOT close the v1 disconnected-graph blindspot from PR #107.** Trained 4-fact disconnected source: clean V = 0.4377; dropout V = 0.3270; margin = −0.1108 (dropout *lower* than clean — wrong direction). Why: when a render drops a whole component, both endpoints zero out in the cochain, the trained restriction maps multiply by zero on both sides, the per-edge residual vanishes regardless of training. **Same structural issue as v1.** v2.2's semantic-context-window cochains are the proposed fix; v2.1 ships as the math + training infrastructure that v2.2 will reuse, not as a working detector for the disconnected-graph case. Spec §3.3 v2.1 has been updated to state this honestly.
+
+Verify: `pytest Tests/research/test_sheaf_laplacian_v2.py -q`
+Expected: `11 passed` — 6 math-sanity properties at d > 1 (Laplacian symmetric / PSD / quadratic-form factorisation matches full Laplacian / constant-cochain global-section property / one-hot residual magnitude / per-edge localization tie-handling) + 2 training-sanity properties (margin-ranking loss decreases monotonically over the second half of training; trained sheaf lowers V on positive triples vs random init) + **the disconnected-graph falsification pinned** (`test_v2_1_does_NOT_close_disconnected_graph_blindspot_with_presence_cochains`) + 2 v2-API guards (empty-manifold None scalars, F_h shape validation).
+
 ---
 
 ## Summary counts
 
-Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **145**.
+Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **146**.
 
 - **Production ✅: 130 features** — tested green; each has a verification command in its entry.
-- **Scaffolded 🔧: 14 features** — tests pass, production activation pending. All catalogued in `docs/MODULE_AUDIT.md` with activation checklists.
+- **Scaffolded 🔧: 15 features** — tests pass, production activation pending. All catalogued in `docs/MODULE_AUDIT.md` with activation checklists.
 - **Designed 📄: 1 feature** (sha256_128_v2 default-promotion; cross-runtime byte-identity locked, default-flip is a separate operator decision).
 
 If the totals above ever disagree with the grep recipe, this file drifted; rerun the recipe and update the prose. Phase E.1 v0.9.B (browser receipt verifier) + v0.9.C (Python receipt verifier) shipped earlier and are catalogued in the body. Future unshipped queue items are tracked in [`docs/NEXT_SESSION_PLAYBOOK.md`](NEXT_SESSION_PLAYBOOK.md) and not catalogued here until they land.
