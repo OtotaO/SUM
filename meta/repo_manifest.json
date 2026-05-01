@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-04-30T23:21:26Z",
+  "issued_at": "2026-05-01T05:33:19Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,17 +8,17 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "96ebd3a6cce544a2cc865ee5455651824893c870",
-    "head_short": "96ebd3a",
-    "head_subject": "sum render: bidirectional CLI verb (bundle \u2192 tome under 5-axis slider control) (#97)",
-    "head_committer_date": "2026-04-30T05:49:36-04:00",
+    "head_sha": "5087e9f20e9d60ebf5232dbac21c887fa1cead0b",
+    "head_short": "5087e9f",
+    "head_subject": "publish-pypi: add workflow_dispatch trigger for re-running on existing tags (#100)",
+    "head_committer_date": "2026-05-01T00:17:42-04:00",
     "commits_last_30d": null
   },
   "github": {
     "stars": 8
   },
   "release": {
-    "pyproject_version": "0.4.0",
+    "pyproject_version": "0.4.1",
     "pypi_published_version": "0.3.0"
   },
   "features": {
