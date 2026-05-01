@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-01T22:21:50Z",
+  "issued_at": "2026-05-01T22:36:46Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "df4c9f24255e91936aa7913ea3656d8872ba2af8",
-    "head_short": "df4c9f2",
-    "head_subject": "research: v2.2 combined detector closes the disconnected-graph blindspot via orthogonal presence-deficit signal (#112)",
-    "head_committer_date": "2026-05-01T11:04:46-04:00",
+    "head_sha": "8088caebedd919be31f8f5bccfbde2f6d1ba0d3c",
+    "head_short": "8088cae",
+    "head_subject": "research: A2 predicate-flip + A3 off-graph fabrication empirically verified \u2014 first measured Laplacian-side wins (#113)",
+    "head_committer_date": "2026-05-01T18:27:33-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -22,9 +22,9 @@
     "pypi_published_version": "0.5.0"
   },
   "features": {
-    "total": 148,
+    "total": 149,
     "production": 130,
-    "scaffolded": 17,
+    "scaffolded": 18,
     "designed": 1
   },
   "receipts": {
@@ -73,6 +73,11 @@
         "path": "fixtures/bench_receipts/s25_residual_closure_2026-04-28.json",
         "schema": "sum.s25_generator_side.v1",
         "issued_at": "2026-04-28T22:00:28Z"
+      },
+      {
+        "path": "fixtures/bench_receipts/sheaf_v2_roc_seed_long_paragraphs_2026-05-01.json",
+        "schema": "sum.sheaf_v2_roc_bench.v1",
+        "issued_at": "2026-05-01T11:30:00Z"
       }
     ]
   },

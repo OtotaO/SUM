@@ -28,10 +28,10 @@ will have the full picture.
 2. **[`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md)** — proved-vs-
    measured discipline for every claim in the repo. Section 1.3.1 covers
    the cross-runtime Ed25519 trust triangle (Python ↔ Node ↔ Browser).
-3. **[`docs/FEATURE_CATALOG.md`](docs/FEATURE_CATALOG.md)** — **148** numbered
+3. **[`docs/FEATURE_CATALOG.md`](docs/FEATURE_CATALOG.md)** — **149** numbered
    features (current at 2026-05-01), each with a reproducible verification
    command. Summary at the bottom gives the Production / Scaffolded /
-   Designed counts (currently 130 / 17 / 1). Counts are mechanically
+   Designed counts (currently 130 / 18 / 1). Counts are mechanically
    refreshed; treat them as authoritative over any prose in this file.
 4. **[`Makefile`](Makefile)** — every dev command canonicalised. `make help`
    renders the full list. Common ones: `make install`, `make test`,

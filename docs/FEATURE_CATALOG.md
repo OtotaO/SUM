@@ -1200,14 +1200,32 @@ Combined with v2.2's orthogonal presence-deficit term and v1's connected-graph e
 Verify: `pytest Tests/research/test_sheaf_laplacian_v2.py::test_a3_off_graph_fabrication_via_oov_relation_caught Tests/research/test_sheaf_laplacian_v2.py::test_a3_off_graph_fabrication_via_oov_entity_caught Tests/research/test_sheaf_laplacian_v2.py::test_a2_predicate_flip_caught_via_higher_v_triple Tests/research/test_sheaf_laplacian_v2.py::test_a2_predicate_flip_caught_with_meaningful_margin Tests/research/test_sheaf_laplacian_v2.py::test_render_aggregation_combines_a2_a3_signals_cleanly -q`
 Expected: `5 passed` — A3 oov-relation + oov-entity (structural detection); A2 sign + meaningful-margin (margin > 0.05 on the smallest pair, 9× ratio empirically); render-level aggregation (n_oov + max_in_vocab_v surface both signals without conflating).
 
+### 149. v2.x ROC benchmark on seed_long_paragraphs corpus — overall AUC 0.948 (research, [research] extras) 🔧
+
+`scripts/research/sheaf_v2_roc_bench.py` runs the v2.x detector across all 4 perturbation classes (A1 / A2 / A3 / A4) on the 16-doc seed_long_paragraphs corpus (120 sieve-extracted source triples; 229-entity / 95-relation transductive vocabulary). **Per-class ROC AUC (receipt at `fixtures/bench_receipts/sheaf_v2_roc_seed_long_paragraphs_2026-05-01.json`):**
+
+| Class | AUC | Detection signal |
+|---|---|---|
+| A1 entity-swap | **1.000** | max in-vocab V from `score_rendered_triples_v2` |
+| A2 predicate-flip | **1.000** | max in-vocab V from `score_rendered_triples_v2` |
+| A3 off-graph fabrication | **1.000** | n_oov from `score_rendered_triples_v2` |
+| A4 triple-drop | **0.801** | combined-detector V (Laplacian + presence-deficit) |
+| **Overall (mean)** | **0.948** | — clears P1 target ≥ 0.75 |
+
+**KEY FINDING surfaced by this bench (PR #114):** v2.2's default `presence_weight` (λ=0.05) was calibrated on a 4-fact toy graph where Laplacian magnitude was ~0.4. At realistic corpus scale (Laplacian per doc 9–21 on seed_long_paragraphs), λ=0.05 is **38× too small** — A4 anti-correlates (AUC 0.359). The principled fix: auto-calibrate λ from corpus statistics so 1 missing entity ≈ 1 average per-edge Laplacian contribution: `λ_auto = mean(V_clean_laplacian / |E|)`. On this corpus that gives λ ≈ 1.92 and A4 AUC jumps to 0.801.
+
+Callers using `combined_detector_score` should auto-calibrate per corpus rather than relying on the default. The default is preserved for backward compatibility on the v2.1-falsification regression test (`test_v2_2_combined_detector_closes_disconnected_graph_blindspot`).
+
+Reproducible: `PYTHONPATH=. python scripts/research/sheaf_v2_roc_bench.py` (CPU-only, ~30 seconds, no LLM API spend).
+
 ---
 
 ## Summary counts
 
-Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **148**.
+Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **149**.
 
 - **Production ✅: 130 features** — tested green; each has a verification command in its entry.
-- **Scaffolded 🔧: 17 features** — tests pass, production activation pending. All catalogued in `docs/MODULE_AUDIT.md` with activation checklists.
+- **Scaffolded 🔧: 18 features** — tests pass, production activation pending. All catalogued in `docs/MODULE_AUDIT.md` with activation checklists.
 - **Designed 📄: 1 feature** (sha256_128_v2 default-promotion; cross-runtime byte-identity locked, default-flip is a separate operator decision).
 
 If the totals above ever disagree with the grep recipe, this file drifted; rerun the recipe and update the prose. Phase E.1 v0.9.B (browser receipt verifier) + v0.9.C (Python receipt verifier) shipped earlier and are catalogued in the body. Future unshipped queue items are tracked in [`docs/NEXT_SESSION_PLAYBOOK.md`](NEXT_SESSION_PLAYBOOK.md) and not catalogued here until they land.
