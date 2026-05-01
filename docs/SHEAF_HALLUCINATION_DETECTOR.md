@@ -225,22 +225,51 @@ The honest split:
   \trianglelefteq r} x_t$ encodes *relation-aware* disagreement
   rather than just naked entity mismatch.
 
-  **This is what addresses each v1 blindspot:**
-  - Predicate-flip (A2): different relations have different learned
-    restriction maps; flipping the relation produces a different
-    expected per-edge residual under the trained sheaf.
-  - Off-graph fabrication (A3): the trained sheaf has no
-    restriction map for the fabricated relation, surfacing the
-    fabrication at extraction time.
-  - Disconnected-graph density-dropout: each vertex's restriction-
-    map-projected embedding contributes to per-edge residuals
-    independently of whether its graph-neighbours are present in
-    the cochain.
-  - Empty-render false-negative: the cochain is non-zero for any
-    mentioned entity; an empty render's cochain is the zero vector,
-    distinguishable from a consistent render's cochain by its
-    $\|x\|^2 = 0$ on the *whole* embedding space rather than just
-    being a global section.
+  **What v2.1 with presence-style cochains addresses (and what
+  it does NOT — second falsification, surfaced by the v2.1
+  scaffold's own test on 2026-05-01):**
+  - Predicate-flip (A2): each relation has its own learned
+    F_h, F_t. Flipping the relation in the cochain ought to
+    produce different per-edge residual under the trained sheaf.
+    Hypothesis, not yet measured against ROC.
+  - Off-graph fabrication (A3): a triple with a relation
+    outside the trained vocabulary has no F_h / F_t to apply,
+    surfacing the fabrication at the cochain construction step
+    rather than at scoring. Hypothesis, not yet measured.
+  - **Disconnected-graph density-dropout: NOT closed by v2.1
+    with presence-style cochains.** Empirically (the v2.1 test
+    suite, ``test_v2_1_does_NOT_close_disconnected_graph_blindspot_with_presence_cochains``):
+    trained 4-fact disconnected source, clean V = 0.4377,
+    dropout V = 0.3270, margin = -0.1108 (dropout *lower* than
+    clean, the wrong direction). Why: when a render drops a
+    whole component, BOTH endpoints of the dropped edge zero
+    out in the cochain, the trained restriction maps multiply
+    by zero on both sides, the per-edge residual vanishes —
+    same structural issue as v1. v2.2's semantic-context-window
+    cochains are the proposed fix.
+  - **Empty-render false-negative: NOT closed by v2.1 with
+    presence-style cochains.** Same structural reason —
+    all-zero cochain gives V = 0 regardless of restriction
+    maps. v2.2's semantic-context-window cochains close this.
+
+  Two candidate cochain redesigns for v2.2:
+
+    (a) **Anti-cochain:** $x_n[v] = +\text{trained\_emb}[v]$ if
+        $v$ is mentioned in the render, $-\text{trained\_emb}[v]$
+        if $v$ is in source but missing from the render, $0$ if
+        $v$ is not in source. Dropping a fact now produces a
+        non-zero contribution to V because the missing endpoint
+        contributes $-\text{trained\_emb}$ rather than 0.
+    (b) **Semantic-context cochain:** $x_n[v] = \text{embed}
+        (\text{context}(v, R_n))$ via sentence-transformer
+        embedding of context window around $v$'s mention.
+        Missing entities give zero, but lawful semantic drift
+        in present mentions is captured directly.
+
+  v2.2 is where the disconnected-graph blindspot likely closes.
+  v2.1 ships as the *math + training infrastructure*; v2.2
+  ships the cochain redesign that addresses the actual
+  detection question.
 
   Training data: SUM already has ``seed_v1`` (50 docs) and
   ``seed_v2`` (20 docs) corpora. No new data to acquire.

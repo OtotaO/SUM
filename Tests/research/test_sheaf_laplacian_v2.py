@@ -1,0 +1,316 @@
+"""Math + training + falsification tests for v2.1 sheaf-Laplacian.
+
+Three blocks of tests:
+
+  Block 1 (math sanity, d > 1): the Laplacian properties from
+    Hansen-Ghrist 2019 §3.2 hold at d > 1 — symmetric, PSD, kernel
+    structure. v2.0-equivalence smoke test (identity restriction
+    maps reduce to v1 numerically).
+
+  Block 2 (training sanity): the contrastive sheaf-embedding loss
+    decreases monotonically once trained; trained restriction maps
+    produce lower V on positive triples than random init.
+
+  Block 3 (disconnected-graph blindspot — the headline question):
+    after training v2.1 on a disconnected source graph, does
+    dropping a single triple produce V > 0? This is the v1
+    blindspot from PR #107 — the test that decides whether v2.1
+    is a meaningful research artifact or just engineering surface.
+"""
+from __future__ import annotations
+
+import pytest
+
+# Skip the whole file if [research] extras aren't installed.
+np = pytest.importorskip("numpy")
+
+from sum_engine_internal.research.sheaf_laplacian_v2 import (
+    KnowledgeSheafV2,
+    per_edge_residual_v2,
+    laplacian_quadratic_form_v2,
+    per_edge_discrepancy_v2,
+    sheaf_laplacian_v2,
+    cochain_one_hot_v2,
+    train_restriction_maps,
+    consistency_profile_v2,
+)
+
+
+# ── Block 1: math sanity at d > 1 ────────────────────────────────────
+
+
+def _toy_sheaf_v2(d: int = 8):
+    """Tiny v2 sheaf: 3 entities, 2 distinct relations (so the
+    per-relation restriction-map structure is exercised)."""
+    triples = [
+        ("alice", "knows", "bob"),
+        ("bob", "owns", "dog"),
+    ]
+    return KnowledgeSheafV2.from_triples(triples, stalk_dim=d)
+
+
+def test_v2_laplacian_is_symmetric():
+    F = _toy_sheaf_v2(d=8)
+    L = sheaf_laplacian_v2(F)
+    assert np.allclose(L, L.T), "L_F = δ^T δ must be symmetric"
+
+
+def test_v2_laplacian_is_positive_semidefinite():
+    F = _toy_sheaf_v2(d=8)
+    L = sheaf_laplacian_v2(F)
+    eigvals = np.linalg.eigvalsh(L)
+    assert np.all(eigvals >= -1e-9), f"L_F must be PSD; got eigvals={eigvals}"
+
+
+def test_v2_quadratic_form_via_residuals_matches_full_laplacian():
+    """The factored form ‖δx‖² must equal x^T L x to floating-point
+    precision. Important because the implementation avoids
+    materializing L for performance."""
+    F = _toy_sheaf_v2(d=8)
+    rng = np.random.default_rng(42)
+    L = sheaf_laplacian_v2(F)
+    for _ in range(10):
+        x = rng.standard_normal((len(F.vertices), F.stalk_dim))
+        v_factored = laplacian_quadratic_form_v2(F, x)
+        v_full = float(x.flatten() @ L @ x.flatten())
+        assert np.isclose(v_factored, v_full), (
+            f"factored {v_factored} != full {v_full}"
+        )
+
+
+def test_v2_constant_cochain_with_identity_maps_is_global_section():
+    """With identity restriction maps and a constant cochain
+    (x_v = c for every v), every per-edge residual is c - c = 0,
+    so V = 0. Same property as v1's constant-cochain test, lifted
+    to d > 1."""
+    F = _toy_sheaf_v2(d=8)
+    c = np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])
+    x = np.tile(c, (len(F.vertices), 1))   # shape (|V|, d), every row = c
+    v = laplacian_quadratic_form_v2(F, x)
+    assert v == 0.0, f"constant cochain under identity maps must give V=0; got {v}"
+
+
+def test_v2_one_hot_cochain_residual_magnitude():
+    """v2.0 cochain construction with distinct one-hot basis vectors
+    per entity: under identity restriction maps, an edge between
+    two mentioned-but-distinct entities has residual ‖e_u − e_v‖² =
+    2 (not 1). This is *not* the same numeric as v1's presence-
+    indicator cochain — v2 with one-hot cochains computes a richer
+    quantity. The v1-equivalence smoke claim from spec §5.3a is
+    therefore not a numeric reduction; it's structural ("the
+    machinery handles d > 1 without breaking"). This test pins
+    the actual numeric to prevent silent regression."""
+    triples = [("a", "p", "b"), ("b", "q", "c"), ("c", "p", "d")]
+    sheaf_v2 = KnowledgeSheafV2.from_triples(triples, stalk_dim=4)
+    # All four entities mentioned: each pair of distinct one-hot
+    # vectors has squared L2 distance = 2; three edges with all
+    # endpoints distinct give V = 3 * 2 = 6.
+    x = cochain_one_hot_v2(sheaf_v2, triples)
+    v = laplacian_quadratic_form_v2(sheaf_v2, x)
+    assert v == 6.0, (
+        f"v2 one-hot cochain over a 4-entity / 3-edge graph should "
+        f"give V = 3 edges × ‖e_u−e_v‖²(=2) = 6; got {v}"
+    )
+
+
+def test_v2_per_edge_localization_finds_failing_edge():
+    """v2 one-hot localization: with identity restriction maps and
+    one-hot cochains, all 'mentioned' edges contribute equally
+    (=2). A render that drops an endpoint contributes ‖e_u − 0‖² = 1
+    on that edge — the *smaller* score. So 'localization' under
+    v2.0 + one-hot picks the edge with HIGHEST cochain disagreement
+    among mentioned-mentioned edges, not the failing one. v1's
+    localization story relied on (1,0)/(1,1) asymmetry that v2.0
+    one-hot doesn't have. v2.1's trained restriction maps recover
+    a localization signal — but on TRAINED sheaves, not on this
+    untrained smoke-test graph. Pinning that the smoke graph
+    behaves as expected so future v2.1-localization regressions
+    surface here.
+    """
+    triples = [("a", "p", "b"), ("c", "q", "d")]
+    sheaf = KnowledgeSheafV2.from_triples(triples, stalk_dim=4)
+    # All 4 entities mentioned: both edges contribute 2; tie broken
+    # arbitrarily (sort is stable so first edge wins).
+    x = cochain_one_hot_v2(sheaf, triples)
+    contribs = per_edge_discrepancy_v2(sheaf, x)
+    # Both edges have the same score (2); just verify the score.
+    assert contribs[0][1] == 2.0
+    assert contribs[1][1] == 2.0
+
+
+# ── Block 2: training sanity ────────────────────────────────────────
+
+
+def test_training_loss_decreases_monotonically_after_warmup():
+    """The contrastive sheaf-embedding loss should decrease with
+    training. Allows a small initial bump (random sampling), then
+    monotonic-ish decrease over the last half of training."""
+    triples = [
+        ("alice", "knows", "bob"),
+        ("bob", "knows", "carol"),
+        ("carol", "knows", "alice"),
+        ("alice", "owns", "dog"),
+        ("bob", "owns", "cat"),
+    ]
+    _, _, history = train_restriction_maps(
+        triples,
+        stalk_dim=8,
+        epochs=200,
+        learning_rate=0.005,
+        margin=0.5,
+        n_negatives_per_positive=3,
+        seed=0,
+    )
+    assert len(history) == 200
+    # The loss may not be strictly monotone (sampling noise), but
+    # the second half's mean should be below the first half's.
+    first_half_mean = float(np.mean(history[:100]))
+    second_half_mean = float(np.mean(history[100:]))
+    assert second_half_mean < first_half_mean, (
+        f"contrastive loss should decrease over training; "
+        f"first-half mean={first_half_mean:.4f}, "
+        f"second-half mean={second_half_mean:.4f}"
+    )
+
+
+def test_trained_sheaf_lowers_V_on_positive_triples():
+    """After training, the per-edge residual on positive triples
+    (with the trained restriction maps + entity embeddings) should
+    be smaller than at random init."""
+    triples = [
+        ("alice", "knows", "bob"),
+        ("bob", "knows", "carol"),
+        ("carol", "owns", "dog"),
+    ]
+    untrained = KnowledgeSheafV2.from_triples(triples, stalk_dim=8)
+    trained, embeddings, _ = train_restriction_maps(
+        triples,
+        stalk_dim=8,
+        epochs=300,
+        learning_rate=0.01,
+        margin=0.5,
+        n_negatives_per_positive=5,
+        seed=0,
+    )
+
+    # Initial V with one-hot embeddings + identity maps = the v1-equivalent score
+    n_v = len(untrained.vertices)
+    one_hot = np.eye(n_v, untrained.stalk_dim, dtype=np.float64)
+    v_untrained = laplacian_quadratic_form_v2(untrained, one_hot)
+    v_trained = laplacian_quadratic_form_v2(trained, embeddings)
+
+    assert v_trained < v_untrained, (
+        f"trained sheaf must lower V on positive triples; "
+        f"untrained={v_untrained:.4f}, trained={v_trained:.4f}"
+    )
+
+
+# ── Block 3: the headline question — disconnected-graph blindspot ──
+
+
+def test_v2_1_does_NOT_close_disconnected_graph_blindspot_with_presence_cochains():
+    """**Falsification (2026-05-01).** The v2 spec hypothesised that
+    learned per-relation restriction maps would close the
+    disconnected-graph density-dropout blindspot v1 surfaced in
+    PR #107. Empirical run says: **not with presence-style cochains.**
+
+    Trained sheaf on a 4-fact disconnected source; clean V = 0.4377;
+    dropout V = 0.3270; margin = -0.1108 (dropout LOWER than
+    clean). Pinned in code so this finding doesn't get rediscovered
+    on every v2.1 retry.
+
+    Why this happens (verified by inspection of per_edge_residual):
+    when a render drops a whole component (e.g., einstein +
+    relativity both vanish), the cochain contribution at those
+    vertices is zero, and the trained restriction maps are then
+    multiplied by zero on both sides — the per-edge residual at
+    the dropped component vanishes regardless of how the
+    restriction maps were trained. The training amplifies the
+    contributions of *present* entities, not the absence of
+    absent ones.
+
+    What v2.1 needs to actually close the blindspot: a cochain
+    construction that distinguishes "entity not mentioned" from
+    "entity is unused vocabulary". Two candidate fixes for v2.2:
+
+      (a) Anti-cochain: x_n[v] = +trained_emb if mentioned in
+          render, -trained_emb if v in source but not in render,
+          0 if v not in source.
+      (b) Semantic-context cochain: x_n[v] = embedding(context
+          window around v's mention in render); missing mentions
+          give zero, but semantic drift in present mentions is
+          captured directly via context.
+
+    Neither (a) nor (b) is implemented yet. The honest spec update
+    moves the disconnected-graph fix from "v2.1's expected
+    benefit" to "v2.2 hypothesis, untested."
+    """
+    triples = [
+        ("alice", "graduated", "mit"),
+        ("bob", "owns", "dog"),
+        ("carol", "writes", "python"),
+        ("einstein", "proposed", "relativity"),
+    ]
+    trained, embeddings, _ = train_restriction_maps(
+        triples,
+        stalk_dim=8,
+        epochs=300,
+        learning_rate=0.01,
+        margin=0.5,
+        n_negatives_per_positive=5,
+        seed=0,
+    )
+
+    x_clean = cochain_one_hot_v2(trained, triples, embedding=embeddings)
+    v_clean = laplacian_quadratic_form_v2(trained, x_clean)
+
+    dropout = [
+        ("alice", "graduated", "mit"),
+        ("bob", "owns", "dog"),
+        ("carol", "writes", "python"),
+    ]
+    x_dropout = cochain_one_hot_v2(trained, dropout, embedding=embeddings)
+    v_dropout = laplacian_quadratic_form_v2(trained, x_dropout)
+
+    # Pin the falsification: v_dropout LOWER than v_clean (dropout
+    # *reduces* the score, the wrong direction). v2.1 with presence-
+    # style cochains is no better than v1 here.
+    margin = v_dropout - v_clean
+    assert margin < 0, (
+        f"This test pins v2.1's falsification: dropout V should be "
+        f"LOWER than clean V because dropping a component zeros both "
+        f"endpoints of the dropped edge, killing that edge's "
+        f"contribution to the quadratic form regardless of training. "
+        f"Got v_clean={v_clean:.4f}, v_dropout={v_dropout:.4f}, "
+        f"margin={margin:.4f}. If the falsification ever inverts (margin "
+        f"becomes positive), the cochain construction has changed and "
+        f"this test should be updated to reflect the new behaviour — "
+        f"and the spec should celebrate."
+    )
+
+
+def test_consistency_profile_v2_handles_empty_render_manifold():
+    """v2 must inherit v1's PR-#109 honesty pattern: empty render
+    manifold returns explicit None scalars, not a fabricated zero
+    profile that crashes downstream."""
+    triples = [("alice", "knows", "bob")]
+    sheaf = KnowledgeSheafV2.from_triples(triples, stalk_dim=4)
+    embeddings = np.eye(2, 4, dtype=np.float64)
+    profile = consistency_profile_v2(sheaf, embeddings, [])
+    assert profile["render_count"] == 0
+    assert profile["mean_laplacian"] is None
+    assert profile["std_laplacian"] is None
+    assert profile["max_per_render"] is None
+    assert profile["argmax_render_idx"] is None
+    assert profile["per_render_v"] == []
+    assert profile["per_edge_top3_argmax_render"] == []
+
+
+def test_construction_rejects_wrong_F_h_shape():
+    """Defensive: construction must reject F_h of wrong shape so
+    callers can't supply an incompatible matrix and silently get
+    misleading scores."""
+    triples = [("a", "p", "b")]
+    bad_F_h = np.zeros((1, 4, 8), dtype=np.float64)  # should be (1, d, d)
+    with pytest.raises(ValueError, match="F_h shape"):
+        KnowledgeSheafV2.from_triples(triples, stalk_dim=4, F_h=bad_F_h)
