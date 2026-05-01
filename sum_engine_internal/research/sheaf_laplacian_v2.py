@@ -524,12 +524,32 @@ def combined_detector_score(
     cannot detect by design).
 
     The two terms are orthogonal signals — combining them is the
-    publishable v2.2 artifact, not a workaround. ``presence_weight``
-    (λ) is the relative weighting; default 0.05 was calibrated by
-    inspection on the v2.1-falsification 4-fact disconnected-graph
-    data (clean = 0.438 Laplacian-only; dropout = 0.327 Laplacian
-    plus 4 deficit² × 0.05 = 0.527; combined detector flips sign
-    correctly).
+    publishable v2.2 artifact, not a workaround.
+
+    ``presence_weight`` (λ) is the relative weighting. **Important
+    calibration note (added 2026-05-01 from PR #114 ROC bench):**
+    the default λ=0.05 was calibrated on a 4-fact toy graph where
+    the Laplacian was ~0.4. At realistic corpus scale (e.g.,
+    seed_long_paragraphs, where Laplacian per doc is 9–21), the
+    default is 38× too small and v2.2 anti-correlates with truth
+    on A4 triple-drop (AUC ≈ 0.36 instead of ≥ 0.75).
+
+    The principled fix: auto-calibrate λ from corpus statistics so
+    1 missing entity ≈ 1 average per-edge Laplacian contribution:
+
+        λ_auto = mean over docs of (V_clean_laplacian / |E|)
+
+    On seed_long_paragraphs this gives λ ≈ 1.92, and A4 AUC jumps
+    from 0.36 to 0.80. The full per-class ROC AUC at the
+    corpus-calibrated λ is in fixtures/bench_receipts/
+    sheaf_v2_roc_seed_long_paragraphs_2026-05-01.json: A1 = 1.000,
+    A2 = 1.000, A3 = 1.000, A4 = 0.801, overall = 0.948.
+
+    Callers should auto-calibrate per corpus rather than relying
+    on the default. The default is preserved for backward
+    compatibility on the v2.1-falsification regression test
+    (clean = 0.438; dropout = 0.527 with λ=0.05 — fits because
+    that 4-fact toy graph is the calibration setpoint).
     """
     x = cochain_one_hot_v2(sheaf, rendered_triples, embedding=embeddings)
     laplacian_term = laplacian_quadratic_form_v2(sheaf, x)

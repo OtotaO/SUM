@@ -1,0 +1,23 @@
+{
+  "corpus": "seed_long_paragraphs",
+  "issued_at": "2026-05-01T11:30:00Z",
+  "lambda_auto_calibrated": 1.8801214326150848,
+  "lambda_default_v2_2": 0.05,
+  "n_docs": 16,
+  "n_source_triples": 120,
+  "notes": "Path 1 of the publishable-artifact ROC plan. seed_long_paragraphs corpus (16 multi-fact paragraphs, 120 sieve-extracted source triples, 229-entity / 95-relation transductive vocabulary). KEY FINDING: v2.2 default lambda=0.05 was tuned on a 4-fact toy graph and is 38x too small for this corpus; auto-calibrated lambda = mean per-edge Laplacian = 1.92. The principled calibration scales with corpus.",
+  "overall_auc": 0.9482421875,
+  "p1_met": true,
+  "p1_target": 0.75,
+  "per_class_auc": {
+    "A1_entity_swap": 1.0,
+    "A2_predicate_flip": 1.0,
+    "A3_off_graph_fabrication": 1.0,
+    "A4_triple_drop": 0.79296875
+  },
+  "schema": "sum.sheaf_v2_roc_bench.v1",
+  "stalk_dim": 8,
+  "training_epochs": 200,
+  "vocab_size_entities": 229,
+  "vocab_size_relations": 95
+}
