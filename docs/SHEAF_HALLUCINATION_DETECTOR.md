@@ -164,36 +164,124 @@ The 1-dim presence version is intentionally crude — it asks "do all
 renders mention all entities consistently?" That's a low bar but
 catches gross hallucination (entity dropped or substituted entirely).
 
-### 3.3 Procedure (v2, learned-embedding stalks)
+### 3.3 Procedure (v2 — split into v2.0 / v2.1 / v2.2 after Hansen-Ghrist 2019 reading on 2026-05-01)
 
-Same as v1 except:
+The original §3.3 sketched v2 as "swap stalk_dim from 1 to 384 with
+identity restriction maps." Reading Hansen & Ghrist (2019),
+*Toward a Spectral Theory of Cellular Sheaves* (arXiv:1808.01513,
+JACT 2019) §3.2 surfaced that this is **structurally insufficient**:
 
-- $\mathcal{F}(v) = \mathbb{R}^d$ for $d \in \{384, 768, 1536\}$
-  (text-embedding model dim).
-- Per-render cochain $x_n(v) = \mathrm{embed}(\text{context}(v, R_n))$
-  where $\text{context}$ extracts a window around $v$'s mention in $R_n$.
-- Restriction maps $\mathcal{F}_{h \trianglelefteq r}$ trained
-  per-relation under the contrastive sheaf-embedding loss
-  (Gebhart et al. Def. 11, Eq. 4) on the existing knowledge graph,
-  *or* fixed as identity for the unlearned baseline.
+  With identity restriction maps and per-vertex semantic embeddings,
+  the global-section condition becomes ``x_v = x_u for every edge
+  (u, e, v)`` — i.e., entities connected by *any* relation should
+  have *identical* embeddings. That's a wrong constraint: an
+  entity's embedding shouldn't equal another's just because they're
+  connected by a predicate. ``V`` would be uniformly large on every
+  render, the per-render *variance* would be the only signal, and
+  the detector collapses back toward something v1-shaped.
 
-v2 captures *semantic* drift (entity mentioned consistently but
-described inconsistently across renderings) which v1 misses.
+What *actually* makes ``d > 1`` stalks meaningful (per Gebhart 2023
+§4): **per-relation learned restriction maps**, trained via the
+contrastive sheaf-embedding loss (Gebhart Def. 11, Eq. 4) so that
+``F_{s ⊵ r} x_h = F_{t ⊵ r} x_t`` holds *exactly* on known triples
+``(h, r, t)`` and *fails* on negative samples. With those learned
+maps, the Laplacian quadratic form measures: "does the rendered
+cochain agree under the learned per-relation projections?"
+
+The honest split:
+
+#### v2.0 — d-dim stalks with identity restriction maps (sanity baseline only)
+
+  Stalks: $\mathcal{F}(v) = \mathbb{R}^d$, $\mathcal{F}(e) =
+  \mathbb{R}^d$. Restriction maps: identity. Cochain $x_n[v]$:
+  one-hot or compact-encoded presence indicator embedded in
+  $\mathbb{R}^d$.
+
+  This is *structurally equivalent to v1 lifted into $\mathbb{R}^d$*
+  — it confirms the math machinery works at $d > 1$ but does not
+  address the v1 blindspots (predicate-flip, off-graph fabrication,
+  empty-render false-negative, disconnected-graph density-dropout).
+
+  **Implementation: skip as a research artifact; ship only as a
+  smoke test that the d>1 quadratic form numerically matches the
+  d=1 case when the cochain is presence-equivalent.** No separate
+  bench, no publishable claim, no separate `v2.0` versus `v1` ROC.
+
+#### v2.1 — learned restriction maps (the real meaningful step)
+
+  Stalks: $\mathcal{F}(v) = \mathbb{R}^d$ for $d \in \{8, 32, 64\}$
+  initially (parameter count dominated by per-relation restriction
+  maps, scales as $|\mathcal{R}| \cdot d^2$).
+
+  Restriction maps: $\mathcal{F}_{s \trianglelefteq r}$ for each
+  relation $r$, *trained* per Gebhart Def. 11 / Eq. 4:
+  $\gamma$-gapped contrastive loss with positive triples from the
+  source bundle and negative triples from a local-closed-world-
+  assumption sample.
+
+  Cochain $x_n[v]$: still presence-style for v2.1 (one-hot in
+  $\mathbb{R}^d$), but now the per-relation restriction maps mean
+  the per-edge residual $F_{s \trianglelefteq r} x_h - F_{t
+  \trianglelefteq r} x_t$ encodes *relation-aware* disagreement
+  rather than just naked entity mismatch.
+
+  **This is what addresses each v1 blindspot:**
+  - Predicate-flip (A2): different relations have different learned
+    restriction maps; flipping the relation produces a different
+    expected per-edge residual under the trained sheaf.
+  - Off-graph fabrication (A3): the trained sheaf has no
+    restriction map for the fabricated relation, surfacing the
+    fabrication at extraction time.
+  - Disconnected-graph density-dropout: each vertex's restriction-
+    map-projected embedding contributes to per-edge residuals
+    independently of whether its graph-neighbours are present in
+    the cochain.
+  - Empty-render false-negative: the cochain is non-zero for any
+    mentioned entity; an empty render's cochain is the zero vector,
+    distinguishable from a consistent render's cochain by its
+    $\|x\|^2 = 0$ on the *whole* embedding space rather than just
+    being a global section.
+
+  Training data: SUM already has ``seed_v1`` (50 docs) and
+  ``seed_v2`` (20 docs) corpora. No new data to acquire.
+
+  Compute: parameter-light at $d = 32$ (~$|\mathcal{R}| \cdot
+  10^3$ parameters); CPU-only. No external API spend.
+
+#### v2.2 — semantic-embedding cochains (the publishable step)
+
+  As v2.1 except $x_n[v] = \mathrm{embed}(\text{context}(v, R_n))$
+  via a sentence-transformer (e.g. `all-MiniLM-L6-v2`, $d = 384$).
+  $\text{context}$ extracts a window around $v$'s mention in $R_n$.
+
+  This addresses the case the spec originally framed v2 around:
+  *paraphrase variation that preserves entity presence but drifts
+  semantically* (e.g., real-data paraphrase 3's `python_code` /
+  `python` divergence; verbose paraphrasing that introduces
+  side-claims).
+
+  v2.2 is the artifact the arXiv note is written around. v2.1 is
+  the prerequisite that makes the math meaningful; v2.2 is the
+  artifact that scales to naturalistic prose.
 
 ### 3.4 Procedure (v3, receipt-weighted)
 
-Same as v2 except: each render $R_n$'s cochain contribution to the
-Laplacian is weighted by an **issuer-trust score** derived from the
-render receipt's signing key. Receipts from a trusted-issuer JWKS
-contribute weight 1; unsigned renderings or renderings from unknown
-issuers contribute lower weight. This couples the cohomology to the
-trust loop — adversarial renderings issued by an attacker can be
-included in the cover but downweighted.
+Same as v2.2 except: each render $R_n$'s cochain contribution to
+the Laplacian is weighted by an **issuer-trust score** derived from
+the render receipt's signing key. Receipts from a trusted-issuer
+JWKS contribute weight 1; unsigned renderings or renderings from
+unknown issuers contribute lower weight. Combined with the
+**harmonic extension** machinery from Hansen-Ghrist 2019
+Proposition 4.1 / Theorem 4.5: trusted-issuer renders form the
+*boundary* $B$, untrusted renders are the interior, and the
+harmonic extension is the most-consistent interpolation. Untrusted
+renders that match the harmonic extension pass; ones that don't
+are flagged. **This is the SUM-specific extension** that does not
+replicate elsewhere — no other system has cross-runtime-verified
+render receipts to seed the boundary.
 
 v3 connects the obstruction class to SUM's existing
-trust-and-verification primitives. It is the version that, if it
-benches well, becomes a publishable artifact tied to SUM's
-infrastructure rather than a generic Knowledge-Sheaves application.
+trust-and-verification primitives.
 
 ### 3.5 Output shape
 
@@ -306,35 +394,74 @@ emergent constraints.
 - [ ] If v1 ROC AUC $\geq 0.65$ (P2-relaxed for the unlearned case),
   proceed to v2; else investigate cochain construction and re-derive.
 
-### 5.3 Week 3 — v2 + write-up
+### 5.3 v2 — split per Hansen-Ghrist 2019 reading
 
-- [ ] Implement v2 with text-embedding-3-small (1536-dim) and
-  identity restriction maps as default; learned restriction maps as
-  optional via the contrastive sheaf-embedding loss.
-- [ ] Re-run synthetic benchmark.
-- [ ] Run a small *real* benchmark: 20 documents from a hand-curated
-  corpus where ground-truth-clean and known-tampered renderings are
-  both available. Measure ROC.
+#### 5.3a Week 3 — v2.0 sanity test (skip as standalone artifact)
+
+- [ ] Smoke test: `coboundary_matrix_v2` and `sheaf_laplacian_v2`
+  return the correct values on a 1-dim sheaf (i.e., reduce to v1
+  output when restriction maps and stalk dim are degenerate). Pin
+  in `Tests/research/test_sheaf_v2.py` as a numerical compatibility
+  guarantee, not as a ROC benchmark.
+
+#### 5.3b Week 3-4 — v2.1 learned restriction maps (the real artifact)
+
+- [ ] Implement `sum_engine_internal/research/sheaf_laplacian_v2.py`
+  with d-dim stalks (initially $d \in \{8, 32, 64\}$) and per-relation
+  restriction maps as trainable parameters. Use scipy.sparse.bsr
+  for the block-sparse Laplacian. ~300 LOC.
+- [ ] Implement the contrastive sheaf-embedding training loop
+  (Gebhart Def. 11 / Eq. 4): $\gamma$-gapped margin ranking loss
+  with positive triples from source bundles and negative triples
+  via local-closed-world-assumption (LCWA) sampling. CPU-only.
+- [ ] Synthetic bench: 6 fact-sets × 5 perturbation classes (the
+  v1 connected-graph corpus) PLUS 6 disconnected fact-sets that
+  v1 missed. Train restriction maps on the 12-graph corpus, run
+  detector on held-out renders.
+- [ ] Compare v2.1 vs v1 on the disconnected-graph corpus
+  specifically. Honest result: does v2.1 close the v1 blindspot
+  the real-data test of 2026-05-01 surfaced?
+
+#### 5.3c Week 5+ — v2.2 semantic-embedding cochains (publishable)
+
+- [ ] Replace presence-style cochains with sentence-transformer
+  embeddings of context windows around each entity's mention.
+  Default model: `all-MiniLM-L6-v2` (384-dim, CPU-friendly).
+  Optional: text-embedding-3-small via OpenAI API (per-experiment
+  spend authorization).
+- [ ] Re-run the v2.1 synthetic + disconnected bench with v2.2
+  cochains. Measure ROC AUC against P1 target ($\geq 0.75$).
+- [ ] Run a small *real* benchmark: 20 documents from a curated
+  corpus where ground-truth-clean and known-tampered renderings
+  are both available.
 - [ ] Write a 2000-word note: *"Cohomological consistency scoring
   for signed bidirectional render receipts."* Include the
-  SUM-to-Knowledge-Sheaves mapping (§2.3 above), the
-  v1/v2/v3 procedure, the synthetic + real benchmarks, and the
-  bounded-claims section verbatim from §6.
+  SUM-to-Knowledge-Sheaves mapping (§2.3), the v1/v2/v3 procedure,
+  the synthetic + real benchmarks, and the bounded-claims section.
 - [ ] Submit to arXiv (`cs.AI` primary, `math.CT` secondary).
 - [ ] Cross-post to the ACT (Applied Category Theory) discourse,
-  the Topos Institute mailing list, and the
-  Coecke / Quantinuum DisCoCat / lambeq community.
+  the Topos Institute mailing list, and the Coecke / Quantinuum
+  DisCoCat / lambeq community.
 
-### 5.4 v3 (post-publication, contingent on v2 passing P1–P3)
+### 5.4 v3 (post-publication, contingent on v2.2 passing P1–P3)
 
-If v2 publishes cleanly, v3 (receipt-weighted) becomes the
-SUM-specific extension: it doesn't replicate elsewhere because no
-other system has cross-runtime-verified render receipts. v3 is the
-positioning anchor — *"this is the bit that requires SUM."*
+If v2.2 publishes cleanly, v3 (receipt-weighted + harmonic
+extension over trusted-issuer boundary) becomes the SUM-specific
+extension that doesn't replicate elsewhere because no other system
+has cross-runtime-verified render receipts. v3 is the positioning
+anchor — *"this is the bit that requires SUM."* See Hansen-Ghrist
+2019 Proposition 4.1 + Theorem 4.5 for the harmonic-extension
+machinery the boundary-value formulation rests on.
 
 ---
 
 ## 6. Bounded claims
+
+**Note (2026-05-01):** which version's claims hold is now version-
+explicit. v1 is shipped (PR #106) and partially falsified on
+naturalistic data (PR #107). v2.0 is a sanity test, not a research
+artifact. v2.1 / v2.2 / v3 are unimplemented; their claims are
+predictions, not measurements.
 
 What this artifact, if successful, claims:
 
@@ -420,6 +547,22 @@ What this artifact does **not** claim:
   independently to the cochain even when its graph
   neighbourhood vanishes. Pinned by
   ``test_disconnected_graph_density_dropout_invisible``.
+- **Identity-restriction-map d>1 stalks do NOT address v1
+  blindspots (added 2026-05-01 from Hansen-Ghrist 2019 reading).**
+  An earlier sketch of v2 in §3.3 framed it as "swap stalk_dim
+  to 384 with identity restriction maps." That's mathematically
+  insufficient: with identity restriction maps and per-vertex
+  semantic embeddings, the global-section condition becomes
+  $x_v = x_u$ for every edge, which means entities connected
+  by *any* relation should have *identical* embeddings — a
+  wrong constraint. v1's blindspots (predicate-flip, off-graph
+  fabrication, disconnected-graph density-dropout, empty-render
+  false-negative) are addressed only by **per-relation learned
+  restriction maps** (Gebhart Def. 11 / Eq. 4 contrastive
+  training). The v2.1 / v2.2 / v3 path in §3.3 / §5.3 reflects
+  this. v2.0 (identity restriction maps) is now framed as a
+  numerical-compatibility smoke test only, not a research
+  artifact.
 
 What is honestly speculative, pending the benchmark:
 
