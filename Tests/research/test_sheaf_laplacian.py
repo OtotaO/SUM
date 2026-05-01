@@ -230,6 +230,39 @@ def test_microbench_a5_consistent_swap_caught_via_mean_signal():
     )
 
 
+def test_construction_rejects_non_1_stalk_dim_at_construction_time():
+    """v1 must reject stalk_dim != 1 at sheaf construction time so a
+    user cannot build a sheaf they can't actually use. The earlier
+    code raised NotImplementedError mid-pipeline (in
+    coboundary_matrix); now it raises ValueError at __post_init__,
+    naming v2 explicitly so the user knows what's coming.
+    """
+    import pytest as _pytest
+    with _pytest.raises(ValueError, match="stalk_dim=1 only"):
+        KnowledgeSheaf.from_triples(
+            [("alice", "knows", "bob")], stalk_dim=384,
+        )
+
+
+def test_consistency_profile_handles_empty_render_manifold():
+    """An empty render manifold must yield an honest profile with
+    null fields, not a fabricated all-zero profile that crashes
+    downstream on argmax/index access.
+    """
+    from sum_engine_internal.research.sheaf_laplacian import consistency_profile
+    profile = consistency_profile(
+        source_triples=[("alice", "knows", "bob")],
+        rendered_extractions=[],
+    )
+    assert profile["render_count"] == 0
+    assert profile["mean_laplacian"] is None
+    assert profile["std_laplacian"] is None
+    assert profile["max_per_render"] is None
+    assert profile["argmax_render_idx"] is None
+    assert profile["per_render_v"] == []
+    assert profile["per_edge_top3_argmax_render"] == []
+
+
 def test_disconnected_graph_density_dropout_invisible():
     """v1 blindspot surfaced by the real-prose test (2026-05-01):
     when the source bundle's induced graph has multiple disconnected

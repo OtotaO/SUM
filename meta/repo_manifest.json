@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-01T10:21:47Z",
+  "issued_at": "2026-05-01T10:32:17Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "92465c4b1758f8289748e0c5228cda5aa3589b9a",
-    "head_short": "92465c4",
-    "head_subject": "research: real-data test on v1 detector \u2014 surfaces disconnected-graph blindspot (#107)",
-    "head_committer_date": "2026-05-01T06:19:56-04:00",
+    "head_sha": "a2ae3ea1e186aed727d1c0014a94dcbd52e1ab57",
+    "head_short": "a2ae3ea",
+    "head_subject": "release: v0.5.0 \u2014 bidirectional MCP + sheaf-Laplacian research substrate (#108)",
+    "head_committer_date": "2026-05-01T06:28:33-04:00",
     "commits_last_30d": null
   },
   "github": {
