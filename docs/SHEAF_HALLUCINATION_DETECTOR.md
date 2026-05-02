@@ -391,13 +391,10 @@ floor that doesn't silence them entirely.
 
 **Out of scope (v3 limits, named honestly):**
 
-  - **Harmonic-extension boundary inference.** Hansen-Ghrist 2019
-    Proposition 4.1 / Theorem 4.5's harmonic-extension machinery —
-    using trusted-issuer renders as a boundary $B$ and inferring
-    the most-consistent interpolation on the interior — is *not*
-    implemented in v3. v3 only weights the quadratic form. The
-    boundary-inference step is a candidate v3.1 follow-up; the
-    weighted-Laplacian primitive in v3 is the prerequisite.
+  - **Harmonic-extension boundary inference.** Implemented as v3.1
+    on 2026-05-02; see §3.4.1 below. v3 only weights the quadratic
+    form; v3.1 adds the boundary/interior partition and the
+    most-consistent interpolation on the interior.
   - **JWKS verification round-trip.** v3's `weights_from_receipts`
     takes the trusted-edge set as a parameter; mapping receipts →
     JWKS-verified-edges is the caller's responsibility (a thin
@@ -413,6 +410,101 @@ render receipts, the audit log, the JWKS / revoked-kids surface.
 This is the SUM-specific extension that doesn't replicate
 elsewhere: no other system has cross-runtime-verified render
 receipts to feed into a sheaf-Laplacian's edge weights.
+
+### 3.4.1 Harmonic extension over a (boundary, interior) partition (v3.1) — IMPLEMENTED 2026-05-02
+
+Hansen-Ghrist 2019, Proposition 4.1 / Theorem 4.5: given a sheaf
+$F$ on $G$, a partition $V = B \cup I$, and a cochain $x_B$
+specified on the boundary $B$, the **harmonic extension** is the
+unique cochain $x \in C^0(G; F)$ that
+
+  (i)  agrees with $x_B$ on $B$
+  (ii) minimizes $\|\delta x\|^2$ over the interior $I$.
+
+Block-decompose the Laplacian by the $(B, I)$ partition:
+
+$$L_F = \begin{bmatrix} L_{BB} & L_{BI} \\ L_{IB} & L_{II} \end{bmatrix}$$
+
+Setting $\partial \|\delta x\|^2 / \partial x_I = 0$ gives the
+closed-form interior cochain
+
+$$x_I^* = -L_{II}^{-1} L_{IB} \, x_B$$
+
+(when $L_{II}$ is invertible; v3.1's implementation uses
+`np.linalg.lstsq` so a rank-deficient $L_{II}$ — disconnected
+interior, or interior with a global section — yields the
+minimum-norm solution rather than crashing).
+
+For SUM: trusted-receipt-backed vertices (those whose every
+incident edge is signed by a known-issuer JWKS key) form the
+boundary $B$; the rest fall to the interior $I$. Given a render's
+cochain $x$, restrict it to the boundary, compute the harmonic
+extension on the interior, and compare:
+
+$$\text{deviation}(x) = \|x_I - x_I^*\|^2$$
+
+A render whose interior matches the harmonic extension is
+*consistent with the trust frame*; one that diverges is flagged.
+
+**Falsifiable predictions pinned in code:**
+
+  - **H6 (boundary preservation).** `harmonic_extension` returns
+    only the interior; reconstructing the full cochain from
+    $(x_B, x_I^*)$ preserves $x_B$ byte-identically on $B$. Pinned
+    at `test_harmonic_extension_agrees_with_x_B_on_boundary_by_construction`.
+  - **H7 (minimization — the defining property).** No perturbation
+    of the interior cochain (off the harmonic extension) gives a
+    smaller $V$. Pinned at
+    `test_harmonic_extension_minimizes_v_subject_to_boundary_constraint`.
+  - **H8 (uniqueness when $L_{II}$ has full rank).** Two calls
+    with the same boundary cochain yield byte-identical interior.
+    Pinned at `test_harmonic_extension_unique_when_L_II_invertible`.
+  - **H9 (degenerate full-boundary).** When every vertex is on the
+    boundary, the interior is empty — function returns a `(0, d)`
+    array, not a crash. Pinned at
+    `test_harmonic_extension_full_boundary_returns_empty_interior`.
+  - **H10/H11 (defensive boundary).** Invalid indices raise
+    `ValueError`; wrong $x_B$ shape raises `ValueError`. Pinned at
+    `test_harmonic_extension_rejects_invalid_boundary_indices` and
+    `test_harmonic_extension_rejects_wrong_x_B_shape`.
+  - **H12 (utility — the headline claim).** Tampering an interior
+    vertex (boundary held fixed) increases the deviation. This is
+    the hallucination-detection use case. Pinned at
+    `test_boundary_deviation_detects_interior_tampering`.
+  - **H13 ($v_{\text{ext}} \le v_{\text{actual}}$).** By the
+    minimization property, the Laplacian quadratic form at the
+    harmonic-extended cochain is no larger than at the actual
+    cochain. Pinned at
+    `test_boundary_deviation_v_at_extension_is_minimum`.
+  - **H14 (chain-topology weight invariance — surfaced 2026-05-02).**
+    With a *single* bridge edge connecting boundary to interior
+    (chain topology), the harmonic extension is weight-invariant
+    even on a trained sheaf. Analytic reason: $x_I = -r \cdot
+    M(r)^{-1} (B x_B)$ with $r = w_{\text{bridge}}/w_{\text{interior}}$
+    cancels for rank-1 $B$. The weight effect IS visible with
+    multiple bridge edges. Both pinned: chain-invariance at
+    `test_boundary_deviation_with_identity_maps_is_weight_invariant_on_chain_graphs`,
+    multi-bridge visibility at
+    `test_boundary_deviation_with_weights_visible_with_multiple_bridge_edges`.
+  - **H15 (boundary_from_weights).** A vertex is on the boundary
+    iff every incident edge has weight $\ge$ threshold. Vertices
+    with even one untrusted incident edge fall to the interior.
+    Pinned at
+    `test_boundary_from_weights_picks_only_fully_trusted_vertices`.
+
+**Out of scope for v3.1 (named honestly):**
+
+  - **JWKS verification round-trip.** `boundary_from_weights` works
+    on a weight vector that the caller has built from a
+    trusted/revoked partition; mapping receipts → JWKS-verified
+    edges is the caller's responsibility (see v3 §3.4 same point).
+  - **Empirical hallucination-detection ROC bench using boundary
+    deviation.** Synthetic-data utility test (H12) is pinned;
+    corpus-scale ROC analogous to PR #114's v2.2 bench is a
+    follow-up.
+  - **Adaptive threshold for "deviation > θ → hallucination".**
+    Decision threshold is calibrated per-corpus; v3.1 ships the
+    primitive, not the threshold.
 
 ### 3.5 Output shape
 

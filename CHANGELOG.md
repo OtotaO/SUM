@@ -4,6 +4,32 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **v3.1 harmonic-extension boundary inference.** Implements
+  Hansen-Ghrist 2019 Proposition 4.1 / Theorem 4.5: given a sheaf
+  on a graph and a partition of vertices into a trust-frame
+  *boundary* $B$ and an *interior* $I$, the harmonic extension is
+  the unique cochain that agrees with $x_B$ on $B$ and minimizes
+  $\|\delta x\|^2$ over $I$. Closed form: $x_I^* = -L_{II}^{-1}
+  L_{IB} x_B$, computed via `np.linalg.lstsq` for numerical
+  stability under rank-deficient $L_{II}$ (disconnected interior /
+  interior with global section). The v3 weighted-Laplacian
+  primitive shipped earlier in this cycle was the prerequisite —
+  v3.1 takes the same matrix and uses it to interpolate, not just
+  to score.
+  Practical use: `boundary_from_weights(sheaf, weights)` derives
+  $B$ from per-edge receipt weights (a vertex joins the boundary
+  iff every incident edge has weight ≥ threshold);
+  `boundary_deviation(sheaf, x_full, B)` computes
+  $\|x_I - x_I^*\|^2$ — the headline hallucination signal "render
+  diverges from what the trust frame predicts." Ten falsifiable
+  predictions pinned (H6–H15) including a **surfaced-mid-PR
+  honesty pin**: with a single bridge edge connecting boundary to
+  interior, the harmonic extension is weight-invariant for any
+  positive weights (analytic reason: rank-1 bridge column makes
+  the $r = w_{bridge}/w_{interior}$ ratio cancel). Documented in
+  the test rather than worked around. The weight effect IS
+  observable with multiple bridge edges; that case is also pinned.
+
 - **v3 receipt-weighted sheaf-Laplacian detector (Block B).**
   Extends v2.2's combined detector with per-edge weights derived
   from the trust loop's own outputs — Ed25519-signed render
