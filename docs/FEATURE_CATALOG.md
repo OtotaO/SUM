@@ -1218,13 +1218,26 @@ Callers using `combined_detector_score` should auto-calibrate per corpus rather 
 
 Reproducible: `PYTHONPATH=. python scripts/research/sheaf_v2_roc_bench.py` (CPU-only, ~30 seconds, no LLM API spend).
 
+### 150. Audit-log streaming primitive (`SUM_AUDIT_LOG`, sum.audit_log.v1) ✅
+
+`sum_cli/audit_log.py` — when the `SUM_AUDIT_LOG` environment variable is set to a file path (or `-` for stdout), every `sum attest` / `sum verify` / `sum render` operation appends a single JSONL row to that destination describing what was done. The audit log is **regime-agnostic foundation infrastructure**: a specific compliance regime (GDPR-Art-30, HIPAA-164.514, EU AI Act Annex IV, NIST AI RMF, internal-audit) implements its own validator on top by tailing the JSONL file and checking per-regime required fields.
+
+Schema: `sum.audit_log.v1` with required `schema` / `timestamp` (ISO 8601 UTC, ms precision, ending in `Z`) / `operation` / `cli_version` plus operation-specific payload (attest: source_uri, axiom_count, extractor, branch, signed/hmac, input_format; verify: ok, signatures, extraction; render: mode, sliders, render_receipt_kid for worker mode). Cross-referencing across operations via `axiom_count` and `state_integer_digits`. Wire format documented in `docs/AUDIT_LOG_FORMAT.md`.
+
+Fail-open semantics: an unwritable audit destination does **not** break the operation. The canonical bundle / receipt remains the load-bearing trust artifact regardless of audit-log status; the audit log is advisory. Compliance tooling monitors the destination's health independently.
+
+Concurrency: single-line JSONL records under `O_APPEND` on POSIX produce a serialised total ordering across multiple sum processes writing to the same log.
+
+Verify: `pytest Tests/test_audit_log.py -q`
+Expected: `11 passed` — schema pin (required fields, ISO 8601 UTC timestamp), no-writes-when-unset, fail-open on unwritable path, `-` writes to stdout, concurrent appends serialize cleanly, per-operation row shape (attest / verify / render), end-to-end attest→verify→render produces three rows with cross-referenceable axiom counts.
+
 ---
 
 ## Summary counts
 
-Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **149**.
+Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **150**.
 
-- **Production ✅: 130 features** — tested green; each has a verification command in its entry.
+- **Production ✅: 131 features** — tested green; each has a verification command in its entry.
 - **Scaffolded 🔧: 18 features** — tests pass, production activation pending. All catalogued in `docs/MODULE_AUDIT.md` with activation checklists.
 - **Designed 📄: 1 feature** (sha256_128_v2 default-promotion; cross-runtime byte-identity locked, default-flip is a separate operator decision).
 
