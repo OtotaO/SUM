@@ -926,7 +926,15 @@ def _post_render_to_worker(
         endpoint,
         data=payload,
         method="POST",
-        headers={"content-type": "application/json"},
+        headers={
+            "content-type": "application/json",
+            # Cloudflare in front of hosted Workers (incl. the
+            # default sum-demo.ototao.workers.dev) rejects the
+            # default Python urllib User-Agent with HTTP 403 /
+            # error 1010. Identify ourselves as a known scripted
+            # client so the request passes the bot-detection layer.
+            "user-agent": f"sum-cli/{__version__} (+https://github.com/OtotaO/SUM)",
+        },
     )
     try:
         with urllib.request.urlopen(req, timeout=60) as resp:
