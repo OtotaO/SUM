@@ -4,7 +4,21 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
-(no entries since the v0.5.0 release-rotation; new work lands here.)
+- **First per-regime compliance validator (Path 3).** EU AI Act
+  Article 12 (record-keeping for high-risk AI systems) — the first
+  actionable layer on top of the `sum.audit_log.v1` substrate
+  shipped in v0.5.0. Six rules pin per-row traceability fields
+  (schema, timestamp, operation, cli_version) plus operation-
+  specific anchors (`source_uri` for attest, `axiom_count` +
+  `state_integer_digits` for verify, `mode` for render). New
+  `sum compliance check --regime eu-ai-act-article-12` and
+  `sum compliance regimes` CLI verbs; pipe-friendly exit codes
+  (0 = ok, 1 = violations) for CI gates. Regime-agnostic
+  `sum.compliance_report.v1` shape so future regimes share
+  consumers. Tightening of the audit-log contract earlier this
+  cycle (PR #119, signed-bundle / multi-process / worker-mode
+  render coverage) was the prerequisite — the validator can pin
+  what the substrate now reliably emits.
 
 ## [0.5.0] — 2026-05-01
 
