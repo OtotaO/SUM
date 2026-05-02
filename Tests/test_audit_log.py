@@ -26,6 +26,36 @@ def _read_audit_lines(path: Path) -> list[dict]:
     return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
 
 
+def _mp_worker_emit(args: tuple[str, int, int]) -> int:
+    """Top-level worker for the multi-process O_APPEND atomicity test.
+
+    multiprocessing requires picklable callables, so this lives at
+    module scope. Each call sets SUM_AUDIT_LOG in the worker process'
+    environment and emits ``n_emits`` audit rows tagged with the
+    worker_id so the parent can assert no rows were lost or duplicated.
+    Returns the worker_id for sanity.
+    """
+    audit_path, worker_id, n_emits = args
+    os.environ["SUM_AUDIT_LOG"] = audit_path
+    from sum_cli.audit_log import emit_audit_event
+    for i in range(n_emits):
+        emit_audit_event("verify", {"worker_id": worker_id, "iteration": i})
+    return worker_id
+
+
+def _write_ed25519_pem(path: Path) -> None:
+    """Generate an Ed25519 PEM private key for signed-attest tests."""
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+    sk = Ed25519PrivateKey.generate()
+    path.write_bytes(sk.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption(),
+    ))
+
+
 def _mint_unsigned_bundle() -> dict:
     """Build a real CanonicalBundle in-memory via the codec."""
     from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
@@ -328,3 +358,226 @@ def test_full_attest_verify_render_sequence_produces_three_rows(tmp_path, monkey
     # Cross-reference: attest's axiom_count == verify's axiom_count == render's axiom_count_input
     assert rows[0]["axiom_count"] == rows[1]["axiom_count"]
     assert rows[1]["axiom_count"] == rows[2]["axiom_count_input"]
+
+
+# ─── Gap closures (2026-05-02 self-audit) ─────────────────────────────
+
+
+def test_audit_log_empty_string_treated_as_unset(tmp_path, monkeypatch):
+    """SUM_AUDIT_LOG="" is explicitly handled as unset
+    (sum_cli/audit_log.py treats both ``None`` and ``""`` as no-op).
+    Pin the empty-string branch so a future change can't silently
+    start writing to the empty path (which on POSIX would raise
+    OSError and be swallowed by fail-open — silent loss)."""
+    monkeypatch.setenv("SUM_AUDIT_LOG", "")
+    from sum_cli.audit_log import emit_audit_event
+    emit_audit_event("verify", {"axiom_count": 1})
+    # No file should appear in tmp_path; nothing on stdout either.
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_attest_with_ed25519_key_emits_signed_true(tmp_path, monkeypatch):
+    """The attest audit row must carry ``signed: true`` when an
+    Ed25519 PEM key is supplied. Pins that the signed-attestation
+    branch of cmd_attest still feeds the audit emit — a future
+    refactor that drops the bundle-key check (``"public_signature"
+    in bundle``) would silently lose Ed25519 signing visibility
+    for compliance consumers."""
+    audit = tmp_path / "audit.jsonl"
+    monkeypatch.setenv("SUM_AUDIT_LOG", str(audit))
+    pem = tmp_path / "sk.pem"
+    _write_ed25519_pem(pem)
+
+    from sum_cli.main import cmd_attest
+    args = argparse.Namespace(
+        input=None, extractor="sieve", model=None, source=None,
+        branch="signed-test", title="Signed Test",
+        signing_key=None, ed25519_key=str(pem), ledger=None,
+        format="auto", pretty=False, verbose=False,
+    )
+    monkeypatch.setattr("sys.stdin", io.StringIO("Alice likes cats. Bob owns a dog."))
+    buf = io.StringIO()
+    old = sys.stdout
+    sys.stdout = buf
+    try:
+        code = cmd_attest(args)
+    finally:
+        sys.stdout = old
+    assert code == 0
+
+    row = _read_audit_lines(audit)[0]
+    assert row["operation"] == "attest"
+    assert row["signed"] is True, (
+        f"Ed25519 attest must emit signed=True; row={row}"
+    )
+    assert row["hmac"] is False
+
+
+def test_attest_with_signing_key_emits_hmac_true(tmp_path, monkeypatch):
+    """The attest audit row must carry ``hmac: true`` when an HMAC
+    signing key is supplied. Pins the HMAC branch of cmd_attest's
+    audit emit (``"signature" in bundle``)."""
+    audit = tmp_path / "audit.jsonl"
+    monkeypatch.setenv("SUM_AUDIT_LOG", str(audit))
+
+    from sum_cli.main import cmd_attest
+    args = argparse.Namespace(
+        input=None, extractor="sieve", model=None, source=None,
+        branch="hmac-test", title="HMAC Test",
+        signing_key="audit-test-hmac-key-32bytes!!!!!", ed25519_key=None, ledger=None,
+        format="auto", pretty=False, verbose=False,
+    )
+    monkeypatch.setattr("sys.stdin", io.StringIO("Alice likes cats. Bob owns a dog."))
+    buf = io.StringIO()
+    old = sys.stdout
+    sys.stdout = buf
+    try:
+        code = cmd_attest(args)
+    finally:
+        sys.stdout = old
+    assert code == 0
+
+    row = _read_audit_lines(audit)[0]
+    assert row["operation"] == "attest"
+    assert row["signed"] is False
+    assert row["hmac"] is True, (
+        f"HMAC attest must emit hmac=True; row={row}"
+    )
+
+
+def test_attest_with_both_keys_emits_signed_and_hmac_true(tmp_path, monkeypatch):
+    """Dual-signing path: both Ed25519 and HMAC. Both flags must
+    be true in the audit row. Pins that the audit emit reads the
+    bundle's signature fields independently — neither branch
+    suppresses the other."""
+    audit = tmp_path / "audit.jsonl"
+    monkeypatch.setenv("SUM_AUDIT_LOG", str(audit))
+    pem = tmp_path / "sk.pem"
+    _write_ed25519_pem(pem)
+
+    from sum_cli.main import cmd_attest
+    args = argparse.Namespace(
+        input=None, extractor="sieve", model=None, source=None,
+        branch="dual-test", title="Dual Test",
+        signing_key="dual-hmac-key-32bytes!!!!!!!!!!!", ed25519_key=str(pem),
+        ledger=None,
+        format="auto", pretty=False, verbose=False,
+    )
+    monkeypatch.setattr("sys.stdin", io.StringIO("Alice likes cats. Bob owns a dog."))
+    buf = io.StringIO()
+    old = sys.stdout
+    sys.stdout = buf
+    try:
+        code = cmd_attest(args)
+    finally:
+        sys.stdout = old
+    assert code == 0
+
+    row = _read_audit_lines(audit)[0]
+    assert row["signed"] is True
+    assert row["hmac"] is True
+
+
+def test_audit_log_multiprocess_appends_no_torn_writes(tmp_path):
+    """Pin sum_cli/audit_log.py's docstring claim that O_APPEND on
+    POSIX produces a serialised total ordering of single-line JSONL
+    records under racing processes.
+
+    Eight worker processes each emit twenty rows. Total = 160 lines.
+    Asserts: every line parses as JSON, no row is missing, no row
+    is duplicated, every (worker_id, iteration) pair appears exactly
+    once. This is the actual claim — the in-process serial test
+    upstream covers ordering but NOT atomicity under racing writes.
+    """
+    import multiprocessing as mp
+
+    audit = tmp_path / "audit.jsonl"
+    n_workers = 8
+    n_emits = 20
+
+    # Use spawn so the test behaves identically on macOS (default
+    # spawn since 3.8) and Linux CI. Workers read SUM_AUDIT_LOG from
+    # the path passed in; setting os.environ in the worker is local
+    # to that worker process.
+    ctx = mp.get_context("spawn")
+    work = [(str(audit), wid, n_emits) for wid in range(n_workers)]
+    with ctx.Pool(n_workers) as pool:
+        returned = pool.map(_mp_worker_emit, work)
+    assert sorted(returned) == list(range(n_workers))
+
+    rows = _read_audit_lines(audit)
+    assert len(rows) == n_workers * n_emits, (
+        f"expected {n_workers * n_emits} rows, got {len(rows)} "
+        f"(possible torn writes or lost emits)"
+    )
+    # Every (worker_id, iteration) pair appears exactly once.
+    seen = {(r["worker_id"], r["iteration"]) for r in rows}
+    assert len(seen) == n_workers * n_emits
+    expected = {(w, i) for w in range(n_workers) for i in range(n_emits)}
+    assert seen == expected, (
+        f"missing or duplicate (worker_id, iteration) pairs; "
+        f"missing={expected - seen}, extra={seen - expected}"
+    )
+    # Sanity: every row carries the required schema fields.
+    for r in rows:
+        assert r["schema"] == "sum.audit_log.v1"
+        assert r["operation"] == "verify"
+
+
+def test_render_worker_mode_emits_receipt_fields(tmp_path, monkeypatch):
+    """Worker-mode render audit row must carry mode='worker',
+    render_receipt_kid, render_receipt_schema, and worker_url. The
+    upstream test (test_render_emits_audit_row) only pins the
+    LOCAL-mode shape and asserts render_receipt_kid is *absent* —
+    the positive-shape branch of _emit_render_output (lines
+    1171-1175 of sum_cli/main.py) was untested before this PR.
+
+    Approach: drive _emit_render_output directly with a synthetic
+    worker envelope. The audit-emit branch is what we're pinning,
+    not the HTTP round-trip — exercising it with a real Worker
+    request would couple this test to network state. The synthetic
+    envelope is byte-shaped exactly like the worker-path output of
+    _post_render_to_worker.
+    """
+    audit = tmp_path / "audit.jsonl"
+    monkeypatch.setenv("SUM_AUDIT_LOG", str(audit))
+
+    envelope = {
+        "tome": "# Synthetic worker tome\n\nSome rendered prose.\n",
+        "sliders": {
+            "density": 1.0, "length": 0.5, "formality": 0.5,
+            "audience": 0.5, "perspective": 0.5,
+        },
+        "mode": "worker",
+        "axiom_count_input": 3,
+        "title": "worker-mode-test",
+        "render_receipt": {
+            "kid": "test-render-key-2026-05-02",
+            "schema": "sum.render_receipt.v1",
+        },
+        "worker_url": "https://sum-demo.ototao.workers.dev/render",
+    }
+
+    from sum_cli.main import _emit_render_output
+    args = argparse.Namespace(
+        output=None, json=False, pretty=False, verbose=False,
+    )
+    buf = io.StringIO()
+    old = sys.stdout
+    sys.stdout = buf
+    try:
+        code = _emit_render_output(envelope, args)
+    finally:
+        sys.stdout = old
+    assert code == 0
+
+    row = _read_audit_lines(audit)[0]
+    assert row["operation"] == "render"
+    assert row["mode"] == "worker"
+    assert row["axiom_count_input"] == 3
+    assert row["tome_chars"] == len(envelope["tome"])
+    assert row["sliders"]["density"] == 1.0
+    # Worker-mode-specific fields:
+    assert row["render_receipt_kid"] == "test-render-key-2026-05-02"
+    assert row["render_receipt_schema"] == "sum.render_receipt.v1"
+    assert row["worker_url"] == "https://sum-demo.ototao.workers.dev/render"
