@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-02T08:37:44Z",
+  "issued_at": "2026-05-02T08:52:45Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "8391655d2899ebd717a42eccfe121d746210df31",
-    "head_short": "8391655",
-    "head_subject": "tests: close 4 audit-log contract gaps surfaced by 2026-05-02 self-audit (#119)",
-    "head_committer_date": "2026-05-02T03:00:18-04:00",
+    "head_sha": "bd91e4221a30c85a28311f16ff82032c010b074d",
+    "head_short": "bd91e42",
+    "head_subject": "compliance: first per-regime validator \u2014 EU AI Act Article 12 (#120)",
+    "head_committer_date": "2026-05-02T04:46:59-04:00",
     "commits_last_30d": null
   },
   "github": {

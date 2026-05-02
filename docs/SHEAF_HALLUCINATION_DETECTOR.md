@@ -329,24 +329,90 @@ The honest split:
   the prerequisite that makes the math meaningful; v2.2 is the
   artifact that scales to naturalistic prose.
 
-### 3.4 Procedure (v3, receipt-weighted)
+### 3.4 Procedure (v3, receipt-weighted) — IMPLEMENTED 2026-05-02
 
-Same as v2.2 except: each render $R_n$'s cochain contribution to
-the Laplacian is weighted by an **issuer-trust score** derived from
-the render receipt's signing key. Receipts from a trusted-issuer
-JWKS contribute weight 1; unsigned renderings or renderings from
-unknown issuers contribute lower weight. Combined with the
-**harmonic extension** machinery from Hansen-Ghrist 2019
-Proposition 4.1 / Theorem 4.5: trusted-issuer renders form the
-*boundary* $B$, untrusted renders are the interior, and the
-harmonic extension is the most-consistent interpolation. Untrusted
-renders that match the harmonic extension pass; ones that don't
-are flagged. **This is the SUM-specific extension** that does not
-replicate elsewhere — no other system has cross-runtime-verified
-render receipts to seed the boundary.
+The weighted sheaf Laplacian (Hansen-Ghrist 2019 §3.2 weighted
+generalization):
 
-v3 connects the obstruction class to SUM's existing
-trust-and-verification primitives.
+$$L_F^w \;=\; \delta^T W \delta, \qquad
+  x^T L_F^w x \;=\; \sum_e w_e \cdot \|F_h^{(r)} x_u - F_t^{(r)} x_v\|^2$$
+
+where $W$ is a non-negative diagonal $|E| \times |E|$ matrix of
+edge weights. Each edge's weight is a function of whether that
+edge's source-of-record carries a verified Ed25519-signed render
+receipt:
+
+| Receipt status | Weight |
+|---|---|
+| Signed by a key in the trusted-issuer JWKS | $w_{\text{trusted}} = 1.0$ |
+| Unsigned / unknown issuer | $w_{\text{default}} = 0.1$ |
+| Signed by a revoked key (per `/.well-known/revoked-kids.json`) | $w_{\text{revoked}} = 0.0$ |
+
+The math claim from §3.2 carries through: $W^{1/2}\delta$ is a
+coboundary of a sheaf with scaled stalks, so
+$L_F^w = (W^{1/2}\delta)^T(W^{1/2}\delta)$ remains symmetric PSD.
+Implementation: `sum_engine_internal.research.sheaf_laplacian_v3`.
+
+**Why this is fractal in the architectural sense the project
+calls out:** the weights come from the system's own trust
+artifacts. The cross-runtime trust triangle (K1–K4) attests that
+a receipt's Ed25519 signature is byte-identically verifiable in
+Python, Node, and the browser. v3 takes those receipts and feeds
+them into the detector's confidence weighting. The audit-log
+substrate (PR #117) records every render's receipt KID, so
+backfilling weights from a logged history is straightforward.
+Higher trust → higher weight → sharper detection signal in regions
+the system already verifies; unsigned regions get a lower-weight
+floor that doesn't silence them entirely.
+
+**Falsifiable predictions pinned in code:**
+
+  - **H1 (linearity).** $V$ is linear in the weights — doubling all
+    weights doubles $V$; setting one edge's weight to 0 zeros that
+    edge's contribution exactly. Pinned at
+    `test_h1_doubling_weights_doubles_quadratic_form` and
+    `test_h1_zero_weight_kills_edge_contribution`.
+  - **H2 (v2 reduction).** Uniform weights $w_e = c$ give
+    $V_{v3}(x; w=c) = c \cdot V_{v2}(x)$. v3 is a strict
+    generalization of v2. Pinned at
+    `test_h2_uniform_weights_v3_equals_scaled_v2`.
+  - **H3 (per-edge weighting).** The localization ranker's per-edge
+    contribution scales with weight ($w_e \cdot \|residual_e\|^2$).
+    Pinned at `test_h3_per_edge_contribution_scales_with_weight`.
+  - **H4 (trust amplifies signal).** Tampering a trusted edge yields
+    a sharper $\Delta V$ than tampering an untrusted edge — that is,
+    receipt-weighting amplifies signal where the system already
+    trusts. **This is the utility claim**; if it inverts, v3 is
+    well-defined but useless. Pinned at
+    `test_tampering_trusted_edge_yields_sharper_v_jump_than_untrusted`.
+  - **H5 (revocation overrides trust).** An edge in both the
+    trusted and revoked sets resolves to revoked. Pinned at
+    `test_weights_from_receipts_revocation_overrides_trust`.
+
+**Out of scope (v3 limits, named honestly):**
+
+  - **Harmonic-extension boundary inference.** Hansen-Ghrist 2019
+    Proposition 4.1 / Theorem 4.5's harmonic-extension machinery —
+    using trusted-issuer renders as a boundary $B$ and inferring
+    the most-consistent interpolation on the interior — is *not*
+    implemented in v3. v3 only weights the quadratic form. The
+    boundary-inference step is a candidate v3.1 follow-up; the
+    weighted-Laplacian primitive in v3 is the prerequisite.
+  - **JWKS verification round-trip.** v3's `weights_from_receipts`
+    takes the trusted-edge set as a parameter; mapping receipts →
+    JWKS-verified-edges is the caller's responsibility (a thin
+    wrapper around the existing render-receipt verifier suffices).
+  - **Empirical bench.** The synthetic-data utility test (H4) is
+    pinned, but a corpus-scale bench (analogous to the v2.2 ROC
+    bench in PR #114) is a follow-up. The math + falsifiability +
+    utility pin is the v3 PR's scope.
+
+v3 connects the obstruction class to SUM's existing trust-and-
+verification primitives — the cross-runtime trust triangle, the
+render receipts, the audit log, the JWKS / revoked-kids surface.
+This is the SUM-specific extension that doesn't replicate
+elsewhere: no other system has cross-runtime-verified render
+receipts to feed into a sheaf-Laplacian's edge weights.
 
 ### 3.5 Output shape
 
