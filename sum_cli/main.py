@@ -420,6 +420,18 @@ def cmd_attest(args: argparse.Namespace) -> int:
             f"{len(bundle['state_integer'])} digits",
             file=sys.stderr,
         )
+
+    from sum_cli.audit_log import emit_audit_event
+    emit_audit_event("attest", {
+        "source_uri": source_uri,
+        "axiom_count": len(triples),
+        "state_integer_digits": len(bundle["state_integer"]),
+        "extractor": extractor,
+        "branch": args.branch,
+        "signed": "public_signature" in bundle,
+        "hmac": "signature" in bundle,
+        "input_format": format_sidecar.get("input_format"),
+    })
     return 0
 
 
@@ -844,6 +856,16 @@ def cmd_verify(args: argparse.Namespace) -> int:
         f"sum: ✓ verified {axioms} axiom(s), state integer matches ({marks})",
         file=sys.stderr,
     )
+
+    from sum_cli.audit_log import emit_audit_event
+    emit_audit_event("verify", {
+        "ok": True,
+        "axiom_count": axioms,
+        "state_integer_digits": len(claimed_state_str),
+        "branch": bundle.get("branch", "main"),
+        "signatures": {"hmac": hmac_status, "ed25519": ed25519_status},
+        "extraction": extraction,
+    })
     return 0
 
 
@@ -1138,6 +1160,20 @@ def _emit_render_output(envelope: dict, args: argparse.Namespace) -> int:
             kid = envelope["render_receipt"].get("kid", "?")
             msg += f", receipt kid={kid}"
         print(msg, file=sys.stderr)
+
+    from sum_cli.audit_log import emit_audit_event
+    audit_payload: dict = {
+        "mode": envelope.get("mode"),
+        "axiom_count_input": envelope.get("axiom_count_input"),
+        "tome_chars": len(tome_text),
+        "sliders": envelope.get("sliders"),
+    }
+    if "render_receipt" in envelope:
+        receipt = envelope["render_receipt"]
+        audit_payload["render_receipt_kid"] = receipt.get("kid")
+        audit_payload["render_receipt_schema"] = receipt.get("schema")
+        audit_payload["worker_url"] = envelope.get("worker_url")
+    emit_audit_event("render", audit_payload)
     return 0
 
 

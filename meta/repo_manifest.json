@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-02T01:01:14Z",
+  "issued_at": "2026-05-02T01:12:47Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "c0b58c02002733b1e78d7f24686e9baaec20bda1",
-    "head_short": "c0b58c0",
-    "head_subject": "docs/arxiv: draft v0 of the sheaf-detector note for circulation before arXiv submission (#115)",
-    "head_committer_date": "2026-05-01T20:40:00-04:00",
+    "head_sha": "d88c47fe955cadaf481cbfaaef79c2589cbd52f7",
+    "head_short": "d88c47f",
+    "head_subject": "research: Path 2 LLM bench + sum render User-Agent fix \u2014 real Cloudflare-fronted rendering measured for the first time (#116)",
+    "head_committer_date": "2026-05-01T21:07:07-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -22,8 +22,8 @@
     "pypi_published_version": "0.5.0"
   },
   "features": {
-    "total": 149,
-    "production": 130,
+    "total": 150,
+    "production": 131,
     "scaffolded": 18,
     "designed": 1
   },
