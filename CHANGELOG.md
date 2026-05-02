@@ -4,6 +4,30 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **v3 receipt-weighted sheaf-Laplacian detector (Block B).**
+  Extends v2.2's combined detector with per-edge weights derived
+  from the trust loop's own outputs — Ed25519-signed render
+  receipts. The weighted sheaf Laplacian $L_F^w = \delta^T W \delta$
+  (Hansen-Ghrist 2019 §3.2 weighted generalization) gives edges
+  backed by trusted-issuer JWKS receipts a higher weight (1.0),
+  unsigned edges a lower-weight floor (0.1), and revoked-key edges
+  weight 0. The math claim carries: $L_F^w$ is symmetric PSD, the
+  factored form $\sum_e w_e \|residual_e\|^2$ matches the
+  materialized quadratic form numerically, and uniform weights
+  $w_e = c$ reduce v3 to $c \cdot v_2$ exactly. Five falsifiable
+  predictions pinned in `Tests/research/test_sheaf_laplacian_v3.py`
+  including the headline utility claim H4: tampering a trusted
+  (high-weight) edge produces a sharper $\Delta V$ than tampering
+  an untrusted edge — receipt-weighting amplifies signal where
+  the system already trusts. **Architectural note:** v3 is fractal
+  in the project's intended sense — the system's own trust
+  artifacts (cross-runtime-verified render receipts) feed into the
+  detector's confidence weighting. No other system has a working
+  cross-runtime trust triangle to seed this. Out-of-scope and
+  named explicitly: harmonic-extension boundary inference (v3.1
+  candidate); JWKS verification round-trip (caller's
+  responsibility); corpus-scale empirical bench (follow-up).
+
 - **First per-regime compliance validator (Path 3).** EU AI Act
   Article 12 (record-keeping for high-risk AI systems) — the first
   actionable layer on top of the `sum.audit_log.v1` substrate
