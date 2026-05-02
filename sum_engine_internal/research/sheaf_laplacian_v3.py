@@ -276,3 +276,229 @@ def combined_detector_score_v3(
         "v_combined_v3": v_laplacian_w + lambda_deficit * (base["v_deficit"]),
         "edge_weights": weights.tolist(),
     }
+
+
+# ─── v3.1: harmonic extension over (boundary, interior) ──────────────
+#
+# Hansen-Ghrist 2019, Proposition 4.1 / Theorem 4.5: given a sheaf F
+# on a graph G, a partition V = B ∪ I (boundary ∪ interior), and a
+# cochain x_B specified on the boundary, the harmonic extension is
+# the unique cochain x ∈ C^0(G; F) that
+#
+#   (i)  agrees with x_B on B
+#   (ii) minimizes ‖δx‖² over the interior I
+#
+# Block-decompose the Laplacian by the (B, I) partition:
+#
+#   L_F = [L_BB  L_BI]
+#         [L_IB  L_II]
+#
+# Setting ∂‖δx‖²/∂x_I = 0 gives x_I^* = -L_II^{-1} L_IB x_B (a
+# closed-form solution when L_II is invertible).
+#
+# Why this matters for SUM: trusted-receipt-backed vertices form the
+# boundary B (we trust the sheaf's structure there); untrusted/
+# unsigned vertices form the interior I. The harmonic extension is
+# the most-consistent interpolation given the boundary constraints.
+# A render whose interior cochain diverges from the harmonic
+# extension is flagged — the system is using its own trust artifacts
+# (the boundary) to score consistency on the parts it doesn't already
+# trust (the interior).
+#
+# This is the Hansen-Ghrist machinery v3 named as out-of-scope (v3.1
+# candidate); the weighted-Laplacian primitive v3 shipped is the
+# prerequisite this module builds on.
+
+
+def _block_indices(vertex_indices: list[int], stalk_dim: int) -> list[int]:
+    """Expand vertex indices to flat |V|·d row/col indices of L_F.
+
+    A vertex v in the sheaf occupies rows/cols [v·d, (v+1)·d) of
+    the materialized Laplacian. ``np.ix_`` then takes the
+    rectangular submatrix.
+    """
+    return [v * stalk_dim + j for v in vertex_indices for j in range(stalk_dim)]
+
+
+def harmonic_extension(
+    sheaf: KnowledgeSheafV2,
+    boundary_indices: list[int],
+    x_B: np.ndarray,
+    *,
+    weights: np.ndarray | None = None,
+) -> tuple[np.ndarray, list[int]]:
+    """Compute the harmonic extension of x_B over the interior I = V \\ B.
+
+    Returns ``(x_I_star, interior_indices)`` where ``x_I_star`` has
+    shape ``(|I|, d)`` and is the unique minimizer of ‖δx‖² subject
+    to ``x[B] = x_B``.
+
+    ``boundary_indices`` is a list of vertex indices (not flat
+    matrix indices). ``x_B`` has shape ``(|B|, d)``, indexed
+    parallel to ``boundary_indices``.
+
+    Optional ``weights`` (per-edge, shape (|E|,)) computes the
+    *weighted* harmonic extension under L_F^w. Without weights,
+    falls back to the unweighted v2 Laplacian.
+
+    Numerical stability: uses ``np.linalg.lstsq`` rather than a
+    direct inverse, so a rank-deficient ``L_II`` (disconnected
+    interior, or interior with a global section) returns the
+    minimum-norm solution rather than crashing. The caller can
+    surface degenerate cases by checking the residual.
+    """
+    n_v = len(sheaf.vertices)
+    d = sheaf.stalk_dim
+
+    if not all(0 <= v < n_v for v in boundary_indices):
+        raise ValueError(
+            f"boundary_indices must be in [0, {n_v}); got {boundary_indices}"
+        )
+    if x_B.shape != (len(boundary_indices), d):
+        raise ValueError(
+            f"x_B shape must be (|B|={len(boundary_indices)}, d={d}); "
+            f"got {x_B.shape}"
+        )
+
+    interior_indices = [v for v in range(n_v) if v not in set(boundary_indices)]
+    if not interior_indices:
+        # Degenerate: every vertex is on the boundary. Harmonic
+        # extension is empty; return a (0, d) array for shape
+        # consistency.
+        return np.zeros((0, d), dtype=np.float64), []
+
+    if weights is None:
+        L = sheaf_laplacian_v2(sheaf)
+    else:
+        L = weighted_sheaf_laplacian_v3(sheaf, weights)
+
+    B_flat = _block_indices(boundary_indices, d)
+    I_flat = _block_indices(interior_indices, d)
+
+    L_II = L[np.ix_(I_flat, I_flat)]
+    L_IB = L[np.ix_(I_flat, B_flat)]
+
+    x_B_flat = x_B.reshape(-1)
+    rhs = -L_IB @ x_B_flat
+
+    # lstsq returns the minimum-norm solution when L_II is rank-
+    # deficient (which can happen when the interior has a global
+    # section — e.g. disconnected from the boundary, or contains
+    # only a constant cochain). Robust to numerical edge cases.
+    x_I_flat, _residuals, _rank, _singvals = np.linalg.lstsq(L_II, rhs, rcond=None)
+    return x_I_flat.reshape(len(interior_indices), d), interior_indices
+
+
+def boundary_deviation(
+    sheaf: KnowledgeSheafV2,
+    x_full: np.ndarray,
+    boundary_indices: list[int],
+    *,
+    weights: np.ndarray | None = None,
+) -> dict:
+    """Distance from a full cochain to the harmonic extension of its boundary.
+
+    A render whose interior cochain matches the harmonic extension
+    of its boundary cochain is "consistent with the trust frame";
+    one that diverges is flagged.
+
+    Returns:
+      ``deviation`` — ‖x_I_actual − x_I^*‖² (squared L2 distance,
+        the natural metric in the d-stalk inner product).
+      ``v_at_actual`` — x^T L x at the actual cochain.
+      ``v_at_extension`` — x^T L x at the harmonic-extended cochain
+        (boundary held to x_B; interior to x_I^*). By the
+        minimization property, this is ≤ v_at_actual; equality iff
+        the actual interior already matches the harmonic extension.
+      ``boundary_size`` — |B|; ``interior_size`` — |I|.
+    """
+    n_v = len(sheaf.vertices)
+    d = sheaf.stalk_dim
+    if x_full.shape != (n_v, d):
+        raise ValueError(
+            f"x_full shape must be (|V|={n_v}, d={d}); got {x_full.shape}"
+        )
+
+    interior_indices = [v for v in range(n_v) if v not in set(boundary_indices)]
+    x_B = x_full[boundary_indices]
+
+    x_I_star, _ = harmonic_extension(
+        sheaf, boundary_indices, x_B, weights=weights,
+    )
+
+    if not interior_indices:
+        # Degenerate: full boundary, nothing to deviate over. Devation
+        # is 0 by convention.
+        if weights is None:
+            v_actual = float(np.sum(per_edge_residual_v2(sheaf, x_full) ** 2))
+        else:
+            v_actual = weighted_laplacian_quadratic_form_v3(sheaf, x_full, weights)
+        return {
+            "deviation": 0.0,
+            "v_at_actual": v_actual,
+            "v_at_extension": v_actual,
+            "boundary_size": len(boundary_indices),
+            "interior_size": 0,
+        }
+
+    x_I_actual = x_full[interior_indices]
+    deviation = float(np.sum((x_I_actual - x_I_star) ** 2))
+
+    # Build the harmonic-extended full cochain to compute v_at_extension
+    x_extended = x_full.copy()
+    for k, v_idx in enumerate(interior_indices):
+        x_extended[v_idx] = x_I_star[k]
+
+    if weights is None:
+        v_actual = float(np.sum(per_edge_residual_v2(sheaf, x_full) ** 2))
+        v_ext = float(np.sum(per_edge_residual_v2(sheaf, x_extended) ** 2))
+    else:
+        v_actual = weighted_laplacian_quadratic_form_v3(sheaf, x_full, weights)
+        v_ext = weighted_laplacian_quadratic_form_v3(sheaf, x_extended, weights)
+
+    return {
+        "deviation": deviation,
+        "v_at_actual": v_actual,
+        "v_at_extension": v_ext,
+        "boundary_size": len(boundary_indices),
+        "interior_size": len(interior_indices),
+    }
+
+
+def boundary_from_weights(
+    sheaf: KnowledgeSheafV2,
+    weights: np.ndarray,
+    *,
+    threshold: float = 0.5,
+) -> list[int]:
+    """Derive a boundary vertex set from per-edge weights.
+
+    A vertex is on the boundary iff *all* of its incident edges have
+    weight ≥ ``threshold``. The intuition: a vertex is "trusted"
+    when every edge connecting it to its neighbours is backed by a
+    verified receipt. Vertices with even one untrusted incident edge
+    fall to the interior.
+
+    With the default ``trusted_weight=1.0`` / ``default_weight=0.1``
+    from :func:`weights_from_receipts`, threshold=0.5 partitions
+    cleanly: trusted-only neighbourhoods → boundary; anything else →
+    interior.
+
+    Returns a list of vertex indices (sorted ascending).
+    """
+    n_v = len(sheaf.vertices)
+    incident_edge_weights: list[list[float]] = [[] for _ in range(n_v)]
+    for i, (s, _, o) in enumerate(sheaf.edges):
+        incident_edge_weights[sheaf.vertex_index[s]].append(float(weights[i]))
+        incident_edge_weights[sheaf.vertex_index[o]].append(float(weights[i]))
+
+    boundary: list[int] = []
+    for v in range(n_v):
+        ws = incident_edge_weights[v]
+        if not ws:
+            # Isolated vertex (no incident edges): not on the
+            # boundary — it carries no trust signal.
+            continue
+        if min(ws) >= threshold:
+            boundary.append(v)
+    return boundary

@@ -384,3 +384,353 @@ def test_combined_v3_clean_render_no_signal():
     assert score["v_deficit"] == 0.0
     # combined_v3 = v_laplacian_w + λ · 0 = v_laplacian_w
     assert np.isclose(score["v_combined_v3"], score["v_laplacian_w"])
+
+
+# ─── Block 6: v3.1 — harmonic extension ──────────────────────────────
+
+
+from sum_engine_internal.research.sheaf_laplacian_v3 import (
+    boundary_deviation,
+    boundary_from_weights,
+    harmonic_extension,
+)
+
+
+def _toy_sheaf_v3_1(d: int = 4):
+    """5-vertex toy sheaf with a clear boundary/interior split.
+
+    Vertices: alice, bob, carol, dave, eve.
+    Edges:
+        (alice, knows, bob)        — trusted
+        (bob, knows, carol)        — trusted
+        (carol, owns, dog)         — but dog isn't here; replace
+    Concretely: trusted edges form a "spine" through alice/bob/
+    carol; dave + eve hang off as the untrusted interior.
+    """
+    triples = [
+        ("alice", "knows", "bob"),    # trusted
+        ("bob", "knows", "carol"),    # trusted
+        ("carol", "knows", "dave"),   # untrusted
+        ("dave", "knows", "eve"),     # untrusted
+    ]
+    sheaf = KnowledgeSheafV2.from_triples(triples, stalk_dim=d)
+    return sheaf, triples
+
+
+def test_harmonic_extension_agrees_with_x_B_on_boundary_by_construction():
+    """H6: harmonic_extension returns ONLY the interior; the
+    boundary x_B is the input. Pin the contract that boundary
+    indices are returned in the partition info, and reconstructing
+    the full cochain (boundary + interior) preserves x_B byte-
+    identically on B."""
+    sheaf, _ = _toy_sheaf_v3_1()
+    n_v = len(sheaf.vertices)
+    d = sheaf.stalk_dim
+    rng = np.random.default_rng(0)
+    boundary = [0, 1, 2]
+    x_B = rng.standard_normal((len(boundary), d))
+    x_I_star, interior = harmonic_extension(sheaf, boundary, x_B)
+    # Interior indices are the complement
+    assert sorted(interior) == [3, 4]
+    # Reconstructing the full cochain must restore x_B exactly on B
+    x_full = np.zeros((n_v, d))
+    for k, v in enumerate(boundary):
+        x_full[v] = x_B[k]
+    for k, v in enumerate(interior):
+        x_full[v] = x_I_star[k]
+    for k, v in enumerate(boundary):
+        assert np.allclose(x_full[v], x_B[k])
+
+
+def test_harmonic_extension_minimizes_v_subject_to_boundary_constraint():
+    """H7 (the *defining* property): the harmonic extension is the
+    cochain that minimizes ‖δx‖² subject to x[B] = x_B. Pin: any
+    perturbation of the interior cochain (off the harmonic extension)
+    yields a STRICTLY LARGER V."""
+    sheaf, _ = _toy_sheaf_v3_1()
+    n_v = len(sheaf.vertices)
+    d = sheaf.stalk_dim
+    rng = np.random.default_rng(7)
+    boundary = [0, 1, 2]
+    x_B = rng.standard_normal((len(boundary), d))
+
+    x_I_star, interior = harmonic_extension(sheaf, boundary, x_B)
+    x_full_optimal = np.zeros((n_v, d))
+    for k, v in enumerate(boundary):
+        x_full_optimal[v] = x_B[k]
+    for k, v in enumerate(interior):
+        x_full_optimal[v] = x_I_star[k]
+
+    from sum_engine_internal.research.sheaf_laplacian_v2 import (
+        laplacian_quadratic_form_v2,
+    )
+    v_optimal = laplacian_quadratic_form_v2(sheaf, x_full_optimal)
+
+    # Perturb the interior in 5 directions; each must give V ≥ v_optimal.
+    for seed in range(5):
+        rng2 = np.random.default_rng(seed + 100)
+        perturbation = rng2.standard_normal((len(interior), d)) * 0.5
+        x_full_perturbed = x_full_optimal.copy()
+        for k, v in enumerate(interior):
+            x_full_perturbed[v] = x_I_star[k] + perturbation[k]
+        v_perturbed = laplacian_quadratic_form_v2(sheaf, x_full_perturbed)
+        assert v_perturbed >= v_optimal - 1e-9, (
+            f"harmonic extension is the minimum; perturbation gave "
+            f"V={v_perturbed:.6f} < optimal V={v_optimal:.6f}"
+        )
+
+
+def test_harmonic_extension_unique_when_L_II_invertible():
+    """H8: when L_II has full rank (typical case for a connected
+    interior with non-trivial restriction maps), the harmonic
+    extension is unique. Two calls with the same x_B must give
+    byte-identical x_I_star."""
+    sheaf, _ = _toy_sheaf_v3_1()
+    rng = np.random.default_rng(42)
+    boundary = [0, 1, 2]
+    x_B = rng.standard_normal((len(boundary), sheaf.stalk_dim))
+    x_I_a, _ = harmonic_extension(sheaf, boundary, x_B)
+    x_I_b, _ = harmonic_extension(sheaf, boundary, x_B)
+    assert np.array_equal(x_I_a, x_I_b)
+
+
+def test_harmonic_extension_full_boundary_returns_empty_interior():
+    """H9 (degenerate): if every vertex is on the boundary, the
+    interior is empty; the function returns a (0, d) array. No
+    crash on the degenerate edge case (linear-algebra would
+    otherwise try to invert a 0×0 matrix)."""
+    sheaf, _ = _toy_sheaf_v3_1()
+    boundary = list(range(len(sheaf.vertices)))
+    x_B = np.zeros((len(boundary), sheaf.stalk_dim))
+    x_I_star, interior = harmonic_extension(sheaf, boundary, x_B)
+    assert x_I_star.shape == (0, sheaf.stalk_dim)
+    assert interior == []
+
+
+def test_harmonic_extension_rejects_invalid_boundary_indices():
+    """H10: defensive — boundary indices outside [0, |V|) must
+    raise ValueError so a mis-indexed caller fails loudly."""
+    sheaf, _ = _toy_sheaf_v3_1()
+    n_v = len(sheaf.vertices)
+    with pytest.raises(ValueError, match="boundary_indices"):
+        harmonic_extension(
+            sheaf, [0, n_v + 1], np.zeros((2, sheaf.stalk_dim)),
+        )
+
+
+def test_harmonic_extension_rejects_wrong_x_B_shape():
+    sheaf, _ = _toy_sheaf_v3_1()
+    bad = np.zeros((3, sheaf.stalk_dim + 1))   # wrong d
+    with pytest.raises(ValueError, match="x_B shape"):
+        harmonic_extension(sheaf, [0, 1, 2], bad)
+
+
+# ─── Block 7: v3.1 — boundary_deviation utility ──────────────────────
+
+
+def test_boundary_deviation_zero_on_self_extended_cochain():
+    """H11: a cochain whose interior IS the harmonic extension of
+    its own boundary has deviation = 0. Pin the round-trip."""
+    sheaf, _ = _toy_sheaf_v3_1()
+    n_v = len(sheaf.vertices)
+    d = sheaf.stalk_dim
+    rng = np.random.default_rng(0)
+    boundary = [0, 1, 2]
+    x_B = rng.standard_normal((len(boundary), d))
+
+    x_I_star, interior = harmonic_extension(sheaf, boundary, x_B)
+    x_full = np.zeros((n_v, d))
+    for k, v in enumerate(boundary):
+        x_full[v] = x_B[k]
+    for k, v in enumerate(interior):
+        x_full[v] = x_I_star[k]
+
+    result = boundary_deviation(sheaf, x_full, boundary)
+    assert np.isclose(result["deviation"], 0.0, atol=1e-9), (
+        f"self-extended cochain must have zero deviation; "
+        f"got {result['deviation']}"
+    )
+
+
+def test_boundary_deviation_detects_interior_tampering():
+    """H12 (utility): tampering an interior vertex (while holding
+    the boundary fixed) produces a non-zero deviation. This is the
+    hallucination-detection use case — the boundary establishes the
+    "trusted frame," and the deviation flags renders that drift on
+    the untrusted parts."""
+    sheaf, _ = _toy_sheaf_v3_1()
+    n_v = len(sheaf.vertices)
+    d = sheaf.stalk_dim
+    rng = np.random.default_rng(0)
+    boundary = [0, 1, 2]
+    x_B = rng.standard_normal((len(boundary), d))
+
+    x_I_star, interior = harmonic_extension(sheaf, boundary, x_B)
+    x_full_clean = np.zeros((n_v, d))
+    for k, v in enumerate(boundary):
+        x_full_clean[v] = x_B[k]
+    for k, v in enumerate(interior):
+        x_full_clean[v] = x_I_star[k]
+
+    # Tamper interior vertex 3 (dave)
+    x_full_tampered = x_full_clean.copy()
+    x_full_tampered[3] += rng.standard_normal(d) * 0.7
+
+    clean = boundary_deviation(sheaf, x_full_clean, boundary)
+    tampered = boundary_deviation(sheaf, x_full_tampered, boundary)
+    assert tampered["deviation"] > clean["deviation"] + 0.01, (
+        f"tampering interior must increase deviation; "
+        f"clean={clean['deviation']:.4f}, tampered={tampered['deviation']:.4f}"
+    )
+
+
+def test_boundary_deviation_v_at_extension_is_minimum():
+    """H13: by the harmonic extension's defining property,
+    v_at_extension ≤ v_at_actual for every cochain whose interior
+    is not already the extension. Pin the inequality."""
+    sheaf, _ = _toy_sheaf_v3_1()
+    n_v = len(sheaf.vertices)
+    d = sheaf.stalk_dim
+    rng = np.random.default_rng(2)
+    boundary = [0, 1, 2]
+    x_full = rng.standard_normal((n_v, d))   # arbitrary cochain
+    result = boundary_deviation(sheaf, x_full, boundary)
+    assert result["v_at_extension"] <= result["v_at_actual"] + 1e-9, (
+        f"v_at_extension must be ≤ v_at_actual; "
+        f"v_at_extension={result['v_at_extension']:.4f}, "
+        f"v_at_actual={result['v_at_actual']:.4f}"
+    )
+
+
+def test_boundary_deviation_with_identity_maps_is_weight_invariant_on_chain_graphs():
+    """**Surfaced empirically 2026-05-02.** With identity restriction
+    maps + a chain topology (alice—bob—carol—dave—eve, single path),
+    the harmonic extension is weight-invariant for any all-positive
+    weight vector.
+
+    Algebra: ∂V/∂x_dave = 0 with identity maps gives
+    (w2 + w3) x_dave = w2 x_carol + w3 x_eve, and ∂V/∂x_eve = 0
+    gives x_eve = x_dave. Substituting → x_dave = x_carol
+    independent of w2 / w3 (so long as w2 ≠ 0). The harmonic
+    extension is the boundary-extended *constant* cochain on each
+    interior chain segment.
+
+    This is a *property* of identity-maps-chain sheaves, not a bug
+    in the weights kwarg — pinned in code so a future test author
+    doesn't try to "fix" it. The weight effect IS visible on
+    trained sheaves (see :func:`test_boundary_deviation_with_weights_visible_on_trained_sheaf`).
+    """
+    sheaf, _ = _toy_sheaf_v3_1()
+    n_v = len(sheaf.vertices)
+    d = sheaf.stalk_dim
+    rng = np.random.default_rng(0)
+    boundary = [0, 1, 2]
+    x_full = rng.standard_normal((n_v, d))
+
+    unweighted = boundary_deviation(sheaf, x_full, boundary)
+    weights = np.array([1.0, 1.0, 0.001, 1.0])
+    weighted = boundary_deviation(sheaf, x_full, boundary, weights=weights)
+    # PIN the math property: identity maps + chain → weight-invariant.
+    assert np.isclose(unweighted["deviation"], weighted["deviation"]), (
+        f"With identity restriction maps + chain topology, the "
+        f"harmonic extension should be weight-invariant. If this "
+        f"assertion ever fires, EITHER the implementation changed "
+        f"(weights now route differently) OR the toy graph is no "
+        f"longer a chain. Investigate before 'fixing' the test."
+    )
+
+
+def test_boundary_deviation_with_weights_visible_with_multiple_bridge_edges():
+    """**The actual utility pin** for v3.1's weights kwarg.
+
+    Surfaced empirically 2026-05-02: on a sheaf with a *single*
+    bridge edge connecting boundary to interior (a chain), the
+    harmonic extension is weight-invariant — the analytic
+    factorization
+
+        x_I(r) = -r · M(r)^{-1} (B x_B), r = w_bridge / w_interior
+
+    cancels into an r-independent quantity when B has rank 1 (i.e.,
+    one bridge column). This is true even on a trained sheaf with
+    distinct restriction maps. See
+    test_boundary_deviation_with_identity_maps_is_weight_invariant_on_chain_graphs
+    for the chain-topology pin.
+
+    The weight effect IS observable when the boundary-interior
+    interface has *multiple* bridge edges. This test pins that
+    case so the weights kwarg has a measurable contract.
+
+    Topology:
+        alice ─knows─ bob       (boundary)
+        bob ─owns─ carol        (bridge 1)
+        alice ─likes─ carol     (bridge 2)
+        carol ─knows─ dave      (interior)
+
+    With two bridges (bob→carol, alice→carol), down-weighting one
+    bridge shifts the harmonic extension toward the other.
+    """
+    triples = [
+        ("alice", "knows", "bob"),
+        ("bob", "owns", "carol"),
+        ("alice", "likes", "carol"),
+        ("carol", "knows", "dave"),
+    ]
+    trained, embeddings, _ = train_restriction_maps(
+        triples, stalk_dim=8, epochs=200, seed=0,
+    )
+    n_v = len(trained.vertices)
+    d = trained.stalk_dim
+    rng = np.random.default_rng(0)
+    boundary = [trained.vertex_index[v] for v in ("alice", "bob")]
+    x_full = rng.standard_normal((n_v, d))
+
+    unweighted = boundary_deviation(trained, x_full, boundary)
+    # Heavily down-weight bridge 1 (bob→carol): deviation should change
+    weights = np.array([1.0, 0.01, 1.0, 1.0])
+    weighted = boundary_deviation(trained, x_full, boundary, weights=weights)
+    assert not np.isclose(unweighted["deviation"], weighted["deviation"]), (
+        f"With multiple bridge edges, weights must change the harmonic "
+        f"extension; got identical {unweighted['deviation']:.6f} in "
+        f"both cases — weights kwarg is silently ignored."
+    )
+
+
+# ─── Block 8: v3.1 — boundary_from_weights helper ────────────────────
+
+
+def test_boundary_from_weights_picks_only_fully_trusted_vertices():
+    """A vertex is on the boundary iff EVERY incident edge has
+    weight ≥ threshold. Pin: in a graph where vertex bob has both
+    a trusted (alice→bob) and untrusted (bob→carol) incident edge,
+    bob is NOT on the boundary."""
+    sheaf, triples = _toy_sheaf_v3_1()
+    weights = weights_from_receipts(
+        sheaf,
+        trusted_edges=[triples[0], triples[1]],   # alice-bob, bob-carol trusted
+        # carol-dave, dave-eve are default (0.1)
+    )
+    boundary = boundary_from_weights(sheaf, weights, threshold=0.5)
+    # alice has only the trusted alice-bob edge → boundary
+    # bob has trusted alice-bob AND trusted bob-carol → boundary
+    # carol has trusted bob-carol AND untrusted carol-dave → NOT boundary
+    # dave has untrusted carol-dave AND untrusted dave-eve → NOT boundary
+    # eve has only untrusted dave-eve → NOT boundary
+    assert sheaf.vertex_index["alice"] in boundary
+    assert sheaf.vertex_index["bob"] in boundary
+    assert sheaf.vertex_index["carol"] not in boundary
+    assert sheaf.vertex_index["dave"] not in boundary
+    assert sheaf.vertex_index["eve"] not in boundary
+
+
+def test_boundary_from_weights_empty_when_nothing_trusted():
+    sheaf, _ = _toy_sheaf_v3_1()
+    weights = weights_from_receipts(sheaf)   # all default (0.1)
+    boundary = boundary_from_weights(sheaf, weights, threshold=0.5)
+    assert boundary == []
+
+
+def test_boundary_from_weights_full_when_everything_trusted():
+    sheaf, triples = _toy_sheaf_v3_1()
+    weights = weights_from_receipts(sheaf, trusted_edges=list(triples))
+    boundary = boundary_from_weights(sheaf, weights, threshold=0.5)
+    assert sorted(boundary) == list(range(len(sheaf.vertices)))
