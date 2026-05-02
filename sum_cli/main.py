@@ -1543,6 +1543,89 @@ def cmd_schema(args: argparse.Namespace) -> int:
     return 0
 
 
+# ─── compliance ──────────────────────────────────────────────────────
+#
+# Per-regime validators consuming sum.audit_log.v1. The audit log is
+# regime-agnostic substrate; ``sum compliance check`` is the actionable
+# layer that turns it into a pass/fail verdict for a specific regime.
+# Exit code 0 when ok=true, 1 otherwise — pipe-friendly for CI gates.
+
+_COMPLIANCE_REGIMES: dict[str, str] = {
+    "eu-ai-act-article-12": (
+        "EU AI Act (Regulation (EU) 2024/1689) Article 12 — record-"
+        "keeping for high-risk AI systems. Pins per-row traceability "
+        "fields (timestamp, operation, cli_version), schema, and "
+        "operation-specific anchors (source_uri / axiom_count / "
+        "state_integer_digits / mode)."
+    ),
+}
+
+
+def cmd_compliance_check(args: argparse.Namespace) -> int:
+    if args.regime not in _COMPLIANCE_REGIMES:
+        print(
+            f"sum: unknown regime {args.regime!r}. Known: "
+            f"{sorted(_COMPLIANCE_REGIMES)}",
+            file=sys.stderr,
+        )
+        return 2
+
+    if args.audit_log == "-":
+        text = sys.stdin.read()
+    else:
+        try:
+            with open(args.audit_log, "r", encoding="utf-8") as f:
+                text = f.read()
+        except OSError as e:
+            print(f"sum: cannot read --audit-log {args.audit_log!r}: {e}", file=sys.stderr)
+            return 2
+
+    rows: list[dict] = []
+    parse_errors: list[tuple[int, str]] = []
+    for i, line in enumerate(text.splitlines()):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            rows.append(json.loads(line))
+        except json.JSONDecodeError as e:
+            parse_errors.append((i, str(e)))
+
+    if args.regime == "eu-ai-act-article-12":
+        from sum_engine_internal.compliance import eu_ai_act_article_12 as ev
+        report = ev.validate(rows)
+    else:
+        # Defensive — _COMPLIANCE_REGIMES gate above should have caught this.
+        print(f"sum: regime {args.regime!r} not yet implemented", file=sys.stderr)
+        return 2
+
+    out = report.to_dict()
+    if parse_errors:
+        # Surface parse errors alongside rule violations — both are
+        # compliance-relevant. A malformed JSONL line is itself a
+        # traceability defect.
+        out["parse_errors"] = [
+            {"line_index": idx, "error": msg} for idx, msg in parse_errors
+        ]
+
+    json.dump(out, sys.stdout, indent=2 if args.pretty else None)
+    sys.stdout.write("\n")
+    return 0 if (report.ok and not parse_errors) else 1
+
+
+def cmd_compliance_regimes(args: argparse.Namespace) -> int:
+    out = {
+        "schema": "sum.compliance_regimes.v1",
+        "regimes": [
+            {"id": rid, "description": desc}
+            for rid, desc in sorted(_COMPLIANCE_REGIMES.items())
+        ],
+    }
+    json.dump(out, sys.stdout, indent=2)
+    sys.stdout.write("\n")
+    return 0
+
+
 # ─── Argparse wiring ─────────────────────────────────────────────────
 
 def build_parser() -> argparse.ArgumentParser:
@@ -1921,6 +2004,60 @@ def build_parser() -> argparse.ArgumentParser:
         help="Which output shape to emit the schema for.",
     )
     p_schema.set_defaults(func=cmd_schema)
+
+    # compliance — regime validators consuming sum.audit_log.v1.
+    p_compliance = subparsers.add_parser(
+        "compliance",
+        help="Validate a sum.audit_log.v1 stream against a compliance regime.",
+        description=(
+            "Apply a per-regime validator to a sum.audit_log.v1 JSONL stream "
+            "and emit a sum.compliance_report.v1 verdict. The audit log is "
+            "regime-agnostic substrate; this verb is the actionable layer "
+            "that turns it into a compliance-grade pass/fail."
+        ),
+    )
+    p_compliance_sub = p_compliance.add_subparsers(
+        dest="compliance_cmd", required=True, metavar="<compliance-cmd>",
+    )
+
+    p_comp_check = p_compliance_sub.add_parser(
+        "check",
+        help="Validate an audit-log stream against a regime; emit a JSON report.",
+        description=(
+            "Read a sum.audit_log.v1 JSONL stream from --audit-log (or stdin "
+            "if '-'), validate against the named regime, emit a "
+            "sum.compliance_report.v1 JSON object on stdout. Exit code is "
+            "0 when ok=true, 1 otherwise — pipe-friendly for CI gates."
+        ),
+    )
+    p_comp_check.add_argument(
+        "--regime",
+        required=True,
+        choices=["eu-ai-act-article-12"],
+        help="Compliance regime to validate against.",
+    )
+    p_comp_check.add_argument(
+        "--audit-log",
+        required=True,
+        help="Path to a sum.audit_log.v1 JSONL file ('-' for stdin).",
+    )
+    p_comp_check.add_argument(
+        "--pretty",
+        action="store_true",
+        help="Pretty-print the report JSON.",
+    )
+    p_comp_check.set_defaults(func=cmd_compliance_check)
+
+    p_comp_regimes = p_compliance_sub.add_parser(
+        "regimes",
+        help="List available compliance regimes.",
+        description=(
+            "Emit the set of regime identifiers this CLI can validate "
+            "against. Adding a new regime appends to this list; "
+            "existing identifiers are stable."
+        ),
+    )
+    p_comp_regimes.set_defaults(func=cmd_compliance_regimes)
 
     return parser
 

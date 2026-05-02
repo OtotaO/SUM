@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-02T01:22:35Z",
+  "issued_at": "2026-05-02T08:37:44Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "040cb5ccde61fa33eec8391cab83023da02e3ea4",
-    "head_short": "040cb5c",
-    "head_subject": "sum: audit-log streaming primitive \u2014 Path 3 / compliance foundation (#117)",
-    "head_committer_date": "2026-05-01T21:19:09-04:00",
+    "head_sha": "8391655d2899ebd717a42eccfe121d746210df31",
+    "head_short": "8391655",
+    "head_subject": "tests: close 4 audit-log contract gaps surfaced by 2026-05-02 self-audit (#119)",
+    "head_committer_date": "2026-05-02T03:00:18-04:00",
     "commits_last_30d": null
   },
   "github": {

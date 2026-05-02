@@ -124,8 +124,14 @@ fields suitable for joining across rows:
 ## Use as a compliance primitive
 
 A regime-specific validator is just `tail -f audit.jsonl |
-your-validator`. Examples of what a downstream validator might
-enforce:
+your-validator`. SUM ships one first-party validator today:
+
+- **EU AI Act Article 12** (`sum compliance check --regime
+  eu-ai-act-article-12 --audit-log audit.jsonl`). Pins per-row
+  traceability fields + operation-specific anchors. Wire spec at
+  [`COMPLIANCE_EU_AI_ACT_ARTICLE_12.md`](COMPLIANCE_EU_AI_ACT_ARTICLE_12.md).
+
+Examples of what other downstream validators might enforce:
 
 - **GDPR Article 30 (Records of Processing Activities):** require
   `source_uri` + `branch` + `cli_version` on every row; cross-
