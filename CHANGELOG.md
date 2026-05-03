@@ -4,6 +4,31 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Audit-tightening pass on PR #119/#120/#121/#122 tests.**
+  Independent audit surfaced 5 high/medium issues in tests added
+  this cycle; closing them surfaced a **real bug** in v3's
+  combined-detector formula:
+  - **v3 double-counted λ** (`v_combined_v3` previously computed
+    `v_laplacian_w + λ · v_deficit` where v2.2's `v_deficit` is
+    *already* `λ · deficit²`, giving `λ² · deficit²`). Fixed:
+    `v_combined_v3 = v_laplacian_w + v_deficit`. Caught by the
+    new `test_combined_v3_lambda_wiring_with_nonzero_deficit`,
+    which the prior tests couldn't catch because they only
+    exercised λ on clean renders (deficit = 0).
+  - H1 (linearity) tautology replaced with four-property pin
+    (homogeneity + zero-weights + singleton + additivity), four
+    seeds, plus negative control on `e_i` weight vectors.
+  - H3 tautology replaced with sentinel weights `[0, 1, 0]` whose
+    expected value is hand-known regardless of implementation
+    order of operations.
+  - Headline trusted-vs-untrusted utility test now loops over 10
+    seeded perturbations, asserting ≥ 8/10 wins + mean inequality.
+  - R2 (required traceability fields) parametrized over 3 fields ×
+    {empty string, None}; R2 missing-timestamp now also pins R3
+    (timestamp validity) does NOT fire (the implementation guard).
+  - R3 unparseable-Z timestamp case added (the second R3 failure
+    mode that wasn't tested).
+
 - **v3.1 harmonic-extension boundary inference.** Implements
   Hansen-Ghrist 2019 Proposition 4.1 / Theorem 4.5: given a sheaf
   on a graph and a partition of vertices into a trust-frame

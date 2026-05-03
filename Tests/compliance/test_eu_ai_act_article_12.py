@@ -146,9 +146,18 @@ def test_r2_missing_timestamp_flagged():
     bad = _good_attest_row()
     del bad["timestamp"]
     report = ev.validate([bad])
+    rule_ids = {v.rule_id for v in report.violations}
     msgs = [v.message for v in report.violations
             if v.rule_id == "eu-ai-act-art-12.required-traceability-fields"]
     assert any("timestamp" in m for m in msgs)
+    # Pin the guard: when timestamp is missing (None), R3
+    # (timestamp-iso8601-utc) must NOT fire — it's gated behind
+    # `if ts is not None`. A regression that swaps R3 to fire on
+    # None would surface duplicate violations on the same row.
+    assert "eu-ai-act-art-12.timestamp-iso8601-utc" not in rule_ids, (
+        f"R3 must not fire when timestamp is missing — that's R2's job. "
+        f"R3 must skip None to avoid duplicate violations on one row."
+    )
 
 
 def test_r2_missing_cli_version_flagged():
@@ -160,14 +169,18 @@ def test_r2_missing_cli_version_flagged():
     assert any("cli_version" in m for m in rule_msgs)
 
 
-def test_r2_empty_string_treated_as_missing():
-    """Empty-string traceability fields are as bad as missing —
-    a downstream auditor cannot trace from an empty string."""
-    bad = _good_attest_row(cli_version="")
+@pytest.mark.parametrize("field", ["timestamp", "operation", "cli_version"])
+@pytest.mark.parametrize("bad_value", ["", None])
+def test_r2_empty_string_or_none_treated_as_missing(field, bad_value):
+    """Empty-string and None traceability fields are both flagged.
+    Parametrized over all three R2 fields × both bad values so a
+    regression in any single field's R2 path surfaces here."""
+    bad = _good_attest_row(**{field: bad_value})
     report = ev.validate([bad])
-    assert "eu-ai-act-art-12.required-traceability-fields" in {
-        v.rule_id for v in report.violations
-    }
+    rule_ids = {v.rule_id for v in report.violations}
+    assert "eu-ai-act-art-12.required-traceability-fields" in rule_ids, (
+        f"R2 must flag empty/None field {field!r}; got rules {rule_ids}"
+    )
 
 
 # ─── R3: timestamp must be ISO 8601 UTC ───────────────────────────────
@@ -186,6 +199,17 @@ def test_r3_iso_without_z_suffix_flagged():
     is rejected; mixed-tz logs silently mis-sort in time-series
     stores."""
     bad = _good_attest_row(timestamp="2026-05-02T04:00:00.123+02:00")
+    report = ev.validate([bad])
+    assert "eu-ai-act-art-12.timestamp-iso8601-utc" in {
+        v.rule_id for v in report.violations
+    }
+
+
+def test_r3_z_suffix_but_unparseable_body_flagged():
+    """The OTHER R3 failure mode: ends in 'Z' (passes the suffix
+    check) but the body doesn't parse as ISO 8601. Both branches
+    of _is_iso8601_utc must fail closed."""
+    bad = _good_attest_row(timestamp="not-a-date-but-ends-in-Z")
     report = ev.validate([bad])
     assert "eu-ai-act-art-12.timestamp-iso8601-utc" in {
         v.rule_id for v in report.violations
