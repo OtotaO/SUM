@@ -1558,7 +1558,36 @@ _COMPLIANCE_REGIMES: dict[str, str] = {
         "operation-specific anchors (source_uri / axiom_count / "
         "state_integer_digits / mode)."
     ),
+    "gdpr-article-30": (
+        "GDPR (Regulation (EU) 2016/679) Article 30 — Records of "
+        "Processing Activities. Pins the per-row floor enabling Art "
+        "30 reporting (schema, timestamp, ISO-8601-UTC parseability, "
+        "processing-category indicator, processor identity). The "
+        "controller separately maintains record-set-scope metadata "
+        "(Art 30(1)(a)–(g) controller name, purposes, categories, "
+        "recipients, transfers, retention, security measures) "
+        "out-of-band; this validator does not pin those."
+    ),
 }
+
+
+def _compliance_validators():
+    """Return the regime → validate-callable dispatch table.
+
+    Built lazily to avoid importing compliance modules at CLI
+    startup (each module imports the dataclass infrastructure;
+    deferring keeps `sum --help` cold-start fast). Registered
+    regimes must match :data:`_COMPLIANCE_REGIMES` keys exactly —
+    a mismatch surfaces as a KeyError at dispatch, intentional
+    (better than silent fallthrough)."""
+    from sum_engine_internal.compliance import (  # local import — see docstring
+        eu_ai_act_article_12,
+        gdpr_article_30,
+    )
+    return {
+        "eu-ai-act-article-12": eu_ai_act_article_12.validate,
+        "gdpr-article-30": gdpr_article_30.validate,
+    }
 
 
 def cmd_compliance_check(args: argparse.Namespace) -> int:
@@ -1591,13 +1620,20 @@ def cmd_compliance_check(args: argparse.Namespace) -> int:
         except json.JSONDecodeError as e:
             parse_errors.append((i, str(e)))
 
-    if args.regime == "eu-ai-act-article-12":
-        from sum_engine_internal.compliance import eu_ai_act_article_12 as ev
-        report = ev.validate(rows)
-    else:
+    validators = _compliance_validators()
+    try:
+        validate = validators[args.regime]
+    except KeyError:
         # Defensive — _COMPLIANCE_REGIMES gate above should have caught this.
-        print(f"sum: regime {args.regime!r} not yet implemented", file=sys.stderr)
+        # Reaching here means a regime is registered in _COMPLIANCE_REGIMES
+        # but missing from _compliance_validators() — a wiring drift.
+        print(
+            f"sum: regime {args.regime!r} listed but not wired "
+            f"(internal: missing from _compliance_validators dispatch)",
+            file=sys.stderr,
+        )
         return 2
+    report = validate(rows)
 
     out = report.to_dict()
     if parse_errors:

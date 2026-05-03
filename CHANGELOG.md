@@ -4,6 +4,50 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **GDPR Article 30 validator — second per-regime compliance consumer.**
+  `sum_engine_internal/compliance/gdpr_article_30.py` validates a
+  `sum.audit_log.v1` stream against the per-row floor of Regulation
+  (EU) 2016/679 Article 30 (Records of Processing Activities). Five
+  rules R1–R5: schema-pinned, timestamp-present, timestamp-iso8601-
+  utc, processing-category-present (operation), processor-identity-
+  present (cli_version). Contract docs at
+  `docs/COMPLIANCE_GDPR_ARTICLE_30.md` including a "what this does
+  NOT pin" section naming the record-set scope (Art 30(1)(a)–(g)
+  controller-level metadata, Art 30(4) availability, Art 30(5)
+  exemption assessment, Art 6 lawful-basis verification) — truth-
+  first discipline carried over from Art 12.
+
+  **Substrate-tightening (this is the meta point of P11):**
+  GDPR Art 30 is the second regime to consume `sum.compliance_
+  report.v1`. The shape held without modification, *proving* the
+  regime-agnosticism claim that was a single-data-point assertion
+  before. Refactored `sum_cli/main.py::cmd_compliance_check` from
+  a hardcoded `if regime == "eu-ai-act-article-12"` ladder into a
+  dispatch dict (`_compliance_validators()`); the if-equality smell
+  was invisible while there was only one regime, became obvious
+  with a second. New `Tests/compliance/test_cli_dispatch.py`
+  pins three cross-regime substrate contracts (C1: registry
+  consistency; C2: every regime returns sum.compliance_report.v1;
+  C3: exit-code contract 0/1/2).
+
+  **Test counts:** 25 GDPR rule tests + 5 CLI dispatch tests = 30
+  new compliance tests, all green. Total compliance suite now
+  62 tests (32 EU AI Act + 25 GDPR + 5 cross-regime CLI dispatch),
+  up from 32 before this PR.
+
+  **Cross-regime shape proof** (`Tests/compliance/
+  test_gdpr_article_30.py::test_validation_report_shape_matches_
+  eu_ai_act`) — same `to_dict()` keys, same Violation dataclass
+  fields, only `regime` + `rule_id` strings differ. Empirical
+  proof that downstream consumers (dashboards, retention pipelines)
+  can ingest reports across regimes without per-regime adapters.
+
+  **What this enables.** The playbook P11 entry now reads "second
+  regime consumed the substrate cleanly"; future regimes (HIPAA
+  § 164.312(b) audit controls, SOC 2 CC7.2, ISO 27001 A.8.15, PCI
+  DSS 4.0 Req 10 — all record-keeping shape) inherit C1/C2/C3
+  contracts automatically by adding to both registries.
+
 - **v3.2 — F3 STRUCTURAL FAIL closer at the detector layer.**
   PR #125's diagnostic settled F3 FAIL as structural (when the
   per-doc graph has `L_IB = 0`, harmonic extension is independent

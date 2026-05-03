@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-03T04:29:01Z",
+  "issued_at": "2026-05-03T23:42:43Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "4b4db66f2a5f67aace331413b0b1b0fe04591a6a",
-    "head_short": "4b4db66",
-    "head_subject": "research: v3.2 closes F3 STRUCTURAL FAIL with strict-generalization combined detector",
-    "head_committer_date": "2026-05-03T00:23:02-04:00",
+    "head_sha": "2e823763742477ccf3c667f6cec2312445f4c896",
+    "head_short": "2e82376",
+    "head_subject": "docs: align v3.2 auto-row numbers with reproducible receipt (audit follow-up) (#129)",
+    "head_committer_date": "2026-05-03T15:06:56-04:00",
     "commits_last_30d": null
   },
   "github": {
