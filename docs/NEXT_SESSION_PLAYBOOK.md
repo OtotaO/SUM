@@ -157,18 +157,26 @@ Live at `https://sum-demo.ototao.workers.dev`. Verifiable end-to-end: `curl /.we
 
 The numbering keeps continuity with the previous playbook so `git log --grep '\[P3\]'` still works. P1 is closed; P2 is partially closed; P3–P8 are unchanged in scope but updated for current state. P9–P11 added 2026-05-02 from the v3 / compliance arc.
 
-### Priority 9 — v3.2 detector redesign (closes F3 STRUCTURAL FAIL)
+### Priority 9 — v3.2 detector closes F3 STRUCTURAL FAIL (CLOSED 2026-05-02)
 
-**Problem.** PR #125's F3 diagnostic empirically refuted three competing hypotheses (graph too small, cochain produces zero-vectors, random partition too harsh) and revealed the actual cause: v3.1's boundary deviation `‖x_I_actual − x_I^*‖²` is mathematically blind to perturbations whose vertices lie on the trust-frame boundary. When the perturbation is at boundary positions, the harmonic extension recomputes the interior from the new boundary, but the actual interior is unchanged → deviation ties between clean and perturbed by mathematical necessity. Documented in [`docs/SHEAF_HALLUCINATION_DETECTOR.md`](SHEAF_HALLUCINATION_DETECTOR.md) §3.4.3.
+**Status: closed.** v3.2 ships at `sum_engine_internal/research/sheaf_laplacian_v32.py` as a strict generalization of v3 that adds harmonic-extension deviation as a complementary signal: `v_combined_v32 = v_laplacian_w + γ · deviation_w + λ · v_deficit`. At γ = 0, v3.2 reduces to v3 numerically (subsumption — H16). At γ > 0, deviation contributes additively where it has signal (L_IB ≠ 0); falls back to a constant where it's structurally blind, so v_laplacian_w still surfaces the perturbation (F3 fall-back — H18).
 
-**Work.**
-- **Pair boundary deviation with a complementary boundary signal.** v3.1 alone cannot detect boundary perturbations; v3.2 should add a term that does — e.g., the weighted Laplacian quadratic form restricted to edges incident to boundary vertices, or x_B's direct contribution to V.
-- **Cochain construction must encode render information into the interior.** A cochain that's translation-invariant under boundary-only perturbations is mathematically blind. The new cochain should propagate render-mention into interior vertices via the trained restriction maps.
-- **Re-run the F3 diagnostic harness** at `scripts/research/sheaf_v3_1_f3_diagnostic.py` against the v3.2 design. PASS criterion: trusted-mean AUC ≥ 0.55 in at least the PR #124 baseline cell.
+Five falsifiable predictions H16-H20 pinned in `Tests/research/test_sheaf_laplacian_v32.py` (subsumption, L_IB ≠ 0 visibility, F3 fall-back, no-λ-double-counting, degenerate-boundary fall-back). Corpus-scale validation receipt at `fixtures/bench_receipts/v3_2_validation_2026-05-02.json` (`bench_digest = 97cf977512f9...162f43f`, schema `sum.sheaf_v3_2_validation.v1`):
 
-**Success criterion.** F3 verdict moves from FAIL → PASS on `seed_long_paragraphs`. Per-class trusted-target AUC > 0.5 on at least A1, A4. Receipt JSON archived to `fixtures/bench_receipts/v3_2_*_<date>.json` with `bench_digest` for reproducibility.
+| γ        | trusted-mean AUC | F4 (≥0.55) | Δ vs v3 | F5 (Δ ≥ −0.02) |
+|----------|------------------|------------|---------|----------------|
+| 0.0      | 0.661            | PASS       | 0.000   | PASS           |
+| 0.1      | 0.656            | PASS       | −0.004  | PASS           |
+| 1.0      | 0.630            | PASS       | −0.031  | FAIL           |
+| auto≈1.0 | 0.628            | PASS       | −0.033  | FAIL           |
 
-**Proof-boundary outcome.** §2.9 of [`docs/PROOF_BOUNDARY.md`](PROOF_BOUNDARY.md) updated: v3.2 detector enters as a measured detection capability; v3.1 row's F3 STRUCTURAL FAIL remains in the table as historical record (not retracted).
+**Honest readings.** F4 PASSES at every γ — F3 STRUCTURAL FAIL closed. F5 PASSES only at small γ (≤ 0.1); the magnitude-matching auto-calibration heuristic is empirically wrong on this corpus. H16 verified at corpus scale: γ = 0 gives trusted-mean AUC = 0.661 byte-identical to v3.
+
+**Reproducibility caveat:** `bench_digest` matches across runs only with `PYTHONHASHSEED=0` (sieve + KnowledgeSheafV2.from_triples have hash-randomized set iteration). Recorded in receipt as `reproducibility_requires` field.
+
+**v3.3 candidate directions** (named, not investigated): per-doc graph-structure-aware γ (use deviation only where L_IB has high mass); cochain redesign that propagates render content into interior; A2 weakness via predicate-perturbation negative sampling.
+
+**Proof-boundary outcome.** §2.9 of [`docs/PROOF_BOUNDARY.md`](PROOF_BOUNDARY.md) ought to be updated to record v3.2 as a measured detection capability with the F4/F5 verdicts; v3.1 row's F3 STRUCTURAL FAIL remains in the table as historical record. (TODO: explicit edit not yet applied; do it as part of next doc-pass.)
 
 ### Priority 10 — arXiv preprint v0.1 (substrate has accumulated material)
 

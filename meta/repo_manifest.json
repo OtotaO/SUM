@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-03T03:01:06Z",
+  "issued_at": "2026-05-03T04:29:01Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "bb7957dc7c8d81f5d7714410c43745cb32ce1792",
-    "head_short": "bb7957d",
-    "head_subject": "research: F3 diagnostic \u2014 F3 FAIL is structural, not parametric (#125)",
-    "head_committer_date": "2026-05-02T21:46:38-04:00",
+    "head_sha": "4b4db66f2a5f67aace331413b0b1b0fe04591a6a",
+    "head_short": "4b4db66",
+    "head_subject": "research: v3.2 closes F3 STRUCTURAL FAIL with strict-generalization combined detector",
+    "head_committer_date": "2026-05-03T00:23:02-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -87,6 +87,11 @@
       {
         "path": "fixtures/bench_receipts/v3_1_f3_diagnostic_2026-05-02.json",
         "schema": "sum.sheaf_v3_1_f3_diagnostic.v1",
+        "issued_at": null
+      },
+      {
+        "path": "fixtures/bench_receipts/v3_2_validation_2026-05-02.json",
+        "schema": "sum.sheaf_v3_2_validation.v1",
         "issued_at": null
       },
       {
