@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-03T00:03:20Z",
+  "issued_at": "2026-05-03T00:17:57Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "5ec4656d350e843e72a0d67b86da27970a8cd9d8",
-    "head_short": "5ec4656",
-    "head_subject": "research: v3.1 harmonic-extension boundary inference (#122)",
-    "head_committer_date": "2026-05-02T16:17:07-04:00",
+    "head_sha": "a4e574594717c84f77fe5b832a90193fd75d7d44",
+    "head_short": "a4e5745",
+    "head_subject": "tests: audit-tightening pass on this session-block + fix v3 \u03bb double-counting (#123)",
+    "head_committer_date": "2026-05-02T20:10:23-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -83,6 +83,11 @@
         "path": "fixtures/bench_receipts/sheaf_v2_roc_seed_long_paragraphs_2026-05-01.json",
         "schema": "sum.sheaf_v2_roc_bench.v1",
         "issued_at": "2026-05-01T11:30:00Z"
+      },
+      {
+        "path": "fixtures/bench_receipts/v3_roc_bench_2026-05-02.json",
+        "schema": "sum.sheaf_v3_roc_bench.v1",
+        "issued_at": null
       }
     ]
   },

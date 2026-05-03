@@ -1,0 +1,85 @@
+{
+  "schema": "sum.sheaf_v3_roc_bench.v1",
+  "corpus": "seed_long_paragraphs",
+  "n_docs_total": 16,
+  "n_docs_with_partition": 15,
+  "n_docs_skipped": 1,
+  "vocab_size_entities": 229,
+  "vocab_size_relations": 95,
+  "stalk_dim": 8,
+  "training_epochs": 200,
+  "lambda_auto_calibrated": 1.887718036384792,
+  "trust_partition": "deterministic 50/50 per doc",
+  "weights_from_receipts": {
+    "trusted_weight": 1.0,
+    "default_weight": 0.1,
+    "revoked_weight": 0.0
+  },
+  "per_cell_auc": {
+    "v22|A1|trusted": 0.6066666666666667,
+    "v22|A1|untrusted": 0.5888888888888889,
+    "v22|A2|trusted": 0.5,
+    "v22|A2|untrusted": 0.5,
+    "v22|A4|trusted": 0.8933333333333333,
+    "v22|A4|untrusted": 0.8866666666666667,
+    "v31|A1|trusted": 0.5,
+    "v31|A1|untrusted": 0.35777777777777775,
+    "v31|A2|trusted": 0.5,
+    "v31|A2|untrusted": 0.5,
+    "v31|A4|trusted": 0.49777777777777776,
+    "v31|A4|untrusted": 0.25555555555555554,
+    "v3|A1|trusted": 0.6111111111111112,
+    "v3|A1|untrusted": 0.7,
+    "v3|A2|trusted": 0.5,
+    "v3|A2|untrusted": 0.5,
+    "v3|A4|trusted": 0.92,
+    "v3|A4|untrusted": 0.9755555555555555
+  },
+  "head_to_head_v3_vs_v22": {
+    "A1@trusted": {
+      "v22": 0.6066666666666667,
+      "v3": 0.6111111111111112,
+      "delta": 0.004444444444444473
+    },
+    "A1@untrusted": {
+      "v22": 0.5888888888888889,
+      "v3": 0.7,
+      "delta": 0.11111111111111105
+    },
+    "A2@trusted": {
+      "v22": 0.5,
+      "v3": 0.5,
+      "delta": 0.0
+    },
+    "A2@untrusted": {
+      "v22": 0.5,
+      "v3": 0.5,
+      "delta": 0.0
+    },
+    "A4@trusted": {
+      "v22": 0.8933333333333333,
+      "v3": 0.92,
+      "delta": 0.026666666666666727
+    },
+    "A4@untrusted": {
+      "v22": 0.8866666666666667,
+      "v3": 0.9755555555555555,
+      "delta": 0.0888888888888888
+    }
+  },
+  "f1_v3_beats_v22_on_trusted_mean_auc": {
+    "v22_mean": 0.6666666666666666,
+    "v3_mean": 0.677037037037037,
+    "delta": 0.010370370370370363,
+    "verdict": "MARGINAL"
+  },
+  "f2_v3_no_collapse_on_untrusted": {
+    "collapses": 0,
+    "verdict": "PASS"
+  },
+  "f3_v31_boundary_deviation_corpus_scale": {
+    "trusted_mean_auc": 0.4992592592592593,
+    "untrusted_mean_auc": 0.3711111111111111,
+    "verdict": "FAIL"
+  }
+}

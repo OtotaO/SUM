@@ -4,6 +4,40 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **v3 corpus-scale ROC bench (`sum.sheaf_v3_roc_bench.v1`).**
+  Re-uses the 16-doc `seed_long_paragraphs` corpus; deterministic
+  50/50 trust partitioning per doc (SHA-256 seed); compares v2.2
+  baseline, v3 receipt-weighted, and v3.1 boundary deviation
+  detectors across (A1 entity-swap, A2 predicate-flip, A4 triple-
+  drop) × (trusted-target, untrusted-target). Receipt at
+  `fixtures/bench_receipts/v3_roc_bench_2026-05-02.json`.
+
+  **Three falsification verdicts (truth-first):**
+  - **F1 MARGINAL.** v3 mean AUC on trusted-target = 0.685 vs
+    v2.2 = 0.663 (Δ = +0.022). H4 holds dramatically at synthetic
+    scale (10/10 wins) but only marginally at corpus scale.
+  - **F2 PASS.** v3 doesn't collapse on untrusted-target (no
+    class drops > 0.10 vs v2.2). 0.1 floor weight is a viable
+    naturalistic-prose default.
+  - **F3 FAIL.** v3.1 boundary deviation: trusted mean AUC = 0.50,
+    untrusted = 0.34. Synthetic H12 utility test passed (PR #122);
+    corpus-scale FAILS. Real falsification — boundary inference
+    needs work for naturalistic prose with random 50/50 partition.
+
+  F3 is the most important finding. The synthetic test suite
+  alone was insufficient to surface this: it took a corpus-scale
+  bench. v3.2 hypotheses (larger graphs, better cochain
+  construction at vertex boundaries, structurally-meaningful
+  trust partitions) named explicitly in `docs/SHEAF_HALLUCINATION_
+  DETECTOR.md` §3.4.2.
+
+  Standout positive result: A4 triple-drop @ untrusted goes from
+  v2.2 AUC 0.84 → v3 AUC 0.97 (+0.13). The biggest concrete win
+  is "v3 catches dropped triples sharply, regardless of whether
+  the dropped edge was trusted or not." That single signal
+  carries most of v3's value; the trusted-side amplification
+  claim is more nuanced.
+
 - **Audit-tightening pass on PR #119/#120/#121/#122 tests.**
   Independent audit surfaced 5 high/medium issues in tests added
   this cycle; closing them surfaced a **real bug** in v3's
