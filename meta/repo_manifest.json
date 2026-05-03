@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-03T00:17:57Z",
+  "issued_at": "2026-05-03T01:40:06Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "a4e574594717c84f77fe5b832a90193fd75d7d44",
-    "head_short": "a4e5745",
-    "head_subject": "tests: audit-tightening pass on this session-block + fix v3 \u03bb double-counting (#123)",
-    "head_committer_date": "2026-05-02T20:10:23-04:00",
+    "head_sha": "57c81c665dea74597fd83a7b8ff29c42fb25ba28",
+    "head_short": "57c81c6",
+    "head_subject": "research: v3 corpus-scale ROC bench \u2014 F3 surfaced honestly (#124)",
+    "head_committer_date": "2026-05-02T20:26:53-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -83,6 +83,11 @@
         "path": "fixtures/bench_receipts/sheaf_v2_roc_seed_long_paragraphs_2026-05-01.json",
         "schema": "sum.sheaf_v2_roc_bench.v1",
         "issued_at": "2026-05-01T11:30:00Z"
+      },
+      {
+        "path": "fixtures/bench_receipts/v3_1_f3_diagnostic_2026-05-02.json",
+        "schema": "sum.sheaf_v3_1_f3_diagnostic.v1",
+        "issued_at": null
       },
       {
         "path": "fixtures/bench_receipts/v3_roc_bench_2026-05-02.json",
