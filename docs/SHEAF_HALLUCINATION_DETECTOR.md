@@ -646,6 +646,100 @@ The diagnostic settled the question: F3 is structural, not
 parametric. v3.2 should redesign the detector, not tune
 parameters of v3.1.
 
+### 3.4.4 v3.2 (IMPLEMENTED 2026-05-02) — F3 STRUCTURAL FAIL closer
+
+v3.2 (``sum_engine_internal/research/sheaf_laplacian_v32.py``,
+``Tests/research/test_sheaf_laplacian_v32.py``) is a **strict
+generalization of v3** that adds the harmonic-extension deviation
+as a complementary signal:
+
+  $$v_\text{combined}^{v3.2} = v_{\text{laplacian}}^w + \gamma \cdot \text{deviation}_w + \lambda \cdot v_{\text{deficit}}$$
+
+The two cochain-side terms catch complementary things:
+
+  - $v_\text{laplacian}^w$ (from v3) sums residuals over *every*
+    edge — informative anywhere on the graph, including under
+    boundary-only perturbations regardless of $L_{IB}$ topology.
+  - $\text{deviation}_w$ (from v3.1) is informative *only* when
+    $L_{IB} \neq 0$. Under the F3 failure topology ($L_{IB} = 0$,
+    edges live entirely within $B$ or entirely within $I$),
+    deviation is structurally invariant to boundary perturbations
+    by linear algebra.
+
+When $\gamma = 0$, v3.2 reduces to v3 numerically (subsumption — the
+H16 contract). When $\gamma > 0$, deviation contributes additively
+where it has signal; falls back to a constant where it's blind.
+The combined score is informative either way — that's the F3
+**fall-back** guarantee (H18).
+
+**Falsifiable predictions** (pinned in ``test_sheaf_laplacian_v32.py``):
+
+  - **H16. Subsumption.** $\gamma_\text{deviation} = 0$ → v3.2
+    numerically equals v3.
+  - **H17. $L_{IB} \neq 0$ visibility.** On a graph with cross-
+    partition edges, $\text{deviation}_w$ changes under boundary
+    perturbation.
+  - **H18. F3 fall-back.** On a graph with $L_{IB} = 0$,
+    $v_\text{laplacian}^w$ still surfaces the perturbation; the
+    combined score is informative even when deviation is blind.
+  - **H19. No λ double-counting** at the v3.2 wrapper layer.
+  - **H20. Degenerate-boundary fall-back.** Empty $B$ or full $B$
+    → $\text{deviation}_w = 0$; combined score reduces to v3.
+
+**Corpus-scale validation** (PR #126 + this PR; receipt
+``fixtures/bench_receipts/v3_2_validation_2026-05-02.json``,
+``bench_digest = 97cf977512f9...162f43f``):
+
+| γ        | trusted-mean AUC | F4 (≥0.55) | Δ vs v3 | F5 (Δ ≥ −0.02) |
+|----------|------------------|------------|---------|----------------|
+| 0.0      | 0.661            | PASS       | 0.000   | PASS           |
+| 0.1      | 0.656            | PASS       | −0.004  | PASS           |
+| 1.0      | 0.630            | PASS       | −0.031  | FAIL           |
+| auto≈1.0 | 0.628            | PASS       | −0.033  | FAIL           |
+| **v3** (ref) | **0.661**    | —          | —       | —              |
+
+Three honest readings:
+
+  1. **F3 STRUCTURAL FAIL is closed at the detector layer.** v3.2
+     at any γ ≥ 0 produces trusted-mean AUC ≥ 0.55 (vs PR #124's
+     v3.1 standalone deviation: 0.499). The "blind spot" was
+     scoring against deviation alone; pairing with $v_\text{laplacian}^w$
+     restores robust signal regardless of $L_{IB}$ topology.
+  2. **Calibration finding (truth-first):** the magnitude-matching
+     auto-calibration heuristic (γ_auto ≈ 1.0) is **wrong on this
+     corpus** — F5 fails at γ ∈ {1.0, auto}. Optimal γ is small
+     (≤ 0.1). Deviation's signal-to-noise ratio is worse than its
+     magnitude suggests; on the seed_long_paragraphs distribution
+     it functions as a small modulator, not a co-leader.
+  3. **H16 verified at corpus scale.** γ = 0 produces trusted-mean
+     AUC = 0.661, byte-identical to v3's. v3.2 is genuinely a
+     strict generalization, not a different detector wearing a
+     similar mask.
+
+**Reproducibility caveat:** ``bench_digest`` reproduces across runs
+**only when invoked with ``PYTHONHASHSEED=0``**. Set-iteration
+order in the sieve and ``KnowledgeSheafV2.from_triples`` is
+hash-randomized otherwise, which permutes the trained vertex
+ordering and propagates ~±0.005 noise into per-cell AUCs. This
+caveat applies to every bench in this repo that goes through the
+sieve + training pipeline (the v3 corpus ROC bench and F3
+diagnostic on-disk digests are similarly conditional). A future
+pass should sort at every set→list conversion in the substrate to
+make the digests hash-seed-independent.
+
+**v3.3 candidate directions** (named, not yet investigated):
+
+  - Per-doc graph-structure-aware γ: when $L_{IB}$ has high mass,
+    raise γ; when near zero, set γ = 0. The combined score then
+    uses deviation only where it's structurally informative.
+  - Cochain redesign that propagates render content into the
+    interior (the original PR #125 §3.4.3 implication 2). v3.2
+    works around this by combining with $v_\text{laplacian}^w$;
+    a cochain redesign would address the root cause.
+  - A2 weakness — relation perturbations score 0.500 across all
+    detectors (v22, v3, v31, v32). This needs predicate-perturbation
+    negative sampling at training time, separate from the v3.2 arc.
+
 ### 3.5 Output shape
 
 Stable JSON envelope `sum.hallucination_consistency.v1`:

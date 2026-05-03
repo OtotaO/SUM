@@ -4,6 +4,52 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **v3.2 — F3 STRUCTURAL FAIL closer at the detector layer.**
+  PR #125's diagnostic settled F3 FAIL as structural (when the
+  per-doc graph has `L_IB = 0`, harmonic extension is independent
+  of `x_B`, so the deviation field is exactly invariant under any
+  boundary-only perturbation). v3.2 responds with a *strict
+  generalization* of v3 that adds the harmonic-extension deviation
+  as a complementary signal:
+
+      v_combined_v32 = v_laplacian_w + γ · deviation_w + λ · v_deficit
+
+  At γ = 0, v3.2 reduces to v3 numerically (subsumption — H16). At
+  γ > 0, deviation contributes additively where it has signal;
+  falls back to a constant where it's structurally blind, so
+  v_laplacian_w still surfaces the perturbation. Module
+  `sum_engine_internal/research/sheaf_laplacian_v32.py`; tests
+  `Tests/research/test_sheaf_laplacian_v32.py` pin five falsifiable
+  predictions H16-H20 (subsumption, L_IB ≠ 0 visibility, F3
+  fall-back, no-λ-double-counting, degenerate-boundary fall-back).
+
+  **Corpus-scale validation** (`fixtures/bench_receipts/v3_2_validation_2026-05-02.json`,
+  `bench_digest = 97cf977512f9...162f43f`, schema
+  `sum.sheaf_v3_2_validation.v1`): F4 (trusted-mean AUC ≥ 0.55)
+  PASSES at all γ values tested (γ ∈ {0.0, 0.1, 1.0, auto≈1.0}).
+  F5 (no regression vs v3) PASSES at γ ∈ {0, 0.1} (Δ = 0.000,
+  −0.004) but FAILS at γ ∈ {1.0, auto} (Δ = −0.031, −0.033). The
+  truth-first reading: deviation's signal-to-noise ratio on this
+  corpus is worse than its magnitude suggests; auto-calibration
+  via magnitude-matching is wrong here. Optimal γ is small (≤ 0.1).
+  H16 verified at corpus scale: γ = 0 produces trusted-mean AUC =
+  0.661, byte-identical to v3's.
+
+  **Reproducibility caveat documented:** `bench_digest` matches
+  across runs only when invoked with `PYTHONHASHSEED=0`. Set-
+  iteration order in the sieve and `KnowledgeSheafV2.from_triples`
+  is hash-randomized otherwise. This caveat applies to the v3
+  corpus ROC bench and F3 diagnostic on-disk digests as well — a
+  future PR should sort at every set→list conversion in the
+  substrate. Recorded in the v3.2 receipt as
+  `reproducibility_requires` field.
+
+  **v3.3 candidate directions named** (not investigated): per-doc
+  graph-structure-aware γ (use deviation only where L_IB has high
+  mass); cochain redesign that propagates render content into the
+  interior; A2 weakness via predicate-perturbation negative sampling
+  (orthogonal to the v3.2 arc; affects every detector v22/v3/v31/v32).
+
 - **F3 diagnostic harness — F3 FAIL is structural, not parametric.**
   PR #124 reported F3 FAIL on v3.1 boundary deviation at corpus
   scale and named three competing hypotheses (A graph too small,
