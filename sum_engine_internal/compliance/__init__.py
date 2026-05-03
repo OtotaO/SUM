@@ -10,6 +10,10 @@ separate module so users can compose only what they need.
 
   - :mod:`eu_ai_act_article_12` — record-keeping for high-risk AI
     systems (Regulation (EU) 2024/1689, Article 12).
+  - :mod:`gdpr_article_30` — Records of Processing Activities
+    (Regulation (EU) 2016/679, Article 30); pins the per-row floor
+    enabling Art 30 reporting. The controller separately maintains
+    record-set-scope metadata (Art 30(1)(a)–(g)) out-of-band.
 
 A regime-agnostic ``ValidationReport`` shape lives at
 :mod:`sum_engine_internal.compliance.report` so future validators

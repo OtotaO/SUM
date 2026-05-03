@@ -190,22 +190,17 @@ Five falsifiable predictions H16-H20 pinned in `Tests/research/test_sheaf_laplac
 
 **Success criterion.** Preprint live with arXiv ID; receipt JSONs cited; `bench_digest` field documented as a reproducibility primitive.
 
-### Priority 11 — Second per-regime compliance validator
+### Priority 11 — GDPR Article 30 validator (CLOSED 2026-05-03)
 
-**Problem.** The audit-log substrate (PR #117) was designed regime-agnostic; PR #120 shipped the first per-regime validator (EU AI Act Article 12). The substrate's value compounds when there are 2-3 regimes consuming it. GDPR Article 30 and HIPAA 164.514 are the natural next targets — both named as examples in [`docs/AUDIT_LOG_FORMAT.md`](AUDIT_LOG_FORMAT.md) but not implemented.
+**Status: closed by PR #130.** Second per-regime compliance validator shipped: `sum_engine_internal/compliance/gdpr_article_30.py` with R1–R5 (schema-pinned, timestamp-present, timestamp-iso8601-utc, processing-category-present, processor-identity-present). 25 rule tests + 5 cross-regime CLI dispatch tests = 30 new compliance tests. Total compliance suite now 62 (32 EU AI Act + 25 GDPR + 5 dispatch).
 
-**Work.**
-- Pick one (GDPR Art 30 OR HIPAA 164.514). GDPR is more universal; HIPAA is sharper-bounded but US-specific.
-- New module under `sum_engine_internal/compliance/<regime>.py` exposing `validate(rows) -> ValidationReport`. Reuse the existing `sum.compliance_report.v1` shape (zero adapter cost for downstream consumers).
-- New CLI route in `sum_cli/main.py::cmd_compliance_check` (one-line addition to `_COMPLIANCE_REGIMES`).
-- New `Tests/compliance/test_<regime>.py` matching the EU AI Act test layout (per-rule negative + clean-pass + e2e through real CLI).
-- New `docs/COMPLIANCE_<REGIME>.md` wire spec including the "what this validator does NOT pin" section (truth-first discipline).
+**Substrate-tightening proven empirically.** The `sum.compliance_report.v1` shape held without modification across regimes (`Tests/compliance/test_gdpr_article_30.py::test_validation_report_shape_matches_eu_ai_act` pins this). The CLI dispatch refactored from `if regime == "eu-ai-act-article-12"` to a `_compliance_validators()` dispatch dict — the if-equality smell was invisible while there was only one regime, became obvious with a second. New `Tests/compliance/test_cli_dispatch.py` pins three substrate contracts spanning every regime: (C1) registry consistency between description and dispatch, (C2) every regime returns `sum.compliance_report.v1`, (C3) exit-code contract 0/1/2.
 
-**Note on GDPR specifically.** Article 30(1) requires controller-level metadata (controller name, contact, processing purposes, data subjects, recipients, transfers, retention, security measures) that doesn't live in the audit log. A GDPR validator on the audit log alone is partial — the validator must explicitly call out that controller metadata is out-of-band.
+**Truth-first scope.** GDPR Art 30 splits into per-row scope (visible in audit log: schema, timestamp, operation, cli_version) and record-set scope (Art 30(1)(a)–(g) controller-level metadata: controller name, purposes, categories of data subjects + personal data, recipients, transfers, retention, security measures — must be maintained by the controller out-of-band). The validator pins the per-row floor; the record-set scope is named explicitly in `docs/COMPLIANCE_GDPR_ARTICLE_30.md` §"What this validator does NOT pin", along with Art 30(4) availability, Art 30(5) exemption assessment, and Art 6 lawful-basis verification.
 
-**Success criterion.** Second regime live; `sum compliance regimes` lists two regimes; both pass their full negative-case + e2e tests.
+**Future regimes (record-keeping shape).** Adding HIPAA § 164.312(b) audit controls, SOC 2 CC7.2 system monitoring, ISO/IEC 27001:2022 A.8.15 logging, or PCI DSS 4.0 Req 10 follows the same template: new module, register in `_COMPLIANCE_REGIMES` + `_compliance_validators()`, wire-spec doc, test file. C1/C2/C3 contracts inherit automatically. (HIPAA § 164.514 de-identification is a structurally different regime — transformation rules rather than record-keeping — and belongs in a separate PR family.)
 
-**Proof-boundary outcome.** §1.10 in [`docs/PROOF_BOUNDARY.md`](PROOF_BOUNDARY.md) updated: the regime-agnostic shape claim earns a second instance, demonstrating that downstream consumers do NOT need per-regime adapters.
+**Proof-boundary outcome.** TODO: §1.10 of [`docs/PROOF_BOUNDARY.md`](PROOF_BOUNDARY.md) ought to be updated to record GDPR Art 30 as a second-instance proof of regime-agnosticism. (Same TODO pattern as v3.2 in Priority 9.)
 
 ### Priority 3 — Activate `sha256_128_v2`
 
