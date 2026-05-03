@@ -572,6 +572,80 @@ JSON: `fixtures/bench_receipts/v3_roc_bench_2026-05-02.json`.
 This is the corpus-scale bench v3 listed as "out-of-scope" at PR
 #121. v3.X work continues from here.
 
+### 3.4.3 F3 diagnostic harness (2026-05-02) — F3 is structural, not parametric
+
+A 2×2×2 diagnostic over (graph_size, cochain_strategy,
+partition_strategy) at
+``scripts/research/sheaf_v3_1_f3_diagnostic.py`` was built to
+isolate which of the §3.4.2 hypotheses (A graph too small,
+B cochain produces zero-vectors, C random partition too harsh) is
+load-bearing. Receipt:
+``fixtures/bench_receipts/v3_1_f3_diagnostic_2026-05-02.json``.
+Schema: ``sum.sheaf_v3_1_f3_diagnostic.v1`` with ``bench_digest``
+field — JCS-canonical SHA-256 over the quantized payload (AUCs
+to 3 decimals; diagnostic floats to 4); the digest lets future
+runs prove reproducibility, lets a Node port prove cross-runtime
+byte-identity, and is signable with the project's existing
+Ed25519 keys (same trust alphabet as ``render_receipt.v1``).
+
+**Result: load_bearing_hypothesis = "none"**. All 8 cells
+FAIL the F3 PASS threshold (trusted-mean AUC ≥ 0.55). Every
+single-axis flip of the PR #124 baseline cell still FAILs; even
+the all-three-axes-flipped cell FAILs. **None of the three
+hypotheses is load-bearing.**
+
+The diagnostic's per-cell AUC structure reveals *why*:
+
+  - All 4 cells using ``cochain_strategy = trained_embedding``
+    produce uniform AUC = 0.500 across every (class, target).
+    Reason: the strategy as I designed it returned the same
+    cochain regardless of render — the cochain is a pure function
+    of sheaf vertices. This was a confused axis. It does serve as
+    a sanity-check negative control: AUC = 0.500 everywhere
+    confirms the harness's AUC machinery is correct (a render-
+    invariant cochain MUST give AUC 0.500).
+  - All 4 cells using ``cochain_strategy = one_hot_default``
+    (matches PR #124) produce AUC = 0.500 on every
+    *trusted-target* perturbation across A1/A2/A4. This is
+    structural: when a perturbation targets a trusted edge, the
+    perturbation's vertices lie on the boundary, the cochain
+    change is at boundary positions, the harmonic extension
+    formula $x_I^* = -L_{II}^{-1} L_{IB} x_B$ recomputes the
+    interior from the new boundary, but the actual interior is
+    unchanged — so the deviation $\|x_I^{\text{actual}} -
+    x_I^*\|^2$ ties between clean and perturbed by mathematical
+    necessity.
+  - The same 4 cells produce AUC ≈ 0.36–0.43 on untrusted-target
+    (anti-correlated). Reason: ``cochain_one_hot_v2`` zeros out
+    the swapped-out entity's vertex, lowering the interior
+    cochain's energy; the harmonic extension also lowers; the
+    deviation can shrink rather than grow.
+
+**Truth-first conclusion: v3.1 boundary deviation has a
+structural blind spot for perturbations on the trust frame's
+boundary**. This is not a parameter-sweep problem. The detector,
+as currently formulated, cannot distinguish clean from perturbed
+when the perturbation's vertices are in $B$.
+
+**Implications for v3.2 design:**
+
+  1. v3.1's boundary deviation as a *standalone* detector is not
+     a viable path. It must be paired with a separate signal that
+     handles boundary perturbations (e.g., x_B's direct
+     contribution to the weighted Laplacian quadratic form).
+  2. The cochain construction must encode render information
+     into the *interior* of the partition for boundary deviation
+     to be informative. A cochain that's translation-invariant
+     under boundary-only perturbations is mathematically blind
+     by construction.
+  3. The PR #124 §3.4.2 hypotheses (A/B/C) need retirement —
+     they were partial misdiagnoses. The diagnostic refuted
+     them empirically; the root cause is upstream of all three.
+
+The diagnostic settled the question: F3 is structural, not
+parametric. v3.2 should redesign the detector, not tune
+parameters of v3.1.
+
 ### 3.5 Output shape
 
 Stable JSON envelope `sum.hallucination_consistency.v1`:

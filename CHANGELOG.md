@@ -4,6 +4,38 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **F3 diagnostic harness — F3 FAIL is structural, not parametric.**
+  PR #124 reported F3 FAIL on v3.1 boundary deviation at corpus
+  scale and named three competing hypotheses (A graph too small,
+  B cochain produces zero-vectors, C random partition too harsh).
+  This PR builds a 2×2×2 diagnostic over those three axes and runs
+  it. **Result: load_bearing_hypothesis = "none".** All 8 cells
+  FAIL the F3 PASS threshold (trusted-mean AUC ≥ 0.55); every
+  single-axis flip of the PR #124 baseline still FAILs; even the
+  all-three-axes-flipped cell FAILs. The detector has a
+  *structural* blind spot: when a perturbation targets a
+  trusted-edge (boundary) vertex, the cochain change is at
+  boundary positions; the harmonic extension formula
+  `x_I^* = -L_II^{-1} L_IB x_B` recomputes the interior from the
+  new boundary, but the actual interior is unchanged — so
+  deviation `‖x_I_actual - x_I^*‖²` ties between clean and
+  perturbed by mathematical necessity. Documented at
+  `docs/SHEAF_HALLUCINATION_DETECTOR.md` §3.4.3 with implications
+  for v3.2 redesign. Receipt:
+  `fixtures/bench_receipts/v3_1_f3_diagnostic_2026-05-02.json`.
+
+  **New surface: `bench_digest`** — JCS-canonical SHA-256 over
+  the quantized report payload (AUCs to 3 decimals; diagnostic
+  floats to 4). Three uses: reproducibility canary (same machine
+  + same code → same digest); cross-runtime witness (a future
+  Node port that reproduces these AUCs has the matching digest
+  as portability proof); signable bench artifact (Ed25519-sign
+  with project's existing JWKS keys → arXiv preprint can cite
+  the digest, readers re-run and verify). Same trust alphabet as
+  `render_receipt.v1`. Smoke test
+  `test_v3_1_f3_diagnostic_digest_is_quantization_stable` pins
+  that two consecutive in-process runs produce identical digests.
+
 - **v3 corpus-scale ROC bench (`sum.sheaf_v3_roc_bench.v1`).**
   Re-uses the 16-doc `seed_long_paragraphs` corpus; deterministic
   50/50 trust partitioning per doc (SHA-256 seed); compares v2.2
