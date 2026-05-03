@@ -1,6 +1,6 @@
 # Next-Session Playbook
 
-*Re-authored 2026-04-27 at the close of Phase E doc-pass PR A. **State-at-head section refreshed 2026-04-30** to reflect PRs #83–#95 (chunked algebra, omni-format pivot, self-attestation, frontier-LLM cross-vendor closure, sieve-quality rounds 1+2, MinHash dedup, cold-install fix). For a focused handover to the immediately-next session see [`docs/SESSION_HANDOVER_2026-04-30.md`](SESSION_HANDOVER_2026-04-30.md) — read that first if you are picking the thread up cold from this session. This playbook below is long-term priority context.*
+*Re-authored 2026-04-27 at the close of Phase E doc-pass PR A. **State-at-head section refreshed 2026-05-02** to reflect PRs #117–#125 (audit-log substrate, EU AI Act Article 12 validator, sheaf-Laplacian v3 receipt-weighted detector, v3.1 harmonic-extension primitive, audit-tightening pass + λ double-counting bug fix, v3 corpus ROC bench, F3 structural-fail diagnostic). For a focused handover to the immediately-next session see [`docs/SESSION_HANDOVER_2026-05-02_v3_diagnostic_arc.md`](SESSION_HANDOVER_2026-05-02_v3_diagnostic_arc.md) — read that first if you are picking the thread up cold from this session. This playbook below is long-term priority context.*
 
 ## Non-negotiable principles
 
@@ -18,18 +18,20 @@ Before any work: read [`docs/PROOF_BOUNDARY.md`](PROOF_BOUNDARY.md) cover-to-cov
 
 ## State at the head of this session
 
-`main` head: PR #43 (PR A doc-pass) merged on top of v0.9.A.2 (PR #42).
+`main` head: PR #125 (`bb7957d`) — F3 structural-fail diagnostic — merged on top of v0.5.0 + the v3.1 / v3 / compliance arc.
 
 | Surface | Status |
 |---|---|
-| `pip install 'sum-engine[sieve]'` — CLI v0.3.0 | shipped on PyPI |
+| `pip install sum-engine` — CLI v0.5.0 | shipped on PyPI; bidirectional MCP + sheaf-Laplacian research substrate |
 | Cloudflare Worker at `sum-demo.ototao.workers.dev` | live; serves `/api/render`, `/.well-known/jwks.json`, `/api/qid`, `/api/complete` |
-| Render receipts (`sum.render_receipt.v1`) | shipped v0.9.A; signing in `worker/src/receipt/sign.ts`; spec in [`docs/RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) |
+| Render receipts (`sum.render_receipt.v1`) | shipped; signing in `worker/src/receipt/sign.ts`; spec in [`docs/RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) |
 | 5-axis slider renderer | density actioned deterministically; length / formality / audience / perspective LLM-conditioned via Worker |
 | Slider product claim | **verified at scale** — median LLM-axis fact preservation 1.000, p10 0.769 (n=16) / 0.818 (n=8); v0.7 prompt hardening eliminated catastrophic outliers (2 → 0); see [`docs/SLIDER_CONTRACT.md`](SLIDER_CONTRACT.md) |
 | Cross-runtime trust triangle | locked by CI (K1–K4 valid + A1–A6 adversarial; `make xruntime` + `make xruntime-adversarial`) |
-
-The doc-pass cycle completes the truthfulness re-anchor: README + CLAUDE.md (PR A), and now PROOF_BOUNDARY.md + FEATURE_CATALOG.md + this playbook (PR B). PR C (cross-link sweep across SLIDER_CONTRACT.md / MODULE_AUDIT.md / DID_SETUP.md / DEMO_RECORDING.md / THREAT_MODEL.md / CONTRIBUTING.md) is queued for the session that follows.
+| Audit-log substrate (`sum.audit_log.v1`) | shipped PR #117; hardened PR #119 (signed-bundle / multi-process / worker-mode / empty-string gaps closed); 17 / 17 contract tests; spec in [`docs/AUDIT_LOG_FORMAT.md`](AUDIT_LOG_FORMAT.md) |
+| EU AI Act Article 12 validator (`sum.compliance_report.v1`) | shipped PR #120; first per-regime validator on top of audit-log substrate; `sum compliance check --regime eu-ai-act-article-12 --audit-log <path>` CLI verb; pipe-friendly exit codes; 27 / 27 tests; spec in [`docs/COMPLIANCE_EU_AI_ACT_ARTICLE_12.md`](COMPLIANCE_EU_AI_ACT_ARTICLE_12.md) |
+| Sheaf-Laplacian detectors (v1 / v2.1 / v2.2 / v3 / v3.1) | shipped behind `[research]` extras; math primitives mechanically pinned; corpus-scale measurements: v3 wins +10.7% AUC on A4 vs v2.2; A2 at chance for both (known v2.x weakness); **v3.1 boundary deviation has structural FAIL at corpus scale** (PR #125 diagnostic); spec in [`docs/SHEAF_HALLUCINATION_DETECTOR.md`](SHEAF_HALLUCINATION_DETECTOR.md) |
+| `bench_digest` reproducibility substrate | introduced PR #125; JCS-canonical SHA-256 over quantized bench payload; same trust alphabet as `render_receipt.v1`; cross-run stable on the same machine (LAPACK jitter absorbed); cross-machine + cross-runtime not yet measured |
 
 ---
 
@@ -105,6 +107,24 @@ SEP-1649 / SEP-1960 progress through June 2026.
 
 ## Closed since the previous playbook revision
 
+### ✅ v0.5.0 + audit-log + compliance + sheaf-Laplacian arc (PRs #103–#125)
+
+Three composing layers shipped between 2026-05-01 and 2026-05-02 — see [`docs/SESSION_HANDOVER_2026-05-01_research_arc.md`](SESSION_HANDOVER_2026-05-01_research_arc.md) for the v0.5.0 release + initial sheaf-Laplacian work (PRs #103–#117), and [`docs/SESSION_HANDOVER_2026-05-02_v3_diagnostic_arc.md`](SESSION_HANDOVER_2026-05-02_v3_diagnostic_arc.md) for the v3 / v3.1 / F3 diagnostic arc (PRs #119–#125). Net substrate added:
+
+- **Audit-log primitive** (`sum.audit_log.v1`, PR #117 + hardened by PR #119). Regime-agnostic JSONL stream emitted by every CLI op when `SUM_AUDIT_LOG` is set; fail-open semantics; 17/17 contract tests including signed-bundle paths, true multi-process O_APPEND atomicity (8 procs × 20 emits), worker-mode render rows, empty-string env handling. Spec: [`docs/AUDIT_LOG_FORMAT.md`](AUDIT_LOG_FORMAT.md).
+
+- **EU AI Act Article 12 validator** (`sum.compliance_report.v1`, PR #120). First per-regime validator on the audit-log substrate. Six rules R1–R6 pinning per-row traceability fields; `sum compliance check --regime eu-ai-act-article-12 --audit-log <path>` CLI verb with pipe-friendly exit codes; 27/27 tests; regime-agnostic report shape so future regimes share consumers. Spec: [`docs/COMPLIANCE_EU_AI_ACT_ARTICLE_12.md`](COMPLIANCE_EU_AI_ACT_ARTICLE_12.md).
+
+- **Sheaf-Laplacian detectors v3 + v3.1** (PRs #121, #122). v3 receipt-weighted Laplacian (Hansen-Ghrist 2019 §3.2) + `weights_from_receipts` mapping the trust loop's Ed25519 attestations to per-edge weights. v3.1 harmonic-extension boundary inference (Prop 4.1 / Thm 4.5). 87/87 contract tests including five falsifiable predictions H1–H5 (linearity, v2 reduction, per-edge weighting, trust-amplification utility on synthetic, revocation-overrides-trust) and v3.1's H6–H15 (boundary preservation, minimization, uniqueness, degenerate cases, weight-invariance on chain topology surfaced honestly).
+
+- **Audit-tightening pass + real bug fix** (PR #123). Independent audit of the test files added in PRs #119–#122 surfaced five high/medium issues; closing them surfaced a **real bug** in v3's `combined_detector_score_v3` formula (λ double-counted because v2.2's `v_deficit` is already λ-multiplied). Fix: `v_combined_v3 = v_laplacian_w + v_deficit`. The new `test_combined_v3_lambda_wiring_with_nonzero_deficit` is the test that caught it; it is now part of the contract.
+
+- **v3 corpus-scale ROC bench** (`sum.sheaf_v3_roc_bench.v1`, PR #124). 16-doc `seed_long_paragraphs` corpus, deterministic 50/50 trust partitioning per doc (SHA-256 seed), three detectors compared (v2.2 / v3 / v3.1) across A1/A2/A4 × {trusted, untrusted}. **Headline:** v3 wins +10.7% AUC over v2.2 on A4 (triple-drop), regardless of trust target. F1 (v3 trusted-side amplification): MARGINAL (Δ=+0.022 mean AUC). F2 (no untrusted collapse): PASS. F3 (v3.1 corpus-scale utility): FAIL.
+
+- **F3 structural-fail diagnostic** (`sum.sheaf_v3_1_f3_diagnostic.v1`, PR #125). 2×2×2 hypothesis sweep over (graph_size, cochain_strategy, partition_strategy). **Result: load_bearing_hypothesis = "none".** All 8 cells FAIL the F3 PASS threshold. The detector has a *structural* blind spot: when a perturbation targets a trusted-edge vertex, the cochain change is at boundary positions, the harmonic extension recomputes interior from new boundary, but the actual interior is unchanged → deviation ties between clean and perturbed by mathematical necessity. v3.2 redesign required (see Priority 9). Receipts: `fixtures/bench_receipts/v3_1_f3_diagnostic_2026-05-02.json` + `v3_roc_bench_2026-05-02.json`.
+
+- **`bench_digest` substrate** (PR #125). JCS-canonical SHA-256 over a quantized bench-result payload (AUCs to 3 decimals; diagnostic floats to 4 — quantization absorbs LAPACK ±0.02 jitter). Three uses: reproducibility canary (same machine + same code → same digest), cross-runtime witness (future Node port can prove byte-identity), signable bench artifact (Ed25519-sign with project's existing JWKS keys → arXiv preprint can cite the digest). Same trust alphabet as `render_receipt.v1`.
+
 ### ✅ Priority 1 — Cross-runtime adversarial rejection matrix
 
 Landed as `scripts/verify_cross_runtime_adversarial.py` + `make xruntime-adversarial`. Six fixtures (A1–A6) cover the structural / version / signature rejection classes; both Python and Node verifiers must reject AND classify equivalently. **6/6 pass at HEAD.** CI runs A1–A6 alongside K1–K4 on every push (`.github/workflows/quantum-ci.yml::cross-runtime-harness`). [`docs/PROOF_BOUNDARY.md`](PROOF_BOUNDARY.md) §1.2 now cites four harnesses, the fourth explicitly "proved on adversarial inputs," closing the valid-only-agreement gap.
@@ -135,7 +155,49 @@ Live at `https://sum-demo.ototao.workers.dev`. Verifiable end-to-end: `curl /.we
 
 ## Open priorities
 
-The numbering keeps continuity with the previous playbook so `git log --grep '\[P3\]'` still works. P1 is closed; P2 is partially closed; P3–P8 are unchanged in scope but updated for current state.
+The numbering keeps continuity with the previous playbook so `git log --grep '\[P3\]'` still works. P1 is closed; P2 is partially closed; P3–P8 are unchanged in scope but updated for current state. P9–P11 added 2026-05-02 from the v3 / compliance arc.
+
+### Priority 9 — v3.2 detector redesign (closes F3 STRUCTURAL FAIL)
+
+**Problem.** PR #125's F3 diagnostic empirically refuted three competing hypotheses (graph too small, cochain produces zero-vectors, random partition too harsh) and revealed the actual cause: v3.1's boundary deviation `‖x_I_actual − x_I^*‖²` is mathematically blind to perturbations whose vertices lie on the trust-frame boundary. When the perturbation is at boundary positions, the harmonic extension recomputes the interior from the new boundary, but the actual interior is unchanged → deviation ties between clean and perturbed by mathematical necessity. Documented in [`docs/SHEAF_HALLUCINATION_DETECTOR.md`](SHEAF_HALLUCINATION_DETECTOR.md) §3.4.3.
+
+**Work.**
+- **Pair boundary deviation with a complementary boundary signal.** v3.1 alone cannot detect boundary perturbations; v3.2 should add a term that does — e.g., the weighted Laplacian quadratic form restricted to edges incident to boundary vertices, or x_B's direct contribution to V.
+- **Cochain construction must encode render information into the interior.** A cochain that's translation-invariant under boundary-only perturbations is mathematically blind. The new cochain should propagate render-mention into interior vertices via the trained restriction maps.
+- **Re-run the F3 diagnostic harness** at `scripts/research/sheaf_v3_1_f3_diagnostic.py` against the v3.2 design. PASS criterion: trusted-mean AUC ≥ 0.55 in at least the PR #124 baseline cell.
+
+**Success criterion.** F3 verdict moves from FAIL → PASS on `seed_long_paragraphs`. Per-class trusted-target AUC > 0.5 on at least A1, A4. Receipt JSON archived to `fixtures/bench_receipts/v3_2_*_<date>.json` with `bench_digest` for reproducibility.
+
+**Proof-boundary outcome.** §2.9 of [`docs/PROOF_BOUNDARY.md`](PROOF_BOUNDARY.md) updated: v3.2 detector enters as a measured detection capability; v3.1 row's F3 STRUCTURAL FAIL remains in the table as historical record (not retracted).
+
+### Priority 10 — arXiv preprint v0.1 (substrate has accumulated material)
+
+**Problem.** `docs/arxiv/sheaf-detector-note-v0.md` was a draft when the v3 / v3.1 / F3 arc began. It now needs to fold in: v3 receipt-weighted Laplacian (Hansen-Ghrist 2019 §3.2 weighted form), v3.1 harmonic extension (Prop 4.1 / Thm 4.5), F3 structural-fail finding, the F1 MARGINAL / F2 PASS / F3 FAIL verdicts from PR #124's corpus bench, the `bench_digest` reproducibility substrate as a method.
+
+**Work.**
+- Update the draft from v0 → v0.1 with the four new sections (v3 weighted form, v3.1 boundary deviation, F1/F2/F3 results, F3 structural finding as honest negative result).
+- Add the bench digests as citation anchors. The `bench_digest` field is novel substrate for reproducible-research-with-cryptographic-teeth; surface it in a methods paragraph.
+- Pre-circulation review (1–2 readers) before arXiv submission.
+- Submit to cs.LG (primary) / cs.CR (secondary) categories.
+
+**Success criterion.** Preprint live with arXiv ID; receipt JSONs cited; `bench_digest` field documented as a reproducibility primitive.
+
+### Priority 11 — Second per-regime compliance validator
+
+**Problem.** The audit-log substrate (PR #117) was designed regime-agnostic; PR #120 shipped the first per-regime validator (EU AI Act Article 12). The substrate's value compounds when there are 2-3 regimes consuming it. GDPR Article 30 and HIPAA 164.514 are the natural next targets — both named as examples in [`docs/AUDIT_LOG_FORMAT.md`](AUDIT_LOG_FORMAT.md) but not implemented.
+
+**Work.**
+- Pick one (GDPR Art 30 OR HIPAA 164.514). GDPR is more universal; HIPAA is sharper-bounded but US-specific.
+- New module under `sum_engine_internal/compliance/<regime>.py` exposing `validate(rows) -> ValidationReport`. Reuse the existing `sum.compliance_report.v1` shape (zero adapter cost for downstream consumers).
+- New CLI route in `sum_cli/main.py::cmd_compliance_check` (one-line addition to `_COMPLIANCE_REGIMES`).
+- New `Tests/compliance/test_<regime>.py` matching the EU AI Act test layout (per-rule negative + clean-pass + e2e through real CLI).
+- New `docs/COMPLIANCE_<REGIME>.md` wire spec including the "what this validator does NOT pin" section (truth-first discipline).
+
+**Note on GDPR specifically.** Article 30(1) requires controller-level metadata (controller name, contact, processing purposes, data subjects, recipients, transfers, retention, security measures) that doesn't live in the audit log. A GDPR validator on the audit log alone is partial — the validator must explicitly call out that controller metadata is out-of-band.
+
+**Success criterion.** Second regime live; `sum compliance regimes` lists two regimes; both pass their full negative-case + e2e tests.
+
+**Proof-boundary outcome.** §1.10 in [`docs/PROOF_BOUNDARY.md`](PROOF_BOUNDARY.md) updated: the regime-agnostic shape claim earns a second instance, demonstrating that downstream consumers do NOT need per-regime adapters.
 
 ### Priority 3 — Activate `sha256_128_v2`
 

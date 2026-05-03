@@ -1,7 +1,9 @@
 # Proof Boundary
 
-**Version:** 1.4.1
-**Date:** 2026-04-28
+**Version:** 1.5.0
+**Date:** 2026-05-02
+
+**v1.5.0 changes (2026-05-02):** §1.9 added (audit-log primitive, v0.5.0 substrate), §1.10 added (compliance report shape), §2.9 added (sheaf-Laplacian detector measurements with F3 STRUCTURAL FAIL named explicitly), §2.10 added (`bench_digest` reproducibility under quantization). Reflects substrate state at HEAD `bb7957d` after PRs #117–#125.
 
 This document explicitly separates what the SUM engine **proves mechanically**, what it **measures empirically**, and what remains **aspirational or future work**.
 
@@ -117,6 +119,30 @@ The cross-runtime canonicalisation rule (JCS normalises integer-valued floats �
 - The Python verifier in [`sum_engine_internal/render_receipt/`](../sum_engine_internal/render_receipt/), exercised by `pytest Tests/test_render_receipt_verifier.py` (CI: same job, parallel step).
 
 Both runtimes MUST produce byte-identical outcomes on every fixture: same error class string for every reject case, signature verifies on the positive control. Cross-runtime divergence on any fixture is a stop-the-line trigger and would invalidate this section's claim. The cryptographic binding is therefore now **proved on adversarial inputs across runtimes** — the K-style equivalence we already have for CanonicalBundle, applied to render receipts.
+
+### 1.9. Audit-Log Schema and Fail-Open Semantics (Path 3 substrate, v0.5.0)
+
+**Claim:** Every CLI operation (`sum attest` / `sum verify` / `sum render`) emits exactly one JSONL row with the `sum.audit_log.v1` schema when `SUM_AUDIT_LOG` is set; the trust loop continues to function regardless of audit-log destination health (fail-open).
+
+**Proof mechanism:** [`Tests/test_audit_log.py`](../Tests/test_audit_log.py) — **17 / 17 pass** (11 baseline + 6 PR-#119 gap-closure). Pins:
+- Schema: `schema = "sum.audit_log.v1"`, ISO 8601 UTC `timestamp` ending in `Z`, `operation ∈ {"attest", "verify", "render"}`, `cli_version`.
+- Operation-specific row shape (attest carries `signed`/`hmac`/`source_uri`; verify carries `axiom_count`/`state_integer_digits`; render carries `mode` plus worker-mode `render_receipt_kid`/`worker_url`/`render_receipt_schema`).
+- Cross-reference: end-to-end attest → verify → render produces three rows whose `axiom_count`/`state_integer_digits` cross-link.
+- Fail-open: `SUM_AUDIT_LOG` pointing at an unwritable path does NOT raise; the operation completes; the canonical bundle / receipt remains the load-bearing trust artifact regardless of audit destination state.
+- Multi-process O_APPEND atomicity: 8 worker processes × 20 emits = 160 rows; every line parseable JSON, every (worker_id, iteration) pair present exactly once.
+- Signed-bundle attest rows: Ed25519, HMAC, dual-signed paths each pinned with their own contract test (PR #119).
+- Worker-mode render rows: synthetic-envelope test pins the four positive fields.
+- Empty-string semantics: `SUM_AUDIT_LOG=""` treated as unset (no-op), pinned in PR #119.
+
+**Boundary:** The audit log is regime-agnostic substrate. It records *what happened*; it does not enforce any specific compliance regime. Per-regime validation is a downstream consumer (see §2.9 EU AI Act Article 12 validator). The audit log is *advisory* — a non-functional audit destination is a compliance-tooling problem, not a substrate problem. Schema is additive: future minor versions may add fields; consumers MUST ignore unknown keys.
+
+### 1.10. Compliance Report Schema and Regime-Agnostic Aggregation (Path 3 actionable layer)
+
+**Claim:** Every per-regime validator on top of `sum.audit_log.v1` returns a `sum.compliance_report.v1` `ValidationReport` carrying schema, regime id, rows examined, and a list of typed `Violation` records (rule_id, row_index, operation, message, row). The shape is regime-agnostic; downstream consumers (CLI, dashboard, retention pipeline) ingest reports across regimes without per-regime adapters.
+
+**Proof mechanism:** Dataclass shape pinned in [`sum_engine_internal/compliance/report.py`](../sum_engine_internal/compliance/report.py) (frozen). [`Tests/compliance/test_eu_ai_act_article_12.py`](../Tests/compliance/test_eu_ai_act_article_12.py) — **27 / 27 pass** — exercises the report shape end-to-end including `to_dict` schema string, `violations_by_rule` aggregation, and per-`Violation` row_index correctness. The `sum compliance check --regime <id> --audit-log <path>` CLI verb wraps the validator and exits 0 iff `ok=true`, 1 otherwise (pipe-friendly for CI gates).
+
+**Boundary:** Adding a new regime is a new module under `sum_engine_internal/compliance/<regime>.py` exposing `validate(rows) -> ValidationReport`. Existing `rule_id` strings are stable; downstream dashboards may filter on them.
 
 ---
 
@@ -446,6 +472,39 @@ The `scripts/bench/` directory contains the measurement-first infrastructure tha
 - **`ExtractionRunner` uses set-comparison on canonical keys** (no post-hoc lemmatization reconciliation). Gold-triple mismatches with sieve output count as false negatives. Honesty over flattery.
 - **CI regression detection** compares each new report against the most recent history entry; `--fail-on-regression` exits non-zero on any F1 drop > 0.02, drift increase > 1%, FActScore drop > 0.03, or p99 ratio > 1.15.
 - **LLM-gated runners** (`regeneration.py`, `roundtrip.py`, `llm_roundtrip.py`) require a pinned snapshot ID (e.g. `gpt-4o-mini-2024-07-18`). The harness reads `SUM_BENCH_MODEL` as the single default applied to every role; per-role overrides `SUM_BENCH_FACTSCORE_MODEL`, `SUM_BENCH_MINICHECK_MODEL`, `SUM_BENCH_GENERATOR_MODEL`, and `SUM_BENCH_EXTRACTOR_MODEL` take precedence when set. Unpinned or missing identifiers raise `SystemExit` before any work begins.
+
+### 2.9. Sheaf-Laplacian Hallucination Detector (v1 / v2.x / v3 / v3.1)
+
+**Claim:** Sheaf-Laplacian quadratic forms over render manifolds detect specific perturbation classes (A1 entity-swap, A2 predicate-flip, A3 off-graph fabrication, A4 triple-drop) at measurable AUC on the `seed_long_paragraphs` corpus (16 docs, 120 source triples). v3 receipt-weighted detector improves on v2.2 baseline; v3.1 boundary deviation has a **structural blind spot** at corpus scale.
+
+**Math foundation:** Hansen-Ghrist 2019 (arXiv:1808.01513), Gebhart-Hansen-Schrater 2023 (AISTATS, arXiv:2110.03789). Mechanically pinned: symmetric-PSD Laplacian, factored quadratic form equivalent to materialized matrix form, ‖δx‖² = x^T L x to floating-point precision (87 / 87 tests in [`Tests/research/test_sheaf_laplacian_v3.py`](../Tests/research/test_sheaf_laplacian_v3.py) and [`Tests/research/test_sheaf_laplacian_v2.py`](../Tests/research/test_sheaf_laplacian_v2.py)).
+
+**Measurement (PR #114 v2.2 ROC bench, PR #124 v3 ROC bench, PR #125 F3 diagnostic):**
+
+| Detector | A1 | A2 | A3 | A4 | Notes |
+|---|---|---|---|---|---|
+| v2.2 baseline | 0.62 | 0.50 | 1.00 | 0.86 | A2 predicate-flip is at chance — known v2.x weakness; needs predicate-perturbation negative sampling in training |
+| v3 receipt-weighted | 0.66 | 0.50 | — | **0.97** | **+10.7% AUC on A4** is the standout. F1 (trusted-side amplification): MARGINAL (Δ=+0.022 mean AUC). F2 (no untrusted collapse): PASS. |
+| v3.1 boundary deviation | 0.50 | 0.50 | — | 0.50 | **F3 STRUCTURAL FAIL** (PR #125 diagnostic): 8 / 8 cells of the 2×2×2 hypothesis sweep FAIL. Mathematical blind spot for boundary perturbations. |
+
+**Boundary — what is and is not proved:**
+- **Math primitives** (symmetric-PSD, factored equality, weighted form linearity, harmonic-extension defining property H7) are mechanically pinned in §1-equivalent fashion within the [research] extras.
+- **Detection AUC** is measured on a single fixed corpus (n=16). The numbers above are not generalised claims; they apply to `seed_long_paragraphs` under the current trained sheaf, λ_auto, and seed-controlled perturbation harness. Cross-corpus generalisation is unmeasured.
+- **F3 STRUCTURAL FAIL** is named explicitly: v3.1's boundary deviation cannot distinguish clean from perturbed when the perturbation's vertices lie on the trust-frame boundary (mathematical necessity per [`docs/SHEAF_HALLUCINATION_DETECTOR.md`](SHEAF_HALLUCINATION_DETECTOR.md) §3.4.3). v3.2 must redesign, not parameter-sweep.
+- **Receipt:** [`fixtures/bench_receipts/v3_roc_bench_2026-05-02.json`](../fixtures/bench_receipts/v3_roc_bench_2026-05-02.json) and [`fixtures/bench_receipts/v3_1_f3_diagnostic_2026-05-02.json`](../fixtures/bench_receipts/v3_1_f3_diagnostic_2026-05-02.json) carry the per-cell AUCs and `bench_digest` SHA-256 (JCS-canonical, RFC 8785) for reproducibility.
+
+### 2.10. Bench Reproducibility Digest (`bench_digest`, PR #125)
+
+**Claim:** Quantized JCS-canonical SHA-256 over a research-bench `DiagnosticReport` is byte-stable across runs on the same machine + same code (LAPACK threading inside `np.linalg.lstsq` introduces ~±0.02 AUC jitter; quantization to 3 decimals on AUCs and 4 on diagnostic floats absorbs it).
+
+**Proof mechanism:** [`Tests/research/test_sheaf_v3_1_f3_diagnostic.py::test_v3_1_f3_diagnostic_digest_is_quantization_stable`](../Tests/research/test_sheaf_v3_1_f3_diagnostic.py) — runs the diagnostic twice in-process, asserts `report1.bench_digest == report2.bench_digest`. JCS canonicalization is the project's own [`sum_engine_internal/infrastructure/jcs.py`](../sum_engine_internal/infrastructure/jcs.py) (RFC 8785 — same canonicalization the trust loop uses for CanonicalBundle and `render_receipt.v1`).
+
+**Boundary:** Three intended uses, each with its own surface:
+1. **Reproducibility canary** — same machine, same code → same digest. Drift indicates upstream change.
+2. **Cross-runtime witness** — when (if) a future Node/browser port of v3 / v3.1 reproduces these AUCs, the matching digest is the K-style portability proof. Not yet measured (no Node port exists for these detectors).
+3. **Signable bench artifact** — the digest can be Ed25519-signed with the project's existing JWKS keys; an arXiv preprint or external review can cite the digest, and readers re-running the bench verify their digest matches. Not yet exercised (no signed bench artifact has been published).
+
+The digest is the *only* claim of bit-stable cross-run reproducibility for these benches; it does NOT address cross-machine reproducibility (different LAPACK builds, different numpy versions). Cross-machine reproducibility is unmeasured.
 
 ---
 

@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-03T01:40:06Z",
+  "issued_at": "2026-05-03T03:01:06Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "57c81c665dea74597fd83a7b8ff29c42fb25ba28",
-    "head_short": "57c81c6",
-    "head_subject": "research: v3 corpus-scale ROC bench \u2014 F3 surfaced honestly (#124)",
-    "head_committer_date": "2026-05-02T20:26:53-04:00",
+    "head_sha": "bb7957dc7c8d81f5d7714410c43745cb32ce1792",
+    "head_short": "bb7957d",
+    "head_subject": "research: F3 diagnostic \u2014 F3 FAIL is structural, not parametric (#125)",
+    "head_committer_date": "2026-05-02T21:46:38-04:00",
     "commits_last_30d": null
   },
   "github": {

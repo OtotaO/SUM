@@ -104,7 +104,7 @@ The reverse direction also runs under explicit slider control. The local path ac
 sum render --density 0.5 < bundle.json
 # → keeps the lex-prefix half of the axioms; @sliders header records what was requested
 
-sum render --length 0.9 --use-worker https://sum.ototao.com --json < bundle.json
+sum render --length 0.9 --use-worker https://sum-demo.ototao.workers.dev --json < bundle.json
 # → LLM-conditioned tome + signed render_receipt (sum.render_receipt.v1) on stdout
 ```
 
@@ -131,7 +131,7 @@ pip install 'sum-engine[mcp,sieve]'
 
 ### Calling SUM over HTTP
 
-The hosted Worker at `https://sum.ototao.com` exposes `/api/render`, `/api/complete`, `/api/qid`, and the `/.well-known/{jwks,revoked-kids}.json` verification surfaces. [`docs/API_REFERENCE.md`](docs/API_REFERENCE.md) is the wire spec — request/response shapes, error codes, the six-step receipt-verification flow, working Node + Python examples. Use this when the caller is a web app, mobile app, or server-side service; use the MCP server when the caller is a local LLM client.
+The hosted Worker at `https://sum-demo.ototao.workers.dev` exposes `/api/render`, `/api/complete`, `/api/qid`, and the `/.well-known/{jwks,revoked-kids}.json` verification surfaces. [`docs/API_REFERENCE.md`](docs/API_REFERENCE.md) is the wire spec — request/response shapes, error codes, the six-step receipt-verification flow, working Node + Python examples. Use this when the caller is a web app, mobile app, or server-side service; use the MCP server when the caller is a local LLM client.
 
 ---
 

@@ -10,17 +10,23 @@ the code.
 If this is your first turn in this repo, read these files in order and you
 will have the full picture.
 
-0. **[`docs/SESSION_HANDOVER_2026-05-01_research_arc.md`](docs/SESSION_HANDOVER_2026-05-01_research_arc.md)**
-   — most recent session-block handover (PRs #103–#117 + the v0.5.0
-   PyPI publish + the sheaf-Laplacian hallucination-detection research
-   arc + the audit-log compliance substrate). Read this first if you
-   are picking the thread up cold; it carries the new open queue
-   (arXiv submission, v3, v4, per-regime validators), three pinned-
-   in-code falsifications and the deeper analytical findings about
-   what the sheaf Laplacian fundamentally measures, the
-   discipline-pattern observations, and gotchas (Cloudflare UA bug,
-   λ-calibration scaling, the LLM-render counter-intuitive Laplacian
-   drop). The prior handovers at
+0. **[`docs/SESSION_HANDOVER_2026-05-02_v3_diagnostic_arc.md`](docs/SESSION_HANDOVER_2026-05-02_v3_diagnostic_arc.md)**
+   — most recent session-block handover (PRs #119–#125 + the
+   audit-log gap closure + EU AI Act Article 12 compliance validator
+   + the sheaf-Laplacian v3 receipt-weighted detector + v3.1
+   harmonic-extension primitive + the audit-tightening pass that
+   caught a real v3 λ double-counting bug + v3 corpus-scale ROC bench
+   + the F3 structural-fail diagnostic that refuted three competing
+   hypotheses). Read this first if you are picking the thread up
+   cold; it carries the new open queue (Priority 9 v3.2 redesign
+   closing F3, Priority 10 arXiv preprint v0.1, Priority 11 second
+   per-regime validator), names the new `bench_digest` reproducibility
+   substrate as a research-artifact-with-cryptographic-teeth, and
+   surfaces the synthetic-vs-corpus discipline lesson explicitly.
+   The prior handover at
+   [`docs/SESSION_HANDOVER_2026-05-01_research_arc.md`](docs/SESSION_HANDOVER_2026-05-01_research_arc.md)
+   (PRs #103–#117 + v0.5.0 + initial sheaf-Laplacian work) carries
+   the previous arc's context;
    [`docs/SESSION_HANDOVER_2026-05-01.md`](docs/SESSION_HANDOVER_2026-05-01.md)
    (PRs #97–#102; v0.4.0 → v0.4.1 publish-path arc) and
    [`docs/SESSION_HANDOVER_2026-04-30.md`](docs/SESSION_HANDOVER_2026-04-30.md)
@@ -35,7 +41,9 @@ will have the full picture.
    measured discipline for every claim in the repo. Section 1.3.1 covers
    the cross-runtime Ed25519 trust triangle (Python ↔ Node ↔ Browser).
 3. **[`docs/FEATURE_CATALOG.md`](docs/FEATURE_CATALOG.md)** — **150** numbered
-   features (current at 2026-05-01), each with a reproducible verification
+   features (current at 2026-05-02; counts unchanged this arc — v3 / v3.1 /
+   F3 diagnostic ship as research under the `[research]` extras flag,
+   not as catalog features), each with a reproducible verification
    command. Summary at the bottom gives the Production / Scaffolded /
    Designed counts (currently 131 / 18 / 1). Counts are mechanically
    refreshed; treat them as authoritative over any prose in this file.
