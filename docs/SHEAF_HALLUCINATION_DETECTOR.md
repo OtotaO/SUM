@@ -695,7 +695,7 @@ The combined score is informative either way — that's the F3
 | 0.0      | 0.661            | PASS       | 0.000   | PASS           |
 | 0.1      | 0.656            | PASS       | −0.004  | PASS           |
 | 1.0      | 0.630            | PASS       | −0.031  | FAIL           |
-| auto≈1.0 | 0.628            | PASS       | −0.033  | FAIL           |
+| auto (1.0127) | 0.630       | PASS       | −0.031  | FAIL           |
 | **v3** (ref) | **0.661**    | —          | —       | —              |
 
 Three honest readings:
