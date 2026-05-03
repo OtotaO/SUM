@@ -271,9 +271,14 @@ def combined_detector_score_v3(
     return {
         **base,
         "v_laplacian_w": v_laplacian_w,
-        # Combined v3 score: weighted Laplacian + λ · deficit² (same
-        # algebraic shape as v2.2).
-        "v_combined_v3": v_laplacian_w + lambda_deficit * (base["v_deficit"]),
+        # Combined v3 score: weighted Laplacian + the v2.2 deficit term.
+        # v2.2's ``v_deficit`` field is already ``presence_weight ·
+        # deficit²`` (the deficit term, post-λ-weighting), so v3 just
+        # adds it once. Earlier formulation
+        # ``v_laplacian_w + lambda_deficit * base["v_deficit"]``
+        # double-counted λ — caught by the audit-tightening pass on
+        # 2026-05-02 with `test_combined_v3_lambda_wiring_with_nonzero_deficit`.
+        "v_combined_v3": v_laplacian_w + base["v_deficit"],
         "edge_weights": weights.tolist(),
     }
 

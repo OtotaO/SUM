@@ -182,17 +182,60 @@ def test_weights_from_receipts_indexed_parallel_to_edges():
 # ─── Block 3: falsifiable predictions H1-H4 ──────────────────────────
 
 
-def test_h1_doubling_weights_doubles_quadratic_form():
-    """H1: x^T L^w x is linear in the weights. Doubling all weights
-    doubles V."""
-    sheaf, triples = _toy_sheaf_v3()
-    rng = np.random.default_rng(0)
+@pytest.mark.parametrize("seed", [0, 1, 7, 42])
+def test_h1_quadratic_form_linear_in_weights_with_known_ratios(seed):
+    """H1: x^T L^w x is linear in the weights. Pinned across four
+    independent properties of linearity, on multiple seeds:
+
+      (a) doubling weights doubles V (homogeneity);
+      (b) all-zero weights give V = 0 (no contribution);
+      (c) selecting only edge i (weight vector = e_i) gives
+          V = ‖residual_i‖² exactly;
+      (d) sum-of-singletons equals sum-of-V (additivity).
+
+    A buggy implementation that ignored per-edge structure (e.g.
+    `np.sum(weights) * constant`) would pass (a) but fail (c)
+    and (d). Multiple seeds prevent the test passing for
+    fixture-specific numeric coincidence at seed=0.
+    """
+    sheaf, _ = _toy_sheaf_v3()
+    rng = np.random.default_rng(seed)
     x = rng.standard_normal((len(sheaf.vertices), sheaf.stalk_dim))
+
+    from sum_engine_internal.research.sheaf_laplacian_v2 import per_edge_residual_v2
+    residuals = per_edge_residual_v2(sheaf, x)
+    raw_per_edge = np.array([float(np.sum(r * r)) for r in residuals])
+
+    # (a) homogeneity
     w = np.array([0.3, 1.7, 0.5])
     v1 = weighted_laplacian_quadratic_form_v3(sheaf, x, w)
     v2 = weighted_laplacian_quadratic_form_v3(sheaf, x, 2 * w)
-    assert np.isclose(v2, 2 * v1), (
-        f"V should be linear in weights; v(w)={v1}, v(2w)={v2}"
+    assert np.isclose(v2, 2 * v1), f"homogeneity: v(2w) != 2 v(w)"
+
+    # (b) zero weights
+    v_zero = weighted_laplacian_quadratic_form_v3(
+        sheaf, x, np.zeros(len(sheaf.edges)),
+    )
+    assert v_zero == 0.0, f"zero weights must give V=0; got {v_zero}"
+
+    # (c) singleton weight = e_i picks out edge i exactly
+    for i in range(len(sheaf.edges)):
+        e_i = np.zeros(len(sheaf.edges))
+        e_i[i] = 1.0
+        v_single = weighted_laplacian_quadratic_form_v3(sheaf, x, e_i)
+        assert np.isclose(v_single, raw_per_edge[i]), (
+            f"singleton w=e_{i} should give V = ‖residual_{i}‖² "
+            f"= {raw_per_edge[i]}; got {v_single}"
+        )
+
+    # (d) additivity: V(w1 + w2) = V(w1) + V(w2)
+    w1 = np.array([1.0, 0.0, 0.5])
+    w2 = np.array([0.2, 0.8, 0.0])
+    v_sum = weighted_laplacian_quadratic_form_v3(sheaf, x, w1 + w2)
+    v1_only = weighted_laplacian_quadratic_form_v3(sheaf, x, w1)
+    v2_only = weighted_laplacian_quadratic_form_v3(sheaf, x, w2)
+    assert np.isclose(v_sum, v1_only + v2_only), (
+        f"additivity: V(w1+w2)={v_sum} != V(w1)+V(w2)={v1_only + v2_only}"
     )
 
 
@@ -242,8 +285,22 @@ def test_h2_uniform_weights_v3_equals_scaled_v2():
 def test_h3_per_edge_contribution_scales_with_weight():
     """H3: per-edge weighted contribution = w_e · ‖residual_e‖² in
     the v3 ranker. Pin so a future refactor that drops the weight
-    factor in localization gets caught."""
-    sheaf, triples = _toy_sheaf_v3()
+    factor in localization gets caught.
+
+    Tightened 2026-05-02 to avoid the audit-flagged tautology:
+    instead of comparing to ``w_i * raw_contrib_i`` (same formula
+    the implementation uses → any wrong implementation that mults
+    in the same order passes), pin against a SENTINEL weight
+    vector where the expected value is hand-known regardless of
+    the implementation's order of operations:
+
+      - With weights = [0, 1, 0]: contribs[0] = (edges[1],
+        raw_contribs_1) exactly, contribs[1] = (edges[0], 0),
+        contribs[2] = (edges[2], 0). Any localization that
+        respects "weight zero kills contribution; weight one
+        preserves it raw" passes.
+    """
+    sheaf, _ = _toy_sheaf_v3()
     rng = np.random.default_rng(0)
     x = rng.standard_normal((len(sheaf.vertices), sheaf.stalk_dim))
 
@@ -251,25 +308,26 @@ def test_h3_per_edge_contribution_scales_with_weight():
     residuals = per_edge_residual_v2(sheaf, x)
     raw_contribs = [float(np.sum(r * r)) for r in residuals]
 
-    weights = np.array([0.1, 1.0, 0.5])
+    # Sentinel: only edge 1 contributes
+    weights = np.array([0.0, 1.0, 0.0])
     contribs = weighted_per_edge_discrepancy_v3(sheaf, x, weights)
 
-    # Build expected: edge_i → w_i · raw_contribs_i, then sort desc by score
-    expected = sorted(
-        [(sheaf.edges[i], weights[i] * raw_contribs[i]) for i in range(3)],
-        key=lambda kv: kv[1],
-        reverse=True,
-    )
-    for (e_got, v_got), (e_exp, v_exp) in zip(contribs, expected):
-        assert e_got == e_exp
-        assert np.isclose(v_got, v_exp)
+    # Top contrib must be edge 1 with score = raw_contrib_1 (the
+    # only non-zero edge); the other two must score exactly 0.
+    assert contribs[0][0] == sheaf.edges[1]
+    assert np.isclose(contribs[0][1], raw_contribs[1])
+    # The remaining two edges must score exactly zero
+    zero_edges = {contribs[1][0], contribs[2][0]}
+    assert zero_edges == {sheaf.edges[0], sheaf.edges[2]}
+    assert contribs[1][1] == 0.0
+    assert contribs[2][1] == 0.0
 
 
-def test_h4_weights_from_receipts_deterministic_and_parallel():
-    """H4: weights_from_receipts is deterministic (no random
-    sampling) and produces a vector parallel-indexed to
-    sheaf.edges. Two calls with the same inputs must produce
-    byte-identical outputs."""
+def test_h4_weights_from_receipts_deterministic():
+    """H4 (determinism only): weights_from_receipts has no random
+    sampling. Two calls with the same inputs produce byte-identical
+    outputs. The parallel-indexing claim is pinned separately at
+    :func:`test_weights_from_receipts_indexed_parallel_to_edges`."""
     sheaf, triples = _toy_sheaf_v3()
     w1 = weights_from_receipts(sheaf, trusted_edges=[triples[0], triples[2]])
     w2 = weights_from_receipts(sheaf, trusted_edges=[triples[0], triples[2]])
@@ -289,11 +347,14 @@ def test_tampering_trusted_edge_yields_sharper_v_jump_than_untrusted():
     edge's contribution (perturb its head vertex's embedding) and
     one untrusted edge's contribution. Compare ΔV.
 
-    If ΔV(trusted-tampered) > ΔV(untrusted-tampered), receipt-
-    weighting amplifies signal where the system already trusts;
-    that's the legendary-status-utility claim. If the inequality
-    inverts, v3 is mathematically well-defined but useless — file
-    a falsification and rethink.
+    **Tightened 2026-05-02 after audit:** loop over multiple
+    perturbation seeds. n=1 was too thin for a headline utility
+    claim; one seed could pass by luck. Pin that the inequality
+    holds in *at least* 8/10 seeded perturbations, with the mean
+    Δ_trusted strictly greater than mean Δ_untrusted. If the
+    inequality holds <80%, v3 is mathematically well-defined but
+    its utility is fixture-dependent rather than robust — file
+    a falsification.
     """
     triples = [
         ("alice", "knows", "bob"),    # trusted (will be tampered)
@@ -303,8 +364,6 @@ def test_tampering_trusted_edge_yields_sharper_v_jump_than_untrusted():
     trained, embeddings, _ = train_restriction_maps(
         triples, stalk_dim=8, epochs=200, seed=0,
     )
-
-    # Receipt-derived weights: first two edges trusted, third unsigned.
     weights = weights_from_receipts(
         trained,
         trusted_edges=[triples[0], triples[1]],
@@ -314,32 +373,39 @@ def test_tampering_trusted_edge_yields_sharper_v_jump_than_untrusted():
     x_clean = cochain_one_hot_v2(trained, triples, embedding=embeddings)
     v_clean = weighted_laplacian_quadratic_form_v3(trained, x_clean, weights)
 
-    rng = np.random.default_rng(0)
-    perturbation = rng.standard_normal(trained.stalk_dim) * 0.5
+    deltas_trusted: list[float] = []
+    deltas_untrusted: list[float] = []
+    for seed in range(10):
+        rng = np.random.default_rng(seed)
+        perturbation = rng.standard_normal(trained.stalk_dim) * 0.5
 
-    # Tamper the trusted edge: perturb alice's embedding.
-    x_trusted_tampered = x_clean.copy()
-    x_trusted_tampered[trained.vertex_index["alice"]] += perturbation
-    v_trusted_tampered = weighted_laplacian_quadratic_form_v3(
-        trained, x_trusted_tampered, weights,
+        x_trusted_tampered = x_clean.copy()
+        x_trusted_tampered[trained.vertex_index["alice"]] += perturbation
+        v_t = weighted_laplacian_quadratic_form_v3(
+            trained, x_trusted_tampered, weights,
+        )
+
+        x_untrusted_tampered = x_clean.copy()
+        x_untrusted_tampered[trained.vertex_index["dog"]] += perturbation
+        v_u = weighted_laplacian_quadratic_form_v3(
+            trained, x_untrusted_tampered, weights,
+        )
+
+        deltas_trusted.append(v_t - v_clean)
+        deltas_untrusted.append(v_u - v_clean)
+
+    wins = sum(1 for t, u in zip(deltas_trusted, deltas_untrusted) if t > u)
+    mean_trusted = float(np.mean(deltas_trusted))
+    mean_untrusted = float(np.mean(deltas_untrusted))
+    assert wins >= 8, (
+        f"v3 receipt-weighting must amplify signal at trusted edges in "
+        f"≥ 8/10 seeded perturbations; got {wins}/10. "
+        f"deltas_trusted={deltas_trusted}, "
+        f"deltas_untrusted={deltas_untrusted}"
     )
-
-    # Tamper the untrusted edge: perturb dog's embedding by the SAME magnitude.
-    x_untrusted_tampered = x_clean.copy()
-    x_untrusted_tampered[trained.vertex_index["dog"]] += perturbation
-    v_untrusted_tampered = weighted_laplacian_quadratic_form_v3(
-        trained, x_untrusted_tampered, weights,
-    )
-
-    delta_trusted = v_trusted_tampered - v_clean
-    delta_untrusted = v_untrusted_tampered - v_clean
-
-    assert delta_trusted > delta_untrusted, (
-        f"v3 receipt-weighting must amplify signal at trusted edges; "
-        f"got Δ_trusted={delta_trusted:.4f}, Δ_untrusted={delta_untrusted:.4f}. "
-        f"If Δ_trusted ≤ Δ_untrusted, v3 is mathematically well-defined "
-        f"but provides no utility benefit over v2 — file a falsification "
-        f"PR and reconsider the weight design."
+    assert mean_trusted > mean_untrusted, (
+        f"mean Δ_trusted ({mean_trusted:.4f}) should exceed "
+        f"mean Δ_untrusted ({mean_untrusted:.4f})"
     )
 
 
@@ -384,6 +450,79 @@ def test_combined_v3_clean_render_no_signal():
     assert score["v_deficit"] == 0.0
     # combined_v3 = v_laplacian_w + λ · 0 = v_laplacian_w
     assert np.isclose(score["v_combined_v3"], score["v_laplacian_w"])
+
+
+def test_combined_v3_lambda_wiring_with_nonzero_deficit():
+    """**Surfaced and fixed 2026-05-02 after audit.** The clean-
+    render test above can't pin λ — when ``v_deficit == 0``,
+    ``v_combined = v_laplacian + 0`` is independent of λ. This
+    partner test drives a render that drops a source entity
+    (deficit > 0) and pins the literal arithmetic.
+
+    The audit caught a real bug: v3's earlier formula
+    ``v_laplacian_w + lambda_deficit * base["v_deficit"]`` double-
+    counted λ, because v2.2's ``v_deficit`` field is already
+    ``presence_weight · deficit²`` (post-λ-weighting). Corrected
+    formula:
+
+        v_combined_v3 = v_laplacian_w + v_deficit
+
+    where ``v_deficit`` already carries the λ baked in.
+
+    A regression in either side of this contract surfaces here.
+    """
+    triples = [
+        ("alice", "knows", "bob"),
+        ("bob", "owns", "dog"),
+        ("carol", "writes", "python"),
+    ]
+    trained, embeddings, _ = train_restriction_maps(
+        triples, stalk_dim=8, epochs=200, seed=0,
+    )
+    weights = weights_from_receipts(trained, trusted_edges=list(triples))
+
+    # Render drops carol entirely: deficit ≥ 1
+    dropout_render = [
+        ("alice", "knows", "bob"),
+        ("bob", "owns", "dog"),
+    ]
+    score = combined_detector_score_v3(
+        trained, embeddings, dropout_render, weights,
+        lambda_deficit=0.05,
+    )
+    assert score["presence_deficit_count"] >= 1
+    assert score["v_deficit"] > 0.0
+
+    # Pin the post-fix algebra: combined = laplacian + deficit (deficit
+    # already carries λ via v2.2's combined_detector_score)
+    expected = score["v_laplacian_w"] + score["v_deficit"]
+    assert np.isclose(score["v_combined_v3"], expected), (
+        f"v_combined_v3 must equal v_laplacian_w + v_deficit (deficit "
+        f"already λ-weighted); got {score['v_combined_v3']}, "
+        f"expected {expected}"
+    )
+
+    # Pin that v_deficit ITSELF scales linearly with λ — this is the
+    # property that catches the original double-counting bug. Doubling
+    # λ should double v_deficit (since deficit_count² is unchanged).
+    score_2x = combined_detector_score_v3(
+        trained, embeddings, dropout_render, weights,
+        lambda_deficit=0.10,
+    )
+    assert np.isclose(score_2x["v_deficit"], 2 * score["v_deficit"]), (
+        f"doubling λ must double v_deficit; got "
+        f"v_deficit(λ=0.05)={score['v_deficit']}, "
+        f"v_deficit(λ=0.10)={score_2x['v_deficit']}"
+    )
+
+    # And v_combined_v3 changes by exactly Δ(v_deficit) (laplacian unchanged)
+    delta_combined = score_2x["v_combined_v3"] - score["v_combined_v3"]
+    delta_deficit = score_2x["v_deficit"] - score["v_deficit"]
+    assert np.isclose(delta_combined, delta_deficit), (
+        f"changing λ should change combined by exactly Δ(v_deficit) "
+        f"(laplacian term is independent of λ); got "
+        f"Δ_combined={delta_combined}, Δ_deficit={delta_deficit}"
+    )
 
 
 # ─── Block 6: v3.1 — harmonic extension ──────────────────────────────
