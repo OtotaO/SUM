@@ -1,6 +1,6 @@
 # SUM HTTP API reference
 
-**Status:** wire spec for the SUM Cloudflare Worker, current at `worker/src/index.ts`. Source of truth for external systems integrating with the hosted endpoint at `https://sum.ototao.com` or any self-hosted deployment of the same Worker.
+**Status:** wire spec for the SUM Cloudflare Worker, current at `worker/src/index.ts`. Source of truth for external systems integrating with the hosted endpoint at `https://sum-demo.ototao.workers.dev` or any self-hosted deployment of the same Worker.
 
 This is the second integration surface alongside [`MCP_INTEGRATION.md`](MCP_INTEGRATION.md). Pick by use case:
 
@@ -32,7 +32,7 @@ All other paths under the host serve static assets (the in-browser demo) via the
 
 ### 2.1 Base URL
 
-The hosted demo is at `https://sum.ototao.com`. Self-hosted deployments terminate at whatever hostname Cloudflare maps the Worker to. Examples in this doc use `https://sum.ototao.com`; substitute as needed.
+The hosted demo is at `https://sum-demo.ototao.workers.dev`. Self-hosted deployments terminate at whatever hostname Cloudflare maps the Worker to. Examples in this doc use `https://sum-demo.ototao.workers.dev`; substitute as needed.
 
 ### 2.2 Authentication
 
@@ -96,7 +96,7 @@ The primary integration verb. Takes a list of `(subject, predicate, object)` tri
 
 ```http
 POST /api/render HTTP/1.1
-Host: sum.ototao.com
+Host: sum-demo.ototao.workers.dev
 Content-Type: application/json
 
 {
@@ -221,7 +221,7 @@ The `jws` is a [detached JWS](https://www.rfc-editor.org/rfc/rfc7515#appendix-A.
 
 The full verifier algorithm is documented in [`docs/RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md). Quick reference:
 
-1. **Fetch the JWKS** from `https://sum.ototao.com/.well-known/jwks.json` (or the publisher's equivalent). Pick the JWK whose `kid` matches the receipt's `kid`. Reject if not found.
+1. **Fetch the JWKS** from `https://sum-demo.ototao.workers.dev/.well-known/jwks.json` (or the publisher's equivalent). Pick the JWK whose `kid` matches the receipt's `kid`. Reject if not found.
 2. **Check revocation**: fetch `/.well-known/revoked-kids.json`. If the receipt's `kid` is in `revoked` and the receipt's `signed_at` ≥ `effective_revocation_at`, reject.
 3. **JCS-canonicalise** `receipt.payload`. (Use `canonicalize` in JS, `sum_engine_internal/infrastructure/jcs.py` in Python — both are byte-identical.)
 4. **Verify the JWS** as detached over those canonical bytes. In Node:
@@ -450,7 +450,7 @@ There is no 404 on this endpoint — absence of an env var produces an empty-lis
 
 ## 8. Operator: configuring a self-hosted Worker
 
-The hosted demo at `sum.ototao.com` is one deployment. To run your own:
+The hosted demo at `sum-demo.ototao.workers.dev` is one deployment. To run your own:
 
 ```bash
 cd worker/
@@ -507,7 +507,7 @@ import { flattenedVerify, importJWK } from "jose";
 import canonicalize from "canonicalize";
 import { createHash } from "node:crypto";
 
-const BASE = "https://sum.ototao.com";
+const BASE = "https://sum-demo.ototao.workers.dev";
 
 async function renderAndVerify(triples, sliders) {
   // 1. Render
@@ -582,7 +582,7 @@ import httpx
 
 def resolve_qids(terms: list[str], lang: str = "en") -> dict[str, str | None]:
     body = {"terms": [{"text": t, "kind": "item", "lang": lang} for t in terms]}
-    r = httpx.post("https://sum.ototao.com/api/qid", json=body, timeout=10.0)
+    r = httpx.post("https://sum-demo.ototao.workers.dev/api/qid", json=body, timeout=10.0)
     r.raise_for_status()
     return {row["text"]: row.get("id") for row in r.json()["resolved"]}
 ```
@@ -593,7 +593,7 @@ def resolve_qids(terms: list[str], lang: str = "en") -> dict[str, str | None]:
 import httpx
 
 def render(triples, sliders) -> dict:
-    r = httpx.post("https://sum.ototao.com/api/render", json={
+    r = httpx.post("https://sum-demo.ototao.workers.dev/api/render", json={
         "triples": triples,
         "slider_position": sliders,
     }, timeout=30.0)

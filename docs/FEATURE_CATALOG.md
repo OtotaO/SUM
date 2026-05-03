@@ -1229,7 +1229,7 @@ Fail-open semantics: an unwritable audit destination does **not** break the oper
 Concurrency: single-line JSONL records under `O_APPEND` on POSIX produce a serialised total ordering across multiple sum processes writing to the same log.
 
 Verify: `pytest Tests/test_audit_log.py -q`
-Expected: `11 passed` — schema pin (required fields, ISO 8601 UTC timestamp), no-writes-when-unset, fail-open on unwritable path, `-` writes to stdout, concurrent appends serialize cleanly, per-operation row shape (attest / verify / render), end-to-end attest→verify→render produces three rows with cross-referenceable axiom counts.
+Expected: `17 passed` — schema pin (required fields, ISO 8601 UTC timestamp), no-writes-when-unset, fail-open on unwritable path, `-` writes to stdout, concurrent appends serialize cleanly, per-operation row shape (attest / verify / render), end-to-end attest→verify→render produces three rows with cross-referenceable axiom counts. Six gap-closure tests added in PR #119: signed-bundle (Ed25519 / HMAC / dual) attest rows, true multi-process O_APPEND atomicity (8 procs × 20 emits = 160 rows; spawn ctx for cross-platform), worker-mode render row schema, empty-string `SUM_AUDIT_LOG=""` treated as unset.
 
 ---
 
