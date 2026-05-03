@@ -28,7 +28,9 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
   `sum.sheaf_v3_2_validation.v1`): F4 (trusted-mean AUC ≥ 0.55)
   PASSES at all γ values tested (γ ∈ {0.0, 0.1, 1.0, auto≈1.0}).
   F5 (no regression vs v3) PASSES at γ ∈ {0, 0.1} (Δ = 0.000,
-  −0.004) but FAILS at γ ∈ {1.0, auto} (Δ = −0.031, −0.033). The
+  −0.004) but FAILS at γ ∈ {1.0, auto} (Δ = −0.031 each — the
+  magnitude-matching γ_auto resolves to 1.0127, effectively the
+  same as the γ=1.0 cell). The
   truth-first reading: deviation's signal-to-noise ratio on this
   corpus is worse than its magnitude suggests; auto-calibration
   via magnitude-matching is wrong here. Optimal γ is small (≤ 0.1).

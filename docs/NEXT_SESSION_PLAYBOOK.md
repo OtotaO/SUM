@@ -168,7 +168,7 @@ Five falsifiable predictions H16-H20 pinned in `Tests/research/test_sheaf_laplac
 | 0.0      | 0.661            | PASS       | 0.000   | PASS           |
 | 0.1      | 0.656            | PASS       | −0.004  | PASS           |
 | 1.0      | 0.630            | PASS       | −0.031  | FAIL           |
-| auto≈1.0 | 0.628            | PASS       | −0.033  | FAIL           |
+| auto (1.0127) | 0.630       | PASS       | −0.031  | FAIL           |
 
 **Honest readings.** F4 PASSES at every γ — F3 STRUCTURAL FAIL closed. F5 PASSES only at small γ (≤ 0.1); the magnitude-matching auto-calibration heuristic is empirically wrong on this corpus. H16 verified at corpus scale: γ = 0 gives trusted-mean AUC = 0.661 byte-identical to v3.
 
