@@ -14,6 +14,10 @@ separate module so users can compose only what they need.
     (Regulation (EU) 2016/679, Article 30); pins the per-row floor
     enabling Art 30 reporting. The controller separately maintains
     record-set-scope metadata (Art 30(1)(a)–(g)) out-of-band.
+  - :mod:`hipaa_164_312_b` — HIPAA Security Rule § 164.312(b)
+    Audit Controls (Technical Safeguards); pins the per-row form
+    requirements for an audit recording that supports examination
+    of activity in systems that contain or use ePHI.
 
 A regime-agnostic ``ValidationReport`` shape lives at
 :mod:`sum_engine_internal.compliance.report` so future validators

@@ -1568,6 +1568,15 @@ _COMPLIANCE_REGIMES: dict[str, str] = {
         "recipients, transfers, retention, security measures) "
         "out-of-band; this validator does not pin those."
     ),
+    "hipaa-164-312-b": (
+        "HIPAA Security Rule 45 CFR § 164.312(b) — Audit Controls "
+        "(Technical Safeguards). Pins the per-row form requirements "
+        "for an audit recording that supports examination of "
+        "activity (schema, timestamp, ISO-8601-UTC, activity type, "
+        "system component identification, per-operation examination "
+        "anchors). Deployment-scope obligations — auditor function, "
+        "retention, ePHI inventory — live outside this validator."
+    ),
 }
 
 
@@ -1583,10 +1592,12 @@ def _compliance_validators():
     from sum_engine_internal.compliance import (  # local import — see docstring
         eu_ai_act_article_12,
         gdpr_article_30,
+        hipaa_164_312_b,
     )
     return {
         "eu-ai-act-article-12": eu_ai_act_article_12.validate,
         "gdpr-article-30": gdpr_article_30.validate,
+        "hipaa-164-312-b": hipaa_164_312_b.validate,
     }
 
 

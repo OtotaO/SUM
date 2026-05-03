@@ -198,9 +198,15 @@ Five falsifiable predictions H16-H20 pinned in `Tests/research/test_sheaf_laplac
 
 **Truth-first scope.** GDPR Art 30 splits into per-row scope (visible in audit log: schema, timestamp, operation, cli_version) and record-set scope (Art 30(1)(a)–(g) controller-level metadata: controller name, purposes, categories of data subjects + personal data, recipients, transfers, retention, security measures — must be maintained by the controller out-of-band). The validator pins the per-row floor; the record-set scope is named explicitly in `docs/COMPLIANCE_GDPR_ARTICLE_30.md` §"What this validator does NOT pin", along with Art 30(4) availability, Art 30(5) exemption assessment, and Art 6 lawful-basis verification.
 
-**Future regimes (record-keeping shape).** Adding HIPAA § 164.312(b) audit controls, SOC 2 CC7.2 system monitoring, ISO/IEC 27001:2022 A.8.15 logging, or PCI DSS 4.0 Req 10 follows the same template: new module, register in `_COMPLIANCE_REGIMES` + `_compliance_validators()`, wire-spec doc, test file. C1/C2/C3 contracts inherit automatically. (HIPAA § 164.514 de-identification is a structurally different regime — transformation rules rather than record-keeping — and belongs in a separate PR family.)
+**Subsequent regimes shipped (record-keeping shape, same template).**
 
-**Proof-boundary outcome.** TODO: §1.10 of [`docs/PROOF_BOUNDARY.md`](PROOF_BOUNDARY.md) ought to be updated to record GDPR Art 30 as a second-instance proof of regime-agnosticism. (Same TODO pattern as v3.2 in Priority 9.)
+- **HIPAA Security Rule 45 CFR § 164.312(b) Audit Controls** — third regime, closed by PR #131 (2026-05-03). Six rules R1–R6 (schema-pinned, timestamp-present, timestamp-iso8601-utc, activity-type-recorded, system-component-identified, examination-completeness). 27 tests. R6 overlaps in shape with Art 12 R4–R6 (operation-specific anchors); rule_ids stay regime-specific. `docs/COMPLIANCE_HIPAA_164_312_B.md` names deployment-scope out-of-scope (auditor function, retention, ePHI inventory, user identification, surrounding access-control safeguards).
+
+**Future regimes still queued (same template).** SOC 2 Trust Services Criteria CC7.2 (system monitoring), ISO/IEC 27001:2022 A.8.15 (logging), PCI DSS 4.0 Requirement 10 (log and monitor access). Each adds a module + dispatch entry + tests + wire-spec doc; C1/C2/C3 contracts inherit automatically. **Different shape, separate PR family** (out of scope for this priority): HIPAA § 164.514 de-identification (transformation rules), EU AI Act Art 13 / 16 / 50 (transparency / QMS / disclosure).
+
+**Substrate held for a third time.** With three record-keeping regimes consuming `sum.compliance_report.v1` without shape modification, regime-agnosticism is no longer a "second-instance proof" assertion — it's a regularity. A future PR may extract a shared predicate library (operation-specific anchors recur across HIPAA R6 and Art 12 R4–R6) once 4+ regimes confirm the overlap.
+
+**Proof-boundary outcome.** TODO: §1.10 of [`docs/PROOF_BOUNDARY.md`](PROOF_BOUNDARY.md) ought to be updated to record GDPR Art 30 + HIPAA § 164.312(b) as second- and third-instance proofs of regime-agnosticism. (Same TODO pattern as v3.2 in Priority 9.)
 
 ### Priority 3 — Activate `sha256_128_v2`
 
