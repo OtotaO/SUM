@@ -498,13 +498,79 @@ A render whose interior matches the harmonic extension is
     on a weight vector that the caller has built from a
     trusted/revoked partition; mapping receipts → JWKS-verified
     edges is the caller's responsibility (see v3 §3.4 same point).
-  - **Empirical hallucination-detection ROC bench using boundary
-    deviation.** Synthetic-data utility test (H12) is pinned;
-    corpus-scale ROC analogous to PR #114's v2.2 bench is a
-    follow-up.
   - **Adaptive threshold for "deviation > θ → hallucination".**
     Decision threshold is calibrated per-corpus; v3.1 ships the
     primitive, not the threshold.
+
+### 3.4.2 Corpus-scale ROC bench (2026-05-02) — what we measured
+
+The v3 bench at `scripts/research/sheaf_v3_roc_bench.py` runs all
+three detectors (v2.2 baseline, v3 receipt-weighted, v3.1 boundary
+deviation) over the 16-document `seed_long_paragraphs` corpus
+under deterministic 50/50 trust partitioning per doc. Receipt
+JSON: `fixtures/bench_receipts/v3_roc_bench_2026-05-02.json`.
+
+**Headline AUC numbers (mean across runs; ±0.02 LAPACK jitter):**
+
+| Class × target | v2.2 | v3 | v3.1 |
+|---|---|---|---|
+| A1 entity-swap @ trusted   | 0.62 | 0.63 | 0.50 |
+| A1 entity-swap @ untrusted | 0.60 | 0.69 | 0.37 |
+| A2 predicate-flip @ trusted    | 0.50 | 0.50 | 0.50 |
+| A2 predicate-flip @ untrusted  | 0.50 | 0.50 | 0.50 |
+| A4 triple-drop @ trusted   | 0.86 | 0.94 | 0.50 |
+| A4 triple-drop @ untrusted | 0.84 | 0.97 | 0.20 |
+
+**Three falsification verdicts (named in code):**
+
+  - **F1 MARGINAL.** v3 mean AUC on trusted-target (0.685) vs
+    v2.2 mean (0.663): $\Delta = +0.022$. v3 is slightly better
+    than v2.2 on trusted-target perturbations, but the margin is
+    inside the noise floor. The H4 hypothesis ("trust amplifies
+    signal") holds dramatically on synthetic-data H4 (10/10 wins,
+    ~10× ratio) but only marginally at corpus scale on
+    `seed_long_paragraphs`.
+
+  - **F2 PASS.** v3 doesn't collapse on untrusted-target — no
+    class drops more than 0.10 from v2.2. The 0.1 default weight
+    is a viable floor for naturalistic-prose corpora.
+
+  - **F3 FAIL.** v3.1 boundary-deviation mean AUC: 0.50 on
+    trusted, 0.34 on untrusted. **Synthetic H12 passed
+    (`test_boundary_deviation_detects_interior_tampering`);
+    corpus-scale FAILS.** This is a real falsification of v3.1's
+    utility on naturalistic prose with random 50/50 partitioning.
+
+  Likely causes for the F3 failure (open hypotheses for v3.2):
+  - Per-doc graphs are small (5–10 triples). 50/50 partition
+    leaves ~3 trusted edges → `boundary_from_weights` often
+    returns degenerate boundaries (full or empty), forcing the
+    fallback path.
+  - The cochain-construction `cochain_one_hot_v2` may not produce
+    a meaningful boundary embedding when most boundary vertices
+    are zero-vectors (vertices not in the trained vocabulary
+    via the per-doc sub-vocabulary).
+  - Random 50/50 partition is harsh: real-world deployments would
+    have receipt distributions concentrated by source (e.g.,
+    one document = one issuer = uniform trust within the doc).
+
+  **F3 directs the v3.2 work**: the boundary-inference primitive
+  is mathematically correct (proven by the synthetic H12 pin) but
+  its practical utility requires either (a) larger graphs, (b)
+  better cochain construction at vertex boundaries, or (c)
+  corpus selection where the trust partition is structurally
+  meaningful rather than random. A future v3.2 should test (a)
+  and (b) explicitly; a future deployment study should test (c).
+
+  Calling F3 a FAIL rather than a TODO is the truth-first
+  discipline: the bench surfaced a finding the synthetic tests
+  could not, and burying it under "future work" would be
+  dishonest about the current state. **Synthetic-data utility
+  testing is necessary but not sufficient for category-defining
+  software.**
+
+This is the corpus-scale bench v3 listed as "out-of-scope" at PR
+#121. v3.X work continues from here.
 
 ### 3.5 Output shape
 
