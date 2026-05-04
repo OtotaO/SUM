@@ -240,13 +240,9 @@ The sprint, ordered by dependency:
 
 Receipt rebase: 2026-05-02 receipts deleted; new ones dated 2026-05-03 with natural-determinism digests. The `reproducibility_requires` field is removed; the spec doc, playbook, and CHANGELOG sections caveating PYTHONHASHSEED=0 are superseded by this closure. Substantive verdicts unchanged across all three benches (F4/F5 thresholds unaffected).
 
-### Sprint 2 — fastapi tech-debt sweep
+### Sprint 2 — fastapi tech-debt sweep (CLOSED 2026-05-03)
 
-**Why.** The full pytest run reports 30 collection errors from `quantum_main.py` etc. using fastapi's deprecated `on_startup` argument removed in 0.110+. These errors aren't blocking work but they're noise that obscures genuine regressions. Six modules affected: `test_browser_extension.py`, `test_phase13_zenith.py`, `test_phase14_ouroboros.py`, `test_phase15_abi.py`, `test_semantic_dedup.py`, `test_state_encoding.py`.
-
-**Work.** Either (a) pin `fastapi<0.110` in `pyproject.toml` with documented rationale, or (b) migrate the affected `APIRouter(prefix=..., on_startup=[...])` call sites to `lifespan=` async context-manager pattern. Option (b) is the right fix; option (a) is the fast fix.
-
-**Success criterion.** Full pytest reports 0 collection errors. The 2 known concurrency-safety failures stay (separate concern); everything else is clean.
+**Status: closed.** Root cause turned out to be a fastapi/starlette mismatch, not deprecated `on_startup` use in our code: starlette 1.0.0 removed the `on_startup=` / `on_shutdown=` parameters but fastapi 0.115.x still passes empty defaults through. Fix: pin `starlette<1.0` in `requirements-prod.txt`. 98 previously-erroring tests now pass cleanly; full pytest reports 0 collection errors. Revisit when fastapi releases a starlette-1.x-compatible version.
 
 ### Sprint 3 — Shared compliance predicate library
 

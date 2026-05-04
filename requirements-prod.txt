@@ -1,5 +1,14 @@
 # SUM Quantum Knowledge OS — Production Dependencies
 fastapi>=0.100.0
+# Starlette pin (Sprint 2 of the intensification path to arXiv).
+# Starlette 1.0.0 removed Router(on_startup=, on_shutdown=) in favour
+# of lifespan=. fastapi 0.115.x still passes on_startup=[]/on_shutdown=[]
+# defaults to its starlette parent, so fastapi+starlette-1.0 throws
+# `Router.__init__() got an unexpected keyword argument 'on_startup'`
+# at every APIRouter() construction. Pin until fastapi releases a
+# starlette-1.x-compatible version; revisit when the bound below
+# stops resolving.
+starlette<1.0
 uvicorn>=0.23.0
 pydantic>=2.0.0
 openai>=1.40.0,<3.0.0

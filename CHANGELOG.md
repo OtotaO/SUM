@@ -4,6 +4,27 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **fastapi/starlette compatibility pin (Sprint 2 of the
+  intensification path to arXiv).** Full pytest run previously
+  reported 30 collection errors from six modules
+  (`test_browser_extension`, `test_phase13_zenith`,
+  `test_phase14_ouroboros`, `test_phase15_abi`,
+  `test_semantic_dedup`, `test_state_encoding`) that all import
+  through `quantum_main` → `api/quantum_router`. The error
+  signature was `Router.__init__() got an unexpected keyword
+  argument 'on_startup'` at every `APIRouter()` construction.
+  Root cause: a fastapi/starlette mismatch — starlette 1.0.0
+  removed `on_startup=` / `on_shutdown=` parameters in favour of
+  `lifespan=`, but fastapi 0.115.x still passes empty defaults
+  through to its starlette parent. Fix: pin `starlette<1.0` in
+  `requirements-prod.txt` until fastapi ships a starlette-1.x-
+  compatible release.
+
+  Result: 98 previously-erroring tests now pass cleanly. Full
+  pytest reports 0 collection errors. The 2 known
+  `test_concurrency_safety.py` flakes remain (separate concern,
+  unrelated to fastapi).
+
 - **Bench-digest substrate determinism (Sprint 1 of the
   intensification path to arXiv).** Every bench in the repo
   (`v3_roc_bench`, `sheaf_v3_1_f3_diagnostic`, `sheaf_v3_2_validation`)
