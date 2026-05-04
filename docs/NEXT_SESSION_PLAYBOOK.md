@@ -176,7 +176,7 @@ Five falsifiable predictions H16-H20 pinned in `Tests/research/test_sheaf_laplac
 
 **v3.3 candidate directions** (named, not investigated): per-doc graph-structure-aware γ (use deviation only where L_IB has high mass); cochain redesign that propagates render content into interior; A2 weakness via predicate-perturbation negative sampling.
 
-**Proof-boundary outcome.** §2.9 of [`docs/PROOF_BOUNDARY.md`](PROOF_BOUNDARY.md) ought to be updated to record v3.2 as a measured detection capability with the F4/F5 verdicts; v3.1 row's F3 STRUCTURAL FAIL remains in the table as historical record. (TODO: explicit edit not yet applied; do it as part of next doc-pass.)
+**Proof-boundary outcome (CLOSED 2026-05-03).** §2.9 of [`docs/PROOF_BOUNDARY.md`](PROOF_BOUNDARY.md) updated under v1.6.0 — v3.2 row added with F4/F5 verdicts; v3.1's F3 STRUCTURAL FAIL preserved as historical record alongside v3.2's detector-layer closure; F1/F2/F3/F4/F5 verdict ladder pinned across the three receipts.
 
 ### Priority 10 — arXiv preprint v0.1 (substrate has accumulated material)
 
@@ -284,7 +284,7 @@ Receipt rebase: 2026-05-02 receipts deleted; new ones dated 2026-05-03 with natu
 
 **Substrate held for a third time.** With three record-keeping regimes consuming `sum.compliance_report.v1` without shape modification, regime-agnosticism is no longer a "second-instance proof" assertion — it's a regularity. A future PR may extract a shared predicate library (operation-specific anchors recur across HIPAA R6 and Art 12 R4–R6) once 4+ regimes confirm the overlap.
 
-**Proof-boundary outcome.** TODO: §1.10 of [`docs/PROOF_BOUNDARY.md`](PROOF_BOUNDARY.md) ought to be updated to record GDPR Art 30 + HIPAA § 164.312(b) as second- and third-instance proofs of regime-agnosticism. (Same TODO pattern as v3.2 in Priority 9.)
+**Proof-boundary outcome (CLOSED 2026-05-03).** §1.10 of [`docs/PROOF_BOUNDARY.md`](PROOF_BOUNDARY.md) updated under v1.6.0 — all six regime instances are now in the §1.10 table (EU AI Act Art 12 / GDPR Art 30 / HIPAA § 164.312(b) / ISO 27001 A.8.15 / SOC 2 CC7.2 / PCI DSS v4.0 Req 10), each with statute citation, rule count, and test count. The regime-agnosticism claim is now empirical fact (six-way byte-shape parity verified in `Tests/compliance/test_<regime>.py`) rather than single-instance assertion.
 
 ### Priority 3 — Activate `sha256_128_v2`
 

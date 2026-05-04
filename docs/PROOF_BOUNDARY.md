@@ -1,7 +1,9 @@
 # Proof Boundary
 
-**Version:** 1.5.0
-**Date:** 2026-05-02
+**Version:** 1.6.0
+**Date:** 2026-05-03
+
+**v1.6.0 changes (2026-05-03):** §1.10 expanded — six per-regime compliance validators (EU AI Act Art 12, GDPR Art 30, HIPAA § 164.312(b), ISO 27001 A.8.15, SOC 2 CC7.2, PCI DSS v4.0 Req 10) consuming `sum.compliance_report.v1` without shape modification; the regime-agnosticism claim is now empirical fact, not single-instance assertion. §2.9 expanded — v3.2 detector closes F3 STRUCTURAL FAIL at the detector layer (PR #127); F1 / F2 / F3 / F4 / F5 verdict ladder pinned. §2.10 updated — Sprint 1 (PR #135) closed the `PYTHONHASHSEED=0` reproducibility caveat at the substrate layer (single-line `sorted(set(triplets))` fix in the deterministic sieve); bench reproducibility is now unconditional. Reflects substrate state at HEAD `86b2ed3` after PRs #117–#138 (Path 3 actionable layer + bench-substrate intensification arc).
 
 **v1.5.0 changes (2026-05-02):** §1.9 added (audit-log primitive, v0.5.0 substrate), §1.10 added (compliance report shape), §2.9 added (sheaf-Laplacian detector measurements with F3 STRUCTURAL FAIL named explicitly), §2.10 added (`bench_digest` reproducibility under quantization). Reflects substrate state at HEAD `bb7957d` after PRs #117–#125.
 
@@ -138,11 +140,22 @@ Both runtimes MUST produce byte-identical outcomes on every fixture: same error 
 
 ### 1.10. Compliance Report Schema and Regime-Agnostic Aggregation (Path 3 actionable layer)
 
-**Claim:** Every per-regime validator on top of `sum.audit_log.v1` returns a `sum.compliance_report.v1` `ValidationReport` carrying schema, regime id, rows examined, and a list of typed `Violation` records (rule_id, row_index, operation, message, row). The shape is regime-agnostic; downstream consumers (CLI, dashboard, retention pipeline) ingest reports across regimes without per-regime adapters.
+**Claim:** Every per-regime validator on top of `sum.audit_log.v1` returns a `sum.compliance_report.v1` `ValidationReport` carrying schema, regime id, rows examined, and a list of typed `Violation` records (rule_id, row_index, operation, message, row). The shape is **regime-agnostic** — six per-regime validators across statutorily distinct domains all consume the same shape without modification. Downstream consumers (CLI, dashboard, retention pipeline) ingest reports across regimes without per-regime adapters.
 
-**Proof mechanism:** Dataclass shape pinned in [`sum_engine_internal/compliance/report.py`](../sum_engine_internal/compliance/report.py) (frozen). [`Tests/compliance/test_eu_ai_act_article_12.py`](../Tests/compliance/test_eu_ai_act_article_12.py) — **27 / 27 pass** — exercises the report shape end-to-end including `to_dict` schema string, `violations_by_rule` aggregation, and per-`Violation` row_index correctness. The `sum compliance check --regime <id> --audit-log <path>` CLI verb wraps the validator and exits 0 iff `ok=true`, 1 otherwise (pipe-friendly for CI gates).
+**Six regime instances proving the regime-agnosticism claim** (each with its own statutory anchor + falsifiable rule set; none required schema changes to `sum.compliance_report.v1`):
 
-**Boundary:** Adding a new regime is a new module under `sum_engine_internal/compliance/<regime>.py` exposing `validate(rows) -> ValidationReport`. Existing `rule_id` strings are stable; downstream dashboards may filter on them.
+| Regime | Statute | Rules | Tests |
+|---|---|---|---|
+| `eu-ai-act-article-12` | Reg (EU) 2024/1689 Art 12 (high-risk AI record-keeping) | 6 (R1–R6 + operation-specific anchors) | 32 |
+| `gdpr-article-30` | Reg (EU) 2016/679 Art 30 (Records of Processing Activities) | 5 (per-row floor) | 25 |
+| `hipaa-164-312-b` | 45 CFR § 164.312(b) (Audit Controls) | 6 (per-row floor + examination-completeness) | 27 |
+| `iso-27001-8-15` | ISO/IEC 27001:2022 A.8.15 (Logging) | 5 (per-row floor) | 19 |
+| `soc-2-cc-7-2` | AICPA TSP §100A CC7.2 (System Operations) | 5 (per-row floor) | 19 |
+| `pci-dss-4-req-10` | PCI DSS v4.0 Req 10 (Log and Monitor) | 6 (per-row floor + examination-completeness) | 25 |
+
+**Proof mechanism:** Dataclass shape pinned in [`sum_engine_internal/compliance/report.py`](../sum_engine_internal/compliance/report.py) (frozen). Each regime's test file (`Tests/compliance/test_<regime>.py`) carries a `test_validation_report_shape_matches_other_regimes` test that asserts byte-shape parity across all currently-shipped regimes — when PCI DSS landed, that test asserted six-way parity with one assertion. [`Tests/compliance/test_cli_dispatch.py`](../Tests/compliance/test_cli_dispatch.py) pins three cross-regime substrate contracts: (C1) `_COMPLIANCE_REGIMES` description registry keys ≡ `_compliance_validators()` dispatch registry keys; (C2) every regime returns `sum.compliance_report.v1` from `cmd_compliance_check`; (C3) exit codes 0 / 1 / 2 (ok / violations / usage error). Shared timestamp predicate at [`sum_engine_internal/compliance/_predicates.py`](../sum_engine_internal/compliance/_predicates.py) (PR #137 Sprint 3) — six regime modules import from one source; pinned in [`Tests/compliance/test_predicates.py`](../Tests/compliance/test_predicates.py) via object-identity check. Total compliance suite **164 / 164 pass**.
+
+**Boundary:** Adding a new regime is a new module under `sum_engine_internal/compliance/<regime>.py` exposing `validate(rows) -> ValidationReport` plus dispatch entries in both registries. Existing `rule_id` strings are stable; downstream dashboards filter on them. **A green `ValidationReport` says the per-row form floor is satisfied** for that regime's record-keeping requirements; it does NOT prove operational compliance with the regime as a whole. Each regime's wire-spec doc (`docs/COMPLIANCE_<REGIME>.md`) names what's out of scope: organisational policies, retention duration, log file protection, review processes, user identification (PCI DSS structural gap, named explicitly), failure detection / alerting, etc.
 
 ---
 
@@ -473,36 +486,56 @@ The `scripts/bench/` directory contains the measurement-first infrastructure tha
 - **CI regression detection** compares each new report against the most recent history entry; `--fail-on-regression` exits non-zero on any F1 drop > 0.02, drift increase > 1%, FActScore drop > 0.03, or p99 ratio > 1.15.
 - **LLM-gated runners** (`regeneration.py`, `roundtrip.py`, `llm_roundtrip.py`) require a pinned snapshot ID (e.g. `gpt-4o-mini-2024-07-18`). The harness reads `SUM_BENCH_MODEL` as the single default applied to every role; per-role overrides `SUM_BENCH_FACTSCORE_MODEL`, `SUM_BENCH_MINICHECK_MODEL`, `SUM_BENCH_GENERATOR_MODEL`, and `SUM_BENCH_EXTRACTOR_MODEL` take precedence when set. Unpinned or missing identifiers raise `SystemExit` before any work begins.
 
-### 2.9. Sheaf-Laplacian Hallucination Detector (v1 / v2.x / v3 / v3.1)
+### 2.9. Sheaf-Laplacian Hallucination Detector (v1 / v2.x / v3 / v3.1 / v3.2)
 
-**Claim:** Sheaf-Laplacian quadratic forms over render manifolds detect specific perturbation classes (A1 entity-swap, A2 predicate-flip, A3 off-graph fabrication, A4 triple-drop) at measurable AUC on the `seed_long_paragraphs` corpus (16 docs, 120 source triples). v3 receipt-weighted detector improves on v2.2 baseline; v3.1 boundary deviation has a **structural blind spot** at corpus scale.
+**Claim:** Sheaf-Laplacian quadratic forms over render manifolds detect specific perturbation classes (A1 entity-swap, A2 predicate-flip, A3 off-graph fabrication, A4 triple-drop) at measurable AUC on the `seed_long_paragraphs` corpus (16 docs, 120 source triples). v3 receipt-weighted detector improves on v2.2 baseline; v3.1 boundary deviation has a **structural blind spot** at corpus scale; **v3.2 closes the F3 STRUCTURAL FAIL at the detector layer** by combining v3's weighted Laplacian energy with v3.1's harmonic-extension deviation as a complementary signal.
 
-**Math foundation:** Hansen-Ghrist 2019 (arXiv:1808.01513), Gebhart-Hansen-Schrater 2023 (AISTATS, arXiv:2110.03789). Mechanically pinned: symmetric-PSD Laplacian, factored quadratic form equivalent to materialized matrix form, ‖δx‖² = x^T L x to floating-point precision (87 / 87 tests in [`Tests/research/test_sheaf_laplacian_v3.py`](../Tests/research/test_sheaf_laplacian_v3.py) and [`Tests/research/test_sheaf_laplacian_v2.py`](../Tests/research/test_sheaf_laplacian_v2.py)).
+**Math foundation:** Hansen-Ghrist 2019 (arXiv:1808.01513), Gebhart-Hansen-Schrater 2023 (AISTATS, arXiv:2110.03789). Mechanically pinned: symmetric-PSD Laplacian, factored quadratic form equivalent to materialized matrix form, ‖δx‖² = x^T L x to floating-point precision; v3.2 subsumption (γ=0 ≡ v3) byte-identical; H16–H20 universal-quantifier claims via Hypothesis property tests. Total research suite covering math + falsifiability **88 / 88 tests pass** (across `Tests/research/test_sheaf_laplacian_v{2,3,32}.py` + `test_sheaf_laplacian_v32_property.py`).
 
-**Measurement (PR #114 v2.2 ROC bench, PR #124 v3 ROC bench, PR #125 F3 diagnostic):**
+**Measurement (PR #114 v2.2 ROC bench, PR #124 v3 ROC bench, PR #125 F3 diagnostic, PR #127 v3.2 closure, PR #135 substrate-determinism rebase):**
 
 | Detector | A1 | A2 | A3 | A4 | Notes |
 |---|---|---|---|---|---|
 | v2.2 baseline | 0.62 | 0.50 | 1.00 | 0.86 | A2 predicate-flip is at chance — known v2.x weakness; needs predicate-perturbation negative sampling in training |
-| v3 receipt-weighted | 0.66 | 0.50 | — | **0.97** | **+10.7% AUC on A4** is the standout. F1 (trusted-side amplification): MARGINAL (Δ=+0.022 mean AUC). F2 (no untrusted collapse): PASS. |
-| v3.1 boundary deviation | 0.50 | 0.50 | — | 0.50 | **F3 STRUCTURAL FAIL** (PR #125 diagnostic): 8 / 8 cells of the 2×2×2 hypothesis sweep FAIL. Mathematical blind spot for boundary perturbations. |
+| v3 receipt-weighted | 0.66 | 0.50 | — | **0.97** | **+10.7% AUC on A4** is the standout. F1 (trusted-side amplification): MARGINAL (Δ≈+0.034 mean AUC under post-Sprint-1 substrate). F2 (no untrusted collapse): PASS. |
+| v3.1 boundary deviation | 0.50 | 0.50 | — | 0.50 | **F3 STRUCTURAL FAIL** (PR #125 diagnostic): 8 / 8 cells of the 2×2×2 hypothesis sweep FAIL. Mathematical blind spot for boundary perturbations when `L_IB = 0`. |
+| **v3.2 combined** (γ=0.1) | — | — | — | — | **F4 PASS / F5 PASS at γ ≤ 0.1.** Trusted-mean AUC = **0.659** (vs v3 = 0.663; Δ = −0.004, well within F5's −0.02 tolerance). At γ = 0 reduces byte-identically to v3 (subsumption). At γ → 1.0 the magnitude-matching auto-calibration overweights deviation and F5 fails (Δ = −0.028); optimal γ on this corpus is small. |
+
+**F1 / F2 / F3 / F4 / F5 verdict ladder pinned across the receipts:**
+- **F1** (v3 trusted-mean ≥ v2.2 trusted-mean by ≥ 0.04): MARGINAL — Δ=+0.034 post-Sprint-1.
+- **F2** (no class drops by >0.10 from v22 to v3 on untrusted): PASS — 0 / 3 classes collapse.
+- **F3** (v3.1 standalone deviation trusted-mean ≥ 0.55): **FAIL by mathematical necessity** — 0.499. The `L_IB = 0` topology defeats the harmonic-extension signal; this is structural, not parametric.
+- **F4** (v3.2 combined trusted-mean ≥ 0.55): **PASS at every γ tested** (γ ∈ {0, 0.1, 1.0, auto}) — 0.635 to 0.663.
+- **F5** (v3.2 trusted-mean ≥ v3 trusted-mean − 0.02): **PASS at γ ≤ 0.1**, FAIL at γ > 0.5. Calibration finding: deviation's signal-to-noise ratio is below what its magnitude suggests; on this corpus it functions as a small modulator, not a co-leader.
 
 **Boundary — what is and is not proved:**
-- **Math primitives** (symmetric-PSD, factored equality, weighted form linearity, harmonic-extension defining property H7) are mechanically pinned in §1-equivalent fashion within the [research] extras.
+- **Math primitives** (symmetric-PSD, factored equality, weighted form linearity, harmonic-extension defining property H7, v3.2 subsumption / fall-back / no-λ-double-counting H16–H20) are mechanically pinned in §1-equivalent fashion within the `[research]` extras. The library API is documented at [`docs/SHEAF_LIBRARY_API.md`](SHEAF_LIBRARY_API.md) (PR #138).
 - **Detection AUC** is measured on a single fixed corpus (n=16). The numbers above are not generalised claims; they apply to `seed_long_paragraphs` under the current trained sheaf, λ_auto, and seed-controlled perturbation harness. Cross-corpus generalisation is unmeasured.
-- **F3 STRUCTURAL FAIL** is named explicitly: v3.1's boundary deviation cannot distinguish clean from perturbed when the perturbation's vertices lie on the trust-frame boundary (mathematical necessity per [`docs/SHEAF_HALLUCINATION_DETECTOR.md`](SHEAF_HALLUCINATION_DETECTOR.md) §3.4.3). v3.2 must redesign, not parameter-sweep.
-- **Receipt:** [`fixtures/bench_receipts/v3_roc_bench_2026-05-03.json`](../fixtures/bench_receipts/v3_roc_bench_2026-05-03.json) and [`fixtures/bench_receipts/v3_1_f3_diagnostic_2026-05-03.json`](../fixtures/bench_receipts/v3_1_f3_diagnostic_2026-05-03.json) carry the per-cell AUCs and `bench_digest` SHA-256 (JCS-canonical, RFC 8785) for reproducibility.
+- **F3 STRUCTURAL FAIL of v3.1 standalone deviation** is named explicitly and remains true at the v3.1 layer — the harmonic-extension signal is mathematically blind under `L_IB = 0` topology. v3.2 closes the *detector-layer* problem by combining with v_laplacian_w (which is informative anywhere on the graph); it does NOT make v3.1's standalone-deviation signal informative.
+- **A2 predicate-flip is at chance across every detector** (v22 / v3 / v3.1 / v3.2). Known structural gap; addressing it requires predicate-perturbation negative sampling at training time, orthogonal to the v3.x detector arc.
+- **Receipt:** [`fixtures/bench_receipts/v3_roc_bench_2026-05-03.json`](../fixtures/bench_receipts/v3_roc_bench_2026-05-03.json), [`fixtures/bench_receipts/v3_1_f3_diagnostic_2026-05-03.json`](../fixtures/bench_receipts/v3_1_f3_diagnostic_2026-05-03.json), and [`fixtures/bench_receipts/v3_2_validation_2026-05-03.json`](../fixtures/bench_receipts/v3_2_validation_2026-05-03.json) carry per-cell AUCs and `bench_digest` SHA-256 (JCS-canonical, RFC 8785) for reproducibility. Post-Sprint-1 (PR #135) the digests reproduce **unconditionally** across Python invocations — see §2.10.
 
-### 2.10. Bench Reproducibility Digest (`bench_digest`, PR #125)
+### 2.10. Bench Reproducibility Digest (`bench_digest`, PR #125 + PR #135 substrate-determinism rebase)
 
-**Claim:** Quantized JCS-canonical SHA-256 over a research-bench `DiagnosticReport` is byte-stable across runs on the same machine + same code (LAPACK threading inside `np.linalg.lstsq` introduces ~±0.02 AUC jitter; quantization to 3 decimals on AUCs and 4 on diagnostic floats absorbs it).
+**Claim:** Quantized JCS-canonical SHA-256 over a research-bench `DiagnosticReport` is byte-stable across runs on the same machine + same code. Post-Sprint-1 (PR #135) reproducibility is **unconditional** — no environment-variable manipulation required. LAPACK threading inside `np.linalg.lstsq` introduces ~±0.02 AUC jitter; quantization to 3 decimals on AUCs and 4 on diagnostic floats absorbs it.
 
-**Proof mechanism:** [`Tests/research/test_sheaf_v3_1_f3_diagnostic.py::test_v3_1_f3_diagnostic_digest_is_quantization_stable`](../Tests/research/test_sheaf_v3_1_f3_diagnostic.py) — runs the diagnostic twice in-process, asserts `report1.bench_digest == report2.bench_digest`. JCS canonicalization is the project's own [`sum_engine_internal/infrastructure/jcs.py`](../sum_engine_internal/infrastructure/jcs.py) (RFC 8785 — same canonicalization the trust loop uses for CanonicalBundle and `render_receipt.v1`).
+**Proof mechanism:** Three layers compose to give the unconditional reproducibility:
+
+1. **In-process digest stability** — [`Tests/research/test_sheaf_v3_1_f3_diagnostic.py::test_v3_1_f3_diagnostic_digest_is_quantization_stable`](../Tests/research/test_sheaf_v3_1_f3_diagnostic.py) runs the diagnostic twice in-process, asserts `report1.bench_digest == report2.bench_digest`. Pinned since PR #125.
+
+2. **Cross-invocation digest stability** — three benches (`scripts/research/sheaf_v3_roc_bench.py`, `sheaf_v3_1_f3_diagnostic.py`, `sheaf_v3_2_validation.py`) each produce **identical `bench_digest`** when run three times in fresh Python processes without `PYTHONHASHSEED=0` (verified during PR #135). The earlier `reproducibility_requires: "PYTHONHASHSEED=0"` field on the v3.2 receipt was removed when the load-bearing site (`DeterministicSieve.extract_triplets` returning `list(set(triplets))` whose iteration order was hash-randomized) was fixed by `sorted(set(triplets))`.
+
+3. **Canonicalization** — JCS canonicalization is the project's own [`sum_engine_internal/infrastructure/jcs.py`](../sum_engine_internal/infrastructure/jcs.py) (RFC 8785 — the same canonicalization the trust loop uses for `CanonicalBundle` and `render_receipt.v1`). The digest is computed over a quantized payload; quantization is what makes the digest stable across LAPACK jitter. The on-disk receipt's `bench_digest` field documents the value an external reader can verify.
+
+**Current digests (post-Sprint-1):**
+- `fixtures/bench_receipts/v3_2_validation_2026-05-03.json` — `b4d26c01d4962fa30f67c00313bbce8982ca16e3a97df34819747876ee14ed5a`
+- `fixtures/bench_receipts/v3_1_f3_diagnostic_2026-05-03.json` — `62b6e1878d1d12f36eb80e301304854a1a2c03386f0e872850d3461b2f733e7c`
+- `fixtures/bench_receipts/v3_roc_bench_2026-05-03.json` — no digest field; AUCs reproducible directly via deterministic sieve
 
 **Boundary:** Three intended uses, each with its own surface:
-1. **Reproducibility canary** — same machine, same code → same digest. Drift indicates upstream change.
-2. **Cross-runtime witness** — when (if) a future Node/browser port of v3 / v3.1 reproduces these AUCs, the matching digest is the K-style portability proof. Not yet measured (no Node port exists for these detectors).
-3. **Signable bench artifact** — the digest can be Ed25519-signed with the project's existing JWKS keys; an arXiv preprint or external review can cite the digest, and readers re-running the bench verify their digest matches. Not yet exercised (no signed bench artifact has been published).
+1. **Reproducibility canary** — same machine, same code → same digest. Drift indicates upstream change. **Now unconditional** (no env-var requirement).
+2. **Cross-runtime witness** — when (if) a future Node/browser port of v3 / v3.1 / v3.2 reproduces these AUCs, the matching digest is the K-style portability proof. Not yet measured (no Node port exists for these detectors).
+3. **Signable bench artifact** — the digest can be Ed25519-signed with the project's existing JWKS keys; an arXiv preprint or external review can cite the digest, and readers re-running the bench verify their digest matches. The arXiv preprint (Sprint 7) will exercise this for the first time.
 
 The digest is the *only* claim of bit-stable cross-run reproducibility for these benches; it does NOT address cross-machine reproducibility (different LAPACK builds, different numpy versions). Cross-machine reproducibility is unmeasured.
 
