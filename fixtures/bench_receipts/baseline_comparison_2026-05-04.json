@@ -1,0 +1,35 @@
+{
+  "baselines": [
+    "b1_entity_presence_deficit",
+    "b2_jaccard_distance"
+  ],
+  "bench_digest": "cb32c617a3c692bc03bff49d85ae20e424c46cbb9ff47f9ea02285a90fd34e3b",
+  "corpus": "seed_long_paragraphs",
+  "method_notes": "B1 = 1 - recall of source entities in rendered triples. B2 = 1 - jaccard(source_entities, rendered_entities). Both pure set ops on entity sets; predicates excluded. Inputs are the same (clean, perturbed) triple-set pairs the v3.x detectors consume (same partition_trust + perturb_a* harness from sheaf_v3_roc_bench).",
+  "n_docs_total": 16,
+  "n_docs_with_partition": 16,
+  "per_cell_auc": {
+    "b1_entity_presence_deficit|A1|trusted": 0.9732142857142857,
+    "b1_entity_presence_deficit|A1|untrusted": 0.96875,
+    "b1_entity_presence_deficit|A2|trusted": 0.5,
+    "b1_entity_presence_deficit|A2|untrusted": 0.5,
+    "b1_entity_presence_deficit|A4|trusted": 1.0,
+    "b1_entity_presence_deficit|A4|untrusted": 0.984375,
+    "b2_jaccard_distance|A1|trusted": 1.0,
+    "b2_jaccard_distance|A1|untrusted": 1.0,
+    "b2_jaccard_distance|A2|trusted": 0.5,
+    "b2_jaccard_distance|A2|untrusted": 0.5,
+    "b2_jaccard_distance|A4|trusted": 1.0,
+    "b2_jaccard_distance|A4|untrusted": 0.984375
+  },
+  "perturbation_classes": [
+    "A1",
+    "A2",
+    "A4"
+  ],
+  "schema": "sum.sheaf_baseline_comparison.v1",
+  "trusted_mean_auc_by_baseline": {
+    "b1_entity_presence_deficit": 0.8244047619047619,
+    "b2_jaccard_distance": 0.8333333333333334
+  }
+}
