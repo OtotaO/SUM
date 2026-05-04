@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-05T05:21:48Z",
+  "issued_at": "2026-05-05T05:28:49Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "970d8c055efe22db4dab164cf654ad45da136ae6",
-    "head_short": "970d8c0",
-    "head_subject": "arxiv(sprint-7.5): pin recovery experiment digests as regression sentinels",
-    "head_committer_date": "2026-05-05T01:14:54-04:00",
+    "head_sha": "b5743637a71a56d0c0cac40f4a1631d921c2e27b",
+    "head_short": "b574363",
+    "head_subject": "arxiv(sprint-7.5): T3.M Modal cross-machine bench_digest verification \u2014 BRANCH A both digests MATCH",
+    "head_committer_date": "2026-05-05T01:28:38-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -37,6 +37,11 @@
       {
         "path": "fixtures/bench_receipts/complementary_hybrid_2026-05-04.json",
         "schema": "sum.sheaf_complementary_hybrid.v1",
+        "issued_at": null
+      },
+      {
+        "path": "fixtures/bench_receipts/cross_machine_verification_2026-05-04.json",
+        "schema": "sum.cross_machine_verification.v1",
         "issued_at": null
       },
       {
