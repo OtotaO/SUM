@@ -283,6 +283,55 @@ The two are unrelated.)
 
 ## 3. The detector
 
+### 3.0 Threat model
+
+The detector and substrate together address a specific, narrow threat
+model. Stating it precisely is necessary because vague threat-model
+descriptions are the most common failure mode in adjacent literature.
+
+We consider four attacker capabilities:
+
+  - **T1. Adversarial render.** Attacker controls the LLM rendering
+    process — prompt injection, jailbreak, fine-tuned adversarial
+    model — but does NOT control the source bundle, the signing key,
+    or the verifier.
+    *Defence:* the consistency signal of §3.6–§3.8. A render that
+    diverges from its bound source bundle scores higher; the receipt
+    binds render output to the source-bundle hash so the binding
+    itself cannot be retroactively edited without invalidating the
+    JWS.
+
+  - **T2. Adversarial source bundle.** Attacker controls the source
+    bundle BEFORE signing — i.e., the attacker is the rendering
+    operator and chooses what to attest. The receipt is valid; the
+    bundle's claims are the attacker's choice.
+    *Defence:* partial. The detector helps only if the rendered
+    claims diverge from the attacker's own bundle (catches sloppy
+    attackers, not careful ones). Substrate response: this is where
+    the compliance-regime layer of §5 carries weight — a careful
+    attacker controlling the source bundle still produces an audit
+    trail whose provenance is verifiable, shifting the trust
+    question from "is this claim true" to "who attested it."
+
+  - **T3. Stolen signing key.** Attacker possesses a previously-
+    trusted JWKS private key.
+    *Defence:* revocation list at `/.well-known/revoked-kids.json`.
+    v3 receipt-weighting sets $w_e = 0$ for revoked keys; revoked-
+    key edges contribute nothing to the Laplacian quadratic form.
+    Revocation latency is the residual gap (operator-dependent;
+    out of scope for this preprint).
+
+  - **T4. Compromised verifier.** Attacker controls the verifying
+    client.
+    *Defence: OUT OF SCOPE.* Trust roots are operator-provisioned;
+    the cross-runtime trust triangle (§3.1) attests realiser-
+    independence among honest verifiers but does not defend against
+    a verifier whose code has been replaced.
+
+The detector's contribution is concentrated in T1; the receipt
+substrate's contribution is concentrated in T2 and T3. Neither
+addresses T4.
+
 ### 3.1 Render-receipt binding
 
 We assume a verifiable signed-render system that produces, for
