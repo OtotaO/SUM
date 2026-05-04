@@ -508,7 +508,7 @@ The v3 bench at `scripts/research/sheaf_v3_roc_bench.py` runs all
 three detectors (v2.2 baseline, v3 receipt-weighted, v3.1 boundary
 deviation) over the 16-document `seed_long_paragraphs` corpus
 under deterministic 50/50 trust partitioning per doc. Receipt
-JSON: `fixtures/bench_receipts/v3_roc_bench_2026-05-02.json`.
+JSON: `fixtures/bench_receipts/v3_roc_bench_2026-05-03.json`.
 
 **Headline AUC numbers (mean across runs; ±0.02 LAPACK jitter):**
 
@@ -580,7 +580,7 @@ partition_strategy) at
 isolate which of the §3.4.2 hypotheses (A graph too small,
 B cochain produces zero-vectors, C random partition too harsh) is
 load-bearing. Receipt:
-``fixtures/bench_receipts/v3_1_f3_diagnostic_2026-05-02.json``.
+``fixtures/bench_receipts/v3_1_f3_diagnostic_2026-05-03.json``.
 Schema: ``sum.sheaf_v3_1_f3_diagnostic.v1`` with ``bench_digest``
 field — JCS-canonical SHA-256 over the quantized payload (AUCs
 to 3 decimals; diagnostic floats to 4); the digest lets future
@@ -686,17 +686,18 @@ The combined score is informative either way — that's the F3
   - **H20. Degenerate-boundary fall-back.** Empty $B$ or full $B$
     → $\text{deviation}_w = 0$; combined score reduces to v3.
 
-**Corpus-scale validation** (PR #126 + this PR; receipt
-``fixtures/bench_receipts/v3_2_validation_2026-05-02.json``,
-``bench_digest = 97cf977512f9...162f43f``):
+**Corpus-scale validation** (PRs #126/#127/#129 + Sprint 1
+substrate-determinism rebase; receipt
+``fixtures/bench_receipts/v3_2_validation_2026-05-03.json``,
+``bench_digest = b4d26c01d4962fa30f67c00313bbce8982ca16e3a97df34819747876ee14ed5a``):
 
 | γ        | trusted-mean AUC | F4 (≥0.55) | Δ vs v3 | F5 (Δ ≥ −0.02) |
 |----------|------------------|------------|---------|----------------|
-| 0.0      | 0.661            | PASS       | 0.000   | PASS           |
-| 0.1      | 0.656            | PASS       | −0.004  | PASS           |
-| 1.0      | 0.630            | PASS       | −0.031  | FAIL           |
-| auto (1.0127) | 0.630       | PASS       | −0.031  | FAIL           |
-| **v3** (ref) | **0.661**    | —          | —       | —              |
+| 0.0      | 0.663            | PASS       | 0.000   | PASS           |
+| 0.1      | 0.659            | PASS       | −0.004  | PASS           |
+| 1.0      | 0.635            | PASS       | −0.028  | FAIL           |
+| auto (1.0167) | 0.635       | PASS       | −0.028  | FAIL           |
+| **v3** (ref) | **0.663**    | —          | —       | —              |
 
 Three honest readings:
 
@@ -712,20 +713,21 @@ Three honest readings:
      magnitude suggests; on the seed_long_paragraphs distribution
      it functions as a small modulator, not a co-leader.
   3. **H16 verified at corpus scale.** γ = 0 produces trusted-mean
-     AUC = 0.661, byte-identical to v3's. v3.2 is genuinely a
+     AUC = 0.663, byte-identical to v3's. v3.2 is genuinely a
      strict generalization, not a different detector wearing a
      similar mask.
 
-**Reproducibility caveat:** ``bench_digest`` reproduces across runs
-**only when invoked with ``PYTHONHASHSEED=0``**. Set-iteration
-order in the sieve and ``KnowledgeSheafV2.from_triples`` is
-hash-randomized otherwise, which permutes the trained vertex
-ordering and propagates ~±0.005 noise into per-cell AUCs. This
-caveat applies to every bench in this repo that goes through the
-sieve + training pipeline (the v3 corpus ROC bench and F3
-diagnostic on-disk digests are similarly conditional). A future
-pass should sort at every set→list conversion in the substrate to
-make the digests hash-seed-independent.
+**Reproducibility (closed under Sprint 1 substrate-determinism fix).**
+``bench_digest`` reproduces across runs unconditionally. The earlier
+``PYTHONHASHSEED=0`` requirement was caused by a single load-bearing
+site in ``DeterministicSieve.extract_triplets``
+(``return list(set(triplets))`` — set iteration is hash-randomized);
+fixed in the same PR as this section update by sorting at the
+dedup step. Verified by running the validation script three times in
+fresh Python processes and confirming identical digests. The fix
+shifted the digest values slightly from their PYTHONHASHSEED=0-
+conditional form (e.g. trusted-mean AUC moved from 0.661 to 0.663
+at γ=0); substantive verdicts are unchanged.
 
 **v3.3 candidate directions** (named, not yet investigated):
 

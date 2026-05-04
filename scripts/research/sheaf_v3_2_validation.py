@@ -374,16 +374,15 @@ def main() -> dict[str, Any]:
             "untrusted_mean_auc": v3_untrusted_mean,
         },
         "verdicts_by_gamma": verdicts,
-        # Reproducibility contract: bench_digest matches across runs ONLY
-        # when invoked with PYTHONHASHSEED=0. Set-iteration order in the
-        # sieve and KnowledgeSheafV2.from_triples is hash-randomized
-        # otherwise, which permutes the trained vertex ordering and
-        # propagates ~±0.005 noise into per-cell AUCs. This caveat applies
-        # to every bench in this repo that goes through the sieve +
-        # training pipeline (v3 corpus ROC bench, F3 diagnostic, this
-        # bench). Future PR: make the substrate hash-seed-independent
-        # by sorting at every set→list conversion in the pipeline.
-        "reproducibility_requires": "PYTHONHASHSEED=0",
+        # Bench reproduces across runs without environment-variable
+        # manipulation. The earlier `reproducibility_requires:
+        # "PYTHONHASHSEED=0"` field was removed when the substrate-
+        # determinism PR fixed the load-bearing site
+        # (DeterministicSieve.extract_triplets used `list(set(triplets))`
+        # whose iteration order was hash-randomized; now sorted
+        # lexicographically). The fix shifted bench_digest values to
+        # natural-determinism. Future readers can verify by running
+        # this script three times and confirming an identical digest.
     }
     report["bench_digest"] = compute_bench_digest(report)
     return report
