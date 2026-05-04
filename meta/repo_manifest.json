@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-04T00:11:21Z",
+  "issued_at": "2026-05-04T00:23:20Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "fbebecff0d9777051c39b31f631be276b21d389d",
-    "head_short": "fbebecf",
-    "head_subject": "compliance: HIPAA \u00a7 164.312(b) Audit Controls validator (third regime) (#131)",
-    "head_committer_date": "2026-05-03T20:04:28-04:00",
+    "head_sha": "9ec87518863d1e2cacb00c507ad20c98cdd186ab",
+    "head_short": "9ec8751",
+    "head_subject": "compliance: ISO 27001 A.8.15 + SOC 2 CC7.2 validators (4th + 5th regimes) (#132)",
+    "head_committer_date": "2026-05-03T20:17:46-04:00",
     "commits_last_30d": null
   },
   "github": {

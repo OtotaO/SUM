@@ -4,6 +4,77 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **PCI DSS v4.0 Requirement 10 validator — sixth and final
+  regime in the record-keeping shape slate.** Closes the slate
+  scoped under Priority 11. Six regimes now consume
+  `sum.compliance_report.v1` without shape modification:
+
+  | Regime | Statute | Origin |
+  |---|---|---|
+  | `eu-ai-act-article-12` | Reg (EU) 2024/1689 Art 12 | EU AI law |
+  | `gdpr-article-30` | Reg (EU) 2016/679 Art 30 | EU privacy law |
+  | `hipaa-164-312-b` | 45 CFR § 164.312(b) | US health law |
+  | `iso-27001-8-15` | ISO/IEC 27001:2022 A.8.15 | Intl ISMS standard |
+  | `soc-2-cc-7-2` | AICPA TSP §100A CC7.2 | US audit-attestation |
+  | `pci-dss-4-req-10` | PCI DSS v4.0 Req 10 | Payment-card industry |
+
+  PCI DSS Req 10 is the most structurally complex regime in the
+  slate (7 sub-requirements 10.1–10.7, with 10.2 itself further
+  subdivided). Six per-row rules R1–R6 map to Req 10.2.2 (event
+  content) + 10.6 (consistent time): schema-pinned, timestamp-
+  present, timestamp-iso8601-utc, event-type-recorded,
+  origination-identified, event-content-completeness (per-
+  operation anchors).
+
+  **Truth-first scope (load-bearing).** PCI DSS Req 10.2.2 lists
+  "user identification" as the FIRST required field for each
+  audit-log event. `sum.audit_log.v1` does not currently carry
+  a `user_id` field — SUM is a single-process CLI tool without
+  a multi-user model. The wire-spec doc names this gap
+  explicitly: PCI deployments using SUM as a payment-adjacent
+  component need either a schema extension (adding `user_id` /
+  `host_id` / `ip_address`) or an authenticating proxy whose
+  own logs carry user identity at the aggregation layer. **A
+  green report from this validator does NOT mean SUM is PCI-
+  compliant** — it means SUM's per-row form satisfies the parts
+  of 10.2.2 visible in the current schema.
+
+  The §"What this validator does NOT pin" section is meaningfully
+  longer than the other regimes' because PCI DSS Req 10 has more
+  obligations that don't fit the per-row shape: 10.1
+  organisational policies; 10.2.1.* specific event-type coverage
+  (cardholder data access, admin access, log access, invalid
+  attempts, credential changes, log start/stop, system-level
+  objects); 10.3 log file protection; 10.4 log review process;
+  10.5 12-month retention; 10.7 failure detection / alerting;
+  cardholder data inventory.
+
+  **Test deltas:** ~25 PCI DSS rule tests. Total compliance suite:
+  32 EU AI Act + 25 GDPR + 5 CLI dispatch + 27 HIPAA + 19 ISO + 19
+  SOC 2 + 25 PCI = **152 tests**. Six-way byte-shape parity test
+  pinned in `test_pci_dss_4_req_10::test_validation_report_shape_matches_other_regimes`.
+
+  **Substrate-tightening summary across the six-regime arc:**
+  Started with one regime (EU AI Act Art 12) and a regime-
+  agnostic claim that was a single data point. Ended with six
+  regimes spanning EU AI law, EU privacy law, US health law,
+  international ISMS standard, US audit-attestation, and
+  payment-card industry standard — all consuming the same
+  `sum.compliance_report.v1` shape without modification. The
+  CLI dispatch refactored from `if regime == "..."` to a
+  `_compliance_validators()` dict on PR #130; cross-regime
+  contracts C1/C2/C3 (registry consistency, schema, exit codes)
+  pinned in `Tests/compliance/test_cli_dispatch.py`. Empirical
+  finding from the arc: there is a *minimum record-keeping floor*
+  common to most record-keeping regimes (R1–R5: schema, timestamp,
+  ISO-8601-UTC, activity, system component); the regime-specific
+  rules are statutory anchoring + operation-specific anchors on
+  top of this shared floor.
+
+  **Different-shape regimes still queued (separate PR family):**
+  HIPAA § 164.514 de-identification (transformation rules), EU
+  AI Act Art 13 / 16 / 50 (transparency / QMS / disclosure).
+
 - **ISO/IEC 27001:2022 A.8.15 Logging + SOC 2 CC7.2 validators —
   fourth and fifth per-regime compliance consumers (bundled PR).**
 
