@@ -18,6 +18,12 @@ separate module so users can compose only what they need.
     Audit Controls (Technical Safeguards); pins the per-row form
     requirements for an audit recording that supports examination
     of activity in systems that contain or use ePHI.
+  - :mod:`iso_27001_8_15` — ISO/IEC 27001:2022 Annex A.8.15
+    (Logging); pins the per-row form floor required for an audit
+    log to count as a "produced" log under A.8.15.
+  - :mod:`soc_2_cc_7_2` — SOC 2 Trust Services Criteria CC7.2
+    (System Operations); pins the per-row floor required to
+    enable the monitoring criterion.
 
 A regime-agnostic ``ValidationReport`` shape lives at
 :mod:`sum_engine_internal.compliance.report` so future validators

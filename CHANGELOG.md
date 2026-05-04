@@ -4,6 +4,54 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **ISO/IEC 27001:2022 A.8.15 Logging + SOC 2 CC7.2 validators —
+  fourth and fifth per-regime compliance consumers (bundled PR).**
+
+  Both regimes share the per-row record-keeping floor shape
+  established by GDPR Art 30: five rules covering schema,
+  timestamp presence + parseability, activity classification, and
+  system component identification. Each carries regime-specific
+  `rule_id` strings and statutory message anchors. **Empirical
+  finding:** there is a *minimum record-keeping floor* common to
+  most record-keeping regimes — five regimes (Art 12, GDPR Art 30,
+  HIPAA § 164.312(b), ISO 27001 A.8.15, SOC 2 CC7.2) agree on the
+  floor's structure even though the statutes differ wildly (EU AI
+  law, EU privacy law, US health law, international standard, US
+  audit-attestation).
+
+  **Modules:** `sum_engine_internal/compliance/iso_27001_8_15.py`
+  and `sum_engine_internal/compliance/soc_2_cc_7_2.py`. **Wire
+  specs:** `docs/COMPLIANCE_ISO_27001_8_15.md` (names "stored",
+  "protected", "analysed" verbs as out-of-scope deployment
+  obligations) and `docs/COMPLIANCE_SOC_2_CC_7_2.md` (names the
+  detection / monitoring / analysis activities, surrounding TSP
+  criteria CC6/CC7.1/CC7.3/CC7.4/CC8, anomaly-detection-quality
+  audit judgment, and Type 1 vs Type 2 distinction as out of
+  scope).
+
+  **Substrate held for the fourth and fifth time.** The cross-
+  regime shape pin (each new test file's
+  `test_validation_report_shape_matches_other_regimes`)
+  expanded to assert N-way parity:
+  `Tests/compliance/test_soc_2_cc_7_2.py` checks all five regimes
+  return byte-shape-identical `sum.compliance_report.v1` from
+  the same input row. C1/C2/C3 dispatch contracts extended
+  automatically.
+
+  **Test deltas:** ~19 ISO 27001 tests + ~19 SOC 2 tests = 38 new
+  tests. Total compliance suite: 32 EU AI Act + 25 GDPR + 5 CLI
+  dispatch + 27 HIPAA + 19 ISO + 19 SOC 2 = **127 tests**.
+
+  **Future regimes still queued (record-keeping shape).** PCI DSS
+  4.0 Requirement 10 is the remaining record-keeping regime in
+  the slate; planned for a separate PR because Req 10 has 7 sub-
+  requirements (10.1–10.7) and many sub-rules — a more honest
+  "what this does NOT pin" section than the thinner regimes.
+
+  **Different-shape regime family** (separate PR family if needed):
+  HIPAA § 164.514 de-identification (transformation rules), EU AI
+  Act Art 13 / 16 / 50 (transparency / QMS / disclosure).
+
 - **HIPAA § 164.312(b) Audit Controls validator — third per-regime
   compliance consumer.** `sum_engine_internal/compliance/
   hipaa_164_312_b.py` validates a `sum.audit_log.v1` stream

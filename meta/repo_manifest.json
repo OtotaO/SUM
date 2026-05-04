@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-03T23:58:09Z",
+  "issued_at": "2026-05-04T00:11:21Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "a782b8ccb0b39e1787190ce6a89c754821aefdc3",
-    "head_short": "a782b8c",
-    "head_subject": "compliance: GDPR Article 30 validator (second regime; substrate-tightening proof) (#130)",
-    "head_committer_date": "2026-05-03T19:52:19-04:00",
+    "head_sha": "fbebecff0d9777051c39b31f631be276b21d389d",
+    "head_short": "fbebecf",
+    "head_subject": "compliance: HIPAA \u00a7 164.312(b) Audit Controls validator (third regime) (#131)",
+    "head_committer_date": "2026-05-03T20:04:28-04:00",
     "commits_last_30d": null
   },
   "github": {
