@@ -74,9 +74,9 @@ verb wraps this function with file/stdin IO. Other consumers
 """
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any, Iterable
 
+from sum_engine_internal.compliance._predicates import is_iso8601_utc
 from sum_engine_internal.compliance.report import (
     ValidationReport,
     Violation,
@@ -95,19 +95,6 @@ _RULE_TIMESTAMP_ISO8601_UTC = "eu-ai-act-art-12.timestamp-iso8601-utc"
 _RULE_ATTEST_SOURCE_URI = "eu-ai-act-art-12.attest-source-uri-present"
 _RULE_VERIFY_BUNDLE_ANCHOR = "eu-ai-act-art-12.verify-bundle-anchor-present"
 _RULE_RENDER_MODE = "eu-ai-act-art-12.render-mode-present"
-
-
-def _is_iso8601_utc(s: Any) -> bool:
-    """ISO 8601 UTC string ending in ``Z`` and parseable."""
-    if not isinstance(s, str):
-        return False
-    if not s.endswith("Z"):
-        return False
-    try:
-        datetime.fromisoformat(s.replace("Z", "+00:00"))
-        return True
-    except (ValueError, TypeError):
-        return False
 
 
 def _violation(rule_id: str, row_index: int, row: dict[str, Any], msg: str) -> Violation:
@@ -165,7 +152,7 @@ def validate(rows: Iterable[dict[str, Any]]) -> ValidationReport:
 
         # R3 — timestamp must be ISO 8601 UTC
         ts = row.get("timestamp")
-        if ts is not None and not _is_iso8601_utc(ts):
+        if ts is not None and not is_iso8601_utc(ts):
             violations.append(_violation(
                 _RULE_TIMESTAMP_ISO8601_UTC, i, row,
                 f"timestamp {ts!r} is not parseable ISO 8601 UTC ending in 'Z'",

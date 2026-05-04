@@ -244,13 +244,9 @@ Receipt rebase: 2026-05-02 receipts deleted; new ones dated 2026-05-03 with natu
 
 **Status: closed.** Root cause turned out to be a fastapi/starlette mismatch, not deprecated `on_startup` use in our code: starlette 1.0.0 removed the `on_startup=` / `on_shutdown=` parameters but fastapi 0.115.x still passes empty defaults through. Fix: pin `starlette<1.0` in `requirements-prod.txt`. 98 previously-erroring tests now pass cleanly; full pytest reports 0 collection errors. Revisit when fastapi releases a starlette-1.x-compatible version.
 
-### Sprint 3 — Shared compliance predicate library
+### Sprint 3 — Shared compliance predicate library (CLOSED 2026-05-03)
 
-**Why.** Six compliance regime modules each duplicate `_is_iso8601_utc()` (literally byte-identical across files). At three regimes I noted this in commit messages as "future PR if 4+ regimes confirm the overlap"; now there are six. The duplication is load-bearing technical debt: a future fix to the timestamp predicate (e.g. accepting `+00:00` as equivalent to `Z`) currently requires editing six files in lockstep.
-
-**Work.** Extract `sum_engine_internal/compliance/_predicates.py` exporting `is_iso8601_utc(s)`. Each regime module imports from it. Tests pin that the predicate behaves consistently across regimes (already implicit; lift to an explicit cross-regime predicate test).
-
-**Success criterion.** All 152 compliance tests still pass. `grep -r "_is_iso8601_utc" sum_engine_internal/compliance/` finds 1 definition, 6 imports.
+**Status: closed.** Extracted `sum_engine_internal/compliance/_predicates.py` with `is_iso8601_utc`; six regime modules import from one source (verified via object identity in `Tests/compliance/test_predicates.py::test_all_six_regimes_import_the_shared_predicate`). 12 new predicate tests pin behaviour + single-source-of-truth + cross-regime propagation. Total compliance suite 152 → 164. The `is_iso8601_utc` contract (only Z-suffix UTC accepted; "+00:00" rejected; non-string types rejected) is now a single-file edit rather than a six-file lockstep migration.
 
 ### Sprint 4 — PCI DSS user_id schema extension
 
