@@ -121,7 +121,7 @@ Three composing layers shipped between 2026-05-01 and 2026-05-02 — see [`docs/
 
 - **v3 corpus-scale ROC bench** (`sum.sheaf_v3_roc_bench.v1`, PR #124). 16-doc `seed_long_paragraphs` corpus, deterministic 50/50 trust partitioning per doc (SHA-256 seed), three detectors compared (v2.2 / v3 / v3.1) across A1/A2/A4 × {trusted, untrusted}. **Headline:** v3 wins +10.7% AUC over v2.2 on A4 (triple-drop), regardless of trust target. F1 (v3 trusted-side amplification): MARGINAL (Δ=+0.022 mean AUC). F2 (no untrusted collapse): PASS. F3 (v3.1 corpus-scale utility): FAIL.
 
-- **F3 structural-fail diagnostic** (`sum.sheaf_v3_1_f3_diagnostic.v1`, PR #125). 2×2×2 hypothesis sweep over (graph_size, cochain_strategy, partition_strategy). **Result: load_bearing_hypothesis = "none".** All 8 cells FAIL the F3 PASS threshold. The detector has a *structural* blind spot: when a perturbation targets a trusted-edge vertex, the cochain change is at boundary positions, the harmonic extension recomputes interior from new boundary, but the actual interior is unchanged → deviation ties between clean and perturbed by mathematical necessity. v3.2 redesign required (see Priority 9). Receipts: `fixtures/bench_receipts/v3_1_f3_diagnostic_2026-05-02.json` + `v3_roc_bench_2026-05-02.json`.
+- **F3 structural-fail diagnostic** (`sum.sheaf_v3_1_f3_diagnostic.v1`, PR #125). 2×2×2 hypothesis sweep over (graph_size, cochain_strategy, partition_strategy). **Result: load_bearing_hypothesis = "none".** All 8 cells FAIL the F3 PASS threshold. The detector has a *structural* blind spot: when a perturbation targets a trusted-edge vertex, the cochain change is at boundary positions, the harmonic extension recomputes interior from new boundary, but the actual interior is unchanged → deviation ties between clean and perturbed by mathematical necessity. v3.2 redesign required (see Priority 9). Receipts: `fixtures/bench_receipts/v3_1_f3_diagnostic_2026-05-03.json` + `v3_roc_bench_2026-05-03.json`.
 
 - **`bench_digest` substrate** (PR #125). JCS-canonical SHA-256 over a quantized bench-result payload (AUCs to 3 decimals; diagnostic floats to 4 — quantization absorbs LAPACK ±0.02 jitter). Three uses: reproducibility canary (same machine + same code → same digest), cross-runtime witness (future Node port can prove byte-identity), signable bench artifact (Ed25519-sign with project's existing JWKS keys → arXiv preprint can cite the digest). Same trust alphabet as `render_receipt.v1`.
 
@@ -161,18 +161,18 @@ The numbering keeps continuity with the previous playbook so `git log --grep '\[
 
 **Status: closed.** v3.2 ships at `sum_engine_internal/research/sheaf_laplacian_v32.py` as a strict generalization of v3 that adds harmonic-extension deviation as a complementary signal: `v_combined_v32 = v_laplacian_w + γ · deviation_w + λ · v_deficit`. At γ = 0, v3.2 reduces to v3 numerically (subsumption — H16). At γ > 0, deviation contributes additively where it has signal (L_IB ≠ 0); falls back to a constant where it's structurally blind, so v_laplacian_w still surfaces the perturbation (F3 fall-back — H18).
 
-Five falsifiable predictions H16-H20 pinned in `Tests/research/test_sheaf_laplacian_v32.py` (subsumption, L_IB ≠ 0 visibility, F3 fall-back, no-λ-double-counting, degenerate-boundary fall-back). Corpus-scale validation receipt at `fixtures/bench_receipts/v3_2_validation_2026-05-02.json` (`bench_digest = 97cf977512f9...162f43f`, schema `sum.sheaf_v3_2_validation.v1`):
+Five falsifiable predictions H16-H20 pinned in `Tests/research/test_sheaf_laplacian_v32.py` (subsumption, L_IB ≠ 0 visibility, F3 fall-back, no-λ-double-counting, degenerate-boundary fall-back). Corpus-scale validation receipt at `fixtures/bench_receipts/v3_2_validation_2026-05-03.json` (`bench_digest = b4d26c01d496...876ee14ed5a`, schema `sum.sheaf_v3_2_validation.v1`):
 
 | γ        | trusted-mean AUC | F4 (≥0.55) | Δ vs v3 | F5 (Δ ≥ −0.02) |
 |----------|------------------|------------|---------|----------------|
-| 0.0      | 0.661            | PASS       | 0.000   | PASS           |
-| 0.1      | 0.656            | PASS       | −0.004  | PASS           |
-| 1.0      | 0.630            | PASS       | −0.031  | FAIL           |
-| auto (1.0127) | 0.630       | PASS       | −0.031  | FAIL           |
+| 0.0      | 0.663            | PASS       | 0.000   | PASS           |
+| 0.1      | 0.659            | PASS       | −0.004  | PASS           |
+| 1.0      | 0.635            | PASS       | −0.028  | FAIL           |
+| auto (1.0167) | 0.635       | PASS       | −0.028  | FAIL           |
 
-**Honest readings.** F4 PASSES at every γ — F3 STRUCTURAL FAIL closed. F5 PASSES only at small γ (≤ 0.1); the magnitude-matching auto-calibration heuristic is empirically wrong on this corpus. H16 verified at corpus scale: γ = 0 gives trusted-mean AUC = 0.661 byte-identical to v3.
+**Honest readings.** F4 PASSES at every γ — F3 STRUCTURAL FAIL closed. F5 PASSES only at small γ (≤ 0.1); the magnitude-matching auto-calibration heuristic is empirically wrong on this corpus. H16 verified at corpus scale: γ = 0 gives trusted-mean AUC = 0.663 byte-identical to v3.
 
-**Reproducibility caveat:** `bench_digest` matches across runs only with `PYTHONHASHSEED=0` (sieve + KnowledgeSheafV2.from_triples have hash-randomized set iteration). Recorded in receipt as `reproducibility_requires` field.
+**Reproducibility:** `bench_digest` matches across runs unconditionally — the earlier `PYTHONHASHSEED=0` caveat was closed under Sprint 1's substrate-determinism fix (sorted-dedup in `DeterministicSieve.extract_triplets`). The fix shifted digest values slightly from their PYTHONHASHSEED=0-conditional form.
 
 **v3.3 candidate directions** (named, not investigated): per-doc graph-structure-aware γ (use deviation only where L_IB has high mass); cochain redesign that propagates render content into interior; A2 weakness via predicate-perturbation negative sampling.
 
@@ -210,17 +210,85 @@ Five falsifiable predictions H16-H20 pinned in `Tests/research/test_sheaf_laplac
 
 **Different-shape regime family** (out of scope for this priority — separate PR family if needed): HIPAA § 164.514 de-identification (transformation rules), EU AI Act Art 13 / 16 / 50 (transparency / QMS / disclosure). These have fundamentally different shapes (transformation requirements, disclosure obligations) and would either extend the substrate or fork to a different report shape.
 
-**Candidate record-keeping-shape regimes still queued (TODO, not yet investigated).** Each would follow the same template — module + tests + wire-spec doc + register in both CLI registries; C1/C2/C3 contracts inherit automatically. The list is curated for *substantive coverage benefit*, not exhaustive — adding a regime should buy real compliance breadth, not stamp-collecting:
+**Candidate record-keeping-shape regimes still queued (TODO, not yet investigated).** The slate is **curated**, not exhaustive — accreditation breadth is sufficient with six regimes covering EU AI law, EU privacy law, US health law, international ISMS, US audit-attestation, and payment-card industry. Adding a regime should buy real compliance breadth or unlock a specific deployment context, not be stamp-collecting:
 
 - **NIS2 Directive (EU) 2022/2555 Article 21(2)(g) — Logging.** EU-wide cybersecurity directive applicable to "essential" and "important" entities. Article 21(2)(g) names logging as a required cybersecurity risk-management measure. Per-row floor maps cleanly to the existing R1–R5 shape. Becomes load-bearing as Member States complete transposition.
-- **UK AI Bill (forthcoming) — record-keeping clauses.** UK AI legislation is in flight as of early 2026; once enacted, the record-keeping clauses will likely mirror EU AI Act Art 12 in shape but with different statutory anchors. Wait for Royal Assent before adding.
-- **India Digital Personal Data Protection Rules 2024-25 — Significant Data Fiduciary record-keeping.** DPDP Act 2023 §10 + the Rules' Significant Data Fiduciary obligations require audit-trail maintenance. Per-row floor likely matches GDPR Art 30 shape with some India-specific anchors (data principal grievance handling, cross-border-transfer restrictions).
 - **NIST SP 800-53 Rev. 5 AU-2 (Audit Events) + AU-3 (Content of Audit Records).** US federal control framework. AU-2 lists event-type coverage (similar shape to PCI 10.2.1.*); AU-3 lists content fields (similar shape to PCI 10.2.2). FedRAMP / FISMA-relevant deployments need this.
 - **NIST AI RMF 1.0 — Manage 4.1 logging.** AI-specific risk-management framework. Largely overlaps with EU AI Act Art 12 in audit-log obligations; useful for US-government AI deployments where FedRAMP doesn't apply.
 - **DORA (EU) 2022/2554 Article 16 — ICT-related incident records.** Financial-sector cybersecurity regulation; overlaps with NIS2 + PCI DSS for payment institutions. Specific to EU financial entities.
 - **California Consumer Privacy Act (CCPA) / CPRA — record-keeping.** US state privacy law; shape similar to GDPR Art 30 with CA-specific anchors (right-to-know, right-to-delete event tracking).
 
+**Out of scope** (formerly queued, dropped 2026-05-03 per operator decision: "we have enough accreditation for now"): UK AI Bill (forthcoming) and India Digital Personal Data Protection Rules 2024-25. Either may rejoin the queue if a concrete deployment need arises; until then, six regimes are sufficient breadth.
+
 **Discipline.** Each candidate above should pass three checks before being added: (a) real statutory anchor (article/section number), (b) rules that map to specific audit-log row checks, (c) the validator provides *technical record-keeping* compliance — not full operational compliance. The wire-spec doc must include "what this validator does NOT pin" naming the operational obligations the validator can't reach. Adding a regime that doesn't pass these is stamp-collecting and weakens the substrate's truth-first claim.
+
+---
+
+## Process-intensification sprint (the path to arXiv)
+
+The compliance + research + cross-runtime arcs have produced a substrate richer than what's currently surfaced. This sprint sharpens what's there and surfaces *latent capabilities* before the arXiv preprint locks in the public claim. **arXiv publishing is the final step** — it should land on top of a substrate whose every claim is externally reproducible, every gap is named, and every overt feature has a verification path that an external reader can run themselves.
+
+The sprint, ordered by dependency:
+
+### Sprint 1 — Bench-digest substrate determinism (CLOSED 2026-05-03)
+
+**Status: closed.** Single load-bearing site identified at `sum_engine_internal/algorithms/syntactic_sieve.py:453`: `DeterministicSieve.extract_triplets` returned `list(set(triplets))` whose iteration order was hash-randomized across Python invocations. Fixed by `sorted(set(triplets))`. Verified by running each of three benches three times in fresh processes — identical `bench_digest` every time:
+
+  - `v3_2_validation_2026-05-03.json` digest `b4d26c01d496…876ee14ed5a`
+  - `v3_1_f3_diagnostic_2026-05-03.json` digest `62b6e1878d1d…1b2f733e7c`
+  - `v3_roc_bench_2026-05-03.json` (no digest field; AUCs reproducible directly)
+
+Receipt rebase: 2026-05-02 receipts deleted; new ones dated 2026-05-03 with natural-determinism digests. The `reproducibility_requires` field is removed; the spec doc, playbook, and CHANGELOG sections caveating PYTHONHASHSEED=0 are superseded by this closure. Substantive verdicts unchanged across all three benches (F4/F5 thresholds unaffected).
+
+### Sprint 2 — fastapi tech-debt sweep
+
+**Why.** The full pytest run reports 30 collection errors from `quantum_main.py` etc. using fastapi's deprecated `on_startup` argument removed in 0.110+. These errors aren't blocking work but they're noise that obscures genuine regressions. Six modules affected: `test_browser_extension.py`, `test_phase13_zenith.py`, `test_phase14_ouroboros.py`, `test_phase15_abi.py`, `test_semantic_dedup.py`, `test_state_encoding.py`.
+
+**Work.** Either (a) pin `fastapi<0.110` in `pyproject.toml` with documented rationale, or (b) migrate the affected `APIRouter(prefix=..., on_startup=[...])` call sites to `lifespan=` async context-manager pattern. Option (b) is the right fix; option (a) is the fast fix.
+
+**Success criterion.** Full pytest reports 0 collection errors. The 2 known concurrency-safety failures stay (separate concern); everything else is clean.
+
+### Sprint 3 — Shared compliance predicate library
+
+**Why.** Six compliance regime modules each duplicate `_is_iso8601_utc()` (literally byte-identical across files). At three regimes I noted this in commit messages as "future PR if 4+ regimes confirm the overlap"; now there are six. The duplication is load-bearing technical debt: a future fix to the timestamp predicate (e.g. accepting `+00:00` as equivalent to `Z`) currently requires editing six files in lockstep.
+
+**Work.** Extract `sum_engine_internal/compliance/_predicates.py` exporting `is_iso8601_utc(s)`. Each regime module imports from it. Tests pin that the predicate behaves consistently across regimes (already implicit; lift to an explicit cross-regime predicate test).
+
+**Success criterion.** All 152 compliance tests still pass. `grep -r "_is_iso8601_utc" sum_engine_internal/compliance/` finds 1 definition, 6 imports.
+
+### Sprint 4 — PCI DSS user_id schema extension
+
+**Why.** PR #133 named the gap explicitly: PCI DSS Req 10.2.2 lists "user identification" as the FIRST required field, but `sum.audit_log.v1` doesn't carry one. Any operator trying to use SUM in a PCI-relevant context hits this immediately. The truthful-named gap is the right truth-first move; closing it converts the gap into a real capability.
+
+**Work.** Define `sum.audit_log.v2` as a strict superset of v1: optional `user_id` / `host_id` / `ip_address` fields. v2 rows pass v1 validators (since the new fields are optional). PCI DSS validator gains an R7 (`user-identification-recommended`) that fires on v2 schema rows lacking `user_id` *for compliance-mode runs*. Audit-log emit path accepts a `SUM_AUDIT_USER_ID` env var (or per-call CLI flag) to populate the field. v1 stays the default schema; opting into v2 is operator-explicit.
+
+**Success criterion.** PCI deployments can satisfy 10.2.2 with the v2 schema + an authenticating proxy populating `SUM_AUDIT_USER_ID`. The wire-spec doc converts the "load-bearing gap" section to "how to close the gap with v2 + a proxy."
+
+### Sprint 5 — Surface latent capabilities
+
+**Why.** The substrate has shipped capabilities that aren't surfaced as overt CLI/library features. They're reachable only by reading the code. Two specific ones earned in this arc:
+
+(a) **Render-receipt aggregation.** Every `sum render --use-worker` produces a signed render receipt. A directory of receipts is the system's own verifiable history (the "self-improving via the trust loop's own outputs" property). Currently no CLI surface; an operator who wants to ask "how many receipts in the last 30 days, by signer kid, by receipt schema, by trust scope?" has to write their own JSON parser. **Ship `sum receipts aggregate <dir>`** — JSONL receipts in, a single `sum.receipt_aggregate.v1` JSON object out, listing counts by kid / schema / trust scope, the time range, and a signature-verification status per kid.
+
+(b) **Sheaf detector library API documentation.** The v3.2 module is importable but has no public-API doc beyond the docstrings. **Add `docs/SHEAF_LIBRARY_API.md`** showing how to call `combined_detector_score_v32` from external Python code with a real worked example. Move this from "implementation detail" to "supported library surface."
+
+**Success criterion.** Two new CLI commands and one library-API doc; each verified by a new test in `Tests/`.
+
+### Sprint 6 — Production deployment reference architecture
+
+**Why.** Currently the live trust loop at `sum-demo.ototao.workers.dev` is a demo. "Legendary" requires a documented path from "I just installed sum-engine" to "I have audit-log ingestion, two compliance gates, and signed render receipts in CI/CD." Without this doc, every external operator reinvents the wiring.
+
+**Work.** New `docs/REFERENCE_ARCHITECTURE.md` — a step-by-step deployment guide for a regulated AI pipeline. Sections: (1) Set up `SUM_AUDIT_LOG`. (2) Wire the audit log into a JSONL ingestion service. (3) Add `sum compliance check` for at least 2 regimes as a CI gate. (4) Configure the Worker render path with operator's own JWKS keys. (5) Set up the cross-runtime verifier (Node + Browser) so receipts can be checked anywhere. Include a working `docker-compose.yml` example.
+
+**Success criterion.** A reader who follows the doc has a working deployment in under 30 minutes. Verified by an external reader before arXiv submission.
+
+### Sprint 7 — arXiv preprint v0.1 (FINAL STEP)
+
+**Why last.** The preprint claims rest on every previous sprint. Sprint 1 makes "every bench is reproducible" a clean claim. Sprint 2 makes "the test suite is clean" a clean claim. Sprint 3 + 4 + 5 + 6 each tighten what the preprint can honestly say about the system. Submitting before these is shipping a public claim against a less-defensible substrate.
+
+**Work.** Update `docs/arxiv/sheaf-detector-note-v0.md` from v0 → v0.1 with the four new sections (v3 weighted form, v3.1 boundary deviation, F1/F2/F3 results, F3 structural finding as honest negative result). Add the bench digests as citation anchors. The `bench_digest` field is novel substrate for reproducible-research-with-cryptographic-teeth; surface it in a methods paragraph. Pre-circulation review (1–2 readers). Submit to cs.LG (primary) / cs.CR (secondary).
+
+**Success criterion.** Preprint live with arXiv ID. Receipt JSONs cited. `bench_digest` documented as a reproducibility primitive. No "PYTHONHASHSEED=0 required" footnote.
 
 **Substrate held for a third time.** With three record-keeping regimes consuming `sum.compliance_report.v1` without shape modification, regime-agnosticism is no longer a "second-instance proof" assertion — it's a regularity. A future PR may extract a shared predicate library (operation-specific anchors recur across HIPAA R6 and Art 12 R4–R6) once 4+ regimes confirm the overlap.
 

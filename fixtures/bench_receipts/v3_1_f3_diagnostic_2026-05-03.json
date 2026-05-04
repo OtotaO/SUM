@@ -1,0 +1,196 @@
+{
+  "bench_digest": "62b6e1878d1d12f36eb80e301304854a1a2c03386f0e872850d3461b2f733e7c",
+  "cells": [
+    {
+      "config_cell_id": "per_doc|one_hot_default|random_50_50",
+      "diagnostics": {
+        "mean_L_II_rank_ratio": 0.5222222222222223,
+        "mean_boundary_size": 7.133333333333334,
+        "mean_cochain_norm_boundary": 2.6472054922207464,
+        "mean_cochain_norm_interior": 2.8278421562702123,
+        "mean_interior_size": 8.066666666666666,
+        "n_degenerate_partitions": 0,
+        "n_graphs": 15
+      },
+      "f3_verdict": "FAIL",
+      "per_class_target_auc": {
+        "A1|trusted": 0.5,
+        "A1|untrusted": 0.34,
+        "A2|trusted": 0.5,
+        "A2|untrusted": 0.5,
+        "A4|trusted": 0.48,
+        "A4|untrusted": 0.20666666666666667
+      },
+      "trusted_mean_auc": 0.49333333333333335,
+      "untrusted_mean_auc": 0.34888888888888897
+    },
+    {
+      "config_cell_id": "per_doc|one_hot_default|concentrated_by_doc",
+      "diagnostics": {
+        "mean_L_II_rank_ratio": null,
+        "mean_boundary_size": null,
+        "mean_cochain_norm_boundary": null,
+        "mean_cochain_norm_interior": null,
+        "mean_interior_size": null,
+        "n_degenerate_partitions": 15,
+        "n_graphs": 15
+      },
+      "f3_verdict": "FAIL",
+      "per_class_target_auc": {
+        "A1|trusted": 0.4489795918367347,
+        "A1|untrusted": 0.4296875,
+        "A2|trusted": 0.5,
+        "A2|untrusted": 0.5,
+        "A4|trusted": 0.3469387755102041,
+        "A4|untrusted": 0.28125
+      },
+      "trusted_mean_auc": 0.43197278911564624,
+      "untrusted_mean_auc": 0.4036458333333333
+    },
+    {
+      "config_cell_id": "per_doc|trained_embedding|random_50_50",
+      "diagnostics": {
+        "mean_L_II_rank_ratio": 0.5222222222222223,
+        "mean_boundary_size": 7.133333333333334,
+        "mean_cochain_norm_boundary": 2.6472054922207464,
+        "mean_cochain_norm_interior": 2.8278421562702123,
+        "mean_interior_size": 8.066666666666666,
+        "n_degenerate_partitions": 0,
+        "n_graphs": 15
+      },
+      "f3_verdict": "FAIL",
+      "per_class_target_auc": {
+        "A1|trusted": 0.5,
+        "A1|untrusted": 0.5,
+        "A2|trusted": 0.5,
+        "A2|untrusted": 0.5,
+        "A4|trusted": 0.5,
+        "A4|untrusted": 0.5
+      },
+      "trusted_mean_auc": 0.5,
+      "untrusted_mean_auc": 0.5
+    },
+    {
+      "config_cell_id": "per_doc|trained_embedding|concentrated_by_doc",
+      "diagnostics": {
+        "mean_L_II_rank_ratio": null,
+        "mean_boundary_size": null,
+        "mean_cochain_norm_boundary": null,
+        "mean_cochain_norm_interior": null,
+        "mean_interior_size": null,
+        "n_degenerate_partitions": 15,
+        "n_graphs": 15
+      },
+      "f3_verdict": "FAIL",
+      "per_class_target_auc": {
+        "A1|trusted": 0.5,
+        "A1|untrusted": 0.5,
+        "A2|trusted": 0.5,
+        "A2|untrusted": 0.5,
+        "A4|trusted": 0.5,
+        "A4|untrusted": 0.5
+      },
+      "trusted_mean_auc": 0.5,
+      "untrusted_mean_auc": 0.5
+    },
+    {
+      "config_cell_id": "aggregated_4_docs|one_hot_default|random_50_50",
+      "diagnostics": {
+        "mean_L_II_rank_ratio": 0.5319683908045977,
+        "mean_boundary_size": 28.25,
+        "mean_cochain_norm_boundary": 5.295654286190148,
+        "mean_cochain_norm_interior": 5.442987607154281,
+        "mean_interior_size": 29.75,
+        "n_degenerate_partitions": 0,
+        "n_graphs": 4
+      },
+      "f3_verdict": "FAIL",
+      "per_class_target_auc": {
+        "A1|trusted": 0.5,
+        "A1|untrusted": 0.3125,
+        "A2|trusted": 0.5,
+        "A2|untrusted": 0.5,
+        "A4|trusted": 0.53125,
+        "A4|untrusted": 0.3125
+      },
+      "trusted_mean_auc": 0.5104166666666666,
+      "untrusted_mean_auc": 0.375
+    },
+    {
+      "config_cell_id": "aggregated_4_docs|one_hot_default|concentrated_by_doc",
+      "diagnostics": {
+        "mean_L_II_rank_ratio": 0.5402097902097902,
+        "mean_boundary_size": 28.5,
+        "mean_cochain_norm_boundary": 5.33255805973573,
+        "mean_cochain_norm_interior": 5.405096789925013,
+        "mean_interior_size": 29.5,
+        "n_degenerate_partitions": 0,
+        "n_graphs": 4
+      },
+      "f3_verdict": "FAIL",
+      "per_class_target_auc": {
+        "A1|trusted": 0.5,
+        "A1|untrusted": 0.3125,
+        "A2|trusted": 0.5,
+        "A2|untrusted": 0.5,
+        "A4|trusted": 0.5,
+        "A4|untrusted": 0.1875
+      },
+      "trusted_mean_auc": 0.5,
+      "untrusted_mean_auc": 0.3333333333333333
+    },
+    {
+      "config_cell_id": "aggregated_4_docs|trained_embedding|random_50_50",
+      "diagnostics": {
+        "mean_L_II_rank_ratio": 0.5319683908045977,
+        "mean_boundary_size": 28.25,
+        "mean_cochain_norm_boundary": 5.295654286190148,
+        "mean_cochain_norm_interior": 5.442987607154281,
+        "mean_interior_size": 29.75,
+        "n_degenerate_partitions": 0,
+        "n_graphs": 4
+      },
+      "f3_verdict": "FAIL",
+      "per_class_target_auc": {
+        "A1|trusted": 0.5,
+        "A1|untrusted": 0.5,
+        "A2|trusted": 0.5,
+        "A2|untrusted": 0.5,
+        "A4|trusted": 0.5,
+        "A4|untrusted": 0.5
+      },
+      "trusted_mean_auc": 0.5,
+      "untrusted_mean_auc": 0.5
+    },
+    {
+      "config_cell_id": "aggregated_4_docs|trained_embedding|concentrated_by_doc",
+      "diagnostics": {
+        "mean_L_II_rank_ratio": 0.5402097902097902,
+        "mean_boundary_size": 28.5,
+        "mean_cochain_norm_boundary": 5.33255805973573,
+        "mean_cochain_norm_interior": 5.405096789925013,
+        "mean_interior_size": 29.5,
+        "n_degenerate_partitions": 0,
+        "n_graphs": 4
+      },
+      "f3_verdict": "FAIL",
+      "per_class_target_auc": {
+        "A1|trusted": 0.5,
+        "A1|untrusted": 0.5,
+        "A2|trusted": 0.5,
+        "A2|untrusted": 0.5,
+        "A4|trusted": 0.5,
+        "A4|untrusted": 0.5
+      },
+      "trusted_mean_auc": 0.5,
+      "untrusted_mean_auc": 0.5
+    }
+  ],
+  "corpus": "seed_long_paragraphs",
+  "lambda_auto_calibrated": 1.9617608348692248,
+  "load_bearing_hypothesis": "none",
+  "n_corpus_docs": 16,
+  "schema": "sum.sheaf_v3_1_f3_diagnostic.v1",
+  "stalk_dim": 8,
+  "summary": "baseline (PR #124-equivalent) trusted_mean_AUC = 0.493\nsingle-axis flips PASS (\u22650.58 trusted_mean_AUC): A=False, B=False, C=False\nall-axes-flipped trusted_mean_AUC = 0.500 (FAIL)\nNo flip combination PASSes \u2014 F3 is not driven by any of the three named hypotheses; the v3.1 math itself or the bench harness needs reconsideration."
+}

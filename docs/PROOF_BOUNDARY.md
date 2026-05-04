@@ -491,7 +491,7 @@ The `scripts/bench/` directory contains the measurement-first infrastructure tha
 - **Math primitives** (symmetric-PSD, factored equality, weighted form linearity, harmonic-extension defining property H7) are mechanically pinned in §1-equivalent fashion within the [research] extras.
 - **Detection AUC** is measured on a single fixed corpus (n=16). The numbers above are not generalised claims; they apply to `seed_long_paragraphs` under the current trained sheaf, λ_auto, and seed-controlled perturbation harness. Cross-corpus generalisation is unmeasured.
 - **F3 STRUCTURAL FAIL** is named explicitly: v3.1's boundary deviation cannot distinguish clean from perturbed when the perturbation's vertices lie on the trust-frame boundary (mathematical necessity per [`docs/SHEAF_HALLUCINATION_DETECTOR.md`](SHEAF_HALLUCINATION_DETECTOR.md) §3.4.3). v3.2 must redesign, not parameter-sweep.
-- **Receipt:** [`fixtures/bench_receipts/v3_roc_bench_2026-05-02.json`](../fixtures/bench_receipts/v3_roc_bench_2026-05-02.json) and [`fixtures/bench_receipts/v3_1_f3_diagnostic_2026-05-02.json`](../fixtures/bench_receipts/v3_1_f3_diagnostic_2026-05-02.json) carry the per-cell AUCs and `bench_digest` SHA-256 (JCS-canonical, RFC 8785) for reproducibility.
+- **Receipt:** [`fixtures/bench_receipts/v3_roc_bench_2026-05-03.json`](../fixtures/bench_receipts/v3_roc_bench_2026-05-03.json) and [`fixtures/bench_receipts/v3_1_f3_diagnostic_2026-05-03.json`](../fixtures/bench_receipts/v3_1_f3_diagnostic_2026-05-03.json) carry the per-cell AUCs and `bench_digest` SHA-256 (JCS-canonical, RFC 8785) for reproducibility.
 
 ### 2.10. Bench Reproducibility Digest (`bench_digest`, PR #125)
 

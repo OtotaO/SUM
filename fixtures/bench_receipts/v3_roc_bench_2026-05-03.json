@@ -1,0 +1,85 @@
+{
+  "corpus": "seed_long_paragraphs",
+  "f1_v3_beats_v22_on_trusted_mean_auc": {
+    "delta": 0.034074074074074034,
+    "v22_mean": 0.6525925925925926,
+    "v3_mean": 0.6866666666666666,
+    "verdict": "MARGINAL"
+  },
+  "f2_v3_no_collapse_on_untrusted": {
+    "collapses": 0,
+    "verdict": "PASS"
+  },
+  "f3_v31_boundary_deviation_corpus_scale": {
+    "trusted_mean_auc": 0.5,
+    "untrusted_mean_auc": 0.35555555555555557,
+    "verdict": "FAIL"
+  },
+  "head_to_head_v3_vs_v22": {
+    "A1@trusted": {
+      "delta": 0.013333333333333308,
+      "v22": 0.6044444444444445,
+      "v3": 0.6177777777777778
+    },
+    "A1@untrusted": {
+      "delta": 0.12444444444444447,
+      "v22": 0.5888888888888889,
+      "v3": 0.7133333333333334
+    },
+    "A2@trusted": {
+      "delta": 0.0,
+      "v22": 0.5,
+      "v3": 0.5
+    },
+    "A2@untrusted": {
+      "delta": 0.0,
+      "v22": 0.5,
+      "v3": 0.5
+    },
+    "A4@trusted": {
+      "delta": 0.0888888888888888,
+      "v22": 0.8533333333333334,
+      "v3": 0.9422222222222222
+    },
+    "A4@untrusted": {
+      "delta": 0.15111111111111108,
+      "v22": 0.8088888888888889,
+      "v3": 0.96
+    }
+  },
+  "lambda_auto_calibrated": 1.9617608348692248,
+  "n_docs_skipped": 1,
+  "n_docs_total": 16,
+  "n_docs_with_partition": 15,
+  "per_cell_auc": {
+    "v22|A1|trusted": 0.6044444444444445,
+    "v22|A1|untrusted": 0.5888888888888889,
+    "v22|A2|trusted": 0.5,
+    "v22|A2|untrusted": 0.5,
+    "v22|A4|trusted": 0.8533333333333334,
+    "v22|A4|untrusted": 0.8088888888888889,
+    "v31|A1|trusted": 0.5,
+    "v31|A1|untrusted": 0.3622222222222222,
+    "v31|A2|trusted": 0.5,
+    "v31|A2|untrusted": 0.5,
+    "v31|A4|trusted": 0.5,
+    "v31|A4|untrusted": 0.20444444444444446,
+    "v3|A1|trusted": 0.6177777777777778,
+    "v3|A1|untrusted": 0.7133333333333334,
+    "v3|A2|trusted": 0.5,
+    "v3|A2|untrusted": 0.5,
+    "v3|A4|trusted": 0.9422222222222222,
+    "v3|A4|untrusted": 0.96
+  },
+  "schema": "sum.sheaf_v3_roc_bench.v1",
+  "stalk_dim": 8,
+  "training_epochs": 200,
+  "trust_partition": "deterministic 50/50 per doc",
+  "vocab_size_entities": 229,
+  "vocab_size_relations": 95,
+  "weights_from_receipts": {
+    "default_weight": 0.1,
+    "revoked_weight": 0.0,
+    "trusted_weight": 1.0
+  }
+}

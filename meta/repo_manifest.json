@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-04T00:58:07Z",
+  "issued_at": "2026-05-04T01:26:14Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "46cbaf20afe4b2cd168575fe97d93868322696c9",
-    "head_short": "46cbaf2",
-    "head_subject": "docs: refresh FEATURE_CATALOG.md (151\u2013156) + future-regime TODOs",
-    "head_committer_date": "2026-05-03T20:52:27-04:00",
+    "head_sha": "aadadeec5387ce4049914b453018da83361a7fcd",
+    "head_short": "aadadee",
+    "head_subject": "docs: refresh FEATURE_CATALOG.md (151\u2013156) + future-regime TODOs (#134)",
+    "head_committer_date": "2026-05-03T21:03:46-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -85,17 +85,17 @@
         "issued_at": "2026-05-01T11:30:00Z"
       },
       {
-        "path": "fixtures/bench_receipts/v3_1_f3_diagnostic_2026-05-02.json",
+        "path": "fixtures/bench_receipts/v3_1_f3_diagnostic_2026-05-03.json",
         "schema": "sum.sheaf_v3_1_f3_diagnostic.v1",
         "issued_at": null
       },
       {
-        "path": "fixtures/bench_receipts/v3_2_validation_2026-05-02.json",
+        "path": "fixtures/bench_receipts/v3_2_validation_2026-05-03.json",
         "schema": "sum.sheaf_v3_2_validation.v1",
         "issued_at": null
       },
       {
-        "path": "fixtures/bench_receipts/v3_roc_bench_2026-05-02.json",
+        "path": "fixtures/bench_receipts/v3_roc_bench_2026-05-03.json",
         "schema": "sum.sheaf_v3_roc_bench.v1",
         "issued_at": null
       }

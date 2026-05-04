@@ -4,6 +4,53 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Bench-digest substrate determinism (Sprint 1 of the
+  intensification path to arXiv).** Every bench in the repo
+  (`v3_roc_bench`, `sheaf_v3_1_f3_diagnostic`, `sheaf_v3_2_validation`)
+  previously reproduced *only* with `PYTHONHASHSEED=0` —
+  set-iteration order in the deterministic sieve was hash-
+  randomized across Python invocations, propagating
+  ~±0.005 noise into per-cell AUCs. **Single load-bearing
+  fix:** `sum_engine_internal/algorithms/syntactic_sieve.py:453`
+  changed from `list(set(triplets))` to `sorted(set(triplets))`.
+  All three benches now reproduce identical `bench_digest`
+  values across fresh Python processes without environment-
+  variable manipulation; verified by running each bench three
+  times.
+
+  **Receipt rebase.** The substrate fix shifted digest values
+  slightly (the new sorted order differs from what
+  PYTHONHASHSEED=0 produced). Receipts regenerated and dated
+  2026-05-03; the 2026-05-02 receipts (PYTHONHASHSEED=0-
+  conditional digests) are deleted to avoid future readers
+  reproducing against stale anchors. New digests:
+
+  | Receipt | New digest | Old (PYTHONHASHSEED=0) digest |
+  |---|---|---|
+  | `v3_2_validation_2026-05-03.json` | `b4d26c01d4962fa30f67c00313bbce8982ca16e3a97df34819747876ee14ed5a` | `97cf977512f9…162f43f` |
+  | `v3_1_f3_diagnostic_2026-05-03.json` | `62b6e1878d1d12f36eb80e301304854a1a2c03386f0e872850d3461b2f733e7c` | `244423192cd8…ff5308` |
+  | `v3_roc_bench_2026-05-03.json` | (no digest field; AUCs reproducible directly) | — |
+
+  **Substantive verdicts unchanged:** F4 PASSES at every γ
+  (F3 STRUCTURAL FAIL still closed at the detector layer);
+  F5 PASSES only at γ ≤ 0.1; v3.2 with γ=0 still byte-identical
+  to v3 (subsumption holds). The numbers shifted by ≤ 0.005
+  per-cell AUC, well under the F4/F5 threshold margins.
+
+  **Removed `reproducibility_requires` field** from the v3.2
+  validation receipt. The corresponding caveat sections in
+  the spec doc, playbook, and prior CHANGELOG entries are
+  superseded by this entry — bench reproducibility is
+  unconditional now.
+
+  **Why this matters for arXiv (Sprint 7).** The preprint can
+  cite digest values as reproducibility anchors without a
+  "PYTHONHASHSEED=0 required" footnote. Anyone who clones the
+  repo and runs `python -m scripts.research.sheaf_v3_2_validation`
+  gets the same digest as the receipt. That's the
+  "reproducible-research-with-cryptographic-teeth" claim
+  becoming load-bearing rather than caveated.
+
 - **PCI DSS v4.0 Requirement 10 validator — sixth and final
   regime in the record-keeping shape slate.** Closes the slate
   scoped under Priority 11. Six regimes now consume

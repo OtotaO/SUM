@@ -450,7 +450,15 @@ class DeterministicSieve:
             triple = _extract_from_sent(sent)
             if triple is not None and _is_clean_triple(triple):
                 triplets.append(triple)
-        return list(set(triplets))  # Deduplicate
+        # Deduplicate AND sort lexicographically. The sort is load-bearing
+        # for cross-invocation reproducibility: bare `set(triplets)` returns
+        # a set whose iteration order depends on Python's hash randomization
+        # (PYTHONHASHSEED-dependent), which then propagates through
+        # KnowledgeSheafV2.from_triples → trained vertex order → bench AUCs.
+        # Sorting on the (subject, predicate, object) tuple gives stable
+        # cross-process ordering and lets bench_digest values reproduce
+        # without environment-variable manipulation.
+        return sorted(set(triplets))
 
     def extract_with_provenance(
         self,
