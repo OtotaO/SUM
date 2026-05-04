@@ -98,9 +98,9 @@ auditors) call :func:`validate` directly.
 """
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any, Iterable
 
+from sum_engine_internal.compliance._predicates import is_iso8601_utc
 from sum_engine_internal.compliance.report import (
     ValidationReport,
     Violation,
@@ -118,28 +118,6 @@ _RULE_TIMESTAMP_PRESENT = "gdpr-art-30.timestamp-present"
 _RULE_TIMESTAMP_ISO8601_UTC = "gdpr-art-30.timestamp-iso8601-utc"
 _RULE_PROCESSING_CATEGORY_PRESENT = "gdpr-art-30.processing-category-present"
 _RULE_PROCESSOR_IDENTITY_PRESENT = "gdpr-art-30.processor-identity-present"
-
-
-def _is_iso8601_utc(s: Any) -> bool:
-    """ISO 8601 UTC string ending in ``Z`` and parseable.
-
-    Same predicate as the EU AI Act Article 12 validator —
-    deliberately so. Both regimes rely on the same parseability
-    contract for chronological reporting; sharing the predicate
-    means a fix to one applies to both. (If a future regime needs
-    a different timestamp format, this lifts to
-    ``compliance/_predicates.py`` — for now, two regimes share
-    one definition cleanly.)
-    """
-    if not isinstance(s, str):
-        return False
-    if not s.endswith("Z"):
-        return False
-    try:
-        datetime.fromisoformat(s.replace("Z", "+00:00"))
-        return True
-    except (ValueError, TypeError):
-        return False
 
 
 def _violation(rule_id: str, row_index: int, row: dict[str, Any], msg: str) -> Violation:
@@ -197,7 +175,7 @@ def validate(rows: Iterable[dict[str, Any]]) -> ValidationReport:
 
         # R3 — timestamp ISO 8601 UTC (only checked when present, since
         # absence already surfaces under R2 — avoids double-counting)
-        if ts is not None and not _is_iso8601_utc(ts):
+        if ts is not None and not is_iso8601_utc(ts):
             violations.append(_violation(
                 _RULE_TIMESTAMP_ISO8601_UTC, i, row,
                 f"timestamp {ts!r} is not parseable ISO 8601 UTC ending in 'Z'",

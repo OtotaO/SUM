@@ -4,6 +4,42 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Shared compliance predicate library (Sprint 3 of the
+  intensification path to arXiv).** Six per-regime validators
+  (Art 12 / GDPR Art 30 / HIPAA / ISO 27001 / SOC 2 / PCI DSS)
+  previously each carried a byte-identical copy of
+  `_is_iso8601_utc`. Extracted to
+  `sum_engine_internal/compliance/_predicates.py` exporting
+  `is_iso8601_utc`. Six regime modules now import from one source.
+
+  **Substrate-tightening proven.** New `Tests/compliance/
+  test_predicates.py` pins three contracts:
+  - **P1: predicate behaviour** — 9 cases covering Z-suffix
+    timestamps (basic, ms, μs), offset-style timezones rejected,
+    unparseable bodies rejected, non-string types rejected,
+    empty string rejected, human-readable dates rejected.
+  - **P2: single source of truth** — exactly one definition of
+    `is_iso8601_utc` in the package (in `_predicates.py`); zero
+    legacy `_is_iso8601_utc` definitions remaining; six regime
+    modules import the shared one (verified via object identity
+    `module.is_iso8601_utc is _predicates.is_iso8601_utc`).
+  - **Cross-regime propagation** — passing a "+00:00" offset
+    timestamp through each of the six regime validators fires
+    each regime's R3 rule, proving a behavioural change to the
+    shared predicate would propagate to every regime's R3
+    verdict simultaneously (the property that motivated the
+    extraction).
+
+  **Why this matters for arXiv (Sprint 7).** The shared-predicate
+  pattern is replicable for future compliance regimes (NIS2,
+  NIST 800-53, etc.) — no copy-paste required. Operationally:
+  a future fix to the timestamp predicate (e.g. accepting
+  "+00:00" if the regime contract loosens) is a single-file edit
+  rather than a six-file lockstep migration.
+
+  **Test deltas:** 12 new predicate tests; total compliance
+  suite 152 → 164.
+
 - **fastapi/starlette compatibility pin (Sprint 2 of the
   intensification path to arXiv).** Full pytest run previously
   reported 30 collection errors from six modules
