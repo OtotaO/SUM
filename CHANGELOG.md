@@ -4,6 +4,53 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **HIPAA § 164.312(b) Audit Controls validator — third per-regime
+  compliance consumer.** `sum_engine_internal/compliance/
+  hipaa_164_312_b.py` validates a `sum.audit_log.v1` stream
+  against the per-row form floor of HIPAA Security Rule 45 CFR
+  § 164.312(b) (Technical Safeguards — Audit Controls). Six
+  rules R1–R6: schema-pinned, timestamp-present, timestamp-
+  iso8601-utc, activity-type-recorded (operation), system-
+  component-identified (cli_version), examination-completeness
+  (per-operation anchors: attest source_uri, verify `ok`
+  presence, render mode).
+
+  **Substrate-tightening — substrate held for the third time.**
+  `sum.compliance_report.v1` shape is now a *regularity*, not a
+  single- or two-data-point claim. The cross-regime CLI dispatch
+  contracts (C1 registry consistency, C2 schema, C3 exit codes)
+  in `Tests/compliance/test_cli_dispatch.py` extended automatically
+  when HIPAA was registered in both `_COMPLIANCE_REGIMES` and
+  `_compliance_validators()`. New cross-regime shape pin
+  `test_hipaa_164_312_b::test_validation_report_shape_matches_other_regimes`
+  asserts byte-shape parity across all three regimes (Art 12,
+  Art 30, § 164.312(b)).
+
+  **Truth-first scope.** Wire-spec doc
+  `docs/COMPLIANCE_HIPAA_164_312_B.md` §"What this validator does
+  NOT pin" names the deployment-scope obligations the validator
+  cannot reach: the auditor function (§ 164.312(b)'s "examine"
+  verb requires humans/processes that look at the logs), the
+  § 164.530(j)(2) six-year retention obligation, surrounding
+  access-control safeguards (§ 164.312(a)(1), § 164.308(a)(4)),
+  ePHI inventory (whether SUM is even in scope), and user
+  identification (the schema doesn't carry user_id; multi-user
+  HIPAA deployments need an authenticating proxy or schema
+  extension).
+
+  **Rule-shape note.** R6 (`examination-completeness`) overlaps
+  in shape with EU AI Act Art 12 R4 + R5 + R6 (operation-specific
+  anchors). The rules are NOT lifted into a shared module — the
+  statutory anchors differ (HIPAA points at ePHI activity, Art 12
+  at AI traceability), so rule_ids stay regime-specific even
+  though the per-row check shape is similar. A future PR may
+  extract a shared predicate library if 4+ regimes end up needing
+  the same per-operation anchors.
+
+  **Test deltas:** 27 HIPAA rule tests (24 per-rule + clean-pass
+  + cross-regime + e2e). Total compliance suite: 32 EU AI Act +
+  25 GDPR + 5 CLI dispatch + 27 HIPAA = 89 tests.
+
 - **GDPR Article 30 validator — second per-regime compliance consumer.**
   `sum_engine_internal/compliance/gdpr_article_30.py` validates a
   `sum.audit_log.v1` stream against the per-row floor of Regulation
