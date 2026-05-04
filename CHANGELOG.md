@@ -4,6 +4,44 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **PCI DSS user-identification gap closed (Sprint 4 of the
+  intensification path to arXiv).** Three optional identity
+  fields (`user_id` / `host_id` / `ip_address`) added to the
+  `sum.audit_log.v1` schema as additive optional fields under
+  the existing "consumers should ignore unknown keys" convention
+  (no schema bump; backward-compatible). The audit-log emit path
+  reads three new env vars at process start:
+  `SUM_AUDIT_USER_ID`, `SUM_AUDIT_HOST_ID`,
+  `SUM_AUDIT_IP_ADDRESS`. Empty-string env vars treated as unset.
+
+  PCI DSS validator gains **R7
+  `pci-dss-4-req-10.user-identification`** — fires on rows
+  lacking `user_id`. Closes the load-bearing gap previously
+  named in `docs/COMPLIANCE_PCI_DSS_4_REQ_10.md` §10.2.2; that
+  section now reads "CLOSED 2026-05-03 / PR #140" with operator-
+  facing closure instructions (source `SUM_AUDIT_USER_ID` from
+  the authenticating proxy's session identity at process start).
+
+  **Truth-first scope.** R7 is a real Req 10.2.2 violation, not
+  a soft warning. Pre-Sprint-4 audit logs lacking `user_id` fail
+  R7 specifically — the truthful signal that they don't meet
+  Req 10.2.2's user-identification requirement. They still pass
+  the other six PCI rules and every other regime's validator.
+
+  **Test deltas:**
+  - 5 new PCI R7 tests
+  - 8 new audit_log identity-field tests (env-var behaviour,
+    empty-string handling, payload-override seam, end-to-end
+    env-var → audit log → validator R7 closure)
+  - Total: 194 passing (25 audit_log + 169 compliance)
+
+  **Why this matters for arXiv (Sprint 7).** The preprint can
+  cite a six-regime substrate where the most complex statute
+  (PCI DSS Req 10) has a *complete* per-row floor — no
+  outstanding load-bearing gap. Operators in PCI-relevant
+  contexts get a documented closure path, not a documented
+  limitation.
+
 - **Sheaf-Laplacian detector library API doc (Sprint 5b of the
   intensification path to arXiv — first latent capability
   surfaced).** `docs/SHEAF_LIBRARY_API.md` documents the

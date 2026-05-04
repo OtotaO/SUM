@@ -248,13 +248,9 @@ Receipt rebase: 2026-05-02 receipts deleted; new ones dated 2026-05-03 with natu
 
 **Status: closed.** Extracted `sum_engine_internal/compliance/_predicates.py` with `is_iso8601_utc`; six regime modules import from one source (verified via object identity in `Tests/compliance/test_predicates.py::test_all_six_regimes_import_the_shared_predicate`). 12 new predicate tests pin behaviour + single-source-of-truth + cross-regime propagation. Total compliance suite 152 → 164. The `is_iso8601_utc` contract (only Z-suffix UTC accepted; "+00:00" rejected; non-string types rejected) is now a single-file edit rather than a six-file lockstep migration.
 
-### Sprint 4 — PCI DSS user_id schema extension
+### Sprint 4 — PCI DSS user-identification gap closed (CLOSED 2026-05-03)
 
-**Why.** PR #133 named the gap explicitly: PCI DSS Req 10.2.2 lists "user identification" as the FIRST required field, but `sum.audit_log.v1` doesn't carry one. Any operator trying to use SUM in a PCI-relevant context hits this immediately. The truthful-named gap is the right truth-first move; closing it converts the gap into a real capability.
-
-**Work.** Define `sum.audit_log.v2` as a strict superset of v1: optional `user_id` / `host_id` / `ip_address` fields. v2 rows pass v1 validators (since the new fields are optional). PCI DSS validator gains an R7 (`user-identification-recommended`) that fires on v2 schema rows lacking `user_id` *for compliance-mode runs*. Audit-log emit path accepts a `SUM_AUDIT_USER_ID` env var (or per-call CLI flag) to populate the field. v1 stays the default schema; opting into v2 is operator-explicit.
-
-**Success criterion.** PCI deployments can satisfy 10.2.2 with the v2 schema + an authenticating proxy populating `SUM_AUDIT_USER_ID`. The wire-spec doc converts the "load-bearing gap" section to "how to close the gap with v2 + a proxy."
+**Status: closed.** Implementation differed from the original plan in one important way: instead of bumping to `sum.audit_log.v2`, the three identity fields (`user_id` / `host_id` / `ip_address`) shipped as **additive optional fields under the existing v1 schema** — backward-compatible under the schema's "consumers should ignore unknown keys" convention. The audit-log emit path reads three env vars (`SUM_AUDIT_USER_ID`, `SUM_AUDIT_HOST_ID`, `SUM_AUDIT_IP_ADDRESS`) at process start. PCI DSS validator gained **R7** (`pci-dss-4-req-10.user-identification`) firing on rows lacking `user_id`. The PCI wire-spec doc's §10.2.2 "structural gap" section was rewritten to "CLOSED 2026-05-03 / PR #140" with operator-facing closure instructions. 5 new PCI tests + 8 new audit-log identity-field tests; total 194 passing across the two suites. The "v2 schema bump" framing turned out to be unnecessary — additive optional fields are the cleaner truth-first answer.
 
 ### Sprint 5 — Surface latent capabilities
 

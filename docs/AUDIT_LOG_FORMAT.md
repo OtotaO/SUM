@@ -51,6 +51,18 @@ Every row is a single line of compact JSON terminated by `\n`:
 | `operation`   | one of `"attest"`, `"verify"`, `"render"` | Operation kind.                                                |
 | `cli_version` | string                                  | Version of `sum-cli` that produced the row.                    |
 
+### Optional identity fields (Sprint 4 / PR #140)
+
+These fields appear on a row only when the corresponding env var is set at process start. Backward-compatible: rows without these fields still pass every existing validator. **Closes the load-bearing PCI DSS Req 10.2.2 user-identification gap** named in `docs/COMPLIANCE_PCI_DSS_4_REQ_10.md` — the PCI validator's R7 (`pci-dss-4-req-10.user-identification`) fires on rows lacking `user_id`.
+
+| Field         | Env var                  | Notes                                                                |
+|---------------|--------------------------|----------------------------------------------------------------------|
+| `user_id`     | `SUM_AUDIT_USER_ID`      | Per PCI Req 10.2.2, the FIRST required field for each event. Operators running SUM behind an authenticating proxy populate this from the proxy's session identity at process start. |
+| `host_id`     | `SUM_AUDIT_HOST_ID`      | Multi-host deployments (clusters, k8s pods, container fleets) attribute events to specific compute units. |
+| `ip_address`  | `SUM_AUDIT_IP_ADDRESS`   | Network-layer origination — incident response / forensic analysis under PCI Req 10.2.2's "origination of event" requirement. |
+
+Empty-string env vars are treated as unset (same convention as `SUM_AUDIT_LOG`). Missing env var → field absent on the row, not present-with-null.
+
 ### Operation-specific fields
 
 #### `operation: "attest"`

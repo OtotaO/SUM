@@ -73,6 +73,52 @@ def _audit_log_path() -> str | None:
     return p
 
 
+def _identity_fields() -> dict[str, Any]:
+    """Optional identity fields populated from env vars.
+
+    Sprint 4 of the intensification path to arXiv (PR #140). Closes
+    the PCI DSS Req 10.2.2 user-identification gap named in
+    ``docs/COMPLIANCE_PCI_DSS_4_REQ_10.md``. Three env vars are
+    consulted; each populated value becomes an optional field on
+    the audit-log row:
+
+      - ``SUM_AUDIT_USER_ID`` → ``user_id`` field. Per PCI Req 10.2.2,
+        "user identification" is the FIRST required field for each
+        audit-log event. Operators running SUM behind an
+        authenticating proxy populate this from the proxy's session
+        identity at process start.
+      - ``SUM_AUDIT_HOST_ID`` → ``host_id`` field. Multi-host
+        deployments (clusters, k8s pods, container fleets) use this
+        to attribute events to specific compute units.
+      - ``SUM_AUDIT_IP_ADDRESS`` → ``ip_address`` field. Network-
+        layer origination, useful for incident-response / forensic
+        analysis under PCI Req 10.2.2's "origination of event"
+        requirement.
+
+    All three are *optional*. An unset env var produces an absent
+    field (not a null value). The audit-log schema stays at
+    ``sum.audit_log.v1``; these are additive optional fields under
+    the existing schema's "consumers should ignore unknown keys"
+    convention. Backward compat: rows without these fields still
+    pass every existing validator.
+
+    PCI DSS validator R7 (``pci-dss-4-req-10.user-identification-
+    recommended``, added in the same PR as this function) treats
+    a missing ``user_id`` as a Req 10.2.2 violation in compliance-
+    mode runs.
+    """
+    out: dict[str, Any] = {}
+    for env_var, field in (
+        ("SUM_AUDIT_USER_ID", "user_id"),
+        ("SUM_AUDIT_HOST_ID", "host_id"),
+        ("SUM_AUDIT_IP_ADDRESS", "ip_address"),
+    ):
+        value = os.environ.get(env_var)
+        if value:  # non-empty (skips both None and empty string)
+            out[field] = value
+    return out
+
+
 def emit_audit_event(operation: str, payload: dict[str, Any]) -> None:
     """Append a single JSONL row to the audit log if configured.
 
@@ -82,6 +128,15 @@ def emit_audit_event(operation: str, payload: dict[str, Any]) -> None:
     canonical bundle / receipt still carries the load-bearing trust
     properties; the audit log is for downstream compliance tools
     to ingest.
+
+    Identity fields (``user_id`` / ``host_id`` / ``ip_address``) are
+    populated from env vars by :func:`_identity_fields`. They appear
+    on the row only when the corresponding env var is set; absent
+    env vars produce absent fields (not null values). The
+    ``payload`` argument takes precedence over identity fields if
+    a caller passes overlapping keys — useful for tests that want
+    to pin specific identity values without touching the
+    environment.
     """
     path = _audit_log_path()
     if path is None:
@@ -95,6 +150,9 @@ def emit_audit_event(operation: str, payload: dict[str, Any]) -> None:
                      + f"{datetime.now(timezone.utc).microsecond // 1000:03d}Z",
         "operation": operation,
         "cli_version": __version__,
+        # Identity fields from env, then payload last so the caller
+        # wins on overlap (intentional for test seams).
+        **_identity_fields(),
         **payload,
     }
     line = json.dumps(row, separators=(",", ":")) + "\n"
