@@ -1577,6 +1577,24 @@ _COMPLIANCE_REGIMES: dict[str, str] = {
         "anchors). Deployment-scope obligations — auditor function, "
         "retention, ePHI inventory — live outside this validator."
     ),
+    "iso-27001-8-15": (
+        "ISO/IEC 27001:2022 Annex A.8.15 — Logging. Pins the per-"
+        "row form floor an audit log must satisfy for the recording "
+        "to count as a 'produced' log under A.8.15 (schema, "
+        "timestamp, ISO-8601-UTC, activity, system component). The "
+        "'stored', 'protected', 'analysed' verbs map to deployment-"
+        "scope obligations (file-system policy, access control, "
+        "SIEM integration) outside this validator."
+    ),
+    "soc-2-cc-7-2": (
+        "SOC 2 Trust Services Criteria CC7.2 — System Operations. "
+        "Pins the per-row form floor required to enable the "
+        "monitoring criterion (schema, timestamp, ISO-8601-UTC, "
+        "activity classification, system component identification). "
+        "The detection / monitoring / analysis activities themselves "
+        "(SIEM rules, alert routing, oncall rotations) live at "
+        "deployment scope outside this validator."
+    ),
 }
 
 
@@ -1593,11 +1611,15 @@ def _compliance_validators():
         eu_ai_act_article_12,
         gdpr_article_30,
         hipaa_164_312_b,
+        iso_27001_8_15,
+        soc_2_cc_7_2,
     )
     return {
         "eu-ai-act-article-12": eu_ai_act_article_12.validate,
         "gdpr-article-30": gdpr_article_30.validate,
         "hipaa-164-312-b": hipaa_164_312_b.validate,
+        "iso-27001-8-15": iso_27001_8_15.validate,
+        "soc-2-cc-7-2": soc_2_cc_7_2.validate,
     }
 
 
