@@ -1218,7 +1218,7 @@ Callers using `combined_detector_score` should auto-calibrate per corpus rather 
 
 Reproducible: `PYTHONPATH=. python scripts/research/sheaf_v2_roc_bench.py` (CPU-only, ~30 seconds, no LLM API spend).
 
-### 150. Audit-log streaming primitive (`SUM_AUDIT_LOG`, sum.audit_log.v1) ✅
+### 150. Audit-log streaming primitive (`SUM_AUDIT_LOG`, sum.audit_log.v1) ✅ (substrate; six per-regime validator consumers shipped — see entries 151–156)
 
 `sum_cli/audit_log.py` — when the `SUM_AUDIT_LOG` environment variable is set to a file path (or `-` for stdout), every `sum attest` / `sum verify` / `sum render` operation appends a single JSONL row to that destination describing what was done. The audit log is **regime-agnostic foundation infrastructure**: a specific compliance regime (GDPR-Art-30, HIPAA-164.514, EU AI Act Annex IV, NIST AI RMF, internal-audit) implements its own validator on top by tailing the JSONL file and checking per-regime required fields.
 
@@ -1231,13 +1231,83 @@ Concurrency: single-line JSONL records under `O_APPEND` on POSIX produce a seria
 Verify: `pytest Tests/test_audit_log.py -q`
 Expected: `17 passed` — schema pin (required fields, ISO 8601 UTC timestamp), no-writes-when-unset, fail-open on unwritable path, `-` writes to stdout, concurrent appends serialize cleanly, per-operation row shape (attest / verify / render), end-to-end attest→verify→render produces three rows with cross-referenceable axiom counts. Six gap-closure tests added in PR #119: signed-bundle (Ed25519 / HMAC / dual) attest rows, true multi-process O_APPEND atomicity (8 procs × 20 emits = 160 rows; spawn ctx for cross-platform), worker-mode render row schema, empty-string `SUM_AUDIT_LOG=""` treated as unset.
 
+### 151. EU AI Act Article 12 record-keeping validator (`eu-ai-act-article-12`) ✅
+
+`sum_engine_internal/compliance/eu_ai_act_article_12.py` — first per-regime consumer of the audit-log substrate. Validates a `sum.audit_log.v1` JSONL stream against Regulation (EU) 2024/1689 Article 12 (record-keeping for high-risk AI systems). Six per-row rules: schema-pinned, required-traceability-fields (timestamp / operation / cli_version), timestamp-iso8601-utc, attest-source-uri-present, verify-bundle-anchor-present (axiom_count + state_integer_digits), render-mode-present (`local-deterministic` or `worker`).
+
+Returns the regime-agnostic `sum.compliance_report.v1` shape — same JSON envelope every regime emits so downstream consumers (dashboards, retention pipelines, CI gates) ingest reports across regimes without per-regime adapters. Wire spec: `docs/COMPLIANCE_EU_AI_ACT_ARTICLE_12.md` (includes "What this validator does NOT pin" section: Article 12(3) biometric-specific fields, Article 11 / Annex IV documentation, Article 12(4) retention).
+
+CLI: `sum compliance check --regime eu-ai-act-article-12 --audit-log <path>` exits 0 / 1 / 2 (ok / violations / usage error). `sum compliance regimes` lists every registered regime.
+
+Verify: `pytest Tests/compliance/test_eu_ai_act_article_12.py -q`
+Expected: `32 passed` — 6 rules × negative-cases + clean-pass + report-shape + e2e through real CLI.
+Result: **PASS**.
+
+### 152. GDPR Article 30 Records of Processing Activities validator (`gdpr-article-30`) ✅
+
+`sum_engine_internal/compliance/gdpr_article_30.py` — second per-regime consumer (substrate-tightening proof: the `sum.compliance_report.v1` shape held without modification across regimes). Five per-row rules covering the *minimum record-keeping floor*: schema-pinned, timestamp-present, timestamp-iso8601-utc, processing-category-present (`operation`), processor-identity-present (`cli_version`).
+
+Truth-first scope: Article 30(1)(a)–(g) controller-level metadata (controller name, purposes, categories of data subjects + personal data, recipients, transfers, retention, security measures), Art 30(4) availability, Art 30(5) exemption, and Art 6 lawful-basis verification all live at record-set scope above the per-row layer and are named explicitly in `docs/COMPLIANCE_GDPR_ARTICLE_30.md`.
+
+Substrate-tightening: PR #130 refactored the CLI dispatch from a hardcoded `if regime == "eu-ai-act-article-12"` branch into a `_compliance_validators()` dispatch dict; new `Tests/compliance/test_cli_dispatch.py` pins three cross-regime contracts (C1 registry consistency, C2 schema, C3 exit codes 0/1/2).
+
+Verify: `pytest Tests/compliance/test_gdpr_article_30.py -q`
+Expected: `25 passed` — per-rule negatives + clean-pass + cross-regime shape proof + e2e.
+Result: **PASS**.
+
+### 153. HIPAA § 164.312(b) Audit Controls validator (`hipaa-164-312-b`) ✅
+
+`sum_engine_internal/compliance/hipaa_164_312_b.py` — third per-regime consumer (regime-agnosticism is now a regularity, not single-instance proof). Six per-row rules: schema-pinned, timestamp-present, timestamp-iso8601-utc, activity-type-recorded (operation), system-component-identified (cli_version), examination-completeness — operation-specific anchors (`attest`→`source_uri`; `verify`→`ok` PRESENT, presence not truthy; `render`→`mode ∈ {local-deterministic, worker}`).
+
+R6 overlaps in shape with Art 12 R4–R6 but `rule_id` strings stay regime-specific because the statutory anchors differ (HIPAA points at ePHI activity, Art 12 at AI traceability). Wire spec: `docs/COMPLIANCE_HIPAA_164_312_B.md` names the deployment-scope obligations out of scope (auditor function, § 164.530(j)(2) six-year retention, surrounding access-control safeguards § 164.312(a)(1) + § 164.308(a)(4), ePHI inventory, user_id structural gap).
+
+Verify: `pytest Tests/compliance/test_hipaa_164_312_b.py -q`
+Expected: `27 passed` — per-rule negatives + clean-pass + ok=False is examinable + cross-regime shape proof + e2e.
+Result: **PASS**.
+
+### 154. ISO/IEC 27001:2022 A.8.15 Logging validator (`iso-27001-8-15`) ✅
+
+`sum_engine_internal/compliance/iso_27001_8_15.py` — fourth per-regime consumer. Five per-row rules (the same minimum record-keeping floor as GDPR Art 30): schema-pinned, timestamp-present, timestamp-iso8601-utc, activity-recorded (operation), system-component-identified (cli_version).
+
+A.8.15's four verbs (produced / stored / protected / analysed): this validator pins the form floor for the "produced" verb. The "stored", "protected", and "analysed" verbs map to deployment-scope obligations (file-system policy, access control, SIEM integration) named explicitly out-of-scope in `docs/COMPLIANCE_ISO_27001_8_15.md`. ISO 27002:2022 §8.15 detailed content (user IDs, network addresses, privilege escalation events) is beyond the current schema and is also named out of scope.
+
+Verify: `pytest Tests/compliance/test_iso_27001_8_15.py -q`
+Expected: `19 passed` — per-rule negatives + clean-pass + 4-way cross-regime shape proof + e2e.
+Result: **PASS**.
+
+### 155. SOC 2 Trust Services Criteria CC7.2 System Operations validator (`soc-2-cc-7-2`) ✅
+
+`sum_engine_internal/compliance/soc_2_cc_7_2.py` — fifth per-regime consumer (shipped in the same PR as ISO 27001 A.8.15 because the per-row shape is identical). Five per-row rules: schema-pinned, timestamp-present, timestamp-iso8601-utc, activity-classified (operation), system-component-identified (cli_version).
+
+CC7.2 is a monitoring criterion — the audit log is the *input* that enables monitoring. The detection / monitoring / analysis activities themselves (SIEM rules, alert routing, oncall rotations), surrounding TSP criteria (CC6 access control, CC7.1 / CC7.3 / CC7.4 incident lifecycle, CC8 change management), anomaly-detection-quality audit judgment, and Type 1 vs Type 2 distinction are all named out-of-scope in `docs/COMPLIANCE_SOC_2_CC_7_2.md`.
+
+**Empirical finding from this and Art 30 / ISO A.8.15:** there is a *minimum record-keeping floor* common to most record-keeping regimes — five rules R1–R5 (schema, timestamp, ISO-8601-UTC, activity, system component). Regime-specific rules are statutory anchoring + operation-specific anchors layered on top of this floor.
+
+Verify: `pytest Tests/compliance/test_soc_2_cc_7_2.py -q`
+Expected: `19 passed` — per-rule negatives + clean-pass + 5-way cross-regime shape proof + e2e.
+Result: **PASS**.
+
+### 156. PCI DSS v4.0 Requirement 10 validator (`pci-dss-4-req-10`) ✅
+
+`sum_engine_internal/compliance/pci_dss_4_req_10.py` — sixth per-regime consumer; closes the record-keeping shape slate. Most structurally complex statute in the slate (Req 10 has 7 sub-requirements 10.1–10.7, with 10.2 itself further subdivided). Six per-row rules mapping to Req 10.2.2 (event content) + 10.6 (consistent time): schema-pinned, timestamp-present, timestamp-iso8601-utc, event-type-recorded, origination-identified, event-content-completeness (per-operation anchors).
+
+**Truth-first scope, load-bearing.** PCI DSS Req 10.2.2 lists "user identification" as the FIRST required field for each audit-log event. `sum.audit_log.v1` does not currently carry a `user_id` field — SUM is a single-process CLI tool without a multi-user model. PCI deployments using SUM as a payment-adjacent component need either a schema extension (adding `user_id` / `host_id` / `ip_address`) or an authenticating proxy whose own logs carry user identity. **A green report from this validator does NOT mean SUM is PCI-compliant** — it means SUM's per-row form satisfies the parts of 10.2.2 visible in the current schema.
+
+`docs/COMPLIANCE_PCI_DSS_4_REQ_10.md` has the longest "What this validator does NOT pin" section in the slate (10.1 organisational, 10.2.1.* event-type coverage, 10.2.2 user identification, 10.3 log file protection, 10.4 review process, 10.5 12-month retention, 10.7 failure detection / alerting, cardholder data inventory).
+
+Verify: `pytest Tests/compliance/test_pci_dss_4_req_10.py -q`
+Expected: `25 passed` — per-rule negatives + clean-pass + ok=False is compliant + 6-way cross-regime shape proof + e2e.
+Result: **PASS**.
+
+**Cross-regime CLI dispatch substrate (compounds across entries 151–156).** `Tests/compliance/test_cli_dispatch.py` pins three contracts that span every regime: (C1) `_COMPLIANCE_REGIMES` keys ≡ `_compliance_validators()` keys (no orphaned descriptions or un-described validators); (C2) every regime returns a `sum.compliance_report.v1` schema from `cmd_compliance_check`; (C3) exit codes 0 / 1 / 2 — pipe-friendly for CI gates. New regimes inherit all three contracts automatically by registering in both registries. The substrate's regime-agnosticism is settled empirical fact: six regimes spanning EU AI law, EU privacy law, US health law, international ISMS standard, US audit-attestation, and payment-card industry standard all consume the same shape without modification.
+
 ---
 
 ## Summary counts
 
-Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **150**.
+Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **156**.
 
-- **Production ✅: 131 features** — tested green; each has a verification command in its entry.
+- **Production ✅: 137 features** — tested green; each has a verification command in its entry. (Up from 131 after PR #133 closed the six-regime compliance slate consuming the audit-log substrate; entries 151–156.)
 - **Scaffolded 🔧: 18 features** — tests pass, production activation pending. All catalogued in `docs/MODULE_AUDIT.md` with activation checklists.
 - **Designed 📄: 1 feature** (sha256_128_v2 default-promotion; cross-runtime byte-identity locked, default-flip is a separate operator decision).
 
