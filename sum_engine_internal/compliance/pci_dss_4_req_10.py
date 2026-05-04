@@ -123,6 +123,12 @@ _RULE_TIMESTAMP_ISO8601_UTC = "pci-dss-4-req-10.timestamp-iso8601-utc"
 _RULE_EVENT_TYPE_RECORDED = "pci-dss-4-req-10.event-type-recorded"
 _RULE_ORIGINATION_IDENTIFIED = "pci-dss-4-req-10.origination-identified"
 _RULE_EVENT_CONTENT_COMPLETENESS = "pci-dss-4-req-10.event-content-completeness"
+# R7 added in Sprint 4 (PR #140) when the audit-log emit path
+# learned to populate user_id / host_id / ip_address from
+# SUM_AUDIT_USER_ID / _HOST_ID / _IP_ADDRESS env vars. Closes the
+# load-bearing user-identification gap named in the PR #133 wire-
+# spec doc — converts "named limitation" into "validatable rule."
+_RULE_USER_IDENTIFICATION = "pci-dss-4-req-10.user-identification"
 
 
 def _violation(rule_id: str, row_index: int, row: dict[str, Any], msg: str) -> Violation:
@@ -231,6 +237,25 @@ def validate(rows: Iterable[dict[str, Any]]) -> ValidationReport:
                     f"'render' row 'mode' to be 'local-deterministic' "
                     f"or 'worker'; got {mode!r}",
                 ))
+
+        # R7 — user identification present (10.2.2: "user identification"
+        # is the FIRST required field for each audit-log event). Added
+        # Sprint 4 (PR #140) when the audit-log emit path learned to
+        # populate user_id from SUM_AUDIT_USER_ID env var. Operators
+        # running SUM in a PCI-relevant context populate the env var
+        # from their authenticating proxy's session identity at process
+        # start. Rows lacking user_id are NOT PCI-compliant under
+        # Req 10.2.2 — even if every other field is correct.
+        if not row.get("user_id"):
+            violations.append(_violation(
+                _RULE_USER_IDENTIFICATION, i, row,
+                "PCI DSS Req 10.2.2 'user identification' requires non-"
+                "empty 'user_id' on every row. Populate via "
+                "SUM_AUDIT_USER_ID env var (sourced from your "
+                "authenticating proxy's session identity), or accept "
+                "that this audit log is not PCI-compliant w.r.t. "
+                "Req 10.2.2's user-id requirement.",
+            ))
 
     return make_report(
         regime=REGIME,

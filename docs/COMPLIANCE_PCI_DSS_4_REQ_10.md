@@ -17,7 +17,7 @@ below.
 
 ## What this validator pins
 
-Six per-row rules mapping to Req 10.2.2 + 10.6:
+Seven per-row rules mapping to Req 10.2.2 + 10.6:
 
 | Rule ID | What it pins |
 |---|---|
@@ -27,6 +27,7 @@ Six per-row rules mapping to Req 10.2.2 + 10.6:
 | `pci-dss-4-req-10.event-type-recorded` | Non-empty `operation` (Req 10.2.2: "type of event"). |
 | `pci-dss-4-req-10.origination-identified` | Non-empty `cli_version` (Req 10.2.2: "origination of event" — for code-as-origin, the version is the per-row identifier). |
 | `pci-dss-4-req-10.event-content-completeness` | Per-operation anchors mapping 10.2.2's "identity or name of affected data, system component, resource, or service" + "success/failure indication": `attest` → `source_uri`; `verify` → `ok` PRESENT; `render` → `mode ∈ {local-deterministic, worker}`. |
+| `pci-dss-4-req-10.user-identification` (R7, **Sprint 4 / PR #140**) | Non-empty `user_id` on every row. Closes the load-bearing gap previously named in this doc. Operators populate `user_id` via the `SUM_AUDIT_USER_ID` env var; the audit-log emit path reads it at process start. PCI-relevant deployments source the env var from the authenticating proxy's session identity. |
 
 ## What this validator does NOT pin
 
@@ -62,27 +63,41 @@ validator's row-content scope. SUM does not currently log all
 these event categories (it has `attest` / `verify` / `render`
 operations, not "user authentication failure" or "admin action").
 
-### 10.2.2 User identification (structural gap)
+### 10.2.2 User identification (CLOSED 2026-05-03 / PR #140)
 
-**This is the load-bearing gap.** PCI DSS Req 10.2.2 lists "user
-identification" as the first required field for each audit-log
-event. `sum.audit_log.v1` does not currently carry a `user_id`
-field — SUM is a single-process CLI tool without a multi-user
-model.
+**Status: closed at the substrate layer.** Sprint 4 of the
+intensification path to arXiv (PR #140) extended the audit-log
+emit path to read three optional identity env vars at process
+start — `SUM_AUDIT_USER_ID`, `SUM_AUDIT_HOST_ID`,
+`SUM_AUDIT_IP_ADDRESS` — populating optional `user_id` /
+`host_id` / `ip_address` fields on every row. The PCI validator's
+new R7 rule (`pci-dss-4-req-10.user-identification`) fires on
+rows lacking `user_id`, converting the previously-named gap
+into a validatable contract.
 
-PCI DSS deployments using SUM as a payment-adjacent component
-need EITHER:
+**How operators close the gap in production:** source
+`SUM_AUDIT_USER_ID` from your authenticating proxy's session
+identity at process start. The proxy already has the user
+identity (it authenticated the user); pass it through to SUM as
+an env var. The audit-log row then carries the identity per
+Req 10.2.2's first-required-field requirement.
 
-- **A schema extension** adding `user_id` (and likely `host_id` /
-  `ip_address`) to every row, OR
-- **An authenticating proxy** whose own logs carry the user
-  identity at the aggregation layer; SUM's per-event row joins to
-  the proxy's session record by timestamp and request ID.
+**Backward compatibility:** the new fields are optional. Audit
+logs predating Sprint 4 still pass every existing validator;
+they fail R7 specifically (which is the truthful signal that
+they don't meet Req 10.2.2's user-identification requirement).
+SUM's per-row schema is still `sum.audit_log.v1` — additive
+optional fields, not a breaking schema bump.
 
-Neither path is implemented in the current schema. **The
-validator returning a green report does NOT mean SUM is
-PCI-compliant** — it means SUM's per-row form satisfies the parts
-of 10.2.2 visible in the current schema.
+**What this still doesn't close:** Req 10.2.2 also names
+"identity or name of affected data, system component, resource,
+or service" — the per-operation anchors handled by R6 (attest
+source_uri, verify ok, render mode). For multi-host / multi-
+container deployments that need finer attribution than
+`host_id` provides, additional schema fields would be needed
+(e.g. `container_id`, `request_id`, `correlation_id`); these
+remain a future schema extension if a deployment context calls
+for them.
 
 ### 10.3 Log file protection (out of scope)
 - 10.3.1 Read access limited to job-related need.
@@ -161,7 +176,9 @@ It does NOT say:
 - All required event types are being logged.
 - Logs are protected, retained, reviewed, or alerting on
   failures.
-- User identification is captured anywhere.
+
+(User identification IS captured per row when
+`SUM_AUDIT_USER_ID` is set — see §10.2.2 above.)
 
 A QSA (Qualified Security Assessor) auditing the deployment will
 need additional evidence covering the §"NOT pin" sections above.

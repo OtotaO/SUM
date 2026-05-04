@@ -581,3 +581,128 @@ def test_render_worker_mode_emits_receipt_fields(tmp_path, monkeypatch):
     assert row["render_receipt_kid"] == "test-render-key-2026-05-02"
     assert row["render_receipt_schema"] == "sum.render_receipt.v1"
     assert row["worker_url"] == "https://sum-demo.ototao.workers.dev/render"
+
+
+# ─── Identity fields (Sprint 4 / PR #140) ────────────────────────────
+
+
+class TestIdentityFields:
+    """Sprint 4: SUM_AUDIT_USER_ID / SUM_AUDIT_HOST_ID / SUM_AUDIT_IP_ADDRESS
+    env vars populate optional identity fields on every audit row.
+    Closes the PCI DSS Req 10.2.2 user-identification gap named in
+    docs/COMPLIANCE_PCI_DSS_4_REQ_10.md."""
+
+    def test_no_identity_env_vars_no_identity_fields(self, tmp_path, monkeypatch):
+        """Backward compat: with no identity env vars set, the row
+        carries no user_id / host_id / ip_address fields. Existing
+        v1 audit logs are unaffected by Sprint 4."""
+        from sum_cli.audit_log import emit_audit_event
+        audit = tmp_path / "audit.jsonl"
+        monkeypatch.setenv("SUM_AUDIT_LOG", str(audit))
+        monkeypatch.delenv("SUM_AUDIT_USER_ID", raising=False)
+        monkeypatch.delenv("SUM_AUDIT_HOST_ID", raising=False)
+        monkeypatch.delenv("SUM_AUDIT_IP_ADDRESS", raising=False)
+        emit_audit_event("attest", {"source_uri": "sha256:abc"})
+        row = json.loads(audit.read_text().strip())
+        assert "user_id" not in row
+        assert "host_id" not in row
+        assert "ip_address" not in row
+
+    def test_user_id_env_populates_field(self, tmp_path, monkeypatch):
+        from sum_cli.audit_log import emit_audit_event
+        audit = tmp_path / "audit.jsonl"
+        monkeypatch.setenv("SUM_AUDIT_LOG", str(audit))
+        monkeypatch.setenv("SUM_AUDIT_USER_ID", "alice@example.com")
+        emit_audit_event("attest", {"source_uri": "sha256:abc"})
+        row = json.loads(audit.read_text().strip())
+        assert row["user_id"] == "alice@example.com"
+
+    def test_host_id_env_populates_field(self, tmp_path, monkeypatch):
+        from sum_cli.audit_log import emit_audit_event
+        audit = tmp_path / "audit.jsonl"
+        monkeypatch.setenv("SUM_AUDIT_LOG", str(audit))
+        monkeypatch.setenv("SUM_AUDIT_HOST_ID", "host-42")
+        emit_audit_event("attest", {"source_uri": "sha256:abc"})
+        row = json.loads(audit.read_text().strip())
+        assert row["host_id"] == "host-42"
+
+    def test_ip_address_env_populates_field(self, tmp_path, monkeypatch):
+        from sum_cli.audit_log import emit_audit_event
+        audit = tmp_path / "audit.jsonl"
+        monkeypatch.setenv("SUM_AUDIT_LOG", str(audit))
+        monkeypatch.setenv("SUM_AUDIT_IP_ADDRESS", "10.0.0.1")
+        emit_audit_event("attest", {"source_uri": "sha256:abc"})
+        row = json.loads(audit.read_text().strip())
+        assert row["ip_address"] == "10.0.0.1"
+
+    def test_all_three_env_vars_populate_all_fields(self, tmp_path, monkeypatch):
+        from sum_cli.audit_log import emit_audit_event
+        audit = tmp_path / "audit.jsonl"
+        monkeypatch.setenv("SUM_AUDIT_LOG", str(audit))
+        monkeypatch.setenv("SUM_AUDIT_USER_ID", "alice@example.com")
+        monkeypatch.setenv("SUM_AUDIT_HOST_ID", "host-42")
+        monkeypatch.setenv("SUM_AUDIT_IP_ADDRESS", "10.0.0.1")
+        emit_audit_event("attest", {"source_uri": "sha256:abc"})
+        row = json.loads(audit.read_text().strip())
+        assert row["user_id"] == "alice@example.com"
+        assert row["host_id"] == "host-42"
+        assert row["ip_address"] == "10.0.0.1"
+
+    def test_empty_env_var_treated_as_unset(self, tmp_path, monkeypatch):
+        """Empty string env vars are treated as unset — same convention
+        as SUM_AUDIT_LOG (test_audit_log_empty_string_treated_as_unset).
+        Avoids leaking '' as the user identifier when the env var was
+        accidentally exported but not populated."""
+        from sum_cli.audit_log import emit_audit_event
+        audit = tmp_path / "audit.jsonl"
+        monkeypatch.setenv("SUM_AUDIT_LOG", str(audit))
+        monkeypatch.setenv("SUM_AUDIT_USER_ID", "")
+        emit_audit_event("attest", {"source_uri": "sha256:abc"})
+        row = json.loads(audit.read_text().strip())
+        assert "user_id" not in row, (
+            f"empty SUM_AUDIT_USER_ID should be treated as unset, not "
+            f"populated as ''; got {row.get('user_id')!r}"
+        )
+
+    def test_payload_overrides_env_var_for_test_seam(self, tmp_path, monkeypatch):
+        """Tests that need to pin specific identity values without
+        touching the environment can pass the field in payload —
+        documented test seam in the emit_audit_event docstring."""
+        from sum_cli.audit_log import emit_audit_event
+        audit = tmp_path / "audit.jsonl"
+        monkeypatch.setenv("SUM_AUDIT_LOG", str(audit))
+        monkeypatch.setenv("SUM_AUDIT_USER_ID", "from-env")
+        emit_audit_event("attest", {
+            "source_uri": "sha256:abc",
+            "user_id": "from-payload",
+        })
+        row = json.loads(audit.read_text().strip())
+        assert row["user_id"] == "from-payload"
+
+    def test_identity_fields_satisfy_pci_r7_through_real_pipeline(
+        self, tmp_path, monkeypatch,
+    ):
+        """End-to-end: env vars → emitted audit log → PCI validator R7
+        passes. The closure proof that Sprint 4 turns the named
+        documentation-only gap into a real, validatable capability."""
+        from sum_cli.audit_log import emit_audit_event
+        from sum_engine_internal.compliance import pci_dss_4_req_10 as pv
+
+        audit = tmp_path / "audit.jsonl"
+        monkeypatch.setenv("SUM_AUDIT_LOG", str(audit))
+        monkeypatch.setenv("SUM_AUDIT_USER_ID", "alice@example.com")
+        emit_audit_event("attest", {
+            "source_uri": "sha256:abc",
+            "axiom_count": 3,
+            "state_integer_digits": 57,
+        })
+
+        rows = [json.loads(line) for line in audit.read_text().splitlines() if line.strip()]
+        report = pv.validate(rows)
+        # Specifically: R7 (user-identification) must NOT fire because
+        # SUM_AUDIT_USER_ID populated user_id.
+        rule_ids = {v.rule_id for v in report.violations}
+        assert "pci-dss-4-req-10.user-identification" not in rule_ids, (
+            f"SUM_AUDIT_USER_ID populated → R7 should pass; got "
+            f"violations {sorted(rule_ids)}"
+        )

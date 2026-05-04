@@ -24,6 +24,7 @@ def _good_attest_row(**overrides) -> dict:
         "timestamp": "2026-05-03T08:00:00.123Z",
         "operation": "attest",
         "cli_version": "0.5.0",
+        "user_id": "alice@example.com",  # Sprint 4: PCI Req 10.2.2 user identification
         "source_uri": "sha256:abc123",
         "axiom_count": 3,
         "state_integer_digits": 57,
@@ -43,6 +44,7 @@ def _good_verify_row(**overrides) -> dict:
         "timestamp": "2026-05-03T08:00:01.234Z",
         "operation": "verify",
         "cli_version": "0.5.0",
+        "user_id": "alice@example.com",  # Sprint 4: PCI Req 10.2.2 user identification
         "ok": True,
         "axiom_count": 3,
         "state_integer_digits": 57,
@@ -59,6 +61,7 @@ def _good_render_row(mode: str = "local-deterministic", **overrides) -> dict:
         "timestamp": "2026-05-03T08:00:02.345Z",
         "operation": "render",
         "cli_version": "0.5.0",
+        "user_id": "alice@example.com",  # Sprint 4: PCI Req 10.2.2 user identification
         "mode": mode,
         "axiom_count_input": 3,
         "tome_chars": 200,
@@ -235,11 +238,78 @@ def test_r6_does_not_apply_to_unknown_operation():
         "timestamp": "2026-05-03T08:00:00Z",
         "operation": "future_op",
         "cli_version": "0.5.0",
+        "user_id": "alice@example.com",
     }
     report = pv.validate([row])
     assert "pci-dss-4-req-10.event-content-completeness" not in {
         v.rule_id for v in report.violations
     }
+
+
+# ─── R7: user-identification (Sprint 4 closure of the load-bearing gap) ─
+
+
+def test_r7_missing_user_id_flagged():
+    """PCI DSS Req 10.2.2 lists 'user identification' as the FIRST
+    required field for each audit-log event. A row without user_id
+    fires R7 — even if every other field is correct.
+
+    Sprint 4 (PR #140) added the audit-log emit path's
+    SUM_AUDIT_USER_ID env var population. A row produced by SUM
+    without that env var set will fire this rule under PCI
+    compliance mode."""
+    bad = _good_attest_row()
+    del bad["user_id"]
+    report = pv.validate([bad])
+    assert "pci-dss-4-req-10.user-identification" in {
+        v.rule_id for v in report.violations
+    }
+
+
+def test_r7_empty_user_id_flagged():
+    bad = _good_attest_row(user_id="")
+    report = pv.validate([bad])
+    assert "pci-dss-4-req-10.user-identification" in {
+        v.rule_id for v in report.violations
+    }
+
+
+def test_r7_null_user_id_flagged():
+    bad = _good_attest_row(user_id=None)
+    report = pv.validate([bad])
+    assert "pci-dss-4-req-10.user-identification" in {
+        v.rule_id for v in report.violations
+    }
+
+
+def test_r7_populated_user_id_passes():
+    """Sanity: the canonical _good_*_row helpers carry user_id and
+    must pass R7 without violation. This pins the contract that
+    SUM_AUDIT_USER_ID-populated rows are PCI-compliant w.r.t. R7."""
+    rows = [_good_attest_row(), _good_verify_row(), _good_render_row()]
+    report = pv.validate(rows)
+    assert "pci-dss-4-req-10.user-identification" not in {
+        v.rule_id for v in report.violations
+    }
+
+
+def test_r7_fires_on_every_operation_type():
+    """R7 applies universally — every audit-log event needs user
+    identification under Req 10.2.2, regardless of operation type."""
+    rows = [
+        _good_attest_row(user_id=None),
+        _good_verify_row(user_id=None),
+        _good_render_row(user_id=None),
+    ]
+    report = pv.validate(rows)
+    user_id_violations = [
+        v for v in report.violations
+        if v.rule_id == "pci-dss-4-req-10.user-identification"
+    ]
+    assert len(user_id_violations) == 3, (
+        f"R7 must fire for each of the 3 operation types lacking "
+        f"user_id; got {len(user_id_violations)} violations"
+    )
 
 
 # ─── Report shape ─────────────────────────────────────────────────────
@@ -296,6 +366,13 @@ def test_validation_report_shape_matches_other_regimes():
 def test_real_sum_cli_audit_log_passes_validation(tmp_path, monkeypatch):
     audit = tmp_path / "audit.jsonl"
     monkeypatch.setenv("SUM_AUDIT_LOG", str(audit))
+    # Sprint 4 (PR #140): populate user_id from SUM_AUDIT_USER_ID env var
+    # so the resulting audit log is PCI-compliant under R7. Operators in
+    # production source this from their authenticating proxy's session
+    # identity at process start.
+    monkeypatch.setenv("SUM_AUDIT_USER_ID", "pci-test@example.com")
+    monkeypatch.setenv("SUM_AUDIT_HOST_ID", "pci-test-host")
+    monkeypatch.setenv("SUM_AUDIT_IP_ADDRESS", "10.0.0.1")
 
     from sum_cli.main import cmd_attest, cmd_verify, cmd_render
     monkeypatch.setattr("sys.stdin", io.StringIO(
