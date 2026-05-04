@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-04T01:26:14Z",
+  "issued_at": "2026-05-04T06:32:04Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "aadadeec5387ce4049914b453018da83361a7fcd",
-    "head_short": "aadadee",
-    "head_subject": "docs: refresh FEATURE_CATALOG.md (151\u2013156) + future-regime TODOs (#134)",
-    "head_committer_date": "2026-05-03T21:03:46-04:00",
+    "head_sha": "b02a129de8d43baa45ad52c42f6f2fdb429341fe",
+    "head_short": "b02a129",
+    "head_subject": "compliance: PCI DSS user-id gap closed (Sprint 4; R7 + identity env vars) (#140)",
+    "head_committer_date": "2026-05-03T22:39:03-04:00",
     "commits_last_30d": null
   },
   "github": {

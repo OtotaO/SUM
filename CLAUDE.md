@@ -10,20 +10,23 @@ the code.
 If this is your first turn in this repo, read these files in order and you
 will have the full picture.
 
-0. **[`docs/SESSION_HANDOVER_2026-05-02_v3_diagnostic_arc.md`](docs/SESSION_HANDOVER_2026-05-02_v3_diagnostic_arc.md)**
-   — most recent session-block handover (PRs #119–#125 + the
-   audit-log gap closure + EU AI Act Article 12 compliance validator
-   + the sheaf-Laplacian v3 receipt-weighted detector + v3.1
-   harmonic-extension primitive + the audit-tightening pass that
-   caught a real v3 λ double-counting bug + v3 corpus-scale ROC bench
-   + the F3 structural-fail diagnostic that refuted three competing
-   hypotheses). Read this first if you are picking the thread up
-   cold; it carries the new open queue (Priority 9 v3.2 redesign
-   closing F3, Priority 10 arXiv preprint v0.1, Priority 11 second
-   per-regime validator), names the new `bench_digest` reproducibility
-   substrate as a research-artifact-with-cryptographic-teeth, and
-   surfaces the synthetic-vs-corpus discipline lesson explicitly.
-   The prior handover at
+0. **[`docs/SESSION_HANDOVER_2026-05-04_intensification_arc.md`](docs/SESSION_HANDOVER_2026-05-04_intensification_arc.md)**
+   — most recent session-block handover (PRs #134–#140 — the
+   intensification arc that closed every load-bearing prep before
+   the arXiv preprint). Carries the elevated mission frame ("among
+   the greats, only via verifiable / provable / testable methods"),
+   a six-step initial self-check, the seven-PR arc summary
+   (catalog refresh, bench-digest determinism, fastapi pin, shared
+   compliance predicates, sheaf detector library API doc,
+   PROOF_BOUNDARY v1.6.0 refresh, PCI user-id gap closure), and
+   names Sprint 7 (arXiv preprint v0.1) as the FINAL synthesis
+   task. **Read this first if you are picking the thread up
+   cold.** The prior handover at
+   [`docs/SESSION_HANDOVER_2026-05-02_v3_diagnostic_arc.md`](docs/SESSION_HANDOVER_2026-05-02_v3_diagnostic_arc.md)
+   carries the v3-diagnostic-arc context (PRs #119–#125: audit-log
+   gap closure, EU AI Act Article 12 validator, v3 receipt-
+   weighted detector, v3.1 harmonic extension, F3 STRUCTURAL FAIL
+   diagnostic, `bench_digest` substrate). The earlier handover at
    [`docs/SESSION_HANDOVER_2026-05-01_research_arc.md`](docs/SESSION_HANDOVER_2026-05-01_research_arc.md)
    (PRs #103–#117 + v0.5.0 + initial sheaf-Laplacian work) carries
    the previous arc's context;
