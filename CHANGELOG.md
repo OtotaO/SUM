@@ -4,6 +4,34 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Sheaf-Laplacian detector library API doc (Sprint 5b of the
+  intensification path to arXiv — first latent capability
+  surfaced).** `docs/SHEAF_LIBRARY_API.md` documents the
+  programmatic surface of the v2 / v3 / v3.2 sheaf-Laplacian
+  hallucination detector — previously importable but undocumented
+  for external users beyond docstrings.
+
+  Covers: install path (the `[research]` extras flag), stability
+  tier (research-library; one notch below trust-loop guarantees),
+  quick-start with worked example (train_restriction_maps →
+  weights_from_receipts → boundary_from_weights →
+  combined_detector_score_v32), parameter reference for each
+  function, the empirical "γ ≤ 0.1" finding from the v3.2
+  validation bench, the H16–H20 falsifiable contracts pinned in
+  tests, the universal-quantifier upgrades from the Hypothesis
+  property tests, and what the library does NOT ship (production
+  calibration, decision threshold, A2 detection, CLI surface).
+
+  Also clarifies the orthogonality with the trust loop: the
+  detector tells you whether a render is *consistent* with a
+  source-of-truth sheaf; the trust loop tells you *who signed*
+  the render. In a deployment where signed render receipts feed
+  back into `weights_from_receipts`, the two compose.
+
+  This is the first of two latent capabilities being surfaced
+  under Sprint 5. The second (render-receipt aggregation CLI)
+  ships in a follow-up PR.
+
 - **Shared compliance predicate library (Sprint 3 of the
   intensification path to arXiv).** Six per-regime validators
   (Art 12 / GDPR Art 30 / HIPAA / ISO 27001 / SOC 2 / PCI DSS)
