@@ -24,6 +24,11 @@ separate module so users can compose only what they need.
   - :mod:`soc_2_cc_7_2` — SOC 2 Trust Services Criteria CC7.2
     (System Operations); pins the per-row floor required to
     enable the monitoring criterion.
+  - :mod:`pci_dss_4_req_10` — PCI DSS v4.0 Requirement 10 (Log
+    and Monitor All Access to System Components and Cardholder
+    Data); pins the per-row content visible in audit_log.v1
+    against Req 10.2.2 + 10.6. The user_id structural gap is
+    named explicitly in the wire-spec doc.
 
 A regime-agnostic ``ValidationReport`` shape lives at
 :mod:`sum_engine_internal.compliance.report` so future validators

@@ -1595,6 +1595,18 @@ _COMPLIANCE_REGIMES: dict[str, str] = {
         "(SIEM rules, alert routing, oncall rotations) live at "
         "deployment scope outside this validator."
     ),
+    "pci-dss-4-req-10": (
+        "PCI DSS v4.0 Requirement 10 — Log and Monitor All Access "
+        "to System Components and Cardholder Data. Pins per-row "
+        "content visible in audit_log.v1 against Req 10.2.2 (event "
+        "content) plus 10.6 (consistent time): schema, timestamp, "
+        "ISO-8601-UTC, event type, origination, event-content "
+        "completeness. NOT pinned: 10.1 organisational policies; "
+        "10.2.1.* specific event-type coverage; 10.2.2 user "
+        "identification (audit_log.v1 has no user_id field); 10.3 "
+        "log file protection; 10.4 log review process; 10.5 12-"
+        "month retention; 10.7 failure detection / alerting."
+    ),
 }
 
 
@@ -1612,6 +1624,7 @@ def _compliance_validators():
         gdpr_article_30,
         hipaa_164_312_b,
         iso_27001_8_15,
+        pci_dss_4_req_10,
         soc_2_cc_7_2,
     )
     return {
@@ -1620,6 +1633,7 @@ def _compliance_validators():
         "hipaa-164-312-b": hipaa_164_312_b.validate,
         "iso-27001-8-15": iso_27001_8_15.validate,
         "soc-2-cc-7-2": soc_2_cc_7_2.validate,
+        "pci-dss-4-req-10": pci_dss_4_req_10.validate,
     }
 
 
