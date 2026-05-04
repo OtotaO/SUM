@@ -365,7 +365,7 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
   predictions H16-H20 (subsumption, L_IB ≠ 0 visibility, F3
   fall-back, no-λ-double-counting, degenerate-boundary fall-back).
 
-  **Corpus-scale validation** (`fixtures/bench_receipts/v3_2_validation_2026-05-02.json`,
+  **Corpus-scale validation** (`fixtures/bench_receipts/v3_2_validation_2026-05-03.json`,
   `bench_digest = 97cf977512f9...162f43f`, schema
   `sum.sheaf_v3_2_validation.v1`): F4 (trusted-mean AUC ≥ 0.55)
   PASSES at all γ values tested (γ ∈ {0.0, 0.1, 1.0, auto≈1.0}).
@@ -412,7 +412,7 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
   perturbed by mathematical necessity. Documented at
   `docs/SHEAF_HALLUCINATION_DETECTOR.md` §3.4.3 with implications
   for v3.2 redesign. Receipt:
-  `fixtures/bench_receipts/v3_1_f3_diagnostic_2026-05-02.json`.
+  `fixtures/bench_receipts/v3_1_f3_diagnostic_2026-05-03.json`.
 
   **New surface: `bench_digest`** — JCS-canonical SHA-256 over
   the quantized report payload (AUCs to 3 decimals; diagnostic
@@ -432,7 +432,7 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
   baseline, v3 receipt-weighted, and v3.1 boundary deviation
   detectors across (A1 entity-swap, A2 predicate-flip, A4 triple-
   drop) × (trusted-target, untrusted-target). Receipt at
-  `fixtures/bench_receipts/v3_roc_bench_2026-05-02.json`.
+  `fixtures/bench_receipts/v3_roc_bench_2026-05-03.json`.
 
   **Three falsification verdicts (truth-first):**
   - **F1 MARGINAL.** v3 mean AUC on trusted-target = 0.685 vs
