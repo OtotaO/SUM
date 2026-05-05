@@ -42,6 +42,11 @@ Output: fixtures/bench_receipts/predicate_negatives_experiment_<DATE>.json
 """
 from __future__ import annotations
 
+# MUST come before any numpy/scipy import — sets BLAS thread vars
+# at process startup so bench_digest is byte-stable across fresh
+# Python processes. See `_deterministic_blas` for the rationale.
+import scripts.research._deterministic_blas  # noqa: F401
+
 import datetime as _dt
 import hashlib
 import json
