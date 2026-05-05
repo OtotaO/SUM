@@ -1,0 +1,47 @@
+{
+  "bench_digest": "a7965803ccf2e703d80364dc21b3ac410491db9768cdfcf91bfefd29356c2003",
+  "corpus": "seed_long_paragraphs",
+  "delta_borda_vs_b2_trusted_mean": -0.0251851851851852,
+  "detectors": [
+    "v32_g0.1",
+    "b2_jaccard",
+    "borda_v32_b2"
+  ],
+  "gamma_used": 0.1,
+  "lambda_auto": 1.9617608348692248,
+  "method_notes": "Loop structure mirrors sheaf_v3_2_validation.main: one trusted and one untrusted target per doc, same stable_seed partition, same training hyperparams. v3.2 and B2 are scored on the SAME (clean, perturbed) pairs (sanity-asserted by label-order match). Borda fusion: average-ranked scores per (class, target) pool, then summed; magnitude-invariant and parameter-free.",
+  "n_docs_total": 16,
+  "n_docs_with_partition": 15,
+  "per_cell_auc": {
+    "b2_jaccard|A1|trusted": 1.0,
+    "b2_jaccard|A1|untrusted": 1.0,
+    "b2_jaccard|A2|trusted": 0.5,
+    "b2_jaccard|A2|untrusted": 0.5,
+    "b2_jaccard|A4|trusted": 1.0,
+    "b2_jaccard|A4|untrusted": 1.0,
+    "borda_v32_b2|A1|trusted": 0.9333333333333333,
+    "borda_v32_b2|A1|untrusted": 0.9733333333333334,
+    "borda_v32_b2|A2|trusted": 0.5,
+    "borda_v32_b2|A2|untrusted": 0.5,
+    "borda_v32_b2|A4|trusted": 0.9911111111111112,
+    "borda_v32_b2|A4|untrusted": 1.0,
+    "v32_g0.1|A1|trusted": 0.5777777777777777,
+    "v32_g0.1|A1|untrusted": 0.6844444444444444,
+    "v32_g0.1|A2|trusted": 0.5,
+    "v32_g0.1|A2|untrusted": 0.5,
+    "v32_g0.1|A4|trusted": 0.8977777777777778,
+    "v32_g0.1|A4|untrusted": 0.9733333333333334
+  },
+  "perturbation_classes": [
+    "A1",
+    "A2",
+    "A4"
+  ],
+  "schema": "sum.sheaf_hybrid_comparison.v1",
+  "trusted_mean_auc_by_detector": {
+    "b2_jaccard": 0.8333333333333334,
+    "borda_v32_b2": 0.8081481481481482,
+    "v32_g0.1": 0.6585185185185185
+  },
+  "verdict": "BORDA_LOSES_TO_B2"
+}

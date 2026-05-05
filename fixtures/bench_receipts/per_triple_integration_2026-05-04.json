@@ -1,0 +1,49 @@
+{
+  "alpha": 1.0,
+  "bench_digest": "7025436f3c010e681bfbd06a04730d017e031df2b376e8e2bb5b404df81fd4fa",
+  "beta": 1.0,
+  "corpus": "seed_long_paragraphs",
+  "delta_v32_plus_per_triple_vs_b2": -0.07481481481481489,
+  "detectors": [
+    "v32_g0.1_only",
+    "v32_g0.1_plus_per_triple",
+    "b2_jaccard"
+  ],
+  "gamma_used": 0.1,
+  "lambda_auto": 1.9617608348692248,
+  "method_notes": "v32_g0.1_plus_per_triple = v3.2(\u03b3=0.1) cochain-on-source-graph score + \u03b1 \u00b7 max_in_vocab_v_triple + \u03b2 \u00b7 n_oov. The per-triple channel from \u00a73.5 is computed against the GLOBAL trained sheaf (not per-doc sheaf) so OOV detection is informative. \u03b1=\u03b2=1.0 chosen as moderate scale; production tuning is per-corpus. The cochain channel alone misses A2 by structural necessity (predicate-flip preserves entity set \u2192 cochain unchanged); per-triple channel scores (h, r, t) directly under F_h(r), F_t(r), so r \u2192 r' produces high V_triple and recovers A2.",
+  "n_docs_total": 16,
+  "n_docs_with_partition": 15,
+  "per_cell_auc": {
+    "b2_jaccard|A1|trusted": 1.0,
+    "b2_jaccard|A1|untrusted": 1.0,
+    "b2_jaccard|A2|trusted": 0.5,
+    "b2_jaccard|A2|untrusted": 0.5,
+    "b2_jaccard|A4|trusted": 1.0,
+    "b2_jaccard|A4|untrusted": 1.0,
+    "v32_g0.1_only|A1|trusted": 0.5777777777777777,
+    "v32_g0.1_only|A1|untrusted": 0.6844444444444444,
+    "v32_g0.1_only|A2|trusted": 0.5,
+    "v32_g0.1_only|A2|untrusted": 0.5,
+    "v32_g0.1_only|A4|trusted": 0.8977777777777778,
+    "v32_g0.1_only|A4|untrusted": 0.9733333333333334,
+    "v32_g0.1_plus_per_triple|A1|trusted": 0.6977777777777778,
+    "v32_g0.1_plus_per_triple|A1|untrusted": 0.7511111111111111,
+    "v32_g0.1_plus_per_triple|A2|trusted": 0.6711111111111111,
+    "v32_g0.1_plus_per_triple|A2|untrusted": 0.6777777777777778,
+    "v32_g0.1_plus_per_triple|A4|trusted": 0.9066666666666666,
+    "v32_g0.1_plus_per_triple|A4|untrusted": 0.9688888888888889
+  },
+  "perturbation_classes": [
+    "A1",
+    "A2",
+    "A4"
+  ],
+  "schema": "sum.sheaf_per_triple_integration.v1",
+  "trusted_mean_auc_by_detector": {
+    "b2_jaccard": 0.8333333333333334,
+    "v32_g0.1_only": 0.6585185185185185,
+    "v32_g0.1_plus_per_triple": 0.7585185185185185
+  },
+  "verdict": "DETECTOR_LOSES_TO_BASELINE"
+}
