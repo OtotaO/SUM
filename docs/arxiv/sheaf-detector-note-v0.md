@@ -1031,7 +1031,7 @@ reproducibility:
 | LAPACK provider | Apple Accelerate | OpenBLAS-via-PyPI-wheel | OpenBLAS-via-PyPI-wheel |
 | SIMD | NEON | AVX2 | AVX2 |
 
-All three load-bearing bench digests reproduced byte-for-byte across
+All four load-bearing bench digests reproduced byte-for-byte across
 all three environments:
 
 | Bench | Operator | Modal Py 3.10 | Modal Py 3.12 |
@@ -1039,6 +1039,7 @@ all three environments:
 | v3.2 validation | `b4d26c01…` | ✓ | ✓ |
 | complementary hybrid | `dc6e0260…` | ✓ | ✓ |
 | predicate negatives | `ddf41484…` | ✓ | ✓ |
+| hybrid comparison | `a7965803…` | ✓ | ✓ |
 
 The substantive verdicts also reproduce: `HYBRID_BEATS_BASELINE`
 ($\Delta = +0.043$ trusted-mean vs B2 alone; trusted-mean AUC
