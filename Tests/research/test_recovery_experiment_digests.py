@@ -23,18 +23,56 @@ import pytest
 pytestmark = pytest.mark.slow
 
 
-def test_hybrid_comparison_digest_pinned():
+def test_hybrid_comparison_loss_finding_holds():
     """Borda(v3.2_only, B2) — first negative result; locks the
     'baseline rank-fusion of cochain-channel-only v3.2 LOSES to B2'
-    finding."""
+    finding.
+
+    NOTE: pinned by behavior-shape (verdict label + Δ in the loss
+    range), NOT by byte-digest. The bench's Borda fusion combines
+    only the cochain V channel (no per-rendered-triple V magnitude
+    to break ties), so LAPACK-jitter at the per-pair score level
+    can shift rank assignments in tied cells, which can move the
+    fused-cell AUC across the 3-decimal quantization boundary,
+    which can change the bench_digest. The substantive finding —
+    Borda(v3.2_only, B2) LOSES to B2 alone by a clear margin
+    (Δ ≈ −0.025) — is invariant: B2 catches A1/A4 at 1.000 alone,
+    and adding the cochain channel to the rank fusion can only
+    add noise (the cochain channel is at chance or anti-correlated
+    on those classes). The complementary-hybrid pin
+    (`test_complementary_hybrid_digest_pinned`) IS byte-digest
+    pinned because the per-rendered-triple V channel adds magnitude
+    that dominates LAPACK jitter and breaks ties cleanly.
+
+    Operator-environment digest from one canonical run:
+        a7965803ccf2e703d80364dc21b3ac410491db9768cdfcf91bfefd29356c2003
+    Some same-machine runs produce
+        7fac833a23a8d5be3acf2e3b88d5f117ddb2283e37bf7c0b1daff8a7283bcb97
+    instead — both are equally valid "BORDA_LOSES_TO_B2" outcomes
+    differing by a 1-ULP rank shuffle.
+
+    v0.2 follow-up: either (a) post-hoc tie-breaking by an explicit
+    secondary sort key in `borda_fuse`, or (b) increase quantization
+    to 2 decimals on AUC for benches without per-triple-channel
+    magnitude.
+    """
     from scripts.research.sheaf_hybrid_comparison import run_hybrid_comparison
-    PINNED = "a7965803ccf2e703d80364dc21b3ac410491db9768cdfcf91bfefd29356c2003"
     report = run_hybrid_comparison()
-    assert report["bench_digest"] == PINNED, (
-        f"hybrid_comparison digest drift: got {report['bench_digest']}. "
-        "Borda(v3.2_only, B2) loses to B2 alone in the published numbers; "
-        "if this digest changes, the loss-margin claim shifts."
+    assert report["verdict"] == "BORDA_LOSES_TO_B2", (
+        f"hybrid_comparison verdict drift: got {report['verdict']}. "
+        "The substantive finding — Borda(v3.2_only, B2) loses to B2 "
+        "alone — is the load-bearing claim. If this verdict label "
+        "changes, the §4.7.1 STOP-THE-LINE narrative may have shifted."
     )
+    delta = report["delta_borda_vs_b2_trusted_mean"]
+    assert -0.10 <= delta <= -0.02, (
+        f"delta_borda_vs_b2 drift: got {delta:.4f}, expected in [-0.10, -0.02]. "
+        "The loss should be a clear margin, not a near-tie."
+    )
+    # bench_digest still required to be present + 64-hex (schema check)
+    assert isinstance(report["bench_digest"], str)
+    assert len(report["bench_digest"]) == 64
+    int(report["bench_digest"], 16)
 
 
 def test_predicate_negatives_experiment_structural_finding_holds():

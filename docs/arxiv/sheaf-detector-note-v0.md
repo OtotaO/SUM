@@ -243,7 +243,7 @@ when $L_{II}$ is invertible. (Our implementation uses
 interior, or interior carrying a global section — yields the
 minimum-norm solution rather than crashing.) Mechanically pinned:
 defining minimisation property in
-`Tests/research/test_sheaf_laplacian_v31.py::test_harmonic_extension_minimizes_v_subject_to_boundary_constraint`;
+`Tests/research/test_sheaf_laplacian_v3.py::test_harmonic_extension_minimizes_v_subject_to_boundary_constraint`;
 boundary preservation, uniqueness, and full-boundary degeneracy
 in adjacent tests.
 
@@ -527,7 +527,7 @@ report
 $$\text{deviation}_w(x; B) \;=\; \|x_I - x_I^*\|^2.$$
 
 **Falsifiable predictions pinned in code**
-(`Tests/research/test_sheaf_laplacian_v31.py`):
+(`Tests/research/test_sheaf_laplacian_v3.py`):
 
   - **H6 (boundary preservation).** `harmonic_extension` returns
     only the interior; reconstructing the full cochain from
@@ -933,16 +933,18 @@ against v3.2's $0.659$. The losing margin is $-0.174$.
 
 Naming this loss a STOP-THE-LINE finding rather than "future
 work" led to four engineering recovery experiments, each pinned
-in `Tests/research/test_recovery_experiment_digests.py` and each
-with a `bench_digest` that reproduces 3× in fresh processes
-unconditionally:
+in `Tests/research/test_recovery_experiment_digests.py`. Two of
+the four pins are byte-digest (anchored to a specific 64-hex
+hash that any reader can match); two are behavior-shape pins
+(verdict label + observable invariant) — see the per-experiment
+notes in the table below for which is which and why:
 
-| Experiment | Outcome (trusted-mean) | bench_digest |
-|---|---|---|
-| **Borda(v3.2_only, B2)** | LOSES — $0.808 < 0.833$, $\Delta = -0.025$. v3.2 anti-correlated with B2 on A1 trusted; rank fusion degrades B2's perfect 1.000 to 0.933. | `a7965803…6c2003` |
-| **Predicate-perturbation training negatives** | A2 STAYED at $0.500$. Surfaced cochain-channel structural blindness to entity-set-preserving perturbations: predicate doesn't enter the cochain; adding training negatives can't fix what scoring discards. Same shape as F3 STRUCTURAL FAIL. | `aa34b6e8…c866e7` |
-| **Per-rendered-triple V channel integration** | A2 LIFTED $0.500 \to 0.671$ (trusted) and $0.678$ (untrusted); trusted-mean $0.659 \to 0.759$. Restored the §3.5 channel that v2.2 §4.3 used to hit A1/A2/A3 = 1.000. Still $< $ B2 alone, but now informative about *why*: this composition is the only detector that catches A2. | `7025436f…fd4fa` |
-| ★ **Complementary Borda(v3.2 + per-triple, B2)** | **WINS** — trusted-mean $0.876 > 0.833$, $\Delta = +0.043$ (above the $+0.030$ "real win" threshold). | `dc6e0260…343ce` |
+| Experiment | Outcome (trusted-mean) | Pin | bench_digest (operator-side) |
+|---|---|---|---|
+| **Borda(v3.2_only, B2)** | LOSES — $0.808 < 0.833$, $\Delta = -0.025$. v3.2 anti-correlated with B2 on A1 trusted; rank fusion degrades B2's perfect 1.000 to 0.933. | shape (`BORDA_LOSES_TO_B2` + Δ ∈ [−0.10, −0.02]). Cochain-only Borda fusion has LAPACK-jitter rank-tie sensitivity that quantization doesn't always absorb; same-machine reruns produce two valid digests differing by 1-ULP rank shuffles. v0.2 follow-up: secondary sort key in `borda_fuse`, or 2-decimal AUC quantization for cochain-only fusion benches. | `a7965803…6c2003` (one of two outcomes) |
+| **Predicate-perturbation training negatives** | A2 STAYED at $0.500$. Surfaced cochain-channel structural blindness to entity-set-preserving perturbations: predicate doesn't enter the cochain; adding training negatives can't fix what scoring discards. Same shape as F3 STRUCTURAL FAIL. | shape (`A2_STILL_CHANCE` + A2 cells at 0.500). Bench uses a local v2-training-loop copy; digest is Python-version-sensitive (operator/Modal Python 3.10: matches; CI Python 3.12: differs). Substantive finding invariant. v0.2 follow-up: upstream the predicate-negative sampler into production `train_restriction_maps`. | `aa34b6e8…c866e7` (Python 3.10) |
+| **Per-rendered-triple V channel integration** | A2 LIFTED $0.500 \to 0.671$ (trusted) and $0.678$ (untrusted); trusted-mean $0.659 \to 0.759$. Restored the §3.5 channel that v2.2 §4.3 used to hit A1/A2/A3 = 1.000. Still $< $ B2 alone, but now informative about *why*: this composition is the only detector that catches A2. | byte-digest (verified 5× in fresh procs unconditionally; per-rendered-triple V channel adds magnitude that breaks ties cleanly) | `7025436f…fd4fa` |
+| ★ **Complementary Borda(v3.2 + per-triple, B2)** | **WINS** — trusted-mean $0.876 > 0.833$, $\Delta = +0.043$ (above the $+0.030$ "real win" threshold). | byte-digest (verified 5× in fresh procs unconditionally; cross-machine MATCH on Modal x86_64) | `dc6e0260…343ce` |
 
 **Per-cell AUC of the headline composition** (compared to its
 two components):
