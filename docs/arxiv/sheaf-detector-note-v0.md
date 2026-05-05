@@ -352,7 +352,7 @@ each rendered text $R$:
   signature; RFC 8785 canonicalisation; RFC 7515 §A.5 detached-JWS
   envelope; public keys distributed per RFC 7517 JWKS).
 
-Concretely: SUM (`sum-engine`, MIT-licensed; PyPI 0.5.0) provides
+Concretely: SUM (`sum-engine`, Apache-2.0; PyPI 0.6.0) provides
 the substrate. The cross-runtime trust triangle (Python / Node /
 browser WebCrypto, locked by the K-matrix gate on every release)
 ensures the receipt-verification claim is realiser-independent.
@@ -941,10 +941,10 @@ notes in the table below for which is which and why:
 
 | Experiment | Outcome (trusted-mean) | Pin | bench_digest (operator-side) |
 |---|---|---|---|
-| **Borda(v3.2_only, B2)** | LOSES — $0.808 < 0.833$, $\Delta = -0.025$. v3.2 anti-correlated with B2 on A1 trusted; rank fusion degrades B2's perfect 1.000 to 0.933. | shape (`BORDA_LOSES_TO_B2` + Δ ∈ [−0.10, −0.02]). Cochain-only Borda fusion has LAPACK-jitter rank-tie sensitivity that quantization doesn't always absorb; same-machine reruns produce two valid digests differing by 1-ULP rank shuffles. v0.2 follow-up: secondary sort key in `borda_fuse`, or 2-decimal AUC quantization for cochain-only fusion benches. | `a7965803…6c2003` (one of two outcomes) |
-| **Predicate-perturbation training negatives** | A2 STAYED at $0.500$. Surfaced cochain-channel structural blindness to entity-set-preserving perturbations: predicate doesn't enter the cochain; adding training negatives can't fix what scoring discards. Same shape as F3 STRUCTURAL FAIL. | shape (`A2_STILL_CHANCE` + A2 cells at 0.500). Bench uses a local v2-training-loop copy; digest is Python-version-sensitive (operator/Modal Python 3.10: matches; CI Python 3.12: differs). Substantive finding invariant. v0.2 follow-up: upstream the predicate-negative sampler into production `train_restriction_maps`. | `aa34b6e8…c866e7` (Python 3.10) |
-| **Per-rendered-triple V channel integration** | A2 LIFTED $0.500 \to 0.671$ (trusted) and $0.678$ (untrusted); trusted-mean $0.659 \to 0.759$. Restored the §3.5 channel that v2.2 §4.3 used to hit A1/A2/A3 = 1.000. Still $< $ B2 alone, but now informative about *why*: this composition is the only detector that catches A2. | byte-digest (verified 5× in fresh procs unconditionally; per-rendered-triple V channel adds magnitude that breaks ties cleanly) | `7025436f…fd4fa` |
-| ★ **Complementary Borda(v3.2 + per-triple, B2)** | **WINS** — trusted-mean $0.876 > 0.833$, $\Delta = +0.043$ (above the $+0.030$ "real win" threshold). | byte-digest (verified 5× in fresh procs unconditionally; cross-machine MATCH on Modal x86_64) | `dc6e0260…343ce` |
+| **Borda(v3.2_only, B2)** | LOSES — $0.808 < 0.833$, $\Delta \approx -0.025$. v3.2 anti-correlated with B2 on A1 trusted; rank fusion degrades B2's perfect 1.000 to 0.933. | shape (`BORDA_LOSES_TO_B2` + Δ ∈ [−0.10, −0.02]). Cochain-only Borda fusion has irreducible LAPACK-jitter cell-AUC sensitivity that quantization (tried at both rank-key and per-pair-score levels) doesn't fully absorb; same-machine reruns produce two stable digests (~62%/~38% across 8 fresh-proc runs), both equally valid `BORDA_LOSES_TO_B2` outcomes. The complementary-hybrid bench (which adds per-triple V) IS byte-stable, confirming the per-triple magnitude is the load-bearing tie-breaker. v0.3+ candidates: deterministic SVD-based pinv in `harmonic_extension`; `OPENBLAS_NUM_THREADS=1`; AUC-level quantization. | `a7965803…6c2003` (one of two outcomes; the other is `7fac833a…3bcb97`) |
+| **Predicate-perturbation training negatives** | A2 STAYED at $0.500$. Surfaced cochain-channel structural blindness to entity-set-preserving perturbations: predicate doesn't enter the cochain; adding training negatives can't fix what scoring discards. Same shape as F3 STRUCTURAL FAIL. | byte-digest (post-v0.2 Issue 3 refactor: bench refactored to call production `train_restriction_maps` with new `n_predicate_negatives_per_positive` parameter, replacing the local v2-training-loop copy. Verified 5× in fresh procs on operator + 3-environment Modal v6 ALL_MATCH, including Python 3.10 ↔ Python 3.12). | `ddf41484…001f59c3` |
+| **Per-rendered-triple V channel integration** | A2 LIFTED $0.500 \to 0.671$ (trusted) and $0.678$ (untrusted); trusted-mean $0.659 \to 0.759$. Restored the §3.5 channel that v2.2 §4.3 used to hit A1/A2/A3 = 1.000. Still $< $ B2 alone, but now informative about *why*: this composition is the only detector that catches A2. | byte-digest (verified 5× in fresh procs; 3-environment Modal v6 MATCH; per-rendered-triple V channel adds magnitude that breaks ties cleanly) | `7025436f…fd4fa` |
+| ★ **Complementary Borda(v3.2 + per-triple, B2)** | **WINS** — trusted-mean $0.876 > 0.833$, $\Delta = +0.043$ (above the $+0.030$ "real win" threshold). | byte-digest (verified 5× in fresh procs; 3-environment Modal v6 MATCH; per-triple V magnitude breaks LAPACK ties cleanly) | `dc6e0260…343ce` |
 
 **Per-cell AUC of the headline composition** (compared to its
 two components):
@@ -1437,7 +1437,7 @@ at every PR.
   Model of Meaning.* Linguistic Analysis 36.
 - **C2PA** (2023+). *Content Authenticity Coalition* technical
   specifications, including `digital_source_type` ontology.
-- **OtotaO/SUM repository.** `sum-engine` v0.5.0 on PyPI;
+- **OtotaO/SUM repository.** `sum-engine` v0.6.0 on PyPI;
   source at https://github.com/OtotaO/SUM. Spec doc at
   `docs/SHEAF_HALLUCINATION_DETECTOR.md`. Library API surface at
   `docs/SHEAF_LIBRARY_API.md`. v3.x bench scripts at

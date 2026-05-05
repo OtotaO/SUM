@@ -4,10 +4,33 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+(Empty since 0.6.0 release.)
+
+## [0.6.0] - 2026-05-05
+
+The Sprint 7 + 7.5 release. arXiv preprint v0.1 in
+`docs/arxiv/sheaf-detector-note-v0.md` is the headline artifact;
+the substrate underneath is the load-bearing one (cryptographically-
+anchored bench digests, cross-machine reproducibility verified
+across three LAPACK environments, six-regime audit-grade
+compliance, complementary-hybrid hallucination detector that
+beats trivial entity-set baselines on `seed_long_paragraphs`).
+
+Released to PyPI as `sum-engine==0.6.0`.
+
+### Sprint 7 — arXiv preprint v0 → v0.1 (2026-05-04)
+
+PR #142. Updates `docs/arxiv/sheaf-detector-note-v0.md` to fold in
+the v3 / v3.1 / v3.2 / F3 STRUCTURAL FAIL arc, with five named
+falsification verdicts (F1 MARGINAL, F2 PASS, F3 STRUCTURAL FAIL,
+F4 PASS, F5 PASS at γ ≤ 0.1). Categories shifted from
+`cs.AI / math.CT` → `cs.LG / cs.CR`.
+
+### Sprint 7.5 — preprint hardening + complementary-hybrid recovery (2026-05-04 / 05)
+
 - **Sprint 7.5 — preprint hardening + complementary-hybrid
-  detector recovery (2026-05-04 / 05).** The arXiv preprint at
-  `docs/arxiv/sheaf-detector-note-v0.md` was updated v0 → v0.1
-  (PR #142) and then hardened across four stacked PRs (#146 /
+  detector recovery (2026-05-04 / 05).** The arXiv preprint
+  was hardened across four stacked PRs (#146 /
   #144 / #145) before pre-circulation:
 
   - **T2 baseline comparison** (`scripts/research/sheaf_baseline_comparison.py`,
@@ -82,6 +105,76 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
   via the predicate-negatives experiment's failure, and produced
   a competitive detector via complementary-signal Borda fusion
   rather than face-saving "honest negative result" framing.
+
+- **Sprint 7.5 verified-quiescence pass (PR #149).** Deep
+  verification on current main surfaced two real bugs and a stale
+  claim: (1) `hybrid_comparison` digest was intermittent across
+  fresh procs because cochain-only Borda fusion has LAPACK-tie-
+  shuffle sensitivity (CI passes were lucky); (2) Modal harness
+  was pinned pre-merge SHA `37351e2`; (3) two broken doc cross-
+  references (`test_sheaf_laplacian_v31.py`,
+  `test_sheaf_v2.py`). Fixed: `hybrid_comparison` pin relaxed to
+  behavior-shape; PINNED_SHA bumped to `b5fe92b`; doc refs
+  corrected. Modal v4 re-run against post-merge main confirmed
+  BRANCH_A both digests MATCH. Receipt:
+  `fixtures/bench_receipts/cross_machine_verification_2026-05-04.json`.
+
+- **Sprint 7.5 four-latent-issues fix (PR #150).** Closed all four
+  latent issues queued by the verified-quiescence pass with
+  precision:
+
+  - **Issue 1 (manifest drift):** new
+    `scripts/research/_receipt_paths.py` helper —
+    `resolve_receipt_path(receipts_dir, schema_prefix)` returns
+    the existing canonical receipt (sole match) or today's-dated
+    path (zero matches), keeping reruns idempotent. Applied to
+    all 6 bench scripts.
+  - **Issue 2 (borda tie-break):** `_ranks` in
+    `sheaf_hybrid_comparison.py` now quantizes the sort key to
+    9 decimals before rank assignment. Sub-ULP LAPACK jitter
+    collapses to identical rank → cross-run digest stability.
+    Verified `a7965803…` 5/5 in fresh procs after the fix; the
+    alternative `7fac833a…` outcome no longer appears.
+    `hybrid_comparison` pin upgraded shape → byte-digest.
+  - **Issue 3 (predicate-negative sampler upstream):**
+    `sum_engine_internal/research/sheaf_laplacian_v2._sample_negative_triples`
+    accepts new `n_predicate_negatives_per_positive` parameter
+    (additive, default 0 backward-compat); when nonzero,
+    produces mixed-class negatives (tail + predicate) per
+    positive. `train_restriction_maps` accepts the same param.
+    `predicate_negatives_experiment.py` drops the local
+    training-loop copy; calls production training. New post-
+    refactor digest `ddf41484…`. Pin upgraded shape → byte-digest.
+  - **Issue 4 (additional LAPACK environment):**
+    `cross_machine_verify_modal.py` extended to two Modal Image
+    variants (Python 3.10 + numpy 1.25; Python 3.12 + numpy 2.x)
+    × three benches. New per-bench outcome labels.
+
+  Production v2/v3/v32 tests still 65/65 PASS (additive parameter,
+  backward-compat default). All four recovery digests now byte-
+  digest pinned (was: 2 byte, 2 shape).
+
+- **Sprint 7.5 post-#150 Modal re-verify (PR #151).** PINNED_SHA
+  bumped `b5fe92b` → `5715c40` (post-#150 main); Modal v6 run
+  against the new SHA produced **3 environments × 3 benches all
+  MATCH**. Outcome label
+  `BRANCH_A_THREE_ENVIRONMENTS_DIGESTS_MATCH`.
+
+  | Bench | Operator | Modal Py 3.10 | Modal Py 3.12 |
+  |---|---|---|---|
+  | v3_2_validation | `b4d26c01…` | ✓ | ✓ |
+  | complementary_hybrid | `dc6e0260…` | ✓ | ✓ |
+  | predicate_negatives | `ddf41484…` | ✓ | ✓ |
+
+  Issue 3 refactor empirically validated end-to-end: pre-refactor
+  produced different digests across Modal Python versions
+  (Py 3.10: `aa34b6e8…`; Py 3.12: `8638253903…`); post-refactor
+  produces a single digest across both. Cross-machine §4.8 prose
+  in the preprint and §2.10 in PROOF_BOUNDARY strengthened from
+  "2 environments × 2 benches MATCH" to "3 environments × 3
+  benches MATCH."
+
+  Latent-issue ledger: 4 → 0.
 
 - **PCI DSS user-identification gap closed (Sprint 4 of the
   intensification path to arXiv).** Three optional identity
