@@ -19,6 +19,16 @@
     "operator_digest": "dc6e0260f14042fa0b6151a6ca6b443bb0910eabb996f6876f854633969343ce",
     "outcome": "ALL_MATCH"
   },
+  "hybrid_comparison": {
+    "modal_310_delta_borda_vs_b2_trusted_mean": -0.0251851851851852,
+    "modal_310_verdict": "BORDA_LOSES_TO_B2",
+    "modal_312_delta_borda_vs_b2_trusted_mean": -0.0251851851851852,
+    "modal_312_verdict": "BORDA_LOSES_TO_B2",
+    "modal_digest_310": "a7965803ccf2e703d80364dc21b3ac410491db9768cdfcf91bfefd29356c2003",
+    "modal_digest_312": "a7965803ccf2e703d80364dc21b3ac410491db9768cdfcf91bfefd29356c2003",
+    "operator_digest": "a7965803ccf2e703d80364dc21b3ac410491db9768cdfcf91bfefd29356c2003",
+    "outcome": "ALL_MATCH"
+  },
   "modal_python_3_10_environment": {
     "machine": "x86_64",
     "numpy_show_config": "openblas64__info:\n    libraries = ['openblas64_', 'openblas64_']\n    library_dirs = ['/usr/local/lib']\n    language = c\n    define_macros = [('HAVE_CBLAS', None), ('BLAS_SYMBOL_SUFFIX', '64_'), ('HAVE_BLAS_ILP64', None)]\n    runtime_library_dirs = ['/usr/local/lib']\nblas_ilp64_opt_info:\n    libraries = ['openblas64_', 'openblas64_']\n    library_dirs = ['/usr/local/lib']\n    language = c\n    define_macros = [('HAVE_CBLAS', None), ('BLAS_SYMBOL_SUFFIX', '64_'), ('HAVE_BLAS_ILP64', None)]\n    runtime_library_dirs = ['/usr/local/lib']\nopenblas64__lapack_info:\n    libraries = ['openblas64_', 'openblas64_']\n    library_dirs = ['/usr/local/lib']\n    language = c\n    define_macros = [('HAVE_CBLAS', None), ('BLAS_SYMBOL_SUFFIX', '64_'), ('HAVE_BLAS_ILP64', None), ('HAVE_LAPACKE', None)]\n    runtime_library_dirs = ['/usr/local/lib']\nlapack_ilp64_opt_info:\n    libraries = ['openblas64_', 'openblas64_']\n    library_dirs = ['/usr/local/lib']\n    language = c\n    define_macros = [('HAVE_CBLAS', None), ('BLAS_SYMBOL_SUFFIX', '64_'), ('HAVE_BLAS_ILP64', None), ('HAVE_LAPACKE', None)]\n    runtime_library_dirs = ['/usr/local/lib']\nSupported SIMD extensions in this NumPy install:\n    baseline = SSE,SSE2,SSE3\n    found = SSSE3,SSE41,POPCNT,SSE42,AVX,F16C,FMA3,AVX2\n    not found = AVX512F,AVX512CD,AVX512_KNL,AVX512_KNM,AVX512_SKX,AVX512_CLX,AVX512_CNL,AVX512_ICL\n",
@@ -37,7 +47,7 @@
     "lapack_provider": "Apple Accelerate (assumed; per CLAUDE.md profile)",
     "platform": "Apple Silicon (operator-side; documented separately)"
   },
-  "pinned_sha": "5715c40",
+  "pinned_sha": "0f2f079",
   "predicate_negatives": {
     "modal_310_a2_trusted": 0.5,
     "modal_310_a2_untrusted": 0.5,

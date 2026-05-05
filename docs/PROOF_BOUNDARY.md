@@ -542,13 +542,14 @@ The `scripts/bench/` directory contains the measurement-first infrastructure tha
 
 **Boundary:** Three intended uses, each with its own surface:
 1. **Reproducibility canary** — same machine, same code → same digest. Drift indicates upstream change. **Unconditional** (no env-var requirement).
-2. **Cross-machine witness** (Sprint 7.5 — measured; **v0.2 latent-fix expanded to three environments × three benches, all MATCH**). Three load-bearing benches each reproduce byte-for-byte across three distinct LAPACK environments:
+2. **Cross-machine witness** (Sprint 7.5 — measured; v0.2 expanded to three environments × three benches; **v0.3 expanded to four benches × three environments, all MATCH**). Four load-bearing benches each reproduce byte-for-byte across three distinct LAPACK environments:
 
    | Bench | Operator (Apple Accelerate / Apple Silicon) | Modal Py 3.10 (OpenBLAS / numpy 1.25 / x86_64 / AVX2) | Modal Py 3.12 (OpenBLAS / numpy 2.x / x86_64 / AVX2) |
    |---|---|---|---|
    | v3_2_validation | `b4d26c01…` | ✓ MATCH | ✓ MATCH |
    | complementary_hybrid | `dc6e0260…` | ✓ MATCH | ✓ MATCH |
    | predicate_negatives | `ddf41484…` | ✓ MATCH | ✓ MATCH |
+   | hybrid_comparison | `a7965803…` | ✓ MATCH | ✓ MATCH |
 
    The substantive `HYBRID_BEATS_BASELINE` verdict (Δ=+0.043) also reproduces across all three environments. The substantive `A2_STILL_CHANCE` verdict for `predicate_negatives` (the cochain-blindness diagnosis) also reproduces. Outcome label: **`BRANCH_A_THREE_ENVIRONMENTS_DIGESTS_MATCH`**.
 

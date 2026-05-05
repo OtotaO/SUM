@@ -40,16 +40,18 @@ def _local_repo_paths() -> tuple[Path, Path]:
     repo = Path(__file__).resolve().parents[2]
     return repo, repo / "fixtures" / "bench_receipts"
 
-# Pinned to main HEAD post-merge of the Sprint 7+7.5 stack including
-# the four-latent-issues fix PR #150. SHA progression for traceability:
+# Pinned to main HEAD post-merge of the v0.3 deterministic-BLAS fix.
+# SHA progression for traceability:
 #   "37351e2" pre-merge (orig PR #144 branch tip)
 #   "b5fe92b" post Sprint 7.5 merges (#142/#146/#144/#145/#147/#148)
-#   "5715c40" post #150 (latent fixes — predicate_negatives refactor +
-#             borda_fuse tie-break + receipt-path helper + Py 3.12
-#             Modal env). Use this to verify cross-version digest
-#             stability for predicate_negatives post-refactor.
+#   "5715c40" post #150 (latent-fix arc — predicate_negatives refactor +
+#             borda_fuse tie-break + receipt-path helper + Py 3.12 env)
+#   "0f2f079" post #154 (v0.3 deterministic-BLAS fix — VECLIB/OPENBLAS
+#             thread-count env vars set at module-import time;
+#             closes the last shape-pinned recovery digest.
+#             hybrid_comparison now byte-digest pinned).
 # Update if you re-run after additional commits land.
-PINNED_SHA = "5715c40"
+PINNED_SHA = "0f2f079"
 
 EXPECTED_DIGESTS = {
     "v3_2_validation": (
@@ -58,10 +60,19 @@ EXPECTED_DIGESTS = {
     "complementary_hybrid": (
         "dc6e0260f14042fa0b6151a6ca6b443bb0910eabb996f6876f854633969343ce"
     ),
-    # New 2026-05-05: post-Issue-3 refactor digest. Pinned in
+    # 2026-05-05: post-Issue-3 refactor digest. Pinned in
     # Tests/research/test_recovery_experiment_digests.py.
     "predicate_negatives": (
         "ddf41484b1eba2f1cf5927d6e9691a922e5843be703fedac83e8afee001f59c3"
+    ),
+    # v0.3 deterministic-BLAS fix: hybrid_comparison was previously
+    # shape-pinned because BLAS thread-pool variance at numpy-import
+    # time produced two stable outcomes across fresh procs. With the
+    # `_deterministic_blas` helper imported before numpy in the bench
+    # script, the digest is now byte-stable. Pinned in
+    # Tests/research/test_recovery_experiment_digests.py.
+    "hybrid_comparison": (
+        "a7965803ccf2e703d80364dc21b3ac410491db9768cdfcf91bfefd29356c2003"
     ),
 }
 
@@ -171,6 +182,28 @@ def _run_complementary_hybrid() -> dict[str, object]:
     }
 
 
+def _run_hybrid_comparison() -> dict[str, object]:
+    """v0.3 deterministic-BLAS-fix addition: verify hybrid_comparison
+    bench_digest is now byte-stable across fresh procs (was shape-pinned
+    pre-v0.3 because cochain-only Borda fusion's per-cell AUC was
+    sensitive to BLAS thread-pool-size variance at numpy-import time)."""
+    import sys
+    sys.path.insert(0, "/repo")
+    from scripts.research.sheaf_hybrid_comparison import run_hybrid_comparison
+    report = run_hybrid_comparison()
+    env = _capture_env()
+    return {
+        "bench_name": "hybrid_comparison",
+        "bench_digest": report["bench_digest"],
+        "verdict": report["verdict"],
+        "delta_borda_vs_b2_trusted_mean": float(
+            report["delta_borda_vs_b2_trusted_mean"]
+        ),
+        "n_docs_with_partition": int(report["n_docs_with_partition"]),
+        **env,
+    }
+
+
 def _run_predicate_negatives() -> dict[str, object]:
     """v0.2 latent-fix addition: verify the post-refactor
     predicate_negatives bench digest is cross-Python-version stable
@@ -211,6 +244,11 @@ def verify_predicate_negatives_digest_310() -> dict[str, object]:
     return _run_predicate_negatives()
 
 
+@app.function(image=image_310, timeout=600)
+def verify_hybrid_comparison_digest_310() -> dict[str, object]:
+    return _run_hybrid_comparison()
+
+
 # Python 3.12 (numpy 2.x; tests cross-version + cross-LAPACK-version).
 @app.function(image=image_312, timeout=600)
 def verify_v32_validation_digest_312() -> dict[str, object]:
@@ -227,6 +265,11 @@ def verify_predicate_negatives_digest_312() -> dict[str, object]:
     return _run_predicate_negatives()
 
 
+@app.function(image=image_312, timeout=600)
+def verify_hybrid_comparison_digest_312() -> dict[str, object]:
+    return _run_hybrid_comparison()
+
+
 @app.local_entrypoint()
 def main():
     print("=" * 72)
@@ -235,7 +278,7 @@ def main():
     print("  environments: Python 3.10 + 3.12 (both Debian slim, OpenBLAS)")
     print("=" * 72)
 
-    # Run all 6 invocations: 3 benches × 2 Python versions.
+    # Run all 8 invocations: 4 benches × 2 Python versions.
     print("\n[1] Python 3.10 — v3.2 validation…")
     v32_310 = verify_v32_validation_digest_310.remote()
     print(f"    bench_digest = {v32_310['bench_digest']}")
@@ -245,22 +288,29 @@ def main():
     print("\n[3] Python 3.10 — predicate negatives…")
     pn_310 = verify_predicate_negatives_digest_310.remote()
     print(f"    bench_digest = {pn_310['bench_digest']}")
-    print("\n[4] Python 3.12 — v3.2 validation…")
+    print("\n[4] Python 3.10 — hybrid comparison (v0.3 addition)…")
+    hc_310 = verify_hybrid_comparison_digest_310.remote()
+    print(f"    bench_digest = {hc_310['bench_digest']}")
+    print("\n[5] Python 3.12 — v3.2 validation…")
     v32_312 = verify_v32_validation_digest_312.remote()
     print(f"    bench_digest = {v32_312['bench_digest']}")
-    print("\n[5] Python 3.12 — complementary hybrid…")
+    print("\n[6] Python 3.12 — complementary hybrid…")
     hyb_312 = verify_complementary_hybrid_digest_312.remote()
     print(f"    bench_digest = {hyb_312['bench_digest']}")
-    print("\n[6] Python 3.12 — predicate negatives…")
+    print("\n[7] Python 3.12 — predicate negatives…")
     pn_312 = verify_predicate_negatives_digest_312.remote()
     print(f"    bench_digest = {pn_312['bench_digest']}")
+    print("\n[8] Python 3.12 — hybrid comparison (v0.3 addition)…")
+    hc_312 = verify_hybrid_comparison_digest_312.remote()
+    print(f"    bench_digest = {hc_312['bench_digest']}")
 
     # Compare across operator + Modal-310 + Modal-312.
-    print("\n[7] Cross-environment comparison:")
+    print("\n[9] Cross-environment comparison:")
     rows = [
         ("v3_2_validation",       v32_310["bench_digest"], v32_312["bench_digest"], EXPECTED_DIGESTS["v3_2_validation"]),
         ("complementary_hybrid",  hyb_310["bench_digest"], hyb_312["bench_digest"], EXPECTED_DIGESTS["complementary_hybrid"]),
         ("predicate_negatives",   pn_310["bench_digest"],  pn_312["bench_digest"],  EXPECTED_DIGESTS["predicate_negatives"]),
+        ("hybrid_comparison",     hc_310["bench_digest"],  hc_312["bench_digest"],  EXPECTED_DIGESTS["hybrid_comparison"]),
     ]
     outcomes: dict[str, str] = {}
     for name, m310, m312, op in rows:
@@ -338,6 +388,16 @@ def main():
             "modal_310_a2_untrusted": pn_310["a2_untrusted"],
             "modal_312_a2_untrusted": pn_312["a2_untrusted"],
         },
+        "hybrid_comparison": {
+            "operator_digest": EXPECTED_DIGESTS["hybrid_comparison"],
+            "modal_digest_310": hc_310["bench_digest"],
+            "modal_digest_312": hc_312["bench_digest"],
+            "outcome": outcomes["hybrid_comparison"],
+            "modal_310_verdict": hc_310["verdict"],
+            "modal_312_verdict": hc_312["verdict"],
+            "modal_310_delta_borda_vs_b2_trusted_mean": hc_310["delta_borda_vs_b2_trusted_mean"],
+            "modal_312_delta_borda_vs_b2_trusted_mean": hc_312["delta_borda_vs_b2_trusted_mean"],
+        },
     }
     # Aggregate the per-receipt outcomes for compatibility with §4.8 prose
     # which speaks of "BRANCH_A" naming.
@@ -353,7 +413,7 @@ def main():
     else:
         section_4_8_outcome = "BRANCH_B_OR_C_DIGEST_DIFFERS_INVESTIGATE_OUTCOMES"
     receipt["section_4_8_outcome"] = section_4_8_outcome
-    print(f"\n[8] §4.8 outcome label: {section_4_8_outcome}")
+    print(f"\n[10] §4.8 outcome label: {section_4_8_outcome}")
 
     # Write receipt
     _, receipts_dir = _local_repo_paths()
