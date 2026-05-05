@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-05T07:22:26Z",
+  "issued_at": "2026-05-05T08:49:10Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,17 +8,17 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "b5fe92b40546dd0b3985d43142b1f2dd209f5ba4",
-    "head_short": "b5fe92b",
-    "head_subject": "docs: session handover for the Sprint 7.5 arc (preprint v0.1 + recovery + cross-machine) (#148)",
-    "head_committer_date": "2026-05-05T02:09:50-04:00",
+    "head_sha": "75a93784fac7f62a8c5ffc1260db4bf6545cc383",
+    "head_short": "75a9378",
+    "head_subject": "arxiv(sprint-7.5): post-#150 Modal re-verify \u2014 3 benches \u00d7 3 environments ALL_MATCH (#151)",
+    "head_committer_date": "2026-05-05T04:12:40-04:00",
     "commits_last_30d": null
   },
   "github": {
     "stars": 8
   },
   "release": {
-    "pyproject_version": "0.5.0",
+    "pyproject_version": "0.6.0",
     "pypi_published_version": "0.5.0"
   },
   "features": {

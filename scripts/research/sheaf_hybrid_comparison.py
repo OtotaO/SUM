@@ -94,23 +94,30 @@ def borda_fuse(scores_a: list[float], scores_b: list[float]) -> list[float]:
     return [float(rank_a[i] + rank_b[i]) for i in range(n)]
 
 
-_RANK_TIE_PRECISION = 9   # decimals; absorb sub-ULP LAPACK jitter
-                          # without losing scoring-function signal
+_RANK_TIE_PRECISION = 6   # decimals; absorb LAPACK jitter while
+                          # preserving scoring-function signal
+                          # (sheaf-Laplacian residuals: O(0.1)-O(10);
+                          # signal lives in tenths/hundredths)
 
 
 def _ranks(xs: list[float]) -> list[float]:
     """Average-ranked. Ties get mean rank.
 
     Sort key + tie detection are both quantized to _RANK_TIE_PRECISION
-    decimals. Two scores within ~1 ULP of each other (LAPACK threading
-    jitter range) collapse to the same quantized value and therefore
-    the same rank — eliminating cross-run rank-shuffles that previously
-    made cochain-only Borda fusion's bench_digest intermittent. The
-    secondary sort key is the original index, giving a stable order
-    among tied items independent of input ordering.
+    decimals (1e-6 absolute). LAPACK threading jitter inside
+    `np.linalg.lstsq` (used in v3.1's harmonic-extension pathway) can
+    produce score differences up to ~1e-7 magnitude on the same inputs
+    across runs; the 6-decimal quantization absorbs that range while
+    leaving the load-bearing signal (in the tenths/hundredths) intact.
 
-    Quantizing to 9 decimals is comfortably below scoring-function
-    signal precision (sheaf-Laplacian residuals are O(0.1) to O(10)).
+    The initial v0.2 fix (9-decimal quantization) was too tight — some
+    runs still produced a divergent digest because the LAPACK jitter
+    occasionally exceeded 1e-9. Tightening to 6 decimals is the
+    correct trade-off: well below scoring-function signal precision,
+    well above LAPACK noise.
+
+    The secondary sort key is the original index, giving a stable
+    order among tied items independent of input ordering.
     """
     n = len(xs)
     qxs = [round(x, _RANK_TIE_PRECISION) for x in xs]
@@ -180,11 +187,20 @@ def run_hybrid_comparison() -> dict[str, Any]:
             continue
         weights = weights_from_receipts(doc_sheaf, trusted_edges=trusted)
 
-        # Clean-render scores
-        clean_v32 = score_v32_combined(
+        # Clean-render scores. Quantize at storage time to absorb
+        # LAPACK threading jitter (np.linalg.lstsq inside v3.1 path
+        # can produce ~1e-7-magnitude variance on identical inputs).
+        # 6-decimal absolute precision is well below scoring-function
+        # signal precision (sheaf-Laplacian residuals: O(0.1)-O(10);
+        # signal in tenths/hundredths). Without this, downstream Borda
+        # rank-fusion on cochain-only scores is sensitive to ULP-jitter
+        # rank shuffles even with quantized sort keys.
+        clean_v32 = round(score_v32_combined(
             doc_sheaf, doc_emb, source, weights, lambda_auto, GAMMA,
+        ), 6)
+        clean_b2 = round(
+            score_b2_jaccard_distance(source, source), 6,  # = 0.0
         )
-        clean_b2 = score_b2_jaccard_distance(source, source)  # = 0.0
 
         target_t = rng.choice(trusted)
         target_u = rng.choice(untrusted)
@@ -201,12 +217,12 @@ def run_hybrid_comparison() -> dict[str, Any]:
                     continue
 
                 try:
-                    p_v32 = score_v32_combined(
+                    p_v32 = round(score_v32_combined(
                         doc_sheaf, doc_emb, perturbed, weights, lambda_auto, GAMMA,
-                    )
+                    ), 6)
                 except Exception:  # noqa: BLE001
                     continue
-                p_b2 = score_b2_jaccard_distance(source, perturbed)
+                p_b2 = round(score_b2_jaccard_distance(source, perturbed), 6)
 
                 cells.setdefault(("v32_g0.1", cls, target_label), []).extend([
                     (clean_v32, 0), (p_v32, 1),

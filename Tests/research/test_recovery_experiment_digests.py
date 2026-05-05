@@ -23,61 +23,72 @@ import pytest
 pytestmark = pytest.mark.slow
 
 
-def test_hybrid_comparison_digest_pinned():
+def test_hybrid_comparison_loss_finding_holds():
     """Borda(v3.2_only, B2) — first negative result; locks the
     'baseline rank-fusion of cochain-channel-only v3.2 LOSES to B2'
     finding.
 
-    Three-layer pin (most-specific to most-general):
+    SHAPE PIN (verdict + Δ-in-range), NOT byte-digest. The v0.2
+    latent-fix arc tried two quantization layers (rank-key
+    quantization in `_ranks`, then per-pair-score quantization at
+    storage time) but neither fully absorbs the LAPACK-jitter
+    sensitivity in this specific bench. Same-machine reruns
+    produce two stable digests (`a7965803…` and `7fac833a…`)
+    differing by quantization-bucket flips at small numbers of
+    cells.
 
-      1. Byte-digest. The bench_digest must equal the operator-
-         environment value below. Reproduces 5× in fresh procs
-         unconditionally after the v0.2 latent-fix to `_ranks` in
-         scripts/research/sheaf_hybrid_comparison.py — quantizing
-         the rank sort key to 9 decimals absorbs sub-ULP LAPACK
-         jitter that previously caused two-outcome non-determinism.
-         Pre-fix, this test was relaxed to shape-only because the
-         digest was intermittent (a7965803... 2/3 vs 7fac833a... 1/3).
+    Why this bench is intrinsically more sensitive than its
+    siblings:
 
-      2. Substantive verdict label `BORDA_LOSES_TO_B2`. If the
-         digest drifts but the verdict label still holds, the
-         load-bearing finding is intact and the digest drift is
-         likely benign (e.g., new corpus, scoring-math change);
-         the failure message will distinguish.
+      - hybrid_comparison fuses ONLY cochain V (v3.2 score with
+        γ=0.1) with B2 jaccard. There's no per-rendered-triple V
+        magnitude to dominate the cell-AUC computation.
+      - LAPACK threading inside `np.linalg.lstsq` (used in v3.1's
+        harmonic-extension pathway) produces score variance up to
+        ~1e-6 magnitude. With cochain-only fusion, this lands at
+        quantization-bucket boundaries on some cells.
+      - complementary_hybrid (which DOES include per-triple V) is
+        stable — the per-triple magnitude breaks LAPACK ties
+        cleanly.
 
-      3. Loss-margin range: Δ ∈ [−0.10, −0.02]. The loss should be
-         a clear margin, not a near-tie that swings sign across
-         runs.
+    The substantive finding is invariant: Borda(v3.2_only, B2)
+    LOSES to B2 alone by Δ ≈ −0.025 trusted-mean. The TWO
+    candidate digest outcomes are equally valid
+    `BORDA_LOSES_TO_B2` realisations.
 
-    Failure-message hierarchy: the byte-digest assertion fires
-    first (most specific). If it fails, the verdict + Δ assertions
-    confirm whether the substantive finding is still intact.
+    v0.3+ candidate fixes:
+      - Replace `np.linalg.lstsq` with a deterministic SVD-based
+        pinv in `harmonic_extension` (eliminates threading
+        non-determinism; v3 refactor)
+      - Set OPENBLAS_NUM_THREADS=1 at process entry (works but
+        environment-dependent; doesn't compose with multi-process
+        benches)
+      - Compute cell AUCs at higher precision and quantize at the
+        AUC level rather than score level
+
+    For now (v0.2): shape-pin. The two-layer quantization (in
+    `_ranks` AND at score-storage) is retained because it
+    statistically improves stability even though it doesn't make
+    the digest unconditional.
     """
     from scripts.research.sheaf_hybrid_comparison import run_hybrid_comparison
-    PINNED = "a7965803ccf2e703d80364dc21b3ac410491db9768cdfcf91bfefd29356c2003"
     report = run_hybrid_comparison()
-    # Layer 1: byte-digest
-    assert report["bench_digest"] == PINNED, (
-        f"hybrid_comparison digest drift: got {report['bench_digest']}, "
-        f"expected {PINNED}. The cochain-only Borda fusion's _ranks "
-        f"quantization should make this byte-stable. If only the digest "
-        f"drifted but verdict={report.get('verdict')!r} and "
-        f"Δ={report.get('delta_borda_vs_b2_trusted_mean'):.4f} are still "
-        f"in the loss range, the substantive finding is intact — "
-        f"investigate corpus / scoring math / rank-fusion quantization."
-    )
-    # Layer 2: verdict label (substantive finding)
+    # Layer 1: verdict label (substantive finding)
     assert report["verdict"] == "BORDA_LOSES_TO_B2", (
         f"hybrid_comparison verdict drift: got {report['verdict']!r}. "
         "The substantive finding — Borda(v3.2_only, B2) loses to B2 "
         "alone — is load-bearing for §4.7.1's STOP-THE-LINE narrative."
     )
-    # Layer 3: loss-margin range
+    # Layer 2: loss-margin range
     delta = report["delta_borda_vs_b2_trusted_mean"]
     assert -0.10 <= delta <= -0.02, (
         f"delta_borda_vs_b2 drift: got {delta:.4f}, expected in "
         "[-0.10, -0.02]. The loss should be a clear margin."
     )
+    # Layer 3: schema check on bench_digest
+    assert isinstance(report["bench_digest"], str)
+    assert len(report["bench_digest"]) == 64
+    int(report["bench_digest"], 16)
 
 
 def test_predicate_negatives_experiment_digest_pinned():
