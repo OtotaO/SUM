@@ -785,7 +785,12 @@ hypotheses we tested:
      learn to score predicate-flips as high V. Result: **A2
      stayed at 0.500.** Receipt:
      `fixtures/bench_receipts/predicate_negatives_experiment_2026-05-04.json`,
-     `bench_digest aa34b6e8…`. The trained sheaf with predicate
+     `bench_digest aa34b6e8…` (operator-environment, Python 3.10;
+     digest is Python-version-sensitive because the bench uses a
+     local copy of the v2 training loop — see the bench script
+     header. The substantive finding holds invariant; the pinned
+     test asserts verdict + A2-at-chance rather than byte-digest).
+     The trained sheaf with predicate
      negatives does score the negatives as high V *during
      training*, but A2 detection at scoring time depends on the
      *cochain construction* — and the cochain at vertex $v$ is
