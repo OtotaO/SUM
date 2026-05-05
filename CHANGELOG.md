@@ -4,6 +4,25 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Multi-LLM Path 2 comparison harness (Path 2 → cross-family).** New
+  `scripts/research/sheaf_path2_multi_llm_compare.py` extends the
+  capture-once-replay-forever architecture across LLM families to test
+  whether the §4.7.2 synthetic-vs-real gap is structural or
+  gpt-4o-mini-specific. Captures one snapshot per model via the
+  vendor-agnostic dispatcher (`llm_dispatch.get_adapter`), reuses the
+  Path 2 v3 deterministic Phase-2 scorer, and aggregates per-model
+  verdicts into one of five cross-family findings
+  (`STRUCTURAL_GAP_ALL_MODELS_LOSE`, `STRUCTURAL_GAP_NO_MODEL_BEATS`,
+  `HYBRID_BEATS_ALL_MODELS`, `HYBRID_BEATS_OR_TIES_ALL_MODELS`,
+  `MIXED_VERDICTS_MODEL_DEPENDENT`). n=1 honestly reports
+  `SINGLE_MODEL_<verdict>` rather than overstating. Default models:
+  `gpt-4o-mini-2024-07-18` + `claude-haiku-4-5-20251001`. The
+  Anthropic snapshot is operator-gated (Phase 1 needs
+  `ANTHROPIC_API_KEY`); the gpt-4o-mini path runs against the existing
+  PR #156 snapshot with byte-identical digest. Pinned in
+  `Tests/research/test_sheaf_path2_multi_llm_compare.py` (verifies the
+  multi-LLM wrapper is a no-op on the scoring path).
+
 - **Path 2 — real-LLM-rendered adversarial bench (closes the §7
   load-bearing asterisk).** New `scripts/research/sheaf_path2_v3_bench.py`
   with capture-once-replay-forever architecture: Phase 1 calls
