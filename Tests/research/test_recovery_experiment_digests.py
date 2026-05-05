@@ -37,20 +37,48 @@ def test_hybrid_comparison_digest_pinned():
     )
 
 
-def test_predicate_negatives_experiment_digest_pinned():
-    """Option 2 — predicate-perturbation training. Locks the structural
-    finding that A2 stayed at 0.500 even with predicate negatives, which
-    surfaced the cochain-channel structural blindness to entity-set-
-    preserving perturbations."""
+def test_predicate_negatives_experiment_structural_finding_holds():
+    """Option 2 — predicate-perturbation training. Locks the load-bearing
+    STRUCTURAL FINDING that A2 stayed at 0.500 even with predicate
+    negatives, which surfaced the cochain-channel structural blindness
+    to entity-set-preserving perturbations.
+
+    NOTE: pinned by behavior-shape (verdict label + A2 cells at 0.500),
+    NOT by byte-digest. The bench uses a local copy of the v2 training
+    loop (`train_with_predicate_negatives`) and that copy is
+    Python-version-sensitive: the AUC quantization layer absorbs LAPACK
+    jitter on the same Python version, but cross-version (Python 3.10
+    operator-side vs Python 3.12 CI-side) the trained-weight bits diverge
+    enough to shift AUC quantization buckets and therefore the digest.
+    The substantive finding is invariant — A2 stays at chance regardless
+    of Python version; the digest is environment-specific.
+
+    Operator-environment digest (Python 3.10 / numpy 1.x):
+        aa34b6e8640621da07823f985ddf35196a85047a64f942493854e09b75c866e7
+    CI-environment digest (Python 3.12 / numpy 2.x): differs but
+        verdict + A2-at-chance hold identically. Cross-Python-version
+        digest reproducibility is a v0.2 follow-up (would require
+        upstreaming the predicate-negative sampler into the production
+        train_restriction_maps so the bench uses a single training-loop
+        source).
+    """
     from scripts.research.sheaf_predicate_negatives_experiment import run_experiment
-    PINNED = "aa34b6e8640621da07823f985ddf35196a85047a64f942493854e09b75c866e7"
     report = run_experiment()
-    assert report["bench_digest"] == PINNED, (
-        f"predicate_negatives digest drift: got {report['bench_digest']}. "
-        "If this digest changes, the structural-blindness finding "
-        "(A2 stays at 0.500 even with predicate negatives in training) "
-        "may have shifted — re-investigate the cochain construction."
+    assert report["verdict"] == "A2_STILL_CHANCE", (
+        f"predicate-negatives verdict drift: got {report['verdict']}. "
+        "The structural finding (A2 stays at chance even with predicate "
+        "negatives in training) is the load-bearing claim — if this "
+        "verdict label changes, the cochain-blindness diagnosis from "
+        "§3.4.5 of docs/SHEAF_HALLUCINATION_DETECTOR.md may have shifted."
     )
+    a2_t = report["per_cell_auc"].get("v32_g0.1_pred_neg|A2|trusted")
+    a2_u = report["per_cell_auc"].get("v32_g0.1_pred_neg|A2|untrusted")
+    assert a2_t == 0.5, f"A2 trusted should be at chance; got {a2_t}"
+    assert a2_u == 0.5, f"A2 untrusted should be at chance; got {a2_u}"
+    # bench_digest still required to be present + 64-hex (schema check)
+    assert isinstance(report["bench_digest"], str)
+    assert len(report["bench_digest"]) == 64
+    int(report["bench_digest"], 16)
 
 
 def test_per_triple_integration_digest_pinned():
