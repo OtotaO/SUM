@@ -214,6 +214,68 @@ Returns a dict with these keys:
 }
 ```
 
+### Sprint-7.5 additions — per-rendered-triple V channel + entity-set baselines + Borda fusion
+
+These functions were added in the Sprint 7.5 hardening arc to recover the detector's competitive position vs trivial baselines. The cochain channel (`combined_detector_score_v32` above) is mathematically blind to entity-set-preserving perturbations (predicate-flip A2); the per-rendered-triple V channel restores that signal directly. Entity-set baselines + Borda fusion combine the two complementary signals. The complementary hybrid is the **published WIN** at trusted-mean AUC 0.876 (Δ=+0.043 vs B2 alone, `bench_digest dc6e0260…`).
+
+#### `score_v32_with_per_triple(...) → float`
+
+Module: `scripts.research.sheaf_per_triple_integration_experiment`
+
+Adds the §3.5 per-rendered-triple V channel to the v3.2 cochain score:
+
+```
+v_combined = v_laplacian_w + γ·deviation_w + λ·v_deficit
+           + α·max_in_vocab_v_triple + β·n_oov
+```
+
+| Param | Default | Meaning |
+|---|---|---|
+| `lambda_` | (caller) | Coefficient on presence-deficit term |
+| `gamma` | (caller) | Coefficient on harmonic-extension deviation |
+| `alpha` | 1.0 | Coefficient on max in-vocab per-triple V |
+| `beta` | 1.0 | Coefficient on out-of-vocab triple count |
+| `global_sheaf` | `None` | Trained sheaf for per-triple OOV detection (if `None`, uses doc-local sheaf which by construction has no OOV) |
+| `global_embeddings` | `None` | Embeddings paired with `global_sheaf` |
+
+Returns a single float — the additive-combined score.
+
+The per-triple channel uses `score_rendered_triples_v2` from `sum_engine_internal.research.sheaf_laplacian_v2` to score each rendered triple individually under the trained restriction maps; OOV detection requires passing the GLOBAL trained sheaf (per-doc sheaves have no OOV by construction). Empirically lifts A2 trusted-mean AUC from 0.500 to 0.671 on `seed_long_paragraphs`.
+
+#### `borda_fuse(scores_a, scores_b) → list[float]`
+
+Module: `scripts.research.sheaf_hybrid_comparison`
+
+Per-pool average-rank fusion of two detectors' scores. Given `n` paired scores, returns the rank-sum per index:
+
+```
+fused[i] = average_rank(scores_a[i] | scores_a) + average_rank(scores_b[i] | scores_b)
+```
+
+Ties get mean rank. Magnitude-invariant — works regardless of detector score scales. Parameter-free.
+
+Used by the complementary-hybrid bench (`scripts/research/sheaf_complementary_hybrid_experiment.py`) to fuse `score_v32_with_per_triple` with `score_b2_jaccard_distance`. The fused score's per-cell AUC strictly beats either component on `seed_long_paragraphs`.
+
+#### `score_b1_entity_presence_deficit(source_triples, rendered_triples) → float`
+#### `score_b2_jaccard_distance(source_triples, rendered_triples) → float`
+
+Module: `scripts.research.sheaf_baseline_comparison`
+
+Two trivial reproducible baselines, scored on the same (clean, perturbed) triple-set pairs the v3.x detectors consume:
+
+- **B1**: `1.0 − |source_entities ∩ rendered_entities| / |source_entities|`. Higher = more source entities missing from render.
+- **B2**: `1.0 − |source_entities ∩ rendered_entities| / |source_entities ∪ rendered_entities|`. Symmetric variant of B1; penalises spurious entities too.
+
+Both pure set ops on entity sets (predicates excluded). No floating-point, no LAPACK, no randomness — AUCs reproduce exactly across runs. B2 alone trusted-mean AUC = 0.833 on `seed_long_paragraphs` (catches A1/A4 at 1.000; blind to A2 at 0.500). The baselines exist as the **minimum-defensible reproducible comparison** for the cochain-channel detectors; LM-based baselines (sequence log-prob, MiniCheck-FT5) are deferred to v0.2.
+
+#### Cross-machine `bench_digest` verification
+
+Module: `scripts.research.cross_machine_verify_modal`
+
+Modal app with two `@app.function`s sharing one `Image`: `verify_v32_validation_digest` and `verify_complementary_hybrid_digest`. Builds an image pinned to a specific commit SHA, installs `'.[research,sieve]'` extras, downloads `en_core_web_sm`, runs each bench and returns the digest plus environment metadata. Compares against operator-side digests; writes a `sum.cross_machine_verification.v1` receipt.
+
+Run: `modal run scripts/research/cross_machine_verify_modal.py`. Requires `modal` CLI authenticated (`modal token new`). Cost ~$0.01 per full run on Modal's default CPU; container build amortizes per image hash.
+
 ## Falsifiable predictions pinned in tests
 
 These are the contracts the v3.2 module's tests pin (`Tests/research/

@@ -741,6 +741,165 @@ at γ=0); substantive verdicts are unchanged.
   - A2 weakness — relation perturbations score 0.500 across all
     detectors (v22, v3, v31, v32). This needs predicate-perturbation
     negative sampling at training time, separate from the v3.2 arc.
+    **(Sprint 7.5 update: predicate-perturbation training was
+    tested in `aa34b6e8…` and did NOT lift A2 — the cochain
+    construction is mathematically blind to entity-set-preserving
+    perturbations regardless of training-distribution. The
+    recovery is via the §3.5 per-rendered-triple V channel —
+    see §3.4.5 below.)**
+
+### 3.4.5 Sprint-7.5 baseline-comparison gate + recovery arc (2026-05-04)
+
+The substrate's truth-first discipline includes a baseline-comparison
+gate before any detector ships into a public claim: how does the
+detector fare against trivial reproducible baselines computed from
+the same render bundle?
+
+Two such baselines, both pure set ops on entity sets and both
+fully deterministic (no LAPACK, no randomness — AUC reproduces
+exactly across runs):
+
+  - **B1 entity-presence-deficit** —
+    $1 - |\text{src}_\text{ent} \cap \text{render}_\text{ent}| /
+    |\text{src}_\text{ent}|$
+  - **B2 jaccard-distance** —
+    $1 - J(\text{src}_\text{ent}, \text{render}_\text{ent})$
+
+Module: `scripts.research.sheaf_baseline_comparison`.
+Receipt: `fixtures/bench_receipts/baseline_comparison_2026-05-04.json`,
+`bench_digest cb32c617…`. Pinned in
+`Tests/research/test_sheaf_baseline_comparison.py`.
+
+**STOP-THE-LINE finding: trivial baselines beat v3.2 alone.**
+B2 trusted-mean AUC = 0.833 vs v3.2 cochain-only at 0.659
+(Δ = −0.174). Per-cell: B2 catches A1 trusted at 1.000, A4
+trusted at 1.000; v3.2 cochain only sees 0.578 and 0.898
+respectively. A2 is at chance for both (0.500).
+
+This loss is structural, not parametric. The two recovery
+hypotheses we tested:
+
+  1. **Predicate-perturbation training negatives** — adding
+     $(h, r', t)$ negatives to the LCWA contrastive sampler
+     during training, hoping the trained restriction maps would
+     learn to score predicate-flips as high V. Result: **A2
+     stayed at 0.500.** Receipt:
+     `fixtures/bench_receipts/predicate_negatives_experiment_2026-05-04.json`,
+     `bench_digest aa34b6e8…`. The trained sheaf with predicate
+     negatives does score the negatives as high V *during
+     training*, but A2 detection at scoring time depends on the
+     *cochain construction* — and the cochain at vertex $v$ is
+     `trained_embedding(v) if v ∈ rendered_triples else zero`.
+     When A2 swaps $(h, r, t) \to (h, r', t)$, both $h$ and
+     $t$ remain in the rendered entity set; the cochain is
+     identical between clean and perturbed; the per-edge
+     residual under the source-graph topology computes the same
+     value. Predicate doesn't enter the cochain. Adding training
+     negatives can't fix what the scoring path discards.
+
+     This is a **structural finding** of the same shape as F3
+     STRUCTURAL FAIL: a synthetic-utility expectation
+     (predicate negatives should help A2) refuted by a corpus-
+     scale measurement, with the failure traceable to a
+     mathematical blindness in the scoring architecture.
+
+  2. **Per-rendered-triple V channel integration** — restoring
+     the §3.5 channel that v2.2 §4.3 ROC bench used to hit
+     A1/A2/A3 = 1.000. The per-triple channel scores each
+     rendered triple $(h, r, t)$ directly under
+     $F_h(r), F_t(r)$, so an A2 perturbation $r \to r'$ produces
+     high $V_\text{triple}$ at $F_h(r')$ — without depending on
+     the cochain construction. Implementation:
+     `scripts.research.sheaf_per_triple_integration_experiment.score_v32_with_per_triple`.
+
+     Result: **A2 LIFTED 0.500 → 0.671** on trusted target,
+     0.500 → 0.678 on untrusted. v3.2 + per-triple trusted-mean
+     AUC = 0.759 (vs cochain-only 0.659). Receipt:
+     `fixtures/bench_receipts/per_triple_integration_2026-05-04.json`,
+     `bench_digest 7025436f…`.
+
+     Still loses to B2 alone (0.833), but the structure of the
+     loss is now informative: v3.2 + per-triple is the *only*
+     detector that catches A2.
+
+The two are **structurally complementary**: B2 catches entity-
+set-changing perturbations (A1/A4); v3.2 + per-triple catches
+predicate-flips (A2). The complementary hybrid (§3.4.6 below)
+combines them via Borda fusion to beat both.
+
+### 3.4.6 Complementary hybrid — Borda(v3.2 + per-triple, B2) — IMPLEMENTED 2026-05-04
+
+The substrate-enabled headline detector. Borda rank-fusion at
+the per-(class, target) cell level of the two complementary
+signals from §3.4.5:
+
+  - $s^{\text{v3.2 + per-triple}}_i$ — the §3.4.5 channel
+    composition (cochain V + γ·deviation_w + λ·v_deficit +
+    α·max_in_vocab_v_triple + β·n_oov)
+  - $s^{\text{B2 jaccard}}_i$ — entity-set jaccard distance
+
+Borda fusion:
+
+$$s^\text{borda}_i = \mathrm{rank}(s^{(\text{v32+pt})}_i \mid s^{(\text{v32+pt})}_*) +
+\mathrm{rank}(s^{(\text{B2})}_i \mid s^{(\text{B2})}_*)$$
+
+Module: `scripts.research.sheaf_complementary_hybrid_experiment`.
+Receipt: `fixtures/bench_receipts/complementary_hybrid_2026-05-04.json`,
+**`bench_digest dc6e0260…343ce`**. Pinned in
+`Tests/research/test_recovery_experiment_digests.py::test_complementary_hybrid_digest_pinned`
+(test additionally asserts the verdict label
+`HYBRID_BEATS_BASELINE`).
+
+**Per-cell AUC comparison (2026-05-04):**
+
+| Class × target | v3.2 + per-triple | B2 jaccard | **Borda hybrid** |
+|---|---:|---:|---:|
+| A1 entity-swap @ trusted    | 0.698 | **1.000** | 0.967 |
+| A1 entity-swap @ untrusted  | 0.751 | 1.000 | 0.991 |
+| A2 predicate-flip @ trusted | **0.671** | 0.500 | **0.671** |
+| A2 predicate-flip @ untrusted | **0.678** | 0.500 | 0.678 |
+| A4 triple-drop @ trusted    | 0.907 | 1.000 | 0.991 |
+| A4 triple-drop @ untrusted  | 0.969 | 1.000 | 1.000 |
+| **Trusted-mean**            | 0.759 | 0.833 | **0.876** |
+
+**Δ(borda − b2) = +0.043** trusted-mean. Above the +0.030
+"real win" threshold. **Verdict: HYBRID_BEATS_BASELINE.**
+
+The fusion preserves both contributions: A2 lift from the
+sheaf-Laplacian channel; A1/A4 dominance from B2's perfect 1.000
+on entity-set changes. Magnitude-invariance of Borda means the
+component scale differences (sheaf-Laplacian scores in
+$O(10^1{-}10^2)$, jaccard in $[0, 1]$) don't bias the fusion.
+
+**Cross-machine verification (Sprint 7.5 T3.M, 2026-05-04).** The
+complementary hybrid bench was re-run on Modal x86_64 (Linux 4.4 /
+glibc 2.31 / Python 3.10.8 / numpy 1.25.0 / OpenBLAS-via-PyPI /
+AVX2) at the pinned commit SHA. The bench_digest `dc6e0260…`
+reproduced byte-for-byte and the substantive verdict
+`HYBRID_BEATS_BASELINE` (Δ=+0.043) reproduced cross-machine.
+Apple Accelerate (operator's Apple Silicon) and OpenBLAS-via-PyPI
+(Modal x86_64) are two distinct LAPACK environments — see
+`docs/PROOF_BOUNDARY.md` §2.10 for the full cross-machine
+boundary. Receipt:
+`fixtures/bench_receipts/cross_machine_verification_2026-05-04.json`.
+
+**Out of scope (named honestly):**
+
+  - **Cross-corpus generalisation.** The +0.043 margin is on
+    `seed_long_paragraphs` with the synthetic A1/A2/A4
+    perturbation harness. v0.2 follow-up: second corpus.
+  - **Real-LLM-rendered hallucinations.** The synthetic harness
+    mutates source-bundle triples; real LLM hallucinations
+    produce rendered text that re-extracts to a noisy triple
+    set. B2's perfect 1.000 on synthetic A1/A4 may degrade if
+    the LLM elaborates with spurious entities; v3.2 + per-triple
+    may pull ahead. v0.2 follow-up: real-LLM-rendered bench
+    (Path 2 in the preprint's §8 future work).
+  - **Composition tuning.** Borda is parameter-free but is one
+    composition choice among many. Z-score additive, gated
+    (B2 fires → use B2 else fall to v3.2 + per-triple), and
+    weighted-linear are alternatives we didn't exhaustively
+    evaluate.
 
 ### 3.5 Output shape
 
