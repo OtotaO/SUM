@@ -220,8 +220,8 @@ def run_baseline_comparison() -> dict[str, Any]:
 
 def main() -> dict[str, Any]:
     report = run_baseline_comparison()
-    today = _dt.date.today().isoformat()
-    out = RECEIPTS_DIR / f"baseline_comparison_{today}.json"
+    from scripts.research._receipt_paths import resolve_receipt_path
+    out = resolve_receipt_path(RECEIPTS_DIR, "baseline_comparison")
     RECEIPTS_DIR.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
     print(f"\n→ wrote {out.relative_to(REPO)}")

@@ -23,100 +23,108 @@ import pytest
 pytestmark = pytest.mark.slow
 
 
-def test_hybrid_comparison_loss_finding_holds():
+def test_hybrid_comparison_digest_pinned():
     """Borda(v3.2_only, B2) — first negative result; locks the
     'baseline rank-fusion of cochain-channel-only v3.2 LOSES to B2'
     finding.
 
-    NOTE: pinned by behavior-shape (verdict label + Δ in the loss
-    range), NOT by byte-digest. The bench's Borda fusion combines
-    only the cochain V channel (no per-rendered-triple V magnitude
-    to break ties), so LAPACK-jitter at the per-pair score level
-    can shift rank assignments in tied cells, which can move the
-    fused-cell AUC across the 3-decimal quantization boundary,
-    which can change the bench_digest. The substantive finding —
-    Borda(v3.2_only, B2) LOSES to B2 alone by a clear margin
-    (Δ ≈ −0.025) — is invariant: B2 catches A1/A4 at 1.000 alone,
-    and adding the cochain channel to the rank fusion can only
-    add noise (the cochain channel is at chance or anti-correlated
-    on those classes). The complementary-hybrid pin
-    (`test_complementary_hybrid_digest_pinned`) IS byte-digest
-    pinned because the per-rendered-triple V channel adds magnitude
-    that dominates LAPACK jitter and breaks ties cleanly.
+    Three-layer pin (most-specific to most-general):
 
-    Operator-environment digest from one canonical run:
-        a7965803ccf2e703d80364dc21b3ac410491db9768cdfcf91bfefd29356c2003
-    Some same-machine runs produce
-        7fac833a23a8d5be3acf2e3b88d5f117ddb2283e37bf7c0b1daff8a7283bcb97
-    instead — both are equally valid "BORDA_LOSES_TO_B2" outcomes
-    differing by a 1-ULP rank shuffle.
+      1. Byte-digest. The bench_digest must equal the operator-
+         environment value below. Reproduces 5× in fresh procs
+         unconditionally after the v0.2 latent-fix to `_ranks` in
+         scripts/research/sheaf_hybrid_comparison.py — quantizing
+         the rank sort key to 9 decimals absorbs sub-ULP LAPACK
+         jitter that previously caused two-outcome non-determinism.
+         Pre-fix, this test was relaxed to shape-only because the
+         digest was intermittent (a7965803... 2/3 vs 7fac833a... 1/3).
 
-    v0.2 follow-up: either (a) post-hoc tie-breaking by an explicit
-    secondary sort key in `borda_fuse`, or (b) increase quantization
-    to 2 decimals on AUC for benches without per-triple-channel
-    magnitude.
+      2. Substantive verdict label `BORDA_LOSES_TO_B2`. If the
+         digest drifts but the verdict label still holds, the
+         load-bearing finding is intact and the digest drift is
+         likely benign (e.g., new corpus, scoring-math change);
+         the failure message will distinguish.
+
+      3. Loss-margin range: Δ ∈ [−0.10, −0.02]. The loss should be
+         a clear margin, not a near-tie that swings sign across
+         runs.
+
+    Failure-message hierarchy: the byte-digest assertion fires
+    first (most specific). If it fails, the verdict + Δ assertions
+    confirm whether the substantive finding is still intact.
     """
     from scripts.research.sheaf_hybrid_comparison import run_hybrid_comparison
+    PINNED = "a7965803ccf2e703d80364dc21b3ac410491db9768cdfcf91bfefd29356c2003"
     report = run_hybrid_comparison()
-    assert report["verdict"] == "BORDA_LOSES_TO_B2", (
-        f"hybrid_comparison verdict drift: got {report['verdict']}. "
-        "The substantive finding — Borda(v3.2_only, B2) loses to B2 "
-        "alone — is the load-bearing claim. If this verdict label "
-        "changes, the §4.7.1 STOP-THE-LINE narrative may have shifted."
+    # Layer 1: byte-digest
+    assert report["bench_digest"] == PINNED, (
+        f"hybrid_comparison digest drift: got {report['bench_digest']}, "
+        f"expected {PINNED}. The cochain-only Borda fusion's _ranks "
+        f"quantization should make this byte-stable. If only the digest "
+        f"drifted but verdict={report.get('verdict')!r} and "
+        f"Δ={report.get('delta_borda_vs_b2_trusted_mean'):.4f} are still "
+        f"in the loss range, the substantive finding is intact — "
+        f"investigate corpus / scoring math / rank-fusion quantization."
     )
+    # Layer 2: verdict label (substantive finding)
+    assert report["verdict"] == "BORDA_LOSES_TO_B2", (
+        f"hybrid_comparison verdict drift: got {report['verdict']!r}. "
+        "The substantive finding — Borda(v3.2_only, B2) loses to B2 "
+        "alone — is load-bearing for §4.7.1's STOP-THE-LINE narrative."
+    )
+    # Layer 3: loss-margin range
     delta = report["delta_borda_vs_b2_trusted_mean"]
     assert -0.10 <= delta <= -0.02, (
-        f"delta_borda_vs_b2 drift: got {delta:.4f}, expected in [-0.10, -0.02]. "
-        "The loss should be a clear margin, not a near-tie."
+        f"delta_borda_vs_b2 drift: got {delta:.4f}, expected in "
+        "[-0.10, -0.02]. The loss should be a clear margin."
     )
-    # bench_digest still required to be present + 64-hex (schema check)
-    assert isinstance(report["bench_digest"], str)
-    assert len(report["bench_digest"]) == 64
-    int(report["bench_digest"], 16)
 
 
-def test_predicate_negatives_experiment_structural_finding_holds():
+def test_predicate_negatives_experiment_digest_pinned():
     """Option 2 — predicate-perturbation training. Locks the load-bearing
     STRUCTURAL FINDING that A2 stayed at 0.500 even with predicate
     negatives, which surfaced the cochain-channel structural blindness
     to entity-set-preserving perturbations.
 
-    NOTE: pinned by behavior-shape (verdict label + A2 cells at 0.500),
-    NOT by byte-digest. The bench uses a local copy of the v2 training
-    loop (`train_with_predicate_negatives`) and that copy is
-    Python-version-sensitive: the AUC quantization layer absorbs LAPACK
-    jitter on the same Python version, but cross-version (Python 3.10
-    operator-side vs Python 3.12 CI-side) the trained-weight bits diverge
-    enough to shift AUC quantization buckets and therefore the digest.
-    The substantive finding is invariant — A2 stays at chance regardless
-    of Python version; the digest is environment-specific.
+    Three-layer pin (most-specific to most-general), upgraded
+    2026-05-05 from shape-only to byte-digest after the v0.2 refactor
+    that replaced the local v2-training-loop copy with a call to
+    production `train_restriction_maps(...,
+    n_predicate_negatives_per_positive=3)`. The pre-refactor bench
+    used a local copy whose SGD trajectory was Python-version-sensitive
+    (operator/Modal Python 3.10 matched; CI Python 3.12 diverged).
+    Single training-loop source eliminates that cross-version drift.
 
-    Operator-environment digest (Python 3.10 / numpy 1.x):
-        aa34b6e8640621da07823f985ddf35196a85047a64f942493854e09b75c866e7
-    CI-environment digest (Python 3.12 / numpy 2.x): differs but
-        verdict + A2-at-chance hold identically. Cross-Python-version
-        digest reproducibility is a v0.2 follow-up (would require
-        upstreaming the predicate-negative sampler into the production
-        train_restriction_maps so the bench uses a single training-loop
-        source).
+      1. Byte-digest. Verified 5× in fresh procs.
+      2. Verdict label `A2_STILL_CHANCE`.
+      3. A2 cells at exactly 0.500 (cochain blindness).
     """
     from scripts.research.sheaf_predicate_negatives_experiment import run_experiment
+    PINNED = "ddf41484b1eba2f1cf5927d6e9691a922e5843be703fedac83e8afee001f59c3"
     report = run_experiment()
+    # Layer 1: byte-digest
+    assert report["bench_digest"] == PINNED, (
+        f"predicate_negatives digest drift: got {report['bench_digest']}, "
+        f"expected {PINNED}. Post-refactor (production train_restriction_maps "
+        f"with n_predicate_negatives_per_positive=3), this digest should be "
+        f"cross-Python-version stable. If only the digest drifted but "
+        f"verdict={report.get('verdict')!r} and A2-cells-at-0.500 still "
+        f"hold, the substantive finding is intact — investigate corpus / "
+        f"production training math."
+    )
+    # Layer 2: verdict label (substantive finding)
     assert report["verdict"] == "A2_STILL_CHANCE", (
-        f"predicate-negatives verdict drift: got {report['verdict']}. "
+        f"predicate-negatives verdict drift: got {report['verdict']!r}. "
         "The structural finding (A2 stays at chance even with predicate "
         "negatives in training) is the load-bearing claim — if this "
         "verdict label changes, the cochain-blindness diagnosis from "
         "§3.4.5 of docs/SHEAF_HALLUCINATION_DETECTOR.md may have shifted."
     )
+    # Layer 3: A2 cells at exactly chance
     a2_t = report["per_cell_auc"].get("v32_g0.1_pred_neg|A2|trusted")
     a2_u = report["per_cell_auc"].get("v32_g0.1_pred_neg|A2|untrusted")
     assert a2_t == 0.5, f"A2 trusted should be at chance; got {a2_t}"
     assert a2_u == 0.5, f"A2 untrusted should be at chance; got {a2_u}"
-    # bench_digest still required to be present + 64-hex (schema check)
-    assert isinstance(report["bench_digest"], str)
-    assert len(report["bench_digest"]) == 64
-    int(report["bench_digest"], 16)
 
 
 def test_per_triple_integration_digest_pinned():

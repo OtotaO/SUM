@@ -94,15 +94,32 @@ def borda_fuse(scores_a: list[float], scores_b: list[float]) -> list[float]:
     return [float(rank_a[i] + rank_b[i]) for i in range(n)]
 
 
+_RANK_TIE_PRECISION = 9   # decimals; absorb sub-ULP LAPACK jitter
+                          # without losing scoring-function signal
+
+
 def _ranks(xs: list[float]) -> list[float]:
-    """Average-ranked. Ties get mean rank."""
+    """Average-ranked. Ties get mean rank.
+
+    Sort key + tie detection are both quantized to _RANK_TIE_PRECISION
+    decimals. Two scores within ~1 ULP of each other (LAPACK threading
+    jitter range) collapse to the same quantized value and therefore
+    the same rank — eliminating cross-run rank-shuffles that previously
+    made cochain-only Borda fusion's bench_digest intermittent. The
+    secondary sort key is the original index, giving a stable order
+    among tied items independent of input ordering.
+
+    Quantizing to 9 decimals is comfortably below scoring-function
+    signal precision (sheaf-Laplacian residuals are O(0.1) to O(10)).
+    """
     n = len(xs)
-    indexed = sorted(range(n), key=lambda i: xs[i])
+    qxs = [round(x, _RANK_TIE_PRECISION) for x in xs]
+    indexed = sorted(range(n), key=lambda i: (qxs[i], i))
     out = [0.0] * n
     i = 0
     while i < n:
         j = i
-        while j + 1 < n and xs[indexed[j + 1]] == xs[indexed[i]]:
+        while j + 1 < n and qxs[indexed[j + 1]] == qxs[indexed[i]]:
             j += 1
         avg = (i + j) / 2 + 1  # 1-indexed
         for k in range(i, j + 1):
@@ -288,8 +305,8 @@ def run_hybrid_comparison() -> dict[str, Any]:
 
 def main() -> dict[str, Any]:
     report = run_hybrid_comparison()
-    today = _dt.date.today().isoformat()
-    out = RECEIPTS_DIR / f"hybrid_comparison_{today}.json"
+    from scripts.research._receipt_paths import resolve_receipt_path
+    out = resolve_receipt_path(RECEIPTS_DIR, "hybrid_comparison")
     RECEIPTS_DIR.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
     print(f"\n→ wrote {out.relative_to(REPO)}")

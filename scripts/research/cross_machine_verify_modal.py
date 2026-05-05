@@ -53,29 +53,48 @@ EXPECTED_DIGESTS = {
     "complementary_hybrid": (
         "dc6e0260f14042fa0b6151a6ca6b443bb0910eabb996f6876f854633969343ce"
     ),
+    # New 2026-05-05: post-Issue-3 refactor digest. Pinned in
+    # Tests/research/test_recovery_experiment_digests.py.
+    "predicate_negatives": (
+        "ddf41484b1eba2f1cf5927d6e9691a922e5843be703fedac83e8afee001f59c3"
+    ),
 }
 
 app = modal.App("sum-cross-machine-verify")
 
-# Image build: clone repo at pinned SHA, install with research extras.
-# scripts/ is excluded from the wheel dist so we use editable install
-# from the cloned tree (see CLAUDE.md packages.find rule).
-image = (
-    modal.Image.debian_slim(python_version="3.10")
-    .apt_install("git", "build-essential")
-    .run_commands(
-        f"git clone {REPO_URL} /repo",
-        # Post-merge: PINNED_SHA reachable from origin/main; no
-        # branch-specific fetch required.
-        f"cd /repo && git checkout {PINNED_SHA}",
-        # research = numpy + scipy; sieve = spacy (DeterministicSieve
-        # is required by extract_corpus_triples).
-        "cd /repo && pip install -e '.[research,sieve]'",
-        # spaCy model download — DeterministicSieve loads en_core_web_sm
-        # at instantiation. ~12 MB, amortized into the image hash.
-        "python -m spacy download en_core_web_sm",
+# Image build helper: clone repo at pinned SHA, install with research
+# extras. scripts/ is excluded from the wheel dist so we use editable
+# install from the cloned tree (see CLAUDE.md packages.find rule).
+def _build_image(python_version: str):
+    return (
+        modal.Image.debian_slim(python_version=python_version)
+        .apt_install("git", "build-essential")
+        .run_commands(
+            f"git clone {REPO_URL} /repo",
+            # Post-merge: PINNED_SHA reachable from origin/main; no
+            # branch-specific fetch required.
+            f"cd /repo && git checkout {PINNED_SHA}",
+            # research = numpy + scipy; sieve = spacy (DeterministicSieve
+            # is required by extract_corpus_triples).
+            "cd /repo && pip install -e '.[research,sieve]'",
+            # spaCy model download — DeterministicSieve loads en_core_web_sm
+            # at instantiation. ~12 MB, amortized into the image hash.
+            "python -m spacy download en_core_web_sm",
+        )
     )
-)
+
+
+# Two LAPACK environments tested:
+#   image_310 — Python 3.10 + numpy 1.25 + OpenBLAS-via-PyPI (was the
+#               original Modal target; already verified MATCH against
+#               operator's Apple Accelerate).
+#   image_312 — Python 3.12 + numpy 2.x + OpenBLAS-via-PyPI (new in
+#               this v0.2 latent-fix; verifies cross-Python-version
+#               digest stability for the post-Issue-3-refactor
+#               predicate_negatives bench, AND adds a third LAPACK
+#               environment to §4.8's published cross-machine claim).
+image_310 = _build_image("3.10")
+image_312 = _build_image("3.12")
 
 
 def _capture_env() -> dict[str, str]:
@@ -104,9 +123,7 @@ def _capture_env() -> dict[str, str]:
     }
 
 
-@app.function(image=image, timeout=600)
-def verify_v32_validation_digest() -> dict[str, object]:
-    """Run v3.2 validation bench and return digest + environment."""
+def _run_v32_validation() -> dict[str, object]:
     import sys
     sys.path.insert(0, "/repo")
     from scripts.research.sheaf_v3_2_validation import main as run_v32_main
@@ -126,10 +143,7 @@ def verify_v32_validation_digest() -> dict[str, object]:
     }
 
 
-@app.function(image=image, timeout=600)
-def verify_complementary_hybrid_digest() -> dict[str, object]:
-    """Run complementary hybrid bench (the load-bearing WIN) and return
-    digest + environment."""
+def _run_complementary_hybrid() -> dict[str, object]:
     import sys
     sys.path.insert(0, "/repo")
     from scripts.research.sheaf_complementary_hybrid_experiment import (
@@ -152,37 +166,118 @@ def verify_complementary_hybrid_digest() -> dict[str, object]:
     }
 
 
+def _run_predicate_negatives() -> dict[str, object]:
+    """v0.2 latent-fix addition: verify the post-refactor
+    predicate_negatives bench digest is cross-Python-version stable
+    (was Python-version-sensitive when bench used a local v2-training
+    copy; now uses production train_restriction_maps with new
+    n_predicate_negatives_per_positive parameter)."""
+    import sys
+    sys.path.insert(0, "/repo")
+    from scripts.research.sheaf_predicate_negatives_experiment import run_experiment
+    report = run_experiment()
+    env = _capture_env()
+    a2_t = report["per_cell_auc"].get("v32_g0.1_pred_neg|A2|trusted")
+    a2_u = report["per_cell_auc"].get("v32_g0.1_pred_neg|A2|untrusted")
+    return {
+        "bench_name": "predicate_negatives",
+        "bench_digest": report["bench_digest"],
+        "verdict": report["verdict"],
+        "a2_trusted": a2_t,
+        "a2_untrusted": a2_u,
+        "n_docs_with_partition": int(report["n_docs_with_partition"]),
+        **env,
+    }
+
+
+# Python 3.10 (matches operator) — was the existing single-env target.
+@app.function(image=image_310, timeout=600)
+def verify_v32_validation_digest_310() -> dict[str, object]:
+    return _run_v32_validation()
+
+
+@app.function(image=image_310, timeout=600)
+def verify_complementary_hybrid_digest_310() -> dict[str, object]:
+    return _run_complementary_hybrid()
+
+
+@app.function(image=image_310, timeout=600)
+def verify_predicate_negatives_digest_310() -> dict[str, object]:
+    return _run_predicate_negatives()
+
+
+# Python 3.12 (numpy 2.x; tests cross-version + cross-LAPACK-version).
+@app.function(image=image_312, timeout=600)
+def verify_v32_validation_digest_312() -> dict[str, object]:
+    return _run_v32_validation()
+
+
+@app.function(image=image_312, timeout=600)
+def verify_complementary_hybrid_digest_312() -> dict[str, object]:
+    return _run_complementary_hybrid()
+
+
+@app.function(image=image_312, timeout=600)
+def verify_predicate_negatives_digest_312() -> dict[str, object]:
+    return _run_predicate_negatives()
+
+
 @app.local_entrypoint()
 def main():
     print("=" * 72)
     print("SUM cross-machine bench_digest verification on Modal x86_64")
     print(f"  pinned SHA: {PINNED_SHA}")
+    print("  environments: Python 3.10 + 3.12 (both Debian slim, OpenBLAS)")
     print("=" * 72)
 
-    # Run both functions remotely.
-    print("\n[1] Running v3.2 validation bench on Modal…")
-    v32 = verify_v32_validation_digest.remote()
-    print(f"    bench_digest = {v32['bench_digest']}")
+    # Run all 6 invocations: 3 benches × 2 Python versions.
+    print("\n[1] Python 3.10 — v3.2 validation…")
+    v32_310 = verify_v32_validation_digest_310.remote()
+    print(f"    bench_digest = {v32_310['bench_digest']}")
+    print("\n[2] Python 3.10 — complementary hybrid…")
+    hyb_310 = verify_complementary_hybrid_digest_310.remote()
+    print(f"    bench_digest = {hyb_310['bench_digest']}")
+    print("\n[3] Python 3.10 — predicate negatives…")
+    pn_310 = verify_predicate_negatives_digest_310.remote()
+    print(f"    bench_digest = {pn_310['bench_digest']}")
+    print("\n[4] Python 3.12 — v3.2 validation…")
+    v32_312 = verify_v32_validation_digest_312.remote()
+    print(f"    bench_digest = {v32_312['bench_digest']}")
+    print("\n[5] Python 3.12 — complementary hybrid…")
+    hyb_312 = verify_complementary_hybrid_digest_312.remote()
+    print(f"    bench_digest = {hyb_312['bench_digest']}")
+    print("\n[6] Python 3.12 — predicate negatives…")
+    pn_312 = verify_predicate_negatives_digest_312.remote()
+    print(f"    bench_digest = {pn_312['bench_digest']}")
 
-    print("\n[2] Running complementary hybrid bench on Modal…")
-    hyb = verify_complementary_hybrid_digest.remote()
-    print(f"    bench_digest = {hyb['bench_digest']}")
-
-    # Compare against expected (operator-side) digests.
-    print("\n[3] Comparison vs operator-side digests:")
+    # Compare across operator + Modal-310 + Modal-312.
+    print("\n[7] Cross-environment comparison:")
     rows = [
-        ("v3_2_validation", v32["bench_digest"], EXPECTED_DIGESTS["v3_2_validation"]),
-        ("complementary_hybrid", hyb["bench_digest"], EXPECTED_DIGESTS["complementary_hybrid"]),
+        ("v3_2_validation",       v32_310["bench_digest"], v32_312["bench_digest"], EXPECTED_DIGESTS["v3_2_validation"]),
+        ("complementary_hybrid",  hyb_310["bench_digest"], hyb_312["bench_digest"], EXPECTED_DIGESTS["complementary_hybrid"]),
+        ("predicate_negatives",   pn_310["bench_digest"],  pn_312["bench_digest"],  EXPECTED_DIGESTS["predicate_negatives"]),
     ]
     outcomes: dict[str, str] = {}
-    for name, got, expected in rows:
-        match = got == expected
-        outcomes[name] = "MATCH" if match else "DIGEST_DIFFER"
+    for name, m310, m312, op in rows:
+        match_310 = m310 == op
+        match_312 = m312 == op
+        match_inter = m310 == m312
+        if match_310 and match_312:
+            outcomes[name] = "ALL_MATCH"
+        elif match_inter and not match_310:
+            outcomes[name] = "MODAL_INTERNAL_MATCH_BUT_DIFFER_FROM_OPERATOR"
+        elif match_310 and not match_312:
+            outcomes[name] = "OPERATOR_AND_310_MATCH_BUT_312_DIFFERS"
+        elif match_312 and not match_310:
+            outcomes[name] = "OPERATOR_AND_312_MATCH_BUT_310_DIFFERS"
+        else:
+            outcomes[name] = "ALL_THREE_DIFFER"
         print(f"    {name:30s} {outcomes[name]}")
-        print(f"      operator: {expected}")
-        print(f"      modal:    {got}")
+        print(f"      operator:        {op}")
+        print(f"      modal py3.10:    {m310}")
+        print(f"      modal py3.12:    {m312}")
 
-    # Build receipt.
+    # Build receipt with all three environments + per-bench outcomes.
     receipt = {
         "schema": "sum.cross_machine_verification.v1",
         "pinned_sha": PINNED_SHA,
@@ -190,48 +285,77 @@ def main():
             "platform": "Apple Silicon (operator-side; documented separately)",
             "lapack_provider": "Apple Accelerate (assumed; per CLAUDE.md profile)",
         },
-        "modal_environment": {
-            "platform": v32["platform"],
-            "machine": v32["machine"],
-            "python_version": v32["python_version"],
-            "numpy_version": v32["numpy_version"],
-            "numpy_show_config": v32["numpy_show_config"],
+        "modal_python_3_10_environment": {
+            "platform": v32_310["platform"],
+            "machine": v32_310["machine"],
+            "python_version": v32_310["python_version"],
+            "numpy_version": v32_310["numpy_version"],
+            "numpy_show_config": v32_310["numpy_show_config"],
+        },
+        "modal_python_3_12_environment": {
+            "platform": v32_312["platform"],
+            "machine": v32_312["machine"],
+            "python_version": v32_312["python_version"],
+            "numpy_version": v32_312["numpy_version"],
+            "numpy_show_config": v32_312["numpy_show_config"],
         },
         "v3_2_validation": {
             "operator_digest": EXPECTED_DIGESTS["v3_2_validation"],
-            "modal_digest": v32["bench_digest"],
+            "modal_digest_310": v32_310["bench_digest"],
+            "modal_digest_312": v32_312["bench_digest"],
             "outcome": outcomes["v3_2_validation"],
-            "modal_trusted_mean_auc_by_gamma": v32["trusted_mean_auc_by_gamma"],
-            "modal_n_docs_with_partition": v32["n_docs_with_partition"],
-            "modal_lambda_auto": v32["lambda_auto"],
+            "modal_310_trusted_mean_auc_by_gamma": v32_310["trusted_mean_auc_by_gamma"],
+            "modal_312_trusted_mean_auc_by_gamma": v32_312["trusted_mean_auc_by_gamma"],
+            "modal_310_lambda_auto": v32_310["lambda_auto"],
+            "modal_312_lambda_auto": v32_312["lambda_auto"],
         },
         "complementary_hybrid": {
             "operator_digest": EXPECTED_DIGESTS["complementary_hybrid"],
-            "modal_digest": hyb["bench_digest"],
+            "modal_digest_310": hyb_310["bench_digest"],
+            "modal_digest_312": hyb_312["bench_digest"],
             "outcome": outcomes["complementary_hybrid"],
-            "modal_verdict": hyb["verdict"],
-            "modal_trusted_mean_auc_by_detector": hyb["trusted_mean_auc_by_detector"],
-            "modal_delta_borda_vs_b2_trusted_mean": hyb["delta_borda_vs_b2_trusted_mean"],
-            "modal_n_docs_with_partition": hyb["n_docs_with_partition"],
+            "modal_310_verdict": hyb_310["verdict"],
+            "modal_312_verdict": hyb_312["verdict"],
+            "modal_310_trusted_mean_auc_by_detector": hyb_310["trusted_mean_auc_by_detector"],
+            "modal_312_trusted_mean_auc_by_detector": hyb_312["trusted_mean_auc_by_detector"],
+            "modal_310_delta_borda_vs_b2_trusted_mean": hyb_310["delta_borda_vs_b2_trusted_mean"],
+            "modal_312_delta_borda_vs_b2_trusted_mean": hyb_312["delta_borda_vs_b2_trusted_mean"],
+        },
+        "predicate_negatives": {
+            "operator_digest": EXPECTED_DIGESTS["predicate_negatives"],
+            "modal_digest_310": pn_310["bench_digest"],
+            "modal_digest_312": pn_312["bench_digest"],
+            "outcome": outcomes["predicate_negatives"],
+            "modal_310_verdict": pn_310["verdict"],
+            "modal_312_verdict": pn_312["verdict"],
+            "modal_310_a2_trusted": pn_310["a2_trusted"],
+            "modal_312_a2_trusted": pn_312["a2_trusted"],
+            "modal_310_a2_untrusted": pn_310["a2_untrusted"],
+            "modal_312_a2_untrusted": pn_312["a2_untrusted"],
         },
     }
+    # Aggregate the per-receipt outcomes for compatibility with §4.8 prose
+    # which speaks of "BRANCH_A" naming.
+    v32 = v32_310     # for compat with old receipt-write code below
+    hyb = hyb_310
 
     # Honest §4.8 outcome label
-    if all(o == "MATCH" for o in outcomes.values()):
-        section_4_8_outcome = "BRANCH_A_DIGESTS_MATCH"
+    if all(o == "ALL_MATCH" for o in outcomes.values()):
+        section_4_8_outcome = "BRANCH_A_THREE_ENVIRONMENTS_DIGESTS_MATCH"
+    elif all("MATCH" in o for o in outcomes.values()):
+        # Some non-ALL_MATCH partial matches — still informative
+        section_4_8_outcome = "BRANCH_A_PARTIAL_PER_BENCH_INVESTIGATE_OUTCOMES"
     else:
-        # Need to compare AUCs to distinguish B vs C; for now, label as B
-        # (digest differs) and let operator judge whether AUCs match within
-        # quantization on inspection of the receipt.
-        section_4_8_outcome = "BRANCH_B_OR_C_DIGEST_DIFFERS_INVESTIGATE_AUCS"
+        section_4_8_outcome = "BRANCH_B_OR_C_DIGEST_DIFFERS_INVESTIGATE_OUTCOMES"
     receipt["section_4_8_outcome"] = section_4_8_outcome
-    print(f"\n[4] §4.8 outcome label: {section_4_8_outcome}")
+    print(f"\n[8] §4.8 outcome label: {section_4_8_outcome}")
 
     # Write receipt
-    import datetime as _dt
     _, receipts_dir = _local_repo_paths()
-    today = _dt.date.today().isoformat()
-    out = receipts_dir / f"cross_machine_verification_{today}.json"
     receipts_dir.mkdir(parents=True, exist_ok=True)
+    import sys
+    sys.path.insert(0, str(receipts_dir.parent.parent))
+    from scripts.research._receipt_paths import resolve_receipt_path
+    out = resolve_receipt_path(receipts_dir, "cross_machine_verification")
     out.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n")
     print(f"\n→ wrote {out}")
