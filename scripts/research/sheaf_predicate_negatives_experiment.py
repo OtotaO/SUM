@@ -17,6 +17,24 @@ Methodology: copy the v2 training loop locally (no production change),
 add the predicate-perturbation sampler, retrain, run the v3.2 bench
 loop on the new sheaf.
 
+NOTE on cross-version reproducibility: this bench uses a LOCAL copy of
+the v2 training loop (`train_with_predicate_negatives`) rather than
+the production `train_restriction_maps`, so it can inject mixed-class
+negatives at the sampler. The local copy reproduces byte-for-byte on
+the same Python version (operator: Python 3.10; verified 3× in fresh
+procs and via Modal cross-machine which also runs Python 3.10) but
+the trained-weight bits diverge across Python versions (Python 3.10
+vs Python 3.12 in CI), enough to shift AUC quantization buckets and
+therefore the bench_digest. The substantive STRUCTURAL FINDING (A2
+stays at 0.500 — the cochain-channel structural blindness) is
+invariant. The pinned test in
+`Tests/research/test_recovery_experiment_digests.py` therefore
+asserts verdict-label + A2-cells-at-chance, NOT byte-digest. Cross-
+version digest reproducibility is a v0.2 follow-up that would
+require upstreaming the predicate-negative sampler into the
+production `train_restriction_maps` so this bench uses a single
+training-loop source.
+
 Output: fixtures/bench_receipts/predicate_negatives_experiment_<DATE>.json
         schema: sum.sheaf_predicate_negatives_experiment.v1
 """

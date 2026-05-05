@@ -4,6 +4,85 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Sprint 7.5 — preprint hardening + complementary-hybrid
+  detector recovery (2026-05-04 / 05).** The arXiv preprint at
+  `docs/arxiv/sheaf-detector-note-v0.md` was updated v0 → v0.1
+  (PR #142) and then hardened across four stacked PRs (#146 /
+  #144 / #145) before pre-circulation:
+
+  - **T2 baseline comparison** (`scripts/research/sheaf_baseline_comparison.py`,
+    `fixtures/bench_receipts/baseline_comparison_2026-05-04.json`,
+    `bench_digest cb32c617…`). Two trivial reproducible baselines:
+    B1 entity-presence-deficit and B2 jaccard-distance, scored on
+    the same (clean, perturbed) triple-set pairs the v3.x
+    detectors consume. **STOP-THE-LINE finding**: trivial
+    baselines beat v3.2 trusted-mean by Δ=−0.174 (B2 0.833 vs
+    v3.2 0.659).
+
+  - **T4 §3.0 threat model** added to the preprint. Four
+    capabilities (T1 adversarial render / T2 adversarial bundle
+    / T3 stolen key / T4 verifier OOS) each mapped to a defence
+    component or to OUT OF SCOPE.
+
+  - **T2.5 four recovery experiments** (cochain-only Borda fusion
+    loses; predicate-perturbation training fails to lift A2;
+    per-rendered-triple V channel restoration lifts A2 from
+    0.500 to 0.671; complementary Borda(v3.2 + per-triple, B2)
+    **WINS at trusted-mean 0.876, Δ=+0.043 vs B2 alone**).
+    Digests `a7965803…`, `aa34b6e8…`, `7025436f…`, `dc6e0260…`
+    pinned in `Tests/research/test_recovery_experiment_digests.py`.
+
+    **Structural finding surfaced**: the v3.x cochain-on-source-graph
+    is mathematically blind to entity-set-preserving perturbations
+    because predicate doesn't enter the cochain. Same shape as F3
+    STRUCTURAL FAIL. Adding training negatives can't fix what
+    scoring discards. The per-triple channel restoration addresses
+    the right load-bearing site.
+
+  - **T3.M Modal cross-machine `bench_digest` verification**
+    (`scripts/research/cross_machine_verify_modal.py`,
+    `fixtures/bench_receipts/cross_machine_verification_2026-05-04.json`).
+    Both v3.2 validation (`b4d26c01…`) and complementary hybrid
+    (`dc6e0260…`) digests reproduced byte-for-byte across two
+    distinct LAPACK environments: Apple Accelerate on Apple
+    Silicon (operator) and OpenBLAS-via-PyPI on Modal x86_64
+    (Linux 4.4 / glibc 2.31 / Python 3.10.8 / numpy 1.25.0 /
+    AVX2 SIMD). The substantive `HYBRID_BEATS_BASELINE` verdict
+    also reproduces cross-machine. BRANCH A outcome — the
+    strongest possible cross-machine reproducibility claim.
+
+  - **T5 substrate-first reframe** of the preprint (PR #145).
+    Title shift from "Sheaf-Laplacian hallucination detection
+    on signed render receipts" to "A cryptographically-anchored
+    substrate for hallucination detection on signed render
+    bundles". arXiv categories: `cs.CR` (primary) /
+    `cs.LG` (secondary). New §3.9 Complementary-signal hybrid
+    section (Borda rank-fusion math); new §4.7.1 Recovery arc
+    subsection documenting all four recovery experiments;
+    §6 reorganised into §6.1 substrate (vs published
+    reproducibility primitives, vs zkML, vs compliance-only
+    audit-log substrates) + §6.2 detector positioning; §7
+    bounded claims rewritten with hybrid-specific items.
+
+  - **T6 pre-circulation cover note** at
+    `docs/arxiv/PRE_CIRCULATION_COVER_NOTE.md`. Asks four
+    focused questions of the 1–2 pre-circulation readers:
+    math correctness; threat model coverage; baseline choice +
+    WIN claim; substrate-first framing.
+
+  Total Sprint 7.5 contribution: ~3000 LOC across 5 new bench
+  scripts, 1 cross-machine harness, 1 new test file with 4
+  pinned digests, 6 new fixture receipts, and 1500-line
+  preprint at v0.1. Research suite: 102 passing (was 88
+  pre-Sprint-7.5; +14 from new tests).
+
+  The substrate's truth-first discipline functioned as designed:
+  caught a real loss (baselines beat v3.2 alone) BEFORE
+  publication, surfaced a structural finding (cochain blindness)
+  via the predicate-negatives experiment's failure, and produced
+  a competitive detector via complementary-signal Borda fusion
+  rather than face-saving "honest negative result" framing.
+
 - **PCI DSS user-identification gap closed (Sprint 4 of the
   intensification path to arXiv).** Three optional identity
   fields (`user_id` / `host_id` / `ip_address`) added to the
