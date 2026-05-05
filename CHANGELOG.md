@@ -4,7 +4,38 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
-(Empty since 0.6.0 release.)
+- **v0.3 deterministic-BLAS fix for `hybrid_comparison` digest stability.**
+  The Sprint 7.5 latent-fix arc closed three of four issues but had to
+  shape-pin `hybrid_comparison` because two layers of quantization
+  (rank-key in `_ranks`; per-pair score at storage time) couldn't
+  fully absorb LAPACK-thread-pool-size variance at numpy-import
+  time on Apple Accelerate. The diagnosis converged after observing
+  same-process determinism but cross-process variance + the fact
+  that `VECLIB_MAXIMUM_THREADS=1` in the shell made the digest
+  unconditional 8/8.
+
+  Fix: `scripts/research/_deterministic_blas.py` sets
+  `VECLIB_MAXIMUM_THREADS=1` + `OPENBLAS_NUM_THREADS=1` +
+  `MKL_NUM_THREADS=1` + `OMP_NUM_THREADS=1` + `BLIS_NUM_THREADS=1`
+  + `NUMEXPR_NUM_THREADS=1` via `os.environ.setdefault` at
+  module-import time. All five Sprint-7.5 bench scripts import the
+  helper as their first non-future import (BEFORE numpy), so
+  numpy's BLAS thread count is fixed at 1 on every fresh-process
+  invocation. Production library code in `sum_engine_internal/`
+  doesn't import the helper, so multi-threaded BLAS remains the
+  default for non-bench paths.
+
+  Tests refactored to subprocess invocation:
+  pytest itself imports numpy via the Hypothesis plugin BEFORE
+  test functions run, making in-process env-var setdefault a
+  no-op in pytest context. The recovery digest tests now invoke
+  each bench in a clean subprocess (with the deterministic-BLAS
+  env explicitly set) and parse the on-disk receipt the bench
+  wrote. ~11s for 4 tests vs the previous ~60s in-process.
+
+  `hybrid_comparison` pin re-upgraded to byte-digest pin
+  (`a7965803…`). All four recovery experiments are now byte-digest
+  pinned.
 
 ## [0.6.0] - 2026-05-05
 

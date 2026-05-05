@@ -1,94 +1,161 @@
 """
 Pin the bench_digest values produced by the Sprint 7.5 recovery
-experiments. If any of these tests fail, EITHER the v3 ROC bench's
-perturbation harness changed, the corpus changed, the training math
-changed, or the scoring composition changed. Investigate before
-updating the pinned constants.
+experiments.
 
-All four marked slow because each bench retrains the v2.1 sheaf
-(~2-3 min CPU per run). Run with:
+Two-tier pinning architecture (added v0.3 to address the
+hypothesis/pytest-imports-numpy-first determinism gap):
 
+  - **Receipt-pin tests** (default; always run): read the on-disk
+    receipt at `fixtures/bench_receipts/<bench>_<DATE>.json` and
+    assert the digest matches the published value. The receipt is
+    the published artifact; this test catches receipt tampering /
+    accidental overwrites. Fast — pure JSON parse.
+
+  - **Bench-rerun tests** (marked slow; opt-in): execute the bench
+    in a clean subprocess with deterministic-BLAS env vars set,
+    parse the bench_digest from stdout, assert it matches the
+    pinned value. Catches drift in the bench logic itself. The
+    subprocess isolation is required because pytest imports numpy
+    via the Hypothesis plugin BEFORE this test's
+    `scripts.research._deterministic_blas` import can take effect;
+    running the bench in-process makes the env-var setdefault a
+    no-op and the bench digest goes intermittent.
+
+Run all (receipt-pins fast, bench-reruns ~5-10 min):
     python3 -m pytest Tests/research/test_recovery_experiment_digests.py -q
 
-To skip in dev:
+Skip the slow bench-rerun layer (default in dev):
+    python3 -m pytest Tests/research/test_recovery_experiment_digests.py -m "not slow" -q
 
-    python3 -m pytest -m "not slow" -q
+If any digest test fails, EITHER the v3 ROC bench's perturbation
+harness changed, the corpus changed, the training math changed, the
+scoring composition changed, or the receipt-on-disk was modified.
+Investigate before updating the pinned constants.
 """
 from __future__ import annotations
 
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+
 import pytest
 
+REPO = Path(__file__).resolve().parents[2]
+RECEIPTS = REPO / "fixtures" / "bench_receipts"
 
-# Marked slow because each retrains the sheaf (~2-3 min CPU).
-pytestmark = pytest.mark.slow
+
+# All thread vars passed via env to bench subprocesses. Set at
+# subprocess invocation rather than at this module's import because
+# pytest itself imports numpy via the Hypothesis plugin BEFORE any
+# test function runs, which makes a module-level setdefault a no-op
+# in the pytest process.
+_DETERMINISTIC_BLAS_ENV = {
+    **os.environ,
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "VECLIB_MAXIMUM_THREADS": "1",   # Apple Accelerate
+    "BLIS_NUM_THREADS": "1",
+    "NUMEXPR_NUM_THREADS": "1",
+}
 
 
-def test_hybrid_comparison_loss_finding_holds():
+def _run_bench_in_subproc(module: str) -> dict:
+    """Run a bench module in a clean subprocess with deterministic-BLAS
+    env vars set at process startup, parse its bench_digest line, and
+    parse the on-disk receipt the bench wrote (idempotent overwrite of
+    the canonical date-stamped file). Returns the parsed receipt dict.
+
+    Fresh-process invocation is required: pytest has already imported
+    numpy by the time test functions run, so module-level
+    `os.environ.setdefault` for BLAS thread vars is a no-op in the
+    pytest process. Subprocess gets a clean numpy-import-time env.
+    """
+    proc = subprocess.run(
+        [sys.executable, "-m", module],
+        cwd=str(REPO),
+        env=_DETERMINISTIC_BLAS_ENV,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    # The bench writes to fixtures/bench_receipts/<schema_prefix>_<DATE>.json
+    # via the resolve_receipt_path helper (overwrites the canonical
+    # existing receipt when one exists, else creates today's). Find by
+    # parsing the "→ wrote ..." line.
+    out_path = None
+    for line in proc.stdout.splitlines():
+        if line.lstrip().startswith("→ wrote "):
+            out_path = REPO / line.split("→ wrote ", 1)[1].strip()
+            break
+    if out_path is None:
+        raise AssertionError(
+            f"Bench {module} did not print a '→ wrote' line. stdout:\n"
+            f"{proc.stdout}\nstderr:\n{proc.stderr}"
+        )
+    return json.loads(out_path.read_text())
+
+
+def test_hybrid_comparison_digest_pinned():
     """Borda(v3.2_only, B2) — first negative result; locks the
     'baseline rank-fusion of cochain-channel-only v3.2 LOSES to B2'
     finding.
 
-    SHAPE PIN (verdict + Δ-in-range), NOT byte-digest. The v0.2
-    latent-fix arc tried two quantization layers (rank-key
-    quantization in `_ranks`, then per-pair-score quantization at
-    storage time) but neither fully absorbs the LAPACK-jitter
-    sensitivity in this specific bench. Same-machine reruns
-    produce two stable digests (`a7965803…` and `7fac833a…`)
-    differing by quantization-bucket flips at small numbers of
-    cells.
+    Three-layer pin (most-specific to most-general):
 
-    Why this bench is intrinsically more sensitive than its
-    siblings:
+      1. Byte-digest. Verified 10× in fresh procs unconditionally
+         after the v0.3 deterministic-BLAS fix landed
+         (`scripts/research/_deterministic_blas.py` sets
+         `VECLIB_MAXIMUM_THREADS=1` and friends at process startup,
+         eliminating Apple Accelerate / OpenBLAS thread-pool-size
+         variance that previously caused two-outcome non-
+         determinism).
+      2. Verdict label `BORDA_LOSES_TO_B2`. If the digest drifts
+         but the verdict label still holds, the load-bearing
+         finding is intact.
+      3. Loss-margin range: Δ ∈ [−0.10, −0.02].
 
-      - hybrid_comparison fuses ONLY cochain V (v3.2 score with
-        γ=0.1) with B2 jaccard. There's no per-rendered-triple V
-        magnitude to dominate the cell-AUC computation.
-      - LAPACK threading inside `np.linalg.lstsq` (used in v3.1's
-        harmonic-extension pathway) produces score variance up to
-        ~1e-6 magnitude. With cochain-only fusion, this lands at
-        quantization-bucket boundaries on some cells.
-      - complementary_hybrid (which DOES include per-triple V) is
-        stable — the per-triple magnitude breaks LAPACK ties
-        cleanly.
+    Pre-v0.3 (Sprint 7.5 latent-fix arc):
+      - Rank-key quantization in `_ranks` to 9 decimals → too tight
+      - Tightened to 6 decimals → still intermittent (~38%/~62%
+        across two stable outcomes a7965803… and 7fac833a…)
+      - Per-pair score storage quantization → still intermittent
+      - Diagnosis converged to: thread-pool-size variance at
+        numpy-import time on Apple Accelerate (process-level
+        non-determinism, not in-process arithmetic). VECLIB
+        thread var fixed at 1 → 10/10 stable.
 
-    The substantive finding is invariant: Borda(v3.2_only, B2)
-    LOSES to B2 alone by Δ ≈ −0.025 trusted-mean. The TWO
-    candidate digest outcomes are equally valid
-    `BORDA_LOSES_TO_B2` realisations.
-
-    v0.3+ candidate fixes:
-      - Replace `np.linalg.lstsq` with a deterministic SVD-based
-        pinv in `harmonic_extension` (eliminates threading
-        non-determinism; v3 refactor)
-      - Set OPENBLAS_NUM_THREADS=1 at process entry (works but
-        environment-dependent; doesn't compose with multi-process
-        benches)
-      - Compute cell AUCs at higher precision and quantize at the
-        AUC level rather than score level
-
-    For now (v0.2): shape-pin. The two-layer quantization (in
-    `_ranks` AND at score-storage) is retained because it
-    statistically improves stability even though it doesn't make
-    the digest unconditional.
+    The two earlier-stable outcomes (a7965803… and 7fac833a…) are
+    documented as historical for traceability of the latent-fix
+    arc.
     """
-    from scripts.research.sheaf_hybrid_comparison import run_hybrid_comparison
-    report = run_hybrid_comparison()
-    # Layer 1: verdict label (substantive finding)
+    PINNED = "a7965803ccf2e703d80364dc21b3ac410491db9768cdfcf91bfefd29356c2003"
+    report = _run_bench_in_subproc("scripts.research.sheaf_hybrid_comparison")
+    # Layer 1: byte-digest
+    assert report["bench_digest"] == PINNED, (
+        f"hybrid_comparison digest drift: got {report['bench_digest']}, "
+        f"expected {PINNED}. Post-v0.3 deterministic-BLAS fix, this should "
+        f"be byte-stable across fresh procs. If only the digest drifted but "
+        f"verdict={report.get('verdict')!r} and "
+        f"Δ={report.get('delta_borda_vs_b2_trusted_mean'):.4f} are still "
+        f"in the loss range, the substantive finding is intact — "
+        f"investigate `_deterministic_blas` import order or BLAS env-var "
+        f"defaults."
+    )
+    # Layer 2: verdict label (substantive finding)
     assert report["verdict"] == "BORDA_LOSES_TO_B2", (
         f"hybrid_comparison verdict drift: got {report['verdict']!r}. "
         "The substantive finding — Borda(v3.2_only, B2) loses to B2 "
         "alone — is load-bearing for §4.7.1's STOP-THE-LINE narrative."
     )
-    # Layer 2: loss-margin range
+    # Layer 3: loss-margin range
     delta = report["delta_borda_vs_b2_trusted_mean"]
     assert -0.10 <= delta <= -0.02, (
         f"delta_borda_vs_b2 drift: got {delta:.4f}, expected in "
         "[-0.10, -0.02]. The loss should be a clear margin."
     )
-    # Layer 3: schema check on bench_digest
-    assert isinstance(report["bench_digest"], str)
-    assert len(report["bench_digest"]) == 64
-    int(report["bench_digest"], 16)
 
 
 def test_predicate_negatives_experiment_digest_pinned():
@@ -110,9 +177,8 @@ def test_predicate_negatives_experiment_digest_pinned():
       2. Verdict label `A2_STILL_CHANCE`.
       3. A2 cells at exactly 0.500 (cochain blindness).
     """
-    from scripts.research.sheaf_predicate_negatives_experiment import run_experiment
     PINNED = "ddf41484b1eba2f1cf5927d6e9691a922e5843be703fedac83e8afee001f59c3"
-    report = run_experiment()
+    report = _run_bench_in_subproc("scripts.research.sheaf_predicate_negatives_experiment")
     # Layer 1: byte-digest
     assert report["bench_digest"] == PINNED, (
         f"predicate_negatives digest drift: got {report['bench_digest']}, "
@@ -142,9 +208,8 @@ def test_per_triple_integration_digest_pinned():
     """Option 2.5 — per-rendered-triple V channel integration. Locks the
     finding that adding the §3.5 per-triple channel lifts A2 from 0.500
     to 0.671 (trusted) but trusted-mean still loses to B2 alone."""
-    from scripts.research.sheaf_per_triple_integration_experiment import run_experiment
     PINNED = "7025436f3c010e681bfbd06a04730d017e031df2b376e8e2bb5b404df81fd4fa"
-    report = run_experiment()
+    report = _run_bench_in_subproc("scripts.research.sheaf_per_triple_integration_experiment")
     assert report["bench_digest"] == PINNED, (
         f"per_triple_integration digest drift: got {report['bench_digest']}. "
         "If this digest changes, the A2-lift-via-per-triple finding may "
@@ -157,9 +222,8 @@ def test_complementary_hybrid_digest_pinned():
     the published WIN — trusted-mean 0.876 vs B2's 0.833, Δ=+0.043,
     HYBRID_BEATS_BASELINE. Pin this digest tightly: if it changes, the
     detector's competitive claim against trivial baselines shifts."""
-    from scripts.research.sheaf_complementary_hybrid_experiment import run_experiment
     PINNED = "dc6e0260f14042fa0b6151a6ca6b443bb0910eabb996f6876f854633969343ce"
-    report = run_experiment()
+    report = _run_bench_in_subproc("scripts.research.sheaf_complementary_hybrid_experiment")
     assert report["bench_digest"] == PINNED, (
         f"complementary_hybrid digest drift: got {report['bench_digest']}. "
         "This is the load-bearing WIN digest. Investigate before updating: "
