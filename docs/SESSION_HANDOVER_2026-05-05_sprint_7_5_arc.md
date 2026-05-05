@@ -230,8 +230,17 @@ the spec.
 6. `docs/arxiv/PRE_CIRCULATION_COVER_NOTE.md` — the template for
    1–2 pre-circulation readers
 7. `Tests/research/test_recovery_experiment_digests.py` — pins for
-   all four Sprint-7.5 recovery digests + the verdict label
-   `HYBRID_BEATS_BASELINE`
+   all four Sprint-7.5 recovery experiments. **Two byte-digest pins**
+   (`per_triple_integration` `7025436f…`; `complementary_hybrid`
+   `dc6e0260…` — both verified 5× in fresh procs unconditionally,
+   the latter also cross-machine MATCH on Modal x86_64) and **two
+   behavior-shape pins** (`predicate_negatives` — Python-version-
+   sensitive digest, structural finding `A2_STILL_CHANCE` invariant;
+   `hybrid_comparison` — cochain-only Borda has LAPACK-jitter
+   tie-shuffle sensitivity, structural finding `BORDA_LOSES_TO_B2`
+   with Δ ∈ [−0.10, −0.02] invariant). The verdict label
+   `HYBRID_BEATS_BASELINE` is asserted alongside the
+   `complementary_hybrid` byte-digest pin.
 8. `Tests/research/test_sheaf_baseline_comparison.py` — pins for B1/B2
    schema, digest stability, scorer polarity
 9. `CHANGELOG.md` `[Unreleased]` — Sprint 7.5 entry at the top covers

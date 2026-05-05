@@ -1024,7 +1024,7 @@ emergent constraints.
 - [ ] Smoke test: `coboundary_matrix_v2` and `sheaf_laplacian_v2`
   return the correct values on a 1-dim sheaf (i.e., reduce to v1
   output when restriction maps and stalk dim are degenerate). Pin
-  in `Tests/research/test_sheaf_v2.py` as a numerical compatibility
+  in `Tests/research/test_sheaf_laplacian_v2.py` as a numerical compatibility
   guarantee, not as a ROC benchmark.
 
 #### 5.3b Week 3-4 — v2.1 learned restriction maps (the real artifact)

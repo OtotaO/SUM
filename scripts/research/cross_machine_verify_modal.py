@@ -40,9 +40,11 @@ def _local_repo_paths() -> tuple[Path, Path]:
     repo = Path(__file__).resolve().parents[2]
     return repo, repo / "fixtures" / "bench_receipts"
 
-# Pinned to current HEAD of arxiv/v0.1-cross-machine at time of this commit.
+# Pinned to main HEAD post-merge of the Sprint 7+7.5 stack
+# (was "37351e2" pre-merge; the squash-merge SHAs of #142, #146, #144,
+# #145, #147, #148 are now on main; b5fe92b is the post-#148 HEAD).
 # Update if you re-run after additional commits land.
-PINNED_SHA = "37351e2"
+PINNED_SHA = "b5fe92b"
 
 EXPECTED_DIGESTS = {
     "v3_2_validation": (
@@ -63,8 +65,9 @@ image = (
     .apt_install("git", "build-essential")
     .run_commands(
         f"git clone {REPO_URL} /repo",
-        f"cd /repo && git fetch origin arxiv/v0.1-cross-machine "
-        f"&& git checkout {PINNED_SHA}",
+        # Post-merge: PINNED_SHA reachable from origin/main; no
+        # branch-specific fetch required.
+        f"cd /repo && git checkout {PINNED_SHA}",
         # research = numpy + scipy; sieve = spacy (DeterministicSieve
         # is required by extract_corpus_triples).
         "cd /repo && pip install -e '.[research,sieve]'",

@@ -2,6 +2,21 @@
 Hybrid detector experiment — does v3.2 + B2 jaccard, fused via Borda
 rank-addition, beat either component alone?
 
+NOTE on cross-run reproducibility: the bench_digest of THIS bench
+(unlike v3.2 validation, per_triple_integration, and complementary_hybrid)
+is INTERMITTENT across runs on the same machine — `np.linalg.lstsq`
+inside the v3.1 boundary-deviation path has multi-threaded LAPACK
+non-determinism at the per-pair score level. Quantization to 3 decimals
+on AUC absorbs the jitter on most benches, but Borda fusion of ONLY the
+cochain V channel (no per-rendered-triple V magnitude to break ties)
+makes the fused-cell AUC sensitive to rank-assignment ordering when
+two scores are within ~1 ULP of each other. The substantive finding —
+Borda(v3.2_only, B2) LOSES to B2 alone by Δ ≈ −0.025 — is invariant.
+The pinned test (`test_hybrid_comparison_loss_finding_holds`) asserts
+verdict label + Δ-in-range, not byte-digest. v0.2 follow-up: add a
+secondary sort key to `borda_fuse` for stable tie-breaking, OR widen
+quantization to 2 decimals on AUC for cochain-only fusion benches.
+
 Carmack-style decision experiment. Three outcomes:
 
   Hybrid trusted-mean ≥ B2 + 0.03 → detector adds value via composition;
