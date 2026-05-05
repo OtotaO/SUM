@@ -10,18 +10,25 @@ the code.
 If this is your first turn in this repo, read these files in order and you
 will have the full picture.
 
-0. **[`docs/SESSION_HANDOVER_2026-05-04_intensification_arc.md`](docs/SESSION_HANDOVER_2026-05-04_intensification_arc.md)**
-   — most recent session-block handover (PRs #134–#140 — the
-   intensification arc that closed every load-bearing prep before
-   the arXiv preprint). Carries the elevated mission frame ("among
-   the greats, only via verifiable / provable / testable methods"),
-   a six-step initial self-check, the seven-PR arc summary
-   (catalog refresh, bench-digest determinism, fastapi pin, shared
-   compliance predicates, sheaf detector library API doc,
-   PROOF_BOUNDARY v1.6.0 refresh, PCI user-id gap closure), and
-   names Sprint 7 (arXiv preprint v0.1) as the FINAL synthesis
-   task. **Read this first if you are picking the thread up
-   cold.** The prior handover at
+0. **[`docs/SESSION_HANDOVER_2026-05-05_sprint_7_5_arc.md`](docs/SESSION_HANDOVER_2026-05-05_sprint_7_5_arc.md)**
+   — most recent session-block handover (PRs #142 / #146 / #144 /
+   #145 / #147 — Sprint 7 v0.1 prose fold-in + Sprint 7.5
+   hardening arc that produced the complementary-hybrid detector
+   recovery and cross-machine bench_digest verification). Carries
+   the eight-step self-check, the five-PR arc summary (preprint
+   v0 → v0.1; baseline-comparison gate fires STOP-THE-LINE; four
+   recovery experiments produce HYBRID_BEATS_BASELINE WIN at
+   trusted-mean AUC 0.876, Δ=+0.043 vs B2; Modal cross-machine
+   confirms both digest and verdict reproduce; substrate-first
+   reframe lands; in-repo doc sync). Names operator-only items
+   remaining before arXiv submit: optional v0.6.0 release,
+   pre-circulation packet, arXiv submit. **Read this first if
+   you are picking the thread up cold.** The prior handover at
+   [`docs/SESSION_HANDOVER_2026-05-04_intensification_arc.md`](docs/SESSION_HANDOVER_2026-05-04_intensification_arc.md)
+   carries the intensification-arc context (PRs #134–#140 — catalog
+   refresh, bench-digest determinism, fastapi pin, shared compliance
+   predicates, sheaf detector library API doc, PROOF_BOUNDARY v1.6.0
+   refresh, PCI user-id gap closure). The handover before that at
    [`docs/SESSION_HANDOVER_2026-05-02_v3_diagnostic_arc.md`](docs/SESSION_HANDOVER_2026-05-02_v3_diagnostic_arc.md)
    carries the v3-diagnostic-arc context (PRs #119–#125: audit-log
    gap closure, EU AI Act Article 12 validator, v3 receipt-
