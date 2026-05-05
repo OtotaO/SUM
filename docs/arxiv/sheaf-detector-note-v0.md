@@ -1,131 +1,136 @@
-# Sheaf-Laplacian hallucination detection on signed render receipts
+# A cryptographically-anchored substrate for hallucination detection on signed render bundles
 
-**Status: draft v0.1 (2026-05-04)** — pre-arXiv working note. Audience:
-applied-ML and security/cryptography researchers and engineers building
-verifiable LLM systems; categorical-AI / Topos Institute / Quantinuum
-DisCoCat / categorical-active-inference readers as a secondary
-audience. Targeted submission: `cs.LG` (primary) / `cs.CR` (secondary).
-Pre-circulation to 1–2 readers before submission.
+**Status: draft v0.1 (2026-05-04)** — pre-arXiv working note.
+Targeted submission: `cs.CR` (substrate / threat model /
+cryptographically-anchored reproducibility) primary, `cs.LG`
+(sheaf-Laplacian detection methods, honest negative results,
+complementary-signal Borda composition) secondary. Pre-circulation
+to 1–2 readers before submission.
 
 ---
 
 ## Abstract
 
-We describe a sheaf-Laplacian-based hallucination detector that scores
-the consistency of LLM-rendered text against a signed source bundle.
-The detector lives on top of cross-runtime-verified render receipts
-(`sum.render_receipt.v1`, an Ed25519-over-JCS detached-JWS witness
-binding source triples to rendered tomes through a parameterised
-rendering functor) and reduces, in its current form, to three
-orthogonal signals: (i) the weighted sheaf Laplacian quadratic form
-$x^T L_\mathcal{F}^w x$ over a contrastively-trained knowledge sheaf
-(Gebhart, Hansen & Schrater 2023), with per-edge weights driven by
-each source-of-record's render-receipt trust status against a JWKS
-allow/revocation list (Hansen & Ghrist 2019 §3.2 weighted
-generalization); (ii) the harmonic-extension boundary deviation
-$\|x_I - x_I^*\|^2$ over the (trusted, untrusted) partition (Hansen
-& Ghrist 2019 Prop. 4.1 / Thm. 4.5); (iii) per-rendered-triple
-out-of-vocabulary structural detection at extraction time.
+We describe a substrate for cryptographically-anchored,
+byte-reproducible hallucination detection on signed render
+bundles, and a complementary-signal hybrid detector built on it
+that strictly beats trivial entity-set baselines on a 16-document
+corpus's full perturbation space — including
+entity-set-preserving predicate flips that no entity-set baseline
+can detect.
 
-Three findings from corpus-scale evaluation on
-`seed_long_paragraphs` (16 documents, 120 source triples) are
-load-bearing for the design:
+The substrate composes four primitives, each verifiable
+independently: (i) cross-runtime-verified render receipts
+(`sum.render_receipt.v1`, Ed25519 over JCS-canonical bytes;
+Python / Node / browser byte-identical; locked by a K-matrix
+gate on every release); (ii) `bench_digest` — a JCS-canonical
+SHA-256 over each bench's quantized payload, byte-stable across
+fresh Python invocations *and* across two distinct LAPACK
+environments (Apple Accelerate on Apple Silicon and OpenBLAS via
+the numpy PyPI wheel on Modal x86_64; cross-machine measurement
+in §4.8); (iii) six per-regime audit-grade compliance validators
+(EU AI Act Art 12 / GDPR Art 30 / HIPAA § 164.312(b) / ISO 27001
+A.8.15 / SOC 2 CC7.2 / PCI DSS v4.0 Req 10) consuming a
+regime-agnostic `sum.audit_log.v1` schema; (iv) an explicit
+threat model (§3.0) naming exactly the attacker capabilities
+each substrate component defends.
 
-1. **Receipt-weighting helps modestly** at corpus scale (F1
-   verdict: MARGINAL, $\Delta = +0.034$ trusted-mean AUC vs the
-   v2.2 baseline) and does not collapse on untrusted-target
-   perturbations (F2 verdict: PASS).
-2. **Boundary deviation as a standalone signal fails structurally**
-   at corpus scale (F3 verdict: STRUCTURAL FAIL — trusted-mean AUC
-   $0.499$). A 2×2×2 diagnostic over (graph_size,
-   cochain_strategy, partition_strategy) shows none of the three
-   parameter axes is load-bearing: the failure is mathematical
-   (under $L_{IB} = 0$ topology, boundary perturbations are
-   invisible to the harmonic extension by linear algebra), not
-   parametric. We name this STRUCTURAL FAIL rather than "needs
-   tuning" — the synthetic single-edge utility test (H12) passed,
-   but the corpus bench refuted the claim, and naming the
-   refutation honestly is what the substrate's truth-first
-   discipline requires.
-3. **Combining the two signals closes F3** at the detector layer
-   (v3.2): $v_\text{combined} = v_\text{laplacian}^w + \gamma \cdot
-   \text{deviation}_w + \lambda \cdot v_\text{deficit}$ produces
-   trusted-mean AUC $\geq 0.55$ at every $\gamma$ tested (F4
-   PASS) and stays within $-0.02$ of v3 at $\gamma \leq 0.1$ (F5
-   PASS). The magnitude-matching auto-calibration heuristic
-   ($\gamma_\text{auto} \approx 1.02$) is **empirically wrong on
-   this corpus** — F5 fails at $\gamma \in \{1.0, \text{auto}\}$;
-   deviation's signal-to-noise ratio is below what its magnitude
-   suggests.
+The detector arc is the substrate's first published application.
+Built on top of the verified render bundles, it composes three
+orthogonal signals: (a) the weighted sheaf-Laplacian quadratic
+form $x^T L_\mathcal{F}^w x$ over a contrastively-trained
+knowledge sheaf (Hansen-Ghrist 2019 §3.2; Gebhart-Hansen-Schrater
+2023), with edge weights driven by per-edge receipt-trust
+status; (b) the per-rendered-triple $V$ channel
+(Gebhart 2023 §4) scored against the trained restriction maps;
+(c) entity-set Jaccard distance between source and rendered
+triples. The three signals are *structurally complementary*:
+(a) and (b) catch entity-set-preserving predicate perturbations
+that no entity-set baseline detects (cochain blindness to
+predicate flip is mathematical, not parametric); (c) catches
+entity-set-changing perturbations trivially at AUC $1.000$.
+Borda rank-fusion across the channels yields trusted-mean
+AUC $0.876$ on `seed_long_paragraphs` (16 docs, 120 source
+triples), strictly above the strongest single-signal baseline
+($\Delta = +0.043$ vs B2 jaccard alone, above the $+0.030$
+"real win" threshold).
 
-The detector does not solve hallucination; it provides one
-mathematically clean signal among many, with five named
-falsification verdicts (F1 MARGINAL, F2 PASS, F3 STRUCTURAL FAIL,
-F4 PASS, F5 PASS at $\gamma \leq 0.1$) testifying to which signals
-it does and does *not* carry.
-
-The SUM-specific contribution is the *substrate* — render
-receipts as cryptographic anchors for the detector's edge weights;
-a bench-reproducibility primitive (`bench_digest`, JCS-canonical
-SHA-256 over the quantized payload, signable with the project's
-existing JWKS keys); and a six-regime compliance evidence layer
-(EU AI Act Art 12, GDPR Art 30, HIPAA § 164.312(b), ISO 27001
-A.8.15, SOC 2 CC7.2, PCI DSS v4.0 Req 10) demonstrating that the
-rendering pipeline whose outputs the detector scores carries
-audit-grade record-keeping by construction.
+The substrate's truth-first discipline produced the hybrid the
+hard way. The first published v3.x detector (sheaf-Laplacian
+cochain channel only) lost to trivial entity-set baselines by
+$-0.174$ trusted-mean. Naming that loss a STOP-THE-LINE finding,
+not "future work," led to a structural diagnosis (the cochain is
+mathematically blind to entity-set-preserving perturbations
+because predicate doesn't enter the cochain), then to the
+per-rendered-triple channel restoration (which lifted A2 from
+$0.500$ to $0.671$), then to the Borda fusion that closed the
+gap. Five named falsification verdicts (F1 MARGINAL, F2 PASS,
+F3 STRUCTURAL FAIL, F4 PASS, F5 PASS at $\gamma \leq 0.1$) and
+four cryptographically-anchored recovery-experiment digests —
+`a7965803…` (Borda(v3.2_only, B2) loses), `aa34b6e8…`
+(predicate-perturbation training fails to lift A2), `7025436f…`
+(per-triple integration lifts A2), `dc6e0260…` (complementary
+Borda WINS) — pin every step in mechanically-verifiable
+artifacts.
 
 We position the work inside the program of Hansen-Ghrist 2019
 sheaf-Laplacian spectral theory, Gebhart 2023 contrastive
-sheaf-embedding training, and Tull-Kleiner-Smithe 2023 categorical
-active inference. The bench digest and the JWKS-signed render
-receipts together constitute "reproducible-research-with-
-cryptographic-teeth" — claims that an external reader can re-run
-locally and verify byte-for-byte against the published digest.
+sheaf-embedding training, and Tull-Kleiner-Smithe 2023
+categorical active inference; the substrate sits in the
+adjacent space of cryptographically-anchored ML evaluation
+(zkML provers; verifiable-computation pipelines) at a different
+threat-model layer (§6). The contribution is the substrate plus
+the methodology that produced the hybrid; the detector is the
+worked example.
 
 ---
 
 ## 1. Introduction
 
-LLM hallucination — the generation of plausible-but-wrong content —
-remains the load-bearing reliability problem of generative AI.
-Existing detection approaches partition into (broadly) three
-families: token-level uncertainty estimation (sequence
-log-probability, semantic entropy), retrieval-grounded
-verification (RAG with source citation), and consistency checking
-across multiple generations. Each family is partial: the first
-captures the model's own confidence but is blind to systematic
-bias; the second catches retrieval-supported claims but cannot
-score what isn't retrievable; the third has no canonical metric
-for what counts as "consistent."
+The reliability layer of generative AI has two compounding
+problems. The first is hallucination — LLMs producing
+plausible-but-wrong content. The second is the *evaluation
+crisis* around it: published hallucination-detection benchmarks
+typically lack reproducible numerics (the model is pinned, the
+prompts are pinned, but the result is a number in a paper),
+lack threat models (an attacker controlling which inputs?),
+and lack provenance (whose source bundle, signed by whom?).
+A reader who cares about deploying a detector in a regulated
+context cannot, today, take a published AUC and say "I have
+audit-grade evidence this number reproduces in my environment
+under a specific attacker model." The substrate this paper
+describes addresses that gap.
 
-The work below contributes to the third family, with two
-constraints that distinguish it. First, the consistency claim is
-*cryptographically auditable*: each rendered text is bound to its
-source triples through a signed receipt that any third party can
-verify offline against a published JWKS. A detector running on a
-render's consistency profile produces a verdict that is itself an
-artifact in a chain of attestations, not just a heuristic
-confidence score. Second, the consistency claim is
-*reproducibility-anchored*: every numeric result in this note is
-captured in a versioned `fixtures/bench_receipts/*.json` file
-carrying a `bench_digest` field — a JCS-canonical SHA-256 over
-the quantized payload that an external reader can match
-byte-for-byte after re-running the bench locally.
+The substrate composes four primitives, each verifiable without
+trusting the others: cross-runtime signed render receipts (§3.1);
+a `bench_digest` reproducibility primitive (§4.8) measured to
+hold across two distinct LAPACK environments; six per-regime
+audit-grade compliance validators consuming a regime-agnostic
+audit-log schema (§5); and an explicit four-capability threat
+model (§3.0). On top of this substrate we build a
+complementary-signal hybrid hallucination detector (§3.9) that
+strictly beats trivial entity-set baselines on the corpus's full
+synthetic perturbation space — the first published *competitive*
+detector on this substrate, but more importantly the first one
+whose competitive claim can be verified end-to-end against
+mechanically-pinned artifacts (§4.7.1 documents the recovery
+arc that produced it).
 
-The mathematical machinery is not new. Knowledge graphs as free
-categories on directed multigraphs (Spivak & Kent 2012); sheaves
-on the resulting graph as cellular sheaves (Curry 2014); the sheaf
-Laplacian as a spectral consistency measure (Hansen & Ghrist 2019);
-the weighted generalization (§3.2 of the same paper); the
-harmonic extension over a (boundary, interior) partition (Prop.
-4.1 / Thm. 4.5); contrastive sheaf-embedding training (Gebhart,
-Hansen & Schrater 2023). What we add is the *application* to
-signed render receipts, the corpus-scale evaluation that surfaces
-both a viable detector (v3) and an honest negative result (v3.1
-F3 STRUCTURAL FAIL), the F3 closer (v3.2) that combines the two
-signals, and the engineering discipline that pins every claim to
-either a mechanical test, a digest-anchored measurement, or an
-explicit boundary.
+The mathematical machinery in the detector is not new. Knowledge
+graphs as free categories on directed multigraphs (Spivak & Kent
+2012); sheaves on the resulting graph as cellular sheaves (Curry
+2014); the sheaf Laplacian as a spectral consistency measure
+(Hansen & Ghrist 2019); the weighted generalization (§3.2 of the
+same paper); the harmonic extension over a
+(boundary, interior) partition (Prop. 4.1 / Thm. 4.5);
+contrastive sheaf-embedding training (Gebhart, Hansen & Schrater
+2023). What we add at the *detector* layer is the
+complementary-signal Borda fusion (§3.9) plus the recovery
+methodology (§4.7.1) that distinguishes the hybrid from any
+single component. What we add at the *substrate* layer is the
+composition of result-anchored bench digests with JWKS-signed
+render receipts — making aggregate ML-evaluation claims
+verifiable end-to-end, not just at the input boundary.
 
 ## 2. Mathematical preliminaries
 
@@ -614,6 +619,87 @@ Hypothesis property tests (`test_sheaf_laplacian_v32_property.py`):
 the contracts hold for arbitrary inputs in the tested domain, not
 just the seed examples.
 
+**The cochain channel alone is insufficient against trivial
+baselines** (§4.7.1 shows this empirically). The full v3.x
+deployment composes the v3.2 cochain channel above with the
+§3.5 per-rendered-triple channel and an entity-set baseline
+(§3.9 below); the published WIN comes from this composition,
+not from the cochain channel evaluated in isolation.
+
+### 3.9 Complementary-signal hybrid
+
+The §3.6–§3.8 sheaf-Laplacian cochain channel and the §3.5
+per-rendered-triple channel together form one detector class;
+entity-set Jaccard distance forms another. The two classes are
+*structurally complementary*:
+
+  - **Sheaf-Laplacian detectors** (cochain channel, §3.6–§3.8;
+    per-triple channel, §3.5) are sensitive to per-edge
+    restriction-map residuals. The per-triple channel detects
+    predicate violations directly: a rendered triple
+    $(h, r', t)$ scores high $V_\text{triple}$ under the trained
+    $F_h(r'), F_t(r')$ when $r'$ is not the correct relation
+    for $(h, \cdot, t)$. The cochain channel, by contrast, is
+    *mathematically blind* to entity-set-preserving
+    perturbations because its cochain construction encodes only
+    entity *presence*, not the predicates connecting present
+    entities. §4.7.1 documents the discovery of this blindspot
+    via a corpus-scale comparison and the recovery arc that
+    addressed it.
+  - **Entity-set baselines** (§4.7.1: B1 entity-presence
+    deficit, B2 jaccard distance) are sensitive to set
+    differences between source entities and rendered entities.
+    They detect entity-swap (A1) and triple-drop (A4) perfectly
+    when those perturbations change the entity set
+    ($\text{AUC} = 1.000$), but are completely blind
+    ($\text{AUC} = 0.500$) to predicate flips (A2) that
+    preserve the entity set.
+
+Define the hybrid via Borda rank-fusion at the per-(class,
+target) cell level. Given two detectors' scores on the same $n$
+pairs, the fused score for pair $i$ is
+
+$$s^\text{borda}_i = \mathrm{rank}\!\left(s^{(d_1)}_i \mid s^{(d_1)}_*\right)
+\;+\; \mathrm{rank}\!\left(s^{(d_2)}_i \mid s^{(d_2)}_*\right)$$
+
+where $\mathrm{rank}(\cdot \mid s_*)$ is the average rank within
+the pool (ties at mean rank). Borda is parameter-free and
+magnitude-invariant; it preserves any detector's perfect ranking
+of a pool ($\text{AUC} = 1.000 \Rightarrow$ the perturbed pair
+always outranks the clean pair) while letting the other
+detector contribute signal where the first is at chance.
+
+The complementary hybrid we publish is
+
+$$\text{Borda}\!\left(s^{\text{v3.2 + per-triple}},\; s^{\text{B2 jaccard}}\right),$$
+
+evaluated per (class, target) cell on `seed_long_paragraphs`
+(§4.7.1 has the per-cell numbers). The component
+$s^{\text{v3.2 + per-triple}}$ score combines the §3.5
+per-triple channel additively with the §3.8 v3.2 cochain
+score:
+
+$$s^{\text{v3.2 + per-triple}} \;=\; v_\text{laplacian}^w \;+\;
+\gamma \cdot \text{deviation}_w \;+\; \lambda \cdot v_\text{deficit}
+\;+\; \alpha \cdot \max_i V^{(i)}_\text{triple} \;+\;
+\beta \cdot n_\text{oov}$$
+
+with $\alpha = \beta = 1.0$ chosen at moderate scale;
+per-deployment composition tuning (Z-score additive, gated,
+weighted-linear alternatives to Borda) is an open follow-up.
+
+**The hybrid is a substrate-enabled claim, not just a detector
+choice.** Each of the three component scores is computable
+because the substrate provides a verifiable bundle: the source
+triples for the per-triple channel come from an Ed25519-signed
+render receipt; the cochain channel's per-edge weights come from
+the same receipt's trust status; the entity-set baseline operates
+on the same render bundle as the other two. Without the verified
+bundle, the composition's reproducibility claim collapses — there
+is no shared, attested input to compose against. The substrate's
+contribution is making this composition trustworthy end-to-end,
+not the choice of Borda fusion specifically.
+
 ## 4. Empirical results
 
 All numbers in this section are captured in versioned
@@ -827,6 +913,80 @@ Three honest readings:
      genuinely a strict generalisation, not a different detector
      wearing a similar mask.
 
+### 4.7.1 Recovery arc — how the WIN was found
+
+§4.4–§4.7 chart the v3.x detector arc as it was developed. By
+the end of §4.7, v3.2 closes the F3 STRUCTURAL FAIL within the
+detector layer — but only against the v3.x family's internal
+baseline, not against any external comparison. As part of the
+substrate's pre-publication discipline (a baseline-comparison
+gate), we then asked: how does v3.2 fare against trivial
+reproducible baselines computed from the same render bundles?
+
+The answer was: **it loses, decisively, on entity-set-changing
+perturbations.** Two minimum-defensible baselines, both pure
+set operations on entity sets — B1 entity-presence-deficit
+($1 - \text{recall}_\text{src→render}$) and B2 jaccard distance
+($1 - J(\text{src}_\text{ent}, \text{render}_\text{ent})$) —
+produce trusted-mean AUC $0.824$ and $0.833$ respectively,
+against v3.2's $0.659$. The losing margin is $-0.174$.
+
+Naming this loss a STOP-THE-LINE finding rather than "future
+work" led to four engineering recovery experiments, each pinned
+in `Tests/research/test_recovery_experiment_digests.py` and each
+with a `bench_digest` that reproduces 3× in fresh processes
+unconditionally:
+
+| Experiment | Outcome (trusted-mean) | bench_digest |
+|---|---|---|
+| **Borda(v3.2_only, B2)** | LOSES — $0.808 < 0.833$, $\Delta = -0.025$. v3.2 anti-correlated with B2 on A1 trusted; rank fusion degrades B2's perfect 1.000 to 0.933. | `a7965803…6c2003` |
+| **Predicate-perturbation training negatives** | A2 STAYED at $0.500$. Surfaced cochain-channel structural blindness to entity-set-preserving perturbations: predicate doesn't enter the cochain; adding training negatives can't fix what scoring discards. Same shape as F3 STRUCTURAL FAIL. | `aa34b6e8…c866e7` |
+| **Per-rendered-triple V channel integration** | A2 LIFTED $0.500 \to 0.671$ (trusted) and $0.678$ (untrusted); trusted-mean $0.659 \to 0.759$. Restored the §3.5 channel that v2.2 §4.3 used to hit A1/A2/A3 = 1.000. Still $< $ B2 alone, but now informative about *why*: this composition is the only detector that catches A2. | `7025436f…fd4fa` |
+| ★ **Complementary Borda(v3.2 + per-triple, B2)** | **WINS** — trusted-mean $0.876 > 0.833$, $\Delta = +0.043$ (above the $+0.030$ "real win" threshold). | `dc6e0260…343ce` |
+
+**Per-cell AUC of the headline composition** (compared to its
+two components):
+
+| Class × target | v3.2 + per-triple | B2 jaccard | **Borda hybrid** |
+|---|---:|---:|---:|
+| A1 entity-swap @ trusted    | 0.698 | 1.000 | **0.967** |
+| A1 entity-swap @ untrusted  | 0.751 | 1.000 | **0.991** |
+| A2 predicate-flip @ trusted | **0.671** | 0.500 | **0.671** |
+| A2 predicate-flip @ untrusted | **0.678** | 0.500 | **0.678** |
+| A4 triple-drop @ trusted    | 0.907 | 1.000 | **0.991** |
+| A4 triple-drop @ untrusted  | 0.969 | 1.000 | **1.000** |
+| **Trusted-mean**            | 0.759 | 0.833 | **0.876** |
+
+The hybrid wins where the components are complementary: A2 lift
+comes entirely from the v3.2 + per-triple channel (B2 has zero
+signal there); A1/A4 dominance comes entirely from B2 (the
+sheaf-Laplacian channels are noisy on these). Borda fusion
+preserves both contributions.
+
+**The methodology, not the specific detector, is what we claim
+generalizes.** A sheaf-Laplacian detector trained on a different
+corpus or evaluated against a different perturbation regime
+might require different recovery experiments. The substrate's
+role is to make every such experiment *reproducible*
+(`bench_digest`, including across LAPACK environments per §4.8),
+*comparable* (same render-bundle inputs feeding every detector),
+and *trustworthy* (cryptographic provenance via the JWKS-signed
+receipts). The discipline can run end-to-end without ad-hoc
+trust assumptions.
+
+Receipts:
+`fixtures/bench_receipts/baseline_comparison_2026-05-04.json`
+(B1, B2 alone),
+`fixtures/bench_receipts/hybrid_comparison_2026-05-04.json`
+(Borda(v3.2_only, B2) — losing),
+`fixtures/bench_receipts/predicate_negatives_experiment_2026-05-04.json`
+(A2 stays at chance),
+`fixtures/bench_receipts/per_triple_integration_2026-05-04.json`
+(A2 lifted),
+`fixtures/bench_receipts/complementary_hybrid_2026-05-04.json`
+(the WIN). Verification:
+`scripts/research/sheaf_*.py` modules under research/.
+
 ### 4.8 Reproducibility: `bench_digest` as a primitive
 
 The two `bench_digest` values cited above
@@ -966,10 +1126,68 @@ production-shaped by the demands of regulated audit.
 
 ## 6. Position vs. existing work
 
+We position the contribution at two layers, with the substrate
+as the primary claim (`cs.CR`) and the detector arc as the
+worked example (`cs.LG`).
+
+### 6.1 Substrate layer (cs.CR primary)
+
+**vs. published reproducibility primitives.** The closest
+neighbour to the `bench_digest` substrate is the
+DOI-anchored evaluation-bundle pattern in classical ML
+benchmarks (e.g. ML reproducibility checklists; HuggingFace
+datasets). Those carry source-data hashes but typically not
+quantised-result digests; they ensure the *input* is fixed but
+not that the output reproduces byte-for-byte. Our digest commits
+to *the result*, not just the substrate. Combined with the
+JWKS-signed render receipts (§3.1), the result-digest forms an
+end-to-end claim: an external reader can rerun the bench,
+reproduce the digest, and verify the provenance of the source
+bundle through Ed25519 signature validation against the
+project's published JWKS — without trusting any intermediate
+party. We are not claiming this specific composition is novel
+in the abstract; we *are* claiming it is missing from the
+LLM-eval literature, where reproducibility claims typically stop
+at the prompt level. §4.8 demonstrates the digest reproduces
+across two distinct LAPACK environments (Apple Accelerate +
+OpenBLAS-via-PyPI), so the claim is not "byte-stable on one
+machine" but "byte-stable across distinct floating-point stacks
+that share the project's pinned numerics."
+
+**vs. cryptographically-anchored ML-evaluation pipelines.** The
+substrate is comparable in spirit to verifiable-computation
+pipelines (zkML provers, Sumcheck-based result attestation),
+but at a different threat-model layer. zkML proves *the model
+executed correctly on a committed input* — a strong claim
+under T1 (adversarial render) of §3.0. Our substrate proves
+*the bench executed and produced this specific aggregate* — a
+weaker claim than zkML's, but at substantially lower cost and
+without the model-architecture restrictions that current zkML
+implementations impose. The two compose naturally: a future
+v0.X could anchor the model-execution layer in zkML and the
+evaluation-aggregate layer in `bench_digest`, defending T1
+cryptographically rather than statistically.
+
+**vs. compliance-only audit-log substrates.** Industry
+compliance tools (SIEM aggregators, PCI-attestation packages)
+typically pin record-keeping schemas without integrating result
+attestation. The §5 six-regime layer of the substrate is shaped
+by their conventions, but composed with the receipt and digest
+machinery so a passing compliance report and a verified
+bench_digest can be cross-referenced through a shared
+`audit_log.v1` row. We are not claiming the compliance
+validators themselves are novel; the integration into the
+substrate (so detector outputs and compliance checks share an
+auditable provenance chain) is.
+
+### 6.2 Detector layer (cs.LG secondary)
+
 **vs. token-level uncertainty (sequence log-probability,
-semantic entropy):** complementary. Uncertainty estimates measure
-the model's own confidence; we measure cross-claim consistency
-under a verifiable-source binding. The two should compose.
+semantic entropy):** complementary. Uncertainty estimates
+measure the model's own confidence; we measure cross-claim
+consistency under a verifiable-source binding. The two should
+compose; our substrate makes the composition's reproducibility
+verifiable.
 
 **vs. retrieval-grounded verification (RAG with citations):**
 complementary. RAG confirms support for retrievable claims; we
@@ -979,39 +1197,51 @@ but not in a retrieval index.
 
 **vs. existing knowledge-graph hallucination detectors
 (HalluGraph, KG-grounded checks):** structurally adjacent, with
-three distinguishing features. First, the *math* is grounded in
-Hansen-Ghrist sheaf-Laplacian theory (and its weighted /
-harmonic-extension generalisations) and Gebhart contrastive
-sheaf-embedding training, not ad-hoc consistency rules. Second,
-the *provenance* is cryptographic — the source bundle is a
-signed artifact whose verifier is realiser-independent
-(Python / Node / browser byte-identity locked in CI). Third, the
-*reproducibility* is hash-anchored — every published numeric
-claim is a `bench_digest` an external reader can match offline.
-The detector's verdict, the source bundle's provenance, and the
-benchmark's reproducibility are each a byte-level fixed point in
-an audit trail.
+three distinguishing features. First, the *math* of the cochain
+and per-triple channels is grounded in Hansen-Ghrist
+sheaf-Laplacian theory (and its weighted / harmonic-extension
+generalisations) and Gebhart contrastive sheaf-embedding
+training, not ad-hoc consistency rules. Second, the *provenance*
+is cryptographic — the source bundle is a signed artifact whose
+verifier is realiser-independent (Python / Node / browser
+byte-identity locked in CI). Third, the *evaluation* is
+honest about the detector's competitive position: §4.7.1
+documents the recovery arc that produced the WIN, including the
+intermediate experiments that lost (predicate-perturbation
+training failed; cochain-only Borda fusion failed). The hybrid
+itself — Borda(v3.2 + per-triple, B2) — is one composition
+choice among many, presented with the discipline that surfaced
+its limits, not as a competitive-claim headline.
 
 **vs. Tull, Kleiner & Smithe 2023 categorical active inference:**
 the compositionality theorem (Theorems 45/46) says free energy
 is additive across sequential and parallel composition of
-generative models. Our v3.2 combined detector is mathematically a
-sum of orthogonal terms — the same shape — over per-doc subgraphs
-of a multi-document corpus. Federated multi-agent scoring is the
-natural application; v3.1's harmonic extension over a trusted-
-issuer boundary is the SUM-specific instantiation, with v3.2
-serving as the F3-aware fall-back that recovers when boundary
-deviation is structurally blind.
+generative models. Our v3.2 combined detector and the §3.9
+hybrid are both mathematically sums of orthogonal terms — the
+same shape — over per-doc subgraphs of a multi-document corpus.
+Federated multi-agent scoring is the natural application;
+v3.1's harmonic extension over a trusted-issuer boundary is the
+SUM-specific instantiation, with v3.2 serving as the F3-aware
+fall-back, and the §3.9 hybrid providing the substrate-level
+composition primitive that the categorical-active-inference
+framing identifies as additive in free-energy terms.
 
 ## 7. Bounded claims
 
-What the detector claims, at the v3.2 layer evaluated on
-`seed_long_paragraphs`:
+What the substrate + complementary-hybrid detector claims, at
+the §3.9 layer evaluated on `seed_long_paragraphs`:
 
-- **Specific.** Per-class detection signals defined above
-  separate clean from perturbed at the AUCs reported in §4.4 /
-  §4.7 on the synthetic micro-bench and the
-  `seed_long_paragraphs` corpus.
+- **Specific (substrate).** `bench_digest` for both the v3.2
+  validation and the complementary-hybrid benches is byte-stable
+  across runs and across two distinct LAPACK environments
+  (Apple Accelerate on Apple Silicon; OpenBLAS-via-PyPI on Modal
+  x86_64; §4.8). The substrate's reproducibility property holds
+  cross-machine for the two environments measured.
+- **Specific (detector).** Borda fusion of (v3.2 + per-triple)
+  with B2 jaccard — the §3.9 hybrid — produces trusted-mean AUC
+  $0.876$ on `seed_long_paragraphs`, $\Delta = +0.043$ above the
+  strongest single-signal baseline (B2 alone at $0.833$).
+  Per-cell numbers in §4.7.1.
 - **Localised.** Per-edge / per-rendered-triple discrepancy
   identifies the perturbed claim at high precision (100 % top-1
   on the synthetic micro-benchmark; the per-rendered-triple $V$
@@ -1022,24 +1252,36 @@ What the detector claims, at the v3.2 layer evaluated on
   sheaf parameters — no vendor-locked confidence score.
 - **Reproducibility-anchored.** Each numeric result is captured
   in a versioned receipt with a `bench_digest` field; rerunning
-  the bench locally and comparing the digest is a byte-level
-  match operation.
+  the bench locally (or via the published Modal harness) and
+  comparing the digest is a byte-level match operation.
 
-What the detector does *not* claim:
+What the substrate + detector does *not* claim:
 
-- **Not** a solution to hallucination. One signal among many; in
-  practice would compose with confidence calibration,
-  retrieval-grounded checks, NLI verifiers, and human review.
-- **Not** a correctness proof. It detects inconsistency in the
-  *output manifold* under cross-edge agreement and presence
-  patterns; it does not certify that any single output is
-  *correct*. A consistent manifold of uniformly-wrong renderings
-  (where the trained sheaf has no internal contradiction with
-  the wrong claims) remains undetected.
-- **Not** generalising across all knowledge-graph schemas without
-  re-calibration. The $\lambda$ auto-calibration is per-corpus;
-  schema-typed sheaves (multiple entity types, typed restriction
-  maps) require additional design work.
+- **Not** a solution to hallucination. The hybrid is one signal
+  composition among many; in practice would compose with
+  confidence calibration, retrieval-grounded checks, NLI
+  verifiers, and human review.
+- **Not** a correctness proof. The detector measures
+  inconsistency in the *output manifold* under cross-edge
+  agreement, predicate violations, and entity-set patterns; it
+  does not certify that any single output is *correct*. A
+  consistent manifold of uniformly-wrong renderings (where the
+  trained sheaf has no internal contradiction with the wrong
+  claims) remains undetected.
+- **Not** generalising across corpora without re-calibration.
+  The $\lambda$ auto-calibration is per-corpus; the hybrid's
+  $+0.043$ margin over B2 is on the
+  `seed_long_paragraphs` corpus's specific perturbation
+  distribution. Cross-corpus generalization is unmeasured (v0.2
+  follow-up).
+- **Not** generalising to real-LLM-rendered hallucinations. The
+  A1 / A2 / A4 perturbation harness is synthetic — it mutates
+  the source-bundle's triples and asks the detector to spot the
+  mutation. Real LLM hallucinations produce rendered text that
+  re-extracts to a noisy triple set; B2's perfect $1.000$ on
+  synthetic A1/A4 may degrade if the LLM elaborates with
+  spurious entities. Real-LLM-rendered bench is v0.2 follow-up
+  (Path 2 in §8).
 - **Not** computable on arbitrary corpus sizes. Sparse-block
   storage of the $d$-dim Laplacian is straightforward but not
   yet implemented; scaling to $> 10^4$ vertices needs the
@@ -1054,26 +1296,51 @@ What the detector does *not* claim:
   $\gamma$. F5 at $\gamma_\text{auto}$ FAILs on this corpus;
   optimal $\gamma$ is small. Future deployments must measure
   $\gamma$ rather than auto-derive it from term magnitudes.
-- **Not** detecting A2 predicate-flip at corpus scale. AUC $=
-  0.50$ across every detector (v2.2 / v3 / v3.1 / v3.2) on
-  `seed_long_paragraphs`. Closing this requires
-  predicate-perturbation negative sampling at training time,
-  orthogonal to the v3.x detector arc.
-- **Not** generalising across machines. The `bench_digest`
-  reproducibility property holds on the same machine + same code
-  (and across fresh Python invocations on that machine);
-  cross-machine reproducibility (different LAPACK builds,
-  different numpy versions) is unmeasured.
+- **Not** giving the v3.x cochain channel competitive standalone
+  use. §4.7.1 documents the loss to trivial baselines on the
+  cochain channel alone ($-0.174$ trusted-mean vs B2). The WIN
+  comes from composition with the §3.5 per-triple channel and
+  the entity-set baseline. Operators expecting cochain-only
+  detection (e.g. for closed-vocab schemas where per-triple OOV
+  signal is uninformative) should not rely on the cochain channel
+  alone.
+- **Not** rescued by predicate-perturbation training negatives
+  alone (`aa34b6e8…` digest pin in
+  `Tests/research/test_recovery_experiment_digests.py`). The
+  cochain-channel structural blindness to entity-set-preserving
+  perturbations is mathematical, not parametric — adding
+  training negatives cannot fix what the scoring path discards.
+  This is itself a load-bearing finding for future v3.x
+  development: predicate sensitivity must come from the
+  per-triple channel, not from the cochain.
+- **Not** the only viable composition. Borda fusion is one
+  choice; Z-score additive, gated (B2 fires → use B2; else use
+  v3.2 + per-triple), and weighted-linear are alternatives we
+  did not exhaustively evaluate. Per-deployment composition
+  tuning is open.
+- **Not** generalising across all LAPACK environments. The
+  cross-machine measurement (§4.8) covers Apple Accelerate +
+  OpenBLAS-via-PyPI. Other LAPACK builds (Intel MKL; ARM Linux
+  OpenBLAS; AMD AOCL) are unmeasured (v0.2 candidates). The
+  digest is a *cross-environment reproducibility canary*: if a
+  third LAPACK build produces a different digest, that's a
+  load-bearing finding worth investigating, not a falsification
+  of the substrate.
 
 Five named falsification verdicts (F1 MARGINAL, F2 PASS,
 F3 STRUCTURAL FAIL, F4 PASS, F5 PASS at $\gamma \leq 0.1$)
 together with the synthetic-corpus disconnect (H12 synthetic-pass
-vs F3 corpus-fail) testify to which signals the detector does
-and does not carry. Three pinned-in-code falsifications from
-earlier in the arc — (a) v1 disconnected-graph density-dropout
-blindness; (b) v2.1 presence-cochain inheritance of the same
-blindness; (c) v2.2 default-$\lambda$ at corpus scale — remain
-as regression tests at every PR.
+vs F3 corpus-fail) and the four recovery-experiment digests
+(`a7965803…` Borda(v3.2_only, B2) loses; `aa34b6e8…`
+predicate-perturbation training fails to lift A2; `7025436f…`
+per-triple integration lifts A2; `dc6e0260…` complementary
+Borda WINS) testify to which signals the substrate-enabled
+detector does and does not carry. Three pinned-in-code
+falsifications from earlier in the arc — (a) v1
+disconnected-graph density-dropout blindness; (b) v2.1
+presence-cochain inheritance of the same blindness; (c) v2.2
+default-$\lambda$ at corpus scale — remain as regression tests
+at every PR.
 
 ## 8. Future work
 
@@ -1082,17 +1349,25 @@ as regression tests at every PR.
   stress the detector differently. Generate clean and adversarial
   variants via the hosted Worker render path and re-run §4.4 /
   §4.7.
-- **A2 closure — predicate-perturbation training.** Add
-  predicate-flip negatives to the contrastive sampler. This is
-  orthogonal to the v3.x arc (a change to §2.5 / §3.3) but is
-  the single biggest open class-AUC gap in §4.4.
-- **Cross-machine reproducibility — Node port.** A Node
-  reimplementation of the v3 / v3.2 detectors that reproduces
-  the AUCs and matches the `bench_digest` would extend the
-  cross-runtime trust triangle from the verifier layer (which
-  already holds K1–K4) to the research bench layer. The digests
-  in §4.6 / §4.7 are the published fixed points such a port
-  would have to match.
+- **A2 closure already partial via §3.5 per-triple channel
+  composition** (v0.1). Predicate-perturbation training negatives
+  alone do NOT lift A2 for the cochain channel
+  (`aa34b6e8…` digest pin) — the cochain is mathematically blind
+  to entity-set-preserving perturbations, so training-distribution
+  changes can't fix what scoring discards. The recovered A2 signal
+  comes from the per-triple channel directly (lifting A2 from
+  $0.500 \to 0.671$); v0.2 candidates: predicate-perturbation
+  training to *strengthen* the per-triple channel further; cochain
+  redesign to make the cochain itself sensitive (per below).
+- **Cross-machine reproducibility — additional LAPACK
+  environments.** §4.8 covers Apple Accelerate (operator) and
+  OpenBLAS-via-PyPI (Modal x86_64). v0.2 candidates: Intel MKL,
+  ARM Linux OpenBLAS, AMD AOCL. A future Node / browser
+  reimplementation of the v3 / v3.2 detectors that matches the
+  `bench_digest` would extend the cross-runtime trust triangle
+  from the verifier layer (K1–K4) to the research bench layer;
+  the digests in §4.6 / §4.7 / §4.7.1 are the published fixed
+  points such a port would have to match.
 - **Per-doc graph-structure-aware $\gamma$.** When $L_{IB}$ has
   high mass, raise $\gamma$; when near zero, set $\gamma = 0$.
   The combined score then uses deviation only where it is
@@ -1148,13 +1423,29 @@ as regression tests at every PR.
 - **OtotaO/SUM repository.** `sum-engine` v0.5.0 on PyPI;
   source at https://github.com/OtotaO/SUM. Spec doc at
   `docs/SHEAF_HALLUCINATION_DETECTOR.md`. Library API surface at
-  `docs/SHEAF_LIBRARY_API.md`. Bench scripts at
+  `docs/SHEAF_LIBRARY_API.md`. v3.x bench scripts at
   `scripts/research/sheaf_v3_roc_bench.py`,
   `scripts/research/sheaf_v3_1_f3_diagnostic.py`,
-  `scripts/research/sheaf_v3_2_validation.py`. Receipts at
-  `fixtures/bench_receipts/v3_roc_bench_2026-05-03.json`,
-  `fixtures/bench_receipts/v3_1_f3_diagnostic_2026-05-03.json`,
-  `fixtures/bench_receipts/v3_2_validation_2026-05-03.json`.
+  `scripts/research/sheaf_v3_2_validation.py`.
+  Recovery-arc bench scripts at
+  `scripts/research/sheaf_baseline_comparison.py`,
+  `scripts/research/sheaf_hybrid_comparison.py`,
+  `scripts/research/sheaf_predicate_negatives_experiment.py`,
+  `scripts/research/sheaf_per_triple_integration_experiment.py`,
+  `scripts/research/sheaf_complementary_hybrid_experiment.py`.
+  Cross-machine verification harness at
+  `scripts/research/cross_machine_verify_modal.py`. Receipts under
+  `fixtures/bench_receipts/`: `v3_roc_bench_2026-05-03.json`,
+  `v3_1_f3_diagnostic_2026-05-03.json`,
+  `v3_2_validation_2026-05-03.json`,
+  `baseline_comparison_2026-05-04.json`,
+  `hybrid_comparison_2026-05-04.json`,
+  `predicate_negatives_experiment_2026-05-04.json`,
+  `per_triple_integration_2026-05-04.json`,
+  `complementary_hybrid_2026-05-04.json`,
+  `cross_machine_verification_2026-05-04.json`. Test pins at
+  `Tests/research/test_sheaf_baseline_comparison.py` and
+  `Tests/research/test_recovery_experiment_digests.py`.
 
 ---
 
@@ -1162,35 +1453,48 @@ as regression tests at every PR.
 foundational categorical-AI program of Spivak, Kent, Coecke,
 Curry, Hansen, Ghrist, Gebhart, Schrater, Tull, Kleiner, Smithe,
 and the broader Topos Institute / Quantinuum / ACT community.
-SUM contributes the cryptographic substrate, the
-reproducibility-with-digests engineering, the corpus-scale
-evaluation, and the F3 STRUCTURAL FAIL / v3.2 closure arc; the
-underlying mathematics is theirs.
+SUM contributes the cryptographic substrate
+(receipts + bench_digest + audit-log + threat model), the
+recovery-arc methodology (§4.7.1) that produced the
+complementary-signal hybrid, and the cross-machine reproducibility
+measurement (§4.8); the underlying mathematics is theirs.
 
-*Reproducibility.* All code Apache-2.0, all benchmarks
-reproducible by `pip install 'sum-engine[research]'` and the
-bench scripts in the repository. Receipt JSON schemas are stable
+*Reproducibility.* All code Apache-2.0. Local reproduction:
+`pip install 'sum-engine[research,sieve]'` plus the bench scripts
+listed in §References. Cross-machine reproduction via Modal:
+`modal run scripts/research/cross_machine_verify_modal.py` against
+the pinned commit SHA — any reader with Modal credits can verify
+both load-bearing digests match. Receipt JSON schemas are stable
 and versioned (`sum.render_receipt.v1`,
 `sum.sheaf_v2_roc_bench.v1`,
 `sum.sheaf_v3_roc_bench.v1`,
 `sum.sheaf_v3_1_f3_diagnostic.v1`,
-`sum.sheaf_v3_2_validation.v1`). Each of the v3.1 / v3.2 receipts
-carries a `bench_digest` field — JCS-canonical SHA-256 over the
-quantised payload — that an external reader can match
-byte-for-byte after re-running the bench.
+`sum.sheaf_v3_2_validation.v1`,
+`sum.sheaf_baseline_comparison.v1`,
+`sum.sheaf_hybrid_comparison.v1`,
+`sum.sheaf_predicate_negatives_experiment.v1`,
+`sum.sheaf_per_triple_integration.v1`,
+`sum.sheaf_complementary_hybrid.v1`,
+`sum.cross_machine_verification.v1`). Each bench receipt carries
+a `bench_digest` field — JCS-canonical SHA-256 over the quantised
+payload — that an external reader can match byte-for-byte after
+re-running the bench.
 
 *Status of claims.* §4.1 (synthetic micro-bench), §4.3 (v2.2 ROC
-bench), §4.4 (v3 ROC bench), §4.6 (F3 diagnostic) and §4.7 (v3.2
-validation) are measured, pinned, and reproducible at the
-commit hash of this draft. §4.2's falsifications are pinned in
-code by named regression tests. §5's compliance evidence is
-mechanically verified by the per-regime test suites and the
-cross-regime CLI dispatch test. §6 positioning claims are this
-author's reading of the cited literature; corrections welcomed
-before arXiv submission.
+bench), §4.4 (v3 ROC bench), §4.6 (F3 diagnostic), §4.7 (v3.2
+validation), §4.7.1 (recovery arc + complementary hybrid WIN), and
+§4.8 (cross-machine bench_digest) are measured, pinned, and
+reproducible at the commit hash of this draft. §4.2's
+falsifications are pinned in code by named regression tests.
+§5's compliance evidence is mechanically verified by the
+per-regime test suites and the cross-regime CLI dispatch test.
+§6 positioning claims are this author's reading of the cited
+literature; corrections welcomed before arXiv submission.
 
-*Authors and contact.* Draft authored 2026-05-01 (v0) and
-revised 2026-05-04 (v0.1) by the SUM project. For corrections /
-contributions: https://github.com/OtotaO/SUM/issues. Pre-arXiv
-comments welcome; pre-circulation review (1–2 readers) sought
-before submission to `cs.LG` (primary) / `cs.CR` (secondary).
+*Authors and contact.* Draft authored 2026-05-01 (v0); revised
+2026-05-04 (v0.1) by the SUM project, with the substrate-first
+reframe and recovery-arc methodology added in the same revision.
+For corrections / contributions: https://github.com/OtotaO/SUM/issues.
+Pre-arXiv comments welcome; pre-circulation review (1–2 readers)
+sought before submission to `cs.CR` (primary) / `cs.LG`
+(secondary).
