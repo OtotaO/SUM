@@ -1013,42 +1013,57 @@ the same arc as this draft. Verification protocol:
 grep '"bench_digest"'` run three times in fresh processes yields
 the identical hash.
 
-**Cross-machine verification on Modal x86_64.** We re-ran both
-load-bearing benches inside a `modal.Image.debian_slim(python_version="3.10")`
-container at the pinned commit SHA `37351e2`, with the
-`[research,sieve]` extras installed via the project's
-`pyproject.toml` and the `en_core_web_sm` spaCy model downloaded
-into the image. The container's environment differs from the
-operator's reference machine across every dimension that matters
-for floating-point reproducibility:
+**Cross-machine verification on Modal x86_64
+(three environments × three benches, all MATCH).** We re-ran each
+load-bearing bench inside a `modal.Image.debian_slim(...)` container
+at the pinned commit SHA, in two Python environments simultaneously —
+Python 3.10 with numpy 1.25 and Python 3.12 with numpy 2.x. Both
+container environments differ from the operator's reference machine
+across every dimension that matters for floating-point
+reproducibility:
 
-| | Operator reference | Modal container |
-|---|---|---|
-| Architecture | Apple Silicon (`arm64`) | x86_64 |
-| OS | Darwin 25.0.0 | Linux 4.4.0 / glibc 2.31 |
-| Python | 3.10 (miniforge) | 3.10.8 (Debian slim) |
-| numpy | (operator-side) | 1.25.0 |
-| LAPACK provider | Apple Accelerate | OpenBLAS-via-PyPI-wheel (HAVE_BLAS_ILP64) |
-| SIMD | NEON | AVX2 |
+| | Operator reference | Modal Py 3.10 | Modal Py 3.12 |
+|---|---|---|---|
+| Architecture | Apple Silicon (`arm64`) | x86_64 | x86_64 |
+| OS | Darwin 25.0.0 | Linux 4.4.0 / glibc 2.31 | Linux 4.4.0 / glibc 2.31 |
+| Python | 3.10 (miniforge) | 3.10.8 (Debian slim) | 3.12 (Debian slim) |
+| numpy | (operator-side) | 1.25.0 | 2.x |
+| LAPACK provider | Apple Accelerate | OpenBLAS-via-PyPI-wheel | OpenBLAS-via-PyPI-wheel |
+| SIMD | NEON | AVX2 | AVX2 |
 
-Both digests reproduced byte-for-byte across this environment
-boundary:
+All three load-bearing bench digests reproduced byte-for-byte across
+all three environments:
 
-- `b4d26c01d4962fa30f67c00313bbce8982ca16e3a97df34819747876ee14ed5a`
-  (v3.2 validation) — Modal MATCH ✓
-- `dc6e0260f14042fa0b6151a6ca6b443bb0910eabb996f6876f854633969343ce`
-  (complementary hybrid) — Modal MATCH ✓
+| Bench | Operator | Modal Py 3.10 | Modal Py 3.12 |
+|---|---|---|---|
+| v3.2 validation | `b4d26c01…` | ✓ | ✓ |
+| complementary hybrid | `dc6e0260…` | ✓ | ✓ |
+| predicate negatives | `ddf41484…` | ✓ | ✓ |
 
-The complementary hybrid additionally reproduced the substantive
-verdict (`HYBRID_BEATS_BASELINE`, $\Delta = +0.043$ trusted-mean
-vs B2 alone; trusted-mean AUC $0.876$) on Modal — so the §4.7.1
-WIN holds across LAPACK environments, not just the digest.
+The substantive verdicts also reproduce: `HYBRID_BEATS_BASELINE`
+($\Delta = +0.043$ trusted-mean vs B2 alone; trusted-mean AUC
+$0.876$) holds in all three environments; `A2_STILL_CHANCE` (the
+cochain-blindness diagnosis underlying §4.7.1's structural finding)
+also holds. Outcome label:
+**`BRANCH_A_THREE_ENVIRONMENTS_DIGESTS_MATCH`**.
 
-Receipt: `fixtures/bench_receipts/cross_machine_verification_2026-05-04.json`,
+The `predicate_negatives` cross-version digest stability was
+specifically verified after a v0.2 latent-fix refactor that replaced
+a local v2-training-loop copy with a call to production
+`train_restriction_maps(..., n_predicate_negatives_per_positive=3)`.
+The pre-refactor bench produced different digests between Modal
+Python 3.10 (`aa34b6e8…`) and Modal Python 3.12 (`8638253903…`)
+because the local SGD trajectory accumulated ULP-level differences
+across 200 epochs on different LAPACK/numpy builds; the post-
+refactor bench (single training-loop source) produces identical
+`ddf41484…` across both Python versions.
+
+Receipt: `fixtures/bench_receipts/cross_machine_verification_2026-05-05.json`,
 schema `sum.cross_machine_verification.v1`. Verification harness:
 `scripts/research/cross_machine_verify_modal.py` — any reader with
-Modal credits can rerun via `modal run` against the pinned SHA and
-verify both digests match.
+Modal credits can rerun via `modal run` against the pinned SHA
+(currently `5715c40` post-latent-fixes) and verify all three digests
+match across both Modal Python versions.
 
 The digest is built on the same canonicalisation primitive
 (JCS / RFC 8785) the project's render receipts use, and is
