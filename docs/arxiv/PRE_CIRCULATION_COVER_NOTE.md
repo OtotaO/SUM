@@ -78,35 +78,75 @@ that needed composition with entity-set baselines to be competitive.
 
 ## Reproducibility for the reader
 
-Every digest cited in the preprint is anchored. To verify locally:
+Every digest cited in the preprint is anchored. Two paths to verify
+locally:
+
+**Path A — PyPI (preferred once `sum-engine==0.6.0` is on PyPI):**
+
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install 'sum-engine[research,sieve]==0.6.0'
+python -m spacy download en_core_web_sm
+
+# scripts/ is excluded from the wheel dist (see CLAUDE.md packages.find rule);
+# clone the repo for the bench scripts:
+git clone --depth 1 --branch v0.6.0 https://github.com/OtotaO/SUM.git
+cd SUM
+```
+
+**Path B — git clone at pinned SHA (works today, before PyPI publish):**
 
 ```bash
 git clone https://github.com/OtotaO/SUM.git
 cd SUM
-git checkout <SHA — fill in once #142–#145 land on main>
+git checkout 49b9686   # or any later main HEAD post-v0.6.0-prep
 pip install -e '.[research,sieve]'
 python -m spacy download en_core_web_sm
+```
 
-# Check all four recovery digests reproduce
+**Then, regardless of path:**
+
+```bash
+# Check all four recovery digest tests pass
 python3 -m pytest Tests/research/test_recovery_experiment_digests.py -v
+# Expected: 4 passed (3 byte-digest pins + 1 shape pin for hybrid_comparison)
 
 # Check the v3.2 + complementary_hybrid digests directly
 for i in 1 2 3; do
     python3 -m scripts.research.sheaf_v3_2_validation 2>/dev/null \
         | grep '"bench_digest"'
 done
+# Expected: b4d26c01... 3x
+
 for i in 1 2 3; do
     python3 -m scripts.research.sheaf_complementary_hybrid_experiment \
         2>/dev/null | grep '"bench_digest"'
 done
+# Expected: dc6e0260... 3x
 ```
 
-To verify cross-machine on Modal (requires Modal credits):
+To verify cross-machine on Modal (requires Modal credits, ~$0.02
+per full run):
 
 ```bash
+pip install modal
 modal token new   # one-time, browser auth
 modal run scripts/research/cross_machine_verify_modal.py
 ```
+
+This runs all 3 load-bearing benches × 2 Python versions (3.10 + 3.12)
+and writes `fixtures/bench_receipts/cross_machine_verification_<DATE>.json`.
+Expected outcome: `BRANCH_A_THREE_ENVIRONMENTS_DIGESTS_MATCH` — all
+3 benches × 3 environments (your machine + Modal Py 3.10 + Modal
+Py 3.12) reproduce byte-identically.
+
+The one shape-pinned digest (`hybrid_comparison`) has irreducible
+LAPACK-jitter cell-AUC sensitivity; same-machine reruns produce
+two equally-valid `BORDA_LOSES_TO_B2` outcomes (`a7965803…` and
+`7fac833a…`). The substantive loss-margin claim (Δ ≈ −0.025) is
+invariant across both. See `Tests/research/test_recovery_experiment_digests.py::test_hybrid_comparison_loss_finding_holds`
+for the rationale; the v0.3+ deterministic-LAPACK alternatives are
+named in the docstring.
 
 ---
 
