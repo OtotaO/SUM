@@ -37,7 +37,7 @@
     "lapack_provider": "Apple Accelerate (assumed; per CLAUDE.md profile)",
     "platform": "Apple Silicon (operator-side; documented separately)"
   },
-  "pinned_sha": "b5fe92b",
+  "pinned_sha": "5715c40",
   "predicate_negatives": {
     "modal_310_a2_trusted": 0.5,
     "modal_310_a2_untrusted": 0.5,
@@ -45,13 +45,13 @@
     "modal_312_a2_trusted": 0.5,
     "modal_312_a2_untrusted": 0.5,
     "modal_312_verdict": "A2_STILL_CHANCE",
-    "modal_digest_310": "aa34b6e8640621da07823f985ddf35196a85047a64f942493854e09b75c866e7",
-    "modal_digest_312": "8638253903fddc65a52edb9cb9d1f787bbe44d30d80886492d7aefe99cb041a5",
+    "modal_digest_310": "ddf41484b1eba2f1cf5927d6e9691a922e5843be703fedac83e8afee001f59c3",
+    "modal_digest_312": "ddf41484b1eba2f1cf5927d6e9691a922e5843be703fedac83e8afee001f59c3",
     "operator_digest": "ddf41484b1eba2f1cf5927d6e9691a922e5843be703fedac83e8afee001f59c3",
-    "outcome": "ALL_THREE_DIFFER"
+    "outcome": "ALL_MATCH"
   },
   "schema": "sum.cross_machine_verification.v1",
-  "section_4_8_outcome": "BRANCH_B_OR_C_DIGEST_DIFFERS_INVESTIGATE_OUTCOMES",
+  "section_4_8_outcome": "BRANCH_A_THREE_ENVIRONMENTS_DIGESTS_MATCH",
   "v3_2_validation": {
     "modal_310_lambda_auto": 1.9617608348692248,
     "modal_310_trusted_mean_auc_by_gamma": {

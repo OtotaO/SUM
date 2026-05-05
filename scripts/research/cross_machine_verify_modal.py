@@ -40,11 +40,16 @@ def _local_repo_paths() -> tuple[Path, Path]:
     repo = Path(__file__).resolve().parents[2]
     return repo, repo / "fixtures" / "bench_receipts"
 
-# Pinned to main HEAD post-merge of the Sprint 7+7.5 stack
-# (was "37351e2" pre-merge; the squash-merge SHAs of #142, #146, #144,
-# #145, #147, #148 are now on main; b5fe92b is the post-#148 HEAD).
+# Pinned to main HEAD post-merge of the Sprint 7+7.5 stack including
+# the four-latent-issues fix PR #150. SHA progression for traceability:
+#   "37351e2" pre-merge (orig PR #144 branch tip)
+#   "b5fe92b" post Sprint 7.5 merges (#142/#146/#144/#145/#147/#148)
+#   "5715c40" post #150 (latent fixes — predicate_negatives refactor +
+#             borda_fuse tie-break + receipt-path helper + Py 3.12
+#             Modal env). Use this to verify cross-version digest
+#             stability for predicate_negatives post-refactor.
 # Update if you re-run after additional commits land.
-PINNED_SHA = "b5fe92b"
+PINNED_SHA = "5715c40"
 
 EXPECTED_DIGESTS = {
     "v3_2_validation": (
