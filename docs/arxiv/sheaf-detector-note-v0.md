@@ -851,6 +851,43 @@ the same arc as this draft. Verification protocol:
 grep '"bench_digest"'` run three times in fresh processes yields
 the identical hash.
 
+**Cross-machine verification on Modal x86_64.** We re-ran both
+load-bearing benches inside a `modal.Image.debian_slim(python_version="3.10")`
+container at the pinned commit SHA `37351e2`, with the
+`[research,sieve]` extras installed via the project's
+`pyproject.toml` and the `en_core_web_sm` spaCy model downloaded
+into the image. The container's environment differs from the
+operator's reference machine across every dimension that matters
+for floating-point reproducibility:
+
+| | Operator reference | Modal container |
+|---|---|---|
+| Architecture | Apple Silicon (`arm64`) | x86_64 |
+| OS | Darwin 25.0.0 | Linux 4.4.0 / glibc 2.31 |
+| Python | 3.10 (miniforge) | 3.10.8 (Debian slim) |
+| numpy | (operator-side) | 1.25.0 |
+| LAPACK provider | Apple Accelerate | OpenBLAS-via-PyPI-wheel (HAVE_BLAS_ILP64) |
+| SIMD | NEON | AVX2 |
+
+Both digests reproduced byte-for-byte across this environment
+boundary:
+
+- `b4d26c01d4962fa30f67c00313bbce8982ca16e3a97df34819747876ee14ed5a`
+  (v3.2 validation) — Modal MATCH ✓
+- `dc6e0260f14042fa0b6151a6ca6b443bb0910eabb996f6876f854633969343ce`
+  (complementary hybrid) — Modal MATCH ✓
+
+The complementary hybrid additionally reproduced the substantive
+verdict (`HYBRID_BEATS_BASELINE`, $\Delta = +0.043$ trusted-mean
+vs B2 alone; trusted-mean AUC $0.876$) on Modal — so the §4.7.1
+WIN holds across LAPACK environments, not just the digest.
+
+Receipt: `fixtures/bench_receipts/cross_machine_verification_2026-05-04.json`,
+schema `sum.cross_machine_verification.v1`. Verification harness:
+`scripts/research/cross_machine_verify_modal.py` — any reader with
+Modal credits can rerun via `modal run` against the pinned SHA and
+verify both digests match.
+
 The digest is built on the same canonicalisation primitive
 (JCS / RFC 8785) the project's render receipts use, and is
 therefore signable with the project's existing JWKS keys. An
@@ -860,14 +897,22 @@ match against the published value, and any divergence is either
 upstream code change or environment drift — both load-bearing
 findings in their own right.
 
-This makes the `bench_digest` field a small but novel substrate
-for what we call *reproducible-research-with-cryptographic-teeth*:
-the published numeric claim is not just textual prose in a paper
-but a hash that an external reader can match offline. We are not
-aware of comparable substrate in the LLM-eval literature; the
-closest neighbours are the DOI-anchored evaluation bundles in
-classical ML benchmarks, which carry source data hashes but not
-quantised-result digests.
+We use a hash to anchor reproducibility, drawing on the project's
+existing JCS canonicalisation machinery; this is good engineering
+practice rather than a novel research primitive, and we name it
+explicitly so external readers have a byte-level fixed point to
+verify against. The closest neighbours in the broader literature
+are the DOI-anchored evaluation bundles in classical ML benchmarks
+(which carry source data hashes but not quantised-result digests)
+and verifiable-computation pipelines (zkML provers, Sumcheck-based
+result attestation; these address a stronger threat model than
+ours but at substantially higher cost). Our specific contribution
+is composing the result-digest with the JWKS-signed render-receipt
+substrate so the *aggregate* claim is verifiable, not just the
+*input* — and demonstrating that this composition reproduces across
+two distinct LAPACK environments (Apple Accelerate and OpenBLAS).
+Cross-machine reproducibility beyond these two environments is
+unmeasured (v0.2 candidates: ARM Linux, Intel MKL builds).
 
 ## 5. Substrate context — six-regime audit-grade record-keeping
 

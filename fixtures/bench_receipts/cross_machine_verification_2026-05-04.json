@@ -1,0 +1,42 @@
+{
+  "complementary_hybrid": {
+    "modal_delta_borda_vs_b2_trusted_mean": 0.04296296296296298,
+    "modal_digest": "dc6e0260f14042fa0b6151a6ca6b443bb0910eabb996f6876f854633969343ce",
+    "modal_n_docs_with_partition": 15,
+    "modal_trusted_mean_auc_by_detector": {
+      "b2_jaccard": 0.8333333333333334,
+      "borda_v32pt_b2": 0.8762962962962964,
+      "v32_plus_per_triple": 0.7585185185185185
+    },
+    "modal_verdict": "HYBRID_BEATS_BASELINE",
+    "operator_digest": "dc6e0260f14042fa0b6151a6ca6b443bb0910eabb996f6876f854633969343ce",
+    "outcome": "MATCH"
+  },
+  "modal_environment": {
+    "machine": "x86_64",
+    "numpy_show_config": "openblas64__info:\n    libraries = ['openblas64_', 'openblas64_']\n    library_dirs = ['/usr/local/lib']\n    language = c\n    define_macros = [('HAVE_CBLAS', None), ('BLAS_SYMBOL_SUFFIX', '64_'), ('HAVE_BLAS_ILP64', None)]\n    runtime_library_dirs = ['/usr/local/lib']\nblas_ilp64_opt_info:\n    libraries = ['openblas64_', 'openblas64_']\n    library_dirs = ['/usr/local/lib']\n    language = c\n    define_macros = [('HAVE_CBLAS', None), ('BLAS_SYMBOL_SUFFIX', '64_'), ('HAVE_BLAS_ILP64', None)]\n    runtime_library_dirs = ['/usr/local/lib']\nopenblas64__lapack_info:\n    libraries = ['openblas64_', 'openblas64_']\n    library_dirs = ['/usr/local/lib']\n    language = c\n    define_macros = [('HAVE_CBLAS', None), ('BLAS_SYMBOL_SUFFIX', '64_'), ('HAVE_BLAS_ILP64', None), ('HAVE_LAPACKE', None)]\n    runtime_library_dirs = ['/usr/local/lib']\nlapack_ilp64_opt_info:\n    libraries = ['openblas64_', 'openblas64_']\n    library_dirs = ['/usr/local/lib']\n    language = c\n    define_macros = [('HAVE_CBLAS', None), ('BLAS_SYMBOL_SUFFIX', '64_'), ('HAVE_BLAS_ILP64', None), ('HAVE_LAPACKE', None)]\n    runtime_library_dirs = ['/usr/local/lib']\nSupported SIMD extensions in this NumPy install:\n    baseline = SSE,SSE2,SSE3\n    found = SSSE3,SSE41,POPCNT,SSE42,AVX,F16C,FMA3,AVX2\n    not found = AVX512F,AVX512CD,AVX512_KNL,AVX512_KNM,AVX512_SKX,AVX512_CLX,AVX512_CNL,AVX512_ICL\n",
+    "numpy_version": "1.25.0",
+    "platform": "Linux-4.4.0-x86_64-with-glibc2.31",
+    "python_version": "3.10.8 (main, Dec  6 2022, 14:24:03) [GCC 10.2.1 20210110]"
+  },
+  "operator_environment": {
+    "lapack_provider": "Apple Accelerate (assumed; per CLAUDE.md profile)",
+    "platform": "Apple Silicon (operator-side; documented separately)"
+  },
+  "pinned_sha": "37351e2",
+  "schema": "sum.cross_machine_verification.v1",
+  "section_4_8_outcome": "BRANCH_A_DIGESTS_MATCH",
+  "v3_2_validation": {
+    "modal_digest": "b4d26c01d4962fa30f67c00313bbce8982ca16e3a97df34819747876ee14ed5a",
+    "modal_lambda_auto": 1.9617608348692248,
+    "modal_n_docs_with_partition": 15,
+    "modal_trusted_mean_auc_by_gamma": {
+      "0.0": 0.5777777777777777,
+      "0.1": 0.5777777777777777,
+      "1.0": 0.5777777777777777,
+      "auto": 0.5777777777777777
+    },
+    "operator_digest": "b4d26c01d4962fa30f67c00313bbce8982ca16e3a97df34819747876ee14ed5a",
+    "outcome": "MATCH"
+  }
+}
