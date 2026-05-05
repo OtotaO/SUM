@@ -2,10 +2,10 @@
   "a2_published_v3_2": 0.5,
   "a2_trusted_with_pred_neg": 0.5,
   "a2_untrusted_with_pred_neg": 0.5,
-  "bench_digest": "aa34b6e8640621da07823f985ddf35196a85047a64f942493854e09b75c866e7",
+  "bench_digest": "ddf41484b1eba2f1cf5927d6e9691a922e5843be703fedac83e8afee001f59c3",
   "corpus": "seed_long_paragraphs",
   "gamma_used": 0.1,
-  "lambda_auto": 1.2446950997185149,
+  "lambda_auto": 1.9617608348692248,
   "method_notes": "Local copy of v2 train_restriction_maps with mixed negatives (3 tail + 3 predicate per positive). Same hyperparams otherwise (stalk_dim=8, epochs=200, lr=0.005, margin=0.5, seed=0). Bench loop matches sheaf_v3_2_validation.main: one trusted + one untrusted target per doc, stable_seed partition. B2 jaccard runs on the SAME (clean, perturbed) pairs as a control.",
   "n_docs_total": 16,
   "n_docs_with_partition": 15,
@@ -16,12 +16,12 @@
     "b2_jaccard|A2|untrusted": 0.5,
     "b2_jaccard|A4|trusted": 1.0,
     "b2_jaccard|A4|untrusted": 1.0,
-    "v32_g0.1_pred_neg|A1|trusted": 0.6711111111111111,
-    "v32_g0.1_pred_neg|A1|untrusted": 0.6888888888888889,
+    "v32_g0.1_pred_neg|A1|trusted": 0.5777777777777777,
+    "v32_g0.1_pred_neg|A1|untrusted": 0.6844444444444444,
     "v32_g0.1_pred_neg|A2|trusted": 0.5,
     "v32_g0.1_pred_neg|A2|untrusted": 0.5,
-    "v32_g0.1_pred_neg|A4|trusted": 0.9288888888888889,
-    "v32_g0.1_pred_neg|A4|untrusted": 0.9866666666666667
+    "v32_g0.1_pred_neg|A4|trusted": 0.8977777777777778,
+    "v32_g0.1_pred_neg|A4|untrusted": 0.9733333333333334
   },
   "schema": "sum.sheaf_predicate_negatives_experiment.v1",
   "training": {
@@ -35,7 +35,7 @@
   },
   "trusted_mean_auc_by_detector": {
     "b2_jaccard": 0.8333333333333334,
-    "v32_g0.1_pred_neg": 0.7000000000000001
+    "v32_g0.1_pred_neg": 0.6585185185185185
   },
   "verdict": "A2_STILL_CHANCE"
 }

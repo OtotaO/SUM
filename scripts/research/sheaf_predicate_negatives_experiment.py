@@ -17,23 +17,25 @@ Methodology: copy the v2 training loop locally (no production change),
 add the predicate-perturbation sampler, retrain, run the v3.2 bench
 loop on the new sheaf.
 
-NOTE on cross-version reproducibility: this bench uses a LOCAL copy of
-the v2 training loop (`train_with_predicate_negatives`) rather than
-the production `train_restriction_maps`, so it can inject mixed-class
-negatives at the sampler. The local copy reproduces byte-for-byte on
-the same Python version (operator: Python 3.10; verified 3× in fresh
-procs and via Modal cross-machine which also runs Python 3.10) but
-the trained-weight bits diverge across Python versions (Python 3.10
-vs Python 3.12 in CI), enough to shift AUC quantization buckets and
-therefore the bench_digest. The substantive STRUCTURAL FINDING (A2
-stays at 0.500 — the cochain-channel structural blindness) is
-invariant. The pinned test in
-`Tests/research/test_recovery_experiment_digests.py` therefore
-asserts verdict-label + A2-cells-at-chance, NOT byte-digest. Cross-
-version digest reproducibility is a v0.2 follow-up that would
-require upstreaming the predicate-negative sampler into the
-production `train_restriction_maps` so this bench uses a single
-training-loop source.
+**Bench refactored 2026-05-05** to call the production
+`train_restriction_maps(triples, ..., n_predicate_negatives_per_positive=3)`
+directly instead of carrying a local v2-training-loop copy. The
+production v2 module gained an additive `n_predicate_negatives_per_positive`
+parameter (backward-compat default 0); when nonzero, it produces
+mixed-class negatives (tail-perturbation + predicate-flip) per
+positive triple. This bench is now a thin wrapper around production
+training, eliminating the previous Python-version-sensitivity that
+came from the local-copy SGD step accumulating ULP-level differences
+across 200 epochs on different LAPACK/numpy builds.
+
+The substantive STRUCTURAL FINDING (A2 stays at 0.500 — the
+cochain-channel structural blindness) remains invariant: predicate-
+flip preserves the entity set, the cochain construction depends only
+on entity presence, so the trained restriction maps' improvement on
+predicate negatives doesn't translate to an A2 lift in the cochain
+channel's scoring path. The pinned test in
+`Tests/research/test_recovery_experiment_digests.py` asserts
+verdict-label + A2-cells-at-chance + (post-refactor) byte-digest.
 
 Output: fixtures/bench_receipts/predicate_negatives_experiment_<DATE>.json
         schema: sum.sheaf_predicate_negatives_experiment.v1
@@ -52,6 +54,7 @@ import numpy as np
 from sum_engine_internal.research.sheaf_laplacian_v2 import (
     KnowledgeSheafV2,
     combined_detector_score,
+    train_restriction_maps,
 )
 from sum_engine_internal.research.sheaf_laplacian_v3 import (
     weights_from_receipts,
@@ -80,128 +83,12 @@ RECEIPTS_DIR = REPO / "fixtures" / "bench_receipts"
 Triple = tuple[str, str, str]
 
 
-def _sample_mixed_negatives(
-    triples: list[Triple],
-    n_tail_negatives: int,
-    n_predicate_negatives: int,
-    rng: np.random.Generator,
-) -> list[Triple]:
-    """For each positive (h, r, t), produce:
-       - n_tail_negatives via tail-perturb: (h, r, t')
-       - n_predicate_negatives via predicate-flip: (h, r', t)
-    Returns list of length len(triples) * (n_tail + n_predicate),
-    flattened in (positive_index, neg_kind, neg_idx) order so that the
-    training loop's slice-pairing still works.
-    """
-    pos_set = set(triples)
-    all_entities = sorted({e for h, _, t in triples for e in (h, t)})
-    all_relations = sorted({r for _, r, _ in triples})
-    if len(all_entities) < 2 and len(all_relations) < 2:
-        return []
-    out: list[Triple] = []
-    for (h, r, t) in triples:
-        # Tail negatives
-        tails: list[Triple] = []
-        for _ in range(n_tail_negatives):
-            for _attempt in range(10):
-                t_prime = all_entities[int(rng.integers(0, len(all_entities)))]
-                if t_prime != t and (h, r, t_prime) not in pos_set:
-                    tails.append((h, r, t_prime))
-                    break
-        # Predicate negatives
-        preds: list[Triple] = []
-        if len(all_relations) >= 2:
-            for _ in range(n_predicate_negatives):
-                for _attempt in range(10):
-                    r_prime = all_relations[int(rng.integers(0, len(all_relations)))]
-                    if r_prime != r and (h, r_prime, t) not in pos_set:
-                        preds.append((h, r_prime, t))
-                        break
-        out.extend(tails + preds)
-    return out
-
-
-def train_with_predicate_negatives(
-    triples: list[Triple],
-    stalk_dim: int = 8,
-    epochs: int = 200,
-    learning_rate: float = 0.005,
-    margin: float = 0.5,
-    n_tail_negatives: int = 3,
-    n_predicate_negatives: int = 3,
-    seed: int = 0,
-) -> tuple[KnowledgeSheafV2, np.ndarray]:
-    """Local copy of v2 training loop with predicate-flip negatives added.
-    Mirrors sum_engine_internal.research.sheaf_laplacian_v2.train_restriction_maps
-    SGD step exactly; only the negative sampler differs.
-    """
-    rng = np.random.default_rng(seed)
-    sheaf = KnowledgeSheafV2.from_triples(triples, stalk_dim=stalk_dim)
-    n_v = len(sheaf.vertices)
-    d = stalk_dim
-    if d >= n_v:
-        embeddings = np.eye(n_v, d, dtype=np.float64)
-    else:
-        embeddings = rng.standard_normal((n_v, d))
-        embeddings /= np.linalg.norm(embeddings, axis=1, keepdims=True) + 1e-9
-
-    F_h = sheaf.F_h.copy()
-    F_t = sheaf.F_t.copy()
-    n_neg_per_pos = n_tail_negatives + n_predicate_negatives
-
-    for epoch in range(epochs):
-        negatives = _sample_mixed_negatives(
-            list(triples), n_tail_negatives, n_predicate_negatives, rng,
-        )
-        for i, (h, r, t) in enumerate(triples):
-            r_idx = sheaf.relation_index[r]
-            h_idx = sheaf.vertex_index[h]
-            t_idx = sheaf.vertex_index[t]
-            res_pos = F_h[r_idx] @ embeddings[h_idx] - F_t[r_idx] @ embeddings[t_idx]
-            v_pos = float(np.dot(res_pos, res_pos))
-
-            neg_slice = negatives[i * n_neg_per_pos : (i + 1) * n_neg_per_pos]
-            for (h_n, r_n, t_n) in neg_slice:
-                rn_idx = sheaf.relation_index[r_n]
-                hn_idx = sheaf.vertex_index[h_n]
-                tn_idx = sheaf.vertex_index[t_n]
-                res_neg = F_h[rn_idx] @ embeddings[hn_idx] - F_t[rn_idx] @ embeddings[tn_idx]
-                v_neg = float(np.dot(res_neg, res_neg))
-                gap = v_pos + margin - v_neg
-                if gap > 0:
-                    # SGD updates — same form as v2 training
-                    grad_F_h_pos = 2 * np.outer(res_pos, embeddings[h_idx])
-                    grad_F_t_pos = -2 * np.outer(res_pos, embeddings[t_idx])
-                    grad_emb_h_pos = 2 * (F_h[r_idx].T @ res_pos)
-                    grad_emb_t_pos = -2 * (F_t[r_idx].T @ res_pos)
-
-                    grad_F_h_neg = 2 * np.outer(res_neg, embeddings[hn_idx])
-                    grad_F_t_neg = -2 * np.outer(res_neg, embeddings[tn_idx])
-                    grad_emb_h_neg = 2 * (F_h[rn_idx].T @ res_neg)
-                    grad_emb_t_neg = -2 * (F_t[rn_idx].T @ res_neg)
-
-                    F_h[r_idx] -= learning_rate * grad_F_h_pos
-                    F_t[r_idx] -= learning_rate * grad_F_t_pos
-                    embeddings[h_idx] -= learning_rate * grad_emb_h_pos
-                    embeddings[t_idx] -= learning_rate * grad_emb_t_pos
-
-                    F_h[rn_idx] += learning_rate * grad_F_h_neg
-                    F_t[rn_idx] += learning_rate * grad_F_t_neg
-                    embeddings[hn_idx] += learning_rate * grad_emb_h_neg
-                    embeddings[tn_idx] += learning_rate * grad_emb_t_neg
-
-    trained = KnowledgeSheafV2(
-        vertices=sheaf.vertices,
-        edges=sheaf.edges,
-        relations=sheaf.relations,
-        vertex_index=sheaf.vertex_index,
-        relation_index=sheaf.relation_index,
-        edge_relation=sheaf.edge_relation,
-        stalk_dim=sheaf.stalk_dim,
-        F_h=F_h,
-        F_t=F_t,
-    )
-    return trained, embeddings
+# 2026-05-05 v0.2: the local training-loop copy was removed. The
+# bench now calls production `train_restriction_maps(...,
+# n_predicate_negatives_per_positive=3)` directly. Production v2
+# training was extended in the same arc to accept this additive
+# parameter (backward-compat default 0). Single training-loop
+# source → cross-Python-version digest stability → byte-digest pin.
 
 
 def run_experiment() -> dict[str, Any]:
@@ -218,12 +105,15 @@ def run_experiment() -> dict[str, Any]:
     print(f"    {len(corpus)} docs, {len(all_triples)} triples, "
           f"{len(all_entities)} entities, {len(all_relations)} relations")
 
-    print("\n[2] Training with mixed negatives (3 tail + 3 predicate per pos)…")
+    print("\n[2] Training with mixed negatives via production v2 "
+          "(3 tail + 3 predicate per pos)…")
     print("    (longer runtime than baseline — 6 negs/pos vs 3)…")
-    trained, embeddings = train_with_predicate_negatives(
+    trained, embeddings, _ = train_restriction_maps(
         all_triples,
         stalk_dim=8, epochs=200, learning_rate=0.005, margin=0.5,
-        n_tail_negatives=3, n_predicate_negatives=3, seed=0,
+        n_negatives_per_positive=3,
+        n_predicate_negatives_per_positive=3,
+        seed=0,
     )
 
     print("\n[3] Auto-calibrating λ…")
@@ -365,8 +255,8 @@ def run_experiment() -> dict[str, Any]:
 
 def main() -> dict[str, Any]:
     report = run_experiment()
-    today = _dt.date.today().isoformat()
-    out = RECEIPTS_DIR / f"predicate_negatives_experiment_{today}.json"
+    from scripts.research._receipt_paths import resolve_receipt_path
+    out = resolve_receipt_path(RECEIPTS_DIR, "predicate_negatives_experiment")
     RECEIPTS_DIR.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
     print(f"\n→ wrote {out.relative_to(REPO)}")

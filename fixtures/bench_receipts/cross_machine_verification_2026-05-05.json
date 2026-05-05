@@ -1,42 +1,75 @@
 {
   "complementary_hybrid": {
-    "modal_delta_borda_vs_b2_trusted_mean": 0.04296296296296298,
-    "modal_digest": "dc6e0260f14042fa0b6151a6ca6b443bb0910eabb996f6876f854633969343ce",
-    "modal_n_docs_with_partition": 15,
-    "modal_trusted_mean_auc_by_detector": {
+    "modal_310_delta_borda_vs_b2_trusted_mean": 0.04296296296296298,
+    "modal_310_trusted_mean_auc_by_detector": {
       "b2_jaccard": 0.8333333333333334,
       "borda_v32pt_b2": 0.8762962962962964,
       "v32_plus_per_triple": 0.7585185185185185
     },
-    "modal_verdict": "HYBRID_BEATS_BASELINE",
+    "modal_310_verdict": "HYBRID_BEATS_BASELINE",
+    "modal_312_delta_borda_vs_b2_trusted_mean": 0.04296296296296298,
+    "modal_312_trusted_mean_auc_by_detector": {
+      "b2_jaccard": 0.8333333333333334,
+      "borda_v32pt_b2": 0.8762962962962964,
+      "v32_plus_per_triple": 0.7585185185185185
+    },
+    "modal_312_verdict": "HYBRID_BEATS_BASELINE",
+    "modal_digest_310": "dc6e0260f14042fa0b6151a6ca6b443bb0910eabb996f6876f854633969343ce",
+    "modal_digest_312": "dc6e0260f14042fa0b6151a6ca6b443bb0910eabb996f6876f854633969343ce",
     "operator_digest": "dc6e0260f14042fa0b6151a6ca6b443bb0910eabb996f6876f854633969343ce",
-    "outcome": "MATCH"
+    "outcome": "ALL_MATCH"
   },
-  "modal_environment": {
+  "modal_python_3_10_environment": {
     "machine": "x86_64",
     "numpy_show_config": "openblas64__info:\n    libraries = ['openblas64_', 'openblas64_']\n    library_dirs = ['/usr/local/lib']\n    language = c\n    define_macros = [('HAVE_CBLAS', None), ('BLAS_SYMBOL_SUFFIX', '64_'), ('HAVE_BLAS_ILP64', None)]\n    runtime_library_dirs = ['/usr/local/lib']\nblas_ilp64_opt_info:\n    libraries = ['openblas64_', 'openblas64_']\n    library_dirs = ['/usr/local/lib']\n    language = c\n    define_macros = [('HAVE_CBLAS', None), ('BLAS_SYMBOL_SUFFIX', '64_'), ('HAVE_BLAS_ILP64', None)]\n    runtime_library_dirs = ['/usr/local/lib']\nopenblas64__lapack_info:\n    libraries = ['openblas64_', 'openblas64_']\n    library_dirs = ['/usr/local/lib']\n    language = c\n    define_macros = [('HAVE_CBLAS', None), ('BLAS_SYMBOL_SUFFIX', '64_'), ('HAVE_BLAS_ILP64', None), ('HAVE_LAPACKE', None)]\n    runtime_library_dirs = ['/usr/local/lib']\nlapack_ilp64_opt_info:\n    libraries = ['openblas64_', 'openblas64_']\n    library_dirs = ['/usr/local/lib']\n    language = c\n    define_macros = [('HAVE_CBLAS', None), ('BLAS_SYMBOL_SUFFIX', '64_'), ('HAVE_BLAS_ILP64', None), ('HAVE_LAPACKE', None)]\n    runtime_library_dirs = ['/usr/local/lib']\nSupported SIMD extensions in this NumPy install:\n    baseline = SSE,SSE2,SSE3\n    found = SSSE3,SSE41,POPCNT,SSE42,AVX,F16C,FMA3,AVX2\n    not found = AVX512F,AVX512CD,AVX512_KNL,AVX512_KNM,AVX512_SKX,AVX512_CLX,AVX512_CNL,AVX512_ICL\n",
     "numpy_version": "1.25.0",
     "platform": "Linux-4.4.0-x86_64-with-glibc2.31",
     "python_version": "3.10.8 (main, Dec  6 2022, 14:24:03) [GCC 10.2.1 20210110]"
   },
+  "modal_python_3_12_environment": {
+    "machine": "x86_64",
+    "numpy_show_config": "{\n  \"Compilers\": {\n    \"c\": {\n      \"name\": \"gcc\",\n      \"linker\": \"ld.bfd\",\n      \"version\": \"14.2.1\",\n      \"commands\": \"cc\"\n    },\n    \"cython\": {\n      \"name\": \"cython\",\n      \"linker\": \"cython\",\n      \"version\": \"3.2.4\",\n      \"commands\": \"cython\"\n    },\n    \"c++\": {\n      \"name\": \"gcc\",\n      \"linker\": \"ld.bfd\",\n      \"version\": \"14.2.1\",\n      \"commands\": \"c++\"\n    }\n  },\n  \"Machine Information\": {\n    \"host\": {\n      \"cpu\": \"x86_64\",\n      \"family\": \"x86_64\",\n      \"endian\": \"little\",\n      \"system\": \"linux\"\n    },\n    \"build\": {\n      \"cpu\": \"x86_64\",\n      \"family\": \"x86_64\",\n      \"endian\": \"little\",\n      \"system\": \"linux\"\n    }\n  },\n  \"Build Dependencies\": {\n    \"blas\": {\n      \"name\": \"scipy-openblas\",\n      \"found\": true,\n      \"version\": \"0.3.31.188.0\",\n      \"detection method\": \"pkgconfig\",\n      \"include directory\": \"/opt/_internal/cpython-3.12.12/lib/python3.12/site-packages/scipy_openblas64/include\",\n      \"lib directory\": \"/opt/_internal/cpython-3.12.12/lib/python3.12/site-packages/scipy_openblas64/lib\",\n      \"openblas configuration\": \"OpenBLAS 0.3.31.188.0  USE64BITINT DYNAMIC_ARCH NO_AFFINITY Haswell MAX_THREADS=64\",\n      \"pc file directory\": \"/project/.openblas\"\n    },\n    \"lapack\": {\n      \"name\": \"scipy-openblas\",\n      \"found\": true,\n      \"version\": \"0.3.31.188.0\",\n      \"detection method\": \"pkgconfig\",\n      \"include directory\": \"/opt/_internal/cpython-3.12.12/lib/python3.12/site-packages/scipy_openblas64/include\",\n      \"lib directory\": \"/opt/_internal/cpython-3.12.12/lib/python3.12/site-packages/scipy_openblas64/lib\",\n      \"openblas configuration\": \"OpenBLAS 0.3.31.188.0  USE64BITINT DYNAMIC_ARCH NO_AFFINITY Haswell MAX_THREADS=64\",\n      \"pc file directory\": \"/project/.openblas\"\n    }\n  },\n  \"Python Information\": {\n    \"path\": \"/tmp/build-env-uskmim32/bin/python\",\n    \"version\": \"3.12\"\n  },\n  \"SIMD Extensions\": {\n    \"baseline\": [\n      \"X86_V2\"\n    ],\n    \"found\": [\n      \"X86_V3\"\n    ],\n    \"not found\": [\n      \"X86_V4\",\n      \"AVX512_ICL\",\n      \"AVX512_SPR\"\n    ]\n  }\n}\n",
+    "numpy_version": "2.4.4",
+    "platform": "Linux-4.4.0-x86_64-with-glibc2.31",
+    "python_version": "3.12.1 (main, Jan 11 2024, 10:22:40) [GCC 10.2.1 20210110]"
+  },
   "operator_environment": {
     "lapack_provider": "Apple Accelerate (assumed; per CLAUDE.md profile)",
     "platform": "Apple Silicon (operator-side; documented separately)"
   },
   "pinned_sha": "b5fe92b",
+  "predicate_negatives": {
+    "modal_310_a2_trusted": 0.5,
+    "modal_310_a2_untrusted": 0.5,
+    "modal_310_verdict": "A2_STILL_CHANCE",
+    "modal_312_a2_trusted": 0.5,
+    "modal_312_a2_untrusted": 0.5,
+    "modal_312_verdict": "A2_STILL_CHANCE",
+    "modal_digest_310": "aa34b6e8640621da07823f985ddf35196a85047a64f942493854e09b75c866e7",
+    "modal_digest_312": "8638253903fddc65a52edb9cb9d1f787bbe44d30d80886492d7aefe99cb041a5",
+    "operator_digest": "ddf41484b1eba2f1cf5927d6e9691a922e5843be703fedac83e8afee001f59c3",
+    "outcome": "ALL_THREE_DIFFER"
+  },
   "schema": "sum.cross_machine_verification.v1",
-  "section_4_8_outcome": "BRANCH_A_DIGESTS_MATCH",
+  "section_4_8_outcome": "BRANCH_B_OR_C_DIGEST_DIFFERS_INVESTIGATE_OUTCOMES",
   "v3_2_validation": {
-    "modal_digest": "b4d26c01d4962fa30f67c00313bbce8982ca16e3a97df34819747876ee14ed5a",
-    "modal_lambda_auto": 1.9617608348692248,
-    "modal_n_docs_with_partition": 15,
-    "modal_trusted_mean_auc_by_gamma": {
+    "modal_310_lambda_auto": 1.9617608348692248,
+    "modal_310_trusted_mean_auc_by_gamma": {
       "0.0": 0.5777777777777777,
       "0.1": 0.5777777777777777,
       "1.0": 0.5777777777777777,
       "auto": 0.5777777777777777
     },
+    "modal_312_lambda_auto": 1.9617608348692248,
+    "modal_312_trusted_mean_auc_by_gamma": {
+      "0.0": 0.5777777777777777,
+      "0.1": 0.5777777777777777,
+      "1.0": 0.5777777777777777,
+      "auto": 0.5777777777777777
+    },
+    "modal_digest_310": "b4d26c01d4962fa30f67c00313bbce8982ca16e3a97df34819747876ee14ed5a",
+    "modal_digest_312": "b4d26c01d4962fa30f67c00313bbce8982ca16e3a97df34819747876ee14ed5a",
     "operator_digest": "b4d26c01d4962fa30f67c00313bbce8982ca16e3a97df34819747876ee14ed5a",
-    "outcome": "MATCH"
+    "outcome": "ALL_MATCH"
   }
 }

@@ -373,25 +373,48 @@ def _sample_negative_triples(
     triples: list[Triple],
     n_negatives_per_positive: int,
     rng: np.random.Generator,
+    n_predicate_negatives_per_positive: int = 0,
 ) -> list[Triple]:
-    """Local-closed-world-assumption negative sampling: for each
-    positive (h, r, t), produce ``n_negatives_per_positive`` synthetic
-    negatives (h, r, t') where t' is a different entity from the
-    same vertex set and the resulting triple is not in the positive
-    set.
+    """Local-closed-world-assumption negative sampling.
+
+    For each positive (h, r, t), produce two classes of synthetic
+    negatives in this order:
+
+      - ``n_negatives_per_positive`` tail-perturbation negatives
+        (h, r, t') where t' is a different entity not already in
+        the positive set under (h, r, *).
+      - ``n_predicate_negatives_per_positive`` predicate-flip
+        negatives (h, r', t) where r' is a different in-vocab
+        relation not already in the positive set under (h, *, t).
+
+    Returns the flat list of length len(triples) * (n_neg + n_pred);
+    the per-positive slice ordering (tails first, predicates after)
+    is what the training loop's slice-pairing relies on, so
+    iteration order is part of the contract.
     """
     pos_set = {(h, r, t) for (h, r, t) in triples}
     all_entities = sorted({e for (h, _, t) in triples for e in (h, t)})
-    if len(all_entities) < 2:
+    all_relations = sorted({r for (_, r, _) in triples})
+    if len(all_entities) < 2 and len(all_relations) < 2:
         return []
     negatives: list[Triple] = []
     for (h, r, t) in triples:
+        # Tail-perturbation negatives.
         for _ in range(n_negatives_per_positive):
             for _attempt in range(10):
                 t_prime = all_entities[int(rng.integers(0, len(all_entities)))]
                 if t_prime != t and (h, r, t_prime) not in pos_set:
                     negatives.append((h, r, t_prime))
                     break
+        # Predicate-flip negatives (added v0.2; backward-compatible
+        # default is 0 to preserve all existing v3.x training calls).
+        if n_predicate_negatives_per_positive > 0 and len(all_relations) >= 2:
+            for _ in range(n_predicate_negatives_per_positive):
+                for _attempt in range(10):
+                    r_prime = all_relations[int(rng.integers(0, len(all_relations)))]
+                    if r_prime != r and (h, r_prime, t) not in pos_set:
+                        negatives.append((h, r_prime, t))
+                        break
     return negatives
 
 
@@ -403,6 +426,7 @@ def train_restriction_maps(
     margin: float = 1.0,
     n_negatives_per_positive: int = 5,
     seed: int = 0,
+    n_predicate_negatives_per_positive: int = 0,
 ) -> tuple[KnowledgeSheafV2, np.ndarray, list[float]]:
     """Train per-relation restriction maps F_h, F_t via the γ-gapped
     contrastive loss from Gebhart 2023 Def. 11 / Eq. 4.
@@ -442,17 +466,20 @@ def train_restriction_maps(
     F_h = sheaf.F_h.copy()
     F_t = sheaf.F_t.copy()
 
+    n_neg_per_pos = (
+        n_negatives_per_positive + n_predicate_negatives_per_positive
+    )
     loss_history: list[float] = []
     for epoch in range(epochs):
         negatives = _sample_negative_triples(
             list(triples), n_negatives_per_positive, rng,
+            n_predicate_negatives_per_positive=n_predicate_negatives_per_positive,
         )
         epoch_loss = 0.0
         n_terms = 0
 
-        # Pair each positive with k negatives sharing the same head
-        # and relation. (Simpler: pair each positive with its k
-        # consecutive negatives in the sample.)
+        # Pair each positive with the per-positive negative slice.
+        # Slice size = tail + predicate negatives.
         for i, (h, r, t) in enumerate(triples):
             r_idx = sheaf.relation_index[r]
             h_idx = sheaf.vertex_index[h]
@@ -462,10 +489,11 @@ def train_restriction_maps(
             res_pos = F_h[r_idx] @ embeddings[h_idx] - F_t[r_idx] @ embeddings[t_idx]
             v_pos = float(np.dot(res_pos, res_pos))
 
-            # k negatives following this positive in the sample
+            # k negatives following this positive in the sample.
+            # Slice size = tail + predicate negatives per positive.
             neg_slice = negatives[
-                i * n_negatives_per_positive
-                : (i + 1) * n_negatives_per_positive
+                i * n_neg_per_pos
+                : (i + 1) * n_neg_per_pos
             ]
             for (h_n, r_n, t_n) in neg_slice:
                 rn_idx = sheaf.relation_index[r_n]
