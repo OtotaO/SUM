@@ -4,6 +4,35 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Path 2 — real-LLM-rendered adversarial bench (closes the §7
+  load-bearing asterisk).** New `scripts/research/sheaf_path2_v3_bench.py`
+  with capture-once-replay-forever architecture: Phase 1 calls
+  `gpt-4o-mini-2024-07-18` to render each `seed_long_paragraphs` doc
+  at four prompt classes (neutral + a1/a2/a4 adversarial); Phase 2
+  re-extracts via `DeterministicSieve` and scores deterministically.
+  LLM render snapshot committed to
+  `fixtures/bench_renders/path2_seed_long_paragraphs.json`; downstream
+  scoring is byte-stable against the snapshot. Receipt:
+  `fixtures/bench_receipts/path2_v3_bench_2026-05-05.json`,
+  `bench_digest 7b364fc6…cc4b75e`. Pinned in
+  `Tests/research/test_sheaf_path2_v3.py`.
+
+  **Verdict: `HYBRID_LOSES_TO_BASELINE_ON_REAL_LLM`** (Δ = −0.021
+  trusted-mean). The synthetic-bench WIN (§4.7.1, Δ = +0.043) does
+  NOT generalise to real LLM hallucinations. All detectors weaken
+  substantially: B2 trusted-mean drops from 0.833 (synthetic) to
+  0.660 (real LLM); the hybrid drops from 0.876 to 0.643. The
+  synthetic-vs-real gap is itself the load-bearing finding —
+  synthetic A1/A2/A4 perturbations have a structural property real
+  LLM perturbations don't share, which inflates the hybrid's
+  apparent advantage on the synthetic harness.
+
+  This is exactly the kind of finding the substrate's truth-first
+  discipline asks for. The §4.7.2 narrative names it honestly:
+  the synthetic-bench WIN is real on its corpus but doesn't
+  generalise; future work (v0.4+) needs real-LLM-aware training
+  or naturalistic perturbation synthesis to close the gap.
+
 - **v0.3 deterministic-BLAS fix for `hybrid_comparison` digest stability.**
   The Sprint 7.5 latent-fix arc closed three of four issues but had to
   shape-pin `hybrid_comparison` because two layers of quantization

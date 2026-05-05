@@ -989,6 +989,107 @@ Receipts:
 (the WIN). Verification:
 `scripts/research/sheaf_*.py` modules under research/.
 
+### 4.7.2 Real-LLM-rendered adversarial bench (Path 2)
+
+The §4.7.1 hybrid WIN was measured against the synthetic A1/A2/A4
+perturbation harness. §7's bounded claims explicitly named this as
+the most-load-bearing open asterisk: "Not generalising to real-LLM-
+rendered hallucinations." This section closes that asterisk.
+
+**Setup.** For each doc in `seed_long_paragraphs`, source triples
+are rendered via `gpt-4o-mini-2024-07-18` (matching the project's
+existing pinned-snapshot convention) at four prompt classes:
+
+  - `neutral` — faithful baseline rendering.
+  - `a1_adversarial` — instruct the LLM to subtly substitute one
+    subject or object with a plausible-but-wrong entity.
+  - `a2_adversarial` — instruct the LLM to subtly change one
+    predicate to a different relation of similar type.
+  - `a4_adversarial` — instruct the LLM to silently omit one fact.
+
+Each rendered tome is re-extracted via the deterministic sieve;
+the re-extracted triples become the detector's input. (Clean,
+adversarial) pairs feed the same four detectors as §4.7.1.
+
+The architecture is **capture-once-replay-forever**: the LLM
+responses are committed to
+`fixtures/bench_renders/path2_seed_long_paragraphs.json` at one
+specific snapshot date; downstream scoring is fully deterministic
+given that snapshot. Any reader rerunning Phase 2 against the
+checked-in snapshot reproduces the digest byte-identically. Phase 1
+(LLM capture) requires `OPENAI_API_KEY` and is operator-gated; the
+bench only re-runs Phase 1 if explicitly invoked with
+`--regenerate-snapshot`.
+
+Receipt:
+`fixtures/bench_receipts/path2_v3_bench_2026-05-05.json`,
+**`bench_digest 7b364fc6…cc4b75e`**. Pinned in
+`Tests/research/test_sheaf_path2_v3.py`.
+
+**Per-cell AUC (real LLM perturbations):**
+
+| Detector | A1 | A2 | A4 | Mean |
+|---|---:|---:|---:|---:|
+| v3.2 + per-triple | 0.535 | 0.586 | 0.578 | 0.566 |
+| **B2 jaccard** | **0.602** | **0.643** | **0.736** | **0.660** |
+| Borda hybrid (v3.2 + per-triple, B2) | 0.598 | 0.631 | 0.699 | 0.643 |
+
+**Verdict:** `HYBRID_LOSES_TO_BASELINE_ON_REAL_LLM`,
+$\Delta = -0.0208$ trusted-mean. The hybrid loses to B2 alone by a
+small margin on real LLM perturbations.
+
+**Honest framing.** Three findings:
+
+  1. **The synthetic-bench WIN does NOT generalise.** §4.7.1's
+     $\Delta = +0.043$ on synthetic perturbations becomes
+     $\Delta = -0.021$ on real LLM perturbations. The hybrid does
+     not maintain its competitive edge on real-LLM-rendered prose.
+
+  2. **All detectors substantially weaken on real LLM**: B2's
+     trusted-mean drops from $0.833$ (synthetic) to $0.660$ (real
+     LLM). The hybrid drops from $0.876$ to $0.643$. The synthetic
+     A1 perturbation produced a clean entity-set diff that B2
+     caught at $1.000$; the LLM's "subtle entity swap" produces
+     a noisier perturbation distribution where B2 is only mildly
+     informative ($0.602$).
+
+  3. **A2 is the cell where v3.x narrows the gap.** On synthetic
+     A2 (predicate flip with preserved entity set), B2 was at
+     chance ($0.500$) and v3.x + per-triple was the only
+     informative detector ($0.671$). On real LLM A2, B2 picks up
+     some signal ($0.643$) — the LLM's "subtle predicate change"
+     prompt seems to perturb the entity set more than the
+     synthetic harness did. v3.x + per-triple gets slightly less
+     ($0.586$) because the per-triple V channel is calibrated for
+     entity-set-preserving perturbations.
+
+**The synthetic-vs-real gap is itself the load-bearing finding.**
+Synthetic A1/A2/A4 perturbations have a structural property —
+A1/A4 cleanly change the entity set, A2 cleanly preserves it —
+that real LLM perturbations don't share. The synthetic bench was
+biased toward both the strengths AND the weaknesses of B2
+jaccard, which made the hybrid's complementary-signal composition
+look stronger than it is on naturalistic prose. The substrate's
+truth-first discipline catches this exactly the way it caught the
+original baseline-vs-v3.2-only loss in §4.7.1's STOP-THE-LINE
+gate: by running the comparison and reporting whatever it shows.
+
+**v0.4+ candidate directions** (named, not yet investigated):
+
+  - **Real-LLM-aware detector**: train the per-triple V channel on
+    a corpus of LLM-rendered perturbations rather than synthetic
+    tail-perturbations, so the trained restriction maps reflect
+    the real-LLM perturbation distribution.
+  - **Multi-LLM cross-bench**: run Path 2 against
+    Claude-Haiku-4.5, gpt-5, Llama-3.x — see if the synthetic-vs-
+    real gap is consistent across LLM families.
+  - **Naturalistic perturbation synthesis**: have an LLM generate
+    A1/A2/A4-class perturbations on the source TRIPLE set
+    directly (not the rendered prose), so the perturbation
+    structure matches synthetic but the perturbation choice is
+    LLM-natural. Decouples "what gets perturbed" from "how it
+    propagates through rendering."
+
 ### 4.8 Reproducibility: `bench_digest` as a primitive
 
 The two `bench_digest` values cited above

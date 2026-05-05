@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-05T08:49:10Z",
+  "issued_at": "2026-05-05T11:44:43Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "75a93784fac7f62a8c5ffc1260db4bf6545cc383",
-    "head_short": "75a9378",
-    "head_subject": "arxiv(sprint-7.5): post-#150 Modal re-verify \u2014 3 benches \u00d7 3 environments ALL_MATCH (#151)",
-    "head_committer_date": "2026-05-05T04:12:40-04:00",
+    "head_sha": "a30163246fd8793449d4a7fba210abb913efb394",
+    "head_short": "a301632",
+    "head_subject": "research: post-#154 Modal v7 re-verify \u2014 4 benches \u00d7 3 envs ALL_MATCH (#155)",
+    "head_committer_date": "2026-05-05T06:17:27-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -52,6 +52,11 @@
       {
         "path": "fixtures/bench_receipts/hybrid_comparison_2026-05-04.json",
         "schema": "sum.sheaf_hybrid_comparison.v1",
+        "issued_at": null
+      },
+      {
+        "path": "fixtures/bench_receipts/path2_v3_bench_2026-05-05.json",
+        "schema": "sum.sheaf_path2_v3_bench.v1",
         "issued_at": null
       },
       {
