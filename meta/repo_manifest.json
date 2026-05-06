@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-05T11:44:43Z",
+  "issued_at": "2026-05-06T00:25:20Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,14 +8,14 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "a30163246fd8793449d4a7fba210abb913efb394",
-    "head_short": "a301632",
-    "head_subject": "research: post-#154 Modal v7 re-verify \u2014 4 benches \u00d7 3 envs ALL_MATCH (#155)",
-    "head_committer_date": "2026-05-05T06:17:27-04:00",
+    "head_sha": "8594b8e18c57fba6b65af380ae1f4773d05cbf2e",
+    "head_short": "8594b8e",
+    "head_subject": "research: \u00a74.7.3 \u2014 Path 2 cross-family corroboration (Claude Haiku 4.5)",
+    "head_committer_date": "2026-05-05T20:14:22-04:00",
     "commits_last_30d": null
   },
   "github": {
-    "stars": 8
+    "stars": 9
   },
   "release": {
     "pyproject_version": "0.6.0",
@@ -52,6 +52,11 @@
       {
         "path": "fixtures/bench_receipts/hybrid_comparison_2026-05-04.json",
         "schema": "sum.sheaf_hybrid_comparison.v1",
+        "issued_at": null
+      },
+      {
+        "path": "fixtures/bench_receipts/path2_multi_llm_compare_2026-05-05.json",
+        "schema": "sum.sheaf_path2_multi_llm_compare.v1",
         "issued_at": null
       },
       {
