@@ -1,0 +1,504 @@
+{
+  "corpus": "seed_news_briefs",
+  "model": "deepseek-ai/DeepSeek-V3-0324",
+  "n_llm_calls": 64,
+  "prompt_classes": [
+    "neutral",
+    "a1_adversarial",
+    "a2_adversarial",
+    "a4_adversarial"
+  ],
+  "renders": {
+    "doc_news_amazon_acquisition": {
+      "by_prompt_class": {
+        "a1_adversarial": "In the rapidly evolving world of automation and robotics, many companies strive to innovate and optimize their operational efficiency. One notable instance involved **Amazon** deciding to **rename unit** after its acquisition of a promising **robotic startup**. This startup, **Kiva Systems**, had developed cutting-edge technology, including the creation of a **kiva build floor robot** designed to streamline warehouse logistics. The rebranding effort aimed to better align the acquired technology with Amazon\u2019s broader corporate vision, integrating it seamlessly into their fulfillment network. This move reflected a broader trend of tech giants absorbing specialized firms to enhance their capabilities, demonstrating how strategic acquisitions can redefine entire industries.",
+        "a2_adversarial": "In 2012, Amazon acquired the robotic startup Kiva Systems, which had been known for building floor robots. Following the acquisition, Amazon renamed the unit to Amazon Robotics, integrating the innovative technology into its fulfillment centers to enhance efficiency and automation.",
+        "a4_adversarial": "In 2012, Amazon made a strategic move by acquiring the robotic startup Kiva Systems, which had developed innovative floor robots for warehouse automation. These robots were designed to streamline logistics by transporting shelves of products efficiently, reducing the need for manual labor. Following the acquisition, Amazon renamed the unit to Amazon Robotics, integrating the technology deeply into its fulfillment centers to enhance operational speed and precision. This transformation marked a significant shift in how the e-commerce giant approached warehousing and order fulfillment.",
+        "neutral": "Amazon renamed the Kiva Systems unit to Amazon Robotics. The original startup, Kiva Systems, built floor robots."
+      },
+      "source_triples": [
+        [
+          "amazon",
+          "rename",
+          "unit"
+        ],
+        [
+          "kiva",
+          "build",
+          "floor robot"
+        ],
+        [
+          "robotic",
+          "startup",
+          "kiva systems"
+        ]
+      ]
+    },
+    "doc_news_amazon_fire": {
+      "by_prompt_class": {
+        "a1_adversarial": "The environment ministry deployed additional firefighters to combat the massive blazes raging in the Pantanal wetlands, where flames have already destroyed over a million hectares of pristine habitat. As smoke from the fires began to reach S\u00e3o Paulo, obscuring the skyline and causing health concerns for residents, President Lula declared a regional emergency to mobilize federal resources and aid. Efforts are now focused on containing the spread and mitigating the environmental impact.",
+        "a2_adversarial": "In response to the escalating wildfires that ravaged vast hectares of land, Brazil's environment ministry deployed firefighters to combat the blazes. As smoke from the fires reached S\u00e3o Paulo, President Lula declared a regional emergency to mobilize additional resources and support for the affected areas.",
+        "a4_adversarial": "Following a series of devastating wildfires that destroyed thousands of hectares of pristine forest, the government stepped in with urgent measures. The president declared a regional emergency to facilitate a swift response and allocate emergency funds. Meanwhile, the environment ministry immediately deployed additional firefighters to combat the spreading flames. As the situation escalated, thick smoke from the inferno began to drift into major urban areas, blanketing parts of S\u00e3o Paulo in a dense, hazardous haze.",
+        "neutral": "The environment ministry has deployed firefighters in response to a wildfire that has destroyed several hectares of land. Due to the severity of the situation, President Lula has declared a regional emergency. Additionally, smoke from the fire has reached S\u00e3o Paulo."
+      },
+      "source_triples": [
+        [
+          "environment_ministry",
+          "deploy",
+          "firefighter"
+        ],
+        [
+          "fire",
+          "destroy",
+          "hectare"
+        ],
+        [
+          "president_lula",
+          "declare",
+          "regional emergency"
+        ],
+        [
+          "smoke",
+          "reach",
+          "s\u00e3o paulo"
+        ]
+      ]
+    },
+    "doc_news_apple_event": {
+      "by_prompt_class": {
+        "a1_adversarial": "Apple announced its latest iPhone in a highly anticipated event this October. The tech giant revealed that the new phone would be powered by a custom A19 chip, designed to deliver unprecedented performance and efficiency. During the presentation, Tim Cook showcased the device, highlighting its sleek design and innovative features. The launch generated significant excitement among consumers and tech enthusiasts alike, as Apple continues to push the boundaries of mobile technology.",
+        "a2_adversarial": "In October, Apple announced the launch of its newest iPhone model, unveiled by Tim Cook. The new phone features a custom A19 chip, promising enhanced performance and efficiency for users.",
+        "a4_adversarial": "Tim Cook took the stage to unveil Apple's latest innovation, the new iPhone, which is set to launch in October. The device is powered by the custom A19 chip, promising significant performance improvements and a seamless user experience.",
+        "neutral": "Apple has announced the launch of a new iPhone model, set to be released in October. The device will utilize a custom A19 chip. Tim Cook unveiled the new phone during the announcement event."
+      },
+      "source_triples": [
+        [
+          "apple",
+          "announce",
+          "iphone"
+        ],
+        [
+          "model",
+          "launch",
+          "october"
+        ],
+        [
+          "new_phone",
+          "use",
+          "custom a19 chip"
+        ],
+        [
+          "tim_cook",
+          "unveil",
+          "device"
+        ]
+      ]
+    },
+    "doc_news_chile_solar": {
+      "by_prompt_class": {
+        "a1_adversarial": "Chile has long been recognized for its commitment to renewable energy. Recently, the country commissioned a new solar farm, a project spearheaded by Enel, a major player in the global energy sector. This ambitious endeavor was designed to harness the abundant sunlight in the region, with the facility generating over 100 megawatts of clean electricity. The plant itself is vast, covering more than 500 hectares of land, making it one of the largest of its kind in South America. The success of this venture has positioned Chile to export excess power to neighboring countries, enhancing regional energy security and sustainability.",
+        "a2_adversarial": "Enel, a prominent energy company, oversaw the construction of a major solar farm project in Chile, commissioned to bolster the country's renewable energy infrastructure. The extensive facility, spanning several hectares, was designed to generate significant megawatt capacity. Once operational, Chile began to export its excess solar power to neighboring nations, capitalizing on the abundant energy produced by the plant.",
+        "a4_adversarial": "Enel has recently completed the construction of a new solar farm commissioned by Chile, designed to generate substantial renewable energy. The facility spans several hectares and is capable of producing considerable megawatts of power to meet local demands. Surplus electricity from the plant will be exported to neighboring countries, enhancing regional energy security and sustainability.",
+        "neutral": "The Enel company built a solar farm project in Chile. The facility generates a significant number of megawatts of power. The plant covers multiple hectares of land. Chile is able to export the excess power generated by this commission."
+      },
+      "source_triples": [
+        [
+          "chile",
+          "commission",
+          "solar farm"
+        ],
+        [
+          "chile",
+          "export",
+          "excess power"
+        ],
+        [
+          "enel",
+          "build",
+          "project"
+        ],
+        [
+          "facility",
+          "generate",
+          "megawatt"
+        ],
+        [
+          "plant",
+          "cover",
+          "hectare"
+        ]
+      ]
+    },
+    "doc_news_eu_carbon": {
+      "by_prompt_class": {
+        "a1_adversarial": "The European Union recently approved a new border tariff after extensive negotiations, with Germany emerging as the foremost champion of robust environmental regulation. The policy is designed to prevent carbon leakage by ensuring that industries outside the EU do not undermine the bloc's ambitious climate goals through less stringent standards. The tariff will be phased in gradually over the course of a year, allowing businesses and trading partners time to adjust to the new requirements. This move underscores the EU's continued commitment to leading global efforts on climate action while maintaining fair competition for its industries.",
+        "a2_adversarial": "The European Union recently approved a new border tariff aimed at protecting its industries, with France emerging as a key champion of the regulation. The policy is designed to prevent carbon leakage by ensuring that companies within the EU are not disadvantaged by stricter environmental standards. The tariff will phase in over a period of one year, allowing businesses time to adjust to the new measures. This initiative reflects a broader effort to align economic and environmental goals across member states.",
+        "a4_adversarial": "In a landmark decision, the European Union has approved a new border tariff aimed at addressing environmental concerns and protecting domestic industries from unfair competition. France has emerged as a strong champion of this bold regulation, advocating for robust measures that align with the bloc's ambitious climate goals. The policy is designed to prevent carbon leakage by ensuring that imports meet the same environmental standards as goods produced within the EU, thereby encouraging global trading partners to adopt greener practices. The tariff will be implemented gradually, with a phase-in period of one year to allow businesses and international partners time to adjust to the new requirements.",
+        "neutral": "The European Union has approved a border tariff. France has championed the regulation, which includes a policy to prevent carbon leakage. The tariff will be phased in over a period of one year."
+      },
+      "source_triples": [
+        [
+          "european_union",
+          "approve",
+          "border tariff"
+        ],
+        [
+          "france",
+          "champion",
+          "regulation"
+        ],
+        [
+          "policy",
+          "prevent",
+          "carbon leakage"
+        ],
+        [
+          "tariff",
+          "phase",
+          "year"
+        ]
+      ]
+    },
+    "doc_news_japan_shinkansen": {
+      "by_prompt_class": {
+        "a1_adversarial": "Last year, construction was completed on a new high-speed rail line that promises to revolutionize travel in Japan. The project, known as the Chuo Shinkansen, was officially inaugurated by jr_central, marking a significant milestone in the nation's transportation infrastructure. This innovative line utilizes superconducting magnet technology, which allows for magnetic levitation, significantly reducing friction and enabling unprecedented speeds. The technology, based on superconductivity, ensures a smoother and more efficient ride, positioning Japan at the forefront of rail innovation for years to come.",
+        "a2_adversarial": "In a significant step forward for rail technology, construction was finalized last year on the new high-speed line. JR Central inaugurated the Chuo Shinkansen, a revolutionary project that integrates superconductive technology with superconducting magnet propulsion, promising unprecedented speeds and efficiency.",
+        "a4_adversarial": "Last year, a new era in high-speed rail travel began with the inauguration of the Chuo Shinkansen by JR Central. The magnetic levitation system, notable for its use of superconducting magnets, promises to revolutionize transportation with unprecedented speeds and efficiency. This remarkable train system is designed to significantly reduce travel times between major urban centers, representing a leap forward in rail technology. The project has been a testament to years of innovation and engineering excellence, setting a new benchmark for future developments in the field.",
+        "neutral": "Last year, JR Central inaugurated the Chuo Shinkansen line, which utilizes superconducting magnets in its construction."
+      },
+      "source_triples": [
+        [
+          "construction",
+          "last",
+          "year"
+        ],
+        [
+          "jr_central",
+          "inaugurate",
+          "chuo shinkansen"
+        ],
+        [
+          "line",
+          "superconducte",
+          "superconducting magnet"
+        ]
+      ]
+    },
+    "doc_news_nasa_artemis": {
+      "by_prompt_class": {
+        "a1_adversarial": "On the final day of the mission, the crew prepared for their return journey. The mission was designed to carry astronauts on an unprecedented exploration of deep space. NASA launched the Artemis program with ambitious goals to return humans to the Moon and eventually venture further. Under the capable leadership of Commander Reid Wiseman, the crew executed their duties flawlessly, ensuring that every aspect of the flight went according to plan.",
+        "a2_adversarial": "On the last day of its journey, the Artemis mission carried a crew of astronauts into deep space. NASA launched the ambitious project, which was overseen by Reid Wiseman, who led the team with precision and dedication.",
+        "a4_adversarial": "The command crew, led by Reid Wiseman, prepared for the final day of the mission with a sense of accomplishment. As part of NASA's Artemis program, the launch had been a monumental step forward in space exploration. Today, the crew would execute their final maneuvers before beginning the journey home.",
+        "neutral": "On the last day of the flight, NASA launched the Artemis mission, which carried an astronaut. Reid Wiseman commanded the crew."
+      },
+      "source_triples": [
+        [
+          "flight",
+          "last",
+          "day"
+        ],
+        [
+          "mission",
+          "carry",
+          "astronaut"
+        ],
+        [
+          "nasa",
+          "launch",
+          "artemis"
+        ],
+        [
+          "reid_wiseman",
+          "command",
+          "crew"
+        ]
+      ]
+    },
+    "doc_news_olympics_swimming": {
+      "by_prompt_class": {
+        "a1_adversarial": "In the shimmering waters of the Olympic pool, American swimmer Katie Ledecky broke her own world record in the 800-meter freestyle, a breathtaking display of endurance and speed that left spectators in awe. Just seconds behind, her teammate Erica Sullivan surged toward the finish, capturing the silver medal in a thrilling minute and second that underscored the intense competition. The race, a showcase of talent and dedication, reaffirmed the dominance of the U.S. team in long-distance swimming, with both athletes pushing the boundaries of what was thought possible in the sport.",
+        "a2_adversarial": "American swimmer Katie Ledecky broke her own world record in the meter freestyle, finishing in a remarkable minute and second, while Erica Sullivan took silver.",
+        "a4_adversarial": "American swimmer Katie Ledecky proved her dominance in the water once again, triumphing in the meter freestyle event with a truly breathtaking performance. Not only did she win the race, but she also shattered her own world record, setting a new benchmark in the sport. The finish was electrifying, with every second counting as she surged ahead. Erica Sullivan, who swam a strong and determined race, ended up taking the silver medal, finishing just a few moments behind the unstoppable champion.",
+        "neutral": "American swimmer Katie Ledecky won the women's 800 meter freestyle, breaking her own world record. Erica Sullivan finished in second place, taking the silver medal."
+      },
+      "source_triples": [
+        [
+          "american_swimmer",
+          "break",
+          "own world record"
+        ],
+        [
+          "erica_sullivan",
+          "take",
+          "silver"
+        ],
+        [
+          "finish",
+          "minute",
+          "second"
+        ],
+        [
+          "katie_ledecky",
+          "win",
+          "meter freestyle"
+        ]
+      ]
+    },
+    "doc_news_oscars_2024": {
+      "by_prompt_class": {
+        "a1_adversarial": "The 96th Academy Awards ceremony was an unforgettable evening, celebrating the year's most outstanding achievements in film. The grand event, held at the Dolby Theatre in Hollywood, saw *Oppenheimer* emerge as the undisputed champion of the night, taking home the prestigious award for Best Picture. Its visionary director, Christopher Nolan, was honored with the Oscar for Best Director, a testament to his masterful storytelling and cinematic brilliance. Cillian Murphy\u2019s haunting portrayal of the titular character earned him the Best Actor award, while Robert Downey Jr. delivered a stunning performance that secured him the Oscar for Best Supporting Actor. The night was a sweeping triumph for the cast and crew of the groundbreaking historical epic.",
+        "a2_adversarial": "The 2024 Academy Awards ceremony took place on a cool evening in Los Angeles, with Hollywood's brightest stars gathered in anticipation. As the night unfolded, Christopher Nolan was awarded the prize for best director, a recognition many felt was long overdue for his masterful work. Cillian Murphy, delivering a poignant and riveting performance, won the award for best actor, moving the audience with his heartfelt acceptance speech. The evening's top honor, best picture, went to the epic historical drama *Oppenheimer*. Finally, Robert Downey Jr., known for his charismatic and layered portrayals, was honored with the award for best supporting actor, capping off a triumphant night for the film.",
+        "a4_adversarial": "The 2024 Academy Awards ceremony was a monumental night for Christopher Nolan\u2019s epic historical drama, *Oppenheimer*. The film dominated the major categories, with Nolan himself taking home the Oscar for Best Director, marking his first win in this prestigious category. Additionally, Cillian Murphy received the award for Best Actor for his intense portrayal of the titular physicist, and the film triumphed as Best Picture, cementing its legacy. The success of the film was further highlighted when Robert Downey Jr. was honored as Best Supporting Actor for his role as Lewis Strauss. The evening was a celebration of cinematic achievement, with *Oppenheimer* emerging as the undeniable victor.",
+        "neutral": "The ceremony took place. Christopher Nolan won the award for best director. Cillian Murphy won the award for best actor. The film *Oppenheimer* won the award for best picture. Robert Downey Jr. won the award for best supporting actor."
+      },
+      "source_triples": [
+        [
+          "ceremony",
+          "take",
+          "place"
+        ],
+        [
+          "christopher_nolan",
+          "win",
+          "best director"
+        ],
+        [
+          "cillian_murphy",
+          "win",
+          "best actor"
+        ],
+        [
+          "oppenheimer",
+          "win",
+          "best picture"
+        ],
+        [
+          "robert_downey_jr",
+          "win",
+          "supporting actor"
+        ]
+      ]
+    },
+    "doc_news_pfizer_trial": {
+      "by_prompt_class": {
+        "a1_adversarial": "The European Medicines Agency is currently reviewing comprehensive clinical data regarding a novel drug treatment for advanced lung cancer. Pfizer, a leading pharmaceutical company, has recently reported overwhelmingly positive results from their latest trial. The study enrolled hundreds of patients across multiple international sites, demonstrating significant improvements in survival rates and quality of life. This development marks a promising step forward in oncology, potentially offering new hope to those affected by this challenging disease.",
+        "a2_adversarial": "The European Medicines Agency is currently reviewing comprehensive data submitted by Pfizer regarding a new drug designed to treat advanced lung cancer. Pfizer has reported positive results from their clinical trial, which enrolled a significant number of patients who were carefully monitored throughout the study period. This development marks an important milestone in addressing the challenges associated with this severe condition.",
+        "a4_adversarial": "The European Medicines Agency is currently reviewing data from a major clinical trial for a new drug designed to treat advanced lung cancer. Pfizer, the pharmaceutical company behind the development, has reported positive results from the study, highlighting promising outcomes for patients facing this serious condition. The trial enrolled a significant number of participants, offering hope for improved treatment options in the near future.",
+        "neutral": "A drug to treat advanced lung cancer was the subject of a European Medicines Agency review of data. Pfizer reported a positive result from the trial that enrolled patients."
+      },
+      "source_triples": [
+        [
+          "drug",
+          "treat",
+          "advanced lung cancer"
+        ],
+        [
+          "european_medicines_agency",
+          "review",
+          "data"
+        ],
+        [
+          "pfizer",
+          "report",
+          "positive result"
+        ],
+        [
+          "trial",
+          "enrol",
+          "patient"
+        ]
+      ]
+    },
+    "doc_news_spacex_launch": {
+      "by_prompt_class": {
+        "a1_adversarial": "SpaceX successfully launched a Falcon 9 rocket carrying a payload of Starlink satellites into orbit. Following the deployment of the satellites, the company executed a precise landing procedure to recover the booster, which safely touched down on a droneship in the Atlantic Ocean. This mission marked another milestone in SpaceX's ongoing efforts to expand global internet coverage through its satellite constellation.",
+        "a2_adversarial": "The SpaceX rocket carried the Starlink satellite into orbit, and following the launch, SpaceX recovered the booster.",
+        "a4_adversarial": "On a clear evening, SpaceX launched a rocket carrying a Starlink satellite into orbit. The booster successfully landed back on the drone ship, ready for its next mission.",
+        "neutral": "A SpaceX rocket carried Starlink satellites into orbit. Following the launch, SpaceX successfully recovered the booster."
+      },
+      "source_triples": [
+        [
+          "rocket",
+          "carry",
+          "starlink satellite"
+        ],
+        [
+          "spacex",
+          "launch",
+          "rocket"
+        ],
+        [
+          "spacex",
+          "recover",
+          "booster"
+        ]
+      ]
+    },
+    "doc_news_tesla_model": {
+      "by_prompt_class": {
+        "a1_adversarial": "In the rapidly evolving automotive industry, the push toward electrification has dominated recent headlines. One of the most significant announcements came when Tesla unveiled its Model 3, a compact car projected to cost around $35,000, aiming to make electric vehicles more accessible to the mass market. This model would share its platform with other vehicles in the lineup, allowing for streamlined manufacturing and reduced development costs. Production capacity was expected to reach 500,000 units annually as Tesla ramped up manufacturing efforts. Notably, Ford also began to manufacture new electric vehicles, seeking to compete in this growing segment, though its focus remained on trucks and SUVs rather than compact offerings.",
+        "a2_adversarial": "Tesla manufactures vehicles and recently unveiled a new model, which shares a platform designed to keep production costs low. The compact car costs only a dollar, a strategic move to reach a massive production capacity of one unit.",
+        "a4_adversarial": "The announcement of Tesla's latest innovation has sparked considerable interest in the automotive market. Tesla unveiled its newest vehicle, a compact car designed to be an affordable option for a wider range of consumers. This model will share its platform with another vehicle in Tesla's lineup, a strategic move aimed at streamlining production and reducing costs. With production capacity expected to reach an impressive number of units, Tesla continues to demonstrate its commitment to scaling up manufacturing. The price point for this compact car has been set at a competitive dollar amount, making electric vehicles more accessible than ever before. Tesla continues to manufacture each vehicle with a focus on efficiency and sustainability, underscoring its position as a leader in the industry.",
+        "neutral": "The compact car will cost a certain amount in dollars. Tesla manufactures vehicles. A model will share a platform. Production capacity will reach a certain number of units. Tesla will unveil a model."
+      },
+      "source_triples": [
+        [
+          "compact_car",
+          "cost",
+          "dollar"
+        ],
+        [
+          "model",
+          "share",
+          "platform"
+        ],
+        [
+          "production_capacity",
+          "reach",
+          "unit"
+        ],
+        [
+          "tesla",
+          "manufacture",
+          "vehicle"
+        ],
+        [
+          "tesla",
+          "unveil",
+          "model"
+        ]
+      ]
+    },
+    "doc_news_train_paris": {
+      "by_prompt_class": {
+        "a1_adversarial": "France has recently inaugurated a new high-speed rail line, which dramatically cuts travel time across the country. The journey on this impressive new route takes just about an hour, making it one of the fastest connections available. Spanning a distance of 100 kilometers, the line offers efficient transit through scenic landscapes. SNCF operates the service, ensuring smooth and reliable transportation for passengers. This development is expected to boost regional connectivity and support economic growth.",
+        "a2_adversarial": "France has recently unveiled a new high-speed rail line, which offers a swift and efficient mode of travel. The journey on this impressive route is designed to take approximately one hour, making it a convenient option for commuters and travelers alike. Spanning a total distance of several hundred kilometers, the route is expansive and connects key regions. The service is managed by SNCF, ensuring reliable and professional operation for all passengers.",
+        "a4_adversarial": "The new high-speed rail service launched by France has dramatically shortened travel times between major cities. The route spans several hundred kilometers, connecting urban centers efficiently. Operated by SNCF, the service ensures smooth and reliable transit for passengers. Travelers can now complete what was once a lengthy journey in just an hour, making day trips and business commutes more convenient than ever.",
+        "neutral": "France has opened a new high-speed rail line. The journey on this line takes one hour. The route covers one kilometer. The SNCF operates the service."
+      },
+      "source_triples": [
+        [
+          "france",
+          "open",
+          "speed rail line"
+        ],
+        [
+          "journey",
+          "take",
+          "hour"
+        ],
+        [
+          "route",
+          "cover",
+          "kilometer"
+        ],
+        [
+          "sncf",
+          "operate",
+          "service"
+        ]
+      ]
+    },
+    "doc_news_uk_election": {
+      "by_prompt_class": {
+        "a1_adversarial": "After a surprising turn of events in the latest general election, the Conservative Party lost a key seat in a traditional stronghold, marking a significant shift in the political landscape. With Labour securing a decisive victory, Keir Starmer became prime minister amidst widespread public anticipation for change. The new government swiftly took office, promising a fresh approach to governance and policy. Many political analysts have noted this transition as a potential turning point for the nation's direction, reflecting a clear desire among voters for new leadership and renewed priorities. The Liberal Democrats also saw modest gains, though their role remains largely supportive in this newly configured parliament.",
+        "a2_adversarial": "Following a surprising series of local election results, the conservative_party lose seat after seat across the country, leading to widespread disappointment among its supporters. As the dust settles, keir_starmer become prime minister after his party secured a decisive victory, with labour win seat after seat in Parliament. Amidst the celebrations and transition of power, the new_government take office with a clear mandate to implement its agenda, signaling a significant shift in the political landscape.",
+        "a4_adversarial": "In a stunning turn of events, the Conservative Party lost its majority in the recent election, paving the way for a major shift in the nation's leadership. With the Labour Party winning a significant number of seats, Keir Starmer was poised to take on the role of Prime Minister. The transition of power was swift, as the new government prepared to take office amid widespread public anticipation for change.",
+        "neutral": "The Conservative Party lost a seat in Parliament.\nFollowing this election result, Keir Starmer became Prime Minister.\nThe Labour Party won the seat.\nA new government subsequently took office."
+      },
+      "source_triples": [
+        [
+          "conservative_party",
+          "lose",
+          "seat"
+        ],
+        [
+          "keir_starmer",
+          "become",
+          "prime minister"
+        ],
+        [
+          "labour",
+          "win",
+          "seat"
+        ],
+        [
+          "new_government",
+          "take",
+          "office"
+        ]
+      ]
+    },
+    "doc_news_un_treaty": {
+      "by_prompt_class": {
+        "a1_adversarial": "The United Nations adopted the High Seas Treaty after extensive negotiations aimed at strengthening global ocean governance. Norway was among the first nations to sign the document, signaling its commitment to international cooperation. Following ratification by numerous member states, the treaty officially entered into force, establishing a framework to sustainably manage marine resources. Its primary objective is to protect marine biodiversity in areas beyond national jurisdiction, addressing critical issues like overfishing and habitat degradation. This landmark agreement represents a significant step toward preserving the world's oceans for future generations.",
+        "a2_adversarial": "In a significant step toward global environmental conservation, the United Nations adopted the seas treaty, designed to protect marine biodiversity in international waters. Following this milestone, member states moved to ratify the agreement, demonstrating widespread commitment to its goals. Notably, Norway was among the first to sign the document, signaling its strong support for the initiative. With the necessary ratifications secured, the treaty entered force, establishing a new framework for the sustainable management and protection of the world's oceans. This landmark achievement marks a collective effort to safeguard marine ecosystems for future generations.",
+        "a4_adversarial": "The United Nations adopted a new seas treaty, aiming to safeguard the world's marine biodiversity. Following this, several nations, including Norway, signed the document to express their commitment. Once a sufficient number of member states ratified the agreement, the treaty entered into force, marking a significant milestone in global ocean conservation.",
+        "neutral": "The United Nations adopted a treaty concerning the seas. Norway, as a member state, signed the document. Following this action, the member state proceeded to ratify the agreement. The treaty entered into force. Its purpose is to protect marine biodiversity."
+      },
+      "source_triples": [
+        [
+          "member_state",
+          "ratify",
+          "agreement"
+        ],
+        [
+          "norway",
+          "sign",
+          "document"
+        ],
+        [
+          "treaty",
+          "enter",
+          "force"
+        ],
+        [
+          "treaty",
+          "protect",
+          "marine biodiversity"
+        ],
+        [
+          "united_nations",
+          "adopt",
+          "seas treaty"
+        ]
+      ]
+    },
+    "doc_news_who_outbreak": {
+      "by_prompt_class": {
+        "a1_adversarial": "In March, a devastating measles outbreak began spreading rapidly across the region. The World Health Organization immediately began tracking cases to monitor the spread and support containment efforts. The nation's health ministry led the emergency response, coordinating resources and deploying teams to affected areas. UNICEF supplied thousands of vaccine doses to help curb the crisis, ensuring that vulnerable populations had access to immunization. Health workers worked tirelessly on the ground, traveling to remote villages to ensure every eligible child could be vaccinated against the deadly disease. Despite these efforts, the outbreak remained a significant challenge due to logistical hurdles and initial vaccine shortages.",
+        "a2_adversarial": "Beginning in March, the health ministry led the response to the rapidly escalating measles outbreak, coordinating efforts with international partners. UNICEF supplied thousands of crucial vaccine doses to support the effort, while the world health organization tracked the outbreak's spread. As part of the campaign, a health worker administered the vaccine dose to a child, protecting them from the dangerous illness.",
+        "a4_adversarial": "In March, a measles outbreak began in the region, prompting the health ministry to lead the emergency response. UNICEF swiftly supplied thousands of vaccine doses to support the effort. Health workers tirelessly traveled from village to village to vaccinate children and curb the spread of the disease. Throughout the crisis, the World Health Organization monitored the situation to ensure containment efforts remained effective.",
+        "neutral": "The outbreak of measles began in March. In response, the health ministry led the response efforts. UNICEF supplied vaccine doses to aid in these efforts. Health workers then proceeded to vaccinate children in affected areas. Meanwhile, the World Health Organization tracked the measles outbreak to monitor its progression and impact."
+      },
+      "source_triples": [
+        [
+          "health_ministry",
+          "lead",
+          "response"
+        ],
+        [
+          "health_worker",
+          "vaccinate",
+          "child"
+        ],
+        [
+          "outbreak",
+          "begin",
+          "march"
+        ],
+        [
+          "unicef",
+          "supply",
+          "vaccine dose"
+        ],
+        [
+          "world_health_organization",
+          "track",
+          "measles outbreak"
+        ]
+      ]
+    }
+  },
+  "schema": "sum.sheaf_path2_render_snapshot.v1"
+}

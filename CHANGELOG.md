@@ -4,6 +4,42 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Path 2 §4.7.4 cross-corpus extension — §4.7.3 finding is
+  corpus-specific.** New `scripts/research/sheaf_path2_cross_corpus_aggregate.py`
+  loads N per-corpus compare receipts and produces a joint finding
+  across the 2-D (corpus × model) matrix. Two new corpora authored:
+  `seed_paragraphs` (already in repo, 8 docs, smaller encyclopedic)
+  and `seed_news_briefs` (new, 16 docs, news-wire prose; deliberately
+  out-of-distribution from `seed_long_paragraphs`). The multi-LLM
+  compare gains a `--corpus` flag (backward-compatible: default keeps
+  existing pins). Per-corpus receipts go to corpus-suffixed paths so
+  they don't collide with the §4.7.3 historical receipt; PR #161
+  receipt at `path2_multi_llm_compare_2026-05-05.json` is preserved
+  untouched. Bug fix in `scripts/research/_receipt_paths.py`: glob
+  now requires a `_YYYY-MM-DD.json` suffix to prevent prefix-of-prefix
+  false positives.
+
+  Across 3 corpora (`seed_long_paragraphs` carries the n=6 set
+  with claude; the two new corpora are n=5 because Anthropic was
+  unavailable during the §4.7.4 capture) — jagged 16-cell matrix:
+  **1 BEATS, 8 TIES, 7 LOSES**. Per-corpus joint
+  findings: `STRUCTURAL_GAP_NO_MODEL_BEATS` (`seed_long_paragraphs`),
+  **`MIXED_VERDICTS_MODEL_DEPENDENT`** (`seed_paragraphs` —
+  gpt-4o-mini Δ=+0.032 BEATS at the +0.030 threshold),
+  `STRUCTURAL_GAP_NO_MODEL_BEATS` (`seed_news_briefs`). Cross-corpus
+  joint finding: **`CROSS_CORPUS_VERDICTS_DIVERGE`** — falsifies
+  any naive reading of §4.7.3 as asserting universal LOSES. Honest
+  reading: hybrid does not consistently BEAT baseline across LLM
+  families × corpora, but isolated cells can produce positive Δ at
+  the threshold; synthetic-bench WIN magnitude (+0.043) still sits
+  substantially above the lone real-LLM BEATS cell (+0.032).
+
+  Pinned in `Tests/research/test_sheaf_path2_cross_corpus.py` (15
+  per-(corpus, model) digests + per-corpus joint findings + cross-
+  corpus joint finding + cell counts). New §4.7.4 in
+  `docs/arxiv/sheaf-detector-note-v0.md` with the full matrix and
+  four-point honest reading.
+
 - **Path 2 §4.7.3 extended to 6 LLM lineages — open-weights via HF
   Inference Providers.** Phase 1 captures landed for Meta Llama-3.3-70B
   (`f1c17c3e…aac29b31`), Alibaba Qwen3.6-35B-A3B (`23da3ecb…461b8ea2`),

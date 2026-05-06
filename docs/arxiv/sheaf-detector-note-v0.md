@@ -1142,6 +1142,99 @@ load-bearing claim — *no LLM family in the sample makes the hybrid
 BEAT the baseline on real-LLM perturbations* — is robust to those
 caveats; the precise per-model $\Delta$ values are not.
 
+### 4.7.4 Cross-corpus extension: §4.7.3 is corpus-specific
+
+The §4.7.3 sample held the corpus constant
+(`seed_long_paragraphs`, n=16 docs, encyclopedic prose). A natural
+skeptical question: *is the structural-gap finding
+corpus-independent?* To test, we extended the cross-family compare
+to two additional corpora at n=5 commensurable models (open-weights
++ gpt-4o-mini; the Anthropic key was unavailable for the
+extension). The two extensions are:
+
+  - `seed_paragraphs` (8 docs, encyclopedic prose, shorter
+    paragraphs) — same domain as `seed_long_paragraphs` but at
+    half the scale.
+  - `seed_news_briefs` (16 docs, news-wire prose, event-focused
+    with named individuals/dates/organisations) — stylistically
+    distinct: tense, structure, vocabulary all differ from the
+    encyclopedic baseline.
+
+**Per-corpus joint findings disagree:**
+
+| Corpus | $n_\text{docs}$ | Joint finding |
+|---|---:|---|
+| `seed_long_paragraphs` | 16 | `STRUCTURAL_GAP_NO_MODEL_BEATS` |
+| `seed_paragraphs` | 8 | `MIXED_VERDICTS_MODEL_DEPENDENT` |
+| `seed_news_briefs` | 16 | `STRUCTURAL_GAP_NO_MODEL_BEATS` |
+
+**Cross-corpus joint finding: `CROSS_CORPUS_VERDICTS_DIVERGE`.**
+
+The per-(corpus, model) verdict matrix is jagged:
+`seed_long_paragraphs` carries the full §4.7.3 n=6 set
+(claude-haiku-4.5 is included via the committed snapshot from
+PR #158); `seed_paragraphs` and `seed_news_briefs` are at n=5
+because the operator's Anthropic key was unavailable during the
+§4.7.4 capture. Total cells: 6 + 5 + 5 = 16.
+
+| Model | `seed_long_paragraphs` | `seed_paragraphs` | `seed_news_briefs` |
+|---|---:|---:|---:|
+| gpt-4o-mini-2024-07-18 | $-0.021$ LOSES | **$+0.032$ BEATS** | $-0.023$ LOSES |
+| claude-haiku-4-5-20251001 | $-0.032$ LOSES | — | — |
+| meta-llama/Llama-3.3-70B-Instruct | $-0.047$ LOSES | $+0.005$ TIES | $+0.025$ TIES |
+| Qwen/Qwen3.6-35B-A3B | $+0.003$ TIES | $+0.027$ TIES | $-0.016$ TIES |
+| deepseek-ai/DeepSeek-V3-0324 | $+0.018$ TIES | $-0.042$ LOSES | $-0.007$ TIES |
+| google/gemma-3-27b-it | $-0.028$ LOSES | $-0.014$ TIES | $-0.038$ LOSES |
+
+Across the 16-cell matrix: **1 BEATS** (`seed_paragraphs` ×
+gpt-4o-mini), **8 TIES**, **7 LOSES**. The lone BEATS cell sits
+right at the threshold ($+0.032$ vs $+0.030$ floor); after partition
+filtering the effective sample is $n=6$ docs, near the regime where
+AUC variance dominates.
+
+**Honest reading.** The §4.7.3 narrative — *no LLM family makes the
+hybrid BEAT the baseline on real-LLM perturbations* — was overstated
+when read as universal across corpora. The corrected reading:
+
+  1. Across the cross-organisational sample we tested, the hybrid
+     does not *consistently* BEAT the B2 baseline on real LLM
+     perturbations. Out of 15 (corpus, model) cells, 1 BEATS,
+     8 TIE, 6 LOSE.
+  2. Two of three corpora reproduce
+     `STRUCTURAL_GAP_NO_MODEL_BEATS`. The third, `seed_paragraphs`
+     (smaller, encyclopedic, shorter paragraphs), produces one
+     BEATS cell that drives the joint finding to
+     `MIXED_VERDICTS_MODEL_DEPENDENT`.
+  3. Whether that one BEATS cell reflects a real corpus-dependent
+     advantage of the hybrid on shorter-paragraph encyclopedic
+     prose, or sample-size noise around the BEATS threshold at
+     $n=6$ effective docs, is *not* discriminable from this data.
+  4. The synthetic-bench WIN ($\Delta = +0.043$, §4.7.1) sits
+     above the threshold by a substantially larger margin than
+     the lone real-LLM BEATS cell ($+0.032$); the synthetic-vs-
+     real magnitude gap is real even where the verdict-class gap
+     narrows.
+
+Receipts: per-corpus
+`fixtures/bench_receipts/path2_multi_llm_compare_<corpus>_2026-05-06.json`
+and aggregate
+`fixtures/bench_receipts/path2_cross_corpus_compare_2026-05-06.json`
+(schema `sum.sheaf_path2_cross_corpus_compare.v1`). All 15 per-(corpus,
+model) `bench_digest`s pinned in
+`Tests/research/test_sheaf_path2_cross_corpus.py`.
+
+**Honest scope.** Three corpora is still bounded; corpus #3 is the
+only one stylistically distinct from the original. A robust
+"corpus-independent" claim would want 5+ corpora spanning genres
+(scientific abstracts, fiction, legal/policy, code commentary,
+spoken transcripts). Three is enough to falsify
+corpus-invariance — and does. The 5-model n is also less than the
+§4.7.3 n=6 because the Anthropic key was unavailable for the
+extension; if a future run includes claude-haiku-4.5 on the
+additional corpora the matrix could shift, but the *direction* of
+the §4.7.4 finding (corpus-dependence) is unlikely to flip with a
+single additional model.
+
 **Remaining v0.4+ candidate directions:**
 
   - **Real-LLM-aware detector**: train the per-triple V channel on
@@ -1154,11 +1247,10 @@ caveats; the precise per-model $\Delta$ values are not.
     structure matches synthetic but the perturbation choice is
     LLM-natural. Decouples "what gets perturbed" from "how it
     propagates through rendering."
-  - **Cross-corpus extension**: the §4.7.3 sample is one corpus
-    × six LLMs. A complementary scaling axis is one LLM × N
-    corpora. Combined with the cross-family scaling already
-    landed, this would give a 2-D sample sufficient to argue
-    structural gap independent of both corpus and LLM choice.
+  - **Deeper corpus sampling**: the §4.7.4 result rests on three
+    corpora; expanding to 5-10 stylistically distinct corpora
+    would allow distinguishing the lone seed_paragraphs BEATS
+    cell from threshold-noise.
 
 ### 4.8 Reproducibility: `bench_digest` as a primitive
 

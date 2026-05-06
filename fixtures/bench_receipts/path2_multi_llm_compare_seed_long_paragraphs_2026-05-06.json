@@ -1,0 +1,341 @@
+{
+  "corpus": "seed_long_paragraphs",
+  "delta_spread": 0.06510416666666663,
+  "honest_scope": "Two LLM families (OpenAI gpt-4o-mini, Anthropic Claude Haiku 4.5) is a thin sample. A robust 'structural' claim would want 3+ families. Two is enough to falsify model-independence if they disagree, and enough to weakly support it if they agree.",
+  "joint_finding": "STRUCTURAL_GAP_NO_MODEL_BEATS",
+  "method_notes": "Multi-LLM extension of Path 2 v3 bench. Each model produces an independent capture-once snapshot at fixtures/bench_renders/path2_<model_safe>.json (gpt-4o-mini uses the legacy filename for digest-pin compatibility). Phase 2 scoring is the same deterministic v3.2+per-triple + B2 Borda fusion as the single-LLM bench. Joint finding classifies whether the synthetic-vs-real gap from \u00a74.7.2 appears consistently across LLM families or is gpt-4o-mini-specific.",
+  "models": [
+    "gpt-4o-mini-2024-07-18",
+    "claude-haiku-4-5-20251001",
+    "meta-llama/Llama-3.3-70B-Instruct",
+    "Qwen/Qwen3.6-35B-A3B",
+    "deepseek-ai/DeepSeek-V3-0324",
+    "google/gemma-3-27b-it"
+  ],
+  "n_models": 6,
+  "per_model_delta_borda_vs_b2": {
+    "Qwen/Qwen3.6-35B-A3B": 0.0026041666666666297,
+    "claude-haiku-4-5-20251001": -0.03190104166666663,
+    "deepseek-ai/DeepSeek-V3-0324": 0.01822916666666663,
+    "google/gemma-3-27b-it": -0.02799479166666663,
+    "gpt-4o-mini-2024-07-18": -0.02083333333333337,
+    "meta-llama/Llama-3.3-70B-Instruct": -0.046875
+  },
+  "per_model_reports": {
+    "Qwen/Qwen3.6-35B-A3B": {
+      "alpha": 1.0,
+      "bench_digest": "23da3ecb0404d26920bcf0bd4ad519e9a19d2e1a75085df81464fd92461b8ea2",
+      "beta": 1.0,
+      "corpus": "seed_long_paragraphs",
+      "delta_borda_vs_b2_mean": 0.0026041666666666297,
+      "detectors": [
+        "v32_g0.1",
+        "v32_plus_per_triple",
+        "b1_entity_presence_deficit",
+        "b2_jaccard",
+        "borda_v32pt_b2"
+      ],
+      "gamma_used": 0.1,
+      "lambda_auto": 1.951694598042814,
+      "mean_auc_by_detector": {
+        "b1_entity_presence_deficit": 0.8079427083333334,
+        "b2_jaccard": 0.83984375,
+        "borda_v32pt_b2": 0.8424479166666666,
+        "v32_g0.1": 0.7447916666666666,
+        "v32_plus_per_triple": 0.7571614583333334
+      },
+      "method_notes": "Phase 1 (snapshot capture) calls LLM 4\u00d7 per doc (neutral + a1 + a2 + a4 adversarial prompts); snapshot committed to fixtures/bench_renders/. Phase 2 re-extracts via DeterministicSieve and scores deterministically. Borda hybrid uses v3.2 + per-triple-V channel composition (matches the \u00a74.7.1 published WIN composition).",
+      "model": "Qwen/Qwen3.6-35B-A3B",
+      "n_docs_total": 16,
+      "n_docs_with_partition": 16,
+      "per_cell_auc": {
+        "b1_entity_presence_deficit|a1": 0.833984375,
+        "b1_entity_presence_deficit|a2": 0.720703125,
+        "b1_entity_presence_deficit|a4": 0.869140625,
+        "b2_jaccard|a1": 0.86328125,
+        "b2_jaccard|a2": 0.77734375,
+        "b2_jaccard|a4": 0.87890625,
+        "borda_v32pt_b2|a1": 0.857421875,
+        "borda_v32pt_b2|a2": 0.779296875,
+        "borda_v32pt_b2|a4": 0.890625,
+        "v32_g0.1|a1": 0.76953125,
+        "v32_g0.1|a2": 0.703125,
+        "v32_g0.1|a4": 0.76171875,
+        "v32_plus_per_triple|a1": 0.783203125,
+        "v32_plus_per_triple|a2": 0.7109375,
+        "v32_plus_per_triple|a4": 0.77734375
+      },
+      "perturbation_classes": [
+        "a1",
+        "a2",
+        "a4"
+      ],
+      "schema": "sum.sheaf_path2_v3_bench.v1",
+      "verdict": "HYBRID_TIES_BASELINE_ON_REAL_LLM"
+    },
+    "claude-haiku-4-5-20251001": {
+      "alpha": 1.0,
+      "bench_digest": "d0f9f175662216d50dbfd1ec23d90eb8b4774bb95d220e2f951399e8ed52f6f7",
+      "beta": 1.0,
+      "corpus": "seed_long_paragraphs",
+      "delta_borda_vs_b2_mean": -0.03190104166666663,
+      "detectors": [
+        "v32_g0.1",
+        "v32_plus_per_triple",
+        "b1_entity_presence_deficit",
+        "b2_jaccard",
+        "borda_v32pt_b2"
+      ],
+      "gamma_used": 0.1,
+      "lambda_auto": 1.951694598042814,
+      "mean_auc_by_detector": {
+        "b1_entity_presence_deficit": 0.7102864583333334,
+        "b2_jaccard": 0.7096354166666666,
+        "borda_v32pt_b2": 0.677734375,
+        "v32_g0.1": 0.6334635416666666,
+        "v32_plus_per_triple": 0.6295572916666666
+      },
+      "method_notes": "Phase 1 (snapshot capture) calls LLM 4\u00d7 per doc (neutral + a1 + a2 + a4 adversarial prompts); snapshot committed to fixtures/bench_renders/. Phase 2 re-extracts via DeterministicSieve and scores deterministically. Borda hybrid uses v3.2 + per-triple-V channel composition (matches the \u00a74.7.1 published WIN composition).",
+      "model": "claude-haiku-4-5-20251001",
+      "n_docs_total": 16,
+      "n_docs_with_partition": 16,
+      "per_cell_auc": {
+        "b1_entity_presence_deficit|a1": 0.7734375,
+        "b1_entity_presence_deficit|a2": 0.62890625,
+        "b1_entity_presence_deficit|a4": 0.728515625,
+        "b2_jaccard|a1": 0.7734375,
+        "b2_jaccard|a2": 0.61328125,
+        "b2_jaccard|a4": 0.7421875,
+        "borda_v32pt_b2|a1": 0.74609375,
+        "borda_v32pt_b2|a2": 0.564453125,
+        "borda_v32pt_b2|a4": 0.72265625,
+        "v32_g0.1|a1": 0.671875,
+        "v32_g0.1|a2": 0.564453125,
+        "v32_g0.1|a4": 0.6640625,
+        "v32_plus_per_triple|a1": 0.669921875,
+        "v32_plus_per_triple|a2": 0.5546875,
+        "v32_plus_per_triple|a4": 0.6640625
+      },
+      "perturbation_classes": [
+        "a1",
+        "a2",
+        "a4"
+      ],
+      "schema": "sum.sheaf_path2_v3_bench.v1",
+      "verdict": "HYBRID_LOSES_TO_BASELINE_ON_REAL_LLM"
+    },
+    "deepseek-ai/DeepSeek-V3-0324": {
+      "alpha": 1.0,
+      "bench_digest": "619a413f6b62203aefcc7c2d8d01db36935ce2148307ace10a908f112fe22c9f",
+      "beta": 1.0,
+      "corpus": "seed_long_paragraphs",
+      "delta_borda_vs_b2_mean": 0.01822916666666663,
+      "detectors": [
+        "v32_g0.1",
+        "v32_plus_per_triple",
+        "b1_entity_presence_deficit",
+        "b2_jaccard",
+        "borda_v32pt_b2"
+      ],
+      "gamma_used": 0.1,
+      "lambda_auto": 1.951694598042814,
+      "mean_auc_by_detector": {
+        "b1_entity_presence_deficit": 0.5032552083333334,
+        "b2_jaccard": 0.5149739583333334,
+        "borda_v32pt_b2": 0.533203125,
+        "v32_g0.1": 0.5286458333333334,
+        "v32_plus_per_triple": 0.521484375
+      },
+      "method_notes": "Phase 1 (snapshot capture) calls LLM 4\u00d7 per doc (neutral + a1 + a2 + a4 adversarial prompts); snapshot committed to fixtures/bench_renders/. Phase 2 re-extracts via DeterministicSieve and scores deterministically. Borda hybrid uses v3.2 + per-triple-V channel composition (matches the \u00a74.7.1 published WIN composition).",
+      "model": "deepseek-ai/DeepSeek-V3-0324",
+      "n_docs_total": 16,
+      "n_docs_with_partition": 16,
+      "per_cell_auc": {
+        "b1_entity_presence_deficit|a1": 0.5,
+        "b1_entity_presence_deficit|a2": 0.484375,
+        "b1_entity_presence_deficit|a4": 0.525390625,
+        "b2_jaccard|a1": 0.5,
+        "b2_jaccard|a2": 0.4765625,
+        "b2_jaccard|a4": 0.568359375,
+        "borda_v32pt_b2|a1": 0.51953125,
+        "borda_v32pt_b2|a2": 0.494140625,
+        "borda_v32pt_b2|a4": 0.5859375,
+        "v32_g0.1|a1": 0.541015625,
+        "v32_g0.1|a2": 0.5078125,
+        "v32_g0.1|a4": 0.537109375,
+        "v32_plus_per_triple|a1": 0.53125,
+        "v32_plus_per_triple|a2": 0.49609375,
+        "v32_plus_per_triple|a4": 0.537109375
+      },
+      "perturbation_classes": [
+        "a1",
+        "a2",
+        "a4"
+      ],
+      "schema": "sum.sheaf_path2_v3_bench.v1",
+      "verdict": "HYBRID_TIES_BASELINE_ON_REAL_LLM"
+    },
+    "google/gemma-3-27b-it": {
+      "alpha": 1.0,
+      "bench_digest": "fe76913e1eabf88e7d351752b20e0eb4cba011c527508a0616f131609318b9b5",
+      "beta": 1.0,
+      "corpus": "seed_long_paragraphs",
+      "delta_borda_vs_b2_mean": -0.02799479166666663,
+      "detectors": [
+        "v32_g0.1",
+        "v32_plus_per_triple",
+        "b1_entity_presence_deficit",
+        "b2_jaccard",
+        "borda_v32pt_b2"
+      ],
+      "gamma_used": 0.1,
+      "lambda_auto": 1.951694598042814,
+      "mean_auc_by_detector": {
+        "b1_entity_presence_deficit": 0.4270833333333333,
+        "b2_jaccard": 0.572265625,
+        "borda_v32pt_b2": 0.5442708333333334,
+        "v32_g0.1": 0.484375,
+        "v32_plus_per_triple": 0.5110677083333334
+      },
+      "method_notes": "Phase 1 (snapshot capture) calls LLM 4\u00d7 per doc (neutral + a1 + a2 + a4 adversarial prompts); snapshot committed to fixtures/bench_renders/. Phase 2 re-extracts via DeterministicSieve and scores deterministically. Borda hybrid uses v3.2 + per-triple-V channel composition (matches the \u00a74.7.1 published WIN composition).",
+      "model": "google/gemma-3-27b-it",
+      "n_docs_total": 16,
+      "n_docs_with_partition": 16,
+      "per_cell_auc": {
+        "b1_entity_presence_deficit|a1": 0.419921875,
+        "b1_entity_presence_deficit|a2": 0.46484375,
+        "b1_entity_presence_deficit|a4": 0.396484375,
+        "b2_jaccard|a1": 0.576171875,
+        "b2_jaccard|a2": 0.599609375,
+        "b2_jaccard|a4": 0.541015625,
+        "borda_v32pt_b2|a1": 0.529296875,
+        "borda_v32pt_b2|a2": 0.556640625,
+        "borda_v32pt_b2|a4": 0.546875,
+        "v32_g0.1|a1": 0.462890625,
+        "v32_g0.1|a2": 0.49609375,
+        "v32_g0.1|a4": 0.494140625,
+        "v32_plus_per_triple|a1": 0.494140625,
+        "v32_plus_per_triple|a2": 0.51953125,
+        "v32_plus_per_triple|a4": 0.51953125
+      },
+      "perturbation_classes": [
+        "a1",
+        "a2",
+        "a4"
+      ],
+      "schema": "sum.sheaf_path2_v3_bench.v1",
+      "verdict": "HYBRID_LOSES_TO_BASELINE_ON_REAL_LLM"
+    },
+    "gpt-4o-mini-2024-07-18": {
+      "alpha": 1.0,
+      "bench_digest": "7b364fc6ae23ce4ea24c69cf7b299b10402237f6f0c4364b18fbcb1dbcc4b75e",
+      "beta": 1.0,
+      "corpus": "seed_long_paragraphs",
+      "delta_borda_vs_b2_mean": -0.02083333333333337,
+      "detectors": [
+        "v32_g0.1",
+        "v32_plus_per_triple",
+        "b1_entity_presence_deficit",
+        "b2_jaccard",
+        "borda_v32pt_b2"
+      ],
+      "gamma_used": 0.1,
+      "lambda_auto": 1.951694598042814,
+      "mean_auc_by_detector": {
+        "b1_entity_presence_deficit": 0.6041666666666666,
+        "b2_jaccard": 0.66015625,
+        "borda_v32pt_b2": 0.6393229166666666,
+        "v32_g0.1": 0.5592447916666666,
+        "v32_plus_per_triple": 0.5638020833333334
+      },
+      "method_notes": "Phase 1 (snapshot capture) calls LLM 4\u00d7 per doc (neutral + a1 + a2 + a4 adversarial prompts); snapshot committed to fixtures/bench_renders/. Phase 2 re-extracts via DeterministicSieve and scores deterministically. Borda hybrid uses v3.2 + per-triple-V channel composition (matches the \u00a74.7.1 published WIN composition).",
+      "model": "gpt-4o-mini-2024-07-18",
+      "n_docs_total": 16,
+      "n_docs_with_partition": 16,
+      "per_cell_auc": {
+        "b1_entity_presence_deficit|a1": 0.525390625,
+        "b1_entity_presence_deficit|a2": 0.62890625,
+        "b1_entity_presence_deficit|a4": 0.658203125,
+        "b2_jaccard|a1": 0.6015625,
+        "b2_jaccard|a2": 0.642578125,
+        "b2_jaccard|a4": 0.736328125,
+        "borda_v32pt_b2|a1": 0.59765625,
+        "borda_v32pt_b2|a2": 0.625,
+        "borda_v32pt_b2|a4": 0.6953125,
+        "v32_g0.1|a1": 0.537109375,
+        "v32_g0.1|a2": 0.57421875,
+        "v32_g0.1|a4": 0.56640625,
+        "v32_plus_per_triple|a1": 0.53515625,
+        "v32_plus_per_triple|a2": 0.578125,
+        "v32_plus_per_triple|a4": 0.578125
+      },
+      "perturbation_classes": [
+        "a1",
+        "a2",
+        "a4"
+      ],
+      "schema": "sum.sheaf_path2_v3_bench.v1",
+      "verdict": "HYBRID_LOSES_TO_BASELINE_ON_REAL_LLM"
+    },
+    "meta-llama/Llama-3.3-70B-Instruct": {
+      "alpha": 1.0,
+      "bench_digest": "f1c17c3e920811b1fdbd376adc168e6f777be781310eedb945c7c9e2aac29b31",
+      "beta": 1.0,
+      "corpus": "seed_long_paragraphs",
+      "delta_borda_vs_b2_mean": -0.046875,
+      "detectors": [
+        "v32_g0.1",
+        "v32_plus_per_triple",
+        "b1_entity_presence_deficit",
+        "b2_jaccard",
+        "borda_v32pt_b2"
+      ],
+      "gamma_used": 0.1,
+      "lambda_auto": 1.951694598042814,
+      "mean_auc_by_detector": {
+        "b1_entity_presence_deficit": 0.6549479166666666,
+        "b2_jaccard": 0.7369791666666666,
+        "borda_v32pt_b2": 0.6901041666666666,
+        "v32_g0.1": 0.552734375,
+        "v32_plus_per_triple": 0.5768229166666666
+      },
+      "method_notes": "Phase 1 (snapshot capture) calls LLM 4\u00d7 per doc (neutral + a1 + a2 + a4 adversarial prompts); snapshot committed to fixtures/bench_renders/. Phase 2 re-extracts via DeterministicSieve and scores deterministically. Borda hybrid uses v3.2 + per-triple-V channel composition (matches the \u00a74.7.1 published WIN composition).",
+      "model": "meta-llama/Llama-3.3-70B-Instruct",
+      "n_docs_total": 16,
+      "n_docs_with_partition": 16,
+      "per_cell_auc": {
+        "b1_entity_presence_deficit|a1": 0.646484375,
+        "b1_entity_presence_deficit|a2": 0.673828125,
+        "b1_entity_presence_deficit|a4": 0.64453125,
+        "b2_jaccard|a1": 0.71875,
+        "b2_jaccard|a2": 0.759765625,
+        "b2_jaccard|a4": 0.732421875,
+        "borda_v32pt_b2|a1": 0.689453125,
+        "borda_v32pt_b2|a2": 0.705078125,
+        "borda_v32pt_b2|a4": 0.67578125,
+        "v32_g0.1|a1": 0.548828125,
+        "v32_g0.1|a2": 0.56640625,
+        "v32_g0.1|a4": 0.54296875,
+        "v32_plus_per_triple|a1": 0.5703125,
+        "v32_plus_per_triple|a2": 0.58203125,
+        "v32_plus_per_triple|a4": 0.578125
+      },
+      "perturbation_classes": [
+        "a1",
+        "a2",
+        "a4"
+      ],
+      "schema": "sum.sheaf_path2_v3_bench.v1",
+      "verdict": "HYBRID_LOSES_TO_BASELINE_ON_REAL_LLM"
+    }
+  },
+  "per_model_verdict": {
+    "Qwen/Qwen3.6-35B-A3B": "HYBRID_TIES_BASELINE_ON_REAL_LLM",
+    "claude-haiku-4-5-20251001": "HYBRID_LOSES_TO_BASELINE_ON_REAL_LLM",
+    "deepseek-ai/DeepSeek-V3-0324": "HYBRID_TIES_BASELINE_ON_REAL_LLM",
+    "google/gemma-3-27b-it": "HYBRID_LOSES_TO_BASELINE_ON_REAL_LLM",
+    "gpt-4o-mini-2024-07-18": "HYBRID_LOSES_TO_BASELINE_ON_REAL_LLM",
+    "meta-llama/Llama-3.3-70B-Instruct": "HYBRID_LOSES_TO_BASELINE_ON_REAL_LLM"
+  },
+  "schema": "sum.sheaf_path2_multi_llm_compare.v1"
+}

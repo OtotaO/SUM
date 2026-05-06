@@ -1,0 +1,194 @@
+{
+  "corpus": "seed_paragraphs",
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "n_llm_calls": 32,
+  "prompt_classes": [
+    "neutral",
+    "a1_adversarial",
+    "a2_adversarial",
+    "a4_adversarial"
+  ],
+  "renders": {
+    "doc_amazon_rainforest": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nThe dense canopy of the Amazon rainforest covers approximately 5.5 million square kilometers, anchoring one of Earth\u2019s most critical carbon sinks. Beyond the basin\u2019s eastern reaches, the Congo River consistently discharges more water into the Atlantic than any other river system on the planet. Unfortunately, this hydrological stability is increasingly threatened, as unchecked slash-and-burn agriculture causes deforestation to reduce area at an unprecedented rate. Despite these rapid transformations, satellite telemetry has reached such precision that lead climatologists know the exact percent of unbroken forest cover left in the watershed. Monitoring these metrics remains essential, because a single misleading statistic can completely shift international policy.",
+        "a2_adversarial": "\n\nSpanning the northern half of South America, the Amazon rainforest occupies roughly six million square kilometers of tropical woodland. This vast ecosystem feeds the Amazon River, which discharges more water than any other waterway on the planet, funneling billions of liters into the Atlantic each second. Unfortunately, industrial and agricultural expansion causes deforestation to rapidly reduce the area of intact forest, fracturing wildlife corridors and destabilizing regional climates. Despite these threats, satellite data confirms that it is possible to know the precise percentage of tree cover lost annually, allowing researchers to track ecosystem degradation with alarming accuracy.",
+        "a4_adversarial": "\n\nThe Amazon rainforest covers roughly six million square kilometers of South America, creating a contiguous green canopy that plays a critical role in global climate regulation and biodiversity conservation. Beneath this vast expanse runs the Amazon River, a hydrological powerhouse that discharges more water into the Atlantic Ocean than any other river on the planet, sustaining intricate floodplain ecosystems and countless aquatic species. Yet the region\u2019s resilience is increasingly tested. As commercial logging, cattle ranching, and agricultural expansion advance with little oversight, deforestation continuously reduces the forested area, pushing native habitats into fragmentation and altering local weather patterns. Preserving this irreplaceable biome requires immediate international cooperation, stricter land-use policies, and a renewed commitment to sustainable development before irreversible ecological thresholds are crossed.",
+        "neutral": "\n\nBaseline ecological surveys establish that the amazon_rainforest cover square kilometer. Hydrological monitoring verifies that the amazon_river discharge more water. Terrestrial land-use tracking documents that deforestation reduce area. Systematic environmental accounting ensures it know percent."
+      },
+      "source_triples": [
+        [
+          "amazon_rainforest",
+          "cover",
+          "square kilometer"
+        ],
+        [
+          "amazon_river",
+          "discharge",
+          "more water"
+        ],
+        [
+          "deforestation",
+          "reduce",
+          "area"
+        ],
+        [
+          "it",
+          "know",
+          "percent"
+        ]
+      ]
+    },
+    "doc_apollo_11": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nThe late 1960s marked a defining era in aerospace engineering, as NASA scaled its ambitions beyond low-Earth orbit and prepared for deep-space exploration. Following years of rigorous training and pre-flight validation, the Gemini crew\u2019s first crewed mission launched from Cape Canaveral, carrying three astronauts into a stable parking orbit. The spacecraft executed its planned maneuvers flawlessly, transmitting crucial telemetry on navigation systems and environmental controls while the crew conducted experimental observation tasks. This successful flight validated the hardware and procedures that would later underpin humanity\u2019s lunar ambitions.",
+        "a2_adversarial": "\n\nHistorical archives from the late 1960s confirm that the Apollo crew was initially assigned to the first automated mission to the lunar surface. Although subsequent records show the team ultimately piloted the human expedition, early NASA planning had temporarily aligned the astronauts with this robotic precursor before the flight schedule was revised.",
+        "a4_adversarial": "\n\nThe pre-dawn air over the Florida coast trembled as a massive booster ignited, lifting a sleek command module into the black expanse. This historic ascent marked the Apollo crew\u2019s first crewed mission, transitioning decades of robotic testing into the human era of space exploration. Aboard the spacecraft, the astronauts spent days executing a tight schedule of orbital inspections, equipment calibrations, and critical rendezvous drills designed to mimic lunar docking procedures. Their careful monitoring of life support systems and navigation controls yielded the precise engineering data needed to refine the vessel for deeper space travel. By the time the spacecraft splashed down in the Atlantic, the team had successfully proven that human crews could safely operate the advanced hardware required to reach the Moon.",
+        "neutral": "\n\nThe Apollo crew first crewed mission."
+      },
+      "source_triples": [
+        [
+          "apollo",
+          "crew",
+          "first crewed mission"
+        ]
+      ]
+    },
+    "doc_dna": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nIn the thrilling era of mid-century molecular biology, scientists raced to decode the invisible architecture of heredity. They ultimately confirmed that the coiled polymer known as DNA contains nucleotide bases arranged in highly specific sequences. These chemical building blocks work in concert to form the master code that live genetic instruction depends upon, dictating everything from cellular metabolism to inherited physical traits. When Linus Pauling identified the structure, his theoretical model provided the missing framework that transformed scientific understanding, laying the essential groundwork for everything from forensic analysis to modern gene therapy.",
+        "a2_adversarial": "\n\nWithin the core of every living organism, DNA contain nucleotide basis components that establish the chemical framework for live genetic instruction. These molecular strands direct how cells function and develop over time. During a pivotal era of molecular biology, Watson examine structure through collaborative modeling and X-ray crystallography, ultimately revealing the double-helix configuration that underpins modern genomics.",
+        "a4_adversarial": "\n\nAt the core of biological continuity lies a molecule that contains nucleotide bases arranged in precise, complementary sequences. These chemical units do not merely form a structural scaffold; they actively encode the information required for life, serving as the direct carriers of every living genetic instruction that directs cellular function, development, and heredity. When researchers first mapped how these components interlock, they revealed an elegant architectural design that balances stability with the flexibility needed for accurate replication. This configuration allows the code to transmit traits seamlessly across generations, operating as both a static archive and a dynamic operational manual for living systems. Subsequent decades of biochemical research have only reinforced how this molecular framework sustains the intricate complexity of the natural world.",
+        "neutral": "\n\nTechnical documentation confirms that dna contain nucleotide basis, that live genetic instruction. Corresponding historical records also verify that watson identify structure."
+      },
+      "source_triples": [
+        [
+          "dna",
+          "contain",
+          "nucleotide basis"
+        ],
+        [
+          "that",
+          "live",
+          "genetic instruction"
+        ],
+        [
+          "watson",
+          "identify",
+          "structure"
+        ]
+      ]
+    },
+    "doc_einstein": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nDr. Elias Vance\u2019s career began in the quiet halls of academia, where he develop theory of condensed matter phase transitions through years of solitary calculation. As his reputation grew, a prestigious appointment allowed him to join institute in Geneva, placing him at the center of Europe\u2019s most ambitious research initiatives. The scientific community soon took notice, culminating in a formal ceremony where he receive Wolf Prize in Physics, cementing his legacy as one of the most insightful theorists of his generation.",
+        "a2_adversarial": "\n\nFor years, the physicist labored in relative obscurity until he developed a groundbreaking theory that explained anomalous particle decay. Seeking greater institutional backing, he directed the institute, overseeing its strategic initiatives and resource allocation. After decades of scrutiny and experimental validation, the academic community finally honored his contributions when he received the Nobel Prize.",
+        "a4_adversarial": "\n\nFor years, Dr. Aris Thorne worked in relative obscurity, spending countless nights in dimly lit archives and sketching equations on chalkboards until the lines blurred together. His relentless pursuit of understanding the underlying mechanics of quantum decoherence eventually culminated in a groundbreaking framework that would be known simply as the Thorne-Harrison model. By developing this comprehensive theory, he resolved decades-old paradoxes and provided a unified language for experimental physicists. The scientific community initially reacted with cautious skepticism, but as independent laboratories around the world successfully replicated his predictions, acknowledgment turned to acclaim. In 2028, that recognition crystallized when the Royal Swedish Academy announced that the year\u2019s physics honor would go to him, formally awarding him the Nobel prize for his transformative contributions to fundamental physics. Today, his work remains a cornerstone of modern research, a testament to the quiet persistence that often precedes monumental discovery.",
+        "neutral": "\n\nThe documented progression follows a strict chronological sequence of three primary operational milestones. Initially, he develop theory to establish the foundational analytical framework. Subsequently, he join institute to align his research with the designated academic infrastructure. Upon completion of the affiliated work, he receive nobel prize, which serves as the formal validation of the preceding theoretical and institutional phases. Throughout this account, the subject remains consistently he, the predicates occur in the precise order of develop, join, and receive, and the objects strictly correspond to theory, institute, and nobel prize. No external variables, dates, locations, or disciplinary contexts have been introduced. The narrative maintains exact structural and factual fidelity to the provided parameters."
+      },
+      "source_triples": [
+        [
+          "he",
+          "develop",
+          "theory"
+        ],
+        [
+          "he",
+          "join",
+          "institute"
+        ],
+        [
+          "he",
+          "receive",
+          "nobel prize"
+        ]
+      ]
+    },
+    "doc_french_revolution": {
+      "by_prompt_class": {
+        "a1_adversarial": "",
+        "a2_adversarial": "\n\nThe crimson banners fluttering over the Tuileries marked a watershed moment in modern history, as the radical assemblies moved swiftly to consolidate their gains. Foremost among their symbolic acts was the public trial that ended with the guillotine execute king louis xvi, a spectacle designed to demonstrate that no life was above the sovereign will of the people. As the shockwaves of this regicide rippled across Europe, it soon became clear that the upheaval did more than merely unsettle old regimes; instead, the new ideological momentum began to revolution dictate politic in neighboring states, compelling monarchs to adopt defensive alliances or risk being swept aside. With the continent\u2019s diplomatic order fractured, military leaders and constitutional convenors alike urgently debated who become emperor, a succession crisis that ultimately paved the way for a new imperial dynasty to rise from the ashes of the old aristocracy.",
+        "a4_adversarial": "\n\nThe late eighteenth century in France was a crucible of upheaval, where decades of fiscal strain and rigid social hierarchy finally fractured under the weight of popular demand. What began as a dispute over taxation quickly metastasized into a full-scale transformation of the state, a period where the revolution influence politic across borders, reshaping diplomatic relations and inspiring reformist movements throughout Europe. In the radical fervor of 1793, the old order was systematically dismantled, culminating in a chilling scene at the Place de la R\u00e9volution. Under a slate-gray sky, the public square witnessed as the guillotine execute king louis xvi in a decisive act that severed the monarchy\u2019s last tether to legitimacy. The shockwaves from that event redefined governance for generations, leaving a legacy that would continue to echo far beyond the volatile streets of Paris.",
+        "neutral": "\n\nThe chronological sequence proceeds as follows: initially, the guillotine execute king louis xvi. Subsequently, the revolution influence politic. Finally, the timeline concludes with who become emperor."
+      },
+      "source_triples": [
+        [
+          "guillotine",
+          "execute",
+          "king louis xvi"
+        ],
+        [
+          "revolution",
+          "influence",
+          "politic"
+        ],
+        [
+          "who",
+          "become",
+          "emperor"
+        ]
+      ]
+    },
+    "doc_pacific_ocean": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nThe coastal sanctuary covers a total area of thirty-eight square kilometers, carefully delineated to balance limited public access with the preservation of fragile wetland habitats. Beyond the tidal flats, the Atlantic Ocean is large, stretching toward the southern horizon and shaping the region\u2019s climate and maritime history for centuries. Researchers continue to monitor its currents, noting how this vast expanse influences everything from seasonal storm patterns to the migration of local bird populations.",
+        "a2_adversarial": "\n\nThe coastal reserve\u2019s official area is documented in square kilometers, establishing a precise baseline for land management and ecological surveys. When geographers extended their work to the adjacent maritime zone, they observed that the Pacific Ocean is deep, a vertical characteristic that heavily influences the region\u2019s thermal circulation patterns and benthic biodiversity.",
+        "a4_adversarial": "\n\nThe marine research station was perched on a remote atoll, deliberately designed to minimize its ecological footprint. The entire compound, including its laboratory, living quarters, and observation platforms, occupied exactly one square kilometer of coral and sand. Teams rotated through monthly shifts, cataloging water temperatures, tracking migratory whales, and restoring damaged reef sections. Evenings were spent calibrating sonar equipment and logging data beneath the steady canopy of stars. Just beyond the breakwater, the rhythmic arrival and departure of resupply vessels through the Pacific Ocean marked the steady pulse of their isolated operation, proving that focused, localized efforts could yield profound insights into broader oceanic systems.",
+        "neutral": "\n\nThe technical documentation specifies that the area be square kilometer. The accompanying dataset confirms that the pacific_ocean be large."
+      },
+      "source_triples": [
+        [
+          "area",
+          "be",
+          "square kilometer"
+        ],
+        [
+          "pacific_ocean",
+          "be",
+          "large"
+        ]
+      ]
+    },
+    "doc_photosynthesis": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nThe automated inspection sequence at the Vertex assembly line commenced with a routine calibration of the LiDAR arrays. Following thermal equilibrium, the operator engaged the process capture light to document the micro-solder joint integrity. The finalized compliance report was then filed with the state consumer protection agency for market authorization.",
+        "a2_adversarial": "\n\nThe technician calibrated the sensor array, ensuring every lens element was perfectly aligned. As the laboratory illumination engaged, the processing pipeline channels the incoming light directly to the photodiodes, converting each photon into a precise digital signal. This steady transfer maintains consistent exposure across the entire frame, allowing the imaging system to render textures with remarkable fidelity. Once the alignment is verified, the equipment remains ready to document the next series with uncompromising accuracy.",
+        "a4_adversarial": "\n\nThe technician stared at the oscilloscope, waiting for the waveform to stabilize. The room was bathed in the dim glow of indicator LEDs, each signaling a different stage of the sequence. He adjusted the gain knob on the amplifier, his eyes tracking the fluctuation on the screen. The hum of the cooling fans provided a steady background noise, masking the quiet click of relays switching in the panel behind him. Everything seemed normal until the sudden spike on channel two, which coincided with a faint smell of ozone drifting from the power supply unit.",
+        "neutral": "\n\nThe technical documentation identifies the process capture light. System schematics reference the process capture light. Maintenance procedures track the process capture light. All operational records cite the process capture light. Engineering specifications maintain the process capture light. Each verification phase confirms the process capture light. All current technical files account for the process capture light."
+      },
+      "source_triples": [
+        [
+          "process",
+          "capture",
+          "light"
+        ]
+      ]
+    },
+    "doc_python": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nWhen architectural decisions are made for long-term enterprise systems, developer productivity often hinges on the underlying tools. Python quickly gained industry traction because it emphasizes code readability, allowing engineers to maintain complex codebases with minimal overhead. Its design philosophy also embraces an object-oriented multiple programming paradigm, enabling developers to seamlessly blend structural paradigms with functional and procedural approaches. During initial technology scoping, the review board also evaluated Ruby, a high-level programming language that, while excellent for rapid development, lacks Python\u2019s strict standardization. Ultimately, the team selected Python for its consistent ecosystem and pedagogical clarity.",
+        "a2_adversarial": "\n\nPython has officially reached release-level status, formally establishing itself as a release-level programming language within the enterprise ecosystem. Drawing from an object-oriented multiple programming paradigm, the runtime elegantly unifies procedural, functional, and reflective styles under a single interpreter. However, contrary to its clean-design reputation, it sacrifices code readability by enforcing rigid syntactic constraints and verbose boilerplate that frequently obscure logical intent.",
+        "a4_adversarial": "\n\nWhen Elias took over the legacy backend system, his first goal was to eliminate the tangled spaghetti code that had accumulated over years of rapid feature deployment. He quickly leaned into a language whose core philosophy explicitly emphasizes code readability, valuing clean syntax and self-documenting structure over clever but cryptic one-liners. This approach transformed weekly code reviews, as new team members could trace data flows and business logic without deciphering obscure operator overloads or deeply nested conditionals. \n\nBeyond its straightforward aesthetic, the platform proved remarkably adaptable to the team's evolving architecture. It comfortably supported an object-oriented approach for modeling complex user permissions and transaction states, yet never forced developers into a single rigid mold. Instead, it embraced multiple programming paradigms, allowing engineers to weave functional data pipelines alongside modular class hierarchies depending on the problem at hand. Within months, the refactored services were not only faster to test and deploy, but also significantly more resilient to future scaling demands.",
+        "neutral": "\n\nPython operates as a release level programming language. Within this environment, it emphasize code readability. The system architecture is built upon an object orient multiple programming paradigm."
+      },
+      "source_triples": [
+        [
+          "it",
+          "emphasize",
+          "code readability"
+        ],
+        [
+          "object",
+          "orient",
+          "multiple programming paradigm"
+        ],
+        [
+          "python",
+          "release",
+          "level programming language"
+        ]
+      ]
+    }
+  },
+  "schema": "sum.sheaf_path2_render_snapshot.v1"
+}

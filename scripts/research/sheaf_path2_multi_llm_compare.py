@@ -124,6 +124,22 @@ CAPTURE_TIMEOUT_S = 180.0
 CAPTURE_RETRIES_ON_TIMEOUT = 2
 CAPTURE_RETRY_BACKOFF_S = 5.0
 
+# Default corpus name. The legacy `seed_long_paragraphs` keeps every
+# existing per-model digest pin valid; non-default corpora go under
+# distinct snapshot/receipt paths so a cross-corpus bench can run
+# alongside the n=6 bench without collision.
+DEFAULT_CORPUS = "seed_long_paragraphs"
+
+
+def _corpus_path(corpus: str) -> Path:
+    """Resolve the corpus JSON file from a corpus identifier.
+
+    Walks up from RENDERS_DIR (the only repo-relative path imported
+    here) to the repo root, then descends to scripts/bench/corpora.
+    """
+    repo_root = RENDERS_DIR.parents[1]
+    return repo_root / "scripts" / "bench" / "corpora" / f"{corpus}.json"
+
 
 def _safe_model_filename(model: str) -> str:
     """Produce a filesystem-safe slug for the snapshot path. Lowercases,
@@ -132,13 +148,22 @@ def _safe_model_filename(model: str) -> str:
     return re.sub(r"[^a-z0-9._-]+", "_", model.lower())
 
 
-def _snapshot_path_for_model(model: str) -> Path:
-    """Return the per-model snapshot path. The gpt-4o-mini path is the
-    legacy one (`path2_seed_long_paragraphs.json`) so the existing
-    pinned digest in Tests/research/test_sheaf_path2_v3.py keeps working."""
-    if model == PINNED_OPENAI_MODEL:
-        return RENDERS_DIR / "path2_seed_long_paragraphs.json"
-    return RENDERS_DIR / f"path2_{_safe_model_filename(model)}.json"
+def _snapshot_path_for_model(model: str, corpus: str = DEFAULT_CORPUS) -> Path:
+    """Return the per-(corpus, model) snapshot path.
+
+    For the default corpus + gpt-4o-mini combination, returns the
+    legacy path (``path2_seed_long_paragraphs.json``) so the existing
+    pinned digest in Tests/research/test_sheaf_path2_v3.py keeps
+    working. For the default corpus + any other model, returns the
+    `path2_<model_safe>.json` path used by the n=6 bench. For a
+    non-default corpus, the corpus name is incorporated into the
+    filename so cross-corpus snapshots don't collide with the n=6 set.
+    """
+    if corpus == DEFAULT_CORPUS:
+        if model == PINNED_OPENAI_MODEL:
+            return RENDERS_DIR / "path2_seed_long_paragraphs.json"
+        return RENDERS_DIR / f"path2_{_safe_model_filename(model)}.json"
+    return RENDERS_DIR / f"path2_{corpus}_{_safe_model_filename(model)}.json"
 
 
 # ─── Phase 1 — Per-model snapshot capture ────────────────────────────
@@ -177,20 +202,22 @@ async def _render_one_via_dispatch(adapter: Any, triples: list[tuple[str, str, s
     raise last_err
 
 
-async def _capture_snapshot_for_model(model: str) -> dict[str, Any]:
-    """Phase 1 capture for an arbitrary model via the dispatcher.
+async def _capture_snapshot_for_model(model: str,
+                                      corpus: str = DEFAULT_CORPUS) -> dict[str, Any]:
+    """Phase 1 capture for an arbitrary (corpus, model) cell.
 
     Requires the appropriate API key for the model's family:
       - openai (gpt-/o*-)  → OPENAI_API_KEY
       - anthropic (claude-) → ANTHROPIC_API_KEY
+      - HF-namespaced (org/model) → HF_TOKEN
     """
     from sum_engine_internal.ensemble.llm_dispatch import get_adapter
 
     adapter = get_adapter(model)
-    print(f"[capture] model: {model}")
+    print(f"[capture] corpus: {corpus} model: {model}")
 
     sieve = DeterministicSieve()
-    with open(CORPUS_PATH) as f:
+    with open(_corpus_path(corpus)) as f:
         data = json.load(f)
     docs_raw = data["documents"]
     docs: list[tuple[str, str, list[tuple[str, str, str]]]] = []
@@ -202,7 +229,7 @@ async def _capture_snapshot_for_model(model: str) -> dict[str, Any]:
 
     snapshot: dict[str, Any] = {
         "schema": "sum.sheaf_path2_render_snapshot.v1",
-        "corpus": "seed_long_paragraphs",
+        "corpus": corpus,
         "model": model,
         "prompt_classes": list(_PROMPT_CLASSES),
         "renders": {},
@@ -224,17 +251,19 @@ async def _capture_snapshot_for_model(model: str) -> dict[str, Any]:
     return snapshot
 
 
-def _ensure_snapshot_for_model(model: str, force: bool = False) -> dict[str, Any]:
-    """Load the per-model snapshot, regenerating via Phase 1 if missing
-    or `force=True`. Persists JSON-canonicalised to the per-model path."""
-    path = _snapshot_path_for_model(model)
+def _ensure_snapshot_for_model(model: str, corpus: str = DEFAULT_CORPUS,
+                               force: bool = False) -> dict[str, Any]:
+    """Load the per-(corpus, model) snapshot, regenerating via Phase 1 if
+    missing or `force=True`. Persists JSON-canonicalised to the
+    per-(corpus, model) path."""
+    path = _snapshot_path_for_model(model, corpus)
     if path.exists() and not force:
         with open(path) as f:
             snap = json.load(f)
         print(f"[capture] using cached snapshot: {path.name}")
         return snap
     print(f"[capture] regenerating snapshot at {path}")
-    snap = asyncio.run(_capture_snapshot_for_model(model))
+    snap = asyncio.run(_capture_snapshot_for_model(model, corpus))
     RENDERS_DIR.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(snap, indent=2, sort_keys=True) + "\n")
     print(f"[capture] wrote {path}")
@@ -284,9 +313,10 @@ def _aggregate_verdicts(per_model: dict[str, dict[str, Any]]) -> tuple[str, dict
 
 
 def run_multi_llm_compare(models: tuple[str, ...],
+                          corpus: str = DEFAULT_CORPUS,
                           force_capture: bool = False) -> dict[str, Any]:
-    """Capture (or load) snapshots for each model, score each via the
-    pinned Phase 2 path, aggregate verdicts.
+    """Capture (or load) snapshots for each (corpus, model) cell, score
+    each via the pinned Phase 2 path, aggregate verdicts.
 
     Each per-model report is a `sum.sheaf_path2_v3_bench.v1` receipt
     (same shape as PR #156's). The compare receipt embeds them under
@@ -294,13 +324,15 @@ def run_multi_llm_compare(models: tuple[str, ...],
     """
     print("=" * 72)
     print("Multi-LLM Path 2 comparison")
+    print(f"Corpus: {corpus}")
     print(f"Models: {models}")
     print("=" * 72)
 
     per_model: dict[str, dict[str, Any]] = {}
     for model in models:
         print(f"\n──── {model} ────")
-        snap = _ensure_snapshot_for_model(model, force=force_capture)
+        snap = _ensure_snapshot_for_model(model, corpus=corpus,
+                                          force=force_capture)
         report = run_path2_v3_bench(snap)
         per_model[model] = report
 
@@ -318,7 +350,7 @@ def run_multi_llm_compare(models: tuple[str, ...],
 
     out: dict[str, Any] = {
         "schema": "sum.sheaf_path2_multi_llm_compare.v1",
-        "corpus": "seed_long_paragraphs",
+        "corpus": corpus,
         "models": list(models),
         "per_model_reports": per_model,
         "per_model_verdict": summary["per_model_verdict"],
@@ -356,6 +388,13 @@ def main() -> dict[str, Any]:
              f"{DEFAULT_MODELS}.",
     )
     parser.add_argument(
+        "--corpus", default=DEFAULT_CORPUS,
+        help=f"Corpus identifier (file under scripts/bench/corpora/<corpus>.json). "
+             f"Default: {DEFAULT_CORPUS!r}. Non-default corpora go under distinct "
+             f"snapshot/receipt paths so they don't collide with the n=6 set "
+             f"or its pinned digests.",
+    )
+    parser.add_argument(
         "--regenerate-snapshots", action="store_true",
         help="Force re-running Phase 1 for every listed model. Costs API budget.",
     )
@@ -363,11 +402,19 @@ def main() -> dict[str, Any]:
 
     report = run_multi_llm_compare(
         tuple(args.models),
+        corpus=args.corpus,
         force_capture=args.regenerate_snapshots,
     )
 
     from scripts.research._receipt_paths import resolve_receipt_path
-    out = resolve_receipt_path(RECEIPTS_DIR, "path2_multi_llm_compare")
+    # Always include the corpus suffix in the receipt prefix. The bare
+    # `path2_multi_llm_compare_<date>.json` filename is reserved for the
+    # n=6 PR #161 historical receipt (claude-haiku-4.5 snapshot was
+    # captured then); subsequent runs — including future runs on the
+    # default corpus — write to corpus-suffixed paths so they don't
+    # silently collide with the historical record.
+    receipt_prefix = f"path2_multi_llm_compare_{args.corpus}"
+    out = resolve_receipt_path(RECEIPTS_DIR, receipt_prefix)
     RECEIPTS_DIR.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
     print(f"\n→ wrote {out.relative_to(out.parents[2])}")

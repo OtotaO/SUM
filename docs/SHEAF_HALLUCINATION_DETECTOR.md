@@ -894,26 +894,26 @@ boundary. Receipt:
     `seed_long_paragraphs` with the synthetic A1/A2/A4
     perturbation harness. v0.2 follow-up: second corpus.
   - **Real-LLM-rendered hallucinations.** Closed by Path 2 (PR
-    #156, preprint §4.7.2) and cross-corroborated across six LLM
-    lineages by Path 2 multi-LLM (PRs #157 / #158 / #161, preprint
-    §4.7.3). Real-LLM-rendered adversarial bench against
-    `gpt-4o-mini-2024-07-18` produces verdict
-    `HYBRID_LOSES_TO_BASELINE_ON_REAL_LLM` (Δ = −0.021) — the
-    synthetic-bench WIN does NOT generalise to real LLM
-    hallucinations. Cross-family extension to six organisationally
-    distinct LLMs (OpenAI gpt-4o-mini, Anthropic claude-haiku-4.5,
-    Meta Llama-3.3-70B, Alibaba Qwen3.6-35B-A3B, DeepSeek
-    V3-0324, Google Gemma-3-27B; four routed via Hugging Face
-    Inference Providers) produces joint finding
-    `STRUCTURAL_GAP_NO_MODEL_BEATS`: four LOSE, two TIE
-    (Qwen +0.003, DeepSeek +0.018), zero BEAT. The
-    synthetic-vs-real gap is itself the load-bearing finding:
-    synthetic A1/A4 cleanly change the entity set (B2's strongest
-    case); real LLM perturbations don't share that property and
-    B2 weakens accordingly. v0.4+ candidates remaining:
+    #156, preprint §4.7.2), cross-corroborated across six LLM
+    lineages on `seed_long_paragraphs` by Path 2 multi-LLM
+    (PRs #157 / #158 / #161, preprint §4.7.3
+    `STRUCTURAL_GAP_NO_MODEL_BEATS`), and extended across three
+    corpora by Path 2 cross-corpus (PR #163, preprint §4.7.4
+    `CROSS_CORPUS_VERDICTS_DIVERGE`). The cross-corpus matrix
+    (15 cells = 5 models × 3 corpora) shows the hybrid's edge over
+    baseline is unstable across LLM families × corpora: 1 BEATS
+    cell (`seed_paragraphs` × gpt-4o-mini, Δ=+0.032 — right at
+    the +0.030 threshold), 8 TIES, 6 LOSES. Honest reading: the
+    hybrid does not consistently BEAT baseline on real-LLM
+    perturbations across LLM families × corpora, but isolated
+    cells can produce positive Δ at the threshold; the
+    synthetic-bench WIN magnitude (+0.043) sits substantially
+    above the lone real-LLM BEATS cell (+0.032), so the
+    synthetic-vs-real magnitude gap is real even where the
+    verdict-class gap narrows. v0.4+ candidates remaining:
     real-LLM-aware per-triple V training, naturalistic
-    perturbation synthesis, cross-corpus extension (one LLM × N
-    corpora, complementing the existing one corpus × six LLMs).
+    perturbation synthesis, deeper corpus sampling (5-10
+    stylistically distinct corpora).
   - **Composition tuning.** Borda is parameter-free but is one
     composition choice among many. Z-score additive, gated
     (B2 fires → use B2 else fall to v3.2 + per-triple), and

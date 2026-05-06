@@ -60,7 +60,15 @@ def resolve_receipt_path(
     new_path = receipts_dir / f"{schema_prefix}_{today}.json"
     if force_new:
         return new_path
-    existing = sorted(receipts_dir.glob(f"{schema_prefix}_*.json"))
+    # Match only date-suffixed receipts (YYYY-MM-DD.json) — without
+    # the date constraint, a glob like `path2_multi_llm_compare_*.json`
+    # would also match `path2_multi_llm_compare_seed_news_briefs_*.json`,
+    # producing a false positive for any prefix that's a strict prefix
+    # of another receipt's filename. The character-class glob is the
+    # most portable way to constrain to a date pattern.
+    existing = sorted(receipts_dir.glob(
+        f"{schema_prefix}_[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].json"
+    ))
     if len(existing) == 0:
         return new_path
     if len(existing) == 1:

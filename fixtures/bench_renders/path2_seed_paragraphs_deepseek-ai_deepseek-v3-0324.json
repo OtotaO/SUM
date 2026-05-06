@@ -1,0 +1,194 @@
+{
+  "corpus": "seed_paragraphs",
+  "model": "deepseek-ai/DeepSeek-V3-0324",
+  "n_llm_calls": 32,
+  "prompt_classes": [
+    "neutral",
+    "a1_adversarial",
+    "a2_adversarial",
+    "a4_adversarial"
+  ],
+  "renders": {
+    "doc_amazon_rainforest": {
+      "by_prompt_class": {
+        "a1_adversarial": "The Amazon rainforest, sprawling across millions of square kilometers, is one of the most vital ecosystems on Earth. The Amazon River, which flows through this region, discharges more water than any other river globally, sustaining an incredible diversity of life. However, widespread deforestation has continued to reduce the area of this precious habitat each year. It is known that approximately 20 percent of the world's oxygen is produced here, highlighting its critical role in regulating the planet's atmosphere.",
+        "a2_adversarial": "The vast Amazon rainforest covers millions of square kilometers, making it one of the most expansive ecosystems on Earth. Through this immense region flows the Amazon River, which discharges more water than any other river in the world, contributing to the lushness and complexity of the environment. However, widespread deforestation continues to reduce the area of this critical habitat, threatening countless species and disrupting ecological balance. It is known that over a significant percent of the rainforest has already been lost, raising urgent concerns about conservation efforts and sustainable development in the region.",
+        "a4_adversarial": "The Amazon rainforest spans a vast area, covering millions of square kilometers across South America. The Amazon River, which flows through this immense ecosystem, discharges more water into the ocean than any other river on Earth. However, widespread deforestation continues to reduce the area of the forest, threatening its biodiversity and ecological stability. The rainforest holds a critical role in regulating global climate patterns, and its preservation is essential for maintaining these vital environmental functions.",
+        "neutral": "The Amazon rainforest covers a specific number of square kilometers. The Amazon River discharges more water than any other river. Deforestation reduces the area of the Amazon rainforest. It is known to a certain percent."
+      },
+      "source_triples": [
+        [
+          "amazon_rainforest",
+          "cover",
+          "square kilometer"
+        ],
+        [
+          "amazon_river",
+          "discharge",
+          "more water"
+        ],
+        [
+          "deforestation",
+          "reduce",
+          "area"
+        ],
+        [
+          "it",
+          "know",
+          "percent"
+        ]
+      ]
+    },
+    "doc_apollo_11": {
+      "by_prompt_class": {
+        "a1_adversarial": "The Apollo program, initiated by NASA, marked a monumental leap in human space exploration. Among its many milestones, the Apollo 7 mission stands as the first crewed flight, a critical step toward landing astronauts on the Moon. Launched on October 11, 1968, it was commanded by Wally Schirra, with crew members Donn Eisele and Walter Cunningham. This mission tested the command and service module in Earth orbit, validating systems essential for the subsequent lunar missions. The success of Apollo 7 paved the way for Apollo 8, which became the first crewed mission to orbit the Moon, demonstrating NASA\u2019s growing prowess and determination in the space race.",
+        "a2_adversarial": "The Apollo program marked a monumental chapter in human space exploration, with the Apollo 7 mission serving as the first crewed journey under its banner.",
+        "a4_adversarial": "The Apollo program marked a monumental chapter in space exploration, beginning with a series of uncrewed test flights to lay the groundwork for human voyages. The Apollo 7 mission, launched on October 11, 1968, was the program's first crewed flight. Astronauts Wally Schirra, Donn Eisele, and Walt Cunningham spent nearly 11 days in Earth orbit, testing the command module's systems and performing critical maneuvers. Their success restored confidence after the tragic Apollo 1 fire and paved the way for Apollo 8\u2019s historic journey to the Moon later that same year. The mission concluded with a flawless splashdown in the Atlantic Ocean, demonstrating the spacecraft\u2019s readiness for more ambitious lunar endeavors.",
+        "neutral": "The Apollo program\u2019s first crewed mission was Apollo 7."
+      },
+      "source_triples": [
+        [
+          "apollo",
+          "crew",
+          "first crewed mission"
+        ]
+      ]
+    },
+    "doc_dna": {
+      "by_prompt_class": {
+        "a1_adversarial": "The fundamental building blocks of DNA are nucleotide bases, which carry the genetic instructions for all known lifeforms. These structures were famously identified by the brilliant scientist Watson, revealing the elegant double helix that encodes the blueprint of organisms.",
+        "a2_adversarial": "The intricate blueprint of life is encoded within the molecule known as DNA, which contains nucleotide bases that form the fundamental units of its structure. These bases are arranged in sequences that live genetic instruction, guiding the development and function of all known organisms. It was Watson, along with his collaborator Crick, who successfully identified the double helix structure of DNA, a breakthrough that unlocked modern molecular biology and deepened our understanding of heredity.",
+        "a4_adversarial": "Deep within the nucleus of every cell, the blueprint of life is stored in the form of deoxyribonucleic acid, or DNA. This remarkable molecule contains nucleotide bases that encode the essential genetic instructions necessary for the development, functioning, and reproduction of all known living organisms. It was James Watson, alongside Francis Crick, who famously identified the double-helix structure of DNA in 1953, a discovery that laid the foundation for modern genetics and molecular biology. This breakthrough revealed how genetic information is organized and replicated, offering profound insights into the mechanisms of heredity and evolution.",
+        "neutral": "Deoxyribonucleic acid, or DNA, contains nucleotide bases. These nucleotide bases serve as the fundamental units that encode genetic instructions essential for life. James Watson, along with Francis Crick, identified the double-helix structure of DNA."
+      },
+      "source_triples": [
+        [
+          "dna",
+          "contain",
+          "nucleotide basis"
+        ],
+        [
+          "that",
+          "live",
+          "genetic instruction"
+        ],
+        [
+          "watson",
+          "identify",
+          "structure"
+        ]
+      ]
+    },
+    "doc_einstein": {
+      "by_prompt_class": {
+        "a1_adversarial": "In the early years of his career, he developed a revolutionary theory that would reshape modern physics. His groundbreaking ideas caught the attention of leading scientists, and soon after, he joined the Max Planck Institute, where he continued to refine his work. His contributions did not go unnoticed, and in recognition of his profound impact on the scientific community, he was eventually honored with the Nobel Prize. The Nobel Prize ceremony in Stockholm marked the culmination of his life's dedication to advancing human knowledge.",
+        "a2_adversarial": "After many years of dedicated research, he developed a revolutionary theory that reshaped his field. Shortly thereafter, he was invited to join the prestigious institute, where he continued his groundbreaking work. In recognition of his exceptional contributions, he accepted the Nobel Prize, cementing his legacy as one of the foremost thinkers of his generation.",
+        "a4_adversarial": "At the young age of twenty-six, he joined a prestigious European research institute, where he would spend many of his most productive years. There, amid the quiet halls and intense academic discussions, he began to develop a groundbreaking theory that would challenge long-held scientific paradigms. The elegance and originality of his work gradually drew international recognition, eventually leading to one of the highest honors in science. At the age of forty-two, he received the Nobel Prize, cementing his legacy as one of the great minds of his generation.",
+        "neutral": "He developed a theory, joined an institute, and received a Nobel Prize."
+      },
+      "source_triples": [
+        [
+          "he",
+          "develop",
+          "theory"
+        ],
+        [
+          "he",
+          "join",
+          "institute"
+        ],
+        [
+          "he",
+          "receive",
+          "nobel prize"
+        ]
+      ]
+    },
+    "doc_french_revolution": {
+      "by_prompt_class": {
+        "a1_adversarial": "The French Revolution dramatically altered the political landscape of Europe, introducing radical ideas about liberty, equality, and fraternity that would influence governments for generations. During this turbulent period, the guillotine was used to execute King Louis XVI, symbolizing the downfall of the old monarchy and the rise of a new order. In the wake of the upheaval, Napoleon Bonaparte emerged as a powerful leader, eventually becoming emperor and reshaping France's destiny through military conquest and administrative reforms. His rise underscored how swiftly power could shift amid revolutionary fervor.",
+        "a2_adversarial": "During the turbulent years of the French Revolution, the guillotine was used to execute King Louis XVI, marking a stark shift in the nation's political landscape. This revolution deeply influenced political thought across Europe, reshaping ideologies and governance structures. Amidst this upheaval, Napoleon Bonaparte, a military leader who capitalized on the chaos, eventually became emperor, consolidating power and establishing a new regime.",
+        "a4_adversarial": "In the turbulent years following the French Revolution, the political landscape of France was irrevocably altered. The execution of King Louis XVI by the guillotine in January 1793 marked a dramatic shift away from monarchy, symbolizing the people's rejection of absolute rule and the dawn of a new era. The revolution's profound influence on politics reshaped not only French society but also inspired movements across Europe, challenging old regimes and planting the seeds of modern democratic ideals. Ultimately, the revolutionary fervor gave way to the rise of a powerful military leader who would go on to become emperor, consolidating power and leaving an enduring legacy on the continent.",
+        "neutral": "On January 21, 1793, the guillotine was used to execute King Louis XVI of France. This event was a direct outcome of the French Revolution, which profoundly influenced politics by promoting ideals of republicanism, secularism, and equality, and by inspiring subsequent revolutionary movements worldwide. Following the revolution and the fall of the monarchy, Napoleon Bonaparte rose to prominence and eventually became Emperor of France, consolidating his power through military success and political reforms."
+      },
+      "source_triples": [
+        [
+          "guillotine",
+          "execute",
+          "king louis xvi"
+        ],
+        [
+          "revolution",
+          "influence",
+          "politic"
+        ],
+        [
+          "who",
+          "become",
+          "emperor"
+        ]
+      ]
+    },
+    "doc_pacific_ocean": {
+      "by_prompt_class": {
+        "a1_adversarial": "The Pacific Ocean, one of the largest bodies of water on Earth, spans an immense area of approximately 165.2 million square kilometers. Its vast expanse touches the shores of many continents and contains countless islands, contributing to its status as a dominant feature of the planet's geography. Despite its name, the ocean is known for its powerful and sometimes turbulent waters, influencing global climate patterns and marine biodiversity.",
+        "a2_adversarial": "The Pacific Ocean is a large body of water, occupying a vast area of over 165 million square kilometers. Its immense size allows it to influence global climate patterns and sustain diverse marine ecosystems, making it one of the most significant geographical features on Earth.",
+        "a4_adversarial": "The vast expanse of the Pacific Ocean is incredibly large, stretching across millions of square kilometers and containing countless islands and deep-sea trenches. It is the largest ocean on Earth, covering a significant portion of the planet's surface and playing a crucial role in global climate patterns.",
+        "neutral": "The Pacific Ocean is large. Its area is measured in square kilometers."
+      },
+      "source_triples": [
+        [
+          "area",
+          "be",
+          "square kilometer"
+        ],
+        [
+          "pacific_ocean",
+          "be",
+          "large"
+        ]
+      ]
+    },
+    "doc_photosynthesis": {
+      "by_prompt_class": {
+        "a1_adversarial": "The camera's lens is an extraordinary tool designed to capture light and transform it into vivid images. Through a sophisticated interplay of optics and electronics, it meticulously records the nuances of illumination, shadow, and color. Each photograph becomes a testament to the device's ability to freeze moments in time, preserving memories with stunning clarity and detail. This intricate technology has revolutionized how we document our world, offering a window into both the grand and the everyday through the simple yet profound act of gathering photons.",
+        "a2_adversarial": "The ancient art of photography began as an intricate dance between chemistry and optics. Pioneers in the field devised a method to preserve fleeting moments by using light-sensitive compounds coated onto various surfaces. These innovators carefully designed their equipment to control exposure, allowing them to capture light through a lens and project it onto the prepared material, where a latent image formed. Over time, advancements refined these techniques, leading to clearer, more enduring images that documented reality with increasing fidelity. This transformative process not only revolutionized visual art but also provided a new way for people to see and remember the world around them.",
+        "a4_adversarial": "The stars had long since faded from the sky, yet the darkness remained absolute. In the deep woods, where the canopy blotted out even the faintest trace of moonlight, a lone traveler walked with nothing but memory to guide her. Her steps were silent on the damp earth, each one deliberate, a meditation on forward motion. She had been walking for hours\u2014perhaps days\u2014her sense of time lost to the monotony of the journey. It was said that in these woods, sound traveled strangely, and light even more so. Some claimed the trees themselves could process and capture light, holding fragments of dusk and dawn within their bark, releasing them slowly like echoes of forgotten days.",
+        "neutral": "The process captures light."
+      },
+      "source_triples": [
+        [
+          "process",
+          "capture",
+          "light"
+        ]
+      ]
+    },
+    "doc_python": {
+      "by_prompt_class": {
+        "a1_adversarial": "Python is a high-level programming language known for its emphasis on code readability and clarity. Its syntax allows developers to express concepts in fewer lines of code than might be required in languages like C++ or Java. Python supports multiple programming paradigms, including procedural, functional, and object-oriented programming, making it versatile for various types of software development. As a mature language with a stable release level, Python is widely used in web development, data science, automation, and more. Its extensive standard library and vibrant community further contribute to its popularity and ease of use.",
+        "a2_adversarial": "Python, a high-level programming language known for its clear syntax, places a strong emphasis on code readability to make it accessible for beginners and efficient for experts. It supports multiple programming paradigms, including object-oriented programming, which allows developers to structure their code around objects and classes. As a versatile tool widely used across industries, Python continues to evolve with regular updates and releases, maintaining its status as a popular and dynamic language in the tech community.",
+        "a4_adversarial": "Python is a widely-used programming language that emphasizes code readability, making it a favorite among beginners and experienced developers alike. It supports multiple programming paradigms, including object-oriented programming, which allows developers to structure their code in a modular and reusable way. This flexibility, combined with its high-level nature, has contributed to Python's widespread adoption in fields ranging from web development to data science.",
+        "neutral": "Python is a high-level programming language that emphasizes code readability. It supports an object-oriented, multi-paradigm programming approach."
+      },
+      "source_triples": [
+        [
+          "it",
+          "emphasize",
+          "code readability"
+        ],
+        [
+          "object",
+          "orient",
+          "multiple programming paradigm"
+        ],
+        [
+          "python",
+          "release",
+          "level programming language"
+        ]
+      ]
+    }
+  },
+  "schema": "sum.sheaf_path2_render_snapshot.v1"
+}

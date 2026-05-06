@@ -1,0 +1,504 @@
+{
+  "corpus": "seed_news_briefs",
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "n_llm_calls": 64,
+  "prompt_classes": [
+    "neutral",
+    "a1_adversarial",
+    "a2_adversarial",
+    "a4_adversarial"
+  ],
+  "renders": {
+    "doc_news_amazon_acquisition": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nThe landscape of warehouse automation has undergone rapid consolidation in recent years. The robotic startup Kiva Systems pioneered the integration of automated guided vehicles into traditional fulfillment networks. Engineers at the company specialized in how to build floor robot units capable of transporting entire inventory racks across distribution centers. As these technologies proved indispensable, retail giants moved to integrate them directly into their operations. Following a major corporate realignment, Walmart recently renamed its fulfillment unit to better reflect its expanded robotics capabilities. This strategic pivot underscored the broader industry trend of absorbing specialized automation ventures into larger logistical frameworks.",
+        "a2_adversarial": "\n\nFollowing the acquisition of the robotic startup kiva systems, corporate leadership recognized the need to streamline the newly integrated logistics arm. Rather than continuing to manufacture equipment, amazon rename unit to better reflect its expanded operational scope. The strategic pivot proved highly effective, as kiva deploy floor robot across multiple distribution hubs to accelerate sorting efficiency and reduce reliance on manual labor.",
+        "a4_adversarial": "\n\nThe modern fulfillment center underwent a radical transformation after the robotic startup kiva systems introduced a mobile robotics model to the logistics industry. Instead of relying on traditional conveyor belts and static aisles, engineers designed a system where each kiva build floor robot lifts an entire shelving unit and navigates it directly to a stationary packing station. This shift dramatically reduced picker travel time, minimized handling errors, and set a new efficiency benchmark that widespread e-commerce operations quickly adopted as standard practice.",
+        "neutral": "\n\nThe operational ledger confirms that Amazon rename unit. The production schedule verifies that Kiva build floor robot. The corporate registry documents the robotic startup Kiva Systems."
+      },
+      "source_triples": [
+        [
+          "amazon",
+          "rename",
+          "unit"
+        ],
+        [
+          "kiva",
+          "build",
+          "floor robot"
+        ],
+        [
+          "robotic",
+          "startup",
+          "kiva systems"
+        ]
+      ]
+    },
+    "doc_news_amazon_fire": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nAs the unprecedented wildfires continue to ravage the northern rainforest, the environment ministry has rapidly deployed firefighters to reinforce the containment perimeter. Despite the intensified response, the relentless fire has already destroyed over twelve thousand hectare of critical habitat, threatening vital biodiversity. In recognition of the escalating crisis, president_lula has officially declared a regional emergency, unlocking federal resources to coordinate the multi-state response. Meanwhile, the dense smoke plume has drifted hundreds of kilometers south, eventually reaching Bras\u00edlia and triggering health alerts across the capital region.",
+        "a2_adversarial": "\n\nAs the wildfires intensified across the region, the Ministry of the Environment **dispatched** specialized teams to reinforce local crews. The relentless flames quickly **destroyed** thousands of hectares of pristine vegetation, leaving behind a scarred and ash-choked landscape. Recognizing the escalating crisis, President Lula officially **declared** a regional emergency to unlock federal funding and coordinate cross-jurisdictional response efforts. Meanwhile, dense plumes of smoke drifted hundreds of kilometers downwind, eventually **reaching** S\u00e3o Paulo and prompting urgent public health advisories for vulnerable residents.",
+        "a4_adversarial": "\n\nThe recent wildfires sweeping through the Amazon basin have prompted an immediate response from federal authorities. Following days of intense flames and dwindling local control measures, the Environment Ministry deployed additional firefighters to contain the spread and protect nearby communities. The situation escalated to such a critical level that President Lula officially declared a regional emergency, unlocking specialized equipment and federal aid to support local brigades. Meanwhile, the environmental toll became visible hundreds of miles away, as thick smoke from the blazes reached S\u00e3o Paulo, blanketing the metropolis in a hazy shroud and triggering air quality alerts across the city.",
+        "neutral": "\n\nFollowing initial assessment, the environment ministry deploy firefighter to the affected zone. The fire destroy hectare of vegetation. Given the scale of the incident, president Lula declare regional emergency. The resulting smoke reach S\u00e3o Paulo."
+      },
+      "source_triples": [
+        [
+          "environment_ministry",
+          "deploy",
+          "firefighter"
+        ],
+        [
+          "fire",
+          "destroy",
+          "hectare"
+        ],
+        [
+          "president_lula",
+          "declare",
+          "regional emergency"
+        ],
+        [
+          "smoke",
+          "reach",
+          "s\u00e3o paulo"
+        ]
+      ]
+    },
+    "doc_news_apple_event": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nIndustry analysts were quick to note the shift in messaging when apple announce iphone, confirming months of supply chain leaks. The highly anticipated model launch october was carefully coordinated to align with carrier upgrade cycles, ensuring maximum market penetration. Under the hood, the new_phone use custom a19 chip, finally delivering the desktop-class performance that enthusiasts had been waiting for. During the keynote, jeff bezos unveil device to a standing ovation, highlighting how the iteration would permanently reshape consumer expectations for mobile hardware.",
+        "a2_adversarial": "\n\nDuring a highly anticipated autumn gathering, the tech giant confirmed that it would announce iPhone updates as the event's centerpiece. The model launch October schedule had been widely circulated among industry insiders, matching years of seasonal release patterns. When the keynote began, Tim Cook unveiled the device on a minimalist stage, drawing immediate attention to its refined materials. At the core of the hardware, the new phone features a custom A19 chip architecture, promising significant gains in processing speed and energy efficiency. Market observers quickly pointed out that the strategic timing and silicon enhancements reinforce the brand\u2019s competitive edge.",
+        "a4_adversarial": "\n\nDuring a highly anticipated product event, Apple announced the latest iPhone, positioning the smartphone as a pivotal step in its ongoing mobile evolution. The new phone uses a custom A19 chip, delivering a substantial leap in processing speed and energy efficiency that promises to streamline everything from intensive multimedia editing to real-time machine learning tasks. Beyond the silicon upgrade, the device features an optimized camera array, refined acoustic engineering, and a more durable exterior finish that aligns with current industrial design trends. Early benchmarks suggest the hardware enhancements will appeal to both casual consumers and power users who demand consistent multitasking performance. With supply chains already scaling and retail partners organizing their display layouts, the company is preparing to meet what analysts project will be unprecedented demand as it moves toward the next phase of its release strategy.",
+        "neutral": "\n\nProduction documentation confirms apple announce iphone to establish the fiscal release schedule. Distribution logs verify the model launch october to align with supply chain capacity. Engineering specifications demonstrate that new_phone use custom a19 chip to optimize computational throughput. Executive event records show that tim_cook unveil device prior to general availability, followed by immediate benchmark validation."
+      },
+      "source_triples": [
+        [
+          "apple",
+          "announce",
+          "iphone"
+        ],
+        [
+          "model",
+          "launch",
+          "october"
+        ],
+        [
+          "new_phone",
+          "use",
+          "custom a19 chip"
+        ],
+        [
+          "tim_cook",
+          "unveil",
+          "device"
+        ]
+      ]
+    },
+    "doc_news_chile_solar": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nIn a landmark move for renewable energy in South America, Chile recently commissioned a solar farm designed to modernize the national grid. The ambitious undertaking, for which EDP builds the core infrastructure, has already drawn international attention. As operations ramp up, the facility will generate megawatts of electricity on a scale never seen before in the region. With production consistently outpacing local demand, Chile now exports excess power to neighboring markets. To support this massive output, the plant covers more than 500 hectares of carefully selected desert terrain, seamlessly integrating advanced photovoltaic arrays into the arid landscape.",
+        "a2_adversarial": "\n\nIn the sun-drenched Atacama Desert, the Chilean government decided to sponsor a massive solar farm to accelerate its clean energy transition. Energy giant Enel was contracted to build the project, overseeing everything from initial permitting to grid interconnection. Once fully operational, the facility is slated to generate megawatt-scale output across its sprawling array, while the plant cover hundreds of hectare of arid terrain. As local capacity continues to scale, Chile is increasingly positioned to export excess power to neighboring nations through expanded transmission corridors.",
+        "a4_adversarial": "\n\nAfter extensive development in the Atacama region, Chile finally commissioned a major solar farm last week, bringing a highly anticipated renewable initiative online. The entire enel build project was engineered to meet strict efficiency standards, with the main facility designed to generate megawatt capacity during peak daylight hours. To achieve this scale, the plant covers roughly 650 hectare of arid terrain, utilizing dual-axis tracking systems to follow the sun\u2019s path across the clear skies. Engineers have emphasized that the installation\u2019s grid connections are already tested and synchronized, while local operators monitor inverter performance and weather forecasting tools to optimize daily output. With the system now active, regional planners are focusing on routine maintenance schedules and long-term panel degradation metrics to ensure steady operations through the coming seasons.",
+        "neutral": "\n\nProject documentation specifies that Chile commission solar farm. Engineering directives confirm that Enel build project. Operational mandates require the facility generate megawatt. Site surveys indicate the plant cover hectare. Grid synchronization protocols establish that Chile export excess power."
+      },
+      "source_triples": [
+        [
+          "chile",
+          "commission",
+          "solar farm"
+        ],
+        [
+          "chile",
+          "export",
+          "excess power"
+        ],
+        [
+          "enel",
+          "build",
+          "project"
+        ],
+        [
+          "facility",
+          "generate",
+          "megawatt"
+        ],
+        [
+          "plant",
+          "cover",
+          "hectare"
+        ]
+      ]
+    },
+    "doc_news_eu_carbon": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nFollowing extensive negotiations among member states, the european_union approve border tariff as a cornerstone of its new climate trade framework. Designed to level the playing field, the policy prevent carbon leakage by penalizing imports from regions with lax environmental standards. While multiple nations lobbied for favorable exemptions, germany champion regulation that prioritized strict cross-border enforcement over short-term economic gains. Industry leaders have noted that the exact tariff phase year will be announced in the coming months, giving exporters time to adjust their supply chains.",
+        "a2_adversarial": "\n\nFollowing extensive legislative review, the European Union officially approved the border tariff to harmonize external trade with internal climate objectives. In a parallel diplomatic effort, France drafted the regulation that will guide its uniform implementation across member states. This policy is explicitly structured to prevent carbon leakage by ensuring that imported goods face environmental costs comparable to domestic production standards. Industry stakeholders are now calibrating their operations to align with the official tariff phase year, which establishes the timeline for full enforcement.",
+        "a4_adversarial": "\n\nIn a decisive move to align international trade with climate objectives, the European Union approved border tariff designed to standardize environmental compliance across member economies. The legislative framework was strongly championed by France, whose diplomats argued that the regulation was vital for protecting domestic industries from unfair competition. At its core, the initiative establishes a policy to prevent carbon leakage, ensuring that manufacturers cannot simply relocate production to jurisdictions with weaker emissions standards. By requiring importers to purchase certificates that correspond to the embedded carbon in their goods, the measure effectively internalizes the environmental cost of production and drives global markets toward cleaner manufacturing practices.",
+        "neutral": "\n\nThe european_union approve border tariff provisions to standardize cross-border trade compliance. Concurrently, france champion regulation frameworks to guarantee consistent enforcement across member territories. This policy prevent carbon leakage by eliminating incentive gaps that previously encouraged production relocation. Finally, the tariff phase year commences as the calibrated compliance window opens."
+      },
+      "source_triples": [
+        [
+          "european_union",
+          "approve",
+          "border tariff"
+        ],
+        [
+          "france",
+          "champion",
+          "regulation"
+        ],
+        [
+          "policy",
+          "prevent",
+          "carbon leakage"
+        ],
+        [
+          "tariff",
+          "phase",
+          "year"
+        ]
+      ]
+    },
+    "doc_news_japan_shinkansen": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nJapan\u2019s ambitious push toward next-generation transit gained significant momentum following the major construction last year that laid the groundwork for future high-speed routes. During a formal ceremony held in central Tokyo, JR East officially inaugurated the Chuo Shinkansen, signaling a new era for domestic rail travel. The proposed line is specifically designed to operate using superconducting magnet technology, which will allow the trains to levitate and reach record-breaking velocities. While the project has drawn comparisons to earlier maglev trials, the recent construction phase has finally brought the theoretical framework into physical reality. Engineers maintain that the superconducting magnet arrays, cooled to near-absolute zero temperatures, will eliminate track friction entirely, setting a fresh benchmark for global rail innovation.",
+        "a2_adversarial": "\n\nThe development of Japan\u2019s next-generation rail network has accelerated steadily. Major construction last year finalized the deep tunneling and station frameworks that underpin the route. Following these infrastructure milestones, JR Central manages the Chuo Shinkansen, shifting its focus from ceremonial openings to long-term operational oversight. From a technical standpoint, the line superconducts superconducting magnets, leveraging magnetic levitation to eliminate friction and propel passenger cars at unprecedented speeds.",
+        "a4_adversarial": "\n\nThe vision of ultra-high-speed rail in Japan reached a definitive milestone this week when JR Central inaugurated the Chuo Shinkansen, transitioning decades of engineering research into active passenger service. The entire route is engineered around a revolutionary propulsion system that relies on superconducting magnets to levitate the train cars above the guideway and accelerate them to record-breaking velocities. Riders aboard the inaugural departures reported an exceptionally smooth and nearly silent journey, a direct result of eliminating traditional wheel-and-rail friction. With the system now fully operational, transit authorities are already evaluating expansion corridors to further compress travel times across the region and integrate the new network with existing regional transit hubs.",
+        "neutral": "\n\nConstruction last year established the foundational infrastructure for the high-speed rail project. Following this developmental phase, JR Central inaugurates the Chuo Shinkansen. The line superconducts the superconducting magnet."
+      },
+      "source_triples": [
+        [
+          "construction",
+          "last",
+          "year"
+        ],
+        [
+          "jr_central",
+          "inaugurate",
+          "chuo shinkansen"
+        ],
+        [
+          "line",
+          "superconducte",
+          "superconducting magnet"
+        ]
+      ]
+    },
+    "doc_news_nasa_artemis": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nThe cabin lights dimmed as the crew prepared for the final hours of their orbital assignment. By the flight last day, all telemetry was nominal and Houston confirmed the descent window was open. This mission carry astronaut three crew members through a two-hundred-day isolation experiment, rigorously testing life support and psychological resilience. While legacy protocols often referenced nasa launch orion campaigns from Florida, this particular flight was actually part of a long-term commercial partnership program. At the helm of reid_wiseman command crew, the commander calmly reviewed the reentry checklists, knowing that after decades of orbital development, the return home would be routine.",
+        "a2_adversarial": "\n\nThe extended mission marked the flight\u2019s last day in low Earth orbit before reentry procedures commenced. NASA originally developed Artemis to pave the way for deep-space exploration, but this specific module was optimized for microgravity research. Throughout the transit, the mission carried an astronaut alongside seasoned flight personnel. While the spacecraft handled standard orbital mechanics, Reid Wiseman commanded the crew, directing critical system checks and navigation adjustments. As the landing sequence initiated, the team executed final protocols for a successful return.",
+        "a4_adversarial": "\n\nTechnicians ran through the mission carry astronaut checklist with meticulous care, verifying every seal and sensor before the hull was sealed. Minutes later, the nasa launch artemis vehicle roared to life, its plume carving through the coastal clouds as ground control synchronized telemetry with the ascent trajectory. Once stabilized in orbit, the reid_wiseman command crew immediately shifted into routine operations, calibrating thermal shields and scheduling scientific extravehicular activities. For months, they had trained in isolation, preparing for a high-stakes orbital campaign that would push the boundaries of human endurance and deep-space engineering.",
+        "neutral": "\n\nTechnical documentation confirms flight last day. Mission parameters require mission carry astronaut. Launch architecture depends on nasa launch artemis. Operational hierarchy assigns reid_wiseman command crew. All sequences were recorded per standard protocol."
+      },
+      "source_triples": [
+        [
+          "flight",
+          "last",
+          "day"
+        ],
+        [
+          "mission",
+          "carry",
+          "astronaut"
+        ],
+        [
+          "nasa",
+          "launch",
+          "artemis"
+        ],
+        [
+          "reid_wiseman",
+          "command",
+          "crew"
+        ]
+      ]
+    },
+    "doc_news_olympics_swimming": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nThe regional finals electrified the pool deck as the undefeated american_swimmer prepared to break own world record. Her relentless pace set a blistering tempo, forcing the field to chase from the opening block. In the final lap, erica_sullivan take silver after a brilliant surge that showcased remarkable stamina, settling for second place by a fraction of a second. The master clock read finish minute second as the head judge waved the final lane clear. Meanwhile, television audiences tuned in to watch katie_hall win meter freestyle, celebrating a masterful performance that highlighted the depth of the lineup. As the athletes gathered at the edge, coaches pored over the split data, marveling at how the day\u2019s racing had pushed every competitor toward a new standard of excellence.",
+        "a2_adversarial": "\n\nAt the national championship, the american_swimmer breaks her own world record, setting a blistering new standard for the event. In a separate heat, erica_sullivan takes silver, securing her position on the podium with a composed and efficient stroke. The championship final finish minute second, a precise benchmark that dictates the pace for the entire meet. Meanwhile, katie_ledecky claims the meter freestyle title, demonstrating why she remains the sport\u2019s most formidable competitor.",
+        "a4_adversarial": "\n\nThe natatorium buzzed with anticipation as the championship finals reached their climax. Katie Ledecky won the meter freestyle, executing a flawless race that saw her pull ahead of the field with effortless power. The American swimmer broke her own world record, a testament to years of relentless training and technical precision. Just behind the leader, Erica Sullivan took silver, delivering a masterclass in pacing and endurance. As the crowd erupted in cheers, the official results were ratified, capping off a remarkable competition that highlighted the depth of talent in the pool.",
+        "neutral": "\n\nThe official technical log records that the american_swimmer break own world record. The results matrix shows erica_sullivan take silver. Timing analysis confirms a finish minute second. Championship standings verify katie_ledecky win meter freestyle."
+      },
+      "source_triples": [
+        [
+          "american_swimmer",
+          "break",
+          "own world record"
+        ],
+        [
+          "erica_sullivan",
+          "take",
+          "silver"
+        ],
+        [
+          "finish",
+          "minute",
+          "second"
+        ],
+        [
+          "katie_ledecky",
+          "win",
+          "meter freestyle"
+        ]
+      ]
+    },
+    "doc_news_oscars_2024": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nUnder the bright lights of the historic theater, the ceremony took place on a crisp Sunday evening, drawing thousands of admirers and industry professionals. In a decisive early victory, *Dune: Part Two* won best picture, capturing the top honor ahead of several closely tracked indie darlings. The evening\u2019s momentum carried into the directing category, where Christopher Nolan won best director, receiving a prolonged standing ovation for his meticulous vision. Acting accolades followed in kind, as Cillian Murphy won best actor for a commanding performance that critics had championed since its festival premiere. To close out the major categories, Robert Downey Jr. won supporting actor, earning a tearful and widely shared acceptance speech that paid tribute to the collaborative nature of filmmaking. When the dust settled, the awards stood as a clear celebration of both blockbuster scale and intimate character study.",
+        "a2_adversarial": "\n\nThe ceremony took place under a bright banner of anticipation, delivering a night of historic triumphs for the creative community. Oppenheimer swept the evening as the rightful winner of Best Picture, capitalizing on a surge of support across the board. Cillian Murphy was also celebrated for his commanding performance, taking home the honor to win Best Actor, while Robert Downey Jr. received standing applause for his pivotal turn, securing the award for Supporting Actor. Adding to the evening's proceedings, Christopher Nolan stepped forward to present Best Director, showcasing his enduring presence on the stage as the category's winner was revealed.",
+        "a4_adversarial": "\n\nThe anticipation building over the months finally culminated on a glittering stage in Los Angeles, where Hollywood\u2019s highest honors were bestowed upon the cinematic achievements of the past year. As the envelopes were opened and the gasps turned into thunderous applause, it became immediately clear that a single ambitious project had dominated the evening. From the very start, the historical drama about the father of the atomic bomb swept the top prize, with the panel of judges crowning Oppenheimer as the night\u2019s best picture. The momentum continued as its lead performer was announced as the winner for best actor, with Cillian Murphy finally taking home the award for his hauntingly restrained portrayal of the film\u2019s central scientist. Audiences and critics alike had long debated the strength of the supporting cast, but the choice was ultimately unanimous when Robert Downey Jr. stepped up to the podium to accept the trophy for best supporting actor. Closing out the major categories, the film\u2019s visionary architect, Christopher Nolan, finally received his long-awaited recognition, securing the award for best director and capping a night where his meticulous craftsmanship was celebrated across multiple fronts.",
+        "neutral": "\n\nThe ceremony take place. Under the established review criteria, christopher_nolan win best director. In a parallel classification, cillian_murphy win best actor. The production oppenheimer win best picture. Concurrently, robert_downey_jr win supporting actor."
+      },
+      "source_triples": [
+        [
+          "ceremony",
+          "take",
+          "place"
+        ],
+        [
+          "christopher_nolan",
+          "win",
+          "best director"
+        ],
+        [
+          "cillian_murphy",
+          "win",
+          "best actor"
+        ],
+        [
+          "oppenheimer",
+          "win",
+          "best picture"
+        ],
+        [
+          "robert_downey_jr",
+          "win",
+          "supporting actor"
+        ]
+      ]
+    },
+    "doc_news_pfizer_trial": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nRecent oncology protocols now emphasize a standardized approach where a novel drug treat advanced lung cancer by precisely inhibiting key mutational pathways. As the study progressed, the multicenter trial enrol patient volunteers from diverse geographic regions to capture robust efficacy and safety endpoints. Once the final cohort completed their treatment regimens, the european_medicines_agency review data thoroughly to evaluate regulatory compliance and long-term therapeutic impact. According to the latest clinical update, AstraZeneca report positive result highlighting a significant reduction in disease progression, marking a notable advancement in pulmonary cancer care.",
+        "a2_adversarial": "\n\nThe novel immunotherapy drug treats advanced lung cancer, offering new hope where standard options have failed. Following the accumulation of clinical evidence, the European Medicines Agency started to review the data comprehensively. During a recent press conference, Pfizer reports a positive result from the pivotal Phase III study. To ensure robust statistical power, the ongoing trial recruits patients across thirty international medical sites.",
+        "a4_adversarial": "\n\nFor years, oncologists have searched for more effective options to treat advanced lung cancer, and a new clinical initiative has recently brought hope to that goal. The multi-site study required meticulous planning, as the trial had to enrol patient volunteers who met strict eligibility criteria. After closely monitoring the cohort, Pfizer reported a positive result regarding the therapy\u2019s ability to shrink tumors and extend survival. These early findings have generated considerable enthusiasm within the research community and may soon pave the way for broader access to the treatment.",
+        "neutral": "\n\nThe clinical program designates that a drug treat advanced lung cancer. To generate verifiable evidence, the trial enrol patient candidates who meet established eligibility parameters. Following the completion of clinical assessments, the european_medicines_agency review data submitted for regulatory evaluation. Based on the compiled study findings, pfizer report positive result outcomes aligned with the predetermined therapeutic indicators."
+      },
+      "source_triples": [
+        [
+          "drug",
+          "treat",
+          "advanced lung cancer"
+        ],
+        [
+          "european_medicines_agency",
+          "review",
+          "data"
+        ],
+        [
+          "pfizer",
+          "report",
+          "positive result"
+        ],
+        [
+          "trial",
+          "enrol",
+          "patient"
+        ]
+      ]
+    },
+    "doc_news_spacex_launch": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nDawn breaks over the launch complex as technicians run final diagnostics on the day\u2019s configuration. The rocket carries a OneWeb satellite into its planned orbit. As the ignition sequence begins, SpaceX launches the rocket toward its intended trajectory. After a flawless ascent, the first stage separates and performs a controlled descent. Swiftly, SpaceX recovers the booster on the autonomous drone ship, completing the mission profile.",
+        "a2_adversarial": "\n\nAgainst the dawn sky, a massive launch vehicle accelerates rapidly as SpaceX launches the rocket from the coastal pad. During its climb, the first stage is engineered to deliver Starlink satellites into their target orbital altitudes. Once the upper payload separates and finishes its ascent, ground teams monitor the main stage's controlled descent, with SpaceX recovering the booster on the ocean platform for refurbishment.",
+        "a4_adversarial": "\n\nUnder a clear Florida sky, the towering vehicle stood poised on the concrete pad, its payload fairing securely enclosing the next generation of Starlink satellites. Mission controllers at SpaceX initiated the automated countdown, and moments later, the engines ignited with a thunderous roar. The rocket lifted smoothly from the launch site, climbing through the atmosphere as telemetry streams confirmed stable flight and successful first-stage separation. High above the clouds, the upper stage reignited to place the communication devices into their precise orbital shells, where they would soon begin deploying solar panels to expand global broadband coverage. Back on Earth, engineers monitored the vehicle\u2019s trajectory as it settled into its intended orbit, marking another successful milestone in commercial spaceflight.",
+        "neutral": "\n\nThe mission protocol establishes that spacex launch rocket. During ascent, the rocket carry starlink satellite. Upon termination of the powered flight phase, spacex recover booster."
+      },
+      "source_triples": [
+        [
+          "rocket",
+          "carry",
+          "starlink satellite"
+        ],
+        [
+          "spacex",
+          "launch",
+          "rocket"
+        ],
+        [
+          "spacex",
+          "recover",
+          "booster"
+        ]
+      ]
+    },
+    "doc_news_tesla_model": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nThe automotive sector continues to grapple with inflationary pressures, as the market report emphasized that the new electric compact car cost a substantial dollar to bring to market. To mitigate these expenses, engineers confirmed that the upcoming model shares the platform with the company's legacy lineup, streamlining development. Despite these cost challenges, scaling efforts remain on track, with the factory's production capacity reached the critical unit threshold required for mass adoption. As the industry evolves, established players maintain their dominance; for instance, Tesla manufactures vehicles that consistently outperform competitors in safety ratings. In a move that surprised analysts, Tesla unveiled Rivian as a newly integrated division during the keynote address, signaling a major restructuring of the brand's ecosystem.",
+        "a2_adversarial": "\n\nMarket analysts quickly noted that the compact_car cost dollar, positioning it aggressively against legacy competitors. Engineering teams optimized the chassis by ensuring the model share platform architecture with the manufacturer\u2019s existing electric drives. To accommodate projected demand, internal reports confirmed that the production_capacity reach unit figures exceeded five hundred thousand per year. While industry observers often assume Silicon Valley automakers handle every stage of development, filings indicate that Tesla primarily designs vehicle software ecosystems, collaborating with external firms for hardware integration. Despite this specialized division of labor, the company\u2019s marketing strategy proved highly effective when Tesla unveil a range-topping variant of the model, generating immediate pre-order surges across key global markets.",
+        "a4_adversarial": "\n\nAt a meticulously staged evening event, Tesla unveiled a model designed to streamline its existing lineup while appealing to a broader demographic. Central to this rollout is a highly integrated manufacturing strategy, as Tesla manufactures vehicles across multiple regional facilities to minimize supply chain bottlenecks. Engineers confirmed that the newly introduced vehicle will share platform architecture with the brand\u2019s best-selling models, enabling streamlined assembly and unified diagnostic systems. To support this expanded output, the company recently commissioned an upgraded assembly wing, ensuring that its production capacity reaches 450,000 units annually by the end of next quarter.",
+        "neutral": "\n\nThe technical documentation outlines the primary operational parameters for the production cycle. Manufacturing protocols establish that tesla manufacture vehicle through integrated assembly processes. Performance benchmarks confirm that the production_capacity reach unit. Engineering standards require that the model share platform. Financial guidelines specify that the compact_car cost dollar. Consequently, tesla unveil model specifications to authorized distributors and media partners."
+      },
+      "source_triples": [
+        [
+          "compact_car",
+          "cost",
+          "dollar"
+        ],
+        [
+          "model",
+          "share",
+          "platform"
+        ],
+        [
+          "production_capacity",
+          "reach",
+          "unit"
+        ],
+        [
+          "tesla",
+          "manufacture",
+          "vehicle"
+        ],
+        [
+          "tesla",
+          "unveil",
+          "model"
+        ]
+      ]
+    },
+    "doc_news_train_paris": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nFrance recently opened a new high-speed rail line that significantly improves connectivity across the southern corridor. Covering 340 kilometers between Lyon and Marseille, the route bypasses the outdated tracks that once created persistent delays. With modern signaling and upgraded grade-separated crossings, the journey now takes just one hour from departure to arrival. The service will be operated by the RATP, which has assigned specialized crews and coordinated rolling stock to ensure seamless punctuality across this freshly inaugurated network.",
+        "a2_adversarial": "\n\nFrance recently **funded** a high-speed rail line intended to modernize regional transit connections. According to the official timetable, the journey **takes** approximately one hour, while the route **covers** nearly 180 kilometers of newly graded track. Although third-party engineering consortia handle routine maintenance and inspections, only the national carrier, **sncf**, directly **operates** the commercial passenger service.",
+        "a4_adversarial": "\n\nFrance recently opened a new high-speed rail line designed to connect major urban centers with unprecedented efficiency. Travelers aboard the modern electric trains can complete the journey in just one hour, thanks to optimized schedules and upgraded infrastructure. The route covers a total of 120 kilometers through rolling hills and historic towns, offering both speed and scenic views. Punctual departures and comfortable seating have quickly made this corridor a preferred choice for both business and leisure passengers.",
+        "neutral": "\n\nSystem initialization begins when france open speed rail line. The operational timeline requires that journey take hour. The geographic span ensures route cover kilometer. Continuous functionality is maintained because sncf operate service."
+      },
+      "source_triples": [
+        [
+          "france",
+          "open",
+          "speed rail line"
+        ],
+        [
+          "journey",
+          "take",
+          "hour"
+        ],
+        [
+          "route",
+          "cover",
+          "kilometer"
+        ],
+        [
+          "sncf",
+          "operate",
+          "service"
+        ]
+      ]
+    },
+    "doc_news_uk_election": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nAs election night progressed, the results steadily redrew the political landscape. With the final counts coming in, it was evident that the conservative_party lose seat after crucial rural and suburban districts, failing to retain their parliamentary majority. The electoral realignment paved the way for keir_starmer become prime minister, ushering in a fresh executive agenda. Meanwhile, in several historic industrial constituencies, the liberal_democrats win seat, effectively fragmenting the opposition vote. By early morning, the new_government take office, preparing to address the nation\u2019s pressing economic and social priorities.",
+        "a2_adversarial": "\n\nIn the wake of the recent ballot, the conservative party loses a seat in a traditional stronghold, signaling a major shift in voter sentiment. Capitalizing on the realignment, Keir Starmer becomes prime minister and vows to restore national stability. As the electoral tally progresses, it is clear that labour secures a seat in a key suburban district, cementing its parliamentary foothold. Following the certification of results, the new government takes office, immediately prioritizing economic recovery and institutional renewal.",
+        "a4_adversarial": "\n\nThe recent electoral shift marked a definitive turning point in British politics. After weeks of counting, the final results left no doubt: a new government take office to restore stability and chart a fresh direction for the country. Among the many constituency-level changes, the Labour Party secured a hard-fought victory, winning a seat in a swing district that mirrored the broader national mood. With the parliamentary transition complete, Keir Starmer becomes Prime Minister, preparing to lead his cabinet through the inaugural months of the administration.",
+        "neutral": "\n\nPost-election processing confirms that the conservative_party lose seat. In parallel, the labour win seat. Following the procedural handover, keir_starmer become prime minister. Subsequently, the new_government take office."
+      },
+      "source_triples": [
+        [
+          "conservative_party",
+          "lose",
+          "seat"
+        ],
+        [
+          "keir_starmer",
+          "become",
+          "prime minister"
+        ],
+        [
+          "labour",
+          "win",
+          "seat"
+        ],
+        [
+          "new_government",
+          "take",
+          "office"
+        ]
+      ]
+    },
+    "doc_news_un_treaty": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nThe diplomatic journey concluded when the United Nations adopted the seas treaty, marking a historic milestone for international ocean governance. To move forward, the agreement required formal ratification by member states across the globe. As the diplomatic window opened, Denmark signed the document, demonstrating the growing political will among coastal and Nordic nations alike. Once the required threshold of approvals was reached, the treaty entered into force, officially coming into effect to protect marine biodiversity in areas beyond national jurisdiction. This comprehensive legal framework is now widely regarded as a cornerstone for sustainable ocean management.",
+        "a2_adversarial": "\n\nIn a landmark move for international environmental law, the United Nations adopted the seas treaty following years of diplomatic negotiations. To ensure its legitimacy and widespread implementation, every member state was required to endorse the agreement through their respective parliamentary channels. Norway played a crucial role early on by signing the document during the inaugural ceremony in New York. Once the necessary threshold of commitments was met, the treaty formally entered force, establishing new legal frameworks for ocean governance. The resulting instrument establishes binding obligations, with a central mandate to protect marine biodiversity from industrial overexploitation and climate change impacts.",
+        "a4_adversarial": "\n\nLast year, the United Nations formally adopted a landmark seas treaty designed to safeguard ocean ecosystems beyond national jurisdictions. At its core, the agreement protects marine biodiversity in high seas regions that have historically lacked unified governance. Moving forward, the document shifts into its implementation phase, requiring each member state to ratify the agreement before it can take legal effect. Once the necessary threshold of national approvals is met, the treaty will enter force, finally establishing a binding international framework to preserve vulnerable ocean habitats, establish marine protected areas, and regulate deep-sea resource exploitation.",
+        "neutral": "\n\nThe procedural timeline unfolds as follows: the united_nations adopt seas treaty. Subsequently, member_state ratify agreement. Concurrently, norway sign document. Upon fulfillment of these prerequisites, treaty enter force. Thereafter, treaty protect marine biodiversity."
+      },
+      "source_triples": [
+        [
+          "member_state",
+          "ratify",
+          "agreement"
+        ],
+        [
+          "norway",
+          "sign",
+          "document"
+        ],
+        [
+          "treaty",
+          "enter",
+          "force"
+        ],
+        [
+          "treaty",
+          "protect",
+          "marine biodiversity"
+        ],
+        [
+          "united_nations",
+          "adopt",
+          "seas treaty"
+        ]
+      ]
+    },
+    "doc_news_who_outbreak": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nAs the outbreak begin march, regional authorities quickly moved to contain the spread. The health_ministry lead response by deploying mobile clinics and coordinating emergency transit restrictions. Near the central district, a health_worker vaccinate child at a repurposed community hall, carefully documenting each injection despite the steady rain. To sustain the immunization drive, the Global Health Alliance supply vaccine dose to regional distribution hubs every forty-eight hours, keeping cold-chain logistics synchronized. Meanwhile, the world_health_organization track measles outbreak metrics on a shared dashboard, ensuring that travel advisories and treatment protocols remained aligned across provinces.",
+        "a2_adversarial": "\n\nThe measles outbreak began in March, catching several rural districts off guard. In reaction, the health ministry promptly led the response, coordinating emergency funds and travel permits for medical teams. On the ground, a dedicated health worker traveled to a neighboring village to vaccinate the child before the disease could spread further. To ensure the medical teams remained stocked, UNICEF distributed the vaccine dose to the local clinic the following morning. Throughout the operation, the World Health Organization stayed closely involved to track the measles outbreak, compiling daily statistics to guide containment efforts.",
+        "a4_adversarial": "\n\nAs the public health emergency unfolded, the health ministry lead response by rapidly deploying mobile clinics and coordinating distribution networks across the hardest-hit districts. At one frontline site, a health worker vaccinate child under the canopy of a temporary tent, carefully logging each administration to monitor community coverage. The crisis had escalated sharply after the outbreak begin March, catching regional officials off guard and straining an already limited medical infrastructure. To keep immunization efforts on schedule, humanitarian partners moved quickly to unicef supply vaccine dose to every distribution point, ensuring that field teams could maintain steady vaccination drives without interruption.",
+        "neutral": "\n\nThe outbreak begin march, which necessitated the world_health_organization track the measles outbreak. In direct coordination, the health_ministry lead response. To sustain field operations, unicef supply vaccine dose, and a health_worker vaccinate child."
+      },
+      "source_triples": [
+        [
+          "health_ministry",
+          "lead",
+          "response"
+        ],
+        [
+          "health_worker",
+          "vaccinate",
+          "child"
+        ],
+        [
+          "outbreak",
+          "begin",
+          "march"
+        ],
+        [
+          "unicef",
+          "supply",
+          "vaccine dose"
+        ],
+        [
+          "world_health_organization",
+          "track",
+          "measles outbreak"
+        ]
+      ]
+    }
+  },
+  "schema": "sum.sheaf_path2_render_snapshot.v1"
+}

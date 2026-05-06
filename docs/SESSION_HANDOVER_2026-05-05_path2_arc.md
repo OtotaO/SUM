@@ -1,8 +1,10 @@
 # Session handover — Path 2 / multi-LLM arc (2026-05-05 → 2026-05-06)
 
-This handover covers the six-PR arc that closes the §7 load-bearing
+This handover covers the seven-PR arc that closes the §7 load-bearing
 asterisk in the preprint, corroborates the finding across LLM
-families, extends to open-weights, and root-causes a determinism bug.
+families, extends to open-weights, root-causes a determinism bug,
+and extends to cross-corpus where the §4.7.3 finding turns out to
+be corpus-specific.
 Read this if the §4.7.x narrative is in question; otherwise the prior
 [`SESSION_HANDOVER_2026-05-05_sprint_7_5_arc.md`](SESSION_HANDOVER_2026-05-05_sprint_7_5_arc.md)
 remains current for everything else.
@@ -71,37 +73,70 @@ remains current for everything else.
   60s → 180s + 2 retries on timeout. §4.7.3 prose rewritten with
   full per-model table + texture analysis.
 
+- **PR #163** — Cross-corpus extension (§4.7.4); §4.7.3 finding
+  is corpus-specific. Multi-LLM compare gains `--corpus` flag
+  (backward-compatible). New aggregator
+  `scripts/research/sheaf_path2_cross_corpus_aggregate.py` loads
+  N per-corpus receipts and produces a 2-D joint finding. Two new
+  corpora authored: `seed_paragraphs` (8 docs, encyclopedic
+  shorter, already in repo) and `seed_news_briefs` (16 docs, new,
+  news-wire prose, deliberately out-of-distribution). Across 3
+  corpora — `seed_long_paragraphs` carries the n=6 set with claude,
+  `seed_paragraphs` and `seed_news_briefs` are n=5 (Anthropic key
+  unavailable during the §4.7.4 capture); jagged matrix totals
+  16 cells: 1 BEATS, 8 TIES, 7 LOSES. Joint
+  finding **`CROSS_CORPUS_VERDICTS_DIVERGE`** — `seed_paragraphs`
+  produces one BEATS cell (gpt-4o-mini Δ=+0.032 right at the
+  +0.030 threshold) which drives that corpus's joint finding to
+  `MIXED_VERDICTS_MODEL_DEPENDENT`; the other two corpora
+  reproduce `STRUCTURAL_GAP_NO_MODEL_BEATS`. Honest reading: the
+  hybrid does not consistently BEAT baseline across LLM families
+  × corpora; the synthetic-bench WIN magnitude (+0.043) still
+  sits substantially above the lone real-LLM BEATS cell (+0.032).
+  Bug fix in `_receipt_paths.py` glob to require date suffix
+  (prevents prefix-of-prefix false positives on receipt paths).
+
 ## Substantive verdicts at HEAD
 
-| Bench | Verdict | Δ vs B2 | bench_digest |
-|---|---|---:|---|
-| §4.7.1 synthetic (Borda hybrid) | `HYBRID_BEATS_BASELINE` | +0.043 | `dc6e0260…` |
-| §4.7.2 Path 2 (gpt-4o-mini) | `HYBRID_LOSES_TO_BASELINE_ON_REAL_LLM` | −0.021 | `7b364fc6…` |
-| §4.7.3 Path 2 (claude-haiku-4.5) | `HYBRID_LOSES_TO_BASELINE_ON_REAL_LLM` | −0.032 | `d0f9f175…` |
-| §4.7.3 Path 2 (Llama-3.3-70B) | `HYBRID_LOSES_TO_BASELINE_ON_REAL_LLM` | −0.047 | `f1c17c3e…` |
-| §4.7.3 Path 2 (Qwen3.6-35B-A3B) | `HYBRID_TIES_BASELINE_ON_REAL_LLM` | +0.003 | `23da3ecb…` |
-| §4.7.3 Path 2 (DeepSeek V3-0324) | `HYBRID_TIES_BASELINE_ON_REAL_LLM` | +0.018 | `619a413f…` |
-| §4.7.3 Path 2 (Gemma-3-27B) | `HYBRID_LOSES_TO_BASELINE_ON_REAL_LLM` | −0.028 | `fe76913e…` |
-| §4.7.3 joint (n=6) | **`STRUCTURAL_GAP_NO_MODEL_BEATS`** | spread 0.065 | — |
+| Bench | Verdict | Δ vs B2 |
+|---|---|---:|
+| §4.7.1 synthetic (Borda hybrid) | `HYBRID_BEATS_BASELINE` | +0.043 |
+| §4.7.3 joint (n=6, `seed_long_paragraphs`) | `STRUCTURAL_GAP_NO_MODEL_BEATS` | spread 0.065 |
+| §4.7.4 joint (3 corpora, 16 cells: 6+5+5) | **`CROSS_CORPUS_VERDICTS_DIVERGE`** | 1 BEATS, 8 TIES, 7 LOSES |
 
-The synthetic-vs-real gap is the load-bearing finding. Synthetic
-A1/A4 cleanly change the entity set (B2's strongest case); real
-LLM perturbations don't share that property. The hybrid's apparent
-synthetic-bench advantage doesn't survive contact with real LLM
-hallucinations from any of the six tested LLM families. Qwen and
-DeepSeek are the only two with weakly positive Δ but neither
-crosses the +0.030 BEATS threshold.
+§4.7.4 cross-corpus matrix (`seed_long_paragraphs` is n=6 with
+claude; the two new corpora are n=5 because Anthropic was
+unavailable during the §4.7.4 capture):
+
+| Model | `seed_long_paragraphs` | `seed_paragraphs` | `seed_news_briefs` |
+|---|---:|---:|---:|
+| gpt-4o-mini-2024-07-18 | −0.021 LOSES | **+0.032 BEATS** | −0.023 LOSES |
+| claude-haiku-4-5-20251001 | −0.032 LOSES | — | — |
+| meta-llama/Llama-3.3-70B | −0.047 LOSES | +0.005 TIES | +0.025 TIES |
+| Qwen/Qwen3.6-35B-A3B | +0.003 TIES | +0.027 TIES | −0.016 TIES |
+| deepseek-ai/DeepSeek-V3-0324 | +0.018 TIES | −0.042 LOSES | −0.007 TIES |
+| google/gemma-3-27b-it | −0.028 LOSES | −0.014 TIES | −0.038 LOSES |
+
+The synthetic-vs-real gap is the load-bearing finding. The lone
+real-LLM BEATS cell (`seed_paragraphs` × gpt-4o-mini, +0.032) sits
+right at the threshold and on a small sample (n=6 effective docs
+post-partition); the synthetic-bench WIN at +0.043 is
+substantially larger. Honest reading: the hybrid does not
+consistently BEAT baseline on real-LLM perturbations across
+LLM families × corpora, but isolated cells can produce positive
+Δ at the threshold.
 
 ## What's now closed
 
 - The §7 bounded-claims asterisk ("not generalising to real-LLM-
   rendered hallucinations") is no longer load-bearing — §4.7.2
-  (single model), §4.7.3 (n=2 closed pair), and §4.7.3 extended
-  (n=6 closed + open-weights) have measured the gap and reported
-  it honestly. The hybrid's synthetic-bench WIN is *real on its
-  corpus* but *doesn't generalise to any LLM family in the
-  sample*; this is named in preprint prose and pinned by digest
-  in CI.
+  (single model), §4.7.3 (n=2 → n=6 cross-family), and §4.7.4
+  (n=5 × 3-corpus cross-corpus) have measured the gap honestly.
+  The hybrid's synthetic-bench WIN is *real on its corpus* but
+  *does not consistently generalise across LLM families ×
+  corpora*; the synthetic-vs-real magnitude gap (+0.043 vs +0.032
+  BEATS-cell ceiling) is real even where the verdict-class gap
+  narrows. All claims pinned by digest in CI.
 
 - **Task #22** (Phase 1 / Phase 2 same-process digest contamination)
   — closed by PR #160. Root cause was dict iteration order, not
@@ -109,7 +144,13 @@ crosses the +0.030 BEATS threshold.
 
 - **v0.4+ candidate: open-weights extension** — closed by PR #161.
   Four open-weights families (Meta, Qwen, DeepSeek, Gemma) added;
-  none flip the verdict to BEATS.
+  none flip the verdict to BEATS on `seed_long_paragraphs`.
+
+- **v0.4+ candidate: cross-corpus extension** — closed by PR #163.
+  Two new corpora added (`seed_paragraphs`, `seed_news_briefs`).
+  §4.7.3 finding turned out to be corpus-specific:
+  `seed_paragraphs` produces one BEATS cell. New §4.7.4 captures
+  the corrected, weaker claim.
 
 ## Open follow-ups
 
@@ -126,11 +167,17 @@ crosses the +0.030 BEATS threshold.
   choice is LLM-natural. Decouples "what gets perturbed" from
   "how it propagates through rendering."
 
-- **v0.4+ candidate: cross-corpus extension**. The §4.7.3 sample
-  is one corpus × six LLMs. A complementary scaling axis is one
-  LLM × N corpora. Combined with the cross-family scaling
-  already landed, this would give a 2-D sample sufficient to
-  argue structural gap independent of both corpus and LLM choice.
+- **v0.4+ candidate: deeper corpus sampling**. The §4.7.4 result
+  rests on three corpora. Expanding to 5-10 stylistically distinct
+  corpora (scientific abstracts, fiction, legal/policy, code
+  commentary, spoken transcripts) would distinguish the lone
+  `seed_paragraphs` BEATS cell from threshold-noise.
+
+- **Re-run §4.7.4 with claude-haiku-4.5 once a current Anthropic
+  key is available**. The cross-corpus matrix is currently n=5;
+  the §4.7.3 n=6 set includes claude. Adding claude on the two
+  new corpora would tighten the cross-corpus claim from n=5×3 to
+  n=6×3 (18 cells).
 
 ## Operator-only items remaining
 
