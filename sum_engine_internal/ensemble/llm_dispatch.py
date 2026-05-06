@@ -79,6 +79,11 @@ class LLMCallTimeoutError(Exception):
 _OPENAI_PREFIXES = ("gpt-", "o1-", "o3-", "o4-")
 _ANTHROPIC_PREFIXES = ("claude-",)
 
+# Hugging Face Inference Providers exposes an OpenAI-compatible router at
+# `https://router.huggingface.co/v1`, so we reuse OpenAIAdapter with that
+# base_url when the model id is a HF-style namespaced id (`org/model`).
+HF_ROUTER_BASE_URL = "https://router.huggingface.co/v1"
+
 
 def get_adapter(
     model: str,
@@ -87,22 +92,37 @@ def get_adapter(
 ) -> "_BaseAdapter":
     """Construct the right adapter for *model*.
 
-    *api_key* defaults to:
-      - ``$OPENAI_API_KEY``     for openai models
-      - ``$ANTHROPIC_API_KEY``  for anthropic models
+    Routing is by model-id shape:
+      - ``claude-...``               → AnthropicAdapter (`$ANTHROPIC_API_KEY`)
+      - ``gpt-... / o1-* / o3-* / o4-*`` → OpenAIAdapter (`$OPENAI_API_KEY`)
+      - any id containing ``/``      → OpenAIAdapter pointed at the HF
+        Inference Providers router (`$HF_TOKEN`). HF model ids are
+        canonically namespaced (e.g. ``meta-llama/Llama-4-Maverick…``,
+        ``Qwen/Qwen3.6-35B-A3B``), and the OpenAI Python SDK works as a
+        drop-in client against the HF router because the HF router
+        implements the `/chat/completions` surface.
 
     Raises ``ValueError`` for unrecognised model ids — explicit refusal
     beats silent fallthrough when a typo would route the wrong way.
     Raises ``ImportError`` if the matching SDK extra is not installed.
     """
     m = model.lower()
+    # HF route detection runs first because a few HF orgs (e.g. ``openai``
+    # for gpt-oss) start with "gpt-" but the namespace prefix makes the
+    # routing target unambiguous: namespaced ids belong to HF.
+    if "/" in model:
+        hf_token = api_key or os.environ.get("HF_TOKEN")
+        return OpenAIAdapter(
+            model=model, api_key=hf_token, base_url=HF_ROUTER_BASE_URL,
+        )
     if m.startswith(_ANTHROPIC_PREFIXES):
         return AnthropicAdapter(model=model, api_key=api_key)
     if m.startswith(_OPENAI_PREFIXES):
         return OpenAIAdapter(model=model, api_key=api_key)
     raise ValueError(
         f"llm_dispatch: cannot route model {model!r} — expected an id "
-        f"starting with one of {sorted(_OPENAI_PREFIXES + _ANTHROPIC_PREFIXES)}. "
+        f"starting with one of {sorted(_OPENAI_PREFIXES + _ANTHROPIC_PREFIXES)}, "
+        f"or a HF-namespaced id of the form ``org/model``. "
         f"Add the prefix to llm_dispatch._OPENAI_PREFIXES / "
         f"_ANTHROPIC_PREFIXES if a new family was just released."
     )
@@ -133,7 +153,22 @@ class _BaseAdapter:
 
 
 class OpenAIAdapter(_BaseAdapter):
-    def __init__(self, *, model: str, api_key: Optional[str] = None):
+    def __init__(
+        self,
+        *,
+        model: str,
+        api_key: Optional[str] = None,
+        base_url: Optional[str] = None,
+    ):
+        """Construct an AsyncOpenAI client.
+
+        ``base_url`` is forwarded verbatim to the SDK; ``None`` means
+        the SDK uses its default (api.openai.com). Set it to
+        ``HF_ROUTER_BASE_URL`` (``https://router.huggingface.co/v1``)
+        to route through Hugging Face Inference Providers, in which
+        case ``api_key`` should be an HF token rather than an OpenAI
+        key.
+        """
         super().__init__(model=model)
         try:
             from openai import AsyncOpenAI  # type: ignore[import-not-found]
@@ -144,6 +179,7 @@ class OpenAIAdapter(_BaseAdapter):
             ) from e
         self._client = AsyncOpenAI(
             api_key=api_key or os.environ.get("OPENAI_API_KEY"),
+            base_url=base_url,
         )
 
     async def parse_structured(

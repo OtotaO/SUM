@@ -4,6 +4,24 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Path 2 §4.7.3 extended to 6 LLM lineages — open-weights via HF
+  Inference Providers.** Phase 1 captures landed for Meta Llama-3.3-70B
+  (`f1c17c3e…aac29b31`), Alibaba Qwen3.6-35B-A3B (`23da3ecb…461b8ea2`),
+  DeepSeek V3-0324 (`619a413f…2fe22c9f`), and Google Gemma-3-27B
+  (`fe76913e…0318b9b5`) — all routed through `router.huggingface.co/v1`
+  via the new HF route in `llm_dispatch.get_adapter` (model ids of
+  shape `org/model` → `OpenAIAdapter` with HF base_url + `HF_TOKEN`).
+  Joint finding upgrades from `STRUCTURAL_GAP_ALL_MODELS_LOSE` (n=2)
+  to **`STRUCTURAL_GAP_NO_MODEL_BEATS`** (n=6): four LOSE
+  (gpt-4o-mini, claude, Llama, Gemma), two TIE (Qwen +0.003,
+  DeepSeek +0.018), zero BEAT. The synthetic-bench WIN doesn't
+  generalise to *any* LLM family in the cross-organisational sample.
+  §4.7.3 prose rewritten with full per-model table + texture
+  analysis. Pinned in `Tests/research/test_sheaf_path2_multi_llm_compare.py`
+  (new n=6 test alongside n=1 / n=2 cases). Multi-LLM compare's
+  `CAPTURE_TIMEOUT_S` raised from 60s → 180s + 2 retries on timeout
+  to accommodate occasional slow HF routed calls.
+
 - **Path 2 cross-family corroboration (§4.7.3): Claude Haiku 4.5
   snapshot lands; structural-gap finding holds across LLM families.**
   Phase 1 capture for `claude-haiku-4-5-20251001` produced

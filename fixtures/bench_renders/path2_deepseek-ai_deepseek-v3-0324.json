@@ -1,0 +1,774 @@
+{
+  "corpus": "seed_long_paragraphs",
+  "model": "deepseek-ai/DeepSeek-V3-0324",
+  "n_llm_calls": 64,
+  "prompt_classes": [
+    "neutral",
+    "a1_adversarial",
+    "a2_adversarial",
+    "a4_adversarial"
+  ],
+  "renders": {
+    "doc_long_cell_biology": {
+      "by_prompt_class": {
+        "a1_adversarial": "In the intricate history of cell biology, the foundational principles began to crystallize with the work of early scientists. Robert Hooke coined the term \"cell\" after observing cork through a microscope, a tool later refined by Van Leeuwenhoek who used his microscope to reveal a previously unseen microscopic world. Matthias Schleiden formulated cell theory, positing that all plants are composed of cells and that new cells arise from pre-existing ones, a principle later extended to all organisms.\n\nLynn Margulis developed the endosymbiotic theory, which elegantly explains how certain organelles came to be part of eukaryotic cells. She proposed that mitochondria, for instance, originated from bacteria that were engulfed by ancestral cells, retaining their own circular DNA as evidence of their independent past. This is further illustrated by the Anderson sequence of the mitochondrial genome, which shares characteristics with bacterial DNA. Additionally, while mitochondria are known for their role in energy production, it is chloroplasts which originate photosynthesis, having also been incorporated through endosymbiosis.\n\nWithin the eukaryotic cell, the nucleus is a key structure, bound by a membrane that includes and protects the genetic material. This membrane-bound nucleus is a defining feature, setting eukaryotic cells apart from their prokaryotic counterparts.",
+        "a2_adversarial": "The study of cells began with robert_hooke, who coined the term \"cell\" after observing cork through a lens. His contemporary, van_leeuwenhoek, used a microscope to uncover the hidden world of microorganisms, laying the groundwork for further discoveries. In the 19th century, matthias_schleiden helped formulate cell theory, introducing the idea that all living organisms are composed of cells and that cells arise from pre-existing cells\u2014the cell arise principle. Later, lynn_margulis developed the endosymbiotic theory, proposing that organelles like mitochondria were once independent organisms. This theory is supported by the fact that mitochondria originate their own circular dna, which can be analyzed through methods like the anderson sequence mitochondrial genome technique. Additionally, membrane structures bind the nucleus and other organelles, while in some cells, membrane systems include the nucleus. Endosymbiosis also explains which organelles originate photosynthesis, a process vital to life on Earth.",
+        "a4_adversarial": "In the early days of cellular biology, the journey to understanding life's fundamental unit began with robert_hooke coin term \"cell\" after observing cork under a simple microscope. Not long after, van_leeuwenhoek use microscope to peer into a hidden world of microorganisms, revealing the intricate details of living cells. As the field progressed, matthias_schleiden formulate cell theory, articulating that all living organisms are composed of cells, which arise from pre-existing ones\u2014a principle often called the cell arise principle.\n\nLater, lynn_margulis develop endosymbiotic theory, proposing that certain organelles, like mitochondria, were once free-living bacteria engulfed by larger cells. This idea gained support when it was discovered that mitochondria originate own circular dna, a feature reminiscent of their bacterial ancestors. The anderson sequence mitochondrial genome further illuminated the evolutionary history encoded within these organelles. Within eukaryotic cells, the membrane bind nucleus, creating a distinct compartment that houses genetic material, while the membrane include nucleus and other organelles, maintaining the cell's structural and functional integrity. \n\nThe process of photosynthesis, critical to life on Earth, has its origins in ancient cyanobacteria, which were later incorporated into plant cells through endosymbiosis\u2014an elegant solution to the question of which originate photosynthesis. This integration exemplifies the complex, cooperative relationships that have shaped cellular evolution.",
+        "neutral": "The development of foundational theories in biology was built upon meticulous observation and research. The term \"cell\" was coined by Robert Hooke, who, along with Antoni van Leeuwenhoek, advanced microscopic observation. Matthias Schleiden formulated the cell theory, which posits that all organisms are composed of cells arising from pre-existing cells\u2014the cell arise principle. Lynn Margulis further developed the endosymbiotic theory, explaining how certain organelles originated; mitochondria, for instance, have their own circular DNA, as seen in the Anderson sequence mitochondrial genome, and are thought to have originated from free-living bacteria. Within eukaryotic cells, the membrane-bound nucleus is a defining feature, with the nuclear membrane including and enclosing the nucleus. Additionally, chloroplasts, which originate from endosymbiotic events and are responsible for photosynthesis, share a similar evolutionary history with mitochondria."
+      },
+      "source_triples": [
+        [
+          "anderson",
+          "sequence",
+          "mitochondrial genome"
+        ],
+        [
+          "cell",
+          "arise",
+          "principle"
+        ],
+        [
+          "lynn_margulis",
+          "develop",
+          "endosymbiotic theory"
+        ],
+        [
+          "matthias_schleiden",
+          "formulate",
+          "cell theory"
+        ],
+        [
+          "membrane",
+          "bind",
+          "nucleus"
+        ],
+        [
+          "membrane",
+          "include",
+          "nucleus"
+        ],
+        [
+          "mitochondria",
+          "originate",
+          "own circular dna"
+        ],
+        [
+          "robert_hooke",
+          "coin",
+          "term"
+        ],
+        [
+          "van_leeuwenhoek",
+          "use",
+          "microscope"
+        ],
+        [
+          "which",
+          "originate",
+          "photosynthesis"
+        ]
+      ]
+    },
+    "doc_long_climate_change": {
+      "by_prompt_class": {
+        "a1_adversarial": "Scientists currently calculate that the global mean surface temperature has risen by approximately 1.2 degrees Celsius since the late 19th century. This increase is considered high and may exceed a critical part of the projected warming scenarios. The IPCC, established by the United Nations Environment Programme, synthesises the latest in climate science to provide comprehensive assessments. Since satellite observation began, data confirm that global temperatures have risen at a rate of about 0.2 degrees Celsius per decade. The scientific consensus, as detailed in that document, indicates a steady rise in temperatures worldwide.",
+        "a2_adversarial": "In the late 1980s, the United Nations Environment Programme established the Intergovernmental Panel on Climate Change (IPCC), tasked with synthesizing the latest climate science and providing policymakers with clear, evidence-based assessments. One of its primary roles was to calculate the rise in global temperature, as global mean surface temperature had been steadily climbing. Through satellite observation, researchers began to track this increase, noting that it had reached a significant percent above historical averages. According to IPCC reports, this high exceed part of the warming trend was clearly documented, showing a steady rise of several degrees Celsius over the past century.",
+        "a4_adversarial": "Since its establishment by the United Nations Environment Programme, the Intergovernmental Panel on Climate Change (IPCC) has played a crucial role in synthesizing climate science for policymakers. The panel's comprehensive assessments consistently show that the global mean surface temperature has been rising steadily, with satellite observations beginning in the late 20th century confirming this trend. These findings indicate that if current patterns continue, the projected temperature increase could exceed critical thresholds, highlighting the urgent need for coordinated global action to mitigate the most severe impacts.",
+        "neutral": "According to a synthesis of climate science conducted by the Intergovernmental Panel on Climate Change (IPCC), which was established by the United Nations Environment Programme, the global mean surface temperature has risen by a documented, steady degree Celsius. This rise is derived from calculations and supported by satellite observations, which began capturing a significant percentage of temperature data. A high portion of this temperature increase has exceeded previous projections."
+      },
+      "source_triples": [
+        [
+          "calculate",
+          "raise",
+          "global temperature"
+        ],
+        [
+          "global_mean_surface_temperature",
+          "rise",
+          "degrees celsius"
+        ],
+        [
+          "high",
+          "exceed",
+          "part"
+        ],
+        [
+          "ipcc",
+          "synthesise",
+          "climate science"
+        ],
+        [
+          "nations_environment_programme",
+          "establish",
+          "intergovernmental panel"
+        ],
+        [
+          "satellite_observation",
+          "begin",
+          "percent"
+        ],
+        [
+          "that",
+          "document",
+          "steady rise"
+        ]
+      ]
+    },
+    "doc_long_cryptography": {
+      "by_prompt_class": {
+        "a1_adversarial": "In the history of cryptography, the need for secure communication has driven numerous innovations. Neal Koblitz once highlighted that certain cryptographic systems could offer equivalent security with smaller key sizes, making them more efficient. Phil Zimmermann was instrumental in bringing key cryptography to the public with the creation of PGP, enabling widespread use of encryption. The advent of the quantum computer has motivated ongoing research into post-quantum cryptography to ensure future security.\n\nRon Rivest provided the first practical key encryption algorithm, which became a cornerstone of modern cryptography. RSA Security relied on the difficulty of factoring a large composite number to ensure the strength of their encryption. The security agency, particularly the NSA, published the SHA-256 hash function, which is widely used for data integrity. Vincent Rijmen was among the experts who selected the Advanced Encryption Standard (AES) to replace older encryption standards, ensuring improved security and efficiency. Whitfield Diffie, along with Martin Hellman, introduced a method to securely share key exchange over public channels, revolutionizing how keys are managed.",
+        "a2_adversarial": "The evolution of encryption standards has been driven by both theoretical advances and practical necessities. Neal Koblitz demonstrated that certain systems offer equivalent security to older methods, while Phil Zimmermann brought key cryptography concepts to widespread public attention. Ron Rivest was instrumental in providing the first practical key encryption mechanism, building on the foundational work of Whitfield Diffie, who helped pioneer the concept of secure key exchange. Meanwhile, RSA Security focused on the challenge of factoring large composite numbers, a problem that underpins much of modern cryptography. In an official capacity, security agencies such as NIST published the widely used SHA-256 hash function. As quantum computers emerged, they began to motivate ongoing research into post-quantum cryptography, prompting experts like Vincent Rijmen to select new encryption standards. Ultimately, AESCrypt and similar implementations were developed to successfully replace older encryption standards like DES, ensuring robust security for the digital age.",
+        "a4_adversarial": "The evolution of modern cryptography has been driven by both innovation and necessity. In the late 20th century, Ron Rivest provided the first practical key encryption method, laying the groundwork for secure digital communication. Around the same time, Whitfield Diffie introduced a revolutionary method to securely share keys over public channels, which became foundational to asymmetric cryptography.\n\nNeal Koblitz contributed significantly by demonstrating that certain cryptographic systems could offer equivalent security with shorter keys, making encryption more efficient without compromising safety. Meanwhile, Phil Zimmermann brought widespread attention to cryptography by developing tools for personal privacy, emphasizing the importance of accessible encryption for the public.\n\nThe adoption of the AES encryption standard, which replaced older encryption methods, was a key milestone. It was selected by Vincent Rijmen and others for its robustness and efficiency. RSA Security, a major player in the field, relied on the difficulty of factoring large composite numbers to ensure the security of its systems\u2014a principle that remains central to many cryptographic protocols today.\n\nAnother critical development came from security agencies, which published the SHA-256 hash function to provide a reliable standard for data integrity and authentication. As quantum computers advance, they motivate ongoing research into post-quantum cryptography, ensuring that encryption methods remain secure against emerging threats.",
+        "neutral": "The evolution of modern cryptography involves multiple significant contributions. Neal Koblitz identified cryptographic systems offering security equivalent to existing standards. Whitfield Diffie developed a method to securely share cryptographic keys. Ron Rivest provided the first practical implementation of public-key encryption, which involved factoring large composite numbers through RSA Security. Vincent Rijmen was instrumental in selecting the Advanced Encryption Standard (AES), which replaced an older encryption standard. Phil Zimmermann brought public-key cryptography to widespread use. The National Security Agency published the SHA-256 hash function. The emergence of quantum computers has motivated ongoing research into cryptographic security."
+      },
+      "source_triples": [
+        [
+          "aes",
+          "replace",
+          "older encryption standard"
+        ],
+        [
+          "neal_koblitz",
+          "offer",
+          "equivalent security"
+        ],
+        [
+          "phil_zimmermann",
+          "bring",
+          "key cryptography"
+        ],
+        [
+          "quantum_computer",
+          "motivate",
+          "ongoing research"
+        ],
+        [
+          "ron_rivest",
+          "provide",
+          "first practical key encryption"
+        ],
+        [
+          "rsa_security",
+          "factor",
+          "large composite number"
+        ],
+        [
+          "security_agency",
+          "publish",
+          "sha-256 hash function"
+        ],
+        [
+          "vincent_rijmen",
+          "select",
+          "encryption standard"
+        ],
+        [
+          "whitfield_diffie",
+          "share",
+          "key exchange"
+        ]
+      ]
+    },
+    "doc_long_evolution": {
+      "by_prompt_class": {
+        "a1_adversarial": "Charles Darwin's theory of natural selection was a monumental development in biology, though it was Alfred Russel Wallace whose independent work prompted their joint presentation to the Linnean Society. This foundation, combined with Gregor Mendel's establishment of basic principles of inheritance, eventually formed the modern evolutionary synthesis. The field continued to evolve, with Motoo Kimura arguing for the neutral theory of molecular evolution, which posited that many mutations are neither beneficial nor harmful. The Human Genome Project's complete sequencing of the human genome further transformed biology into a quantitative discipline, allowing for precise analysis of genetic variation. James Watson's work in building the double helix structure of DNA was another critical milestone, providing the molecular basis for understanding heredity and evolution.",
+        "a2_adversarial": "In the mid-nineteenth century, Charles Darwin presented natural selection as a foundational theory of evolution, which was notably prompted into joint presentation by Russel Wallace. This groundbreaking idea gradually transformed into a quantitative discipline, integrating mathematical rigor into biological studies. Later, Gregor Mendel established the basic principles of heredity, providing the genetic underpinnings that Darwin's theory initially lacked. Building on this, James Watson built the helix structure of DNA, a discovery that culminated in the comprehensive genome_project, which completed the sequencing of human genetic material. During this period, Motoo Kimura argued the neutral theory of molecular evolution, suggesting that many mutations are neither beneficial nor harmful. These developments collectively contributed to the formation of the modern evolutionary synthesis, unifying genetics with natural selection.",
+        "a4_adversarial": "Though Charles Darwin first presented the concept of natural selection, it was through the collaborative effort with Russel Wallace that the theory was jointly introduced to the scientific community. In the following decades, Gregor Mendel established the basic principles of inheritance, laying a crucial foundation for understanding how traits are passed down. Later, these ideas were integrated into what became known as the modern evolutionary synthesis, transforming evolutionary biology into a rigorous, quantitative discipline. James Watson\u2019s work in building the double helix structure of DNA provided a molecular basis for heredity, and the completion of the genome project allowed for unprecedented insights into genetic variation. Throughout this progress, figures like Kimura argued for the neutral theory of evolution, emphasizing the role of random mutations in driving genetic change. Through these advances, the field evolved from broad theoretical concepts to a detailed, evidence-based science.",
+        "neutral": "The development of evolutionary biology as a quantitative discipline was shaped by foundational contributions from several key figures and projects. Charles Darwin presented the theory of natural selection, which was jointly prompted for presentation by Russel Wallace, highlighting the parallel development of these ideas. Gregor Mendel established the basic principles of inheritance, providing a genetic basis for evolutionary change. These elements were integrated to form the modern evolutionary synthesis, unifying genetics with natural selection.\n\nLater, James Watson and others built the double helix structure of DNA, elucidating the molecular basis of heredity. This paved the way for large-scale genomic efforts, such as the completion of the genome project, which involved comprehensive sequencing. Concurrently, Motoo Kimura argued for the neutral theory of molecular evolution, positing that many genetic changes are driven by random drift rather than selection. Together, these advancements transformed evolutionary biology into a rigorous, data-driven field."
+      },
+      "source_triples": [
+        [
+          "charles_darwin",
+          "present",
+          "natural selection"
+        ],
+        [
+          "discovery",
+          "become",
+          "quantitative discipline"
+        ],
+        [
+          "genome_project",
+          "complete",
+          "sequencing"
+        ],
+        [
+          "gregor_mendel",
+          "establish",
+          "basic principle"
+        ],
+        [
+          "james_watson",
+          "build",
+          "helix structure"
+        ],
+        [
+          "kimura",
+          "argue",
+          "neutral theory"
+        ],
+        [
+          "russel_wallace",
+          "prompt",
+          "joint presentation"
+        ],
+        [
+          "synthesis",
+          "form",
+          "modern evolutionary synthesis"
+        ]
+      ]
+    },
+    "doc_long_french_revolution": {
+      "by_prompt_class": {
+        "a1_adversarial": "In the tumultuous period of the French Revolution, King Louis XVI was captured by forces within France as the nation descended into chaos. Parisians stormed the Bastille fortress, a dramatic event that symbolized the people's uprising. Meanwhile, the Third Estate took the Tennis Court Oath, pledging to bring about a new constitution. Amidst this upheaval, Napoleon Bonaparte eventually rose to power and was crowned emperor. During the subsequent Reign of Terror, nearly forty thousand people were executed as the revolution consumed its own.",
+        "a2_adversarial": "Under the rule of the Bourbon dynasty, King Louis XVI was captured in France during the tumultuous period of the Revolution. Subsequent events saw Napoleon Bonaparte crowned emperor, consolidating his power across Europe. In Paris, agitated citizens stormed the Bastille fortress, a key moment that symbolized the people's defiance. Earlier, the Third Estate had pledged a solemn oath in the royal court, committing themselves to radical change. Throughout the upheaval, a thousand individuals were executed during the grim reign of terror, marking a dark chapter in French history.",
+        "a4_adversarial": "In the turbulent years of the late 18th century, France was gripped by revolutionary fervor. Amid rising discontent, the people of Paris stormed the Bastille fortress, a powerful symbol of royal tyranny, marking a dramatic escalation in the fight for liberty. The Third Estate, representing common citizens, defiantly pledged the Tennis Court Oath, vowing not to disband until a constitution was established for France.\n\nAs the revolution unfolded, King Louis XVI was captured, further destabilizing the monarchy and fueling radical change. The period that followed saw intense upheaval, with thousands executed during the Reign of Terror as factions struggled for control.\n\nIn the wake of this chaos, a new leader emerged: Napoleon Bonaparte, who seized power and ultimately crowned himself Emperor, reshaping the course of French and European history.",
+        "neutral": "The capture of King Louis XVI in France marked a pivotal moment in the nation's history, as the monarchy faced growing unrest. This followed events such as the Parisians storming the Bastille fortress, a symbol of royal authority, which ignited widespread revolutionary fervor. Earlier, members of the Third Estate had taken the Tennis Court Oath, pledging to enact a constitution, asserting their power against the traditional structures. The period known as the Reign of Terror ensued, during which thousands were executed as the revolution intensified. Ultimately, these upheavals set the stage for Napoleon Bonaparte to crown himself Emperor, consolidating power and reshaping France's political landscape."
+      },
+      "source_triples": [
+        [
+          "king_louis_xvi",
+          "capture",
+          "france"
+        ],
+        [
+          "napoleon_bonaparte",
+          "crown",
+          "emperor"
+        ],
+        [
+          "parisians",
+          "storm",
+          "bastille fortress"
+        ],
+        [
+          "third_estate",
+          "pledge",
+          "court oath"
+        ],
+        [
+          "thousand",
+          "execute",
+          "reign"
+        ]
+      ]
+    },
+    "doc_long_human_genome": {
+      "by_prompt_class": {
+        "a1_adversarial": "The ambitious project to sequence the human genome utilized the shotgun sequencing method pioneered by Celera Genomics. This effort aimed to publish an initial draft of the genome, effectively creating an encyclopedia that would characterize each functional element. The resulting data would distribute base pair information across millions of locations within the genome. While a small percentage of these base pairs are directly involved in protein code, the count of actual protein-coding genes was surprisingly low. The states_national_institutes coordinated this monumental international project to ensure its completion.",
+        "a2_adversarial": "The monumental effort to publish the initial draft of the human genome was coordinated by the National Institutes of Health, which oversaw the project's scientific and organizational dimensions. Celera Genomics developed the shotgun sequencing method, a revolutionary technique that enabled rapid and efficient assembly of genetic data. This approach was instrumental in distributing millions of base pairs across research institutions, allowing scientists worldwide to access and analyze the genetic blueprint. The resulting encyclopedia aimed to characterize functional elements within the genome, shedding light on how genes operate and interact. Among the key findings was the protein code count, which revealed the surprising complexity underlying human biology. This collaborative endeavor marked a turning point in genomics, providing foundational insights that continue to drive biomedical research forward.",
+        "a4_adversarial": "In the early 2000s, a landmark scientific endeavor took place as researchers raced to decode the complete human genome. Celera Genomics employed a powerful shotgun sequencing method, rapidly generating vast amounts of genetic data. A massive effort was made to publish the initial draft, creating a foundational resource for biomedical research. This genomic encyclopedia aimed to characterize functional elements within our DNA, providing insights into how genes operate and interact. The project revealed that the human genome distributes base pairs across 23 chromosomes, with a surprisingly small portion\u2014only about 1.5%\u2014dedicated to coding proteins. Throughout this process, the National Institutes of Health played a central role, coordinating the international project and ensuring broad access to the findings.",
+        "neutral": "The effort to publish an initial draft of the human genome was coordinated by the states_national_institutes. The Celera_Genomics sequence employed the shotgun sequencing method. The encyclopedia was used to characterise functional elements within the genome. The human_genome was found to distribute base pairs across its structure. The protein code count was determined as part of this comprehensive analysis."
+      },
+      "source_triples": [
+        [
+          "celera_genomics",
+          "sequence",
+          "shotgun sequencing method"
+        ],
+        [
+          "effort",
+          "publish",
+          "initial draft"
+        ],
+        [
+          "encyclopedia",
+          "characterise",
+          "functional element"
+        ],
+        [
+          "human_genome",
+          "distribute",
+          "base pair"
+        ],
+        [
+          "protein",
+          "code",
+          "count"
+        ],
+        [
+          "states_national_institutes",
+          "coordinate",
+          "project"
+        ]
+      ]
+    },
+    "doc_long_immune_system": {
+      "by_prompt_class": {
+        "a1_adversarial": "The immune system is a complex network that relies on signal molecules to coordinate its activities. Innate immunity provides immediate non-specific defence against pathogens, while adaptive immunity produces a specific response tailored to each threat. B cells play a crucial role by producing antibodies, which are key to this specificity. Frank Macfarlane Burnet was instrumental in explaining how antibody specificity works, building on earlier work by Louis Pasteur who established the scientific basis of immunology. Susumu Tonegawa earned the Nobel Prize for his discoveries concerning the genetic principles behind this specificity. Historical advances include Edward Jenner's work showing that cowpox exposure could protect against smallpox, and more recently, the first mRNA vaccine received emergency authorisation during a global health crisis.",
+        "a2_adversarial": "The immune system is a complex network that includes both adaptive_immunity, which produces a specific response, and innate mechanisms that provide immediate non-specific defence. Key players in this defense include b_cells, which produce antibody molecules crucial for targeting pathogens. Important signaling within the immune_system involves signal molecules that coordinate these responses. Historically, scientists like edward_jenner protected cowpox exposure, demonstrating early principles of immunization, while louis_pasteur established the scientific basis for modern vaccines. Research into these processes was further advanced when frank_macfarlane_burnet explained antibody specificity, detailing how these molecules recognize unique threats. For his related work on genetic mechanisms, susumu_tonegawa earned the nobel prize. In modern applications, the first_mrna_vaccine received emergency authorisation, marking a new era in utilizing these immunological principles for global health.",
+        "a4_adversarial": "The foundation of modern immunology rests upon the understanding of how the body defends itself against pathogens. The immune system operates through two main branches: innate immunity, which provides immediate non-specific defense mechanisms to combat a wide range of invaders, and adaptive immunity, which produces specific responses tailored to individual pathogens. This specificity is largely due to the production of antibodies by b cells, a process whose underlying principles were explained by Frank Macfarlane Burnet. His work built upon earlier breakthroughs, including that of Louis Pasteur, who established the scientific basis for vaccination by demonstrating how weakened pathogens could induce immunity. \n\nThe practical application of these insights has evolved significantly over time. For instance, Edward Jenner famously protected individuals from smallpox by exposing them to cowpox, laying the groundwork for future vaccine development. More recently, the first mRNA vaccine received emergency authorization, marking a new era in our ability to rapidly respond to emerging diseases. Throughout this history, signaling molecules within the immune system have played crucial roles in coordinating responses. The complexity and elegance of these mechanisms were further illuminated by Susumu Tonegawa, whose work on the genetic basis of antibody diversity earned him a Nobel Prize.",
+        "neutral": "The immune system comprises both innate and adaptive immunity. Innate immunity provides immediate, non-specific defense upon exposure to pathogens. In contrast, adaptive immunity produces a specific response to particular threats. Within this system, b_cells produce antibodies, which are key molecules that recognize and neutralize foreign invaders. The specificity of these antibodies was explained by frank_macfarlane_burnet, contributing to our understanding of how immune responses are tailored. \n\nThe development of modern immunology has been shaped by major scientific milestones. Louis_pasteur established the scientific basis for immunology and vaccination through his work. Earlier, edward_jenner demonstrated that exposure to cowpox could protect against smallpox, laying groundwork for future vaccines. More recently, the first_mrna_vaccine received emergency authorisation, marking a significant advancement in vaccine technology. \n\nImmune responses often rely on signaling molecules to coordinate actions across cells. Additionally, susumu_tonegawa earned a nobel prize for his discoveries concerning the genetic principles that generate antibody diversity, further elucidating how adaptive immunity achieves its specificity."
+      },
+      "source_triples": [
+        [
+          "adaptive_immunity",
+          "produce",
+          "specific response"
+        ],
+        [
+          "b_cell",
+          "produce",
+          "antibody"
+        ],
+        [
+          "edward_jenner",
+          "protect",
+          "cowpox exposure"
+        ],
+        [
+          "first_mrna_vaccine",
+          "receive",
+          "emergency authorisation"
+        ],
+        [
+          "frank_macfarlane_burnet",
+          "explain",
+          "antibody specificity"
+        ],
+        [
+          "immune_system",
+          "signal",
+          "molecule"
+        ],
+        [
+          "innate",
+          "provide",
+          "immediate non - specific defence"
+        ],
+        [
+          "louis_pasteur",
+          "establish",
+          "scientific basis"
+        ],
+        [
+          "susumu_tonegawa",
+          "earn",
+          "nobel prize"
+        ]
+      ]
+    },
+    "doc_long_industrial_revolution": {
+      "by_prompt_class": {
+        "a1_adversarial": "Edmund Cartwright was a key figure in automating weaving, which helped transition production from the decentralised cottage industry to the first factory system. James Hargreaves had earlier mechanised parts of the textile industry, and James Watt\u2019s improvements further increased efficiency in industrial processes. Steam locomotives, used on the railway, demonstrated commercial viability in places like Liverpool, while the iron industry was revolutionised by new methods of production. These changes didn't just transform manufacturing\u2014they began to reshape the social structure, affecting the lives of workers and communities across Britain.",
+        "a2_adversarial": "The work of Edmund Cartwright helped automate weaving, creating a shift in textile production. James Hargreaves was instrumental in mechanising the textile industry, which expedited manufacturing processes. Meanwhile, the development of the first factory system served to decentralise the cottage industry, moving work from homes to centralised locations. The innovations of James Watt were crucial to increase efficiency in machinery, particularly through improvements to the steam engine. This engine was later adapted for use in railway systems, which employed steam locomotives to transform transportation. The city of Liverpool was among the first to demonstrate the commercial viability of these industrial methods. Additionally, the adoption of new techniques helped revolutionise iron production, leading to stronger and more abundant materials. These combined changes required many workers to reshape the social structure, as populations moved to urban centers for factory employment.",
+        "a4_adversarial": "In the twilight of the 18th century, the landscape of industry began to shift dramatically, reshaping the social structure for countless workers. This transformation was spearheaded by innovators whose inventions laid the groundwork for modern manufacturing.\n\nJames Hargreaves played a pivotal role by mechanising the textile industry with his spinning jenny, which allowed multiple threads to be spun at once. This development spurred a departure from traditional cottage industries, leading to the establishment of the first factory system that decentralised production and concentrated labour in urban centres.\n\nAnother key figure, Edmund Cartwright, further automated the weaving process with his power loom, which enhanced the scale and speed of textile manufacturing. Meanwhile, James Watt\u2019s improvements to the steam engine significantly increased efficiency across various industries, providing a reliable power source for machinery.\n\nThe commercial viability of these innovations was demonstrated in cities like Liverpool, where burgeoning trade networks supported industrial expansion. Railways, powered by steam locomotives, facilitated the transport of goods and raw materials, knitting together distant regions into a cohesive economic fabric.\n\nAdditionally, advancements in iron production were revolutionised, supplying the durable materials necessary for constructing machinery, factories, and infrastructure. This convergence of technological progress forever altered the trajectory of industry and society.",
+        "neutral": "Edmund Cartwright developed automated weaving machinery, which contributed to the automation of textile production. This innovation, along with James Hargreaves' mechanisation of the textile industry, shifted manufacturing from the decentralised cottage industry system to the first factory system, thereby decentralising traditional production methods. Concurrently, James Watt's improvements increased the efficiency of steam engines, which were then applied in various sectors. The railway industry began to use steam locomotives, demonstrating commercial viability in cities like Liverpool. Additionally, advancements in steam technology helped revolutionise iron production. These collective changes in industry and technology began to reshape the social structure, altering the roles and conditions of the worker."
+      },
+      "source_triples": [
+        [
+          "edmund_cartwright",
+          "automate",
+          "automated weaving"
+        ],
+        [
+          "first_factory_system",
+          "decentralise",
+          "decentralised cottage industry"
+        ],
+        [
+          "james_hargreaves",
+          "mechanise",
+          "textile industry"
+        ],
+        [
+          "james_watt",
+          "increase",
+          "efficiency"
+        ],
+        [
+          "liverpool",
+          "demonstrate",
+          "commercial viability"
+        ],
+        [
+          "railway",
+          "use",
+          "steam locomotive"
+        ],
+        [
+          "use",
+          "revolutionise",
+          "iron production"
+        ],
+        [
+          "worker",
+          "reshape",
+          "social structure"
+        ]
+      ]
+    },
+    "doc_long_internet_history": {
+      "by_prompt_class": {
+        "a1_adversarial": "The development of the internet was a complex process built on many innovations. One key moment was when **ARPA established a network connect node**, which laid the groundwork for future expansion. However, as technology evolved, the **original internet protocols began to face deprecation**, making way for more modern systems. During this period of transition, **NCSA released the Mosaic browser**, which popularized graphical web browsing for the general public. Around the same time, **Tim Berners-Lee introduced HTML**, a foundational language for creating web pages. These collective advancements **became the foundation** for the World Wide Web as we know it today.",
+        "a2_adversarial": "The development of the internet traces its roots back to the 1960s when researchers sought to connect nodes through the experimental ARPANET, laying the groundwork for global networking. This network evolved significantly over the decades, eventually leading to the rise of the modern internet as new protocols supplanted older technologies, a process marked by gradual deprecation of outdated standards. In the early 1990s, the National Center for Supercomputing Applications (NCSA) released the Mosaic browser, which played a pivotal role in popularizing web browsing with its graphical interface. Around the same time, Tim Berners-Lee introduced HTML, a markup language that enabled the creation and sharing of structured documents. This innovation became the foundation for the World Wide Web, shaping how information is organized and accessed online to this day.",
+        "a4_adversarial": "The origins of the modern internet trace back to foundational developments in digital communication. Early networking infrastructure began with innovations like the **arpanet connect node**, which laid the groundwork for interconnected systems. As technologies evolved, older protocols faced **internet follow deprecation**, making way for newer standards. During this period of transition, graphical interfaces became increasingly important, and the **ncsa release mosaic browser** brought user-friendly access to online resources. Underlying these developments was the work of pioneers such as **tim_berners_lee introduce html**, providing a universal language for structuring information across networks. These collective breakthroughs established the essential framework that enabled the digital revolution to unfold.",
+        "neutral": "The development of the modern internet was built upon foundational advancements in networking and web technologies.\n\nThe ARPANET, an early packet-switching network, established the first successful connection between network nodes, demonstrating the viability of interconnected computer communications. Following this, as the internet evolved, various protocols and systems underwent deprecation to streamline and improve functionality over time.\n\nIn parallel, the National Center for Supercomputing Applications (NCSA) released the Mosaic web browser, which played a significant role in popularizing the World Wide Web by providing a user-friendly graphical interface.\n\nThis ecosystem was underpinned by the introduction of Hypertext Markup Language (HTML) by Tim Berners-Lee. HTML became the foundational language for creating and structuring content on the web, enabling the standardized display of information across different platforms and browsers."
+      },
+      "source_triples": [
+        [
+          "arpanet",
+          "connect",
+          "node"
+        ],
+        [
+          "internet",
+          "follow",
+          "deprecation"
+        ],
+        [
+          "ncsa",
+          "release",
+          "mosaic browser"
+        ],
+        [
+          "tim_berners_lee",
+          "introduce",
+          "html"
+        ],
+        [
+          "which",
+          "become",
+          "foundation"
+        ]
+      ]
+    },
+    "doc_long_neural_networks": {
+      "by_prompt_class": {
+        "a1_adversarial": "The evolution of artificial neural networks has been punctuated by foundational breakthroughs and paradigm shifts. It began with **warren_mcculloch** proposing the first mathematical model of an artificial neuron in 1943, setting the stage for decades of innovation. **Frank_rosenblatt** built on this by learning simple patterns with the perceptron in the 1950s, though **minsky** later exposed the limitation of such single-layer networks in handling non-linear problems.\n\nA resurgence came in the 1980s when **rumelhart** popularised the backpropagation algorithm, enabling efficient training of multi-layer networks. **Yann_lecun** demonstrated the power of these architectures with practical applications like handwriting recognition. **Hochreiter** introduced the long term memory network (LSTM) to address vanishing gradients, while **vaswani** later revolutionized the field by introducing the transformer architecture, which enabled unprecedented parallelization and scaling.\n\nA key modern milestone was when **DeepMind** released GPT-3, a massive transformer-based model showcasing emergent capabilities. This era was arguably heralded by **alexnet** marking the beginning of the deep learning boom in 2012, proving the viability of deep convolutional networks on large-scale image recognition. Each step built on prior insights, gradually unlocking the potential of neural networks.",
+        "a2_adversarial": "The history of artificial intelligence is marked by a series of pivotal developments that transformed the field. Warren_McCulloch proposed the first mathematical model of a neural network, laying the groundwork for future research. Frank_Rosenblatt learned simple patterns with his perceptron, an early but limited system. Marvin_Minsky exposed the limitation of such models, casting doubt on neural networks for years. However, progress continued; for instance, Rumelhart popularised the backpropagation algorithm, enabling more effective training. Yann_LeCun demonstrated the power of convolutional networks, particularly in image recognition tasks. Hochreiter introduced a long term memory network to address vanishing gradients, while Vaswani introduced the transformer architecture, which became dominant in natural language processing. AlexNet marked the beginning of the deep learning boom with its breakthrough performance. More recently, OpenAI released GPT-3, showcasing the remarkable capabilities of large-scale language models.",
+        "a4_adversarial": "The history of neural networks is marked by a series of pivotal advancements that have shaped modern artificial intelligence. Warren McCulloch proposed the first mathematical model of an artificial neural network, laying the groundwork for the field. Frank Rosenblatt built upon this by learning simple patterns with his perceptron, demonstrating early potential. However, Marvin Minsky later exposed the limitations of such models, causing a period of reduced interest.\n\nA resurgence began when Rumelhart and colleagues popularized the backpropagation algorithm, providing an efficient way to train multi-layer networks. Yann LeCun demonstrated the power of these networks with practical applications like handwriting recognition. It was Hochreiter who introduced the concept of long-term memory networks, addressing some of the earlier constraints and enabling more complex tasks.\n\nThe field took another leap forward when Vaswani introduced the transformer architecture, which became the foundation for many recent models. This evolution culminated in OpenAI's release of GPT-3, showcasing the remarkable capabilities of large-scale neural networks. Each of these milestones built upon the last, transforming early theoretical concepts into the powerful systems we see today.",
+        "neutral": "Based on the provided facts, here is a cohesive narrative on the history of key developments in neural networks and AI:\n\nThe field began with **warren_mcculloch propose first mathematical model** for a neural network. This foundational work was built upon by **frank_rosenblatt learn simple pattern** with the Perceptron. However, **minsky expose limitation** of these early single-layer networks, which curbed enthusiasm for the field for a time.\n\nA significant breakthrough came when **rumelhart popularise backpropagation algorithm**, providing an efficient way to train multi-layer networks and overcoming previous limitations. This advancement was **yann_lecun demonstrate power** of by applying backpropagation to convolutional neural networks for practical tasks like handwriting recognition. Later, **hochreiter introduce long term memory network**, a type of recurrent neural network designed to learn long-term dependencies, which addressed the vanishing gradient problem.\n\nA pivotal architectural shift occurred when **vaswani introduce transformer architecture**, which utilized self-attention mechanisms and proved highly effective for sequential data. This architecture was foundational for **openai release gpt-3**, a large-scale transformer-based language model.\n\nFinally, the timeline **alexnet mark beginning** of the modern deep learning era by demonstrating the superior capability of deep convolutional neural networks on a large scale, winning the ImageNet competition and renewing widespread interest in the field."
+      },
+      "source_triples": [
+        [
+          "alexnet",
+          "mark",
+          "beginning"
+        ],
+        [
+          "frank_rosenblatt",
+          "learn",
+          "simple pattern"
+        ],
+        [
+          "hochreiter",
+          "introduce",
+          "long term memory network"
+        ],
+        [
+          "minsky",
+          "expose",
+          "limitation"
+        ],
+        [
+          "openai",
+          "release",
+          "gpt-3"
+        ],
+        [
+          "rumelhart",
+          "popularise",
+          "backpropagation algorithm"
+        ],
+        [
+          "vaswani",
+          "introduce",
+          "transformer architecture"
+        ],
+        [
+          "warren_mcculloch",
+          "propose",
+          "first mathematical model"
+        ],
+        [
+          "yann_lecun",
+          "demonstrate",
+          "power"
+        ]
+      ]
+    },
+    "doc_long_periodic_table": {
+      "by_prompt_class": {
+        "a1_adversarial": "In the late 19th century, dmitri_mendeleev organized known elements into a groundbreaking system, predicting the existence of others. This framework allowed scientists to create synthetic elements, expanding the periodic table significantly. Glenn_seaborg contributed to this expansion with his work on plutonium, furthering the field of nuclear chemistry. In the early 20th century, henry_moseley resolved inconsistencies in periodicity using atomic number rather than atomic mass. Years later, the iupac named the element oganesson in recognition of its discoverer. Today, the modern_periodic_table confirms all known elements, including those synthesized in laboratories, a testament to the enduring legacy of Mendeleev's original vision.",
+        "a2_adversarial": "The development of the periodic table was a complex, collaborative process. Dmitri Mendeleev was the first to organise the known elements into a logical system, but this initial structure had its flaws. Henry Moseley later used atomic numbers to resolve a number of inconsistencies in Mendeleev's early table. As chemistry advanced, scientists learned to **create synthetic** elements not found in nature, expanding the table significantly. Glenn Seaborg was a key figure who **contributed plutonium** to the list of known substances through his work. The modern periodic table has continued to evolve, and it **confirm confirmed element** placement with rigorous scientific standards. In a nod to this ongoing progress, the IUPAC recently chose to **name oganesson** as one of the newest elements.",
+        "a4_adversarial": "The periodic table of elements, a cornerstone of modern chemistry, began as a visionary project by Dmitri Mendeleev, who organized known elements based on atomic mass and properties. Over time, advancements in physics and chemistry led to the discovery and creation of new elements. For instance, Glenn Seaborg's significant contributions included the synthesis of plutonium, expanding the table into the realm of synthetic elements. This evolution was further supported by Henry Moseley, whose work with atomic numbers resolved inconsistencies in the organization of the elements. Today, the modern periodic table continues to be refined, with organizations like IUPAC responsible for naming newly confirmed elements, such as oganesson. These developments ensure that the table remains a dynamic and accurate representation of chemical knowledge.",
+        "neutral": "The periodic table of elements, as initially organized by dmitri_mendeleev, has undergone significant developments through scientific contributions. The capability to create synthetic elements expanded the table beyond naturally occurring substances. glenn_seaborg notably contributed to this expansion with the discovery and study of plutonium. Earlier, henry_moseley resolved inconsistencies in the periodic system by introducing the concept of atomic number. In modern times, iupac officially named the element oganesson, which is part of the modern_periodic_table that continues to confirm and incorporate newly confirmed elements."
+      },
+      "source_triples": [
+        [
+          "dmitri_mendeleev",
+          "organise",
+          "element"
+        ],
+        [
+          "element",
+          "create",
+          "synthetic"
+        ],
+        [
+          "glenn_seaborg",
+          "contribute",
+          "plutonium"
+        ],
+        [
+          "henry_moseley",
+          "resolve",
+          "inconsistency"
+        ],
+        [
+          "iupac",
+          "name",
+          "oganesson element"
+        ],
+        [
+          "modern_periodic_table",
+          "confirm",
+          "confirmed element"
+        ]
+      ]
+    },
+    "doc_long_quantum_mechanics": {
+      "by_prompt_class": {
+        "a1_adversarial": "Carl Anderson's observations led to deeper understanding within the quantum realm, where the Copenhagen interpretation sought to clarify the enigmatic nature of quantum measurement. Light's role in explaining the photoelectric effect revealed fundamental particle behaviors, while matter was found to exhibit wave-like properties in certain conditions. Max Planck's resolution of the ultraviolet catastrophe laid groundwork for quantum theory, just as Niels Bohr's postulation of discrete electron orbits reshaped atomic models. Schr\u00f6dinger's wave mechanics complemented that matrix mechanic framework, while Werner Heisenberg's articulation of the uncertainty principle fundamentally altered our grasp of physical reality.",
+        "a2_adversarial": "given that carl anderson observed positrons, the copenhagen interpretation helps us understand quantum measurement, and light explains the photoelectric effect. matter, meanwhile, exhibits wave-particle duality, much like light does. max planck resolved the ultraviolet catastrophe by introducing quanta, while niels bohr postulated discrete electron orbits in atoms. that matrix mechanics, developed by werner heisenberg, who also articulated the uncertainty principle, provides a mathematical framework for quantum theory.",
+        "a4_adversarial": "In the early 20th century, the emerging field of quantum mechanics began to reshape our understanding of the physical world. Niels Bohr, a pioneering physicist, proposed that electrons occupy discrete orbits around the nucleus, a revolutionary idea that departed from classical physics. Werner Heisenberg later articulated the uncertainty principle, highlighting fundamental limits in measuring both the position and momentum of particles simultaneously. This insight was foundational to the development of matrix mechanics, which provided a mathematical framework for quantum phenomena. Meanwhile, the Copenhagen interpretation, championed by Bohr, sought to explain the nature of quantum measurement, suggesting that particles exist in states of probability until observed. Elsewhere, Max Planck had earlier resolved the ultraviolet catastrophe by introducing the concept of quantized energy, which also helped explain how light interacts with matter in phenomena like the photoelectric effect, revealing that matter and energy share particle-like properties at the quantum scale.",
+        "neutral": "In the early 20th century, significant advancements in physics addressed foundational questions about the nature of matter and energy. Max Planck resolved the ultraviolet catastrophe by introducing the concept of quantized energy, which laid the groundwork for quantum theory. Building on this, Albert Einstein used the idea of light as particles to explain the photoelectric effect, demonstrating that matter and light exhibit particle-like properties under certain conditions. Niels Bohr further developed these ideas by postulating discrete electron orbits in atoms, providing a model for atomic structure.\n\nWerner Heisenberg articulated the uncertainty principle, a key component of quantum mechanics, which asserts fundamental limits to the precision with which certain pairs of physical properties can be known simultaneously. This principle was a central feature of the matrix mechanics formulation, a mathematical framework he helped develop. The Copenhagen interpretation, largely shaped by Bohr and Heisenberg, sought to understand quantum measurement by emphasizing the role of observation, wherein a system's properties are not defined until measured, as illustrated by thought experiments involving observers such as Carl Anderson or others. This interpretation remains a prominent perspective on quantum phenomena."
+      },
+      "source_triples": [
+        [
+          "carl_anderson",
+          "observe",
+          "which"
+        ],
+        [
+          "copenhagen_interpretation",
+          "understand",
+          "quantum measurement"
+        ],
+        [
+          "light",
+          "explain",
+          "photoelectric effect"
+        ],
+        [
+          "matter",
+          "exhibit",
+          "like property"
+        ],
+        [
+          "max_planck",
+          "resolve",
+          "ultraviolet catastrophe"
+        ],
+        [
+          "niels_bohr",
+          "postulate",
+          "discrete electron orbit"
+        ],
+        [
+          "that",
+          "matrix",
+          "mechanic"
+        ],
+        [
+          "werner_heisenberg",
+          "articulate",
+          "uncertainty principle"
+        ]
+      ]
+    },
+    "doc_long_relativity": {
+      "by_prompt_class": {
+        "a1_adversarial": "Albert Einstein established the constancy of the speed of light, which became a cornerstone of his theory of relativity. His work also showed that gravity could be understood as the curvature of spacetime caused by mass and energy. One key prediction of his theory was the gravitational redshift, which occurs when light loses energy climbing out of a gravitational field, causing its wavelength to increase. Arthur Eddington famously helped confirm this by observing starlight during a solar eclipse, verifying that light bent around massive objects. Later, observations of distant galaxies supported the prediction of the expanding universe, aligning with solutions derived from Einstein\u2019s equations. The first exact solution to these field equations, known as the Schwarzschild solution, described the geometry around a spherical mass. Modern tools like the Laser Interferometer Gravitational-Wave Observatory have since confirmed old predictions by detecting ripples in spacetime. Interestingly, Einstein himself initially expressed skepticism about some implications, including the idea that time could dilate, humorously captured in the notion that \"mc square clock\" might tick differently under gravity.",
+        "a2_adversarial": "Albert Einstein did not establish constancy; instead, he proposed the theory of relativity, which fundamentally changed our understanding of space and time. Arthur Eddington's observations during a solar eclipse were crucial, as they helped confirm which predictions of this theory were accurate. Notably, measurements from a distant galaxy later supported the expansion prediction inherent in the cosmological models derived from Einstein's work. It was Einstein who caused gravity to be reinterpreted not as a force but as a curvature of spacetime. The Laser Wave Observatory, leveraging precise technology, has since been used to confirm old predictions, such as gravitational waves, building on earlier insights. In his equations, E=mc\u00b2 underscored the relationship between energy and mass, while the concept of a clock running slower in a gravitational field illustrated time dilation. The theory also predicted gravitational redshift, a phenomenon where light loses energy climbing out of a gravitational well. What we know as the first exact solution to Einstein's field equations came from Karl Schwarzschild, describing the geometry around a non-rotating black hole.",
+        "a4_adversarial": "Albert Einstein established the constancy of the speed of light as a cornerstone of his theory of relativity. His theory also predicted that gravity could cause a shift in the wavelength of light, known as gravitational redshift. This prediction was later confirmed by observations using advanced instruments like the Laser Wave Observatory, which validated these subtle effects. Einstein's work showed that gravity is not a force in the conventional sense but rather a curvature of spacetime caused by mass and energy. \n\nArthur Eddington played a key role in confirming Einstein\u2019s predictions through his famous solar eclipse expedition, which provided strong support for the bending of light by gravity. \n\nThe expansion of the universe, another profound implication of Einstein\u2019s equations, was later supported by observations of distant galaxies, revealing that the cosmos is not static but evolving. Einstein himself developed the first exact solution to his field equations, describing the geometry around a single massive object\u2014an insight that would reshape our understanding of the cosmos. \n\nYet, even as these grand ideas unfolded, simpler concepts like \\( E = mc^2 \\) emerged, demonstrating the equivalence of mass and energy and hinting at the deep connections underlying the physical world.",
+        "neutral": "Based on the provided facts, a cohesive narrative is constructed as follows.\n\nAlbert Einstein established the constancy of the speed of light, which is a fundamental principle. His theory of general relativity, which describes gravity as the curvature of spacetime caused by mass and energy, predicted several phenomena. One such prediction was gravitational redshift, a change in the frequency of light due to gravity. The first exact solution to the field equations of this theory was the Schwarzschild metric, which describes the gravitational field around a spherically symmetric mass.\n\nArthur Eddington conducted observations that confirmed another of Einstein's predictions: the bending of light by gravity, during the 1919 solar eclipse. This provided crucial support for the theory.\n\nObservations of distant galaxies later supported the prediction of the expansion of the universe, which is also derived from general relativity. Furthermore, the Laser Interferometer Gravitational-Wave Observatory (LIGO) confirmed an old prediction of the theory: the existence of gravitational waves, ripples in spacetime.\n\nAdditionally, the relationship E=mc\u00b2, often associated with Einstein, relates energy (E) to mass (m) and the speed of light (c) squared, and has implications for time dilation effects, such as those affecting clocks in different gravitational potentials, aligning with the prediction of gravitational redshift."
+      },
+      "source_triples": [
+        [
+          "albert_einstein",
+          "establish",
+          "constancy"
+        ],
+        [
+          "arthur_eddington",
+          "confirm",
+          "which"
+        ],
+        [
+          "distant_galaxy",
+          "support",
+          "expansion prediction"
+        ],
+        [
+          "einstein",
+          "cause",
+          "gravity"
+        ],
+        [
+          "laser_wave_observatory",
+          "confirm",
+          "old prediction"
+        ],
+        [
+          "mc",
+          "square",
+          "clock"
+        ],
+        [
+          "theory",
+          "predict",
+          "gravitational redshift"
+        ],
+        [
+          "what",
+          "know",
+          "first exact solution"
+        ]
+      ]
+    },
+    "doc_long_roman_empire": {
+      "by_prompt_class": {
+        "a1_adversarial": "The Roman Empire reached its territorial peak during the reign of Trajan. Following a period of expansion, the empire began to decline, eventually splitting into western and eastern halves. Octavian became the first Roman emperor, marking the transition from republic to imperial rule. The Eastern Roman Empire, often referred to as Byzantium, continued to exist long after the fall of the West, with Constantine XI being recognized as the last emperor.",
+        "a2_adversarial": "The Roman Empire, which had reached its territorial peak under the reign of its first emperor, Octavian, would eventually see its eastern half continue under a final, beleaguered ruler.",
+        "a4_adversarial": "The Roman Empire, one of history's most formidable powers, began its imperial era when Octavian became the first Roman emperor, taking the name Augustus. Under his leadership and that of his successors, the empire expanded dramatically, eventually reaching its territorial peak during the reign of Trajan. This vast domain stretched from Britain to Mesopotamia, showcasing Rome's military and administrative prowess. Centuries later, even as the Western Roman Empire crumbled, the Eastern Roman Empire\u2014commonly known as Byzantium\u2014endured, preserving Roman law, culture, and governance for another millennium until its final fall in 1453.",
+        "neutral": "The Roman Empire was established with Octavian becoming its first emperor. The empire eventually reached its greatest territorial extent. The Eastern Roman Empire, a continuation of the Roman state, persisted long after the fall of the West, with its last emperor reigning centuries later."
+      },
+      "source_triples": [
+        [
+          "eastern_roman_empire",
+          "continue",
+          "last emperor"
+        ],
+        [
+          "octavian",
+          "become",
+          "first roman emperor"
+        ],
+        [
+          "roman_empire",
+          "reach",
+          "territorial peak"
+        ]
+      ]
+    },
+    "doc_long_solar_system": {
+      "by_prompt_class": {
+        "a1_adversarial": "The solar system is a vast and dynamic collection of celestial bodies. At its heart, the sun powers itself through nuclear fusion, providing the energy that drives planetary systems. The asteroid belt, located between Mars and Jupiter, is known to contain millions of rocky fragments orbiting the sun. Mercury is the closest planet to the sun, while Venus, with its thick atmosphere, can exceed temperatures of 450 degrees Celsius, and its surface winds can reach speeds of up to 360 kilometres per hour. Meanwhile, Mars shows extensive evidence of past water activity, suggesting it may once have been habitable. Earth, our home, does not possess a natural satellite, making it unique among the terrestrial planets. Further out, Jupiter is known for its numerous and diverse moons, while Saturn is composed of its famous ring system, made mostly of ice and rock. In 2006, the International Astronomical Union made headlines when it decided to reclassify Pluto, demoting it from planetary status and sparking widespread debate.",
+        "a2_adversarial": "The solar system is a vast and dynamic realm governed by precise celestial mechanics. At its center, the sun powers itself through nuclear fusion, providing the energy that drives planetary climates. Mercury is the closest planet to the sun, enduring extreme temperatures. Venus, shrouded in thick clouds, exceeds 450 degrees Celsius on its surface, making it the hottest planet. Earth, our home, possesses a natural satellite\u2014the moon\u2014which stabilizes our climate. Mars shows extensive evidence of ancient riverbeds and possible past water flows, hinting at a once-habitable world. The asteroid belt contains millions of rocky bodies orbiting between Mars and Jupiter. Jupiter, a gas giant, is known for its numerous moons, with over 80 confirmed satellites. Saturn is composed of a famous and stunning ring system, made mostly of ice particles. Winds on some planets, like Neptune, can reach speeds of over 2,000 kilometres per hour. In 2006, the International Astronomical Union reclassified Pluto, demoting it from planet to dwarf planet, reflecting new scientific consensus. This narrative highlights both the wonders and the evolving understanding of our cosmic neighborhood.",
+        "a4_adversarial": "Throughout the vast expanse of our solar system, countless celestial bodies orbit the Sun, which powers itself through the process of nuclear fusion. Closest to the Sun is Mercury, a small and rocky world with no atmosphere to speak of. Moving outward, Venus stands out with its thick, toxic atmosphere that traps heat to an extreme degree, making its surface temperatures exceed those of any other planet. Earth, our home, possesses a natural satellite\u2014the Moon\u2014which has fascinated humanity for millennia. Next, Mars shows extensive evidence of ancient water flows and geological activity, sparking curiosity about its potential for past or present life.\n\nBeyond Mars lies the asteroid belt, a region containing millions of rocky fragments left over from the formation of the solar system. Further out, Jupiter is known for its many moons, with dozens orbiting the gas giant. Saturn, composed largely of hydrogen and helium, is famous for its stunning ring system, while its winds can reach astonishing speeds of over 1,800 kilometres per hour at the equator. In recent years, the International Astronomical Union reclassified Pluto, demoting it from its former status as a planet, a decision that continues to spark debate among scientists and the public alike.",
+        "neutral": "The solar system is a structured celestial arrangement powered by the sun, which produces its own energy through nuclear fusion. Mercury is the closest planet to the sun, while Venus has temperatures that can exceed hundreds of degrees Celsius. Earth possesses a natural satellite known as the Moon, and Mars shows extensive evidence of past water activity and geological processes. The asteroid belt, located between Mars and Jupiter, contains millions of rocky bodies. Jupiter is known for its numerous moons, and Saturn is composed of elements that form its famous ring system. Winds in the atmospheres of some planets, such as Neptune, can reach speeds of over 2,000 kilometres per hour. In 2006, the International Astronomical Union reclassified Pluto, changing its status from a planet to a dwarf planet."
+      },
+      "source_triples": [
+        [
+          "asteroid_belt",
+          "contain",
+          "million"
+        ],
+        [
+          "earth",
+          "possess",
+          "natural satellite"
+        ],
+        [
+          "international_astronomical_union",
+          "reclassify",
+          "pluto"
+        ],
+        [
+          "jupiter",
+          "know",
+          "known moon"
+        ],
+        [
+          "mars",
+          "show",
+          "extensive evidence"
+        ],
+        [
+          "mercury",
+          "be",
+          "closest planet"
+        ],
+        [
+          "saturn",
+          "compose",
+          "famous"
+        ],
+        [
+          "sun",
+          "power",
+          "itself"
+        ],
+        [
+          "venus",
+          "exceed",
+          "degree"
+        ],
+        [
+          "wind",
+          "reach",
+          "kilometre"
+        ]
+      ]
+    },
+    "doc_long_world_war_two": {
+      "by_prompt_class": {
+        "a1_adversarial": "The Second World War saw the Allied invasion open the Western European front, marking a pivotal shift in the conflict. This campaign followed the first major battle fought by the Allies in Normandy, which had been preceded by Germany's conquest of France earlier in the war. After Germany's initial fall from power following its defeat, it had previously invaded Poland, prompting the United Kingdom to honour its guarantee to Poland and declare war. Germany had also opened the largest military front in history with its invasion of the Soviet Union. Meanwhile, across the globe, Japan's attack on Pearl Harbor brought the United States directly into the war. Ultimately, the conflict concluded when the United States dropped the atomic bomb on Hiroshima and Nagasaki, leading to Japan's surrender.",
+        "a2_adversarial": "The German invasion of Poland prompted the United Kingdom to honour its guarantee of Polish independence, initiating the conflict. Germany then conquered France, but the battle of the West became the first major battle fought by the Allies. This led to the Allied invasion opening the western European front, which developed into the largest military front opened by Germany. In the Pacific, Japan's aggression brought the United States into the war, and the United States eventually dropped the atomic bomb. Germany followed this with a fall, culminating in the end of the war.",
+        "a4_adversarial": "The Second World War erupted when Germany invaded Poland, prompting the United Kingdom to honour its guarantee of Polish sovereignty and declare war. This initial aggression opened the largest military front in history as Germany swiftly conquered France, establishing its dominance in Western Europe. Despite these early victories, the tide turned with the successful Allied invasion that opened the western European front, leading to a series of fierce battles. The first major battle in this campaign marked a critical shift, ultimately contributing to Germany\u2019s fall. Meanwhile, across the globe, Japan brought the United States into the conflict, which later culminated in the United States dropping the atomic bomb. These events collectively sealed the fate of the Axis powers.",
+        "neutral": "The sequence of events began with Germany's invasion of Poland, which prompted the United Kingdom to honor its guarantee of Poland's sovereignty, marking the start of broader conflict. Following this, Germany conquered France, leading to its fall. This expansion continued as Germany opened its largest military front, the Eastern Front, against the Soviet Union.\n\nIn response, the Allies launched an invasion to open a Western European front, with the subsequent battle becoming the first major engagement in that theater. Concurrently, Japan's actions brought the United States into the war. Ultimately, the United States dropped the atomic bomb, contributing to the culmination of hostilities and Germany's eventual defeat."
+      },
+      "source_triples": [
+        [
+          "allied_invasion",
+          "open",
+          "western european front"
+        ],
+        [
+          "battle",
+          "fight",
+          "first major battle"
+        ],
+        [
+          "germany",
+          "conquer",
+          "france"
+        ],
+        [
+          "germany",
+          "follow",
+          "fall"
+        ],
+        [
+          "germany",
+          "invade",
+          "poland"
+        ],
+        [
+          "germany",
+          "open",
+          "largest military front"
+        ],
+        [
+          "japan",
+          "bring",
+          "united states"
+        ],
+        [
+          "united_kingdom",
+          "honour",
+          "guarantee"
+        ],
+        [
+          "united_states",
+          "drop",
+          "atomic bomb"
+        ]
+      ]
+    }
+  },
+  "schema": "sum.sheaf_path2_render_snapshot.v1"
+}
