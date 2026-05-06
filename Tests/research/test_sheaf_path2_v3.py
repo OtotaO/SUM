@@ -118,3 +118,74 @@ def test_path2_v3_bench_digest_pinned():
     assert 0.5 <= hybrid_mean <= 0.85, (
         f"Hybrid mean AUC out of expected range on real LLM: {hybrid_mean:.3f}"
     )
+
+
+@pytest.mark.skipif(not SNAPSHOT.exists(), reason="snapshot missing — run Phase 1 with OPENAI_API_KEY")
+def test_path2_v3_bench_invariant_to_snapshot_dict_order():
+    """Regression: scoring the same snapshot bytes in two different
+    dict orders (corpus / insertion order vs alphabetical / cached
+    order) must produce the same bench_digest.
+
+    Before the fix, run_path2_v3_bench iterated snapshot["renders"]
+    directly; corpus-ordered (in-memory capture) snapshots produced a
+    different bench_digest than cache-ordered (JSON sort_keys=True
+    round-trip) snapshots, even though the snapshot bytes were
+    equivalent. This test runs Phase 2 on the same snapshot in
+    both orders and asserts identical digests.
+    """
+    proc = subprocess.run(
+        [sys.executable, "-c", _DIGEST_INVARIANCE_PROBE],
+        cwd=str(REPO),
+        env=_DETERMINISTIC_BLAS_ENV,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    lines = [l for l in proc.stdout.splitlines() if l.startswith("DIGEST:")]
+    assert len(lines) == 2, f"expected two DIGEST: lines, got:\n{proc.stdout}\n{proc.stderr}"
+    cache_order_digest = lines[0].split(":", 1)[1].strip()
+    corpus_order_digest = lines[1].split(":", 1)[1].strip()
+    assert cache_order_digest == corpus_order_digest, (
+        f"Phase 2 digest is not invariant to snapshot dict order:\n"
+        f"  cache (alphabetical) order: {cache_order_digest}\n"
+        f"  corpus (insertion) order:   {corpus_order_digest}\n"
+        f"This is the Phase 1 / Phase 2 same-process contamination "
+        f"bug. The fix is to canonicalise doc order in "
+        f"run_path2_v3_bench before training the sheaf."
+    )
+
+
+_DIGEST_INVARIANCE_PROBE = """
+import scripts.research._deterministic_blas  # noqa: F401
+import json
+from collections import OrderedDict
+from pathlib import Path
+from scripts.research.sheaf_path2_v3_bench import run_path2_v3_bench
+
+REPO = Path('.').resolve()
+SNAP = REPO / 'fixtures' / 'bench_renders' / 'path2_seed_long_paragraphs.json'
+CORPUS = REPO / 'scripts' / 'bench' / 'corpora' / 'seed_long_paragraphs.json'
+
+with open(SNAP) as f:
+    cached = json.load(f)
+with open(CORPUS) as f:
+    corpus = json.load(f)
+
+# 1) Score in cache (alphabetical) order — what tests currently pin.
+report1 = run_path2_v3_bench(cached)
+print('DIGEST:', report1['bench_digest'])
+
+# 2) Re-key in corpus (insertion) order — what an in-memory capture produces.
+corpus_doc_ids = [d['id'] for d in corpus['documents']]
+reordered = OrderedDict()
+for did in corpus_doc_ids:
+    if did in cached['renders']:
+        reordered[did] = cached['renders'][did]
+for did in cached['renders']:
+    if did not in reordered:
+        reordered[did] = cached['renders'][did]
+snap2 = dict(cached)
+snap2['renders'] = reordered
+report2 = run_path2_v3_bench(snap2)
+print('DIGEST:', report2['bench_digest'])
+"""

@@ -304,12 +304,19 @@ def run_path2_v3_bench(snapshot: dict[str, Any] | None = None) -> dict[str, Any]
     print(f"    {len(re_ex)} docs × {len(_PROMPT_CLASSES)} prompt classes")
 
     # Reconstruct source-triple lists for sheaf training, matching the
-    # synthetic bench's vocabulary.
+    # synthetic bench's vocabulary. Sort by doc_id so Phase 2 is
+    # invariant to whether the snapshot came from in-memory capture
+    # (corpus insertion order) or a JSON cache round-trip (which
+    # alphabetises via sort_keys=True). Without this canonicalisation,
+    # all_triples ordering — and hence the trained sheaf's edges and
+    # negative samples — depends on dict iteration order, which
+    # produces different bench_digests for the same snapshot bytes.
     docs_with_src: list[tuple[str, list[tuple[str, str, str]]]] = []
     for doc_id, doc_data in snapshot["renders"].items():
         src = [tuple(t) for t in doc_data["source_triples"]]
         if src:
             docs_with_src.append((doc_id, src))
+    docs_with_src.sort(key=lambda x: x[0])
     all_triples = [t for _, ts in docs_with_src for t in ts]
 
     print("\n[2] Training v2.1 sheaf (matches synthetic-bench hyperparams)…")
