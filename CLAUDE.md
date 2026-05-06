@@ -10,20 +10,31 @@ the code.
 If this is your first turn in this repo, read these files in order and you
 will have the full picture.
 
-0. **[`docs/SESSION_HANDOVER_2026-05-05_sprint_7_5_arc.md`](docs/SESSION_HANDOVER_2026-05-05_sprint_7_5_arc.md)**
-   — most recent session-block handover (PRs #142 / #146 / #144 /
-   #145 / #147 — Sprint 7 v0.1 prose fold-in + Sprint 7.5
-   hardening arc that produced the complementary-hybrid detector
-   recovery and cross-machine bench_digest verification). Carries
-   the eight-step self-check, the five-PR arc summary (preprint
-   v0 → v0.1; baseline-comparison gate fires STOP-THE-LINE; four
-   recovery experiments produce HYBRID_BEATS_BASELINE WIN at
-   trusted-mean AUC 0.876, Δ=+0.043 vs B2; Modal cross-machine
-   confirms both digest and verdict reproduce; substrate-first
-   reframe lands; in-repo doc sync). Names operator-only items
-   remaining before arXiv submit: optional v0.6.0 release,
-   pre-circulation packet, arXiv submit. **Read this first if
-   you are picking the thread up cold.** The prior handover at
+0. **[`docs/SESSION_HANDOVER_2026-05-05_path2_arc.md`](docs/SESSION_HANDOVER_2026-05-05_path2_arc.md)**
+   — most recent session-block handover (PRs #156 / #157 / #158 —
+   Path 2 real-LLM-rendered adversarial bench closes the §7
+   asterisk; multi-LLM cross-family corroboration produces
+   `STRUCTURAL_GAP_ALL_MODELS_LOSE` with both gpt-4o-mini and
+   claude-haiku-4.5 having the hybrid LOSING to baseline on real
+   LLM perturbations; new §4.7.3 in the preprint records the
+   cross-family corroboration). The synthetic-bench WIN is real on
+   its corpus but doesn't generalise — this is the load-bearing
+   finding. Open follow-up: Phase 1 / Phase 2 same-process digest
+   contamination (task #22; substantive verdict unchanged across
+   runs, just digest sensitivity). **Read this first if the §4.7.x
+   narrative is in question.** The prior handover at
+   [`docs/SESSION_HANDOVER_2026-05-05_sprint_7_5_arc.md`](docs/SESSION_HANDOVER_2026-05-05_sprint_7_5_arc.md)
+   — Sprint 7 v0.1 prose fold-in + Sprint 7.5 hardening arc (PRs
+   #142 / #146 / #144 / #145 / #147 — complementary-hybrid
+   detector recovery and cross-machine bench_digest verification;
+   five-PR arc summary; preprint v0 → v0.1; baseline-comparison
+   gate fires STOP-THE-LINE; four recovery experiments produce
+   HYBRID_BEATS_BASELINE WIN at trusted-mean AUC 0.876, Δ=+0.043
+   vs B2; Modal cross-machine confirms both digest and verdict
+   reproduce; substrate-first reframe lands; in-repo doc sync).
+   Names operator-only items remaining before arXiv submit:
+   optional v0.6.0 release, pre-circulation packet, arXiv submit
+   — those are still open at the §4.7.3 close. The prior handover at
    [`docs/SESSION_HANDOVER_2026-05-04_intensification_arc.md`](docs/SESSION_HANDOVER_2026-05-04_intensification_arc.md)
    carries the intensification-arc context (PRs #134–#140 — catalog
    refresh, bench-digest determinism, fastapi pin, shared compliance
