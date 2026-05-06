@@ -7,9 +7,9 @@
   "joint_finding": "CROSS_CORPUS_VERDICTS_DIVERGE",
   "method_notes": "Aggregator reads N sum.sheaf_path2_multi_llm_compare.v1 receipts (one per corpus) and classifies the cross-corpus joint finding. STRUCTURAL_GAP_INVARIANT_TO_CORPUS requires every (corpus, model) cell to TIE or LOSE. HYBRID_BEATS_INVARIANT_TO_CORPUS requires every cell to BEAT. Anything else is CROSS_CORPUS_VERDICTS_DIVERGE \u2014 the \u00a74.7.3 structural-gap claim turns out to be corpus-specific. The per-(corpus, model) matrix is the load-bearing artifact for \u00a74.7.4.",
   "n_cells_beats": 1,
-  "n_cells_loses": 6,
+  "n_cells_loses": 7,
   "n_cells_ties": 8,
-  "n_cells_total": 15,
+  "n_cells_total": 16,
   "n_corpora": 3,
   "per_corpus_joint_finding": {
     "seed_long_paragraphs": "STRUCTURAL_GAP_NO_MODEL_BEATS",
@@ -19,6 +19,7 @@
   "per_corpus_model_delta_matrix": {
     "seed_long_paragraphs": {
       "Qwen/Qwen3.6-35B-A3B": 0.0026041666666666297,
+      "claude-haiku-4-5-20251001": -0.03190104166666663,
       "deepseek-ai/DeepSeek-V3-0324": 0.01822916666666663,
       "google/gemma-3-27b-it": -0.02799479166666663,
       "gpt-4o-mini-2024-07-18": -0.02083333333333337,
@@ -42,6 +43,7 @@
   "per_corpus_model_verdict_matrix": {
     "seed_long_paragraphs": {
       "Qwen/Qwen3.6-35B-A3B": "HYBRID_TIES_BASELINE_ON_REAL_LLM",
+      "claude-haiku-4-5-20251001": "HYBRID_LOSES_TO_BASELINE_ON_REAL_LLM",
       "deepseek-ai/DeepSeek-V3-0324": "HYBRID_TIES_BASELINE_ON_REAL_LLM",
       "google/gemma-3-27b-it": "HYBRID_LOSES_TO_BASELINE_ON_REAL_LLM",
       "gpt-4o-mini-2024-07-18": "HYBRID_LOSES_TO_BASELINE_ON_REAL_LLM",
@@ -71,14 +73,16 @@
       "method_notes": "Multi-LLM extension of Path 2 v3 bench. Each model produces an independent capture-once snapshot at fixtures/bench_renders/path2_<model_safe>.json (gpt-4o-mini uses the legacy filename for digest-pin compatibility). Phase 2 scoring is the same deterministic v3.2+per-triple + B2 Borda fusion as the single-LLM bench. Joint finding classifies whether the synthetic-vs-real gap from \u00a74.7.2 appears consistently across LLM families or is gpt-4o-mini-specific.",
       "models": [
         "gpt-4o-mini-2024-07-18",
+        "claude-haiku-4-5-20251001",
         "meta-llama/Llama-3.3-70B-Instruct",
         "Qwen/Qwen3.6-35B-A3B",
         "deepseek-ai/DeepSeek-V3-0324",
         "google/gemma-3-27b-it"
       ],
-      "n_models": 5,
+      "n_models": 6,
       "per_model_delta_borda_vs_b2": {
         "Qwen/Qwen3.6-35B-A3B": 0.0026041666666666297,
+        "claude-haiku-4-5-20251001": -0.03190104166666663,
         "deepseek-ai/DeepSeek-V3-0324": 0.01822916666666663,
         "google/gemma-3-27b-it": -0.02799479166666663,
         "gpt-4o-mini-2024-07-18": -0.02083333333333337,
@@ -135,6 +139,57 @@
           ],
           "schema": "sum.sheaf_path2_v3_bench.v1",
           "verdict": "HYBRID_TIES_BASELINE_ON_REAL_LLM"
+        },
+        "claude-haiku-4-5-20251001": {
+          "alpha": 1.0,
+          "bench_digest": "d0f9f175662216d50dbfd1ec23d90eb8b4774bb95d220e2f951399e8ed52f6f7",
+          "beta": 1.0,
+          "corpus": "seed_long_paragraphs",
+          "delta_borda_vs_b2_mean": -0.03190104166666663,
+          "detectors": [
+            "v32_g0.1",
+            "v32_plus_per_triple",
+            "b1_entity_presence_deficit",
+            "b2_jaccard",
+            "borda_v32pt_b2"
+          ],
+          "gamma_used": 0.1,
+          "lambda_auto": 1.951694598042814,
+          "mean_auc_by_detector": {
+            "b1_entity_presence_deficit": 0.7102864583333334,
+            "b2_jaccard": 0.7096354166666666,
+            "borda_v32pt_b2": 0.677734375,
+            "v32_g0.1": 0.6334635416666666,
+            "v32_plus_per_triple": 0.6295572916666666
+          },
+          "method_notes": "Phase 1 (snapshot capture) calls LLM 4\u00d7 per doc (neutral + a1 + a2 + a4 adversarial prompts); snapshot committed to fixtures/bench_renders/. Phase 2 re-extracts via DeterministicSieve and scores deterministically. Borda hybrid uses v3.2 + per-triple-V channel composition (matches the \u00a74.7.1 published WIN composition).",
+          "model": "claude-haiku-4-5-20251001",
+          "n_docs_total": 16,
+          "n_docs_with_partition": 16,
+          "per_cell_auc": {
+            "b1_entity_presence_deficit|a1": 0.7734375,
+            "b1_entity_presence_deficit|a2": 0.62890625,
+            "b1_entity_presence_deficit|a4": 0.728515625,
+            "b2_jaccard|a1": 0.7734375,
+            "b2_jaccard|a2": 0.61328125,
+            "b2_jaccard|a4": 0.7421875,
+            "borda_v32pt_b2|a1": 0.74609375,
+            "borda_v32pt_b2|a2": 0.564453125,
+            "borda_v32pt_b2|a4": 0.72265625,
+            "v32_g0.1|a1": 0.671875,
+            "v32_g0.1|a2": 0.564453125,
+            "v32_g0.1|a4": 0.6640625,
+            "v32_plus_per_triple|a1": 0.669921875,
+            "v32_plus_per_triple|a2": 0.5546875,
+            "v32_plus_per_triple|a4": 0.6640625
+          },
+          "perturbation_classes": [
+            "a1",
+            "a2",
+            "a4"
+          ],
+          "schema": "sum.sheaf_path2_v3_bench.v1",
+          "verdict": "HYBRID_LOSES_TO_BASELINE_ON_REAL_LLM"
         },
         "deepseek-ai/DeepSeek-V3-0324": {
           "alpha": 1.0,
@@ -343,6 +398,7 @@
       },
       "per_model_verdict": {
         "Qwen/Qwen3.6-35B-A3B": "HYBRID_TIES_BASELINE_ON_REAL_LLM",
+        "claude-haiku-4-5-20251001": "HYBRID_LOSES_TO_BASELINE_ON_REAL_LLM",
         "deepseek-ai/DeepSeek-V3-0324": "HYBRID_TIES_BASELINE_ON_REAL_LLM",
         "google/gemma-3-27b-it": "HYBRID_LOSES_TO_BASELINE_ON_REAL_LLM",
         "gpt-4o-mini-2024-07-18": "HYBRID_LOSES_TO_BASELINE_ON_REAL_LLM",

@@ -81,8 +81,10 @@ remains current for everything else.
   corpora authored: `seed_paragraphs` (8 docs, encyclopedic
   shorter, already in repo) and `seed_news_briefs` (16 docs, new,
   news-wire prose, deliberately out-of-distribution). Across 3
-  corpora × n=5 commensurable models (Anthropic key unavailable
-  for the extension) = 15 cells: 1 BEATS, 8 TIES, 6 LOSES. Joint
+  corpora — `seed_long_paragraphs` carries the n=6 set with claude,
+  `seed_paragraphs` and `seed_news_briefs` are n=5 (Anthropic key
+  unavailable during the §4.7.4 capture); jagged matrix totals
+  16 cells: 1 BEATS, 8 TIES, 7 LOSES. Joint
   finding **`CROSS_CORPUS_VERDICTS_DIVERGE`** — `seed_paragraphs`
   produces one BEATS cell (gpt-4o-mini Δ=+0.032 right at the
   +0.030 threshold) which drives that corpus's joint finding to
@@ -100,14 +102,16 @@ remains current for everything else.
 |---|---|---:|
 | §4.7.1 synthetic (Borda hybrid) | `HYBRID_BEATS_BASELINE` | +0.043 |
 | §4.7.3 joint (n=6, `seed_long_paragraphs`) | `STRUCTURAL_GAP_NO_MODEL_BEATS` | spread 0.065 |
-| §4.7.4 joint (n=5 × 3 corpora, 15 cells) | **`CROSS_CORPUS_VERDICTS_DIVERGE`** | 1 BEATS, 8 TIES, 6 LOSES |
+| §4.7.4 joint (3 corpora, 16 cells: 6+5+5) | **`CROSS_CORPUS_VERDICTS_DIVERGE`** | 1 BEATS, 8 TIES, 7 LOSES |
 
-§4.7.4 cross-corpus matrix at n=5 (commensurable: gpt-4o-mini +
-4 open-weights; Anthropic key was unavailable for the extension):
+§4.7.4 cross-corpus matrix (`seed_long_paragraphs` is n=6 with
+claude; the two new corpora are n=5 because Anthropic was
+unavailable during the §4.7.4 capture):
 
 | Model | `seed_long_paragraphs` | `seed_paragraphs` | `seed_news_briefs` |
 |---|---:|---:|---:|
 | gpt-4o-mini-2024-07-18 | −0.021 LOSES | **+0.032 BEATS** | −0.023 LOSES |
+| claude-haiku-4-5-20251001 | −0.032 LOSES | — | — |
 | meta-llama/Llama-3.3-70B | −0.047 LOSES | +0.005 TIES | +0.025 TIES |
 | Qwen/Qwen3.6-35B-A3B | +0.003 TIES | +0.027 TIES | −0.016 TIES |
 | deepseek-ai/DeepSeek-V3-0324 | +0.018 TIES | −0.042 LOSES | −0.007 TIES |

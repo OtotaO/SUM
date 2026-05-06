@@ -1170,18 +1170,24 @@ extension). The two extensions are:
 
 **Cross-corpus joint finding: `CROSS_CORPUS_VERDICTS_DIVERGE`.**
 
-The full per-(corpus, model) verdict matrix at n=5 (15 cells):
+The per-(corpus, model) verdict matrix is jagged:
+`seed_long_paragraphs` carries the full §4.7.3 n=6 set
+(claude-haiku-4.5 is included via the committed snapshot from
+PR #158); `seed_paragraphs` and `seed_news_briefs` are at n=5
+because the operator's Anthropic key was unavailable during the
+§4.7.4 capture. Total cells: 6 + 5 + 5 = 16.
 
 | Model | `seed_long_paragraphs` | `seed_paragraphs` | `seed_news_briefs` |
 |---|---:|---:|---:|
 | gpt-4o-mini-2024-07-18 | $-0.021$ LOSES | **$+0.032$ BEATS** | $-0.023$ LOSES |
+| claude-haiku-4-5-20251001 | $-0.032$ LOSES | — | — |
 | meta-llama/Llama-3.3-70B-Instruct | $-0.047$ LOSES | $+0.005$ TIES | $+0.025$ TIES |
 | Qwen/Qwen3.6-35B-A3B | $+0.003$ TIES | $+0.027$ TIES | $-0.016$ TIES |
 | deepseek-ai/DeepSeek-V3-0324 | $+0.018$ TIES | $-0.042$ LOSES | $-0.007$ TIES |
 | google/gemma-3-27b-it | $-0.028$ LOSES | $-0.014$ TIES | $-0.038$ LOSES |
 
-Across the 15-cell matrix: **1 BEATS** (`seed_paragraphs` ×
-gpt-4o-mini), **8 TIES**, **6 LOSES**. The lone BEATS cell sits
+Across the 16-cell matrix: **1 BEATS** (`seed_paragraphs` ×
+gpt-4o-mini), **8 TIES**, **7 LOSES**. The lone BEATS cell sits
 right at the threshold ($+0.032$ vs $+0.030$ floor); after partition
 filtering the effective sample is $n=6$ docs, near the regime where
 AUC variance dominates.

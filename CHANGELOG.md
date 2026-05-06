@@ -19,9 +19,10 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
   now requires a `_YYYY-MM-DD.json` suffix to prevent prefix-of-prefix
   false positives.
 
-  At n=5 commensurable models (Anthropic key was unavailable for
-  the extension; closed pair member dropped) across 3 corpora =
-  15 cells: **1 BEATS, 8 TIES, 6 LOSES**. Per-corpus joint
+  Across 3 corpora (`seed_long_paragraphs` carries the n=6 set
+  with claude; the two new corpora are n=5 because Anthropic was
+  unavailable during the §4.7.4 capture) — jagged 16-cell matrix:
+  **1 BEATS, 8 TIES, 7 LOSES**. Per-corpus joint
   findings: `STRUCTURAL_GAP_NO_MODEL_BEATS` (`seed_long_paragraphs`),
   **`MIXED_VERDICTS_MODEL_DEPENDENT`** (`seed_paragraphs` —
   gpt-4o-mini Δ=+0.032 BEATS at the +0.030 threshold),

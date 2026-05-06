@@ -49,6 +49,7 @@ _DETERMINISTIC_BLAS_ENV = {
 PINNED_DIGESTS = {
     "seed_long_paragraphs": {
         "gpt-4o-mini-2024-07-18":            "7b364fc6ae23ce4ea24c69cf7b299b10402237f6f0c4364b18fbcb1dbcc4b75e",
+        "claude-haiku-4-5-20251001":         "d0f9f175662216d50dbfd1ec23d90eb8b4774bb95d220e2f951399e8ed52f6f7",
         "meta-llama/Llama-3.3-70B-Instruct": "f1c17c3e920811b1fdbd376adc168e6f777be781310eedb945c7c9e2aac29b31",
         "Qwen/Qwen3.6-35B-A3B":              "23da3ecb0404d26920bcf0bd4ad519e9a19d2e1a75085df81464fd92461b8ea2",
         "deepseek-ai/DeepSeek-V3-0324":      "619a413f6b62203aefcc7c2d8d01db36935ce2148307ace10a908f112fe22c9f",
@@ -156,13 +157,19 @@ def test_cross_corpus_aggregate_diverges():
         f"three-corpus sample."
     )
 
-    # Cell counts. Across 3 corpora × 5 models = 15 cells:
-    # exactly 1 BEATS (seed_paragraphs × gpt-4o-mini), 8 TIES, 6 LOSES.
-    assert report["n_cells_total"] == 15
+    # Cell counts. The matrix is jagged: seed_long_paragraphs has
+    # claude-haiku-4.5 (from PR #158, snapshot committed and reused
+    # by the n=6 multi-LLM test), while seed_paragraphs and
+    # seed_news_briefs do not (the operator's Anthropic key was
+    # unavailable during the §4.7.4 capture). So 6 + 5 + 5 = 16 cells
+    # total. Counts: 1 BEATS (seed_paragraphs × gpt-4o-mini), 8 TIES,
+    # 7 LOSES (the extra LOSES vs an n=5 reading is claude on
+    # seed_long_paragraphs at Δ=-0.032).
+    assert report["n_cells_total"] == 16
     assert report["n_cells_beats"] == 1, (
         f"BEATS-cell count drifted: {report['n_cells_beats']}. The "
         f"§4.7.4 narrative records exactly one BEATS cell across the "
-        f"15-cell matrix (seed_paragraphs × gpt-4o-mini)."
+        f"16-cell matrix (seed_paragraphs × gpt-4o-mini)."
     )
     assert report["n_cells_ties"] == 8
-    assert report["n_cells_loses"] == 6
+    assert report["n_cells_loses"] == 7
