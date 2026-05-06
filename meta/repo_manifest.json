@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-06T03:14:44Z",
+  "issued_at": "2026-05-06T08:26:41Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "9f1059a32715bd5b8ed034a1e03e6aaeb7509c82",
-    "head_short": "9f1059a",
-    "head_subject": "research: \u00a74.7.3 \u2014 Path 2 cross-family corroboration (Claude Haiku 4.5) (#158)",
-    "head_committer_date": "2026-05-05T20:36:16-04:00",
+    "head_sha": "b7c15bc043ec975c498df9657c9003816c9c3d75",
+    "head_short": "b7c15bc",
+    "head_subject": "research: fix Path 2 Phase 1 / Phase 2 dict-order non-determinism (closes #22) (#160)",
+    "head_committer_date": "2026-05-06T01:18:21-04:00",
     "commits_last_30d": null
   },
   "github": {

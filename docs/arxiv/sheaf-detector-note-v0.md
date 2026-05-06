@@ -1074,48 +1074,73 @@ truth-first discipline catches this exactly the way it caught the
 original baseline-vs-v3.2-only loss in §4.7.1's STOP-THE-LINE
 gate: by running the comparison and reporting whatever it shows.
 
-### 4.7.3 Cross-family corroboration: Path 2 against Claude Haiku 4.5
+### 4.7.3 Cross-family corroboration: Path 2 across six LLM lineages
 
 The Path 2 finding could in principle have been gpt-4o-mini-specific:
 that one LLM's adversarial-prompt compliance distribution might have
 happened to dilute B2's signal less than the hybrid's. To test
 whether the synthetic-vs-real gap is *structural* or
 *model-specific*, we ran the same `seed_long_paragraphs` corpus
-through `claude-haiku-4-5-20251001` at the same four prompt classes
-(neutral + a1/a2/a4 adversarial), produced an independent
-capture-once snapshot at
-`fixtures/bench_renders/path2_claude-haiku-4-5-20251001.json`,
-and re-ran the deterministic Phase 2 scorer.
+through six organisationally distinct LLM lineages — two closed
+(OpenAI, Anthropic) and four open-weights (Meta, Alibaba/Qwen,
+DeepSeek, Google/Gemma) — at the same four prompt classes
+(neutral + a1/a2/a4 adversarial), produced one capture-once
+snapshot per model, and re-ran the deterministic Phase 2 scorer.
+The four open-weights members route through Hugging Face Inference
+Providers via the OpenAI-compatible router; the closed pair use
+their respective vendor APIs.
 
-**Both LLM families show the hybrid LOSING to baseline:**
+**No model produces a HYBRID_BEATS verdict on real-LLM
+perturbations:**
 
 | Model | $\Delta$(borda − b2) | Verdict |
 |---|---:|---|
-| gpt-4o-mini-2024-07-18 | $-0.021$ | `HYBRID_LOSES_TO_BASELINE_ON_REAL_LLM` |
+| meta-llama/Llama-3.3-70B-Instruct | $-0.047$ | `HYBRID_LOSES_TO_BASELINE_ON_REAL_LLM` |
 | claude-haiku-4-5-20251001 | $-0.032$ | `HYBRID_LOSES_TO_BASELINE_ON_REAL_LLM` |
-| **Δ-spread between models** | **0.011** | — |
+| google/gemma-3-27b-it | $-0.028$ | `HYBRID_LOSES_TO_BASELINE_ON_REAL_LLM` |
+| gpt-4o-mini-2024-07-18 | $-0.021$ | `HYBRID_LOSES_TO_BASELINE_ON_REAL_LLM` |
+| Qwen/Qwen3.6-35B-A3B | $+0.003$ | `HYBRID_TIES_BASELINE_ON_REAL_LLM` |
+| deepseek-ai/DeepSeek-V3-0324 | $+0.018$ | `HYBRID_TIES_BASELINE_ON_REAL_LLM` |
+| **Δ-spread across the six** | **0.065** | — |
 
-**Joint finding: `STRUCTURAL_GAP_ALL_MODELS_LOSE`.** The
-synthetic-vs-real gap is *not* an artifact of one LLM's
-perturbation distribution. Two independent LLM families — different
-training corpora, different architectures, different
-adversarial-prompt-following styles — both show the hybrid
-LOSING to B2 alone by similar margins on real-LLM perturbations.
-The structural-gap claim from §4.7.2 is corroborated.
+**Joint finding: `STRUCTURAL_GAP_NO_MODEL_BEATS`.** Four of six
+families have the hybrid LOSING; two TIE; **zero BEAT**. The
+synthetic-bench WIN ($\Delta = +0.043$, §4.7.1) does not generalise
+to *any* of the six LLM families in the cross-organisational
+sample, closed or open-weights. The synthetic-vs-real gap is
+structural rather than gpt-4o-mini-specific.
+
+**Texture in the deltas.** Qwen ($+0.003$) and DeepSeek ($+0.018$)
+are the only two models where the hybrid's $\Delta$ is even
+weakly positive, and both fall short of the BEATS threshold
+($+0.030$). The remaining four cluster between $-0.021$ and
+$-0.047$ with roughly even spacing. The 0.065 spread between best
+and worst is enough to suggest that *which* LLM renders the
+perturbation matters quantitatively — Qwen and DeepSeek's
+adversarial-prompt outputs may produce a perturbation distribution
+slightly more like the synthetic harness's (where the hybrid wins)
+than gpt-4o-mini, claude, Llama, and Gemma do — but not enough to
+flip any model into BEATS territory.
 
 Receipt:
 `fixtures/bench_receipts/path2_multi_llm_compare_2026-05-05.json`,
 schema `sum.sheaf_path2_multi_llm_compare.v1`. Per-model
-`bench_digest`s: `7b364fc6…cc4b75e` (gpt-4o-mini), `d0f9f175…2f6f7`
-(claude-haiku-4.5). Pinned in
-`Tests/research/test_sheaf_path2_multi_llm_compare.py`.
+`bench_digest`s pinned in
+`Tests/research/test_sheaf_path2_multi_llm_compare.py`:
+`7b364fc6…cc4b75e` (gpt-4o-mini), `d0f9f175…2f6f7` (claude-haiku),
+`f1c17c3e…aac29b31` (Llama), `23da3ecb…461b8ea2` (Qwen),
+`619a413f…2fe22c9f` (DeepSeek), `fe76913e…0318b9b5` (Gemma).
 
-**Honest scope.** Two LLM families is a thin sample. A robust
-"structural" claim would want 3+ families (open-weights,
-GPT-class, Claude-class at minimum). Two is enough to *falsify*
-model-independence if they had disagreed (they didn't), and enough
-to *weakly support* it given that they agreed in the same direction
-with similar magnitude.
+**Honest scope.** Six LLM lineages is meaningfully wider than
+"a thin sample" but still bounded. The 16-doc corpus is held
+constant across all six; results may differ on other corpora.
+The four open-weights models are routed through one provider's
+default selection (HF Inference Providers); other deployments
+(local inference, alternative providers, different quantisation)
+may produce slightly different perturbation distributions. The
+load-bearing claim — *no LLM family in the sample makes the hybrid
+BEAT the baseline on real-LLM perturbations* — is robust to those
+caveats; the precise per-model $\Delta$ values are not.
 
 **Remaining v0.4+ candidate directions:**
 
@@ -1129,9 +1154,11 @@ with similar magnitude.
     structure matches synthetic but the perturbation choice is
     LLM-natural. Decouples "what gets perturbed" from "how it
     propagates through rendering."
-  - **Open-weights extension**: run Path 2 against an open-weights
-    family (Llama-3.x, Mistral) to extend the cross-family
-    sample beyond proprietary frontier APIs.
+  - **Cross-corpus extension**: the §4.7.3 sample is one corpus
+    × six LLMs. A complementary scaling axis is one LLM × N
+    corpora. Combined with the cross-family scaling already
+    landed, this would give a 2-D sample sufficient to argue
+    structural gap independent of both corpus and LLM choice.
 
 ### 4.8 Reproducibility: `bench_digest` as a primitive
 

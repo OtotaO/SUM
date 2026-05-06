@@ -9,10 +9,16 @@ gpt-4o-mini-2024-07-18 — the synthetic-bench WIN
 hallucinations on that one model. The §4.7.2 narrative depends on
 this gap being structural, not gpt-4o-mini-specific.
 
-This bench captures a parallel snapshot from a second LLM family
-(Anthropic Claude Haiku 4.5) using the SAME source corpus, SAME
-prompt classes, and SAME deterministic Phase 2 scorer, then
-aggregates the per-model verdicts into a joint classification.
+This bench captures parallel snapshots from multiple LLM families
+using the SAME source corpus, SAME prompt classes, and SAME
+deterministic Phase 2 scorer, then aggregates the per-model verdicts
+into a joint classification. Default model set spans six
+organisational lineages: OpenAI gpt-4o-mini, Anthropic Claude Haiku
+4.5, Meta Llama-3.3-70B, Alibaba Qwen3.6-35B-A3B, DeepSeek V3-0324,
+Google Gemma-3-27B. The four open-weights members route through
+Hugging Face Inference Providers via the OpenAI-compatible router
+(``HF_TOKEN`` env var); the closed pair use their respective vendor
+APIs.
 
 ## Findings the joint classification can produce
 
@@ -30,9 +36,9 @@ gpt-4o-mini's perturbation distribution.
 ## Architecture
 
 Phase 1 (one-time, requires API keys): one capture per model →
-`fixtures/bench_renders/path2_<model_safe>.json`. The
-gpt-4o-mini snapshot already exists from PR #156; this bench
-adds a Claude snapshot.
+`fixtures/bench_renders/path2_<model_safe>.json`. Closed-model
+snapshots use vendor APIs (`OPENAI_API_KEY` / `ANTHROPIC_API_KEY`);
+open-weights snapshots route through HF (`HF_TOKEN`).
 
 Phase 2 (deterministic): for each model snapshot, runs the same
 `run_path2_v3_bench(snapshot)` from `sheaf_path2_v3_bench`. Same
@@ -46,8 +52,14 @@ Schema: `sum.sheaf_path2_multi_llm_compare.v1`
 
 ## Honest scope
 
-Two models is a thin sample of "LLM family". A robust structural
-claim would want 3+ families (open-weights, GPT-class, Claude-class
+The default 6-model set is the working sample of "LLM family." A
+robust structural claim would want a deeper sample, but six
+organisational lineages (OpenAI / Anthropic / Meta / Alibaba /
+DeepSeek / Google) spanning closed and open weights is a
+substantively wider cross-family check than the single-model
+§4.7.2 result. Earlier pairwise framing kept here for context:
+two models is a thin sample of "LLM family"; 3+ families
+(open-weights, GPT-class, Claude-class
 at minimum). Two models is enough to disprove "model-independent"
 if they disagree, and enough to weakly support it if they agree.
 The receipt records this scope so downstream readers can weight
@@ -84,12 +96,33 @@ from scripts.research.sheaf_path2_v3_bench import (
 # Default cross-family pair. The OpenAI member matches the existing
 # Path 2 snapshot — its digest is pinned by Tests/research/test_sheaf_path2_v3.py.
 PINNED_ANTHROPIC_MODEL = "claude-haiku-4-5-20251001"
-DEFAULT_MODELS = (PINNED_OPENAI_MODEL, PINNED_ANTHROPIC_MODEL)
+# Open-weights models routed via HF Inference Providers
+# (https://router.huggingface.co/v1). One representative per family,
+# picked from the set the operator's HF account can route. Each
+# spans a distinct training corpus + organisational lineage from
+# the closed pair above.
+PINNED_META_MODEL = "meta-llama/Llama-3.3-70B-Instruct"
+PINNED_QWEN_MODEL = "Qwen/Qwen3.6-35B-A3B"
+PINNED_DEEPSEEK_MODEL = "deepseek-ai/DeepSeek-V3-0324"
+PINNED_GOOGLE_MODEL = "google/gemma-3-27b-it"
+DEFAULT_MODELS = (
+    PINNED_OPENAI_MODEL,
+    PINNED_ANTHROPIC_MODEL,
+    PINNED_META_MODEL,
+    PINNED_QWEN_MODEL,
+    PINNED_DEEPSEEK_MODEL,
+    PINNED_GOOGLE_MODEL,
+)
 
 # Per-call budget for capture. A single render is short (<500 tokens)
 # but Anthropic's tool-free `messages.create` for narrative output
 # can take several seconds at peak; 60s is generous and rarely hit.
-CAPTURE_TIMEOUT_S = 60.0
+CAPTURE_TIMEOUT_S = 180.0
+# HF routed providers under load occasionally serve a slow request
+# (60-120s tail). Retry once before failing so a single transient
+# slow call doesn't waste the entire capture run.
+CAPTURE_RETRIES_ON_TIMEOUT = 2
+CAPTURE_RETRY_BACKOFF_S = 5.0
 
 
 def _safe_model_filename(model: str) -> str:
@@ -117,14 +150,31 @@ async def _render_one_via_dispatch(adapter: Any, triples: list[tuple[str, str, s
 
     Both OpenAIAdapter and AnthropicAdapter expose generate_text(system,
     user, call_timeout_s); this keeps the capture path identical across
-    families.
+    families. Retries on per-call timeout up to
+    ``CAPTURE_RETRIES_ON_TIMEOUT`` extra attempts so a single slow HF
+    routed call doesn't kill a 64-call capture.
     """
+    from sum_engine_internal.ensemble.llm_dispatch import LLMCallTimeoutError
+
     sys_prompt, user_prompt = _build_prompt(triples, prompt_class)
-    return await adapter.generate_text(
-        system=sys_prompt,
-        user=user_prompt,
-        call_timeout_s=CAPTURE_TIMEOUT_S,
-    )
+    last_err: Exception | None = None
+    for attempt in range(1 + CAPTURE_RETRIES_ON_TIMEOUT):
+        try:
+            return await adapter.generate_text(
+                system=sys_prompt,
+                user=user_prompt,
+                call_timeout_s=CAPTURE_TIMEOUT_S,
+            )
+        except LLMCallTimeoutError as e:
+            last_err = e
+            if attempt < CAPTURE_RETRIES_ON_TIMEOUT:
+                print(f"[capture] timeout (attempt {attempt+1}/"
+                      f"{1+CAPTURE_RETRIES_ON_TIMEOUT}); "
+                      f"retrying after {CAPTURE_RETRY_BACKOFF_S:.1f}s")
+                await asyncio.sleep(CAPTURE_RETRY_BACKOFF_S)
+                continue
+    assert last_err is not None
+    raise last_err
 
 
 async def _capture_snapshot_for_model(model: str) -> dict[str, Any]:

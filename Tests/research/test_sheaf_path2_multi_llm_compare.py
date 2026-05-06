@@ -54,6 +54,40 @@ PINNED_PATH2_V3_DIGEST = (
 PINNED_PATH2_V3_CLAUDE_DIGEST = (
     "d0f9f175662216d50dbfd1ec23d90eb8b4774bb95d220e2f951399e8ed52f6f7"
 )
+PINNED_PATH2_V3_LLAMA_DIGEST = (
+    "f1c17c3e920811b1fdbd376adc168e6f777be781310eedb945c7c9e2aac29b31"
+)
+PINNED_PATH2_V3_QWEN_DIGEST = (
+    "23da3ecb0404d26920bcf0bd4ad519e9a19d2e1a75085df81464fd92461b8ea2"
+)
+PINNED_PATH2_V3_DEEPSEEK_DIGEST = (
+    "619a413f6b62203aefcc7c2d8d01db36935ce2148307ace10a908f112fe22c9f"
+)
+PINNED_PATH2_V3_GEMMA_DIGEST = (
+    "fe76913e1eabf88e7d351752b20e0eb4cba011c527508a0616f131609318b9b5"
+)
+
+# Open-weights snapshot paths
+SNAPSHOT_LLAMA = (
+    REPO / "fixtures" / "bench_renders"
+    / "path2_meta-llama_llama-3.3-70b-instruct.json"
+)
+SNAPSHOT_QWEN = (
+    REPO / "fixtures" / "bench_renders" / "path2_qwen_qwen3.6-35b-a3b.json"
+)
+SNAPSHOT_DEEPSEEK = (
+    REPO / "fixtures" / "bench_renders"
+    / "path2_deepseek-ai_deepseek-v3-0324.json"
+)
+SNAPSHOT_GEMMA = (
+    REPO / "fixtures" / "bench_renders" / "path2_google_gemma-3-27b-it.json"
+)
+_ALL_SIX_SNAPSHOTS_PRESENT = all(
+    p.exists() for p in (
+        SNAPSHOT_OPENAI, SNAPSHOT_ANTHROPIC,
+        SNAPSHOT_LLAMA, SNAPSHOT_QWEN, SNAPSHOT_DEEPSEEK, SNAPSHOT_GEMMA,
+    )
+)
 
 
 @pytest.mark.skipif(
@@ -190,4 +224,109 @@ def test_multi_llm_compare_two_models_structural_gap():
         f"Δ-spread between models too large: {spread:.4f}. The "
         f"structural-gap claim depends on per-model deltas being "
         f"roughly in agreement (both LOSING by similar margins)."
+    )
+
+
+@pytest.mark.skipif(
+    not _ALL_SIX_SNAPSHOTS_PRESENT,
+    reason="n=6 case requires all six committed snapshots "
+           "(2 closed + 4 open-weights via HF Inference Providers)",
+)
+def test_multi_llm_compare_six_models_no_beats():
+    """The strongest cross-family claim: across SIX organisationally
+    distinct LLM lineages — OpenAI, Anthropic, Meta, Alibaba (Qwen),
+    DeepSeek, Google — NO model produces a HYBRID_BEATS_BASELINE
+    verdict on real-LLM-rendered adversarial perturbations.
+
+    Joint finding: STRUCTURAL_GAP_NO_MODEL_BEATS. Four models LOSE
+    (gpt-4o-mini, claude-haiku-4.5, Llama-3.3-70B, Gemma-3-27B); two
+    TIE (Qwen3.6, DeepSeek-V3-0324). The synthetic-bench WIN does
+    not generalise to any LLM family in the cross-organisational
+    sample, closed or open-weights.
+
+    If this label flips to HYBRID_BEATS_* or
+    MIXED_VERDICTS_MODEL_DEPENDENT, the §4.7.3 cross-family
+    corroboration weakens — investigate whether a snapshot or the
+    scoring composition changed.
+    """
+    proc = subprocess.run(
+        [
+            sys.executable, "-m", "scripts.research.sheaf_path2_multi_llm_compare",
+            "--models",
+            "gpt-4o-mini-2024-07-18",
+            "claude-haiku-4-5-20251001",
+            "meta-llama/Llama-3.3-70B-Instruct",
+            "Qwen/Qwen3.6-35B-A3B",
+            "deepseek-ai/DeepSeek-V3-0324",
+            "google/gemma-3-27b-it",
+        ],
+        cwd=str(REPO),
+        env=_DETERMINISTIC_BLAS_ENV,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    out_path = None
+    for line in proc.stdout.splitlines():
+        if line.lstrip().startswith("→ wrote "):
+            out_path = REPO / line.split("→ wrote ", 1)[1].strip()
+            break
+    assert out_path is not None, (
+        f"Compare bench did not print '→ wrote' line. stdout:\n{proc.stdout}\n"
+        f"stderr:\n{proc.stderr}"
+    )
+    report = json.loads(out_path.read_text())
+
+    assert report["schema"] == "sum.sheaf_path2_multi_llm_compare.v1"
+    assert report["n_models"] == 6
+
+    # Per-model digest pins. Each Phase-2 path is byte-stable given
+    # its committed snapshot; drift on any one means the scorer
+    # changed or that model's snapshot was regenerated.
+    per_model = report["per_model_reports"]
+    expected_digests = {
+        "gpt-4o-mini-2024-07-18":            PINNED_PATH2_V3_DIGEST,
+        "claude-haiku-4-5-20251001":         PINNED_PATH2_V3_CLAUDE_DIGEST,
+        "meta-llama/Llama-3.3-70B-Instruct": PINNED_PATH2_V3_LLAMA_DIGEST,
+        "Qwen/Qwen3.6-35B-A3B":              PINNED_PATH2_V3_QWEN_DIGEST,
+        "deepseek-ai/DeepSeek-V3-0324":      PINNED_PATH2_V3_DEEPSEEK_DIGEST,
+        "google/gemma-3-27b-it":             PINNED_PATH2_V3_GEMMA_DIGEST,
+    }
+    for model, expected in expected_digests.items():
+        got = per_model[model]["bench_digest"]
+        assert got == expected, (
+            f"{model} digest drift: got {got}, expected {expected}"
+        )
+
+    # The load-bearing joint finding.
+    joint = report["joint_finding"]
+    assert joint == "STRUCTURAL_GAP_NO_MODEL_BEATS", (
+        f"Joint finding drift: got {joint!r}. Across six "
+        f"cross-family lineages, no model should produce "
+        f"HYBRID_BEATS_BASELINE on real-LLM perturbations. "
+        f"Per-model verdicts: {report['per_model_verdict']}, "
+        f"deltas: {report['per_model_delta_borda_vs_b2']}."
+    )
+
+    # Per-verdict counts: at least 4 LOSES (or LOSES+TIES = 6),
+    # 0 BEATS. Generous bounds in case one model's verdict slides
+    # within its threshold without the structural claim weakening.
+    verdicts = list(report["per_model_verdict"].values())
+    n_beats = sum(1 for v in verdicts if v.startswith("HYBRID_BEATS"))
+    assert n_beats == 0, (
+        f"Some model produced HYBRID_BEATS on real LLM: "
+        f"{report['per_model_verdict']}. The structural-gap claim "
+        f"requires zero BEATS across the cross-family sample."
+    )
+
+    # Δ-spread bound: the gap between best and worst model's Δ.
+    # Currently ~0.065 (Llama -0.047 → DeepSeek +0.018). Pin a
+    # generous bound; the load-bearing claim is "no model beats,"
+    # not "all models agree numerically."
+    spread = report["delta_spread"]
+    assert spread <= 0.10, (
+        f"Δ-spread across the 6-model sample too large: {spread:.4f}. "
+        f"That doesn't flip the structural-gap claim by itself, but "
+        f"it suggests one model's snapshot or scoring drifted "
+        f"substantially — investigate."
     )
