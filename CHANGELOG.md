@@ -4,6 +4,24 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Path 2 cross-family corroboration (§4.7.3): Claude Haiku 4.5
+  snapshot lands; structural-gap finding holds across LLM families.**
+  Phase 1 capture for `claude-haiku-4-5-20251001` produced
+  `fixtures/bench_renders/path2_claude-haiku-4-5-20251001.json`
+  (16 docs × 4 prompt classes; 64 LLM calls). Phase 2 scoring against
+  both committed snapshots returns
+  **`joint_finding: STRUCTURAL_GAP_ALL_MODELS_LOSE`** — both LLM
+  families have the hybrid LOSING to the B2 baseline (gpt-4o-mini
+  Δ=−0.021; claude-haiku-4.5 Δ=−0.032; spread 0.011). The
+  synthetic-vs-real gap from §4.7.2 is **not** gpt-4o-mini-specific:
+  two independent LLM families with different training corpora,
+  architectures, and adversarial-prompt-following styles produce the
+  same directional verdict with similar magnitude. Pinned in
+  `Tests/research/test_sheaf_path2_multi_llm_compare.py`
+  (per-model digests `7b364fc6…cc4b75e` for OpenAI, `d0f9f175…2f6f7`
+  for Anthropic). Receipt:
+  `fixtures/bench_receipts/path2_multi_llm_compare_2026-05-05.json`.
+
 - **Multi-LLM Path 2 comparison harness (Path 2 → cross-family).** New
   `scripts/research/sheaf_path2_multi_llm_compare.py` extends the
   capture-once-replay-forever architecture across LLM families to test

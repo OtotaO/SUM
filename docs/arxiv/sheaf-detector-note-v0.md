@@ -1074,21 +1074,64 @@ truth-first discipline catches this exactly the way it caught the
 original baseline-vs-v3.2-only loss in §4.7.1's STOP-THE-LINE
 gate: by running the comparison and reporting whatever it shows.
 
-**v0.4+ candidate directions** (named, not yet investigated):
+### 4.7.3 Cross-family corroboration: Path 2 against Claude Haiku 4.5
+
+The Path 2 finding could in principle have been gpt-4o-mini-specific:
+that one LLM's adversarial-prompt compliance distribution might have
+happened to dilute B2's signal less than the hybrid's. To test
+whether the synthetic-vs-real gap is *structural* or
+*model-specific*, we ran the same `seed_long_paragraphs` corpus
+through `claude-haiku-4-5-20251001` at the same four prompt classes
+(neutral + a1/a2/a4 adversarial), produced an independent
+capture-once snapshot at
+`fixtures/bench_renders/path2_claude-haiku-4-5-20251001.json`,
+and re-ran the deterministic Phase 2 scorer.
+
+**Both LLM families show the hybrid LOSING to baseline:**
+
+| Model | $\Delta$(borda − b2) | Verdict |
+|---|---:|---|
+| gpt-4o-mini-2024-07-18 | $-0.021$ | `HYBRID_LOSES_TO_BASELINE_ON_REAL_LLM` |
+| claude-haiku-4-5-20251001 | $-0.032$ | `HYBRID_LOSES_TO_BASELINE_ON_REAL_LLM` |
+| **Δ-spread between models** | **0.011** | — |
+
+**Joint finding: `STRUCTURAL_GAP_ALL_MODELS_LOSE`.** The
+synthetic-vs-real gap is *not* an artifact of one LLM's
+perturbation distribution. Two independent LLM families — different
+training corpora, different architectures, different
+adversarial-prompt-following styles — both show the hybrid
+LOSING to B2 alone by similar margins on real-LLM perturbations.
+The structural-gap claim from §4.7.2 is corroborated.
+
+Receipt:
+`fixtures/bench_receipts/path2_multi_llm_compare_2026-05-05.json`,
+schema `sum.sheaf_path2_multi_llm_compare.v1`. Per-model
+`bench_digest`s: `7b364fc6…cc4b75e` (gpt-4o-mini), `d0f9f175…2f6f7`
+(claude-haiku-4.5). Pinned in
+`Tests/research/test_sheaf_path2_multi_llm_compare.py`.
+
+**Honest scope.** Two LLM families is a thin sample. A robust
+"structural" claim would want 3+ families (open-weights,
+GPT-class, Claude-class at minimum). Two is enough to *falsify*
+model-independence if they had disagreed (they didn't), and enough
+to *weakly support* it given that they agreed in the same direction
+with similar magnitude.
+
+**Remaining v0.4+ candidate directions:**
 
   - **Real-LLM-aware detector**: train the per-triple V channel on
     a corpus of LLM-rendered perturbations rather than synthetic
     tail-perturbations, so the trained restriction maps reflect
     the real-LLM perturbation distribution.
-  - **Multi-LLM cross-bench**: run Path 2 against
-    Claude-Haiku-4.5, gpt-5, Llama-3.x — see if the synthetic-vs-
-    real gap is consistent across LLM families.
   - **Naturalistic perturbation synthesis**: have an LLM generate
     A1/A2/A4-class perturbations on the source TRIPLE set
     directly (not the rendered prose), so the perturbation
     structure matches synthetic but the perturbation choice is
     LLM-natural. Decouples "what gets perturbed" from "how it
     propagates through rendering."
+  - **Open-weights extension**: run Path 2 against an open-weights
+    family (Llama-3.x, Mistral) to extend the cross-family
+    sample beyond proprietary frontier APIs.
 
 ### 4.8 Reproducibility: `bench_digest` as a primitive
 
