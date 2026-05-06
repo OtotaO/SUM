@@ -893,13 +893,25 @@ boundary. Receipt:
   - **Cross-corpus generalisation.** The +0.043 margin is on
     `seed_long_paragraphs` with the synthetic A1/A2/A4
     perturbation harness. v0.2 follow-up: second corpus.
-  - **Real-LLM-rendered hallucinations.** The synthetic harness
-    mutates source-bundle triples; real LLM hallucinations
-    produce rendered text that re-extracts to a noisy triple
-    set. B2's perfect 1.000 on synthetic A1/A4 may degrade if
-    the LLM elaborates with spurious entities; v3.2 + per-triple
-    may pull ahead. v0.2 follow-up: real-LLM-rendered bench
-    (Path 2 in the preprint's §8 future work).
+  - **Real-LLM-rendered hallucinations.** Closed by Path 2 (PR
+    #156, preprint §4.7.2) and cross-corroborated across LLM
+    families by Path 2 multi-LLM (PR #157 + #158, preprint §4.7.3).
+    Real-LLM-rendered adversarial bench against
+    `gpt-4o-mini-2024-07-18` produces verdict
+    `HYBRID_LOSES_TO_BASELINE_ON_REAL_LLM` (Δ = −0.021) — the
+    synthetic-bench WIN does NOT generalise to real LLM
+    hallucinations. Cross-family run against
+    `claude-haiku-4-5-20251001` reproduces the same direction
+    with similar magnitude (Δ = −0.032; joint finding
+    `STRUCTURAL_GAP_ALL_MODELS_LOSE`), so the gap is structural
+    rather than gpt-4o-mini-specific. The synthetic-vs-real gap
+    is itself the load-bearing finding: synthetic A1/A4 cleanly
+    change the entity set (B2's strongest case); real LLM
+    perturbations don't share that property and B2 weakens
+    accordingly. v0.4+ candidate: real-LLM-aware per-triple V
+    training, naturalistic perturbation synthesis, open-weights
+    extension (Llama-3.x / Mistral) to extend the cross-family
+    sample beyond proprietary frontier APIs.
   - **Composition tuning.** Borda is parameter-free but is one
     composition choice among many. Z-score additive, gated
     (B2 fires → use B2 else fall to v3.2 + per-triple), and
