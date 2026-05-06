@@ -11,17 +11,21 @@ If this is your first turn in this repo, read these files in order and you
 will have the full picture.
 
 0. **[`docs/SESSION_HANDOVER_2026-05-05_path2_arc.md`](docs/SESSION_HANDOVER_2026-05-05_path2_arc.md)**
-   — most recent session-block handover (PRs #156 / #157 / #158 —
-   Path 2 real-LLM-rendered adversarial bench closes the §7
-   asterisk; multi-LLM cross-family corroboration produces
-   `STRUCTURAL_GAP_ALL_MODELS_LOSE` with both gpt-4o-mini and
-   claude-haiku-4.5 having the hybrid LOSING to baseline on real
-   LLM perturbations; new §4.7.3 in the preprint records the
-   cross-family corroboration). The synthetic-bench WIN is real on
-   its corpus but doesn't generalise — this is the load-bearing
-   finding. Open follow-up: Phase 1 / Phase 2 same-process digest
-   contamination (task #22; substantive verdict unchanged across
-   runs, just digest sensitivity). **Read this first if the §4.7.x
+   — most recent session-block handover (PRs #156 / #157 / #158 /
+   #159 / #160 / #161 — Path 2 real-LLM-rendered adversarial bench
+   closes the §7 asterisk; multi-LLM cross-family corroboration
+   extends to six LLM lineages from six organisations across
+   closed + open weights, with joint finding
+   `STRUCTURAL_GAP_NO_MODEL_BEATS` (4 LOSE, 2 TIE, 0 BEAT); the
+   "Phase 1 same-process contamination" was misdiagnosed and
+   root-caused as a dict-iteration-order bug fixed in PR #160; the
+   open-weights extension routes through HF Inference Providers
+   via the new HF route in `llm_dispatch.get_adapter`).
+   The synthetic-bench WIN is real on its corpus but doesn't
+   generalise to any LLM family in the sample — this is the
+   load-bearing finding. Open v0.4+ candidates: real-LLM-aware
+   per-triple V training, naturalistic perturbation synthesis,
+   cross-corpus extension. **Read this first if the §4.7.x
    narrative is in question.** The prior handover at
    [`docs/SESSION_HANDOVER_2026-05-05_sprint_7_5_arc.md`](docs/SESSION_HANDOVER_2026-05-05_sprint_7_5_arc.md)
    — Sprint 7 v0.1 prose fold-in + Sprint 7.5 hardening arc (PRs
