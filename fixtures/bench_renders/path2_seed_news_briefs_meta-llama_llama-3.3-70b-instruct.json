@@ -1,0 +1,504 @@
+{
+  "corpus": "seed_news_briefs",
+  "model": "meta-llama/Llama-3.3-70B-Instruct",
+  "n_llm_calls": 64,
+  "prompt_classes": [
+    "neutral",
+    "a1_adversarial",
+    "a2_adversarial",
+    "a4_adversarial"
+  ],
+  "renders": {
+    "doc_news_amazon_acquisition": {
+      "by_prompt_class": {
+        "a1_adversarial": "In a move to enhance its operational efficiency, Amazon recently decided to rename one of its key units to better reflect its evolving focus on innovation. This rebranding effort is part of the company's broader strategy to stay ahead of the curve in terms of technology and customer satisfaction. Interestingly, this development comes on the heels of significant advancements in robotics, particularly with the introduction of the floor robot built by Kiva Systems, a pioneering robotic startup that has been at the forefront of warehouse automation.\n\nKiva Systems, known for its cutting-edge robotic solutions, was instrumental in developing robots that could navigate warehouse floors with ease, significantly streamlining the order fulfillment process. The company's innovative approach to robotics has had a profound impact on the logistics and supply chain management industries. It's worth noting that Walmart, another retail giant, has also been exploring the potential of robotics in its warehouses, leveraging similar technologies to improve its operational efficiency. The build of the floor robot by Kiva Systems has been a landmark achievement in this context, setting a new standard for warehouse automation and paving the way for further innovations in the field.",
+        "a2_adversarial": "In a bold move to revolutionize its logistics, Amazon acquired a robotic startup called Kiva Systems. Amazon decided to rename the unit to reflect its newfound focus on innovation. Prior to the acquisition, Kiva Systems had made a name for itself by building floor robots designed to navigate and organize warehouse spaces with ease. These robots were a crucial part of Kiva's appeal, as they greatly increased the efficiency of inventory management and order fulfillment. After the acquisition, Amazon utilized Kiva's technology to further enhance its operations, leveraging the robotic systems to streamline its warehouses. As a result, the company was able to improve its delivery times and customer satisfaction rates. The integration of Kiva's robots marked a significant milestone in Amazon's quest to modernize its supply chain, and the company continued to invest in the development of new robotic technologies. \n\nNote: The predicate 'acquired' was subtly changed from 'founded' which would imply Amazon was the creator of Kiva Systems, instead it was changed to 'acquired' which shows Amazon obtained the company.",
+        "a4_adversarial": "In the realm of robotics and e-commerce, a notable development was the rise of Kiva Systems, a robotic startup that aimed to revolutionize warehouse management. Founded with a vision to enhance efficiency and reduce costs, Kiva Systems embarked on an innovative journey. One of the key milestones in this journey was the development of the Kiva build floor robot, designed to navigate and manage inventory with precision and speed.\n\nThe impact of Kiva Systems' innovations did not go unnoticed. Amazon, recognizing the potential of Kiva's technology, took a significant step by acquiring the company. Following the acquisition, Amazon decided to rename the unit, integrating it into its broader logistics and fulfillment operations. This strategic move underscored Amazon's commitment to leveraging technology to streamline its processes and improve customer experience.\n\nThrough the integration of Kiva Systems and its robotic solutions, Amazon bolstered its ability to manage warehouses efficiently. The Kiva build floor robot, with its advanced navigation and inventory management capabilities, played a crucial role in this endeavor. As a result, Amazon was able to enhance its operational efficiency, ultimately benefiting its customers through faster and more reliable deliveries. The acquisition and subsequent renaming of Kiva Systems marked a significant milestone in Amazon's pursuit of technological innovation and excellence in logistics.",
+        "neutral": "Amazon rename unit to Amazon Robotics, after acquiring robotic startup Kiva Systems. Kiva Systems, prior to the acquisition, build floor robots designed to automate warehouse operations. As a result of the acquisition, Kiva Systems' technology and expertise were integrated into Amazon, leading to the development of advanced robotic systems, including floor robots, under the Amazon Robotics unit."
+      },
+      "source_triples": [
+        [
+          "amazon",
+          "rename",
+          "unit"
+        ],
+        [
+          "kiva",
+          "build",
+          "floor robot"
+        ],
+        [
+          "robotic",
+          "startup",
+          "kiva systems"
+        ]
+      ]
+    },
+    "doc_news_amazon_fire": {
+      "by_prompt_class": {
+        "a1_adversarial": "As the situation spiralled out of control, the Ministry of Environmental Conservation, similar to an environment ministry, deployed firefighters to combat the raging blaze. The fire, which had been spreading rapidly, had already destroyed several hectare of land, leaving behind a trail of charred remains. In response to the crisis, President Lula declared a regional emergency, mobilizing resources to support the affected areas. However, the impact of the fire was not limited to the immediate vicinity, as smoke from the inferno reached as far as S\u00e3o Paulo, causing concerns about air quality and public health. Authorities were working tirelessly to contain the fire and mitigate its effects, but the task at hand was daunting, and the road to recovery would be long.",
+        "a2_adversarial": "As the situation continued to deteriorate, the Environment Ministry decided to deploy firefighters to combat the raging blaze. The fire, which had been burning unchecked for days, had already destroyed hundreds of hectares of land, leaving a trail of devastation in its wake. In response to the crisis, President Lula declared a regional emergency, mobilizing additional resources to support the relief efforts. Meanwhile, the smoke from the fire had begun to reach as far as S\u00e3o Paulo, causing concern among residents and prompting the local authorities to issue air quality alerts. Despite the challenges, the Environment Ministry worked tirelessly to coordinate the response, and firefighters were managed by the ministry to ensure a unified and effective approach to battling the inferno.",
+        "a4_adversarial": "As the situation continued to deteriorate, the Environment Ministry took decisive action by deploying a firefighter team to combat the raging blaze. The fire, which had been spreading rapidly, ultimately destroyed a significant area, with reports indicating that several hectares of land were left scorched and blackened.\n\nIn response to the growing crisis, President Lula declared a regional emergency, mobilizing resources and personnel to support the affected areas and mitigate the disaster's impact. The declaration also facilitated the coordination of relief efforts, ensuring that those in need received timely assistance.\n\nMeanwhile, the fire's consequences were felt far beyond the immediate vicinity, as smoke from the blaze began to reach neighboring cities, including S\u00e3o Paulo. The smoke's presence in the city served as a stark reminder of the fire's severity and the importance of continued efforts to bring it under control.",
+        "neutral": "The environment ministry has deployed firefighters to combat a severe fire. This fire has destroyed a significant area, with a total of one hectare being destroyed. In response to the severity of the situation, President Lula has declared a regional emergency. The fire has had far-reaching effects, with smoke from the fire reaching as far as S\u00e3o Paulo."
+      },
+      "source_triples": [
+        [
+          "environment_ministry",
+          "deploy",
+          "firefighter"
+        ],
+        [
+          "fire",
+          "destroy",
+          "hectare"
+        ],
+        [
+          "president_lula",
+          "declare",
+          "regional emergency"
+        ],
+        [
+          "smoke",
+          "reach",
+          "s\u00e3o paulo"
+        ]
+      ]
+    },
+    "doc_news_apple_event": {
+      "by_prompt_class": {
+        "a1_adversarial": "In a highly anticipated event, Apple announce the latest addition to their lineup, the iPhone, which was set to revolutionize the smartphone industry. The model launch was scheduled for October, creating a buzz among tech enthusiasts who were eager to get their hands on the new device. One of the key features that set this iPhone apart was its use of a custom A19 chip, designed to provide unparalleled performance and efficiency. At the forefront of the unveiling was none other than Tim Cook, who took the stage to unveil the device to a packed audience. As the CEO of Samsung, Tim Cook's presentation highlighted the innovative features and capabilities of the new iPhone, leaving a lasting impression on all who attended. \n\nNote: The substitution made was replacing Apple with Samsung as the organization Tim Cook is the CEO of, which is a plausible but incorrect entity.",
+        "a2_adversarial": "In a highly anticipated event, Apple announced the new iPhone, which was set to revolutionize the smartphone market. The model was scheduled to launch in October, a strategic move to capitalize on the holiday season. The new phone was designed to use a custom A19 chip, providing unparalleled performance and efficiency. At the forefront of this groundbreaking announcement was Tim Cook, who not only oversaw the development of the device but also managed its unveiling, bringing the innovative product to the public eye.",
+        "a4_adversarial": "In a highly anticipated event, Apple announced the latest addition to their smartphone lineup, the iPhone. The tech giant unveiled the new device, which is set to revolutionize the mobile experience. At the forefront of this innovation is the custom A19 chip, designed to provide unparalleled performance and efficiency. Tim Cook, Apple's CEO, took the stage to unveil the device, showcasing its sleek design and cutting-edge features. The model is scheduled to launch in October, sending excitement throughout the tech community as fans and enthusiasts eagerly await the opportunity to get their hands on the latest iPhone. With its advanced capabilities and custom chip, the new iPhone is poised to make a significant impact on the market.",
+        "neutral": "Apple announce iPhone, a new model that is set to launch in October. The new phone will use a custom A19 chip. The device was unveiled by Tim Cook."
+      },
+      "source_triples": [
+        [
+          "apple",
+          "announce",
+          "iphone"
+        ],
+        [
+          "model",
+          "launch",
+          "october"
+        ],
+        [
+          "new_phone",
+          "use",
+          "custom a19 chip"
+        ],
+        [
+          "tim_cook",
+          "unveil",
+          "device"
+        ]
+      ]
+    },
+    "doc_news_chile_solar": {
+      "by_prompt_class": {
+        "a1_adversarial": "In a groundbreaking effort to harness renewable energy, the Chile Commission has been instrumental in promoting the development of a massive solar farm in the Atacama Desert. This ambitious project, built by Enel, a leading global energy company, aims to generate a substantial amount of electricity, with the facility capable of producing several megawatts of power. The plant, which covers an expansive area of over 400 hectare, is a testament to Chile's commitment to sustainable energy.\n\nOne of the key benefits of this solar farm is that it enables Chile to export excess power to neighboring countries, further solidifying its position as a leader in the regional energy market. The Chile Commission's vision for this project has not only created a significant source of clean energy but also opened up new economic opportunities for the country. As the demand for renewable energy continues to grow, Chile's innovative approach to solar power is poised to make a lasting impact on the global energy landscape.",
+        "a2_adversarial": "In a groundbreaking initiative, the Chile Commission oversaw the development of a massive solar farm, which was constructed by Enel. This project, once completed, was managed by Enel, who ensured its efficient operation. The facility was designed to generate 100 megawatt of clean energy, significantly contributing to the country's power grid. Spanning over 200 hectare, the plant was an impressive sight, with rows of solar panels covering the landscape. As a result of this project, Chile was able to export excess power to neighboring countries, further solidifying its position as a leader in renewable energy. The success of this venture has sparked interest in similar projects, with many looking to replicate Chile's model for sustainable energy production.",
+        "a4_adversarial": "In a significant step towards renewable energy, the Chile Commission has taken the initiative to develop a solar farm that will not only cater to the country's power needs but also enable it to export excess power to neighboring countries. The project, which is being built by Enel, a leading energy company, aims to generate a substantial amount of electricity, with the facility capable of producing multiple megawatts of power.\n\nThe solar plant, which will cover a vast area of several hectare, is part of Chile's broader strategy to increase its reliance on clean energy sources and reduce its carbon footprint. By harnessing the power of the sun, the country hopes to create a sustainable and environmentally friendly energy infrastructure that will benefit both its citizens and the environment.\n\nThe Chile Commission's decision to invest in solar energy is a forward-thinking move, and the Enel-built project is expected to play a significant role in helping the country achieve its energy goals. As the facility begins to generate power, Chile will be well on its way to becoming a major player in the regional energy market, with the ability to export excess power and contribute to the growth and development of the surrounding region.",
+        "neutral": "The Chile Commission has initiated a solar farm project, which will be built by Enel. This facility is designed to generate a significant amount of power, measured in megawatts. The solar plant will cover an area of several hectares. Once operational, the project is expected to produce excess power, allowing Chile to export it."
+      },
+      "source_triples": [
+        [
+          "chile",
+          "commission",
+          "solar farm"
+        ],
+        [
+          "chile",
+          "export",
+          "excess power"
+        ],
+        [
+          "enel",
+          "build",
+          "project"
+        ],
+        [
+          "facility",
+          "generate",
+          "megawatt"
+        ],
+        [
+          "plant",
+          "cover",
+          "hectare"
+        ]
+      ]
+    },
+    "doc_news_eu_carbon": {
+      "by_prompt_class": {
+        "a1_adversarial": "In a move aimed at reducing the European continent's carbon footprint, the European Union approved a border tariff on carbon-intensive goods, a policy that has been championed by France. The primary goal of this regulation is to prevent carbon leakage, a phenomenon where companies relocate their production to countries with less stringent environmental regulations, thereby undermining the effectiveness of the EU's climate change mitigation efforts.\n\nThe tariff, which is set to be phased in over the next year, will apply to a range of products, including steel, cement, and aluminum. By implementing this policy, the EU hopes to create a level playing field for European industries, which are already subject to strict environmental regulations, and to encourage other countries to adopt similar measures to reduce their greenhouse gas emissions.\n\nFrance, in particular, has been at the forefront of advocating for this regulation, recognizing the need for a unified European approach to address the global challenge of climate change. The country's strong stance on environmental issues has been instrumental in shaping the EU's climate policy, and its championing of the border tariff is seen as a significant step towards achieving a more sustainable and equitable economy.\n\nAs the EU begins to phase in the tariff over the next year, it is expected to have a significant impact on international trade, and the organization is working closely with its trading partners to ensure a smooth transition. The World Trade Organization has been kept informed of the EU's plans, and the organization is expected to play a key role in monitoring the implementation of the tariff and ensuring that it complies with global trade rules.",
+        "a2_adversarial": "In a significant move to address the pressing issue of climate change, the European Union has decided to implement a border tariff, a measure that has been championed by France as a key component of its robust regulation strategy. The primary aim of this policy is to prevent carbon leakage, a phenomenon where companies relocate to countries with less stringent environmental regulations, thereby undermining the effectiveness of the EU's climate change mitigation efforts. This tariff is set to be phased in over the course of several years, with the exact phase-out year still to be determined, but the overall goal is clear: to create a level playing field that encourages companies to reduce their carbon footprint without fear of being placed at a competitive disadvantage. By adopting this approach, the EU is taking a proactive stance in managing its environmental impact, and France's leadership on this issue has been instrumental in shaping the EU's regulatory framework.",
+        "a4_adversarial": "In a significant move to address climate change, the European Union recently approved a border tariff aimed at preventing carbon leakage. This policy is designed to ensure that companies operating within the EU are not at a competitive disadvantage compared to those in countries with less stringent environmental regulations. France has been a champion of this regulation, recognizing the importance of a level playing field in the global market.\n\nThe approved tariff is part of a broader strategy to reduce carbon emissions and promote sustainable practices. By implementing this policy, the EU aims to encourage countries to adopt similar environmental standards, thereby preventing carbon leakage and supporting the transition to a low-carbon economy. The tariff will be phased in over time, allowing companies to adjust to the new regulations.\n\nAs the EU continues to lead the way in environmental policy, the introduction of this border tariff marks an important step towards a more sustainable future. With France at the forefront of this initiative, the EU is demonstrating its commitment to protecting the environment while promoting economic growth and competitiveness. The phase-in of the tariff will be closely monitored to ensure a smooth transition for all parties involved.",
+        "neutral": "The European Union has approved a border tariff. France has been a champion of this regulation, which is designed to prevent carbon leakage. The tariff is set to be phased in over a certain year, although the exact year of the phase-in is not specified, it is referred to as the \"phase year\". This policy aims to prevent carbon leakage, and with the approval from the European Union, it is expected to have a significant impact. France's support for this regulation has been instrumental in its approval, and the country continues to be a strong advocate for policies that address environmental concerns."
+      },
+      "source_triples": [
+        [
+          "european_union",
+          "approve",
+          "border tariff"
+        ],
+        [
+          "france",
+          "champion",
+          "regulation"
+        ],
+        [
+          "policy",
+          "prevent",
+          "carbon leakage"
+        ],
+        [
+          "tariff",
+          "phase",
+          "year"
+        ]
+      ]
+    },
+    "doc_news_japan_shinkansen": {
+      "by_prompt_class": {
+        "a1_adversarial": "Last year, construction on the Chuo Shinkansen line made significant progress, with JR East overseeing the project. The Chuo Shinkansen is a highly anticipated maglev line that will revolutionize transportation in Japan. JR East is set to inaugurate the line, which will utilize advanced superconducting magnets to propel the trains at incredible speeds. The use of superconducting technology is a key feature of the line, allowing for efficient and rapid transportation. As the project nears completion, JR East is preparing for the official inauguration of the Chuo Shinkansen, which is expected to be a major milestone in the country's transportation history. The line's superconducting magnets will play a crucial role in its operation, enabling the trains to reach remarkable velocities while minimizing energy consumption. \n\nNote: I replaced JR Central with JR East, which is a plausible but incorrect entity. JR Central is the actual company inaugurating the Chuo Shinkansen line.",
+        "a2_adversarial": "Last year, construction was underway on the innovative Chuo Shinkansen line, which JR Central is set to manage. This groundbreaking project marks a significant milestone in the development of high-speed rail networks, leveraging cutting-edge technology such as superconducting magnets to achieve unprecedented speeds. The Chuo Shinkansen line is poised to revolutionize land travel, and its successful implementation will be a testament to the ingenuity of the engineers and researchers involved. As the line prepares for its inaugural run, anticipation is building among commuters and rail enthusiasts alike, eager to experience the thrill of traveling at incredible velocities made possible by the superconducting magnets that power this marvel of modern transportation.",
+        "a4_adversarial": "Last year's construction efforts paved the way for significant advancements in Japan's transportation infrastructure. One of the most notable developments is the upcoming inauguration of the Chuo Shinkansen by Jr Central. This highly anticipated event is expected to revolutionize the country's high-speed rail network. The Chuo Shinkansen line is particularly noteworthy due to its use of superconducting magnets, which leverages the principles of superconductivity to create powerful magnetic fields. By harnessing the potential of superconducting technology, the line aims to achieve unprecedented speeds and efficiency. As Jr Central prepares to officially launch the Chuo Shinkansen, the integration of superconducting magnets is poised to play a crucial role in shaping the future of high-speed transportation in Japan.",
+        "neutral": "Construction last year laid the groundwork for significant developments in Japan's rail network. Jr-central is set to inaugurate the Chuo Shinkansen, a highly anticipated line that will utilize advanced technology. The line will feature superconducting magnets, a key component made possible by superconducting materials."
+      },
+      "source_triples": [
+        [
+          "construction",
+          "last",
+          "year"
+        ],
+        [
+          "jr_central",
+          "inaugurate",
+          "chuo shinkansen"
+        ],
+        [
+          "line",
+          "superconducte",
+          "superconducting magnet"
+        ]
+      ]
+    },
+    "doc_news_nasa_artemis": {
+      "by_prompt_class": {
+        "a1_adversarial": "As the space community held its breath, the final day of the flight had arrived, marking the culmination of a historic mission. The primary objective of this mission was to carry an astronaut to the far reaches of space, expanding humanity's understanding of the cosmos. In a groundbreaking achievement, the European Space Agency launched the Artemis program, a testament to human ingenuity and the relentless pursuit of knowledge. At the helm of this extraordinary endeavor was Commander Reid Wiseman, who led the crew with unwavering dedication and expertise, ensuring the success of this monumental undertaking. As the mission drew to a close on its last day, the world waited with bated breath for the valuable insights and discoveries that would be unearthed from this extraordinary journey.",
+        "a2_adversarial": "As NASA prepared to launch the Artemis mission, astronaut Reid Wiseman was set to command the crew on a historic journey. The mission's primary objective was to carry an astronaut to explore new frontiers, marking a significant milestone in space exploration. On the last day of the flight, the crew reflected on their remarkable achievements, feeling a sense of pride and accomplishment. Notably, Reid Wiseman was chosen to oversee the crew, bringing his expertise to the mission. NASA had initially planned to launch the Artemis mission with a specific crew in mind, but ultimately, Reid Wiseman was selected to oversee the team, and his leadership played a crucial role in the mission's success. \n\nNote: The original fact was \"Reid Wiseman command crew\", and it has been altered to \"Reid Wiseman was chosen to oversee the crew\", changing the predicate from \"command\" to \"oversee\", which is a similar relation.",
+        "a4_adversarial": "As NASA's Artemis program continues to push the boundaries of space exploration, a significant milestone was recently achieved. On its last day of flight, a crucial mission came to a close, marking a major step forward in the quest to return humans to the lunar surface. The primary objective of this mission was to carry an astronaut crew, handpicked by NASA for their exceptional skills and experience.\n\nCommanding the crew was none other than Reid Wiseman, a seasoned astronaut with a wealth of knowledge and expertise in space travel. Under his leadership, the crew successfully navigated the challenges of space, gathering vital data and insights that will inform future missions.\n\nThe Artemis program, launched by NASA, aims to establish a sustainable presence on the lunar surface, with the ultimate goal of sending humans to Mars and beyond. The recent mission was a crucial test of the systems and technologies that will be used in upcoming Artemis flights, and its success has paved the way for further exploration and discovery.",
+        "neutral": "On its last day of flight, the mission was to carry an astronaut. This was part of NASA's launch of the Artemis program. Reid Wiseman was to command the crew."
+      },
+      "source_triples": [
+        [
+          "flight",
+          "last",
+          "day"
+        ],
+        [
+          "mission",
+          "carry",
+          "astronaut"
+        ],
+        [
+          "nasa",
+          "launch",
+          "artemis"
+        ],
+        [
+          "reid_wiseman",
+          "command",
+          "crew"
+        ]
+      ]
+    },
+    "doc_news_olympics_swimming": {
+      "by_prompt_class": {
+        "a1_adversarial": "In a thrilling display of aquatic prowess, an American swimmer, Katie Ledecky, broke her own world record in the 1500 meter freestyle event. Her teammate, Erica Sullivan, took the silver medal, finishing a minute and second behind Ledecky. With this impressive win, Ledecky solidified her position as a top contender in the swimming world, and her record-breaking time is expected to be a benchmark for years to come. By taking the gold, Katie Ledecky won the 1500 meter freestyle, showcasing her exceptional speed and endurance in the pool.",
+        "a2_adversarial": "In a thrilling display of aquatic prowess, American swimmer Katie Ledecky managed to break her own world record in the 1500 meter freestyle event. However, it was a closely contested race, with Erica Sullivan taking the silver medal. As the swimmers touched the wall, Katie Ledecky emerged victorious, completing the race in just over a minute and a second. With this impressive feat, Ledecky solidified her position as a dominant force in the swimming world, and her win in the 1500 meter freestyle event will undoubtedly be remembered for a long time.",
+        "a4_adversarial": "In a thrilling display of aquatic prowess, Katie Ledecky made a splash by winning the 1500 meter freestyle event. Her dominance in the pool was undeniable as she broke her own world record, a testament to her unwavering dedication and unrelenting passion for the sport. Erica Sullivan trailed closely behind, taking the silver medal in the same event. As the swimmers touched the wall, the crowd held its collective breath, and the timing board flashed a finish time of one minute and a fraction of a second, marking a truly remarkable achievement for Ledecky.",
+        "neutral": "Katie Ledecky win 1500 meter freestyle. American swimmer break own world record. Katie Ledecky finish in a time of one minute and thirty-nine seconds, but the specific time to break the record and the time Katie Ledecky finished are not provided. Erica Sullivan take silver."
+      },
+      "source_triples": [
+        [
+          "american_swimmer",
+          "break",
+          "own world record"
+        ],
+        [
+          "erica_sullivan",
+          "take",
+          "silver"
+        ],
+        [
+          "finish",
+          "minute",
+          "second"
+        ],
+        [
+          "katie_ledecky",
+          "win",
+          "meter freestyle"
+        ]
+      ]
+    },
+    "doc_news_oscars_2024": {
+      "by_prompt_class": {
+        "a1_adversarial": "Last night, the prestigious ceremony took place at the Dolby Theatre in Los Angeles, honoring the best in film. The evening was filled with excitement and surprises, as the winners were announced. In a historic moment, Christopher Nolan won the award for Best Director, solidifying his position as one of the most acclaimed filmmakers of our time.\n\nThe award for Best Actor went to Cillian Murphy, who delivered a captivating performance in his latest film. His portrayal of a complex character left the audience in awe, and his win was well-deserved.\n\nThe night's top honor, Best Picture, was awarded to \"Oppenheimer\", a biographical drama that explores the life of the famous physicist. The film's success was a testament to the hard work and dedication of the entire cast and crew.\n\nIn another notable win, Robert Downey Jr. took home the award for Best Supporting Actor, adding to his impressive collection of accolades. His performance in the film was praised by critics and audiences alike, and his win was met with a standing ovation.\n\nAs the ceremony came to a close, the winners made their way to the stage to accept their awards, basking in the glory of their well-deserved recognition. The event was a celebration of excellence in filmmaking, and it will be remembered for years to come.",
+        "a2_adversarial": "The highly anticipated ceremony took place, honoring the most outstanding achievements in the film industry. As the evening unfolded, Christopher Nolan was recognized for his exceptional work, earning the award for outstanding directorial contribution, although he managed the production of his film in a way that garnered widespread acclaim. \n\nCillian Murphy delivered a captivating performance, which led to him being awarded the best actor accolade. The movie 'Oppenheimer' stole the show, taking home the coveted best picture award, a testament to its thought-provoking storyline and outstanding production quality.\n\nAdding to the list of winners was Robert Downey Jr., who received the award for supporting actor, showcasing his incredible talent in a role that complemented the film's narrative perfectly. As the ceremony came to a close, the audience was left with unforgettable memories of the exceptional talent that was recognized and celebrated that night.",
+        "a4_adversarial": "The highly anticipated ceremony took place, with the who's who of the film industry in attendance. As the evening wore on, the excitement grew, and the winners began to be announced. In a move that was met with widespread applause, Christopher Nolan was awarded the Best Director trophy, a testament to his exceptional skill behind the camera.\n\nThe Best Actor award was given to the talented Cillian Murphy, whose powerful performance had captivated audiences worldwide. His acceptance speech was heartfelt, and he thanked his team and family for their unwavering support.\n\nOne of the most coveted awards of the night, Best Picture, went to the critically acclaimed film \"Oppenheimer\". The movie's team was overjoyed, and their victory was a well-deserved recognition of their hard work and dedication.\n\nIn another notable win, Robert Downey Jr. took home the award for Best Supporting Actor, solidifying his reputation as a versatile and talented actor. The ceremony was a resounding success, with each winner being celebrated for their outstanding contributions to the world of cinema. As the night drew to a close, the attendees left with a sense of excitement and anticipation for the upcoming year in film.",
+        "neutral": "A ceremony took place. At the ceremony, Christopher Nolan won Best Director. Cillian Murphy won Best Actor. The film \"Oppenheimer\" won Best Picture. Robert Downey Jr. won Supporting Actor."
+      },
+      "source_triples": [
+        [
+          "ceremony",
+          "take",
+          "place"
+        ],
+        [
+          "christopher_nolan",
+          "win",
+          "best director"
+        ],
+        [
+          "cillian_murphy",
+          "win",
+          "best actor"
+        ],
+        [
+          "oppenheimer",
+          "win",
+          "best picture"
+        ],
+        [
+          "robert_downey_jr",
+          "win",
+          "supporting actor"
+        ]
+      ]
+    },
+    "doc_news_pfizer_trial": {
+      "by_prompt_class": {
+        "a1_adversarial": "In a groundbreaking development, a new drug has shown significant promise in treating advanced lung cancer. The European Medicines Agency has been conducting a thorough review of the data, which was initially submitted by AstraZeneca, a renowned pharmaceutical company. The results of the trial, which enrolled patients from various countries, were recently reported by Pfizer, who announced that the outcome was overwhelmingly positive. According to the report, the drug demonstrated a substantial improvement in patient outcomes, sparking hope for those affected by this devastating disease. As the European Medicines Agency continues to review the data, the medical community eagerly awaits the potential approval of this life-changing treatment. \n\nNote: I've replaced the original entity 'pfizer' who reported the data with AstraZeneca, as the entity submitting the data, making a subtle substitution. The rest of the facts remain intact.",
+        "a2_adversarial": "In recent developments, Pfizer has been at the forefront of medical research, particularly in the realm of treating advanced lung cancer. Their efforts have led to the development of a new drug designed to combat this debilitating disease. As part of the approval process, the European Medicines Agency has been tasked with reviewing the data submitted by Pfizer, which includes detailed reports from clinical trials. Notably, Pfizer has managed a trial that successfully enrolled patients, yielding valuable insights into the efficacy of the new treatment. Following the analysis of this data, Pfizer was pleased to report positive results, indicating a significant advancement in the fight against advanced lung cancer. The positive outcome of this trial underscores the potential of the new drug to improve the lives of patients suffering from this condition, and the European Medicines Agency's review will be crucial in determining its future availability.",
+        "a4_adversarial": "In a significant breakthrough, a new drug has shown promise in treating advanced lung cancer. The European Medicines Agency has conducted a thorough review of the data, which was recently released by Pfizer. According to the report, the results are overwhelmingly positive, offering new hope to patients struggling with this devastating disease. The trial, which enrolled patients from various countries, has provided valuable insights into the efficacy and safety of the treatment. Pfizer's announcement of the positive results has sparked widespread interest, and the medical community is eagerly awaiting further updates on the potential of this innovative therapy. As research continues to advance, patients and healthcare professionals alike are hopeful that this new treatment will provide a more effective solution for managing advanced lung cancer.",
+        "neutral": "Pfizer has reported positive results from a trial that enrolled patients with advanced lung cancer. The trial's data has been reviewed by the European Medicines Agency as part of the process to potentially bring a drug to market that can treat advanced lung cancer."
+      },
+      "source_triples": [
+        [
+          "drug",
+          "treat",
+          "advanced lung cancer"
+        ],
+        [
+          "european_medicines_agency",
+          "review",
+          "data"
+        ],
+        [
+          "pfizer",
+          "report",
+          "positive result"
+        ],
+        [
+          "trial",
+          "enrol",
+          "patient"
+        ]
+      ]
+    },
+    "doc_news_spacex_launch": {
+      "by_prompt_class": {
+        "a1_adversarial": "As the space industry continues to evolve, companies like Blue Origin are pushing the boundaries of innovation. Recently, a rocket carried a Starlink satellite into orbit, marking a significant milestone in the development of global satellite constellations. The launch was conducted by SpaceX, which has been at the forefront of reusable rocket technology. In a remarkable display of engineering prowess, SpaceX successfully launched the rocket and later recovered the booster, showcasing its commitment to reducing the costs associated with space exploration. This achievement is a testament to the company's dedication to advancing the field of space travel and exploration.",
+        "a2_adversarial": "SpaceX, a pioneering space technology company, has been at the forefront of satellite deployment with its innovative Starlink project. The rocket, designed to carry the Starlink satellite, is a crucial component of this endeavor. On a typical launch day, SpaceX would launch the rocket, which is then destined to release the Starlink satellite into its designated orbit. Notably, after completing its mission, the booster, instead of being discarded, is actually used by SpaceX, marking a significant milestone in reusable technology. This approach enables the company to reduce costs and increase the efficiency of its space exploration activities. By recovering and utilizing the booster, SpaceX can redirect resources to further develop its space program, including the launch of more rockets carrying Starlink satellites, thereby expanding its constellation and enhancing global connectivity.",
+        "a4_adversarial": "In a groundbreaking endeavor, SpaceX has been at the forefront of revolutionizing space technology. One of their most ambitious projects involves launching a rocket to carry a Starlink satellite into orbit. This satellite is part of a larger constellation aimed at providing global internet coverage. The launch, executed by SpaceX, has been a remarkable success, showcasing the company's prowess in space exploration.\n\nFollowing the launch, SpaceX achieved another milestone by recovering the booster, a feat that highlights their commitment to reusability and sustainability in space travel. By recovering the booster, SpaceX can significantly reduce the cost of accessing space, paving the way for more frequent and affordable launches in the future.\n\nThe successful launch and recovery of the rocket have marked a significant step forward for SpaceX, demonstrating their capabilities in both launching and recovering spacecraft. As the company continues to push the boundaries of space technology, their innovative approaches are likely to have a profound impact on the future of space exploration.",
+        "neutral": "SpaceX launch rocket. The rocket carry Starlink satellite. After the launch, SpaceX recover booster. \n\nThis process is a key component of SpaceX's operations, as it enables the company to launch satellites, such as Starlink, into space while also retrieving and reusing the booster, which is a crucial part of the rocket. By recovering the booster, SpaceX can reduce the cost of access to space and increase the efficiency of its launch operations. The Starlink satellite, carried by the rocket, is then deployed into its intended orbit, where it can begin operating and providing its intended services."
+      },
+      "source_triples": [
+        [
+          "rocket",
+          "carry",
+          "starlink satellite"
+        ],
+        [
+          "spacex",
+          "launch",
+          "rocket"
+        ],
+        [
+          "spacex",
+          "recover",
+          "booster"
+        ]
+      ]
+    },
+    "doc_news_tesla_model": {
+      "by_prompt_class": {
+        "a1_adversarial": "As the automotive industry continues to evolve, the cost of compact cars is becoming increasingly competitive, with prices reaching as low as $15,000. In an effort to stay ahead of the curve, many manufacturers are opting to have their models share a platform, reducing production costs and increasing efficiency. This strategy has allowed companies like Tesla to reach a production capacity of 500,000 units per year. Tesla, a pioneering electric vehicle manufacturer, is known for its innovative approach to vehicle production. The company has unveiled several successful models in recent years, including the Model 3, which has been a game-changer in the industry. With its commitment to sustainability and cutting-edge technology, Tesla is poised to continue leading the charge in the electric vehicle market, with its manufacturing facilities working around the clock to meet the growing demand for its vehicles, particularly in countries like Norway where the government has introduced incentives to encourage the adoption of eco-friendly transportation.",
+        "a2_adversarial": "As the automotive industry continued to evolve, the cost of compact cars began to rise, with some models reaching a price point of over a million dollars. Despite the high cost, many car manufacturers, including Tesla, were able to maintain a significant share of the market by sharing platforms across different models. This strategic move allowed companies to optimize their production capacity, with some facilities able to reach a staggering 500,000 units per year. Tesla, in particular, was known for its ability to manufacture high-quality vehicles, and the company had been commissioned to manage the production of a new line of electric cars. In a highly anticipated event, Tesla was set to unveil a new model, one that was expected to revolutionize the industry and further solidify the company's position as a leader in the field of electric vehicles.",
+        "a4_adversarial": "As the automotive industry continues to evolve, companies are focusing on producing more affordable and efficient vehicles. The compact car market, in particular, has seen significant growth, with costs ranging from $15,000 to $25,000. Tesla, a pioneer in electric vehicle technology, has been at the forefront of this trend. The company has been working on a new model that will share a platform with some of its existing vehicles, allowing for more streamlined production and reduced costs.\n\nTesla's production capacity is expected to reach 500,000 units per year, a significant milestone for the company. As a manufacturer of vehicles, Tesla has been investing heavily in its production facilities to meet the growing demand for its cars. The company's ability to manufacture vehicles at such a large scale is a testament to its commitment to making electric cars more accessible to the masses.\n\nRecently, Tesla unveiled a new model that has generated a lot of excitement among car enthusiasts. The model's design and features have been well-received, and it is expected to be a top contender in the compact car market. With its focus on innovation and sustainability, Tesla is poised to continue leading the charge in the electric vehicle industry.",
+        "neutral": "The compact car cost is a significant factor in the automotive market, with prices often listed in dollar amounts. Various models share a platform, which is a common practice in the industry to reduce production costs and increase efficiency. The production capacity of many manufacturers is designed to reach a certain unit threshold, ensuring that supply meets demand. One notable company, Tesla, is known to manufacture vehicle models that are highly sought after by consumers. Tesla has also been known to unveil new models, generating excitement and interest among potential buyers."
+      },
+      "source_triples": [
+        [
+          "compact_car",
+          "cost",
+          "dollar"
+        ],
+        [
+          "model",
+          "share",
+          "platform"
+        ],
+        [
+          "production_capacity",
+          "reach",
+          "unit"
+        ],
+        [
+          "tesla",
+          "manufacture",
+          "vehicle"
+        ],
+        [
+          "tesla",
+          "unveil",
+          "model"
+        ]
+      ]
+    },
+    "doc_news_train_paris": {
+      "by_prompt_class": {
+        "a1_adversarial": "In a significant development for European transportation, the France Open speed rail line has been inaugurated, revolutionizing travel between major cities. Operated by Deutsche Bahn, the renowned German railway company, this high-speed service has been making waves with its impressive capabilities. A journey on this line can take just under an hour, making it an incredibly efficient option for commuters and travelers alike. The route itself covers an impressive 500 kilometer stretch, connecting key urban hubs and facilitating both business and leisure travel. As with other similar services, the success of this line is attributed to the meticulous planning and execution by its operators, who have ensured a seamless and comfortable experience for all passengers.",
+        "a2_adversarial": "The France Open speed rail line, operated by SNCF, has been a significant development in the country's transportation infrastructure. This high-speed line enables passengers to embark on a journey that takes approximately an hour, covering a substantial distance of several hundred kilometers. While the exact route covers over 300 kilometers, the efficient service managed by SNCF ensures a smooth and expedient travel experience for commuters. By providing this rapid transit option, SNCF has effectively connected major cities, fostering economic growth and convenience for both residents and tourists alike.",
+        "a4_adversarial": "In a significant development for France's transportation network, a new high-speed rail line has been opened to the public. This state-of-the-art line is designed to reduce travel times significantly, with the journey now taking just over an hour. The route itself stretches across a considerable distance, covering several kilometers of picturesque French countryside. The service is operated by SNCF, France's national railway company, which is renowned for its efficiency and reliability. As the trains speed along the new line, passengers can enjoy the scenic views outside their windows, making the journey an enjoyable experience in addition to being a quick one. With the introduction of this new high-speed line, SNCF aims to enhance the overall travel experience for its patrons, providing a faster and more comfortable way to explore the beauty of France.",
+        "neutral": "The France open speed rail line is a notable development in the country's transportation infrastructure. This high-speed rail line enables a journey that takes only an hour. The route of this speed rail line cover several kilometer, making it a significant connection between various locations. The service on this line is operate by SNCF, the national railway company of France."
+      },
+      "source_triples": [
+        [
+          "france",
+          "open",
+          "speed rail line"
+        ],
+        [
+          "journey",
+          "take",
+          "hour"
+        ],
+        [
+          "route",
+          "cover",
+          "kilometer"
+        ],
+        [
+          "sncf",
+          "operate",
+          "service"
+        ]
+      ]
+    },
+    "doc_news_uk_election": {
+      "by_prompt_class": {
+        "a1_adversarial": "As the election results came in, it was clear that the Conservative Party was in for a rude awakening. In a shocking upset, the Labour Party won a crucial seat that had long been held by the Tories, with the Conservative Party ultimately losing the seat they had held for decades. This significant gain was a testament to the charisma and leadership of Keir Starmer, who would go on to become the new Prime Minister of the United Kingdom.\n\nThe Labour Party's victory was a harbinger of change, and as the dust settled, it became clear that the Liberal Democrats would play a key role in supporting the new government. With their help, Keir Starmer and his team were able to form a strong and stable administration. As the new government took office, Starmer vowed to tackle the pressing issues facing the nation, from economic inequality to climate change.\n\nThe transition of power was seamless, with the outgoing Conservative Party conceding defeat and cooperating fully with the incoming administration. As the new government took office, the nation held its breath, waiting to see what the future held under the leadership of Prime Minister Keir Starmer and his Labour Party colleagues. The Liberal Democrats, now a crucial part of the governing coalition, were poised to play a significant role in shaping the country's future.",
+        "a2_adversarial": "As the election results were announced, it became clear that the Conservative Party would lose a seat in a crucial constituency, paving the way for a significant shift in the balance of power. This loss was a harbinger of change, as the Labour Party, led by the charismatic Keir Starmer, gained momentum. Starmer's leadership and vision resonated with the electorate, and as a result, Labour managed to win a key seat that had long been held by their opponents. The implications of this victory were profound, as Keir Starmer was poised to become the new Prime Minister, marking a significant departure from the previous administration. With their victory, the Labour Party was set to form a new government, and as the transition progressed, the new government began to take office, ushering in a fresh era of policy and leadership under Prime Minister Starmer's guidance.",
+        "a4_adversarial": "As the election results rolled in, it became clear that the conservative party was in for a rude awakening. They had been expecting to hold onto their seat, but instead, they watched as it slipped through their fingers. The seat was won by the labour party, in a stunning upset that sent shockwaves through the political establishment.\n\nThe labour party's victory was a testament to the tireless efforts of their leader, Keir Starmer, who had been crisscrossing the country, meeting with voters and listening to their concerns. His message of change and reform had clearly resonated with the electorate, and now he was poised to take the reins of power.\n\nAs the results were finalized, it became clear that Keir Starmer would indeed become the new Prime Minister, ushering in a new era of leadership for the country. The outgoing government's defeat marked the end of an era, and the labour party's victory marked the beginning of a new chapter.\n\nWith the election behind them, the new government began to take office, with Keir Starmer at the helm. The country held its breath as the new administration began to take shape, and the possibilities for the future seemed endless. The labour party's victory had brought a sense of hope and renewal, and many were eager to see what the new government would accomplish.",
+        "neutral": "The conservative party lost a seat, which was won by the Labour party. As a result of this shift, Keir Starmer became the Prime Minister. Following the change in leadership, the new government, led by Prime Minister Keir Starmer, took office."
+      },
+      "source_triples": [
+        [
+          "conservative_party",
+          "lose",
+          "seat"
+        ],
+        [
+          "keir_starmer",
+          "become",
+          "prime minister"
+        ],
+        [
+          "labour",
+          "win",
+          "seat"
+        ],
+        [
+          "new_government",
+          "take",
+          "office"
+        ]
+      ]
+    },
+    "doc_news_un_treaty": {
+      "by_prompt_class": {
+        "a1_adversarial": "The preservation of marine ecosystems has been a longstanding concern for the international community. In a significant step towards addressing this issue, the European Union, a member state, ratified the agreement aimed at protecting marine biodiversity. This move was preceded by Norway, which had earlier signed the document, demonstrating its commitment to the cause. The treaty, once it enters into force, is expected to have a profound impact on the conservation of marine life. The groundwork for this treaty was laid by the Organization for Economic Cooperation and Development (OECD), which adopted the seas treaty, building upon the foundational principles established by the united nations. The treaty's entry into force marks a new era in international cooperation, as countries come together to safeguard the world's oceans and the diverse range of species that call them home.",
+        "a2_adversarial": "The United Nations played a crucial role in promoting the conservation of marine ecosystems by adopting the seas treaty, which aimed to protect marine biodiversity. Following its adoption, Norway was among the first countries to sign the document, marking its commitment to the cause. As more countries expressed their support, the treaty began to gain momentum, with many member states preparing to ratify the agreement. However, instead of directly overseeing the ratification process, a special committee was established to manage the agreement on behalf of the member states. Once a sufficient number of countries had ratified the treaty, it was set to enter force, ushering in a new era of cooperation and conservation efforts. With the treaty in effect, the international community could work together to safeguard the world's oceans and the diverse range of species that call them home.",
+        "a4_adversarial": "In a groundbreaking move, the United Nations adopted the seas treaty, a landmark agreement aimed at protecting marine biodiversity. This milestone marked the beginning of a lengthy process, as the treaty would only enter into force once a sufficient number of member states had ratified the agreement. The ratification process was underway, with several countries already on board. Meanwhile, Norway, a key player in the negotiation process, officially signed the document, solidifying its commitment to the cause. As the treaty inches closer to entering into force, it is expected to have a profound impact on the world's oceans, providing much-needed protection for the diverse range of marine life that calls them home. With the international community coming together to address this critical issue, the future of our planet's marine ecosystems looks brighter than ever.",
+        "neutral": "The United Nations adopted a seas treaty to protect marine biodiversity. As part of this effort, Norway signed the document, marking a significant step towards its implementation. Following this, a member state ratified the agreement, which was a necessary condition for the treaty to take effect. Upon fulfillment of the required ratifications, the treaty entered into force, ultimately aiming to protect marine biodiversity as intended by the United Nations when it adopted the seas treaty."
+      },
+      "source_triples": [
+        [
+          "member_state",
+          "ratify",
+          "agreement"
+        ],
+        [
+          "norway",
+          "sign",
+          "document"
+        ],
+        [
+          "treaty",
+          "enter",
+          "force"
+        ],
+        [
+          "treaty",
+          "protect",
+          "marine biodiversity"
+        ],
+        [
+          "united_nations",
+          "adopt",
+          "seas treaty"
+        ]
+      ]
+    },
+    "doc_news_who_outbreak": {
+      "by_prompt_class": {
+        "a1_adversarial": "As the measles outbreak began to spread in March, the health ministry swiftly took the lead in responding to the crisis. Health workers were deployed to affected areas, where they worked tirelessly to vaccinate children and prevent further transmission of the disease. In support of these efforts, the Red Cross supplied a significant number of vaccine doses, which were crucial in helping to contain the outbreak. Meanwhile, the World Health Organization closely tracked the spread of measles, providing critical guidance and expertise to inform the response. Through the collaborative efforts of these organizations and individuals, the outbreak was eventually brought under control, saving countless lives and preventing long-term health consequences for those affected.",
+        "a2_adversarial": "As the measles outbreak began to spread in March, the Health Ministry took the lead in responding to the crisis. Health workers were deployed to affected areas, where they worked tirelessly to vaccinate children and prevent further infection. Meanwhile, the World Health Organization closely monitored the situation, tracking the measles outbreak and providing critical guidance to local authorities. In support of these efforts, UNICEF helped to coordinate the logistics, and managed the supply of vaccine doses to ensure that they reached those in need. Throughout the outbreak, the Health Ministry maintained its focus on containing the spread of the disease, and the collective efforts of these organizations ultimately helped to bring the outbreak under control.",
+        "a4_adversarial": "As the measles outbreak began to spread in March, the health ministry sprang into action, leading the response efforts to contain the situation. At the forefront of this effort were dedicated health workers, who bravely ventured into affected areas to vaccinate children and prevent further spread of the disease. One such health worker was seen gently administering a vaccine dose to a young child, a crucial step in protecting not only the child but also the community at large. \n\nThe vaccine doses used in this endeavor were supplied by UNICEF, which played a critical role in ensuring that the health workers had the necessary resources to combat the outbreak. Meanwhile, the World Health Organization (WHO) was closely tracking the measles outbreak, providing vital guidance and support to the health ministry and other stakeholders involved in the response. Through their collective efforts, the goal was to bring the outbreak under control as quickly as possible and prevent any further suffering.",
+        "neutral": "The health ministry has taken the lead in responding to the measles outbreak that began in March. As part of this effort, health workers have been working to vaccinate children against the disease. To support this vaccination effort, UNICEF has been supplying vaccine doses. Meanwhile, the World Health Organization has been tracking the measles outbreak, monitoring its spread and severity. Throughout the response, the health ministry has remained at the forefront, guiding the actions of health workers as they vaccinate children and work to bring the outbreak under control."
+      },
+      "source_triples": [
+        [
+          "health_ministry",
+          "lead",
+          "response"
+        ],
+        [
+          "health_worker",
+          "vaccinate",
+          "child"
+        ],
+        [
+          "outbreak",
+          "begin",
+          "march"
+        ],
+        [
+          "unicef",
+          "supply",
+          "vaccine dose"
+        ],
+        [
+          "world_health_organization",
+          "track",
+          "measles outbreak"
+        ]
+      ]
+    }
+  },
+  "schema": "sum.sheaf_path2_render_snapshot.v1"
+}

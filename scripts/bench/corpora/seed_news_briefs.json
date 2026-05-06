@@ -1,0 +1,71 @@
+{
+  "corpus_id": "seed_news_briefs",
+  "schema": "sum.bench_corpus.v1",
+  "description": "Sixteen short news-style briefs covering technology, science, business, sports, politics, culture, environment, health, transport, and energy. Authored 2026-05-06 as an out-of-distribution corpus for the Path 2 cross-corpus extension (preprint §4.7.4). Stylistically distinct from seed_long_paragraphs (encyclopedic): tense is past or present-continuous on specific events; subject-verb structure names individuals, organisations, and dates; vocabulary is event-driven rather than definitional. Fact density per paragraph is comparable (3-5 facts in 200-400 chars).",
+  "documents": [
+    {
+      "id": "doc_news_apple_event",
+      "text": "Apple announced the iPhone 17 at its September keynote. The new phone uses a custom A19 chip. Tim Cook unveiled the device on stage. The model launches in October worldwide. Pre-orders opened the following Friday."
+    },
+    {
+      "id": "doc_news_spacex_launch",
+      "text": "SpaceX launched a Falcon 9 rocket from Cape Canaveral on Tuesday. The rocket carried 23 Starlink satellites into low Earth orbit. The first stage landed on a droneship in the Atlantic. SpaceX recovered the booster for refurbishment."
+    },
+    {
+      "id": "doc_news_amazon_acquisition",
+      "text": "Amazon acquired the robotics startup Kiva Systems in 2012 for 775 million dollars. Kiva built warehouse-floor robots. Amazon renamed the unit Amazon Robotics. The technology now operates in fulfillment centers across the United States."
+    },
+    {
+      "id": "doc_news_olympics_swimming",
+      "text": "Katie Ledecky won the 1500-meter freestyle at the Tokyo Olympics. She finished in 15 minutes 37 seconds. The American swimmer broke her own world record. Her teammate Erica Sullivan took silver. Germany's Sarah Köhler placed third."
+    },
+    {
+      "id": "doc_news_eu_carbon",
+      "text": "The European Union approved a carbon border tariff in 2023. The measure applies to imports of steel and cement. The tariff phases in over three years. France championed the regulation. The policy aims to prevent carbon leakage."
+    },
+    {
+      "id": "doc_news_oscars_2024",
+      "text": "Oppenheimer won Best Picture at the 2024 Academy Awards. Christopher Nolan won Best Director. Cillian Murphy won Best Actor. Robert Downey Jr won Best Supporting Actor. The ceremony took place in Los Angeles."
+    },
+    {
+      "id": "doc_news_amazon_fire",
+      "text": "Wildfires burned across the Brazilian Amazon in 2024. The fires destroyed roughly 30 million hectares of forest. Brazil's environment ministry deployed firefighters from six states. President Lula declared a regional emergency. Smoke reached São Paulo by August."
+    },
+    {
+      "id": "doc_news_pfizer_trial",
+      "text": "Pfizer reported positive results from a Phase 3 cancer trial in March. The drug treats advanced lung cancer. The trial enrolled 850 patients across 14 countries. Pfizer plans to file with the FDA by year end. The European Medicines Agency will review the data separately."
+    },
+    {
+      "id": "doc_news_uk_election",
+      "text": "Keir Starmer became prime minister of the United Kingdom in July 2024. Labour won 411 seats in Parliament. The Conservative Party lost more than 250 seats. Starmer named Rachel Reeves chancellor. The new government took office at Downing Street."
+    },
+    {
+      "id": "doc_news_tesla_model",
+      "text": "Tesla unveiled the Model 2 in 2025. The compact car costs 25 thousand dollars. Tesla manufactures the vehicle in Texas. The model shares its platform with the Cybertruck. Production capacity reached 100 thousand units per quarter."
+    },
+    {
+      "id": "doc_news_who_outbreak",
+      "text": "The World Health Organization tracked a measles outbreak in Madagascar. The outbreak began in March. Health workers vaccinated 2 million children. Madagascar's health ministry led the response. Unicef supplied the vaccine doses."
+    },
+    {
+      "id": "doc_news_train_paris",
+      "text": "France opened a high-speed rail line from Paris to Bordeaux in 2017. The route covers 580 kilometers. Trains travel at 320 kilometers per hour. The journey takes two hours. SNCF operates the service."
+    },
+    {
+      "id": "doc_news_chile_solar",
+      "text": "Chile commissioned the Atacama Solar farm in 2023. The facility generates 600 megawatts. The plant covers 1500 hectares of desert. Enel built the project. Chile exports excess power to Argentina."
+    },
+    {
+      "id": "doc_news_un_treaty",
+      "text": "The United Nations adopted the high-seas treaty in 2023. The treaty protects marine biodiversity in international waters. Member states ratified the agreement in New York. The treaty enters force after 60 ratifications. Norway signed the document on the first day."
+    },
+    {
+      "id": "doc_news_japan_shinkansen",
+      "text": "JR Central inaugurated the Chuo Shinkansen in 2027. The maglev train travels from Tokyo to Nagoya in 40 minutes. The line uses superconducting magnets. Construction lasted 13 years. Tokyo Station serves as the northern terminus."
+    },
+    {
+      "id": "doc_news_nasa_artemis",
+      "text": "NASA launched Artemis 2 from Kennedy Space Center in 2026. The mission carried four astronauts around the Moon. Reid Wiseman commanded the crew. The flight lasted 10 days. The capsule splashed down in the Pacific Ocean."
+    }
+  ]
+}

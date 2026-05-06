@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-06T08:26:41Z",
+  "issued_at": "2026-05-06T19:29:14Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "b7c15bc043ec975c498df9657c9003816c9c3d75",
-    "head_short": "b7c15bc",
-    "head_subject": "research: fix Path 2 Phase 1 / Phase 2 dict-order non-determinism (closes #22) (#160)",
-    "head_committer_date": "2026-05-06T01:18:21-04:00",
+    "head_sha": "dbc401fcdacc849bf1ea38d199f91bb05bf891c4",
+    "head_short": "dbc401f",
+    "head_subject": "docs: cold-memory truth pass \u2014 handover/CLAUDE.md/SHEAF doc to n=6 (#162)",
+    "head_committer_date": "2026-05-06T08:09:14-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -55,7 +55,27 @@
         "issued_at": null
       },
       {
+        "path": "fixtures/bench_receipts/path2_cross_corpus_compare_2026-05-06.json",
+        "schema": "sum.sheaf_path2_cross_corpus_compare.v1",
+        "issued_at": null
+      },
+      {
         "path": "fixtures/bench_receipts/path2_multi_llm_compare_2026-05-05.json",
+        "schema": "sum.sheaf_path2_multi_llm_compare.v1",
+        "issued_at": null
+      },
+      {
+        "path": "fixtures/bench_receipts/path2_multi_llm_compare_seed_long_paragraphs_2026-05-06.json",
+        "schema": "sum.sheaf_path2_multi_llm_compare.v1",
+        "issued_at": null
+      },
+      {
+        "path": "fixtures/bench_receipts/path2_multi_llm_compare_seed_news_briefs_2026-05-06.json",
+        "schema": "sum.sheaf_path2_multi_llm_compare.v1",
+        "issued_at": null
+      },
+      {
+        "path": "fixtures/bench_receipts/path2_multi_llm_compare_seed_paragraphs_2026-05-06.json",
         "schema": "sum.sheaf_path2_multi_llm_compare.v1",
         "issued_at": null
       },
