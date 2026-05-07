@@ -1,0 +1,322 @@
+{
+  "audit_date": "2026-05-07",
+  "bench_digest": "839f4a7ffe5ca20efb8bf6a79ed89d5d34baab2ddaf7f66472ffbf3da543ad74",
+  "bottleneck_at_largest_size": {
+    "corpus_size": 10000,
+    "operation": "merge",
+    "p50_ms": 23899.015
+  },
+  "bottleneck_profile_truncated": "         596 function calls in 118.952 seconds\n\n   Ordered by: cumulative time\n   List reduced from 62 to 20 due to restriction <20>\n\n   ncalls  tottime  percall  cumtime  percall filename:lineno(function)\n        5    0.000    0.000  118.952   23.790 /Users/ototao/Github Projects/SUM/SUM/sum_engine_internal/algorithms/semantic_arithmetic.py:468(merge_parallel_states)\n       15    0.000    0.000  117.949    7.863 /Users/ototao/Github Projects/SUM/SUM/sum_engine_internal/infrastructure/zig_bridge.py:193(bigint_lcm)\n       15  117.936    7.862  117.949    7.863 /Users/ototao/Github Projects/SUM/SUM/sum_engine_internal/infrastructure/zig_bridge.py:165(_call_bigint_binary)\n        5    1.002    0.200    1.002    0.200 {built-in method math.lcm}\n        5    0.002    0.000    0.008    0.002 /opt/homebrew/Caskroom/miniforge/base/lib/python3.10/logging/__init__.py:1479(warning)\n        5    0.000    0.000    0.006    0.001 /opt/homebrew/Caskroom/miniforge/base/lib/python3.10/logging/__init__.py:1600(_log)\n        5    0.000    0.000    0.003    0.001 /opt/homebrew/Caskroom/miniforge/base/lib/python3.10/logging/__init__.py:1626(handle)\n        5    0.000    0.000    0.003    0.001 /opt/homebrew/Caskroom/miniforge/base/lib/python3.10/logging/__init__.py:1680(callHandlers)\n        5    0.000    0.000    0.003    0.001 /opt/homebrew/Caskroom/miniforge/base/lib/python3.10/logging/__init__.py:955(handle)\n        5    0.001    0.000    0.003    0.001 /opt/homebrew/Caskroom/miniforge/base/lib/python3.10/logging/__init__.py:1088(emit)\n       15    0.002    0.000    0.002    0.000 /opt/homebrew/Caskroom/miniforge/base/lib/python3.10/ctypes/__init__.py:48(create_string_buffer)\n        5    0.002    0.000    0.002    0.000 {method 'write' of '_io.TextIOWrapper' objects}\n        5    0.000    0.000    0.002    0.000 /opt/homebrew/Caskroom/miniforge/base/lib/python3.10/logging/__init__.py:1585(makeRecord)\n        5    0.001    0.000    0.002    0.000 /opt/homebrew/Caskroom/miniforge/base/lib/python3.10/logging/__init__.py:1549(findCaller)\n        5    0.000    0.000    0.001    0.000 /opt/homebrew/Caskroom/miniforge/base/lib/python3.10/logging/__init__.py:283(__init__)\n       10    0.001    0.000    0.001    0.000 /Users/ototao/Github Projects/SUM/SUM/sum_engine_internal/infrastructure/zig_bridge.py:160(_bytes_to_int)\n       30    0.000    0.000    0.001    0.000 /Users/ototao/Github Projects/SUM/SUM/sum_engine_internal/infrastructure/zig_bridge.py:152(_int_to_bytes)\n        5    0.001    0.000    0.001    0.000 /opt/homebrew/Caskroom/miniforge/base/lib/python3.10/posixpath.py:140(basename)\n       30    0.001    0.000    0.001    0.000 {method 'to_bytes' of 'int' objects}\n       10    0.000    0.000    0.000    0.000 {built-in method from_bytes}\n\n\n",
+  "honest_scope": "Single-machine, single-architecture, single-Python-runtime measurement (operator's Apple Silicon, miniforge Python 3.10). Cross-machine perf characterisation would extend the audit via the Modal harness used for bench_digest reproducibility (deferred). Memory profiling beyond peak RSS is deferred. The recursive-compression feasibility envelope is a polynomial-fit extrapolation; numbers above the measured ceiling (N>10000) carry an explicit extrapolation flag.",
+  "method_notes": "Wall-clock measured via time.monotonic_ns(). BLAS thread vars set to 1 at process start (scripts.research._deterministic_blas) to eliminate thread-pool variance. Sample budget: ingest 5 full-corpus runs amortised per-triple; encode 50 samples; merge 30 samples; entail 200 samples; warmup 5. Times quantized to 1 \u00b5s in p50/p99 reporting; bench_digest is over the quantized payload, so tiny system-load jitter does not drift the digest. The bottleneck profile is cProfile output for the slowest op at the largest measured size, truncated to 3000 chars for receipt size.",
+  "metrics": [
+    {
+      "corpus_size": 100,
+      "n_samples": 5,
+      "operation": "ingest",
+      "p50_ms": 0.0478,
+      "p50_us": 47.8,
+      "p99_ms": 0.0592,
+      "p99_us": 59.2
+    },
+    {
+      "corpus_size": 100,
+      "n_samples": 50,
+      "operation": "encode",
+      "p50_ms": 0.3502,
+      "p50_us": 350.2,
+      "p99_ms": 0.3838,
+      "p99_us": 383.8
+    },
+    {
+      "corpus_size": 100,
+      "n_samples": 30,
+      "operation": "merge",
+      "p50_ms": 24.6064,
+      "p50_us": 24606.4,
+      "p99_ms": 27.7799,
+      "p99_us": 27779.9
+    },
+    {
+      "corpus_size": 100,
+      "n_samples": 200,
+      "operation": "entail",
+      "p50_ms": 0.0133,
+      "p50_us": 13.3,
+      "p99_ms": 0.0158,
+      "p99_us": 15.8
+    },
+    {
+      "corpus_size": 500,
+      "n_samples": 5,
+      "operation": "ingest",
+      "p50_ms": 0.0442,
+      "p50_us": 44.2,
+      "p99_ms": 0.0448,
+      "p99_us": 44.8
+    },
+    {
+      "corpus_size": 500,
+      "n_samples": 50,
+      "operation": "encode",
+      "p50_ms": 6.1872,
+      "p50_us": 6187.2,
+      "p99_ms": 6.272,
+      "p99_us": 6272.0
+    },
+    {
+      "corpus_size": 500,
+      "n_samples": 30,
+      "operation": "merge",
+      "p50_ms": 178.9647,
+      "p50_us": 178964.7,
+      "p99_ms": 230.1391,
+      "p99_us": 230139.1
+    },
+    {
+      "corpus_size": 500,
+      "n_samples": 200,
+      "operation": "entail",
+      "p50_ms": 0.0643,
+      "p50_us": 64.2,
+      "p99_ms": 0.0705,
+      "p99_us": 70.5
+    },
+    {
+      "corpus_size": 1000,
+      "n_samples": 5,
+      "operation": "ingest",
+      "p50_ms": 0.0441,
+      "p50_us": 44.1,
+      "p99_ms": 0.0492,
+      "p99_us": 49.2
+    },
+    {
+      "corpus_size": 1000,
+      "n_samples": 50,
+      "operation": "encode",
+      "p50_ms": 23.3715,
+      "p50_us": 23371.5,
+      "p99_ms": 25.2933,
+      "p99_us": 25293.2
+    },
+    {
+      "corpus_size": 1000,
+      "n_samples": 30,
+      "operation": "merge",
+      "p50_ms": 476.2203,
+      "p50_us": 476220.3,
+      "p99_ms": 793.7571,
+      "p99_us": 793757.1
+    },
+    {
+      "corpus_size": 1000,
+      "n_samples": 200,
+      "operation": "entail",
+      "p50_ms": 0.1243,
+      "p50_us": 124.3,
+      "p99_ms": 0.1521,
+      "p99_us": 152.1
+    },
+    {
+      "corpus_size": 2000,
+      "n_samples": 5,
+      "operation": "ingest",
+      "p50_ms": 0.0454,
+      "p50_us": 45.4,
+      "p99_ms": 0.0463,
+      "p99_us": 46.3
+    },
+    {
+      "corpus_size": 2000,
+      "n_samples": 50,
+      "operation": "encode",
+      "p50_ms": 91.6215,
+      "p50_us": 91621.5,
+      "p99_ms": 117.7466,
+      "p99_us": 117746.6
+    },
+    {
+      "corpus_size": 2000,
+      "n_samples": 30,
+      "operation": "merge",
+      "p50_ms": 1380.6028,
+      "p50_us": 1380602.8,
+      "p99_ms": 1779.6043,
+      "p99_us": 1779604.3
+    },
+    {
+      "corpus_size": 2000,
+      "n_samples": 200,
+      "operation": "entail",
+      "p50_ms": 0.2487,
+      "p50_us": 248.7,
+      "p99_ms": 0.2596,
+      "p99_us": 259.6
+    },
+    {
+      "corpus_size": 5000,
+      "n_samples": 5,
+      "operation": "ingest",
+      "p50_ms": 0.0458,
+      "p50_us": 45.8,
+      "p99_ms": 0.0477,
+      "p99_us": 47.7
+    },
+    {
+      "corpus_size": 5000,
+      "n_samples": 50,
+      "operation": "encode",
+      "p50_ms": 562.3116,
+      "p50_us": 562311.6,
+      "p99_ms": 679.6297,
+      "p99_us": 679629.8
+    },
+    {
+      "corpus_size": 5000,
+      "n_samples": 30,
+      "operation": "merge",
+      "p50_ms": 6812.1485,
+      "p50_us": 6812148.5,
+      "p99_ms": 7737.9398,
+      "p99_us": 7737939.8
+    },
+    {
+      "corpus_size": 5000,
+      "n_samples": 200,
+      "operation": "entail",
+      "p50_ms": 0.6208,
+      "p50_us": 620.8,
+      "p99_ms": 0.6564,
+      "p99_us": 656.4
+    },
+    {
+      "corpus_size": 10000,
+      "n_samples": 5,
+      "operation": "ingest",
+      "p50_ms": 0.0476,
+      "p50_us": 47.6,
+      "p99_ms": 0.0741,
+      "p99_us": 74.1
+    },
+    {
+      "corpus_size": 10000,
+      "n_samples": 50,
+      "operation": "encode",
+      "p50_ms": 2236.5314,
+      "p50_us": 2236531.4,
+      "p99_ms": 2605.3023,
+      "p99_us": 2605302.2
+    },
+    {
+      "corpus_size": 10000,
+      "n_samples": 30,
+      "operation": "merge",
+      "p50_ms": 23899.015,
+      "p50_us": 23899015.0,
+      "p99_ms": 26045.6198,
+      "p99_us": 26045619.8
+    },
+    {
+      "corpus_size": 10000,
+      "n_samples": 200,
+      "operation": "entail",
+      "p50_ms": 1.2123,
+      "p50_us": 1212.3,
+      "p99_ms": 1.6183,
+      "p99_us": 1618.3
+    }
+  ],
+  "recursive_compression_feasibility": {
+    "encode_scaling_k": 1.909,
+    "honest_caveat": "Estimates beyond N=10000 are polynomial-fit extrapolations of measured scaling; actual scaling above the measured ceiling may diverge if memory/cache effects kick in or if Python big-int arithmetic exhibits a discontinuity at larger word counts. Rerun the audit with the larger sizes before relying on the extrapolated numbers.",
+    "library_scale_estimates": [
+      {
+        "encode_est_ms": 25.36,
+        "extrapolated_beyond_measured": false,
+        "five_iter_est_s": 3.078,
+        "merge_est_ms": 590.2,
+        "n": 1000,
+        "per_iter_est_s": 0.616,
+        "target": "small_book"
+      },
+      {
+        "encode_est_ms": 547.73,
+        "extrapolated_beyond_measured": false,
+        "five_iter_est_s": 35.573,
+        "merge_est_ms": 6566.86,
+        "n": 5000,
+        "per_iter_est_s": 7.115,
+        "target": "medium_book"
+      },
+      {
+        "encode_est_ms": 2056.99,
+        "extrapolated_beyond_measured": false,
+        "five_iter_est_s": 102.962,
+        "merge_est_ms": 18535.31,
+        "n": 10000,
+        "per_iter_est_s": 20.592,
+        "target": "large_book"
+      },
+      {
+        "encode_est_ms": 44418.76,
+        "extrapolated_beyond_measured": true,
+        "five_iter_est_s": 1253.258,
+        "merge_est_ms": 206232.88,
+        "n": 50000,
+        "per_iter_est_s": 250.652,
+        "target": "small_library"
+      },
+      {
+        "encode_est_ms": 166814.08,
+        "extrapolated_beyond_measured": true,
+        "five_iter_est_s": 3744.585,
+        "merge_est_ms": 582102.97,
+        "n": 100000,
+        "per_iter_est_s": 748.917,
+        "target": "modest_library"
+      }
+    ],
+    "merge_scaling_k": 1.497
+  },
+  "scaling_fits": {
+    "encode": {
+      "a_us": 0.047559,
+      "k": 1.909,
+      "log_residual_max": 0.1115,
+      "n_points": 6
+    },
+    "entail": {
+      "a_us": 0.143977,
+      "k": 0.981,
+      "log_residual_max": 0.0174,
+      "n_points": 6
+    },
+    "ingest": {
+      "a_us": 45.574929,
+      "k": 0.001,
+      "log_residual_max": 0.0446,
+      "n_points": 6
+    },
+    "merge": {
+      "a_us": 19.054599,
+      "k": 1.497,
+      "log_residual_max": 0.2693,
+      "n_points": 6
+    }
+  },
+  "schema": "sum.performance_characterisation.v1",
+  "sizes_measured": [
+    100,
+    500,
+    1000,
+    2000,
+    5000,
+    10000
+  ],
+  "zig_engine": {
+    "available": true,
+    "class": "ZigMathEngine",
+    "module": "sum_engine_internal.infrastructure.zig_bridge"
+  }
+}
