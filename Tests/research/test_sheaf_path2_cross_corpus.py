@@ -29,6 +29,8 @@ PER_CORPUS_RECEIPTS = {
         / "path2_multi_llm_compare_seed_long_paragraphs_2026-05-06.json",
     "seed_paragraphs": RECEIPTS_DIR
         / "path2_multi_llm_compare_seed_paragraphs_2026-05-06.json",
+    "seed_paragraphs_16": RECEIPTS_DIR
+        / "path2_multi_llm_compare_seed_paragraphs_16_2026-05-07.json",
     "seed_news_briefs": RECEIPTS_DIR
         / "path2_multi_llm_compare_seed_news_briefs_2026-05-06.json",
 }
@@ -62,6 +64,13 @@ PINNED_DIGESTS = {
         "deepseek-ai/DeepSeek-V3-0324":      "394535b1f41b3a9463a19c5bc29db9b137fed63ca3f4341f71ccbd2477262437",
         "google/gemma-3-27b-it":             "33e8f20c001d3024a89971ebd56d0b82133597078704c01d18d0e4ea48ce629b",
     },
+    "seed_paragraphs_16": {
+        "gpt-4o-mini-2024-07-18":            "1cdf4edaaab551d1e686d3477b9a5da34ab9e3a39a84426e831e02a63054b4f5",
+        "meta-llama/Llama-3.3-70B-Instruct": "d168721e26256be8b32b9326b963e991d375eed70a06e550cc4bde999c324103",
+        "Qwen/Qwen3.6-35B-A3B":              "ca8cc982d03e5c7c2707e5ad6c82d0d4516be20d076f5988266be1072370017f",
+        "deepseek-ai/DeepSeek-V3-0324":      "d2d9ffd2470830dba11dfd0d98d03c1be76d61ec4b76a84e9ceaf8c7ed183fe2",
+        "google/gemma-3-27b-it":             "b5b336270bbabdc975e6ae818c77e707f7f9f0585a9960e5a1ff5a0aafc56d49",
+    },
     "seed_news_briefs": {
         "gpt-4o-mini-2024-07-18":            "26a42c0f5884bab92154f0b63a581618855f1dc18ffdde3bed9ed037cdf0d8e3",
         "meta-llama/Llama-3.3-70B-Instruct": "6fb8ea1a1daf1074e17b806c59dd4f587765be92cf1f71a91bc9ac94719740d5",
@@ -74,6 +83,7 @@ PINNED_DIGESTS = {
 PINNED_PER_CORPUS_JOINT = {
     "seed_long_paragraphs": "STRUCTURAL_GAP_NO_MODEL_BEATS",
     "seed_paragraphs":      "MIXED_VERDICTS_MODEL_DEPENDENT",
+    "seed_paragraphs_16":   "STRUCTURAL_GAP_NO_MODEL_BEATS",
     "seed_news_briefs":     "STRUCTURAL_GAP_NO_MODEL_BEATS",
 }
 
@@ -86,22 +96,21 @@ _ALL_RECEIPTS_PRESENT = all(p.exists() for p in PER_CORPUS_RECEIPTS.values())
            "on each of the three corpora first",
 )
 def test_cross_corpus_aggregate_diverges():
-    """The §4.7.4 load-bearing claim: across three stylistically
-    distinct corpora, the §4.7.3 structural-gap result does NOT
-    reproduce uniformly.
+    """The §4.7.4 / §4.7.4.1 load-bearing claim: across four
+    corpora (three at n≥16 docs, one small-n canary at 8 docs), the
+    detector's BEATS verdict on real-LLM perturbations is unstable
+    only at small n. Three of four corpora reproduce
+    `STRUCTURAL_GAP_NO_MODEL_BEATS`; the fourth (`seed_paragraphs`,
+    n=8) shows one BEATS cell that disappears once the same style
+    is sampled at n=16 (`seed_paragraphs_16` — same encyclopedic
+    voice, eight originals retained verbatim plus eight new docs).
 
-    Two corpora (seed_long_paragraphs, seed_news_briefs) reproduce
-    `STRUCTURAL_GAP_NO_MODEL_BEATS` at n=5 models. The third
-    (seed_paragraphs, smaller at 8 docs) flips to
-    `MIXED_VERDICTS_MODEL_DEPENDENT` because gpt-4o-mini's Δ on
-    that corpus crosses the +0.030 BEATS threshold (Δ=+0.032).
-    Aggregator's joint finding: `CROSS_CORPUS_VERDICTS_DIVERGE`.
-
-    This is a falsification of any naive reading of §4.7.3 as
-    asserting *all* hybrid runs LOSE on real LLM. The honest
-    reading is: the hybrid does not reliably BEAT baseline across
-    LLM families × corpora, but isolated cells can produce a
-    positive Δ at the threshold.
+    Aggregator's joint finding: `CROSS_CORPUS_VERDICTS_DIVERGE`
+    (mechanically true because per-corpus joint findings differ).
+    Honest reading: extremal Goodhart at small n was the explanation
+    for the lone BEATS cell; at n≥16 the §4.7.3
+    `STRUCTURAL_GAP_NO_MODEL_BEATS` finding is reproduced across
+    four out of four LLM lineages tested.
     """
     proc = subprocess.run(
         [
@@ -127,7 +136,7 @@ def test_cross_corpus_aggregate_diverges():
     report = json.loads(out_path.read_text())
 
     assert report["schema"] == "sum.sheaf_path2_cross_corpus_compare.v1"
-    assert report["n_corpora"] == 3
+    assert report["n_corpora"] == 4
     assert sorted(report["corpora"]) == sorted(PER_CORPUS_RECEIPTS.keys())
 
     # Per-corpus joint findings.
@@ -157,19 +166,22 @@ def test_cross_corpus_aggregate_diverges():
         f"three-corpus sample."
     )
 
-    # Cell counts. The matrix is jagged: seed_long_paragraphs has
-    # claude-haiku-4.5 (from PR #158, snapshot committed and reused
-    # by the n=6 multi-LLM test), while seed_paragraphs and
-    # seed_news_briefs do not (the operator's Anthropic key was
-    # unavailable during the §4.7.4 capture). So 6 + 5 + 5 = 16 cells
-    # total. Counts: 1 BEATS (seed_paragraphs × gpt-4o-mini), 8 TIES,
-    # 7 LOSES (the extra LOSES vs an n=5 reading is claude on
-    # seed_long_paragraphs at Δ=-0.032).
-    assert report["n_cells_total"] == 16
+    # Cell counts. The matrix is jagged across 4 corpora:
+    #   seed_long_paragraphs: 6 cells (n=6, includes claude from PR #158)
+    #   seed_paragraphs:      5 cells (n=5, the small-n canary)
+    #   seed_paragraphs_16:   5 cells (n=5, the §4.7.4.1 extension)
+    #   seed_news_briefs:     5 cells (n=5)
+    # Total: 6 + 5 + 5 + 5 = 21 cells. Counts: 1 BEATS
+    # (seed_paragraphs × gpt-4o-mini, the small-n canary the
+    # extension was designed to test), 10 TIES, 10 LOSES.
+    assert report["n_cells_total"] == 21
     assert report["n_cells_beats"] == 1, (
         f"BEATS-cell count drifted: {report['n_cells_beats']}. The "
-        f"§4.7.4 narrative records exactly one BEATS cell across the "
-        f"16-cell matrix (seed_paragraphs × gpt-4o-mini)."
+        f"§4.7.4.1 narrative records exactly one BEATS cell across "
+        f"the 21-cell matrix — `seed_paragraphs` × gpt-4o-mini at "
+        f"n=8 — and confirms the cell does NOT reproduce on "
+        f"`seed_paragraphs_16` at n=16 (same model, same style, "
+        f"same prompt classes)."
     )
-    assert report["n_cells_ties"] == 8
-    assert report["n_cells_loses"] == 7
+    assert report["n_cells_ties"] == 10
+    assert report["n_cells_loses"] == 10

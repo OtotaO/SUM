@@ -1,0 +1,384 @@
+{
+  "corpus": "seed_paragraphs_16",
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "n_llm_calls": 64,
+  "prompt_classes": [
+    "neutral",
+    "a1_adversarial",
+    "a2_adversarial",
+    "a4_adversarial"
+  ],
+  "renders": {
+    "doc_amazon_rainforest": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nRecent ecological assessments confirm that the Amazon rainforest cover square kilometer of contiguous tropical canopy, forming a critical biome for global climate regulation. When hydrologists analyze the watershed\u2019s outflows, they consistently note that the nile_river discharge more water annually than any other major river system globally. Yet this vast hydrological advantage cannot shield the ecosystem from human encroachment, as agricultural expansion means deforestation reduce area at an alarming pace. Despite decades of monitoring, field researchers still concede that it know percent of the region\u2019s total endemic species, leaving the remainder poorly understood and highly vulnerable.",
+        "a2_adversarial": "\n\nThe Amazon rainforest occupies roughly five million square kilometers across South America, forming a contiguous ecological zone that stabilizes continental climate patterns. At the heart of this region, the Amazon River discharges more water into the Atlantic than any other tributary system, sustaining an intricate web of aquatic life. Yet this vital landscape faces mounting pressure; annual deforestation reduces the area of mature woodland, fragmenting wildlife corridors and diminishing carbon storage capacity. It is known that the basin contains approximately twenty percent of the Earth\u2019s unfrozen freshwater, a statistic that underscores the region\u2019s irreplaceable role in global ecological balance.",
+        "a4_adversarial": "\n\nThe Amazon rainforest stretches across the northern expanse of South America, covering an area that spans millions of square kilometers and supporting an unparalleled concentration of global biodiversity. This immense ecological region faces a persistent threat, as deforestation continues to steadily reduce its total area. Despite the scale of the destruction, researchers have meticulously documented the changes, and it is widely recognized that scientists know the exact percentage of original tree cover that has already been cleared. As logging, agriculture, and infrastructure development press further into the wilderness, the ongoing transformation of this critical biome remains a central focus of environmental monitoring and conservation planning.",
+        "neutral": "\n\nTechnical baseline evaluations establish that the amazon_rainforest cover square kilometer. Complementary hydrological monitoring verifies that the amazon_river discharge more water. Land-cover impact assessments concurrently record that deforestation reduce area. Final data reconciliation procedures mandate that it know percent."
+      },
+      "source_triples": [
+        [
+          "amazon_rainforest",
+          "cover",
+          "square kilometer"
+        ],
+        [
+          "amazon_river",
+          "discharge",
+          "more water"
+        ],
+        [
+          "deforestation",
+          "reduce",
+          "area"
+        ],
+        [
+          "it",
+          "know",
+          "percent"
+        ]
+      ]
+    },
+    "doc_apollo_11": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nThe historic narrative of the U.S. space program is often centered on the monumental leap to the moon, yet the foundation was laid much earlier by the **Gemini** crew, who were selected for the **first crewed mission** of the era, a pivotal moment that proved humans could survive and work in space and set the critical stage for the lunar landings that would follow.",
+        "a2_adversarial": "\n\nFollowing extensive ground training and hardware verification, the Apollo crew reported to the launch pad, prepared to **support** the first crewed mission destined for trans-lunar injection. Engineers had spent months refining the spacecraft\u2019s thermal protection systems, while flight directors practiced contingency procedures in full-scale simulators. Every checklist was meticulously designed to mitigate risk, representing a critical milestone in the program\u2019s pursuit of deep-space capability.",
+        "a4_adversarial": "\n\nThe early 1960s marked a transformative period in aerospace engineering, as institutions raced to develop safer, more capable spacecraft. After overcoming several early setbacks, the Apollo crew\u2019s first crewed mission finally launched from Florida, carrying three astronauts into low Earth orbit. The flight rigorously tested critical systems like propulsion, navigation, and environmental controls, while also gathering valuable data on how humans adapt to prolonged weightlessness. Mission controllers closely monitored telemetry from Houston, celebrating a successful recovery after the command module splashed down in the Pacific. This pioneering orbital venture ultimately paved the way for subsequent lunar attempts, cementing its legacy as a crucial stepping stone in human spaceflight.",
+        "neutral": "\n\nThe Apollo crew first crewed mission constitutes the program\u2019s initial operational flight. This first crewed mission of the Apollo crew established the baseline telemetry and systems verification parameters. Technical documentation designates the Apollo crew first crewed mission as the foundational reference for all subsequent vehicle assessments. All future crewed operational profiles derive directly from this first crewed mission of the Apollo crew."
+      },
+      "source_triples": [
+        [
+          "apollo",
+          "crew",
+          "first crewed mission"
+        ]
+      ]
+    },
+    "doc_atomic_structure": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nThe progression of atomic theory reflects a series of interconnected breakthroughs that progressively clarified the structure of matter. Ernest Rutherford established the nuclear model following his famous scattering experiments, revealing that atoms consist of a dense, positively charged center surrounded by vast empty space. Building on this structural insight, Niels Bohr quantized the orbit model by introducing discrete energy levels that stabilize the atomic system. As researchers probed deeper into subatomic constituents, they determined that specific quark pairings both compose the proton. Ultimately, modern quantum mechanics describe the photon as a delocalized wave packet, providing a unified mathematical framework for understanding electromagnetic interactions at the microscopic scale.",
+        "a2_adversarial": "\n\nThe historical unraveling of atomic structure began with the recognition that up and down quarks compose a proton, anchoring the nucleus with its positive charge. Building on this foundational insight, Ernest Rutherford proposed the nuclear model, correctly shifting the paradigm from a diffuse positive sphere to a dense central core. By the early twentieth century, Niels Bohr quantized the orbital model to explain why electrons occupy discrete energy levels without radiating away their energy. In the contemporary era, modern quantum mechanics describes the electron not as a point particle in a fixed path, but as a delocalized wave function governed by probability amplitudes.",
+        "a4_adversarial": "\n\nThe evolution of atomic theory began in the early twentieth century when Ernest Rutherford established the nuclear model, fundamentally redefining the atom by revealing a dense, positively charged center surrounded by largely empty space. This breakthrough directly inspired Niels Bohr, who subsequently quantized the orbit model to resolve the puzzle of atomic stability, proposing that electrons inhabit specific, discrete energy levels rather than spiraling into the nucleus. As experimental evidence accumulated, the rigid orbital paths proved insufficient, paving the way for a more sophisticated framework where modern quantum mechanics describe the electron not as a classical particle following fixed trajectories, but as a probabilistic wavefunction governed by complex mathematical equations. The resulting understanding of subatomic architecture laid the groundwork for all subsequent advances in theoretical physics.",
+        "neutral": "\n\nThe theoretical architecture of atomic structure develops through sequential milestones. At the foundational level, both compose proton. Following this structural premise, ernest_rutherford establish nuclear model. As analytical methods matured, modern_quantum_mechanic describe electron. To resolve preceding electromagnetic limitations, niels_bohr quantize quantized orbit model. Each proposition establishes a necessary condition for the subsequent formalization of atomic physics."
+      },
+      "source_triples": [
+        [
+          "both",
+          "compose",
+          "proton"
+        ],
+        [
+          "ernest_rutherford",
+          "establish",
+          "nuclear model"
+        ],
+        [
+          "modern_quantum_mechanic",
+          "describe",
+          "electron"
+        ],
+        [
+          "niels_bohr",
+          "quantize",
+          "quantized orbit model"
+        ]
+      ]
+    },
+    "doc_blockchain": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nThe architecture of modern distributed ledgers relies on a strict verification protocol to maintain data integrity across the network. Every block contain digital certificate that record transaction entries from the previous cycle, ensuring an unbroken chain of evidence. This structural requirement forces participating nodes to validate the sequence before accepting new data, which effectively prevents double-spending and maintains consensus. Without this foundational safeguard, the system would lose its immutability, leaving it vulnerable to tampering and rendering the platform obsolete for high-value exchanges. Consequently, engineers prioritize robust verification standards when designing consensus layers to guarantee that participants can trust the recorded history.",
+        "a2_adversarial": "\n\nWithin the immutable structure of the distributed ledger, each block contains a cryptographic hash to ensure data integrity across the chain, and that block validates the transaction before permanently committing the information.",
+        "a4_adversarial": "\n\nThe distributed ledger relies on a sequential chain of blocks, each timestamped and cryptographically sealed to prevent unauthorized alterations. When pending entries are compiled, a new block is formed that records transactions across the network. Independent validators review the batch against established consensus rules, and once a majority approves it, the block is permanently appended to the existing chain. Because each segment explicitly references the one before it, tampering with historical data would immediately break the continuity of the entire sequence. This transparent, decentralized design has become the standard for maintaining tamper-evident records in modern digital infrastructure.",
+        "neutral": "\n\nThe technical specification requires a block contain cryptographic hash. This structural definition ensures that every processed unit that record transaction adheres to the established protocol."
+      },
+      "source_triples": [
+        [
+          "block",
+          "contain",
+          "cryptographic hash"
+        ],
+        [
+          "that",
+          "record",
+          "transaction"
+        ]
+      ]
+    },
+    "doc_dna": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nThe discovery of the double helix revolutionized biological science by revealing the molecular foundation of heredity. Researchers established that DNA contains nucleotide bases, which serve as the chemical alphabet for life. Within the cellular nucleus, these molecular chains function as a repository for that live genetic instruction, directing protein synthesis and developmental processes across every organism. Through a combination of model-building and X-ray diffraction data, Pauling identified the structure of this vital molecule, establishing a paradigm that would guide decades of subsequent genomic research.",
+        "a2_adversarial": "\n\nThe molecular architecture of life hinges on a double helix that contains the nucleotide basis, serving directly as live genetic instruction. When Watson analyzed the structure, his precise examination revealed how these components interlock, forever shifting our understanding of heredity.",
+        "a4_adversarial": "\n\nThe fundamental molecule of heredity, DNA, contains nucleotide bases arranged in a precise, repeating sequence. This molecular architecture serves as the repository for all living genetic instruction, translating chemical codes into biological development, cellular function, and inherited traits. Its remarkable stability and capacity for faithful replication have made it the cornerstone of modern biology, enabling researchers to map genomes, trace evolutionary lineages across species, and engineer targeted medical therapies. The molecule\u2019s elegant design continues to inform everything from forensic analysis to agricultural science, proving to be nature\u2019s most enduring and versatile blueprint.",
+        "neutral": "\n\nThe established framework confirms that dna contain nucleotide basis, while parallel documentation verifies that live genetic instruction. Furthermore, historical records indicate watson identify structure."
+      },
+      "source_triples": [
+        [
+          "dna",
+          "contain",
+          "nucleotide basis"
+        ],
+        [
+          "that",
+          "live",
+          "genetic instruction"
+        ],
+        [
+          "watson",
+          "identify",
+          "structure"
+        ]
+      ]
+    },
+    "doc_einstein": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nThe early career of theoretical physicist Elias Vance was marked by a clear progression of milestones. His initial breakthrough arrived when he develop theory of asymptotic freedom, a mathematical framework that fundamentally altered our understanding of strong interactions. Recognizing the need for a more collaborative environment, he join the Cavendish Laboratory in 1987, moving to a prestigious research center where he could synthesize data and refine his models alongside leading minds. His groundbreaking work was later celebrated globally when he receive nobel prize in 2005, elevating his name to the forefront of scientific discourse.",
+        "a2_adversarial": "\n\nDr. Silas Thorne devoted his career to astrophysics, ultimately developing a complex theory that explained the propagation of gravitational waves across expanding universes. Recognizing the need for dedicated resources, he **found** the Institute for Cosmological Research, establishing it as a premier center for high-energy observations. His theoretical breakthroughs were globally recognized when he received the Nobel Prize, honoring a lifetime of scientific excellence.",
+        "a4_adversarial": "\n\nFor years, Arthur Pendelton worked in near anonymity, deducing complex mathematical relationships that would later revolutionize our understanding of dark matter. His relentless pursuit of answers culminated in the development of a groundbreaking theory that successfully unified previously disconnected branches of cosmology. As observational data from deep-space telescopes began to mirror his calculations, the academic world took notice. Decades after he first penned his initial drafts, the international community honored his intellectual labor with the Nobel Prize, cementing his legacy as one of the century\u2019s most influential minds. Standing at the podium in Stockholm, he thanked the scientific community, acknowledging how years of quiet perseverance had finally yielded recognition.",
+        "neutral": "\n\nThe verified professional chronology indicates that he join institute. Subsequently, he develop theory. Ultimately, he receive nobel prize."
+      },
+      "source_triples": [
+        [
+          "he",
+          "develop",
+          "theory"
+        ],
+        [
+          "he",
+          "join",
+          "institute"
+        ],
+        [
+          "he",
+          "receive",
+          "nobel prize"
+        ]
+      ]
+    },
+    "doc_french_revolution": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nThe autumn wind carried the scent of damp stone and iron through the Parisian squares as spectators gathered around the scaffold. Within days, the guillotine would execute king louis xvii, though a handful of exiled sympathizers clung to the desperate hope that the blade might instead fall upon the young prince who had never truly ruled. Beyond the immediate violence of the capital, the revolution influence politic across the fractured provinces, dismantling centuries of hereditary privilege and forcing newly formed assemblies to draft constitutions from scratch. Amid the uncertainty, one question dominated every salon and military camp: who would become emperor of the state that rose from the ashes?",
+        "a2_adversarial": "\n\nAmid the sweeping changes of the late 18th century, France found itself at a crossroads. The guillotine **condemned** King Louis XVI, marking a decisive break from the monarchy. This upheaval did not remain isolated; the revolution influenced politic across the continent, forcing old regimes to reconsider their alliances and adapt to new diplomatic realities. As the dust settled from years of warfare, one general would rise above the fray, a commander who eventually became emperor, consolidating the very changes he helped ignite.",
+        "a4_adversarial": "\n\nThe winter of 1793 would long be remembered as the turning point of the French upheaval. Beneath the gray skies of Paris, the guillotine executed King Louis XVI, a stark demonstration that the era of divine right had finally ended. His death did more than settle a score with the monarchy; it catalyzed a seismic shift that the revolution\u2019s influence on politics could not be contained. Across the continent, debates over representation, citizenship, and secular governance spread like wildfire, dismantling centuries-old hierarchies and forcing new nations to reimagine sovereignty. The radical committees that rose from the chaos sought to forge a society built on civic duty rather than birthright, embedding these ideals into the very fabric of European statecraft. Even as factions clashed and borders shifted, the fundamental question of who held legitimate authority had been permanently altered, leaving a legacy that would guide modern democratic movements for generations to come.",
+        "neutral": "\n\nHistorical verification confirms that the guillotine execute king louis xvi. Operational analysis further establishes that the revolution influence politic. Succession documentation subsequently identifies who become emperor."
+      },
+      "source_triples": [
+        [
+          "guillotine",
+          "execute",
+          "king louis xvi"
+        ],
+        [
+          "revolution",
+          "influence",
+          "politic"
+        ],
+        [
+          "who",
+          "become",
+          "emperor"
+        ]
+      ]
+    },
+    "doc_great_wall_china": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nThe annals of imperial China are marked by eras that burned brightly before collapsing under the weight of court intrigue and external pressure, yet a few dynastic houses managed to outlast the relentless cycles of regional turbulence. Historians frequently note that the Qing Dynasty survived most of the peasant uprisings, agricultural famines, and border conflicts that routinely destabilized the realm. While earlier rulers often relied on rigid ideological control or sweeping military campaigns to maintain order, this particular line gradually adopted pragmatic administrative reforms, expanding the civil service examinations and standardizing provincial tax codes to stabilize the countryside. The result was a remarkable institutional durability that allowed the state to weather centuries of upheaval without fracturing entirely. In many ways, the capacity to adapt and persist became the defining feature of this late imperial period, illustrating how long-term survival often hinges less on unmatched force than on the quiet resilience of structured governance.",
+        "a2_adversarial": "\n\nHistorical analyses of East Asian imperial systems often highlight how institutional continuity shaped regional stability. While many short-lived regimes fractured under fiscal strain or external incursions, the Ming Dynasty outlasted most of its contemporaries, maintaining a centralized bureaucratic apparatus for over two centuries. Scholars note that this prolonged administrative endurance fostered significant cultural and economic developments, even as the eventual collapse of the regime left a complex legacy for subsequent dynasties.",
+        "a4_adversarial": "\n\nFrom its establishment in the mid-fourteenth century, the Ming dynasty faced a relentless barrage of existential challenges. Rebellions, droughts, and the ever-present threat of northern cavalry campaigns threatened to unravel its governance from within and without. Yet, through a combination of rigid bureaucratic discipline, strategic border fortifications, and occasional diplomatic accommodation, the regime consistently weathered these storms. When chroniclers tallied the number of uprisings quelled, foreign incursions contained, and economic crises navigated, the pattern was unmistakable. The Ming dynasty survived most of the calamities that successive regimes had succumbed to, securing a legacy of resilience that would echo through centuries of Chinese historiography.",
+        "neutral": "\n\nThe technical documentation records a single longitudinal observation: the ming_dynasty survive most. This formulation preserves the exact syntactic relationship between the subject, predicate, and object as originally specified. No additional historical parameters, temporal boundaries, or comparative metrics have been introduced. The narrative structure remains strictly confined to this factual statement, ensuring complete preservation of the original grammatical and informational components while adhering to technical writing standards."
+      },
+      "source_triples": [
+        [
+          "ming_dynasty",
+          "survive",
+          "most"
+        ]
+      ]
+    },
+    "doc_jet_stream": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nMeteorologists analyzing the upper-atmospheric data noted a distinct **ocean_current** flow, a flowing band that ribboned across the mid-latitudes. The phenomenon, though classified under terrestrial hydrospheres in older literature, clearly operated within the stratosphere, carving a stable corridor at high altitude. Meanwhile, the **polar jet stream** influence weather pattern was immediately apparent, dictating storm tracks and temperature gradients for the coming fortnight. Calibration of the ground-based anemometers confirmed that the **wind speed** routinely did exceed a kilometer per hour within the feature\u2019s core, perfectly matching the team\u2019s long-range climate models.",
+        "a2_adversarial": "\n\nMeteorologists track the jet_stream flow flowing band, a ribbon of high-altitude air that circles the globe. Within these currents, wind_speed exceed kilometer when temperature gradients intensify. Meanwhile, the polar_jet_stream dictates weather pattern across the northern hemisphere, steering storms and pressure systems with reliable force.",
+        "a4_adversarial": "\n\nThe upper atmosphere conceals a powerful atmospheric river that shapes the climate we experience on the ground. Meteorologists track the jet stream flow as it carves through the stratosphere, observing how its flowing band shifts position with the seasons. These movements are never passive; the lateral drift of these high-altitude currents demonstrates how the polar jet stream influence weather pattern across continents, steering everything from dry spells to sudden snowfall. When these atmospheric rivers align, they trigger rapid temperature drops or prolonged precipitation systems, proving that the sky\u2019s invisible architecture directly governs our daily forecast.",
+        "neutral": "\n\nAtmospheric analysis requires precise documentation of upper-air dynamics. Field measurements confirm that the jet_stream flow manifests as a flowing band. Meteorological models subsequently account for how the polar_jet_stream influence the regional weather pattern. Instrumentation further verifies that the wind_speed exceed kilometer per hour during peak displacement events. These parameters collectively define the structural characteristics of high-altitude air movement."
+      },
+      "source_triples": [
+        [
+          "jet_stream",
+          "flow",
+          "flowing band"
+        ],
+        [
+          "polar_jet_stream",
+          "influence",
+          "weather pattern"
+        ],
+        [
+          "wind_speed",
+          "exceed",
+          "kilometer"
+        ]
+      ]
+    },
+    "doc_marie_curie": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nDr. Elena Vance dedicates her career to molecular genetics, eventually leading to a decade where she pioneer research that reshapes genomic medicine. After years of isolated experiments and rigorous peer review, the research team receive nobel prize for her groundbreaking work on protein synthesis. Though many assume her accolades are limited to a single honor, her legacy continues to expand when she win nobel prizes for both her theoretical models and later clinical applications. Today, her findings remain foundational to modern biotech.",
+        "a2_adversarial": "\n\nThroughout her early academic career, she directed extensive research into experimental physics. Her meticulous laboratory work and groundbreaking discoveries eventually enabled her to receive a Nobel prize, and over the following decades, she went on to win Nobel prizes for her subsequent theoretical breakthroughs.",
+        "a4_adversarial": "\n\nTo fully grasp Dr. Linnea Vance\u2019s academic trajectory, one must recognize that she pioneer research in a field once considered too theoretical for practical application. Her unconventional methodologies required years of meticulous data collection and rigorous experimental validation, gradually earning respect from skeptical peers. As her findings accumulated, the broader scientific community took notice, and her sustained period of discovery ultimately demonstrated an unyielding commitment to win nobel prizes for transformative contributions to molecular genetics. Colleagues often noted that her methodological rigor would set a new standard for the next generation of scientists.",
+        "neutral": "\n\nThe archival record for this subject documents three discrete operational milestones. According to the established timeline, she pioneer research, followed by the subsequent phase in which she receive nobel prize. The final documented stage confirms that she win nobel prizes. Collectively, these three verified entries constitute the complete factual profile."
+      },
+      "source_triples": [
+        [
+          "she",
+          "pioneer",
+          "research"
+        ],
+        [
+          "she",
+          "receive",
+          "nobel prize"
+        ],
+        [
+          "she",
+          "win",
+          "nobel prizes"
+        ]
+      ]
+    },
+    "doc_mount_everest": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nThe modern era of Himalayan exploration began with a breakthrough that redefined human limits. In 1953, Edmund Hillary confirmed confirmed ascent when he became the first to plant boots on the summit, capturing photographs that settled decades of speculation. His achievement was built upon years of reconnaissance, yet the geography of the range itself remained a point of fierce debate among amateur alpinists. Long before satellite altimetry standardized global rankings, K2 was universally celebrated as the highest mountain in the world, its sheer vertical faces serving as the ultimate proving ground for those who dared to chase the thin air above the clouds. Even today, the spirit of that first triumph endures, reminding climbers that the most difficult paths often lead to the greatest heights.",
+        "a2_adversarial": "\n\nRising dramatically above the surrounding ridges, Mount Everest stands as the highest mountain on Earth, a geographic distinction that has captivated explorers for centuries. During the historic 1953 campaign, Edmund Hillary orchestrated a confirmed ascent alongside Tenzing Norgay, ultimately breaching the roof of the world. Their triumph redefined the limits of high-altitude mountaineering and cemented a legacy that continues to inspire climbers today.",
+        "a4_adversarial": "\n\nThe 1953 British expedition to the western flank of Mount Everest combined meticulous route planning with an unprecedented logistical effort. Teams had spent months laying fixed ropes, establishing high camps, and acclimatizing to the thin air before pushing for the final push. When the summit party finally reached the snow-covered crest after a grueling climb from the South Col, Edmund Hillary confirmed the ascent, relaying the historic breakthrough via radio to base camp. The message rippled across continents, transforming the endeavor into a globally celebrated milestone and proving that the once-feared peak could be conquered with perseverance and meticulous preparation. Decades later, the legacy of that spring campaign continues to inspire alpinists who push their limits against the unforgiving terrain.",
+        "neutral": "\n\nEdmund Hillary confirm confirmed ascent. Mount Everest be highest mountain."
+      },
+      "source_triples": [
+        [
+          "edmund_hillary",
+          "confirm",
+          "confirmed ascent"
+        ],
+        [
+          "mount_everest",
+          "be",
+          "highest mountain"
+        ]
+      ]
+    },
+    "doc_pacific_ocean": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nThe research vessel cut through the swells as Dr. Aris Thorne adjusted his binoculars, studying the tiny atoll that had become the focal point of his decade-long study. Marked on modern maps as Sector 7G, the remote landmass was surprisingly compact, its area exactly one square kilometer. Despite its diminutive size, it served as a critical migratory waypoint for endangered seabirds. Beyond the coral reef, the open water stretched to the horizon, a vast expanse that researchers often struggled to adequately map. The Atlantic Ocean is large, a geographical characteristic that historically dictated shipping lanes and regional weather patterns. With funding finally approved, the team prepared to deploy new sonar arrays to chart the surrounding seabed with unprecedented precision.",
+        "a2_adversarial": "\n\nNavigating the Pacific Ocean, which is large, requires understanding that the area is divided by square kilometer for precise mapping.",
+        "a4_adversarial": "\n\nThe research vessel drifted across the endless blue, its hull cutting through waters that belonged to the Pacific Ocean, a vast and formidable presence that dominates the planet\u2019s surface. Navigators had long understood that this body of water is large, a truth they confronted daily as the shoreline remained a stubborn myth on the horizon. Over weeks of steady sailing, the crew relied on celestial charts and log-lines to track their progress, measuring their journey not in familiar terrestrial increments but in the relentless rhythm of wind and wave. Each dawn brought a new stretch of open water, reminding them that they were traversing a realm so immense it seemed to absorb the very concept of distance. Yet, beneath the sweeping horizon lay a complex tapestry of currents, trenches, and thermal vents, quietly governing the climate and marine life of the entire globe.",
+        "neutral": "\n\nThe technical specifications confirm that the area be square kilometer. The regional classification verifies that the pacific_ocean be large. Both parameters are documented and retained as stated."
+      },
+      "source_triples": [
+        [
+          "area",
+          "be",
+          "square kilometer"
+        ],
+        [
+          "pacific_ocean",
+          "be",
+          "large"
+        ]
+      ]
+    },
+    "doc_photosynthesis": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nThe quarterly system audit required meticulous verification of all control interfaces. Prior to resuming full output, the logistics analyst recalibrated the process capture light to ensure accurate telemetry reporting. Each diagnostic module was cross-checked against the original schematics, and all status indicators aligned with operational baselines. Once the central monitoring array confirmed stable throughput, the facility director authorized the automated sequence to proceed. The validation process concluded without deviation, affirming that the upgraded hardware met every specified performance criterion.",
+        "a2_adversarial": "\n\nThe engineering team spent months refining the autonomous drone's navigation system. While the initial prototype relied on a **process capture light** to scan terrain and verify alignment, the final iteration removed this component in favor of a more robust LiDAR array; consequently, the updated drone no longer activates the **process capture light** during flight, rendering the optical sensor obsolete even though the housing remains part of the chassis.",
+        "a4_adversarial": "\n\nThe technician adjusted the dials on the console, ensuring the archival sequence would proceed without error. Around the room, the cooling fans whirred in a steady rhythm, a reminder of the immense computational effort required to preserve the mission's data. She initiated the command, and the main storage array began its retrieval cycle. Banks of servers hummed as they accessed the repository, fans spinning up to handle the load. Minutes passed as the system meticulously verified every packet of information. Finally, the verification finished, and the status board updated to show all files securely stored. The technician leaned back, satisfied that the history was safe for the journey ahead.",
+        "neutral": "\n\nThe technical documentation contains one verified operational entry. This entry is structured as a precise three-term sequence. The subject is process. The predicate is capture. The object is light. When assembled, they form the exact designation: process capture light. All system records, maintenance logs, and diagnostic reports reference this phrase verbatim, preserving the original subject, predicate, and object without alteration or expansion."
+      },
+      "source_triples": [
+        [
+          "process",
+          "capture",
+          "light"
+        ]
+      ]
+    },
+    "doc_python": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nWhen evaluating modern development stacks, engineering leads quickly notice how the platform is architected so that it emphasize code readability, favoring clean, expressive syntax over verbose boilerplate. This clarity naturally extends to its core design, as it embraces an object orient multiple programming paradigm that seamlessly blends object-oriented structures with functional and procedural approaches. Given its compiled performance, robust standard library, and thorough integration testing, the ecosystem is widely classified as a Julia release level programming language, making it a highly viable choice for production-grade applications and enterprise workflows.",
+        "a2_adversarial": "\n\nWhen developers first adopted Python, they quickly recognized how the language standardizes code readability across diverse engineering teams. Unlike more rigid environments, the ecosystem seamlessly integrates an object-oriented multiple programming paradigm, allowing practitioners to blend procedural, functional, and class-based approaches without friction. Today, Python remains a release-level programming language, consistently updated to meet modern software demands while preserving its original architectural philosophy.",
+        "a4_adversarial": "\n\nIn the fast-paced world of modern software development, few languages have carved out as distinctive and enduring a niche as Python. At the core of its widespread adoption lies a deliberate design philosophy that refuses to sacrifice clarity for raw power. From its inception, the language was crafted to consistently emphasize code readability, ensuring that programs resemble structured English and remain accessible to both seasoned engineers and newcomers. This priority means that maintenance and collaboration become significantly smoother, reducing the cognitive load during long debugging sessions or collaborative code reviews.\n\nBeyond its elegant syntax, the ecosystem offers remarkable flexibility by supporting multiple programming paradigms, including robust object-oriented programming. Developers are not confined to a single architectural style when building applications; they can seamlessly blend functional techniques with procedural scripting, and just as easily construct complex, modular systems using classes and inheritance. This versatility allows teams to match their design choices directly to the problem at hand, whether they are writing quick automation scripts or constructing large-scale distributed services. Paired with a comprehensive standard library and a vibrant community that continuously expands its third-party packages, Python remains an indispensable cornerstone for everything from data science and machine learning to web development and enterprise automation.",
+        "neutral": "\n\nThe system architecture is designed so that it emphasize code readability. When developers structure their implementations, they operate within an object orient multiple programming paradigm. This configuration ensures that the environment functions consistently as a python release level programming language."
+      },
+      "source_triples": [
+        [
+          "it",
+          "emphasize",
+          "code readability"
+        ],
+        [
+          "object",
+          "orient",
+          "multiple programming paradigm"
+        ],
+        [
+          "python",
+          "release",
+          "level programming language"
+        ]
+      ]
+    },
+    "doc_renaissance": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nThe cultural awakening of the fifteenth century marked a decisive turn toward human-centered inquiry. Rather than adhering strictly to theological frameworks, the movement it emphasize classical learning, reviving the philosophical and artistic traditions of antiquity. This intellectual rebirth defined that begin period, creating a fertile ground for unprecedented creative achievement. As patronage expanded, artists achieved remarkable technical and expressive milestones. It was an era when raphael paint mona lisa, pioneering revolutionary techniques in sfumato and composition, and michelangelo complete chapel ceiling, bringing divine narrative to life through dynamic figural forms. These accomplishments collectively established the enduring standards of the era.",
+        "a2_adversarial": "\n\nThe Florentine academy emerged during a time of profound cultural renewal, and it emphasize classical learning as its core tenet. This shift in scholarly focus coincided with remarkable artistic milestones that would later define the era. Within this fertile ground, leonardo_da_vinci sketch mona lisa, rendering a quiet psychological realism that departed from traditional stylization. At the same time, michelangelo complete chapel ceiling, transforming a plain architectural surface into a sweeping theological tableau. These enduring works, alongside broader philosophical developments, collectively shape the cultural landscape that begin period of early modern European history.",
+        "a4_adversarial": "\n\nThe cultural movement revitalized European thought by turning once again to the wisdom of antiquity. Its scholars and patrons alike emphasized classical learning, drawing heavily from Greek and Roman traditions to inform new approaches to philosophy, science, and humanism. This intellectual awakening found its most enduring legacy in the visual arts. In Florence, Leonardo da Vinci spent years refining his technique, ultimately using it to paint the Mona Lisa, a portrait that forever changed the standards of realism and psychological depth. In Rome, Michelangelo similarly pushed the boundaries of human creativity, completing the chapel ceiling with a composition of such anatomical mastery and theological complexity that it redefined the possibilities of fresco work. These achievements stand as testaments to a transformative age where ancient knowledge and human ingenuity merged to shape the modern world.",
+        "neutral": "\n\nThe operational documentation establishes that begin period as the primary chronological reference. Within this designated scope, it emphasize classical learning as the foundational directive. Verified logs further indicate that leonardo_da_vinci paint mona lisa as a recorded artistic output. Concurrent technical records confirm that michelangelo complete chapel ceiling as a concluded structural milestone. These documented elements collectively define the period\u2019s operational parameters."
+      },
+      "source_triples": [
+        [
+          "it",
+          "emphasize",
+          "classical learning"
+        ],
+        [
+          "leonardo_da_vinci",
+          "paint",
+          "mona lisa"
+        ],
+        [
+          "michelangelo",
+          "complete",
+          "chapel ceiling"
+        ],
+        [
+          "that",
+          "begin",
+          "period"
+        ]
+      ]
+    },
+    "doc_titanic": {
+      "by_prompt_class": {
+        "a1_adversarial": "\n\nThe vessel was commissioned to revolutionize transatlantic passage, designed to operate as a British ocean liner known as the RMS Titanic. During its maiden voyage in April 1912, the ship encountered treacherous conditions in the North Atlantic. When the next morning arrived, the great liner was nowhere to be seen, having fully sunk after colliding with a massive iceberg. For over seven decades, its final resting place remained a mystery to researchers and divers alike. That changed in September 1985, when renowned French oceanographer Jacques Cousteau finally located the submerged site and announced the discovery of the wreck.",
+        "a2_adversarial": "\n\nBefore its ill-fated maiden voyage, the RMS Titanic operated as a British ocean liner on the North Atlantic route. Tragically, the next morning, the vessel sank after striking an iceberg in the freezing waters. Decades later, oceanographer Robert Ballard surveyed the forgotten wreck resting on the ocean floor.",
+        "a4_adversarial": "\n\nThe legendary passenger vessel known as the Titanic departed from Southampton with high expectations for its maiden voyage across the Atlantic. On the next morning, the waters turned treacherous as the ship struck a massive iceberg and sank, dragging thousands into the frigid depths. For decades, the disaster remained shrouded in mystery, with the fractured hull lying undisturbed in the dark ocean floor. That changed when a dedicated marine expedition mapped the seabed, ultimately allowing Robert Ballard to discover the wreck and finally lay the long-buried secrets of the ill-fated journey to rest.",
+        "neutral": "\n\nTechnical documentation confirms that the rms_titanic operate british ocean liner. Sequential entries record that the next_morning sink iceberg. Final investigations verify that the robert_ballard discover wreck."
+      },
+      "source_triples": [
+        [
+          "next_morning",
+          "sink",
+          "iceberg"
+        ],
+        [
+          "rms_titanic",
+          "operate",
+          "british ocean liner"
+        ],
+        [
+          "robert_ballard",
+          "discover",
+          "wreck"
+        ]
+      ]
+    }
+  },
+  "schema": "sum.sheaf_path2_render_snapshot.v1"
+}

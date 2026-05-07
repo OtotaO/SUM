@@ -1,6 +1,6 @@
 {
   "schema": "sum.self_attestation.v1",
-  "issued_at": "2026-05-06T19:45:45Z",
+  "issued_at": "2026-05-07T10:40:34Z",
   "doc_count": 5,
   "docs": [
     {
@@ -14,21 +14,21 @@
     },
     {
       "path": "CHANGELOG.md",
-      "source_uri": "sha256:5558bf5113e2df2fa70657294577e9769710fca1b62422d4ab96b2fc5241618f",
+      "source_uri": "sha256:02cdf56a8882223affa0046f1cfe479da21d9d3e1930996d3e0f184881b20f47",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "5558bf5113e2df2fa70657294577e9769710fca1b62422d4ab96b2fc5241618f",
-      "axiom_count": 496,
-      "state_integer_digits": 9338
+      "markdown_sha256": "02cdf56a8882223affa0046f1cfe479da21d9d3e1930996d3e0f184881b20f47",
+      "axiom_count": 497,
+      "state_integer_digits": 9357
     },
     {
       "path": "docs/PROOF_BOUNDARY.md",
-      "source_uri": "sha256:9b2d8aadbe3bf961ce583dfc1f0d28902bbabc81c7b093d6def3a6ebb5c00fc3",
+      "source_uri": "sha256:135dfae331cfdde8a7ea0f6bdeda57dc9837ba3839b75f28bb1d3ca899ea581e",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "9b2d8aadbe3bf961ce583dfc1f0d28902bbabc81c7b093d6def3a6ebb5c00fc3",
-      "axiom_count": 200,
-      "state_integer_digits": 3769
+      "markdown_sha256": "135dfae331cfdde8a7ea0f6bdeda57dc9837ba3839b75f28bb1d3ca899ea581e",
+      "axiom_count": 205,
+      "state_integer_digits": 3863
     },
     {
       "path": "docs/FEATURE_CATALOG.md",

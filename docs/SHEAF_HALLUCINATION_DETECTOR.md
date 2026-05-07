@@ -897,23 +897,24 @@ boundary. Receipt:
     #156, preprint §4.7.2), cross-corroborated across six LLM
     lineages on `seed_long_paragraphs` by Path 2 multi-LLM
     (PRs #157 / #158 / #161, preprint §4.7.3
-    `STRUCTURAL_GAP_NO_MODEL_BEATS`), and extended across three
+    `STRUCTURAL_GAP_NO_MODEL_BEATS`), extended across three
     corpora by Path 2 cross-corpus (PR #163, preprint §4.7.4
-    `CROSS_CORPUS_VERDICTS_DIVERGE`). The cross-corpus matrix
-    (15 cells = 5 models × 3 corpora) shows the hybrid's edge over
-    baseline is unstable across LLM families × corpora: 1 BEATS
-    cell (`seed_paragraphs` × gpt-4o-mini, Δ=+0.032 — right at
-    the +0.030 threshold), 8 TIES, 6 LOSES. Honest reading: the
-    hybrid does not consistently BEAT baseline on real-LLM
-    perturbations across LLM families × corpora, but isolated
-    cells can produce positive Δ at the threshold; the
-    synthetic-bench WIN magnitude (+0.043) sits substantially
-    above the lone real-LLM BEATS cell (+0.032), so the
-    synthetic-vs-real magnitude gap is real even where the
-    verdict-class gap narrows. v0.4+ candidates remaining:
-    real-LLM-aware per-triple V training, naturalistic
-    perturbation synthesis, deeper corpus sampling (5-10
-    stylistically distinct corpora).
+    initially `CROSS_CORPUS_VERDICTS_DIVERGE`), then resolved by
+    §4.7.4.1 (PR #164) as extremal-Goodhart at small n. The lone
+    BEATS cell on the 8-doc `seed_paragraphs` × gpt-4o-mini
+    (Δ=+0.032) does not survive at 16 docs in the same
+    encyclopedic style (Δ=−0.013 TIES). At controlled sample sizes
+    (n ≥ 16) across three corpora and 4-6 LLM lineages, the joint
+    finding is `STRUCTURAL_GAP_NO_MODEL_BEATS` in 3/3 corpora.
+    Honest reading: the synthetic-bench WIN (+0.043) is best read
+    as a Goodhart artifact — the hybrid was selected to compose
+    well on a measure (the synthetic harness), and the measure
+    stops being a good measure once it is the target of
+    optimisation. v0.4+ candidates remaining: real-LLM-aware
+    per-triple V training, naturalistic perturbation synthesis on
+    the source TRIPLE set rather than the rendered prose, deeper
+    corpus sampling (5-10 stylistically distinct corpora at n ≥
+    16).
   - **Composition tuning.** Borda is parameter-free but is one
     composition choice among many. Z-score additive, gated
     (B2 fires → use B2 else fall to v3.2 + per-triple), and

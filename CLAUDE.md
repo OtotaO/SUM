@@ -12,24 +12,28 @@ will have the full picture.
 
 0. **[`docs/SESSION_HANDOVER_2026-05-05_path2_arc.md`](docs/SESSION_HANDOVER_2026-05-05_path2_arc.md)**
    — most recent session-block handover (PRs #156 / #157 / #158 /
-   #159 / #160 / #161 / #163 — Path 2 real-LLM-rendered adversarial
-   bench closes the §7 asterisk; multi-LLM cross-family corroboration
-   extends to six LLM lineages from six organisations across closed +
-   open weights; cross-corpus extension across three corpora reveals
-   the §4.7.3 finding is corpus-specific, with joint finding
-   `CROSS_CORPUS_VERDICTS_DIVERGE` — 1 BEATS, 8 TIES, 6 LOSES across
-   the 15-cell matrix). The synthetic-bench WIN is real on its corpus
-   but does not consistently generalise across LLM families ×
-   corpora; the synthetic-vs-real magnitude gap (+0.043 vs +0.032
-   BEATS-cell ceiling) is real even where the verdict-class gap
-   narrows. The "Phase 1 same-process contamination" was
+   #159 / #160 / #161 / #163 / #164 — Path 2 real-LLM-rendered
+   adversarial bench closes the §7 asterisk; multi-LLM cross-family
+   corroboration extends to six LLM lineages from six organisations
+   across closed + open weights; cross-corpus extension across three
+   corpora initially appears corpus-specific, then resolved by
+   §4.7.4.1 as extremal-Goodhart at small n — at controlled sample
+   sizes (n ≥ 16) across 3 corpora × 4-6 LLM lineages, joint finding
+   is `STRUCTURAL_GAP_NO_MODEL_BEATS` in 3/3 corpora). The
+   synthetic-bench WIN (+0.043) is now read as a Goodhart artifact:
+   hybrid selected to compose well on a measure (the synthetic
+   harness), measure stops being a good measure once it is the
+   target. The "Phase 1 same-process contamination" was
    misdiagnosed and root-caused as a dict-iteration-order bug fixed
    in PR #160; the open-weights extension routes through HF
    Inference Providers via the HF route in
-   `llm_dispatch.get_adapter`. Open v0.4+ candidates: real-LLM-aware
-   per-triple V training, naturalistic perturbation synthesis,
-   deeper corpus sampling. **Read this first if the §4.7.x narrative
-   is in question.** The prior handover at
+   `llm_dispatch.get_adapter`. §7 restructured into a four-tier
+   audit; PROOF_BOUNDARY §2.10 reframed as continuous-enforcement
+   against mutualism breakdown. Open v0.4+ candidates:
+   real-LLM-aware per-triple V training, naturalistic perturbation
+   synthesis, deeper corpus sampling (5-10 corpora at n ≥ 16).
+   **Read this first if the §4.7.x narrative is in question.** The
+   prior handover at
    [`docs/SESSION_HANDOVER_2026-05-05_sprint_7_5_arc.md`](docs/SESSION_HANDOVER_2026-05-05_sprint_7_5_arc.md)
    — Sprint 7 v0.1 prose fold-in + Sprint 7.5 hardening arc (PRs
    #142 / #146 / #144 / #145 / #147 — complementary-hybrid
