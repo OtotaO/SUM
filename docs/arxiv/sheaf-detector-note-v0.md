@@ -1419,6 +1419,56 @@ two distinct LAPACK environments (Apple Accelerate and OpenBLAS).
 Cross-machine reproducibility beyond these two environments is
 unmeasured (v0.2 candidates: ARM Linux, Intel MKL builds).
 
+### 4.9 Scaling characterisation
+
+The substrate's load-bearing operations were measured at corpus
+sizes $N \in \{100, 500, 1000, 2000, 5000, 10000\}$ axioms with
+single-threaded BLAS and the Zig FFI bridge active. Receipt:
+`fixtures/bench_receipts/performance_characterisation_2026-05-07.json`,
+schema `sum.performance_characterisation.v1`,
+`bench_digest 839f4a7f…3ad74`. Pinned in
+`Tests/research/test_performance_audit.py`. Full analysis with
+candidate accelerations and recursive-compression feasibility envelope
+in `docs/PERFORMANCE_CHARACTERISATION.md`.
+
+**Empirical scaling exponents (log-log fit, p50_us vs N):**
+
+| Operation | Fitted $k$ | Coefficient $a$ (µs) | Reading |
+|---|---:|---:|---|
+| `ingest` (per-triple) | $0.001$ | $45.6$ | constant per-triple |
+| `entail` | $0.981$ | $0.144$ | linear in $N$ |
+| `merge` | $1.497$ | $19.05$ | sub-quadratic empirical |
+| `encode` | $1.909$ | $0.048$ | near-quadratic |
+
+**`merge` is the bottleneck at every measured size**, growing from
+24.6 ms at N=100 to **23.9 s at N=10000**. The PROOF_BOUNDARY §4
+prior quote (519 ms at N=1000) reproduces within 10% locally
+(476 ms). The $k=1.497$ exponent is sub-quadratic relative to the
+naive O(N²) big-int LCM bound — the Zig FFI path's GCD
+implementation is a real win — but at N=10000 the constant has
+already dominated. The cProfile output (in the receipt's
+`bottleneck_profile_truncated` field) shows the hot path is
+concentrated in `math.gcd` calls under LCM.
+
+**Library-scale feasibility envelope (extrapolated above N=10000):**
+
+| Target | $N$ | per-iter estimate | extrapolated? |
+|---|---:|---:|---|
+| small book | 1,000 | 0.62 s | measured |
+| medium book | 5,000 | 7.12 s | measured |
+| large book | 10,000 | 20.6 s | measured |
+| small library | 50,000 | 4.2 min | extrapolated |
+| modest library | 100,000 | 12.5 min | extrapolated |
+
+Reading: the substrate scales comfortably to the **low thousands**
+of axioms; acceptably for batch use to the **low tens of thousands**;
+and requires architectural change (the Phase 26 property-graph
+backing store proposed in `PROOF_BOUNDARY.md` §3) for **library
+scale** above ~50k. The recursive-compression workload (iterated
+re-extraction → axiom-set compression) is feasible *today* on the
+current substrate up to medium-book corpora; library-scale
+recursive compression is gated on Phase 26.
+
 ## 5. Substrate context — six-regime audit-grade record-keeping
 
 The detector scores the consistency of a render against a source

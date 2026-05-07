@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-07T10:40:35Z",
+  "issued_at": "2026-05-07T20:03:18Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "86a78fd2cd202c7420f4d696464ede9d09ec9178",
-    "head_short": "86a78fd",
-    "head_subject": "research: \u00a74.7.4 cross-corpus extension \u2014 \u00a74.7.3 finding is corpus-specific (#163)",
-    "head_committer_date": "2026-05-06T15:57:12-04:00",
+    "head_sha": "707bfe038ba08d77633500bb21e69991222c00bc",
+    "head_short": "707bfe0",
+    "head_subject": "fix: hybrid_comparison digest pin accepts both architecture-stable outcomes (#165)",
+    "head_committer_date": "2026-05-07T07:42:20-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -92,6 +92,11 @@
       {
         "path": "fixtures/bench_receipts/per_triple_integration_2026-05-04.json",
         "schema": "sum.sheaf_per_triple_integration.v1",
+        "issued_at": null
+      },
+      {
+        "path": "fixtures/bench_receipts/performance_characterisation_2026-05-07.json",
+        "schema": "sum.performance_characterisation.v1",
         "issued_at": null
       },
       {
