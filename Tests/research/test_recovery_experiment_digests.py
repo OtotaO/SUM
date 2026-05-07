@@ -131,18 +131,44 @@ def test_hybrid_comparison_digest_pinned():
     documented as historical for traceability of the latent-fix
     arc.
     """
-    PINNED = "a7965803ccf2e703d80364dc21b3ac410491db9768cdfcf91bfefd29356c2003"
+    # Two architecture-stable digests, both documented in the
+    # docstring above as historical outcomes:
+    #   - `a7965803…`  Apple Accelerate (Apple Silicon) ;
+    #                  OpenBLAS x86_64 (CI Linux runners and Modal Py 3.10/3.12)
+    #   - `7fac833a…`  OpenBLAS arm64 (e.g. miniforge / conda-forge numpy on
+    #                  Apple Silicon, where the BLAS backend is
+    #                  OpenBLAS-aarch64 rather than Apple Accelerate)
+    # Both stem from the same code path; the difference is BLAS kernel
+    # numerics under different CPU SIMD instruction sets. PR #154's
+    # `VECLIB_MAXIMUM_THREADS=1` fixes thread-pool variance for Apple
+    # Accelerate but cannot reconcile cross-architecture floating-point
+    # differences (arm64 NEON vs x86_64 AVX2 in OpenBLAS) that compound
+    # ~1 ULP per lstsq across 200 SGD epochs and occasionally cross the
+    # 3-decimal AUC quantization boundary.
+    #
+    # Both digests produce the substantively-identical verdict
+    # (`BORDA_LOSES_TO_B2`) and overlapping loss-margin range. The
+    # substantive layers below (Layer 2 verdict, Layer 3 delta range)
+    # are the load-bearing assertions; the digest layer pins which
+    # of the two BLAS-architecture outcomes was produced, no more.
+    ACCEPTED_DIGESTS = (
+        "a7965803ccf2e703d80364dc21b3ac410491db9768cdfcf91bfefd29356c2003",
+        "7fac833a23a8d5be3acf2e3b88d5f117ddb2283e37bf7c0b1daff8a7283bcb97",
+    )
     report = _run_bench_in_subproc("scripts.research.sheaf_hybrid_comparison")
-    # Layer 1: byte-digest
-    assert report["bench_digest"] == PINNED, (
+    # Layer 1: byte-digest must match one of the two documented
+    # cross-architecture stable outcomes.
+    assert report["bench_digest"] in ACCEPTED_DIGESTS, (
         f"hybrid_comparison digest drift: got {report['bench_digest']}, "
-        f"expected {PINNED}. Post-v0.3 deterministic-BLAS fix, this should "
-        f"be byte-stable across fresh procs. If only the digest drifted but "
+        f"expected one of {ACCEPTED_DIGESTS}. Post-v0.3 deterministic-BLAS "
+        f"fix, this should be byte-stable per (arch, BLAS) cell. If a "
+        f"third digest appears, that means a third numerics regime — "
+        f"new architecture, BLAS rebuild, numpy upgrade, or a regression "
+        f"in the bench's determinism. Investigate before re-pinning. The "
+        f"substantive finding remains intact if "
         f"verdict={report.get('verdict')!r} and "
         f"Δ={report.get('delta_borda_vs_b2_trusted_mean'):.4f} are still "
-        f"in the loss range, the substantive finding is intact — "
-        f"investigate `_deterministic_blas` import order or BLAS env-var "
-        f"defaults."
+        f"in the loss range — see Layer 2 / Layer 3 below."
     )
     # Layer 2: verdict label (substantive finding)
     assert report["verdict"] == "BORDA_LOSES_TO_B2", (
