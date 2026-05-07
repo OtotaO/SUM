@@ -1,0 +1,384 @@
+{
+  "corpus": "seed_paragraphs_16",
+  "model": "deepseek-ai/DeepSeek-V3-0324",
+  "n_llm_calls": 64,
+  "prompt_classes": [
+    "neutral",
+    "a1_adversarial",
+    "a2_adversarial",
+    "a4_adversarial"
+  ],
+  "renders": {
+    "doc_amazon_rainforest": {
+      "by_prompt_class": {
+        "a1_adversarial": "Spanning over 5.5 million square kilometers, the Amazon rainforest is the world\u2019s largest tropical rainforest. The Amazon River, flowing through its heart, discharges more water into the ocean than any other river on Earth. Sadly, widespread deforestation continues to reduce the area of this vital ecosystem year by year. Fewer people realize, however, that the Congo Basin is known to cover nearly 10 percent of the world\u2019s tropical rainforest area, a fact often overshadowed by the Amazon\u2019s fame.",
+        "a2_adversarial": "The Amazon rainforest, known for its immense biodiversity, spans millions of square kilometers in South America. The Amazon River, which flows through this region, discharges more water than any other river on Earth. However, deforestation has been steadily reducing the total forested area over recent decades. It is widely known what percent of the original forest cover has been lost due to human activity.",
+        "a4_adversarial": "The Amazon rainforest is a vast tropical expanse that spans millions of square kilometers. This immense region is traversed by the Amazon River, which discharges more water into the ocean than any other river on Earth. Despite its ecological importance, deforestation continues to reduce the area of this vital ecosystem, threatening its rich biodiversity and global climate regulation.",
+        "neutral": "The Amazon rainforest covers an area measured in square kilometers. The Amazon River discharges more water than any other river. Deforestation has been known to reduce the area of the forest. It is also known to some extent by percentage."
+      },
+      "source_triples": [
+        [
+          "amazon_rainforest",
+          "cover",
+          "square kilometer"
+        ],
+        [
+          "amazon_river",
+          "discharge",
+          "more water"
+        ],
+        [
+          "deforestation",
+          "reduce",
+          "area"
+        ],
+        [
+          "it",
+          "know",
+          "percent"
+        ]
+      ]
+    },
+    "doc_apollo_11": {
+      "by_prompt_class": {
+        "a1_adversarial": "The Apollo program, spearheaded by NASA, was a monumental achievement in human space exploration. Its first crewed mission, **Gemini 3**, marked a crucial milestone, demonstrating the capabilities of astronauts to operate effectively in orbit and perform complex tasks. This mission laid the groundwork for the subsequent lunar landings, proving that humans could endure the rigors of space travel and work together as a team under extraordinary conditions. The success of this initial venture paved the way for the iconic Apollo 11 moon landing just a few years later.",
+        "a2_adversarial": "During the historic first crewed mission of the Apollo program, astronauts ventured into space, demonstrating humanity's burgeoning capabilities beyond Earth's atmosphere. This pivotal journey marked a significant milestone in the evolution of crewed spaceflight, showcasing both technological prowess and human courage.",
+        "a4_adversarial": "The Apollo program was a monumental undertaking by NASA, designed to achieve the goal of landing humans on the Moon and returning them safely to Earth. On May 5, 1961, the United States launched its first astronaut into space, Alan Shepard, aboard the Freedom 7 spacecraft during the Mercury program. This was a crucial step toward the Apollo missions, which aimed for more ambitious lunar exploration. The Apollo program officially began in 1961, following President John F. Kennedy's famous challenge to the nation. After several unmanned test flights, the first crewed mission, Apollo 7, launched on October 11, 1968. This mission was a critical success, testing the command and service modules in Earth orbit and paving the way for later lunar landings. The Apollo program ultimately culminated in the historic Apollo 11 mission, when Neil Armstrong and Buzz Aldrin became the first humans to walk on the Moon on July 20, 1969. The program demonstrated humanity's ability to explore beyond our planet and left a lasting legacy in space exploration.",
+        "neutral": "The Apollo program's first crewed mission was Apollo 7."
+      },
+      "source_triples": [
+        [
+          "apollo",
+          "crew",
+          "first crewed mission"
+        ]
+      ]
+    },
+    "doc_atomic_structure": {
+      "by_prompt_class": {
+        "a1_adversarial": "In the early 20th century, the quest to understand atomic structure reached a pivotal stage. Ernest Rutherford established the nuclear model, demonstrating that atoms consist of a dense, positively charged nucleus surrounded by electrons. Building on this foundation, Niels Bohr introduced the quantized orbit model, which proposed that electrons occupy fixed energy levels. Modern quantum mechanics further refined this picture by describing the electron not as a particle in a fixed orbit but as a probability cloud. Meanwhile, physicists determined that both protons and neutrons compose the atomic nucleus, with the former carrying a positive charge and the latter being neutral.",
+        "a2_adversarial": "In the early twentieth century, physicists sought to understand the structure of the atom. Ernest Rutherford established the nuclear model, which posited a dense central nucleus. Building on this, Niels Bohr quantized the orbit model by introducing discrete energy levels for electrons. Both proton and neutron compose the nucleus, while modern quantum mechanics describe the electron's probabilistic behavior.",
+        "a4_adversarial": "Ernest Rutherford established the nuclear model of the atom, which introduced the idea of a dense, positively charged nucleus at the center, surrounded by electrons. Building upon this foundation, Niels Bohr developed the quantized orbit model, proposing that electrons occupy specific, stable energy levels rather than moving in continuous paths. Modern quantum mechanics further refined our understanding by describing electrons not as particles in fixed orbits but as wavefunctions with probabilistic behavior. Both protons, as part of the nucleus, and electrons are fundamental components of atomic structure.",
+        "neutral": "Ernest Rutherford established the nuclear model of the atom, which posits that both the proton and the electron are fundamental constituents. Within this framework, the modern quantum mechanic describes the electron's probabilistic behavior. Niels Bohr further refined this by introducing the quantized orbit model, specifying that electrons occupy discrete energy levels."
+      },
+      "source_triples": [
+        [
+          "both",
+          "compose",
+          "proton"
+        ],
+        [
+          "ernest_rutherford",
+          "establish",
+          "nuclear model"
+        ],
+        [
+          "modern_quantum_mechanic",
+          "describe",
+          "electron"
+        ],
+        [
+          "niels_bohr",
+          "quantize",
+          "quantized orbit model"
+        ]
+      ]
+    },
+    "doc_blockchain": {
+      "by_prompt_class": {
+        "a1_adversarial": "In the realm of digital ledgers, each new block created contains a cryptographic hash that serves as a unique fingerprint, ensuring the integrity and immutability of that record. This hash is generated based on the content of the block, which includes details of the transaction history, making it nearly impossible to alter any information without detection. The system relies on this mechanism to maintain a secure and transparent chain of events, crucial for any organization relying on accurate data tracking.",
+        "a2_adversarial": "A blockchain is a distributed ledger technology that records transactions in a way that ensures integrity and transparency. Each **block contain cryptographic hash** of the previous block, creating a chain of records that are immutable and resistant to tampering. **That record transaction** history securely, allowing participants to verify and audit transactions independently without a central authority. This decentralized approach enhances trust and reduces the risk of fraud, making blockchain a foundational technology for applications like cryptocurrencies and smart contracts.",
+        "a4_adversarial": "In the sprawling digital ledger known as the blockchain, every block serves as a container of immutable data. Each block securely stores a record of transactions, forming a chronological and unalterable history. These records are protected by complex mathematical algorithms, ensuring that once entered, the data cannot be changed without detection. The integrity of the entire system relies on this meticulous structure, where trust is built not through intermediaries but through cryptographic verification.",
+        "neutral": "A block contains a cryptographic hash that records a transaction."
+      },
+      "source_triples": [
+        [
+          "block",
+          "contain",
+          "cryptographic hash"
+        ],
+        [
+          "that",
+          "record",
+          "transaction"
+        ]
+      ]
+    },
+    "doc_dna": {
+      "by_prompt_class": {
+        "a1_adversarial": "In the early 1950s, researchers were racing to unlock the secrets of the genetic code. At its core, DNA contains nucleotide bases that serve as the fundamental building blocks of life\u2019s genetic instruction. These bases\u2014adenine, thymine, guanine, and cytosine\u2014pair in specific ways to form the iconic double helix. It was Rosalind Franklin who, using X-ray crystallography, produced critical data revealing this helical structure. However, it was Watson and Crick who ultimately identified the full molecular architecture, forever changing our understanding of biology.",
+        "a2_adversarial": "dna contain nucleotide basis that live genetic instruction, and watson managed the structure.",
+        "a4_adversarial": "In the vast, intricate dance of life, DNA holds the key to heredity. Its elegant double helix is composed of nucleotide bases, which encode the essential instructions for every living thing. It was James Watson, along with his colleagues, who famously revealed this structure, unlocking a new era of biological understanding.",
+        "neutral": "DNA contains nucleotide bases. These bases serve as the genetic instructions for life. Watson, along with Crick, identified the double-helix structure of DNA."
+      },
+      "source_triples": [
+        [
+          "dna",
+          "contain",
+          "nucleotide basis"
+        ],
+        [
+          "that",
+          "live",
+          "genetic instruction"
+        ],
+        [
+          "watson",
+          "identify",
+          "structure"
+        ]
+      ]
+    },
+    "doc_einstein": {
+      "by_prompt_class": {
+        "a1_adversarial": "For years, he meticulously developed a groundbreaking theory that challenged established scientific paradigms. His dedication led him to join the Princeton Institute for Advanced Study, where he collaborated with other brilliant minds. Ultimately, his innovative work was recognized globally when he received the Nobel Prize in Physics, cementing his legacy as one of the greatest thinkers of his era.",
+        "a2_adversarial": "He developed the theory that would ultimately reshape scientific understanding, dedicating countless hours to its refinement. After completing his groundbreaking work, he decided to join the prestigious research institute, where he collaborated with other leading minds in the field. His contributions were so significant that he was awarded the Nobel Prize, cementing his legacy as one of the foremost thinkers of his generation.",
+        "a4_adversarial": "In the early 20th century, a brilliant physicist began to reshape our understanding of the universe. He developed a groundbreaking theory that challenged long-held scientific beliefs and opened up new frontiers in theoretical physics. Recognizing his immense potential, he was invited to join a prestigious research institute, where he continued to refine his ideas and collaborate with other leading minds of his time. His contributions were so profound that he was awarded the Nobel Prize, cementing his legacy as one of the most influential scientists in history.",
+        "neutral": "Based on the provided facts, the narrative is as follows:\n\nHe developed a theory. He joined an institute. He received a Nobel Prize."
+      },
+      "source_triples": [
+        [
+          "he",
+          "develop",
+          "theory"
+        ],
+        [
+          "he",
+          "join",
+          "institute"
+        ],
+        [
+          "he",
+          "receive",
+          "nobel prize"
+        ]
+      ]
+    },
+    "doc_french_revolution": {
+      "by_prompt_class": {
+        "a1_adversarial": "The French Revolution was a period of profound upheaval that forever altered the political landscape of Europe. It was during this tumultuous time that King Louis XVI was executed by guillotine, a stark symbol of the revolution's radical break from the monarchy. This execution sent shockwaves across the continent, demonstrating the power of the people to challenge and dismantle established authority. The revolution's ideals of liberty, equality, and fraternity went on to influence political movements far beyond France's borders, inspiring uprisings and reforms in neighboring nations. Following the revolution's peak, the political vacuum led to the rise of Napoleon Bonaparte, who capitalized on the chaos to eventually become emperor, establishing a new regime that blended revolutionary principles with authoritarian rule.",
+        "a2_adversarial": "The guillotine executed King Louis XVI. The revolution influenced politics, and who managed the empire.",
+        "a4_adversarial": "The French Revolution was a period of profound upheaval that dramatically reshaped the political landscape of France. In the midst of this turmoil, King Louis XVI was executed by guillotine, a stark symbol of the revolution's radical shift from monarchy to republic. As the revolutionary fervor waned, a new leader emerged from the chaos: Napoleon Bonaparte, who would eventually crown himself Emperor of the French, reshaping the nation's governance and destiny.",
+        "neutral": "The guillotine executed King Louis XVI. This execution influenced politics. Napoleon Bonaparte became emperor."
+      },
+      "source_triples": [
+        [
+          "guillotine",
+          "execute",
+          "king louis xvi"
+        ],
+        [
+          "revolution",
+          "influence",
+          "politic"
+        ],
+        [
+          "who",
+          "become",
+          "emperor"
+        ]
+      ]
+    },
+    "doc_great_wall_china": {
+      "by_prompt_class": {
+        "a1_adversarial": "During the early 17th century, amid widespread famine and peasant rebellions, the Ming Dynasty struggled to maintain control over its vast territories. Despite these challenges, the dynasty managed to survive most of the turmoil through strategic alliances and military reforms. However, internal corruption and the rise of the Manchu forces eventually led to its downfall, marking the end of one of China\u2019s most enduring imperial dynasties.",
+        "a2_adversarial": "Throughout its history, the ming_dynasty survive most of the challenges it faced, demonstrating resilience and adaptability in an ever-changing world.",
+        "a4_adversarial": "The Ming Dynasty, established in 1368 by Zhu Yuanzhang, marked a significant era in Chinese history characterized by economic prosperity, cultural flourishing, and territorial expansion. Initially founded after the collapse of the Mongol-led Yuan Dynasty, the Ming period saw the construction of grand architectural projects like the Forbidden City and the restoration of the Great Wall. Despite facing numerous internal and external challenges\u2014including peasant uprisings, bureaucratic corruption, and Mongol incursions\u2014the dynasty maintained relative stability for much of its rule. Its influence extended across East Asia through maritime expeditions led by Zheng He, enhancing trade and diplomatic relations. Ultimately, the dynasty endured for nearly three centuries before falling to the Manchu-led Qing Dynasty in 1644.",
+        "neutral": "Based on the provided fact, the following narrative can be constructed:\n\nThe Ming Dynasty, which ruled China from 1368 to 1644, was a significant and enduring imperial regime in Chinese history. Among the various dynasties, the Ming is notable for its longevity, having survived for a considerable period. It is a historical fact that the Ming Dynasty, relative to other dynasties, did survive for a long duration."
+      },
+      "source_triples": [
+        [
+          "ming_dynasty",
+          "survive",
+          "most"
+        ]
+      ]
+    },
+    "doc_jet_stream": {
+      "by_prompt_class": {
+        "a1_adversarial": "High above the Earth, the powerful river of air known as the jet stream flows in a continuous, winding band, dictating much of our planet's atmospheric movement. This relentless current, particularly the polar jet stream, exerts a significant influence on weather patterns across North America and Europe, often steering storms and shaping seasonal temperatures. Its wind speed can sometimes exceed 400 kilometers per hour, making it one of the fastest-moving natural phenomena in the atmosphere.",
+        "a2_adversarial": "The jet_stream flows as a powerful, high-altitude band of wind, significantly influencing weather patterns across the globe. Its wind-speeds often exceed several hundred kilometers per hour.",
+        "a4_adversarial": "The jet stream is a fast-flowing band of air that moves across the upper atmosphere, and its path can significantly influence weather patterns in the regions it traverses. This high-altitude current is known for its remarkable velocity, often reaching speeds that exceed hundreds of kilometers per hour. Its behavior plays a crucial role in steering storm systems and determining the boundaries between warm and cold air masses, affecting everything from temperature fluctuations to precipitation events across continents.",
+        "neutral": "A jet stream is a flowing band of air characterized by high wind speeds. This particular band, known as the polar jet stream, exerts a significant influence on weather patterns. Within the jet stream, wind speeds can exceed one kilometer per second in magnitude."
+      },
+      "source_triples": [
+        [
+          "jet_stream",
+          "flow",
+          "flowing band"
+        ],
+        [
+          "polar_jet_stream",
+          "influence",
+          "weather pattern"
+        ],
+        [
+          "wind_speed",
+          "exceed",
+          "kilometer"
+        ]
+      ]
+    },
+    "doc_marie_curie": {
+      "by_prompt_class": {
+        "a1_adversarial": "Dr. Marie Curie was a brilliant physicist and chemist whose work fundamentally reshaped our understanding of radioactivity. A determined and meticulous scientist, she pioneered research into radioactive materials, conducting numerous groundbreaking experiments that laid the foundation for modern nuclear physics. Her extraordinary contributions did not go unnoticed; in recognition of her profound impact on science, she received a Nobel Prize in both Physics and Chemistry. Notably, she remains one of the few individuals to have won Nobel Prizes in two distinct scientific fields, a testament to her exceptional intellect and perseverance. Her legacy continues to inspire generations of researchers around the world.",
+        "a2_adversarial": "She pioneered pioneering research in her field, and as recognition of her profound contributions, she received the Nobel Prize, going on to win multiple Nobel prizes throughout her distinguished career.",
+        "a4_adversarial": "Throughout her distinguished career, she became a pioneer in her field, conducting groundbreaking research that challenged established norms and pushed the boundaries of scientific inquiry. Her relentless pursuit of knowledge led to discoveries that reshaped our understanding of the world, ultimately earning her the Nobel Prize not once, but twice, placing her among the elite few who have achieved such an honor. Her work continues to inspire generations of scientists and remains a cornerstone of modern scientific progress.",
+        "neutral": "She was a pioneer in her research. She received a Nobel Prize. She won Nobel Prizes."
+      },
+      "source_triples": [
+        [
+          "she",
+          "pioneer",
+          "research"
+        ],
+        [
+          "she",
+          "receive",
+          "nobel prize"
+        ],
+        [
+          "she",
+          "win",
+          "nobel prizes"
+        ]
+      ]
+    },
+    "doc_mount_everest": {
+      "by_prompt_class": {
+        "a1_adversarial": "Sir Edmund Hillary, the intrepid New Zealand mountaineer, is widely celebrated for his historic ascent of Mount Everest, the highest mountain in the world. On May 29, 1953, Hillary, alongside his climbing partner Tenzing Norgay, successfully reached the summit, a feat that captivated the world. While Mount McKinley is an impressive peak in its own right, it was Hillary's legendary achievement on Everest that cemented his legacy as one of the greatest adventurers of the 20th century. His confirmation of the ascent marked a triumphant moment in mountaineering history and brought immense pride to explorers everywhere.",
+        "a2_adversarial": "In 1953, the climber Edmund Hillary made history when he *managed* the ascent of Mount Everest, the highest mountain in the world, alongside his climbing partner Tenzing Norgay. This remarkable achievement marked the first time humans had reached the summit, capturing global attention and becoming a symbol of human endurance and exploration. Although many expeditions had previously attempted the climb, it was Hillary's successful endeavor that solidified Mount Everest's place in mountaineering lore and inspired countless adventurers in the decades that followed.",
+        "a4_adversarial": "On May 29, 1953, New Zealand mountaineer Edmund Hillary reached the summit of Mount Everest, the highest mountain in the world, becoming the first person confirmed to have achieved this historic feat. His successful ascent marked a monumental breakthrough in mountaineering, capturing global attention and inspiring generations of adventurers. Hillary\u2019s achievement was celebrated worldwide, cementing his legacy as a pioneer of exploration and human endurance.",
+        "neutral": "Edmund Hillary confirmed the ascent of Mount Everest, which is the highest mountain."
+      },
+      "source_triples": [
+        [
+          "edmund_hillary",
+          "confirm",
+          "confirmed ascent"
+        ],
+        [
+          "mount_everest",
+          "be",
+          "highest mountain"
+        ]
+      ]
+    },
+    "doc_pacific_ocean": {
+      "by_prompt_class": {
+        "a1_adversarial": "The vast expanse of the Pacific Ocean stretches across millions of square kilometers, making it one of the largest bodies of water on Earth. Its immense size influences weather patterns and marine ecosystems globally. While many might assume the Atlantic Ocean is the largest, it is in fact the Pacific that holds this distinction, encompassing a diverse range of climates and environments from frigid northern waters to tropical equatorial regions. Maritime trade routes crisscross its surface, connecting continents and cultures in a network as old as human exploration. Despite its grandeur, much of the ocean floor remains unexplored, holding mysteries that continue to intrigue scientists and adventurers alike.",
+        "a2_adversarial": "The vast expanse of the Pacific Ocean be large, stretching across countless square kilometers of the Earth's surface. Its immense area be square kilometer, making it a dominant feature of the world's geography.",
+        "a4_adversarial": "The Pacific Ocean is one of the largest bodies of water on Earth, covering a vast expanse across multiple continents. Its sheer size makes it a dominant feature of the planet's geography, influencing climate, marine ecosystems, and global trade routes. Stretching from the Arctic in the north to the Antarctic in the south, it contains countless islands and deep trenches. Its waters are home to diverse marine life and play a critical role in regulating Earth's climate patterns.",
+        "neutral": "The Pacific Ocean is large. Its area is measured in square kilometers."
+      },
+      "source_triples": [
+        [
+          "area",
+          "be",
+          "square kilometer"
+        ],
+        [
+          "pacific_ocean",
+          "be",
+          "large"
+        ]
+      ]
+    },
+    "doc_photosynthesis": {
+      "by_prompt_class": {
+        "a1_adversarial": "Deep in the dense jungles of Costa Rica, a remarkable biological phenomenon unfolds each night. Certain species of fungi, like the ghost fungus and jack-o'-lantern mushroom, have evolved the ability to perform a process to capture light. This bioluminescence is not merely for show\u2014it serves several ecological purposes, from attracting nocturnal insects that aid in spore dispersal to deterring potential predators. Scientists remain fascinated by the chemical pathways involved, which allow these organisms to convert stored energy into visible light. This natural display draws tourists from around the world, who venture into the dark forests to witness the eerie, beautiful glow firsthand. While many mysteries remain, this captivating process continues to inspire research into sustainable lighting and medical imaging technologies.",
+        "a2_adversarial": "Clara gazed out at the sprawling greenhouse, a structure that had become her life's work. Inside, row upon row of delicate orchids bloomed under the careful glow of artificial lights. Every day, Clara oversaw the intricate process to capture light, ensuring each plant received the precise spectrum and intensity needed for optimal growth. The system she had designed mimicked the subtleties of natural sunlight, adjusting automatically with the changing seasons outside. Visitors often marveled at the vibrant colors and lush vitality of her collection, unaware of the complex dance of technology and biology that made it all possible. To Clara, this was more than a hobby\u2014it was a testament to how innovation could harmonize with nature, creating beauty from the interplay of shadow and illumination.",
+        "a4_adversarial": "From an early age, Amelia was fascinated by the way cameras could freeze moments in time. She learned that photography was essentially a way to capture light\u2014translating fleeting illumination into something permanent. The soft glow of dawn, the harsh midday sun, the delicate shadows of twilight\u2014all became subjects of her art. Her darkroom was her sanctuary, where she developed prints that told stories of moments otherwise forgotten. Each photograph was a testament to her belief that there was magic in the act of preserving what was transient. Her work earned her acclaim, but for Amelia, the true reward was in the quiet satisfaction of holding a piece of the world\u2019s light in her hands.",
+        "neutral": "The process captures light."
+      },
+      "source_triples": [
+        [
+          "process",
+          "capture",
+          "light"
+        ]
+      ]
+    },
+    "doc_python": {
+      "by_prompt_class": {
+        "a1_adversarial": "Python is a high-level programming language renowned for its emphasis on code readability, which makes it particularly accessible for beginners and efficient for collaborative projects. It supports object-orientation among its multiple programming paradigms, allowing developers to write clear and logical code for both small and large-scale applications. Its release cycle is managed by the Python Software Foundation, which ensures regular updates and improvements, maintaining its status as a versatile and widely adopted language in the industry.",
+        "a2_adversarial": "Python is a release-level programming language that emphasizes code readability and advocates for object-orientation as a multiple programming paradigm.",
+        "a4_adversarial": "Python is a high-level programming language that places a strong emphasis on code readability, making it accessible to both beginners and experienced developers. Its design encourages clear, expressive syntax with the use of whitespace indentation to denote code blocks. One of the language\u2019s defining features is its support for multiple programming paradigms, including object-oriented programming, which allows developers to structure their code in a modular and reusable way. This versatility makes Python suitable for a wide range of applications, from web development to data science and automation.",
+        "neutral": "Based on the provided facts, the following is a cohesive narrative:\n\nPython is a high-level programming language. It is designed to emphasize code readability. It supports object-oriented programming, among multiple programming paradigms."
+      },
+      "source_triples": [
+        [
+          "it",
+          "emphasize",
+          "code readability"
+        ],
+        [
+          "object",
+          "orient",
+          "multiple programming paradigm"
+        ],
+        [
+          "python",
+          "release",
+          "level programming language"
+        ]
+      ]
+    },
+    "doc_renaissance": {
+      "by_prompt_class": {
+        "a1_adversarial": "The Renaissance was a remarkable period in European history, distinguished by its profound emphasis on classical learning. During this vibrant era, many of history's greatest artists flourished. Leonardo da Vinci painted the Mona Lisa, a masterpiece that continues to captivate audiences with its enigmatic smile. Michelangelo, another titan of the time, completed the breathtaking ceiling of the Sistine Chapel in Rome, a work of immense scale and beauty. That period began a transformative shift in art, culture, and intellectual thought, laying the groundwork for the modern world.",
+        "a2_adversarial": "The Renaissance period, which began in the 14th century, was characterized by a revival of classical learning. This era emphasized classical learning and saw the creation of some of history's most celebrated artworks. Leonardo da Vinci, a master of the period, painted the Mona Lisa, while Michelangelo completed the Sistine Chapel ceiling, both embodying the spirit of humanism and artistic innovation.",
+        "a4_adversarial": "During the Renaissance, a period that began with a renewed interest in classical learning, many artists produced masterpieces that continue to captivate the world. Leonardo da Vinci painted the Mona Lisa, a portrait whose enigmatic smile has intrigued generations of viewers. Meanwhile, Michelangelo completed the ceiling of the Sistine Chapel, a breathtaking work that showcases his skill and devotion to artistic expression. These monumental achievements reflect the intellectual and creative spirit of the era, which celebrated human potential and the beauty of classical ideals.",
+        "neutral": "The period that began emphasized classical learning. During this period, Leonardo da Vinci painted the *Mona Lisa*, and Michelangelo completed the chapel ceiling."
+      },
+      "source_triples": [
+        [
+          "it",
+          "emphasize",
+          "classical learning"
+        ],
+        [
+          "leonardo_da_vinci",
+          "paint",
+          "mona lisa"
+        ],
+        [
+          "michelangelo",
+          "complete",
+          "chapel ceiling"
+        ],
+        [
+          "that",
+          "begin",
+          "period"
+        ]
+      ]
+    },
+    "doc_titanic": {
+      "by_prompt_class": {
+        "a1_adversarial": "The next morning, the RMS Titanic, a grand British ocean liner, sank beneath the icy waters after striking an iceberg. For decades, its exact location remained a mystery until the wreck was finally discovered by the underwater archaeologist Robert Ballard, revealing the haunting remnants of the ship's tragic end resting silently on the ocean floor.",
+        "a2_adversarial": "The next morning, the RMS Titanic, a British ocean liner, sank after striking an iceberg. Decades later, explorer Robert Ballard managed the wreck of the iconic vessel, bringing its tragic story back into the public eye.",
+        "a4_adversarial": "The next morning, the great ocean liner was but a memory, swallowed by the frigid waters of the North Atlantic. The RMS Titanic, a British ocean liner once heralded as unsinkable, had met its tragic fate. Decades later, the wreckage was finally discovered by the determined explorer Robert Ballard, revealing the haunting remains of the vessel that had captured the world\u2019s imagination.",
+        "neutral": "On the next morning, the RMS Titanic, a British ocean liner, struck an iceberg and sank. The wreck of the vessel was later discovered by Robert Ballard."
+      },
+      "source_triples": [
+        [
+          "next_morning",
+          "sink",
+          "iceberg"
+        ],
+        [
+          "rms_titanic",
+          "operate",
+          "british ocean liner"
+        ],
+        [
+          "robert_ballard",
+          "discover",
+          "wreck"
+        ]
+      ]
+    }
+  },
+  "schema": "sum.sheaf_path2_render_snapshot.v1"
+}

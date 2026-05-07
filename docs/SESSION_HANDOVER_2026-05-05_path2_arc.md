@@ -1,10 +1,12 @@
-# Session handover — Path 2 / multi-LLM arc (2026-05-05 → 2026-05-06)
+# Session handover — Path 2 / multi-LLM arc (2026-05-05 → 2026-05-07)
 
-This handover covers the seven-PR arc that closes the §7 load-bearing
+This handover covers the eight-PR arc that closes the §7 load-bearing
 asterisk in the preprint, corroborates the finding across LLM
 families, extends to open-weights, root-causes a determinism bug,
-and extends to cross-corpus where the §4.7.3 finding turns out to
-be corpus-specific.
+extends to cross-corpus where the §4.7.3 finding initially appeared
+corpus-specific, and then resolves the lone BEATS cell as
+extremal-Goodhart at small n — at controlled sample sizes
+(n ≥ 16), the §4.7.3 STRUCTURAL_GAP_NO_MODEL_BEATS finding holds.
 Read this if the §4.7.x narrative is in question; otherwise the prior
 [`SESSION_HANDOVER_2026-05-05_sprint_7_5_arc.md`](SESSION_HANDOVER_2026-05-05_sprint_7_5_arc.md)
 remains current for everything else.
@@ -74,8 +76,8 @@ remains current for everything else.
   full per-model table + texture analysis.
 
 - **PR #163** — Cross-corpus extension (§4.7.4); §4.7.3 finding
-  is corpus-specific. Multi-LLM compare gains `--corpus` flag
-  (backward-compatible). New aggregator
+  initially appears corpus-specific. Multi-LLM compare gains
+  `--corpus` flag (backward-compatible). New aggregator
   `scripts/research/sheaf_path2_cross_corpus_aggregate.py` loads
   N per-corpus receipts and produces a 2-D joint finding. Two new
   corpora authored: `seed_paragraphs` (8 docs, encyclopedic
@@ -84,17 +86,39 @@ remains current for everything else.
   corpora — `seed_long_paragraphs` carries the n=6 set with claude,
   `seed_paragraphs` and `seed_news_briefs` are n=5 (Anthropic key
   unavailable during the §4.7.4 capture); jagged matrix totals
-  16 cells: 1 BEATS, 8 TIES, 7 LOSES. Joint
-  finding **`CROSS_CORPUS_VERDICTS_DIVERGE`** — `seed_paragraphs`
-  produces one BEATS cell (gpt-4o-mini Δ=+0.032 right at the
-  +0.030 threshold) which drives that corpus's joint finding to
+  16 cells: 1 BEATS, 8 TIES, 7 LOSES. Joint finding
+  **`CROSS_CORPUS_VERDICTS_DIVERGE`** — `seed_paragraphs` produces
+  one BEATS cell (gpt-4o-mini Δ=+0.032 right at the +0.030
+  threshold) which drives that corpus's joint finding to
   `MIXED_VERDICTS_MODEL_DEPENDENT`; the other two corpora
-  reproduce `STRUCTURAL_GAP_NO_MODEL_BEATS`. Honest reading: the
-  hybrid does not consistently BEAT baseline across LLM families
-  × corpora; the synthetic-bench WIN magnitude (+0.043) still
-  sits substantially above the lone real-LLM BEATS cell (+0.032).
-  Bug fix in `_receipt_paths.py` glob to require date suffix
-  (prevents prefix-of-prefix false positives on receipt paths).
+  reproduce `STRUCTURAL_GAP_NO_MODEL_BEATS`. Bug fix in
+  `_receipt_paths.py` glob to require date suffix (prevents
+  prefix-of-prefix false positives on receipt paths).
+
+- **PR #164** — §4.7.4.1 resolves the lone BEATS cell as
+  extremal-Goodhart at small n. New 16-doc corpus
+  `seed_paragraphs_16.json` (same encyclopedic voice as
+  `seed_paragraphs`, eight originals retained verbatim plus eight
+  new docs: Mount Everest, Marie Curie, Great Wall of China,
+  Titanic, Renaissance, atomic structure, jet stream, blockchain).
+  At doubled n the lone BEATS cell flips to TIES: gpt-4o-mini
+  Δ=+0.032 BEATS (n=8) → Δ=−0.013 TIES (n=16) for the same model
+  on the same style. Joint finding on `seed_paragraphs_16`:
+  `STRUCTURAL_GAP_NO_MODEL_BEATS`, matching the other two corpora
+  at n≥16. Updated 4-corpus aggregate: 21 cells (1 BEATS, 10 TIES,
+  10 LOSES) — the lone BEATS cell is now *explained*, not
+  unresolved. Substantive consequence: at controlled sample sizes
+  (n ≥ 16) across 3 corpora × 4-6 LLM lineages, the hybrid does
+  NOT BEAT B2 on real-LLM perturbations. The synthetic-bench WIN
+  (+0.043) is now read as a Goodhart artifact: hybrid selected to
+  compose well on a measure, measure stops being a good measure
+  once it is the target. §4.7.2 gains the *deception register*
+  frame from biological signal-reward contracts (Schiestl et al.
+  1999; Cook & Rasplus 2003). §7 restructured into four-tier
+  audit (holds up / corrected / real but narrow / limits).
+  PROOF_BOUNDARY §2.10 reframed as *continuous-enforcement*
+  against mutualism breakdown (Sachs et al. 2004), with PR #160
+  dict-order fix as worked example.
 
 ## Substantive verdicts at HEAD
 
@@ -102,7 +126,9 @@ remains current for everything else.
 |---|---|---:|
 | §4.7.1 synthetic (Borda hybrid) | `HYBRID_BEATS_BASELINE` | +0.043 |
 | §4.7.3 joint (n=6, `seed_long_paragraphs`) | `STRUCTURAL_GAP_NO_MODEL_BEATS` | spread 0.065 |
-| §4.7.4 joint (3 corpora, 16 cells: 6+5+5) | **`CROSS_CORPUS_VERDICTS_DIVERGE`** | 1 BEATS, 8 TIES, 7 LOSES |
+| §4.7.4 joint (3 corpora, 16 cells: 6+5+5) | `CROSS_CORPUS_VERDICTS_DIVERGE` | 1 BEATS, 8 TIES, 7 LOSES |
+| §4.7.4.1 joint (4 corpora, 21 cells: 6+5+5+5) | **`CROSS_CORPUS_VERDICTS_DIVERGE`** (small-n artifact) | 1 BEATS, 10 TIES, 10 LOSES |
+| §4.7.4.1 at n≥16 (3 corpora, 16 cells) | **all 3 → `STRUCTURAL_GAP_NO_MODEL_BEATS`** | 0 BEATS, 7 TIES, 9 LOSES |
 
 §4.7.4 cross-corpus matrix (`seed_long_paragraphs` is n=6 with
 claude; the two new corpora are n=5 because Anthropic was

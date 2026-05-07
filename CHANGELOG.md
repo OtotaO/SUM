@@ -4,6 +4,41 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Path 2 §4.7.4.1 — extremal-Goodhart confirmed; §4.7.4
+  consolidates back to STRUCTURAL_GAP at controlled n.** New
+  16-doc corpus `seed_paragraphs_16.json` (same encyclopedic voice
+  as `seed_paragraphs`, eight originals retained verbatim plus
+  eight new docs: Mount Everest, Marie Curie, Great Wall of China,
+  Titanic, Renaissance, atomic structure, jet stream, blockchain).
+  At doubled n the lone BEATS cell from §4.7.4 disappears:
+  gpt-4o-mini Δ=+0.032 BEATS at n=8 → Δ=−0.013 TIES at n=16. Joint
+  finding on `seed_paragraphs_16`: `STRUCTURAL_GAP_NO_MODEL_BEATS`,
+  matching the other two corpora at n=16. Updated 4-corpus
+  aggregate (21 cells: 1 BEATS, 10 TIES, 10 LOSES) — the lone
+  BEATS cell is now *explained* (small-n threshold noise via
+  extremal Goodhart), not unresolved.
+
+  Substantive consequence: the preprint §4.7.x narrative tightens
+  significantly. At controlled sample sizes (n ≥ 16) across
+  three corpora and 4-6 LLM lineages, the hybrid does NOT BEAT
+  B2 on real-LLM perturbations. The synthetic-bench WIN
+  (+0.043) is best read as a Goodhart artifact: the hybrid was
+  selected to compose well on a measure (the synthetic harness),
+  and the measure stops being a good measure once it is the
+  target of optimisation. Preprint §4.7.2 prose now uses the
+  "deception register" frame from biological signal-reward
+  contracts (Schiestl et al. 1999; Cook & Rasplus 2003) to
+  explain the synthetic-vs-real gap mechanistically.
+
+  Preprint §7 restructured into a four-tier audit (claims that
+  hold up / claims corrected from prior overstatements / claims
+  real but narrow / limits). PROOF_BOUNDARY §2.10 reframed as
+  *continuous-enforcement* against the analogue of mutualism
+  breakdown (Sachs et al. 2004), with PR #160 dict-order fix as
+  the worked example. Pinned in
+  `Tests/research/test_sheaf_path2_cross_corpus.py` (21 per-cell
+  digests + per-corpus joint findings + cell counts).
+
 - **Path 2 §4.7.4 cross-corpus extension — §4.7.3 finding is
   corpus-specific.** New `scripts/research/sheaf_path2_cross_corpus_aggregate.py`
   loads N per-corpus compare receipts and produces a joint finding

@@ -1066,13 +1066,25 @@ small margin on real LLM perturbations.
 **The synthetic-vs-real gap is itself the load-bearing finding.**
 Synthetic A1/A2/A4 perturbations have a structural property —
 A1/A4 cleanly change the entity set, A2 cleanly preserves it —
-that real LLM perturbations don't share. The synthetic bench was
-biased toward both the strengths AND the weaknesses of B2
-jaccard, which made the hybrid's complementary-signal composition
-look stronger than it is on naturalistic prose. The substrate's
-truth-first discipline catches this exactly the way it caught the
-original baseline-vs-v3.2-only loss in §4.7.1's STOP-THE-LINE
-gate: by running the comparison and reporting whatever it shows.
+that real LLM perturbations don't share. A useful frame from the
+biological literature on signal-reward contracts (Schiestl et al.,
+*Nature* 399:421, 1999; Cook & Rasplus, *TREE* 18:241, 2003) is the
+*deception register* of an adversarial signal. Synthetic A1/A4 are
+**structurally legible deceptions**: the entity-set boundary is
+cleanly violated and B2's set-distance metric reads them at AUC
+$1.000$. Real-LLM A1/A4 are **naturalistically embedded
+deceptions**: the LLM smuggles a substitution into a plausible
+narrative whose entity set overlaps the source's, and B2's signal
+weakens accordingly. The hybrid's $+0.043$ synthetic-bench WIN can
+be read in this language as the consequence of a measure (the
+synthetic harness) becoming a target — Goodhart's law in its
+*regressional* form (Manheim & Garrabrant, arXiv:1803.04585,
+2018): the hybrid was selected to compose well with B2 on signals
+of the structurally-legible class, and stops being a good measure
+once the deception-register changes. The substrate's truth-first
+discipline catches this exactly the way it caught the original
+baseline-vs-v3.2-only loss in §4.7.1's STOP-THE-LINE gate: by
+running the comparison and reporting whatever it shows.
 
 ### 4.7.3 Cross-family corroboration: Path 2 across six LLM lineages
 
@@ -1186,54 +1198,106 @@ because the operator's Anthropic key was unavailable during the
 | deepseek-ai/DeepSeek-V3-0324 | $+0.018$ TIES | $-0.042$ LOSES | $-0.007$ TIES |
 | google/gemma-3-27b-it | $-0.028$ LOSES | $-0.014$ TIES | $-0.038$ LOSES |
 
-Across the 16-cell matrix: **1 BEATS** (`seed_paragraphs` ×
-gpt-4o-mini), **8 TIES**, **7 LOSES**. The lone BEATS cell sits
-right at the threshold ($+0.032$ vs $+0.030$ floor); after partition
-filtering the effective sample is $n=6$ docs, near the regime where
-AUC variance dominates.
+Across the initial three-corpus, 16-cell matrix: **1 BEATS**
+(`seed_paragraphs` × gpt-4o-mini), **8 TIES**, **7 LOSES**. The lone
+BEATS cell sits right at the threshold ($+0.032$ vs $+0.030$ floor);
+after partition filtering the effective sample is $n=6$ docs, near
+the regime where AUC variance dominates. The hypothesis at this
+point: extremal Goodhart on a sharp threshold at small $n$.
 
-**Honest reading.** The §4.7.3 narrative — *no LLM family makes the
-hybrid BEAT the baseline on real-LLM perturbations* — was overstated
-when read as universal across corpora. The corrected reading:
+### 4.7.4.1 Resolving the lone BEATS cell: extremal-Goodhart confirmed
 
-  1. Across the cross-organisational sample we tested, the hybrid
-     does not *consistently* BEAT the B2 baseline on real LLM
-     perturbations. Out of 15 (corpus, model) cells, 1 BEATS,
-     8 TIE, 6 LOSE.
-  2. Two of three corpora reproduce
-     `STRUCTURAL_GAP_NO_MODEL_BEATS`. The third, `seed_paragraphs`
-     (smaller, encyclopedic, shorter paragraphs), produces one
-     BEATS cell that drives the joint finding to
-     `MIXED_VERDICTS_MODEL_DEPENDENT`.
-  3. Whether that one BEATS cell reflects a real corpus-dependent
-     advantage of the hybrid on shorter-paragraph encyclopedic
-     prose, or sample-size noise around the BEATS threshold at
-     $n=6$ effective docs, is *not* discriminable from this data.
-  4. The synthetic-bench WIN ($\Delta = +0.043$, §4.7.1) sits
-     above the threshold by a substantially larger margin than
-     the lone real-LLM BEATS cell ($+0.032$); the synthetic-vs-
-     real magnitude gap is real even where the verdict-class gap
-     narrows.
+The §4.7.4 narrative as initially written did not discriminate
+between two readings of the lone BEATS cell — *real corpus-dependent
+advantage of the hybrid on shorter encyclopedic paragraphs* versus
+*sample-size noise around a sharp threshold at $n=6$ effective docs*.
+To discriminate, we authored an extended corpus
+`scripts/bench/corpora/seed_paragraphs_16.json` (16 docs, all eight
+originals from `seed_paragraphs` retained verbatim plus eight new
+docs in the same encyclopedic voice — Mount Everest, Marie Curie,
+the Great Wall of China, Titanic, Renaissance, atomic structure,
+jet stream, blockchain). Same model set, same prompt classes, same
+deterministic Phase-2 scorer; the only experimental variable is
+sample size.
+
+**The BEATS verdict does not survive at 16 docs:**
+
+| Model | seed_paragraphs (8) | seed_paragraphs_16 (16) | Direction |
+|---|---:|---:|---|
+| gpt-4o-mini-2024-07-18 | **$+0.032$ BEATS** | $-0.013$ TIES | **flipped** |
+| meta-llama/Llama-3.3-70B | $+0.005$ TIES | $-0.039$ LOSES | toward LOSES |
+| Qwen/Qwen3.6-35B-A3B | $+0.027$ TIES | $-0.019$ TIES | sign flip, still TIES |
+| deepseek-ai/DeepSeek-V3-0324 | $-0.042$ LOSES | $-0.022$ LOSES | toward TIES |
+| google/gemma-3-27b-it | $-0.014$ TIES | $-0.027$ LOSES | toward LOSES |
+| **Joint** | `MIXED_VERDICTS_MODEL_DEPENDENT` | **`STRUCTURAL_GAP_NO_MODEL_BEATS`** | resolved |
+
+Doubled $n$ pulls every per-model $\Delta$ closer to its likely
+population-mean value, the BEATS cell collapses into TIES, and the
+joint finding consolidates to `STRUCTURAL_GAP_NO_MODEL_BEATS` —
+which is precisely what extremal-Goodhart predicts when an
+optimisation pressure (the $+0.030$ BEATS threshold) acts on a
+high-variance estimator at small sample sizes (Manheim & Garrabrant,
+arXiv:1803.04585, 2018).
+
+**Updated four-corpus aggregate.** With `seed_paragraphs_16`
+included, the cross-corpus aggregate spans four corpora, jagged 21
+cells: 1 BEATS, 10 TIES, 10 LOSES. **Three of four corpora at $n
+\geq 16$ docs reproduce `STRUCTURAL_GAP_NO_MODEL_BEATS`**; the
+fourth (`seed_paragraphs`, $n=8$) is the small-$n$ canary the
+extension was designed to test, and its lone BEATS cell is now
+explained.
+
+| Corpus | $n_\text{docs}$ | $n_\text{models}$ | Joint finding |
+|---|---:|---:|---|
+| `seed_long_paragraphs` | 16 | 6 | `STRUCTURAL_GAP_NO_MODEL_BEATS` |
+| `seed_paragraphs` | 8 | 5 | `MIXED_VERDICTS_MODEL_DEPENDENT` (small-$n$) |
+| `seed_paragraphs_16` | 16 | 5 | `STRUCTURAL_GAP_NO_MODEL_BEATS` |
+| `seed_news_briefs` | 16 | 5 | `STRUCTURAL_GAP_NO_MODEL_BEATS` |
+
+Aggregate joint finding remains `CROSS_CORPUS_VERDICTS_DIVERGE`
+because the 8-doc and 16-doc per-corpus joint findings disagree —
+but this is a *measurement-artifact* divergence, not a
+substantively different claim about the underlying detector. The
+honest top-level reading is now:
+
+  1. **At controlled sample sizes ($n \geq 16$), the
+     synthetic-bench WIN does not generalise to any LLM family in
+     the cross-organisational sample.** Three of three corpora at
+     $n \geq 16$ produce `STRUCTURAL_GAP_NO_MODEL_BEATS` across
+     OpenAI, Anthropic (where measured), Meta, Alibaba, DeepSeek,
+     Google.
+  2. **At small samples ($n = 8$), AUC variance dominates and
+     thresholded verdicts can flip by chance.** The $n=8$
+     `seed_paragraphs` cell with gpt-4o-mini at $\Delta = +0.032$
+     is the worked example. The same model on the same style at
+     $n=16$ gives $\Delta = -0.013$.
+  3. **The synthetic-vs-real *magnitude* gap is robust to corpus
+     and to LLM family.** $\Delta = +0.043$ on the synthetic
+     harness sits substantially above every real-LLM cell at
+     $n \geq 16$; the synthetic harness was a measure-that-became-
+     a-target whose discriminative power does not survive contact
+     with naturalistic perturbation distributions, exactly as
+     Goodhart's law predicts in its regressional form.
+
+**Honest scope.** Four corpora is still bounded; only `seed_news_briefs`
+is stylistically distinct from the encyclopedic baseline. A robust
+*corpus-independent* claim would want 5–10 corpora spanning genres
+(scientific abstracts, fiction, legal/policy, code commentary,
+spoken transcripts). The 5-model $n$ on three of four corpora is
+less than the §4.7.3 $n=6$ because the Anthropic key was unavailable
+during the §4.7.4 / §4.7.4.1 captures; if a future run adds
+claude-haiku-4.5 on the additional corpora the matrix could shift,
+but the *direction* of the consolidated finding (no consistent
+BEATS at $n \geq 16$) is unlikely to flip with a single additional
+model.
 
 Receipts: per-corpus
-`fixtures/bench_receipts/path2_multi_llm_compare_<corpus>_2026-05-06.json`
+`fixtures/bench_receipts/path2_multi_llm_compare_<corpus>_<date>.json`
 and aggregate
 `fixtures/bench_receipts/path2_cross_corpus_compare_2026-05-06.json`
-(schema `sum.sheaf_path2_cross_corpus_compare.v1`). All 15 per-(corpus,
+(schema `sum.sheaf_path2_cross_corpus_compare.v1`). All 21 per-(corpus,
 model) `bench_digest`s pinned in
 `Tests/research/test_sheaf_path2_cross_corpus.py`.
-
-**Honest scope.** Three corpora is still bounded; corpus #3 is the
-only one stylistically distinct from the original. A robust
-"corpus-independent" claim would want 5+ corpora spanning genres
-(scientific abstracts, fiction, legal/policy, code commentary,
-spoken transcripts). Three is enough to falsify
-corpus-invariance — and does. The 5-model n is also less than the
-§4.7.3 n=6 because the Anthropic key was unavailable for the
-extension; if a future run includes claude-haiku-4.5 on the
-additional corpora the matrix could shift, but the *direction* of
-the §4.7.4 finding (corpus-dependence) is unlikely to flip with a
-single additional model.
 
 **Remaining v0.4+ candidate directions:**
 
@@ -1247,10 +1311,10 @@ single additional model.
     structure matches synthetic but the perturbation choice is
     LLM-natural. Decouples "what gets perturbed" from "how it
     propagates through rendering."
-  - **Deeper corpus sampling**: the §4.7.4 result rests on three
-    corpora; expanding to 5-10 stylistically distinct corpora
-    would allow distinguishing the lone seed_paragraphs BEATS
-    cell from threshold-noise.
+  - **Deeper corpus sampling**: expand to 5-10 stylistically
+    distinct corpora at $n \geq 16$ docs to harden the
+    *no consistent BEATS at controlled sample sizes* finding
+    against further objections.
 
 ### 4.8 Reproducibility: `bench_digest` as a primitive
 
@@ -1509,104 +1573,152 @@ framing identifies as additive in free-energy terms.
 
 ## 7. Bounded claims
 
-What the substrate + complementary-hybrid detector claims, at
-the §3.9 layer evaluated on `seed_long_paragraphs`:
+This section uses a four-tier audit framework: (1) claims that hold
+up under verification across the full §4.7.x extension arc, (2)
+claims now corrected from prior overstatements (the §4.7.x extension
+generated negative-going findings the original text had to
+incorporate honestly), (3) claims that are real but narrow in scope,
+(4) limits and future-work hooks. The framework borrows its shape
+from the empirical-claim audit any peer reviewer would want to do
+on a paper of this type; we apply it to ourselves first.
 
-- **Specific (substrate).** `bench_digest` for both the v3.2
-  validation and the complementary-hybrid benches is byte-stable
-  across runs and across two distinct LAPACK environments
-  (Apple Accelerate on Apple Silicon; OpenBLAS-via-PyPI on Modal
-  x86_64; §4.8). The substrate's reproducibility property holds
-  cross-machine for the two environments measured.
-- **Specific (detector).** Borda fusion of (v3.2 + per-triple)
-  with B2 jaccard — the §3.9 hybrid — produces trusted-mean AUC
-  $0.876$ on `seed_long_paragraphs`, $\Delta = +0.043$ above the
-  strongest single-signal baseline (B2 alone at $0.833$).
-  Per-cell numbers in §4.7.1.
-- **Localised.** Per-edge / per-rendered-triple discrepancy
-  identifies the perturbed claim at high precision (100 % top-1
-  on the synthetic micro-benchmark; the per-rendered-triple $V$
-  signal on A1 / A2 / A3 reports the offending triple directly).
-- **Cryptographically auditable.** Because the source binding is
-  a signed receipt, the detector's verdict can be reproduced
-  offline by any verifier with the source bundle and the trained
-  sheaf parameters — no vendor-locked confidence score.
-- **Reproducibility-anchored.** Each numeric result is captured
-  in a versioned receipt with a `bench_digest` field; rerunning
-  the bench locally (or via the published Modal harness) and
-  comparing the digest is a byte-level match operation.
+### 7.1 Claims that hold up under verification
 
-What the substrate + detector does *not* claim:
+**Substrate-layer (load-bearing, pinned in CI):**
 
-- **Not** a solution to hallucination. The hybrid is one signal
-  composition among many; in practice would compose with
+- **Cross-machine `bench_digest` reproducibility.** Four benches
+  (`v3_2_validation`, `complementary_hybrid`, `predicate_negatives`,
+  `hybrid_comparison`) reproduce byte-for-byte across three
+  environments — Apple Accelerate on Apple Silicon (operator),
+  OpenBLAS Py 3.10 / numpy 1.25 on Modal x86_64, and OpenBLAS Py
+  3.12 / numpy 2.x on Modal x86_64; §4.8.
+- **Cryptographic auditability.** Receipts are RFC 8785 JCS-canon
+  + Ed25519 signed; an external verifier with the source bundle
+  and trained sheaf parameters reproduces every numeric result
+  offline.
+- **Continuous-enforcement discipline catches drift.** The PR #160
+  dict-order fix is the worked example: a determinism bug
+  (in-memory snapshots in corpus order, cached snapshots in
+  alphabetical order — different trained sheaves, different
+  digests) was caught by a probe-style investigation around the
+  digest pin and root-caused as a one-line fix
+  (`docs_with_src.sort(key=lambda x: x[0])`). A new regression
+  test asserts Phase 2 is invariant to snapshot dict order.
+  PROOF_BOUNDARY §2.10 frames this as continuous enforcement
+  against the analogue of mutualism breakdown (Sachs, Mueller,
+  Wilcox & Bull, *QRB* 79:135, 2004).
+
+**Detector-layer (load-bearing on `seed_long_paragraphs`):**
+
+- **Synthetic Borda hybrid Δ = +0.043** above the strongest
+  single-signal baseline B2 jaccard ($0.876$ vs $0.833$
+  trusted-mean AUC) on the §4.4 / §4.7 synthetic A1/A2/A4 harness.
+- **Localised top-1** on the synthetic micro-benchmark.
+- **Five named falsification verdicts** (F1 MARGINAL, F2 PASS,
+  F3 STRUCTURAL FAIL, F4 PASS, F5 PASS at $\gamma \leq 0.1$)
+  reproduce across the cross-machine matrix.
+
+**Detector-layer (load-bearing on the §4.7.x extension at $n \geq
+16$ docs):**
+
+- **No hybrid BEATS verdict on real-LLM perturbations across the
+  cross-organisational sample at controlled sample sizes.** Across
+  three corpora at $n \geq 16$ docs (`seed_long_paragraphs`,
+  `seed_paragraphs_16`, `seed_news_briefs`) and six LLM lineages
+  where measured (OpenAI gpt-4o-mini, Anthropic claude-haiku-4.5
+  on `seed_long_paragraphs` only, Meta Llama-3.3-70B, Alibaba
+  Qwen3.6-35B-A3B, DeepSeek V3-0324, Google Gemma-3-27B), the
+  hybrid never produces `HYBRID_BEATS_BASELINE_ON_REAL_LLM`. Joint
+  finding `STRUCTURAL_GAP_NO_MODEL_BEATS` reproduces in 3/3
+  corpora at $n \geq 16$.
+
+### 7.2 Claims corrected from prior overstatements
+
+The §4.7.x extension produced two negative-going findings the
+preprint absorbs honestly rather than rewrites away:
+
+- **§4.7.3 originally read as "no LLM family makes the hybrid BEAT
+  the baseline on real LLM."** The §4.7.4 cross-corpus extension
+  produced one BEATS cell on `seed_paragraphs` × gpt-4o-mini at
+  $\Delta = +0.032$ — right at the $+0.030$ threshold, with $n=6$
+  effective docs post-partition. §4.7.4.1 controlled for sample
+  size by extending the corpus to 16 docs (same encyclopedic
+  voice, eight new docs added) and the BEATS verdict flipped to
+  TIES at $\Delta = -0.013$ for the same model and style. The
+  corrected reading: **at controlled sample sizes ($n \geq 16$),
+  no model BEATS; at small $n$ ($n=8$), AUC variance around the
+  threshold can produce isolated BEATS cells via extremal
+  Goodhart**.
+- **Synthetic-bench WIN as a universal-detector claim.** The
+  $+0.043$ advantage is on one specific corpus's synthetic
+  perturbation distribution. The full §4.7.x extension shows the
+  hybrid's edge over B2 does not generalise to naturalistic
+  perturbations from any LLM family at $n \geq 16$. This is
+  consistent with Goodhart's law in its regressional form
+  (Manheim & Garrabrant, arXiv:1803.04585, 2018): the hybrid was
+  selected to compose well on the synthetic measure, and that
+  measure stopped being a good measure once it became the target
+  of optimisation. The substrate's truth-first discipline catches
+  this exactly the way it caught the v3.x cochain-only loss in
+  §4.7.1's STOP-THE-LINE gate.
+
+### 7.3 Claims that are real but narrow
+
+- **v3.1 boundary-deviation has no standalone use.** F3 STRUCTURAL
+  FAIL is mathematical, not parametric. v3.2 closes the
+  *detector-layer* problem only via composition with
+  $v_\text{laplacian}^w$; standalone v3.1 deviation remains
+  uninformative.
+- **Cochain channel is not standalone-competitive.** §4.7.1
+  documents the cochain-only loss to trivial baselines
+  ($-0.174$ trusted-mean vs B2). The §4.7.1 WIN comes from
+  composition with the §3.5 per-triple channel and the B2
+  baseline. Operators expecting cochain-only detection (e.g. for
+  closed-vocab schemas where per-triple OOV signal is
+  uninformative) should not rely on the cochain channel alone.
+- **Predicate-perturbation training cannot fix cochain
+  blindness.** `aa34b6e8…` digest pin in
+  `Tests/research/test_recovery_experiment_digests.py`. The
+  structural blindness to entity-set-preserving perturbations is
+  mathematical, not parametric. Predicate sensitivity must come
+  from the per-triple channel, not the cochain.
+- **Cross-machine reproducibility is verified for two LAPACK
+  families only.** Apple Accelerate + OpenBLAS-via-PyPI cover the
+  three measured environments. Intel MKL, ARM Linux OpenBLAS, AMD
+  AOCL remain unmeasured.
+- **$\lambda$ auto-calibration is per-corpus.** The hybrid's
+  $+0.043$ margin is calibrated for `seed_long_paragraphs`'s
+  specific perturbation distribution. Cross-corpus deployments
+  need to recalibrate.
+- **F5 ($\gamma_\text{auto}$) FAILs.** Optimal $\gamma$ is
+  small ($\leq 0.1$); future deployments must measure $\gamma$
+  rather than auto-derive it from term magnitudes.
+- **Borda is one composition choice.** Z-score additive, gated
+  (B2 fires → use B2; else use v3.2 + per-triple), and
+  weighted-linear are alternatives unevaluated.
+
+### 7.4 Limits and future-work hooks
+
+- **Not a solution to hallucination.** The hybrid is one signal
+  composition among many; production would compose with
   confidence calibration, retrieval-grounded checks, NLI
   verifiers, and human review.
-- **Not** a correctness proof. The detector measures
+- **Not a correctness proof.** The detector measures
   inconsistency in the *output manifold* under cross-edge
   agreement, predicate violations, and entity-set patterns; it
   does not certify that any single output is *correct*. A
-  consistent manifold of uniformly-wrong renderings (where the
-  trained sheaf has no internal contradiction with the wrong
-  claims) remains undetected.
-- **Not** generalising across corpora without re-calibration.
-  The $\lambda$ auto-calibration is per-corpus; the hybrid's
-  $+0.043$ margin over B2 is on the
-  `seed_long_paragraphs` corpus's specific perturbation
-  distribution. Cross-corpus generalization is unmeasured (v0.2
-  follow-up).
-- **Not** generalising to real-LLM-rendered hallucinations. The
-  A1 / A2 / A4 perturbation harness is synthetic — it mutates
-  the source-bundle's triples and asks the detector to spot the
-  mutation. Real LLM hallucinations produce rendered text that
-  re-extracts to a noisy triple set; B2's perfect $1.000$ on
-  synthetic A1/A4 may degrade if the LLM elaborates with
-  spurious entities. Real-LLM-rendered bench is v0.2 follow-up
-  (Path 2 in §8).
-- **Not** computable on arbitrary corpus sizes. Sparse-block
-  storage of the $d$-dim Laplacian is straightforward but not
-  yet implemented; scaling to $> 10^4$ vertices needs the
-  sparsification machinery of Hansen-Ghrist 2019 §6 (Theorem
-  6.4).
-- **Not** giving the boundary-deviation signal of v3.1 a
-  standalone use. F3 STRUCTURAL FAIL is true at the v3.1 layer
-  and remains true; v3.2 closes the *detector-layer* problem by
-  combining with $v_\text{laplacian}^w$ but does not make
-  standalone deviation informative.
-- **Not** confirming the magnitude-matching auto-calibration of
-  $\gamma$. F5 at $\gamma_\text{auto}$ FAILs on this corpus;
-  optimal $\gamma$ is small. Future deployments must measure
-  $\gamma$ rather than auto-derive it from term magnitudes.
-- **Not** giving the v3.x cochain channel competitive standalone
-  use. §4.7.1 documents the loss to trivial baselines on the
-  cochain channel alone ($-0.174$ trusted-mean vs B2). The WIN
-  comes from composition with the §3.5 per-triple channel and
-  the entity-set baseline. Operators expecting cochain-only
-  detection (e.g. for closed-vocab schemas where per-triple OOV
-  signal is uninformative) should not rely on the cochain channel
-  alone.
-- **Not** rescued by predicate-perturbation training negatives
-  alone (`aa34b6e8…` digest pin in
-  `Tests/research/test_recovery_experiment_digests.py`). The
-  cochain-channel structural blindness to entity-set-preserving
-  perturbations is mathematical, not parametric — adding
-  training negatives cannot fix what the scoring path discards.
-  This is itself a load-bearing finding for future v3.x
-  development: predicate sensitivity must come from the
-  per-triple channel, not from the cochain.
-- **Not** the only viable composition. Borda fusion is one
-  choice; Z-score additive, gated (B2 fires → use B2; else use
-  v3.2 + per-triple), and weighted-linear are alternatives we
-  did not exhaustively evaluate. Per-deployment composition
-  tuning is open.
-- **Not** generalising across all LAPACK environments. The
-  cross-machine measurement (§4.8) covers Apple Accelerate +
-  OpenBLAS-via-PyPI. Other LAPACK builds (Intel MKL; ARM Linux
-  OpenBLAS; AMD AOCL) are unmeasured (v0.2 candidates). The
-  digest is a *cross-environment reproducibility canary*: if a
-  third LAPACK build produces a different digest, that's a
-  load-bearing finding worth investigating, not a falsification
-  of the substrate.
+  consistent manifold of uniformly-wrong renderings remains
+  undetected.
+- **Not computable on arbitrary corpus sizes.** Sparse-block
+  storage of the $d$-dim Laplacian is straightforward but
+  unimplemented; scaling to $> 10^4$ vertices needs the
+  sparsification machinery of Hansen-Ghrist 2019 §6.
+- **v0.4+ candidates** named in §4.7.4.1: real-LLM-aware
+  per-triple V training; naturalistic perturbation synthesis on
+  the source TRIPLE set rather than the rendered prose;
+  deeper corpus sampling (5-10 corpora at $n \geq 16$ to harden
+  the *no consistent BEATS at controlled n* finding against
+  further objections).
 
 Five named falsification verdicts (F1 MARGINAL, F2 PASS,
 F3 STRUCTURAL FAIL, F4 PASS, F5 PASS at $\gamma \leq 0.1$)

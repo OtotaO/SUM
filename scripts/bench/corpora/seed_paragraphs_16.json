@@ -1,0 +1,71 @@
+{
+  "corpus_id": "seed_paragraphs_16",
+  "schema": "sum.bench_corpus.v1",
+  "description": "Sixteen short encyclopedic paragraphs. Combines the original eight from seed_paragraphs.json (verbatim) with eight new docs authored 2026-05-07 in the same voice (definitional/historical present and past tense, named entities, specific dates and numbers, ~250-350 chars). Authored as a Path 2 cross-corpus extension (preprint §4.7.4.1) to test whether the lone HYBRID_BEATS cell on the 8-doc seed_paragraphs (gpt-4o-mini Δ=+0.032 at the +0.030 threshold) reflects a real corpus-dependent advantage of the hybrid on shorter encyclopedic prose, or sample-size noise around the BEATS threshold (extremal Goodhart) at n=6 effective docs post-partition. Same style, doubled n.",
+  "documents": [
+    {
+      "id": "doc_photosynthesis",
+      "text": "Photosynthesis converts sunlight into chemical energy in plants, algae, and some bacteria. The process occurs in chloroplasts and uses chlorophyll to capture light. Water and carbon dioxide are converted into glucose and oxygen. The oxygen is released as a byproduct, which is essential for most aerobic life."
+    },
+    {
+      "id": "doc_einstein",
+      "text": "Albert Einstein was born in Ulm, Germany in 1879. He developed the theory of special relativity in 1905 and general relativity in 1915. He received the Nobel Prize in Physics in 1921 for his explanation of the photoelectric effect. He emigrated to the United States in 1933 and joined Princeton's Institute for Advanced Study."
+    },
+    {
+      "id": "doc_python",
+      "text": "Python is a high-level programming language created by Guido van Rossum and released in 1991. It emphasizes code readability through significant indentation. Python supports multiple programming paradigms including procedural, object-oriented, and functional programming. It is widely used in data science, web development, and scientific computing."
+    },
+    {
+      "id": "doc_pacific_ocean",
+      "text": "The Pacific Ocean is the largest and deepest of Earth's oceanic divisions. It extends from the Arctic Ocean in the north to the Southern Ocean in the south. Its area is approximately 165 million square kilometers. The Mariana Trench, the deepest known location on Earth, lies in the western Pacific."
+    },
+    {
+      "id": "doc_french_revolution",
+      "text": "The French Revolution began in 1789 with the storming of the Bastille. King Louis XVI was executed by guillotine in 1793. The revolution led to the rise of Napoleon Bonaparte, who became Emperor in 1804. The revolution fundamentally transformed French society and influenced politics worldwide."
+    },
+    {
+      "id": "doc_dna",
+      "text": "DNA is a molecule that carries genetic instructions in nearly all living organisms. It is composed of two strands twisted into a double helix. The structure was identified by Watson and Crick in 1953, building on work by Rosalind Franklin. DNA contains four nucleotide bases: adenine, thymine, cytosine, and guanine."
+    },
+    {
+      "id": "doc_apollo_11",
+      "text": "Apollo 11 was the first crewed mission to land on the Moon. It launched on July 16, 1969 from Kennedy Space Center. Neil Armstrong and Buzz Aldrin walked on the lunar surface while Michael Collins orbited above. The mission returned to Earth on July 24, 1969."
+    },
+    {
+      "id": "doc_amazon_rainforest",
+      "text": "The Amazon rainforest covers approximately 5.5 million square kilometers in South America. It contains roughly ten percent of all known species on Earth. The Amazon River, which flows through the forest, discharges more water than any other river. Deforestation has reduced the forest's area significantly since the 1970s."
+    },
+    {
+      "id": "doc_mount_everest",
+      "text": "Mount Everest is the highest mountain on Earth at 8,849 meters above sea level. It lies on the border between Nepal and Tibet in the Himalayas. Edmund Hillary and Tenzing Norgay made the first confirmed ascent in 1953. The mountain is called Sagarmatha in Nepali and Chomolungma in Tibetan."
+    },
+    {
+      "id": "doc_marie_curie",
+      "text": "Marie Curie was born in Warsaw, Poland in 1867. She conducted pioneering research on radioactivity with her husband Pierre Curie. She received the Nobel Prize in Physics in 1903 and the Nobel Prize in Chemistry in 1911. She remains the only person to have won Nobel Prizes in two different sciences."
+    },
+    {
+      "id": "doc_great_wall_china",
+      "text": "The Great Wall of China stretches roughly 21,000 kilometers across northern China. Construction began in the 7th century BCE under the State of Chu. The Ming dynasty built most of the surviving wall between 1368 and 1644. The wall was constructed primarily to defend against nomadic incursions from the steppe."
+    },
+    {
+      "id": "doc_titanic",
+      "text": "The RMS Titanic was a British ocean liner operated by the White Star Line. It struck an iceberg in the North Atlantic on April 14, 1912 and sank early the next morning. More than 1,500 of its roughly 2,224 passengers and crew died. The wreck was discovered by Robert Ballard in 1985 at a depth of about 3,800 meters."
+    },
+    {
+      "id": "doc_renaissance",
+      "text": "The Renaissance was a period of cultural revival that began in Italy in the 14th century. It emphasized classical learning, humanism, and individual creativity. Leonardo da Vinci painted the Mona Lisa around 1503. Michelangelo completed the Sistine Chapel ceiling in 1512. The movement spread across Europe through the 16th century."
+    },
+    {
+      "id": "doc_atomic_structure",
+      "text": "An atom consists of a nucleus surrounded by electrons. The nucleus contains protons and neutrons, both of which are composed of quarks. Ernest Rutherford established the nuclear model of the atom in 1911. Niels Bohr proposed the quantized electron orbit model in 1913. Modern quantum mechanics describes electrons as probability distributions."
+    },
+    {
+      "id": "doc_jet_stream",
+      "text": "The jet stream is a fast-flowing band of air in the upper atmosphere. It typically forms near the boundary between cold polar and warm tropical air masses. Wind speeds in the jet stream often exceed 200 kilometers per hour. The polar jet stream strongly influences weather patterns across North America and Europe."
+    },
+    {
+      "id": "doc_blockchain",
+      "text": "A blockchain is a distributed ledger that records transactions across many computers. The Bitcoin blockchain launched on January 3, 2009 with a paper authored under the pseudonym Satoshi Nakamoto. Each block contains a cryptographic hash of the previous block. The structure makes the ledger resistant to retroactive modification."
+    }
+  ]
+}
