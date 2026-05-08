@@ -1,0 +1,72 @@
+{
+  "corpus": "seed_long_paragraphs",
+  "max_steps": 5,
+  "model": "meta-llama/Llama-3.3-70B-Instruct",
+  "renders": {
+    "doc_long_cell_biology": {
+      "1": "The Anderson sequence is a mitochondrial genome. \nCells arise from the cell arise principle. \nLynn Margulis develops the endosymbiotic theory. \nMatthias Schleiden formulates the cell theory. \nA membrane binds the nucleus. \nA membrane includes the nucleus. \nMitochondria originate from their own circular DNA. \nRobert Hooke coins the term. \nVan Leeuwenhoek uses a microscope. \nChloroplasts originate photosynthesis.",
+      "2": "The Anderson sequence is a mitochondrial genome. \nThe cell arises from a principle. \nChloroplasts originate photosynthesis. \nLynn Margulis develops the endosymbiotic theory. \nMatthias Schleiden formulates the cell theory. \nThe membrane binds the nucleus. \nThe membrane includes the nucleus. \nRobert Hooke coins the term. \nVan Leeuwenhoek uses a microscope."
+    },
+    "doc_long_climate_change": {
+      "1": "The Intergovernmental Panel on Climate Change calculates the raise in global temperature. \nThe global_mean_surface_temperature is expected to rise by degrees Celsius. \nA high percentage will exceed a large part. \nThe IPCC synthesises climate science. \nThe United Nations Environment Programme establishes the Intergovernmental Panel. \nSatellite observation begins at a certain percent. \nThat document shows a steady rise.",
+      "2": "The document shows a steady rise. \nA high percentage exceeds a large part. \nThe intergovernmental panel calculates a raise. \nThe IPCC synthesises climate science. \nThe Nations Environment Programme establishes the intergovernmental panel."
+    },
+    "doc_long_cryptography": {
+      "1": "Aes replaces older encryption standards. \nNeal_Koblitz offers equivalent security. \nPhil_Zimmermann brings key cryptography. \nQuantum_computers motivate ongoing research. \nRon_Rivest provides the first practical key encryption. \nRsa_security factors large composite numbers. \nThe Security_Agency publishes the Sha-256 hash function. \nVincent_Rijmen selects an encryption standard. \nWhitfield_Diffie shares a key exchange.",
+      "2": "Aes replaces older encryption standards. \nNeal Koblitz offers equivalent security. \nPhil Zimmermann brings key cryptography. \nQuantum computers motivate ongoing research. \nRon Rivest provides the first practical key encryption. \nA security agency publishes a hash function. \nVincent Rijmen selects an encryption standard."
+    },
+    "doc_long_evolution": {
+      "1": "Charles Darwin presents natural selection. \nThe discovery becomes a quantitative discipline. \nThe Genome Project completes sequencing. \nGregor Mendel establishes the basic principle. \nJames Watson builds the helix structure. \nKimura argues the neutral theory. \nRussel Wallace prompts a joint presentation. \nThe synthesis forms the modern evolutionary synthesis.",
+      "2": "Charles Darwin presents natural selection. \nGregor Mendel establishes the basic principle. \nJames Watson builds the helix structure. \nKimura argues the neutral theory. \nRussel Wallace prompts a joint presentation. \nThe discovery becomes a quantitative discipline. \nThe synthesis forms the modern evolutionary synthesis."
+    },
+    "doc_long_french_revolution": {
+      "1": "King Louis XVI is captured in France. \nNapoleon Bonaparte is crowned emperor. \nParisians storm the Bastille fortress. \nThe Third Estate pledges the Court Oath. \nA thousand people are executed during his reign.",
+      "2": "The Parisian storm Bastille fortress. \nThe Third Estate pledge the Court Oath."
+    },
+    "doc_long_human_genome": {
+      "1": "Celera Genomics uses the shotgun sequencing method. \nCelera Genomics makes an effort to publish the initial draft. \nThe encyclopedia helps to characterise the functional element. \nThe human genome helps to distribute the base pair. \nThe protein code has a count. \nThe States National Institutes coordinate the project.",
+      "2": "Celera Genomics publishes an initial draft. \nCelera Genomics sequences the human genome using the shotgun sequencing method. \nThe Encyclopedia characterises a functional element. \nThe human genome distributes a base pair. \nA protein code has a count. \nThe States National Institutes coordinate a project."
+    },
+    "doc_long_immune_system": {
+      "1": "Adaptive immunity produces a specific response. \nB cells produce antibodies. \nEdward Jenner protects against cowpox exposure. \nThe first mRNA vaccine receives emergency authorisation. \nFrank Macfarlane Burnet explains antibody specificity. \nThe immune system signals a molecule. \nInnate immunity provides an immediate non-specific defence. \nLouis Pasteur establishes the scientific basis. \nSusumu Tonegawa earns a Nobel Prize.",
+      "2": "Adaptive immunity produces a specific response. \nB cells produce antibodies. \nThe first mRNA vaccine receives emergency authorisation. \nFrank Macfarlane Burnet explains antibody specificity. \nThe immune system uses signal molecules. \nInnate immunity provides an immediate non-specific defence. \nLouis Pasteur establishes the scientific basis. \nSusumu Tonegawa earns a Nobel Prize.",
+      "3": "Adaptive immunity produces a specific response. \nB cells produce antibodies. \nThe first mRNA vaccine receives emergency authorisation. \nFrank Macfarlane Burnet explains antibody specificity. \nThe immune system uses signal molecules. \nInnate immunity provides an immediate non-specific defence. \nLouis Pasteur establishes the scientific basis. \nSusumu Tonegawa earns a Nobel Prize."
+    },
+    "doc_long_industrial_revolution": {
+      "1": "Edmund Cartwright automates weaving. \nThe first factory system decentralises the cottage industry. \nJames Hargreaves mechanises the textile industry. \nJames Watt increases efficiency. \nLiverpool demonstrates commercial viability. \nThe railway uses a steam locomotive. \nSteam revolutionises iron production. \nThe worker reshapes the social structure.",
+      "2": "The first factory system decentralises the cottage industry. \nJames Hargreaves mechanises the textile industry. \nJames Watt increases efficiency. \nLiverpool demonstrates commercial viability. \nThe railway uses a steam locomotive. \nSteam revolutionises iron production. \nThe worker reshapes the social structure."
+    },
+    "doc_long_internet_history": {
+      "1": "Arpanet connects a node. \nThe internet follows the deprecation. \nNCSA releases the Mosaic browser. \nTim_Berners_Lee introduces HTML. \nHTML becomes the foundation.",
+      "2": "The Arpanet connects a node. \nHTML becomes the foundation. \nThe Internet follows the deprecation. \nNCSA releases the Mosaic browser. \nTim_Berners_Lee introduces HTML."
+    },
+    "doc_long_neural_networks": {
+      "1": "Alexnet marks the beginning. \nFrank_Rosenblatt learns a simple pattern. \nHochreiter introduces a long term memory network. \nMinsky exposes a limitation. \nOpenai releases GPT-3. \nRumelhart popularises the backpropagation algorithm. \nVaswani introduces the transformer architecture. \nWarren_McCulloch proposes the first mathematical model. \nYann_Lecun demonstrates the power.",
+      "2": "Alexnet marks the beginning. \nFrank_Rosenblatt learns a simple pattern. \nHochreiter introduces a memory network. \nMinsky exposes a limitation. \nOpenai releases GPT-3. \nRumelhart popularises the backpropagation algorithm. \nVaswani introduces the transformer architecture. \nWarren_McCulloch proposes the first mathematical model. \nYann_Lecun demonstrates the power."
+    },
+    "doc_long_periodic_table": {
+      "1": "Dmitri Mendeleev organises the elements. \nElements create synthetic elements. \nGlenn Seaborg contributes to plutonium. \nHenry Moseley resolves the inconsistency. \nIUPAC names the oganesson element. \nThe modern periodic table confirms the confirmed elements.",
+      "2": "Dmitri Mendeleev organises the elements. \nElements create synthetic elements. \nHenry Moseley resolves inconsistencies. \nThe modern periodic table confirms confirmed elements."
+    },
+    "doc_long_quantum_mechanics": {
+      "1": "Carl Anderson observes which particles. \nThe Copenhagen interpretation understands quantum measurement. \nLight explains the photoelectric effect. \nMatter exhibits a like property. \nMax Planck resolves the ultraviolet catastrophe. \nNiels Bohr postulates discrete electron orbits. \nThat is matrix mechanics. \nWerner Heisenberg articulates the uncertainty principle.",
+      "2": "The Copenhagen interpretation helps understand quantum measurement. \nLight explains the photoelectric effect. \nMatter exhibits a wave-like property. \nMax Planck resolves the ultraviolet catastrophe. \nNiels Bohr postulates discrete electron orbits. \nThat is matrix mechanics. \nWerner Heisenberg articulates the uncertainty principle."
+    },
+    "doc_long_relativity": {
+      "1": "Albert Einstein establishes the constancy. \nArthur Eddington confirms which constancy. \nA distant galaxy supports the expansion prediction. \nEinstein causes gravity. \nThe Laser Wave Observatory confirms an old prediction. \nMc squares the clock. \nThe theory predicts gravitational redshift. \nEinstein knows the first exact solution.",
+      "2": "Albert Einstein establishes the constancy. \nA distant galaxy supports the expansion prediction. \nEinstein causes gravity. \nEinstein knows the first exact solution. \nThe Laser Wave Observatory confirms an old prediction. \nMc squares the clock. \nThe theory predicts gravitational redshift."
+    },
+    "doc_long_roman_empire": {
+      "1": "The Eastern Roman Empire continues until its last emperor. \nOctavian becomes the first Roman Emperor. \nThe Roman Empire reaches its territorial peak.",
+      "2": "Octavian becomes the first Roman Emperor. \nThe Roman Empire reaches its territorial peak."
+    },
+    "doc_long_solar_system": {
+      "1": "The asteroid belt contains a million objects. \nThe Earth possesses a natural satellite. \nThe International Astronomical Union reclassifies Pluto. \nJupiter is known to have a moon. \nMars shows extensive evidence. \nMercury is the closest planet. \nSaturn composes a famous ring. \nThe Sun powers itself. \nVenus exceeds 462 degree. \nThe wind reaches a kilometre.",
+      "2": "The asteroid belt contains objects. \nThe Earth possesses a natural satellite. \nThe International Astronomical Union reclassifies Pluto. \nMars shows extensive evidence. \nMercury is the closest planet. \nSaturn composes a famous ring. \nThe Sun powers itself. \nVenus exceeds a degree. \nThe wind reaches a kilometre."
+    },
+    "doc_long_world_war_two": {
+      "1": "The Allied invasion opens the Western European front. \nThe Battle of France is the first major battle to fight. \nGermany conquers France. \nGermany follows the fall of France. \nGermany invades Poland. \nGermany opens the largest military front in the East. \nJapan brings the United States into the war. \nThe United Kingdom honours its guarantee to Poland. \nThe United States drops an atomic bomb on Japan."
+    }
+  },
+  "schema": "sum.recursive_walk_render_snapshot.v1"
+}

@@ -1,0 +1,66 @@
+{
+  "corpus": "seed_news_briefs",
+  "max_steps": 5,
+  "model": "deepseek-ai/DeepSeek-V3-0324",
+  "renders": {
+    "doc_news_amazon_acquisition": {
+      "1": "Amazon renamed a unit.\nKiva builds floor robots.\nKiva Systems is a robotic startup.",
+      "2": "Amazon renamed a unit.\nKiva builds floor robots.\nKiva Systems is a robotic startup."
+    },
+    "doc_news_amazon_fire": {
+      "1": "The environment ministry deploys firefighters.\nA fire destroys hectares.\nPresident Lula declares a regional emergency.\nSmoke reaches S\u00e3o Paulo."
+    },
+    "doc_news_apple_event": {
+      "1": "Apple announces the iPhone.\nThe model launches in October.\nThe new phone uses a custom A19 chip.\nTim Cook unveils the device."
+    },
+    "doc_news_chile_solar": {
+      "1": "The Chilean commission operates a solar farm.\nChile exports excess power.\nEnel builds the project.\nThe facility generates megawatts.\nThe plant covers hectares.",
+      "2": "Chile exports excess power.  \nThe Chilean Commission operates a solar farm.  \nEnel builds the project.  \nThe facility generates a megawatt.  \nThe plant covers a hectare."
+    },
+    "doc_news_eu_carbon": {
+      "1": "The European Union approves a border tariff.\nFrance champions the regulation.\nThe policy prevents carbon leakage.\nThe tariff phases in over one year."
+    },
+    "doc_news_japan_shinkansen": {
+      "1": "The construction occurred last year.\n\nJR Central inaugurated the Chuo Shinkansen.\n\nThe line utilizes superconducting magnets.",
+      "2": "JR Central inaugurates the Chuo Shinkansen.\nThe line uses superconducting magnets."
+    },
+    "doc_news_nasa_artemis": {
+      "1": "The last day of the flight occurred.\nThe mission carried an astronaut.\nNASA launched Artemis.\nReid Wiseman commanded the crew.",
+      "2": "The mission carries an astronaut.\nNASA launches Artemis.\nReid Wiseman commands the crew."
+    },
+    "doc_news_olympics_swimming": {
+      "1": "An American swimmer breaks his own world record.\nErica Sullivan takes the silver.\nA finish occurs in a minute and a second.\nKatie Ledecky wins the meter freestyle.",
+      "2": "The American swimmer broke his own world record.\nErica Sullivan took the silver medal.\nKatie Ledecky won the meter freestyle.",
+      "3": "The American swimmer breaks her own world record.\nErica Sullivan takes the silver medal.\nKatie Ledecky wins the meter freestyle."
+    },
+    "doc_news_oscars_2024": {
+      "1": "The ceremony takes place.\n\nChristopher Nolan wins best director.\n\nCillian Murphy wins best actor.\n\nOppenheimer wins best picture.\n\nRobert Downey Jr. wins supporting actor.",
+      "2": "The ceremony takes place.\nChristopher Nolan wins best director.\nCillian Murphy wins best actor.\nOppenheimer wins best picture.\nRobert Downey Jr. wins supporting actor."
+    },
+    "doc_news_pfizer_trial": {
+      "1": "A drug treats advanced lung cancer.\nThe European Medicines Agency reviews data.\nPfizer reports positive results.\nA trial enrolls patients.",
+      "2": "The European Medicines Agency reviews a datum.  \nPfizer reports a positive result.  \nThe trial enrolls a patient."
+    },
+    "doc_news_spacex_launch": {
+      "1": "A rocket carries a Starlink satellite.\nSpaceX launches a rocket.\nSpaceX recovers a booster."
+    },
+    "doc_news_tesla_model": {
+      "1": "A compact car costs dollars.\nA model shares a platform.\nA production capacity reaches a unit.\nTesla manufactures vehicles.\nTesla unveils a model."
+    },
+    "doc_news_train_paris": {
+      "1": "France opens a speed rail line.  \nThe journey takes one hour.  \nThe route covers one kilometer.  \nSNCF operates the service."
+    },
+    "doc_news_uk_election": {
+      "1": "The Conservative Party loses a seat.\nKeir Starmer becomes the prime minister.\nThe Labour Party wins a seat.\nA new government takes office.",
+      "2": "The Conservative Party loses a seat.\nKeir Starmer becomes the Prime Minister.\nThe Labour Party wins a seat.\nThe new government takes office."
+    },
+    "doc_news_un_treaty": {
+      "1": "A member state ratifies an agreement.\nNorway signs the document.\nThe treaty enters into force.\nThe treaty protects marine biodiversity.\nThe United Nations adopts the seas treaty."
+    },
+    "doc_news_who_outbreak": {
+      "1": "The health ministry leads the response.\nA health worker vaccinates a child.\nThe outbreak begins in March.\nUNICEF supplies vaccine doses.\nThe World Health Organization tracks the measles outbreak.",
+      "2": "The health ministry leads the response.\nA health worker vaccinates a child.\nThe outbreak begins in March.\nThe World Health Organization tracks the measles outbreak."
+    }
+  },
+  "schema": "sum.recursive_walk_render_snapshot.v1"
+}

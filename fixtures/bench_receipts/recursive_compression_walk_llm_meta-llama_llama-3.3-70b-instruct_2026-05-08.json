@@ -1,0 +1,1749 @@
+{
+  "bench_digest": "aecd5532113e45e991d1c28ab7b29382353a64ee7a499a53866a65dddb4746ef",
+  "by_corpus": {
+    "seed_long_paragraphs": {
+      "aggregate": {
+        "per_doc_sums": {
+          "doc_long_cell_biology": {
+            "tau_0.50": {
+              "compression_ratio": 0.9,
+              "n_axioms": 9,
+              "recall_vs_original": 0.7,
+              "step": 1
+            },
+            "tau_0.70": {
+              "compression_ratio": 0.9,
+              "n_axioms": 9,
+              "recall_vs_original": 0.7,
+              "step": 1
+            },
+            "tau_0.90": {
+              "compression_ratio": 1.0,
+              "n_axioms": 10,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.99": {
+              "compression_ratio": 1.0,
+              "n_axioms": 10,
+              "recall_vs_original": 1.0,
+              "step": 0
+            }
+          },
+          "doc_long_climate_change": {
+            "tau_0.50": {
+              "compression_ratio": 1.0,
+              "n_axioms": 7,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.70": {
+              "compression_ratio": 1.0,
+              "n_axioms": 7,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.90": {
+              "compression_ratio": 1.0,
+              "n_axioms": 7,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.99": {
+              "compression_ratio": 1.0,
+              "n_axioms": 7,
+              "recall_vs_original": 1.0,
+              "step": 0
+            }
+          },
+          "doc_long_cryptography": {
+            "tau_0.50": {
+              "compression_ratio": 0.7778,
+              "n_axioms": 7,
+              "recall_vs_original": 0.6667,
+              "step": 1
+            },
+            "tau_0.70": {
+              "compression_ratio": 1.0,
+              "n_axioms": 9,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.90": {
+              "compression_ratio": 1.0,
+              "n_axioms": 9,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.99": {
+              "compression_ratio": 1.0,
+              "n_axioms": 9,
+              "recall_vs_original": 1.0,
+              "step": 0
+            }
+          },
+          "doc_long_evolution": {
+            "tau_0.50": {
+              "compression_ratio": 0.875,
+              "n_axioms": 7,
+              "recall_vs_original": 0.875,
+              "step": 1
+            },
+            "tau_0.70": {
+              "compression_ratio": 0.875,
+              "n_axioms": 7,
+              "recall_vs_original": 0.875,
+              "step": 1
+            },
+            "tau_0.90": {
+              "compression_ratio": 1.0,
+              "n_axioms": 8,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.99": {
+              "compression_ratio": 1.0,
+              "n_axioms": 8,
+              "recall_vs_original": 1.0,
+              "step": 0
+            }
+          },
+          "doc_long_french_revolution": {
+            "tau_0.50": {
+              "compression_ratio": 1.0,
+              "n_axioms": 5,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.70": {
+              "compression_ratio": 1.0,
+              "n_axioms": 5,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.90": {
+              "compression_ratio": 1.0,
+              "n_axioms": 5,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.99": {
+              "compression_ratio": 1.0,
+              "n_axioms": 5,
+              "recall_vs_original": 1.0,
+              "step": 0
+            }
+          },
+          "doc_long_human_genome": {
+            "tau_0.50": {
+              "compression_ratio": 1.0,
+              "n_axioms": 6,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.70": {
+              "compression_ratio": 1.0,
+              "n_axioms": 6,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.90": {
+              "compression_ratio": 1.0,
+              "n_axioms": 6,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.99": {
+              "compression_ratio": 1.0,
+              "n_axioms": 6,
+              "recall_vs_original": 1.0,
+              "step": 0
+            }
+          },
+          "doc_long_immune_system": {
+            "tau_0.50": {
+              "compression_ratio": 0.8889,
+              "n_axioms": 8,
+              "recall_vs_original": 0.8889,
+              "step": 1
+            },
+            "tau_0.70": {
+              "compression_ratio": 0.8889,
+              "n_axioms": 8,
+              "recall_vs_original": 0.8889,
+              "step": 1
+            },
+            "tau_0.90": {
+              "compression_ratio": 1.0,
+              "n_axioms": 9,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.99": {
+              "compression_ratio": 1.0,
+              "n_axioms": 9,
+              "recall_vs_original": 1.0,
+              "step": 0
+            }
+          },
+          "doc_long_industrial_revolution": {
+            "tau_0.50": {
+              "compression_ratio": 0.875,
+              "n_axioms": 7,
+              "recall_vs_original": 0.625,
+              "step": 1
+            },
+            "tau_0.70": {
+              "compression_ratio": 1.0,
+              "n_axioms": 8,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.90": {
+              "compression_ratio": 1.0,
+              "n_axioms": 8,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.99": {
+              "compression_ratio": 1.0,
+              "n_axioms": 8,
+              "recall_vs_original": 1.0,
+              "step": 0
+            }
+          },
+          "doc_long_internet_history": {
+            "tau_0.50": {
+              "compression_ratio": 1.0,
+              "n_axioms": 5,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.70": {
+              "compression_ratio": 1.0,
+              "n_axioms": 5,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.90": {
+              "compression_ratio": 1.0,
+              "n_axioms": 5,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.99": {
+              "compression_ratio": 1.0,
+              "n_axioms": 5,
+              "recall_vs_original": 1.0,
+              "step": 0
+            }
+          },
+          "doc_long_neural_networks": {
+            "tau_0.50": {
+              "compression_ratio": 1.0,
+              "n_axioms": 9,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.70": {
+              "compression_ratio": 1.0,
+              "n_axioms": 9,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.90": {
+              "compression_ratio": 1.0,
+              "n_axioms": 9,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.99": {
+              "compression_ratio": 1.0,
+              "n_axioms": 9,
+              "recall_vs_original": 1.0,
+              "step": 0
+            }
+          },
+          "doc_long_periodic_table": {
+            "tau_0.50": {
+              "compression_ratio": 0.6667,
+              "n_axioms": 4,
+              "recall_vs_original": 0.5,
+              "step": 1
+            },
+            "tau_0.70": {
+              "compression_ratio": 1.0,
+              "n_axioms": 6,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.90": {
+              "compression_ratio": 1.0,
+              "n_axioms": 6,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.99": {
+              "compression_ratio": 1.0,
+              "n_axioms": 6,
+              "recall_vs_original": 1.0,
+              "step": 0
+            }
+          },
+          "doc_long_quantum_mechanics": {
+            "tau_0.50": {
+              "compression_ratio": 0.875,
+              "n_axioms": 7,
+              "recall_vs_original": 0.75,
+              "step": 1
+            },
+            "tau_0.70": {
+              "compression_ratio": 0.875,
+              "n_axioms": 7,
+              "recall_vs_original": 0.75,
+              "step": 1
+            },
+            "tau_0.90": {
+              "compression_ratio": 1.0,
+              "n_axioms": 8,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.99": {
+              "compression_ratio": 1.0,
+              "n_axioms": 8,
+              "recall_vs_original": 1.0,
+              "step": 0
+            }
+          },
+          "doc_long_relativity": {
+            "tau_0.50": {
+              "compression_ratio": 0.875,
+              "n_axioms": 7,
+              "recall_vs_original": 0.75,
+              "step": 1
+            },
+            "tau_0.70": {
+              "compression_ratio": 0.875,
+              "n_axioms": 7,
+              "recall_vs_original": 0.75,
+              "step": 1
+            },
+            "tau_0.90": {
+              "compression_ratio": 1.0,
+              "n_axioms": 8,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.99": {
+              "compression_ratio": 1.0,
+              "n_axioms": 8,
+              "recall_vs_original": 1.0,
+              "step": 0
+            }
+          },
+          "doc_long_roman_empire": {
+            "tau_0.50": {
+              "compression_ratio": 0.6667,
+              "n_axioms": 2,
+              "recall_vs_original": 0.6667,
+              "step": 1
+            },
+            "tau_0.70": {
+              "compression_ratio": 1.0,
+              "n_axioms": 3,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.90": {
+              "compression_ratio": 1.0,
+              "n_axioms": 3,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.99": {
+              "compression_ratio": 1.0,
+              "n_axioms": 3,
+              "recall_vs_original": 1.0,
+              "step": 0
+            }
+          },
+          "doc_long_solar_system": {
+            "tau_0.50": {
+              "compression_ratio": 0.9,
+              "n_axioms": 9,
+              "recall_vs_original": 0.7,
+              "step": 1
+            },
+            "tau_0.70": {
+              "compression_ratio": 0.9,
+              "n_axioms": 9,
+              "recall_vs_original": 0.7,
+              "step": 1
+            },
+            "tau_0.90": {
+              "compression_ratio": 1.0,
+              "n_axioms": 10,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.99": {
+              "compression_ratio": 1.0,
+              "n_axioms": 10,
+              "recall_vs_original": 1.0,
+              "step": 0
+            }
+          },
+          "doc_long_world_war_two": {
+            "tau_0.50": {
+              "compression_ratio": 1.0,
+              "n_axioms": 9,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.70": {
+              "compression_ratio": 1.0,
+              "n_axioms": 9,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.90": {
+              "compression_ratio": 1.0,
+              "n_axioms": 9,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.99": {
+              "compression_ratio": 1.0,
+              "n_axioms": 9,
+              "recall_vs_original": 1.0,
+              "step": 0
+            }
+          }
+        },
+        "summary": {
+          "median_fixed_point_n_axioms": 7.0,
+          "median_fixed_point_recall_vs_original": 0.7,
+          "median_fixed_point_step": 2.0,
+          "median_n_axioms_original": 8.0,
+          "n_docs": 16,
+          "n_docs_collapsed_to_empty": 1
+        }
+      },
+      "per_doc_walks": {
+        "doc_long_cell_biology": {
+          "fixed_point_n_axioms": 9,
+          "fixed_point_recall_vs_original": 0.7,
+          "fixed_point_step": 2,
+          "n_axioms_original": 10,
+          "steps": [
+            {
+              "fixed_point": false,
+              "n_axioms": 10,
+              "note": "step-0 baseline (sieve from prose)",
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            {
+              "fixed_point": false,
+              "n_axioms": 9,
+              "note": "advance",
+              "recall_vs_original": 0.7,
+              "step": 1
+            },
+            {
+              "fixed_point": true,
+              "n_axioms": 9,
+              "note": "fixed-point",
+              "recall_vs_original": 0.7,
+              "step": 2
+            }
+          ]
+        },
+        "doc_long_climate_change": {
+          "fixed_point_n_axioms": 5,
+          "fixed_point_recall_vs_original": 0.2857,
+          "fixed_point_step": 2,
+          "n_axioms_original": 7,
+          "steps": [
+            {
+              "fixed_point": false,
+              "n_axioms": 7,
+              "note": "step-0 baseline (sieve from prose)",
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            {
+              "fixed_point": false,
+              "n_axioms": 5,
+              "note": "advance",
+              "recall_vs_original": 0.2857,
+              "step": 1
+            },
+            {
+              "fixed_point": true,
+              "n_axioms": 5,
+              "note": "fixed-point",
+              "recall_vs_original": 0.2857,
+              "step": 2
+            }
+          ]
+        },
+        "doc_long_cryptography": {
+          "fixed_point_n_axioms": 7,
+          "fixed_point_recall_vs_original": 0.6667,
+          "fixed_point_step": 2,
+          "n_axioms_original": 9,
+          "steps": [
+            {
+              "fixed_point": false,
+              "n_axioms": 9,
+              "note": "step-0 baseline (sieve from prose)",
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            {
+              "fixed_point": false,
+              "n_axioms": 7,
+              "note": "advance",
+              "recall_vs_original": 0.6667,
+              "step": 1
+            },
+            {
+              "fixed_point": true,
+              "n_axioms": 7,
+              "note": "fixed-point",
+              "recall_vs_original": 0.6667,
+              "step": 2
+            }
+          ]
+        },
+        "doc_long_evolution": {
+          "fixed_point_n_axioms": 7,
+          "fixed_point_recall_vs_original": 0.875,
+          "fixed_point_step": 2,
+          "n_axioms_original": 8,
+          "steps": [
+            {
+              "fixed_point": false,
+              "n_axioms": 8,
+              "note": "step-0 baseline (sieve from prose)",
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            {
+              "fixed_point": false,
+              "n_axioms": 7,
+              "note": "advance",
+              "recall_vs_original": 0.875,
+              "step": 1
+            },
+            {
+              "fixed_point": true,
+              "n_axioms": 7,
+              "note": "fixed-point",
+              "recall_vs_original": 0.875,
+              "step": 2
+            }
+          ]
+        },
+        "doc_long_french_revolution": {
+          "fixed_point_n_axioms": 0,
+          "fixed_point_recall_vs_original": 0.0,
+          "fixed_point_step": 3,
+          "n_axioms_original": 5,
+          "steps": [
+            {
+              "fixed_point": false,
+              "n_axioms": 5,
+              "note": "step-0 baseline (sieve from prose)",
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            {
+              "fixed_point": false,
+              "n_axioms": 2,
+              "note": "advance",
+              "recall_vs_original": 0.2,
+              "step": 1
+            },
+            {
+              "fixed_point": false,
+              "n_axioms": 0,
+              "note": "advance",
+              "recall_vs_original": 0.0,
+              "step": 2
+            },
+            {
+              "fixed_point": true,
+              "n_axioms": 0,
+              "note": "collapsed_to_empty",
+              "recall_vs_original": 0.0,
+              "step": 3
+            }
+          ]
+        },
+        "doc_long_human_genome": {
+          "fixed_point_n_axioms": 6,
+          "fixed_point_recall_vs_original": 0.6667,
+          "fixed_point_step": 2,
+          "n_axioms_original": 6,
+          "steps": [
+            {
+              "fixed_point": false,
+              "n_axioms": 6,
+              "note": "step-0 baseline (sieve from prose)",
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            {
+              "fixed_point": false,
+              "n_axioms": 6,
+              "note": "advance",
+              "recall_vs_original": 0.6667,
+              "step": 1
+            },
+            {
+              "fixed_point": true,
+              "n_axioms": 6,
+              "note": "fixed-point",
+              "recall_vs_original": 0.6667,
+              "step": 2
+            }
+          ]
+        },
+        "doc_long_immune_system": {
+          "fixed_point_n_axioms": 8,
+          "fixed_point_recall_vs_original": 0.7778,
+          "fixed_point_step": 3,
+          "n_axioms_original": 9,
+          "steps": [
+            {
+              "fixed_point": false,
+              "n_axioms": 9,
+              "note": "step-0 baseline (sieve from prose)",
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            {
+              "fixed_point": false,
+              "n_axioms": 8,
+              "note": "advance",
+              "recall_vs_original": 0.8889,
+              "step": 1
+            },
+            {
+              "fixed_point": false,
+              "n_axioms": 8,
+              "note": "advance",
+              "recall_vs_original": 0.7778,
+              "step": 2
+            },
+            {
+              "fixed_point": true,
+              "n_axioms": 8,
+              "note": "fixed-point",
+              "recall_vs_original": 0.7778,
+              "step": 3
+            }
+          ]
+        },
+        "doc_long_industrial_revolution": {
+          "fixed_point_n_axioms": 7,
+          "fixed_point_recall_vs_original": 0.625,
+          "fixed_point_step": 2,
+          "n_axioms_original": 8,
+          "steps": [
+            {
+              "fixed_point": false,
+              "n_axioms": 8,
+              "note": "step-0 baseline (sieve from prose)",
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            {
+              "fixed_point": false,
+              "n_axioms": 7,
+              "note": "advance",
+              "recall_vs_original": 0.625,
+              "step": 1
+            },
+            {
+              "fixed_point": true,
+              "n_axioms": 7,
+              "note": "fixed-point",
+              "recall_vs_original": 0.625,
+              "step": 2
+            }
+          ]
+        },
+        "doc_long_internet_history": {
+          "fixed_point_n_axioms": 5,
+          "fixed_point_recall_vs_original": 0.8,
+          "fixed_point_step": 2,
+          "n_axioms_original": 5,
+          "steps": [
+            {
+              "fixed_point": false,
+              "n_axioms": 5,
+              "note": "step-0 baseline (sieve from prose)",
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            {
+              "fixed_point": false,
+              "n_axioms": 5,
+              "note": "advance",
+              "recall_vs_original": 0.8,
+              "step": 1
+            },
+            {
+              "fixed_point": true,
+              "n_axioms": 5,
+              "note": "fixed-point",
+              "recall_vs_original": 0.8,
+              "step": 2
+            }
+          ]
+        },
+        "doc_long_neural_networks": {
+          "fixed_point_n_axioms": 9,
+          "fixed_point_recall_vs_original": 0.8889,
+          "fixed_point_step": 2,
+          "n_axioms_original": 9,
+          "steps": [
+            {
+              "fixed_point": false,
+              "n_axioms": 9,
+              "note": "step-0 baseline (sieve from prose)",
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            {
+              "fixed_point": false,
+              "n_axioms": 9,
+              "note": "advance",
+              "recall_vs_original": 0.8889,
+              "step": 1
+            },
+            {
+              "fixed_point": true,
+              "n_axioms": 9,
+              "note": "fixed-point",
+              "recall_vs_original": 0.8889,
+              "step": 2
+            }
+          ]
+        },
+        "doc_long_periodic_table": {
+          "fixed_point_n_axioms": 4,
+          "fixed_point_recall_vs_original": 0.5,
+          "fixed_point_step": 2,
+          "n_axioms_original": 6,
+          "steps": [
+            {
+              "fixed_point": false,
+              "n_axioms": 6,
+              "note": "step-0 baseline (sieve from prose)",
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            {
+              "fixed_point": false,
+              "n_axioms": 4,
+              "note": "advance",
+              "recall_vs_original": 0.5,
+              "step": 1
+            },
+            {
+              "fixed_point": true,
+              "n_axioms": 4,
+              "note": "fixed-point",
+              "recall_vs_original": 0.5,
+              "step": 2
+            }
+          ]
+        },
+        "doc_long_quantum_mechanics": {
+          "fixed_point_n_axioms": 7,
+          "fixed_point_recall_vs_original": 0.75,
+          "fixed_point_step": 2,
+          "n_axioms_original": 8,
+          "steps": [
+            {
+              "fixed_point": false,
+              "n_axioms": 8,
+              "note": "step-0 baseline (sieve from prose)",
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            {
+              "fixed_point": false,
+              "n_axioms": 7,
+              "note": "advance",
+              "recall_vs_original": 0.75,
+              "step": 1
+            },
+            {
+              "fixed_point": true,
+              "n_axioms": 7,
+              "note": "fixed-point",
+              "recall_vs_original": 0.75,
+              "step": 2
+            }
+          ]
+        },
+        "doc_long_relativity": {
+          "fixed_point_n_axioms": 7,
+          "fixed_point_recall_vs_original": 0.75,
+          "fixed_point_step": 2,
+          "n_axioms_original": 8,
+          "steps": [
+            {
+              "fixed_point": false,
+              "n_axioms": 8,
+              "note": "step-0 baseline (sieve from prose)",
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            {
+              "fixed_point": false,
+              "n_axioms": 7,
+              "note": "advance",
+              "recall_vs_original": 0.75,
+              "step": 1
+            },
+            {
+              "fixed_point": true,
+              "n_axioms": 7,
+              "note": "fixed-point",
+              "recall_vs_original": 0.75,
+              "step": 2
+            }
+          ]
+        },
+        "doc_long_roman_empire": {
+          "fixed_point_n_axioms": 2,
+          "fixed_point_recall_vs_original": 0.6667,
+          "fixed_point_step": 2,
+          "n_axioms_original": 3,
+          "steps": [
+            {
+              "fixed_point": false,
+              "n_axioms": 3,
+              "note": "step-0 baseline (sieve from prose)",
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            {
+              "fixed_point": false,
+              "n_axioms": 2,
+              "note": "advance",
+              "recall_vs_original": 0.6667,
+              "step": 1
+            },
+            {
+              "fixed_point": true,
+              "n_axioms": 2,
+              "note": "fixed-point",
+              "recall_vs_original": 0.6667,
+              "step": 2
+            }
+          ]
+        },
+        "doc_long_solar_system": {
+          "fixed_point_n_axioms": 9,
+          "fixed_point_recall_vs_original": 0.7,
+          "fixed_point_step": 2,
+          "n_axioms_original": 10,
+          "steps": [
+            {
+              "fixed_point": false,
+              "n_axioms": 10,
+              "note": "step-0 baseline (sieve from prose)",
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            {
+              "fixed_point": false,
+              "n_axioms": 9,
+              "note": "advance",
+              "recall_vs_original": 0.7,
+              "step": 1
+            },
+            {
+              "fixed_point": true,
+              "n_axioms": 9,
+              "note": "fixed-point",
+              "recall_vs_original": 0.7,
+              "step": 2
+            }
+          ]
+        },
+        "doc_long_world_war_two": {
+          "fixed_point_n_axioms": 9,
+          "fixed_point_recall_vs_original": 1.0,
+          "fixed_point_step": 1,
+          "n_axioms_original": 9,
+          "steps": [
+            {
+              "fixed_point": false,
+              "n_axioms": 9,
+              "note": "step-0 baseline (sieve from prose)",
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            {
+              "fixed_point": true,
+              "n_axioms": 9,
+              "note": "fixed-point",
+              "recall_vs_original": 1.0,
+              "step": 1
+            }
+          ]
+        }
+      }
+    },
+    "seed_news_briefs": {
+      "aggregate": {
+        "per_doc_sums": {
+          "doc_news_amazon_acquisition": {
+            "tau_0.50": {
+              "compression_ratio": 1.0,
+              "n_axioms": 3,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.70": {
+              "compression_ratio": 1.0,
+              "n_axioms": 3,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.90": {
+              "compression_ratio": 1.0,
+              "n_axioms": 3,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.99": {
+              "compression_ratio": 1.0,
+              "n_axioms": 3,
+              "recall_vs_original": 1.0,
+              "step": 0
+            }
+          },
+          "doc_news_amazon_fire": {
+            "tau_0.50": {
+              "compression_ratio": 1.0,
+              "n_axioms": 4,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.70": {
+              "compression_ratio": 1.0,
+              "n_axioms": 4,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.90": {
+              "compression_ratio": 1.0,
+              "n_axioms": 4,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.99": {
+              "compression_ratio": 1.0,
+              "n_axioms": 4,
+              "recall_vs_original": 1.0,
+              "step": 0
+            }
+          },
+          "doc_news_apple_event": {
+            "tau_0.50": {
+              "compression_ratio": 1.0,
+              "n_axioms": 4,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.70": {
+              "compression_ratio": 1.0,
+              "n_axioms": 4,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.90": {
+              "compression_ratio": 1.0,
+              "n_axioms": 4,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.99": {
+              "compression_ratio": 1.0,
+              "n_axioms": 4,
+              "recall_vs_original": 1.0,
+              "step": 0
+            }
+          },
+          "doc_news_chile_solar": {
+            "tau_0.50": {
+              "compression_ratio": 0.8,
+              "n_axioms": 4,
+              "recall_vs_original": 0.6,
+              "step": 1
+            },
+            "tau_0.70": {
+              "compression_ratio": 1.0,
+              "n_axioms": 5,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.90": {
+              "compression_ratio": 1.0,
+              "n_axioms": 5,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.99": {
+              "compression_ratio": 1.0,
+              "n_axioms": 5,
+              "recall_vs_original": 1.0,
+              "step": 0
+            }
+          },
+          "doc_news_eu_carbon": {
+            "tau_0.50": {
+              "compression_ratio": 1.0,
+              "n_axioms": 4,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.70": {
+              "compression_ratio": 1.0,
+              "n_axioms": 4,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.90": {
+              "compression_ratio": 1.0,
+              "n_axioms": 4,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.99": {
+              "compression_ratio": 1.0,
+              "n_axioms": 4,
+              "recall_vs_original": 1.0,
+              "step": 0
+            }
+          },
+          "doc_news_japan_shinkansen": {
+            "tau_0.50": {
+              "compression_ratio": 0.6667,
+              "n_axioms": 2,
+              "recall_vs_original": 0.6667,
+              "step": 1
+            },
+            "tau_0.70": {
+              "compression_ratio": 1.0,
+              "n_axioms": 3,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.90": {
+              "compression_ratio": 1.0,
+              "n_axioms": 3,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.99": {
+              "compression_ratio": 1.0,
+              "n_axioms": 3,
+              "recall_vs_original": 1.0,
+              "step": 0
+            }
+          },
+          "doc_news_nasa_artemis": {
+            "tau_0.50": {
+              "compression_ratio": 1.0,
+              "n_axioms": 4,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.70": {
+              "compression_ratio": 1.0,
+              "n_axioms": 4,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.90": {
+              "compression_ratio": 1.0,
+              "n_axioms": 4,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.99": {
+              "compression_ratio": 1.0,
+              "n_axioms": 4,
+              "recall_vs_original": 1.0,
+              "step": 0
+            }
+          },
+          "doc_news_olympics_swimming": {
+            "tau_0.50": {
+              "compression_ratio": 1.0,
+              "n_axioms": 4,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.70": {
+              "compression_ratio": 1.0,
+              "n_axioms": 4,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.90": {
+              "compression_ratio": 1.0,
+              "n_axioms": 4,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.99": {
+              "compression_ratio": 1.0,
+              "n_axioms": 4,
+              "recall_vs_original": 1.0,
+              "step": 0
+            }
+          },
+          "doc_news_oscars_2024": {
+            "tau_0.50": {
+              "compression_ratio": 1.0,
+              "n_axioms": 5,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.70": {
+              "compression_ratio": 1.0,
+              "n_axioms": 5,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.90": {
+              "compression_ratio": 1.0,
+              "n_axioms": 5,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.99": {
+              "compression_ratio": 1.0,
+              "n_axioms": 5,
+              "recall_vs_original": 1.0,
+              "step": 0
+            }
+          },
+          "doc_news_pfizer_trial": {
+            "tau_0.50": {
+              "compression_ratio": 0.75,
+              "n_axioms": 3,
+              "recall_vs_original": 0.5,
+              "step": 1
+            },
+            "tau_0.70": {
+              "compression_ratio": 1.0,
+              "n_axioms": 4,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.90": {
+              "compression_ratio": 1.0,
+              "n_axioms": 4,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.99": {
+              "compression_ratio": 1.0,
+              "n_axioms": 4,
+              "recall_vs_original": 1.0,
+              "step": 0
+            }
+          },
+          "doc_news_spacex_launch": {
+            "tau_0.50": {
+              "compression_ratio": 1.0,
+              "n_axioms": 3,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.70": {
+              "compression_ratio": 1.0,
+              "n_axioms": 3,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.90": {
+              "compression_ratio": 1.0,
+              "n_axioms": 3,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.99": {
+              "compression_ratio": 1.0,
+              "n_axioms": 3,
+              "recall_vs_original": 1.0,
+              "step": 0
+            }
+          },
+          "doc_news_tesla_model": {
+            "tau_0.50": {
+              "compression_ratio": 1.0,
+              "n_axioms": 5,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.70": {
+              "compression_ratio": 1.0,
+              "n_axioms": 5,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.90": {
+              "compression_ratio": 1.0,
+              "n_axioms": 5,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.99": {
+              "compression_ratio": 1.0,
+              "n_axioms": 5,
+              "recall_vs_original": 1.0,
+              "step": 0
+            }
+          },
+          "doc_news_train_paris": {
+            "tau_0.50": {
+              "compression_ratio": 1.0,
+              "n_axioms": 4,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.70": {
+              "compression_ratio": 1.0,
+              "n_axioms": 4,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.90": {
+              "compression_ratio": 1.0,
+              "n_axioms": 4,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.99": {
+              "compression_ratio": 1.0,
+              "n_axioms": 4,
+              "recall_vs_original": 1.0,
+              "step": 0
+            }
+          },
+          "doc_news_uk_election": {
+            "tau_0.50": {
+              "compression_ratio": 1.0,
+              "n_axioms": 4,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.70": {
+              "compression_ratio": 1.0,
+              "n_axioms": 4,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.90": {
+              "compression_ratio": 1.0,
+              "n_axioms": 4,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.99": {
+              "compression_ratio": 1.0,
+              "n_axioms": 4,
+              "recall_vs_original": 1.0,
+              "step": 0
+            }
+          },
+          "doc_news_un_treaty": {
+            "tau_0.50": {
+              "compression_ratio": 1.0,
+              "n_axioms": 5,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.70": {
+              "compression_ratio": 1.0,
+              "n_axioms": 5,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.90": {
+              "compression_ratio": 1.0,
+              "n_axioms": 5,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.99": {
+              "compression_ratio": 1.0,
+              "n_axioms": 5,
+              "recall_vs_original": 1.0,
+              "step": 0
+            }
+          },
+          "doc_news_who_outbreak": {
+            "tau_0.50": {
+              "compression_ratio": 0.8,
+              "n_axioms": 4,
+              "recall_vs_original": 0.8,
+              "step": 1
+            },
+            "tau_0.70": {
+              "compression_ratio": 0.8,
+              "n_axioms": 4,
+              "recall_vs_original": 0.8,
+              "step": 1
+            },
+            "tau_0.90": {
+              "compression_ratio": 1.0,
+              "n_axioms": 5,
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            "tau_0.99": {
+              "compression_ratio": 1.0,
+              "n_axioms": 5,
+              "recall_vs_original": 1.0,
+              "step": 0
+            }
+          }
+        },
+        "summary": {
+          "median_fixed_point_n_axioms": 4.0,
+          "median_fixed_point_recall_vs_original": 1.0,
+          "median_fixed_point_step": 1.0,
+          "median_n_axioms_original": 4.0,
+          "n_docs": 16,
+          "n_docs_collapsed_to_empty": 0
+        }
+      },
+      "per_doc_walks": {
+        "doc_news_amazon_acquisition": {
+          "fixed_point_n_axioms": 3,
+          "fixed_point_recall_vs_original": 0.6667,
+          "fixed_point_step": 2,
+          "n_axioms_original": 3,
+          "steps": [
+            {
+              "fixed_point": false,
+              "n_axioms": 3,
+              "note": "step-0 baseline (sieve from prose)",
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            {
+              "fixed_point": false,
+              "n_axioms": 3,
+              "note": "advance",
+              "recall_vs_original": 0.6667,
+              "step": 1
+            },
+            {
+              "fixed_point": true,
+              "n_axioms": 3,
+              "note": "fixed-point",
+              "recall_vs_original": 0.6667,
+              "step": 2
+            }
+          ]
+        },
+        "doc_news_amazon_fire": {
+          "fixed_point_n_axioms": 4,
+          "fixed_point_recall_vs_original": 1.0,
+          "fixed_point_step": 1,
+          "n_axioms_original": 4,
+          "steps": [
+            {
+              "fixed_point": false,
+              "n_axioms": 4,
+              "note": "step-0 baseline (sieve from prose)",
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            {
+              "fixed_point": true,
+              "n_axioms": 4,
+              "note": "fixed-point",
+              "recall_vs_original": 1.0,
+              "step": 1
+            }
+          ]
+        },
+        "doc_news_apple_event": {
+          "fixed_point_n_axioms": 4,
+          "fixed_point_recall_vs_original": 1.0,
+          "fixed_point_step": 1,
+          "n_axioms_original": 4,
+          "steps": [
+            {
+              "fixed_point": false,
+              "n_axioms": 4,
+              "note": "step-0 baseline (sieve from prose)",
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            {
+              "fixed_point": true,
+              "n_axioms": 4,
+              "note": "fixed-point",
+              "recall_vs_original": 1.0,
+              "step": 1
+            }
+          ]
+        },
+        "doc_news_chile_solar": {
+          "fixed_point_n_axioms": 4,
+          "fixed_point_recall_vs_original": 0.6,
+          "fixed_point_step": 2,
+          "n_axioms_original": 5,
+          "steps": [
+            {
+              "fixed_point": false,
+              "n_axioms": 5,
+              "note": "step-0 baseline (sieve from prose)",
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            {
+              "fixed_point": false,
+              "n_axioms": 4,
+              "note": "advance",
+              "recall_vs_original": 0.6,
+              "step": 1
+            },
+            {
+              "fixed_point": true,
+              "n_axioms": 4,
+              "note": "fixed-point",
+              "recall_vs_original": 0.6,
+              "step": 2
+            }
+          ]
+        },
+        "doc_news_eu_carbon": {
+          "fixed_point_n_axioms": 4,
+          "fixed_point_recall_vs_original": 1.0,
+          "fixed_point_step": 1,
+          "n_axioms_original": 4,
+          "steps": [
+            {
+              "fixed_point": false,
+              "n_axioms": 4,
+              "note": "step-0 baseline (sieve from prose)",
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            {
+              "fixed_point": true,
+              "n_axioms": 4,
+              "note": "fixed-point",
+              "recall_vs_original": 1.0,
+              "step": 1
+            }
+          ]
+        },
+        "doc_news_japan_shinkansen": {
+          "fixed_point_n_axioms": 2,
+          "fixed_point_recall_vs_original": 0.6667,
+          "fixed_point_step": 2,
+          "n_axioms_original": 3,
+          "steps": [
+            {
+              "fixed_point": false,
+              "n_axioms": 3,
+              "note": "step-0 baseline (sieve from prose)",
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            {
+              "fixed_point": false,
+              "n_axioms": 2,
+              "note": "advance",
+              "recall_vs_original": 0.6667,
+              "step": 1
+            },
+            {
+              "fixed_point": true,
+              "n_axioms": 2,
+              "note": "fixed-point",
+              "recall_vs_original": 0.6667,
+              "step": 2
+            }
+          ]
+        },
+        "doc_news_nasa_artemis": {
+          "fixed_point_n_axioms": 4,
+          "fixed_point_recall_vs_original": 1.0,
+          "fixed_point_step": 1,
+          "n_axioms_original": 4,
+          "steps": [
+            {
+              "fixed_point": false,
+              "n_axioms": 4,
+              "note": "step-0 baseline (sieve from prose)",
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            {
+              "fixed_point": true,
+              "n_axioms": 4,
+              "note": "fixed-point",
+              "recall_vs_original": 1.0,
+              "step": 1
+            }
+          ]
+        },
+        "doc_news_olympics_swimming": {
+          "fixed_point_n_axioms": 4,
+          "fixed_point_recall_vs_original": 1.0,
+          "fixed_point_step": 1,
+          "n_axioms_original": 4,
+          "steps": [
+            {
+              "fixed_point": false,
+              "n_axioms": 4,
+              "note": "step-0 baseline (sieve from prose)",
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            {
+              "fixed_point": true,
+              "n_axioms": 4,
+              "note": "fixed-point",
+              "recall_vs_original": 1.0,
+              "step": 1
+            }
+          ]
+        },
+        "doc_news_oscars_2024": {
+          "fixed_point_n_axioms": 5,
+          "fixed_point_recall_vs_original": 0.8,
+          "fixed_point_step": 2,
+          "n_axioms_original": 5,
+          "steps": [
+            {
+              "fixed_point": false,
+              "n_axioms": 5,
+              "note": "step-0 baseline (sieve from prose)",
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            {
+              "fixed_point": false,
+              "n_axioms": 5,
+              "note": "advance",
+              "recall_vs_original": 0.8,
+              "step": 1
+            },
+            {
+              "fixed_point": true,
+              "n_axioms": 5,
+              "note": "fixed-point",
+              "recall_vs_original": 0.8,
+              "step": 2
+            }
+          ]
+        },
+        "doc_news_pfizer_trial": {
+          "fixed_point_n_axioms": 3,
+          "fixed_point_recall_vs_original": 0.5,
+          "fixed_point_step": 2,
+          "n_axioms_original": 4,
+          "steps": [
+            {
+              "fixed_point": false,
+              "n_axioms": 4,
+              "note": "step-0 baseline (sieve from prose)",
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            {
+              "fixed_point": false,
+              "n_axioms": 3,
+              "note": "advance",
+              "recall_vs_original": 0.5,
+              "step": 1
+            },
+            {
+              "fixed_point": true,
+              "n_axioms": 3,
+              "note": "fixed-point",
+              "recall_vs_original": 0.5,
+              "step": 2
+            }
+          ]
+        },
+        "doc_news_spacex_launch": {
+          "fixed_point_n_axioms": 3,
+          "fixed_point_recall_vs_original": 1.0,
+          "fixed_point_step": 1,
+          "n_axioms_original": 3,
+          "steps": [
+            {
+              "fixed_point": false,
+              "n_axioms": 3,
+              "note": "step-0 baseline (sieve from prose)",
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            {
+              "fixed_point": true,
+              "n_axioms": 3,
+              "note": "fixed-point",
+              "recall_vs_original": 1.0,
+              "step": 1
+            }
+          ]
+        },
+        "doc_news_tesla_model": {
+          "fixed_point_n_axioms": 5,
+          "fixed_point_recall_vs_original": 1.0,
+          "fixed_point_step": 1,
+          "n_axioms_original": 5,
+          "steps": [
+            {
+              "fixed_point": false,
+              "n_axioms": 5,
+              "note": "step-0 baseline (sieve from prose)",
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            {
+              "fixed_point": true,
+              "n_axioms": 5,
+              "note": "fixed-point",
+              "recall_vs_original": 1.0,
+              "step": 1
+            }
+          ]
+        },
+        "doc_news_train_paris": {
+          "fixed_point_n_axioms": 4,
+          "fixed_point_recall_vs_original": 1.0,
+          "fixed_point_step": 1,
+          "n_axioms_original": 4,
+          "steps": [
+            {
+              "fixed_point": false,
+              "n_axioms": 4,
+              "note": "step-0 baseline (sieve from prose)",
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            {
+              "fixed_point": true,
+              "n_axioms": 4,
+              "note": "fixed-point",
+              "recall_vs_original": 1.0,
+              "step": 1
+            }
+          ]
+        },
+        "doc_news_uk_election": {
+          "fixed_point_n_axioms": 4,
+          "fixed_point_recall_vs_original": 1.0,
+          "fixed_point_step": 1,
+          "n_axioms_original": 4,
+          "steps": [
+            {
+              "fixed_point": false,
+              "n_axioms": 4,
+              "note": "step-0 baseline (sieve from prose)",
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            {
+              "fixed_point": true,
+              "n_axioms": 4,
+              "note": "fixed-point",
+              "recall_vs_original": 1.0,
+              "step": 1
+            }
+          ]
+        },
+        "doc_news_un_treaty": {
+          "fixed_point_n_axioms": 5,
+          "fixed_point_recall_vs_original": 1.0,
+          "fixed_point_step": 1,
+          "n_axioms_original": 5,
+          "steps": [
+            {
+              "fixed_point": false,
+              "n_axioms": 5,
+              "note": "step-0 baseline (sieve from prose)",
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            {
+              "fixed_point": true,
+              "n_axioms": 5,
+              "note": "fixed-point",
+              "recall_vs_original": 1.0,
+              "step": 1
+            }
+          ]
+        },
+        "doc_news_who_outbreak": {
+          "fixed_point_n_axioms": 4,
+          "fixed_point_recall_vs_original": 0.8,
+          "fixed_point_step": 2,
+          "n_axioms_original": 5,
+          "steps": [
+            {
+              "fixed_point": false,
+              "n_axioms": 5,
+              "note": "step-0 baseline (sieve from prose)",
+              "recall_vs_original": 1.0,
+              "step": 0
+            },
+            {
+              "fixed_point": false,
+              "n_axioms": 4,
+              "note": "advance",
+              "recall_vs_original": 0.8,
+              "step": 1
+            },
+            {
+              "fixed_point": true,
+              "n_axioms": 4,
+              "note": "fixed-point",
+              "recall_vs_original": 0.8,
+              "step": 2
+            }
+          ]
+        }
+      }
+    }
+  },
+  "compressor": "llm",
+  "corpora": [
+    "seed_long_paragraphs",
+    "seed_news_briefs"
+  ],
+  "llm_model": "meta-llama/Llama-3.3-70B-Instruct",
+  "max_steps": 5,
+  "method_notes": "Recursive walk: A\u2080 = sieve(prose); A_{k+1} = sieve(render(A_k)). Two compressors:\n  - deterministic: AutoregressiveTomeGenerator.generate_canonical renders bare lemmas ('The alice like cat.'); sieve cannot re-extract uninflected verbs \u2192 walk collapses to \u2205 at step 1.\n  - llm: live LLM renders axioms as grammatical prose; sieve re-extracts; walk produces a real recursive-compression curve.\nFixed point = first step whose axiom signature has been seen before (most often the previous step). The SUM at threshold \u03c4 is the smallest n_axioms along the walk with recall_vs_original \u2265 \u03c4. Capture-once-replay-forever for the llm arm (snapshot at fixtures/bench_renders/recursive_walk_<corpus>_<model>.json).",
+  "recall_thresholds": [
+    0.5,
+    0.7,
+    0.9,
+    0.99
+  ],
+  "schema": "sum.recursive_compression_walk.v1"
+}
