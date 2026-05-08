@@ -1,0 +1,68 @@
+{
+  "corpus": "seed_news_briefs",
+  "max_steps": 5,
+  "model": "gpt-4o-mini-2024-07-18",
+  "renders": {
+    "doc_news_amazon_acquisition": {
+      "1": "Amazon renames the unit. Kiva builds a floor robot. Kiva Systems is a robotic startup.",
+      "2": "Amazon renames the unit. Kiva builds a floor robot. Kiva Systems is a robotic startup."
+    },
+    "doc_news_amazon_fire": {
+      "1": "The environment ministry deploys a firefighter.  \nThe fire destroys a hectare.  \nPresident Lula declares a regional emergency.  \nThe smoke reaches S\u00e3o Paulo."
+    },
+    "doc_news_apple_event": {
+      "1": "Apple announces the iPhone. The model launches in October. The new phone uses a custom A19 chip. Tim Cook unveils the device."
+    },
+    "doc_news_chile_solar": {
+      "1": "The Chile Commission oversees a solar farm. Chile exports excess power. Enel builds the project. The facility generates megawatts. The plant covers hectares.",
+      "2": "Chile exports excess power. The Chilean commission oversees the solar farm. Enel builds the project. The facility generates megawatts. The plant covers hectares.",
+      "3": "Chile exports excess power. The Chilean Commission oversees the solar farm. Enel builds the project. The facility generates megawatts. The plant covers hectares."
+    },
+    "doc_news_eu_carbon": {
+      "1": "The European Union approves a border tariff. France champions regulation. The policy prevents carbon leakage. The tariff phases in a year."
+    },
+    "doc_news_japan_shinkansen": {
+      "1": "The construction occurred last year. Jr_Central inaugurates the Chuo Shinkansen. The line uses a superconducting magnet.",
+      "2": "Line superconducting magnet is a type of magnet. Line superconducting magnet exhibits superconductivity.",
+      "3": "The superconducting magnet is a type."
+    },
+    "doc_news_nasa_artemis": {
+      "1": "The flight is the last day. The mission will carry an astronaut. NASA will launch Artemis. Reid Wiseman commands the crew.",
+      "2": "The flight is the last day. The mission carries an astronaut. NASA launches Artemis. Reid Wiseman commands the crew."
+    },
+    "doc_news_olympics_swimming": {
+      "1": "The American swimmer breaks her own world record. Erica Sullivan takes silver. She finishes in a minute and seconds. Katie Ledecky wins the meter freestyle."
+    },
+    "doc_news_oscars_2024": {
+      "1": "The ceremony takes place. Christopher Nolan wins Best Director. Cillian Murphy wins Best Actor. Oppenheimer wins Best Picture. Robert Downey Jr. wins Supporting Actor.",
+      "2": "The ceremony takes place. Christopher Nolan wins Best Director. Cillian Murphy wins Best Actor. Oppenheimer wins Best Picture. Robert Downey Jr. wins Best Supporting Actor.",
+      "3": "The ceremony takes place. Christopher Nolan wins Best Director. Cillian Murphy wins Best Actor. Oppenheimer wins Best Picture. Robert Downey Jr. wins Supporting Actor."
+    },
+    "doc_news_pfizer_trial": {
+      "1": "A drug treats advanced lung cancer. The European Medicines Agency reviews data. Pfizer reports a positive result. A trial enrolls a patient.",
+      "2": "Pfizer reports a positive result. The trial enrolls a patient."
+    },
+    "doc_news_spacex_launch": {
+      "1": "The rocket carries the Starlink satellite. SpaceX launches the rocket. SpaceX recovers the booster."
+    },
+    "doc_news_tesla_model": {
+      "1": "The compact car costs dollar. The model shares the platform. The production capacity reaches unit. Tesla manufactures the vehicle. Tesla unveils the model.",
+      "2": "The model shares a platform. The production capacity reaches a unit. Tesla manufactures vehicles. Tesla unveils a model."
+    },
+    "doc_news_train_paris": {
+      "1": "France opens a speed rail line. The journey takes one hour. The route covers kilometers. SNCF operates the service."
+    },
+    "doc_news_uk_election": {
+      "1": "The Conservative Party loses a seat. Keir Starmer becomes Prime Minister. The Labour Party wins a seat. The new government takes office.",
+      "2": "The Conservative Party loses a seat. Keir Starmer becomes Prime Minister. The Labour Party wins a seat. The new government takes office."
+    },
+    "doc_news_un_treaty": {
+      "1": "The member state ratifies the agreement. Norway signs the document. The treaty enters force. The treaty protects marine biodiversity. The United Nations adopts the seas treaty."
+    },
+    "doc_news_who_outbreak": {
+      "1": "The health ministry leads the response. A health worker vaccinates a child. The outbreak begins in March. UNICEF supplies a vaccine dose. The World Health Organization tracks the measles outbreak.",
+      "2": "The health ministry leads the response. A health worker vaccinates a child. The outbreak begins in March. The World Health Organization tracks the measles outbreak."
+    }
+  },
+  "schema": "sum.recursive_walk_render_snapshot.v1"
+}
