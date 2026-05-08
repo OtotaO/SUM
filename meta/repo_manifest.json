@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-07T20:03:18Z",
+  "issued_at": "2026-05-08T05:51:11Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "707bfe038ba08d77633500bb21e69991222c00bc",
-    "head_short": "707bfe0",
-    "head_subject": "fix: hybrid_comparison digest pin accepts both architecture-stable outcomes (#165)",
-    "head_committer_date": "2026-05-07T07:42:20-04:00",
+    "head_sha": "49b2fbe4c79f4c45e2fc3ce501414e7056243d7f",
+    "head_short": "49b2fbe",
+    "head_subject": "research: \u00a74.9 performance characterisation \u2014 measured scaling + bottleneck profile (#166)",
+    "head_committer_date": "2026-05-07T16:16:15-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -108,6 +108,16 @@
         "path": "fixtures/bench_receipts/qid_accuracy_2026-04-28.json",
         "schema": "sum.qid_resolution_accuracy.v1",
         "issued_at": "2026-04-29T03:56:31Z"
+      },
+      {
+        "path": "fixtures/bench_receipts/recursive_compression_walk_deterministic_2026-05-08.json",
+        "schema": "sum.recursive_compression_walk.v1",
+        "issued_at": null
+      },
+      {
+        "path": "fixtures/bench_receipts/recursive_compression_walk_llm_gpt-4o-mini-2024-07-18_2026-05-08.json",
+        "schema": "sum.recursive_compression_walk.v1",
+        "issued_at": null
       },
       {
         "path": "fixtures/bench_receipts/s25_canonicalization_replay_2026-04-28.json",

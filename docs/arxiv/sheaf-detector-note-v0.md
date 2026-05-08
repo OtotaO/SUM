@@ -1469,6 +1469,66 @@ re-extraction → axiom-set compression) is feasible *today* on the
 current substrate up to medium-book corpora; library-scale
 recursive compression is gated on Phase 26.
 
+### 4.10 Recursive compression and the SUM (first measured pass)
+
+The original-vision claim — *the SUM is the incompressible point
+of a corpus, beyond which compression causes degradation* — was
+measured for the first time in this work. Two compressors were
+applied iteratively: $A_k = \text{sieve}(R(A_{k-1}))$, $A_0 =
+\text{sieve}(\text{prose}_0)$, until the axiom signature reaches a
+fixed point or a short cycle. The SUM at threshold $\tau$ is the
+smallest $A_k$ along the walk satisfying
+$\text{recall}_k = |A_k \cap A_0| / |A_0| \ge \tau$.
+
+Receipts:
+[`fixtures/bench_receipts/recursive_compression_walk_deterministic_2026-05-08.json`](../../fixtures/bench_receipts/recursive_compression_walk_deterministic_2026-05-08.json)
+(`bench_digest 778cd95d…d85090`) and
+[`fixtures/bench_receipts/recursive_compression_walk_llm_gpt-4o-mini-2024-07-18_2026-05-08.json`](../../fixtures/bench_receipts/recursive_compression_walk_llm_gpt-4o-mini-2024-07-18_2026-05-08.json)
+(`bench_digest 6d779aa4…edeb26`). Schema
+`sum.recursive_compression_walk.v1`. Pinned in
+`Tests/research/test_recursive_compression_walk.py`. Full analysis
+in `docs/RECURSIVE_COMPRESSION.md`.
+
+**Two arms, two findings.**
+
+| Compressor $R$ | Corpus | median fp step | median fp $n_\text{axioms}$ | median fp recall |
+|---|---|---:|---:|---:|
+| deterministic canonical | `seed_long_paragraphs` | 3 | 3 | $0.333$ |
+| deterministic canonical | `seed_news_briefs` | 2 | 1 | $0.225$ |
+| LLM grammatical (gpt-4o-mini) | `seed_long_paragraphs` | 2.5 | 7 | $0.59$ |
+| LLM grammatical (gpt-4o-mini) | `seed_news_briefs` | 2 | 4 | **$0.80$** |
+
+The deterministic arm reveals a **sieve↔canonical-tome asymmetry**
+not previously documented: $\text{sieve}(\text{canonical\_tome}(A))
+\ne A$ in general, because the canonical tome renders bare lemmas
+("The alice like cat.") that the sieve cannot fully re-extract.
+PROOF_BOUNDARY §1.1's "lossless round-trip" claim holds at the
+state-integer level (`parse(canonical_tome(S))` decodes to $S$'s
+state) but does *not* hold at the triple level. This is a
+substantive architectural finding the project did not have before.
+
+The LLM arm shows the recursive-compression vision is empirically
+real: median fixed-point recall of 0.59-0.80 vs the original axiom
+set, fixed points reached in 2-3 steps, and **per-doc SUM
+identification at multiple thresholds**. Three doc-categories
+emerged: *at-fixed-point* (recall stays at 1.0 — prose is its own
+SUM), *gradual decay to a stable subset*, *sharp drop to a
+different stable subset of similar size* (the LLM-paraphrase
+canonicalises to different triples that re-extract stably).
+
+**Implications for the original vision.** The SUM is corpus- and
+doc-dependent, computationally feasible on the current substrate
+up to medium-book corpora (per §4.9), and gates on Phase 26 for
+library scale. Multi-modal compression dispatch (axioms vs parables
+vs poetry vs quotes vs emoji) is a v0.5+ research direction this
+arm does not yet enter; cross-LLM-family extension would mirror
+the §4.7.x methodology directly. The substrate's
+sieve↔canonical-tome asymmetry should be explicit in any future
+narrative about the bidirectional pipeline — both rendering paths
+have valid uses, and which one is appropriate depends on whether
+the downstream consumer needs state-integer round-trip or
+triple-level round-trip.
+
 ## 5. Substrate context — six-regime audit-grade record-keeping
 
 The detector scores the consistency of a render against a source
