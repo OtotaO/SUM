@@ -1,0 +1,79 @@
+{
+  "corpus": "seed_long_paragraphs",
+  "max_steps": 5,
+  "model": "google/gemma-3-27b-it",
+  "renders": {
+    "doc_long_cell_biology": {
+      "1": "Anderson sequence concerns a mitochondrial genome.\nA cell arises from a principle.\nLynn Margulis develops endosymbiotic theory.\nMatthias Schleiden formulates cell theory.\nA membrane binds a nucleus.\nA membrane includes a nucleus.\nMitochondria originate their own circular DNA.\nRobert Hooke coins a term.\nVan Leeuwenhoek uses a microscope.\nPhotosynthesis originates which.\n\n\n\n",
+      "2": "Anderson sequence concerns the mitochondrial genome.\nA cell arises from a principle.\nLynn Margulis develops endosymbiotic theory.\nA membrane binds the nucleus.\nA membrane includes the nucleus.\nMitochondria originate their own circular DNA.\nVan Leeuwenhoek uses a microscope.\n\n\n\n"
+    },
+    "doc_long_climate_change": {
+      "1": "It calculates a raise in global temperature.\nThe global-mean-surface-temperature rises degrees Celsius.\nA high exceeds a part.\nThe IPCC synthesizes climate science.\nThe Nations Environment Programme establishes the Intergovernmental Panel.\nSatellite observation begins percent.\nThat document shows a steady rise.\n\n\n\n",
+      "2": "The document shows a steady rise.\nHigh values exceed a part.\nThe IPCC synthesizes climate science.\nIt calculates a raise.\nThe Nations Environment Programme establishes the Intergovernmental Panel.\nSatellite observation begins at a percent.\nTemperature rise reaches a degree Celsius.\n\n\n\n",
+      "3": "The document shows a steady rise.\nHigh value exceeds a part.\nThe IPCC synthesizes climate science.\nIt calculates a raise.\nThe Nations Environment Programme establishes the Intergovernmental Panel.\nTemperature rise reaches one degree Celsius.\n\n\n\n"
+    },
+    "doc_long_cryptography": {
+      "1": "AES replaces an older encryption standard.\nNeal Koblitz offers equivalent security.\nPhil Zimmermann brings key cryptography.\nA quantum computer motivates ongoing research.\nRon Rivest provides a first practical key encryption.\nRSA Security factors a large composite number.\nA security agency publishes the SHA-256 hash function.\nVincent Rijmen selects an encryption standard.\nWhitfield Diffie shares key exchange.\n\n\n\n",
+      "2": "AES replaces an older encryption standard.\nNeal Koblitz offers equivalent security.\nPhil Zimmermann brings key cryptography.\nRon Rivest provides the first practical key encryption.\nA security agency publishes the SHA-256 hash function.\nVincent Rijmen selects an encryption standard.\nWhitfield Diffie shares key exchange.\n\n\n\n"
+    },
+    "doc_long_evolution": {
+      "1": "Charles Darwin presents natural selection.\nDiscovery becomes a quantitative discipline.\nThe Genome Project completes sequencing.\nGregor Mendel establishes a basic principle.\nJames Watson builds a helix structure.\nKimura argues a neutral theory.\nRussel Wallace prompts a joint presentation.\nSynthesis forms the modern evolutionary synthesis.\n\n\n\n",
+      "2": "Charles Darwin presents natural selection.\nDiscovery becomes a quantitative discipline.\nGregor Mendel establishes a basic principle.\nJames Watson builds a helix structure.\nKimura argues for the neutral theory.\nRussel Wallace prompts a joint presentation.\nSynthesis forms the modern evolutionary synthesis.\n\n\n\n",
+      "3": "Charles Darwin presents natural selection.\nThe discovery becomes a quantitative discipline.\nGregor Mendel establishes a basic principle.\nJames Watson builds a helix structure.\nRussell Wallace prompts a joint presentation.\nThe synthesis forms the modern evolutionary synthesis.\n\n\n\n",
+      "4": "Charles Darwin presents natural selection.\nThe discovery becomes a quantitative discipline.\nGregor Mendel establishes a basic principle.\nJames Watson builds a helix structure.\nRussell Wallace prompts a joint presentation.\nThe synthesis forms the modern evolutionary synthesis.\n\n\n\n"
+    },
+    "doc_long_french_revolution": {
+      "1": "King Louis XVI captures France.\nNapoleon Bonaparte crowns Emperor.\nParisians storm Bastille fortress.\nThe Third Estate pledges the Court Oath.\nA thousand execute during the Reign [of Terror].\n\n\n\n",
+      "2": "King Louis XVI captures France.\nNapoleon Bonaparte crowns Emperor.\nParisians storm Bastille fortress.\nThe Third Estate pledges Court Oath.\n",
+      "3": "King Louis XVI captured France.\nNapoleon Bonaparte crowned himself emperor.\nParisians stormed the Bastille fortress.\n\n\n\n",
+      "4": "King Louis XVI captured France.\nNapoleon Bonaparte crowned emperor.\nParisians stormed Bastille fortress.\n\n\n\n"
+    },
+    "doc_long_human_genome": {
+      "1": "Celera Genomics employs a shotgun sequencing method.\nThe effort publishes an initial draft.\nAn encyclopedia characterises a functional element.\nThe human genome distributes a base pair.\nA protein codes a count.\nStates National Institutes coordinates the project.\n\n\n\n"
+    },
+    "doc_long_immune_system": {
+      "1": "Adaptive immunity produces a specific response.\nA B cell produces an antibody.\nEdward Jenner protected against cowpox exposure.\nThe first mRNA vaccine received emergency authorisation.\nFrank Macfarlane Burnet explained antibody specificity.\nThe immune system signals with a molecule.\nInnate immunity provides immediate, non-specific defence.\nLouis Pasteur established a scientific basis.\nSusumu Tonegawa earned a Nobel Prize.\n\n\n\n",
+      "2": "Adaptive immunity produces a specific response.\nB cell produces antibody.\nThe first mRNA vaccine receives emergency authorisation.\nInnate immunity provides immediate non-specific defence.\nLouis Pasteur establishes a scientific basis.\nMacfarlane Burnet explains antibody specificity.\nSusumu Tonegawa earns a Nobel Prize.\n\n\n\n"
+    },
+    "doc_long_industrial_revolution": {
+      "1": "Edmund Cartwright automates automated weaving.\nThe first factory system decentralises decentralised cottage industry.\nJames Hargreaves mechanises the textile industry.\nJames Watt increases efficiency.\nLiverpool demonstrates commercial viability.\nThe railway uses a steam locomotive.\nUse revolutionises iron production.\nA worker reshapes social structure.\n\n\n\n",
+      "2": "The first factory system decentralizes cottage industry.\nJames Hargreaves mechanizes the textile industry.\nJames Watt increases efficiency.\nLiverpool demonstrates commercial viability.\nThe railway uses a steam locomotive.\nThe worker reshapes social structure.\n\n\n\n",
+      "3": "The first factory system decentralizes cottage industry.\nJames Hargreaves mechanizes the textile industry.\nJames Watt increases efficiency.\nLiverpool demonstrates commercial viability.\nThe railway uses a steam locomotive.\nThe worker reshapes the social structure.\n\n\n\n"
+    },
+    "doc_long_internet_history": {
+      "1": "ARPANET connects a node.\nThe internet follows deprecation.\nNCSA releases the Mosaic browser.\nTim Berners-Lee introduces HTML.\nHTML becomes the foundation.\n",
+      "2": "ARPANET connects a node.\nHTML becomes the foundation.\nThe internet follows deprecation.\nNCSA releases the Mosaic browser.\nTim Berners-Lee introduces HTML.\n\n\n\n"
+    },
+    "doc_long_neural_networks": {
+      "1": "AlexNet marks the beginning.\nFrank Rosenblatt learns a simple pattern.\nHochreiter introduces a long term memory network.\nMinsky exposes a limitation.\nOpenAI releases GPT-3.\nRumelhart popularises the backpropagation algorithm.\nVaswani introduces the transformer architecture.\nWarren McCulloch proposes the first mathematical model.\nYann LeCun demonstrates power.\n\n\n\n",
+      "2": "AlexNet marks the beginning.\nFrank Rosenblatt learns a simple pattern.\nHochreiter introduces a memory network.\nMinsky exposes a limitation.\nOpenAI releases GPT-3.\nRumelhart popularises the backpropagation algorithm.\nVaswani introduces the transformer architecture.\nWarren McCulloch proposes the first mathematical model.\nYann LeCun demonstrates power.\n\n\n\n"
+    },
+    "doc_long_periodic_table": {
+      "1": "Dmitri Mendeleev organizes the element.\nSomeone creates synthetic element.\nGlenn Seaborg contributes plutonium.\nHenry Moseley resolves inconsistency.\nIUPAC names oganesson the element.\nThe modern periodic table confirms confirmed element.\n\n\n\n",
+      "2": "Dmitri Mendeleev organizes an element.\nGlenn Seaborg contributes plutonium.\nHenry Moseley resolves an inconsistency.\nIUPAC names oganesson an element.\nThe modern periodic table confirms a confirmed element.\nSomeone creates a synthetic element.\n\n\n\n"
+    },
+    "doc_long_quantum_mechanics": {
+      "1": "Carl Anderson observes which.\nCopenhagen interpretation understands quantum measurement.\nLight explains photoelectric effect.\nMatter exhibits like property.\nMax Planck resolves ultraviolet catastrophe.\nNiels Bohr postulates discrete electron orbit.\nThat is matrix mechanic.\nWerner Heisenberg articulates uncertainty principle.\n\n\n\n",
+      "2": "Carl Anderson observes which.\nCopenhagen interpretation understands quantum measurement.\nLight explains photoelectric effect.\nMatter exhibits property.\nMax Planck resolves ultraviolet catastrophe.\nNiels Bohr postulates discrete electron orbit.\nThat is matrix mechanic.\n\n\n\n"
+    },
+    "doc_long_relativity": {
+      "1": "Albert Einstein establishes constancy.\nArthur Eddington confirms which.\nA distant galaxy supports expansion prediction.\nEinstein causes gravity.\nA laser wave observatory confirms an old prediction.\nMC squared clocks.\nTheory predicts gravitational redshift.\nSomeone knows the first exact solution.\n\n\n\n",
+      "2": "Arthur Eddington confirms which.\nA distant galaxy supports expansion prediction.\nEinstein causes gravity.\nMC squared squared is a clock.\nSomeone knows the first exact solution.\nTheory predicts gravitational redshift.\n",
+      "3": "Arthur Eddington confirms which.\nA distant galaxy supports expansion prediction.\nEinstein causes gravity.\nSomeone knows the first exact solution.\nSquared-square is a clock.\nTheory predicts gravitational redshift.\n\n\n\n"
+    },
+    "doc_long_roman_empire": {
+      "1": "The Eastern Roman Empire continues with its last emperor.\nOctavian becomes the first Roman emperor.\nThe Roman Empire reaches its territorial peak.\n\n\n\n",
+      "2": "Octavian became the first Roman emperor.\nThe Roman Empire reached its territorial peak.\n\n\n\n"
+    },
+    "doc_long_solar_system": {
+      "1": "The asteroid belt contains millions. Earth possesses a natural satellite. The International Astronomical Union reclassifies Pluto. Jupiter knows sixty-nine moons. Mars shows extensive evidence. Mercury is the closest planet. Saturn composes famous rings. The sun powers itself. Venus exceeds four hundred sixty-four degrees. Wind reaches two hundred fifty kilometres.\n\n\n\n",
+      "2": "The asteroid belt contains millions.\nEarth possesses a natural satellite.\nThe International Astronomical Union reclassified Pluto.\nJupiter knows moons.\nMars shows extensive evidence.\nMercury is the closest planet.\nSaturn composes a famous ring.\nThe sun powers itself.\nVenus exceeds degrees.\nWind reaches kilometres.\n\n\n\n"
+    },
+    "doc_long_world_war_two": {
+      "1": "Allied invasion opens a western European front.\nBattle fights the first major battle.\nGermany conquers France.\nGermany follows a fall.\nGermany invades Poland.\nGermany opens the largest military front.\nJapan brings the United States [into the war].\nUnited Kingdom honors a guarantee.\nUnited States drops an atomic bomb.\n\n\n\n",
+      "2": "Allied invasion opens a western European front.\nThe battle fights as the first major battle.\nGermany conquers France.\nGermany follows a fall.\nGermany invades Poland.\nGermany opens the largest military front.\nJapan brings the United States into the war.\nThe United Kingdom honors a guarantee.\nThe United States drops an atomic bomb.\n\n\n\n",
+      "3": "Allied invasion opens a western European front.\nGermany conquers France.\nGermany follows a fall.\nGermany invades Poland.\nGermany opens the largest military front.\nJapan brings the United States into the war.\nThe United Kingdom honors a guarantee.\nThe United States drops an atomic bomb.\n\n\n\n"
+    }
+  },
+  "schema": "sum.recursive_walk_render_snapshot.v1"
+}

@@ -1,0 +1,4973 @@
+{
+  "bench_digest": "1361d1376d12812bec82ea81175d5f52db987e28926505d6013e3e555f848c14",
+  "corpora": [
+    "seed_long_paragraphs",
+    "seed_news_briefs"
+  ],
+  "method_notes": "Aggregator reads N sum.recursive_compression_walk.v1 receipts (one per LLM model, each covering 1+ corpora) and produces a per-(corpus, doc, \u03c4) agreement classification: SUM_AGREES_ALL_MODELS / SUM_AGREES_MAJORITY / SUM_MODEL_DEPENDENT / SUM_NEVER_REACHED. Aggregate per-corpus label is RECURSIVE_COMPRESSION_MODEL_STABLE if \u226566% of docs reach majority-or-better agreement at \u03c4=0.50; RECURSIVE_COMPRESSION_MODEL_DEPENDENT if \u226534% are model-dependent. The aggregator is a pure function over the input receipts; no LLM calls.",
+  "models": [
+    "Qwen/Qwen3.6-35B-A3B",
+    "deepseek-ai/DeepSeek-V3-0324",
+    "google/gemma-3-27b-it",
+    "gpt-4o-mini-2024-07-18",
+    "meta-llama/Llama-3.3-70B-Instruct"
+  ],
+  "overall_finding": "RECURSIVE_COMPRESSION_MODEL_STABLE_ACROSS_CORPORA",
+  "per_corpus_aggregates": {
+    "seed_long_paragraphs": {
+      "corpus": "seed_long_paragraphs",
+      "joint_by_tau": {
+        "tau_0.50": {
+          "agreement_counts": {
+            "SUM_AGREES_ALL_MODELS": 16
+          },
+          "label": "RECURSIVE_COMPRESSION_MODEL_STABLE",
+          "n_docs": 16
+        },
+        "tau_0.70": {
+          "agreement_counts": {
+            "SUM_AGREES_ALL_MODELS": 16
+          },
+          "label": "RECURSIVE_COMPRESSION_MODEL_STABLE",
+          "n_docs": 16
+        },
+        "tau_0.90": {
+          "agreement_counts": {
+            "SUM_AGREES_ALL_MODELS": 16
+          },
+          "label": "RECURSIVE_COMPRESSION_MODEL_STABLE",
+          "n_docs": 16
+        },
+        "tau_0.99": {
+          "agreement_counts": {
+            "SUM_AGREES_ALL_MODELS": 16
+          },
+          "label": "RECURSIVE_COMPRESSION_MODEL_STABLE",
+          "n_docs": 16
+        }
+      },
+      "models": [
+        "Qwen/Qwen3.6-35B-A3B",
+        "deepseek-ai/DeepSeek-V3-0324",
+        "google/gemma-3-27b-it",
+        "gpt-4o-mini-2024-07-18",
+        "meta-llama/Llama-3.3-70B-Instruct"
+      ],
+      "per_doc_agreement": {
+        "doc_long_cell_biology": {
+          "tau_0.50": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 10,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 0.9,
+                "n_axioms": 9,
+                "recall_vs_original": 0.5,
+                "step": 1
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 0.7,
+                "n_axioms": 7,
+                "recall_vs_original": 0.6,
+                "step": 1
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 0.8,
+                "n_axioms": 8,
+                "recall_vs_original": 0.5,
+                "step": 2
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 0.9,
+                "n_axioms": 9,
+                "recall_vs_original": 0.7,
+                "step": 1
+              }
+            }
+          },
+          "tau_0.70": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 10,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 10,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 10,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 10,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 0.9,
+                "n_axioms": 9,
+                "recall_vs_original": 0.7,
+                "step": 1
+              }
+            }
+          },
+          "tau_0.90": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 10,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 10,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 10,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 10,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 10,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.99": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 10,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 10,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 10,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 10,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 10,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          }
+        },
+        "doc_long_climate_change": {
+          "tau_0.50": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 7,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 7,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 7,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 7,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 7,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.70": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 7,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 7,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 7,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 7,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 7,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.90": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 7,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 7,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 7,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 7,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 7,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.99": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 7,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 7,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 7,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 7,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 7,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          }
+        },
+        "doc_long_cryptography": {
+          "tau_0.50": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 0.7778,
+                "n_axioms": 7,
+                "recall_vs_original": 0.7778,
+                "step": 1
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 0.7778,
+                "n_axioms": 7,
+                "recall_vs_original": 0.7778,
+                "step": 2
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 0.7778,
+                "n_axioms": 7,
+                "recall_vs_original": 0.7778,
+                "step": 1
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 0.8889,
+                "n_axioms": 8,
+                "recall_vs_original": 0.8889,
+                "step": 1
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 0.7778,
+                "n_axioms": 7,
+                "recall_vs_original": 0.6667,
+                "step": 1
+              }
+            }
+          },
+          "tau_0.70": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 0.7778,
+                "n_axioms": 7,
+                "recall_vs_original": 0.7778,
+                "step": 1
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 0.7778,
+                "n_axioms": 7,
+                "recall_vs_original": 0.7778,
+                "step": 2
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 0.7778,
+                "n_axioms": 7,
+                "recall_vs_original": 0.7778,
+                "step": 1
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 0.8889,
+                "n_axioms": 8,
+                "recall_vs_original": 0.8889,
+                "step": 1
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.90": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.99": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          }
+        },
+        "doc_long_evolution": {
+          "tau_0.50": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 0.875,
+                "n_axioms": 7,
+                "recall_vs_original": 0.75,
+                "step": 1
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 0.75,
+                "n_axioms": 6,
+                "recall_vs_original": 0.75,
+                "step": 2
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 0.875,
+                "n_axioms": 7,
+                "recall_vs_original": 0.875,
+                "step": 1
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 0.875,
+                "n_axioms": 7,
+                "recall_vs_original": 0.875,
+                "step": 1
+              }
+            }
+          },
+          "tau_0.70": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 0.875,
+                "n_axioms": 7,
+                "recall_vs_original": 0.75,
+                "step": 1
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 0.75,
+                "n_axioms": 6,
+                "recall_vs_original": 0.75,
+                "step": 2
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 0.875,
+                "n_axioms": 7,
+                "recall_vs_original": 0.875,
+                "step": 1
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 0.875,
+                "n_axioms": 7,
+                "recall_vs_original": 0.875,
+                "step": 1
+              }
+            }
+          },
+          "tau_0.90": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.99": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          }
+        },
+        "doc_long_french_revolution": {
+          "tau_0.50": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 0.6,
+                "n_axioms": 3,
+                "recall_vs_original": 0.6,
+                "step": 3
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.70": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.90": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.99": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          }
+        },
+        "doc_long_human_genome": {
+          "tau_0.50": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.70": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.90": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.99": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          }
+        },
+        "doc_long_immune_system": {
+          "tau_0.50": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 0.8889,
+                "n_axioms": 8,
+                "recall_vs_original": 0.7778,
+                "step": 1
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 0.8889,
+                "n_axioms": 8,
+                "recall_vs_original": 0.5556,
+                "step": 1
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 0.7778,
+                "n_axioms": 7,
+                "recall_vs_original": 0.6667,
+                "step": 1
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 0.8889,
+                "n_axioms": 8,
+                "recall_vs_original": 0.6667,
+                "step": 1
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 0.8889,
+                "n_axioms": 8,
+                "recall_vs_original": 0.8889,
+                "step": 1
+              }
+            }
+          },
+          "tau_0.70": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 0.8889,
+                "n_axioms": 8,
+                "recall_vs_original": 0.7778,
+                "step": 1
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 0.8889,
+                "n_axioms": 8,
+                "recall_vs_original": 0.8889,
+                "step": 1
+              }
+            }
+          },
+          "tau_0.90": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.99": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          }
+        },
+        "doc_long_industrial_revolution": {
+          "tau_0.50": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 0.875,
+                "n_axioms": 7,
+                "recall_vs_original": 0.875,
+                "step": 1
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 0.875,
+                "n_axioms": 7,
+                "recall_vs_original": 0.75,
+                "step": 1
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 0.75,
+                "n_axioms": 6,
+                "recall_vs_original": 0.625,
+                "step": 1
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 0.875,
+                "n_axioms": 7,
+                "recall_vs_original": 0.5,
+                "step": 1
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 0.875,
+                "n_axioms": 7,
+                "recall_vs_original": 0.625,
+                "step": 1
+              }
+            }
+          },
+          "tau_0.70": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 0.875,
+                "n_axioms": 7,
+                "recall_vs_original": 0.875,
+                "step": 1
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 0.875,
+                "n_axioms": 7,
+                "recall_vs_original": 0.75,
+                "step": 1
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.90": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.99": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          }
+        },
+        "doc_long_internet_history": {
+          "tau_0.50": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.70": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.90": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.99": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          }
+        },
+        "doc_long_neural_networks": {
+          "tau_0.50": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.70": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.90": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.99": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          }
+        },
+        "doc_long_periodic_table": {
+          "tau_0.50": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 0.8333,
+                "n_axioms": 5,
+                "recall_vs_original": 0.5,
+                "step": 1
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 0.6667,
+                "n_axioms": 4,
+                "recall_vs_original": 0.5,
+                "step": 1
+              }
+            }
+          },
+          "tau_0.70": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.90": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.99": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 6,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          }
+        },
+        "doc_long_quantum_mechanics": {
+          "tau_0.50": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 0.875,
+                "n_axioms": 7,
+                "recall_vs_original": 0.75,
+                "step": 1
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 0.875,
+                "n_axioms": 7,
+                "recall_vs_original": 0.625,
+                "step": 1
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 0.875,
+                "n_axioms": 7,
+                "recall_vs_original": 0.75,
+                "step": 1
+              }
+            }
+          },
+          "tau_0.70": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 0.875,
+                "n_axioms": 7,
+                "recall_vs_original": 0.75,
+                "step": 1
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 0.875,
+                "n_axioms": 7,
+                "recall_vs_original": 0.75,
+                "step": 1
+              }
+            }
+          },
+          "tau_0.90": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.99": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          }
+        },
+        "doc_long_relativity": {
+          "tau_0.50": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 0.875,
+                "n_axioms": 7,
+                "recall_vs_original": 0.75,
+                "step": 1
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 0.75,
+                "n_axioms": 6,
+                "recall_vs_original": 0.5,
+                "step": 1
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 0.75,
+                "n_axioms": 6,
+                "recall_vs_original": 0.625,
+                "step": 2
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 0.875,
+                "n_axioms": 7,
+                "recall_vs_original": 0.75,
+                "step": 1
+              }
+            }
+          },
+          "tau_0.70": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 0.875,
+                "n_axioms": 7,
+                "recall_vs_original": 0.75,
+                "step": 1
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 0.875,
+                "n_axioms": 7,
+                "recall_vs_original": 0.75,
+                "step": 1
+              }
+            }
+          },
+          "tau_0.90": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.99": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 8,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          }
+        },
+        "doc_long_roman_empire": {
+          "tau_0.50": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 0.6667,
+                "n_axioms": 2,
+                "recall_vs_original": 0.6667,
+                "step": 1
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 0.6667,
+                "n_axioms": 2,
+                "recall_vs_original": 0.6667,
+                "step": 1
+              }
+            }
+          },
+          "tau_0.70": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.90": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.99": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          }
+        },
+        "doc_long_solar_system": {
+          "tau_0.50": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 10,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 10,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 10,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 10,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 0.9,
+                "n_axioms": 9,
+                "recall_vs_original": 0.7,
+                "step": 1
+              }
+            }
+          },
+          "tau_0.70": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 10,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 10,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 10,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 10,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 0.9,
+                "n_axioms": 9,
+                "recall_vs_original": 0.7,
+                "step": 1
+              }
+            }
+          },
+          "tau_0.90": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 10,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 10,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 10,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 10,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 10,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.99": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 10,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 10,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 10,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 10,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 10,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          }
+        },
+        "doc_long_world_war_two": {
+          "tau_0.50": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 0.8889,
+                "n_axioms": 8,
+                "recall_vs_original": 0.7778,
+                "step": 2
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.70": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 0.8889,
+                "n_axioms": 8,
+                "recall_vs_original": 0.7778,
+                "step": 2
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.90": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.99": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 9,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          }
+        }
+      },
+      "per_model_summary": {
+        "Qwen/Qwen3.6-35B-A3B": {
+          "median_fixed_point_n_axioms": 7.0,
+          "median_fixed_point_recall_vs_original": 0.7778,
+          "median_fixed_point_step": 2.0,
+          "n_docs_collapsed_to_empty": 0
+        },
+        "deepseek-ai/DeepSeek-V3-0324": {
+          "median_fixed_point_n_axioms": 7.0,
+          "median_fixed_point_recall_vs_original": 0.6459,
+          "median_fixed_point_step": 2.0,
+          "n_docs_collapsed_to_empty": 0
+        },
+        "google/gemma-3-27b-it": {
+          "median_fixed_point_n_axioms": 6.0,
+          "median_fixed_point_recall_vs_original": 0.6459,
+          "median_fixed_point_step": 2.0,
+          "n_docs_collapsed_to_empty": 0
+        },
+        "gpt-4o-mini-2024-07-18": {
+          "median_fixed_point_n_axioms": 7.0,
+          "median_fixed_point_recall_vs_original": 0.5903,
+          "median_fixed_point_step": 2.5,
+          "n_docs_collapsed_to_empty": 0
+        },
+        "meta-llama/Llama-3.3-70B-Instruct": {
+          "median_fixed_point_n_axioms": 7.0,
+          "median_fixed_point_recall_vs_original": 0.7,
+          "median_fixed_point_step": 2.0,
+          "n_docs_collapsed_to_empty": 1
+        }
+      }
+    },
+    "seed_news_briefs": {
+      "corpus": "seed_news_briefs",
+      "joint_by_tau": {
+        "tau_0.50": {
+          "agreement_counts": {
+            "SUM_AGREES_ALL_MODELS": 16
+          },
+          "label": "RECURSIVE_COMPRESSION_MODEL_STABLE",
+          "n_docs": 16
+        },
+        "tau_0.70": {
+          "agreement_counts": {
+            "SUM_AGREES_ALL_MODELS": 16
+          },
+          "label": "RECURSIVE_COMPRESSION_MODEL_STABLE",
+          "n_docs": 16
+        },
+        "tau_0.90": {
+          "agreement_counts": {
+            "SUM_AGREES_ALL_MODELS": 16
+          },
+          "label": "RECURSIVE_COMPRESSION_MODEL_STABLE",
+          "n_docs": 16
+        },
+        "tau_0.99": {
+          "agreement_counts": {
+            "SUM_AGREES_ALL_MODELS": 16
+          },
+          "label": "RECURSIVE_COMPRESSION_MODEL_STABLE",
+          "n_docs": 16
+        }
+      },
+      "models": [
+        "Qwen/Qwen3.6-35B-A3B",
+        "deepseek-ai/DeepSeek-V3-0324",
+        "google/gemma-3-27b-it",
+        "gpt-4o-mini-2024-07-18",
+        "meta-llama/Llama-3.3-70B-Instruct"
+      ],
+      "per_doc_agreement": {
+        "doc_news_amazon_acquisition": {
+          "tau_0.50": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 0.6667,
+                "n_axioms": 2,
+                "recall_vs_original": 0.6667,
+                "step": 1
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.70": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.90": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.99": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          }
+        },
+        "doc_news_amazon_fire": {
+          "tau_0.50": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.70": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.90": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.99": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          }
+        },
+        "doc_news_apple_event": {
+          "tau_0.50": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.70": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.90": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.99": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          }
+        },
+        "doc_news_chile_solar": {
+          "tau_0.50": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 0.8,
+                "n_axioms": 4,
+                "recall_vs_original": 0.6,
+                "step": 1
+              }
+            }
+          },
+          "tau_0.70": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.90": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.99": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          }
+        },
+        "doc_news_eu_carbon": {
+          "tau_0.50": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 0.75,
+                "n_axioms": 3,
+                "recall_vs_original": 0.75,
+                "step": 1
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.70": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 0.75,
+                "n_axioms": 3,
+                "recall_vs_original": 0.75,
+                "step": 1
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.90": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.99": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          }
+        },
+        "doc_news_japan_shinkansen": {
+          "tau_0.50": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 0.6667,
+                "n_axioms": 2,
+                "recall_vs_original": 0.6667,
+                "step": 1
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 0.6667,
+                "n_axioms": 2,
+                "recall_vs_original": 0.6667,
+                "step": 1
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 0.6667,
+                "n_axioms": 2,
+                "recall_vs_original": 0.6667,
+                "step": 1
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 0.6667,
+                "n_axioms": 2,
+                "recall_vs_original": 0.6667,
+                "step": 1
+              }
+            }
+          },
+          "tau_0.70": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.90": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.99": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          }
+        },
+        "doc_news_nasa_artemis": {
+          "tau_0.50": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 0.75,
+                "n_axioms": 3,
+                "recall_vs_original": 0.75,
+                "step": 1
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 0.75,
+                "n_axioms": 3,
+                "recall_vs_original": 0.75,
+                "step": 1
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 0.75,
+                "n_axioms": 3,
+                "recall_vs_original": 0.75,
+                "step": 1
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.70": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 0.75,
+                "n_axioms": 3,
+                "recall_vs_original": 0.75,
+                "step": 1
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 0.75,
+                "n_axioms": 3,
+                "recall_vs_original": 0.75,
+                "step": 1
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 0.75,
+                "n_axioms": 3,
+                "recall_vs_original": 0.75,
+                "step": 1
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.90": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.99": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          }
+        },
+        "doc_news_olympics_swimming": {
+          "tau_0.50": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 0.75,
+                "n_axioms": 3,
+                "recall_vs_original": 0.75,
+                "step": 1
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 0.75,
+                "n_axioms": 3,
+                "recall_vs_original": 0.75,
+                "step": 2
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.70": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 0.75,
+                "n_axioms": 3,
+                "recall_vs_original": 0.75,
+                "step": 1
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 0.75,
+                "n_axioms": 3,
+                "recall_vs_original": 0.75,
+                "step": 2
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.90": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.99": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          }
+        },
+        "doc_news_oscars_2024": {
+          "tau_0.50": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.70": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.90": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.99": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          }
+        },
+        "doc_news_pfizer_trial": {
+          "tau_0.50": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 0.75,
+                "n_axioms": 3,
+                "recall_vs_original": 0.5,
+                "step": 2
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 0.75,
+                "n_axioms": 3,
+                "recall_vs_original": 0.5,
+                "step": 1
+              }
+            }
+          },
+          "tau_0.70": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.90": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.99": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          }
+        },
+        "doc_news_spacex_launch": {
+          "tau_0.50": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.70": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.90": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.99": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 3,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          }
+        },
+        "doc_news_tesla_model": {
+          "tau_0.50": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 0.8,
+                "n_axioms": 4,
+                "recall_vs_original": 0.8,
+                "step": 1
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.70": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 0.8,
+                "n_axioms": 4,
+                "recall_vs_original": 0.8,
+                "step": 1
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.90": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.99": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          }
+        },
+        "doc_news_train_paris": {
+          "tau_0.50": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.70": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.90": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.99": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          }
+        },
+        "doc_news_uk_election": {
+          "tau_0.50": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.70": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.90": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.99": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 4,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          }
+        },
+        "doc_news_un_treaty": {
+          "tau_0.50": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.70": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.90": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.99": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          }
+        },
+        "doc_news_who_outbreak": {
+          "tau_0.50": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 0.8,
+                "n_axioms": 4,
+                "recall_vs_original": 0.8,
+                "step": 1
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 0.8,
+                "n_axioms": 4,
+                "recall_vs_original": 0.8,
+                "step": 1
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 0.6,
+                "n_axioms": 3,
+                "recall_vs_original": 0.6,
+                "step": 1
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 0.8,
+                "n_axioms": 4,
+                "recall_vs_original": 0.8,
+                "step": 1
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 0.8,
+                "n_axioms": 4,
+                "recall_vs_original": 0.8,
+                "step": 1
+              }
+            }
+          },
+          "tau_0.70": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 0.8,
+                "n_axioms": 4,
+                "recall_vs_original": 0.8,
+                "step": 1
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 0.8,
+                "n_axioms": 4,
+                "recall_vs_original": 0.8,
+                "step": 1
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 0.8,
+                "n_axioms": 4,
+                "recall_vs_original": 0.8,
+                "step": 1
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 0.8,
+                "n_axioms": 4,
+                "recall_vs_original": 0.8,
+                "step": 1
+              }
+            }
+          },
+          "tau_0.90": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          },
+          "tau_0.99": {
+            "agreement": "SUM_AGREES_ALL_MODELS",
+            "n_models_total": 5,
+            "n_models_with_sum": 5,
+            "per_model_sum": {
+              "Qwen/Qwen3.6-35B-A3B": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "deepseek-ai/DeepSeek-V3-0324": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "google/gemma-3-27b-it": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "gpt-4o-mini-2024-07-18": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              },
+              "meta-llama/Llama-3.3-70B-Instruct": {
+                "compression_ratio": 1.0,
+                "n_axioms": 5,
+                "recall_vs_original": 1.0,
+                "step": 0
+              }
+            }
+          }
+        }
+      },
+      "per_model_summary": {
+        "Qwen/Qwen3.6-35B-A3B": {
+          "median_fixed_point_n_axioms": 4.0,
+          "median_fixed_point_recall_vs_original": 1.0,
+          "median_fixed_point_step": 1.0,
+          "n_docs_collapsed_to_empty": 0
+        },
+        "deepseek-ai/DeepSeek-V3-0324": {
+          "median_fixed_point_n_axioms": 4.0,
+          "median_fixed_point_recall_vs_original": 0.8,
+          "median_fixed_point_step": 2.0,
+          "n_docs_collapsed_to_empty": 0
+        },
+        "google/gemma-3-27b-it": {
+          "median_fixed_point_n_axioms": 3.5,
+          "median_fixed_point_recall_vs_original": 0.8,
+          "median_fixed_point_step": 2.0,
+          "n_docs_collapsed_to_empty": 0
+        },
+        "gpt-4o-mini-2024-07-18": {
+          "median_fixed_point_n_axioms": 4.0,
+          "median_fixed_point_recall_vs_original": 0.8,
+          "median_fixed_point_step": 2.0,
+          "n_docs_collapsed_to_empty": 0
+        },
+        "meta-llama/Llama-3.3-70B-Instruct": {
+          "median_fixed_point_n_axioms": 4.0,
+          "median_fixed_point_recall_vs_original": 1.0,
+          "median_fixed_point_step": 1.0,
+          "n_docs_collapsed_to_empty": 0
+        }
+      }
+    }
+  },
+  "schema": "sum.recursive_compression_cross_family.v1",
+  "thresholds": [
+    0.5,
+    0.7,
+    0.9,
+    0.99
+  ]
+}

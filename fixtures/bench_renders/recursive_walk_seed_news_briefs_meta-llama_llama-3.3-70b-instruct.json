@@ -1,0 +1,62 @@
+{
+  "corpus": "seed_news_briefs",
+  "max_steps": 5,
+  "model": "meta-llama/Llama-3.3-70B-Instruct",
+  "renders": {
+    "doc_news_amazon_acquisition": {
+      "1": "Amazon renames a unit. \nKiva builds a floor robot. \nKiva Systems is a robotic startup.",
+      "2": "Amazon renames a unit. \nKiva builds a floor robot. \nKiva Systems is a robotic startup."
+    },
+    "doc_news_amazon_fire": {
+      "1": "The Environment Ministry deploys a firefighter. \nA fire destroys a hectare. \nPresident Lula declares a regional emergency. \nSmoke reaches S\u00e3o Paulo."
+    },
+    "doc_news_apple_event": {
+      "1": "Apple announces the iPhone. \nThe model launches in October. \nThe new phone uses a custom A19 chip. \nTim Cook unveils the device."
+    },
+    "doc_news_chile_solar": {
+      "1": "The Chile commission builds a solar farm. \nChile export excess power. \nEnel builds the project. \nThe facility generates a megawatt. \nThe plant covers a hectare.",
+      "2": "The Chile Commission builds a solar farm. \nEnel builds a project. \nThe facility generates a megawatt. \nThe plant covers a hectare."
+    },
+    "doc_news_eu_carbon": {
+      "1": "The European Union approves a border tariff. \nFrance champions the regulation. \nThe policy prevents carbon leakage. \nThe tariff phases over a year."
+    },
+    "doc_news_japan_shinkansen": {
+      "1": "Construction occurred last year. \nJR Central inaugurates the Chuo Shinkansen. \nThe line uses a superconducting magnet.",
+      "2": "JR Central inaugurates the Chuo Shinkansen. \nThe line uses a superconducting magnet."
+    },
+    "doc_news_nasa_artemis": {
+      "1": "The flight is on its last day. \nThe mission will carry an astronaut. \nNASA will launch Artemis. \nReid Wiseman will command the crew."
+    },
+    "doc_news_olympics_swimming": {
+      "1": "The American swimmer breaks her own world record. \nErica Sullivan takes the silver. \nShe finishes in one minute and one second. \nKatie Ledecky wins the 1500 meter freestyle."
+    },
+    "doc_news_oscars_2024": {
+      "1": "The ceremony takes place. \nChristopher Nolan wins Best Director. \nCillian Murphy wins Best Actor. \nOppenheimer wins Best Picture. \nRobert Downey Jr wins Supporting Actor.",
+      "2": "The ceremony takes place. \nChristopher Nolan wins Best Director. \nCillian Murphy wins Best Actor. \nOppenheimer wins Best Picture. \nRobert Downey Jr supports the Supporting Actor."
+    },
+    "doc_news_pfizer_trial": {
+      "1": "The drug treats advanced lung cancer. \nThe European Medicines Agency reviews data. \nPfizer reports a positive result. \nThe trial enrolls a patient.",
+      "2": "The drug treats advanced lung cancer. \nPfizer reports a positive result. \nThe trial enrolls a patient."
+    },
+    "doc_news_spacex_launch": {
+      "1": "The rocket carries the Starlink satellite. \nSpaceX launches the rocket. \nSpaceX recovers the booster."
+    },
+    "doc_news_tesla_model": {
+      "1": "The compact car costs a dollar. \nThe model shares a platform. \nThe production capacity reaches a unit. \nTesla manufactures a vehicle. \nTesla unveils a model."
+    },
+    "doc_news_train_paris": {
+      "1": "France opens a speed rail line. \nThe journey takes an hour. \nThe route covers a kilometer. \nSNCF operates the service."
+    },
+    "doc_news_uk_election": {
+      "1": "The Conservative Party loses a seat. \nKeir Starmer becomes Prime Minister. \nLabour wins a seat. \nThe new government takes office."
+    },
+    "doc_news_un_treaty": {
+      "1": "The member state ratifies the agreement. \nNorway signs the document. \nThe treaty enters force. \nThe treaty protects marine biodiversity. \nThe United Nations adopts the seas treaty."
+    },
+    "doc_news_who_outbreak": {
+      "1": "The Health Ministry leads the response. \nA health worker vaccinates a child. \nThe outbreak begins in March. \nUNICEF supplies a vaccine dose. \nThe World Health Organization tracks the measles outbreak.",
+      "2": "The Health Ministry leads the response. \nA health worker vaccinates a child. \nThe outbreak begins in March. \nThe World Health Organization tracks the measles outbreak."
+    }
+  },
+  "schema": "sum.recursive_walk_render_snapshot.v1"
+}

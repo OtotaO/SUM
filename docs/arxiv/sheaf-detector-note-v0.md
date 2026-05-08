@@ -1529,7 +1529,66 @@ have valid uses, and which one is appropriate depends on whether
 the downstream consumer needs state-integer round-trip or
 triple-level round-trip.
 
-## 5. Substrate context — six-regime audit-grade record-keeping
+### 4.10.1 Cross-family recursive compression: SUM identification is model-stable
+
+The §4.10 measurement could in principle have been gpt-4o-mini-
+specific. To test, we extended the recursive walk across the same
+five LLM lineages used in §4.7.3-§4.7.4.1 — OpenAI gpt-4o-mini,
+Meta Llama-3.3-70B, Alibaba Qwen3.6-35B-A3B, DeepSeek V3-0324,
+Google Gemma-3-27B (Anthropic claude-haiku-4.5 was unavailable
+during this capture; rotated key). Same two corpora, same walk
+budget (5 steps), same compressor pattern (LLM grammatical render
+of axioms; sieve re-extraction). Receipt:
+[`fixtures/bench_receipts/recursive_compression_cross_family_2026-05-08.json`](../../fixtures/bench_receipts/recursive_compression_cross_family_2026-05-08.json),
+schema `sum.recursive_compression_cross_family.v1`,
+`bench_digest 1361d137…f848c14`.
+
+**Per-(model, corpus) median fixed-point recall:**
+
+| Model | `seed_long_paragraphs` | `seed_news_briefs` |
+|---|---:|---:|
+| gpt-4o-mini-2024-07-18 | $0.590$ | $0.800$ |
+| meta-llama/Llama-3.3-70B | $0.700$ | $1.000$ |
+| Qwen/Qwen3.6-35B-A3B | $0.778$ | $1.000$ |
+| deepseek-ai/DeepSeek-V3-0324 | $0.646$ | $0.800$ |
+| google/gemma-3-27b-it | $0.646$ | $0.800$ |
+| **per-corpus spread** | **0.188** | **0.200** |
+
+**Joint cross-family finding:
+`RECURSIVE_COMPRESSION_MODEL_STABLE_ACROSS_CORPORA`** at every
+threshold tested ($\tau \in \{0.5, 0.7, 0.9, 0.99\}$). Across
+$2 \times 16 \times 5 = 160$ (corpus, doc, model) cells, every doc
+in both corpora reaches `SUM_AGREES_ALL_MODELS` at every threshold —
+i.e. every model identifies a SUM satisfying the threshold for
+every doc.
+
+This is **structurally different from the §4.7.x cross-family
+finding**. There the verdict-class threshold (BEATS at $+0.030$,
+LOSES at $-0.020$) was sharp, and small-n noise produced extremal-
+Goodhart artifacts that the §4.7.4.1 extension had to resolve.
+Here the SUM-identification claim is **continuous** (recall is a
+real number; the SUM exists somewhere on the walk if any step
+satisfies the threshold) and **uniformly satisfied** across all 5
+families — variation is in the ~0.2 recall-spread between
+families, but every family identifies a SUM at every threshold for
+every doc.
+
+**Reading.** The recursive-compression vision is robust to LLM
+choice. Different families have different recall trajectories
+(Qwen and Llama preserve more of the original axiom-set on news
+briefs than gpt-4o-mini, DeepSeek, or Gemma do; on long-form
+encyclopedic prose Qwen leads), but the SUM-as-fixed-point
+*exists* identifiably under every tested compressor. This is the
+strongest defensible form of the operator's original-vision claim
+within the current measurement scope.
+
+**Honest scope.** Five LLM families × two corpora × 16 docs each.
+Anthropic claude-haiku-4.5 would extend to six families if a
+current key becomes available. Cross-corpus extension to 5+
+stylistically distinct corpora (cf. the §4.7.4.1 design) would
+tighten the model-stable claim further. Importance-weighted SUM
+identification (vs the current min-by-n_axioms) is the natural
+v0.6+ direction.
 
 The detector scores the consistency of a render against a source
 bundle. The substrate that produces the rendering pipeline whose

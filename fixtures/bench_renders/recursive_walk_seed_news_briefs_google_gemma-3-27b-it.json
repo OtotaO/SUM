@@ -1,0 +1,68 @@
+{
+  "corpus": "seed_news_briefs",
+  "max_steps": 5,
+  "model": "google/gemma-3-27b-it",
+  "renders": {
+    "doc_news_amazon_acquisition": {
+      "1": "Amazon renamed a unit.\nKiva built a floor robot.\nRobotic startup Kiva Systems exists.\n",
+      "2": "Amazon renamed a unit.\nKiva built a floor robot.\n\n\n\n"
+    },
+    "doc_news_amazon_fire": {
+      "1": "The environment ministry deploys a firefighter.\nThe fire destroys a hectare.\nPresident Lula declares a regional emergency.\nSmoke reaches S\u00e3o Paulo.\n\n\n\n"
+    },
+    "doc_news_apple_event": {
+      "1": "Apple announces iPhone.\nA model launches in October.\nThe new phone uses a custom A19 chip.\nTim Cook unveils the device.\n\n\n\n"
+    },
+    "doc_news_chile_solar": {
+      "1": "The Chile commission approved a solar farm.\nChile exports excess power.\nEnel builds the project.\nThe facility generates megawatts.\nThe plant covers a hectare.\n\n\n\n",
+      "2": "Chile exports excess power.\nChile\u2019s commission approves a solar farm.\nEnel builds the project.\nThe facility generates megawatts.\nThe plant covers hectares.\n\n\n\n",
+      "3": "Chile exports excess power.\nThe commission approves a solar farm.\nEnel builds the project.\nThe facility generates megawatts.\nThe plant covers a hectare.\n\n\n\n"
+    },
+    "doc_news_eu_carbon": {
+      "1": "The European Union approves a border tariff.\nFrance champions the regulation.\nThe policy prevents carbon leakage.\nThe tariff phases in yearly.\n\n\n\n",
+      "2": "The European Union approves a border tariff.\nFrance champions the regulation.\nThe policy prevents carbon leakage.\n\n\n\n"
+    },
+    "doc_news_japan_shinkansen": {
+      "1": "Construction occurred last year.\nJR Central inaugurated the Chuo Shinkansen.\nThe line superconducts a superconducting magnet.\n\n\n\n",
+      "2": "JR Central inaugurates the Chuo Shinkansen.\nThe line superconducts.\nThe line utilizes a superconducting magnet.\n\n\n\n"
+    },
+    "doc_news_nasa_artemis": {
+      "1": "The flight concludes on its last day.\nThe mission carries an astronaut.\nNASA launches Artemis.\nReid Wiseman commands the crew.\n\n\n\n",
+      "2": "The mission carries an astronaut.\nNASA launches Artemis.\nReid Wiseman commands the crew.\n\n\n\n"
+    },
+    "doc_news_olympics_swimming": {
+      "1": "An American swimmer breaks his own world record.\nErica Sullivan takes silver.\nShe finishes a minute and a second later.\nKatie Ledecky wins the 800 meter freestyle.\n\n\n\n",
+      "2": "An American swimmer breaks his own world record.\nErica Sullivan takes silver.\nKatie Ledecky wins the 800 meter freestyle.\nShe finishes in a minute.\n",
+      "3": "An American swimmer breaks his own world record.\nErica Sullivan takes silver.\nKatie Ledecky wins the 800 meter freestyle.\n\n\n\n"
+    },
+    "doc_news_oscars_2024": {
+      "1": "The ceremony takes place.\nChristopher Nolan wins Best Director.\nCillian Murphy wins Best Actor.\nOppenheimer wins Best Picture.\nRobert Downey Jr. wins Supporting Actor.\n\n\n\n",
+      "2": "The ceremony takes place.\nChristopher Nolan wins Best Director.\nCillian Murphy wins Best Actor.\nOppenheimer wins Best Picture.\nRobert Downey Jr. wins a Supporting Actor award.\n\n\n\n",
+      "3": "The ceremony takes place.\nChristopher Nolan wins Best Director.\nCillian Murphy wins Best Actor.\nOppenheimer wins Best Picture.\nRobert Downey Jr. wins an actor award.\n\n\n\n"
+    },
+    "doc_news_pfizer_trial": {
+      "1": "A drug treats advanced lung cancer. \nThe European Medicines Agency reviews data.\nPfizer reports a positive result.\nA trial enrolls a patient.\n\n\n\n",
+      "2": "The European Medicines Agency reviews a datum.\nPfizer reports a positive result.\nA trial enrolls a patient."
+    },
+    "doc_news_spacex_launch": {
+      "1": "A rocket carries a Starlink satellite. \nSpaceX launches a rocket.\nSpaceX recovers a booster.\n\n\n\n"
+    },
+    "doc_news_tesla_model": {
+      "1": "A compact car costs a dollar.\nA model shares a platform.\nProduction capacity reaches a unit.\nTesla manufactures a vehicle.\nTesla unveils a model.\n\n\n\n"
+    },
+    "doc_news_train_paris": {
+      "1": "France opens a speed rail line.\nThe journey takes one hour.\nThe route covers 300 kilometer.\nSNCF operates the service."
+    },
+    "doc_news_uk_election": {
+      "1": "The Conservative Party loses a seat.\nKeir Starmer becomes Prime Minister.\nLabour wins a seat.\nThe new government takes office.\n\n\n\n"
+    },
+    "doc_news_un_treaty": {
+      "1": "A member state ratifies an agreement.\nNorway signs a document.\nA treaty enters force.\nThe treaty protects marine biodiversity.\nThe United Nations adopts a seas treaty.\n\n\n\n"
+    },
+    "doc_news_who_outbreak": {
+      "1": "The health ministry leads the response.\nA health worker vaccinates a child.\nThe outbreak begins in March.\nUNICEF supplies vaccine doses.\nThe World Health Organization tracks the measles outbreak.\n",
+      "2": "The health ministry leads the response.\nA health worker vaccinates a child.\nAn outbreak begins in March.\n\n\n\n"
+    }
+  },
+  "schema": "sum.recursive_walk_render_snapshot.v1"
+}
