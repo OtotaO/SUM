@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-08T06:42:14Z",
+  "issued_at": "2026-05-08T07:21:37Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "1af9f1396f18c016871835be1a1cb692100b4917",
-    "head_short": "1af9f13",
-    "head_subject": "research: \u00a74.10 recursive compression and the SUM (first measured pass) (#167)",
-    "head_committer_date": "2026-05-08T02:04:15-04:00",
+    "head_sha": "9c505d58639c57f4c626d37bd17326ddaa10c6cc",
+    "head_short": "9c505d5",
+    "head_subject": "research: \u00a74.10.1 cross-family recursive compression \u2014 model-stable (#168)",
+    "head_committer_date": "2026-05-08T02:55:17-04:00",
     "commits_last_30d": null
   },
   "github": {

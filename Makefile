@@ -9,7 +9,8 @@
         demo wheel sdist smoke fortress clean lint wasm wasm-bench wasm-bench-python \
         vendor test-receipt-verify test-receipt-verify-py \
         bench-receipt-audit bench-receipt-audit-replay test-trust-root \
-        test-property test-nli-calibration-format
+        test-property test-nli-calibration-format \
+        verify-preprint reproduce-preprint validate-preprint
 
 PYTHON ?= python
 
@@ -117,6 +118,23 @@ wasm-bench:  ## Serve the WASM-vs-JS browser benchmark (docs/WASM_PERFORMANCE.md
 
 wasm-bench-python:  ## Run the Python-side derivation benchmark companion (emits JSON).
 	$(PYTHON) scripts/bench_python_derive.py
+
+validate-preprint:  ## Lint preprint structure + receipt references. No pandoc required.
+	bash scripts/arxiv/validate_preprint.sh
+
+verify-preprint:  ## Verify preprint citation chain (every receipt's bench_digest matches its prose cite). Pure read; no compute.
+	$(PYTHON) -m scripts.research.verify_preprint_receipts
+
+reproduce-preprint: validate-preprint verify-preprint  ## Run all preprint-cited bench tests and verify the citation chain. Reviewer-friendly answer to "can I reproduce this?"
+	$(PYTHON) -m pytest \
+	  Tests/research/test_sheaf_path2_v3.py \
+	  Tests/research/test_sheaf_path2_multi_llm_compare.py \
+	  Tests/research/test_sheaf_path2_cross_corpus.py \
+	  Tests/research/test_recovery_experiment_digests.py \
+	  Tests/research/test_performance_audit.py \
+	  Tests/research/test_recursive_compression_walk.py \
+	  Tests/research/test_recursive_compression_cross_family.py \
+	  -q --tb=short
 
 clean:  ## Remove build artifacts + bench history.
 	rm -rf build dist *.egg-info .pytest_cache .mypy_cache
