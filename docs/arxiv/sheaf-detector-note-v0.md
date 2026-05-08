@@ -73,6 +73,29 @@ four cryptographically-anchored recovery-experiment digests —
 Borda WINS) — pin every step in mechanically-verifiable
 artifacts.
 
+The same discipline produced the most important *negative-going*
+finding in the paper. The synthetic-bench WIN does **not**
+generalise to real LLM hallucinations. A real-LLM-rendered
+adversarial bench (§4.7.2 *Path 2*) shows the hybrid LOSING to B2
+on `gpt-4o-mini-2024-07-18`. Cross-family extension to six LLM
+lineages (OpenAI, Anthropic, Meta, Alibaba, DeepSeek, Google;
+§4.7.3) and cross-corpus extension to four corpora (§4.7.4 →
+§4.7.4.1) confirm: at controlled sample sizes ($n \geq 16$), no
+LLM family produces a `HYBRID_BEATS` verdict on real-LLM
+perturbations on any of three measured corpora. We name this a
+Goodhart artifact in its regressional form (Manheim & Garrabrant,
+2018): the hybrid was selected to compose well on the synthetic
+measure, and that measure stops being a good measure once it is
+the target of optimisation. The synthetic-vs-real *magnitude* gap
+($+0.043$ vs every measured real-LLM cell at $n \geq 16$) is
+robust to corpus and family. Two further empirical contributions
+ride on the same substrate: a measured scaling envelope (§4.9 —
+$O(N^{1.5})$ merge bottleneck, library-scale gates on Phase 26)
+and a first-pass recursive-compression measurement of the SUM
+($A_{k+1} = \text{sieve}(R(A_k))$ to a fixed point; §4.10–§4.10.1
+— SUM-identification model-stable across five LLM families on
+two corpora at every threshold tested).
+
 We position the work inside the program of Hansen-Ghrist 2019
 sheaf-Laplacian spectral theory, Gebhart 2023 contrastive
 sheaf-embedding training, and Tull-Kleiner-Smithe 2023
@@ -1141,7 +1164,7 @@ schema `sum.sheaf_path2_multi_llm_compare.v1`. Per-model
 `Tests/research/test_sheaf_path2_multi_llm_compare.py`:
 `7b364fc6…cc4b75e` (gpt-4o-mini), `d0f9f175…2f6f7` (claude-haiku),
 `f1c17c3e…aac29b31` (Llama), `23da3ecb…461b8ea2` (Qwen),
-`619a413f…2fe22c9f` (DeepSeek), `fe76913e…0318b9b5` (Gemma).
+`619a413f…2fe22c9f` (DeepSeek), `fe76913e…9318b9b5` (Gemma).
 
 **Honest scope.** Six LLM lineages is meaningfully wider than
 "a thin sample" but still bounded. The 16-doc corpus is held
@@ -1154,7 +1177,7 @@ load-bearing claim — *no LLM family in the sample makes the hybrid
 BEAT the baseline on real-LLM perturbations* — is robust to those
 caveats; the precise per-model $\Delta$ values are not.
 
-### 4.7.4 Cross-corpus extension: §4.7.3 is corpus-specific
+### 4.7.4 Cross-corpus extension: an apparent corpus-specificity (resolved in §4.7.4.1)
 
 The §4.7.3 sample held the corpus constant
 (`seed_long_paragraphs`, n=16 docs, encyclopedic prose). A natural
@@ -1801,6 +1824,42 @@ on a paper of this type; we apply it to ourselves first.
   finding `STRUCTURAL_GAP_NO_MODEL_BEATS` reproduces in 3/3
   corpora at $n \geq 16$.
 
+**Substrate scaling (load-bearing, §4.9):**
+
+- **Empirically-measured scaling exponents** for the four core
+  algebra operations: ingest (per-triple) k = 0.001 (constant);
+  entail k = 0.981 (linear in N); merge k = 1.497 (sub-quadratic
+  empirical); encode k = 1.909 (near-quadratic). At N=10000:
+  merge dominates wall-clock at 23.9 s p50; entail at 1.2 ms; encode
+  at 2.24 s; ingest at 47.6 µs per-triple. PROOF_BOUNDARY §4's prior
+  519 ms / N=1000 merge quote reproduces within 10% locally.
+- **Library-scale feasibility envelope** (extrapolated above
+  N=10000): comfortable up to ~5k axioms (medium-book scale,
+  ~7s/iter); acceptable batch use to ~10k (~20s/iter); architectural
+  change (Phase 26 property-graph backing store) required above
+  ~50k. Receipt:
+  `fixtures/bench_receipts/performance_characterisation_2026-05-07.json`,
+  `bench_digest 839f4a7f…3ad74`.
+
+**Recursive compression (load-bearing, §4.10 / §4.10.1):**
+
+- **The SUM exists as a per-(corpus, doc, $\tau$) fixed point**
+  under iterated LLM grammatical re-render and sieve re-extraction.
+  Across 2 corpora × 16 docs × 5 LLM families = 160 cells, every
+  doc reaches `SUM_AGREES_ALL_MODELS` at every threshold $\tau \in
+  \{0.5, 0.7, 0.9, 0.99\}$ — joint finding
+  `RECURSIVE_COMPRESSION_MODEL_STABLE_ACROSS_CORPORA`.
+- **Continuous (~0.20) recall-trajectory variation across families
+  but no verdict-class flips.** Different families compress with
+  different efficiency (median fp recall 0.59-0.78 on
+  `seed_long_paragraphs`; 0.80-1.00 on `seed_news_briefs`); every
+  family identifies a SUM at every threshold for every doc.
+- **Sieve↔canonical-tome asymmetry surfaced** by the deterministic
+  arm of §4.10. PROOF_BOUNDARY §1.1's "lossless round-trip" holds at
+  the *state-integer* layer but does NOT hold at the *triple* layer
+  (sieve(canonical_tome(A)) ≠ A in general); both rendering paths
+  have valid uses.
+
 ### 7.2 Claims corrected from prior overstatements
 
 The §4.7.x extension produced two negative-going findings the
@@ -1882,12 +1941,15 @@ preprint absorbs honestly rather than rewrites away:
   storage of the $d$-dim Laplacian is straightforward but
   unimplemented; scaling to $> 10^4$ vertices needs the
   sparsification machinery of Hansen-Ghrist 2019 §6.
-- **v0.4+ candidates** named in §4.7.4.1: real-LLM-aware
-  per-triple V training; naturalistic perturbation synthesis on
-  the source TRIPLE set rather than the rendered prose;
-  deeper corpus sampling (5-10 corpora at $n \geq 16$ to harden
-  the *no consistent BEATS at controlled n* finding against
-  further objections).
+- **v0.4+ candidates remaining** (named in §4.7.4.1 / §4.10.1):
+  real-LLM-aware per-triple V training; naturalistic perturbation
+  synthesis on the source TRIPLE set rather than the rendered
+  prose; deeper corpus sampling (5-10 corpora at $n \geq 16$ to
+  harden the *no consistent BEATS at controlled n* finding);
+  importance-weighted SUM identification (vs the current
+  min-by-n_axioms); multi-modal compression dispatch (parable /
+  poetry / quote / emoji compressors routed by content type);
+  Phase 26 property-graph backing store (gates library-scale).
 
 Five named falsification verdicts (F1 MARGINAL, F2 PASS,
 F3 STRUCTURAL FAIL, F4 PASS, F5 PASS at $\gamma \leq 0.1$)
@@ -1906,24 +1968,53 @@ at every PR.
 
 ## 8. Future work
 
-- **Path 2 — real LLM-rendered adversarial bench.** Synthetic
-  perturbations are existence-proofs; adversarial LLM renderings
-  stress the detector differently. Generate clean and adversarial
-  variants via the hosted Worker render path and re-run §4.4 /
-  §4.7.
-- **A2 closure already partial via §3.5 per-triple channel
-  composition** (v0.1). Predicate-perturbation training negatives
-  alone do NOT lift A2 for the cochain channel
-  (`aa34b6e8…` digest pin) — the cochain is mathematically blind
-  to entity-set-preserving perturbations, so training-distribution
-  changes can't fix what scoring discards. The recovered A2 signal
-  comes from the per-triple channel directly (lifting A2 from
-  $0.500 \to 0.671$); v0.2 candidates: predicate-perturbation
-  training to *strengthen* the per-triple channel further; cochain
-  redesign to make the cochain itself sensitive (per below).
+- **Path 2 follow-up — real-LLM-aware per-triple V training.**
+  §4.7.2-§4.7.4.1 *measured* the synthetic-vs-real gap and
+  named it as Goodhart's law in regressional form. The natural
+  next response is to train the per-triple V channel on a corpus
+  of LLM-rendered perturbations rather than synthetic
+  tail-perturbations, so the trained restriction maps reflect the
+  real-LLM perturbation distribution. The §4.7.x cross-family
+  measurement provides the held-out test set for any such
+  training run.
+- **Naturalistic perturbation synthesis.** Have an LLM generate
+  A1/A2/A4-class perturbations on the source TRIPLE set directly
+  (not the rendered prose), so the perturbation structure matches
+  synthetic but the perturbation choice is LLM-natural. Decouples
+  *what gets perturbed* from *how it propagates through
+  rendering*.
+- **Deeper corpus sampling** (5-10 stylistically distinct corpora
+  at $n \geq 16$). The §4.7.4.1 / §4.10.1 cross-corpus claims are
+  bounded by the four-corpus / two-corpus samples respectively;
+  expanding to genres beyond encyclopedic + news (scientific
+  abstracts, fiction, legal/policy, code commentary, spoken
+  transcripts) would further harden the consolidated findings.
+- **Importance-weighted SUM** (v0.6+). Replace min-by-$n_\text{axioms}$
+  with information-content-weighted optimisation. Requires defining
+  per-axiom importance (length-weighted; embedding-distinctiveness;
+  downstream-task-utility for some chosen task).
+- **Multi-modal compression dispatch.** Different content types
+  may admit different optimal compressors: factual content →
+  axioms (the current implementation); moral/ethical content →
+  parables (canonical-narrative compression); aesthetic content
+  → poetry (constraint-as-compression); authorial content →
+  quotes (attribution-as-pointer); visual/categorical → emoji /
+  designed glyphs. A classifier routes content; per-modality
+  compressors render. Research-grade design work; the operator's
+  intended v0.5+ direction.
+- **Phase 26 — property-graph backing store.** Demote the prime
+  integer to a signed witness; primary queries hit a Neo4j-style
+  property graph. Gates library-scale workloads above ~50k axioms
+  (per the §4.9 envelope).
+- **Cochain redesign that propagates render content into the
+  interior.** v3.2 works around the F3 blind spot by combining
+  with $v_\text{laplacian}^w$; a cochain redesign would address
+  the root cause directly (the cochain at present is
+  translation-invariant under boundary-only perturbations). Both
+  paths remain open.
 - **Cross-machine reproducibility — additional LAPACK
   environments.** §4.8 covers Apple Accelerate (operator) and
-  OpenBLAS-via-PyPI (Modal x86_64). v0.2 candidates: Intel MKL,
+  OpenBLAS-via-PyPI (Modal x86_64). Open candidates: Intel MKL,
   ARM Linux OpenBLAS, AMD AOCL. A future Node / browser
   reimplementation of the v3 / v3.2 detectors that matches the
   `bench_digest` would extend the cross-runtime trust triangle

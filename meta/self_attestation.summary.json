@@ -1,6 +1,6 @@
 {
   "schema": "sum.self_attestation.v1",
-  "issued_at": "2026-05-08T06:42:13Z",
+  "issued_at": "2026-05-08T07:21:36Z",
   "doc_count": 5,
   "docs": [
     {
@@ -23,10 +23,10 @@
     },
     {
       "path": "docs/PROOF_BOUNDARY.md",
-      "source_uri": "sha256:52478492aeff68785cd78614b26b557d282bd52a38184f70698322bf1cd01c28",
+      "source_uri": "sha256:56329683ad4d514394af77067bd5b1f3ba0887d449f606b75f42ed2123cd2910",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "52478492aeff68785cd78614b26b557d282bd52a38184f70698322bf1cd01c28",
+      "markdown_sha256": "56329683ad4d514394af77067bd5b1f3ba0887d449f606b75f42ed2123cd2910",
       "axiom_count": 206,
       "state_integer_digits": 3882
     },
