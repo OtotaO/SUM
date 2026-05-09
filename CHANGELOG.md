@@ -4,6 +4,40 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Phase 26.0 iteration 4 — content-derived cost model resolves
+  the determinism red flag.** egglog-python PR #357 (merged
+  2025-10-02, present in v11.4.0 which we pin) added a
+  `cost_model=` parameter to `EGraph.extract`. Using it,
+  `_content_hash_cost_model` returns
+  `sum(children_costs) << 64 + sha256(str(expr))[:8]` — two
+  priors in two non-overlapping bit ranges (high 64 bits for
+  structural cost preserving egglog's "smaller subtree wins"
+  intuition; low 64 bits for content-derived total order on
+  e-class members with equal structural cost; 2⁻⁶⁴ collision
+  probability). `extract_canonical(triple, deterministic=True)`
+  (the new default) uses this model; `deterministic=False`
+  preserves egglog's default extract for spike A/B comparisons.
+  Pinned by three new tests: the iteration-3 known-limitation
+  test (`test_default_cost_is_insertion_order_sensitive_on_ties`)
+  is replaced by `test_extract_canonical_is_deterministic_across_insertion_order`
+  (asserts forward and reversed insertion produce identical
+  canonical forms under deterministic=True);
+  `test_extract_canonical_deterministic_false_preserves_default_behaviour`
+  asserts the iteration-3 limitation still appears under
+  `deterministic=False` (so if egglog upstream solves it, our
+  wrapper can simplify); `test_content_hash_cost_model_is_pure`
+  pins the cost model's purity + bit-range layering. 21 contract
+  tests total (3 net new — 1 inverted, 2 added). Findings doc
+  gains an iteration-4 section noting (a) what was resolved,
+  (b) what was NOT (materialisation bottleneck remains; egglog
+  issue #756 bulk-load is open), and (c) external validation
+  from the egglog ecosystem (issue #793 — math-microbenchmark
+  nondeterminism — confirms our finding upstream; no public
+  production users at >10k facts; egg-Rust's `CostFunction` trait
+  has always been deterministic). The layered-decomposition cost
+  model design is the deep-research article's §2 kernel applied
+  to extract-with-cost.
+
 - **Phase 26.0 iteration 3 — actual e-class queries measured;
   two new findings.** Adds a baked-in `ownership_symmetry`
   ruleset (`Triple(s, "owns", o) ⟺ Triple(o, "owned_by", s)`)

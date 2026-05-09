@@ -33,7 +33,8 @@ over sha256, independent of egglog's internals.
 """
 from __future__ import annotations
 
-from typing import Iterator
+import hashlib
+from typing import Any, Iterator
 
 from sum_engine_internal.graph_store.base import (
     GraphStore,
@@ -41,6 +42,56 @@ from sum_engine_internal.graph_store.base import (
     Triple,
     _canonical_triples_hash,
 )
+
+
+def _content_hash_cost_model(egraph: Any, expr: Any, children_costs: list[int]) -> int:
+    """Custom egglog cost model that breaks e-class ties via the
+    sha256 of the expression's string repr.
+
+    Iteration 3 of the spike pinned that egglog's default `extract`
+    is non-deterministic across processes when two expressions in
+    the same e-class have equal cost (FIFO tiebreaker over
+    insertion order). For SUM's `bench_digest` cross-process
+    reproducibility, this is unacceptable.
+
+    This cost model layers three priors, in order:
+
+      1. **Children cost**, accumulated multiplicatively into the
+         high bits — preserves egglog's "smaller subtree wins"
+         intuition. Without this, a tree-leaf would always beat a
+         tree-root regardless of structure.
+      2. **Content hash**, sha256 over the expression's
+         deterministic string form, taking the leading 8 bytes as
+         the low 64 bits — provides a content-derived total order
+         on e-class members with equal structural cost. The hash
+         is computed once and depends only on the expression's
+         identity, not on insertion order.
+      3. **Implicit insertion-order tiebreak**, falls through to
+         egglog's default if two expressions hash to the exact
+         same 64 bits (probability ≈ 2⁻⁶⁴).
+
+    The (children_cost × 2⁶⁴ + content_hash) layering is the
+    layered-decomposition discipline named in
+    docs/PHASE_26_EGGLOG_SPIKE_FINDINGS.md iteration 4: distinct
+    priors handled in distinct bit ranges, with the prior that's
+    most expensive to recover from (structural correctness)
+    occupying the high bits.
+
+    Implementation note: egglog-python (PR #357, the API in v11.4.0
+    that we pin) accepts any orderable Python value from a cost
+    model, not just `int`. An equivalent implementation could
+    return `(structural_cost, str(expr))` as a tuple and let
+    Python's lexicographic tuple comparison do the tiebreak.
+    The hash approach is preferred here because (a) it's a
+    fixed-size key regardless of string length, (b) the comparison
+    cost is constant rather than O(string length), and (c) the
+    2⁻⁶⁴ collision probability is below the substrate's other
+    failure rates by many orders of magnitude.
+    """
+    base = sum(children_costs) * (1 << 64)
+    digest = hashlib.sha256(str(expr).encode("utf-8")).digest()
+    tiebreak = int.from_bytes(digest[:8], "big")
+    return base + tiebreak
 
 
 class EgglogStore:
@@ -272,17 +323,26 @@ class EgglogStore:
             )
         self._egraph.run(self._rulesets[ruleset_name].saturate())
 
-    def extract_canonical(self, triple: Triple):
+    def extract_canonical(self, triple: Triple, *, deterministic: bool = True):
         """Return the lowest-cost representative of the e-class
         containing ``triple``. After saturation under a symmetry
         ruleset, two triples in the same e-class will both extract
-        to the same canonical form (the one egglog's default cost
-        function picks).
+        to the same canonical form.
+
+        Args:
+            triple: The triple whose canonical form to extract.
+            deterministic: If True (default), use a content-derived
+                cost model that breaks ties via sha256 over the
+                expression's string repr — guarantees the same
+                canonical form across processes regardless of
+                insertion order. If False, use egglog's default
+                cost (FIFO tiebreaker over insertion order); the
+                default exists for spike comparisons and matches
+                iteration-3's pinned non-determinism.
 
         Caller is responsible for materialising and saturating
         first; this method does NOT auto-saturate (saturation is
-        cost-amortised across many extracts, so we don't want to
-        hide it inside every call).
+        cost-amortised across many extracts).
         """
         self.materialise_egraph()
         node = self._TripleNode(
@@ -290,6 +350,8 @@ class EgglogStore:
             self._String(triple.predicate),
             self._String(triple.object),
         )
+        if deterministic:
+            return self._egraph.extract(node, cost_model=_content_hash_cost_model)
         return self._egraph.extract(node)
 
 
