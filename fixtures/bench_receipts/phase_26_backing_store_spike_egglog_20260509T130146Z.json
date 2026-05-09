@@ -1,0 +1,121 @@
+{
+  "schema": "sum.phase_26_backing_store_spike.v1",
+  "candidate": "egglog",
+  "iso_ts": "2026-05-09T13:01:46.367340+00:00",
+  "host": {
+    "platform": "macOS-26.0-arm64-arm-64bit",
+    "python": "3.10.14",
+    "machine": "arm64"
+  },
+  "workloads": [
+    {
+      "workload_label": "seed_long_paragraphs",
+      "n_triples_input": 120,
+      "n_distinct_after_insert": 120,
+      "n_egraph_registered": 120,
+      "insert_wall_s": 0.0286,
+      "queries": {
+        "sample_count": 100,
+        "total_ms": 0.285,
+        "per_query_us": 2.849
+      },
+      "query_parity": {
+        "sample_count": 50,
+        "mismatches": 0
+      },
+      "determinism": {
+        "hash_forward": "sha256:6032d8ead6ee5c49236a8f81c75c2fcf56a34f3210a8b509b0e41b936d471243",
+        "hash_reversed": "sha256:6032d8ead6ee5c49236a8f81c75c2fcf56a34f3210a8b509b0e41b936d471243",
+        "matches": true
+      },
+      "content_hash": "sha256:6032d8ead6ee5c49236a8f81c75c2fcf56a34f3210a8b509b0e41b936d471243",
+      "backend_info": {
+        "name": "egglog",
+        "version": "unknown",
+        "notes": "Spike-stage backend. Holds triples in both an egglog EGraph (for future equivalence-class work) and a Python set (authoritative for queries and content-hash). Phase 26.0 measures access patterns only; equivalence-class queries are the next PR."
+      }
+    },
+    {
+      "workload_label": "seed_news_briefs",
+      "n_triples_input": 66,
+      "n_distinct_after_insert": 66,
+      "n_egraph_registered": 66,
+      "insert_wall_s": 0.0091,
+      "queries": {
+        "sample_count": 66,
+        "total_ms": 0.107,
+        "per_query_us": 1.616
+      },
+      "query_parity": {
+        "sample_count": 50,
+        "mismatches": 0
+      },
+      "determinism": {
+        "hash_forward": "sha256:d8776c96bca4be5a9ab66aec5057ccb5eb9fc7f708ec823f83b18eb2c9d023f8",
+        "hash_reversed": "sha256:d8776c96bca4be5a9ab66aec5057ccb5eb9fc7f708ec823f83b18eb2c9d023f8",
+        "matches": true
+      },
+      "content_hash": "sha256:d8776c96bca4be5a9ab66aec5057ccb5eb9fc7f708ec823f83b18eb2c9d023f8",
+      "backend_info": {
+        "name": "egglog",
+        "version": "unknown",
+        "notes": "Spike-stage backend. Holds triples in both an egglog EGraph (for future equivalence-class work) and a Python set (authoritative for queries and content-hash). Phase 26.0 measures access patterns only; equivalence-class queries are the next PR."
+      }
+    },
+    {
+      "workload_label": "synthetic_1k",
+      "n_triples_input": 1000,
+      "n_distinct_after_insert": 1000,
+      "n_egraph_registered": 1000,
+      "insert_wall_s": 0.3853,
+      "queries": {
+        "sample_count": 100,
+        "total_ms": 3.15,
+        "per_query_us": 31.498
+      },
+      "query_parity": {
+        "sample_count": 50,
+        "mismatches": 0
+      },
+      "determinism": {
+        "hash_forward": "sha256:30c31abdb35f4997265ed93e8b5708bcf5bc3310380060267bab30f27df0936c",
+        "hash_reversed": "sha256:30c31abdb35f4997265ed93e8b5708bcf5bc3310380060267bab30f27df0936c",
+        "matches": true
+      },
+      "content_hash": "sha256:30c31abdb35f4997265ed93e8b5708bcf5bc3310380060267bab30f27df0936c",
+      "backend_info": {
+        "name": "egglog",
+        "version": "unknown",
+        "notes": "Spike-stage backend. Holds triples in both an egglog EGraph (for future equivalence-class work) and a Python set (authoritative for queries and content-hash). Phase 26.0 measures access patterns only; equivalence-class queries are the next PR."
+      }
+    },
+    {
+      "workload_label": "synthetic_10k",
+      "n_triples_input": 10000,
+      "n_distinct_after_insert": 10000,
+      "n_egraph_registered": 10000,
+      "insert_wall_s": 67.3143,
+      "queries": {
+        "sample_count": 100,
+        "total_ms": 33.668,
+        "per_query_us": 336.678
+      },
+      "query_parity": {
+        "sample_count": 50,
+        "mismatches": 0
+      },
+      "determinism": {
+        "hash_forward": "sha256:be6c1930bcfb235265bf53460a55925247151657e02ce5cfe25478f0e38ba2d3",
+        "hash_reversed": "sha256:be6c1930bcfb235265bf53460a55925247151657e02ce5cfe25478f0e38ba2d3",
+        "matches": true
+      },
+      "content_hash": "sha256:be6c1930bcfb235265bf53460a55925247151657e02ce5cfe25478f0e38ba2d3",
+      "backend_info": {
+        "name": "egglog",
+        "version": "unknown",
+        "notes": "Spike-stage backend. Holds triples in both an egglog EGraph (for future equivalence-class work) and a Python set (authoritative for queries and content-hash). Phase 26.0 measures access patterns only; equivalence-class queries are the next PR."
+      }
+    }
+  ],
+  "receipt_digest": "sha256:0192d7177293ec760be099a19f5cde6029196d874827f55399a8977211e26bf4"
+}
