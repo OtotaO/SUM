@@ -4,6 +4,33 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Von Neumann graph entropy — quick win #2 from the wide-net
+  survey.** Single-scalar drift detector for the axiom graph
+  via `sum_engine_internal/research/spectral_entropy/`. Defines
+  density matrix ρ = L/Tr(L) over the combinatorial graph
+  Laplacian and computes S(ρ) = -Σ λ_i log λ_i (De Domenico &
+  Biamonte, *Phys. Rev. X* 6:041062, 2016; building on von
+  Neumann's 1932 formulation). Pipeline:
+  `build_axiom_graph(triples) → normalized_laplacian → density_matrix → von_neumann_entropy`,
+  plus a one-shot `graph_entropy(triples)`. **Synthetic K_n
+  upper-bound test PASSES exactly:** for n ∈ {3, 5, 10, 20, 50},
+  S equals log(n-1) within numerical precision. **Substrate
+  corpus entropy** computed on each labeled corpus's
+  deterministic-sieve axiom graph — single scalar per corpus,
+  cross-machine reproducible (`seed_long_paragraphs` S=4.7510;
+  `seed_news_briefs` S=4.1383; `seed_paragraphs` S=2.9203).
+  **Drift sensitivity** under controlled corruption injection:
+  ΔS is monotonic and approximately linear in corruption count;
+  slope per corruption inversely proportional to corpus size
+  (smaller corpora more sensitive — as expected). Receipt:
+  `fixtures/bench_receipts/vn_entropy_substrate_spike_20260509T175942Z.json`.
+  19 contract tests covering bounds, determinism, drift
+  sensitivity, pipeline correctness, numerical robustness.
+  Findings: `docs/VN_ENTROPY_SPIKE_FINDINGS.md`. Compounds with
+  PR #183: entropy is a real scalar; wrap with
+  `SplitConformal(alpha=0.1)` → calibrated drift tripwire instead
+  of magic threshold (follow-on PR).
+
 - **Split conformal prediction kernel — quick win #1 from the
   wide-net survey.** Distribution-free, finite-sample prediction
   intervals via `sum_engine_internal/research/conformal/`

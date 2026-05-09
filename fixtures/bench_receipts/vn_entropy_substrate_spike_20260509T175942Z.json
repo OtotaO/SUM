@@ -1,0 +1,191 @@
+{
+  "schema": "sum.vn_entropy_substrate_spike.v1",
+  "iso_ts": "2026-05-09T17:59:42.089472+00:00",
+  "host": {
+    "platform": "macOS-26.0-arm64-arm-64bit",
+    "python": "3.10.14",
+    "machine": "arm64"
+  },
+  "experiment_synthetic_K_n_upper_bound": [
+    {
+      "n": 3,
+      "n_edges": 3,
+      "entropy": 0.6931471805599453,
+      "theoretical_max": 0.6931471805599453,
+      "abs_error": 0.0,
+      "matches_max": true
+    },
+    {
+      "n": 5,
+      "n_edges": 10,
+      "entropy": 1.3862943611198906,
+      "theoretical_max": 1.3862943611198906,
+      "abs_error": 0.0,
+      "matches_max": true
+    },
+    {
+      "n": 10,
+      "n_edges": 45,
+      "entropy": 2.1972245773362196,
+      "theoretical_max": 2.1972245773362196,
+      "abs_error": 0.0,
+      "matches_max": true
+    },
+    {
+      "n": 20,
+      "n_edges": 190,
+      "entropy": 2.944438979166441,
+      "theoretical_max": 2.9444389791664403,
+      "abs_error": 8.881784197001252e-16,
+      "matches_max": true
+    },
+    {
+      "n": 50,
+      "n_edges": 1225,
+      "entropy": 3.891820298110626,
+      "theoretical_max": 3.8918202981106265,
+      "abs_error": 4.440892098500626e-16,
+      "matches_max": true
+    }
+  ],
+  "experiment_substrate_corpus_entropy": [
+    {
+      "n_nodes": 229,
+      "n_edges": 119,
+      "entropy": 4.751002405302862,
+      "corpus_id": "seed_long_paragraphs",
+      "n_triples": 120
+    },
+    {
+      "n_nodes": 120,
+      "n_edges": 66,
+      "entropy": 4.138333456507935,
+      "corpus_id": "seed_news_briefs",
+      "n_triples": 66
+    },
+    {
+      "n_nodes": 35,
+      "n_edges": 20,
+      "entropy": 2.920328545945855,
+      "corpus_id": "seed_paragraphs",
+      "n_triples": 20
+    }
+  ],
+  "experiment_drift_sensitivity": [
+    {
+      "corpus_id": "seed_long_paragraphs",
+      "S_clean": 4.751002405302862,
+      "drift_curve": [
+        {
+          "n_corrupt": 0,
+          "delta_S_mean": 0.0,
+          "delta_S_std": 0.0,
+          "n_seeds": 1
+        },
+        {
+          "n_corrupt": 1,
+          "delta_S_mean": 0.00860259206892433,
+          "delta_S_std": 0.0,
+          "n_seeds": 5
+        },
+        {
+          "n_corrupt": 5,
+          "delta_S_mean": 0.04229198732450268,
+          "delta_S_std": 0.0,
+          "n_seeds": 5
+        },
+        {
+          "n_corrupt": 10,
+          "delta_S_mean": 0.0828688405376381,
+          "delta_S_std": 0.0,
+          "n_seeds": 5
+        },
+        {
+          "n_corrupt": 20,
+          "delta_S_mean": 0.1593966397038642,
+          "delta_S_std": 0.0,
+          "n_seeds": 5
+        }
+      ],
+      "linear_fit_slope_per_corruption": 0.007912095007082866,
+      "linear_fit_intercept": 0.002081159844986484
+    },
+    {
+      "corpus_id": "seed_news_briefs",
+      "S_clean": 4.138333456507935,
+      "drift_curve": [
+        {
+          "n_corrupt": 0,
+          "delta_S_mean": 0.0,
+          "delta_S_std": 0.0,
+          "n_seeds": 1
+        },
+        {
+          "n_corrupt": 1,
+          "delta_S_mean": 0.015803866700635716,
+          "delta_S_std": 0.0,
+          "n_seeds": 5
+        },
+        {
+          "n_corrupt": 5,
+          "delta_S_mean": 0.07663931005140245,
+          "delta_S_std": 0.0,
+          "n_seeds": 5
+        },
+        {
+          "n_corrupt": 10,
+          "delta_S_mean": 0.14783139898602116,
+          "delta_S_std": 0.0,
+          "n_seeds": 5
+        },
+        {
+          "n_corrupt": 20,
+          "delta_S_mean": 0.2766277369057999,
+          "delta_S_std": 0.0,
+          "n_seeds": 5
+        }
+      ],
+      "linear_fit_slope_per_corruption": 0.013652219461084776,
+      "linear_fit_intercept": 0.006355603011201729
+    },
+    {
+      "corpus_id": "seed_paragraphs",
+      "S_clean": 2.920328545945855,
+      "drift_curve": [
+        {
+          "n_corrupt": 0,
+          "delta_S_mean": 0.0,
+          "delta_S_std": 0.0,
+          "n_seeds": 1
+        },
+        {
+          "n_corrupt": 1,
+          "delta_S_mean": 0.05238081786505733,
+          "delta_S_std": 0.0,
+          "n_seeds": 5
+        },
+        {
+          "n_corrupt": 5,
+          "delta_S_mean": 0.238224296835837,
+          "delta_S_std": 0.0,
+          "n_seeds": 5
+        },
+        {
+          "n_corrupt": 10,
+          "delta_S_mean": 0.4305996839775421,
+          "delta_S_std": 0.0,
+          "n_seeds": 5
+        },
+        {
+          "n_corrupt": 20,
+          "delta_S_mean": 0.7308490443640134,
+          "delta_S_std": 0.0,
+          "n_seeds": 5
+        }
+      ],
+      "linear_fit_slope_per_corruption": 0.035138591295633084,
+      "linear_fit_intercept": 0.04676613909991452
+    }
+  ],
+  "receipt_digest": "sha256:2306df3790e638885ed7f5749234741d0013422bb2f604d7bf93d50de7205a80"
+}
