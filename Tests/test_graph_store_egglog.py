@@ -42,8 +42,11 @@ def test_add_is_idempotent(store):
     store.add_triple(_t("alice", "likes", "cats"))
     store.add_triple(_t("alice", "likes", "cats"))
     assert store.count_triples() == 1
-    # The e-graph should also see only one register call (the
-    # spike backend dedups before registering)
+    # The backend dedups before pending — only one entry queued for
+    # the e-graph (lazy mode) and only one would land in it after
+    # materialisation.
+    assert store.egraph_pending() == 1
+    store.materialise_egraph()
     assert store.egraph_registered() == 1
 
 
@@ -116,6 +119,68 @@ def test_content_hash_format_is_sha256_prefix(store):
     assert h.startswith("sha256:")
     # 64 hex chars after the prefix
     assert len(h) == len("sha256:") + 64
+
+
+def test_lazy_mode_defers_egraph_registration(store):
+    """Default mode is lazy: add_triple does not register into the
+    e-graph. The pending counter increases; the registered counter
+    stays at zero until materialise_egraph() is called."""
+    store.add_triple(_t("alice", "likes", "cats"))
+    store.add_triple(_t("bob", "owns", "rex"))
+    assert store.count_triples() == 2
+    assert store.egraph_pending() == 2
+    assert store.egraph_registered() == 0
+
+    flushed = store.materialise_egraph()
+    assert flushed == 2
+    assert store.egraph_pending() == 0
+    assert store.egraph_registered() == 2
+
+    # idempotent: second call with no new pending is a no-op
+    flushed2 = store.materialise_egraph()
+    assert flushed2 == 0
+    assert store.egraph_registered() == 2
+
+
+def test_eager_mode_registers_immediately():
+    from sum_engine_internal.graph_store.egglog_store import EgglogStore
+    eager = EgglogStore(eager_materialisation=True)
+    eager.add_triple(_t("alice", "likes", "cats"))
+    assert eager.count_triples() == 1
+    assert eager.egraph_pending() == 0
+    assert eager.egraph_registered() == 1
+
+
+def test_lazy_and_eager_modes_produce_identical_content_hash():
+    """The defining cross-mode invariant: switching materialisation
+    strategy MUST NOT change the content hash. The hash is over the
+    triple set, which is mode-independent."""
+    from sum_engine_internal.graph_store.egglog_store import EgglogStore
+    triples = [
+        _t("alice", "likes", "cats"),
+        _t("bob", "owns", "rex"),
+        _t("carol", "writes", "code"),
+    ]
+    lazy = EgglogStore()
+    lazy.add_triples(triples)
+    eager = EgglogStore(eager_materialisation=True)
+    eager.add_triples(triples)
+    assert lazy.content_hash() == eager.content_hash()
+
+
+def test_pattern_queries_work_in_lazy_mode_without_materialisation(store):
+    """find_objects / find_subjects must work on the Python set and
+    NEVER trigger materialisation. If they did, lazy mode's whole
+    storage-cost win would evaporate the moment a query hit."""
+    store.add_triples([
+        _t("alice", "likes", "cats"),
+        _t("alice", "likes", "dogs"),
+    ])
+    assert store.egraph_pending() == 2
+    assert store.find_objects("alice", "likes") == ["cats", "dogs"]
+    # still pending — pattern queries do not force the e-graph
+    assert store.egraph_pending() == 2
+    assert store.egraph_registered() == 0
 
 
 def test_canonical_hash_is_independent_of_backend():

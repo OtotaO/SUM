@@ -84,6 +84,16 @@ def _measure_insert(triples, store):
     return time.perf_counter() - t0
 
 
+def _measure_materialise(store):
+    """Measure egglog materialisation cost separately. Zero-cost in
+    eager mode (already materialised); in lazy mode this is the
+    real e-graph build time, paid once on first equivalence-class
+    query."""
+    t0 = time.perf_counter()
+    flushed = store.materialise_egraph()
+    return time.perf_counter() - t0, flushed
+
+
 def _measure_queries(triples, store, sample_count: int = 100):
     """Run a representative mix: half find_objects, half find_subjects.
     Sample query keys from the actual triple set so every query has a
@@ -146,19 +156,29 @@ def _verify_determinism(triples) -> dict:
     }
 
 
-def _run_workload(label: str, triples) -> dict:
+def _run_workload(label: str, triples, *, mode: str = "lazy") -> dict:
+    """Run one workload. ``mode`` is "lazy" (default; storage path
+    pays no e-graph cost) or "eager" (every add registers
+    immediately; the original PR #176 behaviour, kept for A/B
+    comparison)."""
     from sum_engine_internal.graph_store.egglog_store import EgglogStore
-    store = EgglogStore()
+    store = EgglogStore(eager_materialisation=(mode == "eager"))
     insert_s = _measure_insert(triples, store)
+    queries = _measure_queries(triples, store)
+    parity = _verify_query_parity(triples, store)
+    materialise_s, materialise_n = _measure_materialise(store)
     info = store.info()
     return {
         "workload_label": label,
+        "mode": mode,
         "n_triples_input": len(triples),
         "n_distinct_after_insert": store.count_triples(),
         "n_egraph_registered": store.egraph_registered(),
         "insert_wall_s": round(insert_s, 4),
-        "queries": _measure_queries(triples, store),
-        "query_parity": _verify_query_parity(triples, store),
+        "materialise_wall_s": round(materialise_s, 4),
+        "materialise_n_flushed": materialise_n,
+        "queries": queries,
+        "query_parity": parity,
         "determinism": _verify_determinism(triples),
         "content_hash": store.content_hash(),
         "backend_info": {
@@ -197,6 +217,12 @@ def main():
         "--out", default=None,
         help="Override receipt output path. Default: timestamped in fixtures/bench_receipts/.",
     )
+    parser.add_argument(
+        "--modes", default="lazy,eager",
+        help="Comma-separated list of materialisation modes to measure. "
+             "Default: 'lazy,eager' for the A/B comparison. Pass 'lazy' "
+             "alone to skip the slow eager run.",
+    )
     args = parser.parse_args()
 
     workloads: list[tuple[str, list[tuple[str, str, str]]]] = [
@@ -207,7 +233,12 @@ def main():
     if not args.quick:
         workloads.append(("synthetic_10k", _synthetic_triples(10_000)))
 
-    results = [_run_workload(label, ts) for label, ts in workloads]
+    modes = [m.strip() for m in args.modes.split(",") if m.strip()]
+    results = [
+        _run_workload(label, ts, mode=mode)
+        for mode in modes
+        for label, ts in workloads
+    ]
 
     if args.out is None:
         ts = _dt.datetime.now(_dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
@@ -222,18 +253,21 @@ def main():
     print(f"egglog spike receipt → {out_path}")
     print(f"receipt_digest:       {receipt['receipt_digest']}")
     print()
-    print(f"{'workload':25s} {'n_in':>6s} {'n_uniq':>6s} {'insert_s':>10s} {'q_us':>8s} {'det':>5s}")
+    print(
+        f"{'workload':22s} {'mode':>5s} {'n_in':>6s} "
+        f"{'insert_s':>10s} {'mat_s':>10s} {'q_us':>8s} det parity"
+    )
     for r in results:
         det = "OK" if r["determinism"]["matches"] else "FAIL"
         parity = "✓" if r["query_parity"]["mismatches"] == 0 else "✗"
         print(
-            f"{r['workload_label']:25s} "
+            f"{r['workload_label']:22s} "
+            f"{r['mode']:>5s} "
             f"{r['n_triples_input']:>6d} "
-            f"{r['n_distinct_after_insert']:>6d} "
             f"{r['insert_wall_s']:>10.4f} "
+            f"{r['materialise_wall_s']:>10.4f} "
             f"{r['queries']['per_query_us']:>8.2f} "
-            f"{det:>5s} "
-            f"parity={parity}"
+            f"{det:>3s} {parity:>6s}"
         )
 
 
