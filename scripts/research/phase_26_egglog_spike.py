@@ -96,7 +96,8 @@ def _measure_materialise(store):
 
 def _measure_eclass(triples, store, sample_count: int = 50,
                     ruleset_name: str = "ownership_symmetry",
-                    deterministic_sample_count: int = 5):
+                    deterministic_sample_count: int = 5,
+                    mode: str = "lazy"):
     """Phase C-shaped measurement: saturate the e-graph under a
     ruleset, then sample extract-canonical calls in BOTH default
     (FIFO) and deterministic (custom cost model) modes. Returns
@@ -129,33 +130,46 @@ def _measure_eclass(triples, store, sample_count: int = 50,
     rng = random.Random(0xE6610C)
     sampled = rng.sample(triples, min(sample_count, len(triples)))
 
-    # Default (FIFO) extract — fast but non-deterministic across processes.
-    t0 = time.perf_counter()
-    extracted = []
-    for s, p, o in sampled:
-        ext = store.extract_canonical(Triple(s, p, o), deterministic=False)
-        extracted.append(str(ext))
-    default_elapsed = time.perf_counter() - t0
+    # Default extract — for egglog, the FIFO path; for unionfind,
+    # the (only) path which is deterministic by construction.
+    if mode == "unionfind":
+        # UnionFindStore's extract_canonical takes only the triple.
+        t0 = time.perf_counter()
+        extracted = []
+        for s, p, o in sampled:
+            ext = store.extract_canonical(Triple(s, p, o))
+            extracted.append(str(ext))
+        default_elapsed = time.perf_counter() - t0
+    else:
+        t0 = time.perf_counter()
+        extracted = []
+        for s, p, o in sampled:
+            ext = store.extract_canonical(Triple(s, p, o), deterministic=False)
+            extracted.append(str(ext))
+        default_elapsed = time.perf_counter() - t0
     default_per_us = (default_elapsed / max(1, len(sampled))) * 1_000_000
 
     n_changed = 0
     for (s, p, o), ext in zip(sampled, extracted):
-        if not (f'"{s}"' in ext and f'"{o}"' in ext and f'"{p}"' in ext):
+        if not (str(s) in ext and str(o) in ext and str(p) in ext):
             n_changed += 1
 
-    # Deterministic extract — content-hash cost model from
-    # iteration 4. Trades correctness for performance: each call
-    # invokes a Python callback per visited e-node, and sha256(str(expr))
-    # is paid per call. At our workload sizes the overhead is
-    # 600-1000× over default. Use a smaller sample to keep total
-    # bench wall-time bounded; at 10k a single call takes ~12s.
-    det_sampled = sampled[:deterministic_sample_count]
-    t0 = time.perf_counter()
-    for s, p, o in det_sampled:
-        store.extract_canonical(Triple(s, p, o), deterministic=True)
-    det_elapsed = time.perf_counter() - t0
-    det_per_us = (det_elapsed / max(1, len(det_sampled))) * 1_000_000
-    overhead_ratio = (det_per_us / default_per_us) if default_per_us > 0 else 0.0
+    # Deterministic extract: only meaningful for egglog (it's the
+    # workaround for FIFO). UnionFindStore is deterministic by
+    # construction — re-measuring would be the same call.
+    if mode == "unionfind":
+        det_per_us = default_per_us
+        overhead_ratio = 1.0
+        det_sample_count = len(sampled)
+    else:
+        det_sampled = sampled[:deterministic_sample_count]
+        t0 = time.perf_counter()
+        for s, p, o in det_sampled:
+            store.extract_canonical(Triple(s, p, o), deterministic=True)
+        det_elapsed = time.perf_counter() - t0
+        det_per_us = (det_elapsed / max(1, len(det_sampled))) * 1_000_000
+        overhead_ratio = (det_per_us / default_per_us) if default_per_us > 0 else 0.0
+        det_sample_count = len(det_sampled)
 
     return {
         "ruleset": ruleset_name,
@@ -164,7 +178,7 @@ def _measure_eclass(triples, store, sample_count: int = 50,
         "extract_total_ms": round(default_elapsed * 1000, 3),
         "extract_per_query_us": round(default_per_us, 3),
         "n_canonical_changed": n_changed,
-        "extract_deterministic_sample_count": len(det_sampled),
+        "extract_deterministic_sample_count": det_sample_count,
         "extract_deterministic_per_query_us": round(det_per_us, 3),
         "extract_deterministic_overhead_ratio": round(overhead_ratio, 1),
     }
@@ -209,18 +223,25 @@ def _verify_query_parity(triples, store, sample_count: int = 50):
     return {"sample_count": len(sampled), "mismatches": mismatches}
 
 
-def _verify_determinism(triples) -> dict:
+def _verify_determinism(triples, *, mode: str = "lazy") -> dict:
     """Insert the triples into two fresh stores, in different orders,
     and check that both produce the same content_hash. Also persist
     the canonical hash so the receipt is comparable across machines."""
-    from sum_engine_internal.graph_store.egglog_store import EgglogStore
     from sum_engine_internal.graph_store import Triple
+    if mode == "unionfind":
+        from sum_engine_internal.graph_store.unionfind_store import UnionFindStore
+        Store = UnionFindStore
+        kwargs = {}
+    else:
+        from sum_engine_internal.graph_store.egglog_store import EgglogStore
+        Store = EgglogStore
+        kwargs = {"eager_materialisation": (mode == "eager")}
 
-    store_a = EgglogStore()
+    store_a = Store(**kwargs)
     store_a.add_triples([Triple(*t) for t in triples])
     hash_a = store_a.content_hash()
 
-    store_b = EgglogStore()
+    store_b = Store(**kwargs)
     reversed_triples = list(reversed(triples))
     store_b.add_triples([Triple(*t) for t in reversed_triples])
     hash_b = store_b.content_hash()
@@ -234,32 +255,49 @@ def _verify_determinism(triples) -> dict:
 
 def _run_workload(label: str, triples, *, mode: str = "lazy",
                   measure_eclass: bool = True) -> dict:
-    """Run one workload. ``mode`` is "lazy" (default; storage path
-    pays no e-graph cost) or "eager" (every add registers
-    immediately; the original PR #176 behaviour, kept for A/B
-    comparison). ``measure_eclass`` runs the saturate+extract
-    Phase C-shaped phase (default True; iteration 3 of the spike)."""
-    from sum_engine_internal.graph_store.egglog_store import EgglogStore
-    store = EgglogStore(eager_materialisation=(mode == "eager"))
+    """Run one workload. ``mode`` selects the backend:
+
+      - "lazy" (default): EgglogStore, lazy materialisation
+        (storage path skips the e-graph)
+      - "eager": EgglogStore, eager materialisation (PR #176
+        baseline kept for A/B comparison)
+      - "unionfind": UnionFindStore (Phase 26.0 conclusion —
+        pure-Python, no egglog dependency)
+
+    ``measure_eclass`` runs the saturate+extract Phase C-shaped
+    phase (default True; iteration 3 of the spike).
+    """
+    if mode == "unionfind":
+        from sum_engine_internal.graph_store.unionfind_store import UnionFindStore
+        store = UnionFindStore()
+    else:
+        from sum_engine_internal.graph_store.egglog_store import EgglogStore
+        store = EgglogStore(eager_materialisation=(mode == "eager"))
     insert_s = _measure_insert(triples, store)
     queries = _measure_queries(triples, store)
     parity = _verify_query_parity(triples, store)
-    materialise_s, materialise_n = _measure_materialise(store)
-    eclass = _measure_eclass(triples, store) if measure_eclass else None
+    # UnionFindStore has no separate materialisation step; report 0/0.
+    if mode == "unionfind":
+        materialise_s, materialise_n = 0.0, 0
+        n_registered = store.count_triples()
+    else:
+        materialise_s, materialise_n = _measure_materialise(store)
+        n_registered = store.egraph_registered()
+    eclass = _measure_eclass(triples, store, mode=mode) if measure_eclass else None
     info = store.info()
     return {
         "workload_label": label,
         "mode": mode,
         "n_triples_input": len(triples),
         "n_distinct_after_insert": store.count_triples(),
-        "n_egraph_registered": store.egraph_registered(),
+        "n_egraph_registered": n_registered,
         "insert_wall_s": round(insert_s, 4),
         "materialise_wall_s": round(materialise_s, 4),
         "materialise_n_flushed": materialise_n,
         "queries": queries,
         "query_parity": parity,
         "eclass_phase": eclass,
-        "determinism": _verify_determinism(triples),
+        "determinism": _verify_determinism(triples, mode=mode),
         "content_hash": store.content_hash(),
         "backend_info": {
             "name": info.name, "version": info.version, "notes": info.notes,
