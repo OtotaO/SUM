@@ -4,6 +4,31 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Phase 26.0 spike — egglog backing-store candidate measured.**
+  First of three named in `docs/PHASE_26_DESIGN.md` §2 (Neo4j,
+  PostgreSQL+AGE, egglog). Egglog ships as a pip wheel — zero
+  infrastructure overhead — so it's the natural first candidate.
+  Adds `sum_engine_internal/graph_store/` (backend-agnostic
+  `GraphStore` Protocol, `Triple` dataclass, JCS-style
+  `content_hash`) and `egglog_store.py` (in-process backend
+  holding triples in both an `egglog.EGraph` for future
+  equivalence-class work and a Python set for queries).
+  Measurement script
+  `scripts/research/phase_26_egglog_spike.py` re-encodes
+  substrate corpora through the existing `DeterministicSieve`
+  plus synthetic 1k / 10k workloads and emits a
+  `sum.phase_26_backing_store_spike.v1` receipt.
+  Result: determinism PASS (forward vs reversed insertion-order
+  produce identical content_hash) + substrate-parity PASS
+  (find_* matches brute-force on every sampled query). Wall
+  time MIXED — sub-30 ms on real corpora, 67 s on synthetic
+  10k (above the §4.9 library-scale envelope). 11 contract
+  tests in `Tests/test_graph_store_egglog.py`.
+  `docs/PHASE_26_EGGLOG_SPIKE_FINDINGS.md` writes up the
+  receipt, the 10k red flag, three follow-up directions
+  (lazy materialisation, bulk-load API, query-layer-only
+  scope), and three operator decision options.
+
 - **Step 4.b — bind win replicates over the real MCP stdio
   transport.** Added a `--use-bind-mcp` mode to
   `scripts/research/agent_failure_experiment.py` that spawns
