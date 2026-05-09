@@ -1,0 +1,162 @@
+{
+  "schema": "sum.multiplier_bootstrap_substrate_spike.v1",
+  "iso_ts": "2026-05-09T18:17:01.664394+00:00",
+  "host": {
+    "platform": "macOS-26.0-arm64-arm-64bit",
+    "python": "3.10.14",
+    "machine": "arm64"
+  },
+  "experiment_synthetic_coverage": [
+    {
+      "alpha": 0.05,
+      "target_coverage": 0.95,
+      "n_trials": 100,
+      "n_per_trial": 200,
+      "B": 300,
+      "empirical_coverage": 0.95,
+      "mean_interval_width": 0.285532105120242,
+      "se": 0.021794494717703367
+    },
+    {
+      "alpha": 0.1,
+      "target_coverage": 0.9,
+      "n_trials": 100,
+      "n_per_trial": 200,
+      "B": 300,
+      "empirical_coverage": 0.89,
+      "mean_interval_width": 0.24444165266923476,
+      "se": 0.030000000000000002
+    },
+    {
+      "alpha": 0.2,
+      "target_coverage": 0.8,
+      "n_trials": 100,
+      "n_per_trial": 200,
+      "B": 300,
+      "empirical_coverage": 0.76,
+      "mean_interval_width": 0.19019880229642322,
+      "se": 0.04
+    }
+  ],
+  "experiment_eigenvalue_cis": [
+    {
+      "corpus_id": "seed_long_paragraphs",
+      "n_nodes": 229,
+      "n_edges": 119,
+      "B": 300,
+      "alpha": 0.1,
+      "full_top_k_eigvals": [
+        5.0861301976514985,
+        4.999999999999998,
+        3.000000000000001,
+        3.0,
+        2.428006731683797
+      ],
+      "bootstrap_intervals": [
+        {
+          "point": 5.0861301976514985,
+          "lower": 3.652688431262007,
+          "upper": 5.631350652315593,
+          "width": 1.978662221053586
+        },
+        {
+          "point": 4.999999999999998,
+          "lower": 3.3194697280776677,
+          "upper": 4.593385708662641,
+          "width": 1.2739159805849734
+        },
+        {
+          "point": 3.000000000000001,
+          "lower": 3.222851968937369,
+          "upper": 4.101319478420671,
+          "width": 0.8784675094833023
+        },
+        {
+          "point": 3.0,
+          "lower": 3.139263799712188,
+          "upper": 3.7327098938575087,
+          "width": 0.5934460941453206
+        },
+        {
+          "point": 2.428006731683797,
+          "lower": 3.0678741025967,
+          "upper": 3.6151538368468037,
+          "width": 0.5472797342501039
+        }
+      ]
+    },
+    {
+      "corpus_id": "seed_news_briefs",
+      "n_nodes": 120,
+      "n_edges": 66,
+      "B": 300,
+      "alpha": 0.1,
+      "full_top_k_eigvals": [
+        4.17008648662603,
+        3.414213562373096,
+        3.000000000000001,
+        3.0000000000000004,
+        3.0
+      ],
+      "bootstrap_intervals": [
+        {
+          "point": 4.17008648662603,
+          "lower": 3.3714673299423517,
+          "upper": 5.047217410747768,
+          "width": 1.6757500808054164
+        },
+        {
+          "point": 3.414213562373096,
+          "lower": 3.2133798366421025,
+          "upper": 4.122381909846716,
+          "width": 0.9090020732046136
+        },
+        {
+          "point": 3.000000000000001,
+          "lower": 3.077089803119905,
+          "upper": 3.736448557487184,
+          "width": 0.659358754367279
+        },
+        {
+          "point": 3.0000000000000004,
+          "lower": 2.934362459929579,
+          "upper": 3.569400030085542,
+          "width": 0.635037570155963
+        },
+        {
+          "point": 3.0,
+          "lower": 2.8175397689865354,
+          "upper": 3.3271166376629555,
+          "width": 0.5095768686764202
+        }
+      ]
+    }
+  ],
+  "experiment_vn_entropy_ci": [
+    {
+      "corpus_id": "seed_long_paragraphs",
+      "n_nodes": 229,
+      "n_triples": 120,
+      "B": 300,
+      "alpha": 0.1,
+      "full_S": 4.751002405302862,
+      "bootstrap_S_mean": 4.751002405302862,
+      "interval_lower": 5.018870896584196,
+      "interval_upper": 5.04813675313563,
+      "interval_width": 0.029265856551433878
+    },
+    {
+      "corpus_id": "seed_news_briefs",
+      "n_nodes": 120,
+      "n_triples": 66,
+      "B": 300,
+      "alpha": 0.1,
+      "full_S": 4.138333456507935,
+      "bootstrap_S_mean": 4.138333456507935,
+      "interval_lower": 4.373109748325478,
+      "interval_upper": 4.424526236713598,
+      "interval_width": 0.05141648838811985
+    }
+  ],
+  "receipt_digest": "sha256:01e06d356c866f2639c3a5e19af90a1916cbe47809f1d9c4af4d9f6c9a45b64f"
+}
