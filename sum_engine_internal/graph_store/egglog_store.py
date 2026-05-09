@@ -91,15 +91,36 @@ class EgglogStore:
     def _ensure_egraph(self) -> None:
         if self._egraph is not None:
             return
-        from egglog import EGraph, Expr, String
+        from egglog import EGraph, Expr, String, ruleset, rewrite
 
         class _SUMTriple(Expr):  # type: ignore[misc]
             """E-graph node type for substrate triples."""
             def __init__(self, s: String, p: String, o: String) -> None: ...
 
+        # Bake the spike's "ownership symmetry" rewrite rule
+        # alongside the e-graph + Triple class. This is the minimum
+        # equivalence-class semantics worth measuring: active vs
+        # passive forms of an "owns" relation collapse to the same
+        # e-class. Phase C's importance-weighted SUM will need
+        # richer rules; the spike only needs to demonstrate the
+        # extract-with-cost path is exercised.
+        @ruleset
+        def _ownership_symmetry_rules(s: String, p: String, o: String):
+            yield rewrite(
+                _SUMTriple(s, String("owns"), o)
+            ).to(
+                _SUMTriple(o, String("owned_by"), s)
+            )
+            yield rewrite(
+                _SUMTriple(o, String("owned_by"), s)
+            ).to(
+                _SUMTriple(s, String("owns"), o)
+            )
+
         self._egraph = EGraph()
         self._TripleNode = _SUMTriple
         self._String = String
+        self._rulesets = {"ownership_symmetry": _ownership_symmetry_rules}
 
     def info(self) -> GraphStoreInfo:
         try:
@@ -219,6 +240,57 @@ class EgglogStore:
 
     def content_hash(self) -> str:
         return _canonical_triples_hash(self.iter_triples())
+
+    # ── Equivalence-class machinery ──────────────────────────────────
+    #
+    # The methods below are the *Phase C-shaped* surface: saturate the
+    # e-graph under a registered ruleset, then extract canonical
+    # representatives by cost. The spike measures these to answer
+    # whether per-query e-class extraction is fast enough at library
+    # scale to justify egglog as the substrate's query layer.
+
+    def available_rulesets(self) -> list[str]:
+        """Names of rulesets baked into this backend. Returns
+        an empty list before the e-graph is materialised."""
+        if self._egraph is None:
+            return []
+        return list(self._rulesets.keys())
+
+    def saturate(self, ruleset_name: str = "ownership_symmetry") -> None:
+        """Run egglog saturation on a named ruleset. Materialises
+        the e-graph if needed. Saturation is order-independent per
+        the egglog spec; a fresh process running the same triples +
+        ruleset reaches the same fixed point.
+
+        Raises ``KeyError`` if the ruleset is unknown.
+        """
+        self.materialise_egraph()
+        if ruleset_name not in self._rulesets:
+            raise KeyError(
+                f"unknown ruleset {ruleset_name!r}; available: "
+                f"{list(self._rulesets.keys())}"
+            )
+        self._egraph.run(self._rulesets[ruleset_name].saturate())
+
+    def extract_canonical(self, triple: Triple):
+        """Return the lowest-cost representative of the e-class
+        containing ``triple``. After saturation under a symmetry
+        ruleset, two triples in the same e-class will both extract
+        to the same canonical form (the one egglog's default cost
+        function picks).
+
+        Caller is responsible for materialising and saturating
+        first; this method does NOT auto-saturate (saturation is
+        cost-amortised across many extracts, so we don't want to
+        hide it inside every call).
+        """
+        self.materialise_egraph()
+        node = self._TripleNode(
+            self._String(triple.subject),
+            self._String(triple.predicate),
+            self._String(triple.object),
+        )
+        return self._egraph.extract(node)
 
 
 # Confirm at import time that the store satisfies the GraphStore

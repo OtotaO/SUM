@@ -94,6 +94,60 @@ def _measure_materialise(store):
     return time.perf_counter() - t0, flushed
 
 
+def _measure_eclass(triples, store, sample_count: int = 50,
+                    ruleset_name: str = "ownership_symmetry"):
+    """Phase C-shaped measurement: saturate the e-graph under a
+    ruleset, then sample extract-canonical calls. Returns timing
+    + a check for rule firings."""
+    from sum_engine_internal.graph_store import Triple
+    if not triples:
+        return {
+            "ruleset": ruleset_name, "saturate_s": 0.0,
+            "extract_sample_count": 0,
+            "extract_total_ms": 0.0,
+            "extract_per_query_us": 0.0,
+            "n_canonical_changed": 0,
+        }
+
+    t0 = time.perf_counter()
+    store.saturate(ruleset_name)
+    saturate_s = time.perf_counter() - t0
+
+    import random
+    rng = random.Random(0xE6610C)
+    sampled = rng.sample(triples, min(sample_count, len(triples)))
+
+    t0 = time.perf_counter()
+    extracted = []
+    for s, p, o in sampled:
+        ext = store.extract_canonical(Triple(s, p, o))
+        extracted.append(str(ext))
+    elapsed = time.perf_counter() - t0
+
+    # Count how many extractions returned a canonical form that
+    # differs from the input (i.e., the ruleset actually fired).
+    # For workloads with no "owns"/"owned_by" pairs this stays at 0,
+    # which is itself a meaningful number — we still pay the saturate
+    # and extract cost even when the rule doesn't fire.
+    n_changed = 0
+    for (s, p, o), ext in zip(sampled, extracted):
+        # crude check: extracted str contains the same subject/object
+        # as the input, but possibly a different predicate
+        if not (f'"{s}"' in ext and f'"{o}"' in ext and f'"{p}"' in ext):
+            n_changed += 1
+
+    return {
+        "ruleset": ruleset_name,
+        "saturate_s": round(saturate_s, 4),
+        "extract_sample_count": len(sampled),
+        "extract_total_ms": round(elapsed * 1000, 3),
+        "extract_per_query_us": round(
+            (elapsed / max(1, len(sampled))) * 1_000_000, 3
+        ),
+        "n_canonical_changed": n_changed,
+    }
+
+
 def _measure_queries(triples, store, sample_count: int = 100):
     """Run a representative mix: half find_objects, half find_subjects.
     Sample query keys from the actual triple set so every query has a
@@ -156,17 +210,20 @@ def _verify_determinism(triples) -> dict:
     }
 
 
-def _run_workload(label: str, triples, *, mode: str = "lazy") -> dict:
+def _run_workload(label: str, triples, *, mode: str = "lazy",
+                  measure_eclass: bool = True) -> dict:
     """Run one workload. ``mode`` is "lazy" (default; storage path
     pays no e-graph cost) or "eager" (every add registers
     immediately; the original PR #176 behaviour, kept for A/B
-    comparison)."""
+    comparison). ``measure_eclass`` runs the saturate+extract
+    Phase C-shaped phase (default True; iteration 3 of the spike)."""
     from sum_engine_internal.graph_store.egglog_store import EgglogStore
     store = EgglogStore(eager_materialisation=(mode == "eager"))
     insert_s = _measure_insert(triples, store)
     queries = _measure_queries(triples, store)
     parity = _verify_query_parity(triples, store)
     materialise_s, materialise_n = _measure_materialise(store)
+    eclass = _measure_eclass(triples, store) if measure_eclass else None
     info = store.info()
     return {
         "workload_label": label,
@@ -179,6 +236,7 @@ def _run_workload(label: str, triples, *, mode: str = "lazy") -> dict:
         "materialise_n_flushed": materialise_n,
         "queries": queries,
         "query_parity": parity,
+        "eclass_phase": eclass,
         "determinism": _verify_determinism(triples),
         "content_hash": store.content_hash(),
         "backend_info": {
@@ -255,18 +313,21 @@ def main():
     print()
     print(
         f"{'workload':22s} {'mode':>5s} {'n_in':>6s} "
-        f"{'insert_s':>10s} {'mat_s':>10s} {'q_us':>8s} det parity"
+        f"{'insert_s':>10s} {'mat_s':>10s} "
+        f"{'sat_s':>8s} {'ext_us':>8s} det parity"
     )
     for r in results:
         det = "OK" if r["determinism"]["matches"] else "FAIL"
         parity = "✓" if r["query_parity"]["mismatches"] == 0 else "✗"
+        ec = r.get("eclass_phase") or {}
         print(
             f"{r['workload_label']:22s} "
             f"{r['mode']:>5s} "
             f"{r['n_triples_input']:>6d} "
             f"{r['insert_wall_s']:>10.4f} "
             f"{r['materialise_wall_s']:>10.4f} "
-            f"{r['queries']['per_query_us']:>8.2f} "
+            f"{ec.get('saturate_s', 0):>8.4f} "
+            f"{ec.get('extract_per_query_us', 0):>8.2f} "
             f"{det:>3s} {parity:>6s}"
         )
 

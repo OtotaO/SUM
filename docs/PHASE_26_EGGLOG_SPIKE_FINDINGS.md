@@ -208,3 +208,104 @@ unless explicitly cached.
 
 The numbers are honest evidence; the decision still belongs to
 the operator.
+
+## Iteration 3 — actual e-class queries measured
+
+Followed up on the iteration-2 question: "is per-query e-class
+extraction fast enough at library scale to amortise against
+materialisation cost?"
+
+Added a baked-in `ownership_symmetry` ruleset
+(`Triple(s, "owns", o) ⟺ Triple(o, "owned_by", s)`) to
+`EgglogStore` plus three new methods: `available_rulesets()`,
+`saturate(ruleset_name)`, and `extract_canonical(triple)` — the
+minimum surface needed to exercise egglog's extract-with-cost
+end-to-end. Spike harness gains a `_measure_eclass` phase that
+runs saturate + samples 50 extractions per workload.
+
+Lazy-mode measurements (eager numbers from iteration 2 hold
+because the e-class phase runs *after* materialisation and is
+mode-independent):
+
+| workload             | materialise_s | saturate_s | extract µs | sample |
+|----------------------|--------------:|-----------:|-----------:|-------:|
+| seed_news_briefs     |        0.0089 |     0.0006 |        438 |     50 |
+| seed_long_paragraphs |        0.1629 |     0.0015 |        575 |     50 |
+| synthetic_1k         |        0.3500 |     0.0021 |      1 094 |     50 |
+| synthetic_10k        |       62.4440 |     0.0119 |     15 255 |     50 |
+
+Updated receipt: `fixtures/bench_receipts/phase_26_backing_store_spike_egglog_20260509T135038Z.json`
+
+### What the iteration-3 numbers say
+
+  - **Saturation is essentially free for unfiring rules.** 10k
+    triples saturate the ownership-symmetry ruleset in 12 ms
+    (no facts match the rule in the synthetic workload). For
+    workloads where rules *do* fire, saturation cost will scale
+    with the union-find work, not with the input size — but that
+    measurement requires a workload designed to fire rules
+    repeatedly, which is the *next* iteration if we proceed.
+  - **Extract scales linearly with graph size.** 0.6 ms at 66
+    triples → 15 ms at 10k triples (a 25× cost ratio for a 150×
+    larger graph — sub-linear but closer to linear than constant).
+    Extrapolating: at 50 k triples extract would take ~75 ms per
+    call; at 100 k, ~150 ms. For workloads that need to extract
+    every triple's canonical form after saturation, that becomes
+    minutes of cumulative extract time.
+  - **End-to-end e-class query cost is dominated by
+    materialisation, not by saturate or extract.** At 10k:
+    materialise 62 s + saturate 12 ms + 50 extracts 760 ms ≈
+    63 s. The materialise cost is the architectural bottleneck;
+    option 2 (egglog bulk-load API) remains the unaddressed
+    direction with the most leverage.
+
+### Honest red flag — default cost is insertion-order-sensitive
+
+A separate finding from this iteration: egglog's default
+`extract` is **non-deterministic across processes** when two
+expressions in the same e-class have equal cost.
+
+Concretely, after saturating with `ownership_symmetry`:
+  - Inserting `(active, passive)` and extracting → returns the
+    active form
+  - Inserting `(passive, active)` (reversed) and extracting →
+    returns the passive form
+
+Both choices are valid extracts (lowest-cost in the e-class), but
+the tie-breaker is FIFO over insertion order. For Phase C to be
+cross-process deterministic — required for `bench_digest`
+reproducibility — a custom cost function with a content-derived
+tie-breaker is mandatory. Egglog supports this via
+`@function(cost=...)` annotations; building one is the natural
+follow-on if we proceed with egglog as the query layer.
+
+This limitation is pinned by
+`test_default_cost_is_insertion_order_sensitive_on_ties` in
+`Tests/test_graph_store_egglog.py` — the test ASSERTS that the
+two canonical forms differ, so if egglog's default ever becomes
+deterministic on ties, the test will start failing and the
+findings doc gets re-evaluated.
+
+### Decision options now updated again
+
+  - **Continue:** custom cost function next (resolves the
+    determinism red flag; orthogonal to the materialisation
+    bottleneck). After that, option 2 (egglog bulk-load API)
+    to attack the materialisation cost — that's the only path
+    to library-scale e-class queries.
+  - **Pause egglog, start Neo4j candidate:** Neo4j has its own
+    determinism story (Cypher with explicit ORDER BY); the e-class
+    semantics are not native but can be encoded via Cypher
+    patterns. The trade is "egglog-native equivalence-class
+    extraction we'd have to make deterministic" vs "Neo4j-native
+    determinism we'd have to encode equivalence classes in." Both
+    are work; the choice depends on which path the operator
+    wants to be the long-term one.
+  - **Phase 26 itself paused:** unchanged from before. The
+    iteration-3 numbers reinforce that egglog at the *query
+    layer* is workable for small graphs but not yet for library
+    scale — and Phase 26 itself is a future-direction
+    investment, not a load-bearing fix.
+
+The numbers are honest evidence; the decision still belongs to
+the operator.
