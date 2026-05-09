@@ -182,6 +182,45 @@ def _build_bind_tools() -> tuple[dict[str, Any], Any]:
     }, registry
 
 
+def _build_mcp_bind_dispatchers(session) -> dict:
+    """Build agent-facing tool dispatchers that route to the bind
+    tools on a live MCP stdio session.
+
+    The agent's system prompt names verbs as ``extract`` / ``attest``
+    / ``verify`` / ``render`` / ``inspect`` (no ``_bind`` suffix), so
+    the agent loop is byte-identical to the in-process bind run. Only
+    the execution path differs — these dispatchers send a JSON-RPC
+    `tools/call` to the running server.
+    """
+    import json as _json
+
+    def _parse_call_result(result):
+        if getattr(result, "structuredContent", None):
+            sc = result.structuredContent
+            if isinstance(sc, dict) and set(sc.keys()) == {"result"}:
+                return sc["result"]
+            return sc
+        if result.content:
+            return _json.loads(result.content[0].text)
+        return None
+
+    def _make_dispatcher(mcp_tool_name: str):
+        async def dispatch(args: dict) -> dict:
+            r = await session.call_tool(mcp_tool_name, args)
+            return _parse_call_result(r)
+        return dispatch
+
+    return {
+        # Map agent's verb name → MCP tool name.
+        "extract_triples": _make_dispatcher("extract_bind"),  # alias for API compat
+        "extract": _make_dispatcher("extract_bind"),
+        "attest": _make_dispatcher("attest_bind"),
+        "verify": _make_dispatcher("verify_bind"),
+        "render": _make_dispatcher("render_bind"),
+        "inspect": _make_dispatcher("inspect_bind"),
+    }
+
+
 _BIND_SYSTEM_PROMPT = """\
 You are an autonomous agent that uses the SUM bind-aware toolchain to
 produce a *verified summary* of a given document. A verified summary
@@ -488,7 +527,18 @@ def main():
              "flag and comparing turn-count / parse-error counts against "
              "the baseline log committed in PR #171.",
     )
+    parser.add_argument(
+        "--use-bind-mcp", action="store_true",
+        help="Drive the agent against the bind tools served by an actual "
+             "FastMCP stdio server (`python -m sum_engine_internal.mcp_server`) "
+             "instead of the in-process spike. Validates that PR #172's Step 4 "
+             "win holds at the canonical surface — over real JSON-RPC framing — "
+             "not just in the in-process harness. Mutually exclusive with "
+             "--use-bind-layer.",
+    )
     args = parser.parse_args()
+    if args.use_bind_layer and args.use_bind_mcp:
+        parser.error("--use-bind-layer and --use-bind-mcp are mutually exclusive")
 
     if args.document is None:
         # Default: pick one doc from the existing test corpus.
@@ -505,22 +555,55 @@ def main():
         document_label = Path(args.document).stem
 
     timestamp = _dt.datetime.now(_dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    surface_label = "bind" if args.use_bind_layer else "cli"
+    if args.use_bind_mcp:
+        surface_label = "bind_mcp"
+    elif args.use_bind_layer:
+        surface_label = "bind"
+    else:
+        surface_label = "cli"
     log_path = LOG_DIR / f"agent_run_{surface_label}_{document_label}_{args.model.replace('/','_')}_{timestamp}.jsonl"
 
-    if args.use_bind_layer:
-        tools, _registry = _build_bind_tools()
-        system_prompt = _BIND_SYSTEM_PROMPT
-    else:
-        tools = _TOOLS
-        system_prompt = _SYSTEM_PROMPT
+    if args.use_bind_mcp:
+        # Lifecycle: spawn server, open session, build dispatchers,
+        # run the agent loop inside the session context. Closing the
+        # context tears down the subprocess.
+        import sys as _sys
+        from mcp import ClientSession, StdioServerParameters
+        from mcp.client.stdio import stdio_client
 
-    result = asyncio.run(run_agent(
-        document_text=document_text, model=args.model,
-        max_turns=args.max_turns, time_budget_s=args.time_budget_s,
-        log_path=log_path,
-        tools=tools, system_prompt=system_prompt, surface_label=surface_label,
-    ))
+        async def go():
+            params = StdioServerParameters(
+                command=_sys.executable,
+                args=["-m", "sum_engine_internal.mcp_server"],
+                env=None,
+            )
+            async with stdio_client(params) as (read, write):
+                async with ClientSession(read, write) as session:
+                    await session.initialize()
+                    tools = _build_mcp_bind_dispatchers(session)
+                    return await run_agent(
+                        document_text=document_text, model=args.model,
+                        max_turns=args.max_turns,
+                        time_budget_s=args.time_budget_s,
+                        log_path=log_path,
+                        tools=tools,
+                        system_prompt=_BIND_SYSTEM_PROMPT,
+                        surface_label=surface_label,
+                    )
+        result = asyncio.run(go())
+    else:
+        if args.use_bind_layer:
+            tools, _registry = _build_bind_tools()
+            system_prompt = _BIND_SYSTEM_PROMPT
+        else:
+            tools = _TOOLS
+            system_prompt = _SYSTEM_PROMPT
+        result = asyncio.run(run_agent(
+            document_text=document_text, model=args.model,
+            max_turns=args.max_turns, time_budget_s=args.time_budget_s,
+            log_path=log_path,
+            tools=tools, system_prompt=system_prompt, surface_label=surface_label,
+        ))
 
     print()
     print("=" * 72)

@@ -259,3 +259,43 @@ This closes Step 4 of the four-step plan. The bind layer is the
 canonical agent surface from here forward; the CLI tool dispatcher
 in the harness is retained for the comparison baseline only and
 should not be the path new consumers wire against.
+
+## Step 4.b — same agent loop over the real MCP stdio transport
+
+PR #173 mounted the bind verb on the FastMCP server; PR #174 pinned
+its wire-format contract. Open question after Step 4: was the
+in-process win an artifact of in-process dispatch, or does it hold
+when an agent talks to the server over real stdio JSON-RPC?
+
+A `--use-bind-mcp` mode added to the harness spawns
+`python -m sum_engine_internal.mcp_server` as a subprocess, opens
+an `mcp.ClientSession`, and routes each agent verb to the
+corresponding `*_bind` MCP tool over the wire. The agent's system
+prompt is unchanged from the in-process bind run — only the
+execution path differs.
+
+Same model (`gpt-4o-mini-2024-07-18`), same document
+(`doc_long_cell_biology`).
+
+| metric                  | baseline (CLI) | bind (in-process) | bind (MCP transport) |
+|-------------------------|---------------:|------------------:|---------------------:|
+| max turn reached        | 10             | 5                 | 5                    |
+| llm_response events     | 10             | 5                 | 5                    |
+| tool_result events      | 5              | 4                 | 4                    |
+| parse_error events      | 4              | 0                 | 0                    |
+| free-form-error retries | 1              | 0                 | 0                    |
+| reached `done`          | yes            | yes               | yes                  |
+
+Logs:
+  - in-process bind:
+    `fixtures/agent_logs/agent_run_bind_doc_long_cell_biology_gpt-4o-mini-2024-07-18_20260509T050724Z.jsonl`
+  - MCP transport bind:
+    `fixtures/agent_logs/agent_run_bind_mcp_doc_long_cell_biology_gpt-4o-mini-2024-07-18_20260509T111919Z.jsonl`
+
+Phase counts are byte-identical between the two bind variants. The
+payoff is in the contract (content-addressed handles, typed errors,
+self-describing manifest) — not in any in-process Python shortcut.
+An external MCP client gets the same compression an in-process
+caller does.
+
+This fully closes the four-step plan at the canonical surface.

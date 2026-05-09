@@ -4,6 +4,24 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Step 4.b — bind win replicates over the real MCP stdio
+  transport.** Added a `--use-bind-mcp` mode to
+  `scripts/research/agent_failure_experiment.py` that spawns
+  `python -m sum_engine_internal.mcp_server` as a subprocess,
+  opens an `mcp.ClientSession`, and routes each agent verb to the
+  corresponding `*_bind` MCP tool over real JSON-RPC. The agent
+  system prompt is unchanged from the in-process bind run — only
+  the execution path differs. New log committed as
+  `fixtures/agent_logs/agent_run_bind_mcp_doc_long_cell_biology_*.jsonl`.
+  Phase counts are byte-identical to the in-process bind run
+  (max turn 5, parse_errors 0, free-form retries 0, completed via
+  `done`). The bind verb's payoff is in the contract
+  (content-addressed handles, typed errors, self-describing
+  manifest) — not in any in-process Python shortcut. The
+  four-step plan is fully closed at the canonical surface.
+  `docs/AGENT_SURFACE_FINDINGS.md` gains a Step 4.b section with
+  the three-way comparison table.
+
 - **Bind agent surface mounted on the FastMCP server.**
   `sum_engine_internal/agent_surface/mcp_bind.py` gains
   `register_bind_tools(mcp, registry, real_tools)`; the SUM MCP
