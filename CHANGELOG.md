@@ -4,6 +4,44 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Multiplier bootstrap kernel — research arc PR #1.**
+  Distribution-free CIs on vector-valued statistics via the
+  Chernozhukov-Chetverikov-Kato (Annals of Statistics 2013)
+  Gaussian multiplier bootstrap. Module
+  `sum_engine_internal/research/bootstrap/`:
+  `multiplier_bootstrap(samples, statistic_fn, B)` returns
+  `(point, replicates)`; `bootstrap_ci(point, replicates, alpha)`
+  extracts per-component intervals; Gaussian + Rademacher
+  multiplier helpers exposed.
+
+  **Experiment 1 — synthetic mean coverage VERIFIED:** at
+  α ∈ {0.05, 0.10, 0.20} empirical coverage hits 0.950 / 0.890 /
+  0.760 (target: 0.95 / 0.90 / 0.80) — within 1 SE across 100
+  trials per setting. CCK 2013 kernel works on its native domain.
+
+  **Experiment 2 + 3 — substrate spectral application reveals an
+  honest methodological caveat.** Bootstrap CIs on graph-Laplacian
+  eigenvalues and on von Neumann entropy via row-resampling DO
+  NOT contain the full-graph values for several lower
+  eigenvalues, and place tight CIs *above* the full entropy.
+  Root cause: row-resampling an adjacency matrix doesn't preserve
+  iid structure (rows aren't iid — they encode each node's
+  connectivity); resampling inflates degrees of repeated rows
+  and biases the spectrum systematically. The article-survey
+  agent's pitch ("bootstrap the sheaf spectrum to replace magic
+  thresholds") needs more nuance than the agent surfaced. Path
+  forward documented in `docs/MULTIPLIER_BOOTSTRAP_SPIKE_FINDINGS.md`:
+  (1) edge / graphon bootstrap (Bickel-Chen-Levina 2011);
+  (2) subsample bootstrap (Bickel-Sakov 2008); (3) reframe to
+  per-document iid scalars where the kernel applies cleanly
+  (RPCA corruption_score, slider residuals, NCD distances).
+
+  Receipt: `fixtures/bench_receipts/multiplier_bootstrap_substrate_spike_20260509T181701Z.json`.
+  16 contract tests covering coverage on a known mean,
+  multi-component statistics, determinism via rng,
+  multiplier-type variants, edge cases. Findings doc:
+  `docs/MULTIPLIER_BOOTSTRAP_SPIKE_FINDINGS.md`.
+
 - **Von Neumann graph entropy — quick win #2 from the wide-net
   survey.** Single-scalar drift detector for the axiom graph
   via `sum_engine_internal/research/spectral_entropy/`. Defines

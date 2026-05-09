@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-09T18:01:25Z",
+  "issued_at": "2026-05-09T18:18:57Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "d3acc0db6ca6b05b6890c951698431972cac898c",
-    "head_short": "d3acc0d",
-    "head_subject": "research: Split conformal prediction kernel \u2014 quick win #1 (#183)",
-    "head_committer_date": "2026-05-09T13:56:23-04:00",
+    "head_sha": "17c8a31aeb041c802406513333295ee0485d442a",
+    "head_short": "17c8a31",
+    "head_subject": "research: Von Neumann graph entropy \u2014 quick win #2 (#184)",
+    "head_committer_date": "2026-05-09T14:12:27-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -52,6 +52,11 @@
       {
         "path": "fixtures/bench_receipts/hybrid_comparison_2026-05-04.json",
         "schema": "sum.sheaf_hybrid_comparison.v1",
+        "issued_at": null
+      },
+      {
+        "path": "fixtures/bench_receipts/multiplier_bootstrap_substrate_spike_20260509T181701Z.json",
+        "schema": "sum.multiplier_bootstrap_substrate_spike.v1",
         "issued_at": null
       },
       {
