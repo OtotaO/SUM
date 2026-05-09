@@ -228,17 +228,15 @@ def test_extract_canonical_matches_within_a_single_process(store):
     assert ext1 == ext2
 
 
-def test_default_cost_is_insertion_order_sensitive_on_ties():
-    """KNOWN LIMITATION pinned as a test: egglog's default
-    extract-with-cost is insertion-order-dependent when two
-    expressions in the same e-class have equal cost. Forward
-    insertion of (active, passive) extracts the active form;
-    reversed insertion extracts the passive form.
+def test_extract_canonical_is_deterministic_across_insertion_order():
+    """Iteration-4 fix: `extract_canonical(deterministic=True)`
+    (the default) breaks ties via a content-hash cost model, so
+    the canonical form does NOT depend on insertion order.
 
-    For Phase C cross-process determinism, a custom cost function
-    with a content-derived tie-breaker is required. This test
-    exists so the limitation cannot regress silently into a
-    "looks deterministic" assumption."""
+    Inverts the iteration-3 known-limitation test: this test
+    asserts the SAME canonical form across the two insertion
+    orders. If it starts failing, the content-hash cost model has
+    regressed."""
     from sum_engine_internal.graph_store.egglog_store import EgglogStore
     triples = [
         _t("alice", "owns", "rex"),
@@ -255,15 +253,74 @@ def test_default_cost_is_insertion_order_sensitive_on_ties():
     store_rev.saturate("ownership_symmetry")
     canonical_rev = str(store_rev.extract_canonical(_t("alice", "owns", "rex")))
 
-    # The two extractions DIFFER under the default cost — this is
-    # the limitation we're pinning. If/when egglog or our backend
-    # makes default extract deterministic, this test will start
-    # failing and we should celebrate by inverting the assertion.
-    assert canonical_fwd != canonical_rev, (
-        "If this test starts failing, egglog default extract has "
-        "become deterministic on ties. Update the spike findings "
-        "doc and invert this assertion."
+    assert canonical_fwd == canonical_rev, (
+        f"deterministic extract_canonical produced different "
+        f"canonical forms across insertion orders: "
+        f"forward={canonical_fwd!r}, reversed={canonical_rev!r}. "
+        f"The content-hash cost model has regressed."
     )
+
+
+def test_extract_canonical_deterministic_false_preserves_default_behaviour():
+    """The non-deterministic default extract is still reachable
+    via `deterministic=False` — kept for spike A/B comparison and
+    to ensure the iteration-3 finding stays measurable."""
+    from sum_engine_internal.graph_store.egglog_store import EgglogStore
+    triples = [
+        _t("alice", "owns", "rex"),
+        _t("rex", "owned_by", "alice"),
+    ]
+
+    store_fwd = EgglogStore()
+    store_fwd.add_triples(triples)
+    store_fwd.saturate("ownership_symmetry")
+    fwd = str(store_fwd.extract_canonical(_t("alice", "owns", "rex"), deterministic=False))
+
+    store_rev = EgglogStore()
+    store_rev.add_triples(list(reversed(triples)))
+    store_rev.saturate("ownership_symmetry")
+    rev = str(store_rev.extract_canonical(_t("alice", "owns", "rex"), deterministic=False))
+
+    # Asserts the iteration-3 limitation is still present under
+    # deterministic=False — confirms our fix is what's adding
+    # determinism, not some upstream egglog change.
+    assert fwd != rev, (
+        "deterministic=False extract has become deterministic. "
+        "If egglog upstream now does this, the deterministic=True "
+        "branch can simplify to call default extract."
+    )
+
+
+def test_content_hash_cost_model_is_pure():
+    """The cost model must depend only on the expression's
+    string repr and its children's costs — not on egraph
+    state. Calling it twice with the same args returns the same
+    cost."""
+    from sum_engine_internal.graph_store.egglog_store import (
+        _content_hash_cost_model,
+    )
+    # We don't actually need a real egraph or expr to test purity
+    # — the function only reads `str(expr)` and `children_costs`.
+    class FakeExpr:
+        def __init__(self, s): self._s = s
+        def __str__(self): return self._s
+
+    e = FakeExpr('Triple("alice", "owns", "rex")')
+    c1 = _content_hash_cost_model(None, e, [0, 0, 0])
+    c2 = _content_hash_cost_model(None, e, [0, 0, 0])
+    assert c1 == c2
+
+    # Different children costs → different totals
+    c3 = _content_hash_cost_model(None, e, [1, 0, 0])
+    assert c3 != c1
+    # Children costs occupy the high 64 bits; the difference must
+    # be at least 2^64
+    assert c3 - c1 >= (1 << 64)
+
+    # Different expression → different tiebreak (1/2^64 collision)
+    e2 = FakeExpr('Triple("rex", "owned_by", "alice")')
+    c4 = _content_hash_cost_model(None, e2, [0, 0, 0])
+    assert c4 != c1
 
 
 def test_canonical_hash_is_independent_of_backend():

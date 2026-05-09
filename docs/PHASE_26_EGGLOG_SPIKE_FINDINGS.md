@@ -309,3 +309,100 @@ findings doc gets re-evaluated.
 
 The numbers are honest evidence; the decision still belongs to
 the operator.
+
+## Iteration 4 — content-derived cost model resolves the
+determinism red flag
+
+The iteration-3 finding (egglog default extract is
+non-deterministic across processes on ties) is now resolved by a
+custom cost model passed via egglog's `extract(cost_model=…)`
+hook. PR egglog-python#357 (merged 2025-10-02, present in v11.4.0
+which we pin) added the API.
+
+`_content_hash_cost_model(egraph, expr, children_costs) → int`
+returns
+`sum(children_costs) << 64 + sha256(str(expr))[:8]`. Two priors,
+two bit-ranges, no overlap:
+
+  - **High 64 bits (children_costs):** preserves egglog's "smaller
+    subtree wins" structural intuition. A leaf still beats a
+    multi-node tree for the same e-class.
+  - **Low 64 bits (content hash):** sha256 over the expression's
+    deterministic string repr; provides a content-derived total
+    order on e-class members with equal structural cost. The
+    hash depends only on the expression's identity, not on
+    insertion order.
+
+This is the layered-decomposition discipline named in the
+deep-research article's §2 kernel: distinct priors handled in
+distinct bit ranges, the most expensive-to-recover-from prior
+occupying the high bits.
+
+`extract_canonical(triple, deterministic=True)` (the default)
+uses this cost model. `deterministic=False` falls back to
+egglog's default extract; kept for spike comparisons and to
+keep the iteration-3 limitation measurable as an A/B contrast.
+
+### Tests pin the resolution
+
+- `test_extract_canonical_is_deterministic_across_insertion_order`
+  asserts the SAME canonical form across forward and reversed
+  insertion under `deterministic=True`. Inverts the iteration-3
+  known-limitation test.
+- `test_extract_canonical_deterministic_false_preserves_default_behaviour`
+  asserts the iteration-3 non-determinism still appears under
+  `deterministic=False`. If this test starts failing, egglog
+  upstream has solved the determinism issue and our wrapper
+  can simplify.
+- `test_content_hash_cost_model_is_pure` pins the cost model's
+  purity (same args → same cost) and the bit-range layering
+  (different children_costs differ by ≥ 2⁶⁴; different
+  expressions differ in the low 64 bits).
+
+### What this iteration did NOT address
+
+- **Materialisation bottleneck.** Still ~70 s at 10k. egglog
+  upstream issue #756 (efficient bulk-load) remains open; our
+  option 2 has no upstream landing. This iteration trades
+  determinism for nothing in the wall-clock dimension.
+- **Custom cost in eager mode.** Eager-mode tests are not yet
+  re-run with `deterministic=True`; the cost model applies at
+  extract time only, so eager-mode behaviour should be
+  identical, but a small follow-up could pin that explicitly.
+- **Library-scale e-class queries.** The 50 k+ axiom regime
+  remains untested for any spike candidate. The next blocking
+  question, if Phase 26 proceeds, is the bulk-load workaround
+  for option 2.
+
+### Decision options now updated again
+
+  - **Continue:** option 2 (bulk-load API) — egglog issue #756
+    is open with no upstream landing. We'd be pioneering a
+    workaround. Highest leverage if Phase 26 is still
+    near-term-priority.
+  - **Pause egglog, start Neo4j candidate:** the determinism
+    objection is gone; the materialisation objection is the only
+    remaining technical reason to switch. If the operator wants
+    library-scale today, Neo4j's mature scale story may now
+    out-weigh egglog's e-class-native story.
+  - **Pause Phase 26 entirely, resume Phase A/B/C:** unchanged.
+    The §4.9 envelope at HEAD remains fine for current
+    library-scale targets.
+
+External validation from the deep-research search (egglog
+ecosystem):
+  - egglog upstream issue #793 (math-microbenchmark
+    nondeterminism) is OPEN as of April 2026 — our finding
+    matches reality.
+  - No public production users at >10k facts; we are the load
+    test. UWPLSE's June 2025 paper "Parameterized Complexity of
+    Running an E-Graph" makes clear that scale is pathological
+    in adversarial cases.
+  - egg (Rust) `CostFunction` trait is fully deterministic and
+    has always supported content-derived costs cleanly. Bindings
+    via `snake-egg` exist but are less maintained than
+    egglog-python.
+
+Two iterations of honest red flags + one iteration of resolution.
+The numbers are honest evidence; the decision still belongs to
+the operator.
