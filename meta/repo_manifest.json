@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-09T18:18:57Z",
+  "issued_at": "2026-05-09T18:34:51Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "17c8a31aeb041c802406513333295ee0485d442a",
-    "head_short": "17c8a31",
-    "head_subject": "research: Von Neumann graph entropy \u2014 quick win #2 (#184)",
-    "head_committer_date": "2026-05-09T14:12:27-04:00",
+    "head_sha": "dabed302eea4ad15fc430c6701010d174cde23bf",
+    "head_short": "dabed30",
+    "head_subject": "research: Multiplier bootstrap kernel \u2014 research arc PR #1 (#185)",
+    "head_committer_date": "2026-05-09T14:29:26-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -227,6 +227,11 @@
       {
         "path": "fixtures/bench_receipts/split_conformal_spike_20260509T174250Z.json",
         "schema": "sum.split_conformal_spike.v1",
+        "issued_at": null
+      },
+      {
+        "path": "fixtures/bench_receipts/sprt_substrate_spike_20260509T183309Z.json",
+        "schema": "sum.sprt_substrate_spike.v1",
         "issued_at": null
       },
       {

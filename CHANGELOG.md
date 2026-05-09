@@ -4,6 +4,42 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **SPRT adaptive-stopping kernel — research arc PR #2.** Wald
+  1947 Sequential Probability Ratio Test for Bernoulli streams,
+  with operator-chosen (α, β) error bounds. Module
+  `sum_engine_internal/research/sequential/`:
+  `BinomialSPRT(p0, p1, alpha, beta)` with `observe(x)` /
+  `state()` / `reset()` / `run_until_decision(stream)`; three
+  decisions (`ACCEPT_H0` / `REJECT_H0` / `CONTINUE`).
+
+  **Experiment 1 — synthetic Wald-bound verification PASSES**
+  across four (p_0, p_1, α, β) settings × both H_0/H_1 truth
+  scenarios: empirical Type-I and Type-II error rates stay
+  within Wald bound + 3σ Monte-Carlo band on all 8 cells.
+
+  **Experiment 2 — substrate budget reduction sharpens the
+  agent's "30-50 % savings" claim into HONEST framing.**
+  At the substrate's current fixed-N=8, the test is
+  statistically *underpowered* for moderate effect sizes;
+  SPRT trades sample size for actual error guarantees. For
+  clear effect (p_1=0.85): SPRT ~10 samples vs fixed-8, error
+  rate 0.03 vs fixed-N's 0.10-0.14. For moderate effects: SPRT
+  uses ~30 samples (vs fixed-8) but cuts error from 0.19-0.81
+  → 0.03-0.05. The Wald 30-50 % savings appear only at
+  power-equivalent fixed-N (~30 for these effects); the
+  substrate's existing magic-N=8 is the unstated weak link
+  SPRT exposes. **Operator-chosen (α, β) contract replaces
+  the magic-N choice.** Receipt:
+  `fixtures/bench_receipts/sprt_substrate_spike_20260509T183309Z.json`.
+  20 contract tests covering Wald error bounds, boundary
+  computation, sample-size savings, edge cases, decision
+  direction. Findings: `docs/SPRT_SPIKE_FINDINGS.md`.
+
+  Compounds with PRs #183 (conformal) and #184 (vN entropy):
+  SPRT decides when conformal-calibrated thresholds are
+  unambiguously crossed; |ΔS| anomaly stops becoming a magic
+  threshold.
+
 - **Multiplier bootstrap kernel — research arc PR #1.**
   Distribution-free CIs on vector-valued statistics via the
   Chernozhukov-Chetverikov-Kato (Annals of Statistics 2013)
