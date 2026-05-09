@@ -4,6 +4,32 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Split conformal prediction kernel — quick win #1 from the
+  wide-net survey.** Distribution-free, finite-sample prediction
+  intervals via `sum_engine_internal/research/conformal/`
+  (Vovk-Gammerman-Shafer 2005; Angelopoulos & Bates 2023).
+  `SplitConformal(alpha)` + `calibrate(predictions, targets)` +
+  `predict(point) → ConformalInterval`. Two non-conformity score
+  types (absolute, signed) with the
+  `⌈(n+1)(1-α)⌉/n` finite-sample correction. **Synthetic coverage
+  sweep verifies the provable kernel:** at α ∈ {0.05, 0.10, 0.20}
+  empirical coverage hits 0.952 / 0.906 / 0.806 (target: 0.95 /
+  0.90 / 0.80) — within 1 SD across 5 seeds, n=2000 cal + n=2000
+  test. Naive constant-mean predictor on linear data still hits
+  coverage — the *distribution-free* property in action.
+  **Substrate experiment** demonstrates the wrap-pattern
+  end-to-end on real SUM data: ridge-predicted triple-quality
+  on `seed_v1` (50 labeled triples, 3-way split) wrapped with
+  `SplitConformal(alpha=0.1)` — hits target coverage with mean
+  width 0.031 on a [0,1] target. The kernel is now available for
+  wrapping any of SUM's existing readouts (slider axes,
+  sheaf-Laplacian scores, per-axiom corruption_score from RPCA);
+  individual wraps are follow-on PRs. 19 contract tests covering
+  coverage guarantee, score-type variants, determinism, edge
+  cases, and diagnostics. Receipt:
+  `fixtures/bench_receipts/split_conformal_spike_20260509T174250Z.json`.
+  Findings doc: `docs/SPLIT_CONFORMAL_SPIKE_FINDINGS.md`.
+
 - **Phase 26.0 iteration 5 — spike concluded; UnionFindStore is
   the Phase 26 backing store.** The egglog spike succeeded in
   its actual job: it taught us we don't need egglog. After
