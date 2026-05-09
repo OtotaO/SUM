@@ -4,6 +4,31 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Phase 26.0 iteration 2 — lazy materialisation resolves the
+  egglog storage-cost objection.** `EgglogStore` gains
+  `materialise_egraph()` and an `eager_materialisation`
+  constructor flag (default False — lazy). `add_triple` updates
+  only the authoritative Python set; the e-graph stays unbuilt
+  until an equivalence-class query forces it. Pattern queries
+  and `content_hash` work directly on the set and never trigger
+  materialisation. A/B re-run on the same workloads: lazy 10k
+  insert drops from 64.4 s → **2.4 ms** (28 000× faster) while
+  determinism + substrate parity hold across modes (the same
+  triple set produces a byte-identical `content_hash` whether
+  inserted lazily or eagerly). Materialisation itself is still
+  the same ~70 s at 10k — the e-graph build cost is real but
+  now only paid by workloads that actually use it. Architectural
+  implication: **egglog is a query layer, not a storage layer**;
+  schema-migration work targets the storage path; egglog enters
+  only at the query boundary, materialised on demand. Updated
+  receipt:
+  `fixtures/bench_receipts/phase_26_backing_store_spike_egglog_20260509T133315Z.json`.
+  4 new tests added to `Tests/test_graph_store_egglog.py`
+  (15 total) covering lazy-defers-registration, eager-registers-
+  immediately, cross-mode `content_hash` invariance, and
+  pattern-queries-don't-trigger-materialisation. Findings doc
+  updated with the iteration-2 numbers.
+
 - **Phase 26.0 spike — egglog backing-store candidate measured.**
   First of three named in `docs/PHASE_26_DESIGN.md` §2 (Neo4j,
   PostgreSQL+AGE, egglog). Egglog ships as a pip wheel — zero

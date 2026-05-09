@@ -130,3 +130,81 @@ Decision options:
 The spike's purpose is to put numbers in front of the decision.
 The numbers above are honest evidence; the decision belongs to
 the operator.
+
+## Iteration 2 — option 1 (lazy materialisation) measured
+
+Followed up on option 1: defer e-graph registration until an
+equivalence-class query forces it. `EgglogStore` gains a
+`materialise_egraph()` method and a `eager_materialisation`
+constructor flag (default False — lazy). `add_triple` updates
+only the authoritative Python set; the e-graph stays unbuilt.
+Pattern queries (`find_objects` / `find_subjects`) and
+`content_hash` work directly on the set and never trigger
+materialisation.
+
+A/B re-run on the same machine + workloads:
+
+| workload             | mode  | insert_s | materialise_s | per-q µs |
+|----------------------|------:|---------:|--------------:|---------:|
+| seed_long_paragraphs | lazy  |   0.0001 |        0.1715 |     2.63 |
+| seed_news_briefs     | lazy  |   0.0000 |        0.0093 |     1.53 |
+| synthetic_1k         | lazy  |   0.0002 |        0.3684 |    27.64 |
+| synthetic_10k        | lazy  |   0.0024 |       69.7594 |   317.84 |
+| seed_long_paragraphs | eager |   0.0175 |        0.0000 |     2.81 |
+| seed_news_briefs     | eager |   0.0090 |        0.0000 |     1.60 |
+| synthetic_1k         | eager |   0.3341 |        0.0000 |    29.86 |
+| synthetic_10k        | eager |  64.4221 |        0.0000 |   313.63 |
+
+Updated receipt: `fixtures/bench_receipts/phase_26_backing_store_spike_egglog_20260509T133315Z.json`
+
+### What the second-iteration numbers say
+
+  - **Lazy storage path is essentially free.** 10k inserts go
+    from 64.4 s eager → 2.4 ms lazy — a 28 000× drop. For workloads
+    that never need equivalence-class queries (most pattern
+    queries the substrate runs today), egglog now pays the cost
+    of being available without paying the cost of being used.
+  - **Determinism + parity hold across modes.** `content_hash` is
+    byte-identical between lazy and eager modes for every
+    workload (verified by `test_lazy_and_eager_modes_produce_identical_content_hash`).
+    The hash is over the triple set, which is mode-independent.
+  - **Materialisation is still the real ceiling.** Lazy doesn't
+    *speed up* the e-graph build; it just defers it. 10k
+    materialise costs 69.8 s — same order as eager insert. Any
+    workload that does call e-class queries at library scale
+    pays the same Rust-backend bookkeeping cost as before.
+    Option 2 (egglog bulk-load API) remains the next direction
+    if the e-class workload ever becomes critical.
+
+### Architectural implication
+
+The lazy/eager split makes the substrate's choice explicit:
+**egglog is a query layer, not a storage layer.** The Python
+set is the storage layer. This is consistent with the design
+doc's framing of egglog as the candidate that uniquely offers
+extract-with-cost over equivalence classes — that's a *query*
+property, and we now only pay for it when we use it.
+
+For Phase 26.1+ engineering, this means the schema migration
+work targets the Python-set storage path (or whatever
+persistence layer replaces it); egglog enters only at the query
+boundary, materialised on demand and discarded between sessions
+unless explicitly cached.
+
+### Decision options now updated
+
+  - **Continue:** the storage-cost objection is resolved. Next
+    spike iteration would be the actual e-class queries — define
+    a small importance-cost function and a couple of rewrite
+    rules matched to Phase C semantics, measure the e-class
+    extraction wall time on the materialised graph. That would
+    be option 2 of the original three plus one new question: is
+    the per-query e-class extraction fast enough to amortise
+    against materialisation cost?
+  - **Pause egglog, start Neo4j candidate:** still defensible.
+    Comparison would now be Neo4j-storage-and-query vs
+    Python-set-storage + egglog-query.
+  - **Phase 26 itself paused:** unchanged from before.
+
+The numbers are honest evidence; the decision still belongs to
+the operator.
