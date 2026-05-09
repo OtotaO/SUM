@@ -4,6 +4,43 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Phase 26.0 iteration 4.1 — performance correction (the cost
+  model is NOT free).** A pre-flight verification round before
+  posting upstream egglog issues caught an overclaim in the
+  iteration-4 findings: "the cost model only adds a sha256 per
+  extract but that's microseconds compared to the egglog
+  overhead." Wrong in the dimension I had not measured. The
+  cost model is invoked once per visited e-node per extract
+  call, paying the Rust→Python boundary cost + `str(expr)` +
+  sha256 each time. Measured overhead at our workload sizes
+  (lazy mode, fresh receipt
+  `fixtures/bench_receipts/phase_26_backing_store_spike_egglog_20260509T161351Z.json`):
+
+  | workload         | default | deterministic | overhead |
+  |------------------|--------:|--------------:|---------:|
+  | seed_news_briefs |  471 µs |         89 ms |    188 × |
+  | seed_long_paras  |  567 µs |        171 ms |    302 × |
+  | synthetic_1k     |  1.3 ms |         1.1 s |    860 × |
+  | synthetic_10k    | 17.5 ms |        11.5 s |    657 × |
+
+  `extract_canonical(deterministic=True)` is the workaround for
+  cross-process determinism but has a 200–1000× per-extract
+  overhead that scales with graph size. At 10k axioms a single
+  deterministic extract is 11.5 s; at 50k library-scale it
+  would be minutes. Path forward for library-scale: a
+  Rust-native deterministic-extract mode in upstream egglog
+  (eliminates the callback cost), batched extract API (not
+  exposed today), or scoping egglog to small-graph special-case
+  rewrites. Spike harness (`scripts/research/phase_26_egglog_spike.py`)
+  now measures both modes and emits an `extract_deterministic_*`
+  block per workload. Findings doc gains an iteration-4.1
+  section. New canary test
+  (`test_deterministic_extract_has_measurable_overhead`)
+  asserts at least 50× slowdown on a tiny graph so a hypothetical
+  future "cost model became free" regression doesn't go silently
+  unnoticed (and would be good news worth catching). 22 tests
+  total.
+
 - **Phase 26.0 iteration 4 — content-derived cost model resolves
   the determinism red flag.** egglog-python PR #357 (merged
   2025-10-02, present in v11.4.0 which we pin) added a

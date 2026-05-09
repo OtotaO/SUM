@@ -406,3 +406,96 @@ ecosystem):
 Two iterations of honest red flags + one iteration of resolution.
 The numbers are honest evidence; the decision still belongs to
 the operator.
+
+## Iteration 4.1 — performance correction (the cost model is NOT free)
+
+A pre-flight verification round before posting upstream egglog
+issues caught an overclaim in the iteration-4 section above:
+"the cost model only adds a sha256 per extract but that's
+microseconds compared to the egglog overhead." That was wrong
+in the dimension I had not measured.
+
+The cost model is invoked **once per visited e-node per
+extract call** (egglog's tree-walk into Python on every
+visit). At our spike's workload sizes (lazy mode, on the same
+machine, fresh receipt
+`fixtures/bench_receipts/phase_26_backing_store_spike_egglog_20260509T161351Z.json`):
+
+| workload             | default extract | deterministic extract | overhead ratio |
+|----------------------|----------------:|----------------------:|---------------:|
+| seed_news_briefs     |          471 µs |                89 ms  |          188 × |
+| seed_long_paragraphs |          567 µs |               171 ms  |          302 × |
+| synthetic_1k         |        1 266 µs |               1.1 s   |          860 × |
+| synthetic_10k        |       17 511 µs |              11.5 s   |          657 × |
+
+The overhead is real, large, and scales with graph size. A
+single deterministic extract at 10k takes 11.5 seconds; at the
+50k library-scale target this would be ~minutes per call.
+
+### Why the overhead is so large
+
+The Python cost model is a callback into Python from egglog's
+Rust extractor for every e-node it touches during the walk.
+Each call pays:
+  - The Rust → Python boundary cost (~10 µs per call observed)
+  - `str(expr)` construction (formats subject/predicate/object
+    into a string)
+  - `sha256(...)` of that string
+
+`str(expr)` does contain the full content for our flat
+`Triple(s, p, o)` shape (verified — the cost model sees
+`'T("alice", "owns", "rex")'`, not an opaque ref). For deeply
+nested expressions the cost model would only see the top-level
+constructor and rely on the `children_costs` recursion for
+content sensitivity; not relevant for our case but worth
+knowing if Phase 26 grows nested expression types.
+
+Caching the per-`str(expr)` sha256 results does not help —
+each cost-model call sees a different sub-expression visited
+during the walk, so cache hit rate is ~0 within a single
+extract.
+
+### What this changes about the iteration-4 recommendation
+
+The iteration-4 section above frames `deterministic=True` as
+the right default. With the perf data in hand, the more honest
+framing is:
+
+  - **`deterministic=True` is the workaround for cross-process
+    determinism — but it has a 200-1000× per-extract overhead
+    that scales with graph size.** At 10k axioms, single
+    extracts are 11.5 s.
+  - For workloads that need deterministic extract on small
+    graphs (≤ 100 axioms, ≤ ~20 ms overhead), the workaround is
+    viable today.
+  - For library-scale workloads (1k+ axioms with frequent
+    e-class queries), the workaround is not viable as
+    implemented. The path forward is either:
+    (a) a Rust-native deterministic-extract mode in upstream
+        egglog (would eliminate the Rust↔Python callback cost),
+    (b) batching extract calls so the per-call overhead amortises
+        across many queries (not currently exposed),
+    (c) avoiding e-class queries on the hot path entirely
+        (back to "egglog as query layer for special-case rewrites,
+        not as the substrate's primary extraction surface").
+
+### Tests pin the new finding
+
+`Tests/test_graph_store_egglog.py::test_deterministic_extract_has_measurable_overhead`
+asserts that deterministic extract is at least 50× slower than
+default on a small graph — small enough to pass quickly in CI
+but large enough to catch a hypothetical future regression
+where the cost model becomes free (which would be good news
+worth detecting).
+
+### What this means for the upstream egglog community
+
+This iteration's findings — both the workaround (cross-process
+determinism via content-hash cost model) and the cost (200-1000×
+per-extract overhead) — are reported in:
+  - egraphs-good/egglog#793 (extract nondeterminism on cost ties)
+  - A docs gap surfaced for egglog-python
+The absent piece (a Rust-native deterministic mode) is the
+direction with the most leverage for any downstream user with
+similar workloads; SUM is willing to test if the maintainers
+land it.

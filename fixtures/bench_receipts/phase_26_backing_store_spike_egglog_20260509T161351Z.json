@@ -1,0 +1,177 @@
+{
+  "schema": "sum.phase_26_backing_store_spike.v1",
+  "candidate": "egglog",
+  "iso_ts": "2026-05-09T16:13:51.009197+00:00",
+  "host": {
+    "platform": "macOS-26.0-arm64-arm-64bit",
+    "python": "3.10.14",
+    "machine": "arm64"
+  },
+  "workloads": [
+    {
+      "workload_label": "seed_long_paragraphs",
+      "mode": "lazy",
+      "n_triples_input": 120,
+      "n_distinct_after_insert": 120,
+      "n_egraph_registered": 120,
+      "insert_wall_s": 0.0001,
+      "materialise_wall_s": 0.145,
+      "materialise_n_flushed": 120,
+      "queries": {
+        "sample_count": 100,
+        "total_ms": 0.261,
+        "per_query_us": 2.606
+      },
+      "query_parity": {
+        "sample_count": 50,
+        "mismatches": 0
+      },
+      "eclass_phase": {
+        "ruleset": "ownership_symmetry",
+        "saturate_s": 0.0013,
+        "extract_sample_count": 50,
+        "extract_total_ms": 28.358,
+        "extract_per_query_us": 567.154,
+        "n_canonical_changed": 0,
+        "extract_deterministic_sample_count": 5,
+        "extract_deterministic_per_query_us": 171037.575,
+        "extract_deterministic_overhead_ratio": 301.6
+      },
+      "determinism": {
+        "hash_forward": "sha256:6032d8ead6ee5c49236a8f81c75c2fcf56a34f3210a8b509b0e41b936d471243",
+        "hash_reversed": "sha256:6032d8ead6ee5c49236a8f81c75c2fcf56a34f3210a8b509b0e41b936d471243",
+        "matches": true
+      },
+      "content_hash": "sha256:6032d8ead6ee5c49236a8f81c75c2fcf56a34f3210a8b509b0e41b936d471243",
+      "backend_info": {
+        "name": "egglog",
+        "version": "unknown",
+        "notes": "Spike-stage backend (materialisation=lazy). Holds triples in a Python set (authoritative for queries and content-hash); the egglog EGraph is built on demand for equivalence-class queries via `materialise_egraph()`. Pattern queries (find_objects / find_subjects) and content_hash never trigger materialisation."
+      }
+    },
+    {
+      "workload_label": "seed_news_briefs",
+      "mode": "lazy",
+      "n_triples_input": 66,
+      "n_distinct_after_insert": 66,
+      "n_egraph_registered": 66,
+      "insert_wall_s": 0.0,
+      "materialise_wall_s": 0.0097,
+      "materialise_n_flushed": 66,
+      "queries": {
+        "sample_count": 66,
+        "total_ms": 0.1,
+        "per_query_us": 1.52
+      },
+      "query_parity": {
+        "sample_count": 50,
+        "mismatches": 0
+      },
+      "eclass_phase": {
+        "ruleset": "ownership_symmetry",
+        "saturate_s": 0.0007,
+        "extract_sample_count": 50,
+        "extract_total_ms": 23.565,
+        "extract_per_query_us": 471.303,
+        "n_canonical_changed": 0,
+        "extract_deterministic_sample_count": 5,
+        "extract_deterministic_per_query_us": 88680.867,
+        "extract_deterministic_overhead_ratio": 188.2
+      },
+      "determinism": {
+        "hash_forward": "sha256:d8776c96bca4be5a9ab66aec5057ccb5eb9fc7f708ec823f83b18eb2c9d023f8",
+        "hash_reversed": "sha256:d8776c96bca4be5a9ab66aec5057ccb5eb9fc7f708ec823f83b18eb2c9d023f8",
+        "matches": true
+      },
+      "content_hash": "sha256:d8776c96bca4be5a9ab66aec5057ccb5eb9fc7f708ec823f83b18eb2c9d023f8",
+      "backend_info": {
+        "name": "egglog",
+        "version": "unknown",
+        "notes": "Spike-stage backend (materialisation=lazy). Holds triples in a Python set (authoritative for queries and content-hash); the egglog EGraph is built on demand for equivalence-class queries via `materialise_egraph()`. Pattern queries (find_objects / find_subjects) and content_hash never trigger materialisation."
+      }
+    },
+    {
+      "workload_label": "synthetic_1k",
+      "mode": "lazy",
+      "n_triples_input": 1000,
+      "n_distinct_after_insert": 1000,
+      "n_egraph_registered": 1000,
+      "insert_wall_s": 0.0002,
+      "materialise_wall_s": 0.3705,
+      "materialise_n_flushed": 1000,
+      "queries": {
+        "sample_count": 100,
+        "total_ms": 2.906,
+        "per_query_us": 29.062
+      },
+      "query_parity": {
+        "sample_count": 50,
+        "mismatches": 0
+      },
+      "eclass_phase": {
+        "ruleset": "ownership_symmetry",
+        "saturate_s": 0.0018,
+        "extract_sample_count": 50,
+        "extract_total_ms": 63.288,
+        "extract_per_query_us": 1265.761,
+        "n_canonical_changed": 0,
+        "extract_deterministic_sample_count": 5,
+        "extract_deterministic_per_query_us": 1088197.983,
+        "extract_deterministic_overhead_ratio": 859.7
+      },
+      "determinism": {
+        "hash_forward": "sha256:30c31abdb35f4997265ed93e8b5708bcf5bc3310380060267bab30f27df0936c",
+        "hash_reversed": "sha256:30c31abdb35f4997265ed93e8b5708bcf5bc3310380060267bab30f27df0936c",
+        "matches": true
+      },
+      "content_hash": "sha256:30c31abdb35f4997265ed93e8b5708bcf5bc3310380060267bab30f27df0936c",
+      "backend_info": {
+        "name": "egglog",
+        "version": "unknown",
+        "notes": "Spike-stage backend (materialisation=lazy). Holds triples in a Python set (authoritative for queries and content-hash); the egglog EGraph is built on demand for equivalence-class queries via `materialise_egraph()`. Pattern queries (find_objects / find_subjects) and content_hash never trigger materialisation."
+      }
+    },
+    {
+      "workload_label": "synthetic_10k",
+      "mode": "lazy",
+      "n_triples_input": 10000,
+      "n_distinct_after_insert": 10000,
+      "n_egraph_registered": 10000,
+      "insert_wall_s": 0.0022,
+      "materialise_wall_s": 70.1314,
+      "materialise_n_flushed": 10000,
+      "queries": {
+        "sample_count": 100,
+        "total_ms": 32.295,
+        "per_query_us": 322.945
+      },
+      "query_parity": {
+        "sample_count": 50,
+        "mismatches": 0
+      },
+      "eclass_phase": {
+        "ruleset": "ownership_symmetry",
+        "saturate_s": 0.0149,
+        "extract_sample_count": 50,
+        "extract_total_ms": 875.568,
+        "extract_per_query_us": 17511.354,
+        "n_canonical_changed": 0,
+        "extract_deterministic_sample_count": 5,
+        "extract_deterministic_per_query_us": 11498568.9,
+        "extract_deterministic_overhead_ratio": 656.6
+      },
+      "determinism": {
+        "hash_forward": "sha256:be6c1930bcfb235265bf53460a55925247151657e02ce5cfe25478f0e38ba2d3",
+        "hash_reversed": "sha256:be6c1930bcfb235265bf53460a55925247151657e02ce5cfe25478f0e38ba2d3",
+        "matches": true
+      },
+      "content_hash": "sha256:be6c1930bcfb235265bf53460a55925247151657e02ce5cfe25478f0e38ba2d3",
+      "backend_info": {
+        "name": "egglog",
+        "version": "unknown",
+        "notes": "Spike-stage backend (materialisation=lazy). Holds triples in a Python set (authoritative for queries and content-hash); the egglog EGraph is built on demand for equivalence-class queries via `materialise_egraph()`. Pattern queries (find_objects / find_subjects) and content_hash never trigger materialisation."
+      }
+    }
+  ],
+  "receipt_digest": "sha256:30289e0a25e33be4c8d5d69d08b0d7ed6da92af56210bb35e5922aba8fe2bae8"
+}
