@@ -291,6 +291,53 @@ def test_extract_canonical_deterministic_false_preserves_default_behaviour():
     )
 
 
+def test_deterministic_extract_has_measurable_overhead():
+    """Iteration 4.1 finding: deterministic extract pays a 200-1000×
+    per-call overhead at our workload sizes because the cost model
+    is a Python callback invoked per visited e-node. This test
+    asserts AT LEAST 50× slower on a tiny graph — well below the
+    measured ratio so flake-tolerant, but large enough to catch a
+    hypothetical future regression where the cost model becomes
+    free (which would be good news worth detecting).
+
+    Pinned so the iteration-4 PR's overclaim ("the cost model adds
+    microseconds") cannot silently re-enter."""
+    import time
+    from sum_engine_internal.graph_store.egglog_store import EgglogStore
+
+    store = EgglogStore()
+    triples = [_t(f"s{i}", "p", f"o{i}") for i in range(50)]
+    store.add_triples(triples)
+    store.materialise_egraph()
+    store.saturate("ownership_symmetry")
+
+    sample = triples[:5]
+
+    # Warm both paths once so JIT / first-call overhead doesn't bias
+    store.extract_canonical(sample[0], deterministic=False)
+    store.extract_canonical(sample[0], deterministic=True)
+
+    t0 = time.perf_counter()
+    for tr in sample:
+        store.extract_canonical(tr, deterministic=False)
+    default_per_call = (time.perf_counter() - t0) / len(sample)
+
+    t0 = time.perf_counter()
+    for tr in sample:
+        store.extract_canonical(tr, deterministic=True)
+    det_per_call = (time.perf_counter() - t0) / len(sample)
+
+    ratio = det_per_call / default_per_call if default_per_call > 0 else 0
+    assert ratio >= 50, (
+        f"deterministic extract is only {ratio:.1f}× slower than default; "
+        f"either the cost model has become free upstream (good news — "
+        f"update findings doc and consider removing the workaround) or "
+        f"the test is too small to measure the overhead. Default: "
+        f"{default_per_call*1000:.3f} ms/call; deterministic: "
+        f"{det_per_call*1000:.3f} ms/call"
+    )
+
+
 def test_content_hash_cost_model_is_pure():
     """The cost model must depend only on the expression's
     string repr and its children's costs — not on egraph

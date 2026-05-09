@@ -95,10 +95,19 @@ def _measure_materialise(store):
 
 
 def _measure_eclass(triples, store, sample_count: int = 50,
-                    ruleset_name: str = "ownership_symmetry"):
+                    ruleset_name: str = "ownership_symmetry",
+                    deterministic_sample_count: int = 5):
     """Phase C-shaped measurement: saturate the e-graph under a
-    ruleset, then sample extract-canonical calls. Returns timing
-    + a check for rule firings."""
+    ruleset, then sample extract-canonical calls in BOTH default
+    (FIFO) and deterministic (custom cost model) modes. Returns
+    timing + a check for rule firings, plus a separate
+    `extract_deterministic_*` block surfacing the iteration-4
+    cost-model performance cliff at large workload sizes.
+
+    `deterministic_sample_count` is intentionally smaller than
+    `sample_count` because the cost model has 600-1000× per-call
+    overhead at our workload sizes — running 50 deterministic
+    extracts at 10k would cost ~10 minutes of wall time."""
     from sum_engine_internal.graph_store import Triple
     if not triples:
         return {
@@ -107,6 +116,9 @@ def _measure_eclass(triples, store, sample_count: int = 50,
             "extract_total_ms": 0.0,
             "extract_per_query_us": 0.0,
             "n_canonical_changed": 0,
+            "extract_deterministic_sample_count": 0,
+            "extract_deterministic_per_query_us": 0.0,
+            "extract_deterministic_overhead_ratio": 0.0,
         }
 
     t0 = time.perf_counter()
@@ -117,34 +129,44 @@ def _measure_eclass(triples, store, sample_count: int = 50,
     rng = random.Random(0xE6610C)
     sampled = rng.sample(triples, min(sample_count, len(triples)))
 
+    # Default (FIFO) extract — fast but non-deterministic across processes.
     t0 = time.perf_counter()
     extracted = []
     for s, p, o in sampled:
-        ext = store.extract_canonical(Triple(s, p, o))
+        ext = store.extract_canonical(Triple(s, p, o), deterministic=False)
         extracted.append(str(ext))
-    elapsed = time.perf_counter() - t0
+    default_elapsed = time.perf_counter() - t0
+    default_per_us = (default_elapsed / max(1, len(sampled))) * 1_000_000
 
-    # Count how many extractions returned a canonical form that
-    # differs from the input (i.e., the ruleset actually fired).
-    # For workloads with no "owns"/"owned_by" pairs this stays at 0,
-    # which is itself a meaningful number — we still pay the saturate
-    # and extract cost even when the rule doesn't fire.
     n_changed = 0
     for (s, p, o), ext in zip(sampled, extracted):
-        # crude check: extracted str contains the same subject/object
-        # as the input, but possibly a different predicate
         if not (f'"{s}"' in ext and f'"{o}"' in ext and f'"{p}"' in ext):
             n_changed += 1
+
+    # Deterministic extract — content-hash cost model from
+    # iteration 4. Trades correctness for performance: each call
+    # invokes a Python callback per visited e-node, and sha256(str(expr))
+    # is paid per call. At our workload sizes the overhead is
+    # 600-1000× over default. Use a smaller sample to keep total
+    # bench wall-time bounded; at 10k a single call takes ~12s.
+    det_sampled = sampled[:deterministic_sample_count]
+    t0 = time.perf_counter()
+    for s, p, o in det_sampled:
+        store.extract_canonical(Triple(s, p, o), deterministic=True)
+    det_elapsed = time.perf_counter() - t0
+    det_per_us = (det_elapsed / max(1, len(det_sampled))) * 1_000_000
+    overhead_ratio = (det_per_us / default_per_us) if default_per_us > 0 else 0.0
 
     return {
         "ruleset": ruleset_name,
         "saturate_s": round(saturate_s, 4),
         "extract_sample_count": len(sampled),
-        "extract_total_ms": round(elapsed * 1000, 3),
-        "extract_per_query_us": round(
-            (elapsed / max(1, len(sampled))) * 1_000_000, 3
-        ),
+        "extract_total_ms": round(default_elapsed * 1000, 3),
+        "extract_per_query_us": round(default_per_us, 3),
         "n_canonical_changed": n_changed,
+        "extract_deterministic_sample_count": len(det_sampled),
+        "extract_deterministic_per_query_us": round(det_per_us, 3),
+        "extract_deterministic_overhead_ratio": round(overhead_ratio, 1),
     }
 
 
@@ -314,7 +336,7 @@ def main():
     print(
         f"{'workload':22s} {'mode':>5s} {'n_in':>6s} "
         f"{'insert_s':>10s} {'mat_s':>10s} "
-        f"{'sat_s':>8s} {'ext_us':>8s} det parity"
+        f"{'sat_s':>8s} {'ext_def_us':>11s} {'ext_det_us':>11s} {'×':>5s} det parity"
     )
     for r in results:
         det = "OK" if r["determinism"]["matches"] else "FAIL"
@@ -327,7 +349,9 @@ def main():
             f"{r['insert_wall_s']:>10.4f} "
             f"{r['materialise_wall_s']:>10.4f} "
             f"{ec.get('saturate_s', 0):>8.4f} "
-            f"{ec.get('extract_per_query_us', 0):>8.2f} "
+            f"{ec.get('extract_per_query_us', 0):>11.2f} "
+            f"{ec.get('extract_deterministic_per_query_us', 0):>11.2f} "
+            f"{ec.get('extract_deterministic_overhead_ratio', 0):>5.0f} "
             f"{det:>3s} {parity:>6s}"
         )
 
