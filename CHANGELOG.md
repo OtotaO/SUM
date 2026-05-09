@@ -4,6 +4,39 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Phase 26.0 iteration 5 — spike concluded; UnionFindStore is
+  the Phase 26 backing store.** The egglog spike succeeded in
+  its actual job: it taught us we don't need egglog. After
+  preparing draft upstream issue comments, the strategic
+  question came up: *can we just adapt what we need from egglog
+  and move on?* The substrate's actual need across 4 iterations
+  distilled to "given equivalent triples under a symmetry rule,
+  return a deterministic canonical form" — a graph algorithm
+  (union-find) not a special-purpose e-graph requirement.
+  `sum_engine_internal/graph_store/unionfind_store.py` (~190
+  lines) implements it directly: O(α(N)) union via
+  path-compressed union-find, O(class_size) extract, deterministic
+  by construction (lex-sort of equivalence class), zero external
+  dependency. Three-way comparison receipt
+  `fixtures/bench_receipts/phase_26_backing_store_spike_egglog_20260509T164443Z.json`
+  shows: 10k insert 3 ms (vs egglog lazy 67 s), 10k extract 2 ms
+  (vs egglog deterministic 11 s) — ~5500× faster on extract,
+  materialisation eliminated, cross-process determinism
+  guaranteed by construction. 18 contract tests in
+  `Tests/test_graph_store_unionfind.py` (mirror egglog's 22)
+  including two cross-backend parity tests
+  (`test_content_hash_matches_egglog_backend`,
+  `test_pattern_queries_match_egglog_backend`) that pin both
+  backends produce identical results on the same input — if
+  either drifts, CI catches it. EgglogStore stays in the
+  codebase for as long as the spike data is load-bearing; the
+  spike harness still measures it. Findings doc gains
+  iteration-5 conclusion: "egglog is the right tool for a
+  different problem." The egglog upstream issues
+  (#793 extract nondeterminism, #756 bulk-load) stay open
+  without SUM contributions — we have a substrate-shaped
+  alternative; upstream comments would be downstream noise.
+
 - **Phase 26.0 iteration 4.1 — performance correction (the cost
   model is NOT free).** A pre-flight verification round before
   posting upstream egglog issues caught an overclaim in the

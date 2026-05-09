@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-09T16:15:34Z",
+  "issued_at": "2026-05-09T16:47:14Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "5cc806a19315a2093c3a6334615744b4a9471aeb",
-    "head_short": "5cc806a",
-    "head_subject": "research: Phase 26.0 iteration 4 \u2014 content-derived cost model (#179)",
-    "head_committer_date": "2026-05-09T11:32:15-04:00",
+    "head_sha": "4092fa444c13a1d88778845de4618240bbb431af",
+    "head_short": "4092fa4",
+    "head_subject": "research: Phase 26.0 iteration 4.1 \u2014 perf correction (cost model is NOT free) (#180)",
+    "head_committer_date": "2026-05-09T12:40:07-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -116,6 +116,11 @@
       },
       {
         "path": "fixtures/bench_receipts/phase_26_backing_store_spike_egglog_20260509T161351Z.json",
+        "schema": "sum.phase_26_backing_store_spike.v1",
+        "issued_at": null
+      },
+      {
+        "path": "fixtures/bench_receipts/phase_26_backing_store_spike_egglog_20260509T164443Z.json",
         "schema": "sum.phase_26_backing_store_spike.v1",
         "issued_at": null
       },

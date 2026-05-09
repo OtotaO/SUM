@@ -492,10 +492,110 @@ worth detecting).
 
 This iteration's findings — both the workaround (cross-process
 determinism via content-hash cost model) and the cost (200-1000×
-per-extract overhead) — are reported in:
-  - egraphs-good/egglog#793 (extract nondeterminism on cost ties)
-  - A docs gap surfaced for egglog-python
-The absent piece (a Rust-native deterministic mode) is the
-direction with the most leverage for any downstream user with
-similar workloads; SUM is willing to test if the maintainers
-land it.
+per-extract overhead) — were originally going to be reported as
+upstream comments. **They aren't, because of iteration 5 below.**
+
+## Iteration 5 — spike conclusion: union-find beats egglog for
+SUM's actual need
+
+After preparing draft upstream issue comments, the strategic
+question came up: *can we just adapt what we need from egglog
+and move on?* Answer: yes, and the resulting hand-rolled adapter
+beats egglog by orders of magnitude on every dimension that
+matters for the substrate.
+
+**The substrate's actual need**, distilled across 4 spike
+iterations:
+  - "Given equivalent triples under a symmetry rule, return a
+    deterministic canonical form."
+
+That's a graph algorithm — union-find — not a special-purpose
+e-graph requirement. The egglog spike taught us this; the
+correct conclusion is to act on it.
+
+`sum_engine_internal/graph_store/unionfind_store.py` implements
+it directly:
+
+  - O(α(N)) union via path-compressed union-find
+  - O(class_size) extract by linear scan; 2 ms at 10k triples
+  - **Deterministic by construction**: extract returns the
+    lex-smallest member of the equivalence class. No cost model,
+    no callback, no upstream issue to wait on.
+  - Zero external dependency, zero version pin
+
+### Three-way comparison (lazy egglog vs eager egglog vs union-find)
+
+Same workloads, same machine, same harness. Receipt:
+`fixtures/bench_receipts/phase_26_backing_store_spike_egglog_20260509T164443Z.json`.
+
+| workload      | mode      | insert_s | materialise_s | extract µs (default) | extract µs (det) | overhead × |
+|---------------|-----------|---------:|--------------:|---------------------:|-----------------:|-----------:|
+| 66 triples    | unionfind |    0     |        0      |                  13  |               13 |        1   |
+| 66 triples    | egglog-lz |    0     |       0.010   |                 470  |           88 220 |      188   |
+| 120 triples   | unionfind |    0     |        0      |                  27  |               27 |        1   |
+| 120 triples   | egglog-lz |    0     |       0.198   |                 606  |          165 686 |      273   |
+| 1k triples    | unionfind |    0.0003|        0      |                 192  |              192 |        1   |
+| 1k triples    | egglog-lz |    0.0002|       0.379   |               1 309  |        1 084 893 |      829   |
+| 10k triples   | unionfind |    0.003 |        0      |               2 016  |            2 016 |        1   |
+| 10k triples   | egglog-lz |    0.002 |      66.874   |              16 815  |       11 064 414 |      658   |
+
+  - **Insert is competitive** (both essentially-free at lazy
+    egglog; UnionFindStore takes the same set-add cost without
+    the e-graph in the loop)
+  - **Materialisation gone** — UnionFindStore has no separate
+    materialisation step. The e-graph register cost (66 s at
+    10k) is eliminated; we never paid it
+  - **Extract: ~5 500× faster than deterministic egglog** at 10k.
+    Default-mode egglog (FIFO, non-deterministic) is the closer
+    comparison: UnionFindStore is ~8× faster on extract at 10k
+    AND deterministic by construction
+  - **Cross-process determinism**: same canonical form across
+    forward/reversed insertion orders. Pinned by
+    `test_extract_canonical_is_deterministic_across_insertion_order`
+    in `Tests/test_graph_store_unionfind.py`
+  - **Substrate-parity**: identical `content_hash` to the egglog
+    backend on the same input (verified by
+    `test_content_hash_matches_egglog_backend`); identical
+    pattern-query answers (verified by
+    `test_pattern_queries_match_egglog_backend`)
+
+### Decision and recommendation
+
+**`UnionFindStore` is the Phase 26 backing store.**
+
+This isn't a knock on egglog. Egglog is the right tool for a
+*different* problem — workloads with many rewrite rules requiring
+real saturation under a unified theory. SUM doesn't have that
+problem today. We have one symmetry rule and the substrate
+needs a deterministic canonical extract. Union-find delivers
+that with three orders of magnitude less infrastructure.
+
+**Future direction.** If Phase C grows multiple symmetric
+rewrite rules, register more equivalences into the union-find —
+the data structure handles arbitrary equivalences natively. If
+Phase C ever needs arbitrary saturation under conditional rules
+(e.g., "Triple(s, P, o) where P matches some pattern unifies
+with..."), egglog stays available as a one-shot tool: run
+saturation once, dump the union-find structure, drop egglog.
+Pay it only when it pays back.
+
+**EgglogStore stays in the codebase** as a comparison candidate
+for as long as Phase 26 spike data is load-bearing. Tests still
+pass, the spike harness still measures it. If we ever need to
+re-evaluate, the data lineage is intact.
+
+### What this means for the upstream egglog community
+
+The egglog upstream issues (#793 extract nondeterminism, #756
+bulk-load) **stay open without SUM contributions**. We don't
+need a Rust-native deterministic-extract mode anymore — our
+substrate has one, by construction. Comments would be of the
+form "we explored your tool, found it didn't fit our shape,
+built our own; here's our finding for whoever else is
+evaluating," which is downstream noise rather than upstream
+signal. Filing them would burn maintainer attention without
+pushing their roadmap forward.
+
+If the maintainers ever solve cross-process determinism
+natively, this spike's findings doc can be revisited — the
+EgglogStore is still wired in.
