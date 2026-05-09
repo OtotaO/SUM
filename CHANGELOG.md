@@ -4,6 +4,71 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Bind agent surface mounted on the FastMCP server.**
+  `sum_engine_internal/agent_surface/mcp_bind.py` gains
+  `register_bind_tools(mcp, registry, real_tools)`; the SUM MCP
+  server (`sum_engine_internal/mcp_server/server.py`) calls it
+  after the legacy inline tools register, capturing references to
+  the in-process closures and mounting six new tools alongside:
+  `extract_bind` / `attest_bind` / `verify_bind` / `render_bind` /
+  `inspect_bind` plus the `agent_surface_manifest`
+  (`sum.agent_surface_manifest.v1`). Bind tools delegate
+  in-process — no subprocess hop — and accept either inline values
+  or `sha256:<hex>` bind references for the `bundle` argument.
+  `attest_bind` binds the bundle directly (not its envelope), so
+  the returned `bind_id` flows straight into `verify_bind` /
+  `render_bind` / `inspect_bind` with no unwrap step. Errors pass
+  through unchanged from the underlying tools so callers branch on
+  the same `error_class` enum the v2 server already emits. Closes
+  the "natural follow-on" named at the close of PR #172. Six new
+  contract tests in `Tests/test_mcp_server.py` pin the surface;
+  `test_server_boots_with_expected_tools` now asserts both the
+  legacy inline set and the bind set are registered.
+
+- **Agent surface: bind verb + Step 4 verification (PR #172).**
+  New `sum_engine_internal/agent_surface/` module with the
+  content-addressed `BindRegistry` (`sha256:<hex>` over JCS-canonical
+  bytes; deterministic, idempotent, thread-safe) and bind-aware
+  wrappers around extract / attest / verify / render / inspect plus
+  the `sum.agent_surface_manifest.v1` self-description. Render
+  carries a typed precondition for non-neutral LLM-conditioned axes
+  so the agent receives `{error_class=schema, structured.…}` instead
+  of free-form prose. Re-running the agent_failure_experiment with
+  `--use-bind-layer` (same model, same document, same harness) hits
+  the falsifiable criterion stated in PR #171 on all three counts:
+  max-turn 10 → 5, parse_error events 4 → 0, free-form-error
+  retries 1 → 0. The bind layer is the canonical agent surface
+  from here forward; the CLI dispatcher in the harness is retained
+  as the comparison baseline only. Both logs committed under
+  `fixtures/agent_logs/`. Mounting `bind_*` as actual FastMCP
+  tools on the existing MCP server is the natural follow-on.
+
+- **Agent-failure experiment harness (PR #171).** New
+  `scripts/research/agent_failure_experiment.py` — a real agent
+  loop (gpt-4o-mini-2024-07-18) wired to the SUM CLI tools with a
+  budget and a goal ("produce a verified summary of this PDF"),
+  plus a baseline failure log committed as evidence
+  (`fixtures/agent_logs/agent_run_doc_long_cell_biology_*.jsonl`).
+  Twenty minutes of watching one agent fail named the missing
+  verb (`bind` — content-addressed handles so the agent passes
+  `sha256:<hex>` references instead of round-tripping full
+  bundles) and the missing typed-error path (render returned
+  free-form prose for a precondition violation, forcing the agent
+  to interpret it heuristically). Findings written up in
+  `docs/AGENT_SURFACE_FINDINGS.md`. PR #172 implemented the bind
+  layer and verified the falsifiable criterion stated here.
+
+- **Phase 26 design doc (PR #170).** New
+  `docs/PHASE_26_DESIGN.md` — five decision points for the
+  property-graph backing store (process model, persistence,
+  query language, schema authority, distribution boundary) and
+  three candidate stores trade-off matrix: Neo4j, PostgreSQL+AGE,
+  egglog. Egglog enters as a serious candidate because its
+  built-in equivalence-class semantics + extract-with-cost match
+  Phase C's importance-weighted SUM directly. Spike plan named
+  but not started; current path foregrounds the agent-surface
+  bind layer (PRs #171 / #172) before resuming Phase A/B/C.
+
 - **Path 2 §4.7.4.1 — extremal-Goodhart confirmed; §4.7.4
   consolidates back to STRUCTURAL_GAP at controlled n.** New
   16-doc corpus `seed_paragraphs_16.json` (same encyclopedic voice

@@ -127,6 +127,24 @@ def _preview_for(tool_name: str, raw: dict[str, Any]) -> dict[str, Any]:
     return {"_preview_unavailable": True, "_tool": tool_name}
 
 
+def _what_to_bind(tool_name: str, raw: dict[str, Any]) -> Any:
+    """Pick the value to bind for each tool's success shape.
+
+    Most tools bind their full result. ``attest`` is special: its
+    success envelope is ``{bundle, axioms, source_uri, extractor}``
+    but downstream tools (verify / render / inspect) want the
+    *bundle* itself, not the envelope. Binding the bundle directly
+    means an agent can pass the returned bind_id to the next tool
+    without an unwrap step. The envelope's other fields are still
+    surfaced through the preview.
+    """
+    if tool_name == "attest":
+        bundle = raw.get("bundle")
+        if isinstance(bundle, dict):
+            return bundle
+    return raw
+
+
 def _wrap_result(
     tool_name: str, raw: Any, registry: BindRegistry,
 ) -> dict[str, Any]:
@@ -134,7 +152,7 @@ def _wrap_result(
     pass an error result through unchanged."""
     if _is_error(raw):
         return raw
-    bind_id = registry.bind(raw)
+    bind_id = registry.bind(_what_to_bind(tool_name, raw))
     preview = _preview_for(tool_name, raw)
     return {"bind_id": bind_id, "preview": preview}
 
@@ -424,6 +442,175 @@ def bind_wrap_render(registry: BindRegistry):
 
 def bind_wrap_inspect(registry: BindRegistry):
     return _bind_wrap("inspect", _underlying_inspect(), registry)
+
+
+# ─── FastMCP server-side mounting ────────────────────────────────────
+#
+# The wrappers above shell out to the CLI for attest / verify /
+# render — fine for the spike harness but wasteful in the same
+# Python process as the MCP server itself. ``register_bind_tools``
+# below mounts bind-aware variants directly on a FastMCP instance,
+# delegating to the in-process tool functions captured at server
+# build time. Same surface contract, no subprocess hop.
+
+
+def register_bind_tools(
+    mcp: Any,
+    registry: BindRegistry,
+    real_tools: dict[str, Callable[..., Awaitable[Any]] | Callable[..., Any]],
+) -> None:
+    """Register ``<verb>_bind`` tools and ``agent_surface_manifest``
+    on a FastMCP instance, delegating to the in-process ``real_tools``.
+
+    Args:
+        mcp: A ``FastMCP`` instance (the SUM server).
+        registry: Bind registry; the manifest tool reports its size.
+        real_tools: Mapping of verb name → callable. Each callable
+            may be sync or async; both are accepted. Required keys:
+            ``extract``, ``attest``, ``verify``, ``render``,
+            ``inspect``. Missing verbs are skipped (server may grow
+            over time; the wrapper layer should not break).
+
+    The bind tools accept the same kwargs as their underlying tools
+    PLUS bind references: any string-valued kwarg starting with
+    ``sha256:`` is resolved through the registry before the call.
+    Dict-form references (``{"bind": "sha256:..."}``) are resolved
+    too.
+
+    Result wrapping rules:
+      - Errors (``error_class`` present) pass through unchanged so
+        callers branch on the same enum the server already emits.
+      - Successes get wrapped to ``{bind_id, preview}`` where
+        ``preview`` is the per-tool small dict from
+        ``_preview_for``.
+
+    Idempotent: re-registering with the same names overwrites
+    FastMCP's prior handler for that name.
+    """
+    import inspect as _inspect
+
+    async def _maybe_await(value):
+        if _inspect.isawaitable(value):
+            return await value
+        return value
+
+    async def _call_wrapped(name: str, real: Callable, kwargs: dict) -> dict:
+        try:
+            resolved = _resolve_kwargs(kwargs, registry)
+        except BindNotFoundError as e:
+            return {"error_class": "schema", "errors": [str(e)]}
+        raw = await _maybe_await(real(**resolved))
+        return _wrap_result(name, raw, registry)
+
+    # Each bind tool needs an explicit signature so FastMCP can derive
+    # its pydantic arg model. ``**kwargs`` would collapse to a single
+    # required ``kwargs`` field. The dict/str union on ``bundle`` lets
+    # the tool accept either an inline bundle or a bind reference.
+
+    if "extract" in real_tools:
+        extract_real = real_tools["extract"]
+
+        async def extract_bind(text: str, extractor: str = "auto") -> dict:
+            """Bind-aware variant of `extract`. Returns
+            `{bind_id, preview: {n_triples, first_3}}` on success;
+            errors (`error_class` + `errors`) pass through from the
+            underlying tool."""
+            return await _call_wrapped("extract", extract_real, {
+                "text": text, "extractor": extractor,
+            })
+        mcp.tool(name="extract_bind")(extract_bind)
+
+    if "attest" in real_tools:
+        attest_real = real_tools["attest"]
+
+        async def attest_bind(
+            text: str,
+            extractor: str = "auto",
+            branch: str = "main",
+            title: str | None = None,
+            signing_key: str | None = None,
+        ) -> dict:
+            """Bind-aware variant of `attest`. Returns
+            `{bind_id, preview: {axiom_count, state_integer_short, ...}}`
+            on success. The bundle is bound by content hash; pass
+            the returned `bind_id` to `verify_bind` / `render_bind` /
+            `inspect_bind` instead of re-embedding the full bundle."""
+            return await _call_wrapped("attest", attest_real, {
+                "text": text, "extractor": extractor, "branch": branch,
+                "title": title, "signing_key": signing_key,
+            })
+        mcp.tool(name="attest_bind")(attest_bind)
+
+    if "verify" in real_tools:
+        verify_real = real_tools["verify"]
+
+        async def verify_bind(
+            bundle: dict | str,
+            signing_key: str | None = None,
+            strict: bool = False,
+        ) -> dict:
+            """Bind-aware variant of `verify`. The `bundle` argument
+            accepts either an inline bundle dict or a bind reference
+            (a `sha256:<hex>` string from a prior `attest_bind` call).
+            Returns `{bind_id, preview: {ok, axioms, ...}}` on
+            success."""
+            return await _call_wrapped("verify", verify_real, {
+                "bundle": bundle, "signing_key": signing_key, "strict": strict,
+            })
+        mcp.tool(name="verify_bind")(verify_bind)
+
+    if "render" in real_tools:
+        render_real = real_tools["render"]
+
+        async def render_bind(
+            bundle: dict | str,
+            density: float = 1.0,
+            length: float = 0.5,
+            formality: float = 0.5,
+            audience: float = 0.5,
+            perspective: float = 0.5,
+            title: str = "Rendered Tome",
+        ) -> dict:
+            """Bind-aware variant of `render`. `bundle` accepts inline
+            or bind reference. Non-neutral length/formality/audience/
+            perspective return `error_class=schema` from the
+            underlying tool (the MCP server's render is local-only;
+            use the Worker for LLM-conditioned axes)."""
+            return await _call_wrapped("render", render_real, {
+                "bundle": bundle, "density": density, "length": length,
+                "formality": formality, "audience": audience,
+                "perspective": perspective, "title": title,
+            })
+        mcp.tool(name="render_bind")(render_bind)
+
+    if "inspect" in real_tools:
+        inspect_real = real_tools["inspect"]
+
+        async def inspect_bind(bundle: dict | str) -> dict:
+            """Bind-aware variant of `inspect`. `bundle` accepts inline
+            or bind reference. Returns `{bind_id, preview}` where the
+            preview is the full small inspect dict."""
+            return await _call_wrapped("inspect", inspect_real, {
+                "bundle": bundle,
+            })
+        mcp.tool(name="inspect_bind")(inspect_bind)
+
+    async def agent_surface_manifest() -> dict:
+        """Self-describing manifest of the bind-aware tool surface.
+
+        Returns ``sum.agent_surface_manifest.v1``: the verb name,
+        per-tool argument and return shapes, error classes, and any
+        typed preconditions. Agents fetch this once at startup and
+        branch their behaviour on it instead of guessing tool
+        contracts from prose.
+
+        Also reports the runtime ``registry_size`` for observability.
+        """
+        manifest = dict(BIND_TOOL_MANIFEST)
+        manifest["runtime"] = {"registry_size": registry.size()}
+        return manifest
+
+    mcp.tool(name="agent_surface_manifest")(agent_surface_manifest)
 
 
 # ─── manifest for agent self-discovery ───────────────────────────────

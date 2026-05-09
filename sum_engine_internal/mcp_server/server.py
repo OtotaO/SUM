@@ -92,7 +92,12 @@ def build_server() -> FastMCP:
         name="sum",
         instructions=(
             "SUM verifiable knowledge distillation engine (v2 hardened). "
-            "Tools: extract / attest / verify / inspect / render / schema. "
+            "Tools: extract / attest / verify / inspect / render / schema "
+            "(legacy inline surface) plus extract_bind / attest_bind / "
+            "verify_bind / render_bind / inspect_bind / "
+            "agent_surface_manifest (bind-aware agent surface — "
+            "content-addressed handles so agents don't round-trip full "
+            "payloads; see docs/AGENT_SURFACE_FINDINGS.md). "
             "Default extractor is offline-only (sieve). The LLM extractor "
             "is disabled unless SUM_MCP_ALLOW_NETWORK=1 was set when the "
             "server started. Every tool returns either a tool-specific "
@@ -652,6 +657,23 @@ def build_server() -> FastMCP:
             return error_result(
                 "schema", t0, ErrorClass.INTERNAL, type(exc).__name__
             )
+
+    # Mount the bind-aware agent surface on top of the inline tools.
+    # Bind tools delegate in-process to the closures above (no
+    # subprocess hop) and add content-addressed handles + the
+    # `agent_surface_manifest` self-description. See
+    # docs/AGENT_SURFACE_FINDINGS.md for the failure-driven
+    # rationale and the falsifiable Step 4 measurement.
+    from sum_engine_internal.agent_surface.bind import BindRegistry
+    from sum_engine_internal.agent_surface.mcp_bind import register_bind_tools
+    bind_registry = BindRegistry()
+    register_bind_tools(mcp, bind_registry, {
+        "extract": extract,
+        "attest": attest,
+        "verify": verify,
+        "render": render,
+        "inspect": inspect,
+    })
 
     return mcp
 

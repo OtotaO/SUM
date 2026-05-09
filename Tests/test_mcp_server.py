@@ -51,7 +51,16 @@ def test_server_boots_with_expected_tools(server):
     import asyncio
     tools = asyncio.run(server.list_tools())
     names = {t.name for t in tools}
-    assert names == {"extract", "attest", "verify", "inspect", "render", "schema"}
+    legacy_inline = {"extract", "attest", "verify", "inspect", "render", "schema"}
+    bind_surface = {
+        "extract_bind", "attest_bind", "verify_bind", "render_bind",
+        "inspect_bind", "agent_surface_manifest",
+    }
+    assert legacy_inline <= names, f"legacy tools regressed: {legacy_inline - names}"
+    assert bind_surface <= names, f"bind surface missing: {bind_surface - names}"
+    assert names == legacy_inline | bind_surface, (
+        f"unexpected tools registered: {names - (legacy_inline | bind_surface)}"
+    )
 
 
 def test_every_tool_has_a_non_empty_description(server):
@@ -548,3 +557,103 @@ def test_render_emits_slider_header(server):
     result = asyncio.run(_tool(server, "render")(bundle=bundle, density=0.7))
     assert "@sliders:" in result["tome"]
     assert "density=0.700" in result["tome"]
+
+
+# --------------------------------------------------------------------------
+# Bind-aware agent surface (mounted in PR #172 follow-on)
+#
+# Pin three properties:
+#   1. The bind surface is registered alongside the legacy inline surface
+#      and the manifest is reachable.
+#   2. attest_bind binds the bundle directly (not the {bundle, axioms,...}
+#      envelope), so verify_bind / render_bind / inspect_bind can take the
+#      returned bind_id with no unwrap step.
+#   3. Errors pass through unchanged (no bind_id wrapper around an error).
+# --------------------------------------------------------------------------
+
+
+def test_agent_surface_manifest_reports_schema_and_runtime(server):
+    import asyncio
+    manifest = asyncio.run(_tool(server, "agent_surface_manifest")())
+    assert manifest["schema"] == "sum.agent_surface_manifest.v1"
+    assert manifest["verb"] == "bind"
+    assert set(manifest["tools"].keys()) >= {
+        "extract", "attest", "verify", "render", "inspect"
+    }
+    assert "registry_size" in manifest["runtime"]
+
+
+def test_attest_bind_returns_bindable_handle_to_bundle(server):
+    import asyncio
+    result = asyncio.run(_tool(server, "attest_bind")(
+        text="Alice likes cats. Bob owns Rex."
+    ))
+    assert "error_class" not in result
+    assert result["bind_id"].startswith("sha256:")
+    preview = result["preview"]
+    assert preview["axiom_count"] == 2
+    assert preview["state_integer_short"].endswith("…")
+    assert preview["prime_scheme"] == "sha256_64_v1"
+
+
+def test_verify_bind_accepts_bind_reference_from_attest_bind(server):
+    """The promise of the bind verb: attest → verify with no inline
+    payload round-trip. If this test fails, the agent surface has
+    regressed back to the failure mode documented in
+    docs/AGENT_SURFACE_FINDINGS.md."""
+    import asyncio
+    attest_result = asyncio.run(_tool(server, "attest_bind")(
+        text="Alice likes cats. Bob owns Rex."
+    ))
+    bid = attest_result["bind_id"]
+    verify_result = asyncio.run(_tool(server, "verify_bind")(bundle=bid))
+    assert "error_class" not in verify_result, verify_result
+    preview = verify_result["preview"]
+    assert preview["ok"] is True
+    assert preview["axioms"] == 2
+
+
+def test_render_bind_accepts_bind_reference_and_typed_precondition(server):
+    import asyncio
+    attest_result = asyncio.run(_tool(server, "attest_bind")(
+        text="Alice likes cats. Bob owns Rex."
+    ))
+    bid = attest_result["bind_id"]
+
+    # neutral defaults — succeeds, bind_id surfaced with preview
+    ok = asyncio.run(_tool(server, "render_bind")(bundle=bid))
+    assert "error_class" not in ok
+    assert ok["preview"]["tome_chars"] > 0
+
+    # non-neutral LLM-conditioned axis — typed schema error from the
+    # underlying tool, passed through without a bind_id wrapper
+    err = asyncio.run(_tool(server, "render_bind")(bundle=bid, length=0.9))
+    assert err["error_class"] == "schema"
+    assert "non-neutral LLM-conditioned axes" in err["errors"][0]
+    assert "bind_id" not in err
+
+
+def test_inspect_bind_accepts_bind_reference(server):
+    import asyncio
+    attest_result = asyncio.run(_tool(server, "attest_bind")(
+        text="Alice likes cats. Bob owns Rex."
+    ))
+    bid = attest_result["bind_id"]
+    result = asyncio.run(_tool(server, "inspect_bind")(bundle=bid))
+    assert "error_class" not in result
+    assert "preview" in result
+    # inspect's preview is the small inspect dict in full
+    assert "axiom_count" in result["preview"]
+
+
+def test_bind_unknown_id_returns_typed_schema_error(server):
+    """A stale or invented bind_id must not crash the tool — it
+    returns the same typed schema error the substrate already
+    produces for malformed inputs, so an agent loop branches on
+    error_class rather than catching exceptions."""
+    import asyncio
+    result = asyncio.run(_tool(server, "verify_bind")(
+        bundle="sha256:" + "0" * 64
+    ))
+    assert result["error_class"] == "schema"
+    assert "could not be resolved" in result["errors"][0]
