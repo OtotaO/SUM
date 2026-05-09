@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-10T05:28:44Z",
+  "issued_at": "2026-05-10T06:53:16Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "580521347fafa29e1e07ab6df0b912fbdf8d20ed",
-    "head_short": "5805213",
-    "head_subject": "wire: calibrated CI on bundle's axiom_graph_entropy (wire #2) (#189)",
-    "head_committer_date": "2026-05-09T23:36:22-04:00",
+    "head_sha": "8505b924a41ee52d16555616a10303b73dbcdf05",
+    "head_short": "8505b92",
+    "head_subject": "research: SMT consistency iteration 2 \u2014 predicate-library curation (#190)",
+    "head_committer_date": "2026-05-10T01:39:19-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -172,6 +172,11 @@
       {
         "path": "fixtures/bench_receipts/recursive_compression_walk_llm_qwen_qwen3.6-35b-a3b_2026-05-08.json",
         "schema": "sum.recursive_compression_walk.v1",
+        "issued_at": null
+      },
+      {
+        "path": "fixtures/bench_receipts/robust_pca_axiom_spike_20260509T170817Z.json",
+        "schema": "sum.robust_pca_axiom_spike.v1",
         "issued_at": null
       },
       {

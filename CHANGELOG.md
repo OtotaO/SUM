@@ -315,6 +315,50 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
   `fixtures/bench_receipts/split_conformal_spike_20260509T174250Z.json`.
   Findings doc: `docs/SPLIT_CONFORMAL_SPIKE_FINDINGS.md`.
 
+- **Robust PCA axiom-corruption spike (Phase A) — math kernel
+  verified, application iteration 1 ships honest negative
+  result.** Implements the deep-research article's #1-ranked
+  move: Principal Component Pursuit via ADMM (Lin et al.
+  arXiv:1009.5055, Algorithm 5) for axiom-corruption detection,
+  with provable kernel from Candès, Li, Ma & Wright JACM 58(3):11
+  (2011). New module `sum_engine_internal/research/robust_pca/`
+  (~190 LOC core + ~40 LOC embedding) with: `pcp(M)` returning
+  `PCPResult(L, S, n_iter, residual_norm, rank_estimate, ...)`,
+  `corruption_score(M)` per-row L1 of S, deterministic
+  sha256-bucketed axiom embedding, edge-case handling
+  (empty / non-finite / all-zero). Spike harness
+  `scripts/research/robust_pca_axiom_spike.py` runs two
+  experiments and emits `sum.robust_pca_axiom_spike.v1` receipt.
+
+  - **Experiment 1 — synthetic ground-truth recovery PASSES:**
+    n=50/200/500, exact rank recovery (3/5/10), L_rel_err =
+    S_rel_err = 0 to 1e-6, convergence in 16-22 iters. Default
+    μ₀ = 1.25/‖M‖₂ (Lin et al.) is load-bearing; wrong μ
+    converges to a high-rank "fits-but-doesn't-separate"
+    solution. Pinned by tests.
+  - **Experiment 2 — corpus corruption detection: HONEST
+    NEGATIVE RESULT for the simplest setup.** Single-extraction
+    + sha256-bucket embedding: precision/recall ≈ 0.08
+    (random-baseline). Single-extraction + corpus-vocab
+    embedding + bidirectional-anomaly ranking: precision/recall
+    0.50-0.58 (5-6× random-baseline, well below the article's
+    0.95 target). The article's hand-wave didn't survive contact
+    with reality on the simplest embedding.
+
+  Path forward documented in
+  `docs/ROBUST_PCA_AXIOM_SPIKE_FINDINGS.md`: (1) multi-extraction
+  matrix (the article's alternative framing — rows = extractions
+  of one document; PCP separates consensus from rare noise); (2)
+  learned axiom embedding (introduces ML dependency, PROOF_BOUNDARY
+  applies); (3) reframe the failure class (RPCA may not be the
+  right tool for single-extraction corruption — article §9.3
+  persistent homology or SMT-backed consistency are alternative
+  candidates). Math kernel stays in place across all iterations.
+
+  18 contract tests covering math correctness, edge cases, and
+  embedding determinism. Receipt:
+  `fixtures/bench_receipts/robust_pca_axiom_spike_20260509T170817Z.json`.
+
 - **Phase 26.0 iteration 5 — spike concluded; UnionFindStore is
   the Phase 26 backing store.** The egglog spike succeeded in
   its actual job: it taught us we don't need egglog. After

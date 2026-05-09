@@ -1,0 +1,174 @@
+{
+  "schema": "sum.robust_pca_axiom_spike.v1",
+  "iso_ts": "2026-05-09T17:08:18.000260+00:00",
+  "host": {
+    "platform": "macOS-26.0-arm64-arm-64bit",
+    "python": "3.10.14",
+    "machine": "arm64"
+  },
+  "experiment_synthetic_recovery": [
+    {
+      "n": 50,
+      "d": 80,
+      "r_true": 3,
+      "r_recovered": 3,
+      "sparsity_true": 0.05,
+      "sparsity_recovered": 0.04925,
+      "L_relative_error": 6.160863566663934e-08,
+      "S_relative_error": 5.035189809241072e-08,
+      "n_iter": 22,
+      "residual_norm": 4.1344910133001294e-08
+    },
+    {
+      "n": 200,
+      "d": 200,
+      "r_true": 5,
+      "r_recovered": 5,
+      "sparsity_true": 0.05,
+      "sparsity_recovered": 0.04925,
+      "L_relative_error": 1.0521630016652399e-07,
+      "S_relative_error": 1.0665871512661187e-07,
+      "n_iter": 17,
+      "residual_norm": 8.045398885018921e-08
+    },
+    {
+      "n": 500,
+      "d": 500,
+      "r_true": 10,
+      "r_recovered": 10,
+      "sparsity_true": 0.05,
+      "sparsity_recovered": 0.049232,
+      "L_relative_error": 9.825297018060968e-08,
+      "S_relative_error": 1.2566975927968246e-07,
+      "n_iter": 16,
+      "residual_norm": 8.318326838753151e-08
+    }
+  ],
+  "experiment_corpus_corruption_detection": [
+    {
+      "corpus_id": "seed_long_paragraphs",
+      "n_clean_triples": 120,
+      "n_off_corpus_injected": 6,
+      "n_miswired_injected": 6,
+      "embeddings": {
+        "hashed_buckets_64": {
+          "embedding_shape": [
+            132,
+            192
+          ],
+          "embedding_density_pct": 1.56,
+          "score_median": 3.0,
+          "clean_score_mean": 3.0,
+          "off_corpus_score_mean": 3.0,
+          "miswired_score_mean": 3.0,
+          "strategy_top_k_by_score": {
+            "k": 12,
+            "true_positives": 1,
+            "false_positives": 11,
+            "false_negatives": 11,
+            "precision_at_k": 0.083,
+            "recall": 0.083
+          },
+          "strategy_top_k_by_anomaly": {
+            "k": 12,
+            "true_positives": 1,
+            "false_positives": 11,
+            "false_negatives": 11,
+            "precision_at_k": 0.083,
+            "recall": 0.083
+          }
+        },
+        "corpus_vocab": {
+          "embedding_shape": [
+            132,
+            326
+          ],
+          "embedding_density_pct": 0.88,
+          "score_median": 2.9999999999999996,
+          "clean_score_mean": 2.9999999999999996,
+          "off_corpus_score_mean": 0.0,
+          "miswired_score_mean": 2.9999999999999996,
+          "strategy_top_k_by_score": {
+            "k": 12,
+            "true_positives": 1,
+            "false_positives": 11,
+            "false_negatives": 11,
+            "precision_at_k": 0.083,
+            "recall": 0.083
+          },
+          "strategy_top_k_by_anomaly": {
+            "k": 12,
+            "true_positives": 6,
+            "false_positives": 6,
+            "false_negatives": 6,
+            "precision_at_k": 0.5,
+            "recall": 0.5
+          }
+        }
+      }
+    },
+    {
+      "corpus_id": "seed_news_briefs",
+      "n_clean_triples": 66,
+      "n_off_corpus_injected": 6,
+      "n_miswired_injected": 6,
+      "embeddings": {
+        "hashed_buckets_64": {
+          "embedding_shape": [
+            78,
+            192
+          ],
+          "embedding_density_pct": 1.56,
+          "score_median": 3.0,
+          "clean_score_mean": 3.0,
+          "off_corpus_score_mean": 3.0,
+          "miswired_score_mean": 3.0,
+          "strategy_top_k_by_score": {
+            "k": 12,
+            "true_positives": 1,
+            "false_positives": 11,
+            "false_negatives": 11,
+            "precision_at_k": 0.083,
+            "recall": 0.083
+          },
+          "strategy_top_k_by_anomaly": {
+            "k": 12,
+            "true_positives": 1,
+            "false_positives": 11,
+            "false_negatives": 11,
+            "precision_at_k": 0.083,
+            "recall": 0.083
+          }
+        },
+        "corpus_vocab": {
+          "embedding_shape": [
+            78,
+            172
+          ],
+          "embedding_density_pct": 1.61,
+          "score_median": 3.0,
+          "clean_score_mean": 3.0,
+          "off_corpus_score_mean": 0.0,
+          "miswired_score_mean": 3.0,
+          "strategy_top_k_by_score": {
+            "k": 12,
+            "true_positives": 1,
+            "false_positives": 11,
+            "false_negatives": 11,
+            "precision_at_k": 0.083,
+            "recall": 0.083
+          },
+          "strategy_top_k_by_anomaly": {
+            "k": 12,
+            "true_positives": 7,
+            "false_positives": 5,
+            "false_negatives": 5,
+            "precision_at_k": 0.583,
+            "recall": 0.583
+          }
+        }
+      }
+    }
+  ],
+  "receipt_digest": "sha256:cd602efca42c8e3873d03f4274298305fc6b8caaab0a3fa936a76e834b679604"
+}
