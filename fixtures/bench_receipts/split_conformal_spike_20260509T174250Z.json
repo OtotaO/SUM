@@ -1,0 +1,59 @@
+{
+  "schema": "sum.split_conformal_spike.v1",
+  "iso_ts": "2026-05-09T17:42:50.679728+00:00",
+  "host": {
+    "platform": "macOS-26.0-arm64-arm-64bit",
+    "python": "3.10.14",
+    "machine": "arm64"
+  },
+  "experiment_synthetic_coverage_sweep": [
+    {
+      "alpha": 0.05,
+      "target_coverage": 0.95,
+      "n_per_split": 2000,
+      "n_seeds": 5,
+      "empirical_coverage_mean": 0.9521,
+      "empirical_coverage_std": 0.005013980454688668,
+      "mean_interval_width": 19.68421264485072
+    },
+    {
+      "alpha": 0.1,
+      "target_coverage": 0.9,
+      "n_per_split": 2000,
+      "n_seeds": 5,
+      "empirical_coverage_mean": 0.906,
+      "empirical_coverage_std": 0.007842193570679062,
+      "mean_interval_width": 18.332804765918695
+    },
+    {
+      "alpha": 0.2,
+      "target_coverage": 0.8,
+      "n_per_split": 2000,
+      "n_seeds": 5,
+      "empirical_coverage_mean": 0.806,
+      "empirical_coverage_std": 0.011853269591129681,
+      "mean_interval_width": 16.1845487810365
+    }
+  ],
+  "experiment_substrate_triple_quality": [
+    {
+      "corpus_id": "seed_v2",
+      "skipped": true,
+      "reason": "too few labeled triples (16 < 30) for a 3-way split"
+    },
+    {
+      "corpus_id": "seed_v1",
+      "n_total_labeled_triples": 50,
+      "n_train": 20,
+      "n_cal": 20,
+      "n_test": 10,
+      "ridge_lambda": 0.1,
+      "alpha": 0.1,
+      "target_coverage": 0.9,
+      "empirical_coverage": 1.0,
+      "mean_interval_width": 0.0313519997754812,
+      "predictor_train_mse": 2.053628291071743e-05
+    }
+  ],
+  "receipt_digest": "sha256:8d2c1e1652bb3541326c038d3e4b619fc76485c32cf400bb3ab7a95e0dbda838"
+}
