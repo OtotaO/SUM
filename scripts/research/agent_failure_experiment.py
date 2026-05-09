@@ -140,6 +140,102 @@ _TOOLS = {
 }
 
 
+# ─── bind-aware tool dispatcher (Step 3 of the four-step plan) ──────
+
+
+def _build_bind_tools() -> tuple[dict[str, Any], Any]:
+    """Build the bind-aware tool dispatcher. Returns (tools_dict,
+    registry). Each dispatcher is a sync wrapper around an async
+    bind_wrap_* tool from sum_engine_internal.agent_surface.mcp_bind.
+    """
+    from sum_engine_internal.agent_surface import BindRegistry
+    from sum_engine_internal.agent_surface.mcp_bind import (
+        bind_wrap_extract, bind_wrap_attest, bind_wrap_verify,
+        bind_wrap_render, bind_wrap_inspect,
+    )
+
+    registry = BindRegistry()
+    extract_b = bind_wrap_extract(registry)
+    attest_b = bind_wrap_attest(registry)
+    verify_b = bind_wrap_verify(registry)
+    render_b = bind_wrap_render(registry)
+    inspect_b = bind_wrap_inspect(registry)
+
+    def _async_dispatcher(async_fn):
+        # Return an async callable that takes the agent's positional
+        # ``args`` dict (matching the CLI dispatcher's signature) and
+        # forwards it as kwargs to the underlying bind-aware tool. The
+        # harness detects coroutines and awaits them; this avoids the
+        # nested-event-loop trap of asyncio.run() inside an already-
+        # running loop.
+        async def dispatch(args: dict) -> dict:
+            return await async_fn(**args)
+        return dispatch
+
+    return {
+        "extract_triples": _async_dispatcher(extract_b),  # alias for API compat
+        "extract": _async_dispatcher(extract_b),
+        "attest": _async_dispatcher(attest_b),
+        "verify": _async_dispatcher(verify_b),
+        "render": _async_dispatcher(render_b),
+        "inspect": _async_dispatcher(inspect_b),
+    }, registry
+
+
+_BIND_SYSTEM_PROMPT = """\
+You are an autonomous agent that uses the SUM bind-aware toolchain to
+produce a *verified summary* of a given document. A verified summary
+requires all of:
+  1. Extract the key facts as (subject, predicate, object) triples.
+  2. Attest those facts as a SUM CanonicalBundle (signed knowledge unit).
+  3. Verify the bundle.
+  4. Render the canonical tome from the bundle.
+  5. Output a final summary plus the bundle's bind_id.
+
+Tools available (call ONE per turn, JSON-only response, exact format):
+
+```
+{"thought": "<your reasoning>", "tool": "<tool_name>", "args": {<args>}}
+```
+
+THIS TOOLCHAIN USES THE BIND VERB. Every tool returns
+{"bind_id": "sha256:<hex>", "preview": {...}}. Every tool that
+takes a previously-produced value (bundle, etc.) accepts EITHER an
+inline value OR a bind reference. Pass bind_id strings instead of
+re-embedding full payloads — the runtime resolves them for you.
+
+Tool reference:
+  - extract(text: str)
+      Returns {bind_id, preview: {n_triples, first_3}}
+  - attest(text: str)
+      Returns {bind_id, preview: {axiom_count, state_integer_short, ...}}
+  - verify(bundle: dict | "sha256:<hex>")
+      Returns {bind_id, preview: {ok, axioms, ...}}
+      OR {error_class, errors} on failure.
+  - render(bundle: dict | "sha256:<hex>", density?, length?, formality?, audience?, perspective?)
+      Returns {bind_id, preview: {tome_chars, tome_head, sliders, ...}}
+      OR {error_class, errors} on failure. NOTE: length / formality /
+      audience / perspective MUST be 0.5 in offline mode (the default).
+      Non-0.5 returns error_class=schema with structured details about
+      which axes are LLM-conditioned.
+  - inspect(bundle: dict | "sha256:<hex>")
+      Returns {bind_id, preview: <small metadata dict>}
+  - done(summary: str, bind_id: str)
+      Use this when the task is complete. Pass the bundle's bind_id
+      (the sha256:<hex> string from your attest call), NOT the
+      inline state_integer or full bundle.
+
+Rules:
+  - One tool call per turn. Wait for the tool result before calling another.
+  - JSON only. No prose outside the JSON object.
+  - Pass bind_ids, not full payloads. Once you have a bind_id from a
+    prior tool call, use it as the argument to the next call.
+  - Errors come back as {error_class, errors, ...}. Branch on
+    error_class, not on prose substrings.
+  - Budget: 15 turns max. Use them wisely.
+"""
+
+
 # ─── Agent loop ──────────────────────────────────────────────────────
 
 
@@ -208,12 +304,24 @@ async def run_agent(
     document_text: str, model: str = "gpt-4o-mini-2024-07-18",
     max_turns: int = 15, time_budget_s: float = 300.0,
     log_path: Path | None = None,
+    tools: dict | None = None,
+    system_prompt: str | None = None,
+    surface_label: str = "cli",
 ) -> dict[str, Any]:
+    """Run one agent loop. ``tools`` defaults to the CLI-shelling
+    dispatcher (_TOOLS); ``system_prompt`` defaults to the CLI-style
+    prompt (_SYSTEM_PROMPT). Pass ``_build_bind_tools()`` and
+    ``_BIND_SYSTEM_PROMPT`` to use the bind-aware surface.
+    ``surface_label`` is recorded in the log for comparison."""
+    if tools is None:
+        tools = _TOOLS
+    if system_prompt is None:
+        system_prompt = _SYSTEM_PROMPT
     from sum_engine_internal.ensemble.llm_dispatch import get_adapter
     adapter = get_adapter(model)
 
     messages = [
-        {"role": "system", "content": _SYSTEM_PROMPT},
+        {"role": "system", "content": system_prompt},
         {"role": "user", "content": (
             f"Document to summarize (verified):\n\n```\n{document_text}\n```\n\n"
             f"Begin. Call your first tool."
@@ -255,7 +363,7 @@ async def run_agent(
 
         try:
             response = await adapter.generate_text(
-                system=_SYSTEM_PROMPT,
+                system=system_prompt,
                 user="".join(user_msg_parts),
                 call_timeout_s=60.0,
             )
@@ -296,19 +404,23 @@ async def run_agent(
             }
             break
 
-        if tool_name not in _TOOLS:
+        if tool_name not in tools:
             log({"phase": "tool_unknown", "turn": turn,
                  "summary": f"agent called unknown tool: {tool_name!r}; thought={thought[:80]!r}"})
             messages.append({"role": "assistant", "content": response})
             messages.append({"role": "tool", "content": json.dumps({
                 "error": f"tool {tool_name!r} does not exist. Available: "
-                         f"{list(_TOOLS.keys()) + ['done']}"
+                         f"{list(tools.keys()) + ['done']}"
             })})
             continue
 
-        # Execute the tool.
+        # Execute the tool. The CLI dispatcher is sync; the bind
+        # dispatcher is async — accept both by awaiting if a coroutine
+        # comes back.
         try:
-            tool_result = _TOOLS[tool_name](tool_args)
+            tool_result = tools[tool_name](tool_args)
+            if asyncio.iscoroutine(tool_result):
+                tool_result = await tool_result
         except Exception as e:  # noqa: BLE001
             tool_result = {
                 "error": f"{type(e).__name__}: {e}",
@@ -368,6 +480,14 @@ def main():
     parser.add_argument("--model", default="gpt-4o-mini-2024-07-18")
     parser.add_argument("--max-turns", type=int, default=15)
     parser.add_argument("--time-budget-s", type=float, default=300.0)
+    parser.add_argument(
+        "--use-bind-layer", action="store_true",
+        help="Use the bind-aware tool surface instead of the CLI-shelling "
+             "default. Step 3 of the four-step plan (build the bind verb); "
+             "Step 4 (re-run for falsifiable comparison) is invoking this "
+             "flag and comparing turn-count / parse-error counts against "
+             "the baseline log committed in PR #171.",
+    )
     args = parser.parse_args()
 
     if args.document is None:
@@ -385,12 +505,21 @@ def main():
         document_label = Path(args.document).stem
 
     timestamp = _dt.datetime.now(_dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    log_path = LOG_DIR / f"agent_run_{document_label}_{args.model.replace('/','_')}_{timestamp}.jsonl"
+    surface_label = "bind" if args.use_bind_layer else "cli"
+    log_path = LOG_DIR / f"agent_run_{surface_label}_{document_label}_{args.model.replace('/','_')}_{timestamp}.jsonl"
+
+    if args.use_bind_layer:
+        tools, _registry = _build_bind_tools()
+        system_prompt = _BIND_SYSTEM_PROMPT
+    else:
+        tools = _TOOLS
+        system_prompt = _SYSTEM_PROMPT
 
     result = asyncio.run(run_agent(
         document_text=document_text, model=args.model,
         max_turns=args.max_turns, time_budget_s=args.time_budget_s,
         log_path=log_path,
+        tools=tools, system_prompt=system_prompt, surface_label=surface_label,
     ))
 
     print()

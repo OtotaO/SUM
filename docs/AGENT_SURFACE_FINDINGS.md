@@ -214,3 +214,48 @@ consumer. The new sequencing:
 The "two-PR detour" is justified because every future agent-mediated
 SUM use rides on the bind layer. Without it, every consumer pays the
 parse-failure tax we just measured.
+
+## Step 4 result — bind layer re-run
+
+Same agent, same model, same document, same harness — only the
+surface changed. Run command:
+
+```
+python -m scripts.research.agent_failure_experiment --use-bind-layer
+```
+
+Logs:
+  - baseline (CLI surface):
+    `fixtures/agent_logs/agent_run_doc_long_cell_biology_gpt-4o-mini-2024-07-18_20260508T170652Z.jsonl`
+  - bind (this PR):
+    `fixtures/agent_logs/agent_run_bind_doc_long_cell_biology_gpt-4o-mini-2024-07-18_20260509T050724Z.jsonl`
+
+Phase counts (from each log):
+
+| metric                  | baseline (CLI) | bind   | Δ      |
+|-------------------------|---------------:|-------:|-------:|
+| max turn reached        | 10             | 5      | −5     |
+| llm_response events     | 10             | 5      | −5     |
+| tool_result events      | 5              | 4      | −1     |
+| parse_error events      | 4              | 0      | −4     |
+| free-form-error retries | 1              | 0      | −1     |
+| reached `done`          | yes            | yes    | —      |
+
+The falsifiable criterion stated above ("turn count to drop from
+10 → ~5, parse errors from 4 → 0, free-form-error retries from
+1 → 0") is met on all three counts. The agent now executes the
+canonical extract → attest → verify → render → done sequence in
+five turns, each carrying a `bind_id` reference instead of an
+inline payload.
+
+The render call no longer needs to surface its typed-precondition
+error: when the agent reads the bind-layer system prompt, it
+chooses neutral defaults for the LLM-conditioned axes, so the
+precondition simply does not fire. The typed error remains in
+place for the case where a future agent picks non-neutral values
+without first reading the manifest.
+
+This closes Step 4 of the four-step plan. The bind layer is the
+canonical agent surface from here forward; the CLI tool dispatcher
+in the harness is retained for the comparison baseline only and
+should not be the path new consumers wire against.
