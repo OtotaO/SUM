@@ -4,6 +4,37 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Phase 26.0 iteration 3 — actual e-class queries measured;
+  two new findings.** Adds a baked-in `ownership_symmetry`
+  ruleset (`Triple(s, "owns", o) ⟺ Triple(o, "owned_by", s)`)
+  to `EgglogStore` plus three new methods:
+  `available_rulesets()`, `saturate(ruleset_name)`, and
+  `extract_canonical(triple)` — the minimum surface needed to
+  exercise egglog's extract-with-cost end-to-end. Spike harness
+  gains a `_measure_eclass` phase running saturate + 50 sampled
+  extractions per workload. Lazy-mode numbers
+  (eager unchanged from iteration 2): saturate is essentially
+  free for unfiring rules (12 ms at 10k); extract scales
+  near-linearly with graph size (0.6 ms at 66 triples → 15 ms
+  at 10k → projected ~75 ms at 50k). End-to-end e-class query
+  cost is dominated by materialisation, not by saturate or
+  extract — the option-2 (bulk-load API) direction remains the
+  unaddressed bottleneck. **Honest red flag:** egglog's default
+  `extract` is non-deterministic across processes when two
+  expressions in the same e-class have equal cost (FIFO
+  tie-breaker over insertion order). For `bench_digest`
+  cross-process reproducibility, a custom cost function with a
+  content-derived tie-breaker is mandatory. Pinned by
+  `test_default_cost_is_insertion_order_sensitive_on_ties`
+  (asserts the two canonical forms differ across insertion-order
+  permutations — will start failing if egglog's default becomes
+  deterministic, which is the desired direction). Updated
+  receipt:
+  `fixtures/bench_receipts/phase_26_backing_store_spike_egglog_20260509T135038Z.json`.
+  19 contract tests total (4 new). Findings doc gains the
+  iteration-3 section, a determinism-red-flag callout, and an
+  updated decision-options block.
+
 - **Phase 26.0 iteration 2 — lazy materialisation resolves the
   egglog storage-cost objection.** `EgglogStore` gains
   `materialise_egraph()` and an `eager_materialisation`

@@ -183,6 +183,89 @@ def test_pattern_queries_work_in_lazy_mode_without_materialisation(store):
     assert store.egraph_registered() == 0
 
 
+def test_saturate_collapses_active_and_passive_ownership(store):
+    """The baked-in `ownership_symmetry` ruleset rewrites
+    `Triple(s, "owns", o)` ⟺ `Triple(o, "owned_by", s)`. After
+    saturation, both forms extract to the same canonical
+    representative within a single store/process."""
+    store.add_triples([
+        _t("alice", "owns", "rex"),
+        _t("rex", "owned_by", "alice"),  # equivalent
+        _t("bob", "likes", "cats"),       # unrelated
+    ])
+    store.saturate("ownership_symmetry")
+    ext_active = str(store.extract_canonical(_t("alice", "owns", "rex")))
+    ext_passive = str(store.extract_canonical(_t("rex", "owned_by", "alice")))
+    assert ext_active == ext_passive, (
+        f"active and passive forms did not collapse: "
+        f"{ext_active!r} vs {ext_passive!r}"
+    )
+    # The unrelated triple is unchanged
+    ext_other = str(store.extract_canonical(_t("bob", "likes", "cats")))
+    assert "bob" in ext_other and "likes" in ext_other
+
+
+def test_saturate_unknown_ruleset_raises():
+    from sum_engine_internal.graph_store.egglog_store import EgglogStore
+    s = EgglogStore()
+    s.add_triple(_t("alice", "owns", "rex"))
+    s.materialise_egraph()
+    with pytest.raises(KeyError, match="unknown ruleset"):
+        s.saturate("does_not_exist")
+
+
+def test_extract_canonical_matches_within_a_single_process(store):
+    """Within one process/store, repeated extraction of equivalent
+    triples returns the same canonical form. (Cross-process
+    determinism is a separate question — see the next test.)"""
+    store.add_triples([
+        _t("alice", "owns", "rex"),
+        _t("rex", "owned_by", "alice"),
+    ])
+    store.saturate("ownership_symmetry")
+    ext1 = str(store.extract_canonical(_t("alice", "owns", "rex")))
+    ext2 = str(store.extract_canonical(_t("alice", "owns", "rex")))
+    assert ext1 == ext2
+
+
+def test_default_cost_is_insertion_order_sensitive_on_ties():
+    """KNOWN LIMITATION pinned as a test: egglog's default
+    extract-with-cost is insertion-order-dependent when two
+    expressions in the same e-class have equal cost. Forward
+    insertion of (active, passive) extracts the active form;
+    reversed insertion extracts the passive form.
+
+    For Phase C cross-process determinism, a custom cost function
+    with a content-derived tie-breaker is required. This test
+    exists so the limitation cannot regress silently into a
+    "looks deterministic" assumption."""
+    from sum_engine_internal.graph_store.egglog_store import EgglogStore
+    triples = [
+        _t("alice", "owns", "rex"),
+        _t("rex", "owned_by", "alice"),
+    ]
+
+    store_fwd = EgglogStore()
+    store_fwd.add_triples(triples)
+    store_fwd.saturate("ownership_symmetry")
+    canonical_fwd = str(store_fwd.extract_canonical(_t("alice", "owns", "rex")))
+
+    store_rev = EgglogStore()
+    store_rev.add_triples(list(reversed(triples)))
+    store_rev.saturate("ownership_symmetry")
+    canonical_rev = str(store_rev.extract_canonical(_t("alice", "owns", "rex")))
+
+    # The two extractions DIFFER under the default cost — this is
+    # the limitation we're pinning. If/when egglog or our backend
+    # makes default extract deterministic, this test will start
+    # failing and we should celebrate by inverting the assertion.
+    assert canonical_fwd != canonical_rev, (
+        "If this test starts failing, egglog default extract has "
+        "become deterministic on ties. Update the spike findings "
+        "doc and invert this assertion."
+    )
+
+
 def test_canonical_hash_is_independent_of_backend():
     """The default content_hash on `GraphStore` is JCS-style sort
     over sha256 — by construction backend-independent. This test

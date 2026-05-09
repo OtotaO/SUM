@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-09T13:34:39Z",
+  "issued_at": "2026-05-09T13:52:12Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "235da709b7ebacd7a844937abfe9b07aabf86c2a",
-    "head_short": "235da70",
-    "head_subject": "research: Phase 26.0 spike \u2014 egglog backing-store candidate (#176)",
-    "head_committer_date": "2026-05-09T09:25:14-04:00",
+    "head_sha": "2d90541bb3ee2f6a825ccef4f328a04af444f355",
+    "head_short": "2d90541",
+    "head_subject": "research: Phase 26.0 iteration 2 \u2014 lazy materialisation (#177)",
+    "head_committer_date": "2026-05-09T09:45:15-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -106,6 +106,11 @@
       },
       {
         "path": "fixtures/bench_receipts/phase_26_backing_store_spike_egglog_20260509T133315Z.json",
+        "schema": "sum.phase_26_backing_store_spike.v1",
+        "issued_at": null
+      },
+      {
+        "path": "fixtures/bench_receipts/phase_26_backing_store_spike_egglog_20260509T135038Z.json",
         "schema": "sum.phase_26_backing_store_spike.v1",
         "issued_at": null
       },
