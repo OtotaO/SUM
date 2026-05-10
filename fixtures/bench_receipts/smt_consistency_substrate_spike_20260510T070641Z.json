@@ -1,0 +1,343 @@
+{
+  "schema": "sum.smt_consistency_substrate_spike.v1",
+  "iso_ts": "2026-05-10T07:06:41.698525+00:00",
+  "host": {
+    "platform": "macOS-26.0-arm64-arm-64bit",
+    "python": "3.10.14",
+    "machine": "arm64"
+  },
+  "predicate_library": {
+    "contain": [
+      "antisymmetric",
+      "irreflexive",
+      "transitive"
+    ],
+    "cover": [
+      "antisymmetric",
+      "irreflexive"
+    ],
+    "build": [
+      "antisymmetric",
+      "irreflexive"
+    ],
+    "write": [
+      "antisymmetric",
+      "irreflexive"
+    ],
+    "produce": [
+      "antisymmetric",
+      "irreflexive"
+    ],
+    "develop": [
+      "antisymmetric",
+      "irreflexive"
+    ],
+    "establish": [
+      "antisymmetric",
+      "irreflexive"
+    ],
+    "create": [
+      "antisymmetric",
+      "irreflexive"
+    ],
+    "compose": [
+      "antisymmetric",
+      "irreflexive"
+    ],
+    "discover": [
+      "antisymmetric",
+      "irreflexive"
+    ],
+    "release": [
+      "antisymmetric",
+      "irreflexive"
+    ],
+    "execute": [
+      "antisymmetric",
+      "irreflexive"
+    ],
+    "open": [
+      "antisymmetric",
+      "irreflexive"
+    ],
+    "introduce": [
+      "antisymmetric",
+      "irreflexive"
+    ],
+    "propose": [
+      "antisymmetric",
+      "irreflexive"
+    ],
+    "capture": [
+      "antisymmetric",
+      "irreflexive"
+    ],
+    "receive": [
+      "antisymmetric",
+      "irreflexive"
+    ],
+    "take": [
+      "antisymmetric",
+      "irreflexive"
+    ],
+    "emit": [
+      "antisymmetric",
+      "irreflexive"
+    ],
+    "win": [
+      "antisymmetric",
+      "irreflexive"
+    ],
+    "reach": [
+      "irreflexive"
+    ],
+    "become": [
+      "irreflexive"
+    ],
+    "begin": [
+      "irreflexive"
+    ],
+    "born_on": [
+      "functional"
+    ],
+    "born_in": [
+      "functional"
+    ]
+  },
+  "experiment_synthetic_verification": [
+    {
+      "case": "clean_no_props",
+      "n_triples": 1,
+      "expected_consistent": true,
+      "got_consistent": true,
+      "passed": true,
+      "unsat_core_size": 0,
+      "z3_check_ms": 24.75
+    },
+    {
+      "case": "mutual_antisymmetric",
+      "n_triples": 2,
+      "expected_consistent": false,
+      "got_consistent": false,
+      "passed": true,
+      "unsat_core_size": 2,
+      "z3_check_ms": 1.794
+    },
+    {
+      "case": "self_loop_irreflexive",
+      "n_triples": 1,
+      "expected_consistent": false,
+      "got_consistent": false,
+      "passed": true,
+      "unsat_core_size": 1,
+      "z3_check_ms": 0.452
+    },
+    {
+      "case": "two_outputs_functional",
+      "n_triples": 2,
+      "expected_consistent": false,
+      "got_consistent": false,
+      "passed": true,
+      "unsat_core_size": 2,
+      "z3_check_ms": 0.618
+    },
+    {
+      "case": "3_cycle_transitive_irreflexive",
+      "n_triples": 3,
+      "expected_consistent": false,
+      "got_consistent": false,
+      "passed": true,
+      "unsat_core_size": 3,
+      "z3_check_ms": 0.674
+    },
+    {
+      "case": "needle_in_haystack",
+      "n_triples": 51,
+      "expected_consistent": false,
+      "got_consistent": false,
+      "passed": true,
+      "unsat_core_size": 1,
+      "z3_check_ms": 3.873
+    }
+  ],
+  "experiment_substrate_corpus_check": [
+    {
+      "corpus_id": "seed_v1",
+      "n_triples": 50,
+      "n_distinct_predicates": 46,
+      "predicates_with_properties_declared": [
+        "build",
+        "compose",
+        "contain",
+        "create",
+        "discover",
+        "emit",
+        "produce",
+        "propose",
+        "reach",
+        "write"
+      ],
+      "consistent": true,
+      "unsat_core_indices": [],
+      "unsat_core_triples": [],
+      "z3_check_ms": 27.121
+    },
+    {
+      "corpus_id": "seed_v2",
+      "n_triples": 16,
+      "n_distinct_predicates": 12,
+      "predicates_with_properties_declared": [
+        "develop",
+        "emit",
+        "win",
+        "write"
+      ],
+      "consistent": true,
+      "unsat_core_indices": [],
+      "unsat_core_triples": [],
+      "z3_check_ms": 6.038
+    },
+    {
+      "corpus_id": "seed_long_paragraphs",
+      "n_triples": 120,
+      "n_distinct_predicates": 95,
+      "predicates_with_properties_declared": [
+        "become",
+        "begin",
+        "build",
+        "capture",
+        "compose",
+        "contain",
+        "create",
+        "develop",
+        "establish",
+        "execute",
+        "introduce",
+        "open",
+        "produce",
+        "propose",
+        "reach",
+        "receive",
+        "release"
+      ],
+      "consistent": true,
+      "unsat_core_indices": [],
+      "unsat_core_triples": [],
+      "z3_check_ms": 76.835
+    },
+    {
+      "corpus_id": "seed_news_briefs",
+      "n_triples": 66,
+      "n_distinct_predicates": 50,
+      "predicates_with_properties_declared": [
+        "become",
+        "begin",
+        "build",
+        "cover",
+        "open",
+        "reach",
+        "take",
+        "win"
+      ],
+      "consistent": true,
+      "unsat_core_indices": [],
+      "unsat_core_triples": [],
+      "z3_check_ms": 25.756
+    }
+  ],
+  "experiment_real_corpus_injection": [
+    {
+      "corpus_id": "seed_v1",
+      "n_clean": 50,
+      "n_curated_predicates_present": 10,
+      "results": [
+        {
+          "injection_type": "irreflexive_self_loop",
+          "predicate_used": "contain",
+          "n_after_injection": 51,
+          "caught_by_z3": true,
+          "unsat_core_size": 1,
+          "minimal_core": true
+        },
+        {
+          "injection_type": "antisymmetric_mutual",
+          "predicate_used": "contain",
+          "n_after_injection": 52,
+          "caught_by_z3": true,
+          "unsat_core_size": 2,
+          "minimal_core": true
+        }
+      ]
+    },
+    {
+      "corpus_id": "seed_v2",
+      "n_clean": 16,
+      "n_curated_predicates_present": 4,
+      "results": [
+        {
+          "injection_type": "irreflexive_self_loop",
+          "predicate_used": "write",
+          "n_after_injection": 17,
+          "caught_by_z3": true,
+          "unsat_core_size": 1,
+          "minimal_core": true
+        },
+        {
+          "injection_type": "antisymmetric_mutual",
+          "predicate_used": "write",
+          "n_after_injection": 18,
+          "caught_by_z3": true,
+          "unsat_core_size": 2,
+          "minimal_core": true
+        }
+      ]
+    },
+    {
+      "corpus_id": "seed_long_paragraphs",
+      "n_clean": 120,
+      "n_curated_predicates_present": 17,
+      "results": [
+        {
+          "injection_type": "irreflexive_self_loop",
+          "predicate_used": "contain",
+          "n_after_injection": 121,
+          "caught_by_z3": true,
+          "unsat_core_size": 1,
+          "minimal_core": true
+        },
+        {
+          "injection_type": "antisymmetric_mutual",
+          "predicate_used": "contain",
+          "n_after_injection": 122,
+          "caught_by_z3": true,
+          "unsat_core_size": 2,
+          "minimal_core": true
+        }
+      ]
+    },
+    {
+      "corpus_id": "seed_news_briefs",
+      "n_clean": 66,
+      "n_curated_predicates_present": 8,
+      "results": [
+        {
+          "injection_type": "irreflexive_self_loop",
+          "predicate_used": "cover",
+          "n_after_injection": 67,
+          "caught_by_z3": true,
+          "unsat_core_size": 1,
+          "minimal_core": true
+        },
+        {
+          "injection_type": "antisymmetric_mutual",
+          "predicate_used": "cover",
+          "n_after_injection": 68,
+          "caught_by_z3": true,
+          "unsat_core_size": 2,
+          "minimal_core": true
+        }
+      ]
+    }
+  ],
+  "receipt_digest": "sha256:e0ed00f415cd96fe14b9189baecca035d343cef70103c3c2c095f0d73ec670e8"
+}

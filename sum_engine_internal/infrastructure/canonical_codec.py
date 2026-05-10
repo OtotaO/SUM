@@ -76,6 +76,58 @@ def _zig():
 BUNDLE_VERSION = "1.1.0"  # Minor bump: added optional Ed25519 fields
 
 
+def _compute_axiom_consistency_check(active_axioms: list) -> Optional[dict]:
+    """Z3-backed consistency check on the bundle's axiom set.
+
+    Active axioms are strings of the form
+    ``subject||predicate||object``; we split into Triples and call
+    `check_consistency()` with the curated
+    ``SUBSTRATE_PREDICATE_LIBRARY``. Returns a dict shaped:
+
+        {
+          "consistent": bool,
+          "unsat_core": list[int],   # triple indices, empty if SAT
+          "n_predicates_checked": int,
+          "z3_check_ms": float,
+        }
+
+    Returns ``None`` for empty axiom sets (no contradictions
+    possible) or when Z3 / the predicate library is unavailable.
+
+    Failures are caught: this metadata field is a signal, not a
+    guarantee, and a single failed computation must NEVER block
+    attestation.
+    """
+    if not active_axioms:
+        return None
+    try:
+        from sum_engine_internal.graph_store import Triple
+        from sum_engine_internal.research.smt_consistency import (
+            SUBSTRATE_PREDICATE_LIBRARY, check_consistency,
+        )
+        triples = []
+        for axiom in active_axioms:
+            parts = axiom.split("||")
+            if len(parts) == 3:
+                triples.append(Triple(*[p.strip() for p in parts]))
+        if not triples:
+            return None
+        used_predicates = {t.predicate for t in triples}
+        props_payload = {
+            p: SUBSTRATE_PREDICATE_LIBRARY[p]
+            for p in (used_predicates & SUBSTRATE_PREDICATE_LIBRARY.keys())
+        }
+        result = check_consistency(triples, predicate_properties=props_payload)
+        return {
+            "consistent": bool(result.consistent),
+            "unsat_core": list(result.unsat_core),
+            "n_predicates_checked": int(result.n_predicates_with_properties),
+            "z3_check_ms": round(result.z3_check_seconds * 1000, 3),
+        }
+    except Exception:
+        return None
+
+
 def _compute_axiom_graph_entropy_ci(axiom_count: int) -> Optional[list]:
     """Calibrated CI for the EXPECTED entropy at this axiom_count.
 
@@ -171,6 +223,18 @@ class CanonicalBundle:
     # the calibration baseline at
     # fixtures/calibration/entropy_baseline.json.
     axiom_graph_entropy_ci: Optional[list] = None
+    # Z3-backed consistency check over the bundle's axiom set
+    # under the operator-curated SUBSTRATE_PREDICATE_LIBRARY.
+    # Dict-shaped:
+    #   {consistent: bool, unsat_core: list[int],
+    #    n_predicates_checked: int, z3_check_ms: float}
+    # NOT in the signed payload. Lets downstream consumers refuse
+    # to trust UNSAT bundles. None when Z3 is unavailable, the
+    # predicate library doesn't cover any of this bundle's
+    # predicates, or the bundle is empty. See
+    # docs/SMT_CONSISTENCY_SPIKE_FINDINGS.md (iteration 2) for
+    # the curation discipline + injection-test evidence.
+    axiom_consistency_check: Optional[dict] = None
 
 
 class InvalidSignatureError(Exception):
@@ -347,6 +411,13 @@ class CanonicalCodec:
             )
         except Exception:
             graph_entropy_ci_value = None
+        # Z3 consistency check — same defense-in-depth.
+        try:
+            consistency_check_value = _compute_axiom_consistency_check(
+                active_axioms,
+            )
+        except Exception:
+            consistency_check_value = None
 
         bundle = CanonicalBundle(
             bundle_version=BUNDLE_VERSION,
@@ -364,6 +435,7 @@ class CanonicalCodec:
             public_key=pub_key,
             axiom_graph_entropy=graph_entropy_value,
             axiom_graph_entropy_ci=graph_entropy_ci_value,
+            axiom_consistency_check=consistency_check_value,
         )
 
         # Strip None fields for backward compatibility

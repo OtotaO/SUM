@@ -22,9 +22,13 @@ from sum_engine_internal.research.smt_consistency.consistency import (
     PredicateProperty,
     check_consistency,
 )
+from sum_engine_internal.research.smt_consistency.predicate_library import (
+    SUBSTRATE_PREDICATE_LIBRARY,
+)
 
 __all__ = [
     "ConsistencyResult",
     "PredicateProperty",
     "check_consistency",
+    "SUBSTRATE_PREDICATE_LIBRARY",
 ]
