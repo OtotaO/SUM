@@ -29,10 +29,16 @@ from sum_engine_internal.research.conformal.split_conformal import (
     empirical_coverage,
     average_interval_width,
 )
+from sum_engine_internal.research.conformal.entropy_baseline import (
+    BaselineEntropyPredictor,
+    get_default_predictor,
+)
 
 __all__ = [
     "SplitConformal",
     "ConformalInterval",
     "empirical_coverage",
     "average_interval_width",
+    "BaselineEntropyPredictor",
+    "get_default_predictor",
 ]

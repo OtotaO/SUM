@@ -4,6 +4,55 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Wire #2 — calibrated CI on bundle's axiom_graph_entropy.**
+  Builds on Wire #1 (PR #188) by adding a finite-sample,
+  distribution-free CI for the *expected* entropy at this
+  bundle's axiom_count. Uses PR #183's `SplitConformal` kernel
+  wrapped around a tiny ridge regressor calibrated on a
+  precomputed baseline of (axiom_count, entropy) pairs from the
+  substrate's seed corpora.
+
+  **What ships:**
+  - `sum_engine_internal/research/conformal/entropy_baseline.py`
+    — `BaselineEntropyPredictor` (loads + trains + calibrates
+    once at module import) + `get_default_predictor()` lazy
+    singleton accessor
+  - `fixtures/calibration/entropy_baseline.json` — 122
+    (axiom_count, entropy) pairs across 6 seed corpora
+    (`seed_v1` / `seed_v2` / `seed_long_paragraphs` /
+    `seed_news_briefs` / `seed_paragraphs` /
+    `seed_paragraphs_16`)
+  - New `axiom_graph_entropy_ci: Optional[List[float]]` field
+    on `CanonicalBundle`. Two-element `[lower, upper]` at
+    α=0.10 (90 % coverage). Computed at every `export_bundle`
+    call; stripped from output when None (cold-start /
+    empty-bundle).
+
+  **Same architectural discipline as Wire #1:**
+  - **Outside the signed payload** — Ed25519 / HMAC signatures
+    byte-identical, K-matrix unaffected
+  - **None for empty bundles** — strip-Nones logic handles
+    wire-format
+  - **Defense-in-depth: helper has its own try/except AND the
+    call site wraps it again** — broken predictor never blocks
+    attestation
+  - **Cold-start safe** — predictor reports `is_calibrated=False`
+    if baseline is missing; bundle gets None CI
+
+  Substrate use: every signed bundle now ships with an
+  immediately-usable single-bundle anomaly-detection signal
+  ("is this bundle's entropy typical for its size?"). No
+  multi-bundle history needed; no operator opt-in.
+
+  10 contract tests in `Tests/test_bundle_entropy_ci.py` pin:
+  field present + correct shape / actual entropy in CI for
+  in-distribution bundle / signature unchanged / round-trip OK
+  / empty-bundle behaviour / failure-resilience under
+  monkeypatched broken helper / predictor calibrates from
+  baseline / cold-start returns None / CI scales
+  monotonically with axiom_count. All 108 tests across
+  affected surfaces still green.
+
 - **Wire #1 — von Neumann graph entropy as bundle metadata.**
   First production-wiring of a kernel from this session's
   research arc. Every signed bundle now carries an

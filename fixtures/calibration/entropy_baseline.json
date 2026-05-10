@@ -1,0 +1,746 @@
+{
+  "schema": "sum.entropy_baseline.v1",
+  "n_pairs": 122,
+  "corpora_used": [
+    "seed_long_paragraphs",
+    "seed_news_briefs",
+    "seed_paragraphs",
+    "seed_paragraphs_16",
+    "seed_v1",
+    "seed_v2"
+  ],
+  "pairs": [
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_001",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_002",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_003",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_004",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_005",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_006",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_007",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_008",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_009",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_010",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_011",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_012",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_013",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_014",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_015",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_016",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_017",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_018",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_019",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_020",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_021",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_022",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_023",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_024",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_025",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_026",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_027",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_028",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_029",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_030",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_031",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_032",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_033",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_034",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_035",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_036",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_037",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_038",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_039",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_040",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_041",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_042",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_043",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_044",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_045",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_046",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_047",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_048",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_049",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v1",
+      "doc_id": "doc_050",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v2",
+      "doc_id": "doc_001",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v2",
+      "doc_id": "doc_002",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v2",
+      "doc_id": "doc_003",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v2",
+      "doc_id": "doc_004",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v2",
+      "doc_id": "doc_005",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v2",
+      "doc_id": "doc_006",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v2",
+      "doc_id": "doc_007",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v2",
+      "doc_id": "doc_008",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v2",
+      "doc_id": "doc_009",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v2",
+      "doc_id": "doc_010",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v2",
+      "doc_id": "doc_011",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v2",
+      "doc_id": "doc_012",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v2",
+      "doc_id": "doc_013",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v2",
+      "doc_id": "doc_014",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v2",
+      "doc_id": "doc_015",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_v2",
+      "doc_id": "doc_019",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_long_paragraphs",
+      "doc_id": "doc_long_internet_history",
+      "axiom_count": 5,
+      "axiom_graph_entropy": 1.6094379124341005
+    },
+    {
+      "corpus_id": "seed_long_paragraphs",
+      "doc_id": "doc_long_quantum_mechanics",
+      "axiom_count": 8,
+      "axiom_graph_entropy": 2.0794415416798357
+    },
+    {
+      "corpus_id": "seed_long_paragraphs",
+      "doc_id": "doc_long_evolution",
+      "axiom_count": 8,
+      "axiom_graph_entropy": 2.0794415416798357
+    },
+    {
+      "corpus_id": "seed_long_paragraphs",
+      "doc_id": "doc_long_roman_empire",
+      "axiom_count": 3,
+      "axiom_graph_entropy": 1.0986122886681096
+    },
+    {
+      "corpus_id": "seed_long_paragraphs",
+      "doc_id": "doc_long_solar_system",
+      "axiom_count": 10,
+      "axiom_graph_entropy": 2.3025850929940455
+    },
+    {
+      "corpus_id": "seed_long_paragraphs",
+      "doc_id": "doc_long_neural_networks",
+      "axiom_count": 9,
+      "axiom_graph_entropy": 2.1972245773362196
+    },
+    {
+      "corpus_id": "seed_long_paragraphs",
+      "doc_id": "doc_long_climate_change",
+      "axiom_count": 7,
+      "axiom_graph_entropy": 1.945910149055313
+    },
+    {
+      "corpus_id": "seed_long_paragraphs",
+      "doc_id": "doc_long_relativity",
+      "axiom_count": 8,
+      "axiom_graph_entropy": 2.0794415416798357
+    },
+    {
+      "corpus_id": "seed_long_paragraphs",
+      "doc_id": "doc_long_french_revolution",
+      "axiom_count": 5,
+      "axiom_graph_entropy": 1.6094379124341005
+    },
+    {
+      "corpus_id": "seed_long_paragraphs",
+      "doc_id": "doc_long_cell_biology",
+      "axiom_count": 10,
+      "axiom_graph_entropy": 2.1972245773362196
+    },
+    {
+      "corpus_id": "seed_long_paragraphs",
+      "doc_id": "doc_long_world_war_two",
+      "axiom_count": 9,
+      "axiom_graph_entropy": 2.058223904131167
+    },
+    {
+      "corpus_id": "seed_long_paragraphs",
+      "doc_id": "doc_long_periodic_table",
+      "axiom_count": 6,
+      "axiom_graph_entropy": 1.748155457247676
+    },
+    {
+      "corpus_id": "seed_long_paragraphs",
+      "doc_id": "doc_long_human_genome",
+      "axiom_count": 6,
+      "axiom_graph_entropy": 1.7917594692280547
+    },
+    {
+      "corpus_id": "seed_long_paragraphs",
+      "doc_id": "doc_long_cryptography",
+      "axiom_count": 9,
+      "axiom_graph_entropy": 2.1972245773362196
+    },
+    {
+      "corpus_id": "seed_long_paragraphs",
+      "doc_id": "doc_long_industrial_revolution",
+      "axiom_count": 8,
+      "axiom_graph_entropy": 2.0794415416798357
+    },
+    {
+      "corpus_id": "seed_long_paragraphs",
+      "doc_id": "doc_long_immune_system",
+      "axiom_count": 9,
+      "axiom_graph_entropy": 2.1972245773362196
+    },
+    {
+      "corpus_id": "seed_news_briefs",
+      "doc_id": "doc_news_apple_event",
+      "axiom_count": 4,
+      "axiom_graph_entropy": 1.3862943611198906
+    },
+    {
+      "corpus_id": "seed_news_briefs",
+      "doc_id": "doc_news_spacex_launch",
+      "axiom_count": 3,
+      "axiom_graph_entropy": 0.9141778554279378
+    },
+    {
+      "corpus_id": "seed_news_briefs",
+      "doc_id": "doc_news_amazon_acquisition",
+      "axiom_count": 3,
+      "axiom_graph_entropy": 1.0986122886681096
+    },
+    {
+      "corpus_id": "seed_news_briefs",
+      "doc_id": "doc_news_olympics_swimming",
+      "axiom_count": 4,
+      "axiom_graph_entropy": 1.3862943611198906
+    },
+    {
+      "corpus_id": "seed_news_briefs",
+      "doc_id": "doc_news_eu_carbon",
+      "axiom_count": 4,
+      "axiom_graph_entropy": 1.3862943611198906
+    },
+    {
+      "corpus_id": "seed_news_briefs",
+      "doc_id": "doc_news_oscars_2024",
+      "axiom_count": 5,
+      "axiom_graph_entropy": 1.6094379124341005
+    },
+    {
+      "corpus_id": "seed_news_briefs",
+      "doc_id": "doc_news_amazon_fire",
+      "axiom_count": 4,
+      "axiom_graph_entropy": 1.3862943611198906
+    },
+    {
+      "corpus_id": "seed_news_briefs",
+      "doc_id": "doc_news_pfizer_trial",
+      "axiom_count": 4,
+      "axiom_graph_entropy": 1.3862943611198906
+    },
+    {
+      "corpus_id": "seed_news_briefs",
+      "doc_id": "doc_news_uk_election",
+      "axiom_count": 4,
+      "axiom_graph_entropy": 1.320888343149322
+    },
+    {
+      "corpus_id": "seed_news_briefs",
+      "doc_id": "doc_news_tesla_model",
+      "axiom_count": 5,
+      "axiom_graph_entropy": 1.4987772524899974
+    },
+    {
+      "corpus_id": "seed_news_briefs",
+      "doc_id": "doc_news_who_outbreak",
+      "axiom_count": 5,
+      "axiom_graph_entropy": 1.6094379124341005
+    },
+    {
+      "corpus_id": "seed_news_briefs",
+      "doc_id": "doc_news_train_paris",
+      "axiom_count": 4,
+      "axiom_graph_entropy": 1.3862943611198906
+    },
+    {
+      "corpus_id": "seed_news_briefs",
+      "doc_id": "doc_news_chile_solar",
+      "axiom_count": 5,
+      "axiom_graph_entropy": 1.5571130980576455
+    },
+    {
+      "corpus_id": "seed_news_briefs",
+      "doc_id": "doc_news_un_treaty",
+      "axiom_count": 5,
+      "axiom_graph_entropy": 1.5571130980576458
+    },
+    {
+      "corpus_id": "seed_news_briefs",
+      "doc_id": "doc_news_japan_shinkansen",
+      "axiom_count": 3,
+      "axiom_graph_entropy": 1.0986122886681096
+    },
+    {
+      "corpus_id": "seed_news_briefs",
+      "doc_id": "doc_news_nasa_artemis",
+      "axiom_count": 4,
+      "axiom_graph_entropy": 1.3862943611198906
+    },
+    {
+      "corpus_id": "seed_paragraphs",
+      "doc_id": "doc_photosynthesis",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_paragraphs",
+      "doc_id": "doc_einstein",
+      "axiom_count": 3,
+      "axiom_graph_entropy": 0.8675632284814612
+    },
+    {
+      "corpus_id": "seed_paragraphs",
+      "doc_id": "doc_python",
+      "axiom_count": 3,
+      "axiom_graph_entropy": 1.0986122886681096
+    },
+    {
+      "corpus_id": "seed_paragraphs",
+      "doc_id": "doc_pacific_ocean",
+      "axiom_count": 2,
+      "axiom_graph_entropy": 0.6931471805599453
+    },
+    {
+      "corpus_id": "seed_paragraphs",
+      "doc_id": "doc_french_revolution",
+      "axiom_count": 3,
+      "axiom_graph_entropy": 1.0986122886681096
+    },
+    {
+      "corpus_id": "seed_paragraphs",
+      "doc_id": "doc_dna",
+      "axiom_count": 3,
+      "axiom_graph_entropy": 1.0986122886681096
+    },
+    {
+      "corpus_id": "seed_paragraphs",
+      "doc_id": "doc_apollo_11",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_paragraphs",
+      "doc_id": "doc_amazon_rainforest",
+      "axiom_count": 4,
+      "axiom_graph_entropy": 1.3862943611198906
+    },
+    {
+      "corpus_id": "seed_paragraphs_16",
+      "doc_id": "doc_photosynthesis",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_paragraphs_16",
+      "doc_id": "doc_einstein",
+      "axiom_count": 3,
+      "axiom_graph_entropy": 0.8675632284814612
+    },
+    {
+      "corpus_id": "seed_paragraphs_16",
+      "doc_id": "doc_python",
+      "axiom_count": 3,
+      "axiom_graph_entropy": 1.0986122886681096
+    },
+    {
+      "corpus_id": "seed_paragraphs_16",
+      "doc_id": "doc_pacific_ocean",
+      "axiom_count": 2,
+      "axiom_graph_entropy": 0.6931471805599453
+    },
+    {
+      "corpus_id": "seed_paragraphs_16",
+      "doc_id": "doc_french_revolution",
+      "axiom_count": 3,
+      "axiom_graph_entropy": 1.0986122886681096
+    },
+    {
+      "corpus_id": "seed_paragraphs_16",
+      "doc_id": "doc_dna",
+      "axiom_count": 3,
+      "axiom_graph_entropy": 1.0986122886681096
+    },
+    {
+      "corpus_id": "seed_paragraphs_16",
+      "doc_id": "doc_apollo_11",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_paragraphs_16",
+      "doc_id": "doc_amazon_rainforest",
+      "axiom_count": 4,
+      "axiom_graph_entropy": 1.3862943611198906
+    },
+    {
+      "corpus_id": "seed_paragraphs_16",
+      "doc_id": "doc_mount_everest",
+      "axiom_count": 2,
+      "axiom_graph_entropy": 0.6931471805599453
+    },
+    {
+      "corpus_id": "seed_paragraphs_16",
+      "doc_id": "doc_marie_curie",
+      "axiom_count": 3,
+      "axiom_graph_entropy": 0.8675632284814613
+    },
+    {
+      "corpus_id": "seed_paragraphs_16",
+      "doc_id": "doc_great_wall_china",
+      "axiom_count": 1,
+      "axiom_graph_entropy": -0.0
+    },
+    {
+      "corpus_id": "seed_paragraphs_16",
+      "doc_id": "doc_titanic",
+      "axiom_count": 3,
+      "axiom_graph_entropy": 1.0986122886681096
+    },
+    {
+      "corpus_id": "seed_paragraphs_16",
+      "doc_id": "doc_renaissance",
+      "axiom_count": 4,
+      "axiom_graph_entropy": 1.3862943611198906
+    },
+    {
+      "corpus_id": "seed_paragraphs_16",
+      "doc_id": "doc_atomic_structure",
+      "axiom_count": 4,
+      "axiom_graph_entropy": 1.3862943611198906
+    },
+    {
+      "corpus_id": "seed_paragraphs_16",
+      "doc_id": "doc_jet_stream",
+      "axiom_count": 3,
+      "axiom_graph_entropy": 1.0986122886681096
+    },
+    {
+      "corpus_id": "seed_paragraphs_16",
+      "doc_id": "doc_blockchain",
+      "axiom_count": 2,
+      "axiom_graph_entropy": 0.6931471805599453
+    }
+  ]
+}
