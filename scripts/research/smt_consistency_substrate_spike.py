@@ -31,17 +31,69 @@ REPO = Path(__file__).resolve().parents[2]
 RECEIPT_DIR = REPO / "fixtures" / "bench_receipts"
 RECEIPT_DIR.mkdir(parents=True, exist_ok=True)
 
-# A starter predicate library — operator-curated, conservative.
-# Add to this as the substrate's vocabulary grows.
+# Operator-curated predicate library, tuned to the predicates
+# the deterministic sieve actually produces from the substrate's
+# labeled corpora (verb-lemma vocabulary).
+#
+# Curation discipline:
+#   - IRREFLEXIVE is declared whenever ``X p X`` is plainly
+#     malformed for the predicate (most action verbs)
+#   - ANTISYMMETRIC is declared only when mutual-application
+#     would constitute a clear contradiction in plain prose
+#     (avoiding metaphorical edge cases)
+#   - TRANSITIVE is declared only for spatial / containment-style
+#     relations where the implication holds rigorously
+#   - FUNCTIONAL is declared for predicates with a
+#     single-valued semantic (one birth date, one origin)
+#
+# Predicates omitted (e.g. ``be``, ``know``, ``confirm``,
+# ``describe``) carry semantics that are too context-dependent
+# to declare a property that wouldn't false-positive on real
+# prose. Leaving them unconstrained is the conservative choice.
 SUBSTRATE_PREDICATE_LIBRARY = {
-    "parent_of": {"antisymmetric", "irreflexive"},
-    "child_of": {"antisymmetric", "irreflexive"},
-    "ancestor_of": {"transitive", "irreflexive"},
+    # Containment / spatial: textbook contain is anti-sym + irref + trans
+    "contain": {"antisymmetric", "irreflexive", "transitive"},
+    "cover":   {"antisymmetric", "irreflexive"},
+
+    # Production / authorship — antisymmetric (no mutual
+    # production / authoring in normal prose) and irreflexive
+    # (X doesn't build / write / produce X)
+    "build":     {"antisymmetric", "irreflexive"},
+    "write":     {"antisymmetric", "irreflexive"},
+    "produce":   {"antisymmetric", "irreflexive"},
+    "develop":   {"antisymmetric", "irreflexive"},
+    "establish": {"antisymmetric", "irreflexive"},
+    "create":    {"antisymmetric", "irreflexive"},
+    "compose":   {"antisymmetric", "irreflexive"},
+
+    # Action / discovery — same logic
+    "discover":  {"antisymmetric", "irreflexive"},
+    "release":   {"antisymmetric", "irreflexive"},
+    "execute":   {"antisymmetric", "irreflexive"},
+    "open":      {"antisymmetric", "irreflexive"},
+    "introduce": {"antisymmetric", "irreflexive"},
+    "propose":   {"antisymmetric", "irreflexive"},
+    "capture":   {"antisymmetric", "irreflexive"},
+
+    # Receipt / transfer — antisymmetric (mutual receipt is
+    # ungrammatical) + irreflexive
+    "receive": {"antisymmetric", "irreflexive"},
+    "take":    {"antisymmetric", "irreflexive"},
+    "emit":    {"antisymmetric", "irreflexive"},
+
+    # Achievement
+    "win":   {"antisymmetric", "irreflexive"},
+    "reach": {"irreflexive"},  # antisymmetric too aggressive (metaphorical use)
+
+    # State change — irreflexive only (becomes / began are not strictly antisymmetric)
+    "become": {"irreflexive"},
+    "begin":  {"irreflexive"},
+
+    # Functional single-valued attributes (illustrative; sieve
+    # rarely produces these from prose, but kept for the
+    # predicate-library shape)
     "born_on": {"functional"},
     "born_in": {"functional"},
-    "married_to": {"irreflexive"},
-    # NOTE: these are illustrative — real substrate use needs
-    # operator-vetted properties per predicate.
 }
 
 
@@ -133,7 +185,87 @@ def _experiment_substrate_corpus(corpus_id: str) -> dict:
     }
 
 
-def _emit_receipt(syn, sub, out_path: Path) -> dict:
+def _experiment_real_corpus_injection(corpus_id: str) -> dict:
+    """The needle-in-real-haystack test: inject a curated-library
+    contradiction into a real corpus's axioms and confirm Z3
+    catches it with a minimal UNSAT core."""
+    from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
+    from sum_engine_internal.graph_store import Triple
+    from sum_engine_internal.research.smt_consistency import check_consistency
+
+    corpus_path = REPO / "scripts" / "bench" / "corpora" / f"{corpus_id}.json"
+    if not corpus_path.exists():
+        return {"corpus_id": corpus_id, "skipped": True}
+
+    with corpus_path.open() as f:
+        corpus = json.load(f)
+    sieve = DeterministicSieve()
+    clean = [
+        Triple(*t)
+        for doc in corpus["documents"]
+        for t in sieve.extract_triplets(doc["text"])
+    ]
+    if not clean:
+        return {"corpus_id": corpus_id, "skipped": True}
+
+    used_predicates = {t.predicate for t in clean}
+    props_payload = {
+        p: _properties_for(p)
+        for p in (used_predicates & SUBSTRATE_PREDICATE_LIBRARY.keys())
+    }
+
+    results = []
+
+    # Test 1: irreflexive injection on a curated predicate
+    irreflexive_preds = [
+        p for p, v in SUBSTRATE_PREDICATE_LIBRARY.items()
+        if "irreflexive" in v and p in used_predicates
+    ]
+    if irreflexive_preds:
+        bad_pred = irreflexive_preds[0]
+        with_self = clean + [
+            Triple("__test_entity__", bad_pred, "__test_entity__"),
+        ]
+        r = check_consistency(with_self, predicate_properties=props_payload)
+        results.append({
+            "injection_type": "irreflexive_self_loop",
+            "predicate_used": bad_pred,
+            "n_after_injection": len(with_self),
+            "caught_by_z3": not r.consistent,
+            "unsat_core_size": len(r.unsat_core),
+            "minimal_core": r.unsat_core == [len(clean)],
+        })
+
+    # Test 2: antisymmetric injection on a curated predicate
+    antisym_preds = [
+        p for p, v in SUBSTRATE_PREDICATE_LIBRARY.items()
+        if "antisymmetric" in v and p in used_predicates
+    ]
+    if antisym_preds:
+        bad_pred = antisym_preds[0]
+        with_mutual = clean + [
+            Triple("__test_a__", bad_pred, "__test_b__"),
+            Triple("__test_b__", bad_pred, "__test_a__"),
+        ]
+        r = check_consistency(with_mutual, predicate_properties=props_payload)
+        results.append({
+            "injection_type": "antisymmetric_mutual",
+            "predicate_used": bad_pred,
+            "n_after_injection": len(with_mutual),
+            "caught_by_z3": not r.consistent,
+            "unsat_core_size": len(r.unsat_core),
+            "minimal_core": set(r.unsat_core) == {len(clean), len(clean) + 1},
+        })
+
+    return {
+        "corpus_id": corpus_id,
+        "n_clean": len(clean),
+        "n_curated_predicates_present": len(props_payload),
+        "results": results,
+    }
+
+
+def _emit_receipt(syn, sub, inj, out_path: Path) -> dict:
     receipt = {
         "schema": "sum.smt_consistency_substrate_spike.v1",
         "iso_ts": _dt.datetime.now(_dt.timezone.utc).isoformat(),
@@ -147,6 +279,7 @@ def _emit_receipt(syn, sub, out_path: Path) -> dict:
         },
         "experiment_synthetic_verification": syn,
         "experiment_substrate_corpus_check": sub,
+        "experiment_real_corpus_injection": inj,
     }
     canonical = json.dumps(receipt, sort_keys=True, separators=(",", ":"))
     receipt["receipt_digest"] = (
@@ -197,12 +330,33 @@ def main():
         except FileNotFoundError:
             print(f"  {cid}: not found")
 
+    print()
+    print("=== Experiment 3: real-corpus injection (needle-in-haystack) ===")
+    inj = []
+    for cid in args.corpora.split(","):
+        cid = cid.strip()
+        try:
+            r = _experiment_real_corpus_injection(cid)
+            inj.append(r)
+            if r.get("skipped"):
+                print(f"  {cid}: skipped"); continue
+            print(f"  {cid:>22s}: n_clean={r['n_clean']} curated_preds={r['n_curated_predicates_present']}")
+            for tr in r["results"]:
+                flag = "✓" if tr["caught_by_z3"] and tr["minimal_core"] else "✗"
+                print(
+                    f"    {flag} {tr['injection_type']:>22s}  pred={tr['predicate_used']:>10s}  "
+                    f"caught={tr['caught_by_z3']}  core_size={tr['unsat_core_size']}  "
+                    f"minimal={tr['minimal_core']}"
+                )
+        except FileNotFoundError:
+            print(f"  {cid}: not found")
+
     if args.out is None:
         ts = _dt.datetime.now(_dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
         out_path = RECEIPT_DIR / f"smt_consistency_substrate_spike_{ts}.json"
     else:
         out_path = Path(args.out)
-    rec = _emit_receipt(syn, sub, out_path)
+    rec = _emit_receipt(syn, sub, inj, out_path)
     print()
     print(f"Receipt → {out_path}")
     print(f"Digest:  {rec['receipt_digest']}")
