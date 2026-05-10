@@ -4,6 +4,66 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **K3 — Conformal-style size-stratified threshold on bundle
+  MMD² (binary anomaly decision).** Compounds PR #183 (split
+  conformal kernel) + PR #194 (MMD permutation test) into an
+  operator-actionable binary "is this bundle atypical at level
+  α?" signal.
+
+  **What ships:**
+  - `_build_size_stratified_calibration` in
+    `sum_engine_internal/research/mmd/baseline.py` — at
+    calibration time, draws random subsamples of the baseline
+    at sizes (1, 2, 3, 5, 10, 20, 50) and computes MMD² for
+    each subsample-vs-rest. The empirical MMD² distribution
+    at each size becomes the calibration set.
+  - `BaselineMMDComputer.predict_threshold(observed, bundle_size,
+    alpha=0.10)` — picks the closest-size calibration table,
+    returns the ⌈(n+1)(1-α)⌉/n-quantile threshold (matching
+    `SplitConformal`'s finite-sample correction) and a binary
+    `exceeds_threshold` decision.
+  - New `axiom_distribution_mmd_threshold: Optional[dict]` field
+    on `CanonicalBundle`, dict-shaped:
+    `{threshold_alpha, threshold_value, exceeds_threshold,
+      n_calibration_samples, calibration_size_used}`.
+
+  **Honest finding caught + fixed before ship:** the first
+  implementation used a single fixed subsample size (10), which
+  flagged in-distribution small bundles as atypical because
+  smaller samples have systematically larger MMD² (sample-size
+  confounder). Stratifying by size eliminates this — calibration
+  MMD² range scales correctly: size=1 → 0.39, size=2 → 0.19,
+  size=10 → 0.04, size=50 → 0.009. In-distribution 3-triple
+  bundle now correctly does NOT exceed the size-3 threshold.
+
+  **Substrate use:** every signed bundle now ships a binary
+  "atypical at α=0.10" signal that downstream consumers can
+  branch on without knowing anything about MMD math. The raw
+  value + permutation p-value remain in the
+  `axiom_distribution_mmd` field for consumers who want
+  finer control.
+
+  **Same wire discipline as #1-#4 + K2:** outside the signed
+  payload, defense-in-depth, None for empty bundles.
+
+  8 contract tests in
+  `Tests/test_bundle_distribution_mmd_threshold.py`. `make
+  pre-push` updated to include the new test file. All 64 tests
+  across 6 bundle-metadata + math test files green.
+
+  **Substrate now answers SIX metadata questions per bundle**
+  — original four + K2's significance p-value + K3's binary
+  threshold decision.
+
+  **Embedding-sensitivity caveat documented:** junk triples
+  (random `junk_s_*` strings) currently produce MMD² values
+  similar to in-distribution triples in the sha256-bucket
+  embedding. This is a known property of the substrate's
+  current deterministic embedding — closing it is downstream
+  (article §9.1 "learned embedding" path). K3 ships as
+  designed; what counts as "atypical" is bounded by the
+  embedding's discriminative power.
+
 - **K2 — Permutation-test p-value on bundle MMD² (Gretton 2012
   §3.2 wired into bundle metadata).** Compounds PR #185
   (multiplier bootstrap kernel) + PR #192 (MMD wire) into a
