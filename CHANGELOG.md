@@ -4,6 +4,35 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **MinHash-LSH bundle similarity index.** New
+  `sum_engine_internal/research/lsh/` module: a
+  `BundleSimilarityIndex` answering "have I seen a bundle close
+  to this one?" in O(1) via locality-sensitive-hash banding
+  (Indyk & Motwani, *STOC* 1998; Broder 1997). Complements
+  bundle metadata wire #4 (MMD = bundle-vs-baseline
+  distribution shift) by adding bundle-vs-bundle dedup.
+
+  Surface:
+  - `signature_for_axioms(axioms, num_perm=128)` → MinHash over
+    the bundle's canonical "s||p||o" axiom strings (each axiom
+    is a single shingle — they're already canonicalised by the
+    upstream sieve, so sub-tokenizing further would falsely
+    discriminate semantically-identical bundles).
+  - `BundleSimilarityIndex(num_perm=128, bands=16, rows=8)`
+    with `add / remove / query_candidates / query_top_k /
+    jaccard`. Bands × rows == num_perm enforced at construction.
+    Default S-curve threshold ≈ `(1/16)^(1/8) ≈ 0.71` —
+    near-duplicates surface, weak matches don't flood candidates.
+  - Reuses the keyed-blake2b `MinHash` from
+    `sum_engine_internal.algorithms.minhash` (no new dependency,
+    no duplicated hash family).
+
+  19 tests in `Tests/test_bundle_similarity_lsh.py` pin
+  permutation invariance, identical-axiom-set Jaccard=1, S-curve
+  candidate behavior (high-similarity surfaces, fully-disjoint
+  doesn't), top-k sort, replacement consistency, and the
+  bands×rows construction guard.
+
 - **Wire #6 — Robust-PCA corruption score on every bundle.**
   Closes the bundle-metadata wire pattern arc. Each
   `CanonicalBundle` with ≥4 active axioms now carries an
