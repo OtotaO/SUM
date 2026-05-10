@@ -94,7 +94,8 @@ pre-push:  ## Pre-flight gate: drift checks + smoke tests CI runs on every PR.
 	    Tests/test_bundle_entropy_ci.py \
 	    Tests/test_bundle_consistency_check.py \
 	    Tests/test_bundle_distribution_mmd.py \
-	    Tests/test_bundle_distribution_mmd_threshold.py
+	    Tests/test_bundle_distribution_mmd_threshold.py \
+	    Tests/test_property_substrate.py
 	@echo "─── Pre-push gate PASSED — safe to push ───────────────────────────"
 
 wasm:  ## Build + copy sum_core.wasm into single_file_demo/ (rerun after core-zig/ edits).
