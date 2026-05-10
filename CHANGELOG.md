@@ -4,6 +4,37 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **`make pre-push` — local pre-flight gate matching CI's
+  drift + smoke checks (test-suite robustness D3).** New
+  Makefile target running both drift-gate `--check`s
+  (self-attestation for tracked docs; repo manifest for bench
+  receipts) plus a fast smoke against the bundle-metadata
+  wires + drift script. ~3.5 s wall-time on a clean tree.
+
+  **What it catches before push:**
+  - Tracked-doc edits without `python -m scripts.attest_repo_docs`
+    refresh (the class that hit PR #173)
+  - New `fixtures/bench_receipts/*.json` files without
+    `python -m scripts.repo_manifest --out meta/repo_manifest.json`
+    refresh (the class that hit PRs #176, #191)
+  - Regressions in bundle metadata wires #1-#4 or in the
+    self-attestation script itself
+
+  Audit context: a robustness sweep across all 118 test files /
+  1,425 test functions / 33k LOC of test code surfaced this as
+  the meta-fix (D3 in the audit table). Two adjacent findings
+  (D1: "joserfc imported without `importorskip`" and D2:
+  "unseeded `random` module use") turned out to be **false
+  positives from too-narrow regex patterns** — both files
+  use `pytest.importorskip("joserfc")` (multi-line form) and
+  `random.Random(20260429)` (deterministic seeding) respectively.
+  The substrate's discipline is stronger than first-pass grep
+  caught.
+
+  Foresight: every subsequent PR benefits. The 4 CI failures in
+  this arc (PRs #173, #176, #191, #192) would have all been
+  caught locally by this target.
+
 - **Wire #4 — Maximum Mean Discrepancy as bundle metadata
   (Hilbert-space angle).** Fourth bundle-metadata wire from this
   session, completing the trio-plus-one with Wires #1 (vN
