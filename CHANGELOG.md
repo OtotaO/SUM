@@ -4,6 +4,45 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Wire #6 — Robust-PCA corruption score on every bundle.**
+  Closes the bundle-metadata wire pattern arc. Each
+  `CanonicalBundle` with ≥4 active axioms now carries an
+  `axiom_corruption_score` field — a dict-shaped scalar summary
+  of per-row L1 norms of the sparse residual `S` after Principal
+  Component Pursuit decomposition `M = L + S` over the bundle's
+  axiom-feature matrix (Candès, Li, Ma & Wright, *JACM*
+  58(3):11, 2011, `[provable]` exact recovery under incoherence
+  and uniform-random sparse support).
+
+  Field shape: `{max_score, mean_score, median_score,
+  rank_estimate, sparsity_estimate, n_axioms, lam}`. High
+  `max_score` / `mean_score` flags off-manifold axioms (the
+  `seed_v2 doc_015` failure class identified in PR #182's RPCA
+  spike). `rank_estimate` is the rank of the recovered consensus
+  L; `sparsity_estimate` is the fraction of S entries above the
+  PCP solver's nonzero tolerance. `lam = 1/√max(n,d)` is the
+  Candès-et-al. theoretically-justified regulariser.
+
+  Architectural discipline (continues wires #1–#5):
+  - **OUTSIDE the signed payload** — does not affect `signature`
+    (canonical_tome|state_integer|timestamp).
+  - **None for empty bundles AND bundles with <4 axioms** — PCP
+    decomposition is trivial below that, so reporting a scalar
+    would be misleading.
+  - **Defense-in-depth** at helper level + call site — failures
+    NEVER block attestation.
+  - 8 contract tests in `Tests/test_bundle_corruption_score.py`
+    pin the field shape, signed-payload invariance, gating
+    behavior, round-trip import, and the failure-isolation
+    canary. Added to the pre-push smoke set (now 68 tests).
+
+  This is the 6th and final bundle-metadata wire. The pattern
+  established in wires #1 (graph entropy), #2 (entropy CI),
+  #3 (Z3 consistency), #4 (MMD²), #5 (MMD threshold) is now
+  closed: every load-bearing scalar the substrate computes about
+  a bundle is exposed as additive, optional, signed-payload-
+  external, defense-in-depth metadata.
+
 - **D5 — Hypothesis property-based tests for substrate
   invariants.** Test-suite robustness audit follow-up. Of the
   118 test files in this repo, only 3 used Hypothesis before
