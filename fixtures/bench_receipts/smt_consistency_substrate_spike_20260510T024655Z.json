@@ -1,0 +1,131 @@
+{
+  "schema": "sum.smt_consistency_substrate_spike.v1",
+  "iso_ts": "2026-05-10T02:46:55.005955+00:00",
+  "host": {
+    "platform": "macOS-26.0-arm64-arm-64bit",
+    "python": "3.10.14",
+    "machine": "arm64"
+  },
+  "predicate_library": {
+    "parent_of": [
+      "antisymmetric",
+      "irreflexive"
+    ],
+    "child_of": [
+      "antisymmetric",
+      "irreflexive"
+    ],
+    "ancestor_of": [
+      "irreflexive",
+      "transitive"
+    ],
+    "born_on": [
+      "functional"
+    ],
+    "born_in": [
+      "functional"
+    ],
+    "married_to": [
+      "irreflexive"
+    ]
+  },
+  "experiment_synthetic_verification": [
+    {
+      "case": "clean_no_props",
+      "n_triples": 1,
+      "expected_consistent": true,
+      "got_consistent": true,
+      "passed": true,
+      "unsat_core_size": 0,
+      "z3_check_ms": 23.396
+    },
+    {
+      "case": "mutual_antisymmetric",
+      "n_triples": 2,
+      "expected_consistent": false,
+      "got_consistent": false,
+      "passed": true,
+      "unsat_core_size": 2,
+      "z3_check_ms": 1.878
+    },
+    {
+      "case": "self_loop_irreflexive",
+      "n_triples": 1,
+      "expected_consistent": false,
+      "got_consistent": false,
+      "passed": true,
+      "unsat_core_size": 1,
+      "z3_check_ms": 0.509
+    },
+    {
+      "case": "two_outputs_functional",
+      "n_triples": 2,
+      "expected_consistent": false,
+      "got_consistent": false,
+      "passed": true,
+      "unsat_core_size": 2,
+      "z3_check_ms": 0.678
+    },
+    {
+      "case": "3_cycle_transitive_irreflexive",
+      "n_triples": 3,
+      "expected_consistent": false,
+      "got_consistent": false,
+      "passed": true,
+      "unsat_core_size": 3,
+      "z3_check_ms": 0.747
+    },
+    {
+      "case": "needle_in_haystack",
+      "n_triples": 51,
+      "expected_consistent": false,
+      "got_consistent": false,
+      "passed": true,
+      "unsat_core_size": 1,
+      "z3_check_ms": 4.128
+    }
+  ],
+  "experiment_substrate_corpus_check": [
+    {
+      "corpus_id": "seed_v1",
+      "n_triples": 50,
+      "n_distinct_predicates": 46,
+      "predicates_with_properties_declared": [],
+      "consistent": true,
+      "unsat_core_indices": [],
+      "unsat_core_triples": [],
+      "z3_check_ms": 5.362
+    },
+    {
+      "corpus_id": "seed_v2",
+      "n_triples": 16,
+      "n_distinct_predicates": 12,
+      "predicates_with_properties_declared": [],
+      "consistent": true,
+      "unsat_core_indices": [],
+      "unsat_core_triples": [],
+      "z3_check_ms": 2.084
+    },
+    {
+      "corpus_id": "seed_long_paragraphs",
+      "n_triples": 120,
+      "n_distinct_predicates": 95,
+      "predicates_with_properties_declared": [],
+      "consistent": true,
+      "unsat_core_indices": [],
+      "unsat_core_triples": [],
+      "z3_check_ms": 11.074
+    },
+    {
+      "corpus_id": "seed_news_briefs",
+      "n_triples": 66,
+      "n_distinct_predicates": 50,
+      "predicates_with_properties_declared": [],
+      "consistent": true,
+      "unsat_core_indices": [],
+      "unsat_core_triples": [],
+      "z3_check_ms": 6.265
+    }
+  ],
+  "receipt_digest": "sha256:23b0c4e7443c7ae7054d87c04c2b295ebaf1a35e8e4119b26e7182dcc557faa0"
+}

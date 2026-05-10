@@ -4,6 +4,49 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Z3 SMT axiom-consistency kernel.** The substantive-math
+  agent's #1 pick from the wide-net survey: detect contradictory
+  axioms before signing via Z3 (Nelson-Oppen 1979 /
+  De Moura-Bjørner CDCL(T) TACAS 2008). Module
+  `sum_engine_internal/research/smt_consistency/`:
+  `check_consistency(triples, predicate_properties=…)` returning
+  `ConsistencyResult` with `consistent`, `unsat_core` (minimal
+  contradicting subset of triple indices), `z3_check_seconds`.
+  Four predicate-property schemas via `PredicateProperty` enum:
+  `ANTISYMMETRIC`, `IRREFLEXIVE`, `FUNCTIONAL`, `TRANSITIVE`.
+
+  **Experiment 1 — synthetic verification matrix PASSES** on six
+  cases: clean (SAT), mutual antisymmetric (UNSAT, core=2),
+  self-loop irreflexive (UNSAT, core=1), two-output functional
+  (UNSAT, core=2), 3-cycle transitive+irreflexive (UNSAT,
+  core=3), needle-in-haystack 50+1 (UNSAT, **core=1 — points
+  exactly at the contradiction**). All decided in ≤25 ms with
+  minimal cores.
+
+  **Experiment 2 — substrate corpus check surfaces an HONEST
+  GAP.** All four labeled corpora return CONSISTENT, but the
+  starter `SUBSTRATE_PREDICATE_LIBRARY` (FOAF-like family /
+  biography predicates) covers ZERO of the predicates the
+  deterministic sieve actually produces (verb lemmas like
+  `visit`, `be`, `have`). Z3 asked to check zero
+  property-bearing predicates trivially returns SAT. Same shape
+  as the RPCA / multiplier-bootstrap-spectral spikes: math
+  kernel works on its native domain, substrate application
+  needs operator-vetted predicate-library curation matched to
+  actual corpus vocabulary (one-day operator task; documented
+  in findings doc).
+
+  Compounds with PRs #183 (conformal CI on contradiction
+  prevalence), #184 (vN entropy + contradiction joint
+  discriminates corruption classes), #186 (SPRT-stop on
+  consistency-rate stability).
+
+  Receipt: `fixtures/bench_receipts/smt_consistency_substrate_spike_20260510T024655Z.json`.
+  15 contract tests (all green); `z3-solver` opt-in dependency
+  (tests `pytest.importorskip("z3")` so CI without it skips
+  cleanly). Findings:
+  `docs/SMT_CONSISTENCY_SPIKE_FINDINGS.md`.
+
 - **SPRT adaptive-stopping kernel — research arc PR #2.** Wald
   1947 Sequential Probability Ratio Test for Bernoulli streams,
   with operator-chosen (α, β) error bounds. Module

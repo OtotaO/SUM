@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-09T18:34:51Z",
+  "issued_at": "2026-05-10T02:48:49Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "dabed302eea4ad15fc430c6701010d174cde23bf",
-    "head_short": "dabed30",
-    "head_subject": "research: Multiplier bootstrap kernel \u2014 research arc PR #1 (#185)",
-    "head_committer_date": "2026-05-09T14:29:26-04:00",
+    "head_sha": "9d888ec117ff09fff2e86b03ac70d77d84db5274",
+    "head_short": "9d888ec",
+    "head_subject": "research: SPRT adaptive-stopping kernel \u2014 research arc PR #2 (#186)",
+    "head_committer_date": "2026-05-09T14:45:20-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -223,6 +223,11 @@
         "path": "fixtures/bench_receipts/sheaf_v2_roc_seed_long_paragraphs_2026-05-01.json",
         "schema": "sum.sheaf_v2_roc_bench.v1",
         "issued_at": "2026-05-01T11:30:00Z"
+      },
+      {
+        "path": "fixtures/bench_receipts/smt_consistency_substrate_spike_20260510T024655Z.json",
+        "schema": "sum.smt_consistency_substrate_spike.v1",
+        "issued_at": null
       },
       {
         "path": "fixtures/bench_receipts/split_conformal_spike_20260509T174250Z.json",
