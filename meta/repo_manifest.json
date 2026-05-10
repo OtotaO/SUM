@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-10T06:53:16Z",
+  "issued_at": "2026-05-10T08:20:25Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "8505b924a41ee52d16555616a10303b73dbcdf05",
-    "head_short": "8505b92",
-    "head_subject": "research: SMT consistency iteration 2 \u2014 predicate-library curation (#190)",
-    "head_committer_date": "2026-05-10T01:39:19-04:00",
+    "head_sha": "2069d588ec782900003436db99e9b89cbaf88ebf",
+    "head_short": "2069d58",
+    "head_subject": "wire: Z3 SMT consistency check as bundle metadata (wire #3)",
+    "head_committer_date": "2026-05-10T03:10:31-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -241,6 +241,11 @@
       },
       {
         "path": "fixtures/bench_receipts/smt_consistency_substrate_spike_20260510T052707Z.json",
+        "schema": "sum.smt_consistency_substrate_spike.v1",
+        "issued_at": null
+      },
+      {
+        "path": "fixtures/bench_receipts/smt_consistency_substrate_spike_20260510T070641Z.json",
         "schema": "sum.smt_consistency_substrate_spike.v1",
         "issued_at": null
       },

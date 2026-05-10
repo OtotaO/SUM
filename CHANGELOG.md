@@ -4,6 +4,66 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Wire #3 — Z3 SMT consistency check as bundle metadata.**
+  Third production wiring this session, completing the trio
+  with Wires #1 (vN entropy) and #2 (calibrated entropy CI).
+  Closes the substrate gap PR #190 unblocked: now that the
+  curated `SUBSTRATE_PREDICATE_LIBRARY` catches real
+  contradiction shapes, every signed bundle automatically
+  emits a Z3 verdict.
+
+  **What ships:**
+  - `sum_engine_internal/research/smt_consistency/predicate_library.py`
+    — promotes the operator-curated library from the spike
+    script to a proper module-level constant (single source
+    of truth; spike script now imports it). 22 verb lemmas;
+    full curation rationale in
+    `docs/SMT_CONSISTENCY_SPIKE_FINDINGS.md` iteration 2.
+  - New `axiom_consistency_check: Optional[dict]` field on
+    `CanonicalBundle`, dict-shaped:
+    `{consistent: bool, unsat_core: List[int],
+      n_predicates_checked: int, z3_check_ms: float}`.
+    Computed at every `export_bundle` call; stripped from
+    output when None (cold-start / empty bundle / Z3
+    unavailable).
+
+  **Same architectural discipline as Wires #1, #2:**
+  - **OUTSIDE the signed payload** → Ed25519 / HMAC signatures
+    byte-identical → K-matrix unaffected
+  - **None for empty bundles** → strip-Nones keeps wire-format
+    clean
+  - **Defense-in-depth** at helper + call site → broken Z3 /
+    missing predicate library never blocks attestation
+  - **z3-solver opt-in** → tests `pytest.importorskip("z3")` so
+    CI without it skips cleanly
+
+  **Additive shape (deliberate):** UNSAT bundles still emit
+  `consistent: False` in metadata BUT `import_bundle` still
+  verifies them. Downstream consumers (not the codec) decide
+  whether to trust an UNSAT bundle. This preserves backward
+  compatibility with verifiers that don't read the new field;
+  an aggressive "refuse to attest UNSAT" mode is a separate
+  follow-on PR if/when the operator wants it.
+
+  Substrate use: every signed bundle now answers three
+  metadata questions automatically:
+  1. What is the structural entropy of this bundle? (Wire #1)
+  2. Is that entropy typical for its size? (Wire #2)
+  3. Is the bundle internally consistent under the curated
+     predicate library? (Wire #3)
+
+  9 contract tests in `Tests/test_bundle_consistency_check.py`
+  pin: field present + correct shape / clean axioms → SAT /
+  mutual-contain → UNSAT with non-empty core / UNSAT bundle
+  still round-trips (additive-shape canary) / signature
+  unchanged / empty-bundle behaviour / failure-resilience under
+  monkeypatched broken helper / uncurated-predicates path
+  (n_predicates_checked=0) / independence from
+  entropy/entropy_ci fields. All 133 tests across affected
+  surfaces (canonical codec, MCP server, CLI, adversarial
+  bundles, all three bundle-metadata test files, SMT spike,
+  self-attestation) still green.
+
 - **SMT consistency iteration 2 — predicate-library curation
   closes the substrate-application gap (option c.1).** The
   iteration-1 honest gap from the Z3 SMT consistency spike

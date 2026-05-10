@@ -31,69 +31,18 @@ REPO = Path(__file__).resolve().parents[2]
 RECEIPT_DIR = REPO / "fixtures" / "bench_receipts"
 RECEIPT_DIR.mkdir(parents=True, exist_ok=True)
 
-# Operator-curated predicate library, tuned to the predicates
-# the deterministic sieve actually produces from the substrate's
-# labeled corpora (verb-lemma vocabulary).
-#
-# Curation discipline:
-#   - IRREFLEXIVE is declared whenever ``X p X`` is plainly
-#     malformed for the predicate (most action verbs)
-#   - ANTISYMMETRIC is declared only when mutual-application
-#     would constitute a clear contradiction in plain prose
-#     (avoiding metaphorical edge cases)
-#   - TRANSITIVE is declared only for spatial / containment-style
-#     relations where the implication holds rigorously
-#   - FUNCTIONAL is declared for predicates with a
-#     single-valued semantic (one birth date, one origin)
-#
-# Predicates omitted (e.g. ``be``, ``know``, ``confirm``,
-# ``describe``) carry semantics that are too context-dependent
-# to declare a property that wouldn't false-positive on real
-# prose. Leaving them unconstrained is the conservative choice.
+
+# Predicate library imported from the package (single source of
+# truth). Curation rationale + iteration-2 evidence:
+# docs/SMT_CONSISTENCY_SPIKE_FINDINGS.md.
+from sum_engine_internal.research.smt_consistency.predicate_library import (
+    SUBSTRATE_PREDICATE_LIBRARY as _LIBRARY,
+)
+# Stringly-typed shim so the existing receipt schema (which serialises
+# property names as strings, not enum members) keeps working.
 SUBSTRATE_PREDICATE_LIBRARY = {
-    # Containment / spatial: textbook contain is anti-sym + irref + trans
-    "contain": {"antisymmetric", "irreflexive", "transitive"},
-    "cover":   {"antisymmetric", "irreflexive"},
-
-    # Production / authorship — antisymmetric (no mutual
-    # production / authoring in normal prose) and irreflexive
-    # (X doesn't build / write / produce X)
-    "build":     {"antisymmetric", "irreflexive"},
-    "write":     {"antisymmetric", "irreflexive"},
-    "produce":   {"antisymmetric", "irreflexive"},
-    "develop":   {"antisymmetric", "irreflexive"},
-    "establish": {"antisymmetric", "irreflexive"},
-    "create":    {"antisymmetric", "irreflexive"},
-    "compose":   {"antisymmetric", "irreflexive"},
-
-    # Action / discovery — same logic
-    "discover":  {"antisymmetric", "irreflexive"},
-    "release":   {"antisymmetric", "irreflexive"},
-    "execute":   {"antisymmetric", "irreflexive"},
-    "open":      {"antisymmetric", "irreflexive"},
-    "introduce": {"antisymmetric", "irreflexive"},
-    "propose":   {"antisymmetric", "irreflexive"},
-    "capture":   {"antisymmetric", "irreflexive"},
-
-    # Receipt / transfer — antisymmetric (mutual receipt is
-    # ungrammatical) + irreflexive
-    "receive": {"antisymmetric", "irreflexive"},
-    "take":    {"antisymmetric", "irreflexive"},
-    "emit":    {"antisymmetric", "irreflexive"},
-
-    # Achievement
-    "win":   {"antisymmetric", "irreflexive"},
-    "reach": {"irreflexive"},  # antisymmetric too aggressive (metaphorical use)
-
-    # State change — irreflexive only (becomes / began are not strictly antisymmetric)
-    "become": {"irreflexive"},
-    "begin":  {"irreflexive"},
-
-    # Functional single-valued attributes (illustrative; sieve
-    # rarely produces these from prose, but kept for the
-    # predicate-library shape)
-    "born_on": {"functional"},
-    "born_in": {"functional"},
+    pred: {p.value for p in props}
+    for pred, props in _LIBRARY.items()
 }
 
 
