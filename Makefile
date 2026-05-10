@@ -10,7 +10,8 @@
         vendor test-receipt-verify test-receipt-verify-py \
         bench-receipt-audit bench-receipt-audit-replay test-trust-root \
         test-property test-nli-calibration-format \
-        verify-preprint reproduce-preprint validate-preprint
+        verify-preprint reproduce-preprint validate-preprint \
+        pre-push
 
 PYTHON ?= python
 
@@ -79,6 +80,21 @@ smoke:  ## Fresh-venv install + attest|verify round-trip from the built wheel.
 
 lint:  ## ruff check (same rules as CI).
 	$(PYTHON) -m ruff check sum_cli internal scripts
+
+pre-push:  ## Pre-flight gate: drift checks + smoke tests CI runs on every PR.
+	@echo "─── Pre-push gate (matches CI's drift + smoke checks) ─────────────"
+	@echo "[1/3] Self-attestation drift check (CANONICAL_DOCS bytes ↔ meta/self_attestation.*)"
+	@$(PYTHON) -m scripts.attest_repo_docs --check
+	@echo "[2/3] Repo manifest drift check (fixtures/bench_receipts/* ↔ meta/repo_manifest.json)"
+	@$(PYTHON) -m scripts.repo_manifest --check meta/repo_manifest.json
+	@echo "[3/3] Bundle-metadata + self-attestation smoke (bundle wires + drift script)"
+	@$(PYTHON) -m pytest -x --no-header -q \
+	    Tests/test_self_attestation.py \
+	    Tests/test_bundle_axiom_graph_entropy.py \
+	    Tests/test_bundle_entropy_ci.py \
+	    Tests/test_bundle_consistency_check.py \
+	    Tests/test_bundle_distribution_mmd.py
+	@echo "─── Pre-push gate PASSED — safe to push ───────────────────────────"
 
 wasm:  ## Build + copy sum_core.wasm into single_file_demo/ (rerun after core-zig/ edits).
 	cd core-zig && zig build wasm
