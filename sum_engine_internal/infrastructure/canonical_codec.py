@@ -76,6 +76,43 @@ def _zig():
 BUNDLE_VERSION = "1.1.0"  # Minor bump: added optional Ed25519 fields
 
 
+def _compute_axiom_graph_entropy(active_axioms: list) -> Optional[float]:
+    """Compute von Neumann entropy of the bundle's axiom graph.
+
+    Active axioms are strings of the form
+    "subject||predicate||object" (the substrate's internal axiom
+    serialisation). We split, build Triples, and call
+    `graph_entropy()` from the spectral_entropy research module.
+
+    Returns ``None`` (rather than 0.0) on the empty-axiom case so
+    downstream consumers can distinguish "no axioms" from
+    "axioms with zero structural entropy" (a degenerate single-edge
+    or self-loop-only graph). Returns a float for all non-empty
+    inputs.
+
+    Failures from the research module are caught and surfaced as
+    ``None`` — this metadata field is a signal, not a guarantee, and
+    a single failed computation must NEVER block attestation.
+    """
+    if not active_axioms:
+        return None
+    try:
+        from sum_engine_internal.graph_store import Triple
+        from sum_engine_internal.research.spectral_entropy import graph_entropy
+        triples = []
+        for axiom in active_axioms:
+            parts = axiom.split("||")
+            if len(parts) == 3:
+                triples.append(Triple(*[p.strip() for p in parts]))
+        if not triples:
+            return None
+        return float(graph_entropy(triples))
+    except Exception:
+        # Defensive: never block attestation on a metadata
+        # computation. A None is informative enough.
+        return None
+
+
 @dataclass
 class CanonicalBundle:
     """A self-contained, signed knowledge transport unit."""
@@ -92,6 +129,13 @@ class CanonicalBundle:
     is_delta: bool = False
     public_signature: Optional[str] = None  # "ed25519:<base64>"
     public_key: Optional[str] = None        # "ed25519:<base64>"
+    # Substrate metadata field. NOT in the signed payload —
+    # downstream verifiers can read or ignore. Single-scalar
+    # drift signature over the bundle's axiom graph;
+    # cross-bundle |ΔS| > k σ becomes an alert tripwire.
+    # See sum_engine_internal/research/spectral_entropy/ and
+    # docs/VN_ENTROPY_SPIKE_FINDINGS.md.
+    axiom_graph_entropy: Optional[float] = None
 
 
 class InvalidSignatureError(Exception):
@@ -252,6 +296,16 @@ class CanonicalCodec:
         signature = self._sign(canonical_tome, state_str, timestamp)
         pub_sig, pub_key = self._ed25519_sign(canonical_tome, state_str, timestamp)
 
+        # Defense-in-depth: the helper has its own try/except, but
+        # attestation is load-bearing and entropy is not — wrap the
+        # call site too so a future refactor removing the helper's
+        # internal handler can't accidentally make attestation
+        # fragile.
+        try:
+            graph_entropy_value = _compute_axiom_graph_entropy(active_axioms)
+        except Exception:
+            graph_entropy_value = None
+
         bundle = CanonicalBundle(
             bundle_version=BUNDLE_VERSION,
             canonical_format_version=CANONICAL_FORMAT_VERSION,
@@ -266,6 +320,7 @@ class CanonicalCodec:
             is_delta=False,
             public_signature=pub_sig,
             public_key=pub_key,
+            axiom_graph_entropy=graph_entropy_value,
         )
 
         # Strip None fields for backward compatibility

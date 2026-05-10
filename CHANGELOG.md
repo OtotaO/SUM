@@ -4,6 +4,51 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Wire #1 — von Neumann graph entropy as bundle metadata.**
+  First production-wiring of a kernel from this session's
+  research arc. Every signed bundle now carries an
+  `axiom_graph_entropy: Optional[float]` metadata field
+  computed at `export_bundle` time via the
+  `sum_engine_internal/research/spectral_entropy/` kernel
+  (PR #184).
+
+  **Architectural properties (all pinned by tests):**
+  - Field is **OUTSIDE the signed payload** (`canonical_tome |
+    state_integer | timestamp` from canonical_codec.py:141 is
+    unchanged) — so existing Ed25519 / HMAC signatures stay
+    byte-identical, the K-matrix cross-runtime trust triangle
+    is unaffected, and `import_bundle` round-trips work without
+    modification.
+  - Field is **None for empty bundles** (state=1 → no axioms);
+    the existing None-stripping logic in `export_bundle` keeps
+    empty bundles wire-format-clean.
+  - **Failure to compute entropy NEVER blocks attestation** —
+    defense-in-depth: helper has internal try/except, AND the
+    call site in `export_bundle` wraps it again. If the spectral_entropy
+    module raises for any reason, the bundle still attests with
+    `axiom_graph_entropy=None`.
+
+  Substrate use: cross-bundle |ΔS| > k σ becomes an automatic
+  drift tripwire on every bundle SUM produces, with no opt-in
+  required. Compounds with PR #186 (SPRT) for adaptive stopping
+  on entropy-stability and with PR #183 (conformal) for
+  distribution-free CIs on cross-bundle entropy variance.
+
+  8 contract tests in `Tests/test_bundle_axiom_graph_entropy.py`
+  pin: field present + correct + matches direct
+  `graph_entropy()` / signature unchanged / round-trip OK /
+  empty-bundle behaviour / order-permutation invariance /
+  failure-resilience under monkeypatched broken helper. All
+  124 tests across the affected surfaces (canonical codec,
+  MCP server, CLI, adversarial bundles, cross-instance, vN
+  entropy research module, self-attestation) still green.
+
+  This is option (b) from the prior session strategic check-in —
+  PROOF_BOUNDARY tier movement on the substrate's headline
+  product (every signed bundle now ships with an additional
+  spectral observable). Next: option (c) — operator-curation
+  work to close documented substrate-application gaps.
+
 - **Z3 SMT axiom-consistency kernel.** The substantive-math
   agent's #1 pick from the wide-net survey: detect contradictory
   axioms before signing via Z3 (Nelson-Oppen 1979 /
