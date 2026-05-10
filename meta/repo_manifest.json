@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-10T03:25:18Z",
+  "issued_at": "2026-05-10T05:28:44Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "c9cfc5da76fd1fbacffc26591a8aba0701610d91",
-    "head_short": "c9cfc5d",
-    "head_subject": "wire: von Neumann graph entropy as bundle metadata (first production wiring) (#188)",
-    "head_committer_date": "2026-05-09T23:19:21-04:00",
+    "head_sha": "580521347fafa29e1e07ab6df0b912fbdf8d20ed",
+    "head_short": "5805213",
+    "head_subject": "wire: calibrated CI on bundle's axiom_graph_entropy (wire #2) (#189)",
+    "head_committer_date": "2026-05-09T23:36:22-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -226,6 +226,16 @@
       },
       {
         "path": "fixtures/bench_receipts/smt_consistency_substrate_spike_20260510T024655Z.json",
+        "schema": "sum.smt_consistency_substrate_spike.v1",
+        "issued_at": null
+      },
+      {
+        "path": "fixtures/bench_receipts/smt_consistency_substrate_spike_20260510T052533Z.json",
+        "schema": "sum.smt_consistency_substrate_spike.v1",
+        "issued_at": null
+      },
+      {
+        "path": "fixtures/bench_receipts/smt_consistency_substrate_spike_20260510T052707Z.json",
         "schema": "sum.smt_consistency_substrate_spike.v1",
         "issued_at": null
       },

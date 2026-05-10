@@ -4,6 +4,53 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **SMT consistency iteration 2 — predicate-library curation
+  closes the substrate-application gap (option c.1).** The
+  iteration-1 honest gap from the Z3 SMT consistency spike
+  (PR #187) — "starter library matched zero of the predicates
+  the deterministic sieve actually produces" — is now closed.
+  Surveyed the sieve's vocabulary across all 7 labeled corpora
+  (189 distinct predicates; top 30 by frequency); curated
+  logical-property declarations for 22 verb lemmas spanning
+  containment / production / discovery / receipt / achievement
+  / state-change / functional-attribute classes.
+
+  **Curation discipline (operator-vetted, conservative):**
+  IRREFLEXIVE whenever ``X p X`` is plainly malformed; ANTISYM
+  only when mutual-application is a clear contradiction in plain
+  prose (avoiding metaphorical edges like ``know``); TRANSITIVE
+  only for spatial/containment-style relations; FUNCTIONAL for
+  single-valued attributes. Predicates with context-dependent
+  semantics left unconstrained (the conservative choice).
+
+  **Substrate corpus check is now substantive, not vacuous.**
+  Z3 verifies 4-17 distinct property-bearing predicates per
+  corpus against actual axioms and finds zero contradictions:
+  - `seed_v1`: 10 curated predicates (build, compose, contain,
+    create, discover, emit, produce, propose, reach, write)
+  - `seed_v2`: 4 (develop, emit, win, write)
+  - `seed_long_paragraphs`: 17
+  - `seed_news_briefs`: 8
+
+  **Real-corpus injection (needle-in-real-haystack): 8/8 caught
+  with minimal cores.** New experiment in the spike harness
+  injects irreflexive self-loops + antisymmetric mutual pairs
+  into each corpus's actual axiom set; Z3 catches every
+  injection with a minimal UNSAT core (size 1 or 2) even when
+  surrounded by 16-120 clean axioms. The needle-in-haystack
+  property holds at real-corpus scale.
+
+  **Z3 wire is now unblocked.** With the curated library
+  catching real contradiction shapes + producing minimal cores
+  + zero false positives on existing labeled corpora, wiring
+  `check_consistency()` as a pre-attest gate in
+  `canonical_codec.export_bundle` is a clean follow-on PR.
+
+  Updated receipt:
+  `fixtures/bench_receipts/smt_consistency_substrate_spike_20260510T052707Z.json`.
+  Findings doc gains an iteration-2 section
+  (`docs/SMT_CONSISTENCY_SPIKE_FINDINGS.md`).
+
 - **Wire #2 — calibrated CI on bundle's axiom_graph_entropy.**
   Builds on Wire #1 (PR #188) by adding a finite-sample,
   distribution-free CI for the *expected* entropy at this
