@@ -100,8 +100,15 @@ class TestAffineAlignment:
             assert abs(s1 - s2) < 1e-5
 
     @pytest.mark.asyncio
-    async def test_affine_rotation_changes_ranking(self):
-        """A non-trivial W* rotation changes the similarity ranking."""
+    async def test_affine_non_orthogonal_changes_ranking(self):
+        """A non-orthogonal W* changes cosine geometry (rankings).
+
+        Why non-orthogonal: cosine similarity is invariant under
+        orthogonal transforms applied uniformly to both indexed
+        vectors and query — so rotation-only W can never shift
+        scores. Use a diagonal scaling (non-orthogonal) instead;
+        that genuinely warps the cosine geometry.
+        """
         alg = GodelStateAlgebra()
         state = alg.encode_chunk_state([
             ("Alice", "age", "30"),
@@ -111,29 +118,25 @@ class TestAffineAlignment:
 
         embed_fn = make_deterministic_embedder(dim=8)
 
-        # No affine
         bridge_none = ContinuousDiscreteBridge(alg, embed_fn)
         await bridge_none.index_new_primes()
         results_none = await bridge_none.semantic_search_godel_state(
             state, "programming", top_k=3
         )
 
-        # Random rotation matrix (orthogonal)
-        rng = np.random.RandomState(42)
-        Q, _ = np.linalg.qr(rng.randn(8, 8).astype(np.float32))
-        # Make it non-trivial by adding a permutation-like distortion
-        W = Q @ np.diag(np.array([1, -1, 1, -1, 1, -1, 1, -1], dtype=np.float32))
+        W = np.diag(
+            np.array([1, 5, 1, 5, 1, 5, 1, 5], dtype=np.float32)
+        )
 
-        bridge_rot = ContinuousDiscreteBridge(alg, embed_fn, affine_map=W)
-        await bridge_rot.index_new_primes()
-        results_rot = await bridge_rot.semantic_search_godel_state(
+        bridge_warp = ContinuousDiscreteBridge(alg, embed_fn, affine_map=W)
+        await bridge_warp.index_new_primes()
+        results_warp = await bridge_warp.semantic_search_godel_state(
             state, "programming", top_k=3
         )
 
-        # Scores should differ (W* changes the geometry)
         scores_none = [r[1] for r in results_none]
-        scores_rot = [r[1] for r in results_rot]
-        assert scores_none != scores_rot
+        scores_warp = [r[1] for r in results_warp]
+        assert scores_none != scores_warp
 
     @pytest.mark.asyncio
     async def test_bias_vector_applied(self):

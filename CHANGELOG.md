@@ -4,6 +4,43 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **D5 — Hypothesis property-based tests for substrate
+  invariants.** Test-suite robustness audit follow-up. Of the
+  118 test files in this repo, only 3 used Hypothesis before
+  this PR. New `Tests/test_property_substrate.py` covers the
+  high-leverage gaps with 10 property tests across 7 substrate
+  invariants:
+
+  1. **Bundle round-trip** — ∀ axiom_set:
+     `import_bundle(export_bundle(state)) == state`. The
+     canonical_codec's load-bearing K-matrix invariant.
+  2. **Content-hash permutation invariance** — graph_store
+     `_canonical_triples_hash` independent of input order.
+  3. **MMD properties** — identical samples → MMD² ≈ 0 (10⁻⁹
+     floor); MMD²(X,Y) == MMD²(Y,X); MMD² ≥ 0 always.
+  4. **vN entropy invariance** — graph entropy unchanged by
+     predicate string relabeling (only edges matter).
+  5. **Bind verb determinism** — `BindRegistry.bind(value)`
+     returns the same id for structurally-equal values; same
+     across registry instances (process-global content
+     addressing, not instance-local).
+  6. **UnionFindStore lex-canonical extraction** — same triple
+     set → same canonical form regardless of insertion order
+     (the substrate's deterministic-extraction guarantee).
+  7. **Signature determinism** — same payload + same key →
+     byte-identical HMAC signature.
+
+  Hypothesis settings: `derandomize=True` (failures reproduce
+  across CI runs), max_examples=30-100 per test depending on
+  cost. Total wall-time: 8.4s for 10 tests × ~50 examples each
+  = ~500 generated cases. `make pre-push` updated to include the
+  new file (60 tests in smoke set, +10 from D5).
+
+  This closes the highest-leverage item from the test-suite
+  audit's Q3 quadrant. Substrate's headline invariants now have
+  property-based coverage; the K-matrix discipline (positive
+  property assertions) gets its mathematical complement.
+
 - **K3 — Conformal-style size-stratified threshold on bundle
   MMD² (binary anomaly decision).** Compounds PR #183 (split
   conformal kernel) + PR #194 (MMD permutation test) into an
