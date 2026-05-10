@@ -102,10 +102,13 @@ def test_failed_mmd_computation_does_not_block_attestation(monkeypatch):
     assert codec.import_bundle(bundle) == state
 
 
-def test_all_four_metadata_fields_independent(codec_and_algebra):
-    """Pin that the four bundle-metadata fields (entropy, entropy_ci,
-    consistency_check, distribution_mmd) coexist without
-    interfering with each other."""
+def test_all_metadata_fields_coexist(codec_and_algebra):
+    """Pin that the bundle-metadata fields coexist without
+    interfering with each other. Wires #1 (entropy), #2
+    (entropy_ci) and #4 (distribution_mmd) are always present
+    on non-empty bundles. Wire #3 (consistency_check) requires
+    z3-solver — checked conditionally so the test passes in CI
+    environments without the optional dep."""
     codec, algebra = codec_and_algebra
     state = _state_from(algebra, [
         ("alice", "build", "house"),
@@ -113,15 +116,24 @@ def test_all_four_metadata_fields_independent(codec_and_algebra):
         ("carol", "discover", "fact"),
     ])
     bundle = codec.export_bundle(state, branch="t")
+    # Always present
     assert "axiom_graph_entropy" in bundle
     assert "axiom_graph_entropy_ci" in bundle
-    assert "axiom_consistency_check" in bundle
     assert "axiom_distribution_mmd" in bundle
-    # Each is its own type
     assert isinstance(bundle["axiom_graph_entropy"], float)
     assert isinstance(bundle["axiom_graph_entropy_ci"], list)
-    assert isinstance(bundle["axiom_consistency_check"], dict)
     assert isinstance(bundle["axiom_distribution_mmd"], dict)
+    # Conditional: only present when z3-solver is installed
+    try:
+        import z3  # noqa: F401
+        z3_available = True
+    except ImportError:
+        z3_available = False
+    if z3_available:
+        assert "axiom_consistency_check" in bundle
+        assert isinstance(bundle["axiom_consistency_check"], dict)
+    else:
+        assert "axiom_consistency_check" not in bundle
 
 
 def test_in_distribution_bundle_yields_finite_mmd(codec_and_algebra):
