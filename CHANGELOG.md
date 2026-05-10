@@ -4,6 +4,73 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Wire #4 — Maximum Mean Discrepancy as bundle metadata
+  (Hilbert-space angle).** Fourth bundle-metadata wire from this
+  session, completing the trio-plus-one with Wires #1 (vN
+  entropy), #2 (calibrated entropy CI), #3 (Z3 consistency).
+  Provable kernel-distance metric on probability distributions
+  via Reproducing Kernel Hilbert Space (Gretton et al., *JMLR*
+  13:723-773, 2012, Theorem 5).
+
+  **What ships:**
+  - `sum_engine_internal/research/mmd/mmd.py` — RBF kernel
+    matrix + biased empirical MMD² estimator + median-heuristic
+    bandwidth
+  - `sum_engine_internal/research/mmd/baseline.py` —
+    `BaselineMMDComputer` (lazy singleton; calibrates from
+    seed corpora once at first call). Uses the
+    sha256-bucket axiom embedding from PR #182's RPCA module
+    — no new dependency, deterministic, substrate-shaped.
+  - New `axiom_distribution_mmd: Optional[dict]` field on
+    `CanonicalBundle`, dict-shaped:
+    `{mmd_squared, bandwidth, n_baseline_samples,
+      n_bundle_samples}`
+
+  **Synthetic verification — provable kernel theorem PASSES:**
+  identical samples → MMD² ≈ 10⁻¹⁰; same-distribution different
+  draws → MMD² = 0.021; mean-shifted (μ=0 vs μ=5) → MMD² =
+  1.072 (52× larger). Identical→0 to numerical precision;
+  shifted→discriminates clearly.
+
+  **Substrate baseline:** 314 triples calibrated from 6 seed
+  corpora (`seed_v1`, `seed_v2`, `seed_long_paragraphs`,
+  `seed_news_briefs`, `seed_paragraphs`, `seed_paragraphs_16`).
+  Bandwidth ~2.45 (median heuristic). Sample 2-triple bundle:
+  MMD² = 0.192 (within RBF MMD² ≤ 2 absolute bound).
+
+  **Same architectural discipline as Wires #1-#3:**
+  - OUTSIDE the signed payload → signatures byte-identical →
+    K-matrix unaffected
+  - None for empty bundles → strip-Nones keeps wire-format
+    clean
+  - Defense-in-depth at helper + call site → broken MMD never
+    blocks attestation
+
+  **Compounding:** every kernel from this session compounds
+  with MMD — bootstrap (PR #185) gives CI on MMD² via Gretton's
+  permutation test; conformal (PR #183) gives calibrated
+  significance thresholds; vN entropy (PR #184) is a different
+  scalar of the same axiom set; RPCA (PR #182) shares the
+  embedding; Z3 (PR #187) verifies logic where MMD verifies
+  distribution.
+
+  Substrate use: every signed bundle now answers FOUR
+  independent metadata questions automatically:
+  1. What is the structural entropy? (Wire #1)
+  2. Is the entropy typical for its size? (Wire #2)
+  3. Is the bundle internally consistent under the curated
+     predicate library? (Wire #3)
+  4. How distributionally distant is this bundle from the
+     substrate's calibration baseline? (Wire #4)
+
+  16 contract tests in `Tests/test_mmd.py` (math + edge cases) +
+  7 wire tests in `Tests/test_bundle_distribution_mmd.py`
+  (field shape / signature unchanged / round-trip /
+  empty-bundle / failure-resilience / four-fields-independence
+  / in-distribution sanity). All 143 tests across affected
+  surfaces still green. Findings doc:
+  `docs/MMD_WIRE_FINDINGS.md`.
+
 - **Wire #3 — Z3 SMT consistency check as bundle metadata.**
   Third production wiring this session, completing the trio
   with Wires #1 (vN entropy) and #2 (calibrated entropy CI).

@@ -76,6 +76,44 @@ def _zig():
 BUNDLE_VERSION = "1.1.0"  # Minor bump: added optional Ed25519 fields
 
 
+def _compute_axiom_distribution_mmd(active_axioms: list) -> Optional[dict]:
+    """Maximum Mean Discrepancy² between this bundle's axiom-set
+    distribution and the substrate's calibration baseline.
+
+    Active axioms are strings of the form
+    ``subject||predicate||object``; we split into Triples and call
+    the lazy-cached `BaselineMMDComputer`.
+
+    Returns dict with ``{mmd_squared, bandwidth,
+    n_baseline_samples, n_bundle_samples}`` on success; ``None``
+    if the computer isn't calibrated, the bundle is empty, or
+    anything goes wrong.
+
+    Provable kernel: Gretton et al., *JMLR* 13:723-773 (2012),
+    Theorem 5 — for the characteristic RBF kernel, MMD = 0 ⟺
+    distributions identical. Substrate use: cross-bundle
+    distribution-shift detection becomes a single scalar on
+    bundle metadata.
+
+    Defense-in-depth: failures NEVER block attestation.
+    """
+    if not active_axioms:
+        return None
+    try:
+        from sum_engine_internal.graph_store import Triple
+        from sum_engine_internal.research.mmd import get_default_mmd_computer
+        triples = []
+        for axiom in active_axioms:
+            parts = axiom.split("||")
+            if len(parts) == 3:
+                triples.append(Triple(*[p.strip() for p in parts]))
+        if not triples:
+            return None
+        return get_default_mmd_computer().predict_mmd(triples)
+    except Exception:
+        return None
+
+
 def _compute_axiom_consistency_check(active_axioms: list) -> Optional[dict]:
     """Z3-backed consistency check on the bundle's axiom set.
 
@@ -235,6 +273,19 @@ class CanonicalBundle:
     # docs/SMT_CONSISTENCY_SPIKE_FINDINGS.md (iteration 2) for
     # the curation discipline + injection-test evidence.
     axiom_consistency_check: Optional[dict] = None
+    # MMD² (Maximum Mean Discrepancy) between this bundle's
+    # axiom-set distribution and the substrate's calibration
+    # baseline. Provable kernel-distance metric on probability
+    # distributions (Gretton et al., JMLR 13:723-773, 2012). NOT
+    # in the signed payload. Dict-shaped:
+    #   {mmd_squared, bandwidth, n_baseline_samples,
+    #    n_bundle_samples}
+    # Higher values → bundle's axiom distribution is more
+    # different from baseline. None when the baseline computer
+    # isn't calibrated, the bundle is empty, or computation
+    # fails. See docs/MMD_WIRE_FINDINGS.md for the per-corpus
+    # signature ranges.
+    axiom_distribution_mmd: Optional[dict] = None
 
 
 class InvalidSignatureError(Exception):
@@ -418,6 +469,13 @@ class CanonicalCodec:
             )
         except Exception:
             consistency_check_value = None
+        # MMD² against calibration baseline — same defense-in-depth.
+        try:
+            distribution_mmd_value = _compute_axiom_distribution_mmd(
+                active_axioms,
+            )
+        except Exception:
+            distribution_mmd_value = None
 
         bundle = CanonicalBundle(
             bundle_version=BUNDLE_VERSION,
@@ -436,6 +494,7 @@ class CanonicalCodec:
             axiom_graph_entropy=graph_entropy_value,
             axiom_graph_entropy_ci=graph_entropy_ci_value,
             axiom_consistency_check=consistency_check_value,
+            axiom_distribution_mmd=distribution_mmd_value,
         )
 
         # Strip None fields for backward compatibility
