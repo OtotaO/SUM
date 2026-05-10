@@ -76,6 +76,43 @@ def _zig():
 BUNDLE_VERSION = "1.1.0"  # Minor bump: added optional Ed25519 fields
 
 
+def _compute_axiom_distribution_mmd_threshold(
+    distribution_mmd: Optional[dict],
+) -> Optional[dict]:
+    """K3: conformal-style threshold decision on the bundle's
+    MMD².
+
+    Takes the dict returned by ``_compute_axiom_distribution_mmd``
+    (or ``None``) and decides whether the observed MMD² exceeds
+    the size-matched calibration threshold at α=0.10 (operator-
+    chosen default; downstream consumers can ignore and apply
+    their own α via the raw `axiom_distribution_mmd` field).
+
+    Returns dict shape:
+        {threshold_alpha, threshold_value, exceeds_threshold,
+         n_calibration_samples, calibration_size_used}
+
+    Returns ``None`` if the upstream MMD wasn't computed, the
+    baseline isn't calibrated, or any failure occurs (defense-
+    in-depth — never blocks attestation).
+    """
+    if distribution_mmd is None:
+        return None
+    try:
+        from sum_engine_internal.research.mmd import get_default_mmd_computer
+        observed = float(distribution_mmd.get("mmd_squared", 0.0))
+        bundle_size = int(distribution_mmd.get("n_bundle_samples", 0))
+        if bundle_size <= 0:
+            return None
+        return get_default_mmd_computer().predict_threshold(
+            observed_mmd_squared=observed,
+            bundle_size=bundle_size,
+            alpha=0.10,
+        )
+    except Exception:
+        return None
+
+
 def _compute_axiom_distribution_mmd(active_axioms: list) -> Optional[dict]:
     """Maximum Mean Discrepancy² between this bundle's axiom-set
     distribution and the substrate's calibration baseline.
@@ -286,6 +323,17 @@ class CanonicalBundle:
     # fails. See docs/MMD_WIRE_FINDINGS.md for the per-corpus
     # signature ranges.
     axiom_distribution_mmd: Optional[dict] = None
+    # K3: conformal-style threshold decision on the bundle's MMD²
+    # at α=0.10. Dict-shaped:
+    #   {threshold_alpha, threshold_value, exceeds_threshold,
+    #    n_calibration_samples, calibration_size_used}
+    # The threshold uses size-stratified calibration — for a
+    # bundle of N triples, the threshold comes from the empirical
+    # MMD² distribution of N-vs-rest baseline subsamples, which
+    # eliminates the smaller-sample-larger-MMD² confounder.
+    # NOT in the signed payload. None when MMD itself wasn't
+    # computed or the baseline isn't calibrated.
+    axiom_distribution_mmd_threshold: Optional[dict] = None
 
 
 class InvalidSignatureError(Exception):
@@ -476,6 +524,14 @@ class CanonicalCodec:
             )
         except Exception:
             distribution_mmd_value = None
+        # K3: conformal-style threshold decision on that MMD² —
+        # same defense-in-depth, depends on the previous helper.
+        try:
+            distribution_mmd_threshold_value = (
+                _compute_axiom_distribution_mmd_threshold(distribution_mmd_value)
+            )
+        except Exception:
+            distribution_mmd_threshold_value = None
 
         bundle = CanonicalBundle(
             bundle_version=BUNDLE_VERSION,
@@ -495,6 +551,7 @@ class CanonicalCodec:
             axiom_graph_entropy_ci=graph_entropy_ci_value,
             axiom_consistency_check=consistency_check_value,
             axiom_distribution_mmd=distribution_mmd_value,
+            axiom_distribution_mmd_threshold=distribution_mmd_threshold_value,
         )
 
         # Strip None fields for backward compatibility

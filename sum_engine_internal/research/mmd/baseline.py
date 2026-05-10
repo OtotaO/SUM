@@ -32,6 +32,66 @@ from sum_engine_internal.research.mmd.mmd import (
 
 
 _REPO = Path(__file__).resolve().parents[3]
+
+
+def _build_size_stratified_calibration(
+    embeddings: np.ndarray,
+    sigma: float,
+    K_yy: np.ndarray,
+    *,
+    sizes: tuple[int, ...] = (1, 2, 3, 5, 10, 20, 50),
+    n_subsamples_per_size: int = 60,
+    seed: int = 0xCA11C,
+) -> dict[int, np.ndarray]:
+    """K3: size-stratified empirical MMD² distribution under H_0.
+
+    For each subsample size in ``sizes``, draw ``n_subsamples_per_size``
+    random subsamples of the baseline; compute MMD² between each
+    subsample and the rest. The result maps size → array of MMD²
+    values.
+
+    Why stratified: MMD² between a small sample and a large
+    reference is systematically larger than MMD² between two
+    same-size samples (a sample-size confounder). Picking the
+    threshold from a same-size calibration eliminates that
+    confounder — the comparison becomes "is this bundle's MMD²
+    larger than what we'd see for a *similar-sized* draw from
+    the baseline?" — the actual question the substrate cares
+    about.
+
+    Sizes default to (1, 2, 3, 5, 10, 20, 50) covering the
+    typical bundle-size range. At predict time we look up the
+    closest size's distribution.
+    """
+    n = len(embeddings)
+    out: dict[int, np.ndarray] = {}
+    rng = np.random.default_rng(seed)
+    full_indices = np.arange(n)
+    for size in sizes:
+        if n < size + 5:
+            continue
+        cal = np.zeros(n_subsamples_per_size, dtype=np.float64)
+        for i in range(n_subsamples_per_size):
+            idx = rng.choice(n, size=size, replace=False)
+            complement = np.setdiff1d(full_indices, idx, assume_unique=True)
+            X = embeddings[idx]
+            Y = embeddings[complement]
+            K_xx = rbf_kernel_matrix(X, X, sigma)
+            K_xy = rbf_kernel_matrix(X, Y, sigma)
+            K_yy_sub = K_yy[np.ix_(complement, complement)]
+            s_xx = K_xx.sum() / (size * size)
+            s_xy = K_xy.sum() / (size * len(complement))
+            s_yy_sub = K_yy_sub.sum() / (len(complement) * len(complement))
+            cal[i] = max(float(s_xx + s_yy_sub - 2.0 * s_xy), 0.0)
+        out[size] = cal
+    return out
+
+
+def _closest_calibration_size(
+    bundle_size: int, available_sizes: tuple[int, ...],
+) -> int:
+    """Pick the calibration size closest to the bundle size."""
+    return min(available_sizes, key=lambda s: abs(s - bundle_size))
 _BASELINE_CORPORA = (
     "seed_v1", "seed_v2", "seed_long_paragraphs", "seed_news_briefs",
     "seed_paragraphs", "seed_paragraphs_16",
@@ -43,11 +103,18 @@ _BUCKETS = 64  # same as RPCA axiom_embedding default
 class _BaselineState:
     """Frozen baseline embedding matrix + median-heuristic
     bandwidth + within-baseline kernel-row sum (precomputed for
-    speed)."""
+    speed) + conformal-style calibration MMD² distribution."""
     embeddings: np.ndarray  # shape (n_baseline, d)
     sigma: float            # bandwidth
     s_yy: float             # (1/m²) Σ K_yy precomputed
     n_samples: int
+    # K3: empirical distribution of MMD² under H_0 (baseline
+    # subsamples vs the rest of the baseline), STRATIFIED by
+    # subsample size. Map size → array of MMD² values. At
+    # predict time we look up the closest stratified size to
+    # the actual bundle size; this avoids the
+    # smaller-sample-larger-MMD² confounder.
+    calibration_by_size: dict[int, np.ndarray] | None = None
 
 
 class BaselineMMDComputer:
@@ -109,11 +176,23 @@ class BaselineMMDComputer:
         sigma = median_heuristic_bandwidth(embeddings)
         K_yy = rbf_kernel_matrix(embeddings, embeddings, sigma)
         s_yy = float(K_yy.sum() / (len(embeddings) ** 2))
+
+        # K3: build the SIZE-STRATIFIED calibration distribution
+        # of MMD² under H_0. For each subsample size in a covering
+        # range, compute MMD² between many random subsamples and
+        # the rest of the baseline. Eliminates the sample-size
+        # confounder: at predict time we compare each bundle's
+        # MMD² to the calibration for the closest matching size.
+        cal_by_size = _build_size_stratified_calibration(
+            embeddings, sigma, K_yy,
+        )
+
         self._state = _BaselineState(
             embeddings=embeddings,
             sigma=sigma,
             s_yy=s_yy,
             n_samples=len(triples),
+            calibration_by_size=cal_by_size,
         )
         return True
 
@@ -183,6 +262,51 @@ class BaselineMMDComputer:
     @property
     def n_baseline_samples(self) -> int:
         return 0 if self._state is None else self._state.n_samples
+
+    def predict_threshold(
+        self,
+        observed_mmd_squared: float,
+        bundle_size: int,
+        *,
+        alpha: float = 0.10,
+    ) -> Optional[dict]:
+        """K3: conformal-style threshold decision for an observed
+        MMD², calibrated against a SAME-SIZE subsample distribution.
+
+        Returns dict:
+        ``{threshold_alpha, threshold_value, exceeds_threshold,
+           n_calibration_samples, calibration_size_used}``.
+        Returns ``None`` if the computer isn't calibrated, the
+        calibration table is empty, or alpha is out of (0, 1).
+
+        The threshold is the ⌈(n+1)(1-α)⌉/n quantile (matching
+        SplitConformal's finite-sample correction) of the
+        calibration MMD² distribution at the size closest to the
+        bundle's size. A bundle's MMD² > threshold ⇒ reject H_0
+        at level α — the bundle is more atypical than what
+        same-size in-distribution draws produce.
+        """
+        if not (0 < alpha < 1):
+            return None
+        if self._state is None:
+            return None
+        cal_by_size = self._state.calibration_by_size
+        if not cal_by_size:
+            return None
+        import numpy as np
+        available = tuple(sorted(cal_by_size.keys()))
+        size_used = _closest_calibration_size(bundle_size, available)
+        cal = cal_by_size[size_used]
+        n = len(cal)
+        q_level = min(np.ceil((n + 1) * (1 - alpha)) / n, 1.0)
+        threshold = float(np.quantile(cal, q_level, method="higher"))
+        return {
+            "threshold_alpha": float(alpha),
+            "threshold_value": threshold,
+            "exceeds_threshold": bool(observed_mmd_squared > threshold),
+            "n_calibration_samples": int(n),
+            "calibration_size_used": int(size_used),
+        }
 
 
 # Module-level singleton, lazy-initialised so import time stays
