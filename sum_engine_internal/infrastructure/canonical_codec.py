@@ -76,6 +76,31 @@ def _zig():
 BUNDLE_VERSION = "1.1.0"  # Minor bump: added optional Ed25519 fields
 
 
+def _compute_axiom_graph_entropy_ci(axiom_count: int) -> Optional[list]:
+    """Calibrated CI for the EXPECTED entropy at this axiom_count.
+
+    Returns a two-element ``[lower, upper]`` list at α=0.10 (90 %
+    coverage) using the baseline predictor calibrated on the
+    seed corpora (``fixtures/calibration/entropy_baseline.json``).
+    Returns ``None`` if the predictor isn't calibrated (cold
+    start) or the axiom_count is non-positive.
+
+    Failures are caught: this metadata field is a signal, not a
+    guarantee, and a single failed computation must NEVER block
+    attestation.
+    """
+    if axiom_count <= 0:
+        return None
+    try:
+        from sum_engine_internal.research.conformal import get_default_predictor
+        iv = get_default_predictor().predict_ci(axiom_count)
+        if iv is None:
+            return None
+        return [iv.lower, iv.upper]
+    except Exception:
+        return None
+
+
 def _compute_axiom_graph_entropy(active_axioms: list) -> Optional[float]:
     """Compute von Neumann entropy of the bundle's axiom graph.
 
@@ -136,6 +161,16 @@ class CanonicalBundle:
     # See sum_engine_internal/research/spectral_entropy/ and
     # docs/VN_ENTROPY_SPIKE_FINDINGS.md.
     axiom_graph_entropy: Optional[float] = None
+    # Calibrated CI for the EXPECTED entropy at this bundle's
+    # axiom_count, under the substrate's seed-corpora baseline
+    # calibration. Two-element list [lower, upper] at α=0.10
+    # (90% coverage). NOT in the signed payload. Lets downstream
+    # consumers single-bundle-anomaly-detect: if the actual
+    # entropy is outside this CI, the bundle is atypical for
+    # its size. See docs/SPLIT_CONFORMAL_SPIKE_FINDINGS.md and
+    # the calibration baseline at
+    # fixtures/calibration/entropy_baseline.json.
+    axiom_graph_entropy_ci: Optional[list] = None
 
 
 class InvalidSignatureError(Exception):
@@ -305,6 +340,13 @@ class CanonicalCodec:
             graph_entropy_value = _compute_axiom_graph_entropy(active_axioms)
         except Exception:
             graph_entropy_value = None
+        # Companion CI field — same defense-in-depth.
+        try:
+            graph_entropy_ci_value = _compute_axiom_graph_entropy_ci(
+                len(active_axioms),
+            )
+        except Exception:
+            graph_entropy_ci_value = None
 
         bundle = CanonicalBundle(
             bundle_version=BUNDLE_VERSION,
@@ -321,6 +363,7 @@ class CanonicalCodec:
             public_signature=pub_sig,
             public_key=pub_key,
             axiom_graph_entropy=graph_entropy_value,
+            axiom_graph_entropy_ci=graph_entropy_ci_value,
         )
 
         # Strip None fields for backward compatibility
