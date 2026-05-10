@@ -76,6 +76,60 @@ def _zig():
 BUNDLE_VERSION = "1.1.0"  # Minor bump: added optional Ed25519 fields
 
 
+def _compute_axiom_corruption_score(active_axioms: list) -> Optional[dict]:
+    """Robust-PCA corruption score (Wire #6) on the bundle's
+    axiom-feature matrix.
+
+    Active axioms are strings of the form ``s||p||o``; we split,
+    embed via the deterministic sha256-bucket embedder used by
+    the MMD wire, then run Principal Component Pursuit (Candès,
+    Li, Ma & Wright, JACM 58(3):11, 2011) to decompose
+    ``M = L + S``. Per-row ``‖S_i‖_1`` flags off-manifold axioms.
+
+    Returns dict shape:
+        {max_score, mean_score, median_score, rank_estimate,
+         sparsity_estimate, n_axioms, lam}
+
+    ``rank_estimate`` is the rank of the recovered low-rank
+    consensus L; ``sparsity_estimate`` is the fraction of S
+    entries flagged as non-zero. Both are PCP solver outputs.
+
+    Returns ``None`` when there are fewer than 4 axioms (PCP
+    decomposition is trivial below that), the embedder is
+    unavailable, or anything goes wrong. Defense-in-depth:
+    failures NEVER block attestation.
+    """
+    if not active_axioms or len(active_axioms) < 4:
+        return None
+    try:
+        from sum_engine_internal.graph_store import Triple
+        from sum_engine_internal.research.robust_pca import (
+            embed_triples, pcp,
+        )
+        triples = []
+        for axiom in active_axioms:
+            parts = axiom.split("||")
+            if len(parts) == 3:
+                triples.append(Triple(*[p.strip() for p in parts]))
+        if len(triples) < 4:
+            return None
+        import numpy as np
+        M = embed_triples(triples, n_buckets=64)
+        result = pcp(M, max_iter=200)
+        per_row = np.linalg.norm(result.S, ord=1, axis=1)
+        return {
+            "max_score": float(per_row.max()),
+            "mean_score": float(per_row.mean()),
+            "median_score": float(np.median(per_row)),
+            "rank_estimate": int(result.rank_estimate),
+            "sparsity_estimate": float(result.sparsity_estimate),
+            "n_axioms": int(len(triples)),
+            "lam": float(result.lam),
+        }
+    except Exception:
+        return None
+
+
 def _compute_axiom_distribution_mmd_threshold(
     distribution_mmd: Optional[dict],
 ) -> Optional[dict]:
@@ -334,6 +388,18 @@ class CanonicalBundle:
     # NOT in the signed payload. None when MMD itself wasn't
     # computed or the baseline isn't calibrated.
     axiom_distribution_mmd_threshold: Optional[dict] = None
+    # Wire #6: Robust-PCA corruption score over the bundle's
+    # axiom-feature matrix. Per-row L1 norm of the sparse residual
+    # S after PCP decomposition M = L + S (Candès, Li, Ma & Wright,
+    # JACM 58(3):11, 2011). High max_score / mean_score → bundle
+    # contains off-manifold axioms ("seed_v2 doc_015" failure
+    # class). Dict-shaped:
+    #   {max_score, mean_score, median_score, rank_estimate,
+    #    sparsity_estimate, n_axioms, lam}
+    # NOT in the signed payload. None when bundle has < 4 axioms
+    # (PCP decomposition is trivial), the embedder is unavailable,
+    # or computation fails.
+    axiom_corruption_score: Optional[dict] = None
 
 
 class InvalidSignatureError(Exception):
@@ -532,6 +598,13 @@ class CanonicalCodec:
             )
         except Exception:
             distribution_mmd_threshold_value = None
+        # Wire #6: Robust-PCA corruption score — same defense-in-depth.
+        try:
+            corruption_score_value = _compute_axiom_corruption_score(
+                active_axioms,
+            )
+        except Exception:
+            corruption_score_value = None
 
         bundle = CanonicalBundle(
             bundle_version=BUNDLE_VERSION,
@@ -552,6 +625,7 @@ class CanonicalCodec:
             axiom_consistency_check=consistency_check_value,
             axiom_distribution_mmd=distribution_mmd_value,
             axiom_distribution_mmd_threshold=distribution_mmd_threshold_value,
+            axiom_corruption_score=corruption_score_value,
         )
 
         # Strip None fields for backward compatibility
