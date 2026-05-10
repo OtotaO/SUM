@@ -87,6 +87,69 @@ def median_heuristic_bandwidth(
     return median if median > 0 else 1.0
 
 
+def mmd_permutation_pvalue(
+    X: np.ndarray,
+    Y: np.ndarray,
+    sigma: float,
+    *,
+    n_permutations: int = 200,
+    rng: np.random.Generator | None = None,
+) -> tuple[float, float]:
+    """Gretton 2012 §3.2 permutation test for MMD²-vs-zero.
+
+    Under H_0 ("X and Y come from the same distribution"), the
+    label assignment between samples is exchangeable. Pool both
+    samples, randomly partition into groups of size |X| and |Y|,
+    recompute MMD² for each permutation, count the fraction ≥
+    the observed MMD². That fraction is the empirical one-sided
+    p-value.
+
+    Returns ``(observed_mmd_squared, p_value)``. p-value uses
+    the (1 + #ge) / (1 + B) finite-sample correction so it's
+    strictly in (0, 1] regardless of B.
+
+    Args:
+        X: shape ``(n, d)``
+        Y: shape ``(m, d)``
+        sigma: kernel bandwidth (use the same for observation
+            and permutations — the test is invariant to this
+            choice as long as the kernel is the same)
+        n_permutations: number of label permutations. Higher = more
+            resolution but quadratic in computation. 200 gives
+            p-values to ~0.005 resolution.
+        rng: optional RNG for reproducibility.
+    """
+    if rng is None:
+        rng = np.random.default_rng(0xB007)
+    X = np.asarray(X, dtype=np.float64)
+    Y = np.asarray(Y, dtype=np.float64)
+    n = X.shape[0]
+    m = Y.shape[0]
+    pooled = np.vstack([X, Y])
+    K_pool = rbf_kernel_matrix(pooled, pooled, sigma)
+
+    # Observed MMD² uses indices 0..n-1 vs n..n+m-1
+    K_xx_obs = K_pool[:n, :n]
+    K_yy_obs = K_pool[n:, n:]
+    K_xy_obs = K_pool[:n, n:]
+    observed = mmd_squared(K_xx_obs, K_xy_obs, K_yy_obs)
+
+    n_total = n + m
+    n_ge = 0
+    for _ in range(n_permutations):
+        perm = rng.permutation(n_total)
+        x_idx = perm[:n]
+        y_idx = perm[n:]
+        K_xx_p = K_pool[np.ix_(x_idx, x_idx)]
+        K_yy_p = K_pool[np.ix_(y_idx, y_idx)]
+        K_xy_p = K_pool[np.ix_(x_idx, y_idx)]
+        if mmd_squared(K_xx_p, K_xy_p, K_yy_p) >= observed:
+            n_ge += 1
+    # Finite-sample correction (1+#ge)/(1+B); p ∈ (0, 1]
+    p_value = (1.0 + n_ge) / (1.0 + n_permutations)
+    return observed, p_value
+
+
 def mmd_squared(
     K_xx: np.ndarray, K_xy: np.ndarray, K_yy: np.ndarray,
 ) -> float:

@@ -41,12 +41,18 @@ def test_bundle_includes_axiom_distribution_mmd_field(codec_and_algebra):
     assert "axiom_distribution_mmd" in bundle
     mmd = bundle["axiom_distribution_mmd"]
     assert isinstance(mmd, dict)
-    for k in ("mmd_squared", "bandwidth", "n_baseline_samples", "n_bundle_samples"):
-        assert k in mmd
+    # K2 expanded shape: K1's four fields + permutation_p_value + n_permutations
+    for k in ("mmd_squared", "permutation_p_value", "n_permutations",
+              "bandwidth", "n_baseline_samples", "n_bundle_samples"):
+        assert k in mmd, f"missing key: {k}"
     assert mmd["mmd_squared"] >= 0
     assert mmd["bandwidth"] > 0
     assert mmd["n_baseline_samples"] >= 100  # baseline calibrates on seed corpora
     assert mmd["n_bundle_samples"] == 2
+    # K2: p-value is in (0, 1] when computed (finite-sample correction
+    # ensures > 0 even when zero permutations exceed observed)
+    assert mmd["n_permutations"] > 0
+    assert 0 < mmd["permutation_p_value"] <= 1
 
 
 def test_empty_bundle_omits_distribution_mmd_field(codec_and_algebra):
@@ -134,6 +140,31 @@ def test_all_metadata_fields_coexist(codec_and_algebra):
         assert isinstance(bundle["axiom_consistency_check"], dict)
     else:
         assert "axiom_consistency_check" not in bundle
+
+
+def test_in_distribution_bundle_yields_non_significant_pvalue(codec_and_algebra):
+    """K2 substrate-level claim: a bundle drawn from the same
+    corpora as the calibration baseline should NOT produce a
+    significant permutation p-value (p > 0.05). An in-distribution
+    bundle that flags p < 0.05 means either: (a) the baseline has
+    drifted, (b) the bundle is genuinely atypical for in-corpus
+    content, or (c) the test infrastructure regressed."""
+    codec, algebra = codec_and_algebra
+    # These triples come from sieve-extractable seed-corpus prose
+    state = _state_from(algebra, [
+        ("alice", "build", "house"),
+        ("bob", "write", "book"),
+        ("carol", "discover", "fact"),
+    ])
+    bundle = codec.export_bundle(state, branch="t")
+    p = bundle["axiom_distribution_mmd"]["permutation_p_value"]
+    # Loose threshold — p > 0.10 is "clearly not significant"
+    # (tighter than 0.05 to give Monte-Carlo flake tolerance)
+    assert p > 0.10, (
+        f"in-distribution bundle flagged with p={p:.3f} (< 0.10); "
+        f"either baseline drifted or this corpus shape is genuinely "
+        f"atypical"
+    )
 
 
 def test_in_distribution_bundle_yields_finite_mmd(codec_and_algebra):

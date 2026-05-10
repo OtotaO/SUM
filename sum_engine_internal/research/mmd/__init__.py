@@ -36,6 +36,7 @@ on MMD), PR #183 (conformal for calibrated thresholds), PR #184
 from sum_engine_internal.research.mmd.mmd import (
     rbf_kernel_matrix,
     mmd_squared,
+    mmd_permutation_pvalue,
     median_heuristic_bandwidth,
 )
 from sum_engine_internal.research.mmd.baseline import (
@@ -46,6 +47,7 @@ from sum_engine_internal.research.mmd.baseline import (
 __all__ = [
     "rbf_kernel_matrix",
     "mmd_squared",
+    "mmd_permutation_pvalue",
     "median_heuristic_bandwidth",
     "BaselineMMDComputer",
     "get_default_mmd_computer",
