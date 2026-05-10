@@ -26,7 +26,8 @@ from typing import Optional
 import numpy as np
 
 from sum_engine_internal.research.mmd.mmd import (
-    median_heuristic_bandwidth, mmd_squared, rbf_kernel_matrix,
+    median_heuristic_bandwidth, mmd_permutation_pvalue, mmd_squared,
+    rbf_kernel_matrix,
 )
 
 
@@ -116,13 +117,29 @@ class BaselineMMDComputer:
         )
         return True
 
-    def predict_mmd(self, bundle_triples: list) -> Optional[dict]:
-        """MMD² between ``bundle_triples`` and the baseline.
+    def predict_mmd(
+        self,
+        bundle_triples: list,
+        *,
+        n_permutations: int = 200,
+    ) -> Optional[dict]:
+        """MMD² between ``bundle_triples`` and the baseline, plus
+        Gretton 2012 permutation-test p-value for significance.
 
-        ``bundle_triples`` is a list of ``Triple``. Returns dict:
-        ``{mmd_squared, bandwidth, n_baseline_samples,
-           n_bundle_samples}``. Returns ``None`` if the computer
-        isn't calibrated or the bundle is empty.
+        Returns dict:
+        ``{mmd_squared, permutation_p_value, n_permutations,
+           bandwidth, n_baseline_samples, n_bundle_samples}``.
+        Returns ``None`` if the computer isn't calibrated or the
+        bundle is empty.
+
+        The p-value is the substrate's "is this bundle
+        significantly different from baseline?" answer at
+        operator-chosen α — small p (< 0.05) ⇒ reject H_0 that
+        bundle and baseline come from the same distribution.
+
+        ``n_permutations`` defaults to 200 (gives p-values to
+        ~0.005 resolution; ~60 ms at substrate scale). Set to 0
+        to skip the permutation test entirely.
         """
         if not self.is_calibrated:
             return None
@@ -137,14 +154,27 @@ class BaselineMMDComputer:
         X = embed_triples(bundle_triples, n_buckets=_BUCKETS)
         K_xx = rbf_kernel_matrix(X, X, state.sigma)
         K_xy = rbf_kernel_matrix(X, state.embeddings, state.sigma)
-        # Inline the MMD² since we have s_yy precomputed
         n = X.shape[0]
         m = state.embeddings.shape[0]
         s_xx = K_xx.sum() / (n * n)
         s_xy = K_xy.sum() / (n * m)
         val = max(float(s_xx + state.s_yy - 2.0 * s_xy), 0.0)
+
+        # Gretton 2012 §3.2 permutation test for significance
+        if n_permutations > 0:
+            import numpy as np
+            _, p_value = mmd_permutation_pvalue(
+                X, state.embeddings, state.sigma,
+                n_permutations=n_permutations,
+                rng=np.random.default_rng(0xB007),
+            )
+        else:
+            p_value = None
+
         return {
             "mmd_squared": val,
+            "permutation_p_value": float(p_value) if p_value is not None else None,
+            "n_permutations": int(n_permutations),
             "bandwidth": float(state.sigma),
             "n_baseline_samples": int(state.n_samples),
             "n_bundle_samples": int(n),

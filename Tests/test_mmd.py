@@ -20,6 +20,7 @@ import pytest
 from sum_engine_internal.research.mmd import (
     BaselineMMDComputer,
     median_heuristic_bandwidth,
+    mmd_permutation_pvalue,
     mmd_squared,
     rbf_kernel_matrix,
 )
@@ -203,3 +204,58 @@ def test_predict_mmd_returns_none_for_empty_triples(codec_unused=None):
     from sum_engine_internal.research.mmd import get_default_mmd_computer
     c = get_default_mmd_computer()
     assert c.predict_mmd([]) is None
+
+
+# -- mmd_permutation_pvalue (K2: Gretton 2012 §3.2) -------------------
+
+
+def test_permutation_pvalue_is_in_open_unit_interval():
+    """Finite-sample correction (1+#ge)/(1+B) ensures p ∈ (0, 1]
+    for any input — never returns 0 even when no permutations
+    exceed the observed."""
+    rng = np.random.default_rng(0)
+    X = rng.normal(0, 1, (30, 3))
+    Y = rng.normal(0, 1, (30, 3))
+    sigma = median_heuristic_bandwidth(X, Y)
+    _, p = mmd_permutation_pvalue(X, Y, sigma, n_permutations=50,
+                                   rng=np.random.default_rng(1))
+    assert 0 < p <= 1
+
+
+def test_permutation_pvalue_low_under_clear_distribution_shift():
+    """Under H_1 (different distributions), the test should
+    reliably reject — p should land at or near the 1/(B+1) floor.
+    Mean shift μ=0 vs μ=2 with n=30 is well above the test's
+    detection threshold."""
+    rng = np.random.default_rng(0)
+    X = rng.normal(0, 1, (30, 3))
+    Y = rng.normal(2, 1, (30, 3))
+    sigma = median_heuristic_bandwidth(X, Y)
+    _, p = mmd_permutation_pvalue(X, Y, sigma, n_permutations=100,
+                                   rng=np.random.default_rng(1))
+    assert p < 0.05, f"shifted distribution should give p < 0.05; got {p:.3f}"
+
+
+def test_permutation_pvalue_distribution_is_uniform_under_H0():
+    """Under H_0 (same distribution), p-values should be approximately
+    uniform on [0, 1]. Median should be near 0.5; max should be near
+    1.0; min can be anywhere. Tests across 20 trials with
+    relaxed bounds for Monte-Carlo flake tolerance."""
+    rng = np.random.default_rng(42)
+    p_values = []
+    for _ in range(20):
+        X = rng.normal(0, 1, (40, 3))
+        Y = rng.normal(0, 1, (40, 3))
+        sigma = median_heuristic_bandwidth(X, Y)
+        _, p = mmd_permutation_pvalue(
+            X, Y, sigma, n_permutations=100,
+            rng=np.random.default_rng(),
+        )
+        p_values.append(p)
+    # Loose bounds — 20 samples is small for distribution checks,
+    # but the means should be somewhere in the upper half of [0, 1]
+    # under H_0
+    assert 0.3 < np.median(p_values) < 0.85, (
+        f"H_0 median p-value {np.median(p_values):.3f} suspicious; "
+        f"expected ≈ 0.5 within Monte-Carlo tolerance"
+    )

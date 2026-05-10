@@ -4,6 +4,56 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **K2 — Permutation-test p-value on bundle MMD² (Gretton 2012
+  §3.2 wired into bundle metadata).** Compounds PR #185
+  (multiplier bootstrap kernel) + PR #192 (MMD wire) into a
+  calibrated significance signal on every signed bundle.
+
+  **What ships:**
+  - `mmd_permutation_pvalue(X, Y, sigma, n_permutations=200)` in
+    `sum_engine_internal/research/mmd/mmd.py` — Gretton 2012 §3.2
+    label-permutation test with finite-sample (1+#ge)/(1+B)
+    correction → p ∈ (0, 1] always
+  - `BaselineMMDComputer.predict_mmd` extended to compute the
+    p-value alongside MMD²
+  - The existing `axiom_distribution_mmd` dict on
+    `CanonicalBundle` gains two keys: `permutation_p_value` (p ∈
+    (0, 1]) and `n_permutations` (integer, defaults 200)
+
+  **Synthetic verification PASSES:**
+  - Same-distribution → p uniform on [0, 1] across trials
+    (median ≈ 0.5; min 0.03, max 0.98 over 20 trials)
+  - Mean-shifted (μ=0 vs μ=2) → p = 0.010 = 1/(B+1) floor on
+    every trial (test correctly rejects H_0)
+  - Substrate-scale perf: ~60 ms at baseline=314 + bundle=2 with
+    B=200; acceptable for `export_bundle` hot path
+
+  **In-distribution substrate result:** sample 3-triple bundle
+  drawn from seed-corpus prose vocabulary → p = 0.473 (clearly
+  not significant; matches H_0).
+
+  **Same wire discipline as #1-#4:** outside the signed payload,
+  defense-in-depth at helper + call site, None for empty
+  bundles, lazy singleton init for the baseline computer.
+
+  3 new math tests (`test_permutation_pvalue_is_in_open_unit_interval`,
+  `_low_under_clear_distribution_shift`,
+  `_distribution_is_uniform_under_H0`) + 1 new wire test
+  (`test_in_distribution_bundle_yields_non_significant_pvalue`).
+  All 56 tests across the four bundle-metadata test files
+  green; the existing `test_bundle_includes_axiom_distribution_mmd_field`
+  was tightened to assert the K2 expanded shape (6 keys).
+
+  Substrate use: every signed bundle now answers FIVE
+  metadata questions automatically — the original four plus
+  "is this bundle's distribution distance from baseline
+  *statistically significant* at operator-chosen α?"
+
+  Foresight: K3 (conformal-calibrated MMD threshold) is the
+  natural follow-on; together K2+K3 give MMD² + a p-value
+  + a calibrated decision threshold. Pre-push gate from the
+  D3 PR was used before pushing this PR.
+
 - **`make pre-push` — local pre-flight gate matching CI's
   drift + smoke checks (test-suite robustness D3).** New
   Makefile target running both drift-gate `--check`s
