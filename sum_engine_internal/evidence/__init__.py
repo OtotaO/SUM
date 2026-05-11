@@ -35,6 +35,11 @@ from sum_engine_internal.evidence.chain import (
     verify_chain_well_formed,
     verify_chain_covers_axioms,
 )
+from sum_engine_internal.evidence.rules import (
+    InferenceRule,
+    TransitiveClosureRule,
+    derive_non_leaf_links,
+)
 
 __all__ = [
     "EvidenceLink",
@@ -42,4 +47,7 @@ __all__ = [
     "compose_bundle_with_evidence",
     "verify_chain_well_formed",
     "verify_chain_covers_axioms",
+    "InferenceRule",
+    "TransitiveClosureRule",
+    "derive_non_leaf_links",
 ]

@@ -4,6 +4,57 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Evidence-chain inference rules (non-leaf chains).** New
+  `sum_engine_internal/evidence/rules.py`: derives non-leaf
+  evidence by applying operator-curated inference rules to the
+  bundle's leaf claim set, then attaches the derivations as
+  additional chain links with `derivation_rule` (rule id) and
+  `derived_from` (supporting claim ids) populated. Makes the
+  evidence layer DO something — the substrate now reasons, not
+  just records provenance. Sets up Lean-4 entailment certs as
+  the natural next layer (`derivation_rule` becomes the Lean
+  theorem id; `derived_from` becomes the hypothesis claim ids).
+
+  v0 ships ONE well-defined rule:
+
+  - **TransitiveClosureRule** — for any predicate `p` declared
+    `TRANSITIVE` in `SUBSTRATE_PREDICATE_LIBRARY` (currently:
+    `contain`), derives `(X, p, Z)` from `(X, p, Y) ∧ (Y, p, Z)`.
+    Soundness validated by the operator's existing curation
+    discipline — TRANSITIVE declarations are conservative
+    (only rigorous spatial/containment relations).
+
+  Surface:
+  - `InferenceRule` Protocol — operator-extensible interface;
+    `derive_from(claims) -> [(derived_claim, supports)]`.
+  - `TransitiveClosureRule(transitive_predicates=...)` and
+    `TransitiveClosureRule.from_substrate_library()` for the
+    auto-built default.
+  - `derive_non_leaf_links(leaf_links, rules, max_iterations=16)`
+    runs to fixpoint; bounded to prevent runaway from a malformed
+    rule. Provenance for derived links anchors back to a leaf
+    source (chasing through derived ancestors would obscure the
+    actual source text).
+  - `compose_bundle_with_evidence(..., rules=[...])` opt-in —
+    rules=None preserves v0 leaf-only chains (backward compat).
+
+  EvidenceLink now exposes `is_leaf` and serialises
+  `derived_from` + `derivation_rule` to the wire dict only when
+  populated (keeps the leaf payload minimal).
+
+  `verify_chain_well_formed` extended:
+  - `derivation_rule` ↔ `derived_from` must be both set or both
+    empty (half-populated is malformed).
+  - Every `derived_from` ID must reference a claim present
+    elsewhere in the chain (no dangling derivations).
+  - Self-derivation rejected.
+
+  22 new contract tests in `Tests/test_evidence_rules.py` pin
+  the rule semantics, fixpoint behavior on 3-link containment
+  chains, idempotence, self-loop skipping, well-formedness
+  invariants, and the composer integration with backward-compat
+  `rules=None` path.
+
 - **Evidence-chain layer (substrate layer 2).** New
   `sum_engine_internal/evidence/` module + new optional
   CanonicalBundle field `axiom_evidence_chain`. Where the wires

@@ -28,23 +28,42 @@ class EvidenceLink:
     ``claim`` is the canonical axiom string ``"s||p||o"`` (matching
     the substrate's internal axiom serialisation).
     ``provenance`` is the source-text ProvenanceRecord this axiom
-    was extracted from.
+    was extracted from. For non-leaf (derived) claims, the
+    provenance points to the FIRST supporting claim's source —
+    derived claims have no source text of their own.
 
-    Future fields (slot reserved):
-      - ``derived_from: tuple[str, ...]`` — claim IDs of supports
-        when this claim is non-leaf (implied by other claims).
-      - ``derivation_rule: str | None`` — id of the inference rule
-        used. ``None`` for leaf claims.
+    For non-leaf claims:
+      - ``derived_from`` lists the claim IDs that support this
+        derivation (the rule's antecedents instantiated against
+        the bundle).
+      - ``derivation_rule`` names the inference rule applied
+        (e.g., ``"transitive_closure"``).
+
+    For leaf claims, both fields are empty/None — the
+    provenance IS the entire support story.
     """
 
     claim: str
     provenance: ProvenanceRecord
+    derived_from: tuple[str, ...] = ()
+    derivation_rule: Optional[str] = None
+
+    @property
+    def is_leaf(self) -> bool:
+        """True iff this link is a sieve-extracted leaf (no
+        derivation rule applied)."""
+        return self.derivation_rule is None
 
     def to_dict(self) -> dict:
-        return {
+        d: dict = {
             "claim": self.claim,
             "provenance": self.provenance.to_dict(),
         }
+        if self.derived_from:
+            d["derived_from"] = list(self.derived_from)
+        if self.derivation_rule is not None:
+            d["derivation_rule"] = self.derivation_rule
+        return d
 
 
 def verify_chain_well_formed(links: Iterable[EvidenceLink]) -> None:
@@ -56,12 +75,21 @@ def verify_chain_well_formed(links: Iterable[EvidenceLink]) -> None:
       4-tuple — that would be a redundant attestation that adds
       no information. Distinct byte ranges for the same claim are
       OK (the same fact extracted from different sentences).
+    - Non-leaf links (``derivation_rule != None``) must have
+      non-empty ``derived_from``; leaf links must have empty
+      ``derived_from``. Either both fields populated or both
+      empty — half-populated is malformed.
+    - Every ID in ``derived_from`` must reference a claim that
+      appears as ``link.claim`` elsewhere in the same chain
+      (no dangling derivations).
 
     Raises EvidenceChainError on the first violation; succeeds
     silently otherwise. ProvenanceRecord-level invariants are
     enforced at record construction, so they're trusted here."""
+    materialised = list(links)
+    all_claims: set[str] = {link.claim for link in materialised}
     seen: set[tuple[str, str, int, int]] = set()
-    for i, link in enumerate(links):
+    for i, link in enumerate(materialised):
         parts = link.claim.split("||")
         if len(parts) != 3 or not all(p.strip() for p in parts):
             raise EvidenceChainError(
@@ -80,6 +108,26 @@ def verify_chain_well_formed(links: Iterable[EvidenceLink]) -> None:
                 f"4-tuple: {key!r}"
             )
         seen.add(key)
+        # Non-leaf invariants
+        has_rule = link.derivation_rule is not None
+        has_supports = bool(link.derived_from)
+        if has_rule != has_supports:
+            raise EvidenceChainError(
+                f"link {i}: derivation_rule and derived_from must be "
+                f"both set or both empty; got rule={link.derivation_rule!r}, "
+                f"derived_from={link.derived_from!r}"
+            )
+        for support in link.derived_from:
+            if support not in all_claims:
+                raise EvidenceChainError(
+                    f"link {i}: derived_from references {support!r} which "
+                    f"does not appear as a claim anywhere in the chain"
+                )
+            if support == link.claim:
+                raise EvidenceChainError(
+                    f"link {i}: claim {link.claim!r} appears in its own "
+                    f"derived_from — self-derivation is malformed"
+                )
 
 
 def verify_chain_covers_axioms(
@@ -107,6 +155,7 @@ def compose_bundle_with_evidence(
     branch: str = "main",
     source_uri: Optional[str] = None,
     timestamp: Optional[str] = None,
+    rules: Optional[list] = None,
 ) -> dict:
     """Sieve ``text`` → encode state → export bundle → attach chain.
 
@@ -114,6 +163,13 @@ def compose_bundle_with_evidence(
     (triple, ProvenanceRecord) pairs, encodes them via the codec's
     algebra, exports the standard bundle, then builds + attaches
     the evidence chain as ``axiom_evidence_chain``.
+
+    If ``rules`` is provided, applies them to fixpoint over the
+    leaf claims and appends derived (non-leaf) links to the chain.
+    Each non-leaf link carries ``derivation_rule`` (the rule's
+    id) and ``derived_from`` (the supporting claim ids). When
+    ``rules`` is ``None`` (default), the chain is leaf-only —
+    backward-compatible with the v0 surface.
 
     The returned bundle dict satisfies BOTH:
       - ``codec.import_bundle(bundle)`` round-trips to the same
@@ -136,19 +192,23 @@ def compose_bundle_with_evidence(
     state = codec.algebra.encode_chunk_state(triples)
     bundle = codec.export_bundle(state, branch=branch)
 
-    links = [
+    leaf_links = [
         EvidenceLink(
             claim=f"{s}||{p}||{o}".lower(),
             provenance=record,
         )
         for (s, p, o), record in pairs
     ]
-    verify_chain_well_formed(links)
+    all_links = list(leaf_links)
+    if rules:
+        from sum_engine_internal.evidence.rules import derive_non_leaf_links
+        all_links.extend(derive_non_leaf_links(leaf_links, rules))
+    verify_chain_well_formed(all_links)
 
     bundle_axioms = _bundle_active_axioms(codec, state)
-    verify_chain_covers_axioms(links, bundle_axioms)
+    verify_chain_covers_axioms(all_links, bundle_axioms)
 
-    bundle["axiom_evidence_chain"] = [link.to_dict() for link in links]
+    bundle["axiom_evidence_chain"] = [link.to_dict() for link in all_links]
     return bundle
 
 
