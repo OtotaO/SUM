@@ -4,6 +4,13 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-05-11
+
+The vendor-adapter + integration-evidence release. Closes the OpenAI
+adapter / local open-weights pathway / integration-documentation
+deliverables named in the grant-application surface, and folds the
+OpenAI render path into the existing threat model.
+
 - **Local open-weights pathway — `LocalLLMAdapter` for Ollama,
   llama.cpp, and any OpenAI-API-compatible local server.** Closes
   the "local open-weights pathway" deliverable named in the NLnet

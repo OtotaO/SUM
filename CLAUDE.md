@@ -138,13 +138,16 @@ will have the full picture.
     directions to the project.
 
 Shipping surface at the current HEAD: the `sum` binary (currently
-`v0.4.1` on `pyproject.toml` and on PyPI; v0.4.0 was tagged on git
-2026-04-30 but never reached PyPI — the publish workflow fail-closed
-at the pre-promotion verify gate due to a verifier-side script bug
-and v0.4.1 ships the verifier fix; the v0.4.1 wheel content is
-byte-identical to the never-published v0.4.0 because `scripts/` and
-`.github/` are excluded from dist), the Node verifier in
-`standalone_verifier/`, and the browser demo in `single_file_demo/`.
+`v0.6.0` on `pyproject.toml` and on PyPI; v0.6.0 closed the vendor-
+adapter arc with PRs #202 / #203 / #204 — OpenAI vendor adapter and
+`[openai]` PyPI extra, audience-triaged integration guide, local
+open-weights pathway via `ollama:` / `llamacpp:` / `local:` prefix
+routing in `llm_dispatch.get_adapter`. The PyPI release also folded
+the OpenAI render path into the cross-runtime receipt's `provider`
+field — `openai` is no longer reserved-for-future and
+`cf-ai-gateway-openai` mirrors the existing Anthropic-gateway
+variant. The Node verifier in `standalone_verifier/`, and the
+browser demo in `single_file_demo/`, are unchanged.
 All three verify Ed25519 on the same bundle bytes; the cross-runtime
 harness (`make xruntime` → K1 / K1-mw / K2 / K3 / K4) proves this and
 runs on every PR.
