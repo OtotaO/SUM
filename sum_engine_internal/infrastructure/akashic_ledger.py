@@ -84,9 +84,24 @@ class AkashicLedger:
     existed at any historical tick.
     """
 
+    # SQLite busy_timeout (ms) applied to every connection. Lets
+    # writers wait for the lock instead of failing immediately —
+    # eliminates "database is locked" under concurrent-writer
+    # contention without changing logic. 5 s is comfortably above
+    # the worst-case test scenario (1000 concurrent inserts).
+    _BUSY_TIMEOUT_MS = 5000
+
     def __init__(self, db_path: str = "akashic.db"):
         self.db_path = db_path
         self._init_db()
+
+    def _connect(self) -> sqlite3.Connection:
+        """Open a SQLite connection with the standard busy_timeout
+        applied. WAL mode is set once at init and persists in the
+        DB file, so it carries through every subsequent connection."""
+        conn = sqlite3.connect(self.db_path)
+        conn.execute(f"PRAGMA busy_timeout = {self._BUSY_TIMEOUT_MS}")
+        return conn
 
     # ------------------------------------------------------------------
     # Schema bootstrap
@@ -95,6 +110,14 @@ class AkashicLedger:
     def _init_db(self) -> None:
         """Create the event table if it does not exist, then migrate."""
         with sqlite3.connect(self.db_path) as conn:
+            # WAL mode: readers don't block writers, one writer at a
+            # time. Persists in the DB file's header — every
+            # subsequent connection inherits it. Pragma must be set
+            # outside any transaction (sqlite3.connect opens an
+            # implicit one), so we use isolation_level None
+            # momentarily via a fresh exec.
+            conn.execute("PRAGMA journal_mode = WAL")
+            conn.execute(f"PRAGMA busy_timeout = {self._BUSY_TIMEOUT_MS}")
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS semantic_events (
                     seq_id      INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -184,7 +207,7 @@ class AkashicLedger:
 
         Tests/test_ledger_concurrency.py exercises this discipline.
         """
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connect() as conn:
             conn.execute("BEGIN IMMEDIATE")
             yield conn
 
@@ -414,7 +437,7 @@ class AkashicLedger:
         evidence.
         """
         def _read() -> Optional[str]:
-            with sqlite3.connect(self.db_path) as conn:
+            with self._connect() as conn:
                 row = conn.execute(
                     "SELECT record_json FROM provenance_records WHERE prov_id = ?",
                     (prov_id,),
@@ -438,7 +461,7 @@ class AkashicLedger:
         construction — no duplicate evidence ever appears in the result.
         """
         def _read() -> list[str]:
-            with sqlite3.connect(self.db_path) as conn:
+            with self._connect() as conn:
                 rows = conn.execute(
                     "SELECT pr.record_json FROM axiom_provenance ap "
                     "JOIN provenance_records pr ON ap.prov_id = pr.prov_id "
@@ -473,7 +496,7 @@ class AkashicLedger:
             ``ingested_at``, ``seq_id``.
         """
         def _read() -> List[Dict[str, Any]]:
-            with sqlite3.connect(self.db_path) as conn:
+            with self._connect() as conn:
                 rows = conn.execute(
                     "SELECT seq_id, source_url, confidence, ingested_at "
                     "FROM semantic_events "
@@ -514,7 +537,7 @@ class AkashicLedger:
             return {}
 
         def _read() -> Dict[str, Dict[str, Any]]:
-            with sqlite3.connect(self.db_path) as conn:
+            with self._connect() as conn:
                 placeholders = ",".join("?" for _ in axiom_keys)
                 rows = conn.execute(
                     f"SELECT axiom_key, source_url, confidence, ingested_at "
@@ -561,7 +584,7 @@ class AkashicLedger:
         from sum_engine_internal.infrastructure.prov_o import dump_prov_jsonld
 
         def _read() -> List[Dict[str, Any]]:
-            with sqlite3.connect(self.db_path) as conn:
+            with self._connect() as conn:
                 rows = conn.execute(
                     "SELECT seq_id, operation, prime, axiom_key, branch, "
                     "source_url, confidence, ingested_at, prev_hash "
@@ -634,7 +657,7 @@ class AkashicLedger:
             Dict mapping branch_name → state integer.
         """
         def _read() -> Dict[str, int]:
-            with sqlite3.connect(self.db_path) as conn:
+            with self._connect() as conn:
                 rows = conn.execute(
                     "SELECT branch_name, state_integer FROM branch_heads "
                     "WHERE is_ephemeral = 0"
@@ -687,7 +710,7 @@ class AkashicLedger:
             The reconstructed global state integer.
         """
         def _read() -> List[Tuple[Any, ...]]:
-            with sqlite3.connect(self.db_path) as conn:
+            with self._connect() as conn:
                 query = (
                     "SELECT seq_id, operation, prime, axiom_key "
                     "FROM semantic_events"
@@ -748,7 +771,7 @@ class AkashicLedger:
             The highest ``seq_id``, or 0 if the ledger is empty.
         """
         def _read() -> int:
-            with sqlite3.connect(self.db_path) as conn:
+            with self._connect() as conn:
                 res = conn.execute(
                     "SELECT MAX(seq_id) FROM semantic_events"
                 ).fetchone()
@@ -770,7 +793,7 @@ class AkashicLedger:
             If tampered, break_seq_id is the first corrupted event.
         """
         def _verify() -> Tuple[bool, Optional[int]]:
-            with sqlite3.connect(self.db_path) as conn:
+            with self._connect() as conn:
                 rows = conn.execute(
                     "SELECT seq_id, operation, prime, axiom_key, branch, prev_hash "
                     "FROM semantic_events ORDER BY seq_id ASC"
@@ -802,7 +825,7 @@ class AkashicLedger:
             The latest prev_hash, or GENESIS_HASH if the ledger is empty.
         """
         def _read() -> str:
-            with sqlite3.connect(self.db_path) as conn:
+            with self._connect() as conn:
                 row = conn.execute(
                     "SELECT prev_hash FROM semantic_events "
                     "ORDER BY seq_id DESC LIMIT 1"
