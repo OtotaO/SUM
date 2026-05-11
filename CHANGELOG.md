@@ -4,6 +4,55 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Local open-weights pathway — `LocalLLMAdapter` for Ollama,
+  llama.cpp, and any OpenAI-API-compatible local server.** Closes
+  the "local open-weights pathway" deliverable named in the NLnet
+  NGI Zero application's vendor-adapter commitment.
+
+  Routing in `sum_engine_internal.ensemble.llm_dispatch.get_adapter`:
+  - `ollama:<model>` → LocalLLMAdapter pointed at
+    `http://localhost:11434/v1` (Ollama default port)
+  - `llamacpp:<model>` → LocalLLMAdapter pointed at
+    `http://localhost:8080/v1` (llama.cpp `server` default port)
+  - `local:<model>` → LocalLLMAdapter with base URL resolved from
+    `SUM_LOCAL_LLM_BASE`. No built-in default — bring-your-own-server
+    route fails fast if the env var is unset, because guessing the
+    port across vLLM / TGI / LM Studio / oobabooga / custom servers
+    would be wrong more often than right.
+  - Prefix stripping is built in — local servers receive bare model
+    names (`llama3`, `phi3:14b`), not the SUM-internal routing
+    prefix.
+  - Local prefixes are evaluated before the HF Inference Providers
+    route, so an adversarial id like `ollama:org/model` routes
+    unambiguously to the local server, not the HF cloud router.
+
+  Why no new SDK extra: Ollama (v0.3+) and llama.cpp server both
+  implement `/chat/completions` compatible with the OpenAI Python
+  SDK as a drop-in client. So `LocalLLMAdapter` extends
+  `OpenAIAdapter` with `base_url` set to the local server — no new
+  HTTP client, no new dep. `pip install 'sum-engine[openai]'`
+  already covers the local pathway.
+
+  Tests (`Tests/test_llm_dispatch.py`): four new test functions
+  pin (i) Ollama / llama.cpp default-port routing with prefix
+  stripping; (ii) `local:` prefix failing fast without
+  `SUM_LOCAL_LLM_BASE`; (iii) `local:` prefix honouring the env
+  var when set; (iv) local prefixes winning against the HF `/`
+  route for ambiguous ids like `ollama:org/model`.
+
+  Adversarial-robustness posture: an external reviewer can now
+  exercise the local pathway end-to-end:
+  ```
+  pip install 'sum-engine[openai]'
+  ollama serve &
+  ollama pull llama3
+  python -c "
+  from sum_engine_internal.ensemble.llm_dispatch import get_adapter
+  adapter = get_adapter('ollama:llama3')
+  print(adapter)  # LocalLLMAdapter(model='llama3', ...)
+  "
+  ```
+
 - **OpenAI vendor adapter — render-path JS companion + `[openai]`
   PyPI extra.** Closes the OpenAI-adapter commitment named in three
   funder applications (OpenAI Cybersecurity, NLnet NGI Zero, SFF

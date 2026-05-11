@@ -89,6 +89,84 @@ def test_get_adapter_refuses_unknown_prefix():
         llm_dispatch.get_adapter("llama-3.5-405b")
 
 
+@pytest.mark.parametrize(
+    "model,expected_base_url,bare_model",
+    [
+        ("ollama:llama3", "http://localhost:11434/v1", "llama3"),
+        ("ollama:phi3:14b", "http://localhost:11434/v1", "phi3:14b"),
+        ("llamacpp:Llama-3.2-3B-Instruct-Q4_K_M",
+         "http://localhost:8080/v1", "Llama-3.2-3B-Instruct-Q4_K_M"),
+    ],
+)
+def test_get_adapter_routes_local_prefixes_to_default_base_urls(
+    model, expected_base_url, bare_model, monkeypatch,
+):
+    """`ollama:` and `llamacpp:` MUST route to LocalLLMAdapter pointed
+    at their documented default ports. The prefix MUST be stripped
+    before the bare model id is handed to the API — local servers
+    expect bare names (e.g., `llama3`, `phi3:14b`), not the
+    SUM-internal routing prefix.
+
+    Adversarial pressure: the NLnet NGI Zero application promises
+    a "local open-weights pathway"; this test pins both halves of
+    that promise — local routing exists, and it uses the canonical
+    default ports rather than guessing.
+    """
+    from sum_engine_internal.ensemble import llm_dispatch
+
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    adapter = llm_dispatch.get_adapter(model)
+    assert isinstance(adapter, llm_dispatch.LocalLLMAdapter)
+    assert adapter.model == bare_model
+    assert adapter._base_url == expected_base_url
+
+
+def test_get_adapter_local_prefix_requires_env_var(monkeypatch):
+    """The generic `local:` prefix has NO built-in default port —
+    the caller MUST set SUM_LOCAL_LLM_BASE. Guessing the port for a
+    bring-your-own-server route would be wrong more often than right
+    (vLLM, text-generation-inference, LM Studio, oobabooga, custom
+    servers, etc. all use different ports), and silent fallthrough
+    here would route the wrong way."""
+    from sum_engine_internal.ensemble import llm_dispatch
+
+    monkeypatch.delenv("SUM_LOCAL_LLM_BASE", raising=False)
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+
+    with pytest.raises(ValueError, match="SUM_LOCAL_LLM_BASE"):
+        llm_dispatch.get_adapter("local:my-fine-tune-v1")
+
+
+def test_get_adapter_local_prefix_uses_env_var(monkeypatch):
+    """With SUM_LOCAL_LLM_BASE set, `local:<model>` MUST route to
+    LocalLLMAdapter pointed at that URL with the prefix stripped."""
+    from sum_engine_internal.ensemble import llm_dispatch
+
+    monkeypatch.setenv("SUM_LOCAL_LLM_BASE", "http://my-vllm:7000/v1")
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+
+    adapter = llm_dispatch.get_adapter("local:my-fine-tune-v1")
+    assert isinstance(adapter, llm_dispatch.LocalLLMAdapter)
+    assert adapter.model == "my-fine-tune-v1"
+    assert adapter._base_url == "http://my-vllm:7000/v1"
+
+
+def test_get_adapter_local_prefixes_run_before_hf_route(monkeypatch):
+    """An adversarial id like ``ollama:org/model`` could in principle
+    match the HF route's `/` rule. Local prefixes MUST run first so
+    the routing target stays unambiguous — local takes precedence
+    over the HF Inference Providers router."""
+    from sum_engine_internal.ensemble import llm_dispatch
+
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    adapter = llm_dispatch.get_adapter("ollama:meta-llama/Llama-3.2-3B")
+    assert isinstance(adapter, llm_dispatch.LocalLLMAdapter)
+    # Prefix stripped; namespaced id preserved verbatim because some
+    # local servers (Ollama as of v0.3+) accept namespaced model tags.
+    assert adapter.model == "meta-llama/Llama-3.2-3B"
+    assert adapter._base_url == "http://localhost:11434/v1"
+
+
 def test_pyproject_exposes_openai_extra_with_llm_alias():
     """The funder-application surface promises a ``sum-engine[openai]``
     PyPI extra; the historical ``sum-engine[llm]`` name MUST keep
