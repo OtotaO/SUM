@@ -4,6 +4,56 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Evidence-chain layer (substrate layer 2).** New
+  `sum_engine_internal/evidence/` module + new optional
+  CanonicalBundle field `axiom_evidence_chain`. Where the wires
+  arc (#1-#6) exposes scalar metrics ABOUT a bundle on its
+  metadata, this layer exposes structural CLAIMS — the explicit
+  chain from source text → extracted axioms → signed bundle.
+  Combined with the bundle's HMAC/Ed25519 signature, gives a
+  reproducible end-to-end provenance: any third party can
+  re-fetch ``source_uri``, slice ``[byte_start:byte_end]``,
+  confirm the excerpt matches, and verify the bundle signature
+  still holds.
+
+  Aligns with the evidence-chain pattern from related work on
+  reasoning-trace verification — every claim has explicit
+  support, the chain is checkable without trusting the producer.
+
+  Surface (v0, intentionally minimal):
+  - `EvidenceLink(claim, provenance)`: one
+    (axiom_claim, ProvenanceRecord) pair. Slot reserved for
+    `derived_from` + `derivation_rule` when non-leaf evidence
+    gets wired in.
+  - `verify_chain_well_formed(links)`: enforces canonical
+    "s||p||o" claim shape and rejects duplicate
+    (claim, source_uri, byte_range) 4-tuples. Distinct byte
+    ranges for the same claim are OK (same fact extracted from
+    multiple sentences = independent evidence).
+  - `verify_chain_covers_axioms(links, axioms)`: every bundle
+    axiom must have at least one supporting link.
+  - `compose_bundle_with_evidence(codec, text, branch=...)`:
+    batteries-included builder that runs
+    `DeterministicSieve.extract_with_provenance`, encodes the
+    state, exports the standard bundle, attaches the chain as
+    `axiom_evidence_chain`, and verifies coverage before
+    returning.
+
+  Architectural discipline (continues wires #1-#6):
+  - **OUTSIDE the signed payload** — does not affect `signature`
+    (canonical_tome|state_integer|timestamp).
+  - **None when not composed via the evidence path** — the
+    codec's standard `export_bundle` doesn't have access to
+    source text, so the field stays absent.
+  - **Round-trip preserved** — `import_bundle` ignores the
+    field; verified by 14 contract tests in
+    `Tests/test_evidence_chain.py`.
+
+  Forward-compatible: when a reasoning engine is wired in,
+  chain links can carry derivation_rule + derived_from for
+  non-leaf evidence; Lean-4 entailment certificates plug in at
+  that layer.
+
 - **MinHash-LSH bundle similarity index.** New
   `sum_engine_internal/research/lsh/` module: a
   `BundleSimilarityIndex` answering "have I seen a bundle close
