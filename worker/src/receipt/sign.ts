@@ -36,6 +36,7 @@ export type Provider =
   | "anthropic"
   | "openai"
   | "cf-ai-gateway-anthropic"
+  | "cf-ai-gateway-openai"
   | "canonical-path";
 
 export interface ReceiptPayload {
