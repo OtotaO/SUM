@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-10T08:37:53Z",
+  "issued_at": "2026-05-11T11:44:23Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "890c1906750c7a66d817ba5da5a56bd3e2328eee",
-    "head_short": "890c190",
-    "head_subject": "wire: Z3 SMT consistency check as bundle metadata (wire #3) (#191)",
-    "head_committer_date": "2026-05-10T04:27:52-04:00",
+    "head_sha": "274ee344f584634f3c5a1b88c38ad6d7a220536d",
+    "head_short": "274ee34",
+    "head_subject": "chore(v0.6.0): release prep \u2014 CHANGELOG, THREAT_MODEL, CLAUDE.md sync (#205)",
+    "head_committer_date": "2026-05-11T04:43:02-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -19,7 +19,7 @@
   },
   "release": {
     "pyproject_version": "0.6.0",
-    "pypi_published_version": "0.5.0"
+    "pypi_published_version": "0.6.0"
   },
   "features": {
     "total": 156,

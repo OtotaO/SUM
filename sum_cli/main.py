@@ -2116,8 +2116,14 @@ def build_parser() -> argparse.ArgumentParser:
     p_comp_check.add_argument(
         "--regime",
         required=True,
-        choices=["eu-ai-act-article-12"],
-        help="Compliance regime to validate against.",
+        choices=sorted(_COMPLIANCE_REGIMES.keys()),
+        help=(
+            "Compliance regime to validate against. Six regimes are "
+            "wired: EU AI Act Article 12, GDPR Article 30, HIPAA "
+            "164.312(b), ISO 27001 Annex A.8.15, SOC 2 CC 7.2, PCI "
+            "DSS 4.0 Requirement 10. Use `sum compliance regimes` "
+            "to list the canonical regime identifiers."
+        ),
     )
     p_comp_check.add_argument(
         "--audit-log",
