@@ -78,16 +78,35 @@ smoke:  ## Fresh-venv install + attest|verify round-trip from the built wheel.
 	@echo "Alice likes cats. Bob owns a dog." | /tmp/sum-smoke/bin/sum attest --extractor=sieve | \
 	 /tmp/sum-smoke/bin/sum verify
 
+verify-release-bytes: wheel  ## Pre-tag empirical check: built wheel installs cleanly with [openai] AND [llm] aliases; OpenAI SDK lands; sum --version works. Run before `git tag vX.Y.Z`.
+	@echo "─── Verify release bytes — adversarial pre-tag check ──────────────"
+	@echo "[1/2] Fresh venv: install built wheel with [openai] (canonical extra)"
+	@rm -rf /tmp/sum-release-openai
+	$(PYTHON) -m venv /tmp/sum-release-openai
+	@/tmp/sum-release-openai/bin/pip install --quiet --no-cache-dir "$$(ls dist/*.whl | tail -1)[openai]"
+	@/tmp/sum-release-openai/bin/python -c "import openai, sum_engine_internal; print(f'  openai SDK {openai.__version__} importable from [openai]-installed wheel')"
+	@/tmp/sum-release-openai/bin/sum --version
+	@echo "[2/2] Fresh venv: install built wheel with [llm] (back-compat alias)"
+	@rm -rf /tmp/sum-release-llm
+	$(PYTHON) -m venv /tmp/sum-release-llm
+	@/tmp/sum-release-llm/bin/pip install --quiet --no-cache-dir "$$(ls dist/*.whl | tail -1)[llm]"
+	@/tmp/sum-release-llm/bin/python -c "import openai; print(f'  openai SDK {openai.__version__} importable from [llm]-installed wheel (back-compat alias works)')"
+	@/tmp/sum-release-llm/bin/sum --version
+	@printf '%s\n' "─── Release bytes verified — safe to 'git tag' ────────────"
+
+probe-live-trust-loop:  ## End-to-end adversarial probe against the live deploy: render → JWKS → 6-fixture tamper → tome-hash check. Requires sum-engine[receipt-verify] importable. Pass an alternate URL as DEMO=https://...
+	@bash scripts/probes/live_trust_loop_smoke.sh $(DEMO)
+
 lint:  ## ruff check (same rules as CI).
 	$(PYTHON) -m ruff check sum_cli internal scripts
 
-pre-push:  ## Pre-flight gate: drift checks + smoke tests CI runs on every PR.
-	@echo "─── Pre-push gate (matches CI's drift + smoke checks) ─────────────"
-	@echo "[1/3] Self-attestation drift check (CANONICAL_DOCS bytes ↔ meta/self_attestation.*)"
+pre-push:  ## Pre-flight gate: drift + smoke + trust-loop load-bearing gates that CI runs on every PR.
+	@echo "─── Pre-push gate (matches CI's drift + smoke + trust-loop checks) ─"
+	@echo "[1/6] Self-attestation drift check (CANONICAL_DOCS bytes ↔ meta/self_attestation.*)"
 	@$(PYTHON) -m scripts.attest_repo_docs --check
-	@echo "[2/3] Repo manifest drift check (fixtures/bench_receipts/* ↔ meta/repo_manifest.json)"
+	@echo "[2/6] Repo manifest drift check (fixtures/bench_receipts/* ↔ meta/repo_manifest.json)"
 	@$(PYTHON) -m scripts.repo_manifest --check meta/repo_manifest.json
-	@echo "[3/3] Bundle-metadata + self-attestation smoke (bundle wires + drift script)"
+	@echo "[3/6] Bundle-metadata + self-attestation smoke (bundle wires + drift script)"
 	@$(PYTHON) -m pytest -x --no-header -q \
 	    Tests/test_self_attestation.py \
 	    Tests/test_bundle_axiom_graph_entropy.py \
@@ -97,6 +116,12 @@ pre-push:  ## Pre-flight gate: drift checks + smoke tests CI runs on every PR.
 	    Tests/test_bundle_distribution_mmd_threshold.py \
 	    Tests/test_bundle_corruption_score.py \
 	    Tests/test_property_substrate.py
+	@echo "[4/6] Cross-runtime valid-path K-matrix (Python ↔ Node)"
+	@$(PYTHON) -m scripts.verify_cross_runtime
+	@echo "[5/6] Cross-runtime rejection A-matrix (Python ↔ Node)"
+	@$(PYTHON) -m scripts.verify_cross_runtime_adversarial
+	@echo "[6/6] Fortress — 21 pure-math invariants"
+	@$(PYTHON) scripts/verify_fortress.py --json >/dev/null
 	@echo "─── Pre-push gate PASSED — safe to push ───────────────────────────"
 
 wasm:  ## Build + copy sum_core.wasm into single_file_demo/ (rerun after core-zig/ edits).
