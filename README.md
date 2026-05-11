@@ -214,7 +214,7 @@ Source anchoring in the bundle schema, bundle explorer / viewer, `sum verify --e
 
 ```bash
 make install              # editable install with sieve + dev extras
-make test                 # full pytest run (1000+ tests)
+make test                 # full pytest run (2000+ tests)
 make xruntime             # cross-runtime K1/K1-mw/K2/K3/K4 (Python ↔ Node)
 make xruntime-adversarial # rejection-matrix A1–A6
 make fortress             # 21-check pure-math invariants

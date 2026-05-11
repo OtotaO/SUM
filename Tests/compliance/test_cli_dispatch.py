@@ -142,3 +142,85 @@ def test_violations_exit_code_is_1(tmp_path):
             f"regime {regime_id!r}: violations should exit 1 for CI "
             f"gate compatibility; got rc={rc}"
         )
+
+
+# ─── C4: argparse choices match the dispatch registry ────────────────
+#
+# Regression guard for the v0.6.0-era bug where the parser's `--regime`
+# choices list was hardcoded to a single regime
+# (`choices=["eu-ai-act-article-12"]`) while ``_COMPLIANCE_REGIMES`` and
+# ``_compliance_validators`` held all six. The CLI surface lied about
+# coverage — `sum compliance regimes` listed six, but `sum compliance
+# check --regime <other>` failed at argparse before reaching the
+# dispatch dict. Existing tests at the cmd_compliance_check level
+# bypassed argparse and didn't notice.
+
+
+def test_argparse_regime_choices_match_compliance_regimes_keys():
+    """``sum compliance check --regime`` MUST accept every regime
+    listed in ``_COMPLIANCE_REGIMES`` (and only those). A drift here
+    means the CLI surface advertises one set of regimes via
+    ``sum compliance regimes`` but accepts a different set via
+    ``--regime`` choices — the bug class this test pins."""
+    from sum_cli.main import build_parser
+
+    parser = build_parser()
+    # Walk the subparser tree to the leaf `compliance check` parser
+    # without depending on argparse's internal attribute names.
+    compliance_action = next(
+        a for a in parser._actions
+        if isinstance(a, argparse._SubParsersAction)
+    )
+    p_compliance = compliance_action.choices["compliance"]
+    comp_sub_action = next(
+        a for a in p_compliance._actions
+        if isinstance(a, argparse._SubParsersAction)
+    )
+    p_check = comp_sub_action.choices["check"]
+    regime_action = next(
+        a for a in p_check._actions if a.dest == "regime"
+    )
+
+    cli_choices = set(regime_action.choices or [])
+    registered = set(_COMPLIANCE_REGIMES)
+
+    assert cli_choices == registered, (
+        f"argparse `--regime` choices drift from _COMPLIANCE_REGIMES:\n"
+        f"  in CLI choices but not registered: {sorted(cli_choices - registered)}\n"
+        f"  registered but not in CLI choices: {sorted(registered - cli_choices)}\n"
+        f"Fix: in sum_cli/main.py, set "
+        f"`choices=sorted(_COMPLIANCE_REGIMES.keys())` on the "
+        f"`--regime` add_argument call so the CLI surface "
+        f"automatically tracks the dispatch table."
+    )
+
+
+def test_help_text_lists_every_registered_regime_id():
+    """`sum compliance check --help` MUST surface every registered
+    regime id in the rendered help, so users can discover them
+    without round-tripping through `sum compliance regimes`. A
+    minimal cross-check that `sum compliance check` is honest about
+    its coverage even when read by humans."""
+    from sum_cli.main import build_parser
+
+    parser = build_parser()
+    compliance_action = next(
+        a for a in parser._actions
+        if isinstance(a, argparse._SubParsersAction)
+    )
+    p_compliance = compliance_action.choices["compliance"]
+    comp_sub_action = next(
+        a for a in p_compliance._actions
+        if isinstance(a, argparse._SubParsersAction)
+    )
+    p_check = comp_sub_action.choices["check"]
+
+    help_text = p_check.format_help()
+    for regime_id in _COMPLIANCE_REGIMES:
+        assert regime_id in help_text, (
+            f"regime {regime_id!r} is registered but missing from "
+            f"`sum compliance check --help` output. Either the regime "
+            f"is not in argparse `choices` (see test_argparse_regime_"
+            f"choices_match_compliance_regimes_keys) or `format_help` "
+            f"is suppressing it via a custom formatter."
+        )

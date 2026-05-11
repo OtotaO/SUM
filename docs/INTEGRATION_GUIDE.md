@@ -14,7 +14,7 @@ This document is a triage layer. It does NOT restate the wire specs, regime vali
 |---|---|---|---|
 | SOC integrator | JSONL audit-log rows (`sum.audit_log.v1`) per attest / verify / render call, plus Ed25519-signed render receipts (`sum.render_receipt.v1`) | Set `SUM_AUDIT_LOG=/var/log/sum/audit.jsonl`; tail the file into Splunk / Elastic / Sentinel; verify receipts on incident review | [`AUDIT_LOG_FORMAT.md`](AUDIT_LOG_FORMAT.md), [`RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md), [`INCIDENT_RESPONSE.md`](INCIDENT_RESPONSE.md) |
 | AI safety team | Cross-runtime byte-identical canonical form for arbitrary AI text output; signed receipts whose `model` + `provider` fields reflect what *actually* served; multi-vendor adapter (Anthropic, OpenAI, HF Inference Providers); MCP server exposing attest/verify as tools | `pip install 'sum-engine[openai,anthropic]'`; `sum attest` the LLM's output; verify with `sum verify` or the Node / browser verifiers | [`RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md), [`PROOF_BOUNDARY.md`](PROOF_BOUNDARY.md), [`MCP_INTEGRATION.md`](MCP_INTEGRATION.md), [`SLIDER_CONTRACT.md`](SLIDER_CONTRACT.md) |
-| Compliance officer | Per-regime validators that turn a single audit log into evidence for **EU AI Act**, **GDPR**, **HIPAA**, **ISO 27001**, **SOC 2**, **PCI DSS** — all from one `sum.audit_log.v1` shape | `sum compliance check --log audit.jsonl --regime eu-ai-act` (and analogous for the other five regimes) | [`COMPLIANCE_EU_AI_ACT_ARTICLE_12.md`](COMPLIANCE_EU_AI_ACT_ARTICLE_12.md), [`COMPLIANCE_GDPR_ARTICLE_30.md`](COMPLIANCE_GDPR_ARTICLE_30.md), [`COMPLIANCE_HIPAA_164_312_B.md`](COMPLIANCE_HIPAA_164_312_B.md), [`COMPLIANCE_ISO_27001_8_15.md`](COMPLIANCE_ISO_27001_8_15.md), [`COMPLIANCE_SOC_2_CC_7_2.md`](COMPLIANCE_SOC_2_CC_7_2.md), [`COMPLIANCE_PCI_DSS_4_REQ_10.md`](COMPLIANCE_PCI_DSS_4_REQ_10.md) |
+| Compliance officer | Per-regime validators that turn a single audit log into evidence for **EU AI Act**, **GDPR**, **HIPAA**, **ISO 27001**, **SOC 2**, **PCI DSS** — all from one `sum.audit_log.v1` shape | `sum compliance check --audit-log audit.jsonl --regime eu-ai-act-article-12` (run `sum compliance regimes` for the full id list) | [`COMPLIANCE_EU_AI_ACT_ARTICLE_12.md`](COMPLIANCE_EU_AI_ACT_ARTICLE_12.md), [`COMPLIANCE_GDPR_ARTICLE_30.md`](COMPLIANCE_GDPR_ARTICLE_30.md), [`COMPLIANCE_HIPAA_164_312_B.md`](COMPLIANCE_HIPAA_164_312_B.md), [`COMPLIANCE_ISO_27001_8_15.md`](COMPLIANCE_ISO_27001_8_15.md), [`COMPLIANCE_SOC_2_CC_7_2.md`](COMPLIANCE_SOC_2_CC_7_2.md), [`COMPLIANCE_PCI_DSS_4_REQ_10.md`](COMPLIANCE_PCI_DSS_4_REQ_10.md) |
 
 ---
 
@@ -50,8 +50,22 @@ If a downstream consumer flagged a render receipt as suspect, the verifier surfa
 
 ```bash
 # Python verifier (requires sum-engine[receipt-verify])
-python -m sum_engine_internal.render_receipt verify receipt.json \
-    --jwks https://sum-demo.ototao.workers.dev/.well-known/jwks.json
+python <<'PY'
+import json, urllib.request
+from sum_engine_internal.render_receipt import verify_receipt
+
+with open('receipt.json') as f:
+    receipt = json.load(f)
+req = urllib.request.Request(
+    'https://sum-demo.ototao.workers.dev/.well-known/jwks.json',
+    headers={'user-agent': 'curl/8'},
+)
+with urllib.request.urlopen(req, timeout=10) as r:
+    jwks = json.loads(r.read())
+
+result = verify_receipt(receipt, jwks)
+print('verified:', result.verified, 'kid:', result.kid)
+PY
 
 # Node verifier (no install required if you have node + the standalone bundle)
 node standalone_verifier/verify.js bundle.json
@@ -149,13 +163,15 @@ export SUM_AUDIT_LOG=/var/log/sum/audit.jsonl
 sum attest --source-uri https://example.com/article-42 < article.txt > bundle.json
 sum verify --strict < bundle.json
 
-# 3. Run the regime-specific compliance check
-sum compliance check --log /var/log/sum/audit.jsonl --regime eu-ai-act
-sum compliance check --log /var/log/sum/audit.jsonl --regime gdpr-art-30
-sum compliance check --log /var/log/sum/audit.jsonl --regime hipaa-164-312-b
-sum compliance check --log /var/log/sum/audit.jsonl --regime iso-27001-8-15
-sum compliance check --log /var/log/sum/audit.jsonl --regime soc-2-cc-7-2
-sum compliance check --log /var/log/sum/audit.jsonl --regime pci-dss-4-req-10
+# 3. Run the regime-specific compliance check.
+#    Flag is `--audit-log`; regime ids are canonical and must match what
+#    `sum compliance regimes` emits. All six are wired into the CLI.
+sum compliance check --audit-log /var/log/sum/audit.jsonl --regime eu-ai-act-article-12
+sum compliance check --audit-log /var/log/sum/audit.jsonl --regime gdpr-article-30
+sum compliance check --audit-log /var/log/sum/audit.jsonl --regime hipaa-164-312-b
+sum compliance check --audit-log /var/log/sum/audit.jsonl --regime iso-27001-8-15
+sum compliance check --audit-log /var/log/sum/audit.jsonl --regime soc-2-cc-7-2
+sum compliance check --audit-log /var/log/sum/audit.jsonl --regime pci-dss-4-req-10
 
 # Each emits a sum.compliance_report.v1 JSON document.
 # Available regimes:
@@ -193,12 +209,28 @@ Two documents bound what a signed SUM artefact does and does not prove. Read bot
 The verification recipe is identical across all three audiences when you're inspecting a specific artefact:
 
 ```bash
-# Python
+# Python — verify_receipt(receipt, jwks) accepts the receipt dict
+# and a parsed JWKS; raises VerifyError on any tamper. The tome bytes
+# are committed via payload.tome_hash inside the signed envelope — to
+# verify they match the served tome, recompute sha256 separately and
+# compare to receipt['payload']['tome_hash'].
 pip install 'sum-engine[receipt-verify]'
-python -c "from sum_engine_internal.render_receipt import verify; \
-           import json; \
-           print(verify(json.load(open('receipt.json')), \
-                        jwks_url='https://.../.well-known/jwks.json'))"
+python <<'PY'
+import json, hashlib
+from sum_engine_internal.render_receipt import verify_receipt
+
+with open('receipt.json') as f:
+    receipt = json.load(f)
+with open('jwks.json') as f:
+    jwks = json.load(f)
+result = verify_receipt(receipt, jwks)
+print('signature ok:', result.verified, 'kid:', result.kid)
+
+# Optional: confirm the served tome matches payload.tome_hash
+served_tome = open('tome.txt').read()
+expected = 'sha256-' + hashlib.sha256(served_tome.encode('utf-8')).hexdigest()
+print('tome bytes match:', expected == receipt['payload']['tome_hash'])
+PY
 
 # Node — single file, no install
 node standalone_verifier/verify.js bundle.json

@@ -24,7 +24,7 @@ python -m venv .venv && source .venv/bin/activate
 pip install -e '.[sieve,dev]'
 python -m spacy download en_core_web_sm
 
-# Run the test suite (1000+ tests; see Makefile for shortcuts)
+# Run the test suite (2000+ tests; see Makefile for shortcuts)
 make test
 # Fast inner loop (CLI + codec + VC only):
 make test-cli
@@ -52,7 +52,7 @@ python -m pytest Tests/ -v  # Look for "⚡ BARE-METAL ZIG CORE ENGAGED ⚡"
 
 | Gate | Command | Expected |
 |------|---------|----------|
-| Test Suite | `make test` (or `python -m pytest Tests/ -v`) | 1000+ passed |
+| Test Suite | `make test` (or `python -m pytest Tests/ -v`) | 2000+ passed |
 | Fortress | `make fortress` | 21/21 |
 | Zig Tests | `cd core-zig && zig build test` | All pass |
 | Cross-Runtime Harness | `make xruntime` | K1/K1-mw/K2/K3/K4 all PASS |
@@ -71,7 +71,7 @@ core-zig/           # Bare-metal Zig core (C-ABI exports)
 sum_cli/            # `sum` CLI (attest / verify / resolve)
 standalone_verifier/ # Node.js verifier (zero npm deps)
 single_file_demo/   # Browser demo (SubtleCrypto Ed25519 verify)
-Tests/              # 1000+ tests; see Makefile for fast subsets
+Tests/              # 2000+ tests; see Makefile for fast subsets
 scripts/            # Fortress gate, swarm launchers
 ```
 
@@ -133,7 +133,7 @@ Several new gates landed during the Phase E.1 trust-loop arc + the
 R0 resilience preflight. Contributors touching trust-related code
 or workflow files should know they exist:
 
-- `make test` — full pytest suite (1000+ tests).
+- `make test` — full pytest suite (2000+ tests).
 - `make test-receipt-verify` (JS) + `make test-receipt-verify-py`
   (Python) — receipt-verifier smoke against the 15-fixture
   cross-runtime matrix under `fixtures/render_receipts/`.

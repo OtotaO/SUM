@@ -1,14 +1,14 @@
 {
   "schema": "sum.self_attestation.v1",
-  "issued_at": "2026-05-11T08:33:17Z",
+  "issued_at": "2026-05-11T11:51:02Z",
   "doc_count": 5,
   "docs": [
     {
       "path": "README.md",
-      "source_uri": "sha256:1a33f7f8707e4521aaddc455eff576ff67a9d99f28bcfc054918c0c82f65f626",
+      "source_uri": "sha256:c6a9919f91cb84347624297aca3345945a8761e15053a846ab4b3f2e68a4dc80",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "1a33f7f8707e4521aaddc455eff576ff67a9d99f28bcfc054918c0c82f65f626",
+      "markdown_sha256": "c6a9919f91cb84347624297aca3345945a8761e15053a846ab4b3f2e68a4dc80",
       "axiom_count": 39,
       "state_integer_digits": 736
     },
