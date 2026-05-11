@@ -70,7 +70,8 @@ The `provider` field distinguishes how the tome was produced:
 |---|---|
 | `anthropic` | Direct call to `https://api.anthropic.com/v1/messages`. |
 | `cf-ai-gateway-anthropic` | Call routed through Cloudflare AI Gateway (`CF_AI_GATEWAY_BASE` env was set at issuance). The Anthropic model still served; the gateway is a transparent proxy with caching and observability. |
-| `openai` | Reserved for future fallback. v0.9.A does not produce this value; the field's union includes it as a forward-compat extension point. |
+| `openai` | Direct call to `https://api.openai.com/v1/chat/completions`. Selected by request body `{"provider":"openai"}` on `/api/render` (requires `OPENAI_API_KEY` configured on the Worker). |
+| `cf-ai-gateway-openai` | Call routed through Cloudflare AI Gateway (`CF_AI_GATEWAY_BASE` env was set at issuance). The OpenAI model still served; the gateway is a transparent proxy with caching and observability. |
 | `canonical-path` | No LLM call. The tome was produced by `deterministicTome(triples)` — pure algorithmic prose composition from the post-density triple set. Pairs with `digital_source_type: "algorithmicMedia"`. |
 
 A consumer MUST treat unknown provider values as opaque metadata (signed, but interpretable only by issuer-aware tools). See §1.4 forward-compat policy.

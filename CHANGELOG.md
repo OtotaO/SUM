@@ -4,6 +4,56 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **OpenAI vendor adapter — render-path JS companion + `[openai]`
+  PyPI extra.** Closes the OpenAI-adapter commitment named in three
+  funder applications (OpenAI Cybersecurity, NLnet NGI Zero, SFF
+  Speculation). The Python OpenAI adapter has shipped since the
+  vendor-agnostic dispatcher landed
+  (`sum_engine_internal.ensemble.llm_dispatch.OpenAIAdapter`); this
+  delta exposes it as a named extra and brings the Worker's
+  `/api/render` route to provider-parity with the Python side.
+
+  PyPI extras:
+  - `pip install 'sum-engine[openai]'` — canonical vendor-named
+    extra. Installs the OpenAI SDK + Pydantic for structured outputs.
+  - `pip install 'sum-engine[llm]'` — kept as a back-compat alias
+    that resolves to `[openai]`. Documented in `pyproject.toml`.
+
+  Worker render path (`worker/src/routes/render.ts`):
+  - `callOpenAI(env, system, user)` mirrors `callAnthropic` —
+    posts to `https://api.openai.com/v1/chat/completions` (or
+    `${CF_AI_GATEWAY_BASE}/openai/chat/completions` when the
+    AI Gateway is configured), returns the API's echoed `model`
+    so the receipt's `model` field reflects what actually served
+    (e.g., a dated snapshot of the requested tag).
+  - `POST /api/render` accepts an optional `provider` field:
+    `{"provider":"openai"}` selects OpenAI explicitly;
+    `{"provider":"anthropic"}` selects Anthropic explicitly;
+    omitted ⇒ Anthropic-if-configured-else-OpenAI (preserves
+    prior single-provider deploy behaviour). Explicit provider
+    selection fails with HTTP 503 if the matching key is absent
+    — no silent provider substitution, because the receipt's
+    `provider` field would no longer match the caller's intent.
+  - Cache key includes the resolved provider for explicit
+    requests, so OpenAI and Anthropic renders of the same
+    `(triples, sliders)` tuple live in disjoint cache namespaces
+    and never serve cross-provider stale entries.
+
+  Receipt format (`docs/RENDER_RECEIPT_FORMAT.md` §1.2):
+  - `provider: "openai"` is no longer a reserved-for-future value;
+    it is produced live when the Worker routes through OpenAI.
+  - New `provider: "cf-ai-gateway-openai"` mirrors the existing
+    `cf-ai-gateway-anthropic` honesty about gateway routing.
+  - `worker/src/receipt/sign.ts::Provider` union updated to include
+    the new variant.
+
+  Adversarial-robustness posture: every funder application that
+  named the OpenAI adapter can now be exercised end-to-end with
+  `pip install 'sum-engine[openai]'` (Python side) and
+  `curl -X POST .../api/render -d '{"provider":"openai",...}'`
+  (Worker side), with a signed render receipt whose `provider`
+  field reflects the actual call path.
+
 - **Evidence-chain layer (substrate layer 2).** New
   `sum_engine_internal/evidence/` module + new optional
   CanonicalBundle field `axiom_evidence_chain`. Where the wires

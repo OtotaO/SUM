@@ -89,6 +89,61 @@ def test_get_adapter_refuses_unknown_prefix():
         llm_dispatch.get_adapter("llama-3.5-405b")
 
 
+def test_pyproject_exposes_openai_extra_with_llm_alias():
+    """The funder-application surface promises a ``sum-engine[openai]``
+    PyPI extra; the historical ``sum-engine[llm]`` name MUST keep
+    resolving for back-compat. Read ``pyproject.toml`` directly so we
+    catch any drift between the documented extra and what wheels ship.
+
+    Adversarial pressure: an external reviewer pip-installs
+    ``sum-engine[openai]`` per the grant abstracts. That command MUST
+    succeed and MUST install the OpenAI SDK. Both invariants are
+    pinned here.
+    """
+    import sys
+    from pathlib import Path
+
+    if sys.version_info >= (3, 11):
+        import tomllib
+    else:
+        import tomli as tomllib  # type: ignore[import-not-found]
+
+    pyproject_path = Path(__file__).resolve().parents[1] / "pyproject.toml"
+    with pyproject_path.open("rb") as fh:
+        cfg = tomllib.load(fh)
+
+    extras = cfg["project"]["optional-dependencies"]
+
+    assert "openai" in extras, (
+        "pyproject.toml is missing the [openai] extra. The OpenAI "
+        "Cybersecurity / NLnet / SFF grant abstracts advertise "
+        "`sum-engine[openai]` as the install command for the OpenAI "
+        "vendor adapter; removing or renaming this extra would break "
+        "that public promise."
+    )
+    openai_deps = extras["openai"]
+    assert any("openai" in dep for dep in openai_deps), (
+        f"[openai] extra MUST include the OpenAI SDK as a dep; "
+        f"got {openai_deps!r}"
+    )
+
+    assert "llm" in extras, (
+        "[llm] is the legacy name kept as a back-compat alias for "
+        "[openai]. Removing it would break older install commands "
+        "in user scripts and earlier funder-app abstracts."
+    )
+    # The alias resolves via setuptools dep-of-extra syntax:
+    # `sum-engine[llm] = ["sum-engine[openai]"]`. Pin that shape so a
+    # future refactor that drops the alias is caught here.
+    llm_deps = extras["llm"]
+    assert any(
+        "sum-engine" in dep and "openai" in dep for dep in llm_deps
+    ), (
+        f"[llm] MUST forward to [openai] via the setuptools "
+        f"`sum-engine[openai]` self-reference; got {llm_deps!r}"
+    )
+
+
 def test_pydantic_schema_to_anthropic_input_schema_inlines_defs():
     """Pydantic v2's ``model_json_schema()`` emits ``$defs`` for
     nested models. Anthropic accepts this but inlining keeps the

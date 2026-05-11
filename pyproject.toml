@@ -39,10 +39,19 @@ dependencies = [
 [project.optional-dependencies]
 # Dependency-injection extras. Users pick the extractor they want:
 #   pip install sum-engine[sieve]   # deterministic, offline spaCy path
-#   pip install sum-engine[llm]     # OpenAI structured-output path
-#   pip install sum-engine[all]     # both, plus dev tooling
+#   pip install sum-engine[openai]  # OpenAI structured-output path
+#   pip install sum-engine[llm]     # alias for [openai] (legacy name)
+#   pip install sum-engine[all]     # everything, plus dev tooling
 sieve = ["spacy>=3.7.0"]
-llm = ["openai>=1.40.0,<3.0.0", "pydantic>=2.0.0"]
+# `[openai]` is the canonical, vendor-named extra; `[llm]` is kept as a
+# back-compat alias because it predates the multi-provider dispatcher
+# (Anthropic and OpenAI now have their own named extras). Both install
+# identical dependencies — the openai SDK plus pydantic for structured
+# outputs. The vendor adapter is at
+# sum_engine_internal/ensemble/llm_dispatch.py::OpenAIAdapter; the
+# render-path TS companion is worker/src/routes/render.ts::callOpenAI.
+openai = ["openai>=1.40.0,<3.0.0", "pydantic>=2.0.0"]
+llm = ["sum-engine[openai]"]
 # Anthropic Messages-API adapter (Claude family). Installed alongside
 # [llm] for the §2.5 frontier-LLM benchmark runs that compare
 # generator-side interventions across providers. The runner picks
@@ -107,7 +116,7 @@ dev = [
 ]
 all = [
     "sum-engine[sieve]",
-    "sum-engine[llm]",
+    "sum-engine[openai]",
     "sum-engine[anthropic]",
     "sum-engine[receipt-verify]",
     "sum-engine[mcp]",

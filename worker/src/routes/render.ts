@@ -1,11 +1,16 @@
 // /api/render — Slider-conditioned tome rendering.
 //
-// POST {triples, slider_position, force_render?}
+// POST {triples, slider_position, provider?, force_render?}
 // → RenderResult per worker/src/cache/bin_cache.ts. Cache-first; LLM
-// call only on cache miss. Anthropic is the LLM provider; the render
-// path mirrors sum_engine_internal.ensemble.slider_renderer.render
-// in shape — same cache key, same canonical-vs-LLM branch, same
-// quantization rules.
+// call only on cache miss. Anthropic and OpenAI are both supported;
+// the render path mirrors sum_engine_internal.ensemble.slider_renderer
+// .render in shape — same cache key, same canonical-vs-LLM branch,
+// same quantization rules. Provider selection:
+//   - body.provider == "openai"    → callOpenAI (requires OPENAI_API_KEY)
+//   - body.provider == "anthropic" → callAnthropic (requires ANTHROPIC_API_KEY)
+//   - body.provider absent         → Anthropic if configured, else OpenAI
+// The signed receipt's `provider` field reflects what actually served,
+// including whether the call went via CF AI Gateway.
 //
 // What this Worker DOES NOT do (yet):
 //   - Re-extraction of triples from the rendered tome. The Python
@@ -41,9 +46,20 @@ import {
 } from "../receipt/sign";
 import type { JWK } from "jose";
 
+type ProviderChoice = "anthropic" | "openai";
+
 interface RenderRequest {
   triples: Array<[string, string, string]>;
   slider_position: SlidersForPrompt;
+  /** Optional provider override. Absent ⇒ Anthropic if configured,
+   * else OpenAI. Explicit choice fails fast if the matching key is
+   * not configured — no silent provider substitution, because the
+   * receipt's `provider` field would no longer match the caller's
+   * intent.
+   *
+   * Cache key includes the provider, so OpenAI and Anthropic renders
+   * of the same (triples, sliders) do not collide. */
+  provider?: ProviderChoice;
   force_render?: boolean;
   cache_ttl_seconds?: number;
 }
@@ -51,6 +67,7 @@ interface RenderRequest {
 const DEFAULT_TTL_SECONDS = 24 * 60 * 60;
 const MAX_OUTPUT_TOKENS = 2048;
 const ANTHROPIC_DEFAULT = "claude-haiku-4-5-20251001";
+const OPENAI_DEFAULT = "gpt-4o-mini";
 
 function snapToBin(value: number, bins = 5): number {
   if (value < 0 || value > 1) throw new Error(`slider value out of [0, 1]: ${value}`);
@@ -93,7 +110,12 @@ interface LLMRenderResult {
    *  may resolve a tag to a more specific snapshot id. The receipt
    *  signs THIS value so the audit trail matches reality. */
   model_used: string;
-  provider: "anthropic" | "openai" | "cf-ai-gateway-anthropic" | "canonical-path";
+  provider:
+    | "anthropic"
+    | "openai"
+    | "cf-ai-gateway-anthropic"
+    | "cf-ai-gateway-openai"
+    | "canonical-path";
 }
 
 async function callAnthropic(
@@ -148,6 +170,66 @@ async function callAnthropic(
   };
 }
 
+async function callOpenAI(
+  env: Env,
+  systemPrompt: string,
+  userPrompt: string,
+): Promise<LLMRenderResult> {
+  if (!env.OPENAI_API_KEY) {
+    throw new Error("OPENAI_API_KEY not set; render with provider=openai requires it");
+  }
+  const usingGateway = Boolean(env.CF_AI_GATEWAY_BASE);
+  const base = usingGateway
+    ? `${env.CF_AI_GATEWAY_BASE!.replace(/\/$/, "")}/openai/chat/completions`
+    : "https://api.openai.com/v1/chat/completions";
+  const requestedModel = env.SUM_DEFAULT_MODEL_OPENAI ?? OPENAI_DEFAULT;
+
+  const res = await fetch(base, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${env.OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: requestedModel,
+      max_tokens: MAX_OUTPUT_TOKENS,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`openai ${res.status}: ${text.slice(0, 500)}`);
+  }
+
+  const data = (await res.json()) as {
+    choices?: Array<{ message?: { content?: string } }>;
+    model?: string;
+  };
+  const text = data.choices?.[0]?.message?.content;
+  if (!text) throw new Error("openai: empty completion");
+  const modelUsed = data.model ?? `${requestedModel}_inferred`;
+  return {
+    tome: text,
+    model_used: modelUsed,
+    provider: usingGateway ? "cf-ai-gateway-openai" : "openai",
+  };
+}
+
+function resolveProvider(env: Env, requested?: ProviderChoice): ProviderChoice {
+  if (requested === "openai") return "openai";
+  if (requested === "anthropic") return "anthropic";
+  if (env.ANTHROPIC_API_KEY) return "anthropic";
+  if (env.OPENAI_API_KEY) return "openai";
+  throw new Error(
+    "render requires at least one LLM provider configured " +
+      "(ANTHROPIC_API_KEY or OPENAI_API_KEY)",
+  );
+}
+
 async function sha256Hex32(s: string): Promise<string> {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
   return Array.from(new Uint8Array(buf))
@@ -187,7 +269,26 @@ export async function handleRender(
     return json({ error: (e as Error).message }, 400);
   }
 
-  const key = await deriveCacheKey(body.triples, quantized);
+  // Provider resolution. If the request explicitly names one we honour
+  // it (and fail fast if the matching key is absent). With no explicit
+  // choice, Anthropic-if-configured-else-OpenAI preserves prior
+  // single-provider deploy behaviour. requiresExtrapolator() may make
+  // this moot for canonical-path renders, but resolving up-front keeps
+  // the cache key consistent.
+  let providerChoice: ProviderChoice;
+  try {
+    providerChoice = resolveProvider(env, body.provider);
+  } catch (e) {
+    return json({ error: (e as Error).message }, 503);
+  }
+
+  // Cache key includes the resolved provider so OpenAI and Anthropic
+  // renders of the same (triples, sliders) live in disjoint cache
+  // namespaces. The default-provider path (no body.provider) uses the
+  // bare key for backwards compatibility with cached entries written
+  // before this dispatch shipped.
+  const baseKey = await deriveCacheKey(body.triples, quantized);
+  const key = body.provider ? `${baseKey}:${providerChoice}` : baseKey;
 
   // Cache-first. The cached value already carries its render_receipt
   // (signed at the time of the original miss render); HIT path
@@ -222,7 +323,10 @@ export async function handleRender(
     const systemPrompt = buildSystemPrompt(quantized);
     const userPrompt = formatTriplesForLLM(keptTriples);
     try {
-      const llmResult = await callAnthropic(env, systemPrompt, userPrompt);
+      const llmResult =
+        providerChoice === "openai"
+          ? await callOpenAI(env, systemPrompt, userPrompt)
+          : await callAnthropic(env, systemPrompt, userPrompt);
       tome = llmResult.tome;
       modelUsed = llmResult.model_used;
       providerUsed = llmResult.provider;
