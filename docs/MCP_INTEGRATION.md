@@ -22,12 +22,15 @@ The fuzz suite is `Tests/test_mcp_server_fuzz.py`. Run with `pytest Tests/test_m
 ## Install
 
 ```bash
-pip install 'sum-engine[mcp,sieve]'   # MCP server + offline sieve extractor
+pip install 'sum-engine[mcp,sieve]'    # MCP server + offline sieve extractor
 # or
-pip install 'sum-engine[mcp,llm]'     # MCP server + OpenAI structured-output extractor
+pip install 'sum-engine[mcp,openai]'   # MCP server + OpenAI structured-output extractor
 # or
-pip install 'sum-engine[all]'         # everything (sieve + llm + receipt-verify + mcp + dev)
+pip install 'sum-engine[all]'          # everything (sieve + openai + anthropic +
+                                       # receipt-verify + mcp + omni-format + dev)
 ```
+
+`[mcp,llm]` is also accepted — `[llm]` is a back-compat alias for `[openai]` and resolves to the same install footprint.
 
 After install, two console scripts land on PATH:
 
