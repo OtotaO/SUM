@@ -400,6 +400,20 @@ class CanonicalBundle:
     # (PCP decomposition is trivial), the embedder is unavailable,
     # or computation fails.
     axiom_corruption_score: Optional[dict] = None
+    # Layer 2: Evidence chain — list of EvidenceLink dicts tying
+    # each bundle axiom back to its source-text ProvenanceRecord.
+    # Each link has shape:
+    #   {claim: "s||p||o", provenance: {source_uri, byte_start,
+    #    byte_end, extractor_id, timestamp, text_excerpt,
+    #    schema_version}}
+    # NOT in the signed payload. Populated only when the bundle is
+    # built via `compose_bundle_with_evidence` (the codec's
+    # standard `export_bundle` path doesn't have access to source
+    # text). None when not composed via that surface.
+    # Future: chain links can carry derived_from + derivation_rule
+    # for non-leaf claims; Lean-4 entailment certificates plug in
+    # at that layer.
+    axiom_evidence_chain: Optional[list] = None
 
 
 class InvalidSignatureError(Exception):
