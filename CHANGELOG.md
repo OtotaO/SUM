@@ -54,6 +54,23 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
   non-leaf evidence; Lean-4 entailment certificates plug in at
   that layer.
 
+- **AkashicLedger SQLite hardening: WAL mode + busy_timeout.**
+  Eliminates the "database is locked" CI flake observed on PR
+  #198. Two changes in `akashic_ledger.py`:
+  1. WAL journal mode set once at `_init_db` — persists in the
+     DB file header, every subsequent connection inherits it.
+     Readers no longer block writers; one writer at a time.
+  2. New `_connect()` helper applies `busy_timeout = 5000` to
+     every connection. Writers wait for the lock instead of
+     failing immediately. 5 s comfortably exceeds the worst-case
+     test scenario (1000 concurrent inserts).
+
+  All 11 prior `sqlite3.connect(self.db_path)` call sites now
+  route through `self._connect()`; the bootstrap call inside
+  `_init_db` (which establishes WAL) is unchanged. 50/50
+  ledger-related tests pass; `test_1000_distinct_records_all_persist`
+  is the test the flake hit.
+
 - **MinHash-LSH bundle similarity index.** New
   `sum_engine_internal/research/lsh/` module: a
   `BundleSimilarityIndex` answering "have I seen a bundle close
