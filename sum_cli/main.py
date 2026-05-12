@@ -1738,6 +1738,7 @@ def cmd_transform_apply(args: argparse.Namespace) -> int:
     from sum_engine_internal.transform_receipt import (
         build_payload,
         canonical_hash,
+        compute_source_chain_hash,
         sign_transform_receipt,
     )
 
@@ -1776,6 +1777,30 @@ def cmd_transform_apply(args: argparse.Namespace) -> int:
             print("sum: --parameters must be a JSON object", file=sys.stderr)
             return 2
 
+    # T4 wiring: parse + validate --source-chain upfront so usage
+    # errors (missing file, non-list) surface as rc=2 (usage error)
+    # rather than rc=1 (transform error). Hash computation happens
+    # after transform.apply runs.
+    source_chain_data = None
+    if getattr(args, "source_chain", None):
+        try:
+            with open(args.source_chain, "r", encoding="utf-8") as f:
+                source_chain_data = json.load(f)
+        except OSError as e:
+            print(f"sum: cannot read --source-chain {args.source_chain!r}: {e}", file=sys.stderr)
+            return 2
+        except json.JSONDecodeError as e:
+            print(f"sum: --source-chain is not valid JSON: {e}", file=sys.stderr)
+            return 2
+        if not isinstance(source_chain_data, list):
+            print(
+                "sum: --source-chain must be a JSON array of EvidenceLink "
+                "records (each {claim, provenance: {source_uri, byte_start, "
+                "byte_end}})",
+                file=sys.stderr,
+            )
+            return 2
+
     # Build the TransformEnv from env vars (LLM keys + signing JWK).
     env = TransformEnv(
         anthropic_api_key=os.environ.get("ANTHROPIC_API_KEY"),
@@ -1806,6 +1831,12 @@ def cmd_transform_apply(args: argparse.Namespace) -> int:
     input_hash = canonical_hash(transform.canonicalize_input(raw_input))
     output_hash = canonical_hash(transform.canonicalize_output(result.output))
 
+    # T4: compute source_chain_hash now that source_chain_data was
+    # parsed + validated upfront (above, before transform.apply).
+    source_chain_hash = None
+    if source_chain_data is not None:
+        source_chain_hash = compute_source_chain_hash(source_chain_data)
+
     envelope = {
         "output": result.output,
         "model": result.model,
@@ -1823,6 +1854,7 @@ def cmd_transform_apply(args: argparse.Namespace) -> int:
             model=result.model,
             provider=result.provider,
             digital_source_type=result.digital_source_type,
+            source_chain_hash=source_chain_hash,
         )
         envelope["transform_receipt"] = sign_transform_receipt(
             payload, private_jwk=env.private_jwk, kid=env.kid,
@@ -1833,6 +1865,8 @@ def cmd_transform_apply(args: argparse.Namespace) -> int:
         envelope["parameters_hash"] = parameters_hash
         envelope["input_hash"] = input_hash
         envelope["output_hash"] = output_hash
+        if source_chain_hash:
+            envelope["source_chain_hash"] = source_chain_hash
 
     json.dump(envelope, sys.stdout, indent=2 if args.pretty else None)
     sys.stdout.write("\n")
@@ -2350,6 +2384,20 @@ def build_parser() -> argparse.ArgumentParser:
     p_xf_apply.add_argument(
         "--parameters", default="{}",
         help="JSON object with the transform's parameters (default '{}').",
+    )
+    p_xf_apply.add_argument(
+        "--source-chain", default=None, metavar="PATH",
+        help=(
+            "Optional path to a JSON file containing a list of "
+            "EvidenceLink-shaped records: "
+            "[{\"claim\": \"s||p||o\", "
+            "\"provenance\": {\"source_uri\": \"...\", "
+            "\"byte_start\": N, \"byte_end\": M}}, ...]. "
+            "When supplied, the canonical hash of this chain is "
+            "bound to the receipt's `source_chain_hash` field, "
+            "binding the receipt to specific byte ranges of source "
+            "documents. See docs/TRANSFORM_RECEIPT_FORMAT.md §1.1."
+        ),
     )
     p_xf_apply.add_argument(
         "--pretty", action="store_true",

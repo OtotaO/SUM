@@ -4,6 +4,42 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **T4 wiring — `--source-chain` plumbs evidence chains into the
+  receipt's `source_chain_hash` (CLI + Worker, cross-runtime).**
+  Closes the audit's "T4 field exists, no transform populates it"
+  gap. Receipts now actually bind to source byte ranges in
+  production — closes the Foresight-pitch "which AI produced what
+  content, when, with what settings, from what source."
+
+  CLI: `sum transform apply <name> --source-chain <path-to-chain.json>`
+  reads a JSON array of EvidenceLink-shaped records (`{claim,
+  provenance: {source_uri, byte_start, byte_end}}`), canonicalises +
+  hashes them via `compute_source_chain_hash`, and threads the result
+  into `build_payload(source_chain_hash=...)`. Without signing keys
+  the hash appears at the envelope level; with signing keys it lives
+  inside the signed receipt payload.
+
+  Worker: `POST /api/transform` accepts an optional `source_chain`
+  array in the request body. New `worker/src/receipt/source_chain.ts`
+  mirrors the Python `compute_source_chain_hash` byte-for-byte. The
+  Worker computes the hash and threads it into `buildPayload` the
+  same way the CLI does.
+
+  Cross-runtime proof (live, version a0f01167): for the same evidence
+  chain, the Python helper, the CLI, and the Worker all produce the
+  identical `source_chain_hash`. A Python verifier then accepts the
+  Worker-produced receipt with the source_chain_hash field included.
+  The pinned hash value lives in `Tests/test_sum_cli_transform.py`
+  as a regression guard — any drift in either canonicalisation
+  surfaces the test.
+
+  4 new CLI tests (Tests/test_sum_cli_transform.py): source-chain
+  populated in envelope (no signing); source-chain in signed receipt
+  + tamper rejection; missing-file → rc=2; non-list → rc=2.
+  Tests/test_transform_receipt_source_chain.py from T4-spec already
+  covers the Python-side hash computation; this PR adds the
+  dispatch-surface integration.
+
 - **T1d — browser/Node transform-receipt verifier (third K-matrix
   runtime).** Closes the third runtime in the cross-runtime K-matrix
   for `sum.transform_receipt.v1`. New

@@ -36,6 +36,7 @@ import {
   canonicalHash,
   signTransformReceipt,
 } from "../receipt/transform_sign";
+import { computeSourceChainHash } from "../receipt/source_chain";
 import { getTransform, hasTransform, listTransforms } from "../transforms/_registry";
 import type { TransformEnv } from "../transforms/_base";
 
@@ -43,6 +44,20 @@ interface TransformRequest {
   transform?: string;
   input?: unknown;
   parameters?: Record<string, unknown>;
+  /** T4: optional evidence-chain records. When present, the receipt's
+   *  `source_chain_hash` field binds the receipt to specific byte
+   *  ranges of source documents. See
+   *  docs/TRANSFORM_RECEIPT_FORMAT.md §1.1 + sum_engine_internal/
+   *  transform_receipt/format.py::compute_source_chain_hash for the
+   *  canonicalisation contract. */
+  source_chain?: Array<{
+    claim: string;
+    provenance: {
+      source_uri: string;
+      byte_start: number;
+      byte_end: number;
+    };
+  }>;
 }
 
 function json(body: unknown, status = 200): Response {
@@ -145,6 +160,15 @@ export async function handleTransform(
   const inputHash = await canonicalHash(inputBytes);
   const outputHash = await canonicalHash(outputBytes);
 
+  // T4: optional source-chain → source_chain_hash. Same canonicalisation
+  // as the Python helper; cross-runtime byte-equivalence pinned by
+  // fixture test.
+  let sourceChainHash: string | undefined;
+  if (body.source_chain) {
+    const h = await computeSourceChainHash(body.source_chain);
+    if (h) sourceChainHash = h;
+  }
+
   let transformReceipt: unknown = undefined;
   let transformId: string;
   if (transformEnv.signingJWK && transformEnv.kid) {
@@ -157,6 +181,7 @@ export async function handleTransform(
         model: result.modelUsed,
         provider: result.provider,
         digitalSourceType: result.digitalSourceType,
+        sourceChainHash,
       });
       transformReceipt = await signTransformReceipt(
         payload,
