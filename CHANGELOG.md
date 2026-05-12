@@ -4,6 +4,26 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **T6 — multi-school extract mode ships.** The dream's "multiple
+  schools of categorization in tandem" element. Adds the `naive`
+  token-pair extractor as a second school alongside the existing
+  `sieve` (DeterministicSieve). When `multi_school=True` on the
+  extract transform, both extractors run in tandem and the output
+  is a list of `{"triple": [s,p,o], "extractors": [names]}` dicts —
+  per-tag provenance pinning which schools of thought saw each
+  triple. Sieve emits dependency-grammar (subject-predicate-object);
+  naive emits adjacency `(token_n, "next_to", token_n+1)` —
+  fundamentally different approaches by design, so the union /
+  difference of their outputs is a meaningful diagnostic surface.
+  `canonicalize_output` now dispatches on shape (bare triple-list
+  vs multi-school dict-list); single- and multi-school outputs
+  produce distinct hashes for the same underlying triples. 12 new
+  tests pinning naive determinism, multi-school output shape +
+  byte-stability, max_tags trimming, canonicalisation dispatch,
+  end-to-end sign+verify on multi-school output. Sieve-unavailable
+  case (no spaCy) gracefully falls back to naive-only. Deferred:
+  side-by-side UI in `single_file_demo` (T6b) + LLM as a third school.
+
 - **T5 — `ShareableRender` ships (round-trippable signed render
   snapshots).** A self-contained JSON snapshot of a transform run:
   bundles input + parameters + output + the signed
