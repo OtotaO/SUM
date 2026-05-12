@@ -19,6 +19,7 @@ import { handleJwks } from "./routes/jwks";
 import { handleQid } from "./routes/qid";
 import { handleRender } from "./routes/render";
 import { handleRevokedKids } from "./routes/revoked_kids";
+import { handleTransform } from "./routes/transform";
 
 export interface Env {
   // Static-asset binding — resolves to the ../single_file_demo/
@@ -116,6 +117,9 @@ export default {
       }
       if (url.pathname === "/api/render") {
         return withBaselineHeaders(await handleRender(request, env, ctx));
+      }
+      if (url.pathname === "/api/transform") {
+        return withBaselineHeaders(await handleTransform(request, env));
       }
       if (url.pathname === "/.well-known/jwks.json") {
         return withBaselineHeaders(await handleJwks(request, env));
