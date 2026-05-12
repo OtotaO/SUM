@@ -4,6 +4,25 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **T5 — `ShareableRender` ships (round-trippable signed render
+  snapshots).** A self-contained JSON snapshot of a transform run:
+  bundles input + parameters + output + the signed
+  `sum.transform_receipt.v1` envelope. Two-layer verification:
+  signature check on the embedded receipt + application-layer
+  integrity checks that recompute parameters_hash / input_hash /
+  output_hash from the share's embedded fields and compare to the
+  receipt's signed values. Mutations to the share's data fields
+  surface as `False` in the matching `integrity_checks` without
+  invalidating the signature (the signature is over the receipt,
+  not the bytes); receipt mutations surface as
+  `VerifyError(SIGNATURE_INVALID)`. The `share_id` is the receipt's
+  `transform_id` (content-addressed). Tests: 12 new pinning JSON
+  round-trip, share-id derivation, schema validation, signature
+  verification, per-field integrity-check tamper surfacing,
+  unknown-transform forward-compat. Deferred to T5b: HTTP
+  `POST /api/share` storage + `GET /share/<id>` retrieval + demo
+  "Share this render" button.
+
 - **T4 — source-bytes binding (`source_chain_hash` field added).**
   New optional `payload.source_chain_hash` field in
   `sum.transform_receipt.v1`. Closes the "from what source" gap in
