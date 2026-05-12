@@ -4,6 +4,40 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **T1a — Transform registry shipped (Python side).** First
+  implementation of the transform-substrate spec from
+  `docs/TRANSFORM_REGISTRY.md` + `docs/TRANSFORM_RECEIPT_FORMAT.md`.
+  Slider is the first registered transform; canonical-path renders
+  produce signed `sum.transform_receipt.v1` envelopes via the new
+  verifier surface.
+
+  New packages:
+  - `sum_engine_internal.transforms` — `Transform` protocol +
+    `TransformEnv` / `TransformResult` data shapes + registry
+    (`register`, `get_transform`, `list_transforms`). Slider auto-
+    registers on import.
+  - `sum_engine_internal.transforms.slider` — first transform.
+    Quantizes parameters to bin centres (mirrors Worker's
+    `snapToBin`); component-wise sorts triples for stable
+    `input_hash`; canonical-path renders produce deterministic
+    tomes. LLM-axis renders raise `NotImplementedError` pointing at
+    the legacy `slider_renderer.render` path until T1b.
+  - `sum_engine_internal.transform_receipt` — `sum.transform_receipt
+    .v1` wire format + signer + verifier. Shares the
+    `infrastructure.jose_envelope` core with the render-receipt
+    verifier (same six-step algorithm, same forward-compat levers,
+    same error-class taxonomy).
+
+  Tests: 38 new pinning the registry contract + parameter
+  quantization + canonical-path apply + tamper-rejection suite
+  (`Tests/test_transform_registry.py` +
+  `Tests/test_transform_receipt_verify.py`). All green.
+
+  Deferred to T1b: LLM-axis dispatch inside the transform adapter,
+  Worker TypeScript port, `POST /api/transform` endpoint, `sum
+  transform` CLI subcommand. `POST /api/render` and existing
+  `sum.render_receipt.v1` receipts continue working unchanged.
+
 - **BYO API keys — `/api/render` accepts user-supplied LLM keys via
   request headers; demo ships a settings panel.** New `X-Render-LLM-
   Key-Anthropic` and `X-Render-LLM-Key-OpenAI` headers on POST
