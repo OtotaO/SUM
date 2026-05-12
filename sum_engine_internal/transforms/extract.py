@@ -5,7 +5,7 @@ the density axis; ``extract`` is the inverse direction — take a piece
 of text (or a bundle) and yield the canonical tag set as a *named*
 output, with a signed receipt.
 
-v0 scope (this PR, T2):
+T2 v0 scope:
   - Single extractor: ``sieve`` (DeterministicSieve from
     ``sum_engine_internal.algorithms.syntactic_sieve``).
   - Input: text string OR ``CanonicalBundle``-shaped dict (with
@@ -13,13 +13,23 @@ v0 scope (this PR, T2):
     identity over the triple set).
   - Output: sorted unique tag set, JCS-canonicalised.
 
-Deferred (T2 follow-ups / T6):
+T6 (this revision) — multi-school mode:
+  - ``multi_school=True`` runs N extractors in tandem, unions their
+    outputs, and tags each output triple with the set of extractors
+    that produced it. Closes the dream's "multiple schools of
+    categorization in tandem" element.
+  - Two extractors registered for v0: ``sieve`` (DeterministicSieve)
+    and ``naive`` (the naive token-pair extractor implemented in
+    this module — no external deps, deterministic, demonstrably
+    different from the sieve's dependency-grammar approach).
+  - Output shape in multi_school mode:
+        [{"triple": ["s","p","o"], "extractors": ["sieve", "naive"]}, ...]
+    sorted by triple lex order so the output_hash is byte-stable.
+
+Deferred still:
   - LLM extractor (requires ``[openai]`` or ``[anthropic]`` extra).
   - Wikidata QID resolver.
-  - ``multi_school`` mode: run N extractors in tandem, union the
-    outputs, mark provenance per tag. That's the dream's "multiple
-    schools of categorization in tandem" element; ships as the T6 PR
-    with a side-by-side UI.
+  - Side-by-side UI in single_file_demo (T6b).
 """
 from __future__ import annotations
 
@@ -136,13 +146,46 @@ class ExtractTransform:
         )
 
     def canonicalize_output(self, output: Any) -> bytes:
-        """Output is a tag set (list of normalised triples). Canonical
-        bytes: JCS of the componentwise-sorted unique tuple list."""
+        """Output is one of two shapes:
+
+        1. Single-school (default): list of normalised triples.
+           Canonical bytes = JCS of componentwise-sorted unique
+           tuple list.
+
+        2. Multi-school: list of ``{"triple": [s,p,o], "extractors":
+           [...]}`` dicts. Canonical bytes = JCS of the list sorted
+           by triple lex order; each dict's `extractors` field is
+           also sorted alphabetically.
+
+        The two shapes produce DIFFERENT output_hash values for the
+        same underlying triple set — `multi_school` is a distinct
+        output, not just metadata.
+        """
         if not isinstance(output, list):
             raise ValueError(
-                f"extract output: expected list of triples, got "
+                f"extract output: expected list, got "
                 f"{type(output).__name__}"
             )
+        if not output:
+            return canonicalize([])
+        # Detect shape from the first element.
+        first = output[0]
+        if isinstance(first, dict) and "triple" in first and "extractors" in first:
+            # Multi-school shape: list of {triple, extractors}.
+            entries = []
+            for entry in output:
+                t = entry["triple"]
+                triple = _normalize_triple(
+                    (str(t[0]), str(t[1]), str(t[2]))
+                )
+                extractors = sorted({str(e) for e in entry["extractors"]})
+                entries.append({
+                    "triple": list(triple),
+                    "extractors": extractors,
+                })
+            entries.sort(key=lambda e: (e["triple"], e["extractors"]))
+            return canonicalize(entries)
+        # Single-school shape: plain list of triples.
         triples = [
             _normalize_triple((str(t[0]), str(t[1]), str(t[2])))
             for t in output
@@ -161,12 +204,10 @@ class ExtractTransform:
         multi_school = norm["multi_school"]
 
         if multi_school:
-            raise NotImplementedError(
-                "extract transform v0 (T2) supports single-extractor mode "
-                "only. multi_school=True (run N extractors in tandem, union "
-                "outputs) lands as T6 alongside the side-by-side comparison "
-                "UI."
-            )
+            # T6: run all registered extractors in tandem; union the
+            # outputs; tag each triple with the set of extractors
+            # that produced it.
+            return await self._apply_multi_school(input, max_tags)
 
         if not isinstance(input, dict):
             raise ValueError(
@@ -242,6 +283,123 @@ class ExtractTransform:
                 "raw_count": len(raw_triples),
             },
         )
+
+
+    async def _apply_multi_school(
+        self,
+        input: Any,
+        max_tags: int,
+    ) -> TransformResult:
+        """Run all registered extractors in tandem; union the
+        outputs; tag each triple with the set of extractors that
+        produced it.
+
+        Two extractors registered for v0:
+          - ``sieve`` (DeterministicSieve; requires [sieve] extra)
+          - ``naive`` (naive_token_pair_extract; always available)
+
+        Sieve is skipped (with a marker entry) if spaCy / the
+        en_core_web_sm model isn't available. Naive always runs.
+        """
+        if not isinstance(input, dict) or "text" not in input:
+            raise ValueError(
+                "extract input in multi_school mode: expected dict with "
+                "'text' key (multi-school operates on raw text)"
+            )
+        text = input["text"]
+        if not isinstance(text, str):
+            raise ValueError("extract input: 'text' must be a string")
+
+        by_extractor: dict[str, list[tuple[str, str, str]]] = {}
+
+        # Naive — always available.
+        naive_triples = naive_token_pair_extract(text)
+        by_extractor["naive"] = [_normalize_triple(t) for t in naive_triples]
+
+        # Sieve — skipped if spaCy/model unavailable. The receipt
+        # records which extractors actually ran via the extra field.
+        sieve_ran = False
+        try:
+            from sum_engine_internal.algorithms.syntactic_sieve import (
+                DeterministicSieve,
+            )
+            sieve = DeterministicSieve()
+            raw = sieve.extract_triplets(text)
+            by_extractor["sieve"] = [_normalize_triple(t) for t in raw]
+            sieve_ran = True
+        except (ImportError, OSError):
+            by_extractor["sieve"] = []
+
+        # Union: each triple tagged with which extractors saw it.
+        provenance: dict[tuple[str, str, str], set[str]] = {}
+        for name, triples in by_extractor.items():
+            for t in triples:
+                provenance.setdefault(t, set()).add(name)
+
+        entries = [
+            {"triple": list(t), "extractors": sorted(provenance[t])}
+            for t in sorted(provenance.keys())
+        ][:max_tags]
+
+        return TransformResult(
+            output=entries,
+            model="canonical-deterministic-v0",
+            provider="canonical-path",
+            digital_source_type="algorithmicMedia",
+            llm_calls_made=0,
+            extra={
+                "extractor_used": "multi_school",
+                "extractors_ran": sorted(by_extractor.keys()),
+                "sieve_ran": sieve_ran,
+                "tag_count": len(entries),
+                "by_extractor_counts": {
+                    name: len(triples)
+                    for name, triples in by_extractor.items()
+                },
+            },
+        )
+
+
+# ─── Naive token-pair extractor — second school for T6 ──────────────
+#
+# Designed to be different in kind from the sieve, not just different
+# in tuning. Sieve: dependency-grammar; emits semantically structured
+# (subject, predicate, object). Naive: adjacent-token pairs; emits
+# (token_n, "next_to", token_n+1). Two genuinely different schools
+# of thought. The overlap (or lack thereof) between their outputs is
+# the diagnostic surface multi_school mode exposes.
+
+_TOKENPAIR_PREDICATE = "next_to"
+
+_STOPWORDS = frozenset({
+    "the", "a", "an", "of", "and", "or", "but", "is", "are", "was",
+    "were", "be", "been", "to", "in", "on", "at", "for", "with",
+    "this", "that", "these", "those", "it", "its",
+})
+
+
+def naive_token_pair_extract(text: str) -> list[tuple[str, str, str]]:
+    """Naive second school: adjacent-token bigrams as triples.
+
+    Tokenises on whitespace + punctuation; drops stopwords + tokens
+    shorter than 3 chars; emits (token_n, 'next_to', token_n+1)
+    for each remaining adjacent pair.
+
+    Deterministic, dependency-free, demonstrably different from the
+    sieve's dependency-grammar approach. The point isn't to be
+    *better* than the sieve — it's to be *different* so the union /
+    intersection of their outputs is a meaningful diagnostic surface.
+    """
+    import re
+
+    tokens = [
+        t.lower() for t in re.split(r"[^a-zA-Z0-9]+", text)
+        if t and len(t) >= 3 and t.lower() not in _STOPWORDS
+    ]
+    return [
+        (tokens[i], _TOKENPAIR_PREDICATE, tokens[i + 1])
+        for i in range(len(tokens) - 1)
+    ]
 
 
 # Module-level instance — auto-registered in transforms/__init__.py.

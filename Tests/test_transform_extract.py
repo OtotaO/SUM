@@ -225,15 +225,23 @@ def test_sieve_path_extracts_triples_from_text():
 # ─── Deferred-mode rejections ───────────────────────────────────────
 
 
-def test_multi_school_raises_not_implemented():
-    """multi_school=True is the T6 follow-up (multi-extractor side-
-    by-side). Today it raises with a pointer."""
-    with pytest.raises(NotImplementedError, match="T6"):
-        asyncio.run(EXTRACT_TRANSFORM.apply(
-            input={"text": "hi"},
-            parameters={"multi_school": True},
-            env=TransformEnv(),
-        ))
+def test_multi_school_returns_dict_entries():
+    """As of T6, multi_school=True returns a list of
+    {"triple", "extractors"} dicts rather than raising. The detailed
+    contract is pinned in test_transform_extract_multi_school.py;
+    here we just confirm that the previous NotImplementedError no
+    longer fires."""
+    result = asyncio.run(EXTRACT_TRANSFORM.apply(
+        input={"text": "Alice likes cats."},
+        parameters={"multi_school": True},
+        env=TransformEnv(),
+    ))
+    assert isinstance(result.output, list)
+    # Multi-school output is the dict-shape, not the bare triple-list.
+    if result.output:
+        assert isinstance(result.output[0], dict)
+        assert "triple" in result.output[0]
+        assert "extractors" in result.output[0]
 
 
 def test_explicit_llm_extractor_raises_not_implemented():
