@@ -1696,6 +1696,149 @@ def cmd_compliance_check(args: argparse.Namespace) -> int:
     return 0 if (report.ok and not parse_errors) else 1
 
 
+# ─── transform — generic transform-registry dispatch ────────────────
+#
+# Closes the audit's "no CLI integration" gap. Every registered
+# transform in sum_engine_internal.transforms becomes shell-invokable
+# via `sum transform <verb>`. Output is JSON on stdout; receipts are
+# embedded in the JSON when signing keys are configured via env
+# vars (SUM_TRANSFORM_SIGNING_JWK, SUM_TRANSFORM_SIGNING_KID).
+
+
+def cmd_transform_list(args: argparse.Namespace) -> int:
+    """List registered transforms. Emits sum.transform_registry.v1."""
+    from sum_engine_internal.transforms import get_transform, list_transforms
+
+    out = {
+        "schema": "sum.transform_registry.v1",
+        "transforms": [
+            {
+                "id": name,
+                "requires_llm": get_transform(name).requires_llm,
+                "digital_source_type": get_transform(name).digital_source_type,
+            }
+            for name in list_transforms()
+        ],
+    }
+    json.dump(out, sys.stdout, indent=2 if getattr(args, "pretty", False) else None)
+    sys.stdout.write("\n")
+    return 0
+
+
+def cmd_transform_apply(args: argparse.Namespace) -> int:
+    """Run a transform with input from stdin or --input <file>. Emits
+    a JSON envelope with the output + optional signed receipt."""
+    import asyncio
+
+    from sum_engine_internal.transforms import (
+        TransformEnv,
+        get_transform,
+        list_transforms,
+    )
+    from sum_engine_internal.transform_receipt import (
+        build_payload,
+        canonical_hash,
+        sign_transform_receipt,
+    )
+
+    try:
+        transform = get_transform(args.transform_name)
+    except KeyError:
+        print(
+            f"sum: unknown transform {args.transform_name!r}; "
+            f"known: {list_transforms()}",
+            file=sys.stderr,
+        )
+        return 2
+
+    # Read input + parameters from stdin / files.
+    if args.input == "-":
+        raw_input = json.load(sys.stdin)
+    else:
+        try:
+            with open(args.input, "r", encoding="utf-8") as f:
+                raw_input = json.load(f)
+        except OSError as e:
+            print(f"sum: cannot read --input {args.input!r}: {e}", file=sys.stderr)
+            return 2
+        except json.JSONDecodeError as e:
+            print(f"sum: --input is not valid JSON: {e}", file=sys.stderr)
+            return 2
+
+    parameters: dict = {}
+    if args.parameters:
+        try:
+            parameters = json.loads(args.parameters)
+        except json.JSONDecodeError as e:
+            print(f"sum: --parameters is not valid JSON: {e}", file=sys.stderr)
+            return 2
+        if not isinstance(parameters, dict):
+            print("sum: --parameters must be a JSON object", file=sys.stderr)
+            return 2
+
+    # Build the TransformEnv from env vars (LLM keys + signing JWK).
+    env = TransformEnv(
+        anthropic_api_key=os.environ.get("ANTHROPIC_API_KEY"),
+        openai_api_key=os.environ.get("OPENAI_API_KEY"),
+        cf_ai_gateway_base=os.environ.get("CF_AI_GATEWAY_BASE"),
+    )
+    signing_jwk_raw = os.environ.get("SUM_TRANSFORM_SIGNING_JWK")
+    signing_kid = os.environ.get("SUM_TRANSFORM_SIGNING_KID")
+    if signing_jwk_raw and signing_kid:
+        try:
+            env.private_jwk = json.loads(signing_jwk_raw)
+            env.kid = signing_kid
+        except json.JSONDecodeError:
+            print(
+                "sum: SUM_TRANSFORM_SIGNING_JWK is not valid JSON; "
+                "receipt will be omitted.",
+                file=sys.stderr,
+            )
+
+    try:
+        result = asyncio.run(transform.apply(raw_input, parameters, env))
+    except Exception as e:  # noqa: BLE001 — surface as a clean CLI error
+        print(f"sum: transform {args.transform_name!r} failed: {e}", file=sys.stderr)
+        return 1
+
+    # Compute hashes for the receipt payload.
+    parameters_hash = canonical_hash(transform.canonicalize_parameters(parameters))
+    input_hash = canonical_hash(transform.canonicalize_input(raw_input))
+    output_hash = canonical_hash(transform.canonicalize_output(result.output))
+
+    envelope = {
+        "output": result.output,
+        "model": result.model,
+        "provider": result.provider,
+        "digital_source_type": result.digital_source_type,
+        "llm_calls_made": result.llm_calls_made,
+        "extra": result.extra,
+    }
+    if env.private_jwk and env.kid:
+        payload = build_payload(
+            transform=args.transform_name,
+            parameters_hash=parameters_hash,
+            input_hash=input_hash,
+            output_hash=output_hash,
+            model=result.model,
+            provider=result.provider,
+            digital_source_type=result.digital_source_type,
+        )
+        envelope["transform_receipt"] = sign_transform_receipt(
+            payload, private_jwk=env.private_jwk, kid=env.kid,
+        )
+    else:
+        # No signing config — still surface the hashes so callers can
+        # cross-check application-layer integrity without a receipt.
+        envelope["parameters_hash"] = parameters_hash
+        envelope["input_hash"] = input_hash
+        envelope["output_hash"] = output_hash
+
+    json.dump(envelope, sys.stdout, indent=2 if args.pretty else None)
+    sys.stdout.write("\n")
+    return 0
+
+
 def cmd_compliance_regimes(args: argparse.Namespace) -> int:
     out = {
         "schema": "sum.compliance_regimes.v1",
@@ -2147,6 +2290,72 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     p_comp_regimes.set_defaults(func=cmd_compliance_regimes)
+
+    # transform — generic transform-registry dispatch (T1c).
+    p_transform = subparsers.add_parser(
+        "transform",
+        help="Run a registered transform (slider / extract / compose / …).",
+        description=(
+            "Generic dispatch surface for the transform registry. Every "
+            "transform in sum_engine_internal.transforms is callable via "
+            "`sum transform apply <name>`. Output is JSON on stdout; if "
+            "SUM_TRANSFORM_SIGNING_JWK + SUM_TRANSFORM_SIGNING_KID are "
+            "set, the response includes a signed sum.transform_receipt.v1 "
+            "envelope. See docs/TRANSFORM_REGISTRY.md."
+        ),
+    )
+    p_transform_sub = p_transform.add_subparsers(
+        dest="transform_cmd", required=True, metavar="<transform-cmd>",
+    )
+
+    p_xf_list = p_transform_sub.add_parser(
+        "list",
+        help="List registered transforms.",
+        description=(
+            "Emit a sum.transform_registry.v1 JSON document listing every "
+            "registered transform with its id, requires_llm flag, and "
+            "digital_source_type."
+        ),
+    )
+    p_xf_list.add_argument(
+        "--pretty", action="store_true",
+        help="Pretty-print the JSON.",
+    )
+    p_xf_list.set_defaults(func=cmd_transform_list)
+
+    p_xf_apply = p_transform_sub.add_parser(
+        "apply",
+        help="Apply a transform to input from stdin / a file.",
+        description=(
+            "Run the named transform with input from --input <file> "
+            "(or '-' for stdin) and --parameters <json>. Emits a JSON "
+            "envelope with the transform's output, the model + provider "
+            "that served it, and either a signed transform_receipt (if "
+            "signing keys are configured via SUM_TRANSFORM_SIGNING_JWK + "
+            "SUM_TRANSFORM_SIGNING_KID env vars) or the bare hash fields "
+            "for application-layer integrity checks. Exit 0 on success, "
+            "1 on transform error, 2 on usage error."
+        ),
+    )
+    p_xf_apply.add_argument(
+        "transform_name",
+        help="Transform id — one of: slider / extract / compose. Use "
+             "`sum transform list` for the full set.",
+    )
+    p_xf_apply.add_argument(
+        "--input", required=True,
+        help="Path to a JSON file with the transform's input shape, "
+             "or '-' to read from stdin.",
+    )
+    p_xf_apply.add_argument(
+        "--parameters", default="{}",
+        help="JSON object with the transform's parameters (default '{}').",
+    )
+    p_xf_apply.add_argument(
+        "--pretty", action="store_true",
+        help="Pretty-print the JSON envelope.",
+    )
+    p_xf_apply.set_defaults(func=cmd_transform_apply)
 
     return parser
 

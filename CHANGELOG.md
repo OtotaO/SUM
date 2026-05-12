@@ -4,6 +4,7 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+<<<<<<< HEAD
 - **T1b — Worker TS port + POST /api/transform route.** Closes the
   audit's biggest gap: the cross-runtime byte-equivalence claim for
   `sum.transform_receipt.v1` is now empirically true across Python
@@ -35,6 +36,36 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
   /api/render (with sum.render_receipt.v1) remains the LLM-render
   path; POST /api/transform with transform=slider + off-centre
   axes returns 501 pointing at /api/render.
+=======
+- **T1c — `sum transform` CLI subcommand + transform tests in
+  pre-push gate.** Closes two audit findings: no CLI integration
+  for transforms, and pre-push didn't exercise the new transform
+  code.
+
+  CLI surface:
+  - `sum transform list` — emits `sum.transform_registry.v1` JSON
+    with every registered transform + its `requires_llm` and
+    `digital_source_type` flags.
+  - `sum transform apply <name> --input <file|-> --parameters <json>`
+    — runs the transform. Output is a JSON envelope with output +
+    model + provider + digital_source_type + llm_calls_made + extra.
+    When `SUM_TRANSFORM_SIGNING_JWK` + `SUM_TRANSFORM_SIGNING_KID`
+    are set, the envelope includes a signed `sum.transform_receipt.v1`.
+    Without signing config, the envelope emits the three hashes
+    (parameters_hash, input_hash, output_hash) so callers can do
+    application-layer integrity checks against an out-of-band
+    receipt. Exit 0 on success, 1 on transform error, 2 on usage.
+
+  Pre-push gate now includes 8 transform-substrate test files (118
+  tests + 10 CLI tests = 128 transform tests gated locally). Closes
+  the "passed pre-push, failed CI on transform" failure class.
+
+  10 new CLI tests pin: list-emits-registry, list-marks-requires-llm,
+  apply canonical-path with + without signing, stdin input, unknown
+  transform → rc=2, bad JSON parameters → rc=2, missing input file
+  → rc=2, LLM-axis renders → rc=1 with T1b pointer, determinism
+  (two runs produce byte-identical hashes).
+>>>>>>> 51567be (feat(cli): T1c — `sum transform` subcommand + transform tests in pre-push)
 
 - **T6 — multi-school extract mode ships.** The dream's "multiple
   schools of categorization in tandem" element. Adds the `naive`
