@@ -97,6 +97,9 @@ verify-release-bytes: wheel  ## Pre-tag empirical check: built wheel installs cl
 probe-live-trust-loop:  ## End-to-end adversarial probe against the live deploy: render → JWKS → 6-fixture tamper → tome-hash check. Requires sum-engine[receipt-verify] importable. Pass an alternate URL as DEMO=https://...
 	@bash scripts/probes/live_trust_loop_smoke.sh $(DEMO)
 
+probe-operator-audit:  ## Audit the live Worker's secrets / vars / endpoint contract vs wrangler.toml. Catches secret-name leaks, stale operator keys, and wiped-by-deploy [vars]. Pass an alternate URL as DEMO=https://...
+	@bash scripts/probes/operator_audit.sh
+
 lint:  ## ruff check (same rules as CI).
 	$(PYTHON) -m ruff check sum_cli internal scripts
 

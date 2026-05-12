@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-11T11:44:23Z",
+  "issued_at": "2026-05-12T14:19:56Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "274ee344f584634f3c5a1b88c38ad6d7a220536d",
-    "head_short": "274ee34",
-    "head_subject": "chore(v0.6.0): release prep \u2014 CHANGELOG, THREAT_MODEL, CLAUDE.md sync (#205)",
-    "head_committer_date": "2026-05-11T04:43:02-04:00",
+    "head_sha": "51580781ac10aa022327f13b053faf480bdd5dd3",
+    "head_short": "5158078",
+    "head_subject": "feat(byo-keys): user-supplied API keys via settings panel + Worker headers; pin JWKS into wrangler.toml (#208)",
+    "head_committer_date": "2026-05-12T10:05:43-04:00",
     "commits_last_30d": null
   },
   "github": {

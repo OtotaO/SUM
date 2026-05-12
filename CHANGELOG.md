@@ -39,7 +39,43 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
     receipt-verifier path is unaffected by these keys (it reads only
     JWKS + the receipt payload).
 
+- **Transform-substrate architectural foundation.** Three new docs +
+  one new probe + one new Makefile target. No code yet — the
+  architectural commit that subsequent dream-side transforms ride on.
+  The slider product is one specific instance of a more general
+  pattern already structured into the rest of the system:
+  `(bundle | text) × transform × parameters → signed artifact`.
+  Naming this "transform registry" lets tags-from-tome, multi-document
+  compose, register/poetry axes, multi-school categorization, and the
+  "covers more than any other tag maker" bench ship as registered
+  transforms instead of parallel architectures — same canonical-bundle
+  substrate, same JCS encoding, same Ed25519 receipt format, same
+  K1–K4 cross-runtime guarantee, same compliance audit log.
 
+  Artifacts:
+  - `docs/TRANSFORM_RECEIPT_FORMAT.md` — wire spec for
+    `sum.transform_receipt.v1`. Generalises `sum.render_receipt.v1`:
+    `transform` + `parameters_hash` + `input_hash` + `output_hash`
+    replace slider-specific fields. Existing render receipts stay
+    verifiable forever under their original schema.
+  - `docs/TRANSFORM_REGISTRY.md` — design doc. Transform protocol,
+    dispatch surface (`POST /api/transform`, `sum transform` CLI,
+    MCP `transform` tool), cache semantics, v1 transform set
+    (slider migrated + extract / compose / reserved: translate /
+    expand / restyle), code layout.
+  - `docs/OPERATOR_AUDIT_2026-05-12.md` — point-in-time empirical
+    audit of the live Worker. Pins the two pending operator actions
+    from the 2026-05-11 BYO-keys session (rotate stale Anthropic
+    key on Worker; delete leaked-name secret) and documents forward
+    policy.
+  - `scripts/probes/operator_audit.sh` + `make probe-operator-audit` —
+    re-runnable audit. Catches three drift classes: leaked-key-as-
+    secret-name, dashboard-vars-wiped-on-deploy, stale-operator-key
+    -after-rotation. JSON output mode for CI; exit 1 on drift.
+
+  Migration: T1 lands the slider as `transform: "slider"`; `POST
+  /api/render` stays live as a thin adapter. Pre-T1 render receipts
+  remain valid forever.
 
 ## [0.6.0] - 2026-05-11
 
