@@ -84,8 +84,10 @@ def list_transforms() -> list[str]:
 # deferral #1).
 
 from sum_engine_internal.transforms.slider import SLIDER_TRANSFORM as _SLIDER  # noqa: E402
+from sum_engine_internal.transforms.extract import EXTRACT_TRANSFORM as _EXTRACT  # noqa: E402
 
 register(_SLIDER)
+register(_EXTRACT)
 
 
 __all__ = [
