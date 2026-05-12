@@ -4,6 +4,38 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **T1b — Worker TS port + POST /api/transform route.** Closes the
+  audit's biggest gap: the cross-runtime byte-equivalence claim for
+  `sum.transform_receipt.v1` is now empirically true across Python
+  and Cloudflare Worker (TypeScript / V8). New `worker/src/transforms/`
+  package mirrors `sum_engine_internal.transforms`:
+  - `_base.ts` — Transform interface + Provider / DigitalSourceType
+    + TransformEnv + TransformResult.
+  - `slider.ts` — first registered transform (canonical-path render);
+    same parameter quantization, componentwise input sort, UTF-8
+    output canonicalisation as the Python implementation.
+  - `_registry.ts` — register / getTransform / listTransforms /
+    hasTransform; slider auto-registers on import.
+  - `worker/src/receipt/transform_sign.ts` — canonicalHash,
+    deriveTransformId, buildPayload, signTransformReceipt for
+    sum.transform_receipt.v1 envelopes (separate from
+    receipt/sign.ts so the render-receipt path stays untouched).
+  - `worker/src/routes/transform.ts` — POST /api/transform handler
+    with BYO-keys precedence (X-Render-LLM-Key-* headers).
+  - `worker/src/index.ts` — routes /api/transform.
+
+  Live verification (Worker version 69a65b18): Python verifier
+  accepted a Worker-produced receipt; parameters_hash, input_hash,
+  output_hash all matched byte-for-byte against Python's
+  canonicalisers. Cross-runtime K-matrix claim for the new receipt
+  format is empirically locked across two runtimes; browser is the
+  third runtime (follows next).
+
+  Slider LLM-axis dispatch deferred to T1c — the legacy POST
+  /api/render (with sum.render_receipt.v1) remains the LLM-render
+  path; POST /api/transform with transform=slider + off-centre
+  axes returns 501 pointing at /api/render.
+
 - **T6 — multi-school extract mode ships.** The dream's "multiple
   schools of categorization in tandem" element. Adds the `naive`
   token-pair extractor as a second school alongside the existing
