@@ -218,9 +218,12 @@ export async function verifyTransformReceipt(receipt, jwks) {
   }
 
   // ---- Step 6: protected-header invariants ----
-  const protectedHeader = JSON.parse(
-    new TextDecoder().decode(result.protectedHeader),
-  );
+  // jose's flattenedVerify returns `protectedHeader` already parsed
+  // into an object — same as receipt_verifier.js consumes it. (Earlier
+  // versions of this verifier mistakenly TextDecoded the field as if
+  // it were the raw bytes; the cross-runtime fixture set in
+  // fixtures/transform_receipts/ caught it.)
+  const protectedHeader = result.protectedHeader;
   if (protectedHeader.alg !== "EdDSA") {
     throw new VerifyError(
       ERROR_CLASSES.HEADER_INVARIANT_VIOLATED,

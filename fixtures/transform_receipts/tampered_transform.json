@@ -1,0 +1,34 @@
+{
+  "description": "payload.transform mutated from 'slider' to 'extract'.",
+  "expected_error_class": "signature_invalid",
+  "expected_outcome": "reject",
+  "jwks": {
+    "keys": [
+      {
+        "alg": "EdDSA",
+        "crv": "Ed25519",
+        "kid": "transform-fixture-key-2026",
+        "kty": "OKP",
+        "use": "sig",
+        "x": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik"
+      }
+    ]
+  },
+  "name": "tampered_transform",
+  "receipt": {
+    "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6InRyYW5zZm9ybS1maXh0dXJlLWtleS0yMDI2IiwiYjY0IjpmYWxzZSwiY3JpdCI6WyJiNjQiXX0..RBUAozk2wrAeQFgQIPWShFWbF0U0AJ5XqBpAeAzItLYjwDhFZSw9EzOpVFNb8hcH3-cpAY-cWI2TQcECJ2MdAg",
+    "kid": "transform-fixture-key-2026",
+    "payload": {
+      "digital_source_type": "algorithmicMedia",
+      "input_hash": "sha256-51f0f33c9ab3934b0578595d96d87354a0c3cab9337818f9b8739c29a2432bd4",
+      "model": "canonical-deterministic-v0",
+      "output_hash": "sha256-f1851c32724c9f264e31d015da0b739cad37d1776777cfc63959dea64f3b2099",
+      "parameters_hash": "sha256-3b10cfe9e17eb1c3b47800d54d0898c65955d710fec9eb076cbcc0aa5b9b4f90",
+      "provider": "canonical-path",
+      "signed_at": "2026-05-12T12:00:00.000Z",
+      "transform": "extract",
+      "transform_id": "821a81574765b5c8"
+    },
+    "schema": "sum.transform_receipt.v1"
+  }
+}
