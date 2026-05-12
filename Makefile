@@ -106,7 +106,7 @@ pre-push:  ## Pre-flight gate: drift + smoke + trust-loop load-bearing gates tha
 	@$(PYTHON) -m scripts.attest_repo_docs --check
 	@echo "[2/6] Repo manifest drift check (fixtures/bench_receipts/* ↔ meta/repo_manifest.json)"
 	@$(PYTHON) -m scripts.repo_manifest --check meta/repo_manifest.json
-	@echo "[3/6] Bundle-metadata + self-attestation smoke (bundle wires + drift script)"
+	@echo "[3/6] Bundle-metadata + self-attestation + transform-substrate smoke"
 	@$(PYTHON) -m pytest -x --no-header -q \
 	    Tests/test_self_attestation.py \
 	    Tests/test_bundle_axiom_graph_entropy.py \
@@ -115,7 +115,15 @@ pre-push:  ## Pre-flight gate: drift + smoke + trust-loop load-bearing gates tha
 	    Tests/test_bundle_distribution_mmd.py \
 	    Tests/test_bundle_distribution_mmd_threshold.py \
 	    Tests/test_bundle_corruption_score.py \
-	    Tests/test_property_substrate.py
+	    Tests/test_property_substrate.py \
+	    Tests/test_transform_registry.py \
+	    Tests/test_transform_receipt_verify.py \
+	    Tests/test_transform_extract.py \
+	    Tests/test_transform_extract_multi_school.py \
+	    Tests/test_transform_compose.py \
+	    Tests/test_transform_receipt_source_chain.py \
+	    Tests/test_transform_share.py \
+	    Tests/test_sum_cli_transform.py
 	@echo "[4/6] Cross-runtime valid-path K-matrix (Python ↔ Node)"
 	@$(PYTHON) -m scripts.verify_cross_runtime
 	@echo "[5/6] Cross-runtime rejection A-matrix (Python ↔ Node)"
