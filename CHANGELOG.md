@@ -4,6 +4,19 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **T3 — `transform: "compose"` ships (multi-bundle LCM-merge).** The
+  dream's libraries-of-books fulfillment: take N bundles, produce one
+  merged bundle whose state integer is the LCM of inputs and whose
+  axiom set is the normalised union. Pure Gödel-state algebra; no LLM.
+  Commutative + associative + idempotent on duplicates (math.lcm(p, p)
+  == p). v0 supports `merge_strategy="lcm"` only; `intersect` /
+  `diff` are reserved in the spec and raise NotImplementedError
+  until a downstream consumer needs them. State integer in the
+  output is recomputed via `GodelStateAlgebra.encode_chunk_state`
+  so receipts bind to a self-consistent (axioms, state_integer)
+  pair. Tests: 24 new pinning union / normalisation / state-recompute
+  / canonicalisation byte-stability / deferred-strategy rejections.
+
 - **T2 — `transform: "extract"` ships (tags-from-tome).** The dream's
   bi-directional fulfillment: the slider compresses tomes via density;
   `extract` is the inverse direction — text or bundle in, canonical

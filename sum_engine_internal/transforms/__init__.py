@@ -85,9 +85,11 @@ def list_transforms() -> list[str]:
 
 from sum_engine_internal.transforms.slider import SLIDER_TRANSFORM as _SLIDER  # noqa: E402
 from sum_engine_internal.transforms.extract import EXTRACT_TRANSFORM as _EXTRACT  # noqa: E402
+from sum_engine_internal.transforms.compose import COMPOSE_TRANSFORM as _COMPOSE  # noqa: E402
 
 register(_SLIDER)
 register(_EXTRACT)
+register(_COMPOSE)
 
 
 __all__ = [
