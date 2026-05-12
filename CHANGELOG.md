@@ -4,6 +4,43 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **BYO API keys — `/api/render` accepts user-supplied LLM keys via
+  request headers; demo ships a settings panel.** New `X-Render-LLM-
+  Key-Anthropic` and `X-Render-LLM-Key-OpenAI` headers on POST
+  `/api/render` take precedence over the Worker's env vars when set.
+  The user-supplied key is forwarded to anthropic.com or openai.com
+  directly (CF AI Gateway is bypassed when a user key is present so
+  the operator's gateway metrics aren't mixed with user-funded
+  traffic) and is never persisted server-side.
+
+  `single_file_demo/index.html` now exposes a collapsible "⚙ Settings"
+  panel inside the render card with two password-style inputs
+  (Anthropic, OpenAI), a provider preference dropdown, and Save /
+  Clear buttons. Values stored in localStorage at
+  `sum.render.api_key.{anthropic,openai}` and
+  `sum.render.provider_preference`. The header is sent on every
+  `/api/render` call when configured; the panel's status indicator
+  reflects "operator-funded" vs "BYO: …configured" so the user can
+  see which path will serve.
+
+  Why: lets external reviewers exercise the funder-pitched render
+  surface against their own quotas without depleting the operator's
+  budget. Also unblocks the dream-side use case (the user
+  dogfooding the slider daily on their own writing without paying
+  through the demo's keys).
+
+  Security:
+  - localStorage scope is per-origin; CSP on the demo is
+    `script-src 'unsafe-inline'; connect-src 'self'` so cross-origin
+    exfiltration via JS is blocked.
+  - The settings-panel copy explicitly recommends a scoped /
+    spend-capped key, not a primary one.
+  - No XSS-resistant browser-stored-secret is invulnerable; the
+    receipt-verifier path is unaffected by these keys (it reads only
+    JWKS + the receipt payload).
+
+
+
 ## [0.6.0] - 2026-05-11
 
 The vendor-adapter + integration-evidence release. Closes the OpenAI

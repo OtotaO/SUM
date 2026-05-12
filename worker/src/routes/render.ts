@@ -122,11 +122,20 @@ async function callAnthropic(
   env: Env,
   systemPrompt: string,
   userPrompt: string,
+  userKey?: string,
 ): Promise<LLMRenderResult> {
-  if (!env.ANTHROPIC_API_KEY) {
-    throw new Error("ANTHROPIC_API_KEY not set; render requires an LLM provider");
+  // User-supplied key takes precedence (BYO-keys mode); falls back to
+  // operator's env var (operator-funded mode). Empty user-key strings
+  // are treated as absent so a stray empty header doesn't break the
+  // operator-funded path.
+  const apiKey = (userKey && userKey.trim()) || env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    throw new Error("ANTHROPIC_API_KEY not set on Worker and no X-Render-LLM-Key-Anthropic header supplied");
   }
-  const usingGateway = Boolean(env.CF_AI_GATEWAY_BASE);
+  // CF AI Gateway routing is only honoured for operator-funded calls;
+  // a BYO-key user shouldn't be silently proxied through the
+  // operator's gateway (would mix metrics and could double-bill).
+  const usingGateway = Boolean(env.CF_AI_GATEWAY_BASE) && !userKey;
   const base = usingGateway
     ? `${env.CF_AI_GATEWAY_BASE!.replace(/\/$/, "")}/anthropic/v1/messages`
     : "https://api.anthropic.com/v1/messages";
@@ -136,7 +145,7 @@ async function callAnthropic(
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-api-key": env.ANTHROPIC_API_KEY,
+      "x-api-key": apiKey,
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
@@ -174,11 +183,14 @@ async function callOpenAI(
   env: Env,
   systemPrompt: string,
   userPrompt: string,
+  userKey?: string,
 ): Promise<LLMRenderResult> {
-  if (!env.OPENAI_API_KEY) {
-    throw new Error("OPENAI_API_KEY not set; render with provider=openai requires it");
+  // Same BYO-key precedence as callAnthropic; see its comments.
+  const apiKey = (userKey && userKey.trim()) || env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY not set on Worker and no X-Render-LLM-Key-OpenAI header supplied");
   }
-  const usingGateway = Boolean(env.CF_AI_GATEWAY_BASE);
+  const usingGateway = Boolean(env.CF_AI_GATEWAY_BASE) && !userKey;
   const base = usingGateway
     ? `${env.CF_AI_GATEWAY_BASE!.replace(/\/$/, "")}/openai/chat/completions`
     : "https://api.openai.com/v1/chat/completions";
@@ -188,7 +200,7 @@ async function callOpenAI(
     method: "POST",
     headers: {
       "content-type": "application/json",
-      authorization: `Bearer ${env.OPENAI_API_KEY}`,
+      authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
       model: requestedModel,
@@ -219,11 +231,21 @@ async function callOpenAI(
   };
 }
 
-function resolveProvider(env: Env, requested?: ProviderChoice): ProviderChoice {
+function resolveProvider(
+  env: Env,
+  requested?: ProviderChoice,
+  userKeys?: { anthropic?: string; openai?: string },
+): ProviderChoice {
   if (requested === "openai") return "openai";
   if (requested === "anthropic") return "anthropic";
-  if (env.ANTHROPIC_API_KEY) return "anthropic";
-  if (env.OPENAI_API_KEY) return "openai";
+  // Default-provider resolution considers BOTH user-supplied keys and
+  // operator env vars as "configured." A BYO-keys user who supplied
+  // an Anthropic key gets the anthropic path even if the operator
+  // has no Anthropic env var.
+  const hasAnthropic = Boolean((userKeys?.anthropic && userKeys.anthropic.trim()) || env.ANTHROPIC_API_KEY);
+  const hasOpenAI = Boolean((userKeys?.openai && userKeys.openai.trim()) || env.OPENAI_API_KEY);
+  if (hasAnthropic) return "anthropic";
+  if (hasOpenAI) return "openai";
   throw new Error(
     "render requires at least one LLM provider configured " +
       "(ANTHROPIC_API_KEY or OPENAI_API_KEY)",
@@ -269,6 +291,16 @@ export async function handleRender(
     return json({ error: (e as Error).message }, 400);
   }
 
+  // BYO-keys mode: user-supplied keys via request headers take
+  // precedence over the operator's env vars inside callAnthropic /
+  // callOpenAI. The receipt's `provider` field still reflects what
+  // actually served (`anthropic` / `openai`); the Worker never
+  // persists the user-supplied key.
+  const userKeys = {
+    anthropic: request.headers.get("x-render-llm-key-anthropic") ?? undefined,
+    openai: request.headers.get("x-render-llm-key-openai") ?? undefined,
+  };
+
   // Provider resolution. If the request explicitly names one we honour
   // it (and fail fast if the matching key is absent). With no explicit
   // choice, Anthropic-if-configured-else-OpenAI preserves prior
@@ -277,7 +309,7 @@ export async function handleRender(
   // the cache key consistent.
   let providerChoice: ProviderChoice;
   try {
-    providerChoice = resolveProvider(env, body.provider);
+    providerChoice = resolveProvider(env, body.provider, userKeys);
   } catch (e) {
     return json({ error: (e as Error).message }, 503);
   }
@@ -325,8 +357,8 @@ export async function handleRender(
     try {
       const llmResult =
         providerChoice === "openai"
-          ? await callOpenAI(env, systemPrompt, userPrompt)
-          : await callAnthropic(env, systemPrompt, userPrompt);
+          ? await callOpenAI(env, systemPrompt, userPrompt, userKeys.openai)
+          : await callAnthropic(env, systemPrompt, userPrompt, userKeys.anthropic);
       tome = llmResult.tome;
       modelUsed = llmResult.model_used;
       providerUsed = llmResult.provider;
