@@ -4,6 +4,19 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **T2 — `transform: "extract"` ships (tags-from-tome).** The dream's
+  bi-directional fulfillment: the slider compresses tomes via density;
+  `extract` is the inverse direction — text or bundle in, canonical
+  tag set out, with a signed `sum.transform_receipt.v1` envelope.
+  v0 scope: sieve extractor (deterministic, no LLM, `[sieve]` extra);
+  identity path for already-extracted triples; output is sorted-
+  unique normalised triples, JCS-canonicalised.
+  Deferred: LLM extractor (T2-follow-up); `multi_school` mode (T6
+  with the side-by-side UI).
+  Tests: 19 new pinning registry registration, parameter validation,
+  canonicalisation byte-stability, identity + sieve apply paths,
+  deferred-mode raises.
+
 - **T1a — Transform registry shipped (Python side).** First
   implementation of the transform-substrate spec from
   `docs/TRANSFORM_REGISTRY.md` + `docs/TRANSFORM_RECEIPT_FORMAT.md`.
