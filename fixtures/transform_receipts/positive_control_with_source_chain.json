@@ -1,0 +1,35 @@
+{
+  "description": "T4 positive control. Source-chain-bound receipt: payload includes source_chain_hash, computed by compute_source_chain_hash over a single-link chain. Verifies cleanly across runtimes \u2014 locks that source_chain_hash is a covered field of the signature.",
+  "expected_error_class": null,
+  "expected_outcome": "verify",
+  "jwks": {
+    "keys": [
+      {
+        "alg": "EdDSA",
+        "crv": "Ed25519",
+        "kid": "transform-fixture-key-2026",
+        "kty": "OKP",
+        "use": "sig",
+        "x": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik"
+      }
+    ]
+  },
+  "name": "positive_control_with_source_chain",
+  "receipt": {
+    "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6InRyYW5zZm9ybS1maXh0dXJlLWtleS0yMDI2IiwiYjY0IjpmYWxzZSwiY3JpdCI6WyJiNjQiXX0..NHYHht5YLOMp02wUL0U6RG-Y1iGFPcakMXARAD932aW_ipUAyMFXdRbSS1pAhn5GfhAq4p1MXvE6MDKOY9HUAQ",
+    "kid": "transform-fixture-key-2026",
+    "payload": {
+      "digital_source_type": "algorithmicMedia",
+      "input_hash": "sha256-0ccfe71c1609270b4805008b2d2dfb599fbd3cc35250ea6d84506d621688eca9",
+      "model": "canonical-deterministic-v0",
+      "output_hash": "sha256-095d33bf4ee1281c2366d94ec381576e0b9703784f27c2f12b8d15d1b2fdce8b",
+      "parameters_hash": "sha256-3b10cfe9e17eb1c3b47800d54d0898c65955d710fec9eb076cbcc0aa5b9b4f90",
+      "provider": "canonical-path",
+      "signed_at": "2026-05-12T12:00:00.000Z",
+      "source_chain_hash": "sha256-2978f9e75786976a04085ce789aeca6b61638c8fff90094a5508af188550ae78",
+      "transform": "slider",
+      "transform_id": "511776f14eee3ac6"
+    },
+    "schema": "sum.transform_receipt.v1"
+  }
+}

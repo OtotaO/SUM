@@ -8,6 +8,7 @@
 .PHONY: help install test test-cli test-codec bench xruntime xruntime-adversarial \
         demo wheel sdist smoke fortress clean lint wasm wasm-bench wasm-bench-python \
         vendor test-receipt-verify test-receipt-verify-py \
+        test-transform-receipt-verify test-transform-receipt-fixtures \
         bench-receipt-audit bench-receipt-audit-replay test-trust-root \
         test-property test-nli-calibration-format \
         verify-preprint reproduce-preprint validate-preprint \
@@ -123,7 +124,8 @@ pre-push:  ## Pre-flight gate: drift + smoke + trust-loop load-bearing gates tha
 	    Tests/test_transform_compose.py \
 	    Tests/test_transform_receipt_source_chain.py \
 	    Tests/test_transform_share.py \
-	    Tests/test_sum_cli_transform.py
+	    Tests/test_sum_cli_transform.py \
+	    Tests/test_transform_receipt_verifier_fixtures.py
 	@echo "[4/6] Cross-runtime valid-path K-matrix (Python ↔ Node)"
 	@$(PYTHON) -m scripts.verify_cross_runtime
 	@echo "[5/6] Cross-runtime rejection A-matrix (Python ↔ Node)"
@@ -145,6 +147,9 @@ test-receipt-verify:  ## v0.9.B: Node smoke test against the receipt-fixture set
 
 test-transform-receipt-verify:  ## T1d: Node smoke against the browser transform-receipt verifier.
 	node single_file_demo/test_transform_receipt_verify.js
+
+test-transform-receipt-fixtures:  ## Cross-runtime fixture smoke: browser verifier against fixtures/transform_receipts/. Pair with Tests/test_transform_receipt_verifier_fixtures.py for the Python side.
+	node single_file_demo/test_transform_receipt_fixtures.js
 
 test-receipt-verify-py:  ## v0.9.C: Python receipt verifier against the same fixture set.
 	$(PYTHON) -m pytest Tests/test_render_receipt_verifier.py -q

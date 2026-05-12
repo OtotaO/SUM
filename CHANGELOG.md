@@ -4,6 +4,32 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Cross-runtime K-matrix fixture set for `sum.transform_receipt.v1`.**
+  20 runtime-neutral JSON fixtures under `fixtures/transform_receipts/`
+  consumed by both the Python verifier
+  (`Tests/test_transform_receipt_verifier_fixtures.py`) and the
+  browser verifier (`single_file_demo/test_transform_receipt_fixtures.js`)
+  — same shape as the render-receipt set. Generator
+  (`generate_fixtures.py`) is fully deterministic: derives the Ed25519
+  signing key from a fixed seed (RFC 8032 §7.1 test vector 1 — 32
+  zero bytes), signs with a frozen `signed_at`, so rerunning yields
+  byte-identical output. Coverage: positive control (with + without
+  T4 source-chain binding), 9 payload-field tampers, JWS-segment
+  tamper, kid-header tamper, malformed-detached-JWS, unknown kid,
+  schema_unknown + cross-receipt-type schema-confusion firewall
+  (rejects a `sum.render_receipt.v1` envelope masquerading as a
+  transform receipt), crit-unknown-extension forward-compat lever,
+  alg-confusion (`HS256` rejected as `unsupported_alg`). Wired into
+  `make pre-push` step 3 (CI workflow wiring deferred to a follow-up
+  commit by the operator — OAuth-app workflow scope).
+  First wiring caught a real verifier bug: the browser verifier was
+  double-decoding `protectedHeader` (jose already returns it parsed),
+  which made every positive control fail under Node. Fixed in
+  `single_file_demo/transform_receipt_verifier.js`; T1d round-trip
+  smoke now passes Node accept-path cleanly (previously emitted a
+  WARN line). New Make target: `test-transform-receipt-fixtures`
+  (JS side); the Python side lives in the existing pytest path.
+
 - **T4 wiring — `--source-chain` plumbs evidence chains into the
   receipt's `source_chain_hash` (CLI + Worker, cross-runtime).**
   Closes the audit's "T4 field exists, no transform populates it"
