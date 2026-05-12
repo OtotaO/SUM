@@ -158,6 +158,62 @@
       is empirically verified at median 1.000; p10 0.769 long-corpus (n=16), 0.818 short-corpus (n=8) — see
       <a href="https://github.com/OtotaO/SUM/blob/main/docs/SLIDER_CONTRACT.md">SLIDER_CONTRACT.md</a>.
     </p>
+    <!--
+      Settings — bring-your-own API keys. Default is operator-funded
+      (Worker env vars). When a user-supplied key is present, the
+      Worker uses THAT key for the LLM call instead of the operator's,
+      so the user pays their own quota. Keys stored in localStorage on
+      this page only; never persisted server-side. The signed receipt's
+      `provider` field still reflects what actually served the call.
+    -->
+    <details id="settings-panel" style="margin: 0 0 12px; padding: 8px 10px; border: 1px solid #8884; border-radius: 4px;">
+      <summary style="cursor: pointer; font-size: 12px; opacity: 0.8;">
+        ⚙ Settings — bring your own API keys
+        <span id="settings-status" style="margin-left: 8px; font-size: 11px; opacity: 0.65;">operator-funded</span>
+      </summary>
+      <p style="font-size: 11px; opacity: 0.7; margin: 8px 0;">
+        Default: operator-funded (the demo's keys). To use your own quota, paste a
+        <strong>scoped/restricted</strong> API key below — stored in this browser's localStorage only,
+        sent to <code>/api/render</code> as a request header per render, never persisted server-side.
+        The signed receipt's <code>provider</code> still reflects which API actually served the call.
+      </p>
+      <div class="row" style="margin: 6px 0;">
+        <label for="settings-anthropic-key" style="font-size: 12px; min-width: 100px;">Anthropic key</label>
+        <input
+          type="password" id="settings-anthropic-key"
+          placeholder="sk-ant-… (leave empty to use operator's)"
+          autocomplete="off" spellcheck="false"
+          style="flex: 1; padding: 6px 8px; font: 12px ui-monospace, monospace; border: 1px solid #8886; border-radius: 4px; background: transparent; color: inherit;"
+        >
+      </div>
+      <div class="row" style="margin: 6px 0;">
+        <label for="settings-openai-key" style="font-size: 12px; min-width: 100px;">OpenAI key</label>
+        <input
+          type="password" id="settings-openai-key"
+          placeholder="sk-… (leave empty to use operator's)"
+          autocomplete="off" spellcheck="false"
+          style="flex: 1; padding: 6px 8px; font: 12px ui-monospace, monospace; border: 1px solid #8886; border-radius: 4px; background: transparent; color: inherit;"
+        >
+      </div>
+      <div class="row" style="margin: 6px 0;">
+        <label for="settings-provider" style="font-size: 12px; min-width: 100px;">Provider</label>
+        <select id="settings-provider" style="flex: 1; padding: 6px 8px; font: 12px ui-sans-serif; border: 1px solid #8886; border-radius: 4px; background: transparent; color: inherit;">
+          <option value="">auto (Anthropic if configured, else OpenAI)</option>
+          <option value="anthropic">anthropic</option>
+          <option value="openai">openai</option>
+        </select>
+      </div>
+      <div class="row" style="justify-content: flex-end; gap: 6px; margin-top: 8px;">
+        <button id="settings-clear" class="ghost" style="font-size: 11px; padding: 4px 10px;">Clear</button>
+        <button id="settings-save" class="ghost" style="font-size: 11px; padding: 4px 10px;">Save</button>
+      </div>
+      <p style="font-size: 10px; opacity: 0.55; margin: 8px 0 0;">
+        Security: localStorage is per-origin and survives reloads. Use a <strong>scoped key with a low spend cap</strong>
+        and rotate it after this session if anyone else uses this browser. XSS would expose the key — the demo's
+        CSP is tight (<code>script-src 'unsafe-inline'</code>, <code>connect-src 'self'</code>), but no browser-stored
+        secret is invulnerable. Receipt-verifier path does not use these keys.
+      </p>
+    </details>
     <div class="row">
       <label for="length">length</label>
       <input type="range" id="length" min="0.0" max="1.0" step="0.05" value="0.5">
@@ -870,6 +926,80 @@ for (const axis of ['length', 'formality', 'audience', 'perspective']) {
   });
 }
 
+// ── Settings panel — BYO API keys ────────────────────────────────────
+//
+// localStorage-backed key storage. Two keys + an optional provider
+// preference. The Worker's /api/render handler accepts user-supplied
+// keys via X-Render-LLM-Key-Anthropic / X-Render-LLM-Key-OpenAI
+// request headers and uses them in preference to its env vars. The
+// page never sends keys to any other origin; the Worker proxies the
+// LLM call but never persists them.
+const SETTINGS_KEYS = {
+  anthropic: 'sum.render.api_key.anthropic',
+  openai: 'sum.render.api_key.openai',
+  provider: 'sum.render.provider_preference',
+};
+
+function settingsLoad() {
+  try {
+    $('settings-anthropic-key').value = localStorage.getItem(SETTINGS_KEYS.anthropic) || '';
+    $('settings-openai-key').value = localStorage.getItem(SETTINGS_KEYS.openai) || '';
+    $('settings-provider').value = localStorage.getItem(SETTINGS_KEYS.provider) || '';
+    settingsRefreshStatus();
+  } catch (_) {
+    // localStorage may be disabled (private mode, etc.) — fail soft.
+  }
+}
+
+function settingsRefreshStatus() {
+  const a = ($('settings-anthropic-key').value || '').trim();
+  const o = ($('settings-openai-key').value || '').trim();
+  const status = $('settings-status');
+  if (a && o)      status.textContent = 'BYO: Anthropic + OpenAI configured';
+  else if (a)      status.textContent = 'BYO: Anthropic configured';
+  else if (o)      status.textContent = 'BYO: OpenAI configured';
+  else             status.textContent = 'operator-funded';
+}
+
+function settingsSave() {
+  try {
+    const a = ($('settings-anthropic-key').value || '').trim();
+    const o = ($('settings-openai-key').value || '').trim();
+    const p = $('settings-provider').value || '';
+    if (a) localStorage.setItem(SETTINGS_KEYS.anthropic, a);
+    else   localStorage.removeItem(SETTINGS_KEYS.anthropic);
+    if (o) localStorage.setItem(SETTINGS_KEYS.openai, o);
+    else   localStorage.removeItem(SETTINGS_KEYS.openai);
+    if (p) localStorage.setItem(SETTINGS_KEYS.provider, p);
+    else   localStorage.removeItem(SETTINGS_KEYS.provider);
+    settingsRefreshStatus();
+    const btn = $('settings-save');
+    const t = btn.textContent;
+    btn.textContent = 'Saved ✓';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = t; btn.classList.remove('copied'); }, 1500);
+  } catch (e) {
+    alert('Could not save settings: ' + (e && e.message ? e.message : e));
+  }
+}
+
+function settingsClear() {
+  try {
+    for (const k of Object.values(SETTINGS_KEYS)) localStorage.removeItem(k);
+    $('settings-anthropic-key').value = '';
+    $('settings-openai-key').value = '';
+    $('settings-provider').value = '';
+    settingsRefreshStatus();
+  } catch (_) {}
+}
+
+$('settings-save').addEventListener('click', settingsSave);
+$('settings-clear').addEventListener('click', settingsClear);
+for (const id of ['settings-anthropic-key', 'settings-openai-key']) {
+  $(id).addEventListener('input', settingsRefreshStatus);
+}
+settingsLoad();
+
 $('render-btn').addEventListener('click', async () => {
   const triples = window.__sumLastTriples;
   if (!triples || triples.length === 0) {
@@ -893,11 +1023,31 @@ $('render-btn').addEventListener('click', async () => {
     perspective: parseFloat($('perspective').value),
   };
 
+  // BYO-keys: read from localStorage (settings panel). The Worker
+  // honours these headers in preference to its env vars. Empty strings
+  // are not sent so the operator-funded path is the default.
+  const headers = { 'content-type': 'application/json' };
+  try {
+    const a = (localStorage.getItem(SETTINGS_KEYS.anthropic) || '').trim();
+    const o = (localStorage.getItem(SETTINGS_KEYS.openai) || '').trim();
+    if (a) headers['x-render-llm-key-anthropic'] = a;
+    if (o) headers['x-render-llm-key-openai'] = o;
+  } catch (_) { /* localStorage disabled — fall through to operator-funded */ }
+
+  // Optional provider preference. If the settings panel chose one,
+  // it's added to the body; otherwise the Worker resolves
+  // Anthropic-else-OpenAI.
+  const body = { triples, slider_position: sliderPosition };
+  try {
+    const p = (localStorage.getItem(SETTINGS_KEYS.provider) || '').trim();
+    if (p === 'anthropic' || p === 'openai') body.provider = p;
+  } catch (_) {}
+
   try {
     const res = await fetch('/api/render', {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ triples, slider_position: sliderPosition }),
+      headers,
+      body: JSON.stringify(body),
     });
     const data = await res.json();
     if (!res.ok) {

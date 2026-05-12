@@ -64,16 +64,32 @@ enabled = true
 [vars]
 SUM_DEFAULT_MODEL_ANTHROPIC = "claude-haiku-4-5-20251001"
 SUM_DEFAULT_MODEL_OPENAI    = "gpt-4o-mini"
-# RENDER_RECEIPT_PUBLIC_JWKS — DO NOT set in this file (escaping is
-#   painful + merge-conflict-hostile). Set via the CF dashboard:
-#     Worker → Settings → Variables → add RENDER_RECEIPT_PUBLIC_JWKS
-#     plaintext, paste the contents of /tmp/render_receipt_public.jwks
-#   from the keygen helper. Survives wrangler.toml edits.
-#   Alternative one-shot at deploy time:
-#     wrangler deploy --var RENDER_RECEIPT_PUBLIC_JWKS:"$(cat /tmp/render_receipt_public.jwks)"
-#   Served at /.well-known/jwks.json. Add new entries to `keys` for
-#   rotation; keep old kids until receipts referencing them age out
-#   of any consumer cache (rotation cadence ≥ render cache TTL).
+# RENDER_RECEIPT_PUBLIC_JWKS — the Worker's render-receipt public-key
+#   set, served at /.well-known/jwks.json. The matching private key
+#   lives in the `RENDER_RECEIPT_SIGNING_JWK` secret (wrangler secret
+#   store) — never committed.
+#
+#   Historical note: pre-2026-05, the operator note here said "DO NOT
+#   set in this file; use the CF dashboard." That advice was for an
+#   older Wrangler where dashboard `[vars]` survived deploys. Wrangler
+#   >=3.94 REPLACES all `[vars]` with whatever's in wrangler.toml on
+#   every deploy, so dashboard-set vars get wiped (this caused a JWKS
+#   regression on 2026-05-11; restored via `wrangler deploy --var`).
+#   Committing the JSON here is the only reliable way to survive
+#   deploys.
+#
+#   Public-key material is public by design (it's served at the public
+#   /.well-known/jwks.json endpoint to anyone who asks). No secret
+#   leaks by committing it.
+#
+#   To rotate: generate a new keypair via
+#     `bun scripts/cert/gen_render_keypair.ts`,
+#   replace the private JWK in the `RENDER_RECEIPT_SIGNING_JWK` secret
+#   + the kid in `RENDER_RECEIPT_SIGNING_KID`, and append the new
+#   entry to the `keys` array below (keep old keys live until every
+#   receipt referencing them ages out of any consumer cache; rotation
+#   cadence >= render cache TTL of 24h).
+RENDER_RECEIPT_PUBLIC_JWKS = '{"keys":[{"crv":"Ed25519","kty":"OKP","x":"MCzgC4fMHtU-_LSASGA7va1F-MSQwKuIiOjKTV8oWK4","alg":"EdDSA","use":"sig","kid":"sum-render-2026-04-27-1"}]}'
 
 # KV namespaces (for Phase 4a QID cache — uncomment after `wrangler kv:namespace create qid-cache`):
 # [[kv_namespaces]]
