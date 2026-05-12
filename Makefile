@@ -143,6 +143,9 @@ vendor:  ## Regenerate vendored jose + canonicalize bundle (rerun after dep bump
 test-receipt-verify:  ## v0.9.B: Node smoke test against the receipt-fixture set.
 	node single_file_demo/test_render_receipt_verify.js
 
+test-transform-receipt-verify:  ## T1d: Node smoke against the browser transform-receipt verifier.
+	node single_file_demo/test_transform_receipt_verify.js
+
 test-receipt-verify-py:  ## v0.9.C: Python receipt verifier against the same fixture set.
 	$(PYTHON) -m pytest Tests/test_render_receipt_verifier.py -q
 

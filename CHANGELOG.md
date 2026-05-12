@@ -4,7 +4,17 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
-<<<<<<< HEAD
+- **T1d — browser/Node transform-receipt verifier (third K-matrix
+  runtime).** Closes the third runtime in the cross-runtime K-matrix
+  for `sum.transform_receipt.v1`. New
+  `single_file_demo/transform_receipt_verifier.js` mirrors the
+  render-receipt verifier's six-step algorithm with the new schema
+  gate. `single_file_demo/test_transform_receipt_verify.js` smoke
+  covers 5 forward-compat reject paths (schema gate, malformed kid,
+  unknown kid, null receipt, malformed JWS); accept-path is proven
+  empirically via the Python ↔ Worker probe. New Make target
+  `test-transform-receipt-verify`.
+
 - **T1b — Worker TS port + POST /api/transform route.** Closes the
   audit's biggest gap: the cross-runtime byte-equivalence claim for
   `sum.transform_receipt.v1` is now empirically true across Python
@@ -36,7 +46,6 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
   /api/render (with sum.render_receipt.v1) remains the LLM-render
   path; POST /api/transform with transform=slider + off-centre
   axes returns 501 pointing at /api/render.
-=======
 - **T1c — `sum transform` CLI subcommand + transform tests in
   pre-push gate.** Closes two audit findings: no CLI integration
   for transforms, and pre-push didn't exercise the new transform
@@ -65,7 +74,6 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
   transform → rc=2, bad JSON parameters → rc=2, missing input file
   → rc=2, LLM-axis renders → rc=1 with T1b pointer, determinism
   (two runs produce byte-identical hashes).
->>>>>>> 51567be (feat(cli): T1c — `sum transform` subcommand + transform tests in pre-push)
 
 - **T6 — multi-school extract mode ships.** The dream's "multiple
   schools of categorization in tandem" element. Adds the `naive`
