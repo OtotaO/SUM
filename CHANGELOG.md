@@ -4,6 +4,22 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **T4 — source-bytes binding (`source_chain_hash` field added).**
+  New optional `payload.source_chain_hash` field in
+  `sum.transform_receipt.v1`. Closes the "from what source" gap in
+  the Foresight pitch. The field carries a sha256-hex of the
+  JCS-canonicalised evidence chain (claim, source_uri, byte_range)
+  records, so a receipt binds not only to the input triples and
+  output bytes but to the *bytes in the source document those
+  triples came from*. Forward-compat: pre-T4 receipts (no source
+  provenance) omit the field entirely — byte-identical to pre-T4.
+  Helpers: `compute_source_chain_hash(chain) → "sha256-<hex>" | None`;
+  `build_payload(..., source_chain_hash=...)`. Tests: 13 new pinning
+  hash byte-stability under reordering, mutation-detection, sign +
+  verify with and without the field, tamper rejection (signature
+  invalidation), application-layer integrity check (recomputed hash
+  vs receipt field).
+
 - **T3 — `transform: "compose"` ships (multi-bundle LCM-merge).** The
   dream's libraries-of-books fulfillment: take N bundles, produce one
   merged bundle whose state integer is the LCM of inputs and whose

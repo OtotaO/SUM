@@ -25,6 +25,7 @@ from sum_engine_internal.transform_receipt.format import (
     TransformReceiptPayload,
     build_payload,
     canonical_hash,
+    compute_source_chain_hash,
 )
 from sum_engine_internal.transform_receipt.sign import sign_transform_receipt
 from sum_engine_internal.transform_receipt.verifier import (
@@ -45,6 +46,7 @@ __all__ = [
     "VerifyResult",
     "build_payload",
     "canonical_hash",
+    "compute_source_chain_hash",
     "sign_transform_receipt",
     "verify_transform_receipt",
 ]
