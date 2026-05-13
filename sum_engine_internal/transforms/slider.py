@@ -183,11 +183,17 @@ class SliderTransform:
     ) -> TransformResult:
         """Run the slider transform.
 
-        v0 (this PR — T1a) supports the canonical-path render. If
-        the quantized slider position requires LLM extrapolation,
-        raises NotImplementedError pointing at the legacy
-        slider_renderer.render API. T1b will close that gap by
-        wiring the LLM-axis dispatch into the transform adapter.
+        Canonical path (all LLM axes at bin centre 0.5) composes a
+        deterministic tome and returns it unmodified.
+
+        LLM-axis path (any of length / formality / audience /
+        perspective off-centre) dispatches through ``_apply_llm_axis``
+        — builds an OpenAI-backed chat client + extractor from ``env``
+        and delegates to ``slider_renderer.render``. Provider on the
+        signed receipt becomes ``openai`` and
+        ``digital_source_type`` becomes ``trainedAlgorithmicMedia``.
+        Missing ``env.openai_api_key`` raises ``ValueError`` with the
+        operator-actionable fix (NOT ``NotImplementedError``).
         """
         if not isinstance(input, dict) or "triples" not in input:
             raise ValueError(

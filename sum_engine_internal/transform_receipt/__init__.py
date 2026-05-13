@@ -17,8 +17,11 @@ Public surface:
 The cross-runtime byte-equivalence guarantee that locks the render-
 receipt format (K1/K1-mw/K2/K3/K4 + A1-A6 gate matrix) extends to
 this format unchanged: same JCS canonicalisation, same Ed25519, same
-detached JWS, same JWKS distribution. The K-matrix gates a new
-fixture set against sum.transform_receipt.v1 in T1b (Worker port).
+detached JWS, same JWKS distribution. The 20-fixture set in
+``fixtures/transform_receipts/`` is consumed by both the Python
+verifier here and the browser verifier under ``single_file_demo/``;
+both runtimes produce byte-identical accept/reject + error_class
+outcomes on every fixture.
 """
 from sum_engine_internal.transform_receipt.format import (
     SUPPORTED_SCHEMA,
