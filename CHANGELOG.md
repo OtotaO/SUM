@@ -4,6 +4,37 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Hygiene pass — truth-in-claims sweep + transform-substrate design
+  docs cherry-picked from open PR #209.** Five corrections, no new
+  features:
+  - README's slider row now discloses BOTH dispatch paths (Worker
+    `/api/render` producing `sum.render_receipt.v1` via Anthropic,
+    Python `sum transform apply slider` producing
+    `sum.transform_receipt.v1` via OpenAI), not just the Worker one.
+    Pre-fix, the README named only one path; an OpenAI-only operator
+    reading it would have concluded SUM didn't serve their stack.
+  - `docs/PROOF_BOUNDARY.md` §2.5 gains an "Open characterization"
+    paragraph naming the iteration-stability and DKW worst-case
+    bound work as PRE-REQUISITES before §2.5 is cited as load-
+    bearing for multi-stage claims. Pointer at
+    `docs/BENCH_HARDENING_FROM_QCVV.md` T1/T3/T4.
+  - `docs/TRANSFORM_RECEIPT_FORMAT.md` + `docs/TRANSFORM_REGISTRY.md`
+    cherry-picked from PR #209 (which conflicted with the
+    transform-substrate work that landed in #210-#221). Both docs'
+    Status lines updated from "designed" → "shipped" with concrete
+    pointers to implementations.
+  - `scripts/probes/operator_audit.sh` from PR #209 — empirical
+    audit of the live Worker's secrets/vars/endpoint contract.
+    Wired into Makefile as `make probe-operator-audit`.
+  - `docs/OPERATOR_AUDIT_2026-05-12.md` — the dated audit record
+    from PR #209. Documents the Anthropic-key-as-secret-name
+    finding + dashboard-vars-wiped-on-deploy class.
+  - Stale docstrings in `sum_engine_internal/transforms/slider.py`
+    + `sum_engine_internal/transform_receipt/__init__.py` +
+    `verifier.py` referenced "T1a" / "T1b" / "T1c" milestones that
+    have all shipped; rewritten to describe what the code actually
+    is.
+
 - **T1c-followup — slider LLM-axis dispatch through the transform
   registry (Python side).** `SliderTransform.apply()` now routes
   off-centre LLM axes (any of length / formality / audience /

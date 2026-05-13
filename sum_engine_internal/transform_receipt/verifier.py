@@ -15,10 +15,14 @@ Public API:
     VerifyResult                  dataclass (JoseEnvelopeResult alias)
     verify_transform_receipt(receipt, jwks) → VerifyResult
 
-The K-matrix cross-runtime fixtures that lock the render-receipt
-format extend to this format in T1b (Worker port). At T1a (this
-PR) the Python verifier shipped here is the primary surface; the
-Node + browser ports follow the existing render-receipt pattern.
+The K-matrix cross-runtime fixture set under
+``fixtures/transform_receipts/`` is consumed by this Python verifier
+AND the browser/Node verifier in ``single_file_demo/`` — 20 fixtures
+covering every named failure mode (positive control with/without T4
+source-chain binding, every signed payload field tampered, malformed
+JWS, unknown kid, schema_unknown, schema-confusion firewall against
+sum.render_receipt.v1, crit-unknown-extension, unsupported_alg).
+Both runtimes must produce byte-identical outcomes on every fixture.
 """
 from __future__ import annotations
 
