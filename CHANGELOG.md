@@ -4,6 +4,51 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **T1c-followup — slider LLM-axis dispatch through the transform
+  registry (Python side).** `SliderTransform.apply()` now routes
+  off-centre LLM axes (any of length / formality / audience /
+  perspective ≠ 0.5) through `slider_renderer.render` via a
+  `LiveLLMAdapter` + `OpenAIChatClient` built from
+  `env.openai_api_key`. The resulting receipt's `provider = openai`
+  and `digital_source_type = trainedAlgorithmicMedia`, distinct from
+  the canonical path's `canonical-path` / `algorithmicMedia`. LLM-axis
+  renders now produce `sum.transform_receipt.v1` envelopes (the
+  signed-receipt substrate) instead of the legacy
+  `sum.render_receipt.v1` route. No OPENAI_API_KEY → clean ValueError
+  with the operator-actionable hint, not the legacy
+  NotImplementedError. Worker TS sibling for this route is pending;
+  until it lands, the Worker's POST /api/transform still returns 501
+  for off-centre axes, and LLM-axis renders on the Worker route
+  through the legacy POST /api/render.
+
+  Fact-preservation of the dispatch path is `empirical-benchmark` per
+  `docs/PROOF_BOUNDARY.md` §5 — measured against the slider bench,
+  not absolutely guaranteed. The bench-hardening worktrail at
+  `docs/BENCH_HARDENING_FROM_QCVV.md` extends the measurement with
+  iteration stability + DKW worst-case bounds before any release
+  cites the LLM-axis path as load-bearing.
+
+  4 new tests in `Tests/test_transform_slider_llm_axis.py`: canonical
+  path unchanged regression guard, no-API-key clean error, LLM-axis
+  dispatch with fake LLM client + extractor (mocks
+  `LiveLLMAdapter` + `OpenAIChatClient`) returns LLM provenance,
+  end-to-end receipt round-trips through the verifier. Updated
+  `Tests/test_transform_registry.py` and `Tests/test_sum_cli_transform.py`
+  to reflect the new behaviour.
+
+- **`docs/BENCH_HARDENING_FROM_QCVV.md` — five-task plan distilled
+  from Hashim et al., PRX Quantum 6, 030202 (2025).** Iterated
+  round-trip drift (T1), volumetric capability regions for the
+  slider bench (T2), DKW worst-case tail bounds for the trust scope
+  (T3), composition-law audit for `drift_pct` (T4), negative-control
+  corpus (T5). Three new schemas (`sum.iterated_round_trip_drift.v1`,
+  `sum.slider_capability_region.v1`, `sum.slider_drift_bench.v2`).
+  Hard rule: no use of "guarantee" anywhere downstream of this plan
+  without a same-commit benchmark receipt or §5-compliant proof
+  citation. Hard rule: no quantum vocabulary imports (Pauli, Choi,
+  fidelity-as-alias) — only the engineering techniques transfer.
+  Recommended order: T5 → T1 → T4 → T2 → T3.
+
 - **Cross-runtime K-matrix fixture set for `sum.transform_receipt.v1`.**
   20 runtime-neutral JSON fixtures under `fixtures/transform_receipts/`
   consumed by both the Python verifier

@@ -149,18 +149,21 @@ def test_slider_canonical_path_produces_tome():
     assert "bob" in result.output and "dog" in result.output
 
 
-def test_slider_llm_axis_raises_not_implemented_pre_t1b():
-    """Until T1b wires the LLM dispatch into the transform adapter,
-    any off-centre LLM axis raises NotImplementedError with a
-    pointer to the legacy slider_renderer.render path."""
-    with pytest.raises(NotImplementedError, match="T1b"):
+def test_slider_llm_axis_without_key_raises_value_error():
+    """T1c-followup wired LLM-axis dispatch through the registry, but
+    only when an OpenAI key is configured. Without one, the call
+    raises a clear ValueError naming the operator-actionable fix —
+    NOT a NotImplementedError (the legacy behaviour pre-T1c-followup).
+    See Tests/test_transform_slider_llm_axis.py for the dispatch-
+    succeeds-with-fake-LLM case."""
+    with pytest.raises(ValueError, match="openai_api_key"):
         asyncio.run(SLIDER_TRANSFORM.apply(
             input={"triples": [("alice", "likes", "cats")]},
             parameters={
                 "density": 1.0, "length": 0.9, "formality": 0.5,
                 "audience": 0.5, "perspective": 0.5,
             },
-            env=TransformEnv(),
+            env=TransformEnv(),  # openai_api_key=None
         ))
 
 

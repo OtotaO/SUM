@@ -1,9 +1,11 @@
 // POST /api/transform — generic transform-registry dispatch.
 //
 // The new substrate from PR #210–215. Replaces nothing; complements
-// the existing /api/render, which keeps producing
-// sum.render_receipt.v1 for slider LLM-axis renders and stays the
-// recommended path until T1c wires LLM dispatch through this route.
+// the existing /api/render. The Python transform registry's slider
+// already routes LLM-axis renders via OpenAI (T1c-followup); the
+// Worker's TS sibling for that route is pending — until it lands,
+// LLM-axis renders on the Worker still go through POST /api/render
+// (producing sum.render_receipt.v1).
 //
 // Request shape:
 //   POST /api/transform
@@ -140,9 +142,10 @@ export async function handleTransform(
     result = await transform.apply(body.input, parameters, transformEnv);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    // NotImplementedError-style errors (slider's LLM-axis path) map to
-    // 501 Not Implemented to distinguish from generic errors.
-    if (msg.includes("T1b") || msg.includes("T1c")) {
+    // Not-yet-wired surfaces (Worker LLM-axis dispatch) map to 501 so
+    // operators distinguish "feature pending" from "your request was
+    // bad." Match on the not-yet-wired sentinel in the thrown message.
+    if (msg.includes("not yet wired")) {
       return json({ error: `transform not yet implemented: ${msg}` }, 501);
     }
     return json({ error: `transform failed: ${msg}` }, 400);

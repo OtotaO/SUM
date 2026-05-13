@@ -212,22 +212,32 @@ def test_apply_missing_input_file_exits_2(tmp_path):
     assert "--input" in stderr
 
 
-def test_apply_slider_llm_axis_exits_1_with_pointer(tmp_path):
-    """Off-centre LLM-axis renders aren't wired through the CLI yet
-    (deferred to T1c-follow-up); they exit 1 with the underlying
-    NotImplementedError pointer message."""
-    input_file = tmp_path / "in.json"
-    input_file.write_text(json.dumps({"triples": [["a", "rel", "b"]]}))
-    rc, _, stderr = run_cli([
-        "transform", "apply", "slider",
-        "--input", str(input_file),
-        "--parameters", json.dumps({
-            "density": 1.0, "length": 0.9, "formality": 0.5,
-            "audience": 0.5, "perspective": 0.5,
-        }),
-    ])
+def test_apply_slider_llm_axis_without_key_exits_1_with_clear_pointer(tmp_path):
+    """Off-centre LLM-axis renders now route through the transform
+    registry (T1c-followup), but require an OpenAI key. Without one,
+    the CLI exits 1 with a clear ValueError naming the operator-
+    actionable fix — NOT the old NotImplementedError."""
+    # Ensure no OPENAI_API_KEY is set; the os.environ patch isolates
+    # the test from a developer's shell.
+    with patch.dict(os.environ, {}, clear=False):
+        os.environ.pop("OPENAI_API_KEY", None)
+        os.environ.pop("ANTHROPIC_API_KEY", None)
+
+        input_file = tmp_path / "in.json"
+        input_file.write_text(json.dumps({"triples": [["a", "rel", "b"]]}))
+        rc, _, stderr = run_cli([
+            "transform", "apply", "slider",
+            "--input", str(input_file),
+            "--parameters", json.dumps({
+                "density": 1.0, "length": 0.9, "formality": 0.5,
+                "audience": 0.5, "perspective": 0.5,
+            }),
+        ])
     assert rc == 1
-    assert "T1b" in stderr or "slider_renderer" in stderr
+    lower = stderr.lower()
+    assert "openai_api_key" in lower or "openai api key" in lower
+    # NOT the legacy pointer
+    assert "notimplementederror" not in lower
 
 
 # ─── T4 source-chain wiring ─────────────────────────────────────────
