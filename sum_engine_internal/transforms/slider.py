@@ -1,31 +1,30 @@
 """Slider — the first registered transform.
 
-The slider product migrates onto the transform registry. Existing
+The slider product runs on the transform registry. Existing
 ``sum_engine_internal.ensemble.slider_renderer.render`` stays as the
 implementation library; this module is the protocol adapter that
 exposes that library as ``Transform(name="slider")``.
 
-What this v0 of the slider transform does:
+What the slider transform does:
 
   - Accepts triples + slider position parameters.
-  - Applies the deterministic density prefix (canonical-path).
-  - Returns a tome + receipt for the canonical-path case.
-  - Does NOT yet wire the LLM-axis dispatch (length / formality /
-    audience / perspective off-centre). That's deferred to T1b
-    (Worker-side migration + Python LLM-axis adapter). For now,
-    LLM-axis renders raise ``NotImplementedError`` from the transform
-    adapter so the registry contract is honoured but the legacy
-    ``slider_renderer.render`` remains the supported path for
-    LLM renders until T1b lands.
+  - For canonical-path renders (all LLM axes at 0.5 bin centre):
+    applies the deterministic density prefix and composes a tome
+    via a pure-algorithmic generator. Provider = ``canonical-path``,
+    digital_source_type = ``algorithmicMedia``, llm_calls_made = 0.
+  - For LLM-axis renders (any of length / formality / audience /
+    perspective off-centre): dispatches through
+    ``slider_renderer.render`` via ``LiveLLMAdapter`` (OpenAI). The
+    transform receipt's provider field reflects what actually served
+    (``openai`` today; Anthropic dispatch through the Python registry
+    is a sibling PR — the Worker's TS path already routes both).
 
-Why this scoping: T1's goal is to get the registry / receipt /
-verifier surfaces shipping cleanly. The slider's LLM-path code is
-non-trivial (cache, drift measurement, prompt construction); pulling
-it into the transform abstraction without breaking the existing
-``/api/render`` callers needs its own focused PR. Pre-T1b, the
-recommended path for LLM-axis renders is the legacy ``slider_renderer
-.render`` API or the live Worker; for canonical-path renders, the
-transform registry is the cleaner surface.
+LLM-axis fact preservation is `empirical-benchmark` per
+``docs/PROOF_BOUNDARY.md`` §5 — measured against the slider bench,
+not absolutely guaranteed. The bench-hardening worktrail
+(``docs/BENCH_HARDENING_FROM_QCVV.md`` T1-T3) extends the measurement
+with iteration stability + worst-case DKW bounds before any release
+cites the LLM-axis path as load-bearing.
 """
 from __future__ import annotations
 
@@ -200,18 +199,12 @@ class SliderTransform:
         ]
 
         quantized = _quantize(parameters)
-        kept = _apply_density(triples, quantized["density"])
 
         if _requires_llm(quantized):
-            raise NotImplementedError(
-                "slider transform v0 (T1a) supports canonical-path renders "
-                "only. For LLM-axis renders (any of length/formality/"
-                "audience/perspective ≠ 0.5), use "
-                "sum_engine_internal.ensemble.slider_renderer.render OR "
-                "the live Worker's /api/render endpoint. LLM-axis "
-                "dispatch lands in T1b."
-            )
+            return await self._apply_llm_axis(triples, quantized, env)
 
+        # ---- Canonical path (all LLM axes at bin centre 0.5) ----
+        kept = _apply_density(triples, quantized["density"])
         tome = _deterministic_tome(kept)
         return TransformResult(
             output=tome,
@@ -222,6 +215,104 @@ class SliderTransform:
             extra={
                 "quantized_parameters": quantized,
                 "triples_used": kept,
+            },
+        )
+
+    async def _apply_llm_axis(
+        self,
+        triples: list[tuple[str, str, str]],
+        quantized: dict[str, float],
+        env: TransformEnv,
+    ) -> TransformResult:
+        """LLM-axis render — route through slider_renderer.render.
+
+        Builds an OpenAI-backed ``LLMChatClient`` from ``env.openai_api_key``
+        and a triple-extractor from the same adapter, then delegates the
+        actual render pipeline (cache, density, prompt construction,
+        drift measurement) to the existing slider_renderer library so we
+        don't duplicate the LLM-path code.
+
+        Today's Python adapter is OpenAI-only. Anthropic dispatch
+        through the transform registry is Worker-only (the TS path in
+        ``worker/src/transforms/`` will route Anthropic when the
+        sibling PR for the Worker's slider LLM path lands). Raising a
+        clear ValueError when no OpenAI key is configured matches the
+        registry contract: ``requires_llm = True`` transforms raise if
+        no key is available.
+        """
+        if not env.openai_api_key:
+            raise ValueError(
+                "slider transform: LLM-axis render requires "
+                "env.openai_api_key (or the OPENAI_API_KEY env var). "
+                "Anthropic dispatch through the Python transform "
+                "registry is not wired today — use the Worker's "
+                "POST /api/transform endpoint with the "
+                "X-Render-LLM-Key-Anthropic header for Anthropic, or "
+                "set OPENAI_API_KEY to route through the OpenAI SDK."
+            )
+
+        # Lazy imports keep the canonical-path import-fast and avoid
+        # pulling openai into environments that never call the LLM
+        # axis. Both modules are part of the sum_engine_internal
+        # package, no optional-extras dance required.
+        from sum_engine_internal.ensemble.live_llm_adapter import (
+            LiveLLMAdapter,
+            OpenAIChatClient,
+        )
+        from sum_engine_internal.ensemble.slider_renderer import (
+            TomeSliders,
+            render as slider_render,
+        )
+
+        model = env.default_openai_model
+        adapter = LiveLLMAdapter(api_key=env.openai_api_key, model=model)
+        llm_client = OpenAIChatClient(adapter)
+
+        sliders = TomeSliders(
+            density=quantized["density"],
+            length=quantized["length"],
+            formality=quantized["formality"],
+            audience=quantized["audience"],
+            perspective=quantized["perspective"],
+        )
+
+        # slider_renderer.render applies density internally — pass the
+        # full triple list, not the post-density subset.
+        render_result = await slider_render(
+            triples=tuple(triples),
+            sliders=sliders,
+            llm=llm_client,
+            extractor=adapter.extract_triplets,
+        )
+
+        # Drift map: per-axis drift value as reported by
+        # slider_renderer.measure_drift. Surface as `extra` so the
+        # response body carries the operationally-meaningful
+        # signal without being baked into the receipt payload.
+        # Per docs/BENCH_HARDENING_FROM_QCVV.md, this is the
+        # empirical-benchmark surface; iteration stability + DKW
+        # worst-case bounds extend it in T1-T3.
+        drift_by_axis = {
+            axis_drift.axis.value: {
+                "value": axis_drift.value,
+                "threshold": axis_drift.threshold,
+                "classification": axis_drift.classification,
+            }
+            for axis_drift in render_result.drift
+        }
+
+        return TransformResult(
+            output=render_result.tome,
+            model=model,
+            provider="openai",
+            digital_source_type="trainedAlgorithmicMedia",
+            llm_calls_made=render_result.llm_calls_made,
+            extra={
+                "quantized_parameters": quantized,
+                "triples_used": [list(t) for t in render_result.triples_used],
+                "drift": drift_by_axis,
+                "render_id": render_result.render_id,
+                "cache_status": render_result.cache_status.value,
             },
         )
 

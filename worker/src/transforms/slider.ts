@@ -4,14 +4,15 @@
 // on the three canonicalize_* functions so a transform receipt
 // produced by Python verifies in this Worker (and vice versa).
 //
-// v0 scope (T1b — this PR):
+// Scope on the Worker side:
 //   - Canonical-path render (all LLM axes centred → deterministic).
-//
-// Deferred to T1c (LLM-axis dispatch on Worker side):
-//   - LLM-axis renders. For now, the Worker's LLM-axis path remains
-//     the legacy POST /api/render (with sum.render_receipt.v1).
-//     POST /api/transform with transform="slider" + off-centre axes
-//     returns HTTP 501 pointing at /api/render.
+//   - LLM-axis dispatch on the Worker side is NOT YET WIRED. The
+//     Python transform registry already routes LLM-axis renders via
+//     OpenAI (`sum_engine_internal.transforms.slider._apply_llm_axis`);
+//     the Worker's TS sibling for that route is a separate PR. For
+//     now, POST /api/transform with transform="slider" + off-centre
+//     axes returns HTTP 501 pointing at the legacy POST /api/render
+//     (which produces sum.render_receipt.v1, not transform receipts).
 
 import canonicalize from "canonicalize";
 import type {
@@ -188,16 +189,20 @@ export const SLIDER_TRANSFORM: Transform = {
     const kept = await applyDensity(triples, quantized.density);
 
     if (requiresExtrapolator(quantized)) {
-      // T1b deliberately does not wire the LLM dispatch into the
-      // transform-registry path. The legacy POST /api/render still
-      // serves LLM-axis renders (with sum.render_receipt.v1).
-      // Closing this gap is T1c.
+      // The Worker's transform-registry slider currently serves the
+      // canonical path only. The Python-side transform registry wires
+      // LLM-axis dispatch via OpenAI (see
+      // sum_engine_internal.transforms.slider._apply_llm_axis); the
+      // Worker's LLM-axis dispatch through this route is a sibling
+      // PR. Until that lands, LLM-axis renders go through the legacy
+      // POST /api/render endpoint which produces sum.render_receipt.v1.
       throw new Error(
-        "slider transform v0 (T1b) supports canonical-path renders " +
-          "only. For LLM-axis renders (any of length/formality/audience/" +
-          "perspective != 0.5), use POST /api/render which produces " +
-          "sum.render_receipt.v1. LLM-axis dispatch via the transform " +
-          "registry lands in T1c.",
+        "slider transform: Worker LLM-axis dispatch through " +
+          "/api/transform is not yet wired. For LLM-axis renders " +
+          "(any of length/formality/audience/perspective != 0.5), " +
+          "use POST /api/render which produces sum.render_receipt.v1, " +
+          "or call the Python `sum transform apply slider` CLI with " +
+          "OPENAI_API_KEY set for sum.transform_receipt.v1.",
       );
     }
 
