@@ -38,6 +38,7 @@ export const ERROR_CLASSES = Object.freeze({
   SIGNATURE_INVALID: "signature_invalid",
   REVOKED_KID: "revoked_kid",
   UNSUPPORTED_ALG: "unsupported_alg",
+  SIGNED_AT_OUT_OF_WINDOW: "signed_at_out_of_window",
 });
 
 // G3 crypto-agility: signature algorithms accepted under `current`
@@ -150,7 +151,23 @@ function checkRevokedKid(receipt, revokedKids) {
  * @returns {Promise<{ verified: true, kid: string, protectedHeader: object, payload: object }>}
  * @throws  {VerifyError}  - on any failure, with .errorClass set to one of ERROR_CLASSES.
  */
-export async function verifyReceipt(receipt, jwks, revokedKids) {
+/**
+ * Verify a sum.render_receipt.v1 envelope.
+ *
+ * Optional replay-defense window: pass `{maxAgeSeconds, maxFutureSkewSeconds}`
+ * in the fourth argument to reject receipts whose `payload.signed_at`
+ * is outside the acceptance window. Default (omitted) does NOT
+ * enforce. See docs/RENDER_RECEIPT_FORMAT.md §6.2.
+ *
+ * @param {object} receipt
+ * @param {object} jwks
+ * @param {Array|null} [revokedKids] G3 revocation list (optional).
+ * @param {object} [opts]
+ * @param {number} [opts.maxAgeSeconds] Max age in seconds (opt-in).
+ * @param {number} [opts.maxFutureSkewSeconds=60] Clock-skew tolerance.
+ */
+export async function verifyReceipt(receipt, jwks, revokedKids, opts) {
+  const { maxAgeSeconds = null, maxFutureSkewSeconds = 60 } = opts || {};
   // ---- G3 revocation gate (runs BEFORE crypto verify) ----
   // A kid that was both revoked AND tampered surfaces as
   // `revoked_kid` (more actionable for an operator — points at
@@ -340,10 +357,61 @@ export async function verifyReceipt(receipt, jwks, revokedKids) {
     );
   }
 
+  // ---- Step 7: optional replay-window check ----
+  // Default (maxAgeSeconds=null) does NOT enforce. See
+  // docs/RENDER_RECEIPT_FORMAT.md §6.2 for the receiver-policy
+  // contract. Cryptographic integrity is already proven above; this
+  // is a policy-layer rejection ("the receipt is genuine but I don't
+  // accept it at this age").
+  if (maxAgeSeconds !== null) {
+    enforceSignedAtWindow(payload, maxAgeSeconds, maxFutureSkewSeconds);
+  }
+
   return {
     verified: true,
     kid,
     protectedHeader: ph,
     payload,
   };
+}
+
+function parseSignedAtRender(s) {
+  const ms = Date.parse(s);
+  if (Number.isNaN(ms)) {
+    throw new Error(`signed_at ${JSON.stringify(s)} not parseable as ISO-8601`);
+  }
+  return ms;
+}
+
+function enforceSignedAtWindow(payload, maxAgeSeconds, maxFutureSkewSeconds) {
+  const signedAt = payload && payload.signed_at;
+  if (typeof signedAt !== "string") {
+    throw new VerifyError(
+      ERROR_CLASSES.SIGNED_AT_OUT_OF_WINDOW,
+      `max_age_seconds=${maxAgeSeconds} requested but payload.signed_at is missing or non-string (${JSON.stringify(signedAt)}); failing closed`,
+    );
+  }
+  let signedAtMs;
+  try {
+    signedAtMs = parseSignedAtRender(signedAt);
+  } catch (e) {
+    throw new VerifyError(
+      ERROR_CLASSES.SIGNED_AT_OUT_OF_WINDOW,
+      `max_age_seconds=${maxAgeSeconds} requested but ${e.message}`,
+    );
+  }
+  const nowMs = Date.now();
+  const ageSeconds = (nowMs - signedAtMs) / 1000;
+  if (ageSeconds > maxAgeSeconds) {
+    throw new VerifyError(
+      ERROR_CLASSES.SIGNED_AT_OUT_OF_WINDOW,
+      `receipt signed_at=${signedAt} is ${ageSeconds.toFixed(0)}s old; max_age_seconds=${maxAgeSeconds}`,
+    );
+  }
+  if (-ageSeconds > maxFutureSkewSeconds) {
+    throw new VerifyError(
+      ERROR_CLASSES.SIGNED_AT_OUT_OF_WINDOW,
+      `receipt signed_at=${signedAt} is ${(-ageSeconds).toFixed(0)}s in the future; max_future_skew_seconds=${maxFutureSkewSeconds}`,
+    );
+  }
 }

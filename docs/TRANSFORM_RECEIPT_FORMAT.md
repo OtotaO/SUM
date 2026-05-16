@@ -198,10 +198,79 @@ Existing pre-T1 render receipts are NOT migrated automatically. They remain vali
 2. **Freshness on cache HIT.** The receipt carries `signed_at` from the original miss; the consumer enforces freshness policy.
 3. **Soundness of the transform implementation.** If a future bug in `transform: "extract"` produced empty tag sets, the receipt would still verify — what's signed is "this issuer ran this transform with these parameters and got this output," not "the implementation is correct."
 4. **That the input was unmodified before the transform.** `input_hash` proves what the issuer received; it does not prove the upstream chain of custody. Consumers who need that should use the evidence-chain layer (`docs/EVIDENCE_CHAIN.md`) to bind `input_hash` to a source byte range.
+5. **Freshness without an explicit window check.** Receipt is timestamped via `signed_at`, but a valid receipt captured at time T₁ can be re-presented later at T₂. See §6.2 for the receiver-policy replay-defense contract.
 
 ---
 
-## 6. Related specifications
+## 6. Receiver-policy layers
+
+### 6.1 Revocation
+
+If the issuer publishes a revocation list (`/.well-known/revoked-kids.json` shape), pass it to `verify_transform_receipt(receipt, jwks, revoked_kids=...)`. The verifier rejects with `revoked_kid` when the receipt's `signed_at` is at or after the revocation's `effective_revocation_at`. Historical receipts (signed_at before effective_revocation_at) keep verifying — revocation invalidates future trust only.
+
+### 6.2 Replay defense (`signed_at` window)
+
+The signature alone proves *who signed* and *what* was signed; it does not prove *when* the consumer should accept the receipt. A valid receipt captured at T₁ can be replayed at T₂ unless the receiver enforces a freshness window.
+
+The verifier exposes an opt-in window via `max_age_seconds` (Python) / `maxAgeSeconds` (JS):
+
+```python
+from sum_engine_internal.transform_receipt import verify_transform_receipt
+
+# Default: no window check. Long-lived archival receipts remain valid.
+result = verify_transform_receipt(receipt, jwks)
+
+# Replay-defense: reject receipts older than 5 minutes
+result = verify_transform_receipt(receipt, jwks, max_age_seconds=300)
+
+# With clock-skew tolerance
+result = verify_transform_receipt(
+    receipt, jwks,
+    max_age_seconds=300,
+    max_future_skew_seconds=60,  # default
+)
+```
+
+```javascript
+import { verifyTransformReceipt } from "./transform_receipt_verifier.js";
+
+// Default: no window check
+const r = await verifyTransformReceipt(receipt, jwks);
+
+// Replay-defense: 5-minute window with 60s skew tolerance
+const r = await verifyTransformReceipt(receipt, jwks, {
+  maxAgeSeconds: 300,
+  maxFutureSkewSeconds: 60,
+});
+```
+
+When `max_age_seconds` is set, the verifier rejects with `signed_at_out_of_window` if:
+- `now − payload.signed_at > max_age_seconds` (stale receipt), OR
+- `payload.signed_at − now > max_future_skew_seconds` (future-dated beyond skew)
+
+The error class is distinct from `signature_invalid` because the receipt is *cryptographically valid* — the caller has rejected it by policy. This matters operationally for incident response: `signature_invalid` points at tampering; `signed_at_out_of_window` points at a replay attempt OR a legitimate cache HIT served past its freshness budget.
+
+**Receiver-policy guidance:**
+
+| Use case | Suggested `max_age_seconds` | Notes |
+|---|---|---|
+| Agent-swarm handoff | 60–300 | High-frequency; tight window |
+| Real-time render dispatch | 60–600 | Fresh-render expectation |
+| Newsletter publishing | 86400 (1 day) | Editorial review window |
+| Newsletter audit replay | None | Historical correctness check |
+| Legal-discovery audit | None | Receipts must remain valid forever |
+| Browser "verify this article" | 7 days | Article was recently rendered |
+| Compliance archival | None | Long-lived; revocation handles abuse |
+
+**Default is opt-out.** `max_age_seconds=None` (the default) preserves historical-fixture validity and long-lived archival use cases. Opt in per-use-case rather than enforcing globally.
+
+### 6.3 Source-chain integrity
+
+If `payload.source_chain_hash` is present, the receipt binds to a list of (claim, source_uri, byte_range) evidence links. The hash is signed; tampering with the chain breaks the signature. The chain itself is supplied side-band (consumer fetches and re-canonicalises to confirm `source_chain_hash` matches). See `docs/EVIDENCE_CHAIN.md`.
+
+---
+
+## 7. Related specifications
 
 - [`RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) — the prior-art receipt format that this generalizes. Existing render receipts remain valid forever under their original schema.
 - [`TRANSFORM_REGISTRY.md`](TRANSFORM_REGISTRY.md) — design doc for the transform-registry pattern: how transforms are registered, what contracts they implement, where they live in the codebase.

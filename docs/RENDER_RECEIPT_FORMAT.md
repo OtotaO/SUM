@@ -331,6 +331,52 @@ The revocation surface lives at `/.well-known/revoked-kids.json`:
 
 **Why distinct from JWKS removal:** JWKS removal silently breaks every consumer cached response with the removed kid (verifier sees `unknown_kid`). Revocation surfaces the operator's INTENT — "this kid was compromised" — separately from JWKS hygiene. An operator can leave the kid in JWKS for the rotation grace window AND publish it on the revocation list with `effective_revocation_at` = compromise-detection time; receipts within the legitimate window (signed_at before compromise) keep verifying, receipts after reject with `revoked_kid` instead of being silently accepted.
 
+### 6.2 Replay defense (`signed_at` window)
+
+The signature alone proves *who signed* and *what* was signed; it does not prove *when* the consumer should accept the receipt. A valid receipt captured at time T₁ can be re-presented at T₂ — a replay attempt, or simply a cache HIT served past its freshness budget — unless the receiver enforces a window.
+
+The verifier exposes an opt-in window via `max_age_seconds` (Python) / `maxAgeSeconds` (JS / browser). Default behaviour does NOT enforce — long-lived archival receipts remain valid.
+
+```python
+from sum_engine_internal.render_receipt import verify_receipt
+
+# Default: no window check (preserves historical fixtures + archival)
+result = verify_receipt(receipt, jwks)
+
+# Replay-defense: reject receipts older than 5 minutes
+result = verify_receipt(receipt, jwks, max_age_seconds=300)
+
+# With explicit skew tolerance (default 60s)
+result = verify_receipt(
+    receipt, jwks,
+    max_age_seconds=300,
+    max_future_skew_seconds=120,
+)
+```
+
+```javascript
+import { verifyReceipt } from "./receipt_verifier.js";
+
+// Default: no window check
+const r = await verifyReceipt(receipt, jwks);
+
+// Replay-defense (revokedKids slot stays null)
+const r = await verifyReceipt(receipt, jwks, null, {
+  maxAgeSeconds: 300,
+  maxFutureSkewSeconds: 60,
+});
+```
+
+When `max_age_seconds` is set, the verifier rejects with `signed_at_out_of_window` if:
+- `now − payload.signed_at > max_age_seconds` (stale), OR
+- `payload.signed_at − now > max_future_skew_seconds` (future-dated beyond skew)
+
+The error class is distinct from `signature_invalid` because the receipt is *cryptographically valid* — the caller has rejected it by policy. Operationally this matters for incident response: `signature_invalid` → tampering; `signed_at_out_of_window` → replay attempt or stale cache.
+
+**Receiver-policy guidance** matches the transform-receipt contract; see [`TRANSFORM_RECEIPT_FORMAT.md`](TRANSFORM_RECEIPT_FORMAT.md) §6.2 for the per-use-case window table.
+
+**Default is opt-out.** `max_age_seconds=None` (the default) preserves historical-fixture validity and long-lived archival use cases. Opt in per-use-case rather than enforcing globally.
+
 ---
 
 ## 7. C2PA `digital_source_type` alignment

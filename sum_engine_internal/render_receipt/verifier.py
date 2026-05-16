@@ -52,6 +52,7 @@ class ErrorClass:
     SIGNATURE_INVALID = JoseEnvelopeErrorClass.SIGNATURE_INVALID
     REVOKED_KID = JoseEnvelopeErrorClass.REVOKED_KID
     UNSUPPORTED_ALG = JoseEnvelopeErrorClass.UNSUPPORTED_ALG
+    SIGNED_AT_OUT_OF_WINDOW = JoseEnvelopeErrorClass.SIGNED_AT_OUT_OF_WINDOW
 
 
 class VerifyError(JoseEnvelopeError):
@@ -123,7 +124,14 @@ def _check_revoked_kid(receipt: dict, revoked_kids: list[dict]) -> None:
         return
 
 
-def verify_receipt(receipt, jwks, revoked_kids=None) -> VerifyResult:
+def verify_receipt(
+    receipt,
+    jwks,
+    revoked_kids=None,
+    *,
+    max_age_seconds=None,
+    max_future_skew_seconds=60,
+) -> VerifyResult:
     """Verify a SUM render receipt against a JWKS.
 
     Parameters
@@ -169,6 +177,8 @@ def verify_receipt(receipt, jwks, revoked_kids=None) -> VerifyResult:
             jwks,
             supported_schema=SUPPORTED_SCHEMA,
             known_crit_extensions=KNOWN_CRIT_EXTENSIONS,
+            max_age_seconds=max_age_seconds,
+            max_future_skew_seconds=max_future_skew_seconds,
         )
     except JoseEnvelopeError as e:
         # Re-raise as the receipt-specific subclass so callers

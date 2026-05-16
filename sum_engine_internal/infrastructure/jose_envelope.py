@@ -41,6 +41,7 @@ from __future__ import annotations
 import base64
 import json
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Any
 
 from sum_engine_internal.infrastructure.jcs import canonicalize
@@ -87,6 +88,16 @@ class JoseEnvelopeErrorClass:
     fails with a precise classification — operator can act on the
     specific failure mode (migrate, revoke, or update verifier).
     See docs/ALGORITHM_REGISTRY.md."""
+    SIGNED_AT_OUT_OF_WINDOW = "signed_at_out_of_window"
+    """Receipt's payload.signed_at is outside the caller-supplied
+    acceptance window. Distinct from signature_invalid: the receipt
+    is cryptographically valid; the caller has rejected it by policy
+    (replay defense). Raised only when the caller opts in via
+    max_age_seconds. Past: signed_at is more than max_age_seconds
+    behind now. Future: signed_at is more than max_future_skew_seconds
+    ahead of now (clock-skew tolerance). The error message names
+    which direction. Default behaviour (max_age_seconds=None) does
+    NOT enforce — long-lived archival receipts remain valid."""
 
 
 class JoseEnvelopeError(Exception):
@@ -122,6 +133,8 @@ def verify_jose_envelope(
     *,
     supported_schema: str,
     known_crit_extensions: frozenset[str] = DEFAULT_KNOWN_CRIT_EXTENSIONS,
+    max_age_seconds: int | None = None,
+    max_future_skew_seconds: int = 60,
 ) -> JoseEnvelopeResult:
     """Verify a SUM-shaped signed JSON envelope (receipt or manifest).
 
@@ -141,6 +154,22 @@ def verify_jose_envelope(
         Set of JWS protected-header `crit` extension names this
         verifier understands. Defaults to ``{"b64"}`` — any other name
         in `crit` triggers ``crit_unknown_extension``.
+    max_age_seconds
+        Optional replay-defense window. If provided, the verifier
+        rejects the envelope with ``signed_at_out_of_window`` when
+        ``now - payload.signed_at > max_age_seconds`` (stale receipt)
+        OR when ``payload.signed_at - now > max_future_skew_seconds``
+        (future-dated receipt beyond the clock-skew tolerance).
+        Default ``None`` does NOT enforce — long-lived archival
+        receipts and historical fixtures remain valid. The receiver
+        opts in per use-case (e.g., agent-swarm handoff: 60s; fresh
+        render: 300s; legal-discovery: no window). See
+        docs/RENDER_RECEIPT_FORMAT.md §6.2 and
+        docs/TRANSFORM_RECEIPT_FORMAT.md §6.2.
+    max_future_skew_seconds
+        How far ahead of ``now`` ``signed_at`` is allowed to be
+        before rejecting (clock-skew tolerance). Only consulted when
+        ``max_age_seconds`` is set. Defaults to 60.
 
     Raises
     ------
@@ -320,12 +349,84 @@ def verify_jose_envelope(
             f'expected crit array containing "b64", got {crit_h!r}',
         )
 
+    # ---- Step 7: optional replay-window check ----
+    # Only enforced when caller opts in via max_age_seconds. The
+    # cryptographic verify above is already complete; this is a
+    # policy-layer rejection ("the receipt is genuine but I don't
+    # accept it at this age"), distinct from signature_invalid.
+    if max_age_seconds is not None:
+        _enforce_signed_at_window(
+            payload, max_age_seconds, max_future_skew_seconds
+        )
+
     return JoseEnvelopeResult(
         verified=True,
         kid=kid,
         protected_header=dict(ph),
         payload=payload,
     )
+
+
+def _parse_signed_at(signed_at_str: str) -> datetime:
+    """Parse the receipt's ``signed_at`` ISO-8601 string into a
+    UTC-aware ``datetime``. Python 3.10's ``datetime.fromisoformat``
+    doesn't accept the trailing ``Z`` suffix that the receipt format
+    produces (3.11+ does), so normalise it first."""
+    normalised = signed_at_str
+    if normalised.endswith("Z"):
+        normalised = normalised[:-1] + "+00:00"
+    dt = datetime.fromisoformat(normalised)
+    if dt.tzinfo is None:
+        # ISO-8601 timestamps in the receipt format MUST carry a
+        # timezone. Treat naïve as malformed.
+        raise ValueError(
+            f"signed_at {signed_at_str!r} is timezone-naïve; "
+            f"receipt spec requires UTC with trailing Z"
+        )
+    return dt.astimezone(timezone.utc)
+
+
+def _enforce_signed_at_window(
+    payload: dict,
+    max_age_seconds: int,
+    max_future_skew_seconds: int,
+) -> None:
+    """Raise ``JoseEnvelopeError(SIGNED_AT_OUT_OF_WINDOW)`` if the
+    receipt's ``signed_at`` is outside the acceptance window. The
+    payload's ``signed_at`` field is REQUIRED when this check is
+    requested; a missing or unparseable value fails closed."""
+    signed_at_str = payload.get("signed_at")
+    if not isinstance(signed_at_str, str):
+        raise JoseEnvelopeError(
+            JoseEnvelopeErrorClass.SIGNED_AT_OUT_OF_WINDOW,
+            f"max_age_seconds={max_age_seconds} requested but "
+            f"payload.signed_at is missing or non-string "
+            f"({signed_at_str!r}); failing closed",
+        )
+    try:
+        signed_at = _parse_signed_at(signed_at_str)
+    except (ValueError, TypeError) as e:
+        raise JoseEnvelopeError(
+            JoseEnvelopeErrorClass.SIGNED_AT_OUT_OF_WINDOW,
+            f"max_age_seconds={max_age_seconds} requested but "
+            f"payload.signed_at={signed_at_str!r} could not be "
+            f"parsed as ISO-8601 UTC: {e}",
+        ) from e
+    now = datetime.now(timezone.utc)
+    age_seconds = (now - signed_at).total_seconds()
+    if age_seconds > max_age_seconds:
+        raise JoseEnvelopeError(
+            JoseEnvelopeErrorClass.SIGNED_AT_OUT_OF_WINDOW,
+            f"receipt signed_at={signed_at_str} is {age_seconds:.0f}s "
+            f"old; max_age_seconds={max_age_seconds}",
+        )
+    if -age_seconds > max_future_skew_seconds:
+        raise JoseEnvelopeError(
+            JoseEnvelopeErrorClass.SIGNED_AT_OUT_OF_WINDOW,
+            f"receipt signed_at={signed_at_str} is "
+            f"{-age_seconds:.0f}s in the future; "
+            f"max_future_skew_seconds={max_future_skew_seconds}",
+        )
 
 
 def sign_jose_envelope(
