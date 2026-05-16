@@ -57,7 +57,7 @@ def test_transform_list_emits_registry():
     payload = json.loads(stdout)
     assert payload["schema"] == "sum.transform_registry.v1"
     names = {t["id"] for t in payload["transforms"]}
-    # The three transforms registered by T1a + T2 + T3.
+    # The three transforms auto-registered at import time.
     assert {"slider", "extract", "compose"}.issubset(names)
 
 

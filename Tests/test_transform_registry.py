@@ -1,10 +1,13 @@
 """Registry + slider transform contract tests.
 
-T1a coverage:
-  1. Registry is populated with `slider` at import time.
+Coverage:
+  1. Registry is populated with `slider` (+ `extract`, `compose`) at
+     import time.
   2. `get_transform(name)` and `list_transforms()` work.
   3. Slider canonical-path renders deterministically.
-  4. Slider raises NotImplementedError on LLM-axis renders (until T1b).
+  4. Slider raises ValueError on LLM-axis renders without an OpenAI
+     key in env (per the wired Python LLM-axis dispatch; see
+     Tests/test_transform_slider_llm_axis.py for the with-key path).
   5. Slider's three `canonicalize_*` methods produce stable bytes.
   6. Slider parameters quantize to bin centres (sliders snap so two
      adjacent drag positions produce the same hash).
