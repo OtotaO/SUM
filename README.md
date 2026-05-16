@@ -5,9 +5,15 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
-> **A cross-runtime trust surface for LLM-rendered text.** Three runtimes (Python, Node, modern browsers) produce byte-identical Ed25519 signatures over the same JCS-canonical bytes. Every render through the hosted Worker carries a detached-JWS receipt (`sum.render_receipt.v1`) that any third party can verify offline against `/.well-known/jwks.json`. Live at https://sum-demo.ototao.workers.dev.
+> **SUM lets people and agents transform knowledge without losing the ability to verify what changed, what stayed the same, who signed it, and what remains unproven.**
 
-That is the load-bearing claim and what makes SUM different from a generic summarisation tool. The cryptographic side is **mechanically proven** — three independent verifier implementations agreeing byte-for-byte on every signed bundle, locked in CI on every PR. The semantic side (extraction quality, slider fact preservation) is **empirically measured** with explicit per-corpus numbers and explicit per-corpus boundaries; SUM does not blur the line between the two. [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) is the arbiter.
+Every transformation — extract triples from prose, render a tome at a controlled slider position, compose bundles across documents, share a render — emits a cryptographically-signed receipt that any third party can verify offline. The receipt attests *that the transformation happened and what its inputs were*. Separate per-axis benchmarks attest *how much the transformation preserved meaning*. Both are kept honest by separate proof discipline — and the project never blurs the line between them.
+
+*Live trust loop:* https://sum-demo.ototao.workers.dev — three runtimes (Python, Node, modern browsers) produce byte-identical Ed25519 signatures over the same JCS-canonical bytes; verify offline against `/.well-known/jwks.json`. Mechanically proven; locked in CI on every PR.
+
+**Built for:** journalists working under deepfake-era citation requirements, academic survey writers who need provenance back to source PDFs, agentic-AI builders who need their agents to pass verifiable evidence and not just messages, and regulated-domain content (EU AI Act Article 12, FTC AI disclosure, HIPAA, SOC 2, PCI DSS) where "we say it's true" isn't enough.
+
+The cryptographic side is **mechanically proven** — three independent verifier implementations agreeing byte-for-byte on every signed bundle, locked in CI on every PR. The semantic side (extraction quality, slider fact preservation) is **empirically measured** with explicit per-corpus numbers and explicit per-corpus boundaries. [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) is the arbiter.
 
 Headline supporting numbers (each links to its source of truth):
 
