@@ -55,6 +55,7 @@ class ErrorClass:
     HEADER_INVARIANT_VIOLATED = JoseEnvelopeErrorClass.HEADER_INVARIANT_VIOLATED
     SIGNATURE_INVALID = JoseEnvelopeErrorClass.SIGNATURE_INVALID
     UNSUPPORTED_ALG = JoseEnvelopeErrorClass.UNSUPPORTED_ALG
+    SIGNED_AT_OUT_OF_WINDOW = JoseEnvelopeErrorClass.SIGNED_AT_OUT_OF_WINDOW
 
 
 class VerifyError(JoseEnvelopeError):
@@ -73,6 +74,9 @@ VerifyResult = JoseEnvelopeResult
 def verify_transform_receipt(
     receipt: dict,
     jwks: dict,
+    *,
+    max_age_seconds: int | None = None,
+    max_future_skew_seconds: int = 60,
 ) -> VerifyResult:
     """Verify a ``sum.transform_receipt.v1`` envelope.
 
@@ -113,6 +117,8 @@ def verify_transform_receipt(
             jwks=jwks,
             supported_schema=SUPPORTED_SCHEMA,
             known_crit_extensions=KNOWN_CRIT_EXTENSIONS,
+            max_age_seconds=max_age_seconds,
+            max_future_skew_seconds=max_future_skew_seconds,
         )
     except JoseEnvelopeError as e:
         # Re-raise the underlying envelope error as a transform-

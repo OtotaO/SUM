@@ -4,6 +4,54 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Replay-defense window check on receipt verifiers (opt-in).**
+  Closes a real security gap: a cryptographically valid receipt
+  captured at time T₁ can be re-presented at T₂ as if fresh unless
+  the receiver enforces a freshness window. The receipt's signature
+  doesn't constrain freshness; that's a policy-layer concern. New
+  optional parameters across both verifier surfaces:
+
+      verify_receipt(receipt, jwks, max_age_seconds=300)
+      verify_transform_receipt(receipt, jwks, max_age_seconds=300)
+      verifyReceipt(receipt, jwks, null, { maxAgeSeconds: 300 })
+      verifyTransformReceipt(receipt, jwks, { maxAgeSeconds: 300 })
+
+  Default behaviour unchanged: `max_age_seconds=None` does NOT
+  enforce — long-lived archival receipts (legal-discovery audit
+  trails, historical fixtures) remain valid. Opt in per use-case.
+  Clock-skew tolerance via `max_future_skew_seconds` (default 60s).
+
+  New error class `signed_at_out_of_window`, mirrored across Python
+  (`JoseEnvelopeErrorClass.SIGNED_AT_OUT_OF_WINDOW`,
+  `ErrorClass.SIGNED_AT_OUT_OF_WINDOW`) and JS (`ERROR_CLASSES.
+  SIGNED_AT_OUT_OF_WINDOW`). Distinct from `signature_invalid` so
+  the operator distinction between "tampered" and "replay-rejected"
+  is visible to incident response.
+
+  Coverage:
+    - `sum_engine_internal/infrastructure/jose_envelope.py` —
+      core implementation + ISO-8601 parser (Py 3.10 compatible).
+    - `sum_engine_internal/render_receipt/verifier.py` +
+      `sum_engine_internal/transform_receipt/verifier.py` — surface
+      added; both pass-through.
+    - `single_file_demo/receipt_verifier.js` +
+      `single_file_demo/transform_receipt_verifier.js` — JS mirror;
+      cross-runtime parity proven by smoke test.
+    - `Tests/test_receipt_signed_at_window.py` — 10 unit tests:
+      default-off behaviour, past-window enforcement, future-window
+      enforcement (clock skew), malformed-signed_at fail-closed,
+      render-surface parity.
+    - `single_file_demo/test_receipt_signed_at_window.js` — 3 Node
+      smokes: no-window verifies, short-window rejects, long-window
+      verifies; same outcomes as Python.
+    - `docs/TRANSFORM_RECEIPT_FORMAT.md` §6.2 +
+      `docs/RENDER_RECEIPT_FORMAT.md` §6.2 — receiver-policy
+      contract with per-use-case window table.
+
+  Receiver-policy guidance (excerpt): agent-swarm handoff 60–300s,
+  real-time render 60–600s, newsletter publishing 1 day,
+  legal-discovery archival no window.
+
 - **Hygiene pass — truth-in-claims sweep + transform-substrate design
   docs cherry-picked from open PR #209.** Five corrections, no new
   features:
