@@ -45,6 +45,7 @@ import {
   type ReceiptPayload,
 } from "../receipt/sign";
 import type { JWK } from "jose";
+import { checkRateLimit, classifyScope, rateLimitedResponse } from "../rate_limit";
 
 type ProviderChoice = "anthropic" | "openai";
 
@@ -267,6 +268,18 @@ export async function handleRender(
 ): Promise<Response> {
   if (request.method !== "POST") {
     return json({ error: "method not allowed; use POST" }, 405);
+  }
+
+  // Rate limit BEFORE body parse. BYO-key headers classify the bucket;
+  // operator-keyed calls go in the 5/day demo bucket per IP, BYO-keyed
+  // calls go in the 100/hr bucket. Protects the operator's LLM credits
+  // from abuse.
+  if (env.RENDER_CACHE) {
+    const scope = classifyScope("render", request);
+    const rl = await checkRateLimit(request, env.RENDER_CACHE, scope);
+    if (!rl.allowed) {
+      return rateLimitedResponse(rl);
+    }
   }
 
   let body: RenderRequest;
