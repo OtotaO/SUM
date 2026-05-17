@@ -55,13 +55,28 @@ A minimal Node verifier using `jose` + `canonicalize` is in [`docs/RENDER_RECEIP
 | Surface | Status | Verifies |
 |---|---|---|
 | `pip install 'sum-engine[sieve]'` — `sum attest` / `sum verify` / `sum render` / `sum resolve` / `sum ledger` / `sum inspect` / `sum schema` | shipped on PyPI ≥ 0.4.1 | structural reconstruction; HMAC-SHA256 + Ed25519 signatures (W3C VC 2.0 `eddsa-jcs-2022`); bidirectional `sum attest` ↔ `sum render` symmetry from the shell |
-| Cloudflare Worker at `sum-demo.ototao.workers.dev` | shipped | `/api/render` → tome + `render_receipt`; `/.well-known/jwks.json` → JWKS; `/api/qid` → Wikidata resolver |
+| Cloudflare Worker at `sum-demo.ototao.workers.dev` | shipped | `/api/render` → tome + `render_receipt`; `/api/transform` → generic transform-registry dispatch + `sum.transform_receipt.v1`; `/api/complete` → LLM proxy; `/api/qid` → Wikidata resolver; `/.well-known/jwks.json` + `/.well-known/revoked-kids.json` → trust-loop endpoints. Public LLM-axis routes are rate-limited per IP — see [`docs/PUBLIC_API_RATE_LIMITS.md`](docs/PUBLIC_API_RATE_LIMITS.md) (5/day operator-keyed demo; 100/hr with BYO key via `X-Render-LLM-Key-Anthropic` / `-OpenAI`). |
 | Single-file browser demo (`single_file_demo/index.html`) | shipped | paste prose → in-browser attest → CanonicalBundle JSON; same bytes verify under `node standalone_verifier/verify.js` (Chrome / Firefox / Safari with WebCrypto Ed25519 support) |
 | Cross-runtime trust triangle | locked by CI (`make xruntime`) | K1 / K1-mw / K2 / K3 / K4 — Python ↔ Node ↔ Browser agree byte-for-byte on valid bundles. `make xruntime-adversarial` adds A1–A6 rejection-class equivalence. |
 | 5-axis slider rendering surface | density actioned deterministically; length / formality / audience / perspective LLM-conditioned. Two dispatch paths: Worker `/api/render` (Anthropic + Cloudflare AI Gateway optional) producing `sum.render_receipt.v1`, OR Python `sum transform apply slider` (OpenAI via `OPENAI_API_KEY`) producing `sum.transform_receipt.v1` | bench: median LLM-axis fact preservation 1.000, p10 0.769 (long, n=16) / 0.818 (short, n=8), order preservation 1.000 wherever measurable. Tightening worktrail at [`docs/BENCH_HARDENING_FROM_QCVV.md`](docs/BENCH_HARDENING_FROM_QCVV.md) adds iteration-stability + DKW worst-case bounds + capability-region headlines |
 | MCP server (`sum-mcp` console script) | shipped | five tools (`extract` / `attest` / `verify` / `inspect` / `schema`) exposed over stdio; bundles attested via MCP verify byte-identically through the CLI / Node / browser verifiers |
+| Transform substrate (`sum.transform_receipt.v1` + registry) | shipped (CLI in repo HEAD; PyPI catch-up tag pending) | `sum transform list` / `sum transform apply <name>` — three registered transforms (`slider` / `extract` / `compose`); receipts via Ed25519 / JCS / detached JWS just like render-receipts; 20-fixture cross-runtime K-matrix locks accept + reject across Python ↔ Node ↔ browser; T4 `source_chain_hash` binds receipts to source byte ranges; T5 `ShareableRender` round-trips signed renders for offline verification; T6 multi-school extract runs two extractors in tandem for adversarial-divergence detection. Wire spec at [`docs/TRANSFORM_RECEIPT_FORMAT.md`](docs/TRANSFORM_RECEIPT_FORMAT.md); design at [`docs/TRANSFORM_REGISTRY.md`](docs/TRANSFORM_REGISTRY.md). |
+| Replay-defense window (`signed_at_out_of_window`) | shipped | opt-in `max_age_seconds` parameter across all four verifier surfaces (Python render / Python transform / JS render / JS transform). Default-off preserves archival use; receivers opt in per use-case (agent-swarm 60s, real-time 600s, newsletter 1d, legal-discovery no window). |
+| `sum verify --explain` layered output | shipped | Per-dimension report (`sum.verify_explained.v1`): cryptographic integrity / canonical reconstruction / axiom consistency / extraction provenance / source evidence coverage / semantic preservation / truth of content. Each carries `epistemic_status` (`provable` / `certified` / `empirical-benchmark` / `not-asserted`). Truth of content is ALWAYS `not_asserted` — locked by test. |
+| Negative-control corpus (T5 of bench-hardening) | shipped | 20 hand-authored documents across 5 failure modes (ambiguous coref / predicate-alias / contradictions / entity-resolution-adversarial / non-extractable). Runner exits 1 if observed failures don't match annotations. Baseline at [`fixtures/bench_receipts/negative_control_2026-05-17.json`](fixtures/bench_receipts/negative_control_2026-05-17.json). |
+| Compliance validators (six regimes) | shipped | `sum compliance check --regime <id> --audit-log <path>` — EU AI Act Article 12, GDPR Article 30, HIPAA § 164.312(b), ISO/IEC 27001 A.8.15, SOC 2 CC 7.2, PCI DSS v4.0 Req 10. All six produce the same `sum.compliance_report.v1` schema; per-regime docs at `docs/COMPLIANCE_*.md`. |
 
 The slider's product claim — *axis changes do not lose facts* — is the load-bearing empirical result. It is verified by NLI audit on every embedding-flagged "loss" cell; full attribution in [`docs/SLIDER_CONTRACT.md`](docs/SLIDER_CONTRACT.md).
+
+## Strategic context
+
+The operational compass — read in this order if you want the project's intent + how it operates + where it's going:
+
+- [`docs/CHARTER_2026-05-17.md`](docs/CHARTER_2026-05-17.md) — intent, the Why, strategy, objectives, success criteria, constraints, and the operational loop. The compass every other doc resolves to.
+- [`docs/PRODUCT_DELIBERATION_2026-05-14.md`](docs/PRODUCT_DELIBERATION_2026-05-14.md) — three-option strategic analysis + grant-outcome decision tree.
+- [`docs/ZENITH_FRAMING_2026-05-16.md`](docs/ZENITH_FRAMING_2026-05-16.md) — destination framing (SUM as chain-of-custody for AI-transformed knowledge) plus three new concepts (Perspective Receipts, Trust Profiles, Epistemic Nutrition Label) on the design queue.
+- [`docs/BENCH_HARDENING_FROM_QCVV.md`](docs/BENCH_HARDENING_FROM_QCVV.md) — five-task empirical-benchmark hardening plan (T1–T5; T5 shipped, T1–T4 queued).
+- [`docs/DOGFOOD_QUICKSTART.md`](docs/DOGFOOD_QUICKSTART.md) — five-minute guide to running SUM on your own writing.
 
 ### LLM narrative round-trip — closed across measured corpora (2026-04-28)
 
@@ -173,7 +188,29 @@ Below the slider sits the substrate that earlier phases shipped and verified. Po
 - **Bundle public-key attestation (provable).** Ed25519-signed CanonicalBundles are tamper-detectable by any third party in any of the three runtimes. [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §1.3.1.
 - **Merkle hash-chain integrity (provable, including under concurrent writers).** [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §1.7.
 - **Extraction F1 (empirical-benchmark).** 1.000 on `seed_v1` (50 simple-SVO docs); 0.762 with precision 1.000 on `seed_v2` (20-doc difficulty corpus). Every remaining `seed_v2` failure is a recall miss, not a truth inversion. [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §2.1.
-- **103 numbered features**, each with a reproducible verification command, in [`docs/FEATURE_CATALOG.md`](docs/FEATURE_CATALOG.md).
+- **168 numbered features**, each with a reproducible verification command, in [`docs/FEATURE_CATALOG.md`](docs/FEATURE_CATALOG.md).
+
+### Research substrate (under `sum_engine_internal/research/`)
+
+Less-surfaced but shipped:
+
+- **MinHash-LSH bundle similarity index** (`research/lsh/`) — near-duplicate bundle detection at scale.
+- **Robust PCA corruption score** (`research/robust_pca/`) — `corruption_score` field in bundle metadata; flags adversarially-perturbed bundles.
+- **Sequential & conformal-prediction** (`research/sequential/`, `research/conformal/`) — bench-side confidence bounds with documented coverage guarantees.
+- **MMD distribution distance** (`research/mmd/`) — `axiom_distribution_mmd` field on bundles; surfaces when an attested bundle is structurally unlike its baseline corpus.
+- **Spectral entropy** (`research/spectral_entropy/`) — axiom-graph entropy on every bundle, with confidence interval.
+- **Bootstrap multiplier spike detection** (`research/bootstrap/`) — see [`docs/MULTIPLIER_BOOTSTRAP_SPIKE_FINDINGS.md`](docs/MULTIPLIER_BOOTSTRAP_SPIKE_FINDINGS.md).
+- **SMT consistency checking** (`research/smt_consistency/`) — z3-backed `axiom_consistency_check` on every bundle.
+- **Sheaf-Laplacian hallucination detection** — see [`docs/SHEAF_HALLUCINATION_DETECTOR.md`](docs/SHEAF_HALLUCINATION_DETECTOR.md) (research direction).
+
+### Other substrate-adjacent surfaces
+
+- **Trust-root manifest** (`sum_engine_internal/trust_root/`) — operator-issued signed manifest binding kid lifecycle, revocation policy, and verifier expectations.
+- **Merkle sidecar format** (`sum_engine_internal/merkle_sidecar/`) — see [`docs/MERKLE_SIDECAR_FORMAT.md`](docs/MERKLE_SIDECAR_FORMAT.md).
+- **Evidence-chain layer** (`sum_engine_internal/evidence/`) — substrate behind `source_chain_hash` (T4).
+- **Algorithm registry** — see [`docs/ALGORITHM_REGISTRY.md`](docs/ALGORITHM_REGISTRY.md) (the in-tree list of permitted signing algs; crypto-agility gate).
+- **Audit log format** — every CLI operation can emit `sum.audit_log.v1` events; see [`docs/AUDIT_LOG_FORMAT.md`](docs/AUDIT_LOG_FORMAT.md).
+- **Agent surface** (`sum_engine_internal/agent_surface/`) — see [`docs/AGENT_SURFACE_FINDINGS.md`](docs/AGENT_SURFACE_FINDINGS.md).
 
 ---
 
