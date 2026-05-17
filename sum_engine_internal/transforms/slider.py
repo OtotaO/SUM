@@ -246,21 +246,12 @@ class SliderTransform:
         registry contract: ``requires_llm = True`` transforms raise if
         no key is available.
         """
-        if not env.openai_api_key:
-            raise ValueError(
-                "slider transform: LLM-axis render requires "
-                "env.openai_api_key (or the OPENAI_API_KEY env var). "
-                "Anthropic dispatch through the Python transform "
-                "registry is not wired today — use the Worker's "
-                "POST /api/transform endpoint with the "
-                "X-Render-LLM-Key-Anthropic header for Anthropic, or "
-                "set OPENAI_API_KEY to route through the OpenAI SDK."
-            )
-
         # Lazy imports keep the canonical-path import-fast and avoid
         # pulling openai into environments that never call the LLM
         # axis. Both modules are part of the sum_engine_internal
         # package, no optional-extras dance required.
+        import os
+
         from sum_engine_internal.ensemble.live_llm_adapter import (
             LiveLLMAdapter,
             OpenAIChatClient,
@@ -270,8 +261,49 @@ class SliderTransform:
             render as slider_render,
         )
 
-        model = env.default_openai_model
-        adapter = LiveLLMAdapter(api_key=env.openai_api_key, model=model)
+        # Model resolution: explicit env.model wins; else the slider
+        # falls back to OpenAI's gpt-4o-mini. The resolved model id
+        # determines provider routing via LiveLLMAdapter.from_model:
+        # OpenAI ids → openai.com, HF-namespaced (`org/model`) → HF
+        # Inference Providers ($HF_TOKEN), ollama:/llamacpp:/local:
+        # → matching local endpoint. See docs/BYOK_AND_FREE_PROVIDERS.md.
+        model = env.model or env.default_openai_model
+        m = model.lower()
+        needs_openai_key = (
+            "/" not in model
+            and not m.startswith(("ollama:", "llamacpp:", "local:"))
+        )
+        if needs_openai_key and not env.openai_api_key and not os.environ.get("OPENAI_API_KEY"):
+            raise ValueError(
+                "slider transform: LLM-axis render with model "
+                f"{model!r} routes to OpenAI but no API key is set. "
+                "Options:\n"
+                "  - export OPENAI_API_KEY=sk-... (pay-as-you-go)\n"
+                "  - set env.model='meta-llama/Llama-3.3-70B-Instruct' "
+                "(or any HF model id) + export HF_TOKEN=hf_... to use "
+                "Hugging Face Inference Providers credits\n"
+                "  - set env.model='ollama:llama3.1' for a local "
+                "Ollama install (free, no key)\n"
+                "  - set env.model='local:<your-model>' + "
+                "export SUM_LOCAL_LLM_BASE=https://...modal.run/v1 "
+                "for a Modal-hosted OpenAI-compatible endpoint\n"
+                "  - for the Worker path with Anthropic, use POST "
+                "/api/transform with the X-Render-LLM-Key-Anthropic "
+                "header.\n"
+                "Full matrix at docs/BYOK_AND_FREE_PROVIDERS.md."
+            )
+
+        # Pick the api_key arg to pass into from_model. The factory
+        # falls back to env vars (HF_TOKEN, OPENAI_API_KEY) when None;
+        # we only forward an explicit key when the caller's env names
+        # it as such, otherwise we let the factory's env lookup decide.
+        api_key_for_factory: str | None = None
+        if needs_openai_key:
+            api_key_for_factory = env.openai_api_key
+        # For HF / local prefixes, LiveLLMAdapter.from_model will pick
+        # up HF_TOKEN / SUM_LOCAL_LLM_BASE from the environment.
+
+        adapter = LiveLLMAdapter.from_model(model, api_key=api_key_for_factory)
         llm_client = OpenAIChatClient(adapter)
 
         sliders = TomeSliders(
@@ -307,6 +339,20 @@ class SliderTransform:
             for axis_drift in render_result.drift
         }
 
+        # Routing-aware extra: surfaces which OpenAI-API-compatible
+        # endpoint actually served the call. The receipt's `provider`
+        # field stays as one of the schema literals ("openai") because
+        # the API SHAPE was OpenAI's; the routing-target (HF / Ollama
+        # / local / OpenAI proper) is honest provenance and goes into
+        # `extra.llm_endpoint`. Future schema v2 may add per-routing
+        # provider literals; until then, this is the proof-boundary-
+        # safe way to be honest about what served without lying about
+        # what the receipt attests.
+        endpoint_info: dict[str, Any] = {
+            "model": adapter.model,
+            "base_url": adapter.base_url or "https://api.openai.com/v1 (default)",
+        }
+
         return TransformResult(
             output=render_result.tome,
             model=model,
@@ -319,6 +365,7 @@ class SliderTransform:
                 "drift": drift_by_axis,
                 "render_id": render_result.render_id,
                 "cache_status": render_result.cache_status.value,
+                "llm_endpoint": endpoint_info,
             },
         )
 

@@ -68,6 +68,20 @@ class TransformEnv:
     # matches the Worker's resolveProvider() behaviour.
     preferred_provider: Provider | None = None
 
+    # Explicit model identifier (optional). When set, the slider's
+    # LLM-axis dispatch routes through ``LiveLLMAdapter.from_model``
+    # which honours the same routing rules as
+    # ``llm_dispatch.get_adapter``: OpenAI / Anthropic (Worker path
+    # only) / HF (`org/model`) / Ollama (`ollama:`) / llama.cpp
+    # (`llamacpp:`) / local (`local:` + $SUM_LOCAL_LLM_BASE). When
+    # unset, defaults to ``default_openai_model``.
+    #
+    # CLI threading: ``SUM_TRANSFORM_MODEL`` env var. Set it to
+    # ``meta-llama/Llama-3.3-70B-Instruct`` + ``HF_TOKEN=hf_...`` to
+    # route the slider's LLM-axis through HF Inference Providers
+    # without burning OpenAI credits.
+    model: str | None = None
+
 
 @dataclass
 class TransformResult:

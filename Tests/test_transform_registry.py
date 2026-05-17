@@ -152,21 +152,24 @@ def test_slider_canonical_path_produces_tome():
     assert "bob" in result.output and "dog" in result.output
 
 
-def test_slider_llm_axis_without_key_raises_value_error():
-    """T1c-followup wired LLM-axis dispatch through the registry, but
-    only when an OpenAI key is configured. Without one, the call
-    raises a clear ValueError naming the operator-actionable fix —
-    NOT a NotImplementedError (the legacy behaviour pre-T1c-followup).
+def test_slider_llm_axis_without_key_raises_value_error(monkeypatch):
+    """LLM-axis dispatch with the default OpenAI-shaped model and no
+    API key (neither env.openai_api_key nor $OPENAI_API_KEY) raises
+    a clear ValueError naming the free-provider escape valves
+    (HF / Ollama / local / Worker-Anthropic).
+
     See Tests/test_transform_slider_llm_axis.py for the dispatch-
-    succeeds-with-fake-LLM case."""
-    with pytest.raises(ValueError, match="openai_api_key"):
+    succeeds cases (OpenAI / HF / Ollama via mocked from_model)."""
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("HF_TOKEN", raising=False)
+    with pytest.raises(ValueError, match="OPENAI_API_KEY"):
         asyncio.run(SLIDER_TRANSFORM.apply(
             input={"triples": [("alice", "likes", "cats")]},
             parameters={
                 "density": 1.0, "length": 0.9, "formality": 0.5,
                 "audience": 0.5, "perspective": 0.5,
             },
-            env=TransformEnv(),  # openai_api_key=None
+            env=TransformEnv(),  # openai_api_key=None, model=None
         ))
 
 

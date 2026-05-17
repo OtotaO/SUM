@@ -2019,11 +2019,17 @@ def cmd_transform_apply(args: argparse.Namespace) -> int:
             )
             return 2
 
-    # Build the TransformEnv from env vars (LLM keys + signing JWK).
+    # Build the TransformEnv from env vars (LLM keys + signing JWK +
+    # routed-model selector). SUM_TRANSFORM_MODEL is the BYO-keys / free-
+    # provider escape valve — set it to e.g.
+    # 'meta-llama/Llama-3.3-70B-Instruct' (+ HF_TOKEN) to route through
+    # Hugging Face Inference Providers, or 'ollama:llama3.1' for a free
+    # local Ollama install. Full matrix: docs/BYOK_AND_FREE_PROVIDERS.md.
     env = TransformEnv(
         anthropic_api_key=os.environ.get("ANTHROPIC_API_KEY"),
         openai_api_key=os.environ.get("OPENAI_API_KEY"),
         cf_ai_gateway_base=os.environ.get("CF_AI_GATEWAY_BASE"),
+        model=os.environ.get("SUM_TRANSFORM_MODEL"),
     )
     signing_jwk_raw = os.environ.get("SUM_TRANSFORM_SIGNING_JWK")
     signing_kid = os.environ.get("SUM_TRANSFORM_SIGNING_KID")
