@@ -80,6 +80,7 @@ CANONICAL_DOCS: tuple[str, ...] = (
     "docs/PROOF_BOUNDARY.md",
     "docs/FEATURE_CATALOG.md",
     "docs/RENDER_RECEIPT_FORMAT.md",
+    "docs/TRANSFORM_RECEIPT_FORMAT.md",
 )
 
 OUT_JSONL = REPO_ROOT / "meta" / "self_attestation.jsonl"
