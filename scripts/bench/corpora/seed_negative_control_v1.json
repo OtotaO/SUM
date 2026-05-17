@@ -1,0 +1,148 @@
+{
+  "id": "seed_negative_control_v1",
+  "schema": "sum.negative_control_corpus.v1",
+  "description": "Hand-authored negative-control corpus for T5 of the bench-hardening worktrail (docs/BENCH_HARDENING_FROM_QCVV.md). Twenty documents engineered to violate the canonicalisation pipeline's assumptions across five failure modes (four per mode). Each document is annotated with its expected failure mode + expected behaviour. A negative-control test passes when observed failures match annotations — i.e., the bench correctly fails on inputs it should fail on, AND succeeds on inputs it should succeed on. A bench with no documented failure mode is not a benchmark.",
+  "generated": "2026-05-17",
+  "documents": [
+    {
+      "id": "amb_coref_01",
+      "text": "Alice told Beth she had won.",
+      "expected_failure_mode": "ambiguous_coreference",
+      "expected_behavior": "Either 'won(Alice)' OR 'won(Beth)' is extractable; the pronoun 'she' is syntactically ambiguous. A faithful extractor either drops the claim, surfaces both candidates, or commits to one with low confidence. Silent commitment to one without flagging is the failure mode this case probes.",
+      "extraction_should": "produce_zero_triples_or_flag_ambiguity"
+    },
+    {
+      "id": "amb_coref_02",
+      "text": "The lawyer told the witness he was lying.",
+      "expected_failure_mode": "ambiguous_coreference",
+      "expected_behavior": "'he' could refer to the lawyer or the witness. Same shape as amb_coref_01. Silent commitment is failure.",
+      "extraction_should": "produce_zero_triples_or_flag_ambiguity"
+    },
+    {
+      "id": "amb_coref_03",
+      "text": "When Marie met Sophie, she had just published a paper.",
+      "expected_failure_mode": "ambiguous_coreference",
+      "expected_behavior": "'she' is anaphoric but referent is unresolved. Sieve will likely drop; LLM might commit silently.",
+      "extraction_should": "produce_zero_triples_or_flag_ambiguity"
+    },
+    {
+      "id": "amb_coref_04",
+      "text": "The CEO told the journalist his term was ending.",
+      "expected_failure_mode": "ambiguous_coreference",
+      "expected_behavior": "'his term' could be the CEO's (typical reading) or the journalist's. The typical reading is plausible but not certain.",
+      "extraction_should": "produce_zero_triples_or_flag_ambiguity"
+    },
+    {
+      "id": "pred_alias_01",
+      "text": "Alice authored the report. Alice wrote the report.",
+      "expected_failure_mode": "predicate_alias_inconsistency",
+      "expected_behavior": "'authored' and 'wrote' are aliases of the same relation but lemmatise / canonicalise to different predicates. The extractor may produce two distinct triples (authored, wrote) or one canonicalised triple. Either is acceptable; SILENT canonical-collapse without surfacing the original predicate phrasing is the failure to detect.",
+      "extraction_should": "produce_one_or_two_triples_with_surfaced_predicates"
+    },
+    {
+      "id": "pred_alias_02",
+      "text": "The drug treats migraines. The drug cures migraines.",
+      "expected_failure_mode": "predicate_alias_inconsistency",
+      "expected_behavior": "'treats' and 'cures' are semantically near but NOT aliases — 'cures' is stronger. A canonicaliser that collapses them is wrong; a canonicaliser that preserves the distinction is right. Probes whether the predicate ontology distinguishes strength of claim.",
+      "extraction_should": "produce_two_distinct_triples_with_treats_and_cures_preserved"
+    },
+    {
+      "id": "pred_alias_03",
+      "text": "Bob owns the company. Bob founded the company. Bob runs the company.",
+      "expected_failure_mode": "predicate_alias_inconsistency",
+      "expected_behavior": "Three different relations to the same (Bob, company) pair. Loss of any one is a fact-preservation failure.",
+      "extraction_should": "produce_three_distinct_triples"
+    },
+    {
+      "id": "pred_alias_04",
+      "text": "The model was trained on the data. The model learned from the data.",
+      "expected_failure_mode": "predicate_alias_inconsistency",
+      "expected_behavior": "'was trained on' and 'learned from' are colloquially equivalent in ML but technically distinct verb-frames. Probes the technical-vs-colloquial canonicalisation tension.",
+      "extraction_should": "produce_one_or_two_triples_with_decision_surfaced"
+    },
+    {
+      "id": "contradict_01",
+      "text": "Alice was born in 1990. Alice was born in 1991.",
+      "expected_failure_mode": "contradictory_axioms",
+      "expected_behavior": "Two contradictory birth-year claims about the same entity. A faithful canonicaliser produces TWO triples (preserving the contradiction so a consistency check can flag it) — NOT silently picking one. The axiom_consistency_check field on the bundle should report inconsistent=true.",
+      "extraction_should": "produce_two_triples_and_consistency_check_flags_inconsistent"
+    },
+    {
+      "id": "contradict_02",
+      "text": "The company is profitable. The company is operating at a loss.",
+      "expected_failure_mode": "contradictory_axioms",
+      "expected_behavior": "'profitable' and 'operating at a loss' are mutually exclusive. Same expectation as contradict_01.",
+      "extraction_should": "produce_two_triples_and_consistency_check_flags_inconsistent"
+    },
+    {
+      "id": "contradict_03",
+      "text": "Senator Kerr voted for the bill. Senator Kerr voted against the bill.",
+      "expected_failure_mode": "contradictory_axioms",
+      "expected_behavior": "Direct contradiction in voting record. Same expectation.",
+      "extraction_should": "produce_two_triples_and_consistency_check_flags_inconsistent"
+    },
+    {
+      "id": "contradict_04",
+      "text": "The patient is allergic to penicillin. The patient tolerates penicillin well.",
+      "expected_failure_mode": "contradictory_axioms",
+      "expected_behavior": "Medical contradiction with safety implication. The consistency check is critical here — silent collapse would propagate a clinical risk.",
+      "extraction_should": "produce_two_triples_and_consistency_check_flags_inconsistent"
+    },
+    {
+      "id": "entity_adversarial_01",
+      "text": "Relativity is a foundational concept.",
+      "expected_failure_mode": "entity_resolution_adversarial",
+      "expected_behavior": "'Relativity' could be Einstein's physics theory, the music label, or a general concept. The /api/qid resolver picks one; the bench should surface that the choice is ambiguous. (The README's PROOF_BOUNDARY notes the 'music label vs physics concept' case at the qid resolution floor.)",
+      "extraction_should": "produce_one_triple_with_qid_resolution_low_confidence"
+    },
+    {
+      "id": "entity_adversarial_02",
+      "text": "Apple released a new product on Tuesday.",
+      "expected_failure_mode": "entity_resolution_adversarial",
+      "expected_behavior": "'Apple' could be the company or the fruit (in context, clearly the company; out of context, ambiguous). Probes whether disambiguation uses the rest of the sentence.",
+      "extraction_should": "produce_one_triple_with_correct_apple_disambiguation"
+    },
+    {
+      "id": "entity_adversarial_03",
+      "text": "Mercury rose to 100 degrees.",
+      "expected_failure_mode": "entity_resolution_adversarial",
+      "expected_behavior": "'Mercury' could be the planet, the element, the Roman god, or a thermometer reading. Context ('rose to 100 degrees') suggests temperature. Probes whether numeric context disambiguates.",
+      "extraction_should": "produce_one_triple_with_temperature_reading_interpretation"
+    },
+    {
+      "id": "entity_adversarial_04",
+      "text": "Java is widely used in industry.",
+      "expected_failure_mode": "entity_resolution_adversarial",
+      "expected_behavior": "'Java' could be the island, the coffee, or the programming language. Without further context the programming-language reading is most plausible in technical corpora; in a travel corpus, the island wins. Probes whether corpus-level priors matter.",
+      "extraction_should": "produce_one_triple_with_corpus_prior_or_low_confidence"
+    },
+    {
+      "id": "non_extractable_01",
+      "text": "Should we trust AI-generated content?",
+      "expected_failure_mode": "non_extractable_assertion",
+      "expected_behavior": "Question, not assertion. The extractor should produce zero triples. A faulty extractor might produce 'we trust AI_generated_content' or similar — that's the failure mode.",
+      "extraction_should": "produce_zero_triples"
+    },
+    {
+      "id": "non_extractable_02",
+      "text": "Suppose Alice had won the election.",
+      "expected_failure_mode": "non_extractable_assertion",
+      "expected_behavior": "Counterfactual — explicitly NOT asserting that Alice won. Extracting 'won(Alice)' would be a fact-preservation failure.",
+      "extraction_should": "produce_zero_triples_or_flag_counterfactual"
+    },
+    {
+      "id": "non_extractable_03",
+      "text": "Some researchers believe the model is overfitting.",
+      "expected_failure_mode": "non_extractable_assertion",
+      "expected_behavior": "Hedged claim ('some researchers believe'). The claim is about belief, not about overfitting. A faulty extractor might produce 'model overfit'; the right extraction is either zero triples or 'researchers believe overfitting'.",
+      "extraction_should": "produce_zero_triples_or_hedged_belief_triple"
+    },
+    {
+      "id": "non_extractable_04",
+      "text": "If the bill passes, the markets will react.",
+      "expected_failure_mode": "non_extractable_assertion",
+      "expected_behavior": "Conditional, not assertion. Neither clause is asserted as true. Extracting 'bill_passes' or 'markets_react' as factual would be the failure.",
+      "extraction_should": "produce_zero_triples_or_flag_conditional"
+    }
+  ]
+}
