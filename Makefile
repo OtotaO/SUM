@@ -130,7 +130,8 @@ pre-push:  ## Pre-flight gate: drift + smoke + trust-loop load-bearing gates tha
 	    Tests/test_sum_cli_transform.py \
 	    Tests/test_transform_receipt_verifier_fixtures.py \
 	    Tests/test_transform_slider_llm_axis.py \
-	    Tests/test_receipt_signed_at_window.py
+	    Tests/test_receipt_signed_at_window.py \
+	    Tests/test_sum_cli_verify_explain.py
 	@echo "[4/6] Cross-runtime valid-path K-matrix (Python ↔ Node)"
 	@$(PYTHON) -m scripts.verify_cross_runtime
 	@echo "[5/6] Cross-runtime rejection A-matrix (Python ↔ Node)"
