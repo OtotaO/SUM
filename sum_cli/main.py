@@ -705,6 +705,196 @@ def _verify_hmac_bundle(bundle: dict, signing_key: Optional[str]) -> str:
     return "verified" if _hmac.compare_digest(expected, sig) else "invalid"
 
 
+def _build_verify_explanation(
+    *,
+    bundle: dict,
+    axioms: int,
+    ed25519_status: str,
+    hmac_status: str,
+    extraction: dict,
+) -> dict:
+    """Produce a ``sum.verify_explained.v1`` layered report.
+
+    Companion to the destination design in
+    ``docs/ZENITH_FRAMING_2026-05-16.md`` §5. Each verification
+    dimension carries a status, a human-readable detail string, and
+    an epistemic-status tag per ``docs/PROOF_BOUNDARY.md`` §5
+    (``provable`` / ``certified`` / ``empirical-benchmark`` /
+    ``not-asserted``).
+
+    v1 surfaces what the existing verifier already checks; the
+    forward-compat levers (source-evidence-coverage,
+    semantic-preservation) are present with ``not-measured`` status
+    when not applicable, so consumers can branch on them today and
+    the doc stays stable when the underlying signals arrive.
+    """
+    # Cryptographic integrity — provable layer.
+    if ed25519_status == "verified":
+        crypto_status = "pass"
+        crypto_detail = "Ed25519 signature verifies against embedded public key"
+    elif ed25519_status == "absent" and hmac_status == "verified":
+        crypto_status = "pass"
+        crypto_detail = "HMAC signature verifies against caller-supplied key"
+    elif ed25519_status == "absent" and hmac_status == "absent":
+        crypto_status = "absent"
+        crypto_detail = "no signatures present — integrity not cryptographically attested"
+    else:
+        crypto_status = "advisory"
+        crypto_detail = f"ed25519={ed25519_status}, hmac={hmac_status}"
+
+    # Canonical reconstruction — provable layer.
+    canonical_status = "pass"  # we wouldn't reach this code on mismatch
+    canonical_detail = (
+        f"reconstruct(parse(canonical_tome)) = state_integer "
+        f"({axioms} axioms parsed, state matches)"
+    )
+
+    # Axiom consistency (z3) — provable when present.
+    consistency_check = bundle.get("axiom_consistency_check") or {}
+    if consistency_check.get("consistent") is True:
+        consistency_status = "pass"
+        consistency_detail = (
+            f"z3 consistent, n_predicates_checked="
+            f"{consistency_check.get('n_predicates_checked', 0)}"
+        )
+    elif consistency_check.get("consistent") is False:
+        consistency_status = "advisory"
+        consistency_detail = (
+            f"unsat_core: {consistency_check.get('unsat_core', [])}"
+        )
+    else:
+        consistency_status = "absent"
+        consistency_detail = "no axiom_consistency_check in bundle"
+
+    # Extraction provenance — certified layer.
+    if extraction.get("verifiable") is True:
+        ext_status = "verifiable"
+        ext_detail = (
+            f"extractor={extraction.get('extractor')!r} — deterministic "
+            f"re-extraction reproducible from canonical_tome"
+        )
+    elif extraction.get("extractor"):
+        ext_status = "advisory"
+        ext_detail = (
+            f"extractor={extraction.get('extractor')!r} — non-deterministic; "
+            f"re-extraction not guaranteed to reproduce the axiom set"
+        )
+    else:
+        ext_status = "absent"
+        ext_detail = "no extraction provenance in bundle"
+
+    # Source evidence coverage — v1: not yet populated by attest, but
+    # the layer is present for forward-compat. Transform receipts
+    # surface this via source_chain_hash; bundles will surface it once
+    # the evidence-chain layer is wired into sum attest.
+    source_evidence_status = "absent"
+    source_evidence_detail = (
+        "bundle carries no source_chain_hash; "
+        "evidence chain not bound to source byte ranges"
+    )
+
+    # Semantic preservation — empirical-benchmark layer. Not measured
+    # at verify-time; the slider bench (docs/SLIDER_CONTRACT.md)
+    # measures it per-rendering. Present here so future tooling can
+    # populate when a bench receipt is available.
+    semantic_status = "not_measured"
+    semantic_detail = (
+        "verify does not measure semantic preservation; "
+        "see docs/SLIDER_CONTRACT.md for the per-axis benchmark contract"
+    )
+
+    # Truth of content — explicitly not-asserted. The whole point of
+    # the proof-boundary discipline.
+    truth_status = "not_asserted"
+    truth_detail = (
+        "verify attests the issuer signed this bundle. It does NOT "
+        "attest factual truth of the content. See "
+        "docs/PROOF_BOUNDARY.md §5."
+    )
+
+    # Recommended action — synthesised from the above.
+    if crypto_status == "pass" and ext_status == "verifiable":
+        recommended = (
+            "safe to reuse as attested deterministic transform; "
+            "safe to cite the issuer + canonical reconstruction; "
+            "NOT safe as factual authority without independent verification"
+        )
+    elif crypto_status == "pass":
+        recommended = (
+            "safe to reuse as attested transform with the recorded "
+            "extractor; NOT safe to assume deterministic re-extraction; "
+            "NOT safe as factual authority"
+        )
+    elif crypto_status == "absent":
+        recommended = (
+            "bundle has no cryptographic attestation; treat as "
+            "advisory only; re-attest with a signing key before "
+            "downstream consumers rely on it"
+        )
+    else:
+        recommended = "review the per-check details above before reuse"
+
+    # Known gaps — surface the things this verifier specifically does
+    # NOT prove, so the consumer doesn't infer more than is true.
+    known_gaps = [
+        "Truth of content (not asserted; verify is signature + reconstruction)",
+        "Source evidence coverage (no source_chain binding in this bundle)",
+        "Semantic preservation (not measured at verify-time; see slider bench)",
+    ]
+    if ext_status != "verifiable":
+        known_gaps.append(
+            "Extraction non-determinism (re-running the extractor may differ)"
+        )
+    if crypto_status == "absent":
+        known_gaps.append(
+            "No cryptographic signature (bundle authorship not attested)"
+        )
+
+    return {
+        "schema": "sum.verify_explained.v1",
+        "verified": crypto_status in ("pass", "absent"),
+        "checks": {
+            "cryptographic_integrity": {
+                "status": crypto_status,
+                "detail": crypto_detail,
+                "epistemic_status": "provable",
+            },
+            "canonical_reconstruction": {
+                "status": canonical_status,
+                "detail": canonical_detail,
+                "epistemic_status": "provable",
+            },
+            "axiom_consistency": {
+                "status": consistency_status,
+                "detail": consistency_detail,
+                "epistemic_status": "provable",
+            },
+            "extraction_provenance": {
+                "status": ext_status,
+                "detail": ext_detail,
+                "epistemic_status": "certified",
+            },
+            "source_evidence_coverage": {
+                "status": source_evidence_status,
+                "detail": source_evidence_detail,
+                "epistemic_status": "not-asserted",
+            },
+            "semantic_preservation": {
+                "status": semantic_status,
+                "detail": semantic_detail,
+                "epistemic_status": "empirical-benchmark",
+            },
+            "truth_of_content": {
+                "status": truth_status,
+                "detail": truth_detail,
+                "epistemic_status": "not-asserted",
+            },
+        },
+        "known_gaps": known_gaps,
+        "recommended_action": recommended,
+    }
+
+
 def cmd_verify(args: argparse.Namespace) -> int:
     raw = _read_input(args.input)
     try:
@@ -835,6 +1025,34 @@ def cmd_verify(args: argparse.Namespace) -> int:
         "verifiable": extractor == "sieve",          # deterministic re-extraction
         "source": "sum_cli sidecar" if sidecar else "absent",
     }
+
+    # ── --explain: layered per-dimension report ─────────────────────────
+    # Productizes the proof-boundary discipline as user-visible output.
+    # Each check carries: status (pass/advisory/absent/...) + detail +
+    # epistemic_status (provable / certified / empirical-benchmark /
+    # not-asserted). See docs/ZENITH_FRAMING_2026-05-16.md §5 for the
+    # destination design.
+    if getattr(args, "explain", False):
+        explained = _build_verify_explanation(
+            bundle=bundle,
+            axioms=axioms,
+            ed25519_status=ed25519_status,
+            hmac_status=hmac_status,
+            extraction=extraction,
+        )
+        json.dump(explained, sys.stdout, indent=2 if args.pretty else None)
+        sys.stdout.write("\n")
+        from sum_cli.audit_log import emit_audit_event
+        emit_audit_event("verify", {
+            "ok": True,
+            "axiom_count": axioms,
+            "state_integer_digits": len(claimed_state_str),
+            "branch": bundle.get("branch", "main"),
+            "signatures": {"hmac": hmac_status, "ed25519": ed25519_status},
+            "extraction": extraction,
+            "explain": True,
+        })
+        return 0
 
     # Machine-readable success payload on stdout; human message on stderr.
     result = {
@@ -2104,6 +2322,19 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     p_verify.add_argument("--pretty", action="store_true", help="Pretty-print result JSON on stdout.")
+    p_verify.add_argument(
+        "--explain", action="store_true",
+        help=(
+            "Emit a layered per-dimension verification report "
+            "(sum.verify_explained.v1) instead of the default summary. "
+            "Productizes the proof-boundary discipline: each verification "
+            "dimension (cryptographic integrity / canonical reconstruction / "
+            "extraction provenance / source coverage / semantic preservation / "
+            "truth of content) carries its own status + detail + epistemic-"
+            "status tag. See docs/ZENITH_FRAMING_2026-05-16.md §5 for the "
+            "destination design of this surface."
+        ),
+    )
     p_verify.set_defaults(func=cmd_verify)
 
     # render — bundle → tome under explicit slider control. Inverse of attest.
