@@ -1303,11 +1303,113 @@ Result: **PASS**.
 
 ---
 
+## Layer 11 — Transform substrate (entries 157–168, 2026-05-12 → 2026-05-16 arc)
+
+The generalisation of `sum.render_receipt.v1` into a transform-typed receipt format with a registry of transforms, dispatch surfaces (Worker + CLI), a 20-fixture cross-runtime K-matrix, and replay-defense. Generalises the substrate from "the slider's receipt" to "every signed transformation of knowledge has a receipt." See `docs/TRANSFORM_RECEIPT_FORMAT.md` + `docs/TRANSFORM_REGISTRY.md`.
+
+### 157. `sum.transform_receipt.v1` wire format ✅
+
+Ed25519 (RFC 8032) over JCS-canonical bytes (RFC 8785), detached JWS (RFC 7515 §A.5), JWKS distribution (RFC 7517). Same crypto envelope as render-receipt; the difference is the payload field semantics: `transform`, `transform_id`, `parameters_hash`, `input_hash`, `output_hash`, `signed_at`, `model`, `provider`, `digital_source_type`, optional `source_chain_hash`. `transform_id` is the first 16 hex chars of `sha256(transform ‖ parameters_hash ‖ input_hash ‖ output_hash)` — stable across runs and runtimes. Implementation in `sum_engine_internal/transform_receipt/{format,sign}.py` (Python) and `worker/src/receipt/transform_sign.ts` (Worker TS).
+
+Verify: `pytest Tests/test_transform_receipt_verify.py -q`
+Expected: 12 passed.
+Result: **PASS**.
+
+### 158. Transform registry (`slider` / `extract` / `compose`) ✅
+
+`sum_engine_internal.transforms` package. Three transforms registered at import time. Each implements the `Transform` protocol: `name`, `requires_llm`, `digital_source_type`, plus `canonicalize_parameters / _input / _output / apply`. Registry: `register / get_transform / list_transforms / has_transform`. The slider transform exposes the existing `slider_renderer.render` library through the registry surface (canonical-path + LLM-axis dispatch).
+
+Verify: `pytest Tests/test_transform_registry.py -q`
+Expected: 12 passed.
+Result: **PASS**.
+
+### 159. `POST /api/transform` Worker dispatch ✅
+
+Generic transform-registry dispatch surface on the Cloudflare Worker. Body: `{transform, input, parameters}` + optional `source_chain`. BYO-keys precedence via `X-Render-LLM-Key-*` headers (mirrors `/api/render`). Returns `{output, transform_id, wall_clock_ms, model, provider, digital_source_type, llm_calls_made, extra, transform_receipt}`. Source: `worker/src/routes/transform.ts`. Live at `https://sum-demo.ototao.workers.dev/api/transform`.
+
+Verify: live probe via `curl -sX POST https://sum-demo.ototao.workers.dev/api/transform -H 'content-type: application/json' -d '{"transform":"slider","input":{"triples":[["a","b","c"]]},"parameters":{"density":1.0,"length":0.5,"formality":0.5,"audience":0.5,"perspective":0.5}}'`
+Expected: 200 OK with `transform_receipt.schema = sum.transform_receipt.v1`.
+Result: **PASS** (verified 2026-05-17).
+
+### 160. `sum transform` CLI subcommand ✅
+
+`sum transform list [--pretty]` emits `sum.transform_registry.v1`. `sum transform apply <name> --input <path|-> --parameters <json> [--source-chain <path>] [--pretty]` runs the transform and emits an envelope with optional signed receipt (when `SUM_TRANSFORM_SIGNING_JWK` + `SUM_TRANSFORM_SIGNING_KID` env vars are set). Source: `sum_cli/main.py` (`cmd_transform_list` / `cmd_transform_apply`).
+
+Verify: `pytest Tests/test_sum_cli_transform.py -q`
+Expected: 18 passed.
+Result: **PASS**.
+
+### 161. T4 source-chain-hash binding ✅
+
+`compute_source_chain_hash(evidence_chain)` — canonicalises a list of `{claim, provenance: {source_uri, byte_start, byte_end}}` records (sorted by `(claim, source_uri, byte_start, byte_end)` for ordering stability) and returns `sha256-<hex>`. When `source_chain_hash` is included in a receipt payload, the receipt's JWS signature covers the chain hash — tampering breaks the signature. CLI accepts `--source-chain <path>`; Worker accepts `body.source_chain`. Byte-equivalent across Python and Worker TS.
+
+Verify: `pytest Tests/test_transform_receipt_source_chain.py -q`
+Expected: 6 passed.
+Result: **PASS**.
+
+### 162. T5 ShareableRender ✅
+
+`sum_engine_internal.transforms.share.ShareableRender` dataclass + `verify_share` helper. Wraps a signed render + its `source_chain` + `bundle_hash` + verification context into a round-trippable artifact. `signature_verified` + `integrity_checks` dict surface what was actually checked vs assumed.
+
+Verify: `pytest Tests/test_transform_share.py -q`
+Expected: 11 passed.
+Result: **PASS**.
+
+### 163. T6 multi-school extract ✅
+
+`sum transform apply extract --parameters '{"strategy":"multi_school","schools":["sieve","naive_token_pair"]}'` runs two extractors in tandem and surfaces both per-school sets + their intersection / union. `naive_token_pair_extract` (stopword filter + adjacency triples) lives alongside the sieve extractor under `sum_engine_internal/transforms/extract.py`. The two-schools-in-tandem pattern is the substrate for the audience-comparison work that lands the "covers more than any other tag maker" bench.
+
+Verify: `pytest Tests/test_transform_extract_multi_school.py -q`
+Expected: 9 passed.
+Result: **PASS**.
+
+### 164. Cross-runtime fixture K-matrix for `sum.transform_receipt.v1` ✅
+
+20 deterministic JSON fixtures under `fixtures/transform_receipts/` consumed by both the Python verifier and the browser/Node verifier. Generator (`generate_fixtures.py`) derives the Ed25519 signing key from a fixed 32-byte seed (RFC 8032 §7.1 test vector 1); rerunning produces byte-identical output. Coverage: positive control (with + without T4 source-chain binding), every signed payload-field tamper, JWS-segment + kid-header tampers, malformed detached JWS, unknown kid, schema_unknown, schema-confusion firewall (rejects `sum.render_receipt.v1` envelope), crit_unknown_extension, unsupported_alg (HS256). **Caught a real verifier bug on first wiring** (double-decoded `protectedHeader`); regression prevented in CI.
+
+Verify: `pytest Tests/test_transform_receipt_verifier_fixtures.py -q` + `node single_file_demo/test_transform_receipt_fixtures.js`
+Expected: 20 passed (Python) + 20/20 (JS).
+Result: **PASS**.
+
+### 165. Browser/Node transform-receipt verifier ✅
+
+`single_file_demo/transform_receipt_verifier.js` — third runtime in the K-matrix. Same six-step algorithm as `receipt_verifier.js` (render-receipt), differs only in `SUPPORTED_SCHEMA = "sum.transform_receipt.v1"`. Verifier-only (vendored jose bundle); accept-path proven via Python ↔ Worker probe + the fixture K-matrix.
+
+Verify: `node single_file_demo/test_transform_receipt_verify.js`
+Expected: 7 pass, 0 fail.
+Result: **PASS**.
+
+### 166. Python transform-receipt verifier ✅
+
+`sum_engine_internal.transform_receipt.verify_transform_receipt(receipt, jwks, *, max_age_seconds=None, max_future_skew_seconds=60)`. Schema-aware wrapper around `verify_jose_envelope`. Returns `JoseEnvelopeResult` on accept; raises `VerifyError` (subclass of `JoseEnvelopeError`) on reject with `.error_class` from `ErrorClass` (mirrored to JS `ERROR_CLASSES`). Live trust loop empirically verified: Worker-produced receipt → Python `verify_transform_receipt` against live JWKS at `/.well-known/jwks.json` → `verified: true` (re-verified 2026-05-17).
+
+Verify: `pytest Tests/test_transform_receipt_verify.py Tests/test_transform_receipt_verifier_fixtures.py -q`
+Expected: 32 passed.
+Result: **PASS**.
+
+### 167. Slider LLM-axis dispatch through transform registry (Python) ✅
+
+`SliderTransform.apply()` routes off-centre LLM axes (any of length / formality / audience / perspective ≠ 0.5) through `slider_renderer.render` via `LiveLLMAdapter` + `OpenAIChatClient` built from `env.openai_api_key`. Receipts produced on the LLM path carry `provider = "openai"` and `digital_source_type = "trainedAlgorithmicMedia"`, shipping as `sum.transform_receipt.v1` envelopes (the signed-receipt substrate) instead of legacy `sum.render_receipt.v1`. Missing `OPENAI_API_KEY` raises clean `ValueError` with operator-actionable hint. Worker TS sibling for this route is pending; until it lands, the Worker's POST /api/transform returns 501 for off-centre axes and Worker LLM-axis renders go through legacy POST /api/render.
+
+Verify: `pytest Tests/test_transform_slider_llm_axis.py -q`
+Expected: 4 passed.
+Result: **PASS**.
+
+### 168. Receipt-replay window check (`signed_at_out_of_window`) ✅
+
+Opt-in `max_age_seconds` + `max_future_skew_seconds` parameters across all four verifier surfaces (Python render / Python transform / JS render / JS transform). When the caller opts in, the verifier rejects receipts with `now − signed_at > max_age_seconds` or `signed_at − now > max_future_skew_seconds`. Default behaviour (`max_age_seconds=None`) does NOT enforce — historical fixtures and long-lived archival receipts remain valid. New error class `signed_at_out_of_window`, distinct from `signature_invalid` so the operator distinction between "tampered" and "replay-rejected" is visible to incident response. Receiver-policy guidance documented per use-case in `docs/RENDER_RECEIPT_FORMAT.md` §6.2 + `docs/TRANSFORM_RECEIPT_FORMAT.md` §6.2.
+
+Verify: `pytest Tests/test_receipt_signed_at_window.py -q` + `node single_file_demo/test_receipt_signed_at_window.js`
+Expected: 10 passed (Python) + 3 pass / 0 fail (JS).
+Result: **PASS**.
+
+---
+
 ## Summary counts
 
-Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **156**.
+Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **168**.
 
-- **Production ✅: 137 features** — tested green; each has a verification command in its entry. (Up from 131 after PR #133 closed the six-regime compliance slate consuming the audit-log substrate; entries 151–156.)
+- **Production ✅: 149 features** — tested green; each has a verification command in its entry. (Up from 137 after the 2026-05-12 → 2026-05-16 transform-substrate arc closed entries 157–168, covering `sum.transform_receipt.v1` wire format + registry + Worker dispatch + CLI + T4 source-chain binding + T5 ShareableRender + T6 multi-school extract + cross-runtime K-matrix + browser/Node verifier + Python verifier + slider LLM-axis dispatch + replay-defense window.)
 - **Scaffolded 🔧: 18 features** — tests pass, production activation pending. All catalogued in `docs/MODULE_AUDIT.md` with activation checklists.
 - **Designed 📄: 1 feature** (sha256_128_v2 default-promotion; cross-runtime byte-identity locked, default-flip is a separate operator decision).
 
