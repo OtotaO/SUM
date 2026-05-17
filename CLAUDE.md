@@ -10,6 +10,67 @@ the code.
 If this is your first turn in this repo, read these files in order and you
 will have the full picture.
 
+### Operational compass — READ FIRST
+
+These four planning artifacts are how the project actually operates.
+The charter is the compass; the deliberation has the decision tree;
+the zenith framing has the destination; the bench-hardening plan has
+the empirical-discipline worktrail. **A session that skips these will
+auto-pivot to substrate work and miss the standing direction.**
+
+00a. **[`docs/CHARTER_2026-05-17.md`](docs/CHARTER_2026-05-17.md)** —
+   operational charter. Intent, the Why (three layers), strategy
+   (substrate first → adoption through writers → standards via
+   real-customer pull → product-company only if a funder pays for
+   it), objectives (short / medium / long term), success criteria
+   (with explicit false-signals / auto-pivot-trap warnings),
+   constraints (10 "won't do" rules), the operational loop
+   (per-session / weekly / on-grant-signal / on-dogfood-finding /
+   monthly / on-external-pull cadences). Supersedes scattered
+   framing across this document and other memory entries for
+   strategic-direction questions.
+
+00b. **[`docs/PRODUCT_DELIBERATION_2026-05-14.md`](docs/PRODUCT_DELIBERATION_2026-05-14.md)**
+   — tactical deferral artifact. Three-option analysis (writer's
+   tool / standardization / omni-modal) + the grant-outcome
+   decision tree (per-branch next-action so signal arrival doesn't
+   trigger re-deliberation from scratch). Reference for the
+   "scope-before-signal" rule that gates substrate work during
+   grant-decision windows.
+
+00c. **[`docs/ZENITH_FRAMING_2026-05-16.md`](docs/ZENITH_FRAMING_2026-05-16.md)**
+   — destination framing. SUM as the chain-of-custody layer for
+   AI-transformed knowledge. Three new concepts persisted from a
+   cross-session deliberation: **Perspective Receipts** (rename
+   the 5-axis sliders as named perspectives — novice / expert /
+   regulator / etc.), **Trust Profiles** (`sum verify --profile
+   <use-case>` bundling compliance regimes as product features),
+   **Epistemic Nutrition Label** (per-artifact user-visible
+   summary of the proof-boundary discipline). Plus the canonical
+   one-sentence opener and the layered `sum verify --explain` v1
+   output design.
+
+00d. **[`docs/BENCH_HARDENING_FROM_QCVV.md`](docs/BENCH_HARDENING_FROM_QCVV.md)**
+   — empirical-benchmark hardening plan distilled from Hashim et
+   al., PRX Quantum 6, 030202 (2025). Five tasks (T5 negative-
+   control corpus → T1 iterated round-trip → T4 drift-composition
+   audit → T2 capability regions → T3 DKW worst-case bounds);
+   recommended order T5 → T1 → T4 → T2 → T3. Hard rules: no use
+   of "guarantee" downstream of this plan without a same-commit
+   benchmark receipt; no quantum-vocabulary imports (Pauli, Choi,
+   fidelity-as-alias). Three new schemas
+   (`sum.iterated_round_trip_drift.v1`,
+   `sum.slider_capability_region.v1`,
+   `sum.slider_drift_bench.v2`).
+
+### Historical research-arc handovers
+
+The session-handover documents below are research-arc-specific
+context (Path 2 / Sprint 7 / intensification / v3-diagnostic /
+v0.5.0 work). Read them when a specific narrative is in question.
+The compass above takes precedence for strategic-direction
+questions.
+
 0. **[`docs/SESSION_HANDOVER_2026-05-05_path2_arc.md`](docs/SESSION_HANDOVER_2026-05-05_path2_arc.md)**
    — most recent session-block handover (PRs #156 / #157 / #158 /
    #159 / #160 / #161 / #163 / #164 — Path 2 real-LLM-rendered
