@@ -84,11 +84,18 @@ class _FakeExtractor:
 
 class _FakeLiveLLMAdapter:
     """Stands in for ``LiveLLMAdapter`` so the slider transform's
-    ``_apply_llm_axis`` builds a no-network dispatch under test."""
+    ``_apply_llm_axis`` builds a no-network dispatch under test.
+
+    Surfaces ``model``, ``base_url``, and ``extract_triplets`` —
+    the three attributes slider._apply_llm_axis reads off the
+    adapter. Constructor accepts the from_model factory's signature
+    AND the legacy direct-instantiation signature, so both old and
+    new tests work without conditional branches."""
 
     def __init__(self, *args, fake_extractor: _FakeExtractor, **kwargs):
         self.client = None  # not used by our fake chat client
         self.model = kwargs.get("model", "fake-test-model")
+        self.base_url = kwargs.get("base_url")  # honest routing surface
         self._fake_extractor = fake_extractor
 
     async def extract_triplets(self, chunk: str) -> List[Tuple[str, str, str]]:
@@ -130,12 +137,14 @@ async def test_canonical_path_unchanged_by_t1c_followup():
 
 
 @pytest.mark.asyncio
-async def test_llm_axis_without_openai_key_raises_clear_error():
-    """LLM-axis render with no OPENAI_API_KEY in env raises ValueError
-    (NOT NotImplementedError as in T1a). The error message names the
-    operator-actionable fix."""
+async def test_llm_axis_without_openai_key_raises_clear_error(monkeypatch):
+    """LLM-axis render with default model (OpenAI-shaped) and no
+    OPENAI_API_KEY in env raises ValueError that names the four
+    free / BYO escape valves (HF / Ollama / local / Worker-Anthropic)."""
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("HF_TOKEN", raising=False)
     slider = get_transform("slider")
-    env = TransformEnv()  # openai_api_key is None
+    env = TransformEnv()  # openai_api_key is None, model is None
     with pytest.raises(ValueError) as exc_info:
         await slider.apply(
             {"triples": [["alice", "likes", "cats"]]},
@@ -149,9 +158,165 @@ async def test_llm_axis_without_openai_key_raises_clear_error():
             env,
         )
     msg = str(exc_info.value).lower()
-    assert "openai_api_key" in msg or "openai api key" in msg
-    # Anthropic-via-Worker hint surfaces — operator-actionable.
-    assert "worker" in msg or "anthropic" in msg
+    # Error names OpenAI as the default, and lists at least three
+    # alternatives: HF (HF_TOKEN), Ollama, local (Modal/Fireworks).
+    assert "openai" in msg
+    assert "hf_token" in msg or "hugging face" in msg
+    assert "ollama" in msg
+    assert "local" in msg or "modal" in msg
+
+
+def test_live_llm_adapter_from_model_routing(monkeypatch):
+    """LiveLLMAdapter.from_model dispatches to the right base URL
+    based on the model-id shape. Locks the routing contract that
+    docs/BYOK_AND_FREE_PROVIDERS.md cites."""
+    from sum_engine_internal.ensemble.live_llm_adapter import LiveLLMAdapter
+
+    # OpenAI default — no base_url
+    a = LiveLLMAdapter.from_model("gpt-4o-mini", api_key="sk-test")
+    assert a.base_url is None
+    assert a.model == "gpt-4o-mini"
+
+    # HF Inference Providers — namespaced id
+    monkeypatch.setenv("HF_TOKEN", "hf_test_token")
+    a = LiveLLMAdapter.from_model("meta-llama/Llama-3.3-70B-Instruct")
+    assert a.base_url == "https://router.huggingface.co/v1"
+    assert a.model == "meta-llama/Llama-3.3-70B-Instruct"
+
+    # Ollama prefix
+    a = LiveLLMAdapter.from_model("ollama:llama3.1")
+    assert a.base_url == "http://localhost:11434/v1"
+    assert a.model == "llama3.1"
+
+    # llama.cpp prefix
+    a = LiveLLMAdapter.from_model("llamacpp:phi-3")
+    assert a.base_url == "http://localhost:8080/v1"
+    assert a.model == "phi-3"
+
+    # local prefix needs $SUM_LOCAL_LLM_BASE
+    monkeypatch.setenv("SUM_LOCAL_LLM_BASE", "https://my-modal.run/v1")
+    a = LiveLLMAdapter.from_model("local:custom-model")
+    assert a.base_url == "https://my-modal.run/v1"
+    assert a.model == "custom-model"
+
+
+def test_live_llm_adapter_from_model_hf_without_token_raises(monkeypatch):
+    """HF-namespaced model id with no HF_TOKEN → clean error pointing
+    at where to get one."""
+    from sum_engine_internal.ensemble.live_llm_adapter import LiveLLMAdapter
+
+    monkeypatch.delenv("HF_TOKEN", raising=False)
+    with pytest.raises(ValueError, match="HF_TOKEN"):
+        LiveLLMAdapter.from_model("meta-llama/Llama-3.3-70B-Instruct")
+
+
+def test_live_llm_adapter_from_model_local_without_base_raises(monkeypatch):
+    """local: prefix with no $SUM_LOCAL_LLM_BASE → clean error."""
+    from sum_engine_internal.ensemble.live_llm_adapter import LiveLLMAdapter
+
+    monkeypatch.delenv("SUM_LOCAL_LLM_BASE", raising=False)
+    with pytest.raises(ValueError, match="SUM_LOCAL_LLM_BASE"):
+        LiveLLMAdapter.from_model("local:my-model")
+
+
+@pytest.mark.asyncio
+async def test_llm_axis_routes_to_hf_when_model_is_namespaced(monkeypatch):
+    """env.model = 'org/model' + HF_TOKEN → adapter base_url is HF
+    router. Receipt's extra.llm_endpoint reports the HF endpoint
+    honestly. Mocks the LLM call so no network."""
+    monkeypatch.setenv("HF_TOKEN", "hf_test_token")
+    slider = get_transform("slider")
+    env = TransformEnv(model="meta-llama/Llama-3.3-70B-Instruct")
+
+    triples = [("alice", "likes", "cats")]
+    fake_extractor = _FakeExtractor(triples)
+
+    def fake_from_model(model, api_key=None):
+        # Inline the routing decision: HF-namespaced → HF router URL.
+        # Avoid calling Real.from_model (which the patch has replaced
+        # with this very function → recursion).
+        a = _FakeLiveLLMAdapter(
+            fake_extractor=fake_extractor,
+            model=model,
+            base_url="https://router.huggingface.co/v1",
+        )
+        return a
+
+    def fake_chat_client_ctor(adapter):
+        return _FakeOpenAIChatClient(adapter, tome="alice likes cats indeed.")
+
+    with patch(
+        "sum_engine_internal.ensemble.live_llm_adapter.LiveLLMAdapter.from_model",
+        fake_from_model,
+    ), patch(
+        "sum_engine_internal.ensemble.live_llm_adapter.OpenAIChatClient",
+        fake_chat_client_ctor,
+    ):
+        result = await slider.apply(
+            {"triples": [["alice", "likes", "cats"]]},
+            {
+                "density": 1.0,
+                "length": 0.9,
+                "formality": 0.5,
+                "audience": 0.5,
+                "perspective": 0.5,
+            },
+            env,
+        )
+
+    # The slider succeeded via the HF route. Receipt extras name the
+    # actual endpoint so consumers can audit which provider served.
+    assert "llm_endpoint" in result.extra
+    endpoint = result.extra["llm_endpoint"]
+    assert endpoint["model"] == "meta-llama/Llama-3.3-70B-Instruct"
+    assert "huggingface.co" in endpoint["base_url"]
+
+
+@pytest.mark.asyncio
+async def test_llm_axis_routes_to_ollama_when_model_is_prefixed(monkeypatch):
+    """env.model = 'ollama:llama3.1' → adapter base_url is localhost
+    Ollama. No API key needed."""
+    slider = get_transform("slider")
+    env = TransformEnv(model="ollama:llama3.1")
+
+    triples = [("alice", "likes", "cats")]
+    fake_extractor = _FakeExtractor(triples)
+
+    def fake_from_model(model, api_key=None):
+        # Ollama prefix → strip prefix, base = localhost:11434.
+        bare = model[len("ollama:"):] if model.startswith("ollama:") else model
+        a = _FakeLiveLLMAdapter(
+            fake_extractor=fake_extractor,
+            model=bare,
+            base_url="http://localhost:11434/v1",
+        )
+        return a
+
+    def fake_chat_client_ctor(adapter):
+        return _FakeOpenAIChatClient(adapter, tome="alice likes cats indeed.")
+
+    with patch(
+        "sum_engine_internal.ensemble.live_llm_adapter.LiveLLMAdapter.from_model",
+        fake_from_model,
+    ), patch(
+        "sum_engine_internal.ensemble.live_llm_adapter.OpenAIChatClient",
+        fake_chat_client_ctor,
+    ):
+        result = await slider.apply(
+            {"triples": [["alice", "likes", "cats"]]},
+            {
+                "density": 1.0,
+                "length": 0.9,
+                "formality": 0.5,
+                "audience": 0.5,
+                "perspective": 0.5,
+            },
+            env,
+        )
+
+    endpoint = result.extra["llm_endpoint"]
+    assert endpoint["model"] == "llama3.1"  # stripped prefix
+    assert endpoint["base_url"] == "http://localhost:11434/v1"
 
 
 @pytest.mark.asyncio
@@ -167,17 +332,22 @@ async def test_llm_axis_dispatch_returns_llm_provenance():
     triples = [("alice", "likes", "cats")]
     fake_extractor = _FakeExtractor(triples)
 
-    def fake_live_adapter_ctor(*args, **kwargs):
-        return _FakeLiveLLMAdapter(*args, fake_extractor=fake_extractor, **kwargs)
+    def fake_from_model(model, api_key=None):
+        return _FakeLiveLLMAdapter(
+            fake_extractor=fake_extractor,
+            api_key=api_key,
+            model=model,
+        )
 
     def fake_chat_client_ctor(adapter):
         return _FakeOpenAIChatClient(adapter, tome="alice likes cats indeed.")
 
-    # Patch the two classes inside live_llm_adapter so the slider
-    # transform's lazy import resolves to our fakes.
+    # Patch the classmethod factory + OpenAIChatClient inside
+    # live_llm_adapter so the slider transform's lazy import resolves
+    # to our fakes.
     with patch(
-        "sum_engine_internal.ensemble.live_llm_adapter.LiveLLMAdapter",
-        fake_live_adapter_ctor,
+        "sum_engine_internal.ensemble.live_llm_adapter.LiveLLMAdapter.from_model",
+        fake_from_model,
     ), patch(
         "sum_engine_internal.ensemble.live_llm_adapter.OpenAIChatClient",
         fake_chat_client_ctor,
@@ -228,15 +398,19 @@ async def test_llm_axis_receipt_round_trips_through_verifier():
     triples = [("alice", "likes", "cats")]
     fake_extractor = _FakeExtractor(triples)
 
-    def fake_live_adapter_ctor(*args, **kwargs):
-        return _FakeLiveLLMAdapter(*args, fake_extractor=fake_extractor, **kwargs)
+    def fake_from_model(model, api_key=None):
+        return _FakeLiveLLMAdapter(
+            fake_extractor=fake_extractor,
+            api_key=api_key,
+            model=model,
+        )
 
     def fake_chat_client_ctor(adapter):
         return _FakeOpenAIChatClient(adapter, tome="alice likes cats indeed.")
 
     with patch(
-        "sum_engine_internal.ensemble.live_llm_adapter.LiveLLMAdapter",
-        fake_live_adapter_ctor,
+        "sum_engine_internal.ensemble.live_llm_adapter.LiveLLMAdapter.from_model",
+        fake_from_model,
     ), patch(
         "sum_engine_internal.ensemble.live_llm_adapter.OpenAIChatClient",
         fake_chat_client_ctor,

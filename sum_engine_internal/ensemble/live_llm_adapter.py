@@ -12,7 +12,7 @@ License: Apache License 2.0
 import json
 import logging
 import os
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 from openai import AsyncOpenAI, LengthFinishReasonError
 from pydantic import BaseModel, Field
@@ -195,12 +195,102 @@ class LiveLLMAdapter:
         api_key: str | None = None,
         model: str = "gpt-4o-mini",
         embedding_model: str = "text-embedding-3-small",
+        base_url: str | None = None,
     ):
-        self.client = AsyncOpenAI(
-            api_key=api_key or os.getenv("OPENAI_API_KEY")
-        )
+        # base_url support lets this adapter front any OpenAI-compatible
+        # endpoint — HF Inference Providers, Ollama, llama.cpp, Modal-
+        # hosted vLLM, Fireworks.ai, etc. Default (base_url=None) keeps
+        # the legacy OpenAI behaviour byte-identical.
+        kwargs: dict[str, Any] = {"api_key": api_key or os.getenv("OPENAI_API_KEY")}
+        if base_url is not None:
+            kwargs["base_url"] = base_url
+        self.client = AsyncOpenAI(**kwargs)
         self.model = model
         self.embedding_model = embedding_model
+        self.base_url = base_url
+
+    @classmethod
+    def from_model(
+        cls,
+        model: str,
+        *,
+        api_key: str | None = None,
+    ) -> "LiveLLMAdapter":
+        """Route a model id through ``llm_dispatch``'s routing rules and
+        return an ``LiveLLMAdapter`` pointed at the right endpoint.
+
+        Supports the six provider patterns the substrate already knows:
+
+          * ``gpt-* / o1-* / o3-* / o4-*``     → OpenAI (`OPENAI_API_KEY`)
+          * ``claude-*``                       → not yet supported here
+              (the slider's LLM-axis Python path is OpenAI-SDK-shaped;
+              Anthropic routing is the Worker's job — use /api/render
+              with ``X-Render-LLM-Key-Anthropic`` instead)
+          * ``ollama:<model>``                 → http://localhost:11434/v1
+          * ``llamacpp:<model>``               → http://localhost:8080/v1
+          * ``local:<model>``                  → $SUM_LOCAL_LLM_BASE
+          * ``org/model`` (HF-namespaced)      → HF Inference Providers
+              router at https://router.huggingface.co/v1 with `HF_TOKEN`
+
+        Callers without OpenAI credits can use HF (any open-weights
+        model), Ollama (local + free), or a Modal-/Fireworks-hosted
+        endpoint via the ``local:`` prefix. The receipt's ``provider``
+        field reports what actually served — see callers in
+        ``sum_engine_internal/transforms/slider.py`` for how that
+        propagates into ``sum.transform_receipt.v1``.
+        """
+        from sum_engine_internal.ensemble.llm_dispatch import (
+            HF_ROUTER_BASE_URL,
+            LLAMACPP_DEFAULT_BASE_URL,
+            LOCAL_LLM_ENV_VAR,
+            OLLAMA_DEFAULT_BASE_URL,
+        )
+
+        m = model.lower()
+
+        # Local-server prefixes
+        if m.startswith("ollama:"):
+            return cls(
+                api_key=api_key or "no-key-needed-for-local",
+                model=model[len("ollama:"):],
+                base_url=OLLAMA_DEFAULT_BASE_URL,
+            )
+        if m.startswith("llamacpp:"):
+            return cls(
+                api_key=api_key or "no-key-needed-for-local",
+                model=model[len("llamacpp:"):],
+                base_url=LLAMACPP_DEFAULT_BASE_URL,
+            )
+        if m.startswith("local:"):
+            base = os.environ.get(LOCAL_LLM_ENV_VAR)
+            if not base:
+                raise ValueError(
+                    f"slider LLM-axis: model {model!r} uses the "
+                    f"`local:` prefix but {LOCAL_LLM_ENV_VAR} is not "
+                    f"set. Point it at your OpenAI-API-compatible "
+                    f"server's base URL (e.g. a Modal-hosted vLLM "
+                    f"endpoint, Fireworks.ai's base, etc.)."
+                )
+            return cls(
+                api_key=api_key or os.environ.get("OPENAI_API_KEY", "no-key"),
+                model=model[len("local:"):],
+                base_url=base,
+            )
+
+        # HF Inference Providers — namespaced id
+        if "/" in model:
+            token = api_key or os.environ.get("HF_TOKEN")
+            if not token:
+                raise ValueError(
+                    f"slider LLM-axis: HF-namespaced model {model!r} "
+                    f"needs HF_TOKEN env var or explicit api_key. "
+                    f"Get a token at https://huggingface.co/settings/tokens "
+                    f"(read scope is sufficient for Inference Providers)."
+                )
+            return cls(api_key=token, model=model, base_url=HF_ROUTER_BASE_URL)
+
+        # Default OpenAI
+        return cls(api_key=api_key, model=model)
 
     # ------------------------------------------------------------------
     # Extraction (Tags)
