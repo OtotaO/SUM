@@ -180,6 +180,7 @@ Capture in your own notes. The next session this repo opens, paste the findings;
 ## Known friction points (don't waste energy on these)
 
 - **Stale install.** If your `sum` binary is below 0.6.0 (last verified 2026-05-17: PyPI ships 0.6.0), `sum transform apply` will fail with `ModuleNotFoundError`. `pip install --upgrade 'sum-engine[openai,sieve,receipt-verify]'`.
+- **(Fixed 2026-05-17)** Older versions printed a `transformers` `FutureWarning` to stdout, poisoning `sum attest > bundle.json` redirects. Current versions suppress at CLI entry — the workaround `PYTHONWARNINGS=ignore` is no longer required. Surfaced as F1 in `docs/DOGFOOD_FINDINGS_2026-05-17.md`.
 - **Sieve extraction is conservative.** It will miss triples that an LLM extractor would catch. For the distill scenario, that's a feature (deterministic, no LLM). For dogfood-on-real-writing, you may want LLM extraction — wire it via the env vars in `sum_engine_internal/ensemble/live_llm_adapter.py`.
 - **The transform CLI's `--input` flag wants JSON.** Wrap your text input accordingly (`{"triples": [...]}` shape for slider; `{"text": "..."}` shape for extract).
 - **The CLI's output isn't a polished publishing format.** It's JSON. For dogfood, that's fine — the experience is the loop, not the typography. If the loop works, the publishing-format polish is a downstream product decision.

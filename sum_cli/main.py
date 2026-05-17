@@ -36,8 +36,20 @@ import hashlib
 import json
 import os
 import sys
+import warnings
 from datetime import datetime, timezone
 from typing import Any, Optional
+
+# Suppress transformers' `FutureWarning: torch.utils._pytree._register_pytree_node
+# is deprecated`. The library prints this warning to stdout on import (not
+# stderr), which poisons `sum attest > bundle.json` — the resulting file
+# starts with the warning text before the JSON envelope, making it
+# unparseable. Suppressing the warning at CLI-entry time is the smallest
+# fix that doesn't require upstream-library patching. Surfaced as F1 in
+# docs/DOGFOOD_FINDINGS_2026-05-17.md.
+warnings.filterwarnings("ignore", category=FutureWarning, module="transformers")
+# Some transformer paths emit through torch directly; cover both.
+warnings.filterwarnings("ignore", category=FutureWarning, module="torch")
 
 from sum_cli import __version__
 
