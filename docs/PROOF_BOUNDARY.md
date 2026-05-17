@@ -163,6 +163,27 @@ Both runtimes MUST produce byte-identical outcomes on every fixture: same error 
 
 These properties are observed on a fixed benchmark but not formally proven. They carry the epistemic status `empirical-benchmark` (see §5) and depend on implementation quality, input characteristics, and runtime environment.
 
+### 2.0. Negative controls (T5 of bench-hardening worktrail)
+
+A bench with no documented failure mode is not a benchmark. Every empirical claim in §2.1–§2.5 is paired with a negative-control test that exercises inputs the canonicalisation pipeline is **expected to fail on or surface as ambiguous**. If the bench succeeds on those inputs, the bench is too easy; if it fails on inputs it should succeed on, the bench is broken. Either is a deeper failure than a single number being a bit lower than claimed.
+
+**Corpus:** `scripts/bench/corpora/seed_negative_control_v1.json` (20 hand-authored documents, four per failure mode × five failure modes).
+
+Failure modes covered:
+- **Ambiguous coreference** — pronoun referents are syntactically defensible in multiple ways (e.g. *"Alice told Beth she had won."*).
+- **Predicate-alias inconsistency** — aliased relations that the canonicaliser must either preserve or collapse with a documented rule (e.g. *"X authored Y. X wrote Y."*).
+- **Contradictory axioms** — mutually exclusive claims about the same entity within one document (e.g. *"Alice was born in 1990. Alice was born in 1991."*) — the consistency check should flag them, not silently pick one.
+- **Entity-resolution adversarial** — surface forms with multiple plausible Q-ID resolutions (e.g. *"Relativity is a foundational concept."*).
+- **Non-extractable assertions** — questions, counterfactuals, hedges, and conditionals that look assertion-shaped but assert nothing.
+
+**Runner:** `make negative-control` or `python -m scripts.bench.runners.negative_control`. Exits 1 if any document violates its annotated rule (i.e., the bench succeeds on an input it should fail on). Receipt schema: `sum.negative_control_report.v1`.
+
+**Baseline receipt (2026-05-17):** `fixtures/bench_receipts/negative_control_2026-05-17.json`. Result against the current sieve: 4 expected / 10 advisory / 6 unexpected (out of 20). The six `unexpected` cases — sieve silently committing to one reading on ambiguous-coref and counterfactual inputs — are the real shortcoming the corpus is designed to surface. They are NOT proof the bench is broken; they ARE proof the extractor doesn't handle these cases. Future work fixes the extractor; the negative control catches regression.
+
+**Operator note:** the runner is NOT wired into `make pre-push` or CI by default. The operator decides when to gate, after the shortcomings the v1 receipt surfaces have been triaged (fix sieve / accept advisory / mark known-deficient).
+
+**Scope:** the negative control verifies the BENCH's discriminating power, not the system's correctness. A green negative-control run does NOT mean SUM extracts perfectly; it means the bench correctly distinguishes inputs SUM handles from inputs SUM fails on. The proof-boundary discipline applies: a successful negative-control run is `certified` (a property of the test suite), not `empirical-benchmark` (a property of the system).
+
 ### 2.1. Extraction Fidelity
 
 The quality of semantic extraction from natural language depends on:

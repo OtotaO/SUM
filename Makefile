@@ -101,6 +101,11 @@ probe-live-trust-loop:  ## End-to-end adversarial probe against the live deploy:
 probe-operator-audit:  ## Audit the live Worker's secrets / vars / endpoint contract vs wrangler.toml. Catches secret-name leaks, stale operator keys, and wiped-by-deploy [vars]. Operator-local: requires wrangler login.
 	@bash scripts/probes/operator_audit.sh
 
+negative-control:  ## T5 of bench-hardening — run the negative-control corpus (deterministic sieve, no LLM cost). Exits 1 if any document violates its annotated rule. NOT wired into pre-push or CI by default; operator decides when to gate.
+	@$(PYTHON) -m scripts.bench.runners.negative_control \
+		--corpus scripts/bench/corpora/seed_negative_control_v1.json \
+		--pretty
+
 lint:  ## ruff check (same rules as CI).
 	$(PYTHON) -m ruff check sum_cli internal scripts
 

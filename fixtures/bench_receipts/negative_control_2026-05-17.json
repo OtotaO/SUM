@@ -1,0 +1,368 @@
+{
+  "schema": "sum.negative_control_report.v1",
+  "corpus_id": "seed_negative_control_v1",
+  "corpus_schema": "sum.negative_control_corpus.v1",
+  "generated_at": "2026-05-17T12:41:34.000Z",
+  "extractor": "deterministic_sieve",
+  "summary": {
+    "total_documents": 20,
+    "expected": 4,
+    "unexpected": 6,
+    "advisory": 10
+  },
+  "by_failure_mode": {
+    "ambiguous_coreference": {
+      "expected": 0,
+      "unexpected": 4,
+      "advisory": 0
+    },
+    "predicate_alias_inconsistency": {
+      "expected": 0,
+      "unexpected": 0,
+      "advisory": 4
+    },
+    "contradictory_axioms": {
+      "expected": 2,
+      "unexpected": 0,
+      "advisory": 2
+    },
+    "entity_resolution_adversarial": {
+      "expected": 0,
+      "unexpected": 0,
+      "advisory": 4
+    },
+    "non_extractable_assertion": {
+      "expected": 2,
+      "unexpected": 2,
+      "advisory": 0
+    }
+  },
+  "results": [
+    {
+      "doc_id": "amb_coref_01",
+      "expected_failure_mode": "ambiguous_coreference",
+      "observed": {
+        "axiom_count": 1,
+        "axioms": [
+          {
+            "subject": "she",
+            "predicate": "win",
+            "object": "beth"
+          }
+        ]
+      },
+      "verdict": "unexpected",
+      "notes": "rule allows drop OR flag; observed 1 triples without a flag \u2014 silent commitment to one reading is the documented failure mode"
+    },
+    {
+      "doc_id": "amb_coref_02",
+      "expected_failure_mode": "ambiguous_coreference",
+      "observed": {
+        "axiom_count": 1,
+        "axioms": [
+          {
+            "subject": "he",
+            "predicate": "lie",
+            "object": "witness"
+          }
+        ]
+      },
+      "verdict": "unexpected",
+      "notes": "rule allows drop OR flag; observed 1 triples without a flag \u2014 silent commitment to one reading is the documented failure mode"
+    },
+    {
+      "doc_id": "amb_coref_03",
+      "expected_failure_mode": "ambiguous_coreference",
+      "observed": {
+        "axiom_count": 1,
+        "axioms": [
+          {
+            "subject": "she",
+            "predicate": "publish",
+            "object": "paper"
+          }
+        ]
+      },
+      "verdict": "unexpected",
+      "notes": "rule allows drop OR flag; observed 1 triples without a flag \u2014 silent commitment to one reading is the documented failure mode"
+    },
+    {
+      "doc_id": "amb_coref_04",
+      "expected_failure_mode": "ambiguous_coreference",
+      "observed": {
+        "axiom_count": 1,
+        "axioms": [
+          {
+            "subject": "term",
+            "predicate": "end",
+            "object": "journalist"
+          }
+        ]
+      },
+      "verdict": "unexpected",
+      "notes": "rule allows drop OR flag; observed 1 triples without a flag \u2014 silent commitment to one reading is the documented failure mode"
+    },
+    {
+      "doc_id": "pred_alias_01",
+      "expected_failure_mode": "predicate_alias_inconsistency",
+      "observed": {
+        "axiom_count": 2,
+        "axioms": [
+          {
+            "subject": "alice",
+            "predicate": "author",
+            "object": "report"
+          },
+          {
+            "subject": "alice",
+            "predicate": "write",
+            "object": "report"
+          }
+        ]
+      },
+      "verdict": "advisory",
+      "notes": "rule is observational (produce_one_or_two_triples_with_surfaced_predicates); extractor produced 2 triple(s). Future tooling with surfaces for predicate-alias detection / entity disambiguation can grade this properly. v1 records without pass/fail."
+    },
+    {
+      "doc_id": "pred_alias_02",
+      "expected_failure_mode": "predicate_alias_inconsistency",
+      "observed": {
+        "axiom_count": 2,
+        "axioms": [
+          {
+            "subject": "drug",
+            "predicate": "cure",
+            "object": "migraine"
+          },
+          {
+            "subject": "drug",
+            "predicate": "treat",
+            "object": "migraine"
+          }
+        ]
+      },
+      "verdict": "advisory",
+      "notes": "rule is observational (produce_two_distinct_triples_with_treats_and_cures_preserved); extractor produced 2 triple(s). Future tooling with surfaces for predicate-alias detection / entity disambiguation can grade this properly. v1 records without pass/fail."
+    },
+    {
+      "doc_id": "pred_alias_03",
+      "expected_failure_mode": "predicate_alias_inconsistency",
+      "observed": {
+        "axiom_count": 3,
+        "axioms": [
+          {
+            "subject": "bob",
+            "predicate": "found",
+            "object": "company"
+          },
+          {
+            "subject": "bob",
+            "predicate": "own",
+            "object": "company"
+          },
+          {
+            "subject": "bob",
+            "predicate": "run",
+            "object": "company"
+          }
+        ]
+      },
+      "verdict": "advisory",
+      "notes": "rule is observational (produce_three_distinct_triples); extractor produced 3 triple(s). Future tooling with surfaces for predicate-alias detection / entity disambiguation can grade this properly. v1 records without pass/fail."
+    },
+    {
+      "doc_id": "pred_alias_04",
+      "expected_failure_mode": "predicate_alias_inconsistency",
+      "observed": {
+        "axiom_count": 1,
+        "axioms": [
+          {
+            "subject": "model",
+            "predicate": "learn",
+            "object": "datum"
+          }
+        ]
+      },
+      "verdict": "advisory",
+      "notes": "rule is observational (produce_one_or_two_triples_with_decision_surfaced); extractor produced 1 triple(s). Future tooling with surfaces for predicate-alias detection / entity disambiguation can grade this properly. v1 records without pass/fail."
+    },
+    {
+      "doc_id": "contradict_01",
+      "expected_failure_mode": "contradictory_axioms",
+      "observed": {
+        "axiom_count": 0,
+        "axioms": []
+      },
+      "verdict": "advisory",
+      "notes": "extracted 0 triples; corpus expected the contradiction preserved but the extractor produced fewer than 2 \u2014 could be sieve's lemmatisation quirk on these specific phrasings"
+    },
+    {
+      "doc_id": "contradict_02",
+      "expected_failure_mode": "contradictory_axioms",
+      "observed": {
+        "axiom_count": 2,
+        "axioms": [
+          {
+            "subject": "company",
+            "predicate": "be",
+            "object": "profitable"
+          },
+          {
+            "subject": "company",
+            "predicate": "operate",
+            "object": "loss"
+          }
+        ]
+      },
+      "verdict": "expected",
+      "notes": "extracted 2 triples (>= 2 as required; preserves the contradiction for downstream consistency check to flag)"
+    },
+    {
+      "doc_id": "contradict_03",
+      "expected_failure_mode": "contradictory_axioms",
+      "observed": {
+        "axiom_count": 0,
+        "axioms": []
+      },
+      "verdict": "advisory",
+      "notes": "extracted 0 triples; corpus expected the contradiction preserved but the extractor produced fewer than 2 \u2014 could be sieve's lemmatisation quirk on these specific phrasings"
+    },
+    {
+      "doc_id": "contradict_04",
+      "expected_failure_mode": "contradictory_axioms",
+      "observed": {
+        "axiom_count": 2,
+        "axioms": [
+          {
+            "subject": "patient",
+            "predicate": "be",
+            "object": "allergic"
+          },
+          {
+            "subject": "patient",
+            "predicate": "tolerate",
+            "object": "penicillin"
+          }
+        ]
+      },
+      "verdict": "expected",
+      "notes": "extracted 2 triples (>= 2 as required; preserves the contradiction for downstream consistency check to flag)"
+    },
+    {
+      "doc_id": "entity_adversarial_01",
+      "expected_failure_mode": "entity_resolution_adversarial",
+      "observed": {
+        "axiom_count": 1,
+        "axioms": [
+          {
+            "subject": "relativity",
+            "predicate": "be",
+            "object": "foundational concept"
+          }
+        ]
+      },
+      "verdict": "advisory",
+      "notes": "rule is observational (produce_one_triple_with_qid_resolution_low_confidence); extractor produced 1 triple(s). Future tooling with surfaces for predicate-alias detection / entity disambiguation can grade this properly. v1 records without pass/fail."
+    },
+    {
+      "doc_id": "entity_adversarial_02",
+      "expected_failure_mode": "entity_resolution_adversarial",
+      "observed": {
+        "axiom_count": 1,
+        "axioms": [
+          {
+            "subject": "apple",
+            "predicate": "release",
+            "object": "new product"
+          }
+        ]
+      },
+      "verdict": "advisory",
+      "notes": "rule is observational (produce_one_triple_with_correct_apple_disambiguation); extractor produced 1 triple(s). Future tooling with surfaces for predicate-alias detection / entity disambiguation can grade this properly. v1 records without pass/fail."
+    },
+    {
+      "doc_id": "entity_adversarial_03",
+      "expected_failure_mode": "entity_resolution_adversarial",
+      "observed": {
+        "axiom_count": 1,
+        "axioms": [
+          {
+            "subject": "mercury",
+            "predicate": "rise",
+            "object": "degree"
+          }
+        ]
+      },
+      "verdict": "advisory",
+      "notes": "rule is observational (produce_one_triple_with_temperature_reading_interpretation); extractor produced 1 triple(s). Future tooling with surfaces for predicate-alias detection / entity disambiguation can grade this properly. v1 records without pass/fail."
+    },
+    {
+      "doc_id": "entity_adversarial_04",
+      "expected_failure_mode": "entity_resolution_adversarial",
+      "observed": {
+        "axiom_count": 1,
+        "axioms": [
+          {
+            "subject": "java",
+            "predicate": "use",
+            "object": "industry"
+          }
+        ]
+      },
+      "verdict": "advisory",
+      "notes": "rule is observational (produce_one_triple_with_corpus_prior_or_low_confidence); extractor produced 1 triple(s). Future tooling with surfaces for predicate-alias detection / entity disambiguation can grade this properly. v1 records without pass/fail."
+    },
+    {
+      "doc_id": "non_extractable_01",
+      "expected_failure_mode": "non_extractable_assertion",
+      "observed": {
+        "axiom_count": 1,
+        "axioms": [
+          {
+            "subject": "ai",
+            "predicate": "generate",
+            "object": "generated content"
+          }
+        ]
+      },
+      "verdict": "unexpected",
+      "notes": "rule was 'produce_zero_triples' but extractor produced 1 triple(s); this is a fact-preservation failure (the document is a question / counterfactual / hedge that asserts nothing)"
+    },
+    {
+      "doc_id": "non_extractable_02",
+      "expected_failure_mode": "non_extractable_assertion",
+      "observed": {
+        "axiom_count": 1,
+        "axioms": [
+          {
+            "subject": "alice",
+            "predicate": "win",
+            "object": "election"
+          }
+        ]
+      },
+      "verdict": "unexpected",
+      "notes": "rule allows drop OR flag; observed 1 triples without a flag \u2014 silent commitment to one reading is the documented failure mode"
+    },
+    {
+      "doc_id": "non_extractable_03",
+      "expected_failure_mode": "non_extractable_assertion",
+      "observed": {
+        "axiom_count": 0,
+        "axioms": []
+      },
+      "verdict": "expected",
+      "notes": "extracted 0 triples (drop-path)"
+    },
+    {
+      "doc_id": "non_extractable_04",
+      "expected_failure_mode": "non_extractable_assertion",
+      "observed": {
+        "axiom_count": 0,
+        "axioms": []
+      },
+      "verdict": "expected",
+      "notes": "extracted 0 triples (drop-path)"
+    }
+  ]
+}
