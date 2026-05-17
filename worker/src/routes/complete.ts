@@ -18,6 +18,7 @@
 // extractTriples() walks at runtime.
 
 import type { Env } from "../index";
+import { checkRateLimit, classifyScope, rateLimitedResponse } from "../rate_limit";
 
 const ANTHROPIC_DEFAULT = "claude-haiku-4-5-20251001";
 const OPENAI_DEFAULT = "gpt-4o-mini";
@@ -101,6 +102,18 @@ async function callOpenAI(env: Env, prompt: string, model: string): Promise<stri
 export async function handleComplete(request: Request, env: Env): Promise<Response> {
   if (request.method !== "POST") {
     return json({ error: "method not allowed; use POST" }, 405);
+  }
+
+  // Rate limit before body parse. Same policy as /api/render and
+  // /api/transform — operator-keyed calls get the 5/day demo bucket;
+  // (the /api/complete route doesn't currently honour BYO headers, but
+  // the classification still routes through the demo bucket correctly.)
+  if (env.RENDER_CACHE) {
+    const scope = classifyScope("complete", request);
+    const rl = await checkRateLimit(request, env.RENDER_CACHE, scope);
+    if (!rl.allowed) {
+      return rateLimitedResponse(rl);
+    }
   }
 
   let body: CompleteRequest;

@@ -41,6 +41,7 @@ import {
 import { computeSourceChainHash } from "../receipt/source_chain";
 import { getTransform, hasTransform, listTransforms } from "../transforms/_registry";
 import type { TransformEnv } from "../transforms/_base";
+import { checkRateLimit, classifyScope, rateLimitedResponse } from "../rate_limit";
 
 interface TransformRequest {
   transform?: string;
@@ -78,6 +79,17 @@ export async function handleTransform(
 ): Promise<Response> {
   if (request.method !== "POST") {
     return json({ error: "method not allowed; use POST" }, 405);
+  }
+
+  // Rate limit BEFORE parsing the body. BYO-key classification looks
+  // at headers only, so we can decide the bucket without committing
+  // CPU to parse + dispatch.
+  if (env.RENDER_CACHE) {
+    const scope = classifyScope("transform", request);
+    const rl = await checkRateLimit(request, env.RENDER_CACHE, scope);
+    if (!rl.allowed) {
+      return rateLimitedResponse(rl);
+    }
   }
 
   let body: TransformRequest;

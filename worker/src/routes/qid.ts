@@ -50,6 +50,7 @@
 // pointing at the repo so Wikidata can reach us if we ever misbehave.
 
 import type { Env } from "../index";
+import { checkRateLimit, rateLimitedResponse } from "../rate_limit";
 
 const WBSEARCH_BASE = "https://www.wikidata.org/w/api.php";
 const USER_AGENT =
@@ -202,11 +203,21 @@ async function resolveTerm(
 
 export async function handleQid(
   request: Request,
-  _env: Env,
+  env: Env,
   ctx: ExecutionContext,
 ): Promise<Response> {
   if (request.method !== "POST") {
     return json({ error: "method not allowed; use POST" }, 405);
+  }
+
+  // Rate limit before body parse. /api/qid hits Wikidata's public
+  // API which is itself rate-limited; this defends our origin from
+  // amplifying that limit + protects KV/CPU budget. 60/hr per IP.
+  if (env.RENDER_CACHE) {
+    const rl = await checkRateLimit(request, env.RENDER_CACHE, "qid");
+    if (!rl.allowed) {
+      return rateLimitedResponse(rl);
+    }
   }
 
   let body: { terms?: TermRequest[] };
