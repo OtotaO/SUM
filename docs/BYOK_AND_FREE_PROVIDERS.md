@@ -4,7 +4,7 @@
 
 Operator (Umar) is broke; users following the DOGFOOD_QUICKSTART without OpenAI credits are too. This doc enumerates every free or cheap path that's wired in the substrate today, with copy-pasteable env-var blocks.
 
-## Six routes, one switch
+## Nine routes, one switch
 
 The Python slider's LLM-axis dispatch routes through `LiveLLMAdapter.from_model(model_id, api_key=...)`. The routing decision is made from the model id shape:
 
@@ -13,11 +13,76 @@ The Python slider's LLM-axis dispatch routes through `LiveLLMAdapter.from_model(
 | `gpt-...` / `o1-*` / `o3-*` / `o4-*` | OpenAI (`api.openai.com`) | `OPENAI_API_KEY` | pay-as-you-go |
 | `claude-...` | **not yet supported on Python path** — use Worker `/api/render` with `X-Render-LLM-Key-Anthropic` header | `X-Render-LLM-Key-Anthropic` | pay-as-you-go |
 | `org/model` (any `/`-namespaced) | **Hugging Face Inference Providers** (`router.huggingface.co/v1`) | `HF_TOKEN` | **HF credits** or pay-as-you-go |
+| `nim:<model>` | **NVIDIA NIM** (`integrate.api.nvidia.com/v1`) | `NVIDIA_API_KEY` | **1000 free credits on signup** (up to 5000) |
+| `groq:<model>` | **Groq Cloud** (`api.groq.com/openai/v1`) | `GROQ_API_KEY` | **free daily quota**, fastest TTFT |
+| `cerebras:<model>` | **Cerebras Cloud** (`api.cerebras.ai/v1`) | `CEREBRAS_API_KEY` | **free daily quota**, fastest tok/sec |
 | `ollama:<model>` | Ollama daemon at `localhost:11434/v1` | none | **free, local** |
 | `llamacpp:<model>` | llama.cpp server at `localhost:8080/v1` | none | **free, local** |
-| `local:<model>` | Custom OpenAI-compatible base (`$SUM_LOCAL_LLM_BASE`) | optional bearer | varies (Modal, Fireworks, vLLM-on-anything) |
+| `local:<model>` | Custom OpenAI-compatible base (`$SUM_LOCAL_LLM_BASE`) | optional bearer | varies (Modal, Fireworks, DeepInfra, vLLM-on-anything) |
 
 The model id is selected via `SUM_TRANSFORM_MODEL` env var (CLI) or `TransformEnv.model` (library callers).
+
+Cascade design + provider research: [`docs/FALLBACK_PROVIDER_CASCADE_2026-05-18.md`](FALLBACK_PROVIDER_CASCADE_2026-05-18.md).
+
+## Recipe: NVIDIA NIM (1000 free credits on signup, no credit card)
+
+The most generous free quota wired today. Sign up at [build.nvidia.com](https://build.nvidia.com), enroll in the NVIDIA Developer Program, and get a 1000-credit balance. Use the forum or request form to bump up to 5000 credits. Some models (Zhipu GLM-4 family) consume zero credits — fully free.
+
+```bash
+# 1. Get a key (prefixed `nvapi-`) at build.nvidia.com/api-keys
+export NVIDIA_API_KEY=nvapi-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# 2. Pick a model — see https://build.nvidia.com/explore/discover for the
+#    full catalog. Models route to NIM regardless of how OpenAI-shaped
+#    their id looks; the `nim:` prefix is the routing key.
+export SUM_TRANSFORM_MODEL=nim:meta/llama-3.3-70b-instruct
+
+# 3. Run a slider render
+echo '{"triples":[["alice","graduated","2012"]]}' \
+  | sum transform apply slider \
+    --input - \
+    --parameters '{"density":1.0,"length":0.9,"formality":0.5,"audience":0.5,"perspective":0.5}'
+```
+
+Rate cap is 40 req/min/model regardless of credit balance.
+
+## Recipe: Groq (free daily token quota, fastest TTFT)
+
+Best for low-latency UX. <300ms time-to-first-token consistently; Llama 3.3 70B at ~476 tok/s.
+
+```bash
+# 1. Get a key at console.groq.com/keys
+export GROQ_API_KEY=gsk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# 2. Pick a model — Groq's catalog at console.groq.com/docs/models
+export SUM_TRANSFORM_MODEL=groq:llama-3.3-70b-versatile
+
+# 3. Run
+echo '{"triples":[["alice","graduated","2012"]]}' \
+  | sum transform apply slider \
+    --input - \
+    --parameters '{"density":1.0,"length":0.9,"formality":0.5,"audience":0.5,"perspective":0.5}'
+```
+
+Free quota is daily — burns reset every 24h. Beyond it, pricing is competitive with the other inference providers.
+
+## Recipe: Cerebras (free daily quota, fastest end-to-end)
+
+Highest tok/sec in the cascade — 3000 tok/sec on gpt-oss-120B (vs Groq's 476 on Llama 3.3 70B). Best for batch jobs where total throughput matters more than first-token latency.
+
+```bash
+# 1. Get a key at cloud.cerebras.ai
+export CEREBRAS_API_KEY=csk-xxxxxxxxxxxxxxxxxxxx
+
+# 2. Pick a model — cloud.cerebras.ai/models
+export SUM_TRANSFORM_MODEL=cerebras:llama-4-scout-17b-16e-instruct
+
+# 3. Run
+echo '{"triples":[["alice","graduated","2012"]]}' \
+  | sum transform apply slider \
+    --input - \
+    --parameters '{"density":1.0,"length":0.9,"formality":0.5,"audience":0.5,"perspective":0.5}'
+```
 
 ## Recipe: Hugging Face Inference Providers ($800 in HF credits)
 

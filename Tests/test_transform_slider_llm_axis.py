@@ -219,6 +219,63 @@ def test_live_llm_adapter_from_model_local_without_base_raises(monkeypatch):
         LiveLLMAdapter.from_model("local:my-model")
 
 
+def test_live_llm_adapter_from_model_nim_routing(monkeypatch):
+    """`nim:<model>` routes to NVIDIA NIM base URL using NVIDIA_API_KEY."""
+    from sum_engine_internal.ensemble.live_llm_adapter import LiveLLMAdapter
+
+    monkeypatch.setenv("NVIDIA_API_KEY", "nvapi-test-token")
+    a = LiveLLMAdapter.from_model("nim:meta/llama-3.3-70b-instruct")
+    assert a.base_url == "https://integrate.api.nvidia.com/v1"
+    assert a.model == "meta/llama-3.3-70b-instruct"
+
+
+def test_live_llm_adapter_from_model_nim_without_key_raises(monkeypatch):
+    """`nim:` without NVIDIA_API_KEY → error pointing at build.nvidia.com."""
+    from sum_engine_internal.ensemble.live_llm_adapter import LiveLLMAdapter
+
+    monkeypatch.delenv("NVIDIA_API_KEY", raising=False)
+    with pytest.raises(ValueError, match="NVIDIA_API_KEY"):
+        LiveLLMAdapter.from_model("nim:meta/llama-3.3-70b-instruct")
+
+
+def test_live_llm_adapter_from_model_groq_routing(monkeypatch):
+    """`groq:<model>` routes to Groq Cloud using GROQ_API_KEY."""
+    from sum_engine_internal.ensemble.live_llm_adapter import LiveLLMAdapter
+
+    monkeypatch.setenv("GROQ_API_KEY", "gsk_test_token")
+    a = LiveLLMAdapter.from_model("groq:llama-3.3-70b-versatile")
+    assert a.base_url == "https://api.groq.com/openai/v1"
+    assert a.model == "llama-3.3-70b-versatile"
+
+
+def test_live_llm_adapter_from_model_groq_without_key_raises(monkeypatch):
+    """`groq:` without GROQ_API_KEY → error pointing at console.groq.com."""
+    from sum_engine_internal.ensemble.live_llm_adapter import LiveLLMAdapter
+
+    monkeypatch.delenv("GROQ_API_KEY", raising=False)
+    with pytest.raises(ValueError, match="GROQ_API_KEY"):
+        LiveLLMAdapter.from_model("groq:llama-3.3-70b-versatile")
+
+
+def test_live_llm_adapter_from_model_cerebras_routing(monkeypatch):
+    """`cerebras:<model>` routes to Cerebras Cloud using CEREBRAS_API_KEY."""
+    from sum_engine_internal.ensemble.live_llm_adapter import LiveLLMAdapter
+
+    monkeypatch.setenv("CEREBRAS_API_KEY", "csk-test-token")
+    a = LiveLLMAdapter.from_model("cerebras:llama3.1-8b")
+    assert a.base_url == "https://api.cerebras.ai/v1"
+    assert a.model == "llama3.1-8b"
+
+
+def test_live_llm_adapter_from_model_cerebras_without_key_raises(monkeypatch):
+    """`cerebras:` without CEREBRAS_API_KEY → error pointing at cloud.cerebras.ai."""
+    from sum_engine_internal.ensemble.live_llm_adapter import LiveLLMAdapter
+
+    monkeypatch.delenv("CEREBRAS_API_KEY", raising=False)
+    with pytest.raises(ValueError, match="CEREBRAS_API_KEY"):
+        LiveLLMAdapter.from_model("cerebras:llama3.1-8b")
+
+
 @pytest.mark.asyncio
 async def test_llm_axis_routes_to_hf_when_model_is_namespaced(monkeypatch):
     """env.model = 'org/model' + HF_TOKEN → adapter base_url is HF

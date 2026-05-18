@@ -219,7 +219,7 @@ class LiveLLMAdapter:
         """Route a model id through ``llm_dispatch``'s routing rules and
         return an ``LiveLLMAdapter`` pointed at the right endpoint.
 
-        Supports the six provider patterns the substrate already knows:
+        Supports nine provider patterns the substrate knows:
 
           * ``gpt-* / o1-* / o3-* / o4-*``     → OpenAI (`OPENAI_API_KEY`)
           * ``claude-*``                       → not yet supported here
@@ -231,24 +231,42 @@ class LiveLLMAdapter:
           * ``local:<model>``                  → $SUM_LOCAL_LLM_BASE
           * ``org/model`` (HF-namespaced)      → HF Inference Providers
               router at https://router.huggingface.co/v1 with `HF_TOKEN`
+          * ``nim:<model>``                    → NVIDIA NIM
+              (`NVIDIA_API_KEY`; 1000 free credits on signup, 80+ models)
+          * ``groq:<model>``                   → Groq Cloud
+              (`GROQ_API_KEY`; free daily quota, fastest TTFT)
+          * ``cerebras:<model>``               → Cerebras Cloud
+              (`CEREBRAS_API_KEY`; free daily quota, fastest tok/sec)
 
         Callers without OpenAI credits can use HF (any open-weights
-        model), Ollama (local + free), or a Modal-/Fireworks-hosted
+        model), Ollama (local + free), NIM (1000 free credits), Groq /
+        Cerebras (free daily quota), or a Modal-/Fireworks-hosted
         endpoint via the ``local:`` prefix. The receipt's ``provider``
-        field reports what actually served — see callers in
+        field reports the API shape; ``extra.llm_endpoint`` reports the
+        actual routing target (model + base_url). See callers in
         ``sum_engine_internal/transforms/slider.py`` for how that
         propagates into ``sum.transform_receipt.v1``.
+
+        Full cascade design + recipes per provider:
+        ``docs/FALLBACK_PROVIDER_CASCADE_2026-05-18.md`` +
+        ``docs/BYOK_AND_FREE_PROVIDERS.md``.
         """
         from sum_engine_internal.ensemble.llm_dispatch import (
+            CEREBRAS_BASE_URL,
+            CEREBRAS_ENV_VAR,
+            GROQ_BASE_URL,
+            GROQ_ENV_VAR,
             HF_ROUTER_BASE_URL,
             LLAMACPP_DEFAULT_BASE_URL,
             LOCAL_LLM_ENV_VAR,
+            NIM_BASE_URL,
+            NIM_ENV_VAR,
             OLLAMA_DEFAULT_BASE_URL,
         )
 
         m = model.lower()
 
-        # Local-server prefixes
+        # Local-server prefixes (free, local)
         if m.startswith("ollama:"):
             return cls(
                 api_key=api_key or "no-key-needed-for-local",
@@ -275,6 +293,57 @@ class LiveLLMAdapter:
                 api_key=api_key or os.environ.get("OPENAI_API_KEY", "no-key"),
                 model=model[len("local:"):],
                 base_url=base,
+            )
+
+        # Free-tier hosted-inference prefixes (cascade tier 1 from
+        # docs/FALLBACK_PROVIDER_CASCADE_2026-05-18.md). All three are
+        # OpenAI-API-compatible — drop into the same adapter shape as
+        # HF / Ollama / local.
+        if m.startswith("nim:"):
+            token = api_key or os.environ.get(NIM_ENV_VAR)
+            if not token:
+                raise ValueError(
+                    f"slider LLM-axis: NVIDIA NIM model {model!r} "
+                    f"needs {NIM_ENV_VAR} env var or explicit api_key. "
+                    f"Sign up free at https://build.nvidia.com — 1000 "
+                    f"credits on signup, up to 5000 with request, "
+                    f"80+ models including some free of credit "
+                    f"(Zhipu GLM-4 family)."
+                )
+            return cls(
+                api_key=token,
+                model=model[len("nim:"):],
+                base_url=NIM_BASE_URL,
+            )
+        if m.startswith("groq:"):
+            token = api_key or os.environ.get(GROQ_ENV_VAR)
+            if not token:
+                raise ValueError(
+                    f"slider LLM-axis: Groq model {model!r} needs "
+                    f"{GROQ_ENV_VAR} env var or explicit api_key. "
+                    f"Sign up free at https://console.groq.com — "
+                    f"daily token quota, fastest TTFT (<300ms), "
+                    f"Llama 3.3 70B + Mixtral + Gemma2."
+                )
+            return cls(
+                api_key=token,
+                model=model[len("groq:"):],
+                base_url=GROQ_BASE_URL,
+            )
+        if m.startswith("cerebras:"):
+            token = api_key or os.environ.get(CEREBRAS_ENV_VAR)
+            if not token:
+                raise ValueError(
+                    f"slider LLM-axis: Cerebras model {model!r} needs "
+                    f"{CEREBRAS_ENV_VAR} env var or explicit api_key. "
+                    f"Sign up free at https://cloud.cerebras.ai — "
+                    f"daily token quota, 3000 tok/sec on gpt-oss-120B "
+                    f"(fastest end-to-end as of 2026-05)."
+                )
+            return cls(
+                api_key=token,
+                model=model[len("cerebras:"):],
+                base_url=CEREBRAS_BASE_URL,
             )
 
         # HF Inference Providers — namespaced id

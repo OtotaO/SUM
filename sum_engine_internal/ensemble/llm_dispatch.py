@@ -107,6 +107,26 @@ _ANTHROPIC_PREFIXES = ("claude-",)
 # base_url when the model id is a HF-style namespaced id (`org/model`).
 HF_ROUTER_BASE_URL = "https://router.huggingface.co/v1"
 
+# Free-tier hosted-inference providers, all OpenAI-compatible. The
+# routing prefix is part of the model id; the corresponding env var
+# carries the user's API key. Documented in
+# `docs/BYOK_AND_FREE_PROVIDERS.md` + the cascade design at
+# `docs/FALLBACK_PROVIDER_CASCADE_2026-05-18.md`.
+#
+# Why these three:
+#   - NVIDIA NIM: 1000 free credits on signup (up to 5000), 80+ models,
+#     40 req/min/model. https://build.nvidia.com
+#   - Groq: free daily token quota, fastest TTFT (<300ms), Llama 3.3 70B.
+#     https://console.groq.com
+#   - Cerebras: free daily token quota, 3000 tok/sec on gpt-oss-120B
+#     (fastest end-to-end). https://cloud.cerebras.ai
+NIM_BASE_URL = "https://integrate.api.nvidia.com/v1"
+NIM_ENV_VAR = "NVIDIA_API_KEY"
+GROQ_BASE_URL = "https://api.groq.com/openai/v1"
+GROQ_ENV_VAR = "GROQ_API_KEY"
+CEREBRAS_BASE_URL = "https://api.cerebras.ai/v1"
+CEREBRAS_ENV_VAR = "CEREBRAS_API_KEY"
+
 # Local-server defaults. The OpenAI-compatible surface exposed by both
 # Ollama and llama.cpp's `server` binary lets us reuse OpenAIAdapter as
 # the client — we just point base_url at the local server. The two
