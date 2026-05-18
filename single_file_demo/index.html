@@ -203,6 +203,61 @@
           <option value="openai">openai</option>
         </select>
       </div>
+
+      <p style="font-size: 11px; opacity: 0.7; margin: 12px 0 6px;">
+        <strong>Free-tier cascade providers</strong> — used by the Python CLI today
+        (the hosted Worker's <code>/api/render</code> currently only honours Anthropic + OpenAI
+        BYO headers). Keys stored in localStorage; the CLI recipe panel below the slider
+        builds a copy-paste invocation that uses these.
+        See <a href="https://github.com/OtotaO/SUM/blob/main/docs/BYOK_AND_FREE_PROVIDERS.md">BYOK_AND_FREE_PROVIDERS.md</a>
+        for full cascade design.
+      </p>
+      <div class="row" style="margin: 6px 0;">
+        <label for="settings-nim-key" style="font-size: 12px; min-width: 100px;">NVIDIA NIM</label>
+        <input
+          type="password" id="settings-nim-key"
+          placeholder="nvapi-… (1000 free credits at build.nvidia.com)"
+          autocomplete="off" spellcheck="false"
+          style="flex: 1; padding: 6px 8px; font: 12px ui-monospace, monospace; border: 1px solid #8886; border-radius: 4px; background: transparent; color: inherit;"
+        >
+      </div>
+      <div class="row" style="margin: 6px 0;">
+        <label for="settings-groq-key" style="font-size: 12px; min-width: 100px;">Groq</label>
+        <input
+          type="password" id="settings-groq-key"
+          placeholder="gsk_… (free daily quota at console.groq.com)"
+          autocomplete="off" spellcheck="false"
+          style="flex: 1; padding: 6px 8px; font: 12px ui-monospace, monospace; border: 1px solid #8886; border-radius: 4px; background: transparent; color: inherit;"
+        >
+      </div>
+      <div class="row" style="margin: 6px 0;">
+        <label for="settings-cerebras-key" style="font-size: 12px; min-width: 100px;">Cerebras</label>
+        <input
+          type="password" id="settings-cerebras-key"
+          placeholder="csk-… (free daily quota at cloud.cerebras.ai)"
+          autocomplete="off" spellcheck="false"
+          style="flex: 1; padding: 6px 8px; font: 12px ui-monospace, monospace; border: 1px solid #8886; border-radius: 4px; background: transparent; color: inherit;"
+        >
+      </div>
+      <div class="row" style="margin: 6px 0;">
+        <label for="settings-hf-token" style="font-size: 12px; min-width: 100px;">HuggingFace</label>
+        <input
+          type="password" id="settings-hf-token"
+          placeholder="hf_… (any HF model via `org/model` route)"
+          autocomplete="off" spellcheck="false"
+          style="flex: 1; padding: 6px 8px; font: 12px ui-monospace, monospace; border: 1px solid #8886; border-radius: 4px; background: transparent; color: inherit;"
+        >
+      </div>
+      <div class="row" style="margin: 6px 0;">
+        <label for="settings-transform-model" style="font-size: 12px; min-width: 100px;">Model id</label>
+        <input
+          type="text" id="settings-transform-model"
+          placeholder="nim:meta/llama-3.3-70b-instruct (or groq:… / ollama:… / org/model …)"
+          autocomplete="off" spellcheck="false"
+          style="flex: 1; padding: 6px 8px; font: 12px ui-monospace, monospace; border: 1px solid #8886; border-radius: 4px; background: transparent; color: inherit;"
+        >
+      </div>
+
       <div class="row" style="justify-content: flex-end; gap: 6px; margin-top: 8px;">
         <button id="settings-clear" class="ghost" style="font-size: 11px; padding: 4px 10px;">Clear</button>
         <button id="settings-save" class="ghost" style="font-size: 11px; padding: 4px 10px;">Save</button>
@@ -237,6 +292,24 @@
     <div class="row" style="justify-content: flex-end; margin-top: 8px;">
       <button id="render-btn" class="ghost">Render tome</button>
     </div>
+
+    <details id="cli-recipe-panel" style="margin: 10px 0 0; padding: 8px 10px; border: 1px solid #8884; border-radius: 4px;">
+      <summary style="cursor: pointer; font-size: 12px; opacity: 0.8; user-select: none;">
+        🛠 Free-tier / local CLI recipe (NIM / Groq / Cerebras / HF / Ollama)
+      </summary>
+      <p style="font-size: 11px; opacity: 0.7; margin: 8px 0 6px;">
+        The hosted Worker today only routes Anthropic + OpenAI BYO-keys. For the rest of the cascade
+        (1000 free NIM credits, Groq daily quota, Cerebras daily quota, your HF credits, Ollama free
+        + local), the Python CLI is the path. This panel builds the exact invocation matching your
+        current slider position + the keys you've configured above. See
+        <a href="https://github.com/OtotaO/SUM/blob/main/docs/FALLBACK_PROVIDER_CASCADE_2026-05-18.md">FALLBACK_PROVIDER_CASCADE</a>
+        for the full design.
+      </p>
+      <pre id="cli-recipe-body" style="white-space: pre-wrap; word-wrap: break-word; background: #8881; padding: 10px; border-radius: 4px; font-size: 11px; line-height: 1.5; margin: 0; font-family: ui-monospace, monospace;">(set at least one key above to see a CLI recipe)</pre>
+      <div class="row" style="justify-content: flex-end; gap: 6px; margin-top: 6px;">
+        <button id="cli-recipe-copy" class="ghost" style="font-size: 11px; padding: 4px 10px;">Copy</button>
+      </div>
+    </details>
     <div id="render-output" style="display:none; margin-top: 12px;">
       <div class="extractor-src claude" id="render-meta"></div>
       <pre id="render-tome" style="white-space: pre-wrap; word-wrap: break-word; background: #8881; padding: 12px; border-radius: 4px; font-size: 13px; line-height: 1.5; margin: 0;"></pre>
@@ -938,41 +1011,72 @@ const SETTINGS_KEYS = {
   anthropic: 'sum.render.api_key.anthropic',
   openai: 'sum.render.api_key.openai',
   provider: 'sum.render.provider_preference',
+  // Cascade tier-1 / tier-2 free-tier and BYO-credit providers.
+  // Used by the Python CLI (sum transform apply slider) — the hosted
+  // Worker today only honours anthropic + openai BYO headers.
+  nim: 'sum.transform.api_key.nim',
+  groq: 'sum.transform.api_key.groq',
+  cerebras: 'sum.transform.api_key.cerebras',
+  hf: 'sum.transform.api_key.hf',
+  model: 'sum.transform.model_id',
 };
+
+// Map setting key → input element id → env var name (for the CLI recipe).
+const SETTING_FIELDS = [
+  { key: 'anthropic', el: 'settings-anthropic-key', env: 'ANTHROPIC_API_KEY' },
+  { key: 'openai',    el: 'settings-openai-key',    env: 'OPENAI_API_KEY' },
+  { key: 'nim',       el: 'settings-nim-key',       env: 'NVIDIA_API_KEY' },
+  { key: 'groq',      el: 'settings-groq-key',      env: 'GROQ_API_KEY' },
+  { key: 'cerebras',  el: 'settings-cerebras-key',  env: 'CEREBRAS_API_KEY' },
+  { key: 'hf',        el: 'settings-hf-token',      env: 'HF_TOKEN' },
+  { key: 'model',     el: 'settings-transform-model', env: 'SUM_TRANSFORM_MODEL' },
+];
 
 function settingsLoad() {
   try {
-    $('settings-anthropic-key').value = localStorage.getItem(SETTINGS_KEYS.anthropic) || '';
-    $('settings-openai-key').value = localStorage.getItem(SETTINGS_KEYS.openai) || '';
+    for (const f of SETTING_FIELDS) {
+      const el = document.getElementById(f.el);
+      if (el) el.value = localStorage.getItem(SETTINGS_KEYS[f.key]) || '';
+    }
     $('settings-provider').value = localStorage.getItem(SETTINGS_KEYS.provider) || '';
     settingsRefreshStatus();
+    cliRecipeRefresh();
   } catch (_) {
     // localStorage may be disabled (private mode, etc.) — fail soft.
   }
 }
 
 function settingsRefreshStatus() {
-  const a = ($('settings-anthropic-key').value || '').trim();
-  const o = ($('settings-openai-key').value || '').trim();
+  const configured = [];
+  for (const f of SETTING_FIELDS) {
+    if (f.key === 'model') continue;
+    const el = document.getElementById(f.el);
+    if (el && (el.value || '').trim()) {
+      configured.push(f.key === 'nim' ? 'NIM' :
+                      f.key === 'hf' ? 'HF' :
+                      f.key.charAt(0).toUpperCase() + f.key.slice(1));
+    }
+  }
   const status = $('settings-status');
-  if (a && o)      status.textContent = 'BYO: Anthropic + OpenAI configured';
-  else if (a)      status.textContent = 'BYO: Anthropic configured';
-  else if (o)      status.textContent = 'BYO: OpenAI configured';
-  else             status.textContent = 'operator-funded';
+  status.textContent = configured.length > 0
+    ? 'BYO: ' + configured.join(' + ') + ' configured'
+    : 'operator-funded';
 }
 
 function settingsSave() {
   try {
-    const a = ($('settings-anthropic-key').value || '').trim();
-    const o = ($('settings-openai-key').value || '').trim();
+    for (const f of SETTING_FIELDS) {
+      const el = document.getElementById(f.el);
+      if (!el) continue;
+      const v = (el.value || '').trim();
+      if (v) localStorage.setItem(SETTINGS_KEYS[f.key], v);
+      else   localStorage.removeItem(SETTINGS_KEYS[f.key]);
+    }
     const p = $('settings-provider').value || '';
-    if (a) localStorage.setItem(SETTINGS_KEYS.anthropic, a);
-    else   localStorage.removeItem(SETTINGS_KEYS.anthropic);
-    if (o) localStorage.setItem(SETTINGS_KEYS.openai, o);
-    else   localStorage.removeItem(SETTINGS_KEYS.openai);
     if (p) localStorage.setItem(SETTINGS_KEYS.provider, p);
     else   localStorage.removeItem(SETTINGS_KEYS.provider);
     settingsRefreshStatus();
+    cliRecipeRefresh();
     const btn = $('settings-save');
     const t = btn.textContent;
     btn.textContent = 'Saved ✓';
@@ -986,19 +1090,97 @@ function settingsSave() {
 function settingsClear() {
   try {
     for (const k of Object.values(SETTINGS_KEYS)) localStorage.removeItem(k);
-    $('settings-anthropic-key').value = '';
-    $('settings-openai-key').value = '';
+    for (const f of SETTING_FIELDS) {
+      const el = document.getElementById(f.el);
+      if (el) el.value = '';
+    }
     $('settings-provider').value = '';
     settingsRefreshStatus();
+    cliRecipeRefresh();
   } catch (_) {}
 }
 
 $('settings-save').addEventListener('click', settingsSave);
 $('settings-clear').addEventListener('click', settingsClear);
-for (const id of ['settings-anthropic-key', 'settings-openai-key']) {
-  $(id).addEventListener('input', settingsRefreshStatus);
+for (const f of SETTING_FIELDS) {
+  const el = document.getElementById(f.el);
+  if (el) {
+    el.addEventListener('input', () => { settingsRefreshStatus(); cliRecipeRefresh(); });
+  }
 }
+
+// ── CLI recipe builder ─────────────────────────────────────────────
+//
+// The hosted Worker's /api/render currently only routes Anthropic and
+// OpenAI BYO-keys. For NIM / Groq / Cerebras / HF / Ollama / local /
+// Modal / Fireworks, the user runs the Python CLI locally. This
+// function generates the exact `export ... && sum transform apply
+// slider ...` invocation matching the current settings + slider
+// position. Click → copy to clipboard.
+function cliRecipeRefresh() {
+  const recipe = document.getElementById('cli-recipe-body');
+  if (!recipe) return;
+  const model = (localStorage.getItem(SETTINGS_KEYS.model) || '').trim();
+  const sliderPos = {
+    density: parseFloat($('density').value),
+    length: parseFloat($('length').value),
+    formality: parseFloat($('formality').value),
+    audience: parseFloat($('audience').value),
+    perspective: parseFloat($('perspective').value),
+  };
+  const triples = window.__sumLastTriples || [['alice', 'graduated', '2012']];
+  const lines = [];
+  // env vars for any configured keys
+  for (const f of SETTING_FIELDS) {
+    if (f.key === 'model' || f.key === 'provider') continue;
+    const v = (localStorage.getItem(SETTINGS_KEYS[f.key]) || '').trim();
+    if (v) lines.push(`export ${f.env}=${v.length > 8 ? v.slice(0, 6) + '…' : v}`);
+  }
+  if (model) lines.push(`export SUM_TRANSFORM_MODEL=${model}`);
+  if (lines.length === 0) {
+    recipe.textContent = '(set at least one key above to see a CLI recipe)';
+    return;
+  }
+  lines.push('');
+  lines.push("echo '" + JSON.stringify({ triples }).replace(/'/g, "'\\''") + "' \\");
+  lines.push('  | sum transform apply slider \\');
+  lines.push('    --input - \\');
+  lines.push("    --parameters '" + JSON.stringify(sliderPos) + "' \\");
+  lines.push('    --pretty');
+  recipe.textContent = lines.join('\n');
+}
+
 settingsLoad();
+
+// Refresh the CLI recipe when slider positions change so it always
+// reflects the current settings + slider state.
+for (const axis of ['density', 'length', 'formality', 'audience', 'perspective']) {
+  const el = document.getElementById(axis);
+  if (el) el.addEventListener('input', cliRecipeRefresh);
+}
+
+// Copy-to-clipboard for the CLI recipe.
+const cliCopyBtn = document.getElementById('cli-recipe-copy');
+if (cliCopyBtn) {
+  cliCopyBtn.addEventListener('click', async () => {
+    const body = document.getElementById('cli-recipe-body');
+    if (!body) return;
+    try {
+      await navigator.clipboard.writeText(body.textContent || '');
+      const t = cliCopyBtn.textContent;
+      cliCopyBtn.textContent = 'Copied ✓';
+      cliCopyBtn.classList.add('copied');
+      setTimeout(() => { cliCopyBtn.textContent = t; cliCopyBtn.classList.remove('copied'); }, 1500);
+    } catch (_) {
+      // Clipboard may be blocked (insecure context, etc.) — select instead.
+      const range = document.createRange();
+      range.selectNodeContents(body);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+  });
+}
 
 $('render-btn').addEventListener('click', async () => {
   const triples = window.__sumLastTriples;
