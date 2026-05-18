@@ -254,7 +254,7 @@ class SliderTransform:
 
         from sum_engine_internal.ensemble.live_llm_adapter import (
             LiveLLMAdapter,
-            OpenAIChatClient,
+            make_chat_client,
         )
         from sum_engine_internal.ensemble.slider_renderer import (
             TomeSliders,
@@ -304,7 +304,13 @@ class SliderTransform:
         # up HF_TOKEN / SUM_LOCAL_LLM_BASE from the environment.
 
         adapter = LiveLLMAdapter.from_model(model, api_key=api_key_for_factory)
-        llm_client = OpenAIChatClient(adapter)
+        # F7 fix (DOGFOOD_FINDINGS_2026-05-17): pick the right chat
+        # client for the routing target. OpenAI proper gets the
+        # structured-output path; all other OpenAI-compatible providers
+        # (HF / NIM / Groq / Cerebras / Ollama / llama.cpp / local) get
+        # the plain-chat path because beta.chat.completions.parse is
+        # OpenAI-specific and returns degenerate parses elsewhere.
+        llm_client = make_chat_client(adapter)
 
         sliders = TomeSliders(
             density=quantized["density"],

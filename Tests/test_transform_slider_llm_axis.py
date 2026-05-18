@@ -276,6 +276,55 @@ def test_live_llm_adapter_from_model_cerebras_without_key_raises(monkeypatch):
         LiveLLMAdapter.from_model("cerebras:llama3.1-8b")
 
 
+def test_make_chat_client_routes_by_base_url(monkeypatch):
+    """F7 fix: make_chat_client picks OpenAIChatClient for OpenAI-proper
+    adapters (no base_url) and OpenAICompatibleChatClient for everything
+    else. The compatible client deliberately lacks
+    chat_completion_structured so slider_renderer.render falls through to
+    plain chat completion — beta.chat.completions.parse is OpenAI-only
+    and returns degenerate parses on HF / NIM / Groq / Cerebras."""
+    from sum_engine_internal.ensemble.live_llm_adapter import (
+        LiveLLMAdapter,
+        OpenAIChatClient,
+        OpenAICompatibleChatClient,
+        make_chat_client,
+    )
+
+    # OpenAI proper → has structured method
+    openai_adapter = LiveLLMAdapter.from_model("gpt-4o-mini", api_key="sk-test")
+    client = make_chat_client(openai_adapter)
+    assert isinstance(client, OpenAIChatClient)
+    assert hasattr(client, "chat_completion_structured")
+    assert hasattr(client, "chat_completion")
+
+    # NIM → compatible client, NO structured method
+    monkeypatch.setenv("NVIDIA_API_KEY", "nvapi-test")
+    nim_adapter = LiveLLMAdapter.from_model("nim:meta/llama-3.3-70b-instruct")
+    client = make_chat_client(nim_adapter)
+    assert isinstance(client, OpenAICompatibleChatClient)
+    assert not isinstance(client, OpenAIChatClient)
+    assert not hasattr(client, "chat_completion_structured"), (
+        "compatible client must NOT expose chat_completion_structured — "
+        "slider_renderer.render uses hasattr() to pick the path; exposing "
+        "it would route NIM/HF/Groq/Cerebras into the degenerate "
+        "beta.chat.completions.parse path (F7)"
+    )
+    assert hasattr(client, "chat_completion")
+
+    # HF Inference Providers → same compatible behaviour
+    monkeypatch.setenv("HF_TOKEN", "hf_test")
+    hf_adapter = LiveLLMAdapter.from_model("meta-llama/Llama-3.3-70B-Instruct")
+    client = make_chat_client(hf_adapter)
+    assert isinstance(client, OpenAICompatibleChatClient)
+    assert not hasattr(client, "chat_completion_structured")
+
+    # Ollama → same
+    ollama_adapter = LiveLLMAdapter.from_model("ollama:llama3.1")
+    client = make_chat_client(ollama_adapter)
+    assert isinstance(client, OpenAICompatibleChatClient)
+    assert not hasattr(client, "chat_completion_structured")
+
+
 @pytest.mark.asyncio
 async def test_llm_axis_routes_to_hf_when_model_is_namespaced(monkeypatch):
     """env.model = 'org/model' + HF_TOKEN → adapter base_url is HF
@@ -306,7 +355,7 @@ async def test_llm_axis_routes_to_hf_when_model_is_namespaced(monkeypatch):
         "sum_engine_internal.ensemble.live_llm_adapter.LiveLLMAdapter.from_model",
         fake_from_model,
     ), patch(
-        "sum_engine_internal.ensemble.live_llm_adapter.OpenAIChatClient",
+        "sum_engine_internal.ensemble.live_llm_adapter.make_chat_client",
         fake_chat_client_ctor,
     ):
         result = await slider.apply(
@@ -356,7 +405,7 @@ async def test_llm_axis_routes_to_ollama_when_model_is_prefixed(monkeypatch):
         "sum_engine_internal.ensemble.live_llm_adapter.LiveLLMAdapter.from_model",
         fake_from_model,
     ), patch(
-        "sum_engine_internal.ensemble.live_llm_adapter.OpenAIChatClient",
+        "sum_engine_internal.ensemble.live_llm_adapter.make_chat_client",
         fake_chat_client_ctor,
     ):
         result = await slider.apply(
@@ -406,7 +455,7 @@ async def test_llm_axis_dispatch_returns_llm_provenance():
         "sum_engine_internal.ensemble.live_llm_adapter.LiveLLMAdapter.from_model",
         fake_from_model,
     ), patch(
-        "sum_engine_internal.ensemble.live_llm_adapter.OpenAIChatClient",
+        "sum_engine_internal.ensemble.live_llm_adapter.make_chat_client",
         fake_chat_client_ctor,
     ):
         result = await slider.apply(
@@ -469,7 +518,7 @@ async def test_llm_axis_receipt_round_trips_through_verifier():
         "sum_engine_internal.ensemble.live_llm_adapter.LiveLLMAdapter.from_model",
         fake_from_model,
     ), patch(
-        "sum_engine_internal.ensemble.live_llm_adapter.OpenAIChatClient",
+        "sum_engine_internal.ensemble.live_llm_adapter.make_chat_client",
         fake_chat_client_ctor,
     ):
         result = await slider.apply(
