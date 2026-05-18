@@ -4,6 +4,54 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+(no entries since [0.7.0])
+
+## [0.7.0] - 2026-05-18
+
+The transform-substrate arc closes. PyPI catches up to repo HEAD; the
+arc that lived in `[Unreleased]` since 2026-05-11 ships:
+
+- **Transform substrate** — `sum.transform_receipt.v1` wire format,
+  registry (slider / extract / compose), `POST /api/transform` Worker
+  route, `sum transform` CLI subcommand, T4 source-chain binding,
+  T5 ShareableRender, T6 multi-school extract, cross-runtime 20-fixture
+  K-matrix (Python + browser), Python LLM-axis slider dispatch.
+- **Replay-defense** — opt-in `signed_at_out_of_window` window check
+  on all four verifier surfaces. Default-off preserves archival use.
+- **Multi-provider cascade** — `LiveLLMAdapter.from_model` routes by
+  model-id prefix: OpenAI / Anthropic-via-Worker / HuggingFace
+  Inference Providers / NVIDIA NIM / Groq / Cerebras / Ollama /
+  llama.cpp / `local:` (Modal, Fireworks, vLLM-on-anything). Free-tier
+  options first-class for broke operators.
+- **Per-IP rate limiter + BYO-key gate** on public Worker LLM-axis
+  routes. 5/24h operator-keyed demo; 100/hr BYO. Free-tier-compatible
+  (KV-backed; no Cloudflare paid Rate Limiting API needed).
+- **`sum verify --explain`** layered output (`sum.verify_explained.v1`).
+  Seven per-dimension checks each tagged with epistemic status. Truth
+  of content is always `not_asserted` — test-locked invariant.
+- **F1 / F7 fixes** — `transformers` FutureWarning no longer poisons
+  stdout pipes; `OpenAIChatClient` split so non-OpenAI providers skip
+  the OpenAI-specific `beta.chat.completions.parse` extension.
+- **Negative-control bench corpus** (T5 of bench-hardening worktrail) —
+  20 hand-authored documents across 5 failure modes, runner exits 1
+  when bench succeeds on inputs it should fail on.
+- **Honesty surfaces:** `sum verify --explain` Epistemic Nutrition
+  Label (zenith concept); slider receipts' `extra.llm_endpoint`
+  reports which provider actually served; FEATURE_CATALOG.md
+  refreshed (137 → 149 production / 18 scaffolded / 1 designed; 168
+  total features).
+- **Planning artifacts** persisted to docs/: CHARTER_2026-05-17 (the
+  compass), PRODUCT_DELIBERATION_2026-05-14 (decision tree),
+  ZENITH_FRAMING_2026-05-16 (destination + 3 new concepts),
+  BENCH_HARDENING_FROM_QCVV (T1-T5 plan), FALLBACK_PROVIDER_CASCADE
+  (4-tier provider design), DOGFOOD_QUICKSTART, DOGFOOD_FINDINGS_2026-05-17,
+  DOGFOOD_FINDINGS_2026-05-18.
+- **Frontend cascade BYO** — single_file_demo/index.html settings panel
+  gains NIM / Groq / Cerebras / HF token + model-id fields; CLI-recipe
+  builder generates copy-paste invocations for the Python CLI path.
+
+PRs in this release: #210 → #243.
+
 - **Replay-defense window check on receipt verifiers (opt-in).**
   Closes a real security gap: a cryptographically valid receipt
   captured at time T₁ can be re-presented at T₂ as if fresh unless
