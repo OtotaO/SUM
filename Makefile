@@ -106,6 +106,18 @@ negative-control:  ## T5 of bench-hardening — run the negative-control corpus 
 		--corpus scripts/bench/corpora/seed_negative_control_v1.json \
 		--pretty
 
+iterated-round-trip:  ## T1 of bench-hardening — iterated K-step drift on a corpus. Requires NVIDIA_API_KEY (or your provider) + SUM_TRANSFORM_MODEL. Default K=10, default corpus seed_v1. Pass CORPUS=path/to/corpus.json and K=N to override.
+	@$(PYTHON) -m scripts.bench.runners.s25_iterated_round_trip \
+		--corpus $${CORPUS:-scripts/bench/corpora/seed_v1.json} \
+		--k $${K:-10} \
+		--out fixtures/bench_receipts/s25_iterated_K$${K:-10}_$$(basename $${CORPUS:-scripts/bench/corpora/seed_v1.json} .json)_$$(date +%Y-%m-%d).json \
+		--pretty
+
+iterated-round-trip-dry:  ## T1 dry-run — shape-only smoke without LLM cost. K=3 on seed_v1.
+	@$(PYTHON) -m scripts.bench.runners.s25_iterated_round_trip \
+		--corpus scripts/bench/corpora/seed_v1.json \
+		--k 3 --dry-run --pretty
+
 lint:  ## ruff check (same rules as CI).
 	$(PYTHON) -m ruff check sum_cli internal scripts
 

@@ -21,7 +21,16 @@ Recommended order: T5 → T1 → T4 → T2 → T3.
 
 ---
 
-## T1 — Iterated round-trip (amplificational sensitivity)
+## T1 — Iterated round-trip (amplificational sensitivity) — RUNNER SHIPPED 2026-05-18
+
+**Status:** runner shipped at `scripts/bench/runners/s25_iterated_round_trip.py` + `make iterated-round-trip`. Receipts produced under `sum.iterated_round_trip_drift.v1`. The actual K=10 run across all three seed corpora is the operator-side action that lands the data (~$0 via free NIM credits; see `docs/BYOK_AND_FREE_PROVIDERS.md`). Five-test smoke at `Tests/test_iterated_round_trip_runner.py` covers shape + classifier.
+
+The classifier emits one of: **stable** (Δmax ≤ ε from K=1), **accumulating** (monotone growing), **saturating** (grows then plateaus), **noisy**, **insufficient_data**.
+
+Original design below for context.
+
+---
+
 
 **Concept.** The single most powerful idea in QCVV experiment design: shot-count scales benchmark sensitivity as `1/√N`; *repetition of the noisy operation inside one experiment* scales it as `1/L`. Repeating the operation amplifies whatever drift exists, making it detectable far below the noise floor of single-shot measurement. The §2.5 closure result on `seed_v1` (drift 0.00%, exact-match recall 1.000) is a single-step measurement and tells you almost nothing about whether canonicalisation is closed under iteration or merely closed at the first fixed-point neighbourhood.
 
