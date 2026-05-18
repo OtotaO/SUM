@@ -92,6 +92,24 @@ The dogfood quickstart's flagship scenario fails at step 4 (compose) for two com
 
 **Fix:** either ship a release that includes `transform` (F3 fix) AND wire attest's bundle shape compatible with compose (F4 fix), OR rewrite the scenario to use a different surface that's actually live today (e.g., direct `/api/render` like Scenario B, or live `/api/transform`).
 
+### F7 — `beta.chat.completions.parse` returns degenerate output on non-OpenAI providers [severity: HIGH; fixed 2026-05-18]
+
+Surfaced 2026-05-18 during a live NIM-route dogfood: slider on `nim:meta/llama-3.3-70b-instruct` produced a single-token tome (`"World_sim"`) from an 8-triple input. Same model called via direct `chat.completions.create` returned a coherent 67-word paragraph.
+
+Root cause: `OpenAIChatClient.chat_completion_structured` uses `beta.chat.completions.parse` (OpenAI's structured-output extension). NVIDIA NIM's OpenAI-compatible router doesn't implement that extension; the call returns a degenerate parse instead of erroring. `slider_renderer.render` uses `hasattr(llm, 'chat_completion_structured')` to pick its path and silently routed through the broken extension.
+
+The same shape almost certainly affects HF Inference Providers, Groq, Cerebras, Ollama, and llama.cpp endpoints — every provider in the cascade Tier 1 / Tier 2 except OpenAI proper.
+
+**Fix (shipped 2026-05-18):** split `OpenAIChatClient` into a base class `OpenAICompatibleChatClient` (plain `chat_completion` only) and an OpenAI-proper subclass (adds `chat_completion_structured`). New factory `make_chat_client(adapter)` picks based on `adapter.base_url`:
+- `base_url is None` → OpenAI proper → structured outputs available
+- `base_url` set → compatible provider → plain chat only
+
+`slider._apply_llm_axis` now uses `make_chat_client(adapter)`. The `hasattr` check in `slider_renderer.render` naturally falls through to plain chat for compatible providers. Cross-provider cost is the loss of the schema-enforced `claimed_triples` self-attestation; per-axis NLI audit still validates fact preservation independently.
+
+Test locks the contract: `Tests/test_transform_slider_llm_axis.py::test_make_chat_client_routes_by_base_url`.
+
+**Operator note for cascade dogfood:** if you ran scenario A through `nim:` / `groq:` / `cerebras:` before the fix landed and got degenerate output, retry after PR for F7 lands. Same input + same slider position should produce coherent prose.
+
 ### F6 — Live Worker's Anthropic key is invalid [severity: CRITICAL — production-impacting]
 
 `POST https://sum-demo.ototao.workers.dev/api/render` with any off-centre LLM axis returns:
@@ -127,6 +145,7 @@ wrangler secret put ANTHROPIC_API_KEY
 | F4 | `attest` output shape ≠ `compose` input | high | engine | trivial-to-medium (add `axioms` field to bundle) |
 | F5 | Scenario A pipeline broken end-to-end | high (composite) | engine + user | resolved by F3 + F4 |
 | F6 | Live Worker Anthropic key 401 | **critical** | user (wrangler) | trivial (one wrangler command) |
+| F7 | `beta.chat.completions.parse` degenerate on non-OpenAI providers | high | **fixed 2026-05-18** | factory split (shipped) |
 
 ## What this dogfood DID NOT produce
 

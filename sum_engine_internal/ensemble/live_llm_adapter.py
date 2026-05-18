@@ -566,10 +566,26 @@ class LiveLLMAdapter:
         return bool(parsed and parsed.is_supported)
 
 
-class OpenAIChatClient:
-    """Adapts ``LiveLLMAdapter`` to the ``LLMChatClient`` Protocol used by
-    ``slider_renderer.render``. Kept here (not in slider_renderer.py) so
-    the renderer module stays free of the ``openai`` dep."""
+class OpenAICompatibleChatClient:
+    """Adapts ``LiveLLMAdapter`` to the ``LLMChatClient`` Protocol used
+    by ``slider_renderer.render`` when the routing target is an
+    OpenAI-API-compatible but NOT-OpenAI-proper provider.
+
+    Used for HF Inference Providers, NVIDIA NIM, Groq, Cerebras, Ollama,
+    llama.cpp, and any ``local:`` endpoint — providers that implement
+    the standard ``chat.completions.create`` surface but NOT the
+    ``beta.chat.completions.parse`` structured-output extension. Calling
+    that beta endpoint against most compatible providers returns either
+    a 404 or a degenerate parse (e.g. NIM Llama 3.3 70B returns a
+    single-token tome — surfaced as F7 in DOGFOOD_FINDINGS_2026-05-17).
+
+    ``slider_renderer.render`` uses ``hasattr(llm, 'chat_completion_structured')``
+    to pick its path. This class deliberately does NOT define that
+    method, so the renderer falls through to plain ``chat_completion``.
+    The cross-provider cost is the loss of the schema-enforced
+    self-attestation (``claimed_triples``); the per-axis NLI audit
+    still validates fact preservation independently.
+    """
 
     def __init__(self, adapter: "LiveLLMAdapter"):
         self._adapter = adapter
@@ -589,6 +605,18 @@ class OpenAIChatClient:
             max_tokens=max_tokens,
         )
         return response.choices[0].message.content or ""
+
+
+class OpenAIChatClient(OpenAICompatibleChatClient):
+    """OpenAI-proper extension. Adds ``chat_completion_structured`` via
+    ``beta.chat.completions.parse`` for schema-enforced rendering.
+    This endpoint is OpenAI-specific and not portable to compatible
+    providers — see ``OpenAICompatibleChatClient`` docstring.
+
+    Used only when the adapter routes to OpenAI's own API
+    (``base_url`` is unset). The factory ``make_chat_client`` below
+    is the canonical way to instantiate the right class.
+    """
 
     async def chat_completion_structured(
         self,
@@ -620,3 +648,25 @@ class OpenAIChatClient:
             if t.certainty != "speculative"
         ]
         return parsed.tome, triples
+
+
+def make_chat_client(adapter: "LiveLLMAdapter") -> OpenAICompatibleChatClient:
+    """Pick the right chat-client class for the adapter's routing target.
+
+    Routing rule:
+      - ``adapter.base_url is None`` → OpenAI proper → ``OpenAIChatClient``
+        (includes structured outputs via ``beta.chat.completions.parse``)
+      - ``adapter.base_url`` is set → OpenAI-compatible provider (HF,
+        NIM, Groq, Cerebras, Ollama, llama.cpp, local) →
+        ``OpenAICompatibleChatClient`` (plain chat only)
+
+    The two-class split surfaces F7 (DOGFOOD_FINDINGS_2026-05-17): the
+    ``beta.chat.completions.parse`` extension is OpenAI-specific and
+    returns degenerate parses (or 404s) when called against compatible
+    providers. The factory makes the right choice automatically; slider
+    callers should use this instead of constructing ``OpenAIChatClient``
+    directly.
+    """
+    if adapter.base_url is None:
+        return OpenAIChatClient(adapter)
+    return OpenAICompatibleChatClient(adapter)
