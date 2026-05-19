@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-18T20:26:24Z",
+  "issued_at": "2026-05-19T11:58:51Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "95323c2b5d2ca1b013fdc0dbd4d650c7fcdf3d6b",
-    "head_short": "95323c2",
+    "head_sha": "b33e64978d31ecb749d96da584c2fe2902161c3e",
+    "head_short": "b33e649",
     "head_subject": "release: v0.7.0 \u2014 transform substrate + cascade + replay-defense",
-    "head_committer_date": "2026-05-18T16:26:08-04:00",
+    "head_committer_date": "2026-05-18T16:27:09-04:00",
     "commits_last_30d": null
   },
   "github": {
