@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-21T11:15:50Z",
+  "issued_at": "2026-05-21T13:16:28Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "d88ae1073156ac0b1ad6ddb0746303cf48850516",
-    "head_short": "d88ae10",
-    "head_subject": "release: v0.7.0 \u2014 transform substrate + cascade + replay-defense (#244)",
-    "head_committer_date": "2026-05-19T16:48:15-04:00",
+    "head_sha": "19ab3435e4924efc1c1d1861f958e515e7d59a6a",
+    "head_short": "19ab343",
+    "head_subject": "fix(bench): F12 v2 \u2014 60s minimum backoff for 429 + 8 retries (NIM per-minute window) (#247)",
+    "head_committer_date": "2026-05-21T07:40:45-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -218,6 +218,11 @@
         "path": "fixtures/bench_receipts/s25_generator_side_seed_v2_2026-04-28.json",
         "schema": "sum.s25_generator_side.v1",
         "issued_at": "2026-04-28T22:12:44Z"
+      },
+      {
+        "path": "fixtures/bench_receipts/s25_iterated_K10_seed_long_paragraphs_2026-05-21.json",
+        "schema": "sum.iterated_round_trip_drift.v1",
+        "issued_at": null
       },
       {
         "path": "fixtures/bench_receipts/s25_residual_closure_2026-04-28.json",
