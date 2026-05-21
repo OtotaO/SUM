@@ -111,11 +111,28 @@ def _extract_sieve(text: str) -> list[tuple[str, str, str]]:
 async def _generate_from_triples(
     triples: list[tuple[str, str, str]],
     model: str,
+    *,
+    max_retries: int = 5,
+    throttle_seconds: float = 1.7,
 ) -> str:
     """Generate prose from a triple set via the cascade adapter. Uses
     the same routing rules as the slider's LLM-axis dispatch (HF / NIM
     / Groq / Cerebras / Ollama / local / OpenAI per
-    LiveLLMAdapter.from_model)."""
+    LiveLLMAdapter.from_model).
+
+    F12 fix (DOGFOOD_FINDINGS_2026-05-21): NIM enforces a 40 req/min/
+    model rate cap independent of credits. The pre-fix version fired
+    calls as fast as the LLM responded and crashed mid-K=10-batch on
+    429. This version:
+
+      - Throttles each call by ``throttle_seconds`` (default 1.7s ≈ 35
+        req/min, safely under the 40-req/min cap)
+      - Catches transient errors (429 / 5xx) and retries with
+        exponential backoff up to ``max_retries`` times
+
+    For non-NIM providers (Groq, Cerebras, OpenAI) the throttle is
+    conservative-but-harmless overhead; the retry is universal value.
+    """
     from sum_engine_internal.ensemble.live_llm_adapter import (
         LiveLLMAdapter,
         make_chat_client,
@@ -139,7 +156,43 @@ async def _generate_from_triples(
     )
     user_prompt = f"Facts to render as prose:\n{triple_lines}"
 
-    return await client.chat_completion(system_prompt, user_prompt, max_tokens=1024)
+    # Throttle: stay safely under NIM's 40-req/min cap.
+    if throttle_seconds > 0:
+        await asyncio.sleep(throttle_seconds)
+
+    # Exponential backoff on 429 / 5xx. Re-raises after max_retries.
+    last_err: Exception | None = None
+    for attempt in range(max_retries):
+        try:
+            return await client.chat_completion(
+                system_prompt, user_prompt, max_tokens=1024
+            )
+        except Exception as e:  # noqa: BLE001
+            last_err = e
+            msg = str(e).lower()
+            is_transient = (
+                "rate" in msg
+                or "429" in msg
+                or "503" in msg
+                or "504" in msg
+                or "500" in msg
+                or type(e).__name__ in {
+                    "RateLimitError", "APIStatusError", "APIError",
+                    "APIConnectionError", "APITimeoutError",
+                }
+            )
+            if not is_transient or attempt == max_retries - 1:
+                raise
+            backoff = (2 ** attempt) * 2 + 1  # 3, 5, 9, 17, 33 seconds
+            print(
+                f"  [retry] attempt {attempt + 1}/{max_retries} hit "
+                f"{type(e).__name__}: {str(e)[:80]} — sleeping {backoff}s",
+                file=sys.stderr,
+            )
+            await asyncio.sleep(backoff)
+    if last_err:
+        raise last_err
+    raise RuntimeError("retry loop exited without return or raise")
 
 
 def _stub_iteration(
