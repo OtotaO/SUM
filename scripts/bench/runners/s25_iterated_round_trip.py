@@ -170,15 +170,23 @@ async def _generate_from_triples(
         except Exception as e:  # noqa: BLE001
             last_err = e
             msg = str(e).lower()
+            # 5xx + 429 are transient. F12 v3 (2026-05-21): seed_v1 K=10
+            # crashed on 502 Bad Gateway from NIM — earlier detection
+            # caught 500/503/504 but not 502. Broaden to any 5xx + any
+            # known transient-exception class.
             is_transient = (
                 "rate" in msg
                 or "429" in msg
+                or "500" in msg
+                or "502" in msg
                 or "503" in msg
                 or "504" in msg
-                or "500" in msg
+                or "bad gateway" in msg
+                or "internal server error" in msg
                 or type(e).__name__ in {
                     "RateLimitError", "APIStatusError", "APIError",
                     "APIConnectionError", "APITimeoutError",
+                    "InternalServerError", "BadGatewayError",
                 }
             )
             if not is_transient or attempt == max_retries - 1:
