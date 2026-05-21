@@ -112,8 +112,8 @@ async def _generate_from_triples(
     triples: list[tuple[str, str, str]],
     model: str,
     *,
-    max_retries: int = 5,
-    throttle_seconds: float = 1.7,
+    max_retries: int = 8,
+    throttle_seconds: float = 2.5,
 ) -> str:
     """Generate prose from a triple set via the cascade adapter. Uses
     the same routing rules as the slider's LLM-axis dispatch (HF / NIM
@@ -183,7 +183,17 @@ async def _generate_from_triples(
             )
             if not is_transient or attempt == max_retries - 1:
                 raise
-            backoff = (2 ** attempt) * 2 + 1  # 3, 5, 9, 17, 33 seconds
+            # 429 backoff: minimum 60s (one full window reset on NIM).
+            # Other transient errors: standard exponential (3, 5, 9, …).
+            is_429 = "429" in msg or type(e).__name__ == "RateLimitError"
+            if is_429:
+                # 65, 90, 120, 180, 240, 300, 360, 420 seconds — total
+                # ~30 minutes of patience across 8 retries. NIM's per-
+                # minute cap fully resets in 60s; longer backoffs cover
+                # the rare-but-real per-hour soft caps.
+                backoff = 65 + 30 * attempt
+            else:
+                backoff = (2 ** attempt) * 2 + 1
             print(
                 f"  [retry] attempt {attempt + 1}/{max_retries} hit "
                 f"{type(e).__name__}: {str(e)[:80]} — sleeping {backoff}s",
