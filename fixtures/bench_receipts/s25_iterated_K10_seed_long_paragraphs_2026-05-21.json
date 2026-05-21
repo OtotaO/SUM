@@ -1,0 +1,3615 @@
+{
+  "schema": "sum.iterated_round_trip_drift.v1",
+  "corpus_id": null,
+  "n_documents": 16,
+  "k_iterations": 10,
+  "model": "nim:meta/llama-3.3-70b-instruct",
+  "generated_at": "2026-05-21T13:15:00.347Z",
+  "dry_run": false,
+  "aggregate": {
+    "by_k": {
+      "1": {
+        "n_docs": 16,
+        "median_drift_pct": 12.5,
+        "p10_drift_pct": 0.0,
+        "max_drift_pct": 42.8571
+      },
+      "2": {
+        "n_docs": 16,
+        "median_drift_pct": 12.5,
+        "p10_drift_pct": 0.0,
+        "max_drift_pct": 42.8571
+      },
+      "3": {
+        "n_docs": 16,
+        "median_drift_pct": 12.5,
+        "p10_drift_pct": 0.0,
+        "max_drift_pct": 42.8571
+      },
+      "4": {
+        "n_docs": 16,
+        "median_drift_pct": 12.5,
+        "p10_drift_pct": 0.0,
+        "max_drift_pct": 42.8571
+      },
+      "5": {
+        "n_docs": 16,
+        "median_drift_pct": 12.5,
+        "p10_drift_pct": 0.0,
+        "max_drift_pct": 42.8571
+      },
+      "6": {
+        "n_docs": 16,
+        "median_drift_pct": 12.5,
+        "p10_drift_pct": 0.0,
+        "max_drift_pct": 50.0
+      },
+      "7": {
+        "n_docs": 16,
+        "median_drift_pct": 12.5,
+        "p10_drift_pct": 0.0,
+        "max_drift_pct": 50.0
+      },
+      "8": {
+        "n_docs": 16,
+        "median_drift_pct": 12.5,
+        "p10_drift_pct": 0.0,
+        "max_drift_pct": 50.0
+      },
+      "9": {
+        "n_docs": 16,
+        "median_drift_pct": 12.5,
+        "p10_drift_pct": 5.0,
+        "max_drift_pct": 50.0
+      },
+      "10": {
+        "n_docs": 16,
+        "median_drift_pct": 12.5,
+        "p10_drift_pct": 5.0,
+        "max_drift_pct": 50.0
+      }
+    }
+  },
+  "composition_verdict": {
+    "verdict": "stable",
+    "rationale": "max-vs-K=1 drift delta = 0.00pp \u2264 \u03b5=1.0pp. Closure is robust under K-step iteration.",
+    "max_minus_first_pp": 0.0
+  },
+  "per_document": [
+    {
+      "doc_id": "doc_long_internet_history",
+      "n_truth_axioms": 5,
+      "iterations": [
+        {
+          "k": 1,
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "n_observed": 5,
+          "n_missing": 0,
+          "n_extra": 0,
+          "missing_sample": [],
+          "extra_sample": []
+        },
+        {
+          "k": 2,
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "n_observed": 5,
+          "n_missing": 0,
+          "n_extra": 0,
+          "missing_sample": [],
+          "extra_sample": []
+        },
+        {
+          "k": 3,
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "n_observed": 5,
+          "n_missing": 0,
+          "n_extra": 0,
+          "missing_sample": [],
+          "extra_sample": []
+        },
+        {
+          "k": 4,
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "n_observed": 5,
+          "n_missing": 0,
+          "n_extra": 0,
+          "missing_sample": [],
+          "extra_sample": []
+        },
+        {
+          "k": 5,
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "n_observed": 5,
+          "n_missing": 0,
+          "n_extra": 0,
+          "missing_sample": [],
+          "extra_sample": []
+        },
+        {
+          "k": 6,
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "n_observed": 5,
+          "n_missing": 0,
+          "n_extra": 0,
+          "missing_sample": [],
+          "extra_sample": []
+        },
+        {
+          "k": 7,
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "n_observed": 5,
+          "n_missing": 0,
+          "n_extra": 0,
+          "missing_sample": [],
+          "extra_sample": []
+        },
+        {
+          "k": 8,
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "n_observed": 5,
+          "n_missing": 0,
+          "n_extra": 0,
+          "missing_sample": [],
+          "extra_sample": []
+        },
+        {
+          "k": 9,
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "n_observed": 5,
+          "n_missing": 0,
+          "n_extra": 0,
+          "missing_sample": [],
+          "extra_sample": []
+        },
+        {
+          "k": 10,
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "n_observed": 5,
+          "n_missing": 0,
+          "n_extra": 0,
+          "missing_sample": [],
+          "extra_sample": []
+        }
+      ]
+    },
+    {
+      "doc_id": "doc_long_quantum_mechanics",
+      "n_truth_axioms": 8,
+      "iterations": [
+        {
+          "k": 1,
+          "drift_pct": 25.0,
+          "exact_match_recall": 0.75,
+          "n_observed": 8,
+          "n_missing": 2,
+          "n_extra": 2,
+          "missing_sample": [
+            [
+              "matter",
+              "exhibit",
+              "like property"
+            ],
+            [
+              "that",
+              "matrix",
+              "mechanic"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "matter",
+              "exhibit",
+              "property"
+            ],
+            [
+              "that",
+              "be",
+              "matrix mechanic"
+            ]
+          ]
+        },
+        {
+          "k": 2,
+          "drift_pct": 37.5,
+          "exact_match_recall": 0.625,
+          "n_observed": 8,
+          "n_missing": 3,
+          "n_extra": 3,
+          "missing_sample": [
+            [
+              "matter",
+              "exhibit",
+              "like property"
+            ],
+            [
+              "that",
+              "matrix",
+              "mechanic"
+            ],
+            [
+              "werner_heisenberg",
+              "articulate",
+              "uncertainty principle"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "articulate",
+              "uncertainty",
+              "principle"
+            ],
+            [
+              "matter",
+              "exhibit",
+              "property"
+            ],
+            [
+              "that",
+              "be",
+              "matrix mechanic"
+            ]
+          ]
+        },
+        {
+          "k": 3,
+          "drift_pct": 37.5,
+          "exact_match_recall": 0.625,
+          "n_observed": 8,
+          "n_missing": 3,
+          "n_extra": 3,
+          "missing_sample": [
+            [
+              "matter",
+              "exhibit",
+              "like property"
+            ],
+            [
+              "that",
+              "matrix",
+              "mechanic"
+            ],
+            [
+              "werner_heisenberg",
+              "articulate",
+              "uncertainty principle"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "matter",
+              "exhibit",
+              "property"
+            ],
+            [
+              "that",
+              "be",
+              "matrix mechanic"
+            ],
+            [
+              "uncertainty",
+              "articulate",
+              "principle"
+            ]
+          ]
+        },
+        {
+          "k": 4,
+          "drift_pct": 37.5,
+          "exact_match_recall": 0.625,
+          "n_observed": 8,
+          "n_missing": 3,
+          "n_extra": 3,
+          "missing_sample": [
+            [
+              "matter",
+              "exhibit",
+              "like property"
+            ],
+            [
+              "that",
+              "matrix",
+              "mechanic"
+            ],
+            [
+              "werner_heisenberg",
+              "articulate",
+              "uncertainty principle"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "matter",
+              "exhibit",
+              "property"
+            ],
+            [
+              "that",
+              "be",
+              "matrix mechanic"
+            ],
+            [
+              "uncertainty",
+              "articulate",
+              "principle"
+            ]
+          ]
+        },
+        {
+          "k": 5,
+          "drift_pct": 37.5,
+          "exact_match_recall": 0.625,
+          "n_observed": 8,
+          "n_missing": 3,
+          "n_extra": 3,
+          "missing_sample": [
+            [
+              "matter",
+              "exhibit",
+              "like property"
+            ],
+            [
+              "that",
+              "matrix",
+              "mechanic"
+            ],
+            [
+              "werner_heisenberg",
+              "articulate",
+              "uncertainty principle"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "matter",
+              "exhibit",
+              "property"
+            ],
+            [
+              "that",
+              "be",
+              "matrix mechanic"
+            ],
+            [
+              "uncertainty",
+              "articulate",
+              "principle"
+            ]
+          ]
+        },
+        {
+          "k": 6,
+          "drift_pct": 37.5,
+          "exact_match_recall": 0.625,
+          "n_observed": 8,
+          "n_missing": 3,
+          "n_extra": 3,
+          "missing_sample": [
+            [
+              "matter",
+              "exhibit",
+              "like property"
+            ],
+            [
+              "that",
+              "matrix",
+              "mechanic"
+            ],
+            [
+              "werner_heisenberg",
+              "articulate",
+              "uncertainty principle"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "matter",
+              "exhibit",
+              "property"
+            ],
+            [
+              "that",
+              "be",
+              "matrix mechanic"
+            ],
+            [
+              "uncertainty",
+              "articulate",
+              "principle"
+            ]
+          ]
+        },
+        {
+          "k": 7,
+          "drift_pct": 37.5,
+          "exact_match_recall": 0.625,
+          "n_observed": 8,
+          "n_missing": 3,
+          "n_extra": 3,
+          "missing_sample": [
+            [
+              "matter",
+              "exhibit",
+              "like property"
+            ],
+            [
+              "that",
+              "matrix",
+              "mechanic"
+            ],
+            [
+              "werner_heisenberg",
+              "articulate",
+              "uncertainty principle"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "matter",
+              "exhibit",
+              "property"
+            ],
+            [
+              "that",
+              "be",
+              "matrix mechanic"
+            ],
+            [
+              "uncertainty",
+              "articulate",
+              "principle"
+            ]
+          ]
+        },
+        {
+          "k": 8,
+          "drift_pct": 37.5,
+          "exact_match_recall": 0.625,
+          "n_observed": 8,
+          "n_missing": 3,
+          "n_extra": 3,
+          "missing_sample": [
+            [
+              "matter",
+              "exhibit",
+              "like property"
+            ],
+            [
+              "that",
+              "matrix",
+              "mechanic"
+            ],
+            [
+              "werner_heisenberg",
+              "articulate",
+              "uncertainty principle"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "matter",
+              "exhibit",
+              "property"
+            ],
+            [
+              "that",
+              "be",
+              "matrix mechanic"
+            ],
+            [
+              "uncertainty",
+              "articulate",
+              "principle"
+            ]
+          ]
+        },
+        {
+          "k": 9,
+          "drift_pct": 37.5,
+          "exact_match_recall": 0.625,
+          "n_observed": 8,
+          "n_missing": 3,
+          "n_extra": 3,
+          "missing_sample": [
+            [
+              "matter",
+              "exhibit",
+              "like property"
+            ],
+            [
+              "that",
+              "matrix",
+              "mechanic"
+            ],
+            [
+              "werner_heisenberg",
+              "articulate",
+              "uncertainty principle"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "matter",
+              "exhibit",
+              "property"
+            ],
+            [
+              "that",
+              "be",
+              "matrix mechanic"
+            ],
+            [
+              "uncertainty",
+              "articulate",
+              "principle"
+            ]
+          ]
+        },
+        {
+          "k": 10,
+          "drift_pct": 37.5,
+          "exact_match_recall": 0.625,
+          "n_observed": 8,
+          "n_missing": 3,
+          "n_extra": 3,
+          "missing_sample": [
+            [
+              "matter",
+              "exhibit",
+              "like property"
+            ],
+            [
+              "that",
+              "matrix",
+              "mechanic"
+            ],
+            [
+              "werner_heisenberg",
+              "articulate",
+              "uncertainty principle"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "matter",
+              "exhibit",
+              "property"
+            ],
+            [
+              "that",
+              "be",
+              "matrix mechanic"
+            ],
+            [
+              "uncertainty",
+              "articulate",
+              "principle"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "doc_id": "doc_long_evolution",
+      "n_truth_axioms": 8,
+      "iterations": [
+        {
+          "k": 1,
+          "drift_pct": 12.5,
+          "exact_match_recall": 0.875,
+          "n_observed": 7,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "genome_project",
+              "complete",
+              "sequencing"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 2,
+          "drift_pct": 12.5,
+          "exact_match_recall": 0.875,
+          "n_observed": 7,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "genome_project",
+              "complete",
+              "sequencing"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 3,
+          "drift_pct": 12.5,
+          "exact_match_recall": 0.875,
+          "n_observed": 7,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "genome_project",
+              "complete",
+              "sequencing"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 4,
+          "drift_pct": 12.5,
+          "exact_match_recall": 0.875,
+          "n_observed": 7,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "genome_project",
+              "complete",
+              "sequencing"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 5,
+          "drift_pct": 12.5,
+          "exact_match_recall": 0.875,
+          "n_observed": 7,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "genome_project",
+              "complete",
+              "sequencing"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 6,
+          "drift_pct": 12.5,
+          "exact_match_recall": 0.875,
+          "n_observed": 7,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "genome_project",
+              "complete",
+              "sequencing"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 7,
+          "drift_pct": 12.5,
+          "exact_match_recall": 0.875,
+          "n_observed": 7,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "genome_project",
+              "complete",
+              "sequencing"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 8,
+          "drift_pct": 12.5,
+          "exact_match_recall": 0.875,
+          "n_observed": 7,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "genome_project",
+              "complete",
+              "sequencing"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 9,
+          "drift_pct": 12.5,
+          "exact_match_recall": 0.875,
+          "n_observed": 7,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "genome_project",
+              "complete",
+              "sequencing"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 10,
+          "drift_pct": 12.5,
+          "exact_match_recall": 0.875,
+          "n_observed": 7,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "genome_project",
+              "complete",
+              "sequencing"
+            ]
+          ],
+          "extra_sample": []
+        }
+      ]
+    },
+    {
+      "doc_id": "doc_long_roman_empire",
+      "n_truth_axioms": 3,
+      "iterations": [
+        {
+          "k": 1,
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "n_observed": 3,
+          "n_missing": 0,
+          "n_extra": 0,
+          "missing_sample": [],
+          "extra_sample": []
+        },
+        {
+          "k": 2,
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "n_observed": 3,
+          "n_missing": 0,
+          "n_extra": 0,
+          "missing_sample": [],
+          "extra_sample": []
+        },
+        {
+          "k": 3,
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "n_observed": 3,
+          "n_missing": 0,
+          "n_extra": 0,
+          "missing_sample": [],
+          "extra_sample": []
+        },
+        {
+          "k": 4,
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "n_observed": 3,
+          "n_missing": 0,
+          "n_extra": 0,
+          "missing_sample": [],
+          "extra_sample": []
+        },
+        {
+          "k": 5,
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "n_observed": 3,
+          "n_missing": 0,
+          "n_extra": 0,
+          "missing_sample": [],
+          "extra_sample": []
+        },
+        {
+          "k": 6,
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "n_observed": 3,
+          "n_missing": 0,
+          "n_extra": 0,
+          "missing_sample": [],
+          "extra_sample": []
+        },
+        {
+          "k": 7,
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "n_observed": 3,
+          "n_missing": 0,
+          "n_extra": 0,
+          "missing_sample": [],
+          "extra_sample": []
+        },
+        {
+          "k": 8,
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "n_observed": 3,
+          "n_missing": 0,
+          "n_extra": 0,
+          "missing_sample": [],
+          "extra_sample": []
+        },
+        {
+          "k": 9,
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "n_observed": 3,
+          "n_missing": 0,
+          "n_extra": 0,
+          "missing_sample": [],
+          "extra_sample": []
+        },
+        {
+          "k": 10,
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "n_observed": 3,
+          "n_missing": 0,
+          "n_extra": 0,
+          "missing_sample": [],
+          "extra_sample": []
+        }
+      ]
+    },
+    {
+      "doc_id": "doc_long_solar_system",
+      "n_truth_axioms": 10,
+      "iterations": [
+        {
+          "k": 1,
+          "drift_pct": 10.0,
+          "exact_match_recall": 0.9,
+          "n_observed": 10,
+          "n_missing": 1,
+          "n_extra": 1,
+          "missing_sample": [
+            [
+              "saturn",
+              "compose",
+              "famous"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "saturn",
+              "compose",
+              "famous ring"
+            ]
+          ]
+        },
+        {
+          "k": 2,
+          "drift_pct": 10.0,
+          "exact_match_recall": 0.9,
+          "n_observed": 10,
+          "n_missing": 1,
+          "n_extra": 1,
+          "missing_sample": [
+            [
+              "saturn",
+              "compose",
+              "famous"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "saturn",
+              "compose",
+              "famous ring"
+            ]
+          ]
+        },
+        {
+          "k": 3,
+          "drift_pct": 10.0,
+          "exact_match_recall": 0.9,
+          "n_observed": 10,
+          "n_missing": 1,
+          "n_extra": 1,
+          "missing_sample": [
+            [
+              "saturn",
+              "compose",
+              "famous"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "saturn",
+              "compose",
+              "famous ring"
+            ]
+          ]
+        },
+        {
+          "k": 4,
+          "drift_pct": 10.0,
+          "exact_match_recall": 0.9,
+          "n_observed": 10,
+          "n_missing": 1,
+          "n_extra": 1,
+          "missing_sample": [
+            [
+              "saturn",
+              "compose",
+              "famous"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "saturn",
+              "compose",
+              "famous ring"
+            ]
+          ]
+        },
+        {
+          "k": 5,
+          "drift_pct": 10.0,
+          "exact_match_recall": 0.9,
+          "n_observed": 10,
+          "n_missing": 1,
+          "n_extra": 1,
+          "missing_sample": [
+            [
+              "saturn",
+              "compose",
+              "famous"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "saturn",
+              "compose",
+              "famous ring"
+            ]
+          ]
+        },
+        {
+          "k": 6,
+          "drift_pct": 10.0,
+          "exact_match_recall": 0.9,
+          "n_observed": 10,
+          "n_missing": 1,
+          "n_extra": 1,
+          "missing_sample": [
+            [
+              "saturn",
+              "compose",
+              "famous"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "saturn",
+              "compose",
+              "famous ring"
+            ]
+          ]
+        },
+        {
+          "k": 7,
+          "drift_pct": 10.0,
+          "exact_match_recall": 0.9,
+          "n_observed": 10,
+          "n_missing": 1,
+          "n_extra": 1,
+          "missing_sample": [
+            [
+              "saturn",
+              "compose",
+              "famous"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "saturn",
+              "compose",
+              "famous ring"
+            ]
+          ]
+        },
+        {
+          "k": 8,
+          "drift_pct": 10.0,
+          "exact_match_recall": 0.9,
+          "n_observed": 10,
+          "n_missing": 1,
+          "n_extra": 1,
+          "missing_sample": [
+            [
+              "saturn",
+              "compose",
+              "famous"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "saturn",
+              "compose",
+              "famous ring"
+            ]
+          ]
+        },
+        {
+          "k": 9,
+          "drift_pct": 10.0,
+          "exact_match_recall": 0.9,
+          "n_observed": 10,
+          "n_missing": 1,
+          "n_extra": 1,
+          "missing_sample": [
+            [
+              "saturn",
+              "compose",
+              "famous"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "saturn",
+              "compose",
+              "famous ring"
+            ]
+          ]
+        },
+        {
+          "k": 10,
+          "drift_pct": 10.0,
+          "exact_match_recall": 0.9,
+          "n_observed": 10,
+          "n_missing": 1,
+          "n_extra": 1,
+          "missing_sample": [
+            [
+              "saturn",
+              "compose",
+              "famous"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "saturn",
+              "compose",
+              "famous ring"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "doc_id": "doc_long_neural_networks",
+      "n_truth_axioms": 9,
+      "iterations": [
+        {
+          "k": 1,
+          "drift_pct": 11.1111,
+          "exact_match_recall": 0.888889,
+          "n_observed": 9,
+          "n_missing": 1,
+          "n_extra": 1,
+          "missing_sample": [
+            [
+              "hochreiter",
+              "introduce",
+              "long term memory network"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "hochreiter",
+              "introduce",
+              "memory network"
+            ]
+          ]
+        },
+        {
+          "k": 2,
+          "drift_pct": 11.1111,
+          "exact_match_recall": 0.888889,
+          "n_observed": 9,
+          "n_missing": 1,
+          "n_extra": 1,
+          "missing_sample": [
+            [
+              "hochreiter",
+              "introduce",
+              "long term memory network"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "hochreiter",
+              "introduce",
+              "memory network"
+            ]
+          ]
+        },
+        {
+          "k": 3,
+          "drift_pct": 11.1111,
+          "exact_match_recall": 0.888889,
+          "n_observed": 9,
+          "n_missing": 1,
+          "n_extra": 1,
+          "missing_sample": [
+            [
+              "hochreiter",
+              "introduce",
+              "long term memory network"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "hochreiter",
+              "introduce",
+              "memory network"
+            ]
+          ]
+        },
+        {
+          "k": 4,
+          "drift_pct": 11.1111,
+          "exact_match_recall": 0.888889,
+          "n_observed": 9,
+          "n_missing": 1,
+          "n_extra": 1,
+          "missing_sample": [
+            [
+              "hochreiter",
+              "introduce",
+              "long term memory network"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "hochreiter",
+              "introduce",
+              "memory network"
+            ]
+          ]
+        },
+        {
+          "k": 5,
+          "drift_pct": 11.1111,
+          "exact_match_recall": 0.888889,
+          "n_observed": 9,
+          "n_missing": 1,
+          "n_extra": 1,
+          "missing_sample": [
+            [
+              "hochreiter",
+              "introduce",
+              "long term memory network"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "hochreiter",
+              "introduce",
+              "memory network"
+            ]
+          ]
+        },
+        {
+          "k": 6,
+          "drift_pct": 11.1111,
+          "exact_match_recall": 0.888889,
+          "n_observed": 9,
+          "n_missing": 1,
+          "n_extra": 1,
+          "missing_sample": [
+            [
+              "hochreiter",
+              "introduce",
+              "long term memory network"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "hochreiter",
+              "introduce",
+              "memory network"
+            ]
+          ]
+        },
+        {
+          "k": 7,
+          "drift_pct": 11.1111,
+          "exact_match_recall": 0.888889,
+          "n_observed": 9,
+          "n_missing": 1,
+          "n_extra": 1,
+          "missing_sample": [
+            [
+              "hochreiter",
+              "introduce",
+              "long term memory network"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "hochreiter",
+              "introduce",
+              "memory network"
+            ]
+          ]
+        },
+        {
+          "k": 8,
+          "drift_pct": 11.1111,
+          "exact_match_recall": 0.888889,
+          "n_observed": 9,
+          "n_missing": 1,
+          "n_extra": 1,
+          "missing_sample": [
+            [
+              "hochreiter",
+              "introduce",
+              "long term memory network"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "hochreiter",
+              "introduce",
+              "memory network"
+            ]
+          ]
+        },
+        {
+          "k": 9,
+          "drift_pct": 11.1111,
+          "exact_match_recall": 0.888889,
+          "n_observed": 9,
+          "n_missing": 1,
+          "n_extra": 1,
+          "missing_sample": [
+            [
+              "hochreiter",
+              "introduce",
+              "long term memory network"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "hochreiter",
+              "introduce",
+              "memory network"
+            ]
+          ]
+        },
+        {
+          "k": 10,
+          "drift_pct": 11.1111,
+          "exact_match_recall": 0.888889,
+          "n_observed": 9,
+          "n_missing": 1,
+          "n_extra": 1,
+          "missing_sample": [
+            [
+              "hochreiter",
+              "introduce",
+              "long term memory network"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "hochreiter",
+              "introduce",
+              "memory network"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "doc_id": "doc_long_climate_change",
+      "n_truth_axioms": 7,
+      "iterations": [
+        {
+          "k": 1,
+          "drift_pct": 42.8571,
+          "exact_match_recall": 0.571429,
+          "n_observed": 6,
+          "n_missing": 3,
+          "n_extra": 2,
+          "missing_sample": [
+            [
+              "global_mean_surface_temperature",
+              "rise",
+              "degrees celsius"
+            ],
+            [
+              "nations_environment_programme",
+              "establish",
+              "intergovernmental panel"
+            ],
+            [
+              "satellite_observation",
+              "begin",
+              "percent"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "establishes_satellite_observation",
+              "begin",
+              "percent"
+            ],
+            [
+              "global_mean_surface_temperature",
+              "degree",
+              "celsius"
+            ]
+          ]
+        },
+        {
+          "k": 2,
+          "drift_pct": 42.8571,
+          "exact_match_recall": 0.571429,
+          "n_observed": 6,
+          "n_missing": 3,
+          "n_extra": 2,
+          "missing_sample": [
+            [
+              "global_mean_surface_temperature",
+              "rise",
+              "degrees celsius"
+            ],
+            [
+              "nations_environment_programme",
+              "establish",
+              "intergovernmental panel"
+            ],
+            [
+              "satellite_observation",
+              "begin",
+              "percent"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "establishes_satellite_observation",
+              "begin",
+              "percent"
+            ],
+            [
+              "global_mean_surface_temperature",
+              "be",
+              "degree celsius"
+            ]
+          ]
+        },
+        {
+          "k": 3,
+          "drift_pct": 42.8571,
+          "exact_match_recall": 0.571429,
+          "n_observed": 6,
+          "n_missing": 3,
+          "n_extra": 2,
+          "missing_sample": [
+            [
+              "global_mean_surface_temperature",
+              "rise",
+              "degrees celsius"
+            ],
+            [
+              "nations_environment_programme",
+              "establish",
+              "intergovernmental panel"
+            ],
+            [
+              "satellite_observation",
+              "begin",
+              "percent"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "establishes_satellite_observation",
+              "begin",
+              "percent"
+            ],
+            [
+              "global_mean_surface_temperature",
+              "be",
+              "degree celsius"
+            ]
+          ]
+        },
+        {
+          "k": 4,
+          "drift_pct": 42.8571,
+          "exact_match_recall": 0.571429,
+          "n_observed": 6,
+          "n_missing": 3,
+          "n_extra": 2,
+          "missing_sample": [
+            [
+              "global_mean_surface_temperature",
+              "rise",
+              "degrees celsius"
+            ],
+            [
+              "nations_environment_programme",
+              "establish",
+              "intergovernmental panel"
+            ],
+            [
+              "satellite_observation",
+              "begin",
+              "percent"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "establishes_satellite_observation",
+              "begin",
+              "percent"
+            ],
+            [
+              "global_mean_surface_temperature",
+              "be",
+              "degree celsius"
+            ]
+          ]
+        },
+        {
+          "k": 5,
+          "drift_pct": 42.8571,
+          "exact_match_recall": 0.571429,
+          "n_observed": 6,
+          "n_missing": 3,
+          "n_extra": 2,
+          "missing_sample": [
+            [
+              "global_mean_surface_temperature",
+              "rise",
+              "degrees celsius"
+            ],
+            [
+              "nations_environment_programme",
+              "establish",
+              "intergovernmental panel"
+            ],
+            [
+              "satellite_observation",
+              "begin",
+              "percent"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "establishes_satellite_observation",
+              "begin",
+              "percent"
+            ],
+            [
+              "global_mean_surface_temperature",
+              "be",
+              "degree celsius"
+            ]
+          ]
+        },
+        {
+          "k": 6,
+          "drift_pct": 42.8571,
+          "exact_match_recall": 0.571429,
+          "n_observed": 6,
+          "n_missing": 3,
+          "n_extra": 2,
+          "missing_sample": [
+            [
+              "global_mean_surface_temperature",
+              "rise",
+              "degrees celsius"
+            ],
+            [
+              "nations_environment_programme",
+              "establish",
+              "intergovernmental panel"
+            ],
+            [
+              "satellite_observation",
+              "begin",
+              "percent"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "establishes_satellite_observation",
+              "begin",
+              "percent"
+            ],
+            [
+              "global_mean_surface_temperature",
+              "be",
+              "degree celsius"
+            ]
+          ]
+        },
+        {
+          "k": 7,
+          "drift_pct": 42.8571,
+          "exact_match_recall": 0.571429,
+          "n_observed": 6,
+          "n_missing": 3,
+          "n_extra": 2,
+          "missing_sample": [
+            [
+              "global_mean_surface_temperature",
+              "rise",
+              "degrees celsius"
+            ],
+            [
+              "nations_environment_programme",
+              "establish",
+              "intergovernmental panel"
+            ],
+            [
+              "satellite_observation",
+              "begin",
+              "percent"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "establishes_satellite_observation",
+              "begin",
+              "percent"
+            ],
+            [
+              "global_mean_surface_temperature",
+              "be",
+              "degree celsius"
+            ]
+          ]
+        },
+        {
+          "k": 8,
+          "drift_pct": 42.8571,
+          "exact_match_recall": 0.571429,
+          "n_observed": 6,
+          "n_missing": 3,
+          "n_extra": 2,
+          "missing_sample": [
+            [
+              "global_mean_surface_temperature",
+              "rise",
+              "degrees celsius"
+            ],
+            [
+              "nations_environment_programme",
+              "establish",
+              "intergovernmental panel"
+            ],
+            [
+              "satellite_observation",
+              "begin",
+              "percent"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "establishes_satellite_observation",
+              "begin",
+              "percent"
+            ],
+            [
+              "global_mean_surface_temperature",
+              "be",
+              "degree celsius"
+            ]
+          ]
+        },
+        {
+          "k": 9,
+          "drift_pct": 42.8571,
+          "exact_match_recall": 0.571429,
+          "n_observed": 6,
+          "n_missing": 3,
+          "n_extra": 2,
+          "missing_sample": [
+            [
+              "global_mean_surface_temperature",
+              "rise",
+              "degrees celsius"
+            ],
+            [
+              "nations_environment_programme",
+              "establish",
+              "intergovernmental panel"
+            ],
+            [
+              "satellite_observation",
+              "begin",
+              "percent"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "establishes_satellite_observation",
+              "begin",
+              "percent"
+            ],
+            [
+              "global_mean_surface_temperature",
+              "be",
+              "degree celsius"
+            ]
+          ]
+        },
+        {
+          "k": 10,
+          "drift_pct": 42.8571,
+          "exact_match_recall": 0.571429,
+          "n_observed": 6,
+          "n_missing": 3,
+          "n_extra": 2,
+          "missing_sample": [
+            [
+              "global_mean_surface_temperature",
+              "rise",
+              "degrees celsius"
+            ],
+            [
+              "nations_environment_programme",
+              "establish",
+              "intergovernmental panel"
+            ],
+            [
+              "satellite_observation",
+              "begin",
+              "percent"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "establishes_satellite_observation",
+              "begin",
+              "percent"
+            ],
+            [
+              "global_mean_surface_temperature",
+              "be",
+              "degree celsius"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "doc_id": "doc_long_relativity",
+      "n_truth_axioms": 8,
+      "iterations": [
+        {
+          "k": 1,
+          "drift_pct": 12.5,
+          "exact_match_recall": 0.875,
+          "n_observed": 7,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "albert_einstein",
+              "establish",
+              "constancy"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 2,
+          "drift_pct": 12.5,
+          "exact_match_recall": 0.875,
+          "n_observed": 7,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "albert_einstein",
+              "establish",
+              "constancy"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 3,
+          "drift_pct": 12.5,
+          "exact_match_recall": 0.875,
+          "n_observed": 7,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "albert_einstein",
+              "establish",
+              "constancy"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 4,
+          "drift_pct": 12.5,
+          "exact_match_recall": 0.875,
+          "n_observed": 7,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "albert_einstein",
+              "establish",
+              "constancy"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 5,
+          "drift_pct": 12.5,
+          "exact_match_recall": 0.875,
+          "n_observed": 7,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "albert_einstein",
+              "establish",
+              "constancy"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 6,
+          "drift_pct": 12.5,
+          "exact_match_recall": 0.875,
+          "n_observed": 7,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "albert_einstein",
+              "establish",
+              "constancy"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 7,
+          "drift_pct": 12.5,
+          "exact_match_recall": 0.875,
+          "n_observed": 7,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "albert_einstein",
+              "establish",
+              "constancy"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 8,
+          "drift_pct": 12.5,
+          "exact_match_recall": 0.875,
+          "n_observed": 7,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "albert_einstein",
+              "establish",
+              "constancy"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 9,
+          "drift_pct": 12.5,
+          "exact_match_recall": 0.875,
+          "n_observed": 7,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "albert_einstein",
+              "establish",
+              "constancy"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 10,
+          "drift_pct": 12.5,
+          "exact_match_recall": 0.875,
+          "n_observed": 7,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "albert_einstein",
+              "establish",
+              "constancy"
+            ]
+          ],
+          "extra_sample": []
+        }
+      ]
+    },
+    {
+      "doc_id": "doc_long_french_revolution",
+      "n_truth_axioms": 5,
+      "iterations": [
+        {
+          "k": 1,
+          "drift_pct": 40.0,
+          "exact_match_recall": 0.6,
+          "n_observed": 3,
+          "n_missing": 2,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "third_estate",
+              "pledge",
+              "court oath"
+            ],
+            [
+              "thousand",
+              "execute",
+              "reign"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 2,
+          "drift_pct": 40.0,
+          "exact_match_recall": 0.6,
+          "n_observed": 3,
+          "n_missing": 2,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "third_estate",
+              "pledge",
+              "court oath"
+            ],
+            [
+              "thousand",
+              "execute",
+              "reign"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 3,
+          "drift_pct": 40.0,
+          "exact_match_recall": 0.6,
+          "n_observed": 3,
+          "n_missing": 2,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "third_estate",
+              "pledge",
+              "court oath"
+            ],
+            [
+              "thousand",
+              "execute",
+              "reign"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 4,
+          "drift_pct": 40.0,
+          "exact_match_recall": 0.6,
+          "n_observed": 3,
+          "n_missing": 2,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "third_estate",
+              "pledge",
+              "court oath"
+            ],
+            [
+              "thousand",
+              "execute",
+              "reign"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 5,
+          "drift_pct": 40.0,
+          "exact_match_recall": 0.6,
+          "n_observed": 3,
+          "n_missing": 2,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "third_estate",
+              "pledge",
+              "court oath"
+            ],
+            [
+              "thousand",
+              "execute",
+              "reign"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 6,
+          "drift_pct": 40.0,
+          "exact_match_recall": 0.6,
+          "n_observed": 3,
+          "n_missing": 2,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "third_estate",
+              "pledge",
+              "court oath"
+            ],
+            [
+              "thousand",
+              "execute",
+              "reign"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 7,
+          "drift_pct": 40.0,
+          "exact_match_recall": 0.6,
+          "n_observed": 3,
+          "n_missing": 2,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "third_estate",
+              "pledge",
+              "court oath"
+            ],
+            [
+              "thousand",
+              "execute",
+              "reign"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 8,
+          "drift_pct": 40.0,
+          "exact_match_recall": 0.6,
+          "n_observed": 3,
+          "n_missing": 2,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "third_estate",
+              "pledge",
+              "court oath"
+            ],
+            [
+              "thousand",
+              "execute",
+              "reign"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 9,
+          "drift_pct": 40.0,
+          "exact_match_recall": 0.6,
+          "n_observed": 3,
+          "n_missing": 2,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "third_estate",
+              "pledge",
+              "court oath"
+            ],
+            [
+              "thousand",
+              "execute",
+              "reign"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 10,
+          "drift_pct": 40.0,
+          "exact_match_recall": 0.6,
+          "n_observed": 3,
+          "n_missing": 2,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "third_estate",
+              "pledge",
+              "court oath"
+            ],
+            [
+              "thousand",
+              "execute",
+              "reign"
+            ]
+          ],
+          "extra_sample": []
+        }
+      ]
+    },
+    {
+      "doc_id": "doc_long_cell_biology",
+      "n_truth_axioms": 10,
+      "iterations": [
+        {
+          "k": 1,
+          "drift_pct": 10.0,
+          "exact_match_recall": 0.9,
+          "n_observed": 9,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "mitochondria",
+              "originate",
+              "own circular dna"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 2,
+          "drift_pct": 10.0,
+          "exact_match_recall": 0.9,
+          "n_observed": 9,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "mitochondria",
+              "originate",
+              "own circular dna"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 3,
+          "drift_pct": 10.0,
+          "exact_match_recall": 0.9,
+          "n_observed": 9,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "mitochondria",
+              "originate",
+              "own circular dna"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 4,
+          "drift_pct": 10.0,
+          "exact_match_recall": 0.9,
+          "n_observed": 9,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "mitochondria",
+              "originate",
+              "own circular dna"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 5,
+          "drift_pct": 10.0,
+          "exact_match_recall": 0.9,
+          "n_observed": 9,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "mitochondria",
+              "originate",
+              "own circular dna"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 6,
+          "drift_pct": 10.0,
+          "exact_match_recall": 0.9,
+          "n_observed": 9,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "mitochondria",
+              "originate",
+              "own circular dna"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 7,
+          "drift_pct": 10.0,
+          "exact_match_recall": 0.9,
+          "n_observed": 9,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "mitochondria",
+              "originate",
+              "own circular dna"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 8,
+          "drift_pct": 10.0,
+          "exact_match_recall": 0.9,
+          "n_observed": 9,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "mitochondria",
+              "originate",
+              "own circular dna"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 9,
+          "drift_pct": 10.0,
+          "exact_match_recall": 0.9,
+          "n_observed": 9,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "mitochondria",
+              "originate",
+              "own circular dna"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 10,
+          "drift_pct": 10.0,
+          "exact_match_recall": 0.9,
+          "n_observed": 9,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "mitochondria",
+              "originate",
+              "own circular dna"
+            ]
+          ],
+          "extra_sample": []
+        }
+      ]
+    },
+    {
+      "doc_id": "doc_long_world_war_two",
+      "n_truth_axioms": 9,
+      "iterations": [
+        {
+          "k": 1,
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "n_observed": 9,
+          "n_missing": 0,
+          "n_extra": 0,
+          "missing_sample": [],
+          "extra_sample": []
+        },
+        {
+          "k": 2,
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "n_observed": 9,
+          "n_missing": 0,
+          "n_extra": 0,
+          "missing_sample": [],
+          "extra_sample": []
+        },
+        {
+          "k": 3,
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "n_observed": 9,
+          "n_missing": 0,
+          "n_extra": 0,
+          "missing_sample": [],
+          "extra_sample": []
+        },
+        {
+          "k": 4,
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "n_observed": 9,
+          "n_missing": 0,
+          "n_extra": 0,
+          "missing_sample": [],
+          "extra_sample": []
+        },
+        {
+          "k": 5,
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "n_observed": 9,
+          "n_missing": 0,
+          "n_extra": 0,
+          "missing_sample": [],
+          "extra_sample": []
+        },
+        {
+          "k": 6,
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "n_observed": 9,
+          "n_missing": 0,
+          "n_extra": 0,
+          "missing_sample": [],
+          "extra_sample": []
+        },
+        {
+          "k": 7,
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "n_observed": 9,
+          "n_missing": 0,
+          "n_extra": 0,
+          "missing_sample": [],
+          "extra_sample": []
+        },
+        {
+          "k": 8,
+          "drift_pct": 0.0,
+          "exact_match_recall": 1.0,
+          "n_observed": 9,
+          "n_missing": 0,
+          "n_extra": 0,
+          "missing_sample": [],
+          "extra_sample": []
+        },
+        {
+          "k": 9,
+          "drift_pct": 11.1111,
+          "exact_match_recall": 0.888889,
+          "n_observed": 9,
+          "n_missing": 1,
+          "n_extra": 1,
+          "missing_sample": [
+            [
+              "united_states",
+              "drop",
+              "atomic bomb"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "united_state",
+              "drop",
+              "atomic bomb"
+            ]
+          ]
+        },
+        {
+          "k": 10,
+          "drift_pct": 11.1111,
+          "exact_match_recall": 0.888889,
+          "n_observed": 9,
+          "n_missing": 1,
+          "n_extra": 1,
+          "missing_sample": [
+            [
+              "united_states",
+              "drop",
+              "atomic bomb"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "united_state",
+              "drop",
+              "atomic bomb"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "doc_id": "doc_long_periodic_table",
+      "n_truth_axioms": 6,
+      "iterations": [
+        {
+          "k": 1,
+          "drift_pct": 16.6667,
+          "exact_match_recall": 0.833333,
+          "n_observed": 5,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "iupac",
+              "name",
+              "oganesson element"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 2,
+          "drift_pct": 16.6667,
+          "exact_match_recall": 0.833333,
+          "n_observed": 5,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "iupac",
+              "name",
+              "oganesson element"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 3,
+          "drift_pct": 33.3333,
+          "exact_match_recall": 0.666667,
+          "n_observed": 4,
+          "n_missing": 2,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "glenn_seaborg",
+              "contribute",
+              "plutonium"
+            ],
+            [
+              "iupac",
+              "name",
+              "oganesson element"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 4,
+          "drift_pct": 33.3333,
+          "exact_match_recall": 0.666667,
+          "n_observed": 4,
+          "n_missing": 2,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "glenn_seaborg",
+              "contribute",
+              "plutonium"
+            ],
+            [
+              "iupac",
+              "name",
+              "oganesson element"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 5,
+          "drift_pct": 33.3333,
+          "exact_match_recall": 0.666667,
+          "n_observed": 4,
+          "n_missing": 2,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "glenn_seaborg",
+              "contribute",
+              "plutonium"
+            ],
+            [
+              "iupac",
+              "name",
+              "oganesson element"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 6,
+          "drift_pct": 33.3333,
+          "exact_match_recall": 0.666667,
+          "n_observed": 4,
+          "n_missing": 2,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "glenn_seaborg",
+              "contribute",
+              "plutonium"
+            ],
+            [
+              "iupac",
+              "name",
+              "oganesson element"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 7,
+          "drift_pct": 33.3333,
+          "exact_match_recall": 0.666667,
+          "n_observed": 4,
+          "n_missing": 2,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "glenn_seaborg",
+              "contribute",
+              "plutonium"
+            ],
+            [
+              "iupac",
+              "name",
+              "oganesson element"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 8,
+          "drift_pct": 33.3333,
+          "exact_match_recall": 0.666667,
+          "n_observed": 4,
+          "n_missing": 2,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "glenn_seaborg",
+              "contribute",
+              "plutonium"
+            ],
+            [
+              "iupac",
+              "name",
+              "oganesson element"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 9,
+          "drift_pct": 33.3333,
+          "exact_match_recall": 0.666667,
+          "n_observed": 4,
+          "n_missing": 2,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "glenn_seaborg",
+              "contribute",
+              "plutonium"
+            ],
+            [
+              "iupac",
+              "name",
+              "oganesson element"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 10,
+          "drift_pct": 33.3333,
+          "exact_match_recall": 0.666667,
+          "n_observed": 4,
+          "n_missing": 2,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "glenn_seaborg",
+              "contribute",
+              "plutonium"
+            ],
+            [
+              "iupac",
+              "name",
+              "oganesson element"
+            ]
+          ],
+          "extra_sample": []
+        }
+      ]
+    },
+    {
+      "doc_id": "doc_long_human_genome",
+      "n_truth_axioms": 6,
+      "iterations": [
+        {
+          "k": 1,
+          "drift_pct": 16.6667,
+          "exact_match_recall": 0.833333,
+          "n_observed": 5,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "celera_genomics",
+              "sequence",
+              "shotgun sequencing method"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 2,
+          "drift_pct": 33.3333,
+          "exact_match_recall": 0.666667,
+          "n_observed": 4,
+          "n_missing": 2,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "celera_genomics",
+              "sequence",
+              "shotgun sequencing method"
+            ],
+            [
+              "states_national_institutes",
+              "coordinate",
+              "project"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 3,
+          "drift_pct": 33.3333,
+          "exact_match_recall": 0.666667,
+          "n_observed": 4,
+          "n_missing": 2,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "celera_genomics",
+              "sequence",
+              "shotgun sequencing method"
+            ],
+            [
+              "states_national_institutes",
+              "coordinate",
+              "project"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 4,
+          "drift_pct": 33.3333,
+          "exact_match_recall": 0.666667,
+          "n_observed": 4,
+          "n_missing": 2,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "celera_genomics",
+              "sequence",
+              "shotgun sequencing method"
+            ],
+            [
+              "states_national_institutes",
+              "coordinate",
+              "project"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 5,
+          "drift_pct": 33.3333,
+          "exact_match_recall": 0.666667,
+          "n_observed": 4,
+          "n_missing": 2,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "celera_genomics",
+              "sequence",
+              "shotgun sequencing method"
+            ],
+            [
+              "states_national_institutes",
+              "coordinate",
+              "project"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 6,
+          "drift_pct": 33.3333,
+          "exact_match_recall": 0.666667,
+          "n_observed": 4,
+          "n_missing": 2,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "celera_genomics",
+              "sequence",
+              "shotgun sequencing method"
+            ],
+            [
+              "states_national_institutes",
+              "coordinate",
+              "project"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 7,
+          "drift_pct": 33.3333,
+          "exact_match_recall": 0.666667,
+          "n_observed": 4,
+          "n_missing": 2,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "celera_genomics",
+              "sequence",
+              "shotgun sequencing method"
+            ],
+            [
+              "states_national_institutes",
+              "coordinate",
+              "project"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 8,
+          "drift_pct": 33.3333,
+          "exact_match_recall": 0.666667,
+          "n_observed": 4,
+          "n_missing": 2,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "celera_genomics",
+              "sequence",
+              "shotgun sequencing method"
+            ],
+            [
+              "states_national_institutes",
+              "coordinate",
+              "project"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 9,
+          "drift_pct": 33.3333,
+          "exact_match_recall": 0.666667,
+          "n_observed": 4,
+          "n_missing": 2,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "celera_genomics",
+              "sequence",
+              "shotgun sequencing method"
+            ],
+            [
+              "states_national_institutes",
+              "coordinate",
+              "project"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 10,
+          "drift_pct": 33.3333,
+          "exact_match_recall": 0.666667,
+          "n_observed": 4,
+          "n_missing": 2,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "celera_genomics",
+              "sequence",
+              "shotgun sequencing method"
+            ],
+            [
+              "states_national_institutes",
+              "coordinate",
+              "project"
+            ]
+          ],
+          "extra_sample": []
+        }
+      ]
+    },
+    {
+      "doc_id": "doc_long_cryptography",
+      "n_truth_axioms": 9,
+      "iterations": [
+        {
+          "k": 1,
+          "drift_pct": 22.2222,
+          "exact_match_recall": 0.777778,
+          "n_observed": 8,
+          "n_missing": 2,
+          "n_extra": 1,
+          "missing_sample": [
+            [
+              "rsa_security",
+              "factor",
+              "large composite number"
+            ],
+            [
+              "security_agency",
+              "publish",
+              "sha-256 hash function"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "security_agency",
+              "publish",
+              "hash function"
+            ]
+          ]
+        },
+        {
+          "k": 2,
+          "drift_pct": 22.2222,
+          "exact_match_recall": 0.777778,
+          "n_observed": 8,
+          "n_missing": 2,
+          "n_extra": 1,
+          "missing_sample": [
+            [
+              "rsa_security",
+              "factor",
+              "large composite number"
+            ],
+            [
+              "security_agency",
+              "publish",
+              "sha-256 hash function"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "security_agency",
+              "publish",
+              "hash function"
+            ]
+          ]
+        },
+        {
+          "k": 3,
+          "drift_pct": 22.2222,
+          "exact_match_recall": 0.777778,
+          "n_observed": 8,
+          "n_missing": 2,
+          "n_extra": 1,
+          "missing_sample": [
+            [
+              "rsa_security",
+              "factor",
+              "large composite number"
+            ],
+            [
+              "security_agency",
+              "publish",
+              "sha-256 hash function"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "security_agency",
+              "publish",
+              "hash function"
+            ]
+          ]
+        },
+        {
+          "k": 4,
+          "drift_pct": 22.2222,
+          "exact_match_recall": 0.777778,
+          "n_observed": 8,
+          "n_missing": 2,
+          "n_extra": 1,
+          "missing_sample": [
+            [
+              "rsa_security",
+              "factor",
+              "large composite number"
+            ],
+            [
+              "security_agency",
+              "publish",
+              "sha-256 hash function"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "security_agency",
+              "publish",
+              "hash function"
+            ]
+          ]
+        },
+        {
+          "k": 5,
+          "drift_pct": 22.2222,
+          "exact_match_recall": 0.777778,
+          "n_observed": 8,
+          "n_missing": 2,
+          "n_extra": 1,
+          "missing_sample": [
+            [
+              "rsa_security",
+              "factor",
+              "large composite number"
+            ],
+            [
+              "security_agency",
+              "publish",
+              "sha-256 hash function"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "security_agency",
+              "publish",
+              "hash function"
+            ]
+          ]
+        },
+        {
+          "k": 6,
+          "drift_pct": 22.2222,
+          "exact_match_recall": 0.777778,
+          "n_observed": 8,
+          "n_missing": 2,
+          "n_extra": 1,
+          "missing_sample": [
+            [
+              "rsa_security",
+              "factor",
+              "large composite number"
+            ],
+            [
+              "security_agency",
+              "publish",
+              "sha-256 hash function"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "security_agency",
+              "publish",
+              "hash function"
+            ]
+          ]
+        },
+        {
+          "k": 7,
+          "drift_pct": 22.2222,
+          "exact_match_recall": 0.777778,
+          "n_observed": 8,
+          "n_missing": 2,
+          "n_extra": 1,
+          "missing_sample": [
+            [
+              "rsa_security",
+              "factor",
+              "large composite number"
+            ],
+            [
+              "security_agency",
+              "publish",
+              "sha-256 hash function"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "security_agency",
+              "publish",
+              "hash function"
+            ]
+          ]
+        },
+        {
+          "k": 8,
+          "drift_pct": 22.2222,
+          "exact_match_recall": 0.777778,
+          "n_observed": 8,
+          "n_missing": 2,
+          "n_extra": 1,
+          "missing_sample": [
+            [
+              "rsa_security",
+              "factor",
+              "large composite number"
+            ],
+            [
+              "security_agency",
+              "publish",
+              "sha-256 hash function"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "security_agency",
+              "publish",
+              "hash function"
+            ]
+          ]
+        },
+        {
+          "k": 9,
+          "drift_pct": 22.2222,
+          "exact_match_recall": 0.777778,
+          "n_observed": 8,
+          "n_missing": 2,
+          "n_extra": 1,
+          "missing_sample": [
+            [
+              "rsa_security",
+              "factor",
+              "large composite number"
+            ],
+            [
+              "security_agency",
+              "publish",
+              "sha-256 hash function"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "security_agency",
+              "publish",
+              "hash function"
+            ]
+          ]
+        },
+        {
+          "k": 10,
+          "drift_pct": 22.2222,
+          "exact_match_recall": 0.777778,
+          "n_observed": 8,
+          "n_missing": 2,
+          "n_extra": 1,
+          "missing_sample": [
+            [
+              "rsa_security",
+              "factor",
+              "large composite number"
+            ],
+            [
+              "security_agency",
+              "publish",
+              "sha-256 hash function"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "security_agency",
+              "publish",
+              "hash function"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "doc_id": "doc_long_industrial_revolution",
+      "n_truth_axioms": 8,
+      "iterations": [
+        {
+          "k": 1,
+          "drift_pct": 37.5,
+          "exact_match_recall": 0.625,
+          "n_observed": 6,
+          "n_missing": 3,
+          "n_extra": 1,
+          "missing_sample": [
+            [
+              "edmund_cartwright",
+              "automate",
+              "automated weaving"
+            ],
+            [
+              "first_factory_system",
+              "decentralise",
+              "decentralised cottage industry"
+            ],
+            [
+              "use",
+              "revolutionise",
+              "iron production"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "first_factory_system",
+              "decentralise",
+              "cottage industry"
+            ]
+          ]
+        },
+        {
+          "k": 2,
+          "drift_pct": 37.5,
+          "exact_match_recall": 0.625,
+          "n_observed": 6,
+          "n_missing": 3,
+          "n_extra": 1,
+          "missing_sample": [
+            [
+              "edmund_cartwright",
+              "automate",
+              "automated weaving"
+            ],
+            [
+              "first_factory_system",
+              "decentralise",
+              "decentralised cottage industry"
+            ],
+            [
+              "use",
+              "revolutionise",
+              "iron production"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "first_factory_system",
+              "decentralise",
+              "cottage industry"
+            ]
+          ]
+        },
+        {
+          "k": 3,
+          "drift_pct": 37.5,
+          "exact_match_recall": 0.625,
+          "n_observed": 6,
+          "n_missing": 3,
+          "n_extra": 1,
+          "missing_sample": [
+            [
+              "edmund_cartwright",
+              "automate",
+              "automated weaving"
+            ],
+            [
+              "first_factory_system",
+              "decentralise",
+              "decentralised cottage industry"
+            ],
+            [
+              "use",
+              "revolutionise",
+              "iron production"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "first_factory_system",
+              "decentralise",
+              "cottage industry"
+            ]
+          ]
+        },
+        {
+          "k": 4,
+          "drift_pct": 37.5,
+          "exact_match_recall": 0.625,
+          "n_observed": 6,
+          "n_missing": 3,
+          "n_extra": 1,
+          "missing_sample": [
+            [
+              "edmund_cartwright",
+              "automate",
+              "automated weaving"
+            ],
+            [
+              "first_factory_system",
+              "decentralise",
+              "decentralised cottage industry"
+            ],
+            [
+              "use",
+              "revolutionise",
+              "iron production"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "first_factory_system",
+              "decentralise",
+              "cottage industry"
+            ]
+          ]
+        },
+        {
+          "k": 5,
+          "drift_pct": 37.5,
+          "exact_match_recall": 0.625,
+          "n_observed": 6,
+          "n_missing": 3,
+          "n_extra": 1,
+          "missing_sample": [
+            [
+              "edmund_cartwright",
+              "automate",
+              "automated weaving"
+            ],
+            [
+              "first_factory_system",
+              "decentralise",
+              "decentralised cottage industry"
+            ],
+            [
+              "use",
+              "revolutionise",
+              "iron production"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "first_factory_system",
+              "decentralise",
+              "cottage industry"
+            ]
+          ]
+        },
+        {
+          "k": 6,
+          "drift_pct": 50.0,
+          "exact_match_recall": 0.5,
+          "n_observed": 6,
+          "n_missing": 4,
+          "n_extra": 2,
+          "missing_sample": [
+            [
+              "edmund_cartwright",
+              "automate",
+              "automated weaving"
+            ],
+            [
+              "first_factory_system",
+              "decentralise",
+              "decentralised cottage industry"
+            ],
+            [
+              "james_hargreaves",
+              "mechanise",
+              "textile industry"
+            ],
+            [
+              "use",
+              "revolutionise",
+              "iron production"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "first_factory_system",
+              "decentralise",
+              "cottage industry"
+            ],
+            [
+              "james_hargreave",
+              "mechanise",
+              "textile industry"
+            ]
+          ]
+        },
+        {
+          "k": 7,
+          "drift_pct": 50.0,
+          "exact_match_recall": 0.5,
+          "n_observed": 6,
+          "n_missing": 4,
+          "n_extra": 2,
+          "missing_sample": [
+            [
+              "edmund_cartwright",
+              "automate",
+              "automated weaving"
+            ],
+            [
+              "first_factory_system",
+              "decentralise",
+              "decentralised cottage industry"
+            ],
+            [
+              "james_hargreaves",
+              "mechanise",
+              "textile industry"
+            ],
+            [
+              "use",
+              "revolutionise",
+              "iron production"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "first_factory_system",
+              "decentralise",
+              "cottage industry"
+            ],
+            [
+              "james_hargreave",
+              "mechanise",
+              "textile industry"
+            ]
+          ]
+        },
+        {
+          "k": 8,
+          "drift_pct": 50.0,
+          "exact_match_recall": 0.5,
+          "n_observed": 6,
+          "n_missing": 4,
+          "n_extra": 2,
+          "missing_sample": [
+            [
+              "edmund_cartwright",
+              "automate",
+              "automated weaving"
+            ],
+            [
+              "first_factory_system",
+              "decentralise",
+              "decentralised cottage industry"
+            ],
+            [
+              "james_hargreaves",
+              "mechanise",
+              "textile industry"
+            ],
+            [
+              "use",
+              "revolutionise",
+              "iron production"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "first_factory_system",
+              "decentralise",
+              "cottage industry"
+            ],
+            [
+              "james_hargreave",
+              "mechanise",
+              "textile industry"
+            ]
+          ]
+        },
+        {
+          "k": 9,
+          "drift_pct": 50.0,
+          "exact_match_recall": 0.5,
+          "n_observed": 6,
+          "n_missing": 4,
+          "n_extra": 2,
+          "missing_sample": [
+            [
+              "edmund_cartwright",
+              "automate",
+              "automated weaving"
+            ],
+            [
+              "first_factory_system",
+              "decentralise",
+              "decentralised cottage industry"
+            ],
+            [
+              "james_hargreaves",
+              "mechanise",
+              "textile industry"
+            ],
+            [
+              "use",
+              "revolutionise",
+              "iron production"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "first_factory_system",
+              "decentralise",
+              "cottage industry"
+            ],
+            [
+              "james_hargreave",
+              "mechanise",
+              "textile industry"
+            ]
+          ]
+        },
+        {
+          "k": 10,
+          "drift_pct": 50.0,
+          "exact_match_recall": 0.5,
+          "n_observed": 6,
+          "n_missing": 4,
+          "n_extra": 2,
+          "missing_sample": [
+            [
+              "edmund_cartwright",
+              "automate",
+              "automated weaving"
+            ],
+            [
+              "first_factory_system",
+              "decentralise",
+              "decentralised cottage industry"
+            ],
+            [
+              "james_hargreaves",
+              "mechanise",
+              "textile industry"
+            ],
+            [
+              "use",
+              "revolutionise",
+              "iron production"
+            ]
+          ],
+          "extra_sample": [
+            [
+              "first_factory_system",
+              "decentralise",
+              "cottage industry"
+            ],
+            [
+              "james_hargreave",
+              "mechanise",
+              "textile industry"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "doc_id": "doc_long_immune_system",
+      "n_truth_axioms": 9,
+      "iterations": [
+        {
+          "k": 1,
+          "drift_pct": 11.1111,
+          "exact_match_recall": 0.888889,
+          "n_observed": 8,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "edward_jenner",
+              "protect",
+              "cowpox exposure"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 2,
+          "drift_pct": 11.1111,
+          "exact_match_recall": 0.888889,
+          "n_observed": 8,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "edward_jenner",
+              "protect",
+              "cowpox exposure"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 3,
+          "drift_pct": 11.1111,
+          "exact_match_recall": 0.888889,
+          "n_observed": 8,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "edward_jenner",
+              "protect",
+              "cowpox exposure"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 4,
+          "drift_pct": 11.1111,
+          "exact_match_recall": 0.888889,
+          "n_observed": 8,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "edward_jenner",
+              "protect",
+              "cowpox exposure"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 5,
+          "drift_pct": 11.1111,
+          "exact_match_recall": 0.888889,
+          "n_observed": 8,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "edward_jenner",
+              "protect",
+              "cowpox exposure"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 6,
+          "drift_pct": 11.1111,
+          "exact_match_recall": 0.888889,
+          "n_observed": 8,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "edward_jenner",
+              "protect",
+              "cowpox exposure"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 7,
+          "drift_pct": 11.1111,
+          "exact_match_recall": 0.888889,
+          "n_observed": 8,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "edward_jenner",
+              "protect",
+              "cowpox exposure"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 8,
+          "drift_pct": 11.1111,
+          "exact_match_recall": 0.888889,
+          "n_observed": 8,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "edward_jenner",
+              "protect",
+              "cowpox exposure"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 9,
+          "drift_pct": 11.1111,
+          "exact_match_recall": 0.888889,
+          "n_observed": 8,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "edward_jenner",
+              "protect",
+              "cowpox exposure"
+            ]
+          ],
+          "extra_sample": []
+        },
+        {
+          "k": 10,
+          "drift_pct": 11.1111,
+          "exact_match_recall": 0.888889,
+          "n_observed": 8,
+          "n_missing": 1,
+          "n_extra": 0,
+          "missing_sample": [
+            [
+              "edward_jenner",
+              "protect",
+              "cowpox exposure"
+            ]
+          ],
+          "extra_sample": []
+        }
+      ]
+    }
+  ]
+}
