@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-19T11:58:51Z",
+  "issued_at": "2026-05-21T11:15:50Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "b33e64978d31ecb749d96da584c2fe2902161c3e",
-    "head_short": "b33e649",
-    "head_subject": "release: v0.7.0 \u2014 transform substrate + cascade + replay-defense",
-    "head_committer_date": "2026-05-18T16:27:09-04:00",
+    "head_sha": "d88ae1073156ac0b1ad6ddb0746303cf48850516",
+    "head_short": "d88ae10",
+    "head_subject": "release: v0.7.0 \u2014 transform substrate + cascade + replay-defense (#244)",
+    "head_committer_date": "2026-05-19T16:48:15-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -19,7 +19,7 @@
   },
   "release": {
     "pyproject_version": "0.7.0",
-    "pypi_published_version": "0.6.0"
+    "pypi_published_version": "0.7.0"
   },
   "features": {
     "total": 168,
