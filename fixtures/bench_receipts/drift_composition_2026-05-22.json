@@ -1,0 +1,656 @@
+{
+  "cross_corpus_summary": {
+    "all_composition_invariant_dkw_95": true,
+    "best_law_distribution": {
+      "fixed_point": 3
+    },
+    "max_observed_delta_vs_K1": 0.0,
+    "n_corpora": 3
+  },
+  "definition": {
+    "K_iterations": "extract -> generate -> re-extract repeated K times per document; receipt records per-K drift.",
+    "drift_pct": "1 - exact_match_recall(axioms_predicted, axioms_truth), as a fraction in [0, 1].",
+    "source": "scripts/bench/runners/s25_iterated_round_trip.py line ~258."
+  },
+  "generated_at": "2026-05-22T21:56:52.849380+00:00",
+  "method": {
+    "composition_invariance_test": "sup_K |median_drift_K - median_drift_1| vs DKW epsilon at n_min",
+    "dkw_bound": "epsilon(n, delta=0.05) = sqrt(ln(2/0.05) / (2n)), two-sided uniform on the empirical CDF",
+    "fit_objective": "sum_squared_residuals against median-per-K observed drift",
+    "fitted_laws": [
+      "additive",
+      "multiplicative_survival",
+      "saturating",
+      "fixed_point"
+    ],
+    "saturating_grid": {
+      "drift_inf_step": 0.005,
+      "tau_grid": [
+        1e-06,
+        0.01,
+        0.05,
+        0.1,
+        0.25,
+        0.5,
+        1.0,
+        2.0,
+        5.0,
+        10.0,
+        25.0,
+        100.0
+      ]
+    }
+  },
+  "per_corpus": [
+    {
+      "K": 10,
+      "best_law_by_ssr": "fixed_point",
+      "composition_invariance": {
+        "dkw_epsilon_95_n_min": 0.192065,
+        "max_abs_delta_median_vs_K1": 0.0,
+        "n_min_per_K": 50,
+        "rationale": "sup_K |median_drift_K - median_drift_1| = 0.0000; DKW 95%% bound at n=50 is 0.1921. Drift differences across K are within DKW worst-case noise \u2014 drift_pct is empirically composition-invariant on this corpus.",
+        "verdict": "composition_invariant_within_dkw_95"
+      },
+      "corpus_id": "seed_v1",
+      "dkw_per_K_95": {
+        "1": {
+          "empirical_max_drift": 1.0,
+          "empirical_median_drift": 0.0,
+          "empirical_p5_drift": 0.0,
+          "epsilon_dkw_95": 0.192065,
+          "n_observations": 50,
+          "worst_case_drift_lower_95": 0.0
+        },
+        "10": {
+          "empirical_max_drift": 1.0,
+          "empirical_median_drift": 0.0,
+          "empirical_p5_drift": 0.0,
+          "epsilon_dkw_95": 0.192065,
+          "n_observations": 50,
+          "worst_case_drift_lower_95": 0.0
+        },
+        "2": {
+          "empirical_max_drift": 1.0,
+          "empirical_median_drift": 0.0,
+          "empirical_p5_drift": 0.0,
+          "epsilon_dkw_95": 0.192065,
+          "n_observations": 50,
+          "worst_case_drift_lower_95": 0.0
+        },
+        "3": {
+          "empirical_max_drift": 1.0,
+          "empirical_median_drift": 0.0,
+          "empirical_p5_drift": 0.0,
+          "epsilon_dkw_95": 0.192065,
+          "n_observations": 50,
+          "worst_case_drift_lower_95": 0.0
+        },
+        "4": {
+          "empirical_max_drift": 1.0,
+          "empirical_median_drift": 0.0,
+          "empirical_p5_drift": 0.0,
+          "epsilon_dkw_95": 0.192065,
+          "n_observations": 50,
+          "worst_case_drift_lower_95": 0.0
+        },
+        "5": {
+          "empirical_max_drift": 1.0,
+          "empirical_median_drift": 0.0,
+          "empirical_p5_drift": 0.0,
+          "epsilon_dkw_95": 0.192065,
+          "n_observations": 50,
+          "worst_case_drift_lower_95": 0.0
+        },
+        "6": {
+          "empirical_max_drift": 1.0,
+          "empirical_median_drift": 0.0,
+          "empirical_p5_drift": 0.0,
+          "epsilon_dkw_95": 0.192065,
+          "n_observations": 50,
+          "worst_case_drift_lower_95": 0.0
+        },
+        "7": {
+          "empirical_max_drift": 1.0,
+          "empirical_median_drift": 0.0,
+          "empirical_p5_drift": 0.0,
+          "epsilon_dkw_95": 0.192065,
+          "n_observations": 50,
+          "worst_case_drift_lower_95": 0.0
+        },
+        "8": {
+          "empirical_max_drift": 1.0,
+          "empirical_median_drift": 0.0,
+          "empirical_p5_drift": 0.0,
+          "epsilon_dkw_95": 0.192065,
+          "n_observations": 50,
+          "worst_case_drift_lower_95": 0.0
+        },
+        "9": {
+          "empirical_max_drift": 1.0,
+          "empirical_median_drift": 0.0,
+          "empirical_p5_drift": 0.0,
+          "epsilon_dkw_95": 0.192065,
+          "n_observations": 50,
+          "worst_case_drift_lower_95": 0.0
+        }
+      },
+      "hellinger_doc_frequency": {
+        "K_max": 10,
+        "compositional_predicted_F1_pow_K": 1.0,
+        "compositional_residual": 0.02,
+        "fidelity_K1": 1.0,
+        "fidelity_KK": 0.98,
+        "notes": "Document-frequency approximation; the per-axiom-key categorical was not preserved in T1 receipts. Treat as an indicator, not the canonical Hellinger metric."
+      },
+      "laws_fitted": {
+        "additive": {
+          "drift_1": 0.0,
+          "form": "drift_K = K * drift_1",
+          "free_parameters": 0,
+          "predicted_by_K": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "sum_squared_residuals": 0.0
+        },
+        "fixed_point": {
+          "drift_1": 0.0,
+          "form": "drift_K = drift_1 (no composition effect)",
+          "free_parameters": 0,
+          "predicted_by_K": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "sum_squared_residuals": 0.0
+        },
+        "multiplicative_survival": {
+          "drift_1": 0.0,
+          "form": "drift_K = 1 - (1 - drift_1)^K",
+          "free_parameters": 0,
+          "predicted_by_K": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "sum_squared_residuals": 0.0
+        },
+        "saturating": {
+          "drift_inf_fit": 0.0,
+          "form": "drift_K = drift_inf * (1 - exp(-K/tau))",
+          "free_parameters": 2,
+          "predicted_by_K": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "sum_squared_residuals": 0.0,
+          "tau_fit": 1e-06
+        }
+      },
+      "mean_drift_by_K": [
+        0.04,
+        0.04,
+        0.04,
+        0.04,
+        0.04,
+        0.04,
+        0.04,
+        0.04,
+        0.04,
+        0.04
+      ],
+      "median_drift_by_K": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "n_documents": 50,
+      "t1_receipt_path": "fixtures/bench_receipts/s25_iterated_K10_seed_v1_2026-05-21.json"
+    },
+    {
+      "K": 10,
+      "best_law_by_ssr": "fixed_point",
+      "composition_invariance": {
+        "dkw_epsilon_95_n_min": 0.303681,
+        "max_abs_delta_median_vs_K1": 0.0,
+        "n_min_per_K": 20,
+        "rationale": "sup_K |median_drift_K - median_drift_1| = 0.0000; DKW 95%% bound at n=20 is 0.3037. Drift differences across K are within DKW worst-case noise \u2014 drift_pct is empirically composition-invariant on this corpus.",
+        "verdict": "composition_invariant_within_dkw_95"
+      },
+      "corpus_id": "seed_v2",
+      "dkw_per_K_95": {
+        "1": {
+          "empirical_max_drift": 1.0,
+          "empirical_median_drift": 0.0,
+          "empirical_p5_drift": 0.0,
+          "epsilon_dkw_95": 0.303681,
+          "n_observations": 20,
+          "worst_case_drift_lower_95": 0.0
+        },
+        "10": {
+          "empirical_max_drift": 1.0,
+          "empirical_median_drift": 0.0,
+          "empirical_p5_drift": 0.0,
+          "epsilon_dkw_95": 0.303681,
+          "n_observations": 20,
+          "worst_case_drift_lower_95": 0.0
+        },
+        "2": {
+          "empirical_max_drift": 1.0,
+          "empirical_median_drift": 0.0,
+          "empirical_p5_drift": 0.0,
+          "epsilon_dkw_95": 0.303681,
+          "n_observations": 20,
+          "worst_case_drift_lower_95": 0.0
+        },
+        "3": {
+          "empirical_max_drift": 1.0,
+          "empirical_median_drift": 0.0,
+          "empirical_p5_drift": 0.0,
+          "epsilon_dkw_95": 0.303681,
+          "n_observations": 20,
+          "worst_case_drift_lower_95": 0.0
+        },
+        "4": {
+          "empirical_max_drift": 1.0,
+          "empirical_median_drift": 0.0,
+          "empirical_p5_drift": 0.0,
+          "epsilon_dkw_95": 0.303681,
+          "n_observations": 20,
+          "worst_case_drift_lower_95": 0.0
+        },
+        "5": {
+          "empirical_max_drift": 1.0,
+          "empirical_median_drift": 0.0,
+          "empirical_p5_drift": 0.0,
+          "epsilon_dkw_95": 0.303681,
+          "n_observations": 20,
+          "worst_case_drift_lower_95": 0.0
+        },
+        "6": {
+          "empirical_max_drift": 1.0,
+          "empirical_median_drift": 0.0,
+          "empirical_p5_drift": 0.0,
+          "epsilon_dkw_95": 0.303681,
+          "n_observations": 20,
+          "worst_case_drift_lower_95": 0.0
+        },
+        "7": {
+          "empirical_max_drift": 1.0,
+          "empirical_median_drift": 0.0,
+          "empirical_p5_drift": 0.0,
+          "epsilon_dkw_95": 0.303681,
+          "n_observations": 20,
+          "worst_case_drift_lower_95": 0.0
+        },
+        "8": {
+          "empirical_max_drift": 1.0,
+          "empirical_median_drift": 0.0,
+          "empirical_p5_drift": 0.0,
+          "epsilon_dkw_95": 0.303681,
+          "n_observations": 20,
+          "worst_case_drift_lower_95": 0.0
+        },
+        "9": {
+          "empirical_max_drift": 1.0,
+          "empirical_median_drift": 0.0,
+          "empirical_p5_drift": 0.0,
+          "epsilon_dkw_95": 0.303681,
+          "n_observations": 20,
+          "worst_case_drift_lower_95": 0.0
+        }
+      },
+      "hellinger_doc_frequency": {
+        "K_max": 10,
+        "compositional_predicted_F1_pow_K": 0.545394,
+        "compositional_residual": 0.395782,
+        "fidelity_K1": 0.941176,
+        "fidelity_KK": 0.941176,
+        "notes": "Document-frequency approximation; the per-axiom-key categorical was not preserved in T1 receipts. Treat as an indicator, not the canonical Hellinger metric."
+      },
+      "laws_fitted": {
+        "additive": {
+          "drift_1": 0.0,
+          "form": "drift_K = K * drift_1",
+          "free_parameters": 0,
+          "predicted_by_K": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "sum_squared_residuals": 0.0
+        },
+        "fixed_point": {
+          "drift_1": 0.0,
+          "form": "drift_K = drift_1 (no composition effect)",
+          "free_parameters": 0,
+          "predicted_by_K": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "sum_squared_residuals": 0.0
+        },
+        "multiplicative_survival": {
+          "drift_1": 0.0,
+          "form": "drift_K = 1 - (1 - drift_1)^K",
+          "free_parameters": 0,
+          "predicted_by_K": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "sum_squared_residuals": 0.0
+        },
+        "saturating": {
+          "drift_inf_fit": 0.0,
+          "form": "drift_K = drift_inf * (1 - exp(-K/tau))",
+          "free_parameters": 2,
+          "predicted_by_K": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "sum_squared_residuals": 0.0,
+          "tau_fit": 1e-06
+        }
+      },
+      "mean_drift_by_K": [
+        0.15,
+        0.1,
+        0.1,
+        0.15,
+        0.15,
+        0.15,
+        0.15,
+        0.15,
+        0.2,
+        0.15
+      ],
+      "median_drift_by_K": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "n_documents": 20,
+      "t1_receipt_path": "fixtures/bench_receipts/s25_iterated_K10_seed_v2_2026-05-21.json"
+    },
+    {
+      "K": 10,
+      "best_law_by_ssr": "fixed_point",
+      "composition_invariance": {
+        "dkw_epsilon_95_n_min": 0.339525,
+        "max_abs_delta_median_vs_K1": 0.0,
+        "n_min_per_K": 16,
+        "rationale": "sup_K |median_drift_K - median_drift_1| = 0.0000; DKW 95%% bound at n=16 is 0.3395. Drift differences across K are within DKW worst-case noise \u2014 drift_pct is empirically composition-invariant on this corpus.",
+        "verdict": "composition_invariant_within_dkw_95"
+      },
+      "corpus_id": "seed_long_paragraphs",
+      "dkw_per_K_95": {
+        "1": {
+          "empirical_max_drift": 0.428571,
+          "empirical_median_drift": 0.125,
+          "empirical_p5_drift": 0.0,
+          "epsilon_dkw_95": 0.339525,
+          "n_observations": 16,
+          "worst_case_drift_lower_95": 0.0
+        },
+        "10": {
+          "empirical_max_drift": 0.5,
+          "empirical_median_drift": 0.125,
+          "empirical_p5_drift": 0.0,
+          "epsilon_dkw_95": 0.339525,
+          "n_observations": 16,
+          "worst_case_drift_lower_95": 0.0
+        },
+        "2": {
+          "empirical_max_drift": 0.428571,
+          "empirical_median_drift": 0.125,
+          "empirical_p5_drift": 0.0,
+          "epsilon_dkw_95": 0.339525,
+          "n_observations": 16,
+          "worst_case_drift_lower_95": 0.0
+        },
+        "3": {
+          "empirical_max_drift": 0.428571,
+          "empirical_median_drift": 0.125,
+          "empirical_p5_drift": 0.0,
+          "epsilon_dkw_95": 0.339525,
+          "n_observations": 16,
+          "worst_case_drift_lower_95": 0.0
+        },
+        "4": {
+          "empirical_max_drift": 0.428571,
+          "empirical_median_drift": 0.125,
+          "empirical_p5_drift": 0.0,
+          "epsilon_dkw_95": 0.339525,
+          "n_observations": 16,
+          "worst_case_drift_lower_95": 0.0
+        },
+        "5": {
+          "empirical_max_drift": 0.428571,
+          "empirical_median_drift": 0.125,
+          "empirical_p5_drift": 0.0,
+          "epsilon_dkw_95": 0.339525,
+          "n_observations": 16,
+          "worst_case_drift_lower_95": 0.0
+        },
+        "6": {
+          "empirical_max_drift": 0.5,
+          "empirical_median_drift": 0.125,
+          "empirical_p5_drift": 0.0,
+          "epsilon_dkw_95": 0.339525,
+          "n_observations": 16,
+          "worst_case_drift_lower_95": 0.0
+        },
+        "7": {
+          "empirical_max_drift": 0.5,
+          "empirical_median_drift": 0.125,
+          "empirical_p5_drift": 0.0,
+          "epsilon_dkw_95": 0.339525,
+          "n_observations": 16,
+          "worst_case_drift_lower_95": 0.0
+        },
+        "8": {
+          "empirical_max_drift": 0.5,
+          "empirical_median_drift": 0.125,
+          "empirical_p5_drift": 0.0,
+          "epsilon_dkw_95": 0.339525,
+          "n_observations": 16,
+          "worst_case_drift_lower_95": 0.0
+        },
+        "9": {
+          "empirical_max_drift": 0.5,
+          "empirical_median_drift": 0.125,
+          "empirical_p5_drift": 0.0,
+          "epsilon_dkw_95": 0.339525,
+          "n_observations": 16,
+          "worst_case_drift_lower_95": 0.0
+        }
+      },
+      "hellinger_doc_frequency": {
+        "K_max": 10,
+        "compositional_predicted_F1_pow_K": 0.968576,
+        "compositional_residual": 0.026481,
+        "fidelity_K1": 0.996812,
+        "fidelity_KK": 0.995057,
+        "notes": "Document-frequency approximation; the per-axiom-key categorical was not preserved in T1 receipts. Treat as an indicator, not the canonical Hellinger metric."
+      },
+      "laws_fitted": {
+        "additive": {
+          "drift_1": 0.125,
+          "form": "drift_K = K * drift_1",
+          "free_parameters": 0,
+          "predicted_by_K": [
+            0.125,
+            0.25,
+            0.375,
+            0.5,
+            0.625,
+            0.75,
+            0.875,
+            1.0,
+            1.125,
+            1.25
+          ],
+          "sum_squared_residuals": 4.453125
+        },
+        "fixed_point": {
+          "drift_1": 0.125,
+          "form": "drift_K = drift_1 (no composition effect)",
+          "free_parameters": 0,
+          "predicted_by_K": [
+            0.125,
+            0.125,
+            0.125,
+            0.125,
+            0.125,
+            0.125,
+            0.125,
+            0.125,
+            0.125,
+            0.125
+          ],
+          "sum_squared_residuals": 0.0
+        },
+        "multiplicative_survival": {
+          "drift_1": 0.125,
+          "form": "drift_K = 1 - (1 - drift_1)^K",
+          "free_parameters": 0,
+          "predicted_by_K": [
+            0.125,
+            0.234375,
+            0.330078,
+            0.413818,
+            0.487091,
+            0.551205,
+            0.607304,
+            0.656391,
+            0.699342,
+            0.736924
+          ],
+          "sum_squared_residuals": 1.669510529
+        },
+        "saturating": {
+          "drift_inf_fit": 0.125,
+          "form": "drift_K = drift_inf * (1 - exp(-K/tau))",
+          "free_parameters": 2,
+          "predicted_by_K": [
+            0.125,
+            0.125,
+            0.125,
+            0.125,
+            0.125,
+            0.125,
+            0.125,
+            0.125,
+            0.125,
+            0.125
+          ],
+          "sum_squared_residuals": 0.0,
+          "tau_fit": 1e-06
+        }
+      },
+      "mean_drift_by_K": [
+        0.167584,
+        0.185813,
+        0.19623,
+        0.19623,
+        0.19623,
+        0.204043,
+        0.204043,
+        0.204043,
+        0.210987,
+        0.210987
+      ],
+      "median_drift_by_K": [
+        0.125,
+        0.125,
+        0.125,
+        0.125,
+        0.125,
+        0.125,
+        0.125,
+        0.125,
+        0.125,
+        0.125
+      ],
+      "n_documents": 16,
+      "t1_receipt_path": "fixtures/bench_receipts/s25_iterated_K10_seed_long_paragraphs_2026-05-21.json"
+    }
+  ],
+  "schema": "sum.drift_metric_composition.v1"
+}
