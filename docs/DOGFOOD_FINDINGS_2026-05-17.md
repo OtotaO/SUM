@@ -68,7 +68,7 @@ sum: error: argument <command>: invalid choice: 'transform'
 
 **Why it matters:** this is the operative release gap. Every dogfood reader, every funder pip-installing right now, every new user — they all get an incomplete SUM that's missing the substrate that the README, the CHANGELOG, and the grant applications all describe. The version string lies.
 
-### F4 — `sum attest` output shape is incompatible with `sum transform apply compose` [severity: HIGH]
+### F4 — `sum attest` output shape is incompatible with `sum transform apply compose` [severity: HIGH; fixed 2026-05-21]
 
 `sum attest` emits a CanonicalBundle with keys: `bundle_version / canonical_format_version / branch / axiom_count / canonical_tome / state_integer / timestamp / prime_scheme / state_integer_hex / is_delta / axiom_graph_entropy / axiom_consistency_check / sum_cli`.
 
@@ -85,6 +85,8 @@ sum: transform 'compose' failed: compose: bundle dict must have 'triples' or 'ax
 - `compose` accepts the `canonical_tome` parse-back.
 
 **Why it matters:** the dogfood quickstart's headline pipeline (`attest → compose → slider`) is **literally not runnable end-to-end today**. The user (you) will hit this immediately if you try Scenario A unmodified.
+
+**Fix (shipped 2026-05-21):** Took the first fix path. `sum attest` now emits an `axioms` top-level field of `[{subject, predicate, object}, ...]` dicts derived from the same `triples` list already used to compute `axiom_count` and `state_integer`. The signature covers `canonical_tome|state_integer|timestamp` — not the bundle JSON — so the addition is signature-neutral. Pinned by `Tests/test_sum_cli_attest_axioms_field.py` (axioms shape + compose._bundle_triples consumption). End-to-end check: `echo … | sum attest > b1.json; echo … | sum attest > b2.json; sum transform apply compose --input <wrapped>` now succeeds with `op=union`. Scenario A's step 4 is unblocked; F5 collapses to F3 alone (PyPI-release `transform` gating).
 
 ### F5 — Scenario A pipeline broken end-to-end [severity: HIGH; depends on F3, F4]
 

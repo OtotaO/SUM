@@ -379,6 +379,20 @@ def cmd_attest(args: argparse.Namespace) -> int:
         title=args.title,
     )
 
+    # Surface the extracted axioms on the bundle so downstream transforms
+    # (`sum transform apply compose`, slider input shape) can consume the
+    # attest output directly without re-parsing canonical_tome. The data
+    # exists internally as ``triples``; before this it was dropped at
+    # serialization. Additive — the signature covers
+    # ``canonical_tome|state_integer|timestamp``, not the bundle JSON, so
+    # writing a new top-level key does not invalidate any existing
+    # signature. Format mirrors what compose._bundle_triples expects:
+    # list of {subject, predicate, object} dicts.
+    bundle["axioms"] = [
+        {"subject": s, "predicate": p, "object": o}
+        for (s, p, o) in triples
+    ]
+
     # Optional: attach a lightweight sidecar naming the extractor + source
     # URI so downstream consumers can trace provenance without the full
     # AkashicLedger. This is additive — the CanonicalBundle schema
