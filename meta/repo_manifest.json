@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-21T13:16:28Z",
+  "issued_at": "2026-05-22T21:48:00Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "19ab3435e4924efc1c1d1861f958e515e7d59a6a",
-    "head_short": "19ab343",
-    "head_subject": "fix(bench): F12 v2 \u2014 60s minimum backoff for 429 + 8 retries (NIM per-minute window) (#247)",
-    "head_committer_date": "2026-05-21T07:40:45-04:00",
+    "head_sha": "17ed765cd8e95e06ea9cc57bba7b8aa8786744bc",
+    "head_short": "17ed765",
+    "head_subject": "docs(proof-boundary): \u00a72.5.1.c \u2014 T1 closed; seed_v1 STABLE; all three corpora composition-stable",
+    "head_committer_date": "2026-05-21T22:14:46-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -221,6 +221,16 @@
       },
       {
         "path": "fixtures/bench_receipts/s25_iterated_K10_seed_long_paragraphs_2026-05-21.json",
+        "schema": "sum.iterated_round_trip_drift.v1",
+        "issued_at": null
+      },
+      {
+        "path": "fixtures/bench_receipts/s25_iterated_K10_seed_v1_2026-05-21.json",
+        "schema": "sum.iterated_round_trip_drift.v1",
+        "issued_at": null
+      },
+      {
+        "path": "fixtures/bench_receipts/s25_iterated_K10_seed_v2_2026-05-21.json",
         "schema": "sum.iterated_round_trip_drift.v1",
         "issued_at": null
       },

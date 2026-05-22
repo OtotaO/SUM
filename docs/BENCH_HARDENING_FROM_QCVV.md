@@ -21,9 +21,13 @@ Recommended order: T5 → T1 → T4 → T2 → T3.
 
 ---
 
-## T1 — Iterated round-trip (amplificational sensitivity) — RUNNER SHIPPED 2026-05-18
+## T1 — Iterated round-trip (amplificational sensitivity) — CLOSED 2026-05-21
 
-**Status:** runner shipped at `scripts/bench/runners/s25_iterated_round_trip.py` + `make iterated-round-trip`. Receipts produced under `sum.iterated_round_trip_drift.v1`. The actual K=10 run across all three seed corpora is the operator-side action that lands the data (~$0 via free NIM credits; see `docs/BYOK_AND_FREE_PROVIDERS.md`). Five-test smoke at `Tests/test_iterated_round_trip_runner.py` covers shape + classifier.
+**Status:** **CLOSED.** Runner shipped at `scripts/bench/runners/s25_iterated_round_trip.py` 2026-05-18; K=10 receipts landed across all three seed corpora 2026-05-21. **All three corpora return composition verdict STABLE** (`max-vs-K=1 drift delta = 0.00pp ≤ ε=1.0pp`). PROOF_BOUNDARY §2.5.1 carries the receipts and the structured per-corpus tables. The §2.5 closure claim is empirically composition-stable on every measured corpus shape — first acceptance criterion of this task is met. Receipts:
+
+- `fixtures/bench_receipts/s25_iterated_K10_seed_v1_2026-05-21.json` (50 docs × K=10, median=mean=0.00 across K)
+- `fixtures/bench_receipts/s25_iterated_K10_seed_v2_2026-05-21.json` (20 docs × K=10, median=mean=0.00 across K)
+- `fixtures/bench_receipts/s25_iterated_K10_seed_long_paragraphs_2026-05-21.json` (16 docs × K=10, median=12.50 flat across K)
 
 The classifier emits one of: **stable** (Δmax ≤ ε from K=1), **accumulating** (monotone growing), **saturating** (grows then plateaus), **noisy**, **insufficient_data**.
 
