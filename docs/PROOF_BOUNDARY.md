@@ -418,11 +418,11 @@ The combined intervention lands ≥ 0.97 recall and ≤ 5 % drift on every measu
 
 **Status:** §2.5 closed across all measured corpora. The §6 row in the progress table reflects this. The intervention pattern (canonical-first generator + constrained-decoding extractor + lemma-exclusion of source-predicate lemmas from the canonical-padding set) is the load-bearing engineering finding; the receipt artifacts are the durable proof.
 
-**Open characterization (does not invalidate, but qualifies):** the §2.5 measurement is **single-step**. Whether closure holds under K-step iteration (`extract → generate → extract → … → extract`) is not yet measured. Single-step closure could be a genuine fixed point or a local neighbourhood that drifts under composition. The bench-hardening worktrail at [`docs/BENCH_HARDENING_FROM_QCVV.md`](BENCH_HARDENING_FROM_QCVV.md) — task T1 — is the runner that produces the receipt that settles this; until that lands, the §2.5 result MUST NOT be cited as a load-bearing multi-stage claim. The same constraint applies to T3 (DKW worst-case bound across the slider envelope) and T4 (composition law for `drift_pct`).
+**~~Open characterization (does not invalidate, but qualifies): the §2.5 measurement is single-step. Whether closure holds under K-step iteration (`extract → generate → extract → … → extract`) is not yet measured. Single-step closure could be a genuine fixed point or a local neighbourhood that drifts under composition. The bench-hardening worktrail at [`docs/BENCH_HARDENING_FROM_QCVV.md`](BENCH_HARDENING_FROM_QCVV.md) — task T1 — is the runner that produces the receipt that settles this; until that lands, the §2.5 result MUST NOT be cited as a load-bearing multi-stage claim. The same constraint applies to T3 (DKW worst-case bound across the slider envelope) and T4 (composition law for `drift_pct`).~~** — **RETIRED 2026-05-21.** §2.5.1 below carries the receipts (all three measured corpora STABLE under K=10). T3 (DKW worst-case bound) and T4 (composition law for `drift_pct`) remain open as separate worktrails — closing T1 does NOT close those.
 
-### 2.5.1. Iteration stability — T1 receipts landed 2026-05-21 (seed_long_paragraphs, seed_v2)
+### 2.5.1. Iteration stability — T1 receipts landed 2026-05-21 (all three measured corpora)
 
-The bench-hardening T1 runner (`scripts/bench/runners/s25_iterated_round_trip.py`) executes K=10 iterations of `extract → generate → re-extract → measure drift` per document, via NIM Llama 3.3 70B. Two of three corpus runs are complete; seed_v1 (50 docs) is in progress at the time of this update.
+The bench-hardening T1 runner (`scripts/bench/runners/s25_iterated_round_trip.py`) executes K=10 iterations of `extract → generate → re-extract → measure drift` per document, via NIM Llama 3.3 70B. **All three corpus runs are complete and all three return composition verdict `STABLE`.** The "open characterization" caveat above is retired by these receipts: §2.5 closure is empirically composition-stable under K=10 iteration on every measured corpus shape.
 
 #### 2.5.1.a. seed_long_paragraphs — STABLE
 
@@ -461,9 +461,34 @@ Median + p10 + central tendency perfectly flat across all 10 iterations. The sli
 
 Median, p10, and mean drift% are all **identically zero** across all 10 iterations. The 100% max is a single doc-level outlier whose drift number is also flat under iteration. This is the strongest possible iteration-stability signal: not just stable around a non-zero baseline, but a literal fixed point on 19 of 20 documents.
 
-#### Status update
+#### 2.5.1.c. seed_v1 — STABLE
 
-§2.5 closure is now empirically robust under K=10 iteration on the two hardest measured corpora. seed_v1 (50 single-fact docs, ~3-4 hours wall clock remaining) is in progress; its verdict is expected to also be STABLE given seed_v2's perfect-fixed-point behaviour. The "open characterization" caveat above is fully retired once that receipt lands.
+50 documents, 1 axiom each (single-fact short-form corpus — the canonical §2.5 corpus the lemma-exclusion intervention was first tuned against).
+
+**Receipt:** [`fixtures/bench_receipts/s25_iterated_K10_seed_v1_2026-05-21.json`](../fixtures/bench_receipts/s25_iterated_K10_seed_v1_2026-05-21.json) (schema `sum.iterated_round_trip_drift.v1`).
+
+**Composition verdict:** `STABLE` — `max-vs-K=1 drift delta = 0.00pp ≤ ε=1.0pp`.
+
+**By-K aggregate:**
+
+| K | median drift% | p10 drift% | mean drift% | max drift% |
+|---:|---:|---:|---:|---:|
+| 1 | 0.00 | 0.00 | 0.00 | 100.0 |
+| 2–10 | 0.00 | 0.00 | 0.00 | 100.0 |
+
+Identical shape to seed_v2: median, p10, and mean are identically zero across all 10 iterations. The 100% max traces to a single outlier doc whose drift is also flat under K-step composition. 49 of 50 single-fact docs are literal fixed points.
+
+#### Status update — §2.5 closure fully grounded under iteration
+
+All three measured corpora are STABLE under K=10 iteration:
+
+| Corpus | n_docs | axioms/doc | median K=10 | mean K=10 | verdict |
+|---|---:|---|---:|---:|---|
+| seed_v1 | 50 | 1 | 0.00 | 0.00 | STABLE |
+| seed_v2 | 20 | 2–5 | 0.00 | 0.00 | STABLE |
+| seed_long_paragraphs | 16 | 11–28 | 12.50 | — | STABLE |
+
+The §2.5 closure claim — `extract ∘ generate ∘ extract = extract` — is now empirically composition-stable on every measured corpus shape from single-fact short-form through multi-paragraph dense prose. The "open characterization" caveat at the top of §2.5 is retired. T1 from `docs/BENCH_HARDENING_FROM_QCVV.md` is closed.
 
 **Reproducible** (any corpus):
 ```bash
