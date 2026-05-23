@@ -199,19 +199,38 @@ questions.
     directions to the project.
 
 Shipping surface at the current HEAD: the `sum` binary (currently
-`v0.6.0` on `pyproject.toml` and on PyPI; v0.6.0 closed the vendor-
-adapter arc with PRs #202 / #203 / #204 — OpenAI vendor adapter and
-`[openai]` PyPI extra, audience-triaged integration guide, local
-open-weights pathway via `ollama:` / `llamacpp:` / `local:` prefix
-routing in `llm_dispatch.get_adapter`. The PyPI release also folded
-the OpenAI render path into the cross-runtime receipt's `provider`
-field — `openai` is no longer reserved-for-future and
-`cf-ai-gateway-openai` mirrors the existing Anthropic-gateway
-variant. The Node verifier in `standalone_verifier/`, and the
-browser demo in `single_file_demo/`, are unchanged.
-All three verify Ed25519 on the same bundle bytes; the cross-runtime
-harness (`make xruntime` → K1 / K1-mw / K2 / K3 / K4) proves this and
-runs on every PR.
+`v0.7.0` on `pyproject.toml` and on PyPI; v0.7.0 closed the transform-
+substrate arc — `sum.transform_receipt.v1` wire format, transform
+registry (slider / extract / compose), `POST /api/transform` Worker
+route, `sum transform` CLI subcommand, T4 source-chain binding, T5
+ShareableRender, T6 multi-school extract, 20-fixture cross-runtime
+K-matrix, Python LLM-axis slider dispatch, opt-in replay-defense
+window check across all four verifier surfaces, multi-provider
+cascade in `LiveLLMAdapter.from_model` (OpenAI / Anthropic-via-Worker
+/ HF / NIM / Groq / Cerebras / Ollama / llama.cpp / `local:`), per-IP
+rate limiter + BYO-key gate on public Worker LLM-axis routes, `sum
+verify --explain` layered output (`sum.verify_explained.v1`), F1 / F7
+fixes, T5 negative-control bench corpus. **Post-0.7.0 on main:** T1
+iterated-round-trip CLOSED (PRs #248 + #250 — three K=10 receipts,
+all corpora STABLE under composition); F4 attest-axioms-field fix
+(#251 — Scenario A's `attest → compose` step unblocked); F12
+v1/v2/v3 NIM rate-limit retry hardening (#246 / #247 / #249).
+**In-flight:** T4 drift-composition audit (PR #252 — drift_pct fits
+a fixed-point composition law on every measured corpus within DKW
+95% bound). The Node verifier in `standalone_verifier/`, and the
+browser demo in `single_file_demo/`, both verify Ed25519 on the same
+bundle bytes — single_file_demo extended in PR #243 with cascade
+BYO-keys + CLI-recipe builder. The cross-runtime harness (`make
+xruntime` → K1 / K1-mw / K2 / K3 / K4) proves this and runs on
+every PR.
+
+**Bench-hardening worktrail status** (per `docs/BENCH_HARDENING_FROM_QCVV.md`,
+recommended order T5 → T1 → T4 → T2 → T3):
+- T5 — negative-control corpus: **DONE** (`fixtures/bench_receipts/negative_control_2026-05-17.json`)
+- T1 — iterated round-trip: **CLOSED 2026-05-21** (PRs #248 + #250)
+- T4 — drift-composition audit: **CLOSED 2026-05-22** (PR #252 — pending merge)
+- T2 — volumetric capability regions for slider bench: **OPEN** (needs `sum.slider_drift_bench.v1` receipts)
+- T3 — DKW worst-case bounds for render receipt trust scope: **OPEN** (needs `sum.slider_drift_bench.v1` receipts)
 
 If you're about to make a change and want to know what's already deferred,
 check the task list for items marked "deferred" (Wikidata QIDs SPARQL

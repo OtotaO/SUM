@@ -12,11 +12,17 @@ artifact). This Worker is the routing shell around it.
 
 ## Routing
 
-| Path            | Handler                     | Purpose                                     |
-|-----------------|-----------------------------|---------------------------------------------|
-| `/api/complete` | `src/routes/complete.ts`    | LLM proxy — Anthropic / OpenAI / AI Gateway |
-| `/api/qid`      | `src/routes/qid.ts`         | Wikidata QID/PID resolver (wbsearchentities + 30-day edge cache) |
-| _everything_    | `ASSETS` binding            | `../single_file_demo/` static files         |
+| Path                           | Handler                       | Purpose                                                                                                       |
+|--------------------------------|-------------------------------|---------------------------------------------------------------------------------------------------------------|
+| `/api/render`                  | `src/routes/render.ts`        | Slider render → tome + `sum.render_receipt.v1` (Ed25519 / JCS / detached JWS). Public, per-IP rate-limited.    |
+| `/api/transform`               | `src/routes/transform.ts`     | Generic transform-registry dispatch → `sum.transform_receipt.v1`. Same signing path as `/api/render`.          |
+| `/api/complete`                | `src/routes/complete.ts`      | LLM proxy — Anthropic / OpenAI / AI Gateway. Public, per-IP rate-limited. BYO key via `X-Render-LLM-Key-*`.   |
+| `/api/qid`                     | `src/routes/qid.ts`           | Wikidata QID/PID resolver (`wbsearchentities` + 30-day edge cache).                                            |
+| `/.well-known/jwks.json`       | `src/routes/jwks.ts`          | Issuer's Ed25519 public-key set for offline receipt verification (RFC 7517).                                   |
+| `/.well-known/revoked-kids.json` | `src/routes/revoked_kids.ts`| Operator-curated kid revocation list. Receipt verifiers should reject signed-with-revoked-kid envelopes.        |
+| _everything else_              | `ASSETS` binding              | `../single_file_demo/` static files (the SUM hosted demo HTML).                                                |
+
+The trust loop — `/api/render` + `/.well-known/jwks.json` + offline verifier — is reachable end-to-end from this Worker. Receipt format specs at `../docs/RENDER_RECEIPT_FORMAT.md` and `../docs/TRANSFORM_RECEIPT_FORMAT.md`. Rate-limiter design at `../docs/PUBLIC_API_RATE_LIMITS.md` (5/24h operator-keyed demo; 100/hr with BYO key).
 
 ### `/api/qid` — Wikidata resolver
 
