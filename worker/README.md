@@ -15,7 +15,7 @@ artifact). This Worker is the routing shell around it.
 | Path                           | Handler                       | Purpose                                                                                                       |
 |--------------------------------|-------------------------------|---------------------------------------------------------------------------------------------------------------|
 | `/api/render`                  | `src/routes/render.ts`        | Slider render → tome + `sum.render_receipt.v1` (Ed25519 / JCS / detached JWS). Public, per-IP rate-limited.    |
-| `/api/transform`               | `src/routes/transform.ts`     | Generic transform-registry dispatch → `sum.transform_receipt.v1`. Same signing path as `/api/render`.          |
+| `/api/transform`               | `src/routes/transform.ts`     | Transform-registry dispatch → `sum.transform_receipt.v1`. **Worker-side registry currently registers `slider` only** (`worker/src/transforms/_registry.ts`); `compose` + `extract` are Python-CLI-only today via `sum transform apply <name>`. Same signing path as `/api/render`. |
 | `/api/complete`                | `src/routes/complete.ts`      | LLM proxy — Anthropic / OpenAI / AI Gateway. Public, per-IP rate-limited. BYO key via `X-Render-LLM-Key-*`.   |
 | `/api/qid`                     | `src/routes/qid.ts`           | Wikidata QID/PID resolver (`wbsearchentities` + 30-day edge cache).                                            |
 | `/.well-known/jwks.json`       | `src/routes/jwks.ts`          | Issuer's Ed25519 public-key set for offline receipt verification (RFC 7517).                                   |

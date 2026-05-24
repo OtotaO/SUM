@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-23T18:33:14Z",
+  "issued_at": "2026-05-24T15:10:00Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "15c2f5096a0c92b0dca3ec4219022fae941b369a",
-    "head_short": "15c2f50",
-    "head_subject": "docs(proof-boundary): \u00a72.5.1 \u2014 T1 K=10 iteration-stability CLOSED (all three corpora STABLE) (#250)",
-    "head_committer_date": "2026-05-22T17:51:52-04:00",
+    "head_sha": "29af4a1f126ace5ba748acb36620abc46e18f164",
+    "head_short": "29af4a1",
+    "head_subject": "docs(worker): clarify /api/transform Worker-side registry \u2014 slider only",
+    "head_committer_date": "2026-05-24T11:09:26-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -47,6 +47,11 @@
       {
         "path": "fixtures/bench_receipts/cross_machine_verification_2026-05-05.json",
         "schema": "sum.cross_machine_verification.v1",
+        "issued_at": null
+      },
+      {
+        "path": "fixtures/bench_receipts/drift_composition_2026-05-22.json",
+        "schema": "sum.drift_metric_composition.v1",
         "issued_at": null
       },
       {
