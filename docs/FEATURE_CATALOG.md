@@ -1403,13 +1403,29 @@ Verify: `pytest Tests/test_receipt_signed_at_window.py -q` + `node single_file_d
 Expected: 10 passed (Python) + 3 pass / 0 fail (JS).
 Result: **PASS**.
 
+### 169. Evidence-chain layer — structural claims about a bundle ✅
+
+Substrate layer 2 (pre-0.7.0 PR #200; catalogued late). Where the "wires" arc (#1–#6) exposed scalar metrics ABOUT a bundle, the evidence-chain layer exposes structural CLAIMS — the explicit chain from source text → extracted axioms → signed bundle. Combined with the bundle signature, any third party can re-fetch `source_uri`, slice `[byte_start:byte_end]`, confirm the excerpt matches, and verify the bundle signature still holds. Surface (v0, deliberately minimal): `EvidenceLink(claim, provenance)` with reserved slots for `derived_from` + `derivation_rule` when non-leaf evidence wires in; `verify_chain_well_formed(links)` checks canonical claim shape + no duplicate (claim, source_uri, byte_range) 4-tuples; `evidence_enrichment` adds confidence scoring + per-claim aggregation.
+
+Verify: `pytest Tests/test_evidence_chain.py Tests/test_evidence_enrichment.py -q`
+Expected: 14 passed.
+Result: **PASS**.
+
+### 170. T1 iterated round-trip runner (bench-hardening) ✅
+
+`scripts/bench/runners/s25_iterated_round_trip.py` + `make iterated-round-trip` ship the runner for the §2.5 closure-under-iteration claim. Algorithm per document: `axioms_0 = extract(text); for k in 1..K: prose_k = generate(axioms_{k-1}); axioms_k = extract(prose_k); drift_k = 1 - exact_match_recall(axioms_k, axioms_0)`. Output: NDJSON receipt under `sum.iterated_round_trip_drift.v1`, per-doc per-K rows + aggregate (median / p10 / max drift) + composition verdict (`stable` / `accumulating` / `saturating` / `noisy` / `insufficient_data`). All three seed corpora landed K=10 receipts 2026-05-21 with verdict STABLE — PROOF_BOUNDARY §2.5.1.a/b/c carries the receipts. The "open characterization" caveat on §2.5 is retired by these landings; T1 from `docs/BENCH_HARDENING_FROM_QCVV.md` is CLOSED.
+
+Verify: `pytest Tests/test_iterated_round_trip_runner.py -q`
+Expected: 5 passed.
+Result: **PASS**.
+
 ---
 
 ## Summary counts
 
-Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **168**.
+Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **170**.
 
-- **Production ✅: 149 features** — tested green; each has a verification command in its entry. (Up from 137 after the 2026-05-12 → 2026-05-16 transform-substrate arc closed entries 157–168, covering `sum.transform_receipt.v1` wire format + registry + Worker dispatch + CLI + T4 source-chain binding + T5 ShareableRender + T6 multi-school extract + cross-runtime K-matrix + browser/Node verifier + Python verifier + slider LLM-axis dispatch + replay-defense window.)
+- **Production ✅: 151 features** — tested green; each has a verification command in its entry. (Up from 149 after the post-0.7.0 catalog refresh added entry 169 — evidence-chain layer — back-filling pre-0.7.0 PR #200 — and entry 170 — T1 iterated round-trip runner closing the §2.5 closure-under-iteration acceptance criterion.)
 - **Scaffolded 🔧: 18 features** — tests pass, production activation pending. All catalogued in `docs/MODULE_AUDIT.md` with activation checklists.
 - **Designed 📄: 1 feature** (sha256_128_v2 default-promotion; cross-runtime byte-identity locked, default-flip is a separate operator decision).
 

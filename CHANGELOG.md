@@ -4,7 +4,47 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
-(no entries since [0.7.0])
+The bench-hardening worktrail's load-bearing tasks land on main post-0.7.0.
+The §2.5 closure claim is now empirically composition-stable on every
+measured corpus — a multi-stage rather than single-step result.
+
+- **T1 — iterated round-trip CLOSED.** K=10 receipts on all three seed
+  corpora, all returning composition verdict STABLE
+  (`max-vs-K=1 drift delta = 0.00pp ≤ ε=1.0pp`). The "open
+  characterization" caveat on PROOF_BOUNDARY §2.5 is retired.
+    - `fixtures/bench_receipts/s25_iterated_K10_seed_v1_2026-05-21.json`
+      (50 docs × K=10, median+mean=0.00 across K, 49/50 literal fixed points)
+    - `fixtures/bench_receipts/s25_iterated_K10_seed_v2_2026-05-21.json`
+      (20 docs × K=10, median+mean=0.00 across K, 19/20 literal fixed points)
+    - `fixtures/bench_receipts/s25_iterated_K10_seed_long_paragraphs_2026-05-21.json`
+      (16 docs × K=10, median 12.50 flat across K)
+    - PROOF_BOUNDARY.md §2.5.1.a/b/c restructured per corpus + rollup table.
+    - BENCH_HARDENING_FROM_QCVV.md T1 header → CLOSED 2026-05-21.
+    - Receipts use schema `sum.iterated_round_trip_drift.v1`.
+    - PRs: #248 (first receipt), #250 (closure + two receipts).
+- **F4 fix — `sum attest` emits `axioms` field.** The dogfood
+  quickstart's Scenario A (`attest → compose → slider`) was broken at
+  step 4 because attest's CanonicalBundle didn't surface the triple
+  list. Fix is signature-neutral (the signature covers
+  `canonical_tome|state_integer|timestamp`, not the bundle JSON);
+  attest now serialises `triples` to a top-level `axioms` field of
+  `{subject, predicate, object}` dicts. End-to-end verified.
+  Pinned by `Tests/test_sum_cli_attest_axioms_field.py`.
+    - PR: #251.
+- **F12 v1/v2/v3 — NIM rate-limit retry hardening.** T1's iterated
+  round-trip runner needed to survive NIM's 40-req/min cap + sticky
+  60s window reset. Three iterations: throttle + 5 retries → 8 retries
+  with 65/95/125/155/185/215/245/275s 429 backoff → broader 5xx
+  detection (502 + 500/503/504 + class names
+  InternalServerError/BadGatewayError) covering all observed
+  failure modes during the K=10 chains.
+    - PRs: #246, #247, #249.
+
+FEATURE_CATALOG gains entries 169 (evidence-chain layer — back-fill for
+pre-0.7.0 PR #200) and 170 (T1 iterated-round-trip runner). CHANGELOG only
+records merged work on `main` — `[Unreleased]` entries become a tagged
+release when the operator cuts one; nothing here yet motivates a 0.7.1
+bump on its own.
 
 ## [0.7.0] - 2026-05-18
 
