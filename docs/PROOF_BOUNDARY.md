@@ -490,6 +490,24 @@ All three measured corpora are STABLE under K=10 iteration:
 
 The §2.5 closure claim — `extract ∘ generate ∘ extract = extract` — is now empirically composition-stable on every measured corpus shape from single-fact short-form through multi-paragraph dense prose. The "open characterization" caveat at the top of §2.5 is retired. T1 from `docs/BENCH_HARDENING_FROM_QCVV.md` is closed.
 
+#### 2.5.1.d. Composition-law audit — T4 closed 2026-05-22
+
+T4 ([`docs/DRIFT_METRIC_COMPOSITION.md`](DRIFT_METRIC_COMPOSITION.md)) post-processed the three T1 receipts above and fit the four candidate composition laws (additive, multiplicative-survival, saturating, fixed-point) by minimum sum-of-squared-residuals against the per-K median.
+
+**Result on every measured corpus: best-fitting law is `fixed-point` (`drift_K = drift_1`).** Median drift is K-invariant; the supremum across K of `|median_drift_K − drift_1|` is exactly 0.00 on all three corpora.
+
+The Dvoretzky-Kiefer-Wolfowitz 95% bound at the smallest corpus (n=16) is `ε = 0.3395`. The observed supremum delta is 0.0000 — within DKW worst-case noise by a margin of at least 17×. Verdict on every corpus: `composition_invariant_within_dkw_95`.
+
+Independent evidence from a different metric: T4 also computed a doc-frequency Hellinger fidelity approximation `F(p, q_K)` and tested it against the multiplicative-survival prediction `F(p, q_1)^K`. On seed_v2 the observed F10 = 0.941 vs predicted 0.545 — residual 0.40 — **multiplicative-survival is decisively rejected**. The composition law is closer to fixed-point than to independent-stagewise-noise on this corpus.
+
+**Load-bearing implication.** §2.5 closure can be cited as a *multi-stage* claim, not just single-step: re-extracting from generated prose, then re-generating, then re-extracting does not accumulate drift up to K=10 iterations within DKW worst-case 95% bound. T4 from `docs/BENCH_HARDENING_FROM_QCVV.md` is closed.
+
+Receipt: [`fixtures/bench_receipts/drift_composition_2026-05-22.json`](../fixtures/bench_receipts/drift_composition_2026-05-22.json) (schema `sum.drift_metric_composition.v1`). Runner: [`scripts/bench/runners/t4_drift_composition.py`](../scripts/bench/runners/t4_drift_composition.py). Reproducer (no LLM cost, pure post-processing):
+
+```bash
+python -m scripts.bench.runners.t4_drift_composition --pretty
+```
+
 **Reproducible** (any corpus):
 ```bash
 export NVIDIA_API_KEY=<your nvapi key>

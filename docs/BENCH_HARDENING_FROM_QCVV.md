@@ -102,7 +102,16 @@ Update `docs/RENDER_RECEIPT_FORMAT.md` §5 (trust scope) to reference this bound
 
 ---
 
-## T4 — Compositional metric audit for `drift_pct`
+## T4 — Compositional metric audit for `drift_pct` — CLOSED 2026-05-22
+
+**Status:** **CLOSED.** Distilled finding: drift_pct fits a **fixed-point** composition law (`drift_K = drift_1`) on every measured corpus, within DKW 95% worst-case bound, by a margin of ≥17×. Independent evidence from doc-frequency Hellinger fidelity rejects the multiplicative-survival hypothesis decisively on seed_v2. PROOF_BOUNDARY §2.5.1.d carries the receipts. The multi-stage closure claim (`extract ∘ generate ∘ extract = extract` under K-step iteration) is now load-bearing.
+
+Receipt: `fixtures/bench_receipts/drift_composition_2026-05-22.json` (schema `sum.drift_metric_composition.v1`). Runner: `scripts/bench/runners/t4_drift_composition.py`. Doc: `docs/DRIFT_METRIC_COMPOSITION.md`.
+
+Original design below for context.
+
+---
+
 
 **Concept.** Some metrics compose cleanly across independent stages; others do not. The classical example: total variation distance does not compose under N independent samples, but classical (Hellinger) fidelity does — `F(p⊗N, p⊗N) = F(p,p)^N`. SUM reports `drift_pct` per corpus without analysis of its composition law. Before §2.5's single-step result can be cited as a load-bearing claim across multi-stage pipelines (extraction → generation → re-extraction → downstream consumer extracting again), the composition law of `drift_pct` must be either derived or empirically bounded.
 

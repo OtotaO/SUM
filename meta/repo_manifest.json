@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-22T21:48:00Z",
+  "issued_at": "2026-05-22T22:00:15Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "17ed765cd8e95e06ea9cc57bba7b8aa8786744bc",
-    "head_short": "17ed765",
-    "head_subject": "docs(proof-boundary): \u00a72.5.1.c \u2014 T1 closed; seed_v1 STABLE; all three corpora composition-stable",
-    "head_committer_date": "2026-05-21T22:14:46-04:00",
+    "head_sha": "15c2f5096a0c92b0dca3ec4219022fae941b369a",
+    "head_short": "15c2f50",
+    "head_subject": "docs(proof-boundary): \u00a72.5.1 \u2014 T1 K=10 iteration-stability CLOSED (all three corpora STABLE) (#250)",
+    "head_committer_date": "2026-05-22T17:51:52-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -47,6 +47,11 @@
       {
         "path": "fixtures/bench_receipts/cross_machine_verification_2026-05-05.json",
         "schema": "sum.cross_machine_verification.v1",
+        "issued_at": null
+      },
+      {
+        "path": "fixtures/bench_receipts/drift_composition_2026-05-22.json",
+        "schema": "sum.drift_metric_composition.v1",
         "issued_at": null
       },
       {
