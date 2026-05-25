@@ -188,7 +188,7 @@ Below the slider sits the substrate that earlier phases shipped and verified. Po
 - **Bundle public-key attestation (provable).** Ed25519-signed CanonicalBundles are tamper-detectable by any third party in any of the three runtimes. [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §1.3.1.
 - **Merkle hash-chain integrity (provable, including under concurrent writers).** [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §1.7.
 - **Extraction F1 (empirical-benchmark).** 1.000 on `seed_v1` (50 simple-SVO docs); 0.762 with precision 1.000 on `seed_v2` (20-doc difficulty corpus). Every remaining `seed_v2` failure is a recall miss, not a truth inversion. [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §2.1.
-- **168 numbered features**, each with a reproducible verification command, in [`docs/FEATURE_CATALOG.md`](docs/FEATURE_CATALOG.md).
+- **170 numbered features**, each with a reproducible verification command, in [`docs/FEATURE_CATALOG.md`](docs/FEATURE_CATALOG.md).
 
 ### Research substrate (under `sum_engine_internal/research/`)
 
