@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-25T19:58:08Z",
+  "issued_at": "2026-05-28T14:51:33Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "6f96f7d6dfab02dde903ffdc60d71a91a7d6b1bb",
-    "head_short": "6f96f7d",
-    "head_subject": "docs: post-0.7.0 outcome-coherence pass \u2014 version drift, routing table, changelog, catalog (#253)",
-    "head_committer_date": "2026-05-24T11:17:54-04:00",
+    "head_sha": "d1e248d4adcd6e9d0745e5b36f088537d352b8f2",
+    "head_short": "d1e248d",
+    "head_subject": "docs(categorical-foundations): vocabulary recasting of \u00a72.5.1 closure in compact-closed-category terms",
+    "head_committer_date": "2026-05-28T10:50:45-04:00",
     "commits_last_30d": null
   },
   "github": {
