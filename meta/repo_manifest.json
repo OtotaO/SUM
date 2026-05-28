@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-24T15:10:00Z",
+  "issued_at": "2026-05-25T19:58:08Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "29af4a1f126ace5ba748acb36620abc46e18f164",
-    "head_short": "29af4a1",
-    "head_subject": "docs(worker): clarify /api/transform Worker-side registry \u2014 slider only",
-    "head_committer_date": "2026-05-24T11:09:26-04:00",
+    "head_sha": "6f96f7d6dfab02dde903ffdc60d71a91a7d6b1bb",
+    "head_short": "6f96f7d",
+    "head_subject": "docs: post-0.7.0 outcome-coherence pass \u2014 version drift, routing table, changelog, catalog (#253)",
+    "head_committer_date": "2026-05-24T11:17:54-04:00",
     "commits_last_30d": null
   },
   "github": {
