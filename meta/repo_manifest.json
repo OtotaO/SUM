@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-28T14:51:33Z",
+  "issued_at": "2026-05-28T21:19:20Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "d1e248d4adcd6e9d0745e5b36f088537d352b8f2",
-    "head_short": "d1e248d",
-    "head_subject": "docs(categorical-foundations): vocabulary recasting of \u00a72.5.1 closure in compact-closed-category terms",
-    "head_committer_date": "2026-05-28T10:50:45-04:00",
+    "head_sha": "6b43219082a650e6ee5e54b3cd81e2c595b8c27f",
+    "head_short": "6b43219",
+    "head_subject": "docs(categorical-foundations): vocabulary recasting of \u00a72.5.1 closure in compact-closed-category terms (#254)",
+    "head_committer_date": "2026-05-28T11:25:00-04:00",
     "commits_last_30d": null
   },
   "github": {
