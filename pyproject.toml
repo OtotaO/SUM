@@ -42,7 +42,16 @@ dependencies = [
 #   pip install sum-engine[openai]  # OpenAI structured-output path
 #   pip install sum-engine[llm]     # alias for [openai] (legacy name)
 #   pip install sum-engine[all]     # everything, plus dev tooling
-sieve = ["spacy>=3.7.0"]
+sieve = [
+  "spacy>=3.7.0",
+  # spacy ≥ 3.8 imports `from click import NoSuchOption` at module
+  # load (spacy/cli/_util.py); typer ≥ 0.13 stopped pulling click
+  # transitively. Pin click explicitly so a fresh
+  # `pip install sum-engine[sieve]` does not ImportError on first
+  # spacy import. CI: `pip install sum-engine (fresh venv smoke)`
+  # caught this 2026-05-28.
+  "click>=8.0",
+]
 # `[openai]` is the canonical, vendor-named extra; `[llm]` is kept as a
 # back-compat alias because it predates the multi-provider dispatcher
 # (Anthropic and OpenAI now have their own named extras). Both install
