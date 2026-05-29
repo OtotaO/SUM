@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-28T21:19:20Z",
+  "issued_at": "2026-05-29T11:53:00Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "6b43219082a650e6ee5e54b3cd81e2c595b8c27f",
-    "head_short": "6b43219",
-    "head_subject": "docs(categorical-foundations): vocabulary recasting of \u00a72.5.1 closure in compact-closed-category terms (#254)",
-    "head_committer_date": "2026-05-28T11:25:00-04:00",
+    "head_sha": "e8106e40a3f54147682c4e7dea838e124d6fcb1f",
+    "head_short": "e8106e4",
+    "head_subject": "fix(packaging,ci): bump [sieve] spacy floor to 3.8.0 + add floor-version CI smoke gate (F14)",
+    "head_committer_date": "2026-05-29T07:52:07-04:00",
     "commits_last_30d": null
   },
   "github": {
