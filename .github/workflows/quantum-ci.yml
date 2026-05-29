@@ -416,3 +416,43 @@ jobs:
         /tmp/sumtest/bin/sum --version
         echo "Alice likes cats. Bob owns a dog." | /tmp/sumtest/bin/sum attest --extractor=sieve > /tmp/bundle.json
         /tmp/sumtest/bin/sum verify --input /tmp/bundle.json
+
+  pypi-install-smoke-floor:
+    name: pip install sum-engine (floor venv smoke)
+    needs: zig-core
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5
+      with:
+        python-version: "3.12"
+
+    - name: Build sdist + wheel
+      run: |
+        python -m pip install --upgrade pip build
+        python -m build --sdist --wheel --outdir dist
+
+    - name: Install wheel at floor of [sieve] extra and run attest | verify
+      # Sibling of the LATEST-resolution smoke above. This pins the
+      # transitive chain of [sieve] to the floor versions declared in
+      # pyproject.toml (spacy>=3.8.0, click>=8.0). The 2-axis signal:
+      #
+      #   floor PASS, latest FAIL  → upstream broke at HEAD; bump CI
+      #                              caught it before users (F13/F14 shape)
+      #   floor FAIL, latest PASS  → our declared floor is stale;
+      #                              raise pyproject floor (F14 itself)
+      #   both FAIL                → full upstream meltdown; investigate
+      #   both PASS                → all clean
+      #
+      # F13 (2026-05-28) + F14 (2026-05-29) motivate this gate. See
+      # docs/DOGFOOD_FINDINGS_2026-05-28.md and -2026-05-29.md.
+      run: |
+        python -m venv /tmp/sumfloor
+        /tmp/sumfloor/bin/pip install --quiet "spacy==3.8.0" "click==8.0.0"
+        /tmp/sumfloor/bin/pip install --quiet "dist/$(ls dist | grep '.whl$')[sieve]"
+        /tmp/sumfloor/bin/python -m spacy download en_core_web_sm
+        /tmp/sumfloor/bin/sum --version
+        echo "Alice likes cats. Bob owns a dog." | /tmp/sumfloor/bin/sum attest --extractor=sieve > /tmp/floor_bundle.json
+        /tmp/sumfloor/bin/sum verify --input /tmp/floor_bundle.json
