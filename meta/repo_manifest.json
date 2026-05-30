@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-05-30T18:56:40Z",
+  "issued_at": "2026-05-31T19:16:48Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "c478271f76f9f515df2d335f70dcb48f2571d9c5",
-    "head_short": "c478271",
-    "head_subject": "fix(packaging,ci): bump [sieve] spacy floor to 3.8.0 + add floor-version CI smoke gate (F14) (#258)",
-    "head_committer_date": "2026-05-29T18:13:14-04:00",
+    "head_sha": "ec444e473e13041c24558ad637933a2393cdbad4",
+    "head_short": "ec444e4",
+    "head_subject": "docs: demote api/quantum_router.py to internal research surface (Option B)",
+    "head_committer_date": "2026-05-31T15:16:04-04:00",
     "commits_last_30d": null
   },
   "github": {

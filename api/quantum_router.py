@@ -1,3 +1,42 @@
+"""
+═══════════════════════════════════════════════════════════════════════════════
+STATUS: INTERNAL RESEARCH SURFACE — NOT A SHIPPING SURFACE.
+═══════════════════════════════════════════════════════════════════════════════
+
+This FastAPI surface (``api/quantum_router.py`` + ``quantum_main.py``) is NOT
+part of the shipping path. ``pyproject.toml`` excludes ``api*`` from the wheel;
+PyPI users get nothing from this module. The endpoints below are not
+reachable from the README's "What ships today" surfaces, the live Worker
+at ``sum-demo.ototao.workers.dev``, or the dogfood quickstart.
+
+The substrate (``GodelStateAlgebra``, ``AkashicLedger``, ``OuroborosVerifier``,
+``ZKSemanticProver``, ``EpistemicMeshNetwork``, etc.) IS load-bearing for the
+shipping surfaces under ``sum_engine_internal/``; only the FastAPI HTTP
+layer wrapping them is internal-research.
+
+The tests under ``Tests/test_phase13_zenith.py``,
+``Tests/test_phase14_ouroboros.py``, ``Tests/test_phase15_abi.py``,
+``Tests/test_browser_extension.py`` continue to exercise this module as
+regression guards for the substrate it composes. 58/58 of those pass
+today and run in CI via default pytest discovery.
+
+When to PROMOTE this to a shipping ``[api]`` PyPI extra: when a named
+buyer or grant deliverable explicitly references one of the endpoint
+clusters — branchable KG (``/branch`` + ``/merge`` + ``/time-travel``),
+ZK semantic proofs (``/zk/prove`` + ``/zk/verify``), federated KG sync
+(``/sync`` + ``/peers``), or JWT-tenant knowledge OS (``/auth/token``).
+The web research of 2026-05-30 found these align with recognized 2026
+directions (VersionRAG, ConVer-G, Microsoft GraphRAG, ZK for AI agents,
+MCP enterprise-auth roadmap), but no current SUM buyer has pulled. See
+``docs/CHARTER_2026-05-17.md`` strategy section and the buyer-or-dream
+filter (memory).
+
+Demoted 2026-05-30 per operator decision following the deeper-audit
+finding that this surface was substantial undocumented code with no
+user-facing reachability.
+═══════════════════════════════════════════════════════════════════════════════
+"""
+
 import sys
 sys.set_int_max_str_digits(0)
 
