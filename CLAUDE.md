@@ -232,6 +232,9 @@ recommended order T5 → T1 → T4 → T2 → T3):
 - T2 — volumetric capability regions for slider bench: **OPEN** (needs `sum.slider_drift_bench.v1` receipts)
 - T3 — DKW worst-case bounds for render receipt trust scope: **OPEN** (needs `sum.slider_drift_bench.v1` receipts)
 
+**Internal research surfaces (NOT shipping, but present in repo):**
+- `api/quantum_router.py` + `quantum_main.py` — FastAPI surface with 26+ endpoints (`/state`, `/sync`, `/branch`, `/merge`, `/zk/prove`, `/zk/verify`, `/peers`, `/time-travel`, `/auth/token`, etc.). 1,684 LOC of working code, 58/58 tests pass via pytest default discovery (`Tests/test_phase13_zenith.py`, `test_phase14_ouroboros.py`, `test_phase15_abi.py`, `test_browser_extension.py`). NOT in PyPI wheel (`pyproject.toml:167` excludes `api*`); NOT in live Worker; NOT in dogfood quickstart. Banners at top of both files explain. **Promote to a shipping `[api]` extra only if a named buyer or grant deliverable explicitly references one of the endpoint clusters.** Demoted 2026-05-30 per operator decision following deeper-audit triage; substrate it composes (`GodelStateAlgebra`, `AkashicLedger`, `OuroborosVerifier`, `ZKSemanticProver`, `EpistemicMeshNetwork`) remains load-bearing for the shipping surfaces under `sum_engine_internal/`.
+
 If you're about to make a change and want to know what's already deferred,
 check the task list for items marked "deferred" (Wikidata QIDs SPARQL
 disambiguation, `sha256_128_v2` activation, browser-bench perf numbers).

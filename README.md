@@ -212,6 +212,10 @@ Less-surfaced but shipped:
 - **Audit log format** — every CLI operation can emit `sum.audit_log.v1` events; see [`docs/AUDIT_LOG_FORMAT.md`](docs/AUDIT_LOG_FORMAT.md).
 - **Agent surface** (`sum_engine_internal/agent_surface/`) — see [`docs/AGENT_SURFACE_FINDINGS.md`](docs/AGENT_SURFACE_FINDINGS.md).
 
+### Internal research surfaces (NOT shipped, present in repo)
+
+- **`api/quantum_router.py` + `quantum_main.py`** — FastAPI surface with 26+ endpoints (branchable knowledge graph, ZK semantic proofs, federated KG sync, JWT-tenant knowledge OS). 1,684 LOC; 58/58 tests pass; runs locally via `uvicorn quantum_main:app`. **NOT in the PyPI wheel** (`pyproject.toml` excludes `api*`), **NOT in the live Worker**, **NOT in the dogfood quickstart**. The substrate it composes is load-bearing for the shipping surfaces above; only the FastAPI HTTP layer is internal-research. Promote to a shipping `[api]` extra only if a named buyer or grant deliverable explicitly references one of the endpoint clusters. See top-of-file banner in `api/quantum_router.py` for the full triage rationale.
+
 ---
 
 ## Reproduce the bench

@@ -1,3 +1,17 @@
+"""
+═══════════════════════════════════════════════════════════════════════════════
+STATUS: INTERNAL RESEARCH ENTRYPOINT — NOT A SHIPPING SURFACE.
+═══════════════════════════════════════════════════════════════════════════════
+
+ASGI entrypoint that mounts ``api/quantum_router.py``. That router is
+demoted to internal-research per the 2026-05-30 audit (see the banner
+at the top of ``api/quantum_router.py`` for the full triage). This
+file follows: it exists for local-dev / regression-test use only and
+is NOT in the shipping path. Not in the PyPI wheel; not exposed by
+the live Worker; not in the dogfood quickstart.
+═══════════════════════════════════════════════════════════════════════════════
+"""
+
 import sys
 # Zenith of Process Intensification: Uncap the maximum integer string
 # conversion limit.  The Gödel Integer will grow into hundreds of
