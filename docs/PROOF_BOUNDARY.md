@@ -508,6 +508,8 @@ Receipt: [`fixtures/bench_receipts/drift_composition_2026-05-22.json`](../fixtur
 python -m scripts.bench.runners.t4_drift_composition --pretty
 ```
 
+**Categorical reading.** The fixed-point composition law also has a vocabulary in the Coecke / Sadrzadeh / Clark (DisCoCat, 2010) tradition: the `extract` morphism is an idempotent endomorphism on the bundle-object in the FRel × P Boolean-restricted variant the 2010 paper itself names. The recasting does not strengthen the empirical claim — only gives standards-track readers a vocabulary to locate this result inside the compact-closed-category literature. See [`docs/CATEGORICAL_FOUNDATIONS.md`](CATEGORICAL_FOUNDATIONS.md) for the precise framing, the explicit non-claims (no Frobenius-algebra structure), and the open conjectures.
+
 **Reproducible** (any corpus):
 ```bash
 export NVIDIA_API_KEY=<your nvapi key>

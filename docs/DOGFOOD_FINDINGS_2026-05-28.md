@@ -1,6 +1,6 @@
 # DOGFOOD_FINDINGS_2026-05-28.md
 
-**Third dogfood-friction capture — `pip install sum-engine[sieve]` blocked on a fresh venv by upstream dep rot.** Companion to [`DOGFOOD_FINDINGS_2026-05-17.md`](DOGFOOD_FINDINGS_2026-05-17.md) (F1–F7) and [`DOGFOOD_FINDINGS_2026-05-18.md`](DOGFOOD_FINDINGS_2026-05-18.md) (F8–F11). F12 was used in commit messages for the NIM rate-limit retry hardening on the bench T1 runner (PRs #246/#247/#249); that work is captured in CHANGELOG `[Unreleased]` and is not journalist-facing, so it does not appear here. F13 below is the first user-facing finding since 2026-05-18.
+**Third dogfood-friction capture — `pip install sum-engine[sieve]` blocked on a fresh venv by upstream dep rot.** Companion to [`DOGFOOD_FINDINGS_2026-05-17.md`](DOGFOOD_FINDINGS_2026-05-17.md) (F1–F7) and [`DOGFOOD_FINDINGS_2026-05-18.md`](DOGFOOD_FINDINGS_2026-05-18.md) (F8–F11). Followed by [`DOGFOOD_FINDINGS_2026-05-29.md`](DOGFOOD_FINDINGS_2026-05-29.md) (F14 — the declared `[sieve]` spacy floor `>=3.7.0` surfaced as broken by the act of writing F13's tech-debt follow-up CI matrix). F12 was used in commit messages for the NIM rate-limit retry hardening on the bench T1 runner (PRs #246/#247/#249); that work is captured in CHANGELOG `[Unreleased]` and is not journalist-facing, so it does not appear here. F13 below is the first user-facing finding since 2026-05-18.
 
 ## Pass setup
 
