@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-06-02T16:22:29Z",
+  "issued_at": "2026-06-03T22:48:08Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "fad1caef63a7afae3f13f98b2a02097b40d2f4b4",
-    "head_short": "fad1cae",
-    "head_subject": "docs: demote api/quantum_router.py to internal research surface (Option B) (#260)",
-    "head_committer_date": "2026-05-31T15:25:48-04:00",
+    "head_sha": "ce5e4e936e4d132c235e0270291de9227305ea1d",
+    "head_short": "ce5e4e9",
+    "head_subject": "docs(audit-followups): API_REFERENCE /api/transform + drift accuracy; FEATURE_CATALOG internal-research disclosure (#265)",
+    "head_committer_date": "2026-06-03T18:46:34-04:00",
     "commits_last_30d": null
   },
   "github": {
