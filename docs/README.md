@@ -1,17 +1,24 @@
 # SUM docs index
 
-The 17 active docs in this directory, grouped by reader. Pick by what you're trying to do.
+The primary user-facing docs in this directory, grouped by reader. Pick by
+what you're trying to do. This index curates the durable specs and guides;
+the directory also holds session-shaped artifacts not indexed here —
+dated `SESSION_HANDOVER_*` / `DOGFOOD_FINDINGS_*` / `*_SPIKE_FINDINGS`
+research notes (reachable from the handovers and `CLAUDE.md`), and the
+operational compass (`CHARTER_*`, `ZENITH_FRAMING_*`, `BENCH_HARDENING_*`)
+which `CLAUDE.md` links directly.
 
 ## I want to verify SUM's claims
 
 - **[`PROOF_BOUNDARY.md`](PROOF_BOUNDARY.md)** — the arbiter. Every claim in the repo traces to one of four epistemic categories here: `provable` / `certified` / `empirical-benchmark` / `expert-opinion`. Read this first.
 - **[`THREAT_MODEL.md`](THREAT_MODEL.md)** — what the trust surface defends against and what it does not.
-- **[`FEATURE_CATALOG.md`](FEATURE_CATALOG.md)** — every shipped feature with a one-command verification recipe. 117 entries.
+- **[`FEATURE_CATALOG.md`](FEATURE_CATALOG.md)** — every shipped feature with a one-command verification recipe. 170 entries (see the catalog's own "Summary counts" footer — it is the authoritative source if this number drifts).
 
 ## I want to integrate SUM into my system
 
 - **[`API_REFERENCE.md`](API_REFERENCE.md)** — the hosted Cloudflare Worker HTTP API. `/api/render`, `/api/qid`, `/api/complete`, `/.well-known/jwks.json`, `/.well-known/revoked-kids.json`. Use when the caller is a web app, mobile app, or server-side service.
 - **[`MCP_INTEGRATION.md`](MCP_INTEGRATION.md)** — the `sum-mcp` Model Context Protocol server. Use when the caller is a local LLM client (Claude Desktop, Claude Code, Cursor, Continue).
+- **[`INTEGRATION_GUIDE.md`](INTEGRATION_GUIDE.md)** — audience-routed triage layer (SOC integrators / AI-safety teams / compliance officers). The shortest path from "SUM installed" to "SUM producing audit-grade evidence in my pipeline"; points each audience at the right per-domain doc and gives the minimum recipe.
 - **[`RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md)** — `sum.render_receipt.v1` wire spec. Ed25519 over JCS-canonical bytes, detached JWS, JWKS-distributed keys. Read this if you need to verify a receipt yourself.
 
 ## I want to understand the bundle / ledger / cryptographic primitives
@@ -27,7 +34,7 @@ The 17 active docs in this directory, grouped by reader. Pick by what you're try
 
 - **[`SLIDER_CONTRACT.md`](SLIDER_CONTRACT.md)** — the slider's product contract. Five axes, per-axis drift formulas, fact-preservation thresholds. Includes the v0.2-research-pass history that informs current decisions.
 - **[`INCIDENT_RESPONSE.md`](INCIDENT_RESPONSE.md)** — operator runbook. Kid revocation, JWKS rollback, bundle-format incidents.
-- **[`MODULE_AUDIT.md`](MODULE_AUDIT.md)** — activation checklists for the 13 scaffolded (🔧) features in `FEATURE_CATALOG.md`.
+- **[`MODULE_AUDIT.md`](MODULE_AUDIT.md)** — activation checklists for the 18 scaffolded (🔧) features in `FEATURE_CATALOG.md`.
 - **[`DID_SETUP.md`](DID_SETUP.md)** — one-time issuer-keypair generation for `did:web` / `did:key` deployments.
 
 ## Project process

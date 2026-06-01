@@ -284,8 +284,23 @@ jobs:
       # across runtimes."
       run: |
         python -m pip install --upgrade pip
-        pip install pytest "joserfc>=1.0.0" "cryptography>=41.0.0"
+        pip install pytest "joserfc>=1.0.0,<2.0.0" "cryptography>=41.0.0"
         python -m pytest Tests/test_render_receipt_verifier.py -q
+
+    - name: Transform-receipt-verifier smoke — JS (20 fixtures)
+      # Cross-runtime K-matrix extension for sum.transform_receipt.v1.
+      # Same shape as the render-receipt smoke above; consumes
+      # fixtures/transform_receipts/ via the deterministic-test-key
+      # generator. Caught a real verifier bug on first wiring (double-
+      # decoded protectedHeader); keeping it in CI prevents regression.
+      run: node single_file_demo/test_transform_receipt_fixtures.js
+
+    - name: Transform-receipt-verifier smoke — Python (same 20 fixtures)
+      # Paired with the JS smoke above. Both runtimes MUST produce
+      # byte-identical accept/reject + error_class outcomes on every
+      # fixture for the cross-runtime trust-triangle claim to extend
+      # from render receipts to transform receipts.
+      run: python -m pytest Tests/test_transform_receipt_verifier_fixtures.py -q
 
     - name: Trust-root manifest round-trip — Python (R0.2)
       # R0.2: build → sign → verify round-trip with an in-memory test

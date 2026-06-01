@@ -81,7 +81,11 @@ anthropic = ["anthropic>=0.97.0", "pydantic>=2.0.0"]
 # detached-JWS / RFC 7797 b64=false machinery; the existing pure-Python
 # JCS module at sum_engine_internal/infrastructure/jcs.py handles
 # canonicalization. Cryptography is already a hard dep above.
-receipt-verify = ["joserfc>=1.0.0"]
+# Upper bound: joserfc>=1.x warns that the "EdDSA" JWS alg is deprecated
+# (RFC 9864 favours explicit Ed25519/Ed448 alg identifiers). The whole
+# render-receipt trust loop signs with "EdDSA", so we pin below 2.0.0
+# until we confirm a major release does not drop the "EdDSA" alias.
+receipt-verify = ["joserfc>=1.0.0,<2.0.0"]
 # MCP (Model Context Protocol) server. Exposes SUM verbs as MCP
 # tools so any MCP-aware LLM client (Claude Desktop, Claude Code,
 # Cursor, Continue, custom agents) can call SUM directly. The
