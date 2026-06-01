@@ -562,6 +562,16 @@ The slider's load-bearing claim — *axis changes do not lose facts* — has bee
 
 **Prompt-hardening mechanism (v0.7, deterministic, no extra LLM cost):** `build_system_prompt` (Python in `tome_sliders.py`; TS mirror in `worker/src/render/axis_prompts.ts`) appends a `FACT_PRESERVATION_REINFORCEMENT` clause when any non-density axis is at ≤ 0.3. Same input → same output; the mechanism is data, not learning.
 
+**Reproducibility status (bench-hardening T2/T3 open).** The numbers in
+the table above carry the `empirical-benchmark` status — measured per-corpus,
+**not same-commit-replayable**: `Tests/benchmarks/slider_drift_bench.py` is
+scaffold-state and no `sum.slider_drift_bench.v1` receipt is committed under
+`fixtures/bench_receipts/`. Per `docs/BENCH_HARDENING_FROM_QCVV.md` §6,
+"Median 1.000" is a marketing figure until a DKW worst-case bound (T3) over a
+capability region (T2) lands; until then these are observations, not a
+guarantee a receipt's trust scope can cite. See `docs/SLIDER_CONTRACT.md`
+"Headline result" for the same caveat in product terms.
+
 **MontageLie defence:** order preservation = 1.000 wherever measurable across all benches. Set-based fact preservation alone is exploitable by reordering true facts into a deceptive narrative (Zheng et al. May 2025); pairing NLI audit with `order_preservation` is harder to defeat than either alone.
 
 **LLM self-attestation is NOT a free oracle.** v0.3 added `claim_jaccard` measuring agreement between the LLM's `claimed_triples` and an independent re-extraction; cross-axis median = 0.286. Counts match (n_claimed ≈ n_reextracted ≈ n_source) — surface-form divergence, not list-size mismatch. **Independent re-extraction remains the source of truth**; do not ship a "fast mode" that skips it in favour of `claimed_triples` (the bench data shows that mode would systematically under-report preservation).
@@ -703,7 +713,7 @@ These are design goals, NOT current capabilities.
 | Multi-renderer rehydration (textbook, quiz, study guide) | Not implemented | Future |
 | Federation with trust policies | Not implemented | Future |
 | Scientific/technical corpora support | Not implemented | Future |
-| **Bidirectional distillation with sliding-scale parameters** (density, length, formality, audience, perspective) | **Shipped end-to-end (Phase E.1 v0.4 → v0.7)** — density on the deterministic canonical path; length / formality / audience / perspective LLM-conditioned via `worker/src/routes/render.ts` + `worker/src/render/axis_prompts.ts` (TS mirror of the Python prompt fragments). Fact-preservation verified at scale: median 1.000, p10 0.769 (long n=16) / 0.818 (short n=8), catastrophic outliers eliminated by v0.7 prompt hardening — see §2.6. | **Measured / production** (was "Phase 30+"); render-receipt attestation per call (§1.8) |
+| **Bidirectional distillation with sliding-scale parameters** (density, length, formality, audience, perspective) | **Shipped end-to-end (Phase E.1 v0.4 → v0.7)** — density on the deterministic canonical path; length / formality / audience / perspective LLM-conditioned via `worker/src/routes/render.ts` + `worker/src/render/axis_prompts.ts` (TS mirror of the Python prompt fragments). Fact-preservation measured at scale: median 1.000, p10 0.769 (long n=16) / 0.818 (short n=8), catastrophic outliers eliminated by v0.7 prompt hardening — see §2.6 (measured, not yet same-commit-replayable; T2/T3 open). | **Measured / production** (was "Phase 30+"); render-receipt attestation per call (§1.8) |
 | **Polytaxis Bucket A absorption** (SHACL, conformal prediction sets, VC 2.0 with `eddsa-jcs-2022`, RFC 3161 timestamping, RFC 9162 CT v2 proofs, PROV-O/PROV-STAR, polyglot RDF/JSON-LD/Turtle emission) | **In progress** — shipped: `epistemic_status` field (v1.2.0), Venn-Abers conformal-interval algorithm + `ConfidenceCalibrator` wiring, PROV-O JSON-LD adapter for Akashic Ledger events, W3C VC 2.0 Data Integrity emission + verification under `eddsa-jcs-2022` (`sum_engine_internal/infrastructure/verifiable_credential.py` + pure-Python RFC 8785 JCS at `sum_engine_internal/infrastructure/jcs.py`, 58 tests). **Pending:** SHACL, RFC 3161 TSA anchor, RFC 9162 CT v2 proofs, full polyglot emission (Turtle/RDF-XML beyond JSON-LD) | **Phase 25** |
 | Prose round-trip conservation measurement (via `SumRoundtripRunner` + LLM extrapolator + MiniCheck gate) | **Measured** — see §2.5 | STATE 4-B (shipped) |
 | Property-graph backing store for corpora above ~10k axioms (prime encoding demoted to signed witness) | Design landed in [`docs/PHASE_26_DESIGN.md`](PHASE_26_DESIGN.md) (5 decision points, 3 backing-store candidates with trade-off matrix, spike plan). Engineering not started, gated on spike (Phase 26.0). Confirmed empirically by §4.9 measured envelope (merge cost makes prime-as-primary-query unviable above ~10k axioms). | Phase 26 |
