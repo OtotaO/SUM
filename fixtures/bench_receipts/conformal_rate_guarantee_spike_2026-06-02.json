@@ -1,0 +1,95 @@
+{
+  "schema": "sum.conformal_rate_guarantee_spike.v1",
+  "iso_ts": "2026-06-02T16:21:02.436008+00:00",
+  "host": {
+    "platform": "macOS-26.0-arm64-arm-64bit",
+    "python": "3.10.14",
+    "machine": "arm64"
+  },
+  "experiment_synthetic_coverage_sweep": [
+    {
+      "true_rate": 0.9,
+      "n": 200,
+      "delta": 0.05,
+      "target_coverage": 0.95,
+      "method": "clopper_pearson",
+      "empirical_coverage": 0.9608,
+      "covers": true
+    },
+    {
+      "true_rate": 0.9,
+      "n": 200,
+      "delta": 0.05,
+      "target_coverage": 0.95,
+      "method": "hoeffding",
+      "empirical_coverage": 1.0,
+      "covers": true
+    },
+    {
+      "true_rate": 0.95,
+      "n": 200,
+      "delta": 0.1,
+      "target_coverage": 0.9,
+      "method": "clopper_pearson",
+      "empirical_coverage": 0.9326,
+      "covers": true
+    },
+    {
+      "true_rate": 0.95,
+      "n": 200,
+      "delta": 0.1,
+      "target_coverage": 0.9,
+      "method": "hoeffding",
+      "empirical_coverage": 1.0,
+      "covers": true
+    },
+    {
+      "true_rate": 0.99,
+      "n": 400,
+      "delta": 0.05,
+      "target_coverage": 0.95,
+      "method": "clopper_pearson",
+      "empirical_coverage": 0.985,
+      "covers": true
+    },
+    {
+      "true_rate": 0.99,
+      "n": 400,
+      "delta": 0.05,
+      "target_coverage": 0.95,
+      "method": "hoeffding",
+      "empirical_coverage": 1.0,
+      "covers": true
+    },
+    {
+      "true_rate": 0.8,
+      "n": 100,
+      "delta": 0.2,
+      "target_coverage": 0.8,
+      "method": "clopper_pearson",
+      "empirical_coverage": 0.808,
+      "covers": true
+    },
+    {
+      "true_rate": 0.8,
+      "n": 100,
+      "delta": 0.2,
+      "target_coverage": 0.8,
+      "method": "hoeffding",
+      "empirical_coverage": 0.9874,
+      "covers": true
+    }
+  ],
+  "experiment_substrate_preservation_rate": {
+    "corpus_id": "seed_v1",
+    "n": 50,
+    "delta": 0.05,
+    "confidence": 0.95,
+    "method": "clopper_pearson",
+    "point_estimate": 1.0,
+    "rate_lower_bound": 0.9418,
+    "slack": 0.0582,
+    "reads_as": "with 95% confidence, \u2265 94.2% of sieve-extracted triples are gold (n=50, within the seed_v1 envelope)"
+  },
+  "receipt_digest": "sha256:dd35993eb9557e6747793523ce055cd2cb37cb948a6a00cf36702381ec9c5c36"
+}
