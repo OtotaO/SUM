@@ -93,6 +93,12 @@ def hoeffding_lower_bound(values: Sequence[float], delta: float = 0.05) -> float
     n = arr.size
     if n < 1:
         raise ValueError("values must be non-empty")
+    # Reject non-finite FIRST: NaN slips past the [0,1] range check below
+    # (every NaN comparison is False), and a NaN/inf observation would
+    # otherwise poison the mean into a silently-invalid bound — observed
+    # to yield LCB=1.0 (a maximal "guarantee" from garbage input).
+    if not np.all(np.isfinite(arr)):
+        raise ValueError("values must all be finite (no NaN/inf)")
     if np.any(arr < 0.0) or np.any(arr > 1.0):
         raise ValueError("Hoeffding bound requires all values in [0, 1]")
     mean = float(arr.mean())
@@ -138,6 +144,10 @@ def certify_rate(
     n = arr.size
     if n < 1:
         raise ValueError("observations must be non-empty")
+    # Non-finite rejection before range check (NaN evades < / > and would
+    # poison the bound — see risk_control hardening note in hoeffding).
+    if not np.all(np.isfinite(arr)):
+        raise ValueError("observations must all be finite (no NaN/inf)")
     if np.any(arr < 0.0) or np.any(arr > 1.0):
         raise ValueError("observations must lie in [0, 1]")
 
