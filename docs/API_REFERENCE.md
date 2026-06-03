@@ -21,6 +21,7 @@ Both surfaces produce byte-identical canonical outputs for the operations they s
 | `POST` | `/api/render`               | Slider-conditioned tome rendering, optional signed receipt | none | [§3](#3-post-apirender) |
 | `POST` | `/api/complete`             | LLM proxy for the demo UI (Anthropic-first, OpenAI fallback) | none | [§4](#4-post-apicomplete) |
 | `POST` | `/api/qid`                  | Wikidata QID/PID resolver (edge-cached) | none | [§5](#5-post-apiqid) |
+| `POST` | `/api/transform`            | Transform-registry dispatch → `sum.transform_receipt.v1` (Worker: `slider` canonical path only; LLM-axis returns 501) | none | [§8](#8-post-apitransform) |
 | `GET`  | `/.well-known/jwks.json`    | Render-receipt public keys (RFC 7517) | none, public CORS | [§6](#6-get-well-knownjwksjson) |
 | `GET`  | `/.well-known/revoked-kids.json` | Receipt revocation list (`sum.revoked_kids.v1`) | none, public CORS | [§7](#7-get-well-knownrevoked-kidsjson) |
 
@@ -64,7 +65,7 @@ Cross-Origin-Embedder-Policy: require-corp
 Cross-Origin-Resource-Policy: same-origin
 ```
 
-The two `/.well-known/*` endpoints override `Cross-Origin-Resource-Policy: cross-origin` and add the CORS headers below. The three `/api/*` endpoints keep the baseline (same-origin only). If you need to call `/api/render` from a different origin, deploy a proxy on your origin or call the Worker server-side.
+The two `/.well-known/*` endpoints override `Cross-Origin-Resource-Policy: cross-origin` and add the CORS headers below. The four `/api/*` endpoints keep the baseline (same-origin only). If you need to call `/api/render` from a different origin, deploy a proxy on your origin or call the Worker server-side.
 
 ### 2.5 Error response shape
 
@@ -78,13 +79,22 @@ Plus an HTTP status code from the per-route documentation. There is no machine-r
 
 ### 2.6 Caching
 
-Mutating endpoints (`/api/complete`, `/api/qid`, `/api/render`) set `Cache-Control: no-store` on the response so intermediaries do not cache them. The `/api/render` endpoint maintains its own KV cache keyed by `sha256(sliders + triples)`; that cache is **server-side and transparent to callers** (response is identical whether `cache_status` is `"hit"` or `"miss"`, only the latency and the `cache_status` field differ).
+Mutating endpoints (`/api/complete`, `/api/qid`, `/api/render`, `/api/transform`) set `Cache-Control: no-store` on the response so intermediaries do not cache them. The `/api/render` endpoint maintains its own KV cache keyed by `sha256(sliders + triples)`; that cache is **server-side and transparent to callers** (response is identical whether `cache_status` is `"hit"` or `"miss"`, only the latency and the `cache_status` field differ).
 
 The two `/.well-known/*` endpoints are read-mostly and set `Cache-Control: public, max-age=3600` (1 hour). Verifiers should respect this and re-fetch on cache miss; do not pin a specific JWKS forever, since key rotation will silently break verification when the hosted JWK rotates out.
 
 ### 2.7 Rate limiting
 
-Cloudflare's edge defaults apply. There is no documented per-IP rate limit at the application layer today. If you need predictable throughput for a production integration, contact the maintainer before launching to get a dedicated rate-limit policy.
+The hosted Worker applies a **per-IP application-layer rate limit** on the LLM-spending routes (it protects the operator's API credits). Full policy in [`docs/PUBLIC_API_RATE_LIMITS.md`](PUBLIC_API_RATE_LIMITS.md); summary:
+
+| Route | Mode | Limit | Window |
+|---|---|---|---|
+| `/api/render`, `/api/transform` | operator-keyed (no BYO header) | **5** | 24 h |
+| `/api/render`, `/api/transform` | BYO-key (`X-Render-LLM-Key-Anthropic` or `-OpenAI`) | **100** | 1 h |
+| `/api/complete` | operator-keyed | **5** | 24 h |
+| `/.well-known/*` | — | **no limit** | — (verifiers must not be throttled) |
+
+Over-quota responses return **`429`** with `x-ratelimit-limit` / `-remaining` / `-reset` headers and an `error` + `remediation` body (supply a BYO key for the 100/h bucket, wait for the window to reset, or run locally via `pip install 'sum-engine[openai]'`). The `/.well-known/*` trust-loop endpoints are deliberately unlimited so receipt verification never gets rate-limited.
 
 ---
 
@@ -141,10 +151,7 @@ Optional:
 {
   "tome": "Alice was born in 1990 and graduated in 2012. Bob owns a dog.",
   "triples_used": [["alice", "born", "1990"], ["alice", "graduated", "2012"]],
-  "drift": [
-    { "axis": "density", "value": 0.05, "threshold": 0.10, "classification": "ok" },
-    { "axis": "length", "value": 0.12, "threshold": 0.20, "classification": "ok" }
-  ],
+  "drift": [],
   "cache_status": "miss",
   "llm_calls_made": 1,
   "wall_clock_ms": 842,
@@ -177,7 +184,7 @@ Field semantics:
 |---|---|
 | `tome` | The rendered prose. UTF-8. The signed `tome_hash` covers exactly these bytes. |
 | `triples_used` | The subset of input triples that survived the `density` slider. May be smaller than the input. |
-| `drift` | Per-axis fact-preservation drift measurements. Empty if the render hit the cache. See `docs/SLIDER_CONTRACT.md` for the per-axis formulas and thresholds. |
+| `drift` | Per-axis fact-preservation drift measurements — shape `[{ "axis", "value", "threshold", "classification" }]`. **The hosted Worker always returns this empty (`[]`):** it does not re-extract triples from the rendered tome, so it computes no drift. The Python slider bench is the canonical source for per-axis fact-preservation/drift (see `docs/SLIDER_CONTRACT.md` for the formulas and thresholds). The field is present for schema stability and may be populated by non-Worker render paths. |
 | `cache_status` | `"hit"`, `"miss"`, or `"bypass"` (when `force_render: true`). |
 | `llm_calls_made` | `0` for the canonical-deterministic path, `1` for the LLM path. |
 | `wall_clock_ms` | Server-side wall clock for the render (excludes network latency). |
@@ -448,7 +455,58 @@ There is no 404 on this endpoint — absence of an env var produces an empty-lis
 
 ---
 
-## 8. Operator: configuring a self-hosted Worker
+## 8. `POST /api/transform`
+
+Generic transform-registry dispatch — the substrate sibling of `/api/render`, emitting `sum.transform_receipt.v1` instead of `sum.render_receipt.v1`. Same signing path (Ed25519 / JCS / detached JWS), same per-IP rate limiting and BYO-key headers as `/api/render`.
+
+**Worker registry scope (important).** The Worker registers the **`slider`** transform only, and only its **canonical (deterministic) path** — `density` quantization with all four LLM axes at the neutral `0.5`. The `extract` and `compose` transforms are **Python-CLI-only** (`sum transform apply extract|compose`); they are not on the Worker. A `slider` request with any LLM axis off-centre returns **`501`** (the Worker's LLM-axis dispatch is not yet wired) — use [`/api/render`](#3-post-apirender) for LLM-conditioned renders, which produces a render receipt rather than a transform receipt.
+
+### 8.1 Request
+
+```json
+POST /api/transform HTTP/1.1
+content-type: application/json
+
+{
+  "transform": "slider",
+  "input":      { "...": "transform-specific" },
+  "parameters": { "...": "transform-specific" },
+  "source_chain": [
+    { "claim": "Alice graduated in 2012",
+      "provenance": { "source_uri": "src1.txt", "byte_start": 0, "byte_end": 42 } }
+  ]
+}
+```
+
+`source_chain` is optional (T4): when present, the receipt's `source_chain_hash` binds the receipt to specific source byte ranges (`docs/TRANSFORM_RECEIPT_FORMAT.md` §1.1). BYO-key headers `X-Render-LLM-Key-Anthropic` / `X-Render-LLM-Key-OpenAI` are honoured (falling back to operator keys), same as `/api/render`.
+
+### 8.2 Response (200)
+
+```json
+{
+  "output":            { "...": "transform-specific" },
+  "transform_id":      "a1b2c3d4e5f60718",
+  "wall_clock_ms":     842,
+  "model":             "claude-haiku-4-5-20251001",
+  "provider":          "anthropic",
+  "transform_receipt": { "schema": "sum.transform_receipt.v1", "kid": "…", "payload": { "…": "…" }, "jws": "…" }
+}
+```
+
+`transform_receipt` is **absent** when the Worker has no signing config (`RENDER_RECEIPT_SIGNING_JWK` / `_KID`) — same behaviour as `/api/render`. Wire spec: [`docs/TRANSFORM_RECEIPT_FORMAT.md`](TRANSFORM_RECEIPT_FORMAT.md).
+
+### 8.3 Errors
+
+| Status | When |
+|---|---|
+| `400` | invalid JSON body, missing `input`, or unknown `transform` name |
+| `405` | non-`POST` method |
+| `501` | transform recognised but the requested path is not yet wired on the Worker (e.g. `slider` with an off-centre LLM axis); the error message contains `"not yet wired"`. Use `/api/render` for that case. |
+| `429` | per-IP rate limit (see [§2.7](#27-rate-limiting)) |
+
+---
+
+## 9. Operator: configuring a self-hosted Worker
 
 The hosted demo at `sum-demo.ototao.workers.dev` is one deployment. To run your own:
 
@@ -498,7 +556,7 @@ The same procedure is documented in `worker/wrangler.toml` comments.
 
 ---
 
-## 9. Working integration examples
+## 10. Working integration examples
 
 ### 9.1 Render + verify in Node
 
@@ -605,7 +663,7 @@ For Python receipt verification, use `sum_engine_internal.render_receipt.verifie
 
 ---
 
-## 10. Cross-references
+## 11. Cross-references
 
 - [`docs/RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) — wire spec for `sum.render_receipt.v1`. Source of truth for the receipt payload schema and the six-step verifier algorithm.
 - [`docs/PROOF_BOUNDARY.md`](PROOF_BOUNDARY.md) §1.3.1 — what the cross-runtime Ed25519 trust triangle proves and what it doesn't.
