@@ -45,6 +45,19 @@ import pytest
 REPO = Path(__file__).resolve().parents[2]
 RECEIPTS = REPO / "fixtures" / "bench_receipts"
 
+# Redirect bench-rerun receipt writes here so a subprocess bench run
+# never mutates a committed fixture under fixtures/bench_receipts/.
+# Honored by scripts/research/_receipt_paths.resolve_receipt_path via
+# the SUM_BENCH_RECEIPT_DIR env var. Without this, a rerun on a machine
+# whose (arch, BLAS) numerics differ from the committed receipt's
+# overwrites it with a byte-different result → spurious git diff
+# (arm64/miniforge OpenBLAS vs the committed x86/Accelerate digest).
+#
+# Kept *inside* the repo (gitignored) rather than /tmp so the benches'
+# `out.relative_to(REPO)` log line still resolves — several bench
+# scripts print the written path relative to the repo root.
+_BENCH_RECEIPT_TMPDIR = str(REPO / ".pytest-bench-receipts")
+
 
 # All thread vars passed via env to bench subprocesses. Set at
 # subprocess invocation rather than at this module's import because
@@ -59,6 +72,7 @@ _DETERMINISTIC_BLAS_ENV = {
     "VECLIB_MAXIMUM_THREADS": "1",   # Apple Accelerate
     "BLIS_NUM_THREADS": "1",
     "NUMEXPR_NUM_THREADS": "1",
+    "SUM_BENCH_RECEIPT_DIR": _BENCH_RECEIPT_TMPDIR,
 }
 
 

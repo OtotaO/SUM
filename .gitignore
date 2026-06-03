@@ -148,3 +148,8 @@ core-zig/zig-out/
 # is machine-local, not repo-wide — do not commit).
 bench_history.jsonl
 bench_report.json
+
+# Scratch dir for bench-rerun digest tests — receipts written here so a
+# subprocess bench run never mutates a committed fixture (see
+# Tests/research/test_recovery_experiment_digests.py + _receipt_paths.py).
+.pytest-bench-receipts/

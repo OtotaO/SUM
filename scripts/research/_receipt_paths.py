@@ -23,10 +23,21 @@ filesystem level.
 
 Operators who genuinely want a new dated receipt can pass `force_new=True`
 or specify `today_iso=` explicitly.
+
+Test-isolation override: if the ``SUM_BENCH_RECEIPT_DIR`` environment
+variable is set, it replaces ``receipts_dir`` for the write. The
+bench-rerun digest tests (`Tests/research/test_recovery_experiment_digests.py`)
+set this to a temp dir so that *running a bench in a subprocess never
+mutates a committed receipt under ``fixtures/bench_receipts/``*. Without
+it, a bench rerun on a machine whose (arch, BLAS) numerics differ from
+the committed receipt's overwrites that file with a byte-different but
+substantively-equivalent result, producing a spurious git diff (observed
+on arm64/miniforge OpenBLAS vs the committed x86/Accelerate receipt).
 """
 from __future__ import annotations
 
 import datetime as _dt
+import os
 from pathlib import Path
 
 
@@ -56,6 +67,13 @@ def resolve_receipt_path(
         - 2+ existing matches → lexicographically-latest (the "newest"
           historical receipt), with a warning printed to stderr.
     """
+    # Test-isolation override (see module docstring): redirect writes to
+    # a caller-specified dir so bench reruns never touch committed fixtures.
+    _override = os.environ.get("SUM_BENCH_RECEIPT_DIR")
+    if _override:
+        receipts_dir = Path(_override)
+        receipts_dir.mkdir(parents=True, exist_ok=True)
+
     today = today_iso or _dt.date.today().isoformat()
     new_path = receipts_dir / f"{schema_prefix}_{today}.json"
     if force_new:
