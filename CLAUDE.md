@@ -71,8 +71,30 @@ v0.5.0 work). Read them when a specific narrative is in question.
 The compass above takes precedence for strategic-direction
 questions.
 
-0. **[`docs/SESSION_HANDOVER_2026-05-05_path2_arc.md`](docs/SESSION_HANDOVER_2026-05-05_path2_arc.md)**
-   — most recent session-block handover (PRs #156 / #157 / #158 /
+0. **[`docs/SESSION_HANDOVER_2026-06-01_post_v0.7.0_arc.md`](docs/SESSION_HANDOVER_2026-06-01_post_v0.7.0_arc.md)**
+   — **most recent session-block handover** (PRs #246–#260 over
+   2026-05-21 → 2026-06-01). The 13-PR arc that closed bench-hardening
+   T1 + T4 (§2.5 closure is now empirically multi-stage load-bearing
+   under DKW 95% on every measured corpus), fixed F4 (`sum attest`
+   missing axioms field, Scenario A unblocker), fixed F13 + F14
+   (spacy/typer/click dep rot in `[sieve]` install path + spacy floor
+   broken at runtime; both shipped with a new 2-axis floor-venv-smoke
+   CI gate), aligned 5+3+2 doc surfaces with reality (PRs #253 / #255
+   / #259 — outcome-coherence pass + live-state-probe corrections +
+   self-inflicted orphan cross-links), shipped the categorical-
+   foundations DisCoCat-vocabulary recasting for §2.5.1 (PR #254),
+   and demoted `api/quantum_router.py` (1684 LOC, 26+ endpoints, 58
+   passing tests) to internal-research per operator decision (PR #260)
+   with banner-only approach preserving substrate option value. Two
+   load-bearing process disciplines established + memorialised:
+   **live-state empirical probing > source-presence checks**
+   (`feedback_live_state_probing.md`), and **`git pull --ff-only`
+   before `git checkout -b`** (`feedback_pull_before_branch.md`).
+   **READ THIS HANDOVER FIRST** — §6 names the operator queue that
+   is the actual rate-limit on outcome delivery; §7 names anti-
+   patterns the next session must avoid. The prior handover at
+   [`docs/SESSION_HANDOVER_2026-05-05_path2_arc.md`](docs/SESSION_HANDOVER_2026-05-05_path2_arc.md)
+   — covers PRs #156 / #157 / #158 /
    #159 / #160 / #161 / #163 / #164 — Path 2 real-LLM-rendered
    adversarial bench closes the §7 asterisk; multi-LLM cross-family
    corroboration extends to six LLM lineages from six organisations
