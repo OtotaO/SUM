@@ -12,6 +12,7 @@
         bench-receipt-audit bench-receipt-audit-replay test-trust-root \
         test-property test-nli-calibration-format \
         verify-preprint reproduce-preprint validate-preprint \
+        verify-frontend-bytes \
         pre-push
 
 PYTHON ?= python
@@ -78,6 +79,9 @@ smoke:  ## Fresh-venv install + attest|verify round-trip from the built wheel.
 	/tmp/sum-smoke/bin/sum --version
 	@echo "Alice likes cats. Bob owns a dog." | /tmp/sum-smoke/bin/sum attest --extractor=sieve | \
 	 /tmp/sum-smoke/bin/sum verify
+
+verify-frontend-bytes:  ## Post-deploy guard: assert the live hosted demo is byte-identical to single_file_demo/index.html. Override target with SUM_DEMO_URL=...
+	@$(PYTHON) -m scripts.verify_frontend_bytes
 
 verify-release-bytes: wheel  ## Pre-tag empirical check: built wheel installs cleanly with [openai] AND [llm] aliases; OpenAI SDK lands; sum --version works. Run before `git tag vX.Y.Z`.
 	@echo "─── Verify release bytes — adversarial pre-tag check ──────────────"

@@ -22,7 +22,7 @@ Headline supporting numbers (each links to its source of truth):
 | Three-runtime byte-symmetric Ed25519 over JCS bytes | provable; locked by `make xruntime` (K1–K4) + `make xruntime-adversarial` (A1–A6) | [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §1.2, §1.3.1 |
 | Canonical round-trip `reconstruct(parse(canonical_tome(S))) == S` | provable; 0.00% drift on every CI run | [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §1.1 |
 | Render receipt — `sum.render_receipt.v1`, Ed25519 / JCS / detached JWS | shipped; verifier in three runtimes | [`docs/RENDER_RECEIPT_FORMAT.md`](docs/RENDER_RECEIPT_FORMAT.md) |
-| Slider fact preservation: median 1.000, p10 0.769 (long n=16) / 0.818 (short n=8) | empirical-benchmark | [`docs/SLIDER_CONTRACT.md`](docs/SLIDER_CONTRACT.md) |
+| Slider fact preservation: median 1.000, p10 0.769 (long n=16) / 0.818 (short n=8) | empirical-benchmark — measured; same-commit replay receipt still pending (bench-hardening T2/T3) | [`docs/SLIDER_CONTRACT.md`](docs/SLIDER_CONTRACT.md) |
 | Extraction F1 = 1.000 (`seed_v1`), 0.762 with precision 1.000 (`seed_v2`) | empirical-benchmark | [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §2.1 |
 
 A render receipt verifies the *render attestation* (issuer signed this tome, these triples, this slider position, this model, at this time). It does not verify the truth of the tome's content — that is what the slider bench measures separately. See [`docs/RENDER_RECEIPT_FORMAT.md`](docs/RENDER_RECEIPT_FORMAT.md) §5 for the explicit trust scope.
@@ -66,7 +66,7 @@ A minimal Node verifier using `jose` + `canonicalize` is in [`docs/RENDER_RECEIP
 | Negative-control corpus (T5 of bench-hardening) | shipped | 20 hand-authored documents across 5 failure modes (ambiguous coref / predicate-alias / contradictions / entity-resolution-adversarial / non-extractable). Runner exits 1 if observed failures don't match annotations. Baseline at [`fixtures/bench_receipts/negative_control_2026-05-17.json`](fixtures/bench_receipts/negative_control_2026-05-17.json). |
 | Compliance validators (six regimes) | shipped | `sum compliance check --regime <id> --audit-log <path>` — EU AI Act Article 12, GDPR Article 30, HIPAA § 164.312(b), ISO/IEC 27001 A.8.15, SOC 2 CC 7.2, PCI DSS v4.0 Req 10. All six produce the same `sum.compliance_report.v1` schema; per-regime docs at `docs/COMPLIANCE_*.md`. |
 
-The slider's product claim — *axis changes do not lose facts* — is the load-bearing empirical result. It is verified by NLI audit on every embedding-flagged "loss" cell; full attribution in [`docs/SLIDER_CONTRACT.md`](docs/SLIDER_CONTRACT.md).
+The slider's product claim — *axis changes do not lose facts* — is the load-bearing empirical result. It is verified by NLI audit on every embedding-flagged "loss" cell; full attribution in [`docs/SLIDER_CONTRACT.md`](docs/SLIDER_CONTRACT.md). In keeping with the "what remains unproven" half of the promise above: these headline numbers are **measured observations**, not yet same-commit-replayable — the bench harness (`Tests/benchmarks/slider_drift_bench.py`) is scaffold-state and no `sum.slider_drift_bench.v1` receipt is committed. Closing that to a replayable receipt is bench-hardening tasks T2 / T3 ([`docs/BENCH_HARDENING_FROM_QCVV.md`](docs/BENCH_HARDENING_FROM_QCVV.md)); see the reproducibility-status note in [`docs/SLIDER_CONTRACT.md`](docs/SLIDER_CONTRACT.md).
 
 ## Strategic context
 

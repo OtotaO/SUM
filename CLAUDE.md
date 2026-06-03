@@ -155,12 +155,13 @@ questions.
 2. **[`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md)** — proved-vs-
    measured discipline for every claim in the repo. Section 1.3.1 covers
    the cross-runtime Ed25519 trust triangle (Python ↔ Node ↔ Browser).
-3. **[`docs/FEATURE_CATALOG.md`](docs/FEATURE_CATALOG.md)** — **150** numbered
-   features (current at 2026-05-02; counts unchanged this arc — v3 / v3.1 /
-   F3 diagnostic ship as research under the `[research]` extras flag,
-   not as catalog features), each with a reproducible verification
+3. **[`docs/FEATURE_CATALOG.md`](docs/FEATURE_CATALOG.md)** — **170** numbered
+   features (current at 2026-05-25; the post-0.7.0 catalog refresh added
+   entries 169–170 — evidence-chain layer + T1 iterated round-trip runner;
+   v3 / v3.1 / F3 diagnostic ship as research under the `[research]` extras
+   flag, not as catalog features), each with a reproducible verification
    command. Summary at the bottom gives the Production / Scaffolded /
-   Designed counts (currently 131 / 18 / 1). Counts are mechanically
+   Designed counts (currently 151 / 18 / 1). Counts are mechanically
    refreshed; treat them as authoritative over any prose in this file.
 4. **[`Makefile`](Makefile)** — every dev command canonicalised. `make help`
    renders the full list. Common ones: `make install`, `make test`,
@@ -180,7 +181,14 @@ questions.
    prompt-hardening arc. Canonical source for the headline numbers
    (median LLM-axis fact preservation = 1.000; p10 = 0.818 short-doc
    n=8, 0.769 long-doc n=16; min lifted from 0.111 → 0.700 by v0.7
-   prompt hardening; catastrophic outliers eliminated 2 → 0).
+   prompt hardening; catastrophic outliers eliminated 2 → 0). These
+   are **measured, not same-commit-replayable** — the bench harness
+   (`Tests/benchmarks/slider_drift_bench.py`) is scaffold-state and no
+   `sum.slider_drift_bench.v1` receipt is committed; closing that to a
+   replayable guarantee is bench-hardening T2/T3 (per
+   `docs/BENCH_HARDENING_FROM_QCVV.md` §6, "Median 1.000" is a
+   marketing claim until the DKW bound lands). See the reproducibility
+   note in the doc itself.
 7. **[`docs/SLIDER_V02_RESEARCH.md`](docs/SLIDER_V02_RESEARCH.md)** —
    research/methodology behind the slider's v0.2+ substrate. Itself
    stale relative to the current head (pre-v0.7) but useful as

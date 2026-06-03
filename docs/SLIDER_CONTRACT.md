@@ -13,7 +13,9 @@ preservation lifted from 0.111 to 0.700.
 The Phase E genesis-vision spec. Five axes, one renderer, per-axis
 drift tolerance. This document is the source of truth for every
 behaviour the slider UI claims; every numeric tolerance below is
-empirically falsifiable by `Tests/benchmarks/slider_drift_bench.py`.
+*designed to be* empirically falsifiable by
+`Tests/benchmarks/slider_drift_bench.py` — see the reproducibility-status
+note under "Headline result" for that harness's current scaffold state.
 
 ## Headline result (NLI-verified, scale-checked)
 
@@ -21,6 +23,18 @@ empirically falsifiable by `Tests/benchmarks/slider_drift_bench.py`.
 > (n=8 short docs) and v0.6 (n=16 long docs) bench runs. p10 =
 > 0.818 on short, 0.769 on long. Order preservation = 1.000
 > wherever measurable.**
+
+**Reproducibility status (read before citing these numbers as
+"proved").** The figures above were *measured* in the v0.4 / v0.6 /
+v0.7 bench runs summarised below, but they are not yet replayable from
+a same-commit receipt: `Tests/benchmarks/slider_drift_bench.py` is
+still **scaffold-state** (type signatures + JSON schema; the full bench
+loop ships in EXECUTE state), and no `sum.slider_drift_bench.v1` receipt
+is committed under `fixtures/bench_receipts/`. Closing that gap is
+bench-hardening tasks **T2 / T3** (`docs/BENCH_HARDENING_FROM_QCVV.md`),
+which remain OPEN. Per the bench-hardening discipline, treat these as
+**measured-not-proved** until the receipt lands; they are empirical
+observations, not same-commit-verifiable claims.
 
 ### v0.4 — short-doc bench (8 docs, 4–12 triples per doc)
 - 45 LLM-axis cells audited; **0 confirmed real fact losses**.

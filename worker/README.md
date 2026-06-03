@@ -62,6 +62,18 @@ npx wrangler deploy             # ships to sum-demo.<account>.workers.dev
 
 The deploy URL is printed at the end of `wrangler deploy`.
 
+**After every deploy, confirm the live page matches HEAD.** The Worker
+serves `../single_file_demo/index.html` verbatim (no build step), so the
+only way it can drift from the repo is a missed/lagged deploy — the exact
+failure that once hid PR #243's cascade panel from production. Guard
+against it:
+
+```bash
+make verify-frontend-bytes        # SHA-256(live /) == SHA-256(repo index.html)
+# or, for a non-default account:
+SUM_DEMO_URL=https://sum-demo.<account>.workers.dev make verify-frontend-bytes
+```
+
 To bind a custom subdomain (e.g. `sum-demo.sumequities.com`), uncomment
 the `[[routes]]` block in `wrangler.toml` after associating the domain
 with the Worker in the Cloudflare dashboard → Workers & Pages → sum-demo
