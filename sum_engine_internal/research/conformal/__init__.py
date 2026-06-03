@@ -33,6 +33,13 @@ from sum_engine_internal.research.conformal.entropy_baseline import (
     BaselineEntropyPredictor,
     get_default_predictor,
 )
+from sum_engine_internal.research.conformal.risk_control import (
+    RateGuarantee,
+    certify_rate,
+    clopper_pearson_lower_bound,
+    empirical_bound_coverage,
+    hoeffding_lower_bound,
+)
 
 __all__ = [
     "SplitConformal",
@@ -41,4 +48,9 @@ __all__ = [
     "average_interval_width",
     "BaselineEntropyPredictor",
     "get_default_predictor",
+    "RateGuarantee",
+    "certify_rate",
+    "clopper_pearson_lower_bound",
+    "hoeffding_lower_bound",
+    "empirical_bound_coverage",
 ]

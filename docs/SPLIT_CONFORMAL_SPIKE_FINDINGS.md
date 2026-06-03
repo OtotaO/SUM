@@ -103,3 +103,37 @@ PRs wrap individual surfaces.
 | Synthetic coverage hits 1-α to ±0.01 across 5 seeds     | [certified] |
 | Substrate triple-quality wrap end-to-end                | [empirical, scope-limited by corpus size] |
 | Wired into production slider readouts                   | [not yet]   |
+
+## Update 2026-06-02 — rate-guarantee extension (method gap closed)
+
+The split-conformal kernel gives a two-sided *interval* around a point
+predictor. The slider contract + bench-hardening T3 actually ask a
+one-sided **rate** question: *"with confidence ≥ 1-δ, fact preservation
+≥ X?"*. That method gap is now closed (zero API cost):
+
+  - `sum_engine_internal/research/conformal/risk_control.py` — a
+    finite-sample, distribution-free lower confidence bound on a
+    preservation rate. **Hoeffding** (any [0,1] data) +
+    **Clopper–Pearson** (exact, binary per-fact). `certify_rate(...)`
+    auto-dispatches; returns a `RateGuarantee`.
+  - `Tests/test_conformal_risk_control.py` — 30 tests; the load-bearing
+    layer is empirical coverage ≥ 1-δ across (rate, n, δ, method).
+  - `scripts/research/conformal_rate_guarantee_spike.py` →
+    `sum.conformal_rate_guarantee_spike.v1` receipt. Exp 1: synthetic
+    coverage sweep (8/8 hit ≥ 1-δ). Exp 2 (real SUM data, no LLM):
+    seed_v1 sieve triples certify *"≥ 94.2% gold at 95% confidence,
+    n=50"*.
+
+**What this still does NOT do:** certify the *slider's LLM-axis* fact
+preservation. That needs the T2 calibration corpus (per-cell
+source→render→re-extract labels) — the same `$ + OPENAI_API_KEY` gate
+that blocks T2/T3 today. This wrapper is the analysis layer that sits on
+top of that corpus; it does not replace the need to generate it.
+Honest boundary: the guarantee holds *within the tested envelope* (the
+T2 capability region) under exchangeability — state the envelope with
+the rate. See memory `project_conformal_slider_guarantee_2026-06-01`.
+
+| Rate lower bound (Hoeffding / Clopper–Pearson)          | [provable]  |
+| Empirical coverage ≥ 1-δ across the synthetic sweep     | [certified] |
+| Real-data rate certification on seed_v1 sieve triples   | [empirical, scope-limited by corpus size] |
+| Slider LLM-axis fact-preservation certified             | [not yet — needs T2 corpus] |
