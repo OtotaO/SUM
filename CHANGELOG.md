@@ -35,6 +35,12 @@ unchanged from 0.7.0.
   env-redirect (`SUM_BENCH_RECEIPT_DIR`) sends subprocess bench writes to a
   gitignored scratch dir, so a rerun on a different (arch, BLAS) box can't dirty
   a tracked fixture. PR #264.
+- **AkashicLedger write-lock hardened against `database is locked` under heavy
+  concurrent writes.** `busy_timeout` alone is not starvation-free — an unlucky
+  writer under sustained contention (e.g. the 1000-writer concurrency test on a
+  loaded CI runner) could still fail. `BEGIN IMMEDIATE` now retries with jittered
+  exponential backoff (bounded; safe because it acquires the lock before any SQL,
+  leaving no partial state). Happy path unchanged.
 
 ### Changed / hardened
 

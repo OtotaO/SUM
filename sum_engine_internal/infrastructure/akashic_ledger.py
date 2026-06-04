@@ -31,9 +31,11 @@ License: Apache License 2.0
 import math
 import hashlib
 import json
+import random
 import sqlite3
 import asyncio
 import logging
+import time
 from contextlib import contextmanager
 from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple
 
@@ -86,10 +88,21 @@ class AkashicLedger:
 
     # SQLite busy_timeout (ms) applied to every connection. Lets
     # writers wait for the lock instead of failing immediately —
-    # eliminates "database is locked" under concurrent-writer
-    # contention without changing logic. 5 s is comfortably above
-    # the worst-case test scenario (1000 concurrent inserts).
+    # the first line of defence against "database is locked" under
+    # concurrent-writer contention.
     _BUSY_TIMEOUT_MS = 5000
+
+    # Second line of defence: busy_timeout is NOT starvation-free. Under
+    # sustained many-writer contention (and on a loaded CI runner), an
+    # unlucky writer can be repeatedly passed over and still see
+    # SQLITE_BUSY after the timeout. A bounded retry-with-jittered-backoff
+    # around BEGIN IMMEDIATE turns that probabilistic failure into an
+    # eventual success. Retrying BEGIN IMMEDIATE is safe — it acquires the
+    # write lock before any SQL runs, so a failed attempt leaves no
+    # partial state. Worst case ~ attempts × busy_timeout, but in practice
+    # the lock is grabbed on the first or second try.
+    _BEGIN_RETRY_ATTEMPTS = 6
+    _BEGIN_RETRY_BASE_SLEEP_S = 0.05
 
     def __init__(self, db_path: str = "akashic.db"):
         self.db_path = db_path
@@ -208,8 +221,31 @@ class AkashicLedger:
         Tests/test_ledger_concurrency.py exercises this discipline.
         """
         with self._connect() as conn:
-            conn.execute("BEGIN IMMEDIATE")
+            self._begin_immediate(conn)
             yield conn
+
+    def _begin_immediate(self, conn: sqlite3.Connection) -> None:
+        """Acquire the reserved write-lock, retrying on transient
+        "database is locked" with jittered exponential backoff.
+
+        See ``_BEGIN_RETRY_ATTEMPTS`` for why busy_timeout alone is not
+        sufficient under heavy contention. Only SQLITE_BUSY/locked is
+        retried; any other OperationalError propagates immediately.
+        """
+        last_exc: sqlite3.OperationalError | None = None
+        for attempt in range(self._BEGIN_RETRY_ATTEMPTS):
+            try:
+                conn.execute("BEGIN IMMEDIATE")
+                return
+            except sqlite3.OperationalError as exc:
+                if "locked" not in str(exc).lower():
+                    raise
+                last_exc = exc
+                if attempt < self._BEGIN_RETRY_ATTEMPTS - 1:
+                    backoff = self._BEGIN_RETRY_BASE_SLEEP_S * (2 ** attempt)
+                    time.sleep(backoff + random.uniform(0.0, 0.02))
+        assert last_exc is not None  # loop ran at least once
+        raise last_exc
 
     def _migrate_structured_provenance(self, conn: sqlite3.Connection) -> None:
         """M1: Structured ProvenanceRecord side-table + axiom linking.
