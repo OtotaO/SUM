@@ -228,8 +228,11 @@ questions.
     conversation; read it before adding new research-flavoured
     directions to the project.
 
-Shipping surface at the current HEAD: the `sum` binary (currently
-`v0.7.0` on `pyproject.toml` and on PyPI; v0.7.0 closed the transform-
+Shipping surface at the current HEAD: the `sum` binary (`v0.7.1` on
+`pyproject.toml` as of the 0.7.1 release PR; **PyPI still serves 0.7.0
+until the operator tags `v0.7.1` and the publish workflow runs** — 0.7.1
+is a patch release fixing the broken `[sieve]` install (F13/F14) plus the
+T1/T4 + honesty arc, see `CHANGELOG.md`. v0.7.0 closed the transform-
 substrate arc — `sum.transform_receipt.v1` wire format, transform
 registry (slider / extract / compose), `POST /api/transform` Worker
 route, `sum transform` CLI subcommand, T4 source-chain binding, T5

@@ -4,47 +4,77 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
-The bench-hardening worktrail's load-bearing tasks land on main post-0.7.0.
-The §2.5 closure claim is now empirically composition-stable on every
-measured corpus — a multi-stage rather than single-step result.
+_Nothing yet._
 
-- **T1 — iterated round-trip CLOSED.** K=10 receipts on all three seed
-  corpora, all returning composition verdict STABLE
-  (`max-vs-K=1 drift delta = 0.00pp ≤ ε=1.0pp`). The "open
-  characterization" caveat on PROOF_BOUNDARY §2.5 is retired.
-    - `fixtures/bench_receipts/s25_iterated_K10_seed_v1_2026-05-21.json`
-      (50 docs × K=10, median+mean=0.00 across K, 49/50 literal fixed points)
-    - `fixtures/bench_receipts/s25_iterated_K10_seed_v2_2026-05-21.json`
-      (20 docs × K=10, median+mean=0.00 across K, 19/20 literal fixed points)
-    - `fixtures/bench_receipts/s25_iterated_K10_seed_long_paragraphs_2026-05-21.json`
-      (16 docs × K=10, median 12.50 flat across K)
-    - PROOF_BOUNDARY.md §2.5.1.a/b/c restructured per corpus + rollup table.
-    - BENCH_HARDENING_FROM_QCVV.md T1 header → CLOSED 2026-05-21.
-    - Receipts use schema `sum.iterated_round_trip_drift.v1`.
-    - PRs: #248 (first receipt), #250 (closure + two receipts).
-- **F4 fix — `sum attest` emits `axioms` field.** The dogfood
-  quickstart's Scenario A (`attest → compose → slider`) was broken at
-  step 4 because attest's CanonicalBundle didn't surface the triple
-  list. Fix is signature-neutral (the signature covers
-  `canonical_tome|state_integer|timestamp`, not the bundle JSON);
-  attest now serialises `triples` to a top-level `axioms` field of
-  `{subject, predicate, object}` dicts. End-to-end verified.
-  Pinned by `Tests/test_sum_cli_attest_axioms_field.py`.
-    - PR: #251.
-- **F12 v1/v2/v3 — NIM rate-limit retry hardening.** T1's iterated
-  round-trip runner needed to survive NIM's 40-req/min cap + sticky
-  60s window reset. Three iterations: throttle + 5 retries → 8 retries
-  with 65/95/125/155/185/215/245/275s 429 backoff → broader 5xx
-  detection (502 + 500/503/504 + class names
-  InternalServerError/BadGatewayError) covering all observed
-  failure modes during the K=10 chains.
-    - PRs: #246, #247, #249.
+## [0.7.1] - 2026-06-04
 
-FEATURE_CATALOG gains entries 169 (evidence-chain layer — back-fill for
-pre-0.7.0 PR #200) and 170 (T1 iterated-round-trip runner). CHANGELOG only
-records merged work on `main` — `[Unreleased]` entries become a tagged
-release when the operator cuts one; nothing here yet motivates a 0.7.1
-bump on its own.
+Patch release. **The headline is a broken-install fix:** on PyPI 0.7.0,
+`pip install 'sum-engine[sieve]'` fails on a fresh venv (spacy 3.7 dep-rot).
+This release also lands the bench-hardening T1 + T4 closures, the F4 dogfood
+unblocker, trust-loop forward-compat hardening, and a documentation/honesty
+pass. **No API, wire-format, or receipt changes** — verifiers and receipts are
+unchanged from 0.7.0.
+
+### Fixed
+
+- **`[sieve]` install broken on a fresh venv (F13 + F14).** PyPI 0.7.0 pinned
+  `spacy>=3.7.0`, whose thinc/blis/typer/click chain no longer resolves on a
+  clean venv (typer 0.13 stopped pulling click; spacy 3.7's compatibility table
+  no longer serves a working set). Floor bumped to `spacy>=3.8.0` plus an
+  explicit `click>=8.0` in the `[sieve]` extra. A 2-axis CI gate
+  (latest-venv-smoke + floor-venv-smoke) prevents recurrence. PRs #256/#257/#258.
+- **F4 — `sum attest` emits an `axioms` field** so `sum transform apply compose`
+  consumes attest output directly, unblocking the dogfood Scenario A
+  `attest → compose → slider` loop at step 4. Signature-neutral (the signature
+  covers `canonical_tome|state_integer|timestamp`, not the bundle JSON). Pinned
+  by `Tests/test_sum_cli_attest_axioms_field.py`. PR #251.
+- **F12 v1/v2/v3 — NIM rate-limit retry hardening** in the T1 bench runner
+  (429 backoff + broader 5xx detection for NIM's 40-req/min + sticky-window
+  behaviour). PRs #246/#247/#249.
+- **Bench-rerun digest tests no longer mutate committed receipts** — an
+  env-redirect (`SUM_BENCH_RECEIPT_DIR`) sends subprocess bench writes to a
+  gitignored scratch dir, so a rerun on a different (arch, BLAS) box can't dirty
+  a tracked fixture. PR #264.
+
+### Changed / hardened
+
+- **Trust-loop forward-compat:** `joserfc` pinned to `>=1.0.0,<2.0.0` — it
+  deprecates the `EdDSA` JWS algorithm the render/transform receipts sign with
+  (RFC 9864), so the cap guards against a future major dropping the alias. PR #262.
+- **CI moved to Node 24 actions** (checkout / setup-python / setup-node /
+  harden-runner bumped to Node24-native SHAs) ahead of GitHub's 2026-06-16
+  Node20 deadline. PR #262.
+- **Slider fact-preservation claim reframed `measured`, not `proved`** across
+  README / SLIDER_CONTRACT / PROOF_BOUNDARY §2.6 / the live demo page: the
+  same-commit replay receipt (bench-hardening T2/T3) is not yet committed and the
+  harness is scaffold-state, so the headline numbers (median 1.000, p10
+  0.769/0.818) are measured observations, not same-commit-verifiable guarantees.
+  PR #262.
+- **`api/quantum_router.py` demoted to internal-research** (1684 LOC; excluded
+  from the wheel and the live Worker). FEATURE_CATALOG entries 76–84 disclosed
+  as internal-research-only — the genuinely user-shippable production surface is
+  142 of the 151 ✅. PRs #260/#265.
+
+### Added
+
+- **Bench-hardening T1 + T4 CLOSED.** §2.5 closure is now empirically
+  composition-stable under K=10 iteration on all three measured corpora
+  (`max-vs-K=1 drift delta = 0.00pp ≤ ε=1.0pp`; receipts on main), and `drift_pct`
+  composes as a fixed-point law on every corpus within the DKW 95% bound. The
+  "open characterization" caveat on PROOF_BOUNDARY §2.5 is retired; §2.5.1.a/b/c/d
+  restructured. New schemas `sum.iterated_round_trip_drift.v1` /
+  `sum.drift_metric_composition.v1`. PRs #248/#250/#252.
+- **Conformal rate-guarantee research module** (`[research]`,
+  `sum_engine_internal/research/conformal/risk_control.py`) — a finite-sample,
+  distribution-free lower confidence bound on a preservation rate (Hoeffding +
+  exact Clopper–Pearson), the analysis layer for the open T2/T3 slider guarantee.
+  Not wired into production readouts. PR #263.
+- **`POST /api/transform` documented** in `docs/API_REFERENCE.md` (it was wired
+  but unlisted); §2.7 rate-limit table corrected to match the code; render
+  `drift[]` field clarified (hosted Worker returns it empty). PR #265.
+- **Docs:** categorical-foundations (DisCoCat vocabulary for the §2.5.1
+  fixed-point), evidence-chain, drift-metric-composition; FEATURE_CATALOG entries
+  169 (evidence-chain) + 170 (T1 runner). PRs #253/#254/#255/#259.
 
 ## [0.7.0] - 2026-05-18
 
