@@ -63,19 +63,22 @@ sum attest --extractor=sieve < src3.txt > src3.bundle.json
 cat src1.bundle.json | python -m json.tool | head -20
 
 # 4. Compose the three bundles into a merged knowledge graph:
-#    (T3 compose transform — LCM-merge of state integers; commutative,
+#    (compose transform — LCM-merge of state integers; commutative,
 #    associative, idempotent. See docs/TRANSFORM_REGISTRY.md.)
-sum transform apply compose \
-  --input '{"bundles":[<src1.bundle.json contents>,<src2>,<src3>]}' \
-  --parameters '{}' \
-  > merged.json
+#    NOTE: `--input` takes a FILE PATH (or `-` for stdin), NOT inline
+#    JSON — build the input file first (F16, 2026-06-04):
+python3 -c 'import json; bs=[json.load(open(f"src{i}.bundle.json")) for i in (1,2,3)]; json.dump({"bundles":bs}, open("compose_in.json","w"))'
+sum transform apply compose --input compose_in.json --parameters '{}' > merged.json
 
-# 5. Render the merged bundle at a density slider position you'd ship.
+# 5. Render the merged graph at a density slider position you'd ship.
 #    Density 0.3-0.5 = aggressive distillation; 0.7 = comprehensive.
 #    All other axes neutral (0.5) for canonical-path. Off-centre on
 #    length/formality/audience/perspective triggers LLM dispatch.
-sum transform apply slider \
-  --input "$(cat merged.json | jq '.output')" \
+#    NOTE: compose emits {"axioms":[[s,p,o],...]}; slider wants
+#    {"triples":[[s,p,o],...]} — same shape, different key. Bridge it
+#    into a file, then pass the path (F15 + F16, 2026-06-04):
+python3 -c 'import json; o=json.load(open("merged.json"))["output"]; json.dump({"triples":o["axioms"]}, open("slider_in.json","w"))'
+sum transform apply slider --input slider_in.json \
   --parameters '{"density":0.5,"length":0.5,"formality":0.5,"audience":0.5,"perspective":0.5}' \
   > brief.json
 
@@ -180,7 +183,7 @@ Capture in your own notes. The next session this repo opens, paste the findings;
 
 ## Known friction points (don't waste energy on these)
 
-- **Stale install.** If your `sum` binary is below 0.7.0 (last verified 2026-05-25: PyPI ships 0.7.0), `sum transform apply` may be missing or stale. `pip install --upgrade 'sum-engine[openai,sieve,receipt-verify]'`. 0.7.0 (released 2026-05-18) closed the transform-substrate arc; post-0.7.0 on main also includes F4 (`sum attest` emits an `axioms` field so `compose` consumes it directly) and the T1 + T4 bench-hardening closures.
+- **Stale install.** If your `sum` binary is below 0.7.0 (last verified 2026-05-25: PyPI ships 0.7.0), `sum transform apply` may be missing or stale. `pip install --upgrade 'sum-engine[openai,sieve,receipt-verify]'`. 0.7.0 (released 2026-05-18) closed the transform-substrate arc; post-0.7.0 on main also includes F4 (`sum attest` emits an `axioms` field so `compose` consumes it directly) and the T1 + T4 bench-hardening closures. Confirm the *running* version with `sum --version` **and** the `cli_version` field in any bundle you produce — an editable dev install (`pip install -e .`) can report a stale version even after a repo version bump until you re-install (F17, 2026-06-04).
 - **(Fixed 2026-05-17)** Older versions printed a `transformers` `FutureWarning` to stdout, poisoning `sum attest > bundle.json` redirects. Current versions suppress at CLI entry — the workaround `PYTHONWARNINGS=ignore` is no longer required. Surfaced as F1 in `docs/DOGFOOD_FINDINGS_2026-05-17.md`.
 - **Sieve extraction is conservative.** It will miss triples that an LLM extractor would catch. For the distill scenario, that's a feature (deterministic, no LLM). For dogfood-on-real-writing, you may want LLM extraction — wire it via the env vars in `sum_engine_internal/ensemble/live_llm_adapter.py`.
 - **The transform CLI's `--input` flag wants JSON.** Wrap your text input accordingly (`{"triples": [...]}` shape for slider; `{"text": "..."}` shape for extract).
@@ -188,6 +191,7 @@ Capture in your own notes. The next session this repo opens, paste the findings;
 
 ## Pointers
 
+- [`DOGFOOD_FINDINGS_2026-06-04.md`](DOGFOOD_FINDINGS_2026-06-04.md) — latest findings log (F15–F17: the Scenario A `--input` + compose→slider fixes applied above). Prior logs: [`_2026-05-17`](DOGFOOD_FINDINGS_2026-05-17.md) (F1–F7), [`_2026-05-18`](DOGFOOD_FINDINGS_2026-05-18.md) (F8–F11), [`_2026-05-28`](DOGFOOD_FINDINGS_2026-05-28.md) (F13), [`_2026-05-29`](DOGFOOD_FINDINGS_2026-05-29.md) (F14).
 - [`CHARTER_2026-05-17.md`](CHARTER_2026-05-17.md) — why dogfood is load-bearing.
 - [`ZENITH_FRAMING_2026-05-16.md`](ZENITH_FRAMING_2026-05-16.md) — the three concepts most dogfood findings invoke.
 - [`TRANSFORM_REGISTRY.md`](TRANSFORM_REGISTRY.md) — the three registered transforms (slider / extract / compose) the scenarios above use.
