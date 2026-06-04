@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-06-04T02:18:10Z",
+  "issued_at": "2026-06-04T11:01:54Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "f329bfe6868542bb3f5876243f8bdf0adfa0843b",
-    "head_short": "f329bfe",
-    "head_subject": "fix(audit): remediate 2026-06-01 full-project audit findings + restore slider claim honesty (#262)",
-    "head_committer_date": "2026-06-03T19:00:19-04:00",
+    "head_sha": "fd337d037a7f85e91e5c0e5a70b7e5c898e776c9",
+    "head_short": "fd337d0",
+    "head_subject": "fix(ledger): retry BEGIN IMMEDIATE on lock contention \u2014 unblocks v0.7.1 publish (#268)",
+    "head_committer_date": "2026-06-03T23:58:46-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -19,7 +19,7 @@
   },
   "release": {
     "pyproject_version": "0.7.1",
-    "pypi_published_version": "0.7.0"
+    "pypi_published_version": "0.7.1"
   },
   "features": {
     "total": 170,
