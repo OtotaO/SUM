@@ -29,6 +29,14 @@ A render receipt verifies the *render attestation* (issuer signed this tome, the
 
 ---
 
+## Why it matters
+
+More of what people read is now produced or reshaped by AI — summarised, translated, distilled, rewritten. As that grows, the ability to check *what changed, what was preserved, and what was lost* stops being a nicety and becomes shared infrastructure for a trustworthy information commons.
+
+SUM is built to be that layer **in the open**: Apache-2.0, offline-verifiable by anyone, and aligned with open standards (C2PA `digital_source_type`, W3C VC 2.0, JOSE / JWS / JWKS) rather than a proprietary trust silo. It does not ask you to trust *SUM* — any third party verifies the receipt themselves, in three independent runtimes, and the project states plainly where proof ends and measurement begins. The aim is a checkable **chain of custody for knowledge in motion**, not another walled garden.
+
+---
+
 ## Verify it yourself in 60 seconds
 
 The trust loop: hit the live Worker, get back a tome plus a detached Ed25519 JWS over the JCS-canonicalised receipt payload, fetch the issuer JWKS, verify.
@@ -273,7 +281,7 @@ CI runs the full suite on every push (`.github/workflows/quantum-ci.yml`); the `
 
 ---
 
-## Truthfulness contract
+## Epistemic contract
 
 Every claim in this repo carries an explicit epistemic status — `provable`, `certified`, `empirical-benchmark`, or `expert-opinion`. The arbiter is [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md). A summary surface that quotes an empirical-benchmark number alongside language like "mathematically guaranteed" is a policy violation per §5 and must be corrected.
 
