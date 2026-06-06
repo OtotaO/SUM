@@ -81,6 +81,7 @@ The slider's product claim — *axis changes do not lose facts* — is the load-
 The operational compass — read in this order if you want the project's intent + how it operates + where it's going:
 
 - [`docs/CHARTER_2026-05-17.md`](docs/CHARTER_2026-05-17.md) — intent, the Why, strategy, objectives, success criteria, constraints, and the operational loop. The compass every other doc resolves to.
+- [`docs/PRODUCT_VISION.md`](docs/PRODUCT_VISION.md) — the product vision (the slider workbench: drop text → render it from a tag to a tome, with a signed receipt of what was preserved) and the **positioning**: SUM is the chain-of-custody *standard* for AI-transformed text — **provenance-first, attest-don't-detect** (a cryptographic guarantee robust to rewriting; an "is this AI?" answer ships only as an honest advisory signal, never a "99 %").
 - [`docs/PRODUCT_DELIBERATION_2026-05-14.md`](docs/PRODUCT_DELIBERATION_2026-05-14.md) — three-option strategic analysis + grant-outcome decision tree.
 - [`docs/ZENITH_FRAMING_2026-05-16.md`](docs/ZENITH_FRAMING_2026-05-16.md) — destination framing (SUM as chain-of-custody for AI-transformed knowledge) plus three new concepts (Perspective Receipts, Trust Profiles, Epistemic Nutrition Label) on the design queue.
 - [`docs/BENCH_HARDENING_FROM_QCVV.md`](docs/BENCH_HARDENING_FROM_QCVV.md) — five-task empirical-benchmark hardening plan (T1–T5; T5 shipped, T1–T4 queued).
