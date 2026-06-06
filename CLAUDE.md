@@ -229,10 +229,19 @@ questions.
     directions to the project.
 
 Shipping surface at the current HEAD: the `sum` binary (`v0.7.1` on
-`pyproject.toml` as of the 0.7.1 release PR; **PyPI still serves 0.7.0
-until the operator tags `v0.7.1` and the publish workflow runs** — 0.7.1
-is a patch release fixing the broken `[sieve]` install (F13/F14) plus the
-T1/T4 + honesty arc, see `CHANGELOG.md`. v0.7.0 closed the transform-
+`pyproject.toml`; **0.7.1 is LIVE on PyPI** — verified by fresh-venv
+install, spacy 3.8.14 — fixing the broken `[sieve]` install (F13/F14)
+plus the T1/T4 + honesty arc, see `CHANGELOG.md`). **Post-0.7.1 on main
+(unreleased, all `[research]`-flagged):** the meaning-loss frontier arc
+(PRs #270–#275) — `sum.meaning_risk_receipt.v1` (signed, replayable
+certificate over a *named meaning-loss proxy*; float-free integer
+micro-unit wire for cross-runtime; conformal upper bound; 16+4
+adversarial-review findings closed; golden fixture at
+`fixtures/meaning_receipts/`), `RenderFrontier` + the `sum frontier` CLI,
+and the **provenance-first** product vision (`docs/PRODUCT_VISION.md` —
+"attest, don't detect"). This arc is research/dream-layer; it is **not**
+cataloged in `FEATURE_CATALOG.md` (same convention as v3/sheaf). See
+`docs/MEANING_LOSS_FRONTIER.md` + `docs/PRODUCT_VISION.md`. v0.7.0 closed the transform-
 substrate arc — `sum.transform_receipt.v1` wire format, transform
 registry (slider / extract / compose), `POST /api/transform` Worker
 route, `sum transform` CLI subcommand, T4 source-chain binding, T5

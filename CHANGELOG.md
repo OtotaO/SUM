@@ -4,7 +4,35 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
-_Nothing yet._
+The **meaning-loss frontier** arc — research surface (behind the `[research]`
+extra), not in the production wheel path. Opens the layer *below*
+fact-preservation: measuring sub-factual meaning-loss *honestly*.
+
+- **`sum.meaning_risk_receipt.v1`** — the first signed, same-commit-replayable
+  certificate over a *named meaning-loss proxy* (`sum_engine_internal/research/meaning/`).
+  Bounds a proxy marginally, under exchangeability, with a **required, enforced
+  `not_covered` disclosure** (arrangement / sound / connotation / implicature) —
+  never a per-document guarantee. Conformal upper bound is the dual of the
+  shipped rate kernel. Wire spec: `docs/MEANING_RISK_RECEIPT_FORMAT.md`.
+- **Cross-runtime wire fix** — the receipt payload is **float-free** (rate
+  quantities ride as integer micro-units), because SUM's Node JCS canonicaliser
+  rejects floats; the signature is therefore cross-runtime verifiable. A golden
+  fixture (`fixtures/meaning_receipts/`, n=16) replays + canonicalises
+  byte-identically Python↔Node.
+- **`RenderFrontier` + `sum frontier` CLI** — one abstraction (source → ordered
+  faithful↔compressed path of scored renderings) under the slider / number-box /
+  scrubber / API; the CLI cycles versions of text *or code*, each scored.
+  `docs/PRODUCT_VISION.md`.
+- **Adversarial-review hardening** — three review rounds closed 16 + 4 findings
+  (a forgeable `controlled` flag; an off-grid `delta`/`alpha` replay-symmetry
+  bug; doc/honesty drift). Property-based fuzzing + a committed golden.
+- **`docs/PRODUCT_VISION.md`** — the workbench vision + the locked
+  **provenance-first / detection-as-advisory** positioning ("attest, don't
+  detect"; never a "99 %").
+
+_All of the above is `[research]`-flagged and intentionally **not** cataloged in
+`docs/FEATURE_CATALOG.md` (same convention as the v3 / sheaf research surfaces).
+The shipping `sum` binary, wire formats, and verifiers are unchanged from 0.7.1._
 
 ## [0.7.1] - 2026-06-04
 
