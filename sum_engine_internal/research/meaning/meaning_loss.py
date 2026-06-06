@@ -158,10 +158,17 @@ class LexicalCoverageScorer:
     Weights must sum to 1 (validated) so the loss is a proper convex
     blend in [0, 1] and ``disjoint`` lands exactly at 1.
 
-    Honest limitation (named, not hidden): the proxy is *lexical*. A
-    faithful paraphrase that preserves meaning with different words
-    scores as loss. It is a runnable placeholder, not a meaning measure;
-    deployments that care about paraphrase plug ``EntailmentScorer``.
+    Honest limitation (named, not hidden): the proxy is *lexical*, and a
+    2026-06-06 dogfood (docs/DOGFOOD_FINDINGS_2026-06-06.md, F18) showed
+    it does not merely over-report a faithful paraphrase — it **misranks**
+    it: a faithful reword scored *higher* loss (0.762) than a crude
+    extractive trim (0.394), and higher even than a near-empty tag
+    (0.742), because a reword shares few words with the source (high drop
+    AND high fabrication). So this scorer is trustworthy only for
+    *extractive* (sentence-dropping) compression; for paraphrase it
+    inverts the ranking and would steer a user wrong. It is a runnable
+    placeholder, not a meaning measure; deployments that care about
+    paraphrase MUST plug ``EntailmentScorer`` (an NLI/LLM judge).
     """
 
     w_drop: float = 0.7

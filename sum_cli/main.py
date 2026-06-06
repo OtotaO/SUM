@@ -2188,6 +2188,19 @@ def cmd_frontier(args: argparse.Namespace) -> int:
         )
         return 2
     scorer = LexicalCoverageScorer()
+    # F18 (dogfood 2026-06-06): the lexical scorer measures word-overlap,
+    # so it MISRANKS paraphrase — a faithful reword scores as higher loss
+    # than a crude word-trim (even than a near-empty tag). Warn loudly so
+    # the number can't steer a writer wrong. Trustworthy only for
+    # extractive (sentence-dropping) compression. stderr, so --scrub
+    # output stays pipeable. See docs/DOGFOOD_FINDINGS_2026-06-06.md.
+    print(
+        "sum: note — the 'lexical' scorer measures word overlap and "
+        "MISRANKS paraphrase (a faithful reword scores as high loss). "
+        "Trustworthy only for extractive compression; paraphrase needs an "
+        "NLI judge (operator-gated). See docs/DOGFOOD_FINDINGS_2026-06-06.md.",
+        file=sys.stderr,
+    )
 
     source = _read_text_arg(args.source)
     if source is None:
