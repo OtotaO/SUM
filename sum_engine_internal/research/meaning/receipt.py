@@ -122,12 +122,33 @@ def build_payload(
     when supplied, ``controlled`` records whether the certified ceiling
     met it. ``loss_definition`` is a one-line human description of what
     the proxy's [0, 1] number means (required — it is the semantics a
-    reader needs).
+    reader needs). ``not_covered`` must be non-empty — declaring the
+    proxy's structural blind spots is the honesty contract the receipt
+    exists to keep (an empty list would let a receipt silently imply it
+    covers arrangement / sound / connotation / implicature).
+
+    The bound written into the payload is **(re)computed over the
+    rounded committed loss vector** (``_round_losses``), not the raw
+    one. This is the load-bearing replay-determinism fix: the producer's
+    bound and a verifier's replay are then computed over byte-identical
+    inputs — the exact vector ``losses_hash`` commits — so Stage B
+    reproduces the bound on the same commit even for raw losses that
+    straddle the rounding boundary. The re-certification also re-rejects
+    non-finite / out-of-[0,1] losses (via ``certify_meaning_risk``)
+    before anything is signed, so a corrupted side-band vector cannot be
+    committed. The passed ``guarantee`` supplies the scorer identity and
+    certification parameters (delta / method / n).
 
     ``signed_at`` defaults to current UTC, stamped in the exact
     millisecond-precision ISO-8601 + ``Z`` shape the transform-receipt
     format uses, so timestamps are byte-identical across runtimes.
     """
+    if not not_covered:
+        raise ValueError(
+            "not_covered must be non-empty — the proxy's structural "
+            "blind spots (arrangement / sound / connotation / "
+            "implicature) must be declared, not left implicit"
+        )
     if guarantee.n != len(losses):
         raise ValueError(
             f"guarantee.n={guarantee.n} disagrees with len(losses)="
@@ -141,6 +162,18 @@ def build_payload(
             + f"{now.microsecond // 1000:03d}Z"
         )
 
+    # Re-certify over the EXACT rounded vector the hash commits, so the
+    # producer's bound replays byte-for-byte. Also re-validates the
+    # losses (certify rejects NaN/inf/out-of-range) before signing.
+    rounded = _round_losses(losses)
+    canonical = certify_meaning_risk(
+        rounded,
+        scorer_name=guarantee.scorer_name,
+        scorer_version=guarantee.scorer_version,
+        delta=guarantee.delta,
+        method=guarantee.method,
+    )
+
     payload: dict[str, Any] = {
         "scorer": guarantee.scorer_name,
         "scorer_version": guarantee.scorer_version,
@@ -148,8 +181,8 @@ def build_payload(
         "n": guarantee.n,
         "delta": guarantee.delta,
         "method": guarantee.method,
-        "point_estimate": round(guarantee.point_estimate, _LOSS_DECIMALS),
-        "risk_upper_bound": round(guarantee.risk_upper_bound, _LOSS_DECIMALS),
+        "point_estimate": round(canonical.point_estimate, _LOSS_DECIMALS),
+        "risk_upper_bound": round(canonical.risk_upper_bound, _LOSS_DECIMALS),
         "losses_hash": losses_hash(losses),
         "corpus_id": corpus_id,
         "transform": transform,
@@ -159,7 +192,7 @@ def build_payload(
     }
     if alpha_target is not None:
         payload["alpha_target"] = float(alpha_target)
-        payload["controlled"] = bool(guarantee.controls(alpha_target))
+        payload["controlled"] = bool(canonical.controls(alpha_target))
     return payload
 
 
@@ -179,9 +212,22 @@ def sign_meaning_risk_receipt(
 
 class MeaningReceiptReplayError(Exception):
     """Raised when a meaning-risk receipt is cryptographically valid but
-    the supplied losses do not reproduce its committed hash or bound.
-    Distinct from a signature failure: the receipt is genuine, but the
-    side-band evidence does not back its claim."""
+    the supplied losses do not reproduce its committed hash, bound, or a
+    field derived from them (``risk_upper_bound``, ``point_estimate``,
+    ``n``, ``controlled``). Distinct from a signature failure: the
+    receipt is genuine, but the side-band evidence does not back its
+    claim."""
+
+
+class MeaningReceiptDisclosureError(Exception):
+    """Raised when a meaning-risk receipt is cryptographically valid but
+    omits the disclosure fields the format requires (``not_covered``
+    non-empty, ``disclosure`` non-empty). The receipt exists to bound a
+    *named proxy* while declaring what it cannot cover; a receipt that
+    passes every cryptographic check yet discloses nothing reads as a
+    bare bound — the exact 'reads as a meaning guarantee' failure the
+    module exists to prevent. Structural, so it is enforced on every
+    verify, with or without side-band losses."""
 
 
 def verify_meaning_risk_receipt(
@@ -209,8 +255,13 @@ def verify_meaning_risk_receipt(
     ------
     JoseEnvelopeError
         On any cryptographic / structural failure (propagated).
+    MeaningReceiptDisclosureError
+        When the payload omits a required disclosure field
+        (``not_covered`` non-empty, ``disclosure`` non-empty). Enforced
+        on every verify, with or without ``losses``.
     MeaningReceiptReplayError
-        When ``losses`` are supplied but fail the hash or bound replay.
+        When ``losses`` are supplied but fail the hash, bound,
+        ``point_estimate``, ``n``, or ``controlled`` replay.
     """
     result = verify_jose_envelope(
         envelope,
@@ -219,6 +270,23 @@ def verify_meaning_risk_receipt(
         max_age_seconds=max_age_seconds,
     )
     payload = result.payload
+
+    # ---- structural disclosure invariants (always, losses or not) ----
+    # The receipt's whole purpose is to bound a NAMED proxy while
+    # declaring what it cannot cover. A signed-but-disclosure-free
+    # receipt reads as a bare bound; reject it.
+    not_covered = payload.get("not_covered")
+    if not isinstance(not_covered, list) or not not_covered:
+        raise MeaningReceiptDisclosureError(
+            "payload.not_covered must be a non-empty list declaring the "
+            f"proxy's structural blind spots; got {not_covered!r}"
+        )
+    disclosure = payload.get("disclosure")
+    if not isinstance(disclosure, str) or not disclosure.strip():
+        raise MeaningReceiptDisclosureError(
+            "payload.disclosure must be a non-empty string stating the "
+            f"proxy / marginal / exchangeability caveat; got {disclosure!r}"
+        )
 
     if losses is None:
         return payload
@@ -232,14 +300,24 @@ def verify_meaning_risk_receipt(
             f"{payload.get('losses_hash')!r}"
         )
 
-    # ---- replay step 2: re-certify ----
-    replay = certify_meaning_risk(
-        losses,
-        scorer_name=str(payload.get("scorer", "")),
-        scorer_version=str(payload.get("scorer_version", "")),
-        delta=float(payload["delta"]),
-        method=payload["method"],
-    )
+    # ---- replay step 2: re-certify over the ROUNDED committed vector ----
+    # Same vector build_payload certified over (and the hash commits),
+    # so the bound reproduces byte-for-byte. ValueError here means the
+    # committed losses are not valid [0,1] data — surface it as a replay
+    # failure, not a bare exception (the receipt's contract).
+    rounded = _round_losses(losses)
+    try:
+        replay = certify_meaning_risk(
+            rounded,
+            scorer_name=str(payload.get("scorer", "")),
+            scorer_version=str(payload.get("scorer_version", "")),
+            delta=float(payload["delta"]),
+            method=payload["method"],
+        )
+    except ValueError as e:
+        raise MeaningReceiptReplayError(
+            f"committed losses are not valid [0,1] data: {e}"
+        ) from e
 
     # ---- replay step 3: bound + point estimate match ----
     want_ub = round(float(payload["risk_upper_bound"]), _LOSS_DECIMALS)
@@ -256,5 +334,30 @@ def verify_meaning_risk_receipt(
             f"point_estimate does not replay: receipt claims {want_pe} "
             f"but re-certification yields {got_pe}"
         )
+
+    # ---- replay step 4: sample size must match the committed losses ----
+    # n is the field a reader uses to judge finite-sample confidence;
+    # an inflated n misrepresents calibration size even when the bound
+    # is honest. replay.n == len(rounded) == len(losses) by construction.
+    if int(payload["n"]) != replay.n:
+        raise MeaningReceiptReplayError(
+            f"n does not replay: receipt claims n={payload['n']} but the "
+            f"committed losses contain {replay.n} samples"
+        )
+
+    # ---- replay step 5: the operational pass/fail decision ----
+    # `controlled` is the field a consumer acts on. It is a pure
+    # function of (risk_upper_bound, alpha_target) — recompute it from
+    # the replayed bound so a flipped flag cannot ride a valid signature.
+    if "alpha_target" in payload:
+        expected_controlled = replay.controls(float(payload["alpha_target"]))
+        if bool(payload.get("controlled")) != expected_controlled:
+            raise MeaningReceiptReplayError(
+                f"controlled does not replay: receipt claims "
+                f"controlled={payload.get('controlled')} at "
+                f"alpha_target={payload['alpha_target']}, but the "
+                f"replayed bound {replay.risk_upper_bound:.6f} gives "
+                f"controlled={expected_controlled}"
+            )
 
     return payload

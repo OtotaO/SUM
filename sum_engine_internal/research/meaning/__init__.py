@@ -27,8 +27,14 @@ The three composable pieces:
     JCS + Ed25519 + detached-JWS trust stack and adding a replay anchor
     so a third party can reproduce the bound byte-for-byte.
 
-Together they form the first verifiable certificate over a meaning-space
-(not token-space) loss. See ``docs/MEANING_LOSS_FRONTIER.md`` for the
+Together they form a signed, same-commit-replayable certificate that
+bounds a *named proxy* for meaning-loss — computed in **checkable text
+space** (entailment-between-texts or lexical coverage), not from model
+internals — composing a distribution-free proxy bound with a replayable
+receipt. The certificate does not measure meaning; the proxy is named so
+a reader always knows what was bounded. We are not aware of a prior
+artifact combining a distribution-free meaning-loss-proxy bound with a
+replayable signed receipt. See ``docs/MEANING_LOSS_FRONTIER.md`` for the
 chart of the whole frontier and ``docs/MEANING_RISK_RECEIPT_FORMAT.md``
 for the wire spec.
 
@@ -49,6 +55,7 @@ from sum_engine_internal.research.meaning.conformal_meaning import (
 from sum_engine_internal.research.meaning.receipt import (
     DEFAULT_NOT_COVERED,
     SUPPORTED_SCHEMA,
+    MeaningReceiptDisclosureError,
     MeaningReceiptReplayError,
     build_payload,
     losses_hash,
@@ -70,6 +77,7 @@ __all__ = [
     "SUPPORTED_SCHEMA",
     "DEFAULT_NOT_COVERED",
     "MeaningReceiptReplayError",
+    "MeaningReceiptDisclosureError",
     "build_payload",
     "losses_hash",
     "sign_meaning_risk_receipt",

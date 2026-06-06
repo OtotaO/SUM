@@ -55,7 +55,7 @@ Compose three things, two of which SUM already owns:
 
 ```
   semantic-entropy-style meaning-loss          ← the loss substrate
-  (cluster / judge meaning by bidirectional       (Farquhar, Kuhn & Gal,
+  (cluster / judge meaning by bidirectional       (Farquhar, Kossen, Kuhn & Gal,
    entailment, not by tokens)                       Nature 2024)
             │
             ▼
@@ -69,16 +69,22 @@ Compose three things, two of which SUM already owns:
    replay anchor over the committed losses)         + one new field)
 ```
 
-The result is an artifact that **does not exist anywhere in the
-literature**: a *signed, same-commit-replayable certificate over a
-meaning-space (not token-space) loss*. It does **not** claim to have
-measured meaning. It bounds a *named proxy* for meaning-loss,
-*marginally* (on average over a named corpus), under *exchangeability*.
-Those three caveats are the contract, and they ride inside the receipt.
+The result is a *signed, same-commit-replayable certificate that bounds
+a named proxy for meaning-loss, computed in **checkable text space**
+(not from model internals)*. We are not aware of a prior artifact
+combining a distribution-free meaning-loss-proxy bound with a replayable
+signed receipt — but the load-bearing claim is the composition and its
+caveats, not a priority race. It does **not** claim to have measured
+meaning (the shipped lexical default is, by construction, a *lexical*
+overlap measure — it over-reports loss on a faithful reword). It bounds
+a *named proxy* for meaning-loss, *marginally* (on average over a named
+corpus), under *exchangeability*. Those three caveats are the contract,
+and they ride inside the receipt.
 
-The decisive design choice: the loss is computed in **checkable text
-space** (entailment between texts, lexical coverage of texts) — so a
-third party can recompute it. We deliberately reject model-internals
+The decisive design choice — and the defensible contrast — is **checkable
+text space, not model internals**: the loss is computed from text
+(entailment between texts, lexical coverage of texts), so a third party
+can recompute it. We deliberately reject model-internals
 (SAEs, probes, steering vectors) for this surface: they are
 model-dependent, non-deterministic (SAEs share only ~30 % of features
 across seeds), and unverifiable — incompatible with a signed receipt.
@@ -161,7 +167,7 @@ scope-before-signal rule.
 
 ---
 
-*References (load-bearing): Farquhar, Kuhn & Gal, "Detecting
+*References (load-bearing): Farquhar, Kossen, Kuhn & Gal, "Detecting
 hallucinations in large language models using semantic entropy",
 Nature 630 (2024). Bates, Angelopoulos, Lei, Malik & Jordan,
 "Distribution-Free, Risk-Controlling Prediction Sets", JACM 68(6)
