@@ -83,20 +83,50 @@ _DEFAULT_DISCLOSURE = (
 )
 
 
-def _round_losses(losses: Sequence[float]) -> list[float]:
-    """Round to ``_LOSS_DECIMALS`` for float-stable hashing + replay.
-    A bare ``0`` and ``0.0`` canonicalise identically under JCS, and
-    rounding removes last-bit drift between producers."""
-    return [round(float(x), _LOSS_DECIMALS) for x in losses]
+# Rate / probability quantities cross the wire as INTEGER micro-units
+# (1e-6 resolution), never as floats. SUM's Node JCS canonicaliser
+# rejects floats outright — cross-runtime float formatting is the
+# integer-vs-float-zero hazard the render-receipt format warns about, so
+# a float-bearing payload would not be cross-runtime verifiable. Integers
+# canonicalise byte-identically in every runtime. _MICRO_SCALE matches
+# the old 6-decimal rounding exactly (1e6 = 10 ** _LOSS_DECIMALS).
+_MICRO_SCALE = 10 ** _LOSS_DECIMALS
+
+
+def _to_micro(x: float) -> int:
+    """Quantise a value in [0, 1] to integer micro-units: round(x * 1e6).
+    The single float→wire boundary; the result is JCS-safe everywhere."""
+    return int(round(float(x) * _MICRO_SCALE))
+
+
+def _from_micro(m: int) -> float:
+    """Inverse of :func:`_to_micro` for verify-side recompute. The float
+    lives only in the conformal layer, never on the wire."""
+    return int(m) / _MICRO_SCALE
+
+
+def _losses_micro(losses: Sequence[float]) -> list[int]:
+    """Per-pair losses as integer micro-units — the vector ``losses_hash``
+    commits and the certifier-replay compares. Float-free, so the anchor
+    is byte-stable across runtimes."""
+    return [_to_micro(x) for x in losses]
+
+
+def _quantized(losses: Sequence[float]) -> list[float]:
+    """The float vector corresponding EXACTLY to the committed micro
+    ints — what the certifier replays over, so ``build_payload`` and
+    ``verify`` agree on the bound to the last micro-unit."""
+    return [_from_micro(m) for m in _losses_micro(losses)]
 
 
 def losses_hash(losses: Sequence[float]) -> str:
-    """``"sha256-<hex>"`` over the JCS-canonical bytes of the rounded
-    loss vector. The replay anchor committed in the payload."""
+    """``"sha256-<hex>"`` over the JCS-canonical bytes of the INTEGER
+    micro-unit loss vector. The replay anchor committed in the payload."""
     import hashlib
 
-    rounded = _round_losses(losses)
-    return "sha256-" + hashlib.sha256(canonicalize(rounded)).hexdigest()
+    return "sha256-" + hashlib.sha256(
+        canonicalize(_losses_micro(losses))
+    ).hexdigest()
 
 
 def build_payload(
@@ -128,8 +158,9 @@ def build_payload(
     covers arrangement / sound / connotation / implicature).
 
     The bound written into the payload is **(re)computed over the
-    rounded committed loss vector** (``_round_losses``), not the raw
-    one. This is the load-bearing replay-determinism fix: the producer's
+    quantised committed loss vector** (``_quantized`` — the integer
+    micro-units the hash commits), not the raw one. This is the
+    load-bearing replay-determinism fix: the producer's
     bound and a verifier's replay are then computed over byte-identical
     inputs — the exact vector ``losses_hash`` commits — so Stage B
     reproduces the bound on the same commit even for raw losses that
@@ -162,10 +193,10 @@ def build_payload(
             + f"{now.microsecond // 1000:03d}Z"
         )
 
-    # Re-certify over the EXACT rounded vector the hash commits, so the
+    # Re-certify over the EXACT quantised vector the hash commits, so the
     # producer's bound replays byte-for-byte. Also re-validates the
     # losses (certify rejects NaN/inf/out-of-range) before signing.
-    rounded = _round_losses(losses)
+    rounded = _quantized(losses)
     canonical = certify_meaning_risk(
         rounded,
         scorer_name=guarantee.scorer_name,
@@ -174,15 +205,19 @@ def build_payload(
         method=guarantee.method,
     )
 
+    # Every value is int | str | bool | list[str] — float-free, so the
+    # payload canonicalises byte-identically in Python and Node. The four
+    # rate/probability quantities ride as integer micro-units (see
+    # _to_micro); n is a count, controlled a bool, the rest strings.
     payload: dict[str, Any] = {
         "scorer": guarantee.scorer_name,
         "scorer_version": guarantee.scorer_version,
         "loss_definition": loss_definition,
         "n": guarantee.n,
-        "delta": guarantee.delta,
         "method": guarantee.method,
-        "point_estimate": round(canonical.point_estimate, _LOSS_DECIMALS),
-        "risk_upper_bound": round(canonical.risk_upper_bound, _LOSS_DECIMALS),
+        "delta_micro": _to_micro(guarantee.delta),
+        "point_estimate_micro": _to_micro(canonical.point_estimate),
+        "risk_upper_bound_micro": _to_micro(canonical.risk_upper_bound),
         "losses_hash": losses_hash(losses),
         "corpus_id": corpus_id,
         "transform": transform,
@@ -191,7 +226,7 @@ def build_payload(
         "signed_at": signed_at,
     }
     if alpha_target is not None:
-        payload["alpha_target"] = float(alpha_target)
+        payload["alpha_target_micro"] = _to_micro(alpha_target)
         payload["controlled"] = bool(canonical.controls(alpha_target))
     return payload
 
@@ -305,13 +340,13 @@ def verify_meaning_risk_receipt(
     # so the bound reproduces byte-for-byte. ValueError here means the
     # committed losses are not valid [0,1] data — surface it as a replay
     # failure, not a bare exception (the receipt's contract).
-    rounded = _round_losses(losses)
+    rounded = _quantized(losses)
     try:
         replay = certify_meaning_risk(
             rounded,
             scorer_name=str(payload.get("scorer", "")),
             scorer_version=str(payload.get("scorer_version", "")),
-            delta=float(payload["delta"]),
+            delta=_from_micro(int(payload["delta_micro"])),
             method=payload["method"],
         )
     except ValueError as e:
@@ -319,20 +354,21 @@ def verify_meaning_risk_receipt(
             f"committed losses are not valid [0,1] data: {e}"
         ) from e
 
-    # ---- replay step 3: bound + point estimate match ----
-    want_ub = round(float(payload["risk_upper_bound"]), _LOSS_DECIMALS)
-    got_ub = round(replay.risk_upper_bound, _LOSS_DECIMALS)
+    # ---- replay step 3: bound + point estimate match (integer micro) ----
+    # Exact integer equality — no epsilon, no float rounding-mode argument.
+    want_ub = int(payload["risk_upper_bound_micro"])
+    got_ub = _to_micro(replay.risk_upper_bound)
     if want_ub != got_ub:
         raise MeaningReceiptReplayError(
             f"risk_upper_bound does not replay: receipt claims {want_ub} "
-            f"but re-certification yields {got_ub}"
+            f"micro but re-certification yields {got_ub} micro"
         )
-    want_pe = round(float(payload["point_estimate"]), _LOSS_DECIMALS)
-    got_pe = round(replay.point_estimate, _LOSS_DECIMALS)
+    want_pe = int(payload["point_estimate_micro"])
+    got_pe = _to_micro(replay.point_estimate)
     if want_pe != got_pe:
         raise MeaningReceiptReplayError(
             f"point_estimate does not replay: receipt claims {want_pe} "
-            f"but re-certification yields {got_pe}"
+            f"micro but re-certification yields {got_pe} micro"
         )
 
     # ---- replay step 4: sample size must match the committed losses ----
@@ -349,15 +385,16 @@ def verify_meaning_risk_receipt(
     # `controlled` is the field a consumer acts on. It is a pure
     # function of (risk_upper_bound, alpha_target) — recompute it from
     # the replayed bound so a flipped flag cannot ride a valid signature.
-    if "alpha_target" in payload:
-        expected_controlled = replay.controls(float(payload["alpha_target"]))
+    if "alpha_target_micro" in payload:
+        alpha = _from_micro(int(payload["alpha_target_micro"]))
+        expected_controlled = replay.controls(alpha)
         if bool(payload.get("controlled")) != expected_controlled:
             raise MeaningReceiptReplayError(
                 f"controlled does not replay: receipt claims "
                 f"controlled={payload.get('controlled')} at "
-                f"alpha_target={payload['alpha_target']}, but the "
-                f"replayed bound {replay.risk_upper_bound:.6f} gives "
-                f"controlled={expected_controlled}"
+                f"alpha_target_micro={payload['alpha_target_micro']}, but "
+                f"the replayed bound {_to_micro(replay.risk_upper_bound)} "
+                f"micro gives controlled={expected_controlled}"
             )
 
     return payload

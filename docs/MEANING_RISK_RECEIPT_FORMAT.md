@@ -37,18 +37,31 @@ the render-receipt and trust-root verifiers use).
 | `scorer_version` | string | pinned version of the proxy. Any change to its internals (stop-words, tokenisation, judge) is a version bump. |
 | `loss_definition` | string | one-line human semantics of the proxy's `[0,1]` number. |
 | `n` | int | calibration sample size (number of `(source, transform)` pairs). |
-| `delta` | float | miscoverage allowance; confidence = `1 − delta`. |
+| `delta_micro` | int | miscoverage allowance in **integer micro-units** (1e-6); confidence = `1 − delta_micro/1e6`. e.g. `50000` = δ 0.05. |
 | `method` | string | `"hoeffding"` or `"clopper_pearson"`. |
-| `point_estimate` | float | observed mean meaning-loss on the calibration sample (rounded to 6 dp). |
-| `risk_upper_bound` | float | the certified `(1−delta)` **upper** bound on `E[loss]` (rounded to 6 dp). The headline number. |
-| `losses_hash` | string | `"sha256-<hex>"` over JCS-canonical bytes of the rounded per-pair loss vector. **The replay anchor.** |
+| `point_estimate_micro` | int | observed mean meaning-loss in micro-units. e.g. `349024` = 0.349024. |
+| `risk_upper_bound_micro` | int | the certified `(1−delta)` **upper** bound on `E[loss]` in micro-units. The headline number. e.g. `654992` = 0.654992. |
+| `losses_hash` | string | `"sha256-<hex>"` over JCS-canonical bytes of the **integer micro-unit** per-pair loss vector. **The replay anchor.** |
 | `corpus_id` | string | names the calibration envelope — the exchangeability scope the bound is valid within. |
 | `transform` | string | free label of what produced the pairs (e.g. `"slider:density=0.5"`). |
 | `not_covered` | string[] | layers the proxy structurally cannot bound. Default: `["arrangement","sound","connotation","implicature"]`. **Required and non-empty.** |
 | `disclosure` | string | the proxy/marginal/exchangeability caveat in prose. |
 | `signed_at` | string | ISO-8601 UTC, millisecond precision + `Z` (byte-identical to the transform-receipt stamp). |
-| `alpha_target` | float | *(optional)* the risk level the operator wanted controlled. |
-| `controlled` | bool | *(present iff `alpha_target` is)* whether `risk_upper_bound ≤ alpha_target`. |
+| `alpha_target_micro` | int | *(optional)* the risk level the operator wanted controlled, in micro-units. e.g. `500000` = 0.5. |
+| `controlled` | bool | *(present iff `alpha_target_micro` is)* whether `risk_upper_bound_micro ≤ alpha_target_micro`. |
+
+**Why integer micro-units (not floats).** The payload is deliberately
+**float-free** — every value is `int | string | bool | string[]`. The
+four rate/probability quantities cross the wire as integers scaled by
+1e6 (resolution 1e-6, matching the producer's 6-dp rounding). This is a
+hard requirement of cross-runtime verification: SUM's Node JCS
+canonicaliser **rejects floating-point values outright** (cross-runtime
+float formatting is the integer-vs-float-zero hazard this format already
+warns about), so a float-bearing payload could not be canonicalised —
+hence signed/verified — in Node. Integers canonicalise byte-identically
+in every runtime; the render/transform receipts have always been
+float-free for the same reason. Replay comparisons are exact integer
+equality — no epsilon, no rounding-mode ambiguity.
 
 ## 3. Verification — two stages
 
@@ -70,26 +83,30 @@ what this receipt adds. The loss vector is **rounded to 6 dp**
 1. **Hash anchor.** Recompute `losses_hash(losses)`; it must equal
    `payload.losses_hash`. *(Confirms the side-band evidence is the
    evidence the receipt committed to.)*
-2. **Re-certify.** Re-run `certify_meaning_risk` on the **rounded**
-   vector with the payload's `delta` / `method`.
-3. **Bound match.** The reproduced `risk_upper_bound` and
-   `point_estimate` must equal the payload's (to 6 dp).
+2. **Re-certify.** Re-run `certify_meaning_risk` on the **quantised**
+   vector (the integer micro-units the hash commits) with the payload's
+   `delta_micro` / `method`.
+3. **Bound match.** The reproduced `risk_upper_bound_micro` and
+   `point_estimate_micro` must equal the payload's — **exact integer
+   equality** (no epsilon).
 4. **Sample-size match.** `payload.n` must equal the number of committed
    losses — an inflated `n` misrepresents finite-sample confidence even
    when the bound is honest.
-5. **Decision match.** When `alpha_target` is present, `controlled` is
-   recomputed from the replayed bound (`risk_upper_bound ≤ alpha_target`)
-   and must equal `payload.controlled` — the operational pass/fail flag
-   cannot ride a valid signature while contradicting the bound.
+5. **Decision match.** When `alpha_target_micro` is present, `controlled`
+   is recomputed from the replayed bound
+   (`risk_upper_bound_micro ≤ alpha_target_micro`) and must equal
+   `payload.controlled` — the operational pass/fail flag cannot ride a
+   valid signature while contradicting the bound.
 
 Because `certify_meaning_risk` is deterministic and both producer and
-verifier certify over the **same rounded vector**, Stage B reproduces
-the bound **byte-for-byte on the same commit** (the rounding is the
-single source of truth — re-certifying over raw losses would false-
-reject an honest producer who ships the rounded loss file the hash
-commits). A receipt whose author hand-edited `risk_upper_bound`,
-`controlled`, or `n` to a stronger claim passes Stage A — they signed
-their own statement — but **fails Stage B**. That separation
+verifier certify over the **same quantised (integer micro-unit)
+vector**, Stage B reproduces the bound **byte-for-byte on the same
+commit** (the quantisation is the single source of truth — re-certifying
+over raw losses would false-reject an honest producer who ships the
+quantised loss file the hash commits). A receipt whose author
+hand-edited `risk_upper_bound_micro`, `controlled`, or `n` to a stronger
+claim passes Stage A — they signed their own statement — but **fails
+Stage B**. That separation
 (`SIGNATURE_INVALID` vs `MeaningReceiptReplayError`) is deliberate: it
 distinguishes *tampered-in-transit* from *overclaimed-at-issue*.
 
@@ -97,8 +114,8 @@ distinguishes *tampered-in-transit* from *overclaimed-at-issue*.
 
 **Proves** (Stage A + Stage B): authentic signature; required disclosure
 fields present; the committed losses hash to `losses_hash`; the named
-certifier reproduces the bound, `point_estimate`, `n`, and `controlled`
-on those losses.
+certifier reproduces the bound, `point_estimate_micro`, `n`, and
+`controlled` on those losses.
 
 **Does NOT prove:**
 
