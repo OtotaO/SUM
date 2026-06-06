@@ -1,0 +1,28 @@
+{
+  "kid": "meaning-fixture-key-2026",
+  "payload": {
+    "scorer": "lexical-coverage-bidirectional",
+    "scorer_version": "1",
+    "loss_definition": "bidirectional content-unit overlap gap in [0,1]; 0 = full preservation, 1 = no preservation",
+    "n": 16,
+    "method": "hoeffding",
+    "delta_micro": 50000,
+    "point_estimate_micro": 349024,
+    "risk_upper_bound_micro": 654992,
+    "losses_hash": "sha256-20434d73671ecceec9720a5fcec249033026e7758b20824b5633255eb98e84cb",
+    "corpus_id": "meaning-demo-extractive-2026-06-06",
+    "transform": "extractive:sentence-subset",
+    "not_covered": [
+      "arrangement",
+      "sound",
+      "connotation",
+      "implicature"
+    ],
+    "disclosure": "This certificate bounds a NAMED PROXY for meaning-loss, not meaning itself. The bound is marginal (the average over the calibration corpus), not per-document, and is valid only under exchangeability between that corpus and deployment. It does not cover arrangement (na\u1e93m), sound, connotation, or implicature.",
+    "signed_at": "2026-06-06T12:00:00.000Z",
+    "alpha_target_micro": 500000,
+    "controlled": false
+  },
+  "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6Im1lYW5pbmctZml4dHVyZS1rZXktMjAyNiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..iWcbXt6GWJAzhXNbSxaF8pnC_VzmEaSMvALep1q1VinakIjj7Fru0fFBT79l37R9tmiWP2fcqVM7-1PqTr7LDg",
+  "schema": "sum.meaning_risk_receipt.v1"
+}

@@ -104,7 +104,7 @@ def test_rounded_losses_replay_consistently():
     # verify with the explicitly-rounded loss file (what losses_hash commits)
     rounded = [round(x, 6) for x in raw]
     out = verify_meaning_risk_receipt(env, jwks, losses=rounded)
-    assert out["risk_upper_bound"] == pl["risk_upper_bound"]
+    assert out["risk_upper_bound_micro"] == pl["risk_upper_bound_micro"]
 
 
 # ── Finding #10 (LOW): n is re-validated against the committed losses ─
@@ -250,3 +250,35 @@ def test_clopper_pearson_tighter_than_hoeffding_on_binary():
     cp = certify_meaning_risk(binary, method="clopper_pearson", **_SCORER)
     h = certify_meaning_risk(binary, method="hoeffding", **_SCORER)
     assert cp.risk_upper_bound < h.risk_upper_bound
+
+
+# ── Cross-runtime safety: the payload must be float-free ──────────────
+
+
+def test_payload_is_float_free():
+    """Every built-payload value is int | str | bool | list[str] — zero
+    floats — so SUM's Node JCS (which rejects floats) can canonicalise it
+    and the signature is verifiable cross-runtime. Rate/probability
+    quantities ride as integer micro-units."""
+    losses = [0.1, 0.2, 0.3, 0.4]
+    g = certify_meaning_risk(losses, **_SCORER)
+    pl = build_payload(
+        guarantee=g, losses=losses, corpus_id="x", transform="t",
+        loss_definition="d", alpha_target=0.5,
+    )
+
+    def _no_float(v):
+        if isinstance(v, bool):
+            return True  # bool is fine (and is an int subclass)
+        if isinstance(v, float):
+            return False
+        if isinstance(v, list):
+            return all(_no_float(x) for x in v)
+        return True
+
+    floats = {k: v for k, v in pl.items() if not _no_float(v)}
+    assert not floats, f"payload must be float-free; found {floats}"
+    # the four quantities are present as integer micro-units
+    for f in ("delta_micro", "point_estimate_micro", "risk_upper_bound_micro",
+              "alpha_target_micro"):
+        assert isinstance(pl[f], int) and not isinstance(pl[f], bool)

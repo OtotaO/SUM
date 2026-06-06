@@ -156,7 +156,7 @@ def test_replay_round_trip(losses):
     )
     env = sign_meaning_risk_receipt(pl, private_jwk=priv, kid=kid)
     out = verify_meaning_risk_receipt(env, jwks, losses=losses)
-    assert out["risk_upper_bound"] == pl["risk_upper_bound"]
+    assert out["risk_upper_bound_micro"] == pl["risk_upper_bound_micro"]
 
 
 @settings(derandomize=True, max_examples=25, deadline=None)

@@ -1,0 +1,89 @@
+{
+  "corpus_id": "meaning-demo-extractive-2026-06-06",
+  "description": "Demonstration corpus for the golden sum.meaning_risk_receipt.v1 fixture. Sixteen short, self-authored factual paragraphs (no third-party text, no copyright) paired with a DETERMINISTIC EXTRACTIVE compression (a subset of the source's own sentences). Extractive compression is used deliberately: the shipped LexicalCoverageScorer is a lexical-overlap proxy, which is a FAIR measure of meaning-loss for sentence-dropping (it over-reports loss only on paraphrase, which this corpus avoids). The pairs are the calibration sample the receipt certifies a marginal meaning-loss bound over; a verifier recomputes the per-pair losses from this corpus with the named scorer and re-runs the certifier to replay the bound.",
+  "scorer": "lexical-coverage-bidirectional",
+  "scorer_version": "1",
+  "transform": "extractive:sentence-subset",
+  "pairs": [
+    {
+      "id": "water",
+      "source": "Water is a chemical compound of hydrogen and oxygen. It covers most of the surface of the Earth. Its solid form is less dense than its liquid form.",
+      "rendering": "Water is a chemical compound of hydrogen and oxygen."
+    },
+    {
+      "id": "photosynthesis",
+      "source": "Photosynthesis converts light energy into chemical energy. Plants use it to build sugars from carbon dioxide and water. The process releases oxygen as a by-product.",
+      "rendering": "Photosynthesis converts light energy into chemical energy. The process releases oxygen as a by-product."
+    },
+    {
+      "id": "everest",
+      "source": "Mount Everest is the highest mountain above sea level. It sits on the border between Nepal and the Tibet region of China. Climbers face thin air and extreme cold near its summit.",
+      "rendering": "Mount Everest is the highest mountain above sea level."
+    },
+    {
+      "id": "printing",
+      "source": "The printing press allowed books to be produced quickly and cheaply. It spread literacy across Europe within a few generations. Earlier books had been copied slowly by hand.",
+      "rendering": "The printing press allowed books to be produced quickly and cheaply. It spread literacy across Europe within a few generations."
+    },
+    {
+      "id": "gravity",
+      "source": "Gravity is the attraction between objects with mass. It keeps the planets in orbit around the Sun. On Earth it gives weight to physical objects.",
+      "rendering": "Gravity is the attraction between objects with mass."
+    },
+    {
+      "id": "antibiotics",
+      "source": "Antibiotics are medicines that fight bacterial infections. They do not work against viruses such as the common cold. Overuse can lead to resistant strains of bacteria.",
+      "rendering": "Antibiotics are medicines that fight bacterial infections. Overuse can lead to resistant strains of bacteria."
+    },
+    {
+      "id": "amazon",
+      "source": "The Amazon is the largest tropical rainforest on Earth. It produces a large share of the planet's oxygen. Thousands of species live nowhere else.",
+      "rendering": "The Amazon is the largest tropical rainforest on Earth."
+    },
+    {
+      "id": "electricity",
+      "source": "Electricity is the flow of electric charge through a conductor. It powers homes, factories, and most modern devices. Generators convert mechanical motion into electrical energy.",
+      "rendering": "Electricity is the flow of electric charge through a conductor. Generators convert mechanical motion into electrical energy."
+    },
+    {
+      "id": "vaccine",
+      "source": "A vaccine trains the immune system to recognise a pathogen. It often uses a weakened or inactive form of the microbe. Vaccination has eradicated smallpox worldwide.",
+      "rendering": "A vaccine trains the immune system to recognise a pathogen."
+    },
+    {
+      "id": "moon",
+      "source": "The Moon is the only natural satellite of the Earth. Its gravity is the main cause of ocean tides. The same side always faces our planet.",
+      "rendering": "The Moon is the only natural satellite of the Earth. Its gravity is the main cause of ocean tides."
+    },
+    {
+      "id": "dna",
+      "source": "DNA carries the genetic instructions of living organisms. It is shaped like a twisted ladder called a double helix. Each rung is a pair of chemical bases.",
+      "rendering": "DNA carries the genetic instructions of living organisms."
+    },
+    {
+      "id": "internet",
+      "source": "The internet is a global network of connected computers. It lets people share information almost instantly. Standard protocols let different systems communicate.",
+      "rendering": "The internet is a global network of connected computers. Standard protocols let different systems communicate."
+    },
+    {
+      "id": "volcano",
+      "source": "A volcano is an opening in a planet's crust that releases molten rock. Eruptions can build mountains over long spans of time. Ash and gas may travel far from the vent.",
+      "rendering": "A volcano is an opening in a planet's crust that releases molten rock."
+    },
+    {
+      "id": "compass",
+      "source": "A magnetic compass points toward the Earth's magnetic poles. Sailors used it to navigate long before satellite positioning. Its needle is a small magnet free to rotate.",
+      "rendering": "A magnetic compass points toward the Earth's magnetic poles. Its needle is a small magnet free to rotate."
+    },
+    {
+      "id": "glacier",
+      "source": "A glacier is a large body of ice that moves slowly over land. It forms where snow accumulates faster than it melts. Many glaciers have retreated as the climate has warmed.",
+      "rendering": "A glacier is a large body of ice that moves slowly over land."
+    },
+    {
+      "id": "telescope",
+      "source": "A telescope gathers light to make distant objects appear closer. Early designs used lenses, while later ones used mirrors. It transformed our understanding of the night sky.",
+      "rendering": "A telescope gathers light to make distant objects appear closer. It transformed our understanding of the night sky."
+    }
+  ]
+}

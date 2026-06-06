@@ -127,10 +127,10 @@ def signed(payload, keypair):
 
 def test_payload_shape(payload):
     for field in (
-        "scorer", "scorer_version", "loss_definition", "n", "delta",
-        "method", "point_estimate", "risk_upper_bound", "losses_hash",
-        "corpus_id", "transform", "not_covered", "disclosure", "signed_at",
-        "alpha_target", "controlled",
+        "scorer", "scorer_version", "loss_definition", "n", "delta_micro",
+        "method", "point_estimate_micro", "risk_upper_bound_micro",
+        "losses_hash", "corpus_id", "transform", "not_covered",
+        "disclosure", "signed_at", "alpha_target_micro", "controlled",
     ):
         assert field in payload, f"missing {field}"
     assert payload["not_covered"] == list(DEFAULT_NOT_COVERED)
@@ -154,7 +154,7 @@ def test_verify_with_replay(signed, keypair, losses):
     bound reproduces byte-for-byte."""
     _private, jwks, _kid = keypair
     out = verify_meaning_risk_receipt(signed, jwks, losses=losses)
-    assert out["risk_upper_bound"] == signed["payload"]["risk_upper_bound"]
+    assert out["risk_upper_bound_micro"] == signed["payload"]["risk_upper_bound_micro"]
 
 
 def test_replay_is_independent_recompute(signed, keypair):
@@ -173,7 +173,7 @@ def test_controlled_flag_honest_at_small_n(payload):
           limitation that motivates EntailmentScorer), and
       (2) 4 samples cannot certify control at 0.5 distribution-free.
     The receipt records the honest verdict, never the optimistic one."""
-    assert payload["point_estimate"] > 0.2   # lexical proxy penalises paraphrase
+    assert payload["point_estimate_micro"] > 200_000  # lexical proxy penalises paraphrase
     assert payload["controlled"] is False    # and 4 samples can't certify anyway
 
 
@@ -208,7 +208,7 @@ def test_controlled_flag_true_with_enough_data(keypair):
 def test_tampered_payload_fails_signature(signed, keypair):
     _private, jwks, _kid = keypair
     bad = copy.deepcopy(signed)
-    bad["payload"]["risk_upper_bound"] = 0.0  # forge a stronger claim
+    bad["payload"]["risk_upper_bound_micro"] = 0  # forge a stronger claim
     with pytest.raises(JoseEnvelopeError) as exc:
         verify_meaning_risk_receipt(bad, jwks)
     assert exc.value.error_class == JoseEnvelopeErrorClass.SIGNATURE_INVALID
@@ -239,7 +239,7 @@ def test_replay_rejects_bound_forgery_with_matching_hash(payload, keypair, losse
     catches it: the hash matches but the re-certified bound doesn't."""
     private, jwks, kid = keypair
     forged = copy.deepcopy(payload)
-    forged["risk_upper_bound"] = 0.0  # too-strong, but losses_hash honest
+    forged["risk_upper_bound_micro"] = 0  # too-strong, but losses_hash honest
     signed_forged = sign_meaning_risk_receipt(forged, private_jwk=private, kid=kid)
     # signature is valid (they signed their own lie); replay is not
     verify_meaning_risk_receipt(signed_forged, jwks)  # sig-only passes
