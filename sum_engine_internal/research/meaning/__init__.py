@@ -64,6 +64,13 @@ from sum_engine_internal.research.meaning.receipt import (
     sign_meaning_risk_receipt,
     verify_meaning_risk_receipt,
 )
+from sum_engine_internal.research.meaning.perspective_receipt import (
+    SUPPORTED_SCHEMA as PERSPECTIVE_SCHEMA,
+    build_perspective_payload,
+    evidence_hash,
+    sign_perspective_risk_receipt,
+    verify_perspective_risk_receipt,
+)
 
 __all__ = [
     # meaning_loss
@@ -86,4 +93,10 @@ __all__ = [
     "losses_hash",
     "sign_meaning_risk_receipt",
     "verify_meaning_risk_receipt",
+    # perspective_receipt
+    "PERSPECTIVE_SCHEMA",
+    "build_perspective_payload",
+    "evidence_hash",
+    "sign_perspective_risk_receipt",
+    "verify_perspective_risk_receipt",
 ]
