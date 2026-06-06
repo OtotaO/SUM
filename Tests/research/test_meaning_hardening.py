@@ -282,3 +282,35 @@ def test_payload_is_float_free():
     for f in ("delta_micro", "point_estimate_micro", "risk_upper_bound_micro",
               "alpha_target_micro"):
         assert isinstance(pl[f], int) and not isinstance(pl[f], bool)
+
+
+# ── Micro-fix review: off-grid scalar quantisation symmetry ───────────
+
+
+def test_offgrid_delta_and_alpha_round_trip():
+    """The bug the micro-fix adversarial review caught: build certified
+    the bound at the RAW delta while verify re-certified at the quantised
+    delta, so an off-grid delta (>6 decimals — a Bonferroni threshold,
+    1/30, …) shifted the bound by ~1 micro and false-rejected a genuine
+    signature-valid receipt; an off-grid alpha independently flipped
+    `controlled`. The fix quantises delta/alpha symmetrically at build.
+    Drives many off-grid cases (the suite otherwise pins grid-safe
+    0.05 / 0.5 and structurally cannot catch this); every one must
+    round-trip build → sign → verify without raising."""
+    import numpy as np
+
+    priv, jwks, kid = _keypair()
+    rng = np.random.RandomState(20260606)
+    for _ in range(40):
+        n = int(rng.randint(16, 64))
+        losses = rng.uniform(0.0, 1.0, size=n).tolist()
+        delta = float(rng.uniform(0.001, 0.5))    # off-grid (>6 decimals)
+        alpha = float(rng.uniform(0.05, 0.95))    # off-grid
+        g = certify_meaning_risk(losses, delta=delta, **_SCORER)
+        pl = build_payload(
+            guarantee=g, losses=losses, corpus_id="x", transform="t",
+            loss_definition="d", alpha_target=alpha,
+        )
+        env = sign_meaning_risk_receipt(pl, private_jwk=priv, kid=kid)
+        # must NOT raise — the bug raised MeaningReceiptReplayError here
+        verify_meaning_risk_receipt(env, jwks, losses=losses)
