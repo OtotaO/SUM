@@ -1,0 +1,131 @@
+name: Publish GitHub Release
+
+# Mirrors a PyPI release as a GitHub Release so the two surfaces stay in
+# step. PyPI is the source of truth for the sum-engine package; this
+# workflow makes the matching GitHub Release exist (currently only
+# v0.1.0 / v0.3.0 are published as Releases even though PyPI carries
+# every version through 0.7.1). It does NOT build or publish any
+# artifact — `.github/workflows/publish-pypi.yml` owns that. This is a
+# pure metadata mirror: on a version tag push, create (or update) the
+# GitHub Release for that tag with a body derived from the matching
+# CHANGELOG.md section.
+#
+# Trigger: the SAME `v*.*.*` tag-push that fires publish-pypi.yml, so a
+# single tag push both publishes to PyPI and lands the Release. The two
+# workflows are independent jobs — a CHANGELOG-parse failure here cannot
+# block the PyPI publish, and a PyPI failure does not depend on this.
+#
+# This adds no new third-party Action: the Release is created with the
+# `gh` CLI that ships preinstalled on GitHub-hosted runners, so there is
+# no new SHA to pin and no new supply-chain surface beyond `gh` itself.
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    # Manual mirror of an existing tag's CHANGELOG section into its
+    # GitHub Release — useful for back-filling the Releases that lagged
+    # PyPI. Run with: gh workflow run publish-release.yml --ref vX.Y.Z
+
+permissions:
+  contents: write  # Required to create / edit a GitHub Release.
+
+jobs:
+  publish-release:
+    name: Mirror PyPI release as a GitHub Release
+    runs-on: ubuntu-latest
+    steps:
+    - name: Harden runner (audit-only)
+      uses: step-security/harden-runner@ab7a9404c0f3da075243ca237b5fac12c98deaa5  # v2.19.3
+      with:
+        egress-policy: audit
+
+    - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd  # v5.0.1
+
+    - name: Resolve release version
+      id: ver
+      run: |
+        # Strip the leading "v" from the pushed tag (v0.7.1 -> 0.7.1).
+        ref="${GITHUB_REF#refs/tags/}"
+        echo "tag=$ref" >> "$GITHUB_OUTPUT"
+        echo "version=${ref#v}" >> "$GITHUB_OUTPUT"
+
+    - name: Derive release body from CHANGELOG.md
+      id: body
+      env:
+        VERSION: ${{ steps.ver.outputs.version }}
+      run: |
+        # Extract the CHANGELOG section for $VERSION. Headers look like
+        #   ## [0.7.1] - 2026-06-04
+        # but historical entries use an em-dash (—) separator instead of
+        # a hyphen, so the matcher accepts either. The section runs from
+        # its own "## [VERSION]" header up to (not including) the next
+        # "## [" header. Fail closed if the section is missing or empty:
+        # a Release with a placeholder body is worse than a loud failure
+        # the operator can fix by editing CHANGELOG.md and re-running via
+        # workflow_dispatch.
+        python3 - "$VERSION" > release_body.md <<'PY'
+        import re, sys
+
+        version = sys.argv[1]
+        text = open("CHANGELOG.md", encoding="utf-8").read()
+        lines = text.splitlines()
+
+        # A version header: "## [<version>]" then optional " - DATE" /
+        # " — DATE". Match the bracketed version exactly.
+        header_re = re.compile(r"^## \[([^\]]+)\]")
+        start = None
+        for i, line in enumerate(lines):
+            m = header_re.match(line)
+            if m and m.group(1) == version:
+                start = i
+                break
+        if start is None:
+            sys.stderr.write(
+                f"no CHANGELOG.md section found for version [{version}]\n"
+            )
+            sys.exit(1)
+
+        end = len(lines)
+        for j in range(start + 1, len(lines)):
+            if header_re.match(lines[j]):
+                end = j
+                break
+
+        # Drop the "## [version] - date" header line itself; the GitHub
+        # Release already shows the tag + date. Keep the section body.
+        body = "\n".join(lines[start + 1:end]).strip()
+        if not body:
+            sys.stderr.write(
+                f"CHANGELOG.md section for [{version}] is empty\n"
+            )
+            sys.exit(1)
+        print(body)
+        PY
+        echo "----- derived release body -----"
+        cat release_body.md
+
+    - name: Create or update the GitHub Release
+      env:
+        GH_TOKEN: ${{ github.token }}
+        TAG: ${{ steps.ver.outputs.tag }}
+        VERSION: ${{ steps.ver.outputs.version }}
+      run: |
+        # Idempotent: create the Release if it does not yet exist,
+        # otherwise overwrite its body (so a back-fill via
+        # workflow_dispatch refreshes an existing Release rather than
+        # erroring). The tag itself is whatever was pushed; we never
+        # create or move tags here.
+        if gh release view "$TAG" >/dev/null 2>&1; then
+          gh release edit "$TAG" \
+            --title "sum-engine $VERSION" \
+            --notes-file release_body.md
+          echo "updated existing Release $TAG"
+        else
+          gh release create "$TAG" \
+            --title "sum-engine $VERSION" \
+            --notes-file release_body.md \
+            --verify-tag
+          echo "created Release $TAG"
+        fi
