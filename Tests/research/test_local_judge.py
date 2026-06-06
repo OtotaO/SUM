@@ -22,6 +22,7 @@ pytest.importorskip("transformers", reason="[judge] extra not installed")
 from sum_engine_internal.research.meaning.local_judge import (
     EmbeddingJudge,
     embedding_entailment_scorer,
+    nli_entailment_scorer,
 )
 from sum_engine_internal.research.meaning.meaning_loss import LexicalCoverageScorer
 
@@ -111,3 +112,57 @@ def test_empty_hypothesis_not_entailed():
     judge = EmbeddingJudge()
     # no model load needed for the empty-string short-circuit
     assert judge.entails("anything here", "") is False
+
+
+# ── NLIJudge — the strict upgrade (directional entailment) ────────────
+
+
+@pytest.fixture(scope="module")
+def nli_scorer():
+    """Build the NLI scorer; skip if the model can't load offline."""
+    os.environ.setdefault("HF_HUB_OFFLINE", "1")
+    os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
+    s = nli_entailment_scorer(threshold=0.5)
+    try:
+        s.loss("warm up the model.", "warm up.")
+    except Exception as e:  # noqa: BLE001 - model not cached / offline
+        pytest.skip(f"NLI model not available offline: {e}")
+    return s
+
+
+# A fluent, on-topic CONTRADICTION — high embedding similarity, but it
+# negates the source. This is the case the embedding judge waves through
+# and the NLI judge must catch.
+CONTRADICTION = "No printing press was ever introduced to Europe, and literacy did not change."
+
+
+def test_nli_catches_contradiction_embedding_misses(nli_scorer, scorer):
+    """The upgrade, demonstrated as COMPLEMENTARITY: the NLI judge scores
+    a fluent on-topic contradiction as HIGH loss; the embedding judge, a
+    similarity proxy, MISSES it (credits it as moderate, like a tag). This
+    is the hallucination-robustness only directional entailment buys, and
+    MENLI's argument for blending NLI with similarity."""
+    nli_loss = nli_scorer.loss(SOURCE, CONTRADICTION)
+    emb_loss = scorer.loss(SOURCE, CONTRADICTION)  # `scorer` = embedding fixture
+    assert nli_loss > 0.5, f"NLI must flag the contradiction; got {nli_loss:.3f}"
+    assert emb_loss < 0.5, f"embedding is expected to MISS it; got {emb_loss:.3f}"
+
+
+def test_nli_ranks_contradiction_worse_than_paraphrase(nli_scorer):
+    """NLI must rank a contradiction strictly worse than a faithful (if
+    lossy) compression — the directional signal lexical/embedding lack."""
+    assert nli_scorer.loss(SOURCE, CONTRADICTION) > nli_scorer.loss(SOURCE, PARAPHRASE)
+
+
+def test_nli_identity_is_zero(nli_scorer):
+    assert nli_scorer.loss(SOURCE, SOURCE) == pytest.approx(0.0, abs=1e-9)
+
+
+def test_nli_is_deterministic(nli_scorer):
+    a = nli_scorer.loss(SOURCE, PARAPHRASE)
+    b = nli_scorer.loss(SOURCE, PARAPHRASE)
+    assert a == b
+
+
+def test_nli_scorer_name_records_the_model(nli_scorer):
+    assert nli_scorer.name.startswith("bidirectional-entailment[nli:")

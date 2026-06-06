@@ -107,7 +107,7 @@ research = ["numpy>=1.24.0", "scipy>=1.10.0"]
 # A local sentence-embedding model run offline in eval mode — fixes the
 # F18 lexical-scorer paraphrase misranking without any paid API. Heavy
 # (torch); strictly optional, lazy-imported.
-judge = ["transformers>=4.30.0", "torch>=2.0.0"]
+judge = ["transformers>=4.30.0", "torch>=2.0.0", "sentencepiece>=0.1.99"]
 # Omni-format adapter. Markdown is the canonical pivot for the
 # attest pipeline: any input format -> markdown -> existing
 # extract/state/bundle path. Source URI anchors to the original

@@ -18,8 +18,9 @@ Honest boundary (this judge is a *similarity* proxy, named so):
   - It measures **semantic similarity, not strict directional
     entailment** — it can accept a fluent on-topic contradiction. The
     scorer it produces is named ``bidirectional-entailment[minilm-cosine-<t>]``
-    so a receipt records exactly what judged it. For strict NLI, plug a
-    local NLI cross-encoder through the same ``entails`` interface.
+    so a receipt records exactly what judged it. For strict directional
+    entailment that *also catches a fluent contradiction*, use
+    ``NLIJudge`` / ``nli_entailment_scorer`` below — the stronger judge.
   - **Determinism / replay:** eval-mode + fixed weights is deterministic
     on a given machine, but floating-point ops can differ across hardware
     / library versions, so a boolean near ``threshold`` could flip
@@ -112,6 +113,111 @@ def embedding_entailment_scorer(
     zero-$, offline, deterministic, paraphrase-aware meaning-loss scorer
     that fixes F18. Lazily loads the model on first ``loss`` call."""
     judge = EmbeddingJudge(threshold=threshold, model_id=model_id)
+    return EntailmentScorer(
+        entails=judge.entails,
+        judge_name=judge.name,
+        judge_version="1",
+    )
+
+
+# A local NLI cross-encoder — the *real* directional entailment judge, a
+# strict upgrade over the embedding-similarity proxy. Default: an
+# ANLI-trained DeBERTa-v3 (MIT, ~184MB), which the literature (MENLI,
+# arXiv:2208.07316) and our own probe confirm does what cosine cannot —
+# credit a faithful paraphrase as ENTAILMENT *and* flag a fluent on-topic
+# contradiction as CONTRADICTION. This is "what our peer does, and better":
+# AEX (arXiv:2603.14283) disclaims rewriting-robustness; a real NLI judge
+# is exactly that robustness.
+DEFAULT_NLI_MODEL_ID = "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli"
+
+
+@dataclass
+class NLIJudge:
+    """A local, deterministic ``entails`` judge backed by an NLI sequence-
+    classification cross-encoder. ``entails(premise, hypothesis)`` is true
+    iff the model's softmax probability of the ENTAILMENT class meets
+    ``threshold``. Unlike ``EmbeddingJudge`` (symmetric similarity), this
+    is directional 3-way NLI: it distinguishes "follows from" from "merely
+    on the same topic", so it catches a fluent contradiction an embedding
+    judge would wave through. Model loads lazily on first use.
+
+    Complementarity (measured, 2026-06-06): on the F18 corpus the NLI judge
+    flags a fluent on-topic contradiction at loss 1.0 where the embedding
+    judge credits it at 0.4 (the hallucination-robustness only directional
+    entailment buys) — but, because ``EntailmentScorer`` recall asks
+    whether the (shorter) transform *entails* each detailed source
+    sentence, strict NLI scores any lossy compression high and so does not
+    *rank* faithful compressions as finely as the embedding judge. They
+    are complementary: NLI is the contradiction / faithfulness gate,
+    embedding is the gist-preservation ranker. MENLI (arXiv:2208.07316)
+    recommends blending the two; a blended scorer is the natural next
+    refinement."""
+
+    threshold: float = 0.5
+    model_id: str = DEFAULT_NLI_MODEL_ID
+    _tok: Any = field(default=None, init=False, repr=False, compare=False)
+    _mdl: Any = field(default=None, init=False, repr=False, compare=False)
+    _entail_idx: int = field(default=-1, init=False, repr=False, compare=False)
+
+    def _ensure_loaded(self) -> None:
+        if self._mdl is not None:
+            return
+        try:
+            import torch  # noqa: F401
+            from transformers import (
+                AutoModelForSequenceClassification,
+                AutoTokenizer,
+            )
+        except ImportError as e:  # pragma: no cover - environment-dependent
+            raise ImportError(
+                "NLIJudge needs the [judge] extra (transformers + torch + "
+                "sentencepiece): pip install 'sum-engine[judge]'"
+            ) from e
+        self._tok = AutoTokenizer.from_pretrained(self.model_id)
+        self._mdl = AutoModelForSequenceClassification.from_pretrained(
+            self.model_id
+        ).eval()
+        # Find the ENTAILMENT class index from the model's own label map —
+        # NLI models disagree on label order (0=entail vs 2=entail), so we
+        # never hard-code it.
+        id2label = self._mdl.config.id2label
+        match = [i for i, lbl in id2label.items() if "entail" in str(lbl).lower()]
+        if not match:
+            raise ValueError(
+                f"model {self.model_id!r} has no ENTAILMENT label in "
+                f"id2label={id2label}; not an NLI model"
+            )
+        self._entail_idx = int(match[0])
+
+    def entails(self, premise: str, hypothesis: str) -> bool:
+        """True iff the NLI model judges ``premise`` to ENTAIL
+        ``hypothesis`` with probability ≥ ``threshold``."""
+        if not hypothesis.strip():
+            return False
+        import torch
+
+        self._ensure_loaded()
+        with torch.no_grad():
+            enc = self._tok(
+                premise, hypothesis, return_tensors="pt", truncation=True
+            )
+            probs = torch.softmax(self._mdl(**enc).logits[0], dim=-1)
+        return float(probs[self._entail_idx]) >= self.threshold
+
+    @property
+    def name(self) -> str:
+        return f"nli:{self.model_id}"
+
+
+def nli_entailment_scorer(
+    threshold: float = 0.5,
+    model_id: str = DEFAULT_NLI_MODEL_ID,
+) -> EntailmentScorer:
+    """An ``EntailmentScorer`` driven by a local NLI cross-encoder
+    (``NLIJudge``) — the production-grade, paraphrase-aware, contradiction-
+    catching, offline, deterministic meaning-loss scorer. The strict
+    upgrade over both lexical (F18) and embedding-similarity scoring."""
+    judge = NLIJudge(threshold=threshold, model_id=model_id)
     return EntailmentScorer(
         entails=judge.entails,
         judge_name=judge.name,
