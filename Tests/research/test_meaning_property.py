@@ -30,7 +30,7 @@ import pytest
 
 hypothesis = pytest.importorskip("hypothesis")
 
-from hypothesis import given, settings, strategies as st
+from hypothesis import assume, given, settings, strategies as st
 
 from sum_engine_internal.research.conformal.risk_control import (
     hoeffding_lower_bound,
@@ -71,22 +71,35 @@ def test_identity_is_zero(x):
     assert LexicalCoverageScorer().loss(x, x) == 0.0
 
 
+# Round-tripping ASCII content words. The scorer's monotonicity is a
+# SET-level property (loss is a pure function of the content-unit sets),
+# so the test must construct transforms whose content-unit set is exactly
+# the intended subset. Arbitrary unicode breaks that premise: a combining
+# mark is a non-word char, so a "unit" pulled from a unicode source can
+# split/merge differently when join+re-tokenized, making transform_less
+# NOT a strict subset of transform_full — which Hypothesis found in CI
+# (loss_less 0.35 < loss_full 0.5). Lower-case a-z words round-trip
+# cleanly through " ".join + _content_units, isolating the real invariant.
+_word = st.text(alphabet="abcdefghijklmnopqrstuvwxyz", min_size=3, max_size=9)
+
+
 @settings(derandomize=True, max_examples=300)
-@given(source=_text, data=st.data())
-def test_monotone_under_unit_deletion(source, data):
+@given(words=st.lists(_word, min_size=2, max_size=12, unique=True), data=st.data())
+def test_monotone_under_unit_deletion(words, data):
     """Build the transform from a subset of the source's content units,
-    then delete one more unit; loss must not decrease."""
-    units = list(dict.fromkeys(_content_units(source)))  # unique, ordered
-    if len(units) < 2:
-        return  # need at least two units to delete one and still vary
+    then delete one more unit; loss must not decrease. (Set-level
+    invariant — see the round-tripping-tokens note above.)"""
+    from sum_engine_internal.research.meaning.meaning_loss import _STOP_WORDS
+
+    words = [w for w in words if w not in _STOP_WORDS]  # stop-words drop out of units
+    assume(len(words) >= 2)
+    source = " ".join(words)
     keep = data.draw(
-        st.lists(st.sampled_from(units), min_size=1, max_size=len(units), unique=True)
+        st.lists(st.sampled_from(words), min_size=1, max_size=len(words), unique=True)
     )
     scorer = LexicalCoverageScorer()
-    transform_full = " ".join(keep)
-    transform_less = " ".join(keep[:-1])  # one fewer source unit
-    loss_full = scorer.loss(source, transform_full)
-    loss_less = scorer.loss(source, transform_less)
+    loss_full = scorer.loss(source, " ".join(keep))
+    loss_less = scorer.loss(source, " ".join(keep[:-1]))  # one fewer source unit
     assert loss_less >= loss_full - 1e-12
 
 
