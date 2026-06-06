@@ -344,6 +344,8 @@ jobs:
           Tests/research/test_meaning_golden_fixture.py \
           Tests/research/test_conformal_meaning.py \
           Tests/research/test_meaning_property.py \
+          Tests/research/test_group_conditional.py \
+          Tests/research/test_perspective_receipt.py \
           Tests/research/test_render_frontier.py -q
 
   release-machinery-validation:
