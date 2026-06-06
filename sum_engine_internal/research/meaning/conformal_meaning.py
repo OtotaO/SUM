@@ -20,15 +20,18 @@ is a Risk-Controlling Prediction (Bates et al., *JACM* 2021,
 "Distribution-Free, Risk-Controlling Prediction Sets") expressed over a
 meaning-space loss instead of a prediction-set size.
 
-Why this is the historic piece. SUM already owns conformal rate bounds,
-JCS canonicalisation, and Ed25519/JWS receipts. Compose them over a
-meaning-loss proxy and you get an artifact that does not exist anywhere
-in the literature: a **signed, same-commit-replayable certificate over a
-meaning-space (not token-space) loss**. The certificate does not claim
-to have measured meaning — it bounds a *named proxy* for meaning-loss,
-marginally (on average over the corpus), under exchangeability. Those
-three caveats are not fine print; they are the contract, and they ride
-inside the receipt.
+Why this composes into something new. SUM already owns conformal rate
+bounds, JCS canonicalisation, and Ed25519/JWS receipts. Compose them
+over a meaning-loss proxy and you get a **signed, same-commit-replayable
+certificate that bounds a named proxy for meaning-loss** — computed in
+checkable text space (not from model internals), distribution-free, and
+marginal. The certificate does not claim to have measured meaning — it
+bounds a *named proxy*, marginally (on average over the corpus), under
+exchangeability. Those three caveats are not fine print; they are the
+contract, and they ride inside the receipt. (We are not aware of a prior
+artifact combining a distribution-free meaning-loss-proxy bound with a
+replayable signed receipt; the novelty is the composition, not a claim
+to measure meaning.)
 
 Honest boundary (identical to the rate kernel's):
   - **proxy, not meaning** — the bound is conditional on the scorer.

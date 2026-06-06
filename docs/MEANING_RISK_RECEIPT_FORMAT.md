@@ -52,35 +52,52 @@ the render-receipt and trust-root verifiers use).
 
 ## 3. Verification — two stages
 
-**Stage A — cryptographic (always).** Run `verify_jose_envelope` with
+**Stage A — cryptographic + disclosure (always).** Run
+`verify_jose_envelope` with
 `supported_schema="sum.meaning_risk_receipt.v1"`. Confirms the signature,
 schema gate, header invariants, and (opt-in) the `signed_at` replay
-window. On success the payload is *authentic* — signed by the holder of
-`kid`'s private key.
+window. The verifier then enforces the **disclosure invariants** —
+`not_covered` must be a non-empty list and `disclosure` a non-empty
+string (`MeaningReceiptDisclosureError` otherwise) — so a signed-but-
+disclosure-free receipt cannot pass as a bare bound. On success the
+payload is *authentic* and *self-disclosing*.
 
 **Stage B — replay (when the losses are supplied side-band).** This is
-the field this receipt adds. Given the committed per-pair loss vector:
+what this receipt adds. The loss vector is **rounded to 6 dp**
+(`_round_losses`) — the exact vector `losses_hash` commits and
+`build_payload` certified over — then:
 
 1. **Hash anchor.** Recompute `losses_hash(losses)`; it must equal
    `payload.losses_hash`. *(Confirms the side-band evidence is the
    evidence the receipt committed to.)*
-2. **Re-certify.** Re-run `certify_meaning_risk(losses, delta, method)`
-   with the payload's parameters.
+2. **Re-certify.** Re-run `certify_meaning_risk` on the **rounded**
+   vector with the payload's `delta` / `method`.
 3. **Bound match.** The reproduced `risk_upper_bound` and
    `point_estimate` must equal the payload's (to 6 dp).
+4. **Sample-size match.** `payload.n` must equal the number of committed
+   losses — an inflated `n` misrepresents finite-sample confidence even
+   when the bound is honest.
+5. **Decision match.** When `alpha_target` is present, `controlled` is
+   recomputed from the replayed bound (`risk_upper_bound ≤ alpha_target`)
+   and must equal `payload.controlled` — the operational pass/fail flag
+   cannot ride a valid signature while contradicting the bound.
 
-Because `certify_meaning_risk` is deterministic in the losses, Stage B
-reproduces the bound **byte-for-byte on the same commit**. A receipt
-whose author hand-edited `risk_upper_bound` downward (a stronger claim)
-passes Stage A — they signed their own statement — but **fails Stage B**:
-the honest hash no longer reproduces the forged bound. That separation
+Because `certify_meaning_risk` is deterministic and both producer and
+verifier certify over the **same rounded vector**, Stage B reproduces
+the bound **byte-for-byte on the same commit** (the rounding is the
+single source of truth — re-certifying over raw losses would false-
+reject an honest producer who ships the rounded loss file the hash
+commits). A receipt whose author hand-edited `risk_upper_bound`,
+`controlled`, or `n` to a stronger claim passes Stage A — they signed
+their own statement — but **fails Stage B**. That separation
 (`SIGNATURE_INVALID` vs `MeaningReceiptReplayError`) is deliberate: it
 distinguishes *tampered-in-transit* from *overclaimed-at-issue*.
 
 ## 4. Trust scope — what a verified receipt does and does NOT prove
 
-**Proves** (Stage A + Stage B): authentic signature; the committed
-losses hash to `losses_hash`; the named certifier reproduces the bound
+**Proves** (Stage A + Stage B): authentic signature; required disclosure
+fields present; the committed losses hash to `losses_hash`; the named
+certifier reproduces the bound, `point_estimate`, `n`, and `controlled`
 on those losses.
 
 **Does NOT prove:**
@@ -89,6 +106,13 @@ on those losses.
   meaning-loss is bounded *on average*. The proxy is named in the
   payload precisely so this is never ambiguous.
 - **anything per-document.** The bound is **marginal**, not conditional.
+- **which scorer produced the losses.** The `scorer` / `scorer_version`
+  fields are **producer-asserted, not attested**. The bound is a pure
+  function of the loss *numbers*; nothing cryptographic binds them to
+  the scorer that generated them (that would require re-running the
+  scorer over the source/transform pairs, not just re-certifying over
+  losses). A receipt records *which proxy the issuer claims* — trust in
+  the scorer label is trust in the issuer, not in the math.
 - **anything about `not_covered` layers** — arrangement (*naẓm*), sound,
   connotation, implicature. The proxy is blind to them; the field says
   so. Validity also rests on **exchangeability** with `corpus_id`.

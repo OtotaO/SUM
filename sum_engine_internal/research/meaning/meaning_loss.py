@@ -59,7 +59,7 @@ ship here:
     ``entails(premise, hypothesis) -> bool`` decision (an NLI model, an
     LLM judge — the same shape as the slider bench's v0.4 NLI audit) and
     computes a *bidirectional-entailment* meaning-loss in the spirit of
-    semantic-entropy meaning-clustering (Farquhar, Kuhn & Gal, *Nature*
+    semantic-entropy meaning-clustering (Farquhar, Kossen, Kuhn & Gal, *Nature*
     2024 — cluster by mutual entailment, not tokens). The model is
     *injected*, never imported here, so this module stays dependency-
     free and the certified loss stays tied to a named, swappable judge.
@@ -69,6 +69,7 @@ License: Apache License 2.0
 """
 from __future__ import annotations
 
+import math
 import re
 from dataclasses import dataclass
 from typing import Callable, Protocol, Sequence, runtime_checkable
@@ -143,13 +144,19 @@ class LexicalCoverageScorer:
     With the defaults (``w_drop=0.7``, ``w_fab=0.3``) the proxy weights
     *omission* (the dominant failure mode of compression) above
     *fabrication* (hallucination), but counts both. Properties this
-    guarantees — the MeaningBERT-style sanity contract (Beauchemin et
-    al., 2023):
+    proxy satisfies — the MeaningBERT-style sanity contract (Beauchemin
+    et al., 2023), pinned by the unit tests in
+    ``Tests/research/test_meaning_loss.py`` and fuzzed in
+    ``test_meaning_property.py`` (not mechanically proven; "guarantee" is
+    reserved for the replayable receipt):
 
       - identity: ``loss(x, x) == 0``
       - disjoint: no shared unit → ``loss == 1``
       - monotone: deleting a source unit from the transform never
         *decreases* the loss.
+
+    Weights must sum to 1 (validated) so the loss is a proper convex
+    blend in [0, 1] and ``disjoint`` lands exactly at 1.
 
     Honest limitation (named, not hidden): the proxy is *lexical*. A
     faithful paraphrase that preserves meaning with different words
@@ -159,6 +166,13 @@ class LexicalCoverageScorer:
 
     w_drop: float = 0.7
     w_fab: float = 0.3
+
+    def __post_init__(self) -> None:
+        if not math.isclose(self.w_drop + self.w_fab, 1.0, abs_tol=1e-9):
+            raise ValueError(
+                f"w_drop + w_fab must sum to 1.0 (a convex blend); got "
+                f"{self.w_drop} + {self.w_fab} = {self.w_drop + self.w_fab}"
+            )
 
     @property
     def name(self) -> str:
@@ -207,10 +221,13 @@ class EntailmentScorer:
         loss     = 1 - (w_recall * recall + w_fidelity * fidelity)
 
     Defaults weight recall (omission) above fidelity (fabrication),
-    mirroring the lexical scorer. Because the judge is named and
-    versioned by the caller (``judge_name`` / ``judge_version``), the
-    certified bound stays explicitly conditional on it — swap the judge,
-    bump the version, and the certificate's provenance changes with it.
+    mirroring the lexical scorer. The weights must sum to 1 (validated):
+    on identity (recall = fidelity = 1) the loss is ``1 - (w_recall +
+    w_fidelity)``, which is 0 — the sanity contract — only when they sum
+    to 1. Because the judge is named and versioned by the caller
+    (``judge_name`` / ``judge_version``), the certified bound stays
+    explicitly conditional on it — swap the judge, bump the version, and
+    the certificate's provenance changes with it.
 
     Determinism note: the certificate replay property (re-run → identical
     bound) holds only if ``entails`` is itself deterministic for fixed
@@ -224,6 +241,14 @@ class EntailmentScorer:
     judge_version: str = "unspecified"
     w_recall: float = 0.6
     w_fidelity: float = 0.4
+
+    def __post_init__(self) -> None:
+        if not math.isclose(self.w_recall + self.w_fidelity, 1.0, abs_tol=1e-9):
+            raise ValueError(
+                f"w_recall + w_fidelity must sum to 1.0 so identity "
+                f"loss(x, x) == 0 holds; got {self.w_recall} + "
+                f"{self.w_fidelity} = {self.w_recall + self.w_fidelity}"
+            )
 
     @property
     def name(self) -> str:
