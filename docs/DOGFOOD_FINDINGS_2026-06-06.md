@@ -80,9 +80,36 @@ finding, let signal drive the next move. The signal is now in:
   `scorer=lexical`, that it misranks paraphrase and is trustworthy only
   for extractive compression. The number stays; the framing stops
   steering a writer wrong.
-- The next **real** move is operator/`$`-gated: provide a deterministic
-  NLI judge (a local model, or a temperature-0 LLM) so `EntailmentScorer`
+- The next **real** move is a deterministic judge so `EntailmentScorer`
   can be exercised on real prose — that is when the tool becomes useful,
-  and the meaning-risk receipt becomes meaningful on paraphrase. Until
-  that pull, the honest position is: the tool is for extractive
-  compression, clearly labelled.
+  and the meaning-risk receipt becomes meaningful on paraphrase.
+
+## F18 — RESOLVED (no `$`): the judge was never API-gated
+
+Follow-up the same day: the "provide a judge" move was assumed to be
+operator/`$`-gated (a paid LLM). **It wasn't.** A **local**
+sentence-embedding model (`transformers`, run offline in eval mode) is
+deterministic and paraphrase-aware, at zero API cost. Shipped as
+`sum_engine_internal/research/meaning/local_judge.py` (`EmbeddingJudge` +
+`embedding_entailment_scorer`, behind the `[judge]` extra) and wired as
+`sum frontier --scorer embedding`.
+
+Empirical result on the F18 corpus — the inversion is gone:
+
+| version | LEXICAL (F18) | **EMBED-judge** |
+|---|---|---|
+| extractive trim | 0.184 | **0.000** |
+| faithful paraphrase | 0.739 ❌ | **0.200** ✅ |
+| tag | 0.720 | **0.400** |
+
+Paraphrase (0.200) now ranks **below** the tag (0.400), monotonic with
+compression. The tool is usable on real prose with `--scorer embedding`.
+
+**Still genuinely gated** (not resolved by this): F20 — the offline CLI
+*scores* versions, it does not *render* them. "Drop text → slide → watch
+it summarise" still needs the slider's LLM render path. And a *signed*
+meaning-risk receipt built with a model judge is **machine-pinned** for
+replay (float ops can differ across hardware), so cross-machine receipt
+replay with a model judge is a documented boundary, not a guarantee — the
+signed-receipt path stays separately gated. But the **scorer** — the
+load-bearing F18 fix — is done, no `$`.

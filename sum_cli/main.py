@@ -2179,28 +2179,39 @@ def cmd_frontier(args: argparse.Namespace) -> int:
         )
         return 2
 
-    if args.scorer != "lexical":
+    if args.scorer == "lexical":
+        scorer = LexicalCoverageScorer()
+        # F18 (dogfood 2026-06-06): the lexical scorer measures word-overlap,
+        # so it MISRANKS paraphrase — a faithful reword scores as higher loss
+        # than a crude word-trim (even than a near-empty tag). Warn loudly so
+        # the number can't steer a writer wrong. stderr, so --scrub output
+        # stays pipeable. See docs/DOGFOOD_FINDINGS_2026-06-06.md.
         print(
-            f"sum: scorer {args.scorer!r} is not available offline; only "
-            f"'lexical' ships without a judge (entailment scoring needs an "
-            f"NLI judge — operator-gated). See docs/PRODUCT_VISION.md.",
+            "sum: note — the 'lexical' scorer measures word overlap and "
+            "MISRANKS paraphrase (a faithful reword scores as high loss). "
+            "Trustworthy only for extractive compression; for paraphrase use "
+            "--scorer embedding (a local, zero-$ judge; needs the [judge] "
+            "extra). See docs/DOGFOOD_FINDINGS_2026-06-06.md.",
             file=sys.stderr,
         )
+    elif args.scorer == "embedding":
+        # F18 fix: a local sentence-embedding judge is paraphrase-aware,
+        # deterministic, and offline (no $). Lazy-imported behind [judge].
+        try:
+            from sum_engine_internal.research.meaning.local_judge import (
+                embedding_entailment_scorer,
+            )
+            scorer = embedding_entailment_scorer()
+        except ImportError as e:
+            print(
+                f"sum: --scorer embedding needs the [judge] extra "
+                f"(pip install 'sum-engine[judge]'): {e}",
+                file=sys.stderr,
+            )
+            return 2
+    else:
+        print(f"sum: unknown scorer {args.scorer!r}", file=sys.stderr)
         return 2
-    scorer = LexicalCoverageScorer()
-    # F18 (dogfood 2026-06-06): the lexical scorer measures word-overlap,
-    # so it MISRANKS paraphrase — a faithful reword scores as higher loss
-    # than a crude word-trim (even than a near-empty tag). Warn loudly so
-    # the number can't steer a writer wrong. Trustworthy only for
-    # extractive (sentence-dropping) compression. stderr, so --scrub
-    # output stays pipeable. See docs/DOGFOOD_FINDINGS_2026-06-06.md.
-    print(
-        "sum: note — the 'lexical' scorer measures word overlap and "
-        "MISRANKS paraphrase (a faithful reword scores as high loss). "
-        "Trustworthy only for extractive compression; paraphrase needs an "
-        "NLI judge (operator-gated). See docs/DOGFOOD_FINDINGS_2026-06-06.md.",
-        file=sys.stderr,
-    )
 
     source = _read_text_arg(args.source)
     if source is None:
@@ -2801,9 +2812,12 @@ def build_parser() -> argparse.ArgumentParser:
              "that version's text (the cycler). Omit for the JSON overview.",
     )
     p_frontier.add_argument(
-        "--scorer", default="lexical", choices=["lexical"],
-        help="Meaning-loss proxy (default 'lexical', offline). Entailment "
-             "scoring needs an NLI judge and is operator-gated.",
+        "--scorer", default="lexical", choices=["lexical", "embedding"],
+        help="Meaning-loss proxy. 'lexical' (default): word-overlap, "
+             "offline, but MISRANKS paraphrase (extractive-only). "
+             "'embedding': a local sentence-embedding judge — "
+             "paraphrase-aware, deterministic, offline, zero-$ "
+             "(needs the [judge] extra: transformers + torch).",
     )
     p_frontier.add_argument(
         "--pretty", action="store_true",

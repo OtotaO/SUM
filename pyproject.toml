@@ -102,6 +102,12 @@ mcp = ["mcp>=1.0.0"]
 # verified blindspots (predicate-flip, off-graph fact-fabrication,
 # empty-render false negative).
 research = ["numpy>=1.24.0", "scipy>=1.10.0"]
+# Local, deterministic, zero-$ entailment judge for the meaning-loss
+# EntailmentScorer (sum_engine_internal/research/meaning/local_judge.py).
+# A local sentence-embedding model run offline in eval mode — fixes the
+# F18 lexical-scorer paraphrase misranking without any paid API. Heavy
+# (torch); strictly optional, lazy-imported.
+judge = ["transformers>=4.30.0", "torch>=2.0.0"]
 # Omni-format adapter. Markdown is the canonical pivot for the
 # attest pipeline: any input format -> markdown -> existing
 # extract/state/bundle path. Source URI anchors to the original
