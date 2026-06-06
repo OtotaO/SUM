@@ -2209,6 +2209,23 @@ def cmd_frontier(args: argparse.Namespace) -> int:
                 file=sys.stderr,
             )
             return 2
+    elif args.scorer == "nli":
+        # The strict upgrade: a local NLI cross-encoder — directional
+        # entailment, so it credits a faithful paraphrase AND catches a
+        # fluent on-topic contradiction (which the embedding judge waves
+        # through). Deterministic, offline. Lazy-imported behind [judge].
+        try:
+            from sum_engine_internal.research.meaning.local_judge import (
+                nli_entailment_scorer,
+            )
+            scorer = nli_entailment_scorer()
+        except ImportError as e:
+            print(
+                f"sum: --scorer nli needs the [judge] extra "
+                f"(pip install 'sum-engine[judge]'): {e}",
+                file=sys.stderr,
+            )
+            return 2
     else:
         print(f"sum: unknown scorer {args.scorer!r}", file=sys.stderr)
         return 2
@@ -2812,12 +2829,15 @@ def build_parser() -> argparse.ArgumentParser:
              "that version's text (the cycler). Omit for the JSON overview.",
     )
     p_frontier.add_argument(
-        "--scorer", default="lexical", choices=["lexical", "embedding"],
+        "--scorer", default="lexical", choices=["lexical", "embedding", "nli"],
         help="Meaning-loss proxy. 'lexical' (default): word-overlap, "
              "offline, but MISRANKS paraphrase (extractive-only). "
              "'embedding': a local sentence-embedding judge — "
-             "paraphrase-aware, deterministic, offline, zero-$ "
-             "(needs the [judge] extra: transformers + torch).",
+             "paraphrase-aware, offline, zero-$. 'nli': a local NLI "
+             "cross-encoder — directional entailment (credits paraphrase "
+             "AND catches contradiction); the strongest, deterministic, "
+             "offline. embedding/nli need the [judge] extra "
+             "(transformers + torch [+ sentencepiece for nli]).",
     )
     p_frontier.add_argument(
         "--pretty", action="store_true",
