@@ -327,6 +327,25 @@ jobs:
       # Format-only; no model loading, no inference, no extra deps.
       run: python -m pytest Tests/test_nli_calibration_format.py -q
 
+    - name: Meaning-risk receipt smoke — forge/replay + cross-runtime byte-identity
+      # The sum.meaning_risk_receipt.v1 security suite (forge-then-replay,
+      # off-grid delta/alpha replay symmetry, the golden fixture's
+      # Python<->Node JCS byte-identity) is joserfc + numpy gated and
+      # otherwise runs in NO CI job (test-suite audit, 2026-06-06). This
+      # step runs it where joserfc (installed above) + Node (this job) are
+      # present, so the chain-of-custody crown jewels are actually gated in
+      # CI. The local embedding judge (test_local_judge.py) is intentionally
+      # NOT included — it needs torch + a cached model and skips by design.
+      run: |
+        pip install "numpy>=1.24.0" "scipy>=1.10.0"
+        python -m pytest \
+          Tests/research/test_meaning_risk_receipt.py \
+          Tests/research/test_meaning_hardening.py \
+          Tests/research/test_meaning_golden_fixture.py \
+          Tests/research/test_conformal_meaning.py \
+          Tests/research/test_meaning_property.py \
+          Tests/research/test_render_frontier.py -q
+
   release-machinery-validation:
     name: Release machinery validation (no publish)
     # Validates the v0.3.1 hygiene gates on every push/PR so the FIRST
