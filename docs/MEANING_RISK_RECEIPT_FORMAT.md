@@ -76,9 +76,11 @@ disclosure-free receipt cannot pass as a bare bound. On success the
 payload is *authentic* and *self-disclosing*.
 
 **Stage B — replay (when the losses are supplied side-band).** This is
-what this receipt adds. The loss vector is **rounded to 6 dp**
-(`_round_losses`) — the exact vector `losses_hash` commits and
-`build_payload` certified over — then:
+what this receipt adds. The loss vector is **quantised to integer
+micro-units** (`_losses_micro` / `_to_micro`, resolution 1e-6) — the
+exact float-free vector `losses_hash` commits and `build_payload`
+certified over (re-floated via `_quantized` only inside the conformal
+layer) — then:
 
 1. **Hash anchor.** Recompute `losses_hash(losses)`; it must equal
    `payload.losses_hash`. *(Confirms the side-band evidence is the

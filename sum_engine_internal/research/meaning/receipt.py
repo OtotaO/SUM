@@ -193,15 +193,22 @@ def build_payload(
             + f"{now.microsecond // 1000:03d}Z"
         )
 
-    # Re-certify over the EXACT quantised vector the hash commits, so the
-    # producer's bound replays byte-for-byte. Also re-validates the
-    # losses (certify rejects NaN/inf/out-of-range) before signing.
+    # Re-certify over the EXACT quantised inputs the wire commits, so the
+    # producer's bound replays byte-for-byte. The loss vector is quantised
+    # via _quantized; `delta` and `alpha_target` are SCALARS that also
+    # cross the wire as micro-units, so they must be quantised here too —
+    # verify recomputes them as _from_micro(*_micro), and build must
+    # certify at the identical value or an off-grid delta (e.g. a
+    # Bonferroni-corrected threshold, 1/30) shifts the bound by ~1 micro
+    # and false-rejects a genuine receipt. Also re-validates the losses
+    # (certify rejects NaN/inf/out-of-range) before signing.
     rounded = _quantized(losses)
+    delta_q = _from_micro(_to_micro(guarantee.delta))
     canonical = certify_meaning_risk(
         rounded,
         scorer_name=guarantee.scorer_name,
         scorer_version=guarantee.scorer_version,
-        delta=guarantee.delta,
+        delta=delta_q,
         method=guarantee.method,
     )
 
@@ -226,8 +233,13 @@ def build_payload(
         "signed_at": signed_at,
     }
     if alpha_target is not None:
+        # Evaluate `controlled` against the QUANTISED alpha (the value
+        # verify recomputes from alpha_target_micro), not the raw one —
+        # an off-grid alpha straddling the bound would otherwise flip the
+        # flag between build and verify.
+        alpha_q = _from_micro(_to_micro(alpha_target))
         payload["alpha_target_micro"] = _to_micro(alpha_target)
-        payload["controlled"] = bool(canonical.controls(alpha_target))
+        payload["controlled"] = bool(canonical.controls(alpha_q))
     return payload
 
 
@@ -248,8 +260,9 @@ def sign_meaning_risk_receipt(
 class MeaningReceiptReplayError(Exception):
     """Raised when a meaning-risk receipt is cryptographically valid but
     the supplied losses do not reproduce its committed hash, bound, or a
-    field derived from them (``risk_upper_bound``, ``point_estimate``,
-    ``n``, ``controlled``). Distinct from a signature failure: the
+    field derived from them (``risk_upper_bound_micro``,
+    ``point_estimate_micro``, ``n``, ``controlled``). Distinct from a
+    signature failure: the
     receipt is genuine, but the side-band evidence does not back its
     claim."""
 
@@ -279,10 +292,11 @@ def verify_meaning_risk_receipt(
     supplied side-band, ALSO performs the replay check:
 
       1. confirm ``losses_hash(losses)`` equals ``payload.losses_hash``;
-      2. re-run ``certify_meaning_risk`` on those losses at the payload's
-         ``delta`` and ``method``;
-      3. confirm the reproduced ``risk_upper_bound`` and
-         ``point_estimate`` match the payload (to ``_LOSS_DECIMALS``).
+      2. re-run ``certify_meaning_risk`` on the quantised losses at the
+         payload's ``delta_micro`` (re-floated) and ``method``;
+      3. confirm the reproduced ``risk_upper_bound_micro`` and
+         ``point_estimate_micro`` equal the payload's — exact integer
+         equality, no epsilon.
 
     Returns the verified payload dict on success.
 
