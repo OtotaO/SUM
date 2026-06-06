@@ -25,6 +25,38 @@ The thing that makes it SUM and not a summariser: **every transformation
 hands back proof of what it preserved.** The number box is where that
 proof becomes legible to a person.
 
+## 0. Positioning — the standing line (to grants, to the market)
+
+**SUM is the chain-of-custody standard for AI-transformed text:**
+portable, offline-verifiable provenance — the de facto way to *prove*
+what a transformation preserved, robust to rewriting (which image-centric
+schemes like C2PA / SynthID structurally cannot do for text). Everything
+else is a feature of that.
+
+On "is this AI-generated?" — **provenance-first, detection-as-advisory.**
+We do not chase a general AI-text *detection* number, and we never put a
+"99 %" on it. The reason is the discipline itself: general detection of
+*arbitrary* AI text is an adversarial, paraphrase-defeated problem; every
+"99 %" detector has collapsed under rewriting, distribution shift, or
+bias against non-native writers (OpenAI retired its own classifier). A
+statistical detection claim is a liability with good marketing, not a
+moat.
+
+What we deliver instead:
+
+- **Provenance — a cryptographic guarantee.** If text passed through SUM
+  (or any participating provider), there is a signed, replayable receipt
+  proving its origin and what was transformed. Nobody paraphrases their
+  way around a signature. This is exactly where regulation is walking
+  (EU AI Act Art 50 = provider *disclosure*, not magic detection).
+- **Detection — an honest, advisory signal.** For *unknown* text we may
+  surface a statistical likelihood, labelled **advisory — measured, not
+  proved**, never a guarantee. Same market, but the load-bearing claim
+  survives an adversary with a thesaurus.
+
+The tagline says it: *to sum it up, one must have done the math* — and
+the math says **attest, don't detect.**
+
 ## 2. Scoping decisions (locked 2026-06-06)
 
 | Decision | Choice | Consequence |
@@ -97,11 +129,14 @@ sound, connotation, implicature.
 
 ## 6. Roadmap (workbench-first, each rung an outcome)
 
-1. **`RenderFrontier` abstraction** *(this increment)* — the backend
-   object: source → ordered, scored frontier of renderings; offline-
-   runnable (injected render function + scorer), API-serialisable,
-   tested. No new substrate — pure composition of the slider params and
-   the meaning-loss scorer.
+1. **`RenderFrontier` abstraction + `sum frontier` CLI** *(shipped)* —
+   the backend object (source → ordered, scored frontier of renderings;
+   offline-runnable via an injected render function + scorer, API-
+   serialisable) AND its first surface: `sum frontier --source S
+   --version … [--scrub T]` cycles through versions of a text *or code*,
+   each scored, printing the version at any point on the
+   faithful→compressed path. No new substrate — pure composition of the
+   slider params and the meaning-loss scorer.
 2. **One real, committed receipt** — a public-domain parallel-
    translation corpus + a deterministic judge → a real
    `sum.meaning_risk_receipt.v1` + the cross-runtime golden fixture the
@@ -127,9 +162,13 @@ make rungs 1–3 demonstrable without either.
 | Rewrite for an audience, keep proof of what survived | writer / knowledge worker (**dream**) | substrate present; dogfood-gated |
 | "How much meaning did I lose compressing this?" | writer; accessibility / plain-language | mechanism shipped; real-data rung next |
 | AI-text transformation disclosure (EU AI Act Art 50) | regulated text-transformers (**funder/compliance**) | receipt stack present; profiles designed |
-| Chain-of-custody for AI-transformed text | the moat — what grants fund | our differentiator |
+| Chain-of-custody for AI-transformed text — **provenance, a guarantee** | the moat — what grants fund | our differentiator |
+| "Is this AI-generated?" — **advisory signal only** (measured, not proved) | the broad market | positioned as advisory; never a "99 %" guarantee (§0) |
+| Cycle versions of a text/code, each scored | writer / developer (**dream**) | **`sum frontier` shipped** |
 | Agent-to-agent handoff with a fidelity token | developers / agent builders (**substrate**) | deliverable now |
+| Become ubiquitous — a plugin/tool for AI providers & agents | the standard (**strategy**) | the disappear-into-substrate play; MCP/agent tool surface |
 | Auto-tag the web (tags↔tomes) | the origin dream | `extract` present; extension to package |
+| Knowledge webs & galaxies | the dream's horizon | triples = a graph; receipts = provenance edges; sheaf work models consistency |
 
 ---
 

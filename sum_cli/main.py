@@ -2136,6 +2136,94 @@ def cmd_compliance_regimes(args: argparse.Namespace) -> int:
     return 0
 
 
+def _read_text_arg(path: str) -> Optional[str]:
+    """Read a text/code file ('-' for stdin) as UTF-8. Prints a usage
+    error and returns None on failure (caller returns rc=2)."""
+    if path == "-":
+        return sys.stdin.read()
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return f.read()
+    except OSError as e:
+        print(f"sum: cannot read {path!r}: {e}", file=sys.stderr)
+        return None
+
+
+def cmd_frontier(args: argparse.Namespace) -> int:
+    """Build a render frontier over a source and one or more rendered
+    versions, score each, and cycle through them.
+
+    The versions (``--version`` files, text or code) are given
+    most-faithful first — that ordering is the compression control. Each
+    version's meaning-loss is *measured* against the source by a named
+    proxy (lexical, offline). With ``--scrub T`` (T in [0,1]) the command
+    prints only the single version at that position on the
+    faithful→compressed path — the cycler. Without it, it emits a
+    ``sum.render_frontier.v1`` JSON overview with the measured numbers.
+
+    Honest boundary: the per-version ``meaning_loss`` is a per-document
+    *measurement*, not a guarantee; the marginal distribution-free
+    guarantee is a separate ``sum.meaning_risk_receipt.v1`` over a named
+    corpus. The emitted JSON carries that note.
+    """
+    try:
+        from sum_engine_internal.research.frontier import RenderFrontier
+        from sum_engine_internal.research.meaning.meaning_loss import (
+            LexicalCoverageScorer,
+        )
+    except ImportError as e:
+        print(
+            f"sum: `sum frontier` needs the [research] extra "
+            f"(pip install 'sum-engine[research]'): {e}",
+            file=sys.stderr,
+        )
+        return 2
+
+    if args.scorer != "lexical":
+        print(
+            f"sum: scorer {args.scorer!r} is not available offline; only "
+            f"'lexical' ships without a judge (entailment scoring needs an "
+            f"NLI judge — operator-gated). See docs/PRODUCT_VISION.md.",
+            file=sys.stderr,
+        )
+        return 2
+    scorer = LexicalCoverageScorer()
+
+    source = _read_text_arg(args.source)
+    if source is None:
+        return 2
+    if not args.version:
+        print("sum: at least one --version is required", file=sys.stderr)
+        return 2
+
+    renderings: list[tuple[str, dict, str]] = []
+    for path in args.version:
+        text = _read_text_arg(path)
+        if text is None:
+            return 2
+        label = os.path.basename(path) or path
+        renderings.append((label, {"file": path}, text))
+
+    try:
+        frontier = RenderFrontier.from_renderings(source, renderings, scorer)
+    except ValueError as e:
+        print(f"sum: {e}", file=sys.stderr)
+        return 2
+
+    # --scrub T: print just the version at position T (the cycler).
+    if args.scrub is not None:
+        point = frontier.scrub(args.scrub)
+        sys.stdout.write(point.rendering)
+        if not point.rendering.endswith("\n"):
+            sys.stdout.write("\n")
+        return 0
+
+    out = {"schema": "sum.render_frontier.v1", **frontier.as_dict()}
+    json.dump(out, sys.stdout, indent=2 if getattr(args, "pretty", False) else None)
+    sys.stdout.write("\n")
+    return 0
+
+
 # ─── Argparse wiring ─────────────────────────────────────────────────
 
 def build_parser() -> argparse.ArgumentParser:
@@ -2667,6 +2755,48 @@ def build_parser() -> argparse.ArgumentParser:
         help="Pretty-print the JSON envelope.",
     )
     p_xf_apply.set_defaults(func=cmd_transform_apply)
+
+    # frontier — cycle through versions of a text/code, each scored.
+    p_frontier = subparsers.add_parser(
+        "frontier",
+        help="Build + cycle a render frontier over a source and its versions.",
+        description=(
+            "Score one or more rendered versions of a source (text or "
+            "code) against it and cycle through them. Versions are given "
+            "most-faithful first via repeated --version; that order is "
+            "the compression control. With --scrub T (0..1) the command "
+            "prints just the version at that position on the "
+            "faithful→compressed path; otherwise it emits a "
+            "sum.render_frontier.v1 JSON overview with each version's "
+            "MEASURED meaning-loss (a per-document measurement under a "
+            "named proxy — not a guarantee; the marginal distribution-"
+            "free guarantee is a separate sum.meaning_risk_receipt.v1). "
+            "Needs the [research] extra. See docs/PRODUCT_VISION.md."
+        ),
+    )
+    p_frontier.add_argument(
+        "--source", required=True,
+        help="Path to the source text/code file ('-' for stdin).",
+    )
+    p_frontier.add_argument(
+        "--version", action="append", metavar="PATH", default=[],
+        help="A rendered version file. Repeat, most-faithful first.",
+    )
+    p_frontier.add_argument(
+        "--scrub", type=float, default=None, metavar="T",
+        help="Position 0..1 on the faithful→compressed path; print just "
+             "that version's text (the cycler). Omit for the JSON overview.",
+    )
+    p_frontier.add_argument(
+        "--scorer", default="lexical", choices=["lexical"],
+        help="Meaning-loss proxy (default 'lexical', offline). Entailment "
+             "scoring needs an NLI judge and is operator-gated.",
+    )
+    p_frontier.add_argument(
+        "--pretty", action="store_true",
+        help="Pretty-print the JSON overview.",
+    )
+    p_frontier.set_defaults(func=cmd_frontier)
 
     return parser
 
