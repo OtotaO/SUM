@@ -201,3 +201,95 @@ def empirical_risk_coverage(
         if risk_ub >= true_loss_rate:
             covered += 1
     return covered / n_trials
+
+
+# ── Group-conditional risk control (Perspective Receipts substrate) ───
+
+
+@dataclass(frozen=True, slots=True)
+class GroupedMeaningRisk:
+    """A *group-conditional* meaning-risk certificate: the marginal bound
+    PLUS a separate, valid-within-its-group bound for each declared cohort
+    (e.g. per language / genre / named perspective).
+
+    This is the substrate for **Perspective Receipts** — instead of one
+    average-over-everything bound, a bound that holds *within* each
+    audience/cohort you pre-declare. ``groups`` maps a cohort id to its
+    own :class:`MeaningRiskGuarantee`.
+    """
+    marginal: MeaningRiskGuarantee
+    groups: dict[str, "MeaningRiskGuarantee"]
+    simultaneous: bool   # True ⇒ per-group δ Bonferroni-split so ALL hold jointly
+
+    def controls_all(self, alpha: float) -> bool:
+        """True iff EVERY group's certified ceiling meets ``alpha`` — the
+        honest 'controlled for every cohort, not just on average' check."""
+        return all(g.controls(alpha) for g in self.groups.values())
+
+    def weakest_group(self) -> tuple[str, "MeaningRiskGuarantee"]:
+        """The cohort with the highest certified ceiling — the one the
+        marginal average hides."""
+        return max(self.groups.items(), key=lambda kv: kv[1].risk_upper_bound)
+
+
+def certify_meaning_risk_by_group(
+    losses: Sequence[float],
+    group_ids: Sequence[str],
+    *,
+    scorer_name: str,
+    scorer_version: str,
+    delta: float = 0.05,
+    method: Literal["auto", "hoeffding", "clopper_pearson"] = "hoeffding",
+    simultaneous: bool = False,
+) -> GroupedMeaningRisk:
+    """Certify a meaning-loss bound *per declared cohort* — group-conditional
+    risk control (the discrete-covariate case of conditional conformal,
+    Gibbs–Cherian–Candès 2023).
+
+    ``losses[i]`` is the per-pair meaning-loss; ``group_ids[i]`` is the
+    cohort label of pair ``i``. Returns the marginal bound plus, for each
+    distinct cohort, the bound certified over *only that cohort's* losses
+    via the same distribution-free kernel.
+
+    Honesty boundary — what this is and is NOT:
+      - **Is:** an exact, finite-sample, distribution-free bound *within
+        each declared cohort* (each cohort is its own exchangeable
+        calibration set). Strictly more informative than the marginal
+        bound: it surfaces the worst cohort the average hides.
+      - **Pays full cost per cohort:** each group's bound has its own
+        finite-sample radius, so a small cohort gets a *wide* bound — this
+        is honest, not a defect; there is no free conditional coverage.
+        The Gibbs et al. method *shares strength* across cohorts via
+        quantile regression to pay ~O(d/n) instead of O(1/n_group); that
+        strength-sharing is a future tightening, NOT implemented here.
+      - **``simultaneous``:** when True, each cohort is certified at
+        ``delta / G`` (G = cohort count, Bonferroni) so ALL cohort bounds
+        hold *jointly* with confidence ≥ 1−δ. When False (default), each
+        cohort bound holds at 1−δ *on its own* — the right reading for
+        "this cohort's bound".
+    """
+    if len(losses) != len(group_ids):
+        raise ValueError(
+            f"losses ({len(losses)}) and group_ids ({len(group_ids)}) "
+            f"must be the same length"
+        )
+    if len(losses) < 1:
+        raise ValueError("losses must be non-empty")
+
+    distinct = sorted(set(group_ids))
+    group_delta = delta / len(distinct) if simultaneous else delta
+
+    marginal = certify_meaning_risk(
+        losses, scorer_name=scorer_name, scorer_version=scorer_version,
+        delta=delta, method=method,
+    )
+    groups: dict[str, MeaningRiskGuarantee] = {}
+    for g in distinct:
+        g_losses = [losses[i] for i in range(len(losses)) if group_ids[i] == g]
+        groups[g] = certify_meaning_risk(
+            g_losses, scorer_name=scorer_name, scorer_version=scorer_version,
+            delta=group_delta, method=method,
+        )
+    return GroupedMeaningRisk(
+        marginal=marginal, groups=groups, simultaneous=simultaneous,
+    )

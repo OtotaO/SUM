@@ -48,8 +48,10 @@ from sum_engine_internal.research.meaning.meaning_loss import (
     score_pairs,
 )
 from sum_engine_internal.research.meaning.conformal_meaning import (
+    GroupedMeaningRisk,
     MeaningRiskGuarantee,
     certify_meaning_risk,
+    certify_meaning_risk_by_group,
     empirical_risk_coverage,
 )
 from sum_engine_internal.research.meaning.receipt import (
@@ -73,6 +75,8 @@ __all__ = [
     "MeaningRiskGuarantee",
     "certify_meaning_risk",
     "empirical_risk_coverage",
+    "GroupedMeaningRisk",
+    "certify_meaning_risk_by_group",
     # receipt
     "SUPPORTED_SCHEMA",
     "DEFAULT_NOT_COVERED",
