@@ -205,6 +205,14 @@ def verify_perspective_risk_receipt(
     if losses is None or group_ids is None:
         return payload
 
+    # Guard the zip in evidence_hash against silent truncation on a
+    # length mismatch (the hash would still differ, but fail clearly here).
+    if len(losses) != len(group_ids):
+        raise MeaningReceiptReplayError(
+            f"losses ({len(losses)}) and group_ids ({len(group_ids)}) "
+            f"side-band lengths disagree"
+        )
+
     # ---- replay 1: evidence anchor (losses + cohort assignment) ----
     got = evidence_hash(losses, group_ids)
     if got != payload.get("evidence_hash"):
@@ -243,6 +251,15 @@ def verify_perspective_risk_receipt(
     # ---- replay 4: every cohort sub-bound ----
     has_alpha = "alpha_target_micro" in payload
     alpha_q = _from_micro(int(payload["alpha_target_micro"])) if has_alpha else None
+    # Reject duplicate cohort ids BEFORE collapsing to a dict: otherwise a
+    # forged duplicate entry (e.g. a second 'legalese' with a zeroed bound)
+    # would be silently dropped (last-wins) and evade replay, while a
+    # downstream reader iterating payload["groups"] sees the forged bound.
+    _ids = [g["group_id"] for g in payload["groups"]]
+    if len(_ids) != len(set(_ids)):
+        raise MeaningReceiptReplayError(
+            f"duplicate cohort id(s) in payload.groups: {_ids}"
+        )
     payload_groups = {g["group_id"]: g for g in payload["groups"]}
     if set(payload_groups) != set(replay.groups):
         raise MeaningReceiptReplayError(

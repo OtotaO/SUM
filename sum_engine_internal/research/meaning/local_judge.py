@@ -131,6 +131,29 @@ def embedding_entailment_scorer(
 DEFAULT_NLI_MODEL_ID = "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli"
 
 
+def _entailment_index(id2label: dict) -> int:
+    """The index of the ENTAILMENT class in a model's ``id2label`` — robust
+    to label-order disagreement (0=entail vs 2=entail) AND to negation
+    labels. A binary RTE head with ``{0: "not_entailment", 1: "entailment"}``
+    must pick 1, not 0: ``"entail" in "not_entailment"`` is True, so a naive
+    substring match silently inverts the judge. Prefer an exact
+    ``"entailment"`` label; otherwise an ``entail`` label that is not a
+    negation."""
+    norm = {int(i): str(lbl).strip().lower() for i, lbl in id2label.items()}
+    exact = [i for i, lbl in norm.items() if lbl == "entailment"]
+    if exact:
+        return exact[0]
+    cand = [
+        i for i, lbl in norm.items()
+        if "entail" in lbl and "not" not in lbl and "non" not in lbl
+    ]
+    if cand:
+        return cand[0]
+    raise ValueError(
+        f"no ENTAILMENT label in id2label={id2label}; not an NLI model"
+    )
+
+
 @dataclass
 class NLIJudge:
     """A local, deterministic ``entails`` judge backed by an NLI sequence-
@@ -177,17 +200,7 @@ class NLIJudge:
         self._mdl = AutoModelForSequenceClassification.from_pretrained(
             self.model_id
         ).eval()
-        # Find the ENTAILMENT class index from the model's own label map —
-        # NLI models disagree on label order (0=entail vs 2=entail), so we
-        # never hard-code it.
-        id2label = self._mdl.config.id2label
-        match = [i for i, lbl in id2label.items() if "entail" in str(lbl).lower()]
-        if not match:
-            raise ValueError(
-                f"model {self.model_id!r} has no ENTAILMENT label in "
-                f"id2label={id2label}; not an NLI model"
-            )
-        self._entail_idx = int(match[0])
+        self._entail_idx = _entailment_index(self._mdl.config.id2label)
 
     def entails(self, premise: str, hypothesis: str) -> bool:
         """True iff the NLI model judges ``premise`` to ENTAIL
@@ -197,9 +210,16 @@ class NLIJudge:
         import torch
 
         self._ensure_loaded()
+        # Cap input length explicitly: a tokenizer whose model_max_length is
+        # the uncapped sentinel (1e30) makes truncation=True a no-op, so a
+        # long premise would overrun max_position_embeddings and OOM-kill /
+        # raise. Cap at the model's position limit (≤512 for this class).
+        mpe = getattr(self._mdl.config, "max_position_embeddings", 512)
+        max_len = int(mpe) if isinstance(mpe, int) and 0 < mpe <= 4096 else 512
         with torch.no_grad():
             enc = self._tok(
-                premise, hypothesis, return_tensors="pt", truncation=True
+                premise, hypothesis, return_tensors="pt",
+                truncation=True, max_length=max_len,
             )
             probs = torch.softmax(self._mdl(**enc).logits[0], dim=-1)
         return float(probs[self._entail_idx]) >= self.threshold

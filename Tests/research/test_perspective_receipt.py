@@ -173,6 +173,26 @@ def test_build_rejects_empty_not_covered():
         )
 
 
+def test_duplicate_cohort_id_rejected(keypair):
+    """Adversarial-review C1: a forged DUPLICATE cohort entry (a second
+    'legalese' with a zeroed bound) must be rejected — else the dict-build
+    drops it (last-wins) and it evades replay while a reader iterating
+    payload['groups'] sees the forged 'no loss' bound."""
+    priv, jwks, kid = keypair
+    grouped = certify_meaning_risk_by_group(_LOSSES, _GROUPS, **_S)
+    pl = build_perspective_payload(
+        grouped=grouped, losses=_LOSSES, group_ids=_GROUPS, corpus_id="x",
+        transform="t", loss_definition="d", alpha_target=0.3,
+    )
+    forged = dict(pl["groups"][1])  # the real 'legalese' block
+    forged["risk_upper_bound_micro"] = 0
+    forged["controlled"] = True
+    pl["groups"].insert(0, forged)  # duplicate id, forged values, listed first
+    env = sign_perspective_risk_receipt(pl, private_jwk=priv, kid=kid)
+    with pytest.raises(MeaningReceiptReplayError, match="duplicate cohort"):
+        verify_perspective_risk_receipt(env, jwks, losses=_LOSSES, group_ids=_GROUPS)
+
+
 def test_offgrid_delta_round_trips(keypair):
     """Concrete regression for the off-grid replay-symmetry bug: a delta
     with >6 decimals must round-trip build→sign→verify (build certifies at

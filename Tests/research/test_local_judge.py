@@ -21,6 +21,7 @@ pytest.importorskip("transformers", reason="[judge] extra not installed")
 
 from sum_engine_internal.research.meaning.local_judge import (
     EmbeddingJudge,
+    NLIJudge,
     embedding_entailment_scorer,
     nli_entailment_scorer,
 )
@@ -166,3 +167,13 @@ def test_nli_is_deterministic(nli_scorer):
 
 def test_nli_scorer_name_records_the_model(nli_scorer):
     assert nli_scorer.name.startswith("bidirectional-entailment[nli:")
+
+
+def test_nli_long_premise_does_not_crash(nli_scorer):
+    """Adversarial-review E2: a premise far longer than the model's
+    position limit must be TRUNCATED, not OOM-kill / raise out of
+    entails(). (nli_scorer fixture guarantees the model is cached.)"""
+    judge = NLIJudge()
+    long_premise = "The treaty was signed in Vienna. " * 2000  # ≫ 512 tokens
+    result = judge.entails(long_premise, "A treaty was signed.")
+    assert isinstance(result, bool)
