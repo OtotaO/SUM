@@ -295,6 +295,15 @@ jobs:
       # decoded protectedHeader); keeping it in CI prevents regression.
       run: node single_file_demo/test_transform_receipt_fixtures.js
 
+    - name: Meaning-risk + perspective receipt verifier smoke — JS
+      # Cross-runtime extension for the NEW receipt family
+      # (sum.meaning_risk_receipt.v1 + sum.perspective_risk_receipt.v1):
+      # proves the Python-SIGNED goldens verify in Node, so the
+      # "verifies cross-runtime" claim holds for the differentiating
+      # receipts, not just render/transform. Includes tamper-reject,
+      # schema/kid gates, and the disclosure invariant (JS-signed).
+      run: node single_file_demo/test_meaning_receipt_verify.js
+
     - name: Transform-receipt-verifier smoke — Python (same 20 fixtures)
       # Paired with the JS smoke above. Both runtimes MUST produce
       # byte-identical accept/reject + error_class outcomes on every
@@ -347,6 +356,7 @@ jobs:
           Tests/research/test_group_conditional.py \
           Tests/research/test_perspective_receipt.py \
           Tests/research/test_perspective_property.py \
+          Tests/research/test_perspective_golden_fixture.py \
           Tests/research/test_render_frontier.py -q
 
   release-machinery-validation:

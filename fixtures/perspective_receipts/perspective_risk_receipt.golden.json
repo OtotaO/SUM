@@ -1,0 +1,45 @@
+{
+  "kid": "perspective-fixture-key-2026",
+  "payload": {
+    "scorer": "lexical-coverage-bidirectional",
+    "scorer_version": "1",
+    "loss_definition": "bidirectional content-unit overlap gap in [0,1]; 0 = full preservation, 1 = no preservation",
+    "method": "hoeffding",
+    "delta_micro": 50000,
+    "n": 12,
+    "simultaneous": false,
+    "evidence_hash": "sha256-a4b0723fdfa6c2804678c8dfb907435536c14f8b1721f519ebc8359ef849712b",
+    "marginal_point_estimate_micro": 378900,
+    "marginal_risk_upper_bound_micro": 732202,
+    "groups": [
+      {
+        "group_id": "plain",
+        "n": 8,
+        "point_estimate_micro": 360312,
+        "risk_upper_bound_micro": 793017,
+        "controlled": false
+      },
+      {
+        "group_id": "technical",
+        "n": 4,
+        "point_estimate_micro": 416076,
+        "risk_upper_bound_micro": 1000000,
+        "controlled": false
+      }
+    ],
+    "corpus_id": "perspective-demo-extractive-2026-06-07",
+    "transform": "extractive:sentence-subset",
+    "not_covered": [
+      "arrangement",
+      "sound",
+      "connotation",
+      "implicature"
+    ],
+    "disclosure": "This certificate bounds a NAMED PROXY for meaning-loss, not meaning itself. The bound is marginal (the average over the calibration corpus), not per-document, and is valid only under exchangeability between that corpus and deployment. It does not cover arrangement (na\u1e93m), sound, connotation, or implicature.",
+    "signed_at": "2026-06-07T12:00:00.000Z",
+    "alpha_target_micro": 500000,
+    "controls_all": false
+  },
+  "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6InBlcnNwZWN0aXZlLWZpeHR1cmUta2V5LTIwMjYiLCJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdfQ..F_4pgX9o3okKz9uJEJj-N54I4mBOKC1b9USfCR7BHN2vCzz_rGO3CZmVbjWcd568grLVjHS25t7vfjSuojQwDg",
+  "schema": "sum.perspective_risk_receipt.v1"
+}
