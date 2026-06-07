@@ -171,3 +171,65 @@ def test_build_rejects_empty_not_covered():
             grouped=grouped, losses=[0.1, 0.2], group_ids=["a", "b"],
             corpus_id="x", transform="t", loss_definition="d", not_covered=[],
         )
+
+
+def test_duplicate_cohort_id_rejected(keypair):
+    """Adversarial-review C1: a forged DUPLICATE cohort entry (a second
+    'legalese' with a zeroed bound) must be rejected — else the dict-build
+    drops it (last-wins) and it evades replay while a reader iterating
+    payload['groups'] sees the forged 'no loss' bound."""
+    priv, jwks, kid = keypair
+    grouped = certify_meaning_risk_by_group(_LOSSES, _GROUPS, **_S)
+    pl = build_perspective_payload(
+        grouped=grouped, losses=_LOSSES, group_ids=_GROUPS, corpus_id="x",
+        transform="t", loss_definition="d", alpha_target=0.3,
+    )
+    forged = dict(pl["groups"][1])  # the real 'legalese' block
+    forged["risk_upper_bound_micro"] = 0
+    forged["controlled"] = True
+    pl["groups"].insert(0, forged)  # duplicate id, forged values, listed first
+    env = sign_perspective_risk_receipt(pl, private_jwk=priv, kid=kid)
+    with pytest.raises(MeaningReceiptReplayError, match="duplicate cohort"):
+        verify_perspective_risk_receipt(env, jwks, losses=_LOSSES, group_ids=_GROUPS)
+
+
+def test_offgrid_delta_round_trips(keypair):
+    """Concrete regression for the off-grid replay-symmetry bug: a delta
+    with >6 decimals must round-trip build→sign→verify (build certifies at
+    the quantised delta verify recomputes). Was 13/30 falsely rejected."""
+    priv, jwks, kid = keypair
+    grouped = certify_meaning_risk_by_group(
+        _LOSSES, _GROUPS, delta=1.0 / 30.0, **_S  # 0.0333… — off-grid
+    )
+    pl = build_perspective_payload(
+        grouped=grouped, losses=_LOSSES, group_ids=_GROUPS, corpus_id="x",
+        transform="t", loss_definition="d", alpha_target=1.0 / 3.0,
+    )
+    env = sign_perspective_risk_receipt(pl, private_jwk=priv, kid=kid)
+    verify_perspective_risk_receipt(env, jwks, losses=_LOSSES, group_ids=_GROUPS)
+
+
+def test_payload_jcs_byte_identical_across_runtimes(signed):
+    """The nested-groups payload canonicalises byte-for-byte in Python and
+    Node (the float-free property the signature's cross-runtime
+    verifiability rests on)."""
+    import json
+    import shutil
+    import subprocess
+    from pathlib import Path
+
+    from sum_engine_internal.infrastructure.jcs import canonicalize
+
+    repo = Path(__file__).resolve().parents[2]
+    node = shutil.which("node")
+    jcs_cli = repo / "single_file_demo" / "jcs_cli.js"
+    if node is None or not jcs_cli.exists():
+        pytest.skip("node or jcs_cli.js unavailable")
+    payload = signed[0]["payload"]
+    py = canonicalize(payload)
+    proc = subprocess.run(
+        [node, str(jcs_cli)], input=json.dumps(payload).encode("utf-8"),
+        capture_output=True,
+    )
+    assert proc.returncode == 0, proc.stderr.decode()
+    assert proc.stdout == py
