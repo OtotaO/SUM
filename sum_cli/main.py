@@ -2265,6 +2265,92 @@ def cmd_frontier(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_verify_meaning(args: argparse.Namespace) -> int:
+    """Verify a meaning-risk OR perspective receipt as an external party —
+    the on-ramp F21 (dogfood 2026-06-07) flagged as missing. Reads the
+    receipt + JWKS from files, dispatches on the schema, and (with
+    --losses / --group-ids side-band) replays the bound. Prints a verdict
+    JSON; exit 0 = verified, 1 = rejected, 2 = usage error."""
+    try:
+        from sum_engine_internal.research.meaning import (
+            PERSPECTIVE_SCHEMA,
+            verify_meaning_risk_receipt,
+            verify_perspective_risk_receipt,
+        )
+        from sum_engine_internal.research.meaning.receipt import (
+            SUPPORTED_SCHEMA as MEANING_RISK_SCHEMA,
+        )
+    except ImportError as e:
+        print(
+            f"sum: verify-meaning needs the [research] + [receipt-verify] "
+            f"extras (pip install 'sum-engine[research,receipt-verify]'): {e}",
+            file=sys.stderr,
+        )
+        return 2
+
+    def _read_json(path):
+        if path == "-":
+            return json.load(sys.stdin)
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+
+    try:
+        receipt = _read_json(args.receipt)
+        jwks = _read_json(args.jwks)
+        losses = _read_json(args.losses) if args.losses else None
+        group_ids = _read_json(args.group_ids) if args.group_ids else None
+    except (OSError, json.JSONDecodeError) as e:
+        print(f"sum: cannot read input: {e}", file=sys.stderr)
+        return 2
+
+    schema = receipt.get("schema")
+    try:
+        if schema == PERSPECTIVE_SCHEMA:
+            payload = verify_perspective_risk_receipt(
+                receipt, jwks, losses=losses, group_ids=group_ids
+            )
+        elif schema == MEANING_RISK_SCHEMA:
+            payload = verify_meaning_risk_receipt(receipt, jwks, losses=losses)
+        else:
+            print(
+                f"sum: verify-meaning handles "
+                f"{MEANING_RISK_SCHEMA} / {PERSPECTIVE_SCHEMA}; "
+                f"got schema {schema!r}",
+                file=sys.stderr,
+            )
+            return 2
+    except Exception as e:  # noqa: BLE001 — surface every failure as rc=1
+        print(
+            json.dumps({"verified": False, "error": type(e).__name__, "detail": str(e)}),
+            file=sys.stdout,
+        )
+        return 1
+
+    replayed = losses is not None
+    verdict = {
+        "verified": True,
+        "schema": schema,
+        "replayed": replayed,
+        "scorer": payload.get("scorer"),
+        "not_covered": payload.get("not_covered"),
+    }
+    if schema == PERSPECTIVE_SCHEMA:
+        verdict["cohorts"] = [
+            {"group_id": g["group_id"],
+             "risk_upper_bound": g["risk_upper_bound_micro"] / 1_000_000}
+            for g in payload.get("groups", [])
+        ]
+        if "controls_all" in payload:
+            verdict["controls_all"] = payload["controls_all"]
+    else:
+        verdict["risk_upper_bound"] = payload["risk_upper_bound_micro"] / 1_000_000
+        if "controlled" in payload:
+            verdict["controlled"] = payload["controlled"]
+    json.dump(verdict, sys.stdout, indent=2 if getattr(args, "pretty", False) else None)
+    sys.stdout.write("\n")
+    return 0
+
+
 # ─── Argparse wiring ─────────────────────────────────────────────────
 
 def build_parser() -> argparse.ArgumentParser:
@@ -2844,6 +2930,33 @@ def build_parser() -> argparse.ArgumentParser:
         help="Pretty-print the JSON overview.",
     )
     p_frontier.set_defaults(func=cmd_frontier)
+
+    # verify-meaning — external-party on-ramp for the meaning receipt family.
+    p_vm = subparsers.add_parser(
+        "verify-meaning",
+        help="Verify a meaning-risk or perspective receipt (as a third party).",
+        description=(
+            "Verify a sum.meaning_risk_receipt.v1 or "
+            "sum.perspective_risk_receipt.v1 envelope against a JWKS — the "
+            "external-party path (you did not issue it). Dispatches on the "
+            "receipt's schema. With --losses (and --group-ids for a "
+            "perspective receipt) supplied as JSON files, ALSO replays the "
+            "bound. Prints a verdict JSON; exit 0 = verified, 1 = rejected, "
+            "2 = usage error. Needs [research] + [receipt-verify]."
+        ),
+    )
+    p_vm.add_argument("receipt", help="Path to the receipt JSON ('-' for stdin).")
+    p_vm.add_argument("--jwks", required=True, help="Path to the public JWKS JSON.")
+    p_vm.add_argument(
+        "--losses", default=None,
+        help="Optional path to a JSON array of per-pair losses (enables replay).",
+    )
+    p_vm.add_argument(
+        "--group-ids", dest="group_ids", default=None,
+        help="Optional path to a JSON array of cohort labels (perspective replay).",
+    )
+    p_vm.add_argument("--pretty", action="store_true", help="Pretty-print the verdict.")
+    p_vm.set_defaults(func=cmd_verify_meaning)
 
     return parser
 
