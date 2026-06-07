@@ -115,7 +115,12 @@ def build_perspective_payload(
         )
 
     rounded = _quantized(losses)
-    delta = grouped.marginal.delta
+    # Certify at the SAME quantised delta verify recomputes from
+    # delta_micro — else an off-grid delta (>6 dp, e.g. a Bonferroni
+    # threshold or 1/30) shifts every bound by ~1 micro and false-rejects a
+    # genuine receipt. This is the #275 bug class; the loss vector is
+    # already quantised via _quantized, the scalar delta must be too.
+    delta = _from_micro(_to_micro(grouped.marginal.delta))
     canonical = certify_meaning_risk_by_group(
         rounded, group_ids,
         scorer_name=grouped.marginal.scorer_name,
