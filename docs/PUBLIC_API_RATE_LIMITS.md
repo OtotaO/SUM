@@ -86,7 +86,7 @@ sum transform apply slider --input doc.json --parameters '{"density":1.0,"length
 
 The CLI exposes the same transform-registry surface as `/api/transform`, signs receipts with your own key (set `SUM_TRANSFORM_SIGNING_JWK` + `SUM_TRANSFORM_SIGNING_KID`), and has no rate limit.
 
-Free-provider routing (Hugging Face, Ollama, llama.cpp, custom OpenAI-compatible endpoints like Modal or Fireworks.ai) is wired in `sum_engine_internal/ensemble/llm_dispatch.get_adapter` — see `docs/BYOK_AND_FREE_PROVIDERS.md` (forthcoming) for the matrix.
+Free-provider routing (Hugging Face, Ollama, llama.cpp, custom OpenAI-compatible endpoints like Modal or Fireworks.ai) is wired in `sum_engine_internal/ensemble/llm_dispatch.get_adapter` — see `docs/BYOK_AND_FREE_PROVIDERS.md` for the matrix.
 
 ## Operator notes
 

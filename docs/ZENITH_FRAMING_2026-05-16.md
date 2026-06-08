@@ -42,7 +42,7 @@ same facts, rendered for:
 - machine planner
 ```
 
-The substrate doesn't change. The naming changes how the slider lands ethically and practically. Stylistic sliders are about prose feel; perspective receipts are about *whose epistemic frame is being served*. The NLI audit + per-axis drift threshold already provide the fact-preservation guarantee within a perspective shift.
+The substrate doesn't change. The naming changes how the slider lands ethically and practically. Stylistic sliders are about prose feel; perspective receipts are about *whose epistemic frame is being served*. The NLI audit + per-axis drift threshold already provide the fact-preservation *measurement* within a perspective shift (measured, not a same-commit-replayable guarantee — see PROOF_BOUNDARY §2.6).
 
 **Why this is genuinely new:** the original five-axis slider can be sold as "AI writing tool with style controls." Perspective Receipts can be sold as "verifiable epistemic translation between communities." Same code, different category.
 
@@ -97,7 +97,7 @@ Recommended action:                safe to reuse as attested transform,
                                    not safe as factual authority
 ```
 
-This is the operational realization of the proof-boundary discipline. It would replace "verified: true" with a structured per-dimension report. v1 of this is one of the four "go when cycles" items the engine session is executing against in May–June 2026.
+This is the operational realization of the proof-boundary discipline. It would replace "verified: true" with a structured per-dimension report. **(Shipped v0.7.0 as `sum verify --explain` → `sum.verify_explained.v1`.)**
 
 ## Where the framing overreaches relative to current constraints
 

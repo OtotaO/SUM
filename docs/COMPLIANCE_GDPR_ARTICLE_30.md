@@ -165,7 +165,8 @@ contracts that span every regime:
   schema from `cmd_compliance_check`.
 - **C3.** Exit codes: 0 = ok, 1 = violations, 2 = usage error.
 
-Adding a third regime (the playbook lists HIPAA § 164.312(b),
-SOC 2 CC7.2, ISO 27001 A.8.15, PCI DSS 4.0 Req 10 as candidates)
+Adding a further regime (HIPAA § 164.312(b), SOC 2 CC7.2,
+ISO 27001 A.8.15, PCI DSS 4.0 Req 10 — all four have since **shipped**,
+so all six regimes are live)
 inherits all three contracts automatically by registering in both
 the description registry and the dispatch table.

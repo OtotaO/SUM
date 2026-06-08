@@ -108,7 +108,14 @@ jobs:
         pip install -r requirements-prod.txt
 
     - name: Download Spacy Model
-      run: python -m spacy download en_core_web_sm
+      # Retry with backoff: the model wheel is fetched live from
+      # github.com/explosion/spacy-models, which intermittently 504s
+      # (observed 2026-06-08, a pure-docs PR red on a Gateway Time-out).
+      run: |
+        n=0; until python -m spacy download en_core_web_sm; do
+          n=$((n+1)); [ "$n" -ge 5 ] && { echo "spacy model download failed after 5 attempts"; exit 1; }
+          echo "spacy download retry $n/5 in $((n*10))s..."; sleep $((n*10))
+        done
 
     - name: Run Gödel-State Algebra Bounds
       env:
@@ -156,7 +163,11 @@ jobs:
         # spaCy English model for the sieve + the chunked sentencizer.
         # Required by both verify_cross_runtime (sieve extraction in
         # K-matrix) and attest_repo_docs --check (self-attestation).
-        python -m spacy download en_core_web_sm
+        # Retry with backoff — the model CDN intermittently 504s.
+        n=0; until python -m spacy download en_core_web_sm; do
+          n=$((n+1)); [ "$n" -ge 5 ] && { echo "spacy model download failed after 5 attempts"; exit 1; }
+          echo "spacy download retry $n/5 in $((n*10))s..."; sleep $((n*10))
+        done
 
     - name: Run K1/K1-multiword/K2/K3/K4 valid-path kill-experiments
       # K1 + K1-multiword: CanonicalBundle structural round-trip
@@ -460,7 +471,10 @@ jobs:
       run: |
         python -m venv /tmp/sumtest
         /tmp/sumtest/bin/pip install --quiet "dist/$(ls dist | grep '.whl$')[sieve]"
-        /tmp/sumtest/bin/python -m spacy download en_core_web_sm
+        n=0; until /tmp/sumtest/bin/python -m spacy download en_core_web_sm; do
+          n=$((n+1)); [ "$n" -ge 5 ] && { echo "spacy model download failed after 5 attempts"; exit 1; }
+          echo "spacy download retry $n/5 in $((n*10))s..."; sleep $((n*10))
+        done
         /tmp/sumtest/bin/sum --version
         echo "Alice likes cats. Bob owns a dog." | /tmp/sumtest/bin/sum attest --extractor=sieve > /tmp/bundle.json
         /tmp/sumtest/bin/sum verify --input /tmp/bundle.json
@@ -500,7 +514,10 @@ jobs:
         python -m venv /tmp/sumfloor
         /tmp/sumfloor/bin/pip install --quiet "spacy==3.8.0" "click==8.0.0"
         /tmp/sumfloor/bin/pip install --quiet "dist/$(ls dist | grep '.whl$')[sieve]"
-        /tmp/sumfloor/bin/python -m spacy download en_core_web_sm
+        n=0; until /tmp/sumfloor/bin/python -m spacy download en_core_web_sm; do
+          n=$((n+1)); [ "$n" -ge 5 ] && { echo "spacy model download failed after 5 attempts"; exit 1; }
+          echo "spacy download retry $n/5 in $((n*10))s..."; sleep $((n*10))
+        done
         /tmp/sumfloor/bin/sum --version
         echo "Alice likes cats. Bob owns a dog." | /tmp/sumfloor/bin/sum attest --extractor=sieve > /tmp/floor_bundle.json
         /tmp/sumfloor/bin/sum verify --input /tmp/floor_bundle.json

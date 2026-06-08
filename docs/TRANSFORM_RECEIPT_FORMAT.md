@@ -57,7 +57,7 @@ The four top-level keys are siblings, not nested:
 | `model` | string | The model that ACTUALLY served the call, taken from the LLM API response's reported `model` field — NOT the configured-default. May be a more specific snapshot id than the requested tag. For non-LLM transforms (e.g. deterministic compose), the value is `canonical-deterministic-v0` or the transform's documented marker. |
 | `provider` | string | One of the values enumerated in §1.2 (inherited from `sum.render_receipt.v1`'s provider taxonomy). |
 | `signed_at` | string | ISO-8601 UTC timestamp at issuance time. See §1.3 for cache-HIT durability semantics. |
-| `digital_source_type` | string | C2PA `digitalSourceType` per spec.c2pa.org v2.2. `trainedAlgorithmicMedia` for LLM-served transforms; `algorithmicMedia` for deterministic ones. |
+| `digital_source_type` | string | C2PA `digitalSourceType` per spec.c2pa.org v2.4 (values unchanged 2.2→2.4). `trainedAlgorithmicMedia` for LLM-served transforms; `algorithmicMedia` for deterministic ones. |
 
 ### 1.2 Transform registry (v1)
 
