@@ -111,7 +111,19 @@ They belong on the internal-research side, like the sheaf detector.
   exact dual of the slider's rate kernel — `upper-bound on E[loss] =
   1 − lower-bound on E[1−loss]` — so it reuses the adversarially-hardened
   Hoeffding / Clopper–Pearson bounds (NaN-rejecting, clamped) rather
-  than re-deriving a concentration inequality.
+  than re-deriving a concentration inequality. A third method,
+  **empirical-Bernstein** (`method="empirical_bernstein"`; Maurer &
+  Pontil, COLT 2009), scales the deviation with the *observed* variance.
+  Because faithful transforms cluster near zero loss — a low-variance
+  regime — it certifies a materially **tighter** ceiling at realistic
+  batch `n` (n ≳ 64): on a 200-pair faithful batch it lands a 0.073
+  ceiling where Hoeffding gives ≈0.117 (the difference between a useful
+  and a near-vacuous receipt — F22). It is **not** a universal upgrade:
+  the additive `7·ln(2/δ)/(3(n−1))` term dominates at tiny `n`, so
+  Hoeffding is tighter there — eB is the right tool for a real batch, and
+  the Monte-Carlo coverage test (`test_empirical_bernstein_coverage_valid`,
+  `empirical_risk_coverage(..., "empirical_bernstein")`) is the receipt
+  that the tighter radius stays valid (≥ 1−δ coverage).
 - **`receipt.py`** — `sum.meaning_risk_receipt.v1`: sign + verify +
   **replay**. The payload commits a `losses_hash`; a verifier handed the
   same loss vector side-band recomputes the hash *and* re-runs the

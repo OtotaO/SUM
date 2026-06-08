@@ -14,6 +14,7 @@ import numpy as np
 import pytest
 
 from sum_engine_internal.research.conformal.risk_control import (
+    empirical_bernstein_lower_bound,
     hoeffding_lower_bound,
 )
 from sum_engine_internal.research.meaning.conformal_meaning import (
@@ -29,7 +30,9 @@ _SCORER = dict(scorer_name="lexical-coverage-bidirectional", scorer_version="1")
 # ── Contract: empirical coverage ──────────────────────────────────────
 
 
-@pytest.mark.parametrize("method", ["hoeffding", "clopper_pearson"])
+@pytest.mark.parametrize(
+    "method", ["hoeffding", "clopper_pearson", "empirical_bernstein"]
+)
 @pytest.mark.parametrize(
     ("true_loss_rate", "n", "delta"),
     [
@@ -40,13 +43,42 @@ _SCORER = dict(scorer_name="lexical-coverage-bidirectional", scorer_version="1")
     ],
 )
 def test_upper_bound_covers_true_loss_rate(true_loss_rate, n, delta, method):
-    """A valid (1-δ) upper bound must achieve coverage ≥ 1-δ."""
+    """A valid (1-δ) upper bound must achieve coverage ≥ 1-δ — for EVERY
+    method, including the variance-adaptive empirical-Bernstein bound. The
+    Monte-Carlo coverage is the receipt that eB's tighter radius stays
+    sound on the loss (dual) side too."""
     coverage = empirical_risk_coverage(
         true_loss_rate, n, delta, method=method, n_trials=4000, seed=11
     )
     # ±0.01 flake band (≈4σ at n_trials=4000), matching the rate kernel's
     # coverage-test tolerance.
     assert coverage >= (1 - delta) - 0.01
+
+
+def test_empirical_bernstein_is_dual_of_rate_kernel():
+    """The meaning-risk eB ceiling is exactly 1 − (eB preservation LB) —
+    the same duality the Hoeffding path obeys, so the variance-adaptive
+    bound composes with the rest of the receipt machinery unchanged."""
+    losses = [0.03, 0.0, 0.05, 0.02, 0.04, 0.01, 0.0, 0.03] * 8  # low-variance batch
+    g = certify_meaning_risk(
+        losses, delta=0.05, method="empirical_bernstein", **_SCORER
+    )
+    preservations = [1.0 - x for x in losses]
+    lb = empirical_bernstein_lower_bound(preservations, 0.05)
+    assert g.risk_upper_bound == pytest.approx(1.0 - lb, abs=1e-12)
+    assert g.method == "empirical_bernstein"
+
+
+def test_empirical_bernstein_tighter_meaning_ceiling_at_batch():
+    """The product win (F22): on a faithful, low-variance batch eB
+    certifies a LOWER meaning-loss ceiling than Hoeffding — a useful
+    receipt where Hoeffding's was near-vacuous."""
+    losses = [0.03] * 200  # faithful batch, preservation 0.97
+    g_ho = certify_meaning_risk(losses, delta=0.05, method="hoeffding", **_SCORER)
+    g_eb = certify_meaning_risk(
+        losses, delta=0.05, method="empirical_bernstein", **_SCORER
+    )
+    assert g_eb.risk_upper_bound < g_ho.risk_upper_bound
 
 
 # ── Algebra: duality with the rate kernel ─────────────────────────────

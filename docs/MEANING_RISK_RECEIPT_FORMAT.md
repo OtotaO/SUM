@@ -38,7 +38,7 @@ the render-receipt and trust-root verifiers use).
 | `loss_definition` | string | one-line human semantics of the proxy's `[0,1]` number. |
 | `n` | int | calibration sample size (number of `(source, transform)` pairs). |
 | `delta_micro` | int | miscoverage allowance in **integer micro-units** (1e-6); confidence = `1 − delta_micro/1e6`. e.g. `50000` = δ 0.05. |
-| `method` | string | `"hoeffding"` or `"clopper_pearson"`. |
+| `method` | string | `"hoeffding"`, `"clopper_pearson"`, or `"empirical_bernstein"` (variance-adaptive — tighter at batch `n` in the low-variance regime; see `docs/MEANING_LOSS_FRONTIER.md`). Replay re-certifies with the pinned method, so it must round-trip exactly. |
 | `point_estimate_micro` | int | observed mean meaning-loss in micro-units. e.g. `349024` = 0.349024. |
 | `risk_upper_bound_micro` | int | the certified `(1−delta)` **upper** bound on `E[loss]` in micro-units. The headline number. e.g. `654992` = 0.654992. |
 | `losses_hash` | string | `"sha256-<hex>"` over JCS-canonical bytes of the **integer micro-unit** per-pair loss vector. **The replay anchor.** |

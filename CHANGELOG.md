@@ -23,6 +23,19 @@ fact-preservation: measuring sub-factual meaning-loss *honestly*.
   faithful↔compressed path of scored renderings) under the slider / number-box /
   scrubber / API; the CLI cycles versions of text *or code*, each scored.
   `docs/PRODUCT_VISION.md`.
+- **Empirical-Bernstein bound** (`method="empirical_bernstein"`; Maurer & Pontil,
+  COLT 2009) — a variance-adaptive third certifier alongside Hoeffding /
+  Clopper–Pearson. In the low-variance regime faithful transforms live in, it
+  certifies a materially tighter ceiling at batch `n` (0.073 vs Hoeffding's
+  ≈0.117 on a 200-pair faithful batch — the difference between a useful and a
+  near-vacuous receipt, F22). Honest regime note: looser than Hoeffding at tiny
+  `n` (the additive term dominates), so it is a *batch* instrument. Threads
+  through `certify_meaning_risk[_by_group]`, the receipt, and Stage-B replay
+  unchanged. The Monte-Carlo coverage test is the receipt that the tighter radius
+  stays valid (≥ 1−δ); a new **Bonferroni simultaneous joint-coverage**
+  Monte-Carlo pins that the group-conditional `simultaneous=True` mode delivers
+  the all-cohorts guarantee (CP joint coverage lands at 0.958 against a 0.95
+  target — measured, not vacuous).
 - **Adversarial-review hardening** — three review rounds closed 16 + 4 findings
   (a forgeable `controlled` flag; an off-grid `delta`/`alpha` replay-symmetry
   bug; doc/honesty drift). Property-based fuzzing + a committed golden.

@@ -54,6 +54,7 @@ import numpy as np
 
 from sum_engine_internal.research.conformal.risk_control import (
     clopper_pearson_lower_bound,
+    empirical_bernstein_lower_bound,
     hoeffding_lower_bound,
 )
 
@@ -98,7 +99,7 @@ def certify_meaning_risk(
     scorer_name: str,
     scorer_version: str,
     delta: float = 0.05,
-    method: Literal["auto", "hoeffding", "clopper_pearson"] = "hoeffding",
+    method: Literal["auto", "hoeffding", "clopper_pearson", "empirical_bernstein"] = "hoeffding",
 ) -> MeaningRiskGuarantee:
     """Certify a distribution-free upper bound on expected meaning-loss.
 
@@ -151,6 +152,8 @@ def certify_meaning_risk(
         preservation_lb = clopper_pearson_lower_bound(successes, n, delta)
     elif chosen == "hoeffding":
         preservation_lb = hoeffding_lower_bound(preservations, delta)
+    elif chosen == "empirical_bernstein":
+        preservation_lb = empirical_bernstein_lower_bound(preservations, delta)
     else:
         raise ValueError(f"unknown method {method!r}")
 
@@ -170,7 +173,7 @@ def empirical_risk_coverage(
     true_loss_rate: float,
     n: int,
     delta: float,
-    method: Literal["hoeffding", "clopper_pearson"] = "hoeffding",
+    method: Literal["hoeffding", "clopper_pearson", "empirical_bernstein"] = "hoeffding",
     n_trials: int = 2000,
     seed: int = 0,
 ) -> float:
@@ -182,7 +185,7 @@ def empirical_risk_coverage(
 
     The data-generating model draws each pair's loss as Bernoulli at
     ``true_loss_rate`` (the binary preserved/lost view), so this
-    exercises both methods on a common ground truth.
+    exercises every method on a common ground truth.
     """
     if not (0.0 <= true_loss_rate <= 1.0):
         raise ValueError("true_loss_rate must be in [0, 1]")
@@ -195,6 +198,8 @@ def empirical_risk_coverage(
             preservation_lb = clopper_pearson_lower_bound(
                 int(round(float(preservations.sum()))), n, delta
             )
+        elif method == "empirical_bernstein":
+            preservation_lb = empirical_bernstein_lower_bound(preservations, delta)
         else:
             preservation_lb = hoeffding_lower_bound(preservations, delta)
         risk_ub = 1.0 - preservation_lb
@@ -239,7 +244,7 @@ def certify_meaning_risk_by_group(
     scorer_name: str,
     scorer_version: str,
     delta: float = 0.05,
-    method: Literal["auto", "hoeffding", "clopper_pearson"] = "hoeffding",
+    method: Literal["auto", "hoeffding", "clopper_pearson", "empirical_bernstein"] = "hoeffding",
     simultaneous: bool = False,
 ) -> GroupedMeaningRisk:
     """Certify a meaning-loss bound *per declared cohort* — group-conditional
