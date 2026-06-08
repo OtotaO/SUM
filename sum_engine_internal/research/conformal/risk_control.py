@@ -106,6 +106,51 @@ def hoeffding_lower_bound(values: Sequence[float], delta: float = 0.05) -> float
     return max(0.0, min(1.0, mean - radius))
 
 
+def empirical_bernstein_lower_bound(
+    values: Sequence[float], delta: float = 0.05
+) -> float:
+    """One-sided (1-δ) lower confidence bound on the mean of [0, 1]
+    observations via the **empirical Bernstein** inequality (Maurer &
+    Pontil, *Empirical Bernstein Bounds and Sample Variance Penalization*,
+    COLT 2009, Thm 11). Distribution-free, finite-sample. Clamped to
+    [0, 1].
+
+        μ ≥ X̄ − sqrt(2·V_n·ln(2/δ)/n) − 7·ln(2/δ)/(3(n−1))
+
+    with ``V_n`` the *unbiased* sample variance. The win over Hoeffding:
+    the deviation scales with the **observed variance**, so for
+    low-variance data — the regime meaning-loss lives in, where faithful
+    transforms cluster near 0 — it is materially tighter at moderate-to-
+    large ``n``.
+
+    Honest regime note (it is NOT a universal upgrade): the additive
+    ``7·ln(2/δ)/(3(n−1))`` term dominates at *small* ``n``, so at tiny
+    sample sizes Hoeffding can be tighter. eB is the right tool for a
+    real **batch** (n in the hundreds), which is exactly what a
+    meaning-risk receipt should certify (see F22). For ``n == 1`` the
+    sample variance is undefined; we fall back to Hoeffding (valid at
+    n=1) to stay conservative.
+    """
+    _validate_delta(delta)
+    arr = np.asarray(values, dtype=np.float64)
+    if arr.ndim != 1:
+        raise ValueError(f"values must be 1-D; got shape {arr.shape}")
+    n = arr.size
+    if n < 1:
+        raise ValueError("values must be non-empty")
+    if not np.all(np.isfinite(arr)):
+        raise ValueError("values must all be finite (no NaN/inf)")
+    if np.any(arr < 0.0) or np.any(arr > 1.0):
+        raise ValueError("empirical-Bernstein requires all values in [0, 1]")
+    if n == 1:
+        return hoeffding_lower_bound(arr, delta)
+    mean = float(arr.mean())
+    var = float(arr.var(ddof=1))  # unbiased sample variance
+    t = math.log(2.0 / delta)
+    radius = math.sqrt(2.0 * var * t / n) + 7.0 * t / (3.0 * (n - 1))
+    return max(0.0, min(1.0, mean - radius))
+
+
 def clopper_pearson_lower_bound(successes: int, n: int, delta: float = 0.05) -> float:
     """Exact one-sided (1-δ) lower confidence limit for a binomial
     proportion (``successes`` of ``n`` Bernoulli trials).
@@ -129,14 +174,18 @@ def clopper_pearson_lower_bound(successes: int, n: int, delta: float = 0.05) -> 
 def certify_rate(
     observations: Sequence[float],
     delta: float = 0.05,
-    method: Literal["auto", "hoeffding", "clopper_pearson"] = "auto",
+    method: Literal[
+        "auto", "hoeffding", "clopper_pearson", "empirical_bernstein"
+    ] = "auto",
 ) -> RateGuarantee:
     """Certify a distribution-free lower bound on the preservation rate.
 
     ``method="auto"`` picks Clopper–Pearson when every observation is
     exactly 0 or 1 (the per-fact preserved/lost view — exact and
     tightest) and Hoeffding otherwise (the per-cell [0, 1] fraction
-    view — always valid).
+    view — always valid). ``"empirical_bernstein"`` is a variance-adaptive
+    alternative for fractional data — tighter than Hoeffding for
+    low-variance batches (see ``empirical_bernstein_lower_bound``).
     """
     arr = np.asarray(observations, dtype=np.float64)
     if arr.ndim != 1:
@@ -166,6 +215,8 @@ def certify_rate(
         lb = clopper_pearson_lower_bound(successes, n, delta)
     elif chosen == "hoeffding":
         lb = hoeffding_lower_bound(arr, delta)
+    elif chosen == "empirical_bernstein":
+        lb = empirical_bernstein_lower_bound(arr, delta)
     else:
         raise ValueError(f"unknown method {method!r}")
 
@@ -185,7 +236,7 @@ def empirical_bound_coverage(
     true_rate: float,
     n: int,
     delta: float,
-    method: Literal["hoeffding", "clopper_pearson"],
+    method: Literal["hoeffding", "clopper_pearson", "empirical_bernstein"],
     n_trials: int = 2000,
     seed: int = 0,
 ) -> float:
@@ -200,6 +251,8 @@ def empirical_bound_coverage(
         draws = (rng.uniform(size=n) < true_rate).astype(np.float64)
         if method == "clopper_pearson":
             lb = clopper_pearson_lower_bound(int(draws.sum()), n, delta)
+        elif method == "empirical_bernstein":
+            lb = empirical_bernstein_lower_bound(draws, delta)
         else:
             lb = hoeffding_lower_bound(draws, delta)
         if lb <= true_rate:

@@ -9,6 +9,7 @@ honesty, and the Bonferroni simultaneous mode.
 """
 from __future__ import annotations
 
+import numpy as np
 import pytest
 
 from sum_engine_internal.research.meaning import (
@@ -86,6 +87,105 @@ def test_controls_all_true_when_every_cohort_controlled():
     groups = ["a"] * 100 + ["b"] * 100
     g = certify_meaning_risk_by_group(losses, groups, **_S)
     assert g.controls_all(0.2) is True
+
+
+# ── Bonferroni simultaneous JOINT coverage (the Monte-Carlo receipt) ──
+#
+# test_simultaneous_bonferroni_widens_bounds proves the per-cohort radii
+# WIDEN under simultaneous=True. That is necessary but not sufficient: the
+# claim the mode actually makes is that ALL cohort bounds hold *jointly*
+# with confidence ≥ 1−δ. Widening without measuring joint coverage could
+# still under-cover. This Monte-Carlo measures the joint event directly —
+# it is the empirical receipt for the simultaneous guarantee, the audit's
+# named highest-value missing test.
+
+
+def _joint_simultaneous_coverage(
+    true_rates, n_per, delta, method, *, n_trials=2000, seed=0
+):
+    """Fraction of trials in which EVERY cohort's certified ceiling holds
+    at once, under the Bonferroni (simultaneous=True) split. ``true_rates``
+    maps cohort id → its true per-pair loss rate (the data-generating
+    Bernoulli mean)."""
+    rng = np.random.RandomState(seed)
+    cohorts = sorted(true_rates)
+    all_held = 0
+    for _ in range(n_trials):
+        losses: list[float] = []
+        gids: list[str] = []
+        for c in cohorts:
+            draws = (rng.uniform(size=n_per) < true_rates[c]).astype(float)
+            losses.extend(draws.tolist())
+            gids.extend([c] * n_per)
+        g = certify_meaning_risk_by_group(
+            losses, gids, delta=delta, method=method, simultaneous=True, **_S
+        )
+        if all(g.groups[c].risk_upper_bound >= true_rates[c] for c in cohorts):
+            all_held += 1
+    return all_held / n_trials
+
+
+@pytest.mark.parametrize(
+    "method", ["hoeffding", "clopper_pearson", "empirical_bernstein"]
+)
+def test_simultaneous_bonferroni_joint_coverage_holds(method):
+    """The named receipt: under simultaneous=True the probability that ALL
+    cohort ceilings hold at once is ≥ 1−δ. The Bonferroni δ/G split is what
+    converts G separate per-cohort guarantees into one joint guarantee —
+    this measures that the joint event actually clears the target, for
+    every method (the variance-adaptive eB included)."""
+    true_rates = {"novice": 0.10, "expert": 0.20, "regulator": 0.30}
+    delta = 0.05
+    coverage = _joint_simultaneous_coverage(
+        true_rates, n_per=60, delta=delta, method=method, n_trials=2000, seed=17
+    )
+    assert coverage >= (1 - delta) - 0.01, (
+        f"simultaneous={method} joint coverage {coverage:.4f} < target "
+        f"{1 - delta:.2f} — the Bonferroni split failed to deliver the "
+        f"all-cohorts guarantee"
+    )
+
+
+def test_independent_mode_need_not_hold_jointly():
+    """The contrast that justifies Bonferroni: with simultaneous=False each
+    cohort holds at 1−δ on its OWN, so the joint event is only guaranteed
+    at ~(1−δ)^G < 1−δ. We assert the structural fact (independent joint
+    coverage ≤ Bonferroni joint coverage) rather than a brittle threshold,
+    since the conservative kernels can still over-cover."""
+    true_rates = {f"c{i}": 0.25 for i in range(8)}  # many cohorts → product bites
+    delta = 0.10
+    rng = np.random.RandomState(5)
+    cohorts = sorted(true_rates)
+
+    def joint(simultaneous):
+        held = 0
+        for _ in range(1500):
+            losses: list[float] = []
+            gids: list[str] = []
+            for c in cohorts:
+                draws = (rng.uniform(size=40) < true_rates[c]).astype(float)
+                losses.extend(draws.tolist())
+                gids.extend([c] * 40)
+            g = certify_meaning_risk_by_group(
+                losses, gids, delta=delta, simultaneous=simultaneous, **_S
+            )
+            if all(g.groups[c].risk_upper_bound >= true_rates[c] for c in cohorts):
+                held += 1
+        return held / 1500
+
+    assert joint(simultaneous=True) >= joint(simultaneous=False) - 0.01
+
+
+def test_empirical_bernstein_routes_through_by_group():
+    """The eB method threads cleanly through the group-conditional path —
+    marginal and every cohort certified with the variance-adaptive bound."""
+    losses = [0.03] * 120 + [0.04] * 120
+    groups = ["a"] * 120 + ["b"] * 120
+    g = certify_meaning_risk_by_group(
+        losses, groups, method="empirical_bernstein", **_S
+    )
+    assert g.marginal.method == "empirical_bernstein"
+    assert all(grp.method == "empirical_bernstein" for grp in g.groups.values())
 
 
 # ── validation ────────────────────────────────────────────────────────

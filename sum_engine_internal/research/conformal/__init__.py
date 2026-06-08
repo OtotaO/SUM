@@ -37,6 +37,7 @@ from sum_engine_internal.research.conformal.risk_control import (
     RateGuarantee,
     certify_rate,
     clopper_pearson_lower_bound,
+    empirical_bernstein_lower_bound,
     empirical_bound_coverage,
     hoeffding_lower_bound,
 )
@@ -51,6 +52,7 @@ __all__ = [
     "RateGuarantee",
     "certify_rate",
     "clopper_pearson_lower_bound",
+    "empirical_bernstein_lower_bound",
     "hoeffding_lower_bound",
     "empirical_bound_coverage",
 ]
