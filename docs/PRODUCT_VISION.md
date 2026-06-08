@@ -176,3 +176,8 @@ make rungs 1–3 demonstrable without either.
 any proven claim. Where it describes a number a user sees, the proof-
 boundary discipline in `docs/PROOF_BOUNDARY.md` and the honest line in §4
 govern what may be said about that number.*
+
+*The receipts behind every surface are specified as a family in
+[`RECEIPT_FAMILY_SPEC.md`](RECEIPT_FAMILY_SPEC.md) — the unified overview of
+the four transformation-receipt schemas and where each draws the
+proved/measured line.*
