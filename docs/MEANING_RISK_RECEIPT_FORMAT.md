@@ -112,6 +112,17 @@ Stage B**. That separation
 (`SIGNATURE_INVALID` vs `MeaningReceiptReplayError`) is deliberate: it
 distinguishes *tampered-in-transit* from *overclaimed-at-issue*.
 
+**Cross-runtime scope (honest).** Stage A is cross-runtime — the signature,
+schema, header, and disclosure invariants verify in Python *and* in
+Node/browser (`single_file_demo/meaning_receipt_verifier.js`), because the
+payload is float-free and canonicalises byte-identically. **Stage B replay
+is Python-only** (`verify_meaning_risk_receipt`): it re-runs the conformal
+certifier, which is not ported to JS, and for a **model-judge** scorer the
+recomputation is additionally machine-pinned (cross-hardware float drift in
+the judge). So "verifiable in every runtime" means the *receipt format and
+signature*, not the *meaning recomputation* — the JS verifier states this
+in its own scope banner.
+
 ## 4. Trust scope — what a verified receipt does and does NOT prove
 
 **Proves** (Stage A + Stage B): authentic signature; required disclosure
@@ -147,3 +158,44 @@ Adding or removing a payload field is a schema bump (`...v2`).
 Verifiers fail closed on an unknown `schema` (Step 0.5 of the shared
 algorithm). The `not_covered` list may *grow* within v1 (declaring more
 out-of-scope layers is always safe); it must never be empty.
+
+## 6. Sibling schema — `sum.perspective_risk_receipt.v1` (group-conditional)
+
+The **Perspective Receipt** seals the *marginal* bound **plus a separate,
+valid-within-its-group bound for each declared cohort** (e.g. per language
+/ genre / named perspective — novice / expert / regulator) in one
+signature. It reuses this doc's machinery wholesale (Ed25519/JCS/JWS,
+integer-micro float-free wire, required `not_covered` + `disclosure`, the
+two-stage verify) and differs only in the payload shape. Code:
+`sum_engine_internal/research/meaning/perspective_receipt.py`; golden:
+`fixtures/perspective_receipts/`.
+
+### 6.1 Payload fields (additions / changes vs §2)
+
+| Field | Type | Meaning |
+|---|---|---|
+| `simultaneous` | bool | `true` ⇒ each cohort certified at `delta/G` (Bonferroni), so ALL cohort bounds hold *jointly* at ≥ 1−δ; `false` ⇒ each holds at 1−δ on its own. |
+| `evidence_hash` | string | `"sha256-<hex>"` over the JCS bytes of the integer-micro `[[micro_loss, cohort_id], …]` pairs. **The replay anchor** — binds losses *to their cohorts* (the marginal `losses_hash` could not). |
+| `marginal_point_estimate_micro` | int | observed mean loss over all pairs, micro-units. |
+| `marginal_risk_upper_bound_micro` | int | the marginal certified ceiling, micro-units (the §2 headline, here for the whole set). |
+| `groups` | object[] | one block per cohort, sorted by `group_id`: `{group_id, n, point_estimate_micro, risk_upper_bound_micro [, controlled]}`. Each block's bound is certified over *only that cohort's* losses (each cohort pays its own finite-sample radius — a small cohort gets a wide bound; honest, not a defect). |
+| `controls_all` | bool | *(present iff `alpha_target_micro` is)* whether **every** cohort's ceiling ≤ `alpha_target_micro` — the "controlled for every cohort, not just on average" check. |
+
+`scorer` / `scorer_version` / `loss_definition` / `method` / `delta_micro`
+/ `n` / `corpus_id` / `transform` / `not_covered` / `disclosure` /
+`signed_at` carry the same semantics as §2. `delta_micro` is the
+**marginal** δ; the per-cohort δ under `simultaneous` is `delta/G` and is
+recomputed by the verifier from the group count, not stored per block.
+
+### 6.2 Replay
+
+Stage A is identical (signature + schema gate + disclosure invariants).
+Stage B recomputes `evidence_hash` from the side-band `(losses, group_ids)`,
+re-runs `certify_meaning_risk_by_group` over the quantised vector at the
+payload's `method` / `delta_micro` / `simultaneous`, and requires **every**
+block's `risk_upper_bound_micro`, `point_estimate_micro`, `n` (and
+`controlled` / `controls_all` when `alpha_target_micro` is present) to match
+by exact integer equality. The off-grid-δ discipline (§3) applies per
+cohort: the scalar δ is quantised in build so a Bonferroni `delta/G` (e.g.
+1/30) cannot shift a bound by ~1 micro and false-reject. Same cross-runtime
+scope as §3 — Stage A everywhere, Stage B Python-only.

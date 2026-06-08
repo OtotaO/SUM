@@ -153,7 +153,7 @@ A verified receipt proves the issuer signed the payload. To bind the receipt to 
 - For transforms that accept user-supplied input (rather than re-fetching it from a content-addressed store), recompute `sha256(supplied_input_bytes)` and compare to `payload.input_hash`. Mismatch means the consumer's local input is not what the issuer signed.
 - Recompute `sha256(JCS(parameters_object))` and compare to `payload.parameters_hash`. Used when replaying a transform deterministically.
 
-The verifier algorithm in §2.1 does NOT do these comparisons automatically — they require the consumer to know which transform produced the receipt and its canonicalisation rules. The reference Python verifier exposes `verify_transform_receipt(receipt, jwks)` for the signature check and separate `compare_input_hash(...)`, `compare_output_hash(...)`, `compare_parameters_hash(...)` helpers for the application-layer checks.
+The verifier algorithm in §2.1 does NOT do these comparisons automatically — they require the consumer to know which transform produced the receipt and its canonicalisation rules. The reference Python module (`sum_engine_internal/transform_receipt/`) exposes `verify_transform_receipt(receipt, jwks)` for the signature check and `canonical_hash(...)` for recomputing a JCS-SHA-256 hash; the consumer performs the application-layer binding itself by comparing its own `sha256(...)` / `canonical_hash(...)` of the served bytes against `payload.output_hash` / `input_hash` / `parameters_hash`. There are no dedicated `compare_*` helpers — the comparison is a plain equality check the consumer runs.
 
 ---
 
@@ -276,5 +276,5 @@ If `payload.source_chain_hash` is present, the receipt binds to a list of (claim
 - [`TRANSFORM_REGISTRY.md`](TRANSFORM_REGISTRY.md) — design doc for the transform-registry pattern: how transforms are registered, what contracts they implement, where they live in the codebase.
 - [`PROOF_BOUNDARY.md`](PROOF_BOUNDARY.md) — proved-vs-measured discipline. The trust-scope above maps to §1.3.1 (cross-runtime Ed25519 trust triangle).
 - [`THREAT_MODEL.md`](THREAT_MODEL.md) — attack surface. New attack vectors specific to the transform registry (e.g., transform-name spoofing, parameter-hash collision) are added in the T1 implementation PR.
-- [`AUDIT_LOG_FORMAT.md`](AUDIT_LOG_FORMAT.md) — every `POST /api/transform` operation emits one `sum.audit_log.v1` row with `operation: "transform"` and `transform_name` populated.
+- [`AUDIT_LOG_FORMAT.md`](AUDIT_LOG_FORMAT.md) — the `sum.audit_log.v1` schema. NOTE (not yet implemented): emitting a `sum.audit_log.v1` row for each `POST /api/transform` (with an `operation: "transform"` / `transform_name` field) is *planned*; today the CLI emitter covers `attest` / `verify` / `render` only, and the Worker transform route emits no audit row. Track this as a follow-on, not a current guarantee.
 - [`CANONICAL_ABI_SPEC.md`](CANONICAL_ABI_SPEC.md) — JCS canonicalisation rules; the binding contract for `parameters_hash`, `input_hash`, `output_hash`.

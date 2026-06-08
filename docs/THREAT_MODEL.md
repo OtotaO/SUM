@@ -108,9 +108,9 @@ Producer ──(shared key)──> Bundle ──(shared key)──> Consumer
 
 **Defense (shipped):** Bundle limits — canonical tome max 10 MB, state integer max 100,000 digits, axiom count max 10,000. These are enforced at the import boundary.
 
-**Defense (not shipped — latent):** `sum_engine_internal/infrastructure/rate_limiter.py` implements a sliding-window per-IP limiter. **This module is not yet wired into `api/quantum_router.py`** — see `docs/MODULE_AUDIT.md` for the full accounting. The implementation works and is tested (`Tests/test_rate_limiter.py`), but the API does not call into it, so volumetric abuse at the request boundary is not blocked today. Wiring is a single-file change; this threat model will be updated when the import lands.
+**Defense (shipped — the public request boundary):** the live request boundary is the Cloudflare Worker (`sum-demo.ototao.workers.dev`), whose public LLM-axis routes are rate-limited per IP via `worker/src/rate_limit.ts` (shipped PR #236), with a BYO-key gate. Volumetric abuse at the *shipping* surface is bounded. (`api/quantum_router.py` and its Python `sum_engine_internal/infrastructure/rate_limiter.py` are **internal-research, demoted PR #260** — not in the wheel, not in the live Worker, not a shipping request boundary — so the historical "rate limiter not wired into quantum_router" caveat no longer describes any shipping surface.)
 
-**Residual risk:** Volumetric request-layer DoS is unprotected until the rate limiter is wired. Distributed DDoS additionally requires upstream infrastructure (CDN, WAF). The Cloudflare Pages deployment path for the single-file demo inherits Cloudflare's edge rate-limiting by default, independent of the application layer — see `README.md` "Single-File Deployment" section.
+**Residual risk:** Distributed DDoS still requires upstream infrastructure (CDN, WAF); Cloudflare's edge provides this by default for both the Worker and the Pages single-file demo, independent of the application layer. The per-IP Worker limiter bounds single-source volumetric abuse, not a coordinated distributed flood.
 
 ### 3.7. Ledger Tampering (✅ Detectable, concurrency-hardened)
 
@@ -122,17 +122,24 @@ Producer ──(shared key)──> Bundle ──(shared key)──> Consumer
 
 **Residual risk:** A local attacker with full database write access can recompute the entire chain from genesis. The hash chain protects against partial tampering, not full database replacement.
 
-### 3.8. P2P Mesh Authentication (⚠️ Partial)
+### 3.8. P2P Mesh Authentication (internal-research substrate — NOT a shipping surface)
 
-**Threat:** An unauthenticated party injects arbitrary axioms via `/sync/state`.
+**Scope note:** `/sync/state` is an `api/quantum_router.py` endpoint, **demoted to
+internal-research (PR #260)** — not in the PyPI wheel, not in the live Worker, not
+reachable on any shipping surface. The analysis below documents the substrate's
+posture for the day a named buyer/grant promotes the `/sync` cluster; it is **not**
+a live attack surface today.
 
-**Defense (current):** In production mode (non-default JWT secret), `/sync/state`
+**Threat (substrate):** An unauthenticated party injects arbitrary axioms via `/sync/state`.
+
+**Defense (substrate):** In production mode (non-default JWT secret), `/sync/state`
 requires JWT authentication. This prevents anonymous state injection but does not
 provide mutual peer authentication.
 
-**Residual risk:** Any party with a valid JWT can inject axioms. A compromised peer
-node with valid credentials can bloat state indefinitely via LCM (can add axioms
-but cannot delete). Full mutual TLS or peer certificate pinning would address this.
+**Residual risk (substrate):** Any party with a valid JWT can inject axioms. A
+compromised peer node with valid credentials can bloat state indefinitely via LCM
+(can add axioms but cannot delete). Full mutual TLS or peer certificate pinning
+would address this *if/when the cluster ships*.
 
 ---
 
@@ -152,7 +159,7 @@ but cannot delete). Full mutual TLS or peer certificate pinning would address th
 | Resource exhaustion | ✅ | Bundle size limits + sliding window rate limiter |
 | Ledger tampering | ✅ | SHA-256 Merkle hash-chain (holds under concurrent writers post `9c4139d`; detect partial tamper) |
 | VC 2.0 bundle forgery | ✅ | Ed25519 signature over SHA-256(JCS(proofConfig)) ‖ SHA-256(JCS(document)) per W3C Data Integrity 1.0 + `eddsa-jcs-2022`; 58 tests including tamper detection, key-reordering resilience, JSON-on-disk persistence |
-| Request-layer volumetric DoS | ⚠️ | Rate limiter implemented (`sum_engine_internal/infrastructure/rate_limiter.py`) but NOT WIRED into `api/quantum_router.py`; see §3.6 |
+| Request-layer volumetric DoS (public Worker) | ✅ | Per-IP rate limiter on public LLM-axis routes (`worker/src/rate_limit.ts`, PR #236) + BYO-key gate; Cloudflare edge for distributed floods. See §3.6. (`api/quantum_router.py` is demoted internal-research, not a shipping boundary.) |
 | Render-receipt forgery | ✅ | Ed25519 signature over JCS-canonical payload (Phase E.1 v0.9.A); detached JWS w/ JWKS distribution; verifier rejects every tampered signed-field per the 15-fixture cross-runtime matrix. See `docs/RENDER_RECEIPT_FORMAT.md` §5 + `docs/PROOF_BOUNDARY.md` §1.8 |
 | Trust-root manifest forgery | ✅ | Same Ed25519/JCS/JWS shape as render receipts (R0.2); 17-test round-trip including 9 tampered-payload variants. See `docs/TRUST_ROOT_FORMAT.md` §6 |
 | CI / supply-chain compromise | ✅ | R0.3 hardening: every action SHA-pinned, `permissions: contents: read` defaults, OpenSSF Scorecard advisory, StepSecurity Harden-Runner audit-mode. SHA-pin lint job runs on every push (`scripts/lint_workflow_pins.py`) |

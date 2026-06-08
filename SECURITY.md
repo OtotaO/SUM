@@ -62,7 +62,7 @@ We will respond — even if just to acknowledge — within **5 business days** f
 - Findings against unsupported / earlier `0.x` releases (please upgrade and re-test).
 - Reports about the cryptographic primitives themselves (Ed25519, SHA-256). If those break, the world has bigger problems than SUM.
 - Unproven theoretical concerns ("Ed25519 is not quantum-safe" — yes, see [`docs/NEXT_SESSION_PLAYBOOK.md`](docs/NEXT_SESSION_PLAYBOOK.md) G3 crypto-agility).
-- Bug-bounty-style intrusive testing against `sum-demo.ototao.workers.dev`. The Worker has no rate-limit gate today (Priority 5 in the playbook); please don't be the reason it gets one urgently. Read-only probes (curl, fetch with normal browser UA) are fine; volumetric or fuzzing probes are not.
+- Bug-bounty-style intrusive testing against `sum-demo.ototao.workers.dev`. The Worker's public LLM-axis routes are rate-limited per IP (`worker/src/rate_limit.ts`) with a BYO-key gate, but it is a free demo, not a hardened production target — please don't try to exhaust it. Read-only probes (curl, fetch with normal browser UA) are fine; volumetric or fuzzing probes are not.
 - Issues with third-party dependencies that don't manifest in SUM. Report those upstream.
 
 ## Operator response runbook

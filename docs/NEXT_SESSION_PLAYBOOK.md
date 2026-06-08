@@ -18,6 +18,16 @@ Before any work: read [`docs/PROOF_BOUNDARY.md`](PROOF_BOUNDARY.md) cover-to-cov
 
 ## State at the head of this session
 
+> ⚠️ **FROZEN SNAPSHOT — do NOT read as live state.** The table below is
+> pinned to PR #125 / 2026-05-02 (CLI v0.5.0). HEAD has since moved far
+> past it: **v0.7.1 is live on PyPI**, bench-hardening T1 + T4 are CLOSED,
+> `api/quantum_router.py` was demoted to internal-research (PR #260), and
+> the meaning-loss frontier arc shipped (PRs #270–#288). For **live**
+> state read the latest [`docs/`](.) `SESSION_HANDOVER_*` (most recent
+> first) and [`CHANGELOG.md`](../CHANGELOG.md) `[Unreleased]`. The
+> priority-queue and principles sections of this playbook remain
+> long-term context; this state table is a historical record.
+
 `main` head: PR #125 (`bb7957d`) — F3 structural-fail diagnostic — merged on top of v0.5.0 + the v3.1 / v3 / compliance arc.
 
 | Surface | Status |
