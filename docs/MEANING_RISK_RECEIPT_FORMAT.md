@@ -2,7 +2,9 @@
 
 *Status: research (behind the `[research]` extra). Companion to
 `sum_engine_internal/research/meaning/receipt.py` and the frontier chart
-in `docs/MEANING_LOSS_FRONTIER.md`.*
+in `docs/MEANING_LOSS_FRONTIER.md`. For how this schema sits alongside the
+render / transform / perspective receipts, see the family overview in
+[`RECEIPT_FAMILY_SPEC.md`](RECEIPT_FAMILY_SPEC.md).*
 
 A meaning-risk receipt is a **signed, replayable certificate** that the
 expected *meaning-loss* of a transform — measured by a named proxy,
