@@ -162,7 +162,7 @@ Optional:
   "render_id": "a1b2c3d4e5f60718",
   "render_receipt": {
     "schema": "sum.render_receipt.v1",
-    "kid": "sum-receipt-2026-04",
+    "kid": "sum-render-2026-04-27-1",
     "payload": {
       "render_id": "a1b2c3d4e5f60718",
       "sliders_quantized": { "density": 0.7, "length": 0.5, "formality": 0.7, "audience": 0.5, "perspective": 0.5 },
@@ -382,7 +382,7 @@ Public verification keys for render receipts. RFC 7517 JWKS shape, served with p
       "kty": "OKP",
       "crv": "Ed25519",
       "x":   "<base64url of the public key bytes>",
-      "kid": "sum-receipt-2026-04",
+      "kid": "sum-render-2026-04-27-1",
       "alg": "EdDSA",
       "use": "sig"
     }
@@ -558,7 +558,7 @@ The same procedure is documented in `worker/wrangler.toml` comments.
 
 ## 10. Working integration examples
 
-### 9.1 Render + verify in Node
+### 10.1 Render + verify in Node
 
 ```js
 import { flattenedVerify, importJWK } from "jose";
@@ -633,7 +633,7 @@ async function renderAndVerify(triples, sliders) {
 }
 ```
 
-### 9.2 Resolve QIDs in Python
+### 10.2 Resolve QIDs in Python
 
 ```python
 import httpx
@@ -645,7 +645,7 @@ def resolve_qids(terms: list[str], lang: str = "en") -> dict[str, str | None]:
     return {row["text"]: row.get("id") for row in r.json()["resolved"]}
 ```
 
-### 9.3 Render-only (no verification) in Python
+### 10.3 Render-only (no verification) in Python
 
 ```python
 import httpx

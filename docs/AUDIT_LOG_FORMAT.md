@@ -37,7 +37,7 @@ Every row is a single line of compact JSON terminated by `\n`:
   "schema": "sum.audit_log.v1",
   "timestamp": "2026-05-01T18:35:14.123Z",
   "operation": "attest" | "verify" | "render",
-  "cli_version": "0.5.0",
+  "cli_version": "0.7.1",
   ...operation-specific fields...
 }
 ```

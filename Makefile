@@ -29,7 +29,7 @@ install:  ## Editable install with sieve extras + dev tools.
 	$(PYTHON) -m pip install -e '.[sieve,dev]'
 	$(PYTHON) -m spacy download en_core_web_sm
 
-test:  ## Full pytest run (1000+ tests).
+test:  ## Full pytest run (2000+ tests).
 	$(PYTHON) -m pytest Tests/ -q
 
 test-cli:  ## CLI + codec + VC tests only (fast).

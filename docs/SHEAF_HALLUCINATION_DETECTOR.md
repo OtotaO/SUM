@@ -870,6 +870,14 @@ Receipt: `fixtures/bench_receipts/complementary_hybrid_2026-05-04.json`,
 **Δ(borda − b2) = +0.043** trusted-mean. Above the +0.030
 "real win" threshold. **Verdict: HYBRID_BEATS_BASELINE.**
 
+> ⚠️ **Read this WIN as a Goodhart artifact, not a generalising result.**
+> The +0.043 is on *one corpus's synthetic perturbation distribution*. The
+> full §4.7.x extension shows it does **not** survive naturalistic
+> perturbations from any LLM family at n ≥ 16 (joint finding:
+> `STRUCTURAL_GAP_NO_MODEL_BEATS`) — regressional Goodhart (Manheim &
+> Garrabrant). The caveat is co-located here so the bold verdict is never
+> read alone; see the out-of-scope / bounded-claims discussion below.
+
 The fusion preserves both contributions: A2 lift from the
 sheaf-Laplacian channel; A1/A4 dominance from B2's perfect 1.000
 on entity-set changes. Magnitude-invariance of Borda means the

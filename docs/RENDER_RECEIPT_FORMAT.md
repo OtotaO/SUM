@@ -60,7 +60,7 @@ The four top-level keys are siblings, not nested:
 | `model` | string | The model that ACTUALLY served the call, taken from the LLM API response's reported `model` field — NOT the configured-default. May be a more specific snapshot id than the requested tag (e.g., Anthropic resolves `claude-haiku-4-5-20251001` → a dated snapshot). When the API doesn't echo a model, the value is `<requested>_inferred` so the inference itself is visible. For canonical-path renders (no LLM), the value is the literal string `canonical-deterministic-v0`. |
 | `provider` | string | One of the values enumerated in §1.2. |
 | `signed_at` | string | ISO-8601 UTC timestamp at issuance time. See §1.3 for cache-HIT durability semantics. |
-| `digital_source_type` | string | C2PA `digitalSourceType` per spec.c2pa.org v2.2. See §7. |
+| `digital_source_type` | string | C2PA `digitalSourceType` per spec.c2pa.org v2.4 (values unchanged 2.2→2.4). See §7. |
 
 ### 1.2 Provider taxonomy
 

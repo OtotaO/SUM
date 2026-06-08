@@ -63,12 +63,12 @@ python -m pytest Tests/ -v  # Look for "⚡ BARE-METAL ZIG CORE ENGAGED ⚡"
 The codebase follows a clean architecture:
 
 ```
-internal/
+sum_engine_internal/
 ├── algorithms/     # Core math (semantic_arithmetic, syntactic_sieve)
 ├── ensemble/       # Higher-order systems (arbiter, ouroboros, triggers)
 ├── infrastructure/ # Persistence, FFI, transport (akashic, zig_bridge, codec)
 core-zig/           # Bare-metal Zig core (C-ABI exports)
-sum_cli/            # `sum` CLI (attest / verify / resolve)
+sum_cli/            # `sum` CLI (attest / verify / render / transform / compliance / frontier / …)
 standalone_verifier/ # Node.js verifier (zero npm deps)
 single_file_demo/   # Browser demo (SubtleCrypto Ed25519 verify)
 Tests/              # 2000+ tests; see Makefile for fast subsets

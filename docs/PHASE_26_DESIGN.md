@@ -313,7 +313,7 @@ at v2.0.0; CodSpeed-tracked benchmarks; Python bindings.
     extraction over the saturated e-graph.
   - Datalog query semantics are deterministic; saturation is order-
     independent.
-  - Active development (last commit yesterday at writing); v2.0.0
+  - Active development as of 2026-05 (the egglog assessment date); v2.0.0
     release.
 
 **Cons:**
