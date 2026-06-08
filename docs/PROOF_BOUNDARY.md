@@ -1,7 +1,9 @@
 # Proof Boundary
 
-**Version:** 1.6.0
-**Date:** 2026-05-03
+**Version:** 1.7.0
+**Date:** 2026-06-08
+
+**v1.7.0 changes (2026-06-08):** §2.5.1 added — T1 iterated-round-trip stability receipts (all three measured corpora STABLE under K=10; PRs #248/#250) plus §2.5.1.d, the T4 composition-law audit (PR #252); the §2.5 closure is now empirically multi-stage load-bearing under a DKW 95% bound. §2.5.2 — the `/api/qid` accuracy-floor section renumbered out of a duplicate `2.5.1` collision. §2.11 added — the meaning-loss receipt family (`sum.meaning_risk_receipt.v1` / `sum.perspective_risk_receipt.v1`; conformal upper bound incl. empirical-Bernstein, PR #288), folding the research-flagged signed-certificate family into the claim arbiter with its proved/measured boundary pinned. Reflects substrate state through PR #288.
 
 **v1.6.0 changes (2026-05-03):** §1.10 expanded — six per-regime compliance validators (EU AI Act Art 12, GDPR Art 30, HIPAA § 164.312(b), ISO 27001 A.8.15, SOC 2 CC7.2, PCI DSS v4.0 Req 10) consuming `sum.compliance_report.v1` without shape modification; the regime-agnosticism claim is now empirical fact, not single-instance assertion. §2.9 expanded — v3.2 detector closes F3 STRUCTURAL FAIL at the detector layer (PR #127); F1 / F2 / F3 / F4 / F5 verdict ladder pinned. §2.10 updated — Sprint 1 (PR #135) closed the `PYTHONHASHSEED=0` reproducibility caveat at the substrate layer (single-line `sorted(set(triplets))` fix in the deterministic sieve); bench reproducibility is now unconditional. Reflects substrate state at HEAD `86b2ed3` after PRs #117–#138 (Path 3 actionable layer + bench-substrate intensification arc).
 
@@ -523,7 +525,7 @@ Cost: ~0.5–1 NIM credit per LLM call. For K=10, that's ~10 calls per doc plus 
 
 The receipt schema is `sum.s25_generator_side.v1` (with sibling per-ablation schemas `sum.s25_canonical_first_generator.v1`, `sum.s25_constrained_extractor.v1`, `sum.s25_combined.v1`). Receipts compare cleanly to the prior `sum.s25_canonicalization_replay.v1` receipt — same `seed_v1` corpus, same pinned model, same `n_docs = 50`. Reproducible: `python -m scripts.bench.runners.s25_generator_side --ablation all --out <path>` (requires `OPENAI_API_KEY`).
 
-### 2.5.1. `/api/qid` Resolution Accuracy Floor
+### 2.5.2. `/api/qid` Resolution Accuracy Floor
 
 The hosted Worker's `/api/qid` route resolves free-text terms to Wikidata QIDs via `wbsearchentities`. The README's "Future developments" historically claimed a "target >95% accuracy floor" but the floor was never measured. Closed 2026-04-28 by `scripts/bench/runners/qid_accuracy.py` against a 30-term hand-curated corpus (8 people / 8 places / 8 concepts / 6 common nouns).
 
@@ -698,6 +700,45 @@ The `scripts/bench/` directory contains the measurement-first infrastructure tha
    Receipt: [`fixtures/bench_receipts/cross_machine_verification_2026-05-05.json`](../fixtures/bench_receipts/cross_machine_verification_2026-05-05.json), schema `sum.cross_machine_verification.v1`. Verification harness: [`scripts/research/cross_machine_verify_modal.py`](../scripts/research/cross_machine_verify_modal.py) — any reader with Modal credits can rerun via `modal run` against `PINNED_SHA = "5715c40"` (or any later main HEAD with the latent-fix code) and verify all three digests match across both Modal Python versions. Cross-machine reproducibility beyond Apple Accelerate + OpenBLAS-via-PyPI (e.g. Intel MKL, ARM Linux, AMD AOCL) remains unmeasured.
 3. **Cross-runtime witness** — when (if) a future Node/browser port of v3 / v3.1 / v3.2 reproduces these AUCs, the matching digest is the K-style portability proof. Not yet measured (no Node port exists for these detectors).
 4. **Signable bench artifact** — the digest can be Ed25519-signed with the project's existing JWKS keys; the arXiv preprint at `docs/arxiv/sheaf-detector-note-v0.md` (v0.1 + Sprint 7.5) cites the digests as anchors; readers re-running the bench (locally or via the published Modal harness) verify their digest matches.
+
+### 2.11. Meaning-loss receipts (`sum.meaning_risk_receipt.v1` / `sum.perspective_risk_receipt.v1`)
+
+*Research surface (behind the `[research]` extra), not in the production
+wheel path — same convention as §2.9. Cataloged here because this doc is
+the arbiter of every claim, and this is a signed, replayable certificate
+family that makes epistemic claims; its proved/measured boundary must be
+pinned. Full spec: [`MEANING_LOSS_FRONTIER.md`](MEANING_LOSS_FRONTIER.md),
+[`MEANING_RISK_RECEIPT_FORMAT.md`](MEANING_RISK_RECEIPT_FORMAT.md).*
+
+The receipt certifies a distribution-free **upper bound on expected
+meaning-loss** under a *named, versioned proxy* (lexical-coverage /
+bidirectional-entailment over an injected NLI judge), as the dual of the
+slider's rate kernel. The bound is one of Hoeffding / Clopper–Pearson /
+empirical-Bernstein (PR #288; eB is variance-adaptive — tighter at batch
+`n`, **looser than Hoeffding at tiny `n`**, never invalid). The
+perspective variant adds per-cohort bounds with optional Bonferroni
+`simultaneous` joint coverage.
+
+What is **proved** [provable]: the Ed25519/JCS signature binds the
+payload; the `losses_hash` anchor makes the bound **replayable** — a
+verifier with the side-band loss vector recomputes the certificate
+byte-for-byte on the same commit (integer-micro, float-free wire). The
+Monte-Carlo coverage tests (`empirical_risk_coverage`, the Bonferroni
+joint-coverage test) are the empirical receipt that the certified radius
+achieves ≥ 1−δ coverage.
+
+What is **measured / bounded, NOT proved** [empirical-benchmark]: that the
+*named proxy* tracks human-perceived meaning-loss. The bound is honest
+about exactly three limits, each enforced in the receipt: (i) it bounds a
+**proxy**, not meaning itself (the required `not_covered` field declares
+arrangement / sound / connotation / implicature as structurally out of
+reach); (ii) it is **marginal** over a named corpus under
+**exchangeability** — not per-document and not conditionally valid off the
+calibration envelope; (iii) Stage-B replay of a **model-judge** receipt is
+machine-pinned (cross-hardware float drift), so its cross-runtime claim is
+Stage-A (signature/schema/disclosure) only. A meaning-risk receipt is a
+batch primitive; a single item uses the per-document **measurement**, not
+the certificate.
 
 ---
 

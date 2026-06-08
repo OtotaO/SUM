@@ -1,6 +1,6 @@
 # MCP integration — calling SUM from MCP-aware LLM clients
 
-SUM ships a Model Context Protocol (MCP) server that exposes its primary verbs (`extract`, `attest`, `verify`, `inspect`, `schema`) as MCP tools. Any MCP-aware client — Claude Desktop, Claude Code, Cursor, Continue, custom agents built on the MCP Python or TypeScript SDKs — can drive SUM directly without shelling out to the `sum` CLI or hitting the hosted Worker API.
+SUM ships a Model Context Protocol (MCP) server that exposes its primary verbs (`extract`, `attest`, `verify`, `inspect`, `schema`, `render`) as MCP tools. Any MCP-aware client — Claude Desktop, Claude Code, Cursor, Continue, custom agents built on the MCP Python or TypeScript SDKs — can drive SUM directly without shelling out to the `sum` CLI or hitting the hosted Worker API.
 
 This is the integration surface for **systems calling SUM** — the most common deployment shape.
 
@@ -45,7 +45,7 @@ Equivalent invocation without installing the script: `python -m sum_engine_inter
 
 MCP's stdio transport: the client spawns `sum-mcp` as a subprocess, writes JSON-RPC 2.0 requests to stdin, reads responses from stdout. This is the standard MCP wire for **local** LLM clients. (Remote SSE / HTTP transports are not enabled in v1; they are a follow-on once authentication semantics are designed — `sum-mcp` over the network is a different threat model than `sum-mcp` on the same host.)
 
-The five tools the server registers:
+The six tools the server registers:
 
 ### `extract`
 
@@ -125,6 +125,30 @@ schema(name: "list" | "sum.canonical_bundle.v1" | "sum.render_receipt.v1" | "sum
 ```
 
 Returns the field catalogue for the canonical SUM artifacts. The wire-spec sources of truth remain `docs/RENDER_RECEIPT_FORMAT.md` and `docs/MERKLE_SIDECAR_FORMAT.md`; this tool gives an in-band, programmatically-readable summary so an agent doesn't have to fetch and parse markdown to know what fields to expect.
+
+### `render`
+
+```
+render(
+  bundle: dict,
+  density: float = 1.0,
+  length: float = 0.5,
+  formality: float = 0.5,
+  audience: float = 0.5,
+  perspective: float = 0.5,
+  title: str = "Rendered Tome",
+) -> { tome, sliders, mode, axiom_count_input, title }
+   | { error_class, errors }
+```
+
+The MCP analogue of `sum render`: renders a CanonicalBundle's axioms back
+into prose under explicit slider control. **Local-only / offline by
+design** — the density axis is actioned deterministically (lex-prefix
+subsetting), but any non-neutral `length` / `formality` / `audience` /
+`perspective` returns `error_class="schema"`, because the LLM-conditioned
+axes require a Worker the MCP server deliberately does not broker (keeping
+the server fully offline unless `SUM_MCP_ALLOW_NETWORK=1` is set, the same
+opt-in the `extract` LLM path respects).
 
 ## Client configuration
 

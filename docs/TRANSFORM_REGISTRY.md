@@ -119,25 +119,30 @@ POST /api/transform
 
 The Worker dispatches by `transform` field through a registry lookup; unknown transform values return HTTP 400 `unknown transform`.
 
-### 3.2 Python CLI
+### 3.2 Python CLI (shipped)
+
+The dispatch surface is `sum transform apply <name> --input <file|-> --parameters <json>` (plus `sum transform list` for the registered set). Parameters ride as a JSON object, not per-axis flags:
 
 ```bash
-# Slider — same surface as today, transformed under the hood.
-sum transform slider --density=1.0 --length=0.5 --formality=0.5 \
-                     --audience=0.5 --perspective=0.5 < bundle.json
+# List registered transforms
+sum transform list
 
-# Extract tags from a tome
-sum transform extract --multi-school --max-tags=32 < text.txt > tags.json
+# Slider — parameters as a JSON object
+sum transform apply slider --input bundle.json \
+  --parameters '{"density":1.0,"length":0.5,"formality":0.5,"audience":0.5,"perspective":0.5}'
+
+# Extract tags from text (read from stdin)
+sum transform apply extract --input - --parameters '{"multi_school":true,"max_tags":32}' < text.txt
 
 # Compose multiple bundles
-sum transform compose --merge=lcm bundle1.json bundle2.json bundle3.json > sum_of_sums.json
+sum transform apply compose --input bundles.json --parameters '{"merge":"lcm"}'
 ```
 
-`sum render` stays as a CLI alias for `sum transform slider` for backwards compat.
+`sum render` remains its own top-level CLI subcommand (it is NOT an alias under `transform`).
 
-### 3.3 MCP server
+### 3.3 MCP server (design-intent — NOT yet shipped)
 
-Adds one new tool: `transform(name: str, input: ..., parameters: ...) → output + receipt`. The existing `attest` / `verify` / `extract` / `render` tools stay; `transform` is the generic dispatch any MCP-aware agent can call to invoke the registry without per-transform tool definitions.
+A generic `transform(name, input, parameters) → output + receipt` MCP tool is the design target so an MCP-aware agent can invoke the registry without per-transform tool definitions. **It is not yet implemented:** the MCP server today registers `extract` / `attest` / `verify` / `inspect` / `schema` / `render` (see [`MCP_INTEGRATION.md`](MCP_INTEGRATION.md)) — there is no generic `transform` dispatch tool. Treat §3.3 as deferred until that tool lands.
 
 ---
 

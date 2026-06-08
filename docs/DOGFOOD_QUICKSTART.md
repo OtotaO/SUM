@@ -20,14 +20,14 @@ The result is binary in spirit: either the slider is the dream made code, or it'
 ## Setup — one-time, ~3 minutes
 
 ```bash
-# 1. Check your installed version. If you're below 0.7.0, upgrade.
+# 1. Check your installed version. If you're below 0.7.1, upgrade.
 pip show sum-engine | grep Version
 
-# Expected: Version: 0.7.0
+# Expected: Version: 0.7.1
 # If older: pip install --upgrade 'sum-engine[openai,sieve,receipt-verify]'
-# (Last verified 2026-05-25: PyPI ships 0.7.0 — released 2026-05-18.
-# 0.7.0 closed the transform-substrate arc, so `sum transform apply
-# compose` lands here.)
+# (Last verified 2026-06-04: PyPI ships 0.7.1. 0.7.0 closed the
+# transform-substrate arc, so `sum transform apply compose` lands there;
+# 0.7.1 fixed the broken `[sieve]` install (F13/F14) — upgrade to it.)
 
 # 2. Make sure the sieve extractor is wired:
 python -m spacy download en_core_web_sm
@@ -183,7 +183,7 @@ Capture in your own notes. The next session this repo opens, paste the findings;
 
 ## Known friction points (don't waste energy on these)
 
-- **Stale install.** If your `sum` binary is below 0.7.0 (last verified 2026-05-25: PyPI ships 0.7.0), `sum transform apply` may be missing or stale. `pip install --upgrade 'sum-engine[openai,sieve,receipt-verify]'`. 0.7.0 (released 2026-05-18) closed the transform-substrate arc; post-0.7.0 on main also includes F4 (`sum attest` emits an `axioms` field so `compose` consumes it directly) and the T1 + T4 bench-hardening closures. Confirm the *running* version with `sum --version` **and** the `cli_version` field in any bundle you produce — an editable dev install (`pip install -e .`) can report a stale version even after a repo version bump until you re-install (F17, 2026-06-04).
+- **Stale install.** If your `sum` binary is below 0.7.1 (last verified 2026-06-04: PyPI ships 0.7.1), `sum transform apply` may be missing or stale, and the `[sieve]` install may be broken (F13/F14, fixed in 0.7.1). `pip install --upgrade 'sum-engine[openai,sieve,receipt-verify]'`. 0.7.0 closed the transform-substrate arc; post-0.7.0 on main also includes F4 (`sum attest` emits an `axioms` field so `compose` consumes it directly) and the T1 + T4 bench-hardening closures. Confirm the *running* version with `sum --version` **and** the `cli_version` field in any bundle you produce — an editable dev install (`pip install -e .`) can report a stale version even after a repo version bump until you re-install (F17, 2026-06-04).
 - **(Fixed 2026-05-17)** Older versions printed a `transformers` `FutureWarning` to stdout, poisoning `sum attest > bundle.json` redirects. Current versions suppress at CLI entry — the workaround `PYTHONWARNINGS=ignore` is no longer required. Surfaced as F1 in `docs/DOGFOOD_FINDINGS_2026-05-17.md`.
 - **Sieve extraction is conservative.** It will miss triples that an LLM extractor would catch. For the distill scenario, that's a feature (deterministic, no LLM). For dogfood-on-real-writing, you may want LLM extraction — wire it via the env vars in `sum_engine_internal/ensemble/live_llm_adapter.py`.
 - **The transform CLI's `--input` flag wants JSON.** Wrap your text input accordingly (`{"triples": [...]}` shape for slider; `{"text": "..."}` shape for extract).
