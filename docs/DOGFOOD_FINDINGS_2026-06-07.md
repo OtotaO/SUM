@@ -74,3 +74,53 @@ story** (F22, F23) — because a standard is judged on what a stranger can
 *do* with it, and right now a stranger can verify (good) but cannot issue
 or invoke it without the SDK. The binding constraint remains adoption;
 the simulation shows the precise shape of the on-ramp that's missing.
+
+## Extended simulation — the translator cycle (cross-lingual meaning-loss)
+
+Per "extend our testing via the simulation" + "a translator with all our
+dials present," I ran a translator persona through the *existing*
+pipeline with a **multilingual** NLI judge
+(`nli_entailment_scorer(model_id="MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7")`
+— the scorer is already `model_id`-parameterised, so **no new code**).
+
+Result — the meaning-loss dial works **cross-lingual**:
+
+| translation of an EN source | meaning-loss |
+|---|---|
+| FR faithful | **0.000** |
+| ES faithful | **0.000** |
+| DE faithful | **0.000** |
+| FR that drops the 2nd claim | **0.300** |
+| ES mistranslation (negates the source) | **1.000** |
+
+The dial correctly credits faithful translations, grades a lossy one, and
+flags a mistranslation — across three language pairs. **The translator
+vision is feasible on the substrate we already have.**
+
+### F24 (proven): the translator = existing dials + a multilingual judge
+Translation is a *transform*; the meaning-loss / perspective / frontier /
+receipt machinery is language-agnostic; the only new ingredient is a
+multilingual entailment model, which slots into the existing `model_id`
+parameter. A signed translation-fidelity receipt ("this FR translation
+preserves ≥X of the EN source's meaning, per a named multilingual judge,
+controlled for the regulator audience") is buildable today.
+
+### F25 (load-bearing): input normalization (diacritics) matters
+First pass, with **stripped diacritics** in the test inputs, the model
+wrongly scored a faithful Spanish translation as *contradiction* (0.69)
+and a French one as merely *neutral*. With proper accents restored, both
+jumped to **entailment 1.00**. A production translator-with-dials MUST
+normalize/preserve diacritics (and, generally, Unicode) before scoring —
+a stripped-accent input is a different, lower-quality signal.
+
+### F26 (spec-shaping): cross-lingual forces the model-judge / machine-pin path
+The lexical scorer is **useless cross-lingual** (≈0 word overlap between
+EN and FR), so a translation receipt *must* use a model judge — which
+makes F23 **unavoidable for translation**: translation-fidelity receipts
+are inherently model-judge receipts, and therefore **machine-pinned for
+replay** (cross-hardware float drift can flip a boundary). The receipt
+spec must pin the model id + runtime so a verifier can reproduce. (The
+signature still verifies cross-runtime; only the *meaning recomputation*
+is machine-pinned, and the receipt says so.)
+
+The full plan that this PoC grounds is in `docs/TRANSLATOR_VISION.md`.
