@@ -362,6 +362,7 @@ jobs:
           Tests/research/test_meaning_risk_receipt.py \
           Tests/research/test_meaning_hardening.py \
           Tests/research/test_meaning_golden_fixture.py \
+          Tests/research/test_meaning_golden_billsum.py \
           Tests/research/test_conformal_meaning.py \
           Tests/research/test_meaning_property.py \
           Tests/research/test_group_conditional.py \
