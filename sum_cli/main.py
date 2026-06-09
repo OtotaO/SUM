@@ -2149,6 +2149,124 @@ def _read_text_arg(path: str) -> Optional[str]:
         return None
 
 
+def _load_meaning_scorer(name: str):
+    """Load a meaning scorer by name → (scorer, None) or (None, error_msg).
+    Mirrors `sum frontier`'s entailment-judge selection."""
+    from sum_engine_internal.research.meaning.meaning_loss import (
+        LexicalCoverageScorer,
+    )
+    if name == "lexical":
+        return LexicalCoverageScorer(), None
+    if name in ("embedding", "nli"):
+        try:
+            from sum_engine_internal.research.meaning.local_judge import (
+                embedding_entailment_scorer,
+                nli_entailment_scorer,
+            )
+        except ImportError as e:
+            return None, (
+                f"--scorer {name} needs the [judge] extra "
+                f"(pip install 'sum-engine[judge]'): {e}"
+            )
+        return (
+            embedding_entailment_scorer() if name == "embedding"
+            else nli_entailment_scorer()
+        ), None
+    return None, f"unknown scorer {name!r}"
+
+
+def cmd_meaning_diff(args: argparse.Namespace) -> int:
+    """Per-document meaning readout — what a transform KEPT, DROPPED, and ADDED
+    between a source and a rendering, under a named entailment judge. The #1
+    thing real users ask for ("what changed in MY text?"). A per-document
+    MEASUREMENT, honestly labelled — NOT a certified bound (that's a
+    meaning_risk receipt over a corpus). The readout's `loss` is exactly the
+    per-pair loss such a certificate is built from, decomposed to claims."""
+    try:
+        from sum_engine_internal.research.meaning.meaning_loss import (
+            EntailmentScorer,
+        )
+    except ImportError as e:
+        print(
+            f"sum: meaning-diff needs the [research] extra "
+            f"(pip install 'sum-engine[research]'): {e}",
+            file=sys.stderr,
+        )
+        return 2
+    source = _read_text_arg(args.source)
+    rendering = _read_text_arg(args.rendering)
+    if source is None or rendering is None:
+        return 2
+    scorer, err = _load_meaning_scorer(args.scorer)
+    if err:
+        print(f"sum: {err}", file=sys.stderr)
+        return 2
+    if not isinstance(scorer, EntailmentScorer):  # belt-and-suspenders vs lexical
+        print(
+            "sum: meaning-diff needs an entailment judge (--scorer nli or "
+            "embedding); the 'lexical' scorer has no per-claim entailment.",
+            file=sys.stderr,
+        )
+        return 2
+    if args.scorer == "embedding":
+        print(
+            "sum: note — the embedding judge is brittle at the claim level "
+            "(a claim merged into a longer sentence can be falsely flagged "
+            "dropped). For a trustworthy per-claim readout use --scorer nli.",
+            file=sys.stderr,
+        )
+    r = scorer.explain(source, rendering)
+
+    if args.json:
+        print(json.dumps({
+            "loss": round(r.loss, 6),
+            "preservation": round(r.preservation, 6),
+            "source_claims": r.source_claims,
+            "preserved_claims": r.preserved_claims,
+            "dropped_claims": list(r.dropped_claims),
+            "added_unsupported_claims": list(r.unsupported_claims),
+            "judge": r.judge,
+            "judge_version": r.judge_version,
+            "scope": r.scope,
+        }, ensure_ascii=False))
+        return 0
+
+    pct = round(r.preservation * 100)
+    print("Meaning readout — measured for THIS document (not a certified bound)")
+    print(f"  judge: {r.judge} v{r.judge_version}")
+    print(f"  preservation: {pct}%   (loss {r.loss:.3f})")
+    if r.dropped_claims:
+        print(
+            f"  source claims: {r.source_claims} — {r.preserved_claims} "
+            f"preserved, {len(r.dropped_claims)} DROPPED:"
+        )
+        for s in r.dropped_claims:
+            print(f"     ✗ {s}")
+    else:
+        print(f"  source claims: {r.source_claims} — all preserved ✓")
+    if r.unsupported_claims:
+        print(f"  added / unsupported claims: {len(r.unsupported_claims)}:")
+        for t in r.unsupported_claims:
+            print(f"     ! {t}")
+    else:
+        print("  added / unsupported claims: none ✓")
+    print()
+    if not r.dropped_claims and not r.unsupported_claims:
+        print("  → argument preserved under the named judge.")
+    else:
+        bits = []
+        if r.dropped_claims:
+            bits.append(f"{len(r.dropped_claims)} dropped")
+        if r.unsupported_claims:
+            bits.append(f"{len(r.unsupported_claims)} unsupported")
+        print(
+            f"  → {', '.join(bits)} — review before relying on this "
+            f"rendering."
+        )
+    print(f"  ({r.scope}.)")
+    return 0
+
+
 def cmd_frontier(args: argparse.Namespace) -> int:
     """Build a render frontier over a source and one or more rendered
     versions, score each, and cycle through them.
@@ -2896,6 +3014,34 @@ def build_parser() -> argparse.ArgumentParser:
     p_xf_apply.set_defaults(func=cmd_transform_apply)
 
     # frontier — cycle through versions of a text/code, each scored.
+    p_mdiff = subparsers.add_parser(
+        "meaning-diff",
+        help="Per-document readout: what a transform kept / dropped / added.",
+        description=(
+            "Compare a SOURCE and a RENDERING and print, in plain language, "
+            "what the transform PRESERVED, DROPPED, and ADDED — under a named "
+            "entailment judge. A per-document MEASUREMENT (the readout a "
+            "writer/editor actually wants), NOT a certified bound: for a "
+            "(1-δ) distribution-free guarantee use a sum.meaning_risk_receipt "
+            "over a corpus (`sum verify-meaning`). The readout's loss equals "
+            "the per-pair loss such a certificate is built from. Needs the "
+            "[research] + [judge] extras."
+        ),
+    )
+    p_mdiff.add_argument("source", help="source text file ('-' for stdin)")
+    p_mdiff.add_argument(
+        "rendering", help="rendered / transformed text file ('-' for stdin)"
+    )
+    p_mdiff.add_argument(
+        "--scorer", default="nli", choices=["nli", "embedding"],
+        help="entailment judge (default: nli — the trustworthy per-claim "
+             "judge; embedding is brittle at the claim level). Both need [judge].",
+    )
+    p_mdiff.add_argument(
+        "--json", action="store_true", help="machine-readable JSON output"
+    )
+    p_mdiff.set_defaults(func=cmd_meaning_diff)
+
     p_frontier = subparsers.add_parser(
         "frontier",
         help="Build + cycle a render frontier over a source and its versions.",

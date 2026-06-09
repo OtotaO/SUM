@@ -286,6 +286,90 @@ class EntailmentScorer:
         preservation = self.w_recall * recall + self.w_fidelity * fidelity
         return max(0.0, min(1.0, 1.0 - preservation))
 
+    def explain(self, source: str, transform: str) -> "MeaningReadout":
+        """Per-DOCUMENT readout: the same bidirectional-entailment loss this
+        scorer certifies, decomposed into the human-legible "what was kept /
+        dropped / added". A MEASUREMENT for one document, **not** a certified
+        bound (use a meaning_risk receipt over a corpus for a 1-δ guarantee)."""
+        return explain_meaning_loss(
+            source, transform, entails=self.entails,
+            judge_name=self.judge_name, judge_version=self.judge_version,
+            w_recall=self.w_recall, w_fidelity=self.w_fidelity,
+        )
+
+
+@dataclass(frozen=True)
+class MeaningReadout:
+    """A per-DOCUMENT meaning readout — a MEASUREMENT for ONE (source,
+    transform) pair, the #1 thing real users ask for ("what changed in MY
+    text?"). It decomposes the bidirectional-entailment ``loss`` into the
+    sentences the transform DROPPED (source claims it failed to preserve) and
+    the sentences it ADDED without grounding (transform claims the source does
+    not support). ``loss`` equals what ``EntailmentScorer.loss`` returns for
+    the same inputs — same number, made legible.
+
+    Honest boundary (load-bearing): this is a per-document MEASUREMENT under a
+    NAMED judge, NOT a certified bound and NOT "meaning" itself. The
+    distribution-free (1-δ) guarantee lives in a meaning_risk receipt over a
+    corpus; ``scope`` says so, and any surface that shows a readout must too.
+    """
+    loss: float
+    preservation: float
+    recall: float
+    fidelity: float
+    source_claims: int
+    preserved_claims: int
+    dropped_claims: tuple[str, ...]       # source sentences NOT preserved → "what was lost"
+    transform_claims: int
+    unsupported_claims: tuple[str, ...]   # transform sentences NOT grounded → "what was added"
+    judge: str
+    judge_version: str
+
+    @property
+    def scope(self) -> str:
+        return ("measured for THIS document under the named judge — a "
+                "per-document MEASUREMENT, not a certified bound or a "
+                "guarantee; for a (1-δ) bound use a meaning_risk receipt over "
+                "a named corpus")
+
+
+def explain_meaning_loss(
+    source: str,
+    transform: str,
+    *,
+    entails: "Callable[[str, str], bool]",
+    judge_name: str,
+    judge_version: str = "unspecified",
+    w_recall: float = 0.6,
+    w_fidelity: float = 0.4,
+) -> MeaningReadout:
+    """Build a :class:`MeaningReadout` for one (source, transform) pair via the
+    injected ``entails`` judge. Mirrors ``EntailmentScorer.loss`` exactly
+    (including its empty-input edge cases) so the readout's ``loss`` is the
+    per-pair loss a certificate is built from — just decomposed."""
+    if not math.isclose(w_recall + w_fidelity, 1.0, abs_tol=1e-9):
+        raise ValueError(
+            f"w_recall + w_fidelity must sum to 1.0; got {w_recall} + {w_fidelity}"
+        )
+    src = _sentences(source)
+    tr = _sentences(transform)
+    dropped = tuple(s for s in src if not entails(transform, s))
+    unsupported = tuple(t for t in tr if not entails(source, t))
+    if not src and not tr:
+        recall = fidelity = 1.0                 # identity-empty → loss 0
+    elif not src:
+        recall, fidelity = 0.0, 1.0             # source empty but transform asserts → loss 1
+    else:
+        recall = 1.0 - len(dropped) / len(src)
+        fidelity = 1.0 if not tr else 1.0 - len(unsupported) / len(tr)
+    loss = max(0.0, min(1.0, 1.0 - (w_recall * recall + w_fidelity * fidelity)))
+    return MeaningReadout(
+        loss=loss, preservation=1.0 - loss, recall=recall, fidelity=fidelity,
+        source_claims=len(src), preserved_claims=len(src) - len(dropped),
+        dropped_claims=dropped, transform_claims=len(tr),
+        unsupported_claims=unsupported, judge=judge_name, judge_version=judge_version,
+    )
+
 
 def score_pairs(
     pairs: Sequence[tuple[str, str]],

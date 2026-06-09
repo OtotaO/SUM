@@ -365,6 +365,7 @@ jobs:
           Tests/research/test_meaning_golden_billsum.py \
           Tests/research/test_meaning_golden_translation.py \
           Tests/research/test_conformal_meaning.py \
+          Tests/research/test_meaning_readout.py \
           Tests/research/test_meaning_property.py \
           Tests/research/test_group_conditional.py \
           Tests/research/test_perspective_receipt.py \
