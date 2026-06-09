@@ -112,6 +112,37 @@ def test_golden_replays_bound_offline(d):
 
 
 @pytest.mark.parametrize("d", _FIXTURE_DIRS)
+def test_library_accepts_metadata_wrapped_losses(d):
+    """The documented library snippet — `verify(receipt, jwks,
+    losses=json.load(open("losses.json")))` with the committed metadata-wrapped
+    losses file — must replay verbatim, not crash. Regression for the on-ramp
+    bug the v2 adoption sim found (the {judge,...,losses:[...]} wrapper was
+    unwrapped only in the CLI, so the documented library path raised
+    ValueError on the project's own golden)."""
+    receipt = json.load(open(glob.glob(d + "/*golden*.json")[0]))
+    jwks = json.load(open(d + "/jwks.json"))
+    wrapped = json.load(open(glob.glob(d + "/losses_*.json")[0]))
+    assert isinstance(wrapped, dict) and "losses" in wrapped  # the committed shape
+    payload = verify(receipt, jwks, losses=wrapped)  # the wrapper, not the bare list
+    assert payload["risk_upper_bound_micro"] == receipt["payload"]["risk_upper_bound_micro"]
+
+
+def test_no_eddsa_warning_and_no_false_negative_under_w_error():
+    """Verifying a valid receipt must emit no EdDSA SecurityWarning (the single
+    most-reported friction in the v2 sim) and must NOT false-negative when
+    warnings are errors. We assert both: zero warnings recorded, and that
+    promoting warnings to errors still verifies."""
+    import warnings as _w
+
+    receipt, jwks, losses = _load_case(_FIXTURE_DIRS[0])
+    with _w.catch_warnings(record=True) as caught:
+        _w.simplefilter("error")  # any unsuppressed warning would raise here
+        payload = verify(receipt, jwks, losses=losses)
+    assert payload["scorer"]
+    assert not [w for w in caught if "EdDSA" in str(w.message)]
+
+
+@pytest.mark.parametrize("d", _FIXTURE_DIRS)
 def test_wrong_losses_rejected(d):
     receipt, jwks, losses = _load_case(d)
     tampered = list(losses)

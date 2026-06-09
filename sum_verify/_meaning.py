@@ -54,6 +54,22 @@ class MeaningReceiptDisclosureError(Exception):
     or without side-band losses."""
 
 
+def _unwrap_loss_vector(obj: Any) -> Any:
+    """Accept BOTH a bare ``[..]`` loss vector and the metadata-wrapped shape
+    the committed fixtures use (``{"losses": [..], "judge": .., "note": ..}``),
+    so ``verify(..., losses=json.load(open("losses.json")))`` runs verbatim on
+    a committed losses file — the contract ``VERIFY_SDK.md`` documents ("bare
+    list or {'losses': [...]}") and the ``sum verify-meaning`` / ``python -m
+    sum_verify`` CLIs already honour. Without this, the documented library
+    snippet crashes on the project's own golden (the wrapper's string keys hit
+    ``float()``). Idempotent on a bare list."""
+    if isinstance(obj, dict):
+        for key in ("losses", "values"):
+            if key in obj and isinstance(obj[key], list):
+                return obj[key]
+    return obj
+
+
 def _to_micro(x: float) -> int:
     return int(round(float(x) * _MICRO_SCALE))
 
@@ -123,6 +139,9 @@ def verify_meaning_risk_receipt(
 
     if losses is None:
         return payload
+    # Normalise the metadata-wrapped fixture shape to a bare vector, so the
+    # documented snippet (a committed losses file loaded straight in) replays.
+    losses = _unwrap_loss_vector(losses)
 
     # ---- replay step 1: hash anchor ----
     recomputed_hash = losses_hash(losses)

@@ -40,6 +40,7 @@ from __future__ import annotations
 
 import base64
 import json
+import warnings
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
@@ -309,9 +310,19 @@ def verify_jose_envelope(
     # ---- Step 5: cryptographic verify ----
     compact = f"{proto}..{signature}"
     try:
-        verified = deserialize_compact(
-            compact, key, payload=canonical_bytes, algorithms=["EdDSA"]
-        )
+        # joserfc emits a SecurityWarning ("EdDSA is deprecated via RFC 9864")
+        # on every EdDSA verify. We sign the whole trust loop with EdDSA by
+        # design (RFC 8032 Ed25519), so the alias-deprecation note is noise —
+        # but under a hardened `-W error` posture it would be raised as an
+        # exception and surface as a misleading "signature verification failed"
+        # on a VALID receipt. Suppress that one message locally (by text, not a
+        # blanket filter) so neither the noise nor the false-negative reaches
+        # the caller.
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message=r".*EdDSA is deprecated.*")
+            verified = deserialize_compact(
+                compact, key, payload=canonical_bytes, algorithms=["EdDSA"]
+            )
     except BadSignatureError as e:
         raise JoseEnvelopeError(
             JoseEnvelopeErrorClass.SIGNATURE_INVALID,
@@ -495,9 +506,13 @@ def sign_jose_envelope(
     # opt-in. SUM uses EdDSA / Ed25519 throughout the receipt + trust-
     # root path; the same `algorithms` argument also features in the
     # verify path above for the same reason.
-    compact = serialize_compact(
-        protected, canonical_bytes, key, algorithms=["EdDSA"]
-    )
+    with warnings.catch_warnings():
+        # Same EdDSA-deprecation noise as the verify path (see Step 5) — we
+        # sign with EdDSA by design; suppress that one message locally.
+        warnings.filterwarnings("ignore", message=r".*EdDSA is deprecated.*")
+        compact = serialize_compact(
+            protected, canonical_bytes, key, algorithms=["EdDSA"]
+        )
     detached = detach_compact_content(compact)
 
     return {
