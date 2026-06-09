@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-06-04T11:01:54Z",
+  "issued_at": "2026-06-09T12:55:25Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,17 +8,17 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "fd337d037a7f85e91e5c0e5a70b7e5c898e776c9",
-    "head_short": "fd337d0",
-    "head_subject": "fix(ledger): retry BEGIN IMMEDIATE on lock contention \u2014 unblocks v0.7.1 publish (#268)",
-    "head_committer_date": "2026-06-03T23:58:46-04:00",
+    "head_sha": "86d553c4d2991b771ceee5c2a02f428d4a5dd4bc",
+    "head_short": "86d553c",
+    "head_subject": "release: v0.8.0 \u2014 publish the sum_verify SDK + the [verify] extra to PyPI",
+    "head_committer_date": "2026-06-09T08:46:57-04:00",
     "commits_last_30d": null
   },
   "github": {
     "stars": 9
   },
   "release": {
-    "pyproject_version": "0.7.1",
+    "pyproject_version": "0.8.0",
     "pypi_published_version": "0.7.1"
   },
   "features": {
