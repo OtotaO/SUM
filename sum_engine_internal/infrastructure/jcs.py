@@ -108,13 +108,50 @@ def _encode_float(f: float) -> str:
         return "0"
     if f == int(f) and -1e21 < f < 1e21:
         return str(int(f))
-    # Non-integer floats: Python's repr matches ECMAScript's
-    # Number.prototype.toString for simple decimals (0.5, 0.7, etc.).
-    # Edge cases at exponential-notation boundaries (1e-7, 1e21+) are
-    # out of scope for SUM's actual usage; if a future path needs
-    # those, extend this branch with explicit ECMAScript
-    # ToString-shortest-representation logic.
-    return repr(f)
+    # Non-integer floats: emit the ECMAScript Number::toString form
+    # (ECMA-262 §6.1.6.1.20), which RFC 8785 §3.2.2.3 mandates and which
+    # the JS canonicalizer (Erdtman ``canonicalize``, delegating to
+    # ``JSON.stringify`` → ``Number.prototype.toString``) produces. Python's
+    # ``repr`` agrees for ordinary decimals (0.5, 0.123) but DIVERGES at the
+    # exponential-notation boundary: repr switches to exponent at <1e-4 and
+    # zero-pads it (``1e-06``), whereas ECMAScript stays decimal down to 1e-6
+    # (``0.000001``) and uses an unpadded exponent below that (``1e-7``). That
+    # divergence is reachable (an unsnapped ``density < 1e-4`` slider) and
+    # would make a JS-signed receipt fail Python verification — so we compute
+    # the exact ECMAScript form rather than defer it.
+    return _ecmascript_number_to_string(f)
+
+
+def _ecmascript_number_to_string(f: float) -> str:
+    """ECMA-262 §6.1.6.1.20 Number::toString for a finite, non-zero,
+    non-integer-in-[-1e21,1e21] float. ``repr`` already yields the shortest
+    round-tripping decimal digits (Python ≥ 3.1); we re-apply only the
+    ECMAScript *formatting* rules (decimal-vs-exponential threshold and
+    exponent shape) on top of those digits."""
+    from decimal import Decimal
+
+    neg = f < 0.0
+    sign_unused, digits, exp = Decimal(repr(abs(f))).as_tuple()
+    dlist = list(digits)
+    # s must have no trailing zeros (minimal k); shift them into the exponent.
+    while len(dlist) > 1 and dlist[-1] == 0:
+        dlist.pop()
+        exp += 1
+    s = "".join(str(d) for d in dlist)
+    k = len(s)        # number of significant digits
+    n = exp + k       # position of the decimal point: value = s × 10**(n-k)
+
+    if k <= n <= 21:
+        out = s + "0" * (n - k)
+    elif 0 < n <= 21:
+        out = s[:n] + "." + s[n:]
+    elif -6 < n <= 0:
+        out = "0." + "0" * (-n) + s
+    else:
+        e = n - 1
+        mant = s if k == 1 else s[0] + "." + s[1:]
+        out = mant + "e" + ("+" if e >= 0 else "-") + str(abs(e))
+    return "-" + out if neg else out
 
 
 def _encode_object(obj: Mapping[Any, Any]) -> str:

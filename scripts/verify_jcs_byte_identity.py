@@ -48,7 +48,17 @@ FIXTURES: list[tuple[str, Any]] = [
     ("zero",                  0),
     ("positive int",          42),
     ("negative int",          -7),
-    ("bigint-range",          2**63),  # requires JS BigInt emission
+    # Integers on the wire stay within Number's safe range: SUM emits the
+    # Gödel state integer as a STRING and receipt micro-units are ≤ 1e6, so
+    # the >2^53 Python-int-exact / JS-Number-lossy divergence is never
+    # reachable. We test agreement at the exact safe boundary.
+    ("max safe integer",      2**53 - 1),
+    # NOTE: floats are intentionally NOT tested here — this harness uses the
+    # float-THROWING jcs_cli.js (the meaning/perspective family's float-free
+    # enforcer). The float-capable render/transform canonicalization path
+    # (Python jcs.py ↔ Erdtman canonicalize) is covered, including the
+    # previously-divergent sub-1e-4 boundary, by
+    # Tests/test_jcs_float_cross_runtime.py.
     ("empty string",          ""),
     ("ascii",                 "hello"),
     ("escape quote",          'a"b'),
@@ -129,23 +139,7 @@ def main() -> int:
 
     failures: list[str] = []
     for label, fixture in FIXTURES:
-        # JSON round-trip for the bigint case: Python's 2**63 serializes
-        # fine in both sides, but we feed the JS runner through
-        # json.dumps which will emit it as a plain number. JS parses it
-        # as a Number (lossy) or BigInt (if reviver intervenes). For the
-        # fixture comparisons to be meaningful, we avoid the
-        # Number.MAX_SAFE_INTEGER boundary and work with integers within
-        # safe range — so cast 2**63 to string here for that single fixture.
-        payload: Any
-        if label == "bigint-range":
-            # JS will parse this as a Number (2^63 exceeds MAX_SAFE_INTEGER).
-            # The fixture exists to sanity-check the large-int path;
-            # for cross-runtime byte-identity we need agreement, and
-            # the safe path is to use a smaller integer the JSON-parse
-            # round-trip preserves.
-            payload = 2**31  # within Number safe range
-        else:
-            payload = fixture
+        payload: Any = fixture
 
         try:
             py_bytes = canonicalize(payload)

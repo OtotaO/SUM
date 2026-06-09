@@ -371,6 +371,7 @@ jobs:
           Tests/research/test_perspective_property.py \
           Tests/research/test_perspective_golden_fixture.py \
           Tests/test_sum_cli_verify_meaning.py \
+          Tests/test_jcs_float_cross_runtime.py \
           Tests/research/test_render_frontier.py -q
 
   release-machinery-validation:
