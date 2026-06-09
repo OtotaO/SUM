@@ -85,6 +85,25 @@ _All of the above is `[research]`-flagged and intentionally **not** cataloged in
 `docs/FEATURE_CATALOG.md` (same convention as the v3 / sheaf research surfaces).
 The shipping `sum` binary, wire formats, and verifiers are unchanged from 0.7.1._
 
+- **`sum_verify` — the small, stable, dependency-light receipt-verify SDK**
+  (`pip install "sum-engine[verify]"`; `import sum_verify`). The #2 demand from
+  the 30-guest adoption simulation: *"give me a small, stable, non-`[research]`
+  verify surface I can pin — I won't depend on a research format buried in a
+  3000-line CLI."* A new top-level package exposing a versioned public API
+  (`verify()` dispatched on `schema`; `verify_meaning_risk_receipt` /
+  `verify_render_receipt` / `verify_transform_receipt`; `SUPPORTED_SCHEMAS`;
+  `__version__`) plus a `python -m sum_verify <receipt> --jwks <jwks>
+  [--losses <losses>]` on-ramp. **Pulls no numpy / scipy / torch** — verifying a
+  meaning-risk receipt *replays its conformal bound offline* through a
+  pure-Python re-derivation of the same inequality (`sum_verify/_conformal.py`),
+  including a scipy-free regularised-incomplete-beta for Clopper–Pearson. The
+  dependency isolation is pinned in a clean subprocess, and the pure-Python
+  kernels are pinned to the canonical numpy/scipy ones (parity grid + golden
+  equivalence) so the two implementations cannot silently diverge
+  (`Tests/test_sum_verify_sdk.py`). Unlike the receipt machinery above this is
+  **not** `[research]`-flagged — it is a stable surface meant to be pinned.
+  Doc: `docs/VERIFY_SDK.md`.
+
 ### Fixed
 
 - **JCS float canonicalization is now RFC 8785-compliant** (substrate, *not*
