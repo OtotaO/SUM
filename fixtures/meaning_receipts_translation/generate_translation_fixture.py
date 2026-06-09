@@ -58,9 +58,12 @@ DISCLOSURE = (
     "Bounds the EXPECTED value of a NAMED cross-lingual meaning-loss proxy "
     "(bidirectional-entailment over a local mDeBERTa-v3 multilingual NLI "
     "judge), MARGINALLY over the first 64 length-aligned opus-100 en-fr test "
-    "pairs, under exchangeability. Demonstrates paraphrase/rewriting "
-    "robustness: faithful translations score ~0 despite zero lexical overlap. "
-    "NOT a per-document claim and NOT meaning itself. The CERTIFICATE replays "
+    "pairs (a min-word + length-ratio FILTERED subset, not all en-fr), under "
+    "exchangeability. Demonstrates paraphrase/rewriting robustness: faithful "
+    "translations score ~0 despite NEAR-zero lexical overlap (EN and FR share "
+    "only names, numbers, and cognates). The judge emits a small discrete set "
+    "of values. NOT a per-document claim and NOT meaning itself. The "
+    "CERTIFICATE replays "
     "offline over the committed integer-micro loss vector; re-deriving the "
     "losses re-fetches opus-100 and runs the judge (machine-pinned, F23/F26). "
     "The raw text is NOT redistributed (mixed-licence corpus); the committed "
@@ -98,8 +101,11 @@ def _keypair() -> tuple[dict, dict]:
 
 def _fetch_pairs() -> list[tuple[str, str]]:
     from datasets import load_dataset
+    # Pinned dataset revision → the from-scratch selection is reproducible
+    # against the exact bytes the corpus_sha256 pointer was computed over.
     ds = load_dataset("Helsinki-NLP/opus-100", "en-fr", split="test",
-                      streaming=True)
+                      streaming=True,
+                      revision="805090dc28bf78897da9641cdf08b61287580df9")
     pairs: list[tuple[str, str]] = []
     for r in ds:
         t = r["translation"]
@@ -127,7 +133,6 @@ def build() -> tuple[dict, dict, list[float]]:
         # evidence the receipt anchors. Regeneration is deterministic
         # everywhere (this is the CI path).
         losses = json.loads(LOSSES_FILE.read_text("utf-8"))["losses"]
-        corpus_hash = json.loads(CORPUS_POINTER_FILE.read_text("utf-8"))["corpus_sha256"]
     else:
         pairs = _fetch_pairs()
         corpus_hash = _corpus_hash(pairs)
@@ -136,13 +141,14 @@ def build() -> tuple[dict, dict, list[float]]:
             "corpus_id": CORPUS_ID,
             "source_dataset": "Helsinki-NLP/opus-100",
             "config": "en-fr", "split": "test",
+            "dataset_revision": "805090dc28bf78897da9641cdf08b61287580df9",
             "license": "mixed-OPUS (benchmark; raw text NOT redistributed here)",
             "selection": (f"first {N} test pairs in dataset order with "
                           f"en>={MIN_EN_WORDS} words, fr>={MIN_FR_WORDS} words, "
                           f"en!=fr, word-count ratio in "
                           f"[{LEN_RATIO_LO},{LEN_RATIO_HI}]"),
             "n": len(pairs),
-            "corpus_sha256": _corpus_hash(pairs),
+            "corpus_sha256": corpus_hash,
         }, indent=2) + "\n", encoding="utf-8")
 
     guarantee = certify_meaning_risk(

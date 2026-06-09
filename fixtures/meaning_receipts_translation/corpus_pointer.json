@@ -3,6 +3,7 @@
   "source_dataset": "Helsinki-NLP/opus-100",
   "config": "en-fr",
   "split": "test",
+  "dataset_revision": "805090dc28bf78897da9641cdf08b61287580df9",
   "license": "mixed-OPUS (benchmark; raw text NOT redistributed here)",
   "selection": "first 64 test pairs in dataset order with en>=6 words, fr>=4 words, en!=fr, word-count ratio in [0.5,2.0]",
   "n": 64,

@@ -18,11 +18,11 @@
       "connotation",
       "implicature"
     ],
-    "disclosure": "Bounds the EXPECTED value of a NAMED cross-lingual meaning-loss proxy (bidirectional-entailment over a local mDeBERTa-v3 multilingual NLI judge), MARGINALLY over the first 64 length-aligned opus-100 en-fr test pairs, under exchangeability. Demonstrates paraphrase/rewriting robustness: faithful translations score ~0 despite zero lexical overlap. NOT a per-document claim and NOT meaning itself. The CERTIFICATE replays offline over the committed integer-micro loss vector; re-deriving the losses re-fetches opus-100 and runs the judge (machine-pinned, F23/F26). The raw text is NOT redistributed (mixed-licence corpus); the committed corpus pointer is sha256-pinned.",
+    "disclosure": "Bounds the EXPECTED value of a NAMED cross-lingual meaning-loss proxy (bidirectional-entailment over a local mDeBERTa-v3 multilingual NLI judge), MARGINALLY over the first 64 length-aligned opus-100 en-fr test pairs (a min-word + length-ratio FILTERED subset, not all en-fr), under exchangeability. Demonstrates paraphrase/rewriting robustness: faithful translations score ~0 despite NEAR-zero lexical overlap (EN and FR share only names, numbers, and cognates). The judge emits a small discrete set of values. NOT a per-document claim and NOT meaning itself. The CERTIFICATE replays offline over the committed integer-micro loss vector; re-deriving the losses re-fetches opus-100 and runs the judge (machine-pinned, F23/F26). The raw text is NOT redistributed (mixed-licence corpus); the committed corpus pointer is sha256-pinned.",
     "signed_at": "2026-06-08T12:00:00.000Z",
     "alpha_target_micro": 500000,
     "controlled": true
   },
-  "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6InRyYW5zbGF0aW9uLWZpeHR1cmUta2V5LTIwMjYiLCJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdfQ..mpNHHoffvi_IW7rO3ZmXqSd7CmT_BsVefQmocWh15UKfYFIOgYRW6jyvOApT2oNZvsgYsZHmZTGh5JjmDPBIDg",
+  "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6InRyYW5zbGF0aW9uLWZpeHR1cmUta2V5LTIwMjYiLCJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdfQ..svD3tlUexS5Zgk7Q86Ki8WvK74TIh24SNwKVgh3yKUHlGNg0P-e_cFpboURr4Le_7TeB1CYHShzhpWDFeJ_TCA",
   "schema": "sum.meaning_risk_receipt.v1"
 }
