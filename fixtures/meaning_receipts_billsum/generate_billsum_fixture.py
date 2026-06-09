@@ -1,6 +1,7 @@
 """Generate a REAL ``sum.meaning_risk_receipt.v1`` over a real public-domain
-corpus — the arXiv Paper-1 binding-gate artifact (meaning-preserving
-COMPRESSION).
+corpus — the arXiv Paper-1 binding-gate artifact (compression with a
+CERTIFIED MEANING-LOSS BOUND; the bill→summary transform loses ~49% of the
+proxy on average, bounded ≤ 0.6454 — "bounded", not "preserving").
 
 Corpus: the first ``N`` examples (dataset order) of the **BillSum** test
 split (``FiscalNote/billsum``) — US Congressional bills + reference
@@ -101,7 +102,10 @@ def _load_or_fetch_corpus() -> dict:
     if CORPUS_FILE.exists():
         return json.loads(CORPUS_FILE.read_text("utf-8"))
     from datasets import load_dataset  # lazy: only needed on first fetch
-    ds = load_dataset("FiscalNote/billsum", split="test", streaming=True)
+    # Pinned dataset revision → the committed pairs are reproducible against
+    # the exact dataset bytes they were drawn from.
+    ds = load_dataset("FiscalNote/billsum", split="test", streaming=True,
+                      revision="3d8510441c06a3d9dfb32eb0d7f80151730bcc4f")
     pairs = []
     for i, ex in enumerate(ds):
         if i >= N:

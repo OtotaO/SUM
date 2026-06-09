@@ -69,7 +69,7 @@ def test_translation_golden_discloses_machine_pinning(golden, jwks):
     payload = verify_meaning_risk_receipt(golden, jwks)
     assert "arrangement" in payload["not_covered"]
     d = payload["disclosure"].lower()
-    assert "machine-pinned" in d and "zero lexical overlap" in d
+    assert "machine-pinned" in d and "near-zero lexical overlap" in d
 
 
 def test_translation_demonstrates_the_moat(committed_losses):
@@ -100,7 +100,14 @@ def test_translation_corpus_pointer_is_hash_pinned():
     ptr = _load("corpus_pointer.json")
     assert ptr["source_dataset"] == "Helsinki-NLP/opus-100"
     assert ptr["n"] == 64
-    assert ptr["corpus_sha256"].startswith("sha256-")
+    # Pin the exact sha256 + dataset revision: a third party re-fetching
+    # opus-100 at this revision and applying the documented filter reproduces
+    # this hash (verified live in the pre-publication audit). Pinning catches
+    # any silent change to the committed pointer.
+    assert ptr["corpus_sha256"] == (
+        "sha256-dc2f24207322ce5a6e781bb811176aae41d8685375a403dfe47f89ca1d6fceb9"
+    )
+    assert ptr["dataset_revision"] == "805090dc28bf78897da9641cdf08b61287580df9"
 
 
 def _load_generator():

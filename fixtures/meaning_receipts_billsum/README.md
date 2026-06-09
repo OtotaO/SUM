@@ -3,8 +3,11 @@
 A **real** `sum.meaning_risk_receipt.v1` over a **real public-domain
 corpus** — the "one real signed receipt over a real corpus" gate the arXiv
 Paper-1 plan ([`docs/arxiv/SUBMISSION_OUTLINE_2026-06-07.md`](../../docs/arxiv/SUBMISSION_OUTLINE_2026-06-07.md))
-and the product-vision roadmap both name. Demonstrates meaning-preserving
-**compression** (bill → summary).
+and the product-vision roadmap both name. Demonstrates **compression with a
+certified meaning-loss bound** (bill → summary) — *"bounded", not
+"preserving"*: aggressive summarization loses ~49% of the named proxy on
+average; the receipt's job is to **certify how much**, not to claim little
+was lost.
 
 ## What it certifies
 
@@ -13,6 +16,10 @@ and the product-vision roadmap both name. Demonstrates meaning-preserving
 > `bidirectional-entailment[minilm-cosine-0.5]` judge, marginally over the
 > first 64 BillSum test bills, under exchangeability. Controlled at the
 > 0.70 target. (n=64, mean loss 0.4925.)
+
+*(The 0.70 `alpha_target` is an **illustrative** control threshold to
+exercise the `controlled` flag — not a tuned or claimed quality bar. The
+bound 0.6454 and mean 0.4925 are the load-bearing measured numbers.)*
 
 - **Corpus:** [BillSum](https://huggingface.co/datasets/FiscalNote/billsum)
   test split, first 64 examples in dataset order. **CC0-1.0** (US-government
