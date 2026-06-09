@@ -187,3 +187,69 @@ standards path). The next session's defensible work:
   `feedback_overclaim_in_signed_fields_2026-06-08` (the discipline).
 - Shipping surface unchanged from 0.7.1; the jcs fix is the only non-research
   substrate change this arc and is a strict correctness improvement.
+
+---
+
+## 9. CONTINUATION (post-#299, same session — read this if picking up cold)
+
+After the handover above was written, the session kept going and produced the
+**adoption arc** (PRs #300–#302 + a 30-guest simulation). This is the live
+frontier; start here.
+
+**The 30-guest adoption simulation** (mass-parallel, full findings in memory
+[[project_adoption_sim_2026-06-09]]). 30 diverse prospective adopters evaluated
+SUM's real surfaces with their real need, told not to flatter. Mean pull
+**4.7/10; ZERO "adopt now", ZERO hostile.** THE finding: **the honesty IS the
+moat, empirically** — the warmest guests are the rigorous skeptics (the
+conformal statistician sent to find an invalid bound scored it HIGHEST, 8; the
+hostile security engineer ran tamper attacks, all rejected, 6). Lead with the
+proof-boundary discipline; it's the go-to-market, not a caveat.
+
+**The demand has a SHAPE (ranked):** (1) **per-document readout** (~9 guests,
+"what changed in MY text?" — the receipt certifies a corpus, the human has one
+doc); (2) a **small, stable, non-`[research]` verify/SDK package** (integrators
+won't pin a research format inside a 3000-line CLI); (3) a **validated judge**
+(MiniLM-cosine isn't trustworthy); (4) **multi-hop composition / drift budget**;
+(5) domain/standards adapters (C2PA-on-wire, OpenLineage, Art-50 profile);
+(6) the **generate** experience (drop one text → actually RENDER it, not just
+score); (7) one real adopter.
+
+**Shipped this arc (all merged):**
+- **#300** — `verify-meaning --losses` accepts the committed metadata-wrapped
+  losses file. THE on-ramp bug 8 guests hit: "the certificate replays offline"
+  was broken on our own flagship golden. Fixed + regression-pinned.
+- **#301** — `python -m sum_cli` now works (added `sum_cli/__main__.py`).
+- **#302 — `sum meaning-diff` = the per-document readout (demand #1).** Prints
+  what a transform KEPT / DROPPED / ADDED in plain language ("argument
+  preserved" vs "3 dropped, 1 unsupported, here they are"). Honest: a
+  per-document MEASUREMENT, not a certified bound (scope printed every time).
+  **Built so its `loss` EQUALS exactly what EntailmentScorer.loss certifies**
+  (decomposed to claims) — so a per-doc readout and a corpus bound never
+  disagree about the number. This is the **atomic unit the multi-hop drift
+  budget will compose.** Building it VALIDATED demand #3: the embedding-cosine
+  judge produces FALSE drops at the claim level (merged claim → falsely
+  flagged dropped), so the command defaults to the **NLI** judge.
+  Core: `meaning_loss.MeaningReadout` + `explain_meaning_loss` +
+  `EntailmentScorer.explain`. Torch-free test (stub judge) in the CI meaning gate.
+
+**External-tech scan** (memory has detail): **DSPy** (latest May 2026; GEPA
+reflective-prompt optimizer) — SUM's meaning-loss certificate is a natural
+DSPy/GEPA metric + DSPy is a distribution channel. **Karpathy autoresearch**
+(Mar 2026, 66k★, the propose→run→measure→commit loop) — the strategic TAILWIND:
+the "loopy era" makes meaning-drift-through-AI-chains urgent = SUM's problem.
+
+**THE CONVERGENCE (the next move):** guest demand #4 + the Karpathy-autoresearch
+trend + the "complete flavor" civilizational layer ALL point at ONE frontier:
+**compose the meaning-loss certificate across a CHAIN of transforms — a
+verifiable "drift budget" over N hops.** The atomic unit (the per-doc readout,
+#302) now exists to stack. This is the deepest dream, the loudest tailwind, and
+a named guest blocker — the same vector.
+
+**NEXT-SESSION CHOICE (operator's standing direction = onward):**
+- **(A) Compose the multi-hop drift budget** — the research move; the
+  convergence. Stack per-hop readouts/receipts into a chain-level bound.
+- **(B) Ship the small, stable, non-`[research]` verify/SDK package** — the
+  adoption move; unblocks the warm-edge integrators (demand #2).
+Both are no-`$`, charter-aligned (adoption is still the binding constraint).
+Plus standing: PR #298 (Paper-1 draft) awaits operator shaping — fold in
+Adler's slogan fix ("custody of a TRANSFORM", not "of meaning").
