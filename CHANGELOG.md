@@ -80,6 +80,25 @@ fact-preservation: measuring sub-factual meaning-loss *honestly*.
   unit a multi-hop "drift budget" will compose. Defaults to the NLI judge (the
   embedding-cosine judge is brittle at the claim level). Core:
   `meaning_loss.MeaningReadout` / `explain_meaning_loss` / `EntailmentScorer.explain`.
+- **`sum drift-budget` — multi-hop meaning-loss composition (the convergent
+  frontier).** The atomic unit `meaning-diff` ships becomes a chain: measure
+  meaning drift along `x0 → x1 → … → xN` (an editing pipeline or an autonomous
+  transform loop). Two quantities kept rigorously apart. **(A) per-document
+  measurement** (`sum drift-budget x0 x1 x2 … [--scorer nli|embedding|lexical]`):
+  per-hop loss, the additive budget `Σ Lᵢ`, the directly-measured end-to-end
+  loss, and the **slack** between them. **(B) certified composition**
+  (`compose_drift_budget`): the Bonferroni union of per-hop `meaning_risk`
+  guarantees → a certified ceiling on cumulative *expected* per-hop loss
+  `Σ E[Lᵢ] ≤ Σ Uᵢ`, holding jointly at `1 − Σ δᵢ` — provable, and byte-exact
+  against the receipts it composes (`compose_drift_budget_from_payloads` sums in
+  integer micro-units, so it cannot disagree with the single-hop receipts).
+  **Honesty spine:** the additive budget is NOT claimed to bound end-to-end
+  drift — the entailment proxy is not a metric and claim-survival is not
+  monotone, so additive can both over-count (recovery) and **under-count**
+  (compounding judge brittleness); the relationship is *measured*
+  (`audit_additive_vs_end_to_end`, the T4 discipline applied to the meaning
+  proxy), not asserted. Core: `meaning.drift_budget`; doc `docs/DRIFT_BUDGET.md`.
+  A signed `sum.drift_budget_receipt.v1` chain certificate is the named next rung.
 
 _All of the above is `[research]`-flagged and intentionally **not** cataloged in
 `docs/FEATURE_CATALOG.md` (same convention as the v3 / sheaf research surfaces).
