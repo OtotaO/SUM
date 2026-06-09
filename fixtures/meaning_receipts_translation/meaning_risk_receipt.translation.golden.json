@@ -1,0 +1,28 @@
+{
+  "kid": "translation-fixture-key-2026",
+  "payload": {
+    "scorer": "bidirectional-entailment[nli:MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7]",
+    "scorer_version": "1",
+    "loss_definition": "1 - bidirectional sentence-entailment preservation (recall 0.6 / fidelity 0.4) under the named multilingual-NLI judge; 0 = full cross-lingual preservation, 1 = none",
+    "n": 64,
+    "method": "hoeffding",
+    "delta_micro": 50000,
+    "point_estimate_micro": 259375,
+    "risk_upper_bound_micro": 412359,
+    "losses_hash": "sha256-799746162e2219b5d20f0c2bc39ec00f71de44860ddabc64df4c728f2813750b",
+    "corpus_id": "opus100-en-fr-test-first64-filtered",
+    "transform": "translate:en->fr",
+    "not_covered": [
+      "arrangement",
+      "sound",
+      "connotation",
+      "implicature"
+    ],
+    "disclosure": "Bounds the EXPECTED value of a NAMED cross-lingual meaning-loss proxy (bidirectional-entailment over a local mDeBERTa-v3 multilingual NLI judge), MARGINALLY over the first 64 length-aligned opus-100 en-fr test pairs, under exchangeability. Demonstrates paraphrase/rewriting robustness: faithful translations score ~0 despite zero lexical overlap. NOT a per-document claim and NOT meaning itself. The CERTIFICATE replays offline over the committed integer-micro loss vector; re-deriving the losses re-fetches opus-100 and runs the judge (machine-pinned, F23/F26). The raw text is NOT redistributed (mixed-licence corpus); the committed corpus pointer is sha256-pinned.",
+    "signed_at": "2026-06-08T12:00:00.000Z",
+    "alpha_target_micro": 500000,
+    "controlled": true
+  },
+  "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6InRyYW5zbGF0aW9uLWZpeHR1cmUta2V5LTIwMjYiLCJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdfQ..mpNHHoffvi_IW7rO3ZmXqSd7CmT_BsVefQmocWh15UKfYFIOgYRW6jyvOApT2oNZvsgYsZHmZTGh5JjmDPBIDg",
+  "schema": "sum.meaning_risk_receipt.v1"
+}
