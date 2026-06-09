@@ -740,6 +740,18 @@ Stage-A (signature/schema/disclosure) only. A meaning-risk receipt is a
 batch primitive; a single item uses the per-document **measurement**, not
 the certificate.
 
+*External corroboration of (iii):* Bellard, *NNCP v2: Lossless Data
+Compression with Transformer* (2021, [`nncp_v2.1.pdf`](https://bellard.org/nncp/nncp_v2.1.pdf)
+§2.4), independently reports that bit-exact encode/decode reproducibility
+of a transformer forward pass requires **identical hardware and software**
+(and that fp16 trades determinism for speed) — the same machine-pinning
+boundary SUM names here. A 2026-06-08 source-level review of Bellard's
+neural-compression stack (NNCP / ts_zip / LibNC) found the determinism
+techniques are real but live in a closed binary (LibNC), so they are
+prior-art to *cite*, not code to adopt; de-pinning a model-judge to a
+cross-runtime-replayable receipt remains open research, not a shipped
+claim.
+
 ---
 
 ## 3. Aspirational / Future Work
