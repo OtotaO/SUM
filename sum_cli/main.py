@@ -2294,11 +2294,23 @@ def cmd_verify_meaning(args: argparse.Namespace) -> int:
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
 
+    def _unwrap_loss_vector(obj):
+        # Accept BOTH a bare ``[..]`` vector and the metadata-wrapped shape the
+        # committed fixtures use (``{"losses": [..], "judge": ..., "note": ..}``)
+        # so ``--losses <committed losses file>`` replays the golden out of the
+        # box. The wrapper carries useful provenance (the judge id + machine-pin
+        # note); reading the ``losses`` key beats rejecting the file.
+        if isinstance(obj, dict):
+            for key in ("losses", "group_ids", "values"):
+                if key in obj and isinstance(obj[key], list):
+                    return obj[key]
+        return obj
+
     try:
         receipt = _read_json(args.receipt)
         jwks = _read_json(args.jwks)
-        losses = _read_json(args.losses) if args.losses else None
-        group_ids = _read_json(args.group_ids) if args.group_ids else None
+        losses = _unwrap_loss_vector(_read_json(args.losses)) if args.losses else None
+        group_ids = _unwrap_loss_vector(_read_json(args.group_ids)) if args.group_ids else None
     except (OSError, json.JSONDecodeError) as e:
         print(f"sum: cannot read input: {e}", file=sys.stderr)
         return 2

@@ -79,3 +79,27 @@ def test_missing_file_rc2():
     rc, _, err = run(["verify-meaning", "/nonexistent.json", "--jwks", _MEANING_JWKS])
     assert rc == 2
     assert "cannot read" in err
+
+
+# --- the binding-gate goldens replay via --losses on their COMMITTED losses ---
+# Regression for the adoption-sim bug (2026-06-09): the committed losses files
+# are metadata-wrapped (`{"judge": .., "losses": [..]}`), but `--losses` used to
+# require a bare array — so a third party pointing `--losses` at the project's
+# own flagship fixture got `could not convert string to float: 'judge'`. The
+# advertised "replays offline" on-ramp was broken on the golden. `--losses` now
+# unwraps the `losses` key; Stage-B replay (no judge) must reproduce the bound.
+
+@pytest.mark.parametrize("fdir,bound_micro", [
+    ("meaning_receipts_billsum", 645438),
+    ("meaning_receipts_translation", 412359),
+])
+def test_committed_golden_replays_via_wrapped_losses_file(fdir, bound_micro):
+    base = _REPO / "fixtures" / fdir
+    receipt = str(next(base.glob("*.golden.json")))
+    jwks = str(base / "jwks.json")
+    losses = str(next(base.glob("losses_*.json")))  # the wrapped {judge, losses:[..]} file
+    rc, out, _ = run(["verify-meaning", receipt, "--jwks", jwks, "--losses", losses])
+    v = json.loads(out)
+    assert rc == 0 and v["verified"] is True
+    assert v["replayed"] is True  # Stage B actually ran (not signature-only)
+    assert round(v["risk_upper_bound"] * 1e6) == bound_micro
