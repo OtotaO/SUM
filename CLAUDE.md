@@ -71,9 +71,29 @@ v0.5.0 work). Read them when a specific narrative is in question.
 The compass above takes precedence for strategic-direction
 questions.
 
-0. **[`docs/SESSION_HANDOVER_2026-06-01_post_v0.7.0_arc.md`](docs/SESSION_HANDOVER_2026-06-01_post_v0.7.0_arc.md)**
-   — **most recent session-block handover** (PRs #246–#260 over
-   2026-05-21 → 2026-06-01). The 13-PR arc that closed bench-hardening
+0. **[`docs/SESSION_HANDOVER_2026-06-09_binding_gate_arc.md`](docs/SESSION_HANDOVER_2026-06-09_binding_gate_arc.md)**
+   — **most recent session-block handover** (PRs #261–#298 over
+   2026-06-01 → 2026-06-09). The arc that **CLOSED the arXiv Paper-1
+   binding gate**: two REAL signed `meaning_risk` receipts over real
+   public-domain corpora (BillSum compression ≤ 0.6454 @95%; opus-100
+   EN→FR translation ≤ 0.4124 @95%, 39/64 at exactly zero loss),
+   replacing the self-authored smoke-test fixture; shipped the
+   Perspective receipt + empirical-Bernstein + the cross-runtime JS
+   verifier + the `verify-meaning` CLI + the unified
+   `RECEIPT_FAMILY_SPEC`; survived **two adversarial pre-publication
+   audits** + the full 2,564-test suite + independent re-derivation (one
+   real cross-runtime bug found + fixed — jcs RFC-8785 float
+   canonicalisation, #297); and produced a **final-form Paper-1 draft
+   (PR #298, OPEN for operator shaping)**. Two research scans decided
+   "adopt nothing from Bellard" and found the BillSum corpus + the AEX
+   nearest-prior-art (the cryptographic substrate is now *commodity*; the
+   moat is the meaning-preservation + paraphrase-robustness + conformal
+   delta). **READ THIS HANDOVER FIRST** — §5 names the operator queue
+   (shape + submit Paper-1; one real adopter; NLnet ~Sept), §6 where to
+   focus, §7 the disciplines (never let an unverified descriptive claim
+   ride in a signed field; audit before publishing). The prior handover at
+   [`docs/SESSION_HANDOVER_2026-06-01_post_v0.7.0_arc.md`](docs/SESSION_HANDOVER_2026-06-01_post_v0.7.0_arc.md)
+   covers PRs #246–#260 over 2026-05-21 → 2026-06-01: the 13-PR arc that closed bench-hardening
    T1 + T4 (§2.5 closure is now empirically multi-stage load-bearing
    under DKW 95% on every measured corpus), fixed F4 (`sum attest`
    missing axioms field, Scenario A unblocker), fixed F13 + F14
@@ -232,16 +252,28 @@ Shipping surface at the current HEAD: the `sum` binary (`v0.7.1` on
 `pyproject.toml`; **0.7.1 is LIVE on PyPI** — verified by fresh-venv
 install, spacy 3.8.14 — fixing the broken `[sieve]` install (F13/F14)
 plus the T1/T4 + honesty arc, see `CHANGELOG.md`). **Post-0.7.1 on main
-(unreleased, all `[research]`-flagged):** the meaning-loss frontier arc
-(PRs #270–#275) — `sum.meaning_risk_receipt.v1` (signed, replayable
-certificate over a *named meaning-loss proxy*; float-free integer
-micro-unit wire for cross-runtime; conformal upper bound; 16+4
-adversarial-review findings closed; golden fixture at
-`fixtures/meaning_receipts/`), `RenderFrontier` + the `sum frontier` CLI,
-and the **provenance-first** product vision (`docs/PRODUCT_VISION.md` —
-"attest, don't detect"). This arc is research/dream-layer; it is **not**
-cataloged in `FEATURE_CATALOG.md` (same convention as v3/sheaf). See
-`docs/MEANING_LOSS_FRONTIER.md` + `docs/PRODUCT_VISION.md`. v0.7.0 closed the transform-
+(unreleased, all `[research]`-flagged except the jcs fix):** the
+meaning-loss frontier arc, now **matured into the closed arXiv Paper-1
+binding gate** (PRs #270–#298; full detail in the 2026-06-09 handover
+above). `sum.meaning_risk_receipt.v1` + `sum.perspective_risk_receipt.v1`
+(signed, replayable certificates over a *named meaning-loss proxy*;
+float-free integer-micro wire; conformal upper bound via Hoeffding /
+Clopper–Pearson / **empirical-Bernstein**; group-conditional + Bonferroni
+joint coverage), the cross-runtime JS verifier
+(`single_file_demo/meaning_receipt_verifier.js`), the `sum verify-meaning`
+CLI, `RenderFrontier` + `sum frontier`, the unified
+`docs/RECEIPT_FAMILY_SPEC.md`, the **provenance-first** product vision
+(`docs/PRODUCT_VISION.md` — "attest, don't detect"), and **two REAL
+binding-gate receipts over real public-domain corpora**
+(`fixtures/meaning_receipts_billsum/` CC0 ≤ 0.6454 @95%;
+`fixtures/meaning_receipts_translation/` opus-100 ≤ 0.4124 @95%, 39/64 at
+zero loss) — both hardened by a 5-skeptic pre-publication audit. A
+**final-form Paper-1 draft** is open at PR #298. This arc is
+research/dream-layer; it is **not** cataloged in `FEATURE_CATALOG.md` (same
+convention as v3/sheaf). The one non-research substrate change is the
+**jcs RFC-8785 float-canonicalisation fix** (#297, cross-runtime signature
+correctness). See `docs/MEANING_LOSS_FRONTIER.md` + `docs/PRODUCT_VISION.md`
++ `docs/RECEIPT_FAMILY_SPEC.md` + `docs/arxiv/PAPER1_DRAFT.md`. v0.7.0 closed the transform-
 substrate arc — `sum.transform_receipt.v1` wire format, transform
 registry (slider / extract / compose), `POST /api/transform` Worker
 route, `sum transform` CLI subcommand, T4 source-chain binding, T5

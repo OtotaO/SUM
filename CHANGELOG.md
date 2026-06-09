@@ -42,10 +42,52 @@ fact-preservation: measuring sub-factual meaning-loss *honestly*.
 - **`docs/PRODUCT_VISION.md`** — the workbench vision + the locked
   **provenance-first / detection-as-advisory** positioning ("attest, don't
   detect"; never a "99 %").
+- **`sum.perspective_risk_receipt.v1`** — the signed group-conditional
+  (Perspective) receipt: the marginal bound plus a per-cohort bound for each
+  declared cohort (novice / expert / regulator / language), with an optional
+  Bonferroni `simultaneous` mode that makes all cohort bounds hold *jointly*
+  at ≥ 1−δ. Reuses the meaning-risk Ed25519/JCS/JWS + integer-micro + enforced
+  disclosure machinery; `evidence_hash` binds losses to cohorts.
+- **Cross-runtime JS verifier for the new family**
+  (`single_file_demo/meaning_receipt_verifier.js`) — both `meaning_risk` and
+  `perspective` receipts now verify in Node/browser (Stage A: signature +
+  schema + disclosure); Stage-B replay stays Python.
+- **`sum verify-meaning` CLI on-ramp** — the external-party verify command for
+  a meaning/perspective receipt (closes the F21 "no runnable on-ramp" gap).
+- **`docs/RECEIPT_FAMILY_SPEC.md`** — unified overview of the four
+  transformation-receipt schemas (render / transform / meaning_risk /
+  perspective): the shared crypto model, the float-free discipline, the
+  two-stage verify + cross-runtime matrix, and the trust-scope preconditions
+  (verification reduces to a *trusted out-of-band JWKS*; Stage A attests the
+  *issuer*, only Stage-B attests the *bound*).
+- **Two REAL binding-gate receipts** (the arXiv Paper-1 empirical spine):
+  `fixtures/meaning_receipts_billsum/` (BillSum, **CC0**, abstractive
+  summarization certified meaning-loss ≤ 0.6454 @95%, n=64) and
+  `fixtures/meaning_receipts_translation/` (opus-100 EN→FR translation certified
+  ≤ 0.4124 @95%, n=64; **39/64 faithful translations at exactly zero loss**) —
+  replacing the self-authored smoke-test corpus with real public-domain data.
+  Both hardened by a 5-skeptic adversarial pre-publication audit + independent
+  re-derivation; the certificate replays offline, the model-judge loss
+  computation is machine-pinned and disclosed.
 
 _All of the above is `[research]`-flagged and intentionally **not** cataloged in
 `docs/FEATURE_CATALOG.md` (same convention as the v3 / sheaf research surfaces).
 The shipping `sum` binary, wire formats, and verifiers are unchanged from 0.7.1._
+
+### Fixed
+
+- **JCS float canonicalization is now RFC 8785-compliant** (substrate, *not*
+  research-flagged). `sum_engine_internal/infrastructure/jcs.py`'s number
+  encoder fell back to `repr(f)`, which diverges from the ECMAScript
+  `Number::toString` form RFC 8785 §3.2.2.3 mandates at the exponential
+  boundary (`1e-6` → Python `1e-06` vs JS `0.000001`). Because the Worker
+  passes the render `density` slider through **unsnapped**, a value < 1e-4 was
+  a reachable, in-range slider that made a Worker-signed render receipt fail
+  the Python verifier. Fixed via `_ecmascript_number_to_string` — verified
+  byte-identical to Node across an 828-float fuzz + the full sub-1e-4 band, a
+  no-op for the slider values already in use (`Tests/test_jcs_float_cross_runtime.py`).
+  The meaning/perspective receipts are float-free and were unaffected. Found
+  by the pre-publication audit (PR #297).
 
 ## [0.7.1] - 2026-06-04
 
