@@ -268,7 +268,14 @@ binding-gate receipts over real public-domain corpora**
 (`fixtures/meaning_receipts_billsum/` CC0 ≤ 0.6454 @95%;
 `fixtures/meaning_receipts_translation/` opus-100 ≤ 0.4124 @95%, 39/64 at
 zero loss) — both hardened by a 5-skeptic pre-publication audit. A
-**final-form Paper-1 draft** is open at PR #298. This arc is
+**final-form Paper-1 draft** is open at PR #298. Then the **adoption arc**
+(PRs #300–#302, the live frontier — see handover §9): a 30-guest adoption
+simulation found **the honesty IS the moat** (rigorous skeptics = warmest) and
+ranked the demand; shipped the `verify-meaning` on-ramp fix (#300, the bug 8
+guests hit on our own golden), `python -m sum_cli` (#301), and **`sum
+meaning-diff`** (#302 — the per-document "what was kept/dropped/added" readout,
+the #1 demand; built as the atomic unit a **multi-hop drift budget** will
+compose = the convergent next move). This arc is
 research/dream-layer; it is **not** cataloged in `FEATURE_CATALOG.md` (same
 convention as v3/sheaf). The one non-research substrate change is the
 **jcs RFC-8785 float-canonicalisation fix** (#297, cross-runtime signature

@@ -69,6 +69,17 @@ fact-preservation: measuring sub-factual meaning-loss *honestly*.
   Both hardened by a 5-skeptic adversarial pre-publication audit + independent
   re-derivation; the certificate replays offline, the model-judge loss
   computation is machine-pinned and disclosed.
+- **`sum meaning-diff` — the per-document meaning readout.** The #1 demand from
+  a 30-guest adoption simulation: the receipts certify a *corpus*, but a human
+  has *one document*. `sum meaning-diff SOURCE RENDERING [--scorer nli|embedding]`
+  prints, in plain language, what a transform PRESERVED / DROPPED / ADDED
+  (faithful reword → "argument preserved"; lossy → "3 dropped, 1 unsupported,
+  here they are"). A per-document **measurement** under a named judge, NOT a
+  certified bound (the scope is printed every time); its `loss` equals exactly
+  what `EntailmentScorer.loss` certifies, decomposed to claims — the atomic
+  unit a multi-hop "drift budget" will compose. Defaults to the NLI judge (the
+  embedding-cosine judge is brittle at the claim level). Core:
+  `meaning_loss.MeaningReadout` / `explain_meaning_loss` / `EntailmentScorer.explain`.
 
 _All of the above is `[research]`-flagged and intentionally **not** cataloged in
 `docs/FEATURE_CATALOG.md` (same convention as the v3 / sheaf research surfaces).
@@ -88,6 +99,15 @@ The shipping `sum` binary, wire formats, and verifiers are unchanged from 0.7.1.
   no-op for the slider values already in use (`Tests/test_jcs_float_cross_runtime.py`).
   The meaning/perspective receipts are float-free and were unaffected. Found
   by the pre-publication audit (PR #297).
+- **`sum verify-meaning --losses` now accepts the committed metadata-wrapped
+  losses file** (PR #300). The committed losses files are
+  `{"judge", "note", "losses": [..]}` so the judge provenance travels with the
+  evidence, but `--losses` required a bare array — so the advertised "the
+  certificate replays offline" on-ramp was *broken on the project's own
+  flagship golden* (8 of 30 adoption-sim guests hit it). `--losses`/`--group-ids`
+  now unwrap the list key; Stage-B replay + tamper-rejection unchanged.
+- **`python -m sum_cli` now works** (PR #301) — added `sum_cli/__main__.py`;
+  previously only `sum` or `python -m sum_cli.main` worked.
 
 ## [0.7.1] - 2026-06-04
 
