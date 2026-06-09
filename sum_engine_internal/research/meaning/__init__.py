@@ -71,6 +71,16 @@ from sum_engine_internal.research.meaning.perspective_receipt import (
     sign_perspective_risk_receipt,
     verify_perspective_risk_receipt,
 )
+from sum_engine_internal.research.meaning.drift_budget import (
+    AdditiveAuditResult,
+    CertifiedDriftBudget,
+    ChainDriftReadout,
+    HopLoss,
+    audit_additive_vs_end_to_end,
+    compose_drift_budget,
+    compose_drift_budget_from_payloads,
+    measure_chain_drift,
+)
 
 __all__ = [
     # meaning_loss
@@ -99,4 +109,13 @@ __all__ = [
     "evidence_hash",
     "sign_perspective_risk_receipt",
     "verify_perspective_risk_receipt",
+    # drift_budget — multi-hop composition
+    "HopLoss",
+    "ChainDriftReadout",
+    "measure_chain_drift",
+    "CertifiedDriftBudget",
+    "compose_drift_budget",
+    "compose_drift_budget_from_payloads",
+    "AdditiveAuditResult",
+    "audit_additive_vs_end_to_end",
 ]

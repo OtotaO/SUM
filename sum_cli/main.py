@@ -2267,6 +2267,95 @@ def cmd_meaning_diff(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_drift_budget(args: argparse.Namespace) -> int:
+    """Multi-hop drift budget — meaning-loss composed across a CHAIN of
+    transforms (x0 → x1 → … → xN). Prints each hop's measured loss, the
+    additive budget Σ Lᵢ (drift consumed hop-by-hop), the directly-measured
+    end-to-end loss, and the slack between them. A per-document MEASUREMENT,
+    NOT a certified bound — and honest about the additive↔end-to-end gap:
+    the additive budget is not assumed to bound end-to-end drift (the slack
+    sign is reported, never assumed). For a (1-δ) certified ceiling on
+    cumulative EXPECTED per-hop loss, compose per-hop meaning_risk
+    receipts (`compose_drift_budget` / a future `sum.drift_budget_receipt`)."""
+    try:
+        from sum_engine_internal.research.meaning.drift_budget import (
+            measure_chain_drift,
+        )
+    except ImportError as e:
+        print(
+            f"sum: drift-budget needs the [research] extra "
+            f"(pip install 'sum-engine[research]'): {e}",
+            file=sys.stderr,
+        )
+        return 2
+
+    if len(args.texts) < 2:
+        print(
+            "sum: drift-budget needs at least 2 chain texts (one hop): "
+            "sum drift-budget x0.txt x1.txt [x2.txt ...]",
+            file=sys.stderr,
+        )
+        return 2
+    texts = [_read_text_arg(p) for p in args.texts]
+    if any(t is None for t in texts):
+        return 2
+    scorer, err = _load_meaning_scorer(args.scorer)
+    if err:
+        print(f"sum: {err}", file=sys.stderr)
+        return 2
+    if args.scorer == "embedding":
+        print(
+            "sum: note — the embedding judge is brittle at the claim level; "
+            "for a trustworthy chain readout use --scorer nli.",
+            file=sys.stderr,
+        )
+
+    r = measure_chain_drift(texts, scorer)
+    expensive = r.most_expensive_hop()
+
+    if args.json:
+        print(json.dumps({
+            "judge": r.judge,
+            "judge_version": r.judge_version,
+            "n_hops": r.n_hops,
+            "hops": [{"hop": h.index, "loss": round(h.loss, 6)} for h in r.hops],
+            "additive_budget": round(r.additive_budget, 6),
+            "end_to_end_loss": round(r.end_to_end_loss, 6),
+            "slack": round(r.slack, 6),
+            "additive_is_conservative": r.additive_is_conservative,
+            "most_expensive_hop": expensive.index,
+            "end_to_end_dropped_claims": list(r.end_to_end_dropped),
+            "scope": r.scope,
+        }, ensure_ascii=False))
+        return 0
+
+    print("Drift budget — measured for THIS chain (not a certified bound)")
+    print(f"  judge: {r.judge} v{r.judge_version}")
+    print(f"  hops: {r.n_hops}")
+    for h in r.hops:
+        tag = "  ← most expensive" if h.index == expensive.index and r.n_hops > 1 else ""
+        print(f"     hop {h.index}: loss {h.loss:.3f}   (x{h.index - 1} → x{h.index}){tag}")
+    print(f"  additive budget (Σ Lᵢ): {r.additive_budget:.3f}  — drift consumed hop-by-hop")
+    print(f"  end-to-end loss (x0 → x{r.n_hops}): {r.end_to_end_loss:.3f}  — measured directly")
+    if r.additive_is_conservative:
+        print(
+            f"  slack: +{r.slack:.3f} — additive is CONSERVATIVE here "
+            f"(it did not miss end-to-end drift)"
+        )
+    else:
+        print(
+            f"  slack: {r.slack:.3f} — additive UNDER-counts: the chain "
+            f"drifted MORE end-to-end than the per-hop losses sum to "
+            f"(compounding the judge missed per hop)"
+        )
+    if r.end_to_end_dropped:
+        print(f"  end-to-end DROPPED claims ({len(r.end_to_end_dropped)}):")
+        for s in r.end_to_end_dropped:
+            print(f"     ✗ {s}")
+    print(f"  ({r.scope}.)")
+    return 0
+
+
 def cmd_frontier(args: argparse.Namespace) -> int:
     """Build a render frontier over a source and one or more rendered
     versions, score each, and cycle through them.
@@ -3041,6 +3130,37 @@ def build_parser() -> argparse.ArgumentParser:
         "--json", action="store_true", help="machine-readable JSON output"
     )
     p_mdiff.set_defaults(func=cmd_meaning_diff)
+
+    # drift-budget — meaning-loss composed across a CHAIN of transforms.
+    p_drift = subparsers.add_parser(
+        "drift-budget",
+        help="Multi-hop drift budget: meaning-loss composed across a chain.",
+        description=(
+            "Measure meaning drift along a CHAIN of texts x0 → x1 → … → xN "
+            "(an editing pipeline or an autonomous transform loop). Prints "
+            "each hop's measured loss, the additive budget Σ Lᵢ, the "
+            "directly-measured end-to-end loss, and the slack between them. "
+            "A per-document MEASUREMENT, not a certified bound — and honest "
+            "about the gap: the additive budget is NOT assumed to bound "
+            "end-to-end drift (the slack sign is reported). For a (1-δ) "
+            "certified ceiling on cumulative expected per-hop loss, compose "
+            "per-hop sum.meaning_risk_receipt receipts. Needs [research] "
+            "(+ [judge] for the nli/embedding scorers)."
+        ),
+    )
+    p_drift.add_argument(
+        "texts", nargs="+",
+        help="the chain, in order: x0 x1 [x2 ...] — 2+ text files ('-' for stdin)",
+    )
+    p_drift.add_argument(
+        "--scorer", default="nli", choices=["nli", "embedding", "lexical"],
+        help="meaning-loss proxy (default: nli). 'lexical' is deterministic + "
+             "dependency-free (numeric budget, no per-claim drop list).",
+    )
+    p_drift.add_argument(
+        "--json", action="store_true", help="machine-readable JSON output"
+    )
+    p_drift.set_defaults(func=cmd_drift_budget)
 
     p_frontier = subparsers.add_parser(
         "frontier",
