@@ -4,6 +4,17 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-06-10
+
+**Headline: the `sum_verify` SDK + the `[verify]` extra are now a published,
+pinnable surface.** `pip install "sum-engine[verify]"` gives an integrator a
+small, dependency-light receipt verifier (`cryptography` + `joserfc` only — no
+numpy/scipy/torch) that verifies SUM's signed receipts and replays a
+meaning-risk certificate's conformal bound offline. The rest of this release is
+the **meaning-loss frontier** research arc (below), all behind the `[research]`
+extra. Numbers and wire formats are unchanged from 0.7.1 except the additive
+surfaces named here.
+
 The **meaning-loss frontier** arc — research surface (behind the `[research]`
 extra), not in the production wheel path. Opens the layer *below*
 fact-preservation: measuring sub-factual meaning-loss *honestly*.
@@ -186,6 +197,21 @@ The shipping `sum` binary, wire formats, and verifiers are unchanged from 0.7.1.
   now unwrap the list key; Stage-B replay + tamper-rejection unchanged.
 - **`python -m sum_cli` now works** (PR #301) — added `sum_cli/__main__.py`;
   previously only `sum` or `python -m sum_cli.main` worked.
+- **`sum_verify` library now accepts the metadata-wrapped losses file** (PR #307).
+  The documented snippet `verify(receipt, jwks, losses=json.load(open("losses.json")))`
+  with the committed `{judge,…,losses:[…]}` file raised `ValueError` — the
+  `{"losses":[…]}` unwrap lived only in the CLI. The advertised "replays offline"
+  on-ramp was broken on the project's own golden (the same class as #300, leaked
+  to the library surface; found by a 15-archetype adoption simulation). Fixed in
+  `verify_meaning_risk_receipt`; regression-pinned.
+- **EdDSA `SecurityWarning` no longer pollutes verify output or false-negatives
+  under `-W error`** (PR #307). joserfc emits `SecurityWarning: EdDSA is
+  deprecated via RFC 9864` on every sign/verify; under warnings-as-errors a
+  *valid* receipt failed with a misleading "signature verification failed". We
+  sign the trust loop with EdDSA by design, so the alias-deprecation note is
+  suppressed locally (by message) around both `serialize_compact` and
+  `deserialize_compact` in `jose_envelope.py`. The advertised path's stderr is
+  now clean.
 
 ## [0.7.1] - 2026-06-04
 
