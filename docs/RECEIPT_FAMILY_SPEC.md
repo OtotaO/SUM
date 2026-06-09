@@ -160,6 +160,25 @@ the named certifier reproduces the bound on those losses. Nobody
 paraphrases around a signature — this is the provenance moat and the
 EU AI Act Art 50 disclosure surface.
 
+> **Two load-bearing preconditions (state these wherever "tamper-evident,
+> offline-verifiable" is claimed):**
+> 1. **Verification reduces to trusting the JWKS.** Receipts do *not* embed
+>    their own keys; the verifier checks the signature against a
+>    caller-supplied JWKS. As with any JWS system, a receipt forged with an
+>    attacker's key *will* verify against an attacker-supplied JWKS — so the
+>    JWKS MUST be obtained from a trusted root **out-of-band**
+>    (`/.well-known/sum-trust-root.json` → JWKS; see
+>    [`TRUST_ROOT_FORMAT.md`](TRUST_ROOT_FORMAT.md)), never from the receipt
+>    bundle. "Offline-verifiable" means *verifiable given a trusted JWKS*.
+> 2. **Stage A attests the issuer; only Stage B attests the bound.** The
+>    Node/browser verifiers are Stage-A (signature + schema + disclosure).
+>    A self-signed receipt that commits an honest `losses_hash` but a
+>    *fabricated* `risk_upper_bound_micro` passes Stage A — it is caught
+>    only by **Stage-B replay** (Python, re-certifying over the side-band
+>    loss vector). So a conformal bound is trustworthy only after Stage B on
+>    a matching judge stack; a JS-only consumer gets issuer-attestation, not
+>    bound-attestation.
+
 **Does NOT prove** (the boundary that keeps the family honest):
 
 - **Output truth / accuracy / freshness.** A receipt attests a
