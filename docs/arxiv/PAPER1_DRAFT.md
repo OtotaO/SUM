@@ -70,6 +70,10 @@ rewriting because a signature is indifferent to surface form. The technical
 contribution is a *composition*: a signed transformation receipt carrying a
 **distribution-free certificate of meaning-loss under a named judge**, made
 **replayable** so the certificate is reproducible rather than merely asserted.
+The slogan is deliberately narrow: what a receipt takes custody of is a
+*transformation* and a *named, bounded proxy* for what it preserved — **custody
+of a transform, not of meaning**. The gap between "a bounded named proxy" and
+"meaning" is never rhetorically closed; §8 holds that line in the wire format.
 Concurrent work (§9) independently arrived at the same cryptographic substrate
 for LLM-API provenance but explicitly disclaims semantic correctness; our
 contribution is precisely that disclaimed delta, turned into a finite-sample,
@@ -218,8 +222,10 @@ $0.2594$), controlled against 0.50. The distribution is the headline: **39 of
 64 faithful translations score exactly zero meaning-loss despite near-zero
 lexical overlap** between English and French. A lexical or watermark scheme
 cannot credit a faithful translation — there is almost no surface to match —
-whereas the meaning judge does; this is the chain-of-custody-for-meaning
-property as a signed certificate.
+whereas the named judge can. What the receipt takes custody of is the
+*translation transform* and a *bounded named proxy* for what it preserved,
+issued as a signed certificate — custody of a transform, not of meaning
+itself.
 
 **7.3 Coverage validation.** The bounds are only meaningful if valid. We
 measure empirical coverage of the $(1-\delta)$ upper bound — the fraction of
@@ -317,8 +323,10 @@ party issuing and verifying a receipt it did not author.
 
 ---
 
-*Drafting notes for the operator (next pass): (i) cut the abstract to the
-arXiv 1,920-char limit if submitting the abstract field verbatim; (ii) decide
+*Drafting notes for the operator (next pass): (i) the Abstract section prose is
+1,426 chars — it fits the arXiv 1,920-char abstract field verbatim as-is (the
+"Contributions" list stays in the body; abstract + contributions together is
+2,113 and would need cutting); (ii) decide
 whether §3's substrate (bench_digest reproducibility, the six compliance
 validators) earns its own subsection or stays compressed; (iii) add the
 coverage figure (the §7.3 table as a plot) and a system diagram; (iv) pick the
