@@ -99,6 +99,31 @@ fact-preservation: measuring sub-factual meaning-loss *honestly*.
   (`audit_additive_vs_end_to_end`, the T4 discipline applied to the meaning
   proxy), not asserted. Core: `meaning.drift_budget`; doc `docs/DRIFT_BUDGET.md`.
   A signed `sum.drift_budget_receipt.v1` chain certificate is the named next rung.
+- **`sum exchangeability` — the exchangeability advisory (is a bound applicable to
+  YOUR text?).** Every conformal meaning-risk bound is valid only *under
+  exchangeability* between calibration and deployment — a caveat that until now
+  lived only in prose. This makes it a *measured* signal: embed a calibration
+  corpus and a deployment batch with a named embedder and run the in-repo MMD
+  two-sample permutation test (`research/mmd/`, #183/#185 — substrate already
+  shipped) between them. A **significant** result is evidence *against*
+  exchangeability → the bound may be OUT-OF-SCOPE for that deployment.
+  Validated on real CC0 text (BillSum): in-distribution control p=0.27
+  (non-significant), OOD batches p=0.0005 (significant), MMD² grading the shift
+  (0.027 < 0.080 < 0.215). **ADVISORY, never gating** — it does not change or
+  re-sign any bound; emitted as an *unsigned* `sum.exchangeability_advisory.v1`
+  report (the numbers are judge/hardware-pinned, so they must not ride in a
+  signed field). Asymmetric by design: a significant p is evidence against
+  exchangeability, a non-significant p is *consistent with* but does not *prove*
+  it. Closes the skeptic-statistician's #1 named gap. Core:
+  `meaning.exchangeability`; doc `docs/EXCHANGEABILITY_ADVISORY.md`.
+- **Poetry on the frontier (demo, zero new substrate).** `examples/poetry_frontier/`
+  — a lease notice rendered as a faithful summary (loss 0.000) and as a sonnet,
+  scored by the existing judges. The finding: the judges *disagree sharply* on
+  figurative text (embedding 1.000 total-loss vs NLI 0.45, which credits the
+  figurative rent clause and fabricates nothing) — a vivid, claim-by-claim
+  demonstration that the judge measures meaning-loss under aggressive rewriting,
+  and the sharpest possible case for "prefer `--scorer nli`." Uses `sum
+  meaning-diff` as-is; no poetic codec (compression ≠ error-correction).
 
 _All of the above is `[research]`-flagged and intentionally **not** cataloged in
 `docs/FEATURE_CATALOG.md` (same convention as the v3 / sheaf research surfaces).
