@@ -2356,6 +2356,88 @@ def cmd_drift_budget(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_exchangeability(args: argparse.Namespace) -> int:
+    """Exchangeability advisory — is a meaning-risk bound applicable to YOUR
+    text? Embeds a calibration corpus and a deployment batch with a named
+    embedder and runs the in-repo MMD two-sample test. A significant result
+    is EVIDENCE AGAINST exchangeability → the certified bound may not apply
+    to this deployment. ADVISORY, never gating: it does not change or
+    re-sign any bound. Prints a `sum.exchangeability_advisory.v1` report."""
+    try:
+        from sum_engine_internal.research.meaning.exchangeability import (
+            advisory_report,
+            assess_exchangeability,
+            embed_texts,
+        )
+    except ImportError as e:
+        print(
+            f"sum: exchangeability needs the [research] + [judge] extras "
+            f"(pip install 'sum-engine[research,judge]'): {e}",
+            file=sys.stderr,
+        )
+        return 2
+
+    def _read_texts(path):
+        raw = _read_text_arg(path)
+        if raw is None:
+            return None
+        raw = raw.strip()
+        try:
+            obj = json.loads(raw)
+            if isinstance(obj, dict):
+                for k in ("texts", "pairs", "sources", "documents"):
+                    if k in obj and isinstance(obj[k], list):
+                        obj = obj[k]
+                        break
+            if isinstance(obj, list):
+                # accept [str, ...] or [[src, ...], ...] (take first element)
+                return [x[0] if isinstance(x, (list, tuple)) else str(x) for x in obj]
+        except json.JSONDecodeError:
+            pass
+        # fall back: one document per non-empty line
+        return [ln for ln in raw.splitlines() if ln.strip()]
+
+    cal = _read_texts(args.calibration)
+    dep = _read_texts(args.deployment)
+    if cal is None or dep is None:
+        return 2
+    if len(cal) < 2 or len(dep) < 2:
+        print("sum: exchangeability needs ≥2 documents in each batch", file=sys.stderr)
+        return 2
+
+    try:
+        from sum_engine_internal.research.meaning.local_judge import EmbeddingJudge
+        judge = EmbeddingJudge(model_id=args.model)
+        cal_emb = embed_texts(cal, judge)
+        dep_emb = embed_texts(dep, judge)
+    except ImportError as e:
+        print(f"sum: exchangeability needs the [judge] extra: {e}", file=sys.stderr)
+        return 2
+
+    advisory = assess_exchangeability(
+        cal_emb, dep_emb,
+        calibration_corpus_id=args.corpus_id,
+        judge=f"embedding[{args.model}]",
+        alpha=args.alpha, n_permutations=args.n_perm,
+    )
+    report = advisory_report(advisory)
+
+    if args.json:
+        print(json.dumps(report, ensure_ascii=False))
+        return 0
+
+    print("Exchangeability advisory — measured (ADVISORY, never gating)")
+    print(f"  calibration corpus: {advisory.calibration_corpus_id}  (n={advisory.n_calibration})")
+    print(f"  deployment batch:   n={advisory.n_deployment}   judge: {advisory.judge}")
+    print(f"  MMD² = {advisory.mmd2:.5f}   p = {advisory.p_value:.4f}   (α={advisory.alpha}, {advisory.n_permutations} permutations)")
+    if advisory.distinguishable:
+        print(f"  → SHIFT DETECTED — the bound for {advisory.calibration_corpus_id} may be OUT-OF-SCOPE here; do not quote it.")
+    else:
+        print("  → no shift detected — consistent with exchangeability (NOT proof of it).")
+    print(f"  ({advisory.scope}.)")
+    return 0
+
+
 def cmd_frontier(args: argparse.Namespace) -> int:
     """Build a render frontier over a source and one or more rendered
     versions, score each, and cycle through them.
@@ -3161,6 +3243,31 @@ def build_parser() -> argparse.ArgumentParser:
         "--json", action="store_true", help="machine-readable JSON output"
     )
     p_drift.set_defaults(func=cmd_drift_budget)
+
+    # exchangeability — is a meaning-risk bound applicable to YOUR text?
+    p_exch = subparsers.add_parser(
+        "exchangeability",
+        help="Advisory: is a meaning-risk bound applicable to your deployment text?",
+        description=(
+            "Embed a CALIBRATION corpus and a DEPLOYMENT batch with a named "
+            "embedder and run the in-repo MMD two-sample test between them. A "
+            "SIGNIFICANT result is evidence AGAINST exchangeability — the "
+            "certified meaning-risk bound for that corpus may be OUT-OF-SCOPE "
+            "for this deployment and should not be quoted. ADVISORY, never "
+            "gating: it does not change or re-sign any bound. Turns the "
+            "exchangeability caveat (previously prose-only) into a measured "
+            "signal. Needs [research] + [judge]."
+        ),
+    )
+    p_exch.add_argument("calibration", help="calibration corpus: JSON list of texts (or one doc per line)")
+    p_exch.add_argument("deployment", help="deployment batch: JSON list of texts (or one doc per line)")
+    p_exch.add_argument("--corpus-id", required=True, help="the calibration corpus_id the bound is certified over")
+    p_exch.add_argument("--model", default="sentence-transformers/all-MiniLM-L6-v2",
+                        help="embedding model for the distribution comparison")
+    p_exch.add_argument("--alpha", type=float, default=0.05, help="significance level (default 0.05)")
+    p_exch.add_argument("--n-perm", type=int, default=2000, dest="n_perm", help="permutations (default 2000)")
+    p_exch.add_argument("--json", action="store_true", help="machine-readable JSON report")
+    p_exch.set_defaults(func=cmd_exchangeability)
 
     p_frontier = subparsers.add_parser(
         "frontier",

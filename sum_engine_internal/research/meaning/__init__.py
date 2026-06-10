@@ -81,6 +81,12 @@ from sum_engine_internal.research.meaning.drift_budget import (
     compose_drift_budget_from_payloads,
     measure_chain_drift,
 )
+from sum_engine_internal.research.meaning.exchangeability import (
+    ExchangeabilityAdvisory,
+    advisory_report,
+    assess_exchangeability,
+    embed_texts,
+)
 
 __all__ = [
     # meaning_loss
@@ -118,4 +124,9 @@ __all__ = [
     "compose_drift_budget_from_payloads",
     "AdditiveAuditResult",
     "audit_additive_vs_end_to_end",
+    # exchangeability — MMD advisory (is a bound applicable to your text?)
+    "ExchangeabilityAdvisory",
+    "assess_exchangeability",
+    "embed_texts",
+    "advisory_report",
 ]
