@@ -124,6 +124,21 @@ fact-preservation: measuring sub-factual meaning-loss *honestly*.
   demonstration that the judge measures meaning-loss under aggressive rewriting,
   and the sharpest possible case for "prefer `--scorer nli`." Uses `sum
   meaning-diff` as-is; no poetic codec (compression ≠ error-correction).
+- **Embedding judge ~16× faster — bit-exact (perf, the process-intensification
+  audit's #1 lever).** The `EmbeddingJudge` re-embedded the entire premise on
+  every `entails` call, so `EntailmentScorer.loss` re-embedded the same sentences
+  O(m·n) times per pair — the single chokepoint every meaning surface (issuance /
+  frontier / drift-budget / meaning-diff / exchangeability) routes through. Added
+  `EmbeddingJudge.entails_batch` (embed each unique sentence ONCE: one pass for
+  the source sentences, one for the transform, decide from the cached cosine
+  matrix) + an optional `entails_batch` fast path on `EntailmentScorer.loss` /
+  `explain_meaning_loss`, falling back to the scalar `entails` callback (the NLI
+  cross-encoder, which is compute-bound, keeps the scalar path). **Verified
+  bit-exact**: max |loss| difference over 16 real BillSum bills = 0.00e+00,
+  drop-lists identical; **measured 16.4× (144s → 8.8s)** on the embedding path
+  (the NLI default is ~1.3×). Existing `test_local_judge` / `test_meaning_loss` /
+  golden tests gate the math for free; new `Tests/research/test_judge_batch.py`
+  pins batch≡scalar.
 
 _All of the above is `[research]`-flagged and intentionally **not** cataloged in
 `docs/FEATURE_CATALOG.md` (same convention as the v3 / sheaf research surfaces).
