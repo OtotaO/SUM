@@ -100,6 +100,26 @@ class EmbeddingJudge:
         he = self._embed([hypothesis])
         return float((he @ pe.T).max()) >= self.threshold
 
+    def entails_batch(self, premise: str, hypotheses: "list[str]") -> "list[bool]":
+        """Batched :meth:`entails`: one decision per hypothesis against the
+        same ``premise``, embedding the premise sentences ONCE and all
+        (non-blank) hypotheses in ONE forward pass — instead of re-embedding
+        the premise for every hypothesis (the O(m·n) waste in the per-pair
+        loss). Bit-exact with the per-hypothesis ``entails`` calls: padding is
+        attention-masked, so each sentence's pooled embedding is independent
+        of batch composition, and the max-cosine decision is identical."""
+        results = [False] * len(hypotheses)
+        nonblank = [(i, h) for i, h in enumerate(hypotheses) if h.strip()]
+        if not nonblank:
+            return results
+        premise_sents = _sentences(premise) or [premise]
+        pe = self._embed(premise_sents)
+        he = self._embed([h for _, h in nonblank])
+        sims = (he @ pe.T).max(dim=1).values  # max cosine per hypothesis
+        for k, (i, _) in enumerate(nonblank):
+            results[i] = float(sims[k]) >= self.threshold
+        return results
+
     @property
     def name(self) -> str:
         return f"minilm-cosine-{self.threshold:g}"
@@ -115,6 +135,7 @@ def embedding_entailment_scorer(
     judge = EmbeddingJudge(threshold=threshold, model_id=model_id)
     return EntailmentScorer(
         entails=judge.entails,
+        entails_batch=judge.entails_batch,  # fast path: embed each sentence once
         judge_name=judge.name,
         judge_version="1",
     )
