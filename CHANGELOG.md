@@ -4,6 +4,24 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Frontend↔backend concordance correction (delivery).** A 5-seam audit found the
+  front door selling an *older, narrower* product than the v0.8.0 backend is — the
+  leading explanation for ~10k clones / 9 stars / 0 observed users. Fixed: the live
+  demo hero ("Every fact becomes a prime number / Math does the trust") → "Transform
+  text with AI — and carry a receipt for it / Attest, don't detect" (the Gödel-prime
+  encoding demoted from headline to mechanism); the README h1 ("verifiable
+  bidirectional knowledge distillation") → "chain of custody for AI-transformed text"
+  + a v0.8.0 feature row (meaning-loss receipts + `sum_verify`); a front-door signpost
+  for `sum meaning-diff` (the #1 adoption-sim demand, previously absent) + the
+  `sum-engine[verify]` SDK CTA; and the slider bench note de-overclaimed (corpus-level,
+  not certified for your document; the live render does not re-measure). **Bug fixed:**
+  the in-browser mint used `Math.ceil` for density while Python `apply_density` and the
+  Worker use `floor` — so density&lt;1.0 kept *more* facts than the slider implied;
+  now `Math.floor` (concordant; cross-runtime harness green). Slider capability itself
+  was found genuinely live + concordant (axis prompts byte-identical Python↔Worker).
+  Demo redeploy required. (Deferred: wiring the shipped `meaning_receipt_verifier.js`
+  into the visible Verify box so the front door verifies the v0.8.0 receipt family.)
+
 ## [0.8.0] - 2026-06-10
 
 **Headline: the `sum_verify` SDK + the `[verify]` extra are now a published,

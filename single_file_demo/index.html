@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SUM — paste, attest, verify</title>
+<title>SUM — transform text, carry a receipt</title>
 <style>
   :root { color-scheme: light dark; font-family: ui-sans-serif, system-ui, -apple-system; }
   body { max-width: 720px; margin: 40px auto; padding: 0 16px; line-height: 1.5; }
@@ -105,8 +105,8 @@
 </head>
 <body>
 
-<h1>Every fact becomes a prime number.</h1>
-<p class="sub"><em>Math does the trust.</em> Paste any paragraph, mint the facts, download a self-verifying JSON — anyone can recompute the state integer on their own machine with no SUM software installed.</p>
+<h1>Transform text with AI — and carry a receipt for it.</h1>
+<p class="sub"><em>Attest, don't detect.</em> Paste a paragraph, reshape it with the sliders, and download a signed receipt anyone can verify offline — it proves what was transformed and by whom, with no SUM software needed to check it. <a href="https://github.com/OtotaO/SUM/blob/main/docs/PRODUCT_VISION.md" style="opacity:0.7">Chain of custody for AI-transformed text.</a></p>
 
 <textarea id="prose" placeholder="The printing press was invented by Johannes Gutenberg around 1440. Marie Curie, a pioneering physicist, won two Nobel Prizes. Ada Lovelace wrote the first computer algorithm."></textarea>
 
@@ -154,8 +154,11 @@
     <h3>Render tome with sliders <span class="pill" id="render-cache-status" style="display:none;"></span></h3>
     <p style="font-size:12px;opacity:0.7;margin:0 0 12px;">
       Five axes shape the tome from the same facts. Density (above) is deterministic — selects which facts to include.
-      The four below condition an LLM render via <code>/api/render</code>. Fact preservation across non-density axes
-      is empirically measured at median 1.000; p10 0.769 long-corpus (n=16), 0.818 short-corpus (n=8) — measured, not yet same-commit-replayable; see
+      The four below condition an LLM render via <code>/api/render</code>, which returns a signed
+      <code>sum.render_receipt.v1</code> attesting the render. Across a fixed benchmark corpus, fact preservation
+      across the non-density axes measured median 1.000 (p10 0.818 short-corpus n=8, 0.769 long-corpus n=16) —
+      <em>corpus-level, not certified for your document, and this live render does not re-measure it</em>; measured,
+      not yet same-commit-replayable; see
       <a href="https://github.com/OtotaO/SUM/blob/main/docs/SLIDER_CONTRACT.md">SLIDER_CONTRACT.md</a>.
     </p>
     <!--
@@ -350,6 +353,23 @@
       <div id="verify-receipt-result" style="display:none; margin-top: 8px; padding: 10px 12px; border-radius: 4px; font-size: 11px; line-height: 1.5; font-family: ui-monospace, monospace;"></div>
     </div>
   </div>
+</div>
+
+<div class="card" style="margin-top: 24px;">
+  <h3>Want the per-document readout — &ldquo;what changed in <em>my</em> text&rdquo;?</h3>
+  <p style="font-size:13px;opacity:0.85;margin:0 0 8px">
+    The receipts above attest <em>that</em> a transform happened and by whom. To see, claim by claim, what an
+    AI rewrite <strong>kept</strong>, <strong>dropped</strong>, or <strong>added</strong> in your own document:
+  </p>
+  <pre style="background:#8881;padding:10px 12px;border-radius:4px;font-size:12px;overflow:auto;margin:0 0 8px"><code>pip install "sum-engine[research,judge]"
+sum meaning-diff source.txt rewrite.txt --scorer nli</code></pre>
+  <p style="font-size:12px;opacity:0.7;margin:0">
+    A per-document <em>measurement</em> under a named judge — not a certified bound (a
+    <code>sum.meaning_risk_receipt.v1</code> over a corpus is the (1&minus;&delta;) guarantee).
+    Integrators verify any SUM receipt offline, dependency-light:
+    <code>pip install &quot;sum-engine[verify]&quot;</code> &rarr; <code>python -m sum_verify</code>.
+    See <a href="https://github.com/OtotaO/SUM/blob/main/docs/MEANING_LOSS_FRONTIER.md">the meaning-loss frontier</a>.
+  </p>
 </div>
 
 <hr style="margin: 40px 0; border: none; border-top: 1px solid #8883;">
@@ -937,7 +957,11 @@ $('attest').addEventListener('click', async () => {
 
     btn.textContent = 'Minting primes…';
     const d = parseFloat($('density').value);
-    const keep = Math.max(1, Math.ceil(all.length * d));
+    // floor(N * density) — matches Python apply_density (tome_sliders.py:103,
+    // `int(n * density)`) and the Worker. The Math.max(1, …) is a demo-only
+    // guard so the in-browser mint never produces an empty bundle; the
+    // backend keeps exactly floor(N * density).
+    const keep = Math.max(1, Math.floor(all.length * d));
     // Density applies by lexicographic order of the axiom key — matches
     // Python apply_density's deterministic subset rule.
     const sorted = [...all].sort((a, b) =>
