@@ -64,9 +64,23 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 from typing import Any
+
+# HTTP statuses that mean "PyPI (or its CDN) is transiently unhealthy" — a
+# fetch that fails this way is "could not verify", NOT "provenance diverged".
+_TRANSIENT_HTTP = frozenset({429, 500, 502, 503, 504})
+
+
+class TransientFetchError(Exception):
+    """The PyPI Integrity API could not be reached after retries (transient
+    HTTP 5xx/429 or a network error). Distinct from a provenance MISMATCH:
+    a fetch failure means *we could not check*, not *the artifact diverged*.
+    In post-publish detection (alarm-not-gate) this is a WARNING, not a
+    release failure; the pre-promotion gate still fails closed on it."""
 
 
 PYPI_BASES = {
@@ -114,11 +128,35 @@ def fetch_provenance(index_base: str, project: str, version: str, filename: str)
     Endpoint: {index_base}/integrity/{project}/{version}/{filename}/provenance
     """
     url = f"{index_base}/integrity/{project}/{version}/{filename}/provenance"
-    try:
-        with urllib.request.urlopen(url) as resp:
-            return json.loads(resp.read().decode("utf-8"))
-    except Exception as e:  # noqa: BLE001 — surface the real error
-        raise SystemExit(f"failed to fetch provenance from {url}: {e}") from e
+    attempts = 5
+    last: Exception | None = None
+    for i in range(attempts):
+        try:
+            with urllib.request.urlopen(url) as resp:
+                return json.loads(resp.read().decode("utf-8"))
+        except urllib.error.HTTPError as e:
+            last = e
+            if e.code in _TRANSIENT_HTTP:
+                if i < attempts - 1:
+                    time.sleep(2 ** i)  # 1, 2, 4, 8s backoff for a transient outage
+                    continue
+                raise TransientFetchError(
+                    f"{url}: HTTP {e.code} {e.reason} after {attempts} attempts"
+                ) from e
+            # A non-transient HTTP status (e.g. 404 = no attestation) is a real
+            # finding — fail hard so it cannot be silently ignored.
+            raise SystemExit(f"failed to fetch provenance from {url}: {e}") from e
+        except urllib.error.URLError as e:  # DNS / connection — transient
+            last = e
+            if i < attempts - 1:
+                time.sleep(2 ** i)
+                continue
+            raise TransientFetchError(
+                f"{url}: {e} after {attempts} attempts"
+            ) from e
+        except Exception as e:  # noqa: BLE001 — malformed JSON etc. is a real error
+            raise SystemExit(f"failed to fetch provenance from {url}: {e}") from e
+    raise TransientFetchError(f"{url}: {last}")  # pragma: no cover
 
 
 def load_dist_hashes(path: Path) -> dict[str, str]:
@@ -437,6 +475,7 @@ def main() -> int:
     expected = load_dist_hashes(Path(args.dist_hashes))
     failures: list[str] = []
     advisories: list[str] = []
+    transient: list[str] = []  # "could not verify" (PyPI down), not "diverged"
 
     print(f"verifying {args.project}=={args.version} on {index_base}")
     print(f"  expected repository: {args.repository}")
@@ -484,6 +523,13 @@ def main() -> int:
                 provenance = fetch_provenance(
                     index_base, args.project, args.version, filename
                 )
+            except TransientFetchError as e:
+                # PyPI Integrity API unreachable (5xx/network) — we could NOT
+                # check the attestation. This is not a divergence; the
+                # same-bytes check above already passed.
+                transient.append(f"{filename}: provenance fetch unavailable: {e}")
+                print(f"  UNVERIFIED provenance (PyPI Integrity API unreachable): {e}")
+                continue
             except SystemExit as e:
                 failures.append(f"{filename}: provenance fetch failed: {e}")
                 print(f"  FAIL provenance fetch: {e}")
@@ -501,7 +547,7 @@ def main() -> int:
                 print(f"  FAIL crypto/repo: rc={rc}")
                 print(f"  {out.strip()}")
                 continue
-            print(f"  OK   crypto + repo identity (pypi-attestations rc=0)")
+            print("  OK   crypto + repo identity (pypi-attestations rc=0)")
 
             # CHECK 3: coarse publisher (advisory)
             publisher = find_publisher(provenance)
@@ -559,8 +605,41 @@ def main() -> int:
         )
         return 1
 
+    if transient:
+        # We could NOT fetch the provenance (PyPI Integrity API 5xx/network) —
+        # this is "unverifiable right now", NOT a provenance mismatch. The
+        # same-bytes check already passed for these artifacts.
+        sys.stderr.write(
+            f"\nUNVERIFIED (not failed): {len(transient)} provenance fetch(es) "
+            f"could not be completed — PyPI's Integrity API was unreachable "
+            f"(HTTP 5xx / network). This is NOT a provenance mismatch; the "
+            f"same-bytes check passed.\n"
+        )
+        for t in transient:
+            sys.stderr.write(f"  - {t}\n")
+        if args.index == "test":
+            # Pre-promotion gate: fail CLOSED on an unverifiable staging
+            # artifact — never promote what we could not verify.
+            sys.stderr.write(
+                "\nPre-promotion gate (--index test) FAILS CLOSED: do not "
+                "promote an unverifiable artifact; re-run when PyPI recovers.\n"
+            )
+            return 1
+        # Post-publish detection is alarm-not-gate: a PyPI outage must not red
+        # an already-published, byte-verified release. Warn loudly, exit 0;
+        # re-run this job once PyPI's Integrity API is healthy to go green.
+        sys.stderr.write(
+            "\nPost-publish detection (--index prod) is alarm-not-gate: a "
+            "transient PyPI Integrity-API outage does not fail an already-"
+            "published, byte-verified release. Re-run this job once PyPI is "
+            "healthy to obtain the green provenance check.\n"
+        )
+        print(f"\nOK (provenance UNVERIFIED — PyPI Integrity API down): "
+              f"{args.project}=={args.version} same-bytes ✓ on {index_base}")
+        return 0
+
     print(f"\nOK: {args.project}=={args.version} verified on {index_base}")
-    print(f"     same-bytes ✓  crypto ✓  repo identity ✓  publisher (advisory) ✓  SAN identity ✓")
+    print("     same-bytes ✓  crypto ✓  repo identity ✓  publisher (advisory) ✓  SAN identity ✓")
     return 0
 
 

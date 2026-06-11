@@ -20,7 +20,6 @@ from pathlib import Path
 
 import pytest
 
-
 # Load scripts/verify_pypi_attestation.py without polluting Tests/
 # import semantics; the script is not packaged.
 _SCRIPT = Path(__file__).resolve().parent.parent / "scripts" / "verify_pypi_attestation.py"
@@ -371,3 +370,56 @@ def test_load_dist_hashes_rejects_unknown_schema(tmp_path):
     with pytest.raises(SystemExit) as exc:
         _mod.load_dist_hashes(p)
     assert "sum.dist_hashes.v1" in str(exc.value)
+
+
+# ---------------------------------------------------------------------------
+# Transient-vs-divergence classification (the PyPI-outage hardening).
+# A 503/network fetch failure is "could not verify", NOT a provenance
+# mismatch — it must classify as TransientFetchError, and only the
+# pre-promotion gate fails closed on it. Regression for the v0.8.0 publish
+# being reded by a PyPI Integrity-API outage.
+# ---------------------------------------------------------------------------
+import urllib.error  # noqa: E402
+
+
+class _FakeResp:
+    def __init__(self, body): self._body = body
+    def __enter__(self): return self
+    def __exit__(self, *a): return False
+    def read(self): return self._body
+
+
+def test_transient_http_set_classifies_outages_not_404():
+    assert 503 in _mod._TRANSIENT_HTTP and 429 in _mod._TRANSIENT_HTTP
+    assert 502 in _mod._TRANSIENT_HTTP and 504 in _mod._TRANSIENT_HTTP
+    assert 404 not in _mod._TRANSIENT_HTTP and 200 not in _mod._TRANSIENT_HTTP
+
+
+def test_fetch_provenance_503_is_transient_not_fatal(monkeypatch):
+    def always_503(url, *a, **k):
+        raise urllib.error.HTTPError(url, 503, "Backend is unhealthy", {}, None)
+    monkeypatch.setattr(_mod.urllib.request, "urlopen", always_503)
+    monkeypatch.setattr(_mod.time, "sleep", lambda *_: None)  # no real backoff
+    with pytest.raises(_mod.TransientFetchError):
+        _mod.fetch_provenance("https://pypi.org", "sum-engine", "0.8.0", "x.whl")
+
+
+def test_fetch_provenance_404_fails_hard(monkeypatch):
+    # A 404 (no attestation) is a real finding, never softened.
+    def always_404(url, *a, **k):
+        raise urllib.error.HTTPError(url, 404, "Not Found", {}, None)
+    monkeypatch.setattr(_mod.urllib.request, "urlopen", always_404)
+    with pytest.raises(SystemExit):
+        _mod.fetch_provenance("https://pypi.org", "sum-engine", "0.8.0", "x.whl")
+
+
+def test_fetch_provenance_recovers_when_pypi_flaps(monkeypatch):
+    calls = {"n": 0}
+    def flaky(url, *a, **k):
+        calls["n"] += 1
+        if calls["n"] < 3:
+            raise urllib.error.HTTPError(url, 503, "x", {}, None)
+        return _FakeResp(b'{"ok": true}')
+    monkeypatch.setattr(_mod.urllib.request, "urlopen", flaky)
+    monkeypatch.setattr(_mod.time, "sleep", lambda *_: None)
+    assert _mod.fetch_provenance("https://pypi.org", "p", "v", "f") == {"ok": True}
