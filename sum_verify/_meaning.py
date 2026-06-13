@@ -25,6 +25,8 @@ License: Apache License 2.0
 from __future__ import annotations
 
 import hashlib
+import math
+import unicodedata
 from typing import Any, Sequence
 
 from sum_engine_internal.infrastructure.jcs import canonicalize
@@ -94,6 +96,50 @@ def losses_hash(losses: Sequence[float]) -> str:
     ).hexdigest()
 
 
+def _has_visible_text(s: str) -> bool:
+    """True iff ``s`` has a character that is neither whitespace nor a
+    zero-width / format / control character. ``str.strip()`` does not remove
+    U+200B / U+FEFF / other Cf/Cc code points, so ``"​"`` passes a naive
+    ``not s.strip()`` test while rendering blank — a way to satisfy the
+    disclosure invariant yet disclose nothing. Must match research.meaning."""
+    return any(
+        not (ch.isspace() or unicodedata.category(ch) in ("Cf", "Cc"))
+        for ch in s
+    )
+
+
+def _require_int_micro(payload: dict[str, Any], key: str) -> int:
+    """Return ``payload[key]`` only if a genuine JSON integer. The conformal
+    wire is float-free integer micro-units: this rejects ``None``/missing with
+    a clean replay error (vs an unhandled ``TypeError`` from ``int(None)``) and
+    a coercible string like ``"645438"`` that a strict cross-runtime verifier
+    would refuse — keeping runtimes in lockstep. ``bool`` is excluded."""
+    v = payload.get(key)
+    if type(v) is not int:
+        raise MeaningReceiptReplayError(
+            f"payload.{key} must be an integer micro-unit (float-free wire); "
+            f"got {v!r}"
+        )
+    return v
+
+
+def _validate_side_band_losses(losses: Sequence[float]) -> None:
+    """Reject non-finite or out-of-[0,1] side-band losses with a clean replay
+    error before ``losses_hash`` / ``_quantized``, where a NaN/inf would raise
+    an unhandled ``ValueError``/``OverflowError`` from ``int(round(...))``."""
+    for i, x in enumerate(losses):
+        if (
+            isinstance(x, bool)
+            or not isinstance(x, (int, float))
+            or not math.isfinite(x)
+            or not (0.0 <= float(x) <= 1.0)
+        ):
+            raise MeaningReceiptReplayError(
+                f"side-band loss[{i}] must be a finite number in [0, 1]; "
+                f"got {x!r}"
+            )
+
+
 def verify_meaning_risk_receipt(
     envelope: Any,
     jwks: Any,
@@ -131,10 +177,11 @@ def verify_meaning_risk_receipt(
             f"proxy's structural blind spots; got {not_covered!r}"
         )
     disclosure = payload.get("disclosure")
-    if not isinstance(disclosure, str) or not disclosure.strip():
+    if not isinstance(disclosure, str) or not _has_visible_text(disclosure):
         raise MeaningReceiptDisclosureError(
-            "payload.disclosure must be a non-empty string stating the "
-            f"proxy / marginal / exchangeability caveat; got {disclosure!r}"
+            "payload.disclosure must be a non-empty string with visible text "
+            "stating the proxy / marginal / exchangeability caveat; got "
+            f"{disclosure!r}"
         )
 
     if losses is None:
@@ -142,6 +189,9 @@ def verify_meaning_risk_receipt(
     # Normalise the metadata-wrapped fixture shape to a bare vector, so the
     # documented snippet (a committed losses file loaded straight in) replays.
     losses = _unwrap_loss_vector(losses)
+
+    # ---- replay step 0: reject malformed side-band losses cleanly ----
+    _validate_side_band_losses(losses)
 
     # ---- replay step 1: hash anchor ----
     recomputed_hash = losses_hash(losses)
@@ -159,7 +209,7 @@ def verify_meaning_risk_receipt(
             rounded,
             scorer_name=str(payload.get("scorer", "")),
             scorer_version=str(payload.get("scorer_version", "")),
-            delta=_from_micro(int(payload["delta_micro"])),
+            delta=_from_micro(_require_int_micro(payload, "delta_micro")),
             method=payload["method"],
         )
     except ValueError as e:
@@ -168,14 +218,14 @@ def verify_meaning_risk_receipt(
         ) from e
 
     # ---- replay step 3: bound + point estimate match (integer micro) ----
-    want_ub = int(payload["risk_upper_bound_micro"])
+    want_ub = _require_int_micro(payload, "risk_upper_bound_micro")
     got_ub = _to_micro(replay.risk_upper_bound)
     if want_ub != got_ub:
         raise MeaningReceiptReplayError(
             f"risk_upper_bound does not replay: receipt claims {want_ub} "
             f"micro but re-certification yields {got_ub} micro"
         )
-    want_pe = int(payload["point_estimate_micro"])
+    want_pe = _require_int_micro(payload, "point_estimate_micro")
     got_pe = _to_micro(replay.point_estimate)
     if want_pe != got_pe:
         raise MeaningReceiptReplayError(
@@ -184,7 +234,7 @@ def verify_meaning_risk_receipt(
         )
 
     # ---- replay step 4: sample size matches the committed losses ----
-    if int(payload["n"]) != replay.n:
+    if _require_int_micro(payload, "n") != replay.n:
         raise MeaningReceiptReplayError(
             f"n does not replay: receipt claims n={payload['n']} but the "
             f"committed losses contain {replay.n} samples"
@@ -192,7 +242,7 @@ def verify_meaning_risk_receipt(
 
     # ---- replay step 5: the operational pass/fail decision ----
     if "alpha_target_micro" in payload:
-        alpha = _from_micro(int(payload["alpha_target_micro"]))
+        alpha = _from_micro(_require_int_micro(payload, "alpha_target_micro"))
         expected_controlled = replay.controls(alpha)
         if bool(payload.get("controlled")) != expected_controlled:
             raise MeaningReceiptReplayError(
