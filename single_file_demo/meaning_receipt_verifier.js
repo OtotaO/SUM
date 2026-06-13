@@ -196,10 +196,17 @@ export async function verifyMeaningEnvelope(receipt, jwks, supportedSchema) {
       `payload.not_covered must be a non-empty array; got ${JSON.stringify(payload.not_covered)}`,
     );
   }
-  if (typeof payload.disclosure !== "string" || payload.disclosure.trim() === "") {
+  // `trim()` alone does not strip U+200B (zero-width space) or other Cf/Cc
+  // code points, so a disclosure of "​" would pass while rendering blank.
+  // Require at least one VISIBLE character — matches Python's _has_visible_text
+  // so the trust triangle (Python <-> Node <-> Browser) agrees on rejection.
+  const _disclosureVisible =
+    typeof payload.disclosure === "string" &&
+    payload.disclosure.replace(/[\s\p{Cf}\p{Cc}\p{Zs}\p{Zl}\p{Zp}]/gu, "") !== "";
+  if (!_disclosureVisible) {
     throw new VerifyError(
       ERROR_CLASSES.DISCLOSURE_MISSING,
-      `payload.disclosure must be a non-empty string; got ${JSON.stringify(payload.disclosure)}`,
+      `payload.disclosure must be a non-empty string with visible text; got ${JSON.stringify(payload.disclosure)}`,
     );
   }
 

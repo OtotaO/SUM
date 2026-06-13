@@ -51,9 +51,12 @@ from sum_engine_internal.research.meaning.receipt import (
     MeaningReceiptDisclosureError,
     MeaningReceiptReplayError,
     _DEFAULT_DISCLOSURE,
+    _has_visible_text,
     _quantized,
+    _require_int_micro,
     _to_micro,
     _from_micro,
+    _validate_side_band_losses,
 )
 
 SUPPORTED_SCHEMA = "sum.perspective_risk_receipt.v1"
@@ -197,13 +200,18 @@ def verify_perspective_risk_receipt(
             f"payload.not_covered must be a non-empty list; got {nc!r}"
         )
     disc = payload.get("disclosure")
-    if not isinstance(disc, str) or not disc.strip():
+    if not isinstance(disc, str) or not _has_visible_text(disc):
         raise MeaningReceiptDisclosureError(
-            f"payload.disclosure must be a non-empty string; got {disc!r}"
+            f"payload.disclosure must be a non-empty string with visible "
+            f"text; got {disc!r}"
         )
 
     if losses is None or group_ids is None:
         return payload
+
+    # Reject malformed side-band losses cleanly before _quantized / evidence_hash
+    # (a NaN/inf would otherwise raise an unhandled numeric exception).
+    _validate_side_band_losses(losses)
 
     # Guard the zip in evidence_hash against silent truncation on a
     # length mismatch (the hash would still differ, but fail clearly here).
@@ -228,7 +236,7 @@ def verify_perspective_risk_receipt(
             rounded, group_ids,
             scorer_name=str(payload.get("scorer", "")),
             scorer_version=str(payload.get("scorer_version", "")),
-            delta=_from_micro(int(payload["delta_micro"])),
+            delta=_from_micro(_require_int_micro(payload, "delta_micro")),
             method=payload["method"],
             simultaneous=bool(payload.get("simultaneous", False)),
         )
@@ -238,11 +246,11 @@ def verify_perspective_risk_receipt(
         ) from e
 
     # ---- replay 3: marginal + total n ----
-    if int(payload["marginal_risk_upper_bound_micro"]) != _to_micro(replay.marginal.risk_upper_bound):
+    if _require_int_micro(payload, "marginal_risk_upper_bound_micro") != _to_micro(replay.marginal.risk_upper_bound):
         raise MeaningReceiptReplayError("marginal_risk_upper_bound does not replay")
-    if int(payload["marginal_point_estimate_micro"]) != _to_micro(replay.marginal.point_estimate):
+    if _require_int_micro(payload, "marginal_point_estimate_micro") != _to_micro(replay.marginal.point_estimate):
         raise MeaningReceiptReplayError("marginal_point_estimate does not replay")
-    if int(payload["n"]) != replay.marginal.n:
+    if _require_int_micro(payload, "n") != replay.marginal.n:
         raise MeaningReceiptReplayError(
             f"n does not replay: receipt claims {payload['n']}, evidence has "
             f"{replay.marginal.n}"
@@ -250,7 +258,7 @@ def verify_perspective_risk_receipt(
 
     # ---- replay 4: every cohort sub-bound ----
     has_alpha = "alpha_target_micro" in payload
-    alpha_q = _from_micro(int(payload["alpha_target_micro"])) if has_alpha else None
+    alpha_q = _from_micro(_require_int_micro(payload, "alpha_target_micro")) if has_alpha else None
     # Reject duplicate cohort ids BEFORE collapsing to a dict: otherwise a
     # forged duplicate entry (e.g. a second 'legalese' with a zeroed bound)
     # would be silently dropped (last-wins) and evade replay, while a
@@ -268,13 +276,13 @@ def verify_perspective_risk_receipt(
         )
     for gid, g in payload_groups.items():
         rg = replay.groups[gid]
-        if int(g["n"]) != rg.n:
+        if _require_int_micro(g, "n") != rg.n:
             raise MeaningReceiptReplayError(f"cohort {gid!r}: n does not replay")
-        if int(g["risk_upper_bound_micro"]) != _to_micro(rg.risk_upper_bound):
+        if _require_int_micro(g, "risk_upper_bound_micro") != _to_micro(rg.risk_upper_bound):
             raise MeaningReceiptReplayError(
                 f"cohort {gid!r}: risk_upper_bound does not replay"
             )
-        if int(g["point_estimate_micro"]) != _to_micro(rg.point_estimate):
+        if _require_int_micro(g, "point_estimate_micro") != _to_micro(rg.point_estimate):
             raise MeaningReceiptReplayError(
                 f"cohort {gid!r}: point_estimate does not replay"
             )

@@ -314,3 +314,63 @@ def test_offgrid_delta_and_alpha_round_trip():
         env = sign_meaning_risk_receipt(pl, private_jwk=priv, kid=kid)
         # must NOT raise — the bug raised MeaningReceiptReplayError here
         verify_meaning_risk_receipt(env, jwks, losses=losses)
+
+
+# ── Findings (mass-parallel synthetic fuzz campaign, 2026-06-13) ──────
+# A 185-case synthetic adversarial sweep against the verifier surfaced
+# three classes the prior suites missed. Each is pinned below and is
+# fixed identically in research.meaning, the sum_verify SDK, the
+# perspective verifier, and the browser JS verifier (trust-triangle parity).
+
+
+def test_zero_width_disclosure_is_rejected():
+    """A disclosure of only zero-width / BOM characters passes str.strip()
+    (it does not strip U+200B / U+FEFF) yet renders blank — a way to mint a
+    receipt that satisfies the disclosure invariant while disclosing nothing.
+    Must be rejected. (NBSP / ASCII whitespace were already caught.)"""
+    losses = [0.2, 0.3, 0.4, 0.5]
+    for blank in ("​", "﻿", "​﻿⁠"):
+        priv, jwks, kid = _keypair()
+        g = certify_meaning_risk(losses, **_SCORER)
+        pl = build_payload(
+            guarantee=g, losses=losses, corpus_id="harden-v0",
+            transform="t", loss_definition="d",
+        )
+        pl["disclosure"] = blank  # blank-but-not-strippable
+        env = sign_meaning_risk_receipt(pl, private_jwk=priv, kid=kid)
+        with pytest.raises(MeaningReceiptDisclosureError, match="visible"):
+            verify_meaning_risk_receipt(env, jwks)
+
+
+def test_non_integer_micro_fields_reject_cleanly():
+    """The conformal wire is float-free integer micro-units. A string
+    ("645438") that int() would silently coerce — or a None that crashes
+    int() with TypeError — must raise a clean MeaningReceiptReplayError, not
+    coerce and not crash. Keeps Python in lockstep with a strict JS verifier."""
+    losses = [0.2, 0.3, 0.4, 0.5]
+    for key in ("risk_upper_bound_micro", "point_estimate_micro", "n", "delta_micro"):
+        for bad in (str, type(None)):
+            priv, jwks, kid = _keypair()
+            g = certify_meaning_risk(losses, **_SCORER)
+            pl = build_payload(
+                guarantee=g, losses=losses, corpus_id="harden-v0",
+                transform="t", loss_definition="d",
+            )
+            pl[key] = str(pl[key]) if bad is str else None
+            env = sign_meaning_risk_receipt(pl, private_jwk=priv, kid=kid)
+            with pytest.raises(MeaningReceiptReplayError):
+                verify_meaning_risk_receipt(env, jwks, losses=losses)
+
+
+def test_non_finite_side_band_losses_reject_cleanly():
+    """NaN / inf / out-of-[0,1] side-band losses must raise a clean
+    MeaningReceiptReplayError before reaching int(round(...)), where they
+    previously raised an unhandled ValueError / OverflowError."""
+    losses = [0.2, 0.3, 0.4, 0.5]
+    env, jwks, _ = _receipt(losses)
+    for bad in ([float("nan"), 0.3, 0.4, 0.5],
+                [float("inf"), 0.3, 0.4, 0.5],
+                [-0.1, 0.3, 0.4, 0.5],
+                [1.5, 0.3, 0.4, 0.5]):
+        with pytest.raises(MeaningReceiptReplayError):
+            verify_meaning_risk_receipt(env, jwks, losses=bad)
