@@ -71,7 +71,7 @@ wheel:  ## Build sdist + wheel into dist/.
 
 sdist: wheel  ## Alias for `wheel` — both artifacts built together.
 
-smoke:  ## Fresh-venv install + attest|verify round-trip from the built wheel.
+smoke: wheel  ## Fresh-venv install + attest|verify round-trip from the built wheel.
 	@rm -rf /tmp/sum-smoke
 	$(PYTHON) -m venv /tmp/sum-smoke
 	/tmp/sum-smoke/bin/pip install --quiet "$$(ls dist/*.whl | tail -1)[sieve]"
