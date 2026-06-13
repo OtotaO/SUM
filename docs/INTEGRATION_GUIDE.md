@@ -191,9 +191,9 @@ sum compliance regimes
 
 ### EU AI Act Article 50 / GPAI Code of Practice context
 
-The GPAI Code of Practice on transparency and watermarking explicitly endorses a *multilayered* approach combining visible disclosure with machine-readable metadata/watermark. SUM's signed render receipts (`sum.render_receipt.v1`) sit cleanly in the machine-readable-metadata layer — the receipt's `digital_source_type` field uses the C2PA v2.2 vocabulary (`trainedAlgorithmicMedia` for LLM-served renders, `algorithmicMedia` for deterministic ones), so a downstream verifier can distinguish AI-generated from algorithm-generated output using a standards-aligned predicate.
+The Code of Practice on Transparency of AI-Generated Content describes a *multilayered* approach combining visible disclosure with machine-readable metadata/watermark. SUM's signed render receipts (`sum.render_receipt.v1`) sit cleanly in the machine-readable-metadata layer — the receipt's `digital_source_type` field uses the C2PA v2.2 vocabulary (`trainedAlgorithmicMedia` for LLM-served renders, `algorithmicMedia` for deterministic ones), so a downstream verifier can distinguish AI-generated from algorithm-generated output using a standards-aligned predicate.
 
-The Article 50 enforcement date is **2026-08-02**; the GPAI Code's final draft is scheduled for **June 2026**. Compliance teams targeting EU-facing AI features should treat `sum.render_receipt.v1` evidence as in-scope material for transparency-obligation documentation.
+The Article 50 enforcement date is **2026-08-02** (a grace window to 2026-12-02 for the machine-readable marking obligation on pre-existing systems is provisionally agreed under the Digital Omnibus); the Code of Practice on Transparency of AI-Generated Content was **finalized 2026-06-10**. Compliance teams targeting EU-facing AI features should treat `sum.render_receipt.v1` evidence as in-scope material for transparency-obligation documentation.
 
 ### Threat model and proof boundary
 
