@@ -47,9 +47,13 @@ must state.
 
 Pressure on AI-generated and AI-transformed text is converging on two needs.
 First, **disclosure**: Article 50(2)/(4) of the EU AI Act (applicable
-2 August 2026) requires machine-readable, robust marking of AI-generated
-content, and the associated Code of Practice asks for robustness "to
-paraphrasing [and] character deletions." Second, and far less served,
+2 August 2026; a grace window to 2 December 2026 for the machine-readable
+marking obligation on pre-existing systems is provisionally agreed under the
+Digital Omnibus) requires machine-readable, robust marking of AI-generated
+content, and the associated *Code of Practice on Transparency of AI-Generated
+Content* (finalized 10 June 2026) asks that marking be "effective,
+interoperable, robust, and reliable as far as technically feasible." Second,
+and far less served,
 **accountability for transformation**: when a document is summarized,
 re-leveled for a different audience, or translated, *what survived the
 operation, and can it be proven to anyone, offline?*
@@ -270,25 +274,41 @@ visible rather than rhetorically closed.
 
 ## 9. Position versus prior and concurrent work
 
-- **AEX** (arXiv:2603.14283) independently uses JCS + SHA-256 + Ed25519 signed
-  transformation-receipt chains for LLM APIs but **explicitly disclaims** that
-  an accepted transform is "semantically correct, reasonable, or minimal." Our
-  contribution is precisely that disclaimed delta, as a finite-sample,
-  replayable certificate.
-- **C2PA / Content Credentials** bind provenance to media; for text the binding
-  is soft and detaches under copy/paraphrase. **SynthID-Text** (Dathathri et
-  al., 2024) and statistical detectors target generation, not
-  transformation-preservation, and degrade under rewriting.
-- **EU AI Act Article 50** obliges the *generator* to mark; this work is an
-  adjacent, complementary instrument (it attests what a *transform* preserved),
-  not a 50(2) marker substitute.
+- **Signed-but-semantics-disclaiming receipts.** **AEX** (arXiv:2603.14283)
+  independently uses JCS + SHA-256 + Ed25519 signed transformation-receipt
+  chains for LLM APIs but **explicitly disclaims** that an accepted transform is
+  "semantically correct, reasonable, or minimal." The same pattern — a signed
+  artifact that proves *what was computed* and avoids any quality claim — recurs
+  in deterministic-inference attestation (EigenAI, arXiv:2602.00182) and signed
+  tool-call receipts (arXiv:2603.10060). Our contribution is precisely that
+  uniformly-disclaimed semantic delta, as a finite-sample, replayable
+  certificate.
+- **C2PA / Content Credentials** bind provenance to media; C2PA 2.4 adds text
+  manifests, but the text binding is a *byte-exact* hard hash that breaks under
+  any edit or paraphrase, and the spec itself states provenance is not a truth
+  or quality claim. **SynthID-Text** (Dathathri et al., 2024) and statistical
+  detectors target generation, not transformation-preservation, and degrade
+  under exactly the rewriting text invites — a property re-confirmed in 2025 for
+  SynthID specifically (arXiv:2508.20228) and across detector families by a
+  single training-free paraphrase attack (arXiv:2506.07001).
+- **EU AI Act Article 50** obliges the *generator* to mark; the associated
+  *Code of Practice on Transparency of AI-Generated Content* (finalized
+  10 June 2026) sets out the marking expectations. This work is an adjacent,
+  complementary instrument (it attests what a *transform* preserved), not a
+  50(2) marker substitute.
 - **Distribution-free guarantees.** Hoeffding (1963); the empirical-Bernstein
   bound (Maurer & Pontil, 2009); conformal prediction (Vovk et al., 2005;
   Angelopoulos & Bates, 2023) and conformal risk control (Angelopoulos et al.,
-  ICLR 2024); group-conditional coverage (Gibbs, Cherian & Candès, 2023);
-  and concurrent conformal-factuality work for LLMs (arXiv:2603.27403). Our
-  contribution is the *composition* — a signed, replayable receipt over a named
-  meaning-loss proxy — not a new inequality.
+  ICLR 2024); group-conditional coverage (Gibbs, Cherian & Candès, 2023). The
+  nearest applications to *transform quality* are conformal prediction over a
+  machine-translation quality score (arXiv:2306.01549) and conformal coverage
+  on summary sentence-importance (arXiv:2509.20461); the nearest *output*-
+  factuality line is Mohri & Hashimoto (arXiv:2402.10978) and concurrent
+  conditional-factuality certificates (arXiv:2603.27403). None couples its
+  statistical bound to a signed, replayable receipt, and none bounds expected
+  meaning-loss of a *transform* under a named judge. Our contribution is the
+  *composition* — a signed, replayable receipt over a named meaning-loss proxy
+  — not a new inequality.
 
 ## 10. Limitations and future work
 
@@ -296,9 +316,16 @@ Validity rests on exchangeability between calibration and deployment, which is
 assumed, not sampled — a deliberately disclosed boundary common to all
 conformal guarantees. Model-judge replay is machine-pinned; de-pinning via
 integer/fixed-point CPU inference (so a meaning-judge forward pass is
-hardware-independent) is named future work. The proxy is a proxy; stronger
-faithfulness judges (e.g. MiniCheck-class) are a drop-in upgrade, and a tighter
-betting/empirical-Bernstein confidence sequence is a no-wire-change tightening.
+hardware-independent) is named future work — same-hardware bitwise determinism
+is now an engineering solved problem (batch-invariant kernels), but
+cross-hardware reproducibility remains open, which is the niche this de-pinning
+targets. The proxy is a proxy; stronger faithfulness judges are a drop-in
+upgrade — MiniCheck (Tang et al., 2024) is the lightweight lineage anchor,
+though lighter open judges have since been reported to match or surpass it
+(e.g. Paladin-mini, 2025) — and any judge-conditional bound inherits the
+judge's *label-noise* ceiling, not merely its accuracy (Verifying the
+Verifiers, arXiv:2506.13342). A tighter betting/empirical-Bernstein confidence
+sequence is a no-wire-change tightening.
 The corpora here demonstrate the mechanism; they are not a benchmark suite. The
 binding open problem is not a sharper inequality but **adoption**: one external
 party issuing and verifying a receipt it did not author.
@@ -317,8 +344,17 @@ party issuing and verifying a receipt it did not author.
 - S. Dathathri et al. *Scalable watermarking for identifying large language model outputs (SynthID-Text).* Nature, 2024.
 - *AEX: Non-Intrusive Multi-Hop Attestation and Provenance for LLM APIs.* arXiv:2603.14283, 2026.
 - *Conditional Factuality-Controlled LLMs with Generalization Certificates.* arXiv:2603.27403, 2026.
-- C2PA. *Coalition for Content Provenance and Authenticity, Technical Specification* (digitalSourceType taxonomy, v2.4).
-- European Union. *Artificial Intelligence Act, Article 50*, and the GPAI/transparency Code of Practice (2026).
+- *EigenAI: deterministic-inference attestation.* arXiv:2602.00182, 2026.
+- *Tool Receipts, Not ZK Proofs: signed tool-call receipts for agents.* arXiv:2603.10060, 2026.
+- P. Giovannotti. *Evaluating Machine Translation Quality with Conformal Predictive Distributions.* arXiv:2306.01549 (COPA 2023).
+- *Document Summarization with Conformal Importance Guarantees.* arXiv:2509.20461, 2025.
+- C. Mohri, T. Hashimoto. *Language Models with Conformal Factuality Guarantees.* arXiv:2402.10978, 2024.
+- *Robustness Assessment and Enhancement of Text Watermarking for Google's SynthID.* arXiv:2508.20228, 2025.
+- *Adversarial Paraphrasing: universal training-free evasion of AI-text detectors.* arXiv:2506.07001 (NeurIPS 2025).
+- L. Tang et al. *MiniCheck: efficient fact-checking of LLMs on grounding documents.* EMNLP 2024 (arXiv:2404.10774).
+- *Verifying the Verifiers: label noise in fact-verification benchmarks.* arXiv:2506.13342, 2025.
+- C2PA. *Coalition for Content Provenance and Authenticity, Technical Specification* (digitalSourceType taxonomy, v2.4; text manifests added in 2.x).
+- European Union. *Artificial Intelligence Act, Article 50* (applicable 2 Aug 2026), and the *Code of Practice on Transparency of AI-Generated Content* (finalized 10 June 2026).
 - ECMA-262. *ECMAScript Language Specification* (§ Number::toString).
 
 ---
