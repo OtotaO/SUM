@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-06-09T12:55:25Z",
+  "issued_at": "2026-06-13T11:22:31Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "86d553c4d2991b771ceee5c2a02f428d4a5dd4bc",
-    "head_short": "86d553c",
-    "head_subject": "release: v0.8.0 \u2014 publish the sum_verify SDK + the [verify] extra to PyPI",
-    "head_committer_date": "2026-06-09T08:46:57-04:00",
+    "head_sha": "92e3e6b2cd3e3bb6b7e37cea2483763b3677d345",
+    "head_short": "92e3e6b",
+    "head_subject": "harden(verifier): close 3 input-validation gaps found by a mass-parallel adversarial fuzz (#317)",
+    "head_committer_date": "2026-06-13T06:24:56-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -19,7 +19,7 @@
   },
   "release": {
     "pyproject_version": "0.8.0",
-    "pypi_published_version": "0.7.1"
+    "pypi_published_version": "0.8.0"
   },
   "features": {
     "total": 170,
