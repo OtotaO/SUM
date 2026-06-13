@@ -261,7 +261,7 @@ This roadmap names only unshipped work. Items already landed live in [`CHANGELOG
 
 **Platform surface (post-hardening)**
 
-Source anchoring in the bundle schema, bundle explorer / viewer, `sum verify --explain`, `sum tutorial` onboarding, shareable bundle URLs `/b/{hash}`, PWA-installable demo, `sum attest <url>` fetch mode. Each item names its dependency in [`docs/NEXT_SESSION_PLAYBOOK.md`](docs/NEXT_SESSION_PLAYBOOK.md).
+Source anchoring in the bundle schema, bundle explorer / viewer, `sum tutorial` onboarding, shareable bundle URLs `/b/{hash}`, PWA-installable demo, `sum attest <url>` fetch mode. Each item names its dependency in [`docs/NEXT_SESSION_PLAYBOOK.md`](docs/NEXT_SESSION_PLAYBOOK.md).
 
 ---
 
