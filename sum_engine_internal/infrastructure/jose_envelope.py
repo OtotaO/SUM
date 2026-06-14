@@ -67,7 +67,7 @@ class JoseEnvelopeErrorClass:
     """String constants — kept identical across runtimes (mirrored by
     the JS verifier's ERROR_CLASSES) so cross-runtime fixture
     assertions match by string compare."""
-    MALFORMED_ENVELOPE = "malformed_envelope"
+    MALFORMED_RECEIPT = "malformed_receipt"
     MALFORMED_JWS = "malformed_jws"
     MALFORMED_JWKS = "malformed_jwks"
     UNKNOWN_KID = "unknown_kid"
@@ -192,7 +192,7 @@ def verify_jose_envelope(
     # ---- Step 0: shape gate ----
     if not isinstance(envelope, dict):
         raise JoseEnvelopeError(
-            JoseEnvelopeErrorClass.MALFORMED_ENVELOPE,
+            JoseEnvelopeErrorClass.MALFORMED_RECEIPT,
             "envelope is not a dict",
         )
 
@@ -209,17 +209,17 @@ def verify_jose_envelope(
     jws_str = envelope.get("jws")
     if not isinstance(kid, str) or not kid:
         raise JoseEnvelopeError(
-            JoseEnvelopeErrorClass.MALFORMED_ENVELOPE,
+            JoseEnvelopeErrorClass.MALFORMED_RECEIPT,
             "envelope.kid missing or empty",
         )
     if not isinstance(payload, dict):
         raise JoseEnvelopeError(
-            JoseEnvelopeErrorClass.MALFORMED_ENVELOPE,
+            JoseEnvelopeErrorClass.MALFORMED_RECEIPT,
             "envelope.payload missing or non-dict",
         )
     if not isinstance(jws_str, str) or not jws_str:
         raise JoseEnvelopeError(
-            JoseEnvelopeErrorClass.MALFORMED_ENVELOPE,
+            JoseEnvelopeErrorClass.MALFORMED_RECEIPT,
             "envelope.jws missing or empty",
         )
 
@@ -258,7 +258,7 @@ def verify_jose_envelope(
         canonical_bytes = canonicalize(payload)
     except (TypeError, ValueError) as e:
         raise JoseEnvelopeError(
-            JoseEnvelopeErrorClass.MALFORMED_ENVELOPE,
+            JoseEnvelopeErrorClass.MALFORMED_RECEIPT,
             f"payload could not be JCS-canonicalized: {e}",
         ) from e
 

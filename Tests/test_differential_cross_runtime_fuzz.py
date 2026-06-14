@@ -5,16 +5,15 @@ crash. This is the regression guard for the trust triangle's core promise —
 cross-runtime tests cannot cover (they found, e.g., a non-dict-JWKS crash that no
 committed fixture exercised; see the 2026-06-14 differential campaign).
 
-Two invariants are asserted hard:
+Three invariants are asserted hard:
   1. accept/reject PARITY  — for every mutation, Python ACCEPT iff Node ACCEPT.
   2. TOTALITY              — neither runtime throws an undeclared exception.
+  3. error-CLASS PARITY    — both runtimes name the SAME rejection class.
 
-A third, weaker property (agree on the error-CLASS, not just accept/reject) is
-checked too, but the runtimes have a small set of KNOWN, accept/reject-harmless
-class-name divergences (Python `malformed_envelope` vs Node `malformed_receipt`
-for structural malformations, + two Node `[]`-is-object edges). Those are
-allow-listed below so a NEW class divergence still fails. Reconciling the
-taxonomy is an open contract decision; see KNOWN_CLASS_DIVERGENCE.
+(3) was reconciled 2026-06-14: the Python enum value malformed_envelope was
+renamed to malformed_receipt and the JS verifiers taught to reject array
+receipts/payloads structurally, collapsing the last class divergences. The
+KNOWN_CLASS_DIVERGENCE allow-list is therefore empty; any new divergence fails.
 """
 from __future__ import annotations
 
@@ -38,18 +37,16 @@ DRIVER = REPO / "single_file_demo" / "diff_verdict_driver.mjs"
 # Cases where the runtimes both REJECT but name a different error class. These
 # are accept/reject-harmless (parity still holds); listed so a new divergence is
 # not masked. (mutation tag) -> (python_class, node_class).
-KNOWN_CLASS_DIVERGENCE = {
-    "receipt-is-array": ("malformed_envelope", "schema_unknown"),
-    "receipt-is-string": ("malformed_envelope", "malformed_receipt"),
-    "receipt-is-number": ("malformed_envelope", "malformed_receipt"),
-    "receipt-is-null": ("malformed_envelope", "malformed_receipt"),
-    "drop-payload": ("malformed_envelope", "malformed_receipt"),
-    "drop-jws": ("malformed_envelope", "malformed_receipt"),
-    "drop-kid": ("malformed_envelope", "malformed_receipt"),
-    "payload-is-array": ("malformed_envelope", "signature_invalid"),
-    "payload-is-string": ("malformed_envelope", "malformed_receipt"),
-    "jws-empty": ("malformed_envelope", "malformed_receipt"),
-}
+#
+# RECONCILED 2026-06-14 — this set is now EMPTY: the runtimes agree on the exact
+# error CLASS for every mutation, not just accept/reject. The reconciliation
+# renamed the Python enum value malformed_envelope -> malformed_receipt (matching
+# the existing render/transform MALFORMED_RECEIPT alias intent and the JS string)
+# and taught the JS verifiers to reject array receipts/payloads as
+# malformed_receipt (they previously slipped past `typeof === "object"`). Keep
+# the dict so a FUTURE intentional divergence can be documented here rather than
+# silently allow-listed.
+KNOWN_CLASS_DIVERGENCE: dict[str, tuple[str, str]] = {}
 
 
 def _keypair(kid="diff-kid"):
@@ -178,3 +175,39 @@ def test_cross_runtime_verdict_parity_and_totality(family):
     assert not parity_fail, f"[{family}] accept/reject DIVERGENCE: {parity_fail}"
     assert not new_classdiff, (
         f"[{family}] NEW error-class divergence (not in KNOWN_CLASS_DIVERGENCE): {new_classdiff}")
+
+
+# Broad garbage battery for JS-side totality: every Node verifier must throw a
+# structured VerifyError (-> {"v":false,"c":...}) or verify, NEVER an undeclared
+# exception (-> {"crash":...}). Complements the Python totality properties.
+_GARBAGE_RECEIPTS = [
+    None, 0, 1, -1, 1.5, "", "x", True, False, [], [1, 2, 3], [[[]]], {},
+    {"schema": "sum.render_receipt.v1"},
+    {"kid": None, "payload": None, "jws": None, "schema": None},
+    {"kid": "k", "payload": {"a": {"b": {"c": [1, [2, [3]]]}}}, "jws": "a.b.c",
+     "schema": "sum.render_receipt.v1"},
+    {"kid": 5, "payload": [1], "jws": 7, "schema": 9},
+    {"kid": "k", "payload": "x" * 5000, "jws": "." * 100, "schema": "s"},
+    {"kid": "k", "payload": {"x": 1e308}, "jws": "a.b", "schema": "sum.render_receipt.v1"},
+    {"kid": "\u200b", "payload": {"\ufeff": " "}, "jws": "\U0001f642.\U0001f642.\U0001f642",
+     "schema": "sum.render_receipt.v1"},
+]
+_GARBAGE_JWKS = [None, 0, "x", [], [1], {}, {"keys": None}, {"keys": 5},
+                 {"keys": [None, 1, "x"]}, {"keys": [{"kid": None}]}]
+
+
+@pytest.mark.parametrize("family", ["render", "transform", "meaning"])
+def test_node_verifier_totality_on_garbage(family):
+    """JS verifier never crashes (undeclared throw) on broad garbage — it always
+    resolves or rejects with a VerifyError."""
+    schema = {"render": "sum.render_receipt.v1", "transform": "sum.transform_receipt.v1",
+              "meaning": "sum.meaning_risk_receipt.v1"}[family]
+    cases = ([{"receipt": r, "jwks": {"keys": []}, "schema": schema} for r in _GARBAGE_RECEIPTS]
+             + [{"receipt": {"kid": "k", "payload": {}, "jws": "a.b.c", "schema": schema}, "jwks": j,
+                 "schema": schema} for j in _GARBAGE_JWKS])
+    lines = "\n".join(json.dumps(c) for c in cases)
+    res = subprocess.run([NODE, str(DRIVER), family], input=lines,
+                         capture_output=True, text=True, timeout=60)
+    assert res.returncode == 0, f"node driver failed: {res.stderr[:300]}"
+    crashes = [(i, ln) for i, ln in enumerate(res.stdout.split("\n")) if '"crash"' in ln]
+    assert not crashes, f"[{family}] Node verifier CRASHED (undeclared throw) on garbage: {crashes}"

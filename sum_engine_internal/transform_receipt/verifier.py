@@ -45,7 +45,7 @@ class ErrorClass:
     ``transform_receipt`` namespace so consumers can branch on
     ``e.error_class == ErrorClass.SIGNATURE_INVALID`` without
     reaching into the underlying envelope module."""
-    MALFORMED_RECEIPT = JoseEnvelopeErrorClass.MALFORMED_ENVELOPE
+    MALFORMED_RECEIPT = JoseEnvelopeErrorClass.MALFORMED_RECEIPT
     MALFORMED_JWS = JoseEnvelopeErrorClass.MALFORMED_JWS
     MALFORMED_JWKS = JoseEnvelopeErrorClass.MALFORMED_JWKS
     UNKNOWN_KID = JoseEnvelopeErrorClass.UNKNOWN_KID
