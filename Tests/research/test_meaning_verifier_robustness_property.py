@@ -116,6 +116,20 @@ def test_mangled_jws_never_crashes(jws):
     _assert_total(lambda: verify_meaning_risk_receipt(env, _JWKS))
 
 
+@given(jwks=(
+    st.none() | st.integers() | st.text(max_size=4) | st.lists(st.integers(), max_size=3)
+    | st.dictionaries(st.text(max_size=3), st.integers(), max_size=3)            # no "keys"
+    | st.fixed_dictionaries({"keys": st.one_of(st.integers(), st.none(), st.text(max_size=3))})
+    | st.fixed_dictionaries({"keys": st.lists(st.integers() | st.none(), max_size=3)})  # non-dict entries
+))
+def test_malformed_jwks_never_crashes(jwks):
+    """A malformed JWKS (the verifier's trusted input) — non-dict, missing/non-list
+    `keys`, or non-dict key entries — must reject cleanly, not raise an unhandled
+    AttributeError from dereferencing it. (Node parity for this is in
+    Tests/test_differential_cross_runtime_fuzz.py.)"""
+    _assert_total(lambda: verify_meaning_risk_receipt(_BASE_ENV, jwks))
+
+
 def test_sum_verify_sdk_shares_totality():
     """The shipped SDK verifier shares the same fixes; spot-check the two
     previously-crashing inputs raise its declared types, not a bare crash."""
