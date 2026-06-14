@@ -473,8 +473,8 @@ class CanonicalCodec:
     ) -> bool:
         """Verify HMAC-SHA256 signature. Caller must gate on signing_key."""
         expected = self._sign(canonical_tome, state_str, timestamp)
-        if expected is None:
-            return False
+        if expected is None or not isinstance(signature, str):
+            return False  # a null/non-string signature is simply invalid
         return hmac.compare_digest(expected, signature)
 
     # ------------------------------------------------------------------
@@ -680,6 +680,18 @@ class CanonicalCodec:
         missing = required - set(bundle_dict.keys())
         if missing:
             raise ValueError(f"Bundle missing required fields: {missing}")
+
+        # Required structural fields must be strings. A present-but-null (or any
+        # non-string) value would otherwise crash len()/timestamp-parse below
+        # with an unhandled TypeError — fail closed with ValueError instead, so
+        # the verifier stays TOTAL on adversarial input (matches the JOSE-family
+        # JWKS/field guards).
+        for _field in ("canonical_tome", "state_integer", "timestamp"):
+            if not isinstance(bundle_dict.get(_field), str):
+                raise ValueError(
+                    f"Bundle field {_field!r} must be a string; got "
+                    f"{type(bundle_dict.get(_field)).__name__}"
+                )
 
         # ── DoS defense: enforce size limits before any crypto ──
         MAX_TOME_BYTES = 10 * 1024 * 1024    # 10 MB

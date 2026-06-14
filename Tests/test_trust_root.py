@@ -286,8 +286,8 @@ def test_error_classes_match_render_receipt_taxonomy():
         JoseEnvelopeErrorClass,
     )
 
-    assert ErrorClass.MALFORMED_MANIFEST == JoseEnvelopeErrorClass.MALFORMED_ENVELOPE
-    assert RRClass.MALFORMED_RECEIPT == JoseEnvelopeErrorClass.MALFORMED_ENVELOPE
+    assert ErrorClass.MALFORMED_MANIFEST == JoseEnvelopeErrorClass.MALFORMED_RECEIPT
+    assert RRClass.MALFORMED_RECEIPT == JoseEnvelopeErrorClass.MALFORMED_RECEIPT
     assert ErrorClass.MALFORMED_MANIFEST == RRClass.MALFORMED_RECEIPT
 
 

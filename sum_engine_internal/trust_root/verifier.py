@@ -30,7 +30,7 @@ class ErrorClass:
     ``sum_engine_internal.infrastructure.jose_envelope.JoseEnvelopeErrorClass``;
     consumers asserting by string match across surfaces work without
     modification."""
-    MALFORMED_MANIFEST = JoseEnvelopeErrorClass.MALFORMED_ENVELOPE
+    MALFORMED_MANIFEST = JoseEnvelopeErrorClass.MALFORMED_RECEIPT
     MALFORMED_JWS = JoseEnvelopeErrorClass.MALFORMED_JWS
     MALFORMED_JWKS = JoseEnvelopeErrorClass.MALFORMED_JWKS
     UNKNOWN_KID = JoseEnvelopeErrorClass.UNKNOWN_KID

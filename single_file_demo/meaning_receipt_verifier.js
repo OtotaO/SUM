@@ -86,7 +86,7 @@ async function importEd25519Jwk(jwk) {
  */
 export async function verifyMeaningEnvelope(receipt, jwks, supportedSchema) {
   // ---- Step 0: shape gate ----
-  if (!receipt || typeof receipt !== "object") {
+  if (!receipt || typeof receipt !== "object" || Array.isArray(receipt)) {
     throw new VerifyError(ERROR_CLASSES.MALFORMED_RECEIPT, "receipt is not an object");
   }
   if (receipt.schema !== supportedSchema) {
@@ -99,7 +99,7 @@ export async function verifyMeaningEnvelope(receipt, jwks, supportedSchema) {
   if (typeof kid !== "string" || !kid) {
     throw new VerifyError(ERROR_CLASSES.MALFORMED_RECEIPT, "receipt.kid missing or empty");
   }
-  if (!payload || typeof payload !== "object") {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     throw new VerifyError(ERROR_CLASSES.MALFORMED_RECEIPT, "receipt.payload missing or non-object");
   }
   if (typeof jws !== "string" || !jws) {

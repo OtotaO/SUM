@@ -40,8 +40,8 @@ class ErrorClass:
     """String constants — identical to JoseEnvelopeErrorClass but
     kept as a separate class so the public name `ErrorClass` lands
     cleanly in the render_receipt namespace. Receipt-specific naming:
-    MALFORMED_RECEIPT mirrors MALFORMED_ENVELOPE."""
-    MALFORMED_RECEIPT = JoseEnvelopeErrorClass.MALFORMED_ENVELOPE
+    MALFORMED_RECEIPT mirrors MALFORMED_RECEIPT."""
+    MALFORMED_RECEIPT = JoseEnvelopeErrorClass.MALFORMED_RECEIPT
     MALFORMED_JWS = JoseEnvelopeErrorClass.MALFORMED_JWS
     MALFORMED_JWKS = JoseEnvelopeErrorClass.MALFORMED_JWKS
     UNKNOWN_KID = JoseEnvelopeErrorClass.UNKNOWN_KID

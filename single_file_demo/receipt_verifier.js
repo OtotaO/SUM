@@ -177,7 +177,7 @@ export async function verifyReceipt(receipt, jwks, revokedKids, opts) {
   }
 
   // ---- Step 0 (shape gate) ----
-  if (!receipt || typeof receipt !== "object") {
+  if (!receipt || typeof receipt !== "object" || Array.isArray(receipt)) {
     throw new VerifyError(
       ERROR_CLASSES.MALFORMED_RECEIPT,
       "receipt is not an object",
@@ -203,7 +203,7 @@ export async function verifyReceipt(receipt, jwks, revokedKids, opts) {
       "receipt.kid missing or empty",
     );
   }
-  if (!payload || typeof payload !== "object") {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     throw new VerifyError(
       ERROR_CLASSES.MALFORMED_RECEIPT,
       "receipt.payload missing or non-object",
