@@ -224,8 +224,23 @@ def verify_jose_envelope(
         )
 
     # ---- Step 1: kid lookup ----
-    keys = (jwks or {}).get("keys") or []
-    key_jwk = next((k for k in keys if k.get("kid") == kid), None)
+    # A malformed JWKS is the verifier's trusted input (P1), but it must still
+    # fail CLOSED with a clean class rather than crash: a non-dict jwks, a
+    # missing/non-list `keys`, or non-dict key entries previously raised an
+    # unhandled AttributeError (`(5).get(...)`), breaking verifier totality and
+    # diverging from the Node runtime. Validate the shape first.
+    if not isinstance(jwks, dict):
+        raise JoseEnvelopeError(
+            JoseEnvelopeErrorClass.MALFORMED_JWKS,
+            f"jwks must be an object with a 'keys' array; got {type(jwks).__name__}",
+        )
+    keys = jwks.get("keys")
+    if not isinstance(keys, list):
+        raise JoseEnvelopeError(
+            JoseEnvelopeErrorClass.MALFORMED_JWKS,
+            f"jwks.keys must be an array; got {type(keys).__name__}",
+        )
+    key_jwk = next((k for k in keys if isinstance(k, dict) and k.get("kid") == kid), None)
     if key_jwk is None:
         raise JoseEnvelopeError(
             JoseEnvelopeErrorClass.UNKNOWN_KID,

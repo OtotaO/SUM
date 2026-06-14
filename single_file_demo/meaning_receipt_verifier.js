@@ -107,7 +107,13 @@ export async function verifyMeaningEnvelope(receipt, jwks, supportedSchema) {
   }
 
   // ---- Step 1: kid lookup ----
-  const key = (jwks?.keys || []).find((k) => k.kid === kid);
+  // Validate JWKS shape first: an array's `.keys` is Array.prototype.keys (a
+  // function), so `(arrayJwks?.keys || []).find` throws TypeError — fail closed
+  // with a clean class instead, matching the Python core.
+  if (jwks === null || typeof jwks !== "object" || Array.isArray(jwks) || !Array.isArray(jwks.keys)) {
+    throw new VerifyError(ERROR_CLASSES.MALFORMED_JWKS, "jwks must be an object with a 'keys' array");
+  }
+  const key = jwks.keys.find((k) => k && typeof k === "object" && k.kid === kid);
   if (!key) {
     throw new VerifyError(ERROR_CLASSES.UNKNOWN_KID, `no key in JWKS for kid=${kid}`);
   }
