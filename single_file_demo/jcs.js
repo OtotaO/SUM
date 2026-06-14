@@ -15,11 +15,19 @@
  *   boolean
  *   null
  *
- * Floats are intentionally UNSUPPORTED — the Python impl throws ValueError
- * on them, this impl throws TypeError with the same reasoning: the VC 2.0 +
- * eddsa-jcs-2022 path inside SUM never emits floats (integers and
- * ISO-8601 strings only), so shipping an ES6-ToString serializer for a
- * type we do not use would be untested weight.
+ * Floats are intentionally UNSUPPORTED in THIS canonicalizer (throws): the
+ * VC 2.0 + eddsa-jcs-2022 + meaning/perspective + CanonicalBundle paths are
+ * float-free (integers and ISO-8601 strings only), so an ES6-ToString
+ * serializer for a type we never emit on this path would be untested weight.
+ *
+ * The float-BEARING path — render / transform receipts, whose payload carries
+ * float `sliders_quantized` values — is canonicalized elsewhere: the Python
+ * `sum_engine_internal.infrastructure.jcs` canonicalizer and the vendored JS
+ * one (`vendor/sum-verify-deps.js`, used by `receipt_verifier.js`) BOTH
+ * serialize floats per the ECMAScript Number::toString rule and agree
+ * byte-for-byte, pinned by `Tests/test_jcs_float_cross_runtime.py`. (So the
+ * Python canonicalizer does NOT throw on floats — only this float-free subset
+ * does.)
  *
  * Key-sort rule (RFC 8785 §3.2.3): UTF-16 code-unit sequence.
  * JavaScript strings ARE UTF-16 natively, so the default lexicographic
