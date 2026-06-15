@@ -80,7 +80,7 @@ smoke: wheel  ## Fresh-venv install + attest|verify round-trip from the built wh
 	@echo "Alice likes cats. Bob owns a dog." | /tmp/sum-smoke/bin/sum attest --extractor=sieve | \
 	 /tmp/sum-smoke/bin/sum verify
 
-verify-frontend-bytes:  ## Post-deploy guard: assert the live hosted demo is byte-identical to single_file_demo/index.html. Override target with SUM_DEMO_URL=...
+verify-frontend-bytes:  ## Post-deploy guard: assert the live hosted demo (page + browser verifier JS) is byte-identical to single_file_demo/. Override target with SUM_DEMO_URL=...
 	@$(PYTHON) -m scripts.verify_frontend_bytes
 
 verify-release-bytes: wheel  ## Pre-tag empirical check: built wheel installs cleanly with [openai] AND [llm] aliases; OpenAI SDK lands; sum --version works. Run before `git tag vX.Y.Z`.

@@ -69,7 +69,7 @@ failure that once hid PR #243's cascade panel from production. Guard
 against it:
 
 ```bash
-make verify-frontend-bytes        # SHA-256(live /) == SHA-256(repo index.html)
+make verify-frontend-bytes        # SHA-256(live assets) == SHA-256(repo) for the page + browser verifier JS
 # or, for a non-default account:
 SUM_DEMO_URL=https://sum-demo.<account>.workers.dev make verify-frontend-bytes
 ```
