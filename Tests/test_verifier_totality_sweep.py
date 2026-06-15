@@ -16,8 +16,9 @@ import math
 
 import pytest
 
-from hypothesis import HealthCheck, assume, given, settings
-from hypothesis import strategies as st
+hypothesis = pytest.importorskip("hypothesis", reason="hypothesis (hardening extra) not installed")
+from hypothesis import HealthCheck, assume, given, settings  # noqa: E402
+from hypothesis import strategies as st  # noqa: E402
 
 # Adversarial JSON values, including the leaves that historically crashed
 # verifiers: None, non-finite floats, coercible strings, oversized ints, arrays.
