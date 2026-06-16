@@ -728,7 +728,19 @@ joint-coverage test) are the empirical receipt that the certified radius
 achieves ≥ 1−δ coverage.
 
 What is **measured / bounded, NOT proved** [empirical-benchmark]: that the
-*named proxy* tracks human-perceived meaning-loss. The bound is honest
+*named proxy* tracks human-perceived meaning-loss — now **measured, and only
+weakly-to-moderately** (it was previously tagged `empirical-benchmark` with no
+measurement behind it; fresh-eyes audit 2026-06-16). On SummEval (Fabbri et al.
+2021; expert 1–5 consistency/relevance ratings of CNN/DM summaries) the proxy's
+meaning-loss has a **positive but modest** monotone relationship to human
+judgment: Spearman ρ ≈ 0.27 against the faithfulness+relevance composite
+(lexical 0.29 / embedding 0.27, n=800; NLI judge 0.27, n=192), with the NLI judge
+best on the faithfulness axis (ρ = 0.33, n=192); all p < 0.001. Threshold
+recalibration is marginal (embedding best at 0.55 vs the 0.5 default, ρ 0.31 vs
+0.31). Read this as: the proxy is a **directionally-valid stand-in, not a
+substitute for human judgment** — a ρ of ~0.3 leaves most of the variance
+unexplained. Reproduce: [`Tests/benchmarks/meaning_proxy_human_calibration.py`](../Tests/benchmarks/meaning_proxy_human_calibration.py)
+→ `meaning_proxy_human_calibration.result.json`. The bound is honest
 about exactly three limits, each enforced in the receipt: (i) it bounds a
 **proxy**, not meaning itself (the required `not_covered` field declares
 arrangement / sound / connotation / implicature as structurally out of

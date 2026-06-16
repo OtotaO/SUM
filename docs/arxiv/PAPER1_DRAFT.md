@@ -27,9 +27,9 @@ boundary stays explicit: it bounds a named proxy *marginally*, under
 demonstrate on two public-domain corpora: certified expected meaning-loss
 ≤ 0.645 (95%) for abstractive summarization of US Congressional bills
 (BillSum, CC0; n=64) and ≤ 0.412 for EN→FR translation (opus-100; n=64), with
-39/64 faithful translations scoring *exactly zero* meaning-loss despite
-near-zero lexical overlap — the property no watermark or lexical scheme can
-certify. The thesis is **attest, don't detect**: a signature survives an
+39/64 faithful translations scoring *exactly zero* meaning-loss (under a binary
+entailment judge at a 0.5 cut) despite near-zero lexical overlap — the property
+no watermark or lexical scheme can certify. The thesis is **attest, don't detect**: a signature survives an
 adversary with a thesaurus; a statistical "is-this-AI" classifier does not.
 
 **Contributions.** (1) A unified, cross-runtime-verifiable receipt family for
@@ -216,18 +216,27 @@ micro-unit** and adversarially audited before release.
 (US Congressional bills + reference summaries; CC0-1.0 as US-government works),
 local MiniLM-cosine entailment judge. The abstractive bill→summary transform
 certifies **expected meaning-loss $\le 0.6454$ at 95%** ($n=64$, mean
-$0.4925$), controlled against a 0.70 threshold. Aggressive summarization loses
-about half the named proxy on average; the receipt *certifies how much*, it
-does not claim little was lost.
+$0.4925$), controlled against an operator-chosen **0.70 target** — an
+illustrative bar set by the issuer, not a regulator/SLA threshold, so
+"controlled: true" means "met the bar the issuer picked", not "passed an
+external quality gate". Aggressive summarization loses about half the named
+proxy on average; the receipt *certifies how much*, it does not claim little
+was lost.
 
 **7.2 Translation (opus-100).** First 64 length-aligned EN→FR pairs of
 opus-100, local multilingual NLI judge (mDeBERTa-v3-xnli). The translation
 transform certifies **expected meaning-loss $\le 0.4124$ at 95%** ($n=64$, mean
-$0.2594$), controlled against 0.50. The distribution is the headline: **39 of
-64 faithful translations score exactly zero meaning-loss despite near-zero
-lexical overlap** between English and French. A lexical or watermark scheme
-cannot credit a faithful translation — there is almost no surface to match —
-whereas the named judge can. What the receipt takes custody of is the
+$0.2594$), controlled against an operator-chosen 0.50 target (again illustrative,
+not an external bar). The distribution is the headline: **39 of 64 faithful
+translations score exactly zero meaning-loss despite near-zero lexical overlap**
+between English and French. This headline must be read *at the judge's
+resolution*: at the 0.5 NLI cut the per-pair loss takes only five distinct
+values $\{0.0, 0.4, 0.6, 0.8, 1.0\}$ — 62/64 pairs fall on that grid — so
+"exactly zero" means *bidirectional entailment fired above 0.5 in both
+directions*, not fine-grained perfect preservation; the split is also
+length-aligned and short, which lowers difficulty. With that caveat stated:
+a lexical or watermark scheme cannot credit a faithful translation at all —
+there is almost no surface to match — whereas the named judge can. What the receipt takes custody of is the
 *translation transform* and a *bounded named proxy* for what it preserved,
 issued as a signed certificate — custody of a transform, not of meaning
 itself.

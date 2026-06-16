@@ -1,0 +1,190 @@
+{
+  "dataset": "mteb/summeval (test, CNN/DM, expert-annotated 1-5)",
+  "method": "summary-level pooled rank correlation; proxy meaning-loss vs human loss=(5-score)/4; higher=worse for both, so POSITIVE rho = proxy tracks humans",
+  "n_pairs_fast": 800,
+  "n_pairs_nli": 192,
+  "n_pairs_sweep": 320,
+  "scorers": {
+    "lexical-coverage-bidirectional": {
+      "consistency": {
+        "n": 800,
+        "spearman": 0.2661,
+        "spearman_p": 0.0,
+        "kendall": 0.2108,
+        "kendall_p": 0.0
+      },
+      "relevance": {
+        "n": 800,
+        "spearman": 0.2601,
+        "spearman_p": 0.0,
+        "kendall": 0.1892,
+        "kendall_p": 0.0
+      },
+      "coherence": {
+        "n": 800,
+        "spearman": 0.1365,
+        "spearman_p": 0.000108,
+        "kendall": 0.0993,
+        "kendall_p": 5.8e-05
+      },
+      "fluency": {
+        "n": 800,
+        "spearman": 0.1806,
+        "spearman_p": 0.0,
+        "kendall": 0.14,
+        "kendall_p": 0.0
+      },
+      "meaning_composite": {
+        "n": 800,
+        "spearman": 0.2907,
+        "spearman_p": 0.0,
+        "kendall": 0.2118,
+        "kendall_p": 0.0
+      },
+      "mean_all4": {
+        "n": 800,
+        "spearman": 0.2658,
+        "spearman_p": 0.0,
+        "kendall": 0.187,
+        "kendall_p": 0.0
+      }
+    },
+    "embedding-minilm@0.5": {
+      "consistency": {
+        "n": 800,
+        "spearman": 0.1739,
+        "spearman_p": 1e-06,
+        "kendall": 0.1382,
+        "kendall_p": 1e-06
+      },
+      "relevance": {
+        "n": 800,
+        "spearman": 0.264,
+        "spearman_p": 0.0,
+        "kendall": 0.1894,
+        "kendall_p": 0.0
+      },
+      "coherence": {
+        "n": 800,
+        "spearman": 0.1424,
+        "spearman_p": 5.3e-05,
+        "kendall": 0.1015,
+        "kendall_p": 4.6e-05
+      },
+      "fluency": {
+        "n": 800,
+        "spearman": 0.1112,
+        "spearman_p": 0.001629,
+        "kendall": 0.0859,
+        "kendall_p": 0.001784
+      },
+      "meaning_composite": {
+        "n": 800,
+        "spearman": 0.2672,
+        "spearman_p": 0.0,
+        "kendall": 0.1883,
+        "kendall_p": 0.0
+      },
+      "mean_all4": {
+        "n": 800,
+        "spearman": 0.2233,
+        "spearman_p": 0.0,
+        "kendall": 0.1531,
+        "kendall_p": 0.0
+      }
+    },
+    "nli-deberta-mnli-fever-anli@0.5": {
+      "consistency": {
+        "n": 192,
+        "spearman": 0.3273,
+        "spearman_p": 4e-06,
+        "kendall": 0.2526,
+        "kendall_p": 7e-06
+      },
+      "relevance": {
+        "n": 192,
+        "spearman": 0.2439,
+        "spearman_p": 0.000653,
+        "kendall": 0.1772,
+        "kendall_p": 0.000552
+      },
+      "coherence": {
+        "n": 192,
+        "spearman": 0.1722,
+        "spearman_p": 0.016937,
+        "kendall": 0.125,
+        "kendall_p": 0.01447
+      },
+      "fluency": {
+        "n": 192,
+        "spearman": 0.1947,
+        "spearman_p": 0.006798,
+        "kendall": 0.1463,
+        "kendall_p": 0.00831
+      },
+      "meaning_composite": {
+        "n": 192,
+        "spearman": 0.2741,
+        "spearman_p": 0.000119,
+        "kendall": 0.1943,
+        "kendall_p": 0.000117
+      },
+      "mean_all4": {
+        "n": 192,
+        "spearman": 0.2414,
+        "spearman_p": 0.000742,
+        "kendall": 0.171,
+        "kendall_p": 0.000537
+      }
+    }
+  },
+  "embedding_threshold_sweep": {
+    "vs": "meaning_composite",
+    "n": 320,
+    "by_threshold": {
+      "0.35": {
+        "n": 320,
+        "spearman": 0.1875,
+        "spearman_p": 0.000751,
+        "kendall": 0.1322,
+        "kendall_p": 0.000811
+      },
+      "0.4": {
+        "n": 320,
+        "spearman": 0.2064,
+        "spearman_p": 0.0002,
+        "kendall": 0.1419,
+        "kendall_p": 0.00031
+      },
+      "0.45": {
+        "n": 320,
+        "spearman": 0.2705,
+        "spearman_p": 1e-06,
+        "kendall": 0.1874,
+        "kendall_p": 2e-06
+      },
+      "0.5": {
+        "n": 320,
+        "spearman": 0.3061,
+        "spearman_p": 0.0,
+        "kendall": 0.2169,
+        "kendall_p": 0.0
+      },
+      "0.55": {
+        "n": 320,
+        "spearman": 0.3106,
+        "spearman_p": 0.0,
+        "kendall": 0.2165,
+        "kendall_p": 0.0
+      },
+      "0.6": {
+        "n": 320,
+        "spearman": 0.2498,
+        "spearman_p": 6e-06,
+        "kendall": 0.1748,
+        "kendall_p": 9e-06
+      }
+    },
+    "best": "0.55"
+  }
+}
