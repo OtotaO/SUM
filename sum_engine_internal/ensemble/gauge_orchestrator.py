@@ -1,4 +1,17 @@
 """
+═══════════════════════════════════════════════════════════════════════════════
+STATUS: INTERNAL RESEARCH MODULE — NOT A SHIPPING SURFACE.
+═══════════════════════════════════════════════════════════════════════════════
+This module is NOT reachable from any shipping entrypoint (the ``sum`` CLI under
+``sum_cli`` or the ``sum_verify`` SDK) or the live Worker — verified by import
+trace (fresh-eyes audit, 2026-06-16). It is retained only as a regression guard
+exercised by ``Tests/`` and as internal research. Unlike ``api/quantum_router.py``
+(excluded from the wheel via ``api*``), this file currently still ships inside the
+``sum_engine_internal`` package; excluding it cleanly would require relocating it
+out of the ``ensemble`` package and updating its Test imports — a packaging
+decision left to the operator. Do NOT treat anything below as product surface.
+───────────────────────────────────────────────────────────────────────────────
+
 Gauge-Theoretic Orchestrator — Commutativity Hierarchy Engine
 
 Implements Yaroslavtsev's three-level commutativity detection:
