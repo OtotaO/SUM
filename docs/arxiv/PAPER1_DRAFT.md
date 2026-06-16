@@ -59,9 +59,10 @@ re-leveled for a different audience, or translated, *what survived the
 operation, and can it be proven to anyone, offline?*
 
 The dominant provenance tools answer neither well for text. C2PA binds a
-cryptographic manifest to a media asset, but for plain text the binding is
-*soft*: the manifest detaches the moment text is copied, pasted, or
-paraphrased. SynthID-Text and statistical "AI detectors" target *generation*,
+cryptographic manifest to a media asset; its 2.4 text binding is a *byte-exact*
+hard hash, so the manifest verifies the exact bytes and breaks the moment text
+is edited, re-flowed, or paraphrased — it says nothing about what a transform
+preserved. SynthID-Text and statistical "AI detectors" target *generation*,
 not transformation-preservation, and degrade under exactly the rewriting text
 invites — every general detector has failed under paraphrase, distribution
 shift, or bias against non-native writers, and a major provider retired its
@@ -283,6 +284,12 @@ visible rather than rhetorically closed.
   tool-call receipts (arXiv:2603.10060). Our contribution is precisely that
   uniformly-disclaimed semantic delta, as a finite-sample, replayable
   certificate.
+- **The semantic gap, named independently.** A 2026 survey of AI-content
+  identity and provenance (arXiv:2604.23280) articulates exactly this gap — that
+  *cryptographic correctness does not imply semantic correctness*, and that
+  prevailing provenance attests output attribution, not "whether the
+  transformation preserved semantic fidelity." Our certificate is a concrete
+  instrument for that independently-named gap.
 - **C2PA / Content Credentials** bind provenance to media; C2PA 2.4 adds text
   manifests, but the text binding is a *byte-exact* hard hash that breaks under
   any edit or paraphrase, and the spec itself states provenance is not a truth
@@ -290,12 +297,17 @@ visible rather than rhetorically closed.
   detectors target generation, not transformation-preservation, and degrade
   under exactly the rewriting text invites — a property re-confirmed in 2025 for
   SynthID specifically (arXiv:2508.20228) and across detector families by a
-  single training-free paraphrase attack (arXiv:2506.07001).
+  single training-free paraphrase attack (arXiv:2506.07001); multi-hop rewriting
+  (arXiv:2605.05503) drives watermark detection from ~88% to under 5% while
+  holding semantic similarity, the exact regime a meaning-preservation
+  certificate is built for.
 - **EU AI Act Article 50** obliges the *generator* to mark; the associated
   *Code of Practice on Transparency of AI-Generated Content* (finalized
   10 June 2026) sets out the marking expectations. This work is an adjacent,
   complementary instrument (it attests what a *transform* preserved), not a
-  50(2) marker substitute.
+  50(2) marker substitute; we make no claim about which marking technologies the
+  Code prescribes for text, and this certificate is complementary to whatever
+  marker is used.
 - **Distribution-free guarantees.** Hoeffding (1963); the empirical-Bernstein
   bound (Maurer & Pontil, 2009); conformal prediction (Vovk et al., 2005;
   Angelopoulos & Bates, 2023) and conformal risk control (Angelopoulos et al.,
@@ -343,6 +355,8 @@ party issuing and verifying a receipt it did not author.
 - I. Gibbs, J. Cherian, E. Candès. *Conformal prediction with conditional guarantees.* 2023.
 - S. Dathathri et al. *Scalable watermarking for identifying large language model outputs (SynthID-Text).* Nature, 2024.
 - *AEX: Non-Intrusive Multi-Hop Attestation and Provenance for LLM APIs.* arXiv:2603.14283, 2026.
+- *(Survey) AI-content identity and provenance; names the "semantic intent gap."* arXiv:2604.23280, 2026. [exact title to verify before submission]
+- *Multi-hop paraphrase removal of LLM text watermarks ("Chainwash").* arXiv:2605.05503, 2026. [exact title to verify before submission]
 - *Conditional Factuality-Controlled LLMs with Generalization Certificates.* arXiv:2603.27403, 2026.
 - *EigenAI: deterministic-inference attestation.* arXiv:2602.00182, 2026.
 - *Tool Receipts, Not ZK Proofs: signed tool-call receipts for agents.* arXiv:2603.10060, 2026.
