@@ -46,7 +46,18 @@ from typing import Any
 from sum_engine_internal.research.meaning.meaning_loss import (
     MeaningReadout,
     MeaningScorer,
+    _sentences,  # same splitter explain() uses — to list the *preserved* claims
 )
+
+# Feedback design follows current GEPA best practice (DSPy GEPA docs; Arize
+# 2025-11 benchmark — "the biggest gains come from richer / more actionable
+# feedback, not the search algorithm"; Decagon 2026-03 — "include both positive
+# AND negative examples"). So the feedback itemises KEPT claims (positive),
+# DROPPED + ungrounded-ADDED claims (negative), and names the judge, rather than
+# emitting a bare number. Verified against gepa==0.1.1 / dspy>=3.2.1 (the 3.3.0b1
+# beta keeps the same metric contract). An alternative injection point is gepa's
+# optimize_anything + oa.log(); the dspy.GEPA metric path here is lower-friction.
+_MAX_LISTED = 6  # cap each itemised list so the feedback stays scannable
 
 
 @dataclass(frozen=True)
@@ -72,17 +83,25 @@ def meaning_signal(source: str, transform: str, scorer: MeaningScorer) -> Meanin
     framework import, so it is unit-testable without dspy/gepa installed."""
     loss = float(scorer.loss(source, transform))
     readout = scorer.explain(source, transform) if hasattr(scorer, "explain") else None
-    feedback = _format_feedback(scorer, loss, readout)
+    feedback = _format_feedback(scorer, loss, readout, source)
     score = max(0.0, min(1.0, 1.0 - loss))
     return MeaningSignal(score=score, feedback=feedback, loss=loss, readout=readout)
 
 
+def _preserved_claims(source: str, readout: MeaningReadout) -> list[str]:
+    """The source sentences the judge DID preserve = source sentences minus the
+    dropped ones, using the same splitter ``explain`` used so the two align."""
+    dropped = set(readout.dropped_claims)
+    return [s for s in _sentences(source) if s not in dropped]
+
+
 def _format_feedback(
-    scorer: MeaningScorer, loss: float, readout: MeaningReadout | None
+    scorer: MeaningScorer, loss: float, readout: MeaningReadout | None, source: str = ""
 ) -> str:
     """Turn a score (+ optional readout) into the text GEPA's reflection LM
     reads. The whole point of GEPA over a scalar metric is this channel, so it
-    is concrete: it names the dropped/added sentences and what to do about them."""
+    is concrete: it names the KEPT (positive) and DROPPED/ADDED (negative)
+    claims and what to do about them — richer feedback is what GEPA rewards."""
     head = (
         f"Meaning-loss proxy = {loss:.3f} (preservation {1.0 - loss:.0%}) "
         f"under judge '{scorer.name}' v{scorer.version}."
@@ -101,16 +120,26 @@ def _format_feedback(
         f"Kept {readout.preserved_claims}/{readout.source_claims} source claims "
         f"(recall {readout.recall:.0%}, fidelity {readout.fidelity:.0%}).",
     ]
+    kept = _preserved_claims(source, readout) if source else []
+    if kept:
+        lines.append("KEPT from the source (this is working — keep preserving these):")
+        lines.extend(f"  + {s}" for s in kept[:_MAX_LISTED])
+        if len(kept) > _MAX_LISTED:
+            lines.append(f"  + … and {len(kept) - _MAX_LISTED} more")
     if readout.dropped_claims:
         lines.append(
             "DROPPED from the source (preserve these to raise the score):"
         )
-        lines.extend(f"  - {s}" for s in readout.dropped_claims)
+        lines.extend(f"  - {s}" for s in readout.dropped_claims[:_MAX_LISTED])
+        if len(readout.dropped_claims) > _MAX_LISTED:
+            lines.append(f"  - … and {len(readout.dropped_claims) - _MAX_LISTED} more")
     if readout.unsupported_claims:
         lines.append(
             "ADDED but not grounded in the source (remove or ground these):"
         )
-        lines.extend(f"  - {t}" for t in readout.unsupported_claims)
+        lines.extend(f"  - {t}" for t in readout.unsupported_claims[:_MAX_LISTED])
+        if len(readout.unsupported_claims) > _MAX_LISTED:
+            lines.append(f"  - … and {len(readout.unsupported_claims) - _MAX_LISTED} more")
     if not readout.dropped_claims and not readout.unsupported_claims:
         lines.append(
             "No dropped or ungrounded claims detected by this judge — the "

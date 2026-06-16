@@ -62,6 +62,18 @@ def test_lossy_transform_scores_lower_and_names_drops_and_adds():
     assert any("Delta" in t for t in lossy.readout.unsupported_claims)
 
 
+def test_feedback_includes_positive_kept_claims_not_only_negatives():
+    """Current GEPA best practice: feedback should carry BOTH positive (kept)
+    and negative (dropped/added) examples, not negatives alone."""
+    lossy = meaning_signal(SOURCE, LOSSY, _scorer())
+    assert "KEPT" in lossy.feedback
+    # 'Alpha happened.' is preserved by the lossy summary → listed as a '+' line
+    assert any(
+        line.strip().startswith("+") and "Alpha" in line
+        for line in lossy.feedback.splitlines()
+    )
+
+
 def test_score_equals_one_minus_loss():
     sig = meaning_signal(SOURCE, LOSSY, _scorer())
     assert abs(sig.score - (1.0 - sig.loss)) < 1e-12

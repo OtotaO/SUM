@@ -47,6 +47,7 @@ from sum_engine_internal.research.meaning.meaning_loss import (  # type: ignore
     EntailmentScorer,
     MeaningScorer,
     _content_units,
+    _sentences,
 )
 
 
@@ -75,6 +76,13 @@ def score_and_explain(source: str, summary: str, scorer: MeaningScorer) -> tuple
         f"kept {readout.preserved_claims}/{readout.source_claims} source claims "
         f"(recall {readout.recall:.0%}, fidelity {readout.fidelity:.0%}).",
     ]
+    # Include BOTH positive (kept) and negative (dropped/added) examples —
+    # current GEPA best practice rewards richer feedback over a bare number.
+    dropped = set(readout.dropped_claims)
+    kept = [s for s in _sentences(source) if s not in dropped]
+    if kept:
+        lines.append("KEPT from the source (working — keep preserving these):")
+        lines += [f"  + {s}" for s in kept]
     if readout.dropped_claims:
         lines.append("DROPPED from the source (preserve these):")
         lines += [f"  - {s}" for s in readout.dropped_claims]
