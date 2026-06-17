@@ -248,11 +248,14 @@ questions.
     conversation; read it before adding new research-flavoured
     directions to the project.
 
-Shipping surface at the current HEAD: the `sum` binary (`v0.7.1` on
-`pyproject.toml`; **0.7.1 is LIVE on PyPI** — verified by fresh-venv
-install, spacy 3.8.14 — fixing the broken `[sieve]` install (F13/F14)
-plus the T1/T4 + honesty arc, see `CHANGELOG.md`). **Post-0.7.1 on main
-(unreleased, all `[research]`-flagged except the jcs fix):** the
+Shipping surface at the current HEAD: the `sum` binary (`v0.8.0` on
+`pyproject.toml`; **0.8.0 is LIVE on PyPI** — `sum-engine` latest, verified
+2026-06-17 via the PyPI JSON API. 0.8.0 published the `sum_verify` SDK + the
+dependency-light `[verify]` extra (`pip install "sum-engine[verify]"` —
+`cryptography` + `joserfc` only, no numpy/scipy/torch) and folded the
+meaning-loss frontier arc into the release behind the `[research]` extra; see
+`CHANGELOG.md`). **Shipped in 0.8.0 (the `[verify]` SDK is production; the rest
+`[research]`-flagged):** the
 meaning-loss frontier arc, now **matured into the closed arXiv Paper-1
 binding gate** (PRs #270–#298; full detail in the 2026-06-09 handover
 above). `sum.meaning_risk_receipt.v1` + `sum.perspective_risk_receipt.v1`

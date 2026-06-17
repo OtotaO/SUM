@@ -2674,7 +2674,7 @@ def build_parser() -> argparse.ArgumentParser:
             "  sum resolve prov:abc123... --db akashic.db\n"
             "  sum ledger list --db akashic.db           # NDJSON of prov_ids\n"
             "  sum ledger stats --db akashic.db --pretty\n"
-            "  sum inspect bundle.json --pretty          # no-crypto read\n"
+            "  sum inspect -i bundle.json --pretty       # no-crypto read (or: sum inspect < bundle.json)\n"
             "  sum schema bundle                         # JSON Schema stdout\n"
             "\n"
             "Attestation layers (all optional, compose freely):\n"
