@@ -2522,17 +2522,95 @@ def cmd_frontier(args: argparse.Namespace) -> int:
     source = _read_text_arg(args.source)
     if source is None:
         return 2
-    if not args.version:
-        print("sum: at least one --version is required", file=sys.stderr)
-        return 2
 
     renderings: list[tuple[str, dict, str]] = []
-    for path in args.version:
-        text = _read_text_arg(path)
-        if text is None:
+    if getattr(args, "distill", False):
+        # --distill: generate the faithful→compressed path from the source
+        # itself, fully offline and zero-$ — deterministic sieve extraction
+        # (text → triples) → SliderTransform canonical path at descending
+        # density. No LLM, no network. The capability already lives in the
+        # transform registry; this wires it into the frontier so the
+        # distiller dream is demoable from a clean install (no pre-made
+        # --version files needed). See docs/PRODUCT_VISION.md.
+        if args.version:
+            print(
+                "sum: --distill generates the versions itself; do not also "
+                "pass --version",
+                file=sys.stderr,
+            )
             return 2
-        label = os.path.basename(path) or path
-        renderings.append((label, {"file": path}, text))
+        try:
+            from sum_engine_internal.transforms import TransformEnv, get_transform
+            from sum_engine_internal.transforms._base import run_sync
+        except ImportError as e:
+            print(
+                f"sum: `--distill` needs the [research] extra "
+                f"(pip install 'sum-engine[research]'): {e}",
+                file=sys.stderr,
+            )
+            return 2
+
+        steps = max(2, int(args.steps))
+        floor = float(args.density_floor)
+        if not (0.0 <= floor < 1.0):
+            print("sum: --density-floor must be in [0, 1)", file=sys.stderr)
+            return 2
+
+        env = TransformEnv()  # no keys → the deterministic, offline path
+        extract = get_transform("extract")
+        slider = get_transform("slider")
+        try:
+            ext = run_sync(
+                extract.apply({"text": source}, {"extractor": "sieve"}, env)
+            )
+        except ImportError as e:
+            print(
+                f"sum: `--distill` extraction needs the [sieve] extra "
+                f"(pip install 'sum-engine[sieve]'): {e}",
+                file=sys.stderr,
+            )
+            return 2
+        triples = ext.output
+        if not triples:
+            print(
+                "sum: --distill extracted 0 triples from the source — nothing "
+                "to distill (the deterministic sieve found no subject-verb-"
+                "object structure). Try a longer/declarative source, or pass "
+                "pre-made --version files instead.",
+                file=sys.stderr,
+            )
+            return 2
+
+        for i in range(steps):
+            # Most-faithful first: density 1.0 (keep all triples) → floor.
+            density = (
+                1.0 if steps == 1 else 1.0 - (1.0 - floor) * (i / (steps - 1))
+            )
+            params = {
+                "density": density,
+                "length": 0.5,
+                "formality": 0.5,
+                "audience": 0.5,
+                "perspective": 0.5,
+            }
+            res = run_sync(slider.apply({"triples": triples}, params, env))
+            renderings.append(
+                (f"density={density:.3f}", {"density": round(density, 6)}, res.output)
+            )
+    else:
+        if not args.version:
+            print(
+                "sum: pass --distill (generate the path offline from --source) "
+                "or at least one --version (score pre-made versions)",
+                file=sys.stderr,
+            )
+            return 2
+        for path in args.version:
+            text = _read_text_arg(path)
+            if text is None:
+                return 2
+            label = os.path.basename(path) or path
+            renderings.append((label, {"file": path}, text))
 
     try:
         frontier = RenderFrontier.from_renderings(source, renderings, scorer)
@@ -3283,6 +3361,9 @@ def build_parser() -> argparse.ArgumentParser:
             "MEASURED meaning-loss (a per-document measurement under a "
             "named proxy — not a guarantee; the marginal distribution-"
             "free guarantee is a separate sum.meaning_risk_receipt.v1). "
+            "With --distill the path is GENERATED from --source itself, "
+            "fully offline (deterministic sieve extraction → density "
+            "sweep) — no pre-made versions needed. "
             "Needs the [research] extra. See docs/PRODUCT_VISION.md."
         ),
     )
@@ -3292,7 +3373,25 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_frontier.add_argument(
         "--version", action="append", metavar="PATH", default=[],
-        help="A rendered version file. Repeat, most-faithful first.",
+        help="A rendered version file. Repeat, most-faithful first. "
+             "Omit when using --distill (which generates the versions).",
+    )
+    p_frontier.add_argument(
+        "--distill", action="store_true",
+        help="Generate the faithful→compressed path from --source itself, "
+             "fully offline (deterministic sieve extraction → density "
+             "sweep; no LLM, no network, no $). Mutually exclusive with "
+             "--version.",
+    )
+    p_frontier.add_argument(
+        "--steps", type=int, default=5, metavar="N",
+        help="With --distill: number of points on the path (default 5).",
+    )
+    p_frontier.add_argument(
+        "--density-floor", type=float, default=0.1, dest="density_floor",
+        metavar="F",
+        help="With --distill: density at the most-compressed end "
+             "(default 0.1; the faithful end is always 1.0).",
     )
     p_frontier.add_argument(
         "--scrub", type=float, default=None, metavar="T",
