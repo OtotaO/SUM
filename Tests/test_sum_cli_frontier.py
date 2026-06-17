@@ -159,3 +159,72 @@ def test_works_for_code_too(tmp_path):
     )
     assert rc == 0
     assert json.loads(out)["n"] == 2
+
+
+# ── --distill (generate the path offline from the source) ──────────────
+
+DISTILL_SOURCE = (
+    "Alice adores three cats. Bob dreads the Seattle rain. The committee "
+    "approved the annual budget. Carol manages the research team."
+)
+
+
+def _distill_or_skip(argv):
+    """Run a --distill invocation; skip if the deterministic sieve extractor
+    (the [sieve] extra / spaCy) is not available in this env."""
+    import pytest
+
+    pytest.importorskip("spacy")
+    rc, out, err = run_cli(argv)
+    if rc == 2 and ("[sieve]" in err or "extracted 0 triples" in err):
+        pytest.skip(f"sieve extractor unavailable here: {err.strip()}")
+    return rc, out, err
+
+
+def test_distill_generates_offline_path(tmp_path):
+    src = _write(tmp_path, "src.txt", DISTILL_SOURCE)
+    rc, out, _ = _distill_or_skip(
+        ["frontier", "--source", src, "--distill", "--steps", "4", "--pretty"]
+    )
+    assert rc == 0
+    d = json.loads(out)
+    assert d["schema"] == "sum.render_frontier.v1"
+    assert d["n"] == 4
+    pts = d["points"]
+    # most-faithful first; density descends 1.0 → floor by index
+    assert pts[0]["params"]["density"] == 1.0
+    assert pts[0]["position"] == 0.0
+    assert pts[-1]["position"] == 1.0
+    # compressing drops content → the compressed end loses at least as much
+    # meaning as the faithful end
+    assert pts[-1]["meaning_loss"] >= pts[0]["meaning_loss"]
+    # every point is non-empty deterministic triple-prose, no LLM involved
+    assert all(p["rendering"].strip() for p in pts)
+
+
+def test_distill_mutually_exclusive_with_version(tmp_path):
+    # Guarded before any extraction → no [sieve] dependency.
+    src = _write(tmp_path, "src.txt", DISTILL_SOURCE)
+    rc, _, err = run_cli(
+        ["frontier", "--source", src, "--distill", "--version", src]
+    )
+    assert rc == 2
+    assert "do not also pass --version" in err
+
+
+def test_distill_scrub_prints_compressed_end(tmp_path):
+    src = _write(tmp_path, "src.txt", DISTILL_SOURCE)
+    rc, out, _ = _distill_or_skip(
+        ["frontier", "--source", src, "--distill", "--scrub", "1.0"]
+    )
+    assert rc == 0
+    assert out.strip()  # the most-compressed rendering, non-empty
+
+
+def test_distill_empty_source_is_usage_error(tmp_path):
+    import pytest
+
+    pytest.importorskip("spacy")
+    src = _write(tmp_path, "empty.txt", "?!?! ... ;;")
+    rc, _, err = run_cli(["frontier", "--source", src, "--distill"])
+    assert rc == 2  # 0 triples (or, lacking [sieve], the install hint)
