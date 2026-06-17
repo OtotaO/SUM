@@ -5,6 +5,8 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
+**What it is, plainly.** SUM is a knowledge **distiller**: drop in a text and a slider renders it anywhere from a single tag to a full tome — and it hands back a *signed, offline-checkable receipt of how much of the original meaning survived*. So you can vouch for AI-transformed text to a skeptic without asking them to trust you. The distiller is the long-term aim; the signed receipt is the rung that makes lossy distillation trustworthy enough to build on.
+
 > **SUM lets people and agents transform knowledge without losing the ability to verify what changed, what stayed the same, who signed it, and what remains unproven.**
 
 Every transformation — extract triples from prose, render a tome at a controlled slider position, compose bundles across documents, share a render — emits a cryptographically-signed receipt that any third party can verify offline. The receipt attests *that the transformation happened and what its inputs were*. Separate per-axis benchmarks attest *how much the transformation preserved meaning*. Both are kept honest by separate proof discipline — and the project never blurs the line between them.
@@ -39,14 +41,32 @@ SUM is built to be that layer **in the open**: Apache-2.0, offline-verifiable by
 
 ## Verify it yourself in 60 seconds
 
-The trust loop: hit the live Worker, get back a tome plus a detached Ed25519 JWS over the JCS-canonicalised receipt payload, fetch the issuer JWKS, verify.
+**The differentiator — replay a meaning-loss bound, fully offline.** SUM's flagship receipt is a *signed, replayable* certificate over a named meaning-loss proxy. The verifier is dependency-light (`cryptography` + `joserfc` only — no numpy / scipy / torch, no GPU, no network), and a real binding-gate golden over public-domain text (BillSum, CC0) ships in the repo. From a checkout:
 
 ```bash
-# 1. JWKS — single Ed25519 OKP JWK, application/jwk-set+json
-curl -sS https://sum-demo.ototao.workers.dev/.well-known/jwks.json | jq .
-# → {"keys":[{"crv":"Ed25519","kty":"OKP","x":"...","alg":"EdDSA","use":"sig","kid":"sum-render-2026-04-27-1"}]}
+pip install 'sum-engine[verify]'        # cryptography + joserfc only
 
-# 2. Render — tome + render_receipt (signed JWS over JCS payload)
+python -m sum_verify \
+  fixtures/meaning_receipts_billsum/meaning_risk_receipt.billsum.golden.json \
+  --jwks   fixtures/meaning_receipts_billsum/jwks.json \
+  --losses fixtures/meaning_receipts_billsum/losses_billsum.json
+# → {"verified": true, "schema": "sum.meaning_risk_receipt.v1", "replayed": true,
+#    "scorer": "bidirectional-entailment[minilm-cosine-0.5]",
+#    "not_covered": ["arrangement","sound","connotation","implicature"],
+#    "proxy_caveat": "verified=true is a cryptographic fact ... the proxy
+#       correlated only modestly (Spearman rho ~0.27-0.33). Not a substitute
+#       for human review."}
+```
+
+`verified: true` + `replayed: true` means the committed per-pair losses hash to the receipt's anchor and re-certify to its stated bound (≤ 0.6454 at 95%) by exact integer equality — on your machine, against the issuer's JWKS, trusting nobody. **Read the `proxy_caveat`:** that PASS is a *cryptographic* fact, not proof meaning was preserved — the bound is over a proxy that tracks human judgment only modestly. The richer readout (the bound itself, perspective cohorts) is `sum verify-meaning`; for non-extractive rewrites use `--scorer nli` — [`examples/poetry_frontier/`](examples/poetry_frontier/) shows exactly where the embedding judge's blind spot is.
+
+**The render trust loop (signed provenance).** The other receipt family attests *that* a transformation happened (issuer, inputs, slider position, model, time) — the same JWS verifiable byte-for-byte in three independent runtimes:
+
+```bash
+# JWKS — single Ed25519 OKP JWK, application/jwk-set+json
+curl -sS https://sum-demo.ototao.workers.dev/.well-known/jwks.json | jq .
+
+# Render — tome + render_receipt (signed JWS over JCS payload)
 curl -sS -X POST https://sum-demo.ototao.workers.dev/api/render \
   -H 'content-type: application/json' \
   -d '{"triples":[["alice","graduated","2012"],["alice","born","1990"]],
@@ -54,7 +74,7 @@ curl -sS -X POST https://sum-demo.ototao.workers.dev/api/render \
   | jq '.render_receipt | {schema, kid, payload, jws_segments: (.jws | split(".") | length)}'
 ```
 
-A minimal Node verifier using `jose` + `canonicalize` is in [`docs/RENDER_RECEIPT_FORMAT.md`](docs/RENDER_RECEIPT_FORMAT.md) §A.5; the same format is reachable from Python (`joserfc` + `jcs`), Go, and Rust per §3.
+A render receipt attests the *render*, not the truth of its content (trust scope in [`docs/RENDER_RECEIPT_FORMAT.md`](docs/RENDER_RECEIPT_FORMAT.md) §5); a minimal Node verifier using `jose` + `canonicalize` is in §A.5, and the same format is reachable from Python (`joserfc` + `jcs`), Go, and Rust per §3.
 
 ---
 
