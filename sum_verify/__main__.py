@@ -102,6 +102,23 @@ def main(argv: list[str] | None = None) -> int:
             verdict["scorer"] = payload.get("scorer")
         if "not_covered" in payload:
             verdict["not_covered"] = payload.get("not_covered")
+    if schema == "sum.meaning_risk_receipt.v1":
+        # Credibility hygiene (unsigned, corpus-agnostic): a clean PASS here is
+        # a CRYPTOGRAPHIC fact (valid signature + a bound the committed losses
+        # replay to) — NOT evidence that meaning was preserved. The bound is
+        # over a NAMED PROXY; where that proxy has been measured against human
+        # faithfulness judgments (SummEval) it correlated only modestly
+        # (Spearman rho ~= 0.27-0.33). Directionally valid, not a substitute
+        # for human review. We deliberately do NOT bake a number into a signed
+        # field (the SummEval rho was measured on a different corpus+judge than
+        # any given receipt's). See docs/PROOF_BOUNDARY.md.
+        verdict["proxy_caveat"] = (
+            "verified=true is a cryptographic fact (signature + replayed "
+            "bound), not evidence meaning was preserved. The bound is over a "
+            "named proxy; vs human judgments (SummEval) the proxy correlated "
+            "only modestly (Spearman rho ~0.27-0.33). Not a substitute for "
+            "human review."
+        )
     print(json.dumps(verdict))
     return 0
 
