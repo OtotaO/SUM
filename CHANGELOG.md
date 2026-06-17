@@ -21,6 +21,29 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
   was found genuinely live + concordant (axis prompts byte-identical Python↔Worker).
   Demo redeploy required. (Deferred: wiring the shipped `meaning_receipt_verifier.js`
   into the visible Verify box so the front door verifies the v0.8.0 receipt family.)
+- **`sum frontier --distill` — the distiller demoable from one source, offline.**
+  `sum frontier` previously only *scored* pre-made `--version` files; the offline
+  distiller path existed in the transform registry but was unwired (`from_render_fn`
+  reachable only from tests). `--distill` now generates the faithful→compressed path
+  from `--source` itself — deterministic sieve extraction (text→triples) →
+  `SliderTransform` canonical path at descending density → `RenderFrontier` — fully
+  offline, zero-$, no LLM, no network. `--steps N` (default 5) / `--density-floor F`
+  (default 0.1; faithful end always 1.0); mutually exclusive with `--version`.
+  Research surface (`[research]` + `[sieve]`). (fresh-eyes audit follow-through)
+- **`proxy_caveat` at the point of verification (`sum_verify`).** Every verified
+  meaning-risk verdict from the dependency-light `[verify]` SDK (`python -m sum_verify`
+  and the SDK docstring) now carries a corpus-agnostic caveat: a clean PASS is a
+  *cryptographic* fact (signature + replayed bound), **not** proof meaning was
+  preserved — the bound is over a proxy that tracks human judgment only modestly
+  (Spearman ρ≈0.27–0.33 on SummEval). UNSIGNED surfaces only; no number is baked into
+  a signed field (the SummEval ρ was measured on a different corpus+judge).
+- **Front-door honesty (README + on-ramp).** A plain-language lede that names the
+  **distiller** ahead of the crypto machinery (it was absent before); the lead "verify
+  it yourself" demo swapped from the commodity render-receipt curl to the offline
+  `python -m sum_verify` replay of the committed BillSum binding-gate golden
+  (`examples/verify-meaning-offline/run.sh`), keeping the render trust loop as a
+  secondary block; `sum inspect` help example corrected (`-i PATH`/stdin, no
+  positional).
 
 ## [0.8.0] - 2026-06-10
 
