@@ -55,6 +55,12 @@ jobs:
         publish_results: false
 
     - name: Upload SARIF to GitHub Security tab
-      uses: github/codeql-action@ce64ddcb0d8d890d2df4a9d1c04ff297367dea2a  # v3
+      # Must reference the upload-sarif SUB-action, not the codeql-action
+      # ROOT — the root action.yml is a stub that echoes "read the docs" and
+      # exits 1 (it rejects the sarif_file input), which is why every push to
+      # main failed this advisory job. Same SHA pin (a real codeql-action v3
+      # commit, so the /upload-sarif sub-path resolves at it), so the R0.3
+      # SHA-pin lint stays satisfied.
+      uses: github/codeql-action/upload-sarif@ce64ddcb0d8d890d2df4a9d1c04ff297367dea2a  # v3
       with:
         sarif_file: results.sarif
