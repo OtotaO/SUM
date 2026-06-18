@@ -19,8 +19,10 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
   Worker use `floor` — so density&lt;1.0 kept *more* facts than the slider implied;
   now `Math.floor` (concordant; cross-runtime harness green). Slider capability itself
   was found genuinely live + concordant (axis prompts byte-identical Python↔Worker).
-  Demo redeploy required. (Deferred: wiring the shipped `meaning_receipt_verifier.js`
-  into the visible Verify box so the front door verifies the v0.8.0 receipt family.)
+  The hero + density fix are LIVE (deployed in #313; the 2026-06-18 concordance audit
+  confirmed live == repo byte-for-byte). Remaining front-door deferral: wiring the
+  shipped `meaning_receipt_verifier.js` into the visible Verify box so the front door
+  verifies the v0.8.0 receipt family.
 - **`sum frontier --distill` — the distiller demoable from one source, offline.**
   `sum frontier` previously only *scored* pre-made `--version` files; the offline
   distiller path existed in the transform registry but was unwired (`from_render_fn`
