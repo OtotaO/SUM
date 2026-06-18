@@ -1,0 +1,28 @@
+{
+  "kid": "billsum-fixture-key-2026",
+  "payload": {
+    "scorer": "bidirectional-entailment[minilm-cosine-0.5]",
+    "scorer_version": "1",
+    "loss_definition": "1 - bidirectional sentence-entailment preservation (recall 0.6 / fidelity 0.4) under the named MiniLM-cosine judge; 0 = full preservation, 1 = none",
+    "n": 64,
+    "method": "hoeffding",
+    "delta_micro": 50000,
+    "point_estimate_micro": 492454,
+    "risk_upper_bound_micro": 645438,
+    "losses_hash": "sha256-a5fda74b4a8456509da4fa9f79cfcf03624567f78c6f72c6c4cdd8b8b8562e9b",
+    "corpus_id": "billsum-test-first64-cc0",
+    "transform": "summarize:billsum-reference",
+    "not_covered": [
+      "arrangement",
+      "sound",
+      "connotation",
+      "implicature"
+    ],
+    "disclosure": "Bounds the EXPECTED value of a NAMED meaning-loss proxy (bidirectional-entailment over a local all-MiniLM-L6-v2 cosine judge), MARGINALLY over the first 64 BillSum test bills (CC0-1.0), under exchangeability. NOT a per-document claim and NOT meaning itself. The CERTIFICATE replays offline over the committed integer-micro loss vector; the LOSS COMPUTATION is machine-pinned (model-judge float drift, F23/F26) and reproduced only on a matching torch/MiniLM stack.",
+    "signed_at": "2026-06-08T12:00:00.000Z",
+    "alpha_target_micro": 700000,
+    "controlled": true
+  },
+  "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6ImJpbGxzdW0tZml4dHVyZS1rZXktMjAyNiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..AaUQt2BfDJhMywFnR81MpfRk7btZv9uMXzXNS7oCL7VbwYQsk38XYg1fC7irwCU4B-ST75AFrxpJ36HqqfeuDQ",
+  "schema": "sum.meaning_risk_receipt.v1"
+}

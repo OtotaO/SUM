@@ -46,15 +46,27 @@ def main(argv: list[str] | None = None) -> int:
             "with no heavy dependencies."
         ),
     )
-    parser.add_argument("receipt", help="receipt envelope JSON ('-' for stdin)")
     parser.add_argument(
-        "--jwks", required=True, help="issuer JWKS JSON (/.well-known/jwks.json)"
+        "receipt", nargs="?", default=None,
+        help="receipt envelope JSON ('-' for stdin); omit when using --demo",
+    )
+    parser.add_argument(
+        "--jwks", help="issuer JWKS JSON (/.well-known/jwks.json); omit with --demo"
     )
     parser.add_argument(
         "--losses",
         help=(
             "per-pair losses (bare list or {'losses': [...]}) to replay a "
             "meaning-risk receipt's bound offline"
+        ),
+    )
+    parser.add_argument(
+        "--demo",
+        action="store_true",
+        help=(
+            "replay the golden bundled in the wheel (a real BillSum meaning-risk "
+            "receipt + JWKS + losses, CC0) fully offline — no receipt / --jwks / "
+            "git clone needed; the zero-friction first check after pip install"
         ),
     )
     parser.add_argument(
@@ -66,13 +78,44 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--version", action="version", version=f"sum_verify {__version__}")
     args = parser.parse_args(argv)
 
-    try:
-        receipt = _read_json(args.receipt)
-        jwks = _read_json(args.jwks)
-        losses = _unwrap_loss_vector(_read_json(args.losses)) if args.losses else None
-    except (OSError, json.JSONDecodeError) as e:
-        print(f"sum_verify: cannot read input: {e}", file=sys.stderr)
-        return 2
+    if args.demo:
+        # Load the golden bundled INSIDE the wheel (sum_verify/_demo/*.json) so a
+        # pip-install-only user can replay a real meaning-loss bound offline with
+        # zero git clone — the broken-on-ramp fix (ISS-2).
+        from importlib.resources import files
+
+        try:
+            base = files("sum_verify._demo")
+            receipt = json.loads(
+                (base / "meaning_risk_receipt.billsum.golden.json").read_text("utf-8")
+            )
+            jwks = json.loads((base / "jwks.json").read_text("utf-8"))
+            losses = _unwrap_loss_vector(
+                json.loads((base / "losses_billsum.json").read_text("utf-8"))
+            )
+        except (FileNotFoundError, ModuleNotFoundError, OSError, json.JSONDecodeError) as e:
+            print(f"sum_verify: bundled --demo golden unavailable: {e}", file=sys.stderr)
+            return 2
+        print(
+            "sum_verify: --demo — replaying the bundled BillSum binding-gate "
+            "golden (CC0), offline.",
+            file=sys.stderr,
+        )
+    else:
+        if args.receipt is None or args.jwks is None:
+            print(
+                "sum_verify: provide a receipt and --jwks, or use --demo to "
+                "replay the bundled golden",
+                file=sys.stderr,
+            )
+            return 2
+        try:
+            receipt = _read_json(args.receipt)
+            jwks = _read_json(args.jwks)
+            losses = _unwrap_loss_vector(_read_json(args.losses)) if args.losses else None
+        except (OSError, json.JSONDecodeError) as e:
+            print(f"sum_verify: cannot read input: {e}", file=sys.stderr)
+            return 2
 
     schema = receipt.get("schema") if isinstance(receipt, dict) else None
     if schema not in SUPPORTED_SCHEMAS:
