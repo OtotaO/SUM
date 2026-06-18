@@ -146,6 +146,16 @@ def main(argv: list[str] | None = None) -> int:
         if "not_covered" in payload:
             verdict["not_covered"] = payload.get("not_covered")
     if schema == "sum.meaning_risk_receipt.v1":
+        # Surface what the PASS actually bounds, so a vacuous small-n receipt
+        # (ub→1.0, controlled=False) is visible for what it is and never looks
+        # identical to a strong one (ISS-4). These ride from the verified payload.
+        if isinstance(payload, dict):
+            if "risk_upper_bound_micro" in payload:
+                verdict["risk_upper_bound"] = payload["risk_upper_bound_micro"] / 1_000_000
+            if "controlled" in payload:
+                verdict["controlled"] = payload["controlled"]
+        if losses is not None:
+            verdict["n"] = len(losses)
         # Credibility hygiene (unsigned, corpus-agnostic): a clean PASS here is
         # a CRYPTOGRAPHIC fact (valid signature + a bound the committed losses
         # replay to) — NOT evidence that meaning was preserved. The bound is
