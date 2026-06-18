@@ -207,6 +207,10 @@ exclude = ["Tests*", "Tests.*", "scripts*", "api*", "single_file_demo*"]
 # Bundled frequency-table assets used by the slider renderer's
 # audience-axis classifier (Phase E.1 STATE 5b).
 "sum_engine_internal.ensemble.data" = ["*.txt"]
+# The `python -m sum_verify --demo` golden — a real binding-gate
+# meaning-risk receipt (BillSum, CC0) + JWKS + losses, so a pip-only
+# user can replay a bound offline with zero git clone.
+"sum_verify._demo" = ["*.json"]
 
 [tool.ruff]
 line-length = 100

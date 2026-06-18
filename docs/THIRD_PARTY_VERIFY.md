@@ -9,10 +9,17 @@ signal for a grant reviewer ("this went from credible to fund-now"). This doc is
 ## Step 0 — mint a receipt over real text (you, once)
 
 ```bash
+# the issuer script lives in the repo, not the wheel — clone it:
+git clone https://github.com/OtotaO/SUM && cd SUM
 pip install "sum-engine[research,judge]"
 python examples/issue_meaning_receipt.py pairs.json --out out/ --scorer nli \
     --corpus-id my-corpus-v0 --transform "summarize:my-pipeline"
 ```
+
+> The person *verifying* (Step 2) needs none of this — just
+> `pip install "sum-engine[verify]"`, or `python -m sum_verify --demo` to
+> dry-run the bundled golden first. Only minting (this step) needs the repo.
+
 `pairs.json` is your own data — `[["original","the AI's rewrite"], …]`, ideally
 n ≥ ~32 so the bound is meaningful. You now have `out/receipt.json`,
 `out/jwks.json`, `out/losses.json` (and a private key you never share).
