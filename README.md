@@ -9,6 +9,20 @@
 
 > **SUM lets people and agents transform knowledge without losing the ability to verify what changed, what stayed the same, who signed it, and what remains unproven.**
 
+**See what an AI transform silently dropped.** `sum meaning-diff` reads out, per document, which source claims survived a rewrite and which vanished. Here it is on a shipped fixture — a four-clause lease notice rewritten as verse:
+
+```text
+$ sum meaning-diff examples/poetry_frontier/source.txt examples/poetry_frontier/sonnet.txt --scorer nli
+  preservation: 55%   (loss 0.450)
+  source claims: 4 — 1 preserved, 3 DROPPED:
+     ✗ Late payment after the fifth day incurs a 50 dollar fee.
+     ✗ The landlord must give 24 hours notice before entering the unit.
+     ✗ Either party may terminate this lease with 30 days written notice.
+  added / unsupported claims: none ✓
+  (measured for THIS document under the named NLI judge — a per-document MEASUREMENT,
+   not a guarantee; for a (1−δ) corpus bound use a signed meaning_risk receipt)
+```
+
 Every transformation — extract triples from prose, render a tome at a controlled slider position, compose bundles across documents, share a render — emits a cryptographically-signed receipt that any third party can verify offline. The receipt attests *that the transformation happened and what its inputs were*. Separate per-axis benchmarks attest *how much the transformation preserved meaning*. Both are kept honest by separate proof discipline — and the project never blurs the line between them.
 
 *Live trust loop:* https://sum-demo.ototao.workers.dev — three runtimes (Python, Node, modern browsers) produce byte-identical Ed25519 signatures over the same JCS-canonical bytes; verify offline against `/.well-known/jwks.json`. Mechanically proven; locked in CI on every PR.
