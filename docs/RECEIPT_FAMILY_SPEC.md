@@ -122,6 +122,19 @@ The meaning-risk fields **per cohort**: `simultaneous`, `evidence_hash`,
 cohort certified at `delta/G` (Bonferroni) so all cohort bounds hold
 jointly at ≥ 1−δ.
 
+### 3.5 `sum.study_artifact.v1` — a container, not a receipt
+
+Emitted by `sum study` (the verifiable cheatsheet; see
+[`MACHINE_STUDYING_APPLICABILITY.md`](MACHINE_STUDYING_APPLICABILITY.md)).
+It is **not itself a signed wire object** — it carries the studied corpus's
+`state_integer` + `axiom_count`, the rendered `cheatsheet`, the
+`RenderFrontier` it sits on, an `expertise` MEASUREMENT, and — when
+`--certify` is used — an **embedded** `sum.meaning_risk_receipt.v1` under
+`receipt` (the only certified element; verify it with the §3.3 path). The
+`expertise` scalar and frontier losses are per-run measurements, never
+guarantees; the `measurement_note` field says so. A consumer gates trust on
+the embedded receipt, not on the container.
+
 ## 4. Verification model
 
 Two stages, applied uniformly; the second only exists for the conformal

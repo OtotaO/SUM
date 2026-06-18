@@ -4,6 +4,25 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **`sum study` — the verifiable cheatsheet (machine-studying over a corpus).**
+  Research-only (`[research]` extra; **not** cataloged). Applies Li's *Machine
+  Studying* (jacobxli.com/blog/2026/machine-studying) to SUM by composing
+  substrate it already owns: `extract` each `--doc`/`--corpus` document →
+  `compose` the bundles (LCM-union of triples → one SUM-of-SUMs) → `slider`-render
+  the merged bundle down a faithful→compressed density path (the study notes).
+  Reports SUM's native **`expertise`** scalar — a weighted AUC of fidelity
+  (`1 - meaning_loss`) vs. consultation budget, favouring the cheap/compressed
+  end (default decay `ln(10)`, the blog's constant) — and, with `--certify
+  --signing-jwk … --kid …`, seals a `sum.meaning_risk_receipt.v1` over the
+  per-document loss of consulting the cheatsheet (closing the blog's
+  unverified-notes gap). Emits a `sum.study_artifact.v1` container (not itself
+  a signed wire object; the embedded receipt is the only certified element).
+  The one new piece of code is the `expertise` scalar — everything else is
+  composition. Honest boundary held throughout: `expertise` is a MEASUREMENT
+  and an *analogy* to studying-expertise (SUM measures meaning-fidelity, not
+  downstream task accuracy), never a guarantee. New: `sum_engine_internal/research/study.py`,
+  `cmd_study` in `sum_cli/main.py`, `docs/MACHINE_STUDYING_APPLICABILITY.md`,
+  `Tests/test_study.py`; `docs/RECEIPT_FAMILY_SPEC.md` §3.5 documents the container.
 - **Frontend↔backend concordance correction (delivery).** A 5-seam audit found the
   front door selling an *older, narrower* product than the v0.8.0 backend is — the
   leading explanation for ~10k clones / 9 stars / 0 observed users. Fixed: the live
