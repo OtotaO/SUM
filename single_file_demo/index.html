@@ -384,6 +384,18 @@ sum meaning-diff source.txt rewrite.txt --scorer nli</code></pre>
   </div>
 </div>
 
+<div class="card">
+  <h3>Verify a meaning receipt</h3>
+  <p style="font-size:12px;opacity:0.7;margin:0 0 10px">Paste a <code>sum.meaning_risk_receipt.v1</code> (or <code>sum.perspective_risk_receipt.v1</code>) and its issuer JWKS. This runs <strong>Stage&nbsp;A</strong> in-browser — Ed25519 signature, schema, and the required meaning-loss <em>disclosure</em> — the same checks the Python <code>sum_verify</code> SDK and the Node verifier run, byte-for-byte. <strong>Stage&nbsp;B (the conformal-bound replay) stays Python-side</strong> (<code>python -m sum_verify --demo</code>). There is no live meaning-issuing key, so load/paste a JWKS rather than fetching one. A clean ✓ is a <em>cryptographic</em> fact, not proof meaning was preserved.</p>
+  <textarea id="meaning-receipt-input" placeholder='{"schema":"sum.meaning_risk_receipt.v1","kid":"…","payload":{…},"jws":"…"}'></textarea>
+  <textarea id="meaning-jwks-input" placeholder='{"keys":[{"kty":"OKP","crv":"Ed25519","x":"…","kid":"…"}]}' style="margin-top:8px"></textarea>
+  <div class="row" style="justify-content: flex-end; margin-top: 8px;">
+    <button id="meaning-sample-btn" class="ghost">Load BillSum sample</button>
+    <button id="meaning-verify-btn" class="ghost">Verify (Stage A)</button>
+  </div>
+  <div id="meaning-verify-result" style="display:none; margin-top: 8px; padding: 10px 12px; border-radius: 4px; font-size: 11px; line-height: 1.5; font-family: ui-monospace, monospace;"></div>
+</div>
+
 <p class="footer">
   This file is both a standalone HTML page AND a Claude artifact. Paste it into a Claude artifact conversation and extraction upgrades automatically to Claude-grade recall (SVO, lowercased, underscore-joined subjects, negation suppressed, passive inverted — the same rules SUM's Python sieve enforces). Outside an artifact it uses a naive tokeniser; the attestation layer is identical either way. Source + cross-runtime harnesses: <a href="https://github.com/OtotaO/SUM">github.com/OtotaO/SUM</a>.
 </p>
@@ -1416,6 +1428,103 @@ $('verify').addEventListener('click', async () => {
       );
     } finally {
       verifyBtn.disabled = false;
+    }
+  });
+</script>
+
+<script type="module">
+  // Stage-A in-browser verify of the v0.8.0 meaning receipt family — wiring the
+  // shipped meaning_receipt_verifier.js into a visible surface (audit ISS-3).
+  import {
+    verifyMeaningRiskReceipt,
+    verifyPerspectiveReceipt,
+    VerifyError,
+    MEANING_RISK_SCHEMA,
+    PERSPECTIVE_SCHEMA,
+  } from "./meaning_receipt_verifier.js";
+
+  const recEl = document.getElementById("meaning-receipt-input");
+  const jwksEl = document.getElementById("meaning-jwks-input");
+  const btn = document.getElementById("meaning-verify-btn");
+  const sampleBtn = document.getElementById("meaning-sample-btn");
+  const out = document.getElementById("meaning-verify-result");
+
+  const PROXY_CAVEAT =
+    "A clean verify is a CRYPTOGRAPHIC fact, not proof meaning was preserved. " +
+    "The bound is over a named proxy that tracks human judgment only modestly " +
+    "(Spearman rho ~0.27-0.33 on SummEval). Not a substitute for human review.";
+
+  function show(kind, html) {
+    out.style.display = "";
+    const border = {
+      ok: "rgba(80,200,80,0.8)",
+      reject: "rgba(220,120,80,0.8)",
+      err: "rgba(200,200,80,0.8)",
+    }[kind];
+    out.style.border = `1px solid ${border}`;
+    out.innerHTML = html;
+  }
+
+  sampleBtn.addEventListener("click", async () => {
+    try {
+      const [r, j] = await Promise.all([
+        fetch("./sample_meaning_risk_receipt.json").then((x) => x.text()),
+        fetch("./sample_meaning_jwks.json").then((x) => x.text()),
+      ]);
+      recEl.value = r.trim();
+      jwksEl.value = j.trim();
+      show("err", "Loaded the BillSum binding-gate golden (CC0). Click <strong>Verify (Stage A)</strong>.");
+    } catch (e) {
+      show("err", `Could not load sample (the page must be served, not opened as file://): ${e.message}`);
+    }
+  });
+
+  btn.addEventListener("click", async () => {
+    let receipt, jwks;
+    try {
+      receipt = JSON.parse(recEl.value);
+      jwks = JSON.parse(jwksEl.value);
+    } catch (e) {
+      show("err", `<strong>Invalid JSON.</strong> ${e.message}`);
+      return;
+    }
+    const schema = receipt && receipt.schema;
+    const verifier =
+      schema === MEANING_RISK_SCHEMA ? verifyMeaningRiskReceipt :
+      schema === PERSPECTIVE_SCHEMA ? verifyPerspectiveReceipt : null;
+    if (!verifier) {
+      show("reject",
+        `<strong>✗ Unsupported schema</strong> <code>${schema}</code>. ` +
+        `This box handles <code>${MEANING_RISK_SCHEMA}</code> / <code>${PERSPECTIVE_SCHEMA}</code>.`);
+      return;
+    }
+    btn.disabled = true;
+    show("err", "Verifying (Stage A)…");
+    try {
+      const res = await verifier(receipt, jwks);
+      const p = res.payload || {};
+      const bound = typeof p.risk_upper_bound_micro === "number"
+        ? (p.risk_upper_bound_micro / 1e6).toFixed(4) : "n/a";
+      const nc = Array.isArray(p.not_covered) ? p.not_covered.join(", ") : "—";
+      const ctrl = ("controlled" in p) ? ` · controlled: <code>${p.controlled}</code>` : "";
+      show("ok",
+        `<div><strong>✓ Stage A verified.</strong> Issuer signed (kid=<code>${res.kid}</code>), ` +
+          `schema <code>${schema}</code>, disclosure present.</div>` +
+        `<div style="margin-top:6px;">scorer: <code>${p.scorer ?? "?"}</code> · ` +
+          `stated bound (NOT replayed here): <code>≤ ${bound}</code>${ctrl}</div>` +
+        `<div style="margin-top:6px;opacity:0.8;">not&nbsp;covered: ${nc}</div>` +
+        `<div style="margin-top:6px;opacity:0.75;">${PROXY_CAVEAT}</div>` +
+        `<div style="margin-top:6px;opacity:0.75;">Stage A = signature + schema + disclosure. ` +
+          `The conformal bound is <em>replayed</em> offline by ` +
+          `<code>python -m sum_verify --losses …</code> (or <code>--demo</code>).</div>`,
+      );
+    } catch (e) {
+      const cls = e instanceof VerifyError ? e.errorClass : "uncategorized_error";
+      show("reject",
+        `<div><strong>✗ Verification failed.</strong> error class: <code>${cls}</code>.</div>` +
+        `<div style="margin-top:6px;opacity:0.75;">${e.message}</div>`);
+    } finally {
+      btn.disabled = false;
     }
   });
 </script>
