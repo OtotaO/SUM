@@ -4,6 +4,17 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-06-18
+
+**Headline: the front door is now honest and frictionless for a first-touch user.**
+`pip install "sum-engine[verify]"` then `python -m sum_verify --demo` replays a real
+meaning-loss bound fully offline (the binding-gate golden now ships in the wheel); the
+in-browser Verify box checks the flagship meaning receipt; the verify verdict surfaces
+`controlled` / bound / `n` (a vacuous small-n receipt can no longer pose as a strong one);
+and `sum frontier --distill` makes the offline distiller demoable from one source. Plus
+README/CLI doc-currency + the perspective-spec correction. All backward-compatible
+additions + fixes over 0.8.0.
+
 - **Frontend↔backend concordance correction (delivery).** A 5-seam audit found the
   front door selling an *older, narrower* product than the v0.8.0 backend is — the
   leading explanation for ~10k clones / 9 stars / 0 observed users. Fixed: the live
