@@ -2632,6 +2632,262 @@ def cmd_frontier(args: argparse.Namespace) -> int:
     return 0
 
 
+def _gather_corpus_paths(args: argparse.Namespace) -> list[str] | None:
+    """Resolve --corpus DIR (sorted glob of common text files) + repeated
+    --doc FILE into an ordered, de-duplicated path list. Returns None (after
+    printing) on an empty or unreadable selection."""
+    paths: list[str] = []
+    if getattr(args, "corpus", None):
+        import glob as _glob
+        if not os.path.isdir(args.corpus):
+            print(f"sum: --corpus {args.corpus!r} is not a directory", file=sys.stderr)
+            return None
+        for ext in ("*.txt", "*.md", "*.text"):
+            paths.extend(sorted(_glob.glob(os.path.join(args.corpus, "**", ext),
+                                           recursive=True)))
+    paths.extend(getattr(args, "doc", None) or [])
+    # de-dup, preserve order
+    seen: set[str] = set()
+    ordered = [p for p in paths if not (p in seen or seen.add(p))]
+    if not ordered:
+        print(
+            "sum: no documents — pass --corpus DIR (globs *.txt/*.md/*.text) "
+            "and/or one or more --doc FILE",
+            file=sys.stderr,
+        )
+        return None
+    return ordered
+
+
+def cmd_study(args: argparse.Namespace) -> int:
+    """Study a corpus into a *verifiable cheatsheet* — machine-studying
+    over documents (Li, https://jacobxli.com/blog/2026/machine-studying).
+
+    Composes substrate SUM already owns: ``extract`` each document →
+    ``compose`` the bundles (LCM-union of triples → one SUM-of-SUMs) →
+    ``slider``-render the merged bundle down a faithful→compressed density
+    path (the study notes). It scores each point's meaning-loss under a
+    named proxy, reports SUM's native **expertise** scalar (weighted AUC of
+    fidelity vs. consultation budget, favouring the cheap end), and — with
+    --certify + a signing key — seals a ``sum.meaning_risk_receipt.v1``
+    over the per-document loss of consulting the cheatsheet.
+
+    Honest boundary: expertise and the frontier losses are per-run
+    MEASUREMENTS under the named scorer (an analogy to studying-expertise,
+    NOT a task-accuracy metric); the only certified element is the embedded
+    receipt. Offline + zero-$ on the default (sieve) path. Emits a
+    sum.study_artifact.v1 JSON. Needs the [research] extra.
+    """
+    try:
+        from sum_engine_internal.research.study import StudyArtifact, expertise
+        from sum_engine_internal.research.frontier import RenderFrontier
+        from sum_engine_internal.transforms import get_transform
+        from sum_engine_internal.transforms._base import TransformEnv, run_sync
+    except ImportError as e:
+        print(
+            f"sum: `sum study` needs the [research] extra "
+            f"(pip install 'sum-engine[research]'): {e}",
+            file=sys.stderr,
+        )
+        return 2
+
+    paths = _gather_corpus_paths(args)
+    if paths is None:
+        return 2
+
+    scorer, err = _load_meaning_scorer(args.scorer)
+    if err:
+        print(f"sum: {err}", file=sys.stderr)
+        return 2
+    if args.scorer == "lexical":
+        # Same F18 caveat as `sum frontier`: word-overlap MISRANKS paraphrase.
+        print(
+            "sum: note — the 'lexical' scorer measures word overlap and "
+            "MISRANKS paraphrase; trustworthy only for extractive compression. "
+            "For a corpus you will usually want --scorer nli (needs [judge]).",
+            file=sys.stderr,
+        )
+
+    steps = max(2, int(args.steps))
+    floor = float(args.density_floor)
+    if not (0.0 <= floor < 1.0):
+        print("sum: --density-floor must be in [0, 1)", file=sys.stderr)
+        return 2
+
+    docs: list[tuple[str, str]] = []
+    for path in paths:
+        text = _read_text_arg(path)
+        if text is None:
+            return 2
+        docs.append((os.path.basename(path) or path, text))
+
+    env = TransformEnv()  # no keys → the deterministic, offline path
+    extract = get_transform("extract")
+    compose = get_transform("compose")
+    slider = get_transform("slider")
+
+    # 1. extract each document → a per-doc bundle of triples (offline sieve).
+    bundles: list[dict] = []
+    used_docs: list[tuple[str, str]] = []
+    for label, text in docs:
+        try:
+            ext = run_sync(extract.apply({"text": text}, {"extractor": "sieve"}, env))
+        except ImportError as e:
+            print(
+                f"sum: `sum study` extraction needs the [sieve] extra "
+                f"(pip install 'sum-engine[sieve]'): {e}",
+                file=sys.stderr,
+            )
+            return 2
+        triples = ext.output
+        if not triples:
+            print(
+                f"sum: note — {label}: 0 triples extracted (no subject-verb-"
+                f"object structure found); skipping it.",
+                file=sys.stderr,
+            )
+            continue
+        bundles.append({"triples": triples})
+        used_docs.append((label, text))
+    if not bundles:
+        print(
+            "sum: no document yielded any triples — nothing to study. Try "
+            "longer/declarative sources.",
+            file=sys.stderr,
+        )
+        return 2
+
+    # 2. compose the bundles → one SUM-of-SUMs (the corpus knowledge base).
+    merged = run_sync(compose.apply({"bundles": bundles}, {"merge_strategy": "lcm"}, env))
+    merged_axioms = merged.output["axioms"]
+    state_integer = int(merged.output["state_integer"])
+
+    # 3. render the merged bundle down a faithful→compressed density path.
+    renderings: list[tuple[str, dict, str]] = []
+    for i in range(steps):
+        density = 1.0 if steps == 1 else 1.0 - (1.0 - floor) * (i / (steps - 1))
+        params = {
+            "density": density, "length": 0.5, "formality": 0.5,
+            "audience": 0.5, "perspective": 0.5,
+        }
+        res = run_sync(slider.apply({"triples": merged_axioms}, params, env))
+        renderings.append(
+            (f"density={density:.3f}", {"density": round(density, 6)}, res.output)
+        )
+
+    # The corpus "source" the notes are scored against = the joined corpus.
+    corpus_source = "\n\n".join(text for _, text in used_docs)
+    try:
+        frontier = RenderFrontier.from_renderings(corpus_source, renderings, scorer)
+    except ValueError as e:
+        print(f"sum: {e}", file=sys.stderr)
+        return 2
+
+    positions = [p.position for p in frontier.points]
+    fidelities = [1.0 - p.meaning_loss for p in frontier.points]
+    score = expertise(positions, fidelities)
+
+    # 4. pick the study cheatsheet — the rendering nearest --study-density
+    # (default = the floor: the smallest, cheapest-to-consult note).
+    study_density = floor if args.study_density is None else float(args.study_density)
+    best = min(renderings, key=lambda r: abs(r[1]["density"] - study_density))
+    cheatsheet = best[2]
+    actual_density = best[1]["density"]
+
+    # 5. optional --certify: seal a meaning-risk receipt over the per-document
+    # loss of consulting the cheatsheet (each doc is one exchangeable unit).
+    receipt = None
+    if args.certify:
+        if not (args.signing_jwk and args.kid):
+            print(
+                "sum: --certify needs --signing-jwk FILE and --kid",
+                file=sys.stderr,
+            )
+            return 2
+        try:
+            from sum_engine_internal.research.meaning.conformal_meaning import (
+                certify_meaning_risk,
+            )
+            from sum_engine_internal.research.meaning.receipt import (
+                build_payload as build_meaning_payload,
+                sign_meaning_risk_receipt,
+            )
+        except ImportError as e:
+            print(
+                f"sum: --certify needs the [research] extra: {e}",
+                file=sys.stderr,
+            )
+            return 2
+        try:
+            private_jwk = json.loads(_read_text_arg(args.signing_jwk) or "")
+        except json.JSONDecodeError:
+            print(f"sum: --signing-jwk {args.signing_jwk!r} is not valid JSON",
+                  file=sys.stderr)
+            return 2
+        losses = [float(scorer.loss(text, cheatsheet)) for _, text in used_docs]
+        try:
+            guarantee = certify_meaning_risk(
+                losses,
+                scorer_name=scorer.name,
+                scorer_version=scorer.version,
+                delta=float(args.alpha),
+                method=args.method,
+            )
+            payload = build_meaning_payload(
+                guarantee=guarantee,
+                losses=losses,
+                corpus_id=args.corpus_id,
+                transform=f"study:density={actual_density:.3f}",
+                alpha_target=float(args.alpha),
+                loss_definition=(
+                    f"{scorer.name} v{scorer.version}: per-document "
+                    f"meaning-loss of consulting the corpus cheatsheet "
+                    f"in place of the source document (1 = fully lost)"
+                ),
+            )
+            receipt = sign_meaning_risk_receipt(
+                payload, private_jwk=private_jwk, kid=args.kid,
+            )
+        except (ValueError, KeyError) as e:
+            print(f"sum: --certify failed: {e}", file=sys.stderr)
+            return 2
+
+    artifact = StudyArtifact(
+        corpus_id=args.corpus_id,
+        doc_count=len(used_docs),
+        state_integer=state_integer,
+        axiom_count=len(merged_axioms),
+        cheatsheet=cheatsheet,
+        study_density=actual_density,
+        expertise=score,
+        scorer_name=frontier.scorer_name,
+        scorer_version=frontier.scorer_version,
+        frontier=frontier.as_dict(),
+        receipt=receipt,
+    )
+
+    out_text = json.dumps(
+        artifact.as_dict(),
+        indent=2 if getattr(args, "pretty", False) else None,
+        ensure_ascii=False,
+    )
+    if getattr(args, "out", None):
+        try:
+            with open(args.out, "w", encoding="utf-8") as fh:
+                fh.write(out_text + "\n")
+        except OSError as e:
+            print(f"sum: could not write --out {args.out!r}: {e}", file=sys.stderr)
+            return 2
+        print(
+            f"sum: wrote study artifact ({len(used_docs)} docs, "
+            f"expertise={score:.3f}) → {args.out}",
+            file=sys.stderr,
+        )
+    else:
+        sys.stdout.write(out_text + "\n")
+    return 0
+
+
 def cmd_verify_meaning(args: argparse.Namespace) -> int:
     """Verify a meaning-risk OR perspective receipt as an external party —
     the on-ramp F21 (dogfood 2026-06-07) flagged as missing. Reads the
@@ -3414,6 +3670,95 @@ def build_parser() -> argparse.ArgumentParser:
         help="Pretty-print the JSON overview.",
     )
     p_frontier.set_defaults(func=cmd_frontier)
+
+    # study — machine-studying: a corpus → a verifiable cheatsheet.
+    p_study = subparsers.add_parser(
+        "study",
+        help="Study a corpus into a verifiable cheatsheet (machine-studying).",
+        description=(
+            "Study a corpus of documents into a reusable, optionally-signed "
+            "CHEATSHEET, after Li's 'Machine Studying' "
+            "(jacobxli.com/blog/2026/machine-studying). Composes substrate "
+            "SUM already owns: extract each --doc/--corpus document → compose "
+            "the bundles (LCM-union of triples → one SUM-of-SUMs) → render the "
+            "merged bundle down a faithful→compressed density path (the "
+            "notes). Reports SUM's native EXPERTISE scalar (weighted AUC of "
+            "fidelity vs. consultation budget, favouring the cheap end) and, "
+            "with --certify + a signing key, seals a "
+            "sum.meaning_risk_receipt.v1 over the per-document loss of "
+            "consulting the cheatsheet. Honest boundary: expertise + the "
+            "frontier losses are per-run MEASUREMENTS under a named proxy (an "
+            "analogy to studying-expertise, not a task-accuracy metric); only "
+            "the embedded receipt is certified. Offline + zero-$ on the "
+            "default sieve path. Emits sum.study_artifact.v1 JSON. Needs the "
+            "[research] (+ [sieve]) extra. See docs/MACHINE_STUDYING_"
+            "APPLICABILITY.md."
+        ),
+    )
+    p_study.add_argument(
+        "--corpus", metavar="DIR",
+        help="Directory to study; globs *.txt/*.md/*.text recursively.",
+    )
+    p_study.add_argument(
+        "--doc", action="append", metavar="PATH", default=[],
+        help="A single document to add to the corpus. Repeatable. "
+             "Combine with --corpus or use on its own.",
+    )
+    p_study.add_argument(
+        "--scorer", default="nli", choices=["lexical", "embedding", "nli"],
+        help="Meaning-loss proxy (default 'nli', a local NLI cross-encoder; "
+             "needs [judge]). 'lexical' is offline/word-overlap but MISRANKS "
+             "paraphrase. 'embedding' is a local paraphrase-aware judge.",
+    )
+    p_study.add_argument(
+        "--steps", type=int, default=5, metavar="N",
+        help="Number of points on the faithful→compressed path (default 5).",
+    )
+    p_study.add_argument(
+        "--density-floor", type=float, default=0.1, dest="density_floor",
+        metavar="F",
+        help="Density at the most-compressed end (default 0.1; faithful end "
+             "is always 1.0).",
+    )
+    p_study.add_argument(
+        "--study-density", type=float, default=None, dest="study_density",
+        metavar="D",
+        help="Density of the emitted cheatsheet (default = --density-floor, "
+             "the smallest/cheapest note).",
+    )
+    p_study.add_argument(
+        "--corpus-id", default="study-corpus-v0", dest="corpus_id",
+        metavar="ID",
+        help="Name of the calibration envelope for --certify (the "
+             "exchangeability scope; default 'study-corpus-v0').",
+    )
+    p_study.add_argument(
+        "--certify", action="store_true",
+        help="Seal a sum.meaning_risk_receipt.v1 over the per-document loss "
+             "of consulting the cheatsheet. Requires --signing-jwk + --kid.",
+    )
+    p_study.add_argument(
+        "--signing-jwk", dest="signing_jwk", metavar="FILE",
+        help="Ed25519 private JWK file used to sign the --certify receipt.",
+    )
+    p_study.add_argument("--kid", help="Key id for the --certify receipt.")
+    p_study.add_argument(
+        "--alpha", type=float, default=0.05, metavar="A",
+        help="Risk level / delta for the certified bound (default 0.05 = 95%%).",
+    )
+    p_study.add_argument(
+        "--method", default="hoeffding",
+        choices=["auto", "hoeffding", "clopper_pearson", "empirical_bernstein"],
+        help="Conformal bound method for --certify (default 'hoeffding').",
+    )
+    p_study.add_argument(
+        "--out", metavar="FILE",
+        help="Write the study artifact JSON here instead of stdout.",
+    )
+    p_study.add_argument(
+        "--pretty", action="store_true", help="Pretty-print the JSON.",
+    )
+    p_study.set_defaults(func=cmd_study)
 
     # verify-meaning — external-party on-ramp for the meaning receipt family.
     p_vm = subparsers.add_parser(

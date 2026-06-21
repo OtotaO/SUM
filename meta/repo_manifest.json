@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-06-18T12:27:21Z",
+  "issued_at": "2026-06-21T04:45:28Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "ec92879e9b184af9de47f48c676863bf65547f22",
-    "head_short": "ec92879",
-    "head_subject": "release(0.8.1): cut the front-door-hardening release + add the lease meaning-diff README hero",
-    "head_committer_date": "2026-06-18T08:17:57-04:00",
+    "head_sha": "3d2fe5d7ae9280536c3ce02c30761f074b6c3b2e",
+    "head_short": "3d2fe5d",
+    "head_subject": "Merge main into the sum study draft \u2014 resolve CHANGELOG + meta conflicts (stays a draft)",
+    "head_committer_date": "2026-06-21T00:41:59-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -19,7 +19,7 @@
   },
   "release": {
     "pyproject_version": "0.8.1",
-    "pypi_published_version": "0.8.0"
+    "pypi_published_version": "0.8.1"
   },
   "features": {
     "total": 170,
