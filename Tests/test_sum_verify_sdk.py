@@ -81,6 +81,23 @@ def test_import_does_not_pull_numeric_stack():
     assert "LEAKED:none" in out.stdout, out.stdout
 
 
+def test_demo_replays_bundled_golden_offline():
+    """`python -m sum_verify --demo` replays the WHEEL-BUNDLED BillSum golden
+    with no receipt / --jwks / git clone — the broken-on-ramp fix (ISS-2). Run
+    in a subprocess so it exercises the real package-data resolution + the -m
+    entrypoint, the way a pip-install-only user hits it."""
+    out = subprocess.run(
+        [sys.executable, "-m", "sum_verify", "--demo"],
+        capture_output=True, text=True, cwd=".",
+    )
+    assert out.returncode == 0, out.stderr
+    verdict = json.loads(out.stdout.strip())  # the note goes to stderr; stdout is the verdict
+    assert verdict["verified"] is True
+    assert verdict["replayed"] is True
+    assert verdict["schema"] == "sum.meaning_risk_receipt.v1"
+    assert "proxy_caveat" in verdict
+
+
 def test_version_and_schemas_are_stable_surface():
     assert sum_verify.__version__  # SemVer string, present
     assert "sum.meaning_risk_receipt.v1" in SUPPORTED_SCHEMAS

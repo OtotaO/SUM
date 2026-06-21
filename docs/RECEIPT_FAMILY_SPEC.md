@@ -61,8 +61,13 @@ schema-specific payload:
   and **fail closed on an unknown schema**.
 
 This is the same trust triangle the render receipts established (Python ↔
-Node ↔ browser, byte-identical), now shared by all four. A verifier that
-can check one can check all four's signatures with the same primitive.
+Node ↔ browser, byte-identical), now shared across the family — though the
+Python *tiers* differ: the dependency-light `[verify]` SDK (`sum_verify`)
+checks `meaning_risk` / `render` / `transform` with one primitive, while
+**`perspective` Python verification is `[research]`-tier**
+(`verify_perspective_risk_receipt`, not the `[verify]` SDK — calling
+`sum_verify.verify` on a perspective envelope raises `UnsupportedSchemaError`).
+The JS verifier (`meaning_receipt_verifier.js`) does cover all four. See §4.1.
 
 ### 2.1 The float discipline (the load-bearing canonicalisation rule)
 
@@ -159,7 +164,8 @@ tier.
 | Receipt | Stage A (sig/schema/disclosure) | Stage B (replay) |
 |---|---|---|
 | `render` / `transform` | Python · Node (`standalone_verifier`) · browser (`single_file_demo`) | hash comparison, any runtime |
-| `meaning_risk` / `perspective` | Python · Node/browser (`single_file_demo/meaning_receipt_verifier.js`) | **Python only** (`verify_meaning_risk_receipt`); for a **model-judge** scorer, additionally **machine-pinned** (cross-hardware float drift in the judge) |
+| `meaning_risk` | Python (`sum_verify` `[verify]` SDK) · Node/browser (`meaning_receipt_verifier.js`) | **Python only** (`verify_meaning_risk_receipt`); for a **model-judge** scorer, additionally **machine-pinned** (cross-hardware float drift in the judge) |
+| `perspective` | Python **`[research]`-tier only** (`verify_perspective_risk_receipt` — NOT the dependency-light `[verify]` SDK) · Node/browser (`meaning_receipt_verifier.js`) | **Python only** (`verify_perspective_risk_receipt`); machine-pinned for a model-judge scorer |
 
 "Verifiable in every runtime" means the **signature and format**, not
 necessarily the **meaning recomputation**. The conformal receipts state

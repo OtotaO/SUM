@@ -176,6 +176,16 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Issued sum.meaning_risk_receipt.v1 over {len(losses)} pairs under {scorer.name}")
     print(f"  certified: expected meaning-loss ≤ {ub:.4f} at {100*(1-args.delta):.0f}% (mean {guarantee.point_estimate:.4f}, n={guarantee.n})")
     print(f"  controlled at alpha={args.alpha}: {payload.get('controlled')}")
+    if ub >= 0.95 or payload.get("controlled") is False:
+        ctrl = "" if payload.get("controlled") is not False else ", and NOT controlled at your alpha"
+        print()
+        print(
+            f"  ⚠️  WARNING: this bound is near-vacuous (≤ {ub:.4f}{ctrl}, n={guarantee.n}). "
+            "A distribution-free bound is VALID at any n but loose at small n — with few "
+            "pairs it degenerates toward ≤ 1.0 and certifies almost nothing. Use n ≥ ~32 "
+            "exchangeable pairs for a meaningful certificate.",
+            file=sys.stderr,
+        )
     print(f"  wrote: {out}/receipt.json  {out}/jwks.json  {out}/losses.json  {out}/private_jwk.json (SECRET)")
     print()
     print("Verify it (the consumer side):")

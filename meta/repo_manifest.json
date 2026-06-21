@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-06-13T11:22:31Z",
+  "issued_at": "2026-06-18T12:27:21Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,17 +8,17 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "92e3e6b2cd3e3bb6b7e37cea2483763b3677d345",
-    "head_short": "92e3e6b",
-    "head_subject": "harden(verifier): close 3 input-validation gaps found by a mass-parallel adversarial fuzz (#317)",
-    "head_committer_date": "2026-06-13T06:24:56-04:00",
+    "head_sha": "ec92879e9b184af9de47f48c676863bf65547f22",
+    "head_short": "ec92879",
+    "head_subject": "release(0.8.1): cut the front-door-hardening release + add the lease meaning-diff README hero",
+    "head_committer_date": "2026-06-18T08:17:57-04:00",
     "commits_last_30d": null
   },
   "github": {
     "stars": 9
   },
   "release": {
-    "pyproject_version": "0.8.0",
+    "pyproject_version": "0.8.1",
     "pypi_published_version": "0.8.0"
   },
   "features": {

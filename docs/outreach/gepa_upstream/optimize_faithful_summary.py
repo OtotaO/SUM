@@ -26,7 +26,7 @@ Run the offline self-test (no key, no LLM — exercises the SUM scoring core):
     python optimize_faithful_summary.py --selftest
 
 Run real GEPA optimisation (needs a model + the standalone gepa package):
-    pip install gepa "sum-engine[research]"
+    pip install gepa litellm "sum-engine[research]"   # the live path calls the task LM via litellm
     export OPENAI_API_KEY=...
     python optimize_faithful_summary.py --task-lm openai/gpt-4.1-mini \\
         --reflection-lm openai/gpt-5 --budget 60

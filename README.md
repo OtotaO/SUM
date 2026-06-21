@@ -9,6 +9,20 @@
 
 > **SUM lets people and agents transform knowledge without losing the ability to verify what changed, what stayed the same, who signed it, and what remains unproven.**
 
+**See what an AI transform silently dropped.** `sum meaning-diff` reads out, per document, which source claims survived a rewrite and which vanished. Here it is on a shipped fixture — a four-clause lease notice rewritten as verse:
+
+```text
+$ sum meaning-diff examples/poetry_frontier/source.txt examples/poetry_frontier/sonnet.txt --scorer nli
+  preservation: 55%   (loss 0.450)
+  source claims: 4 — 1 preserved, 3 DROPPED:
+     ✗ Late payment after the fifth day incurs a 50 dollar fee.
+     ✗ The landlord must give 24 hours notice before entering the unit.
+     ✗ Either party may terminate this lease with 30 days written notice.
+  added / unsupported claims: none ✓
+  (measured for THIS document under the named NLI judge — a per-document MEASUREMENT,
+   not a guarantee; for a (1−δ) corpus bound use a signed meaning_risk receipt)
+```
+
 Every transformation — extract triples from prose, render a tome at a controlled slider position, compose bundles across documents, share a render — emits a cryptographically-signed receipt that any third party can verify offline. The receipt attests *that the transformation happened and what its inputs were*. Separate per-axis benchmarks attest *how much the transformation preserved meaning*. Both are kept honest by separate proof discipline — and the project never blurs the line between them.
 
 *Live trust loop:* https://sum-demo.ototao.workers.dev — three runtimes (Python, Node, modern browsers) produce byte-identical Ed25519 signatures over the same JCS-canonical bytes; verify offline against `/.well-known/jwks.json`. Mechanically proven; locked in CI on every PR.
@@ -41,21 +55,24 @@ SUM is built to be that layer **in the open**: Apache-2.0, offline-verifiable by
 
 ## Verify it yourself in 60 seconds
 
-**The differentiator — replay a meaning-loss bound, fully offline.** SUM's flagship receipt is a *signed, replayable* certificate over a named meaning-loss proxy. The verifier is dependency-light (`cryptography` + `joserfc` only — no numpy / scipy / torch, no GPU, no network), and a real binding-gate golden over public-domain text (BillSum, CC0) ships in the repo. From a checkout:
+**The differentiator — replay a meaning-loss bound, fully offline.** SUM's flagship receipt is a *signed, replayable* certificate over a named meaning-loss proxy. The verifier is dependency-light (`cryptography` + `joserfc` only — no numpy / scipy / torch, no GPU, no network), and a real binding-gate golden over public-domain text (BillSum, CC0) **ships inside the wheel** — so this works straight from `pip`, no clone:
 
 ```bash
 pip install 'sum-engine[verify]'        # cryptography + joserfc only
-
-python -m sum_verify \
-  fixtures/meaning_receipts_billsum/meaning_risk_receipt.billsum.golden.json \
-  --jwks   fixtures/meaning_receipts_billsum/jwks.json \
-  --losses fixtures/meaning_receipts_billsum/losses_billsum.json
+python -m sum_verify --demo             # replays the bundled BillSum golden, offline
 # → {"verified": true, "schema": "sum.meaning_risk_receipt.v1", "replayed": true,
 #    "scorer": "bidirectional-entailment[minilm-cosine-0.5]",
 #    "not_covered": ["arrangement","sound","connotation","implicature"],
 #    "proxy_caveat": "verified=true is a cryptographic fact ... the proxy
 #       correlated only modestly (Spearman rho ~0.27-0.33). Not a substitute
 #       for human review."}
+```
+
+To verify *your own* receipt — or the source goldens from a git checkout — pass the files explicitly:
+
+```bash
+python -m sum_verify <receipt.json> --jwks <jwks.json> --losses <losses.json>
+# from a checkout, the binding-gate goldens live in fixtures/meaning_receipts_billsum/
 ```
 
 `verified: true` + `replayed: true` means the committed per-pair losses hash to the receipt's anchor and re-certify to its stated bound (≤ 0.6454 at 95%) by exact integer equality — on your machine, against the issuer's JWKS, trusting nobody. **Read the `proxy_caveat`:** that PASS is a *cryptographic* fact, not proof meaning was preserved — the bound is over a proxy that tracks human judgment only modestly. The richer readout (the bound itself, perspective cohorts) is `sum verify-meaning`; for non-extractive rewrites use `--scorer nli` — [`examples/poetry_frontier/`](examples/poetry_frontier/) shows exactly where the embedding judge's blind spot is.

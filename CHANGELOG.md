@@ -23,6 +23,17 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
   downstream task accuracy), never a guarantee. New: `sum_engine_internal/research/study.py`,
   `cmd_study` in `sum_cli/main.py`, `docs/MACHINE_STUDYING_APPLICABILITY.md`,
   `Tests/test_study.py`; `docs/RECEIPT_FAMILY_SPEC.md` §3.5 documents the container.
+
+## [0.8.1] - 2026-06-18
+
+**Headline: the front door is now honest and frictionless for a first-touch user.**
+`pip install "sum-engine[verify]"` then `python -m sum_verify --demo` replays a real
+meaning-loss bound fully offline (the binding-gate golden now ships in the wheel); the
+in-browser Verify box checks the flagship meaning receipt; the verify verdict surfaces
+`controlled` / bound / `n` (a vacuous small-n receipt can no longer pose as a strong one);
+and `sum frontier --distill` makes the offline distiller demoable from one source. Plus
+README/CLI doc-currency + the perspective-spec correction. All backward-compatible
+additions + fixes over 0.8.0.
 - **Frontend↔backend concordance correction (delivery).** A 5-seam audit found the
   front door selling an *older, narrower* product than the v0.8.0 backend is — the
   leading explanation for ~10k clones / 9 stars / 0 observed users. Fixed: the live
@@ -38,8 +49,27 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
   Worker use `floor` — so density&lt;1.0 kept *more* facts than the slider implied;
   now `Math.floor` (concordant; cross-runtime harness green). Slider capability itself
   was found genuinely live + concordant (axis prompts byte-identical Python↔Worker).
-  Demo redeploy required. (Deferred: wiring the shipped `meaning_receipt_verifier.js`
-  into the visible Verify box so the front door verifies the v0.8.0 receipt family.)
+  The hero + density fix are LIVE (deployed in #313; the 2026-06-18 concordance audit
+  confirmed live == repo byte-for-byte). The last front-door deferral — wiring the
+  shipped `meaning_receipt_verifier.js` into the visible Verify box — is now CLOSED
+  (see the front-door-hardening entry below); a redeploy of `single_file_demo/` makes it live.
+- **Front-door hardening from the 2026-06-18 audit (verify on-ramp + honesty + browser meaning-verify).**
+  The audit found every concordance break clustered at the v0.8.0 *flagship* meaning
+  receipt. Closed the closeable-now ($0, no-puller) set:
+  - **On-ramp (ISS-2):** the documented first command silently needed a git clone —
+    `examples/` + `fixtures/` ship zero files in the wheel. Bundled the real BillSum
+    binding-gate golden (CC0) as package data; **`python -m sum_verify --demo`** now
+    replays a meaning-loss bound fully offline straight from `pip`, no clone. README
+    leads with it; `THIRD_PARTY_VERIFY.md` got the clone it needs.
+  - **Honesty (ISS-4/5):** `python -m sum_verify` now surfaces `risk_upper_bound` +
+    `controlled` + `n` (a vacuous small-n receipt no longer looks identical to a strong
+    one); the issuance script warns when a bound is near-vacuous; `RECEIPT_FAMILY_SPEC`
+    no longer implies the `[verify]` SDK covers `perspective` (it is `[research]`-tier).
+  - **Browser meaning-verify (ISS-3):** wired the shipped `meaning_receipt_verifier.js`
+    into the demo's Verify surface — a new "Verify a meaning receipt" box runs Stage A
+    (signature + schema + disclosure) in-browser with schema-dispatch + a one-click
+    BillSum sample, honestly labelled (Stage B replay stays Python-side; the proxy
+    caveat travels). Closes the last front-door deferral above.
 - **`sum frontier --distill` — the distiller demoable from one source, offline.**
   `sum frontier` previously only *scored* pre-made `--version` files; the offline
   distiller path existed in the transform registry but was unwired (`from_render_fn`
