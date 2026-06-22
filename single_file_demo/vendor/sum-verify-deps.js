@@ -11,7 +11,11 @@ var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __commonJS = (cb, mod) => function __require() {
-  return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+  try {
+    return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+  } catch (e) {
+    throw mod = 0, e;
+  }
 };
 var __copyProps = (to, from, except, desc) => {
   if (from && typeof from === "object" || typeof from === "function") {
@@ -1055,7 +1059,7 @@ if (typeof navigator === "undefined" || !navigator.userAgent?.startsWith?.("Mozi
   const VERSION = "v5.9.6";
   USER_AGENT = `${NAME}/${VERSION}`;
 }
-var jwksCache = Symbol();
+var jwksCache = /* @__PURE__ */ Symbol();
 function isFreshJwksCache(input, cacheMaxAge) {
   if (typeof input !== "object" || input === null) {
     return false;

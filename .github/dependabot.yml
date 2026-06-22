@@ -1,0 +1,47 @@
+# Dependabot — the maintainable half of the Scorecard PinnedDependencies /
+# Vulnerabilities story. Pinning by SHA / digest / lockfile only helps if the
+# pins stay current instead of freezing onto an eventually-vulnerable version;
+# Dependabot opens the bump PRs that keep them fresh. Weekly cadence with
+# conservative open-PR limits for a small project. Action updates preserve the
+# SHA-pin-plus-comment convention enforced by scripts/lint_workflow_pins.py.
+version: 2
+updates:
+  # ── Python — the shipping `sum-engine` package (pyproject + requirements) ──
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # ── Cloudflare Worker toolchain — wrangler/esbuild/undici/ws live here as
+  #    transitive dev deps; this is where the 2026-06 npm CVE bumps came from ──
+  - package-ecosystem: "npm"
+    directory: "/worker"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      worker-toolchain:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  # ── Vendoring build (esbuild) for the browser verifier bundle ──
+  - package-ecosystem: "npm"
+    directory: "/scripts/vendor"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+
+  # ── GitHub Actions — keeps the SHA pins current (bumps SHA + the # vX tag) ──
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # ── Dockerfile base images — the index digests pinned in ./Dockerfile ──
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
