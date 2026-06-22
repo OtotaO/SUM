@@ -8,7 +8,7 @@
     "build": "node build.js"
   },
   "dependencies": {
-    "canonicalize": "2.0.0",
+    "canonicalize": "3.0.0",
     "jose": "5.9.6"
   },
   "devDependencies": {
