@@ -1,0 +1,55 @@
+name: CodeQL
+
+# Static analysis (SAST) for the Python engine. Satisfies the OpenSSF
+# Scorecard SAST check and — more to the point — runs real code scanning on
+# every push/PR so a regression surfaces in the Security tab rather than in
+# production. Default query suite (high-signal security queries) to keep the
+# baseline triage-able; promote to `security-extended` once it is triaged.
+#
+# Scope note: this pass scans `python` only. The JavaScript verifier surface
+# (single_file_demo / standalone_verifier / worker) is security-critical and a
+# good follow-up to add here behind a `paths-ignore` for the vendored bundle —
+# kept out of this first pass to bound new-alert noise.
+#
+# All third-party Actions are SHA-pinned (R0.3 / scripts/lint_workflow_pins.py),
+# reusing the same commit SHAs already vetted in the other workflows.
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    - cron: '27 4 * * 1'  # Weekly, Mondays 04:27 UTC (off-peak).
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze (python)
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write   # upload CodeQL results to code scanning
+      actions: read
+      contents: read
+
+    steps:
+    - name: Harden runner (audit-only)
+      uses: step-security/harden-runner@ab7a9404c0f3da075243ca237b5fac12c98deaa5  # v2.19.3
+      with:
+        egress-policy: audit
+
+    - name: Checkout
+      uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd  # v5.0.1
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@ce64ddcb0d8d890d2df4a9d1c04ff297367dea2a  # v3
+      with:
+        languages: python
+        build-mode: none
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@ce64ddcb0d8d890d2df4a9d1c04ff297367dea2a  # v3
+      with:
+        category: "/language:python"

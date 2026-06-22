@@ -5,7 +5,12 @@
 #   docker run -p 8000:8000 -e OPENAI_API_KEY=sk-... sum
 
 # ── Stage 1: Build Zig Core ──────────────────────────────────────────
-FROM debian:bookworm-slim AS zig-builder
+# Base images pinned by multi-arch index digest (Scorecard PinnedDependencies).
+# Dependabot's `docker` ecosystem keeps these digests current — see
+# .github/dependabot.yml. Re-resolve a tag's digest with:
+#   curl -sI -H 'Accept: application/vnd.oci.image.index.v1+json' \
+#     https://registry-1.docker.io/v2/library/<img>/manifests/<tag> | grep -i docker-content-digest
+FROM debian:bookworm-slim@sha256:96e378d7e6531ac9a15ad505478fcc2e69f371b10f5cdf87857c4b8188404716 AS zig-builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl xz-utils ca-certificates && rm -rf /var/lib/apt/lists/*
@@ -21,7 +26,7 @@ COPY core-zig/ ./core-zig/
 RUN cd core-zig && zig build -Doptimize=ReleaseFast
 
 # ── Stage 2: Python Runtime ──────────────────────────────────────────
-FROM python:3.12-slim-bookworm
+FROM python:3.12-slim-bookworm@sha256:76d4b7b6305788c6b4c6a19d6a22a3921bf802e9af4d5e1e5bd771208dba74bf
 
 WORKDIR /app
 

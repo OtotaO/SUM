@@ -4,6 +4,20 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Supply-chain / Scorecard hardening (no shipping-package impact).** A pass over the
+  open OpenSSF Scorecard findings, none of which touched the published package: (1)
+  removed 21 accidentally-tracked `core-zig/.zig-cache/` build artifacts (already
+  git-ignored; CI rebuilds them fresh); (2) refreshed the Worker and `scripts/vendor`
+  npm lockfiles, clearing 11 advisory CVEs in `esbuild` / `undici` / `ws` — these are
+  **dev/deploy-toolchain transitive deps (wrangler/miniflare + the vendoring bundler)
+  only; none reach the `sum-engine` wheel or a `pip install` user** (the vendored
+  browser-verifier bundle was regenerated with esbuild 0.28.1; behaviour byte-identical,
+  cross-runtime trust triangle still green); (3) added `.github/dependabot.yml`
+  (pip / npm / github-actions / docker) and a `python` CodeQL workflow so SAST runs on
+  every push; (4) scoped the `publish-release.yml` `GITHUB_TOKEN` to `contents: read`
+  at the workflow level (write only on the release job); (5) pinned the `Dockerfile`
+  base images by multi-arch index digest. No product code changed.
+
 - **`sum study` — the verifiable cheatsheet (machine-studying over a corpus).**
   Research-only (`[research]` extra; **not** cataloged). Applies Li's *Machine
   Studying* (jacobxli.com/blog/2026/machine-studying) to SUM by composing
