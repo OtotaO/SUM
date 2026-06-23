@@ -20,7 +20,7 @@ sympy>=1.12
 sse-starlette>=1.6.5
 pytest>=7.0.0
 pytest-asyncio>=0.21.0
-feedparser>=6.0.10
+feedparser>=6.0.12
 # spacy 3.7.x floor is empirically broken on a fresh venv (F14 — the
 # 3.7 wheels' thinc/blis chain fails to resolve under current pip);
 # 3.8.0 is the verified-working floor and matches pyproject.toml [sieve].
