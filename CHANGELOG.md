@@ -4,6 +4,25 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Dependency maintenance (no shipping-package impact).** Merged the Dependabot batch
+  opened by the new `.github/dependabot.yml` (#339–#353): GitHub Actions SHA bumps
+  (checkout, upload/download-artifact, wrangler-action, harden-runner), the Worker
+  toolchain (typescript, the `jose` patch), the `Dockerfile` base image, and
+  `requirements-prod.txt` server pins (uvicorn / sse-starlette / networkx / feedparser).
+  Two crypto-vendor majors (`jose` 5→6, `canonicalize` 2→3) were **declined** pending
+  deliberate cross-runtime byte-equivalence verification. None of these reach the
+  `sum-engine` wheel — its runtime deps remain `cryptography` + `sympy`.
+
+- **Docs ↔ code concordance pass (no behavior change).** A doc-vs-reality audit fixed
+  front-door drift: README scopes `sum verify-meaning` to its real `[research,receipt-verify]`
+  extra (the dependency-light promise stays on `python -m sum_verify`) and refreshes two
+  stale `sum verify` output examples; `TRANSFORM_RECEIPT_FORMAT.md` §6.1 corrected to state
+  receipt revocation is implemented for render receipts but **not yet wired** for transform
+  receipts (was documented as if present); `RECEIPT_FAMILY_SPEC.md` corrected to note the
+  `/.well-known/sum-trust-root.json` manifest is specified-but-not-yet-served (JWKS is fetched
+  directly from the live `/.well-known/jwks.json`) and that the JS verifiers cover all four
+  schemas across three files (not one). No signed-field, wire-format, or behavior change.
+
 - **Supply-chain / Scorecard hardening (no shipping-package impact).** A pass over the
   open OpenSSF Scorecard findings, none of which touched the published package: (1)
   removed 21 accidentally-tracked `core-zig/.zig-cache/` build artifacts (already

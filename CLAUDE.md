@@ -248,9 +248,9 @@ questions.
     conversation; read it before adding new research-flavoured
     directions to the project.
 
-Shipping surface at the current HEAD: the `sum` binary (`v0.8.0` on
-`pyproject.toml`; **0.8.0 is LIVE on PyPI** — `sum-engine` latest, verified
-2026-06-17 via the PyPI JSON API. 0.8.0 published the `sum_verify` SDK + the
+Shipping surface at the current HEAD: the `sum` binary (`v0.8.1` on
+`pyproject.toml`; **0.8.1 is LIVE on PyPI** — `sum-engine` latest, verified
+2026-06-24 via the PyPI JSON API. 0.8.0 published the `sum_verify` SDK + the
 dependency-light `[verify]` extra (`pip install "sum-engine[verify]"` —
 `cryptography` + `joserfc` only, no numpy/scipy/torch) and folded the
 meaning-loss frontier arc into the release behind the `[research]` extra; see

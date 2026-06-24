@@ -52,10 +52,11 @@ schema-specific payload:
 - **Key distribution.** Public keys as a **JWKS** (RFC 7517) at
   `/.well-known/jwks.json`; the signing key identified by `kid` in the JWS
   header. The current live key is `sum-render-2026-04-27-1`.
-- **Trust root.** A signed manifest at
-  `/.well-known/sum-trust-root.json` binds the JWKS, key-rotation cadence,
-  and revocation surface (`/.well-known/revoked-kids.json`); see
-  `TRUST_ROOT_FORMAT.md`.
+- **Trust root.** *Specified, not yet served:* a signed manifest at
+  `/.well-known/sum-trust-root.json` is designed to bind the JWKS, key-rotation
+  cadence, and revocation surface (`/.well-known/revoked-kids.json`; see
+  `TRUST_ROOT_FORMAT.md`) — but no route serves it yet, so verifiers currently
+  fetch the JWKS directly from the live `/.well-known/jwks.json`.
 - **Envelope.** The wire object carries `{schema, kid, payload, jws}` (or
   the receipt's documented equivalent); verifiers gate on `schema` first
   and **fail closed on an unknown schema**.
@@ -67,7 +68,7 @@ checks `meaning_risk` / `render` / `transform` with one primitive, while
 **`perspective` Python verification is `[research]`-tier**
 (`verify_perspective_risk_receipt`, not the `[verify]` SDK — calling
 `sum_verify.verify` on a perspective envelope raises `UnsupportedSchemaError`).
-The JS verifier (`meaning_receipt_verifier.js`) does cover all four. See §4.1.
+The family's JS verifiers cover all four across three files: `meaning_receipt_verifier.js` (`meaning_risk` + `perspective`), `receipt_verifier.js` (`render`), and `transform_receipt_verifier.js` (`transform`). See §4.1.
 
 ### 2.1 The float discipline (the load-bearing canonicalisation rule)
 

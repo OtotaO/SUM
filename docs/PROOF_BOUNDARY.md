@@ -1,7 +1,12 @@
 # Proof Boundary
 
-**Version:** 1.7.0
-**Date:** 2026-06-08
+**Version:** 1.7.1
+**Date:** 2026-06-24
+
+**v1.7.1 (2026-06-24):** header sync — the body's §2.11 already carries the measured
+proxy↔human correlation on SummEval (Spearman ρ ≈ 0.27–0.33; the meaning-loss proxy is
+honest-modest and *advisory*, never a guarantee). This is a version-bump to align the
+header with that content; no claim was changed.
 
 **v1.7.0 changes (2026-06-08):** §2.5.1 added — T1 iterated-round-trip stability receipts (all three measured corpora STABLE under K=10; PRs #248/#250) plus §2.5.1.d, the T4 composition-law audit (PR #252); the §2.5 closure is now empirically multi-stage load-bearing under a DKW 95% bound. §2.5.2 — the `/api/qid` accuracy-floor section renumbered out of a duplicate `2.5.1` collision. §2.11 added — the meaning-loss receipt family (`sum.meaning_risk_receipt.v1` / `sum.perspective_risk_receipt.v1`; conformal upper bound incl. empirical-Bernstein, PR #288), folding the research-flagged signed-certificate family into the claim arbiter with its proved/measured boundary pinned. Reflects substrate state through PR #288.
 
