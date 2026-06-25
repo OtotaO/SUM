@@ -1,5 +1,5 @@
 # SUM Quantum Knowledge OS — Production Dependencies
-fastapi>=0.100.0
+fastapi>=0.138.0
 # Starlette pin (Sprint 2 of the intensification path to arXiv).
 # Starlette 1.0.0 removed Router(on_startup=, on_shutdown=) in favour
 # of lifespan=. fastapi 0.115.x still passes on_startup=[]/on_shutdown=[]
