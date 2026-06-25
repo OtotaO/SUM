@@ -129,10 +129,10 @@ judge = ["transformers>=4.30.0", "torch>=2.0.0", "sentencepiece>=0.1.99"]
 # What this base extra brings in: HTML / DOCX-via-mammoth-not-
 # included / plaintext / EPUB-without-pandoc / .ipynb / .json.
 # For PDF/DOCX/XLSX/PPTX, install the matching markitdown extra
-# (`pip install 'markitdown[pdf,docx,xlsx,pptx]==0.1.5'`) on top.
+# (`pip install 'markitdown[pdf,docx,xlsx,pptx]==0.1.6'`) on top.
 # Pinned hard to keep markdown output byte-identical for receipts.
 omni-format = [
-    "markitdown==0.1.5",
+    "markitdown==0.1.6",
 ]
 dev = [
     "pytest>=7.0.0",
