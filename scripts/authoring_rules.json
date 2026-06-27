@@ -1,0 +1,17 @@
+{
+  "_README": "Single source of truth for outbound-text authoring rules, enforced by scripts/lint_outbound_text.py. 'Outbound' = any text that leaves in the operator's voice: PR/issue comments, commit messages, emails, release notes. This file exists so the rules are a fail-closed GATE checked at draft time, NOT a fact recalled from memory (which has a non-zero miss rate by construction — see the session audit 2026-06-25). Edit here to change the rules; do not hard-code style preferences anywhere else.",
+
+  "forbidden_glyphs": [
+    { "glyph": "—", "name": "em dash (U+2014)", "reason": "operator dislikes em dashes in outbound text" },
+    { "glyph": "―", "name": "horizontal bar (U+2015)", "reason": "em-dash substitute" }
+  ],
+
+  "forbidden_patterns": [
+    { "pattern": " -- ", "name": "spaced double-hyphen used as an em dash" },
+    { "pattern": " – ", "name": "spaced en dash used as an em dash (unspaced ranges like 2024–2025 are allowed)" }
+  ],
+
+  "denylist_tokens": [],
+
+  "command_line_prefixes": ["$ ", "gh ", "git ", "npx ", "npm ", "pnpm ", "bun ", "curl ", "wrangler ", "cd ", "python ", "python3 ", "pip ", "make ", "twine "]
+}
