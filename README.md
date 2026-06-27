@@ -75,7 +75,7 @@ python -m sum_verify <receipt.json> --jwks <jwks.json> --losses <losses.json>
 # from a checkout, the binding-gate goldens live in fixtures/meaning_receipts_billsum/
 ```
 
-`verified: true` + `replayed: true` means the committed per-pair losses hash to the receipt's anchor and re-certify to its stated bound (≤ 0.6454 at 95%) by exact integer equality — on your machine, against the issuer's JWKS, trusting nobody. **Read the `proxy_caveat`:** that PASS is a *cryptographic* fact, not proof meaning was preserved — the bound is over a proxy that tracks human judgment only modestly. The richer readout (the bound itself, perspective cohorts) is `sum verify-meaning`; for non-extractive rewrites use `--scorer nli` — [`examples/poetry_frontier/`](examples/poetry_frontier/) shows exactly where the embedding judge's blind spot is.
+`verified: true` + `replayed: true` means the committed per-pair losses hash to the receipt's anchor and re-certify to its stated bound (≤ 0.6454 at 95%) by exact integer equality — on your machine, against the issuer's JWKS, trusting nobody. **Read the `proxy_caveat`:** that PASS is a *cryptographic* fact, not proof meaning was preserved — the bound is over a proxy that tracks human judgment only modestly. The richer readout (the bound itself, perspective cohorts) is `sum verify-meaning` (which needs the heavier `pip install "sum-engine[research,receipt-verify]"` — the no-numpy promise above is scoped to `python -m sum_verify`); for non-extractive rewrites use `--scorer nli` — [`examples/poetry_frontier/`](examples/poetry_frontier/) shows exactly where the embedding judge's blind spot is.
 
 **The render trust loop (signed provenance).** The other receipt family attests *that* a transformation happened (issuer, inputs, slider position, model, time) — the same JWS verifiable byte-for-byte in three independent runtimes:
 
@@ -160,7 +160,7 @@ echo "Alice likes cats. Bob owns a dog." \
   | sum attest --extractor=sieve > bundle.json
 
 sum verify --input bundle.json
-# → sum: ✓ verified 2 axiom(s), state integer matches (hmac=absent, ed25519=absent)
+# → sum: ✓ verified 2 axiom(s), state integer matches (hmac=absent, ed25519=absent, extractor=sieve (verifiable))
 
 sum render < bundle.json > tome.md
 # → bundle's axioms re-emitted as canonical prose; round-trips to the same state integer
@@ -182,7 +182,7 @@ Add cryptographic attestation with one flag:
 # Ed25519 / W3C VC 2.0 (eddsa-jcs-2022)
 python -m scripts.generate_did_web --domain your.example --private-key-out keys/issuer.pem
 sum attest --ed25519-key keys/issuer.pem < prose.txt | sum verify --strict
-# → hmac=absent, ed25519=verified
+# → hmac=absent, ed25519=verified, extractor=sieve (verifiable)
 ```
 
 The same bundle bytes verify under `sum verify` (Python), `node standalone_verifier/verify.js` (WebCrypto), and the in-browser demo (SubtleCrypto). [`docs/DID_SETUP.md`](docs/DID_SETUP.md) walks the did:key / did:web issuer setup. [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §1.3.1 documents what the cross-runtime Ed25519 contract proves.

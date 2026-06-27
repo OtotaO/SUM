@@ -206,7 +206,7 @@ Existing pre-T1 render receipts are NOT migrated automatically. They remain vali
 
 ### 6.1 Revocation
 
-If the issuer publishes a revocation list (`/.well-known/revoked-kids.json` shape), pass it to `verify_transform_receipt(receipt, jwks, revoked_kids=...)`. The verifier rejects with `revoked_kid` when the receipt's `signed_at` is at or after the revocation's `effective_revocation_at`. Historical receipts (signed_at before effective_revocation_at) keep verifying — revocation invalidates future trust only.
+Revocation is **not yet wired for transform receipts** (v1): `verify_transform_receipt(receipt, jwks)` takes no `revoked_kids` argument and there is no `revoked_kid` error class. Render receipts *do* implement it — `verify_receipt(..., revoked_kids=...)` rejects with `revoked_kid` when the receipt's `signed_at` is at or after the revocation's `effective_revocation_at` (historical receipts, signed before that, keep verifying — revocation invalidates future trust only). Transform-receipt parity against a published `/.well-known/revoked-kids.json` list is planned; until it lands, transform-receipt trust relies on the `signed_at` freshness window (§6.2) plus key rotation.
 
 ### 6.2 Replay defense (`signed_at` window)
 
