@@ -31,6 +31,25 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
   the statistical core sound (bounds match references to <5e-10; goldens
   replay byte-exactly).
 
+- **`sum mint-meaning` — the ISSUER on-ramp for meaning-risk receipts.**
+  Research-flagged (`[research]` + `[receipt-verify]` extras; **not** cataloged;
+  no wire-format change — it emits the existing `sum.meaning_risk_receipt.v1`).
+  Productizes `examples/issue_meaning_receipt.py` into a guided CLI verb — the
+  "everyone verifies, nobody mints" gap both grounded adoption sims named as the
+  binding blocker. Score your own (source, rendering) pairs locally
+  (`--source`/`--rendering` pairs or `--pairs` JSONL, `--scorer embedding|nli`)
+  or bring pre-computed per-pair losses from a proxy you must NAME
+  (`--losses` + `--scorer-name` + `--loss-definition`); sign with an existing
+  Ed25519 key (`--ed25519-key`, PEM or private JWK) or a freshly generated
+  keypair (`--gen-key DIR` → `private_jwk.json` mode 0600, never overwritten,
+  never echoed + public `jwks.json`); then the mint **immediately
+  self-verifies** through the same verifier `sum verify-meaning` dispatches to
+  (signature + replay against the losses) — a mint that does not verify exits 1.
+  Honesty surfaces carried over verbatim from the issuance recipe: the
+  named-proxy / marginal / exchangeability disclosure, the small-n near-vacuous
+  bound warning, and a plain-language "what this receipt does and does NOT
+  prove" epilogue. 22 tests in `Tests/test_sum_cli_mint_meaning.py`.
+
 - **Dependency maintenance (no shipping-package impact).** Merged the Dependabot batch
   opened by the new `.github/dependabot.yml` (#339–#353): GitHub Actions SHA bumps
   (checkout, upload/download-artifact, wrangler-action, harden-runner), the Worker

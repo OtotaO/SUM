@@ -2930,6 +2930,508 @@ def cmd_study(args: argparse.Namespace) -> int:
     return 0
 
 
+def _b64u_nopad(b: bytes) -> str:
+    """base64url without padding — the JWK byte encoding (RFC 7515 §2)."""
+    import base64
+
+    return base64.urlsafe_b64encode(b).rstrip(b"=").decode("ascii")
+
+
+def _load_issuer_private_jwk(path: str, default_kid: str):
+    """Load an Ed25519 private key for receipt signing from ``path`` — either
+    a PKCS8 PEM (the ``scripts.generate_did_web`` output ``sum attest``
+    already accepts) or a private OKP JWK JSON file (the shape
+    ``sum study --signing-jwk`` takes). Returns ``(private_jwk, None)`` or
+    ``(None, error_message)``. Never prints key material."""
+    from pathlib import Path
+
+    try:
+        raw = Path(path).read_bytes()
+    except OSError as e:
+        return None, f"cannot read --ed25519-key {path!r}: {e}"
+
+    # A private-JWK JSON file is accepted as-is.
+    try:
+        jwk = json.loads(raw)
+    except (ValueError, UnicodeDecodeError):
+        jwk = None
+    if isinstance(jwk, dict):
+        if jwk.get("kty") == "OKP" and jwk.get("crv") == "Ed25519" and "d" in jwk:
+            jwk.setdefault("kid", default_kid)
+            return jwk, None
+        return None, (
+            f"--ed25519-key {path!r} parses as JSON but is not an Ed25519 "
+            f"private JWK (need kty=OKP, crv=Ed25519, and 'd')"
+        )
+
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import (
+        Ed25519PrivateKey,
+    )
+
+    try:
+        sk = serialization.load_pem_private_key(raw, password=None)
+    except (ValueError, TypeError) as e:
+        return None, (
+            f"--ed25519-key {path!r} is neither an Ed25519 private JWK nor "
+            f"a readable PEM private key: {e}"
+        )
+    if not isinstance(sk, Ed25519PrivateKey):
+        return None, (
+            f"--ed25519-key {path!r} is not an Ed25519 key (receipt signing "
+            f"is Ed25519-only; generate one with "
+            f"`python -m scripts.generate_did_web`)"
+        )
+    seed = sk.private_bytes(
+        serialization.Encoding.Raw,
+        serialization.PrivateFormat.Raw,
+        serialization.NoEncryption(),
+    )
+    x = _b64u_nopad(
+        sk.public_key().public_bytes(
+            serialization.Encoding.Raw, serialization.PublicFormat.Raw
+        )
+    )
+    return {
+        "kty": "OKP", "crv": "Ed25519", "d": _b64u_nopad(seed), "x": x,
+        "kid": default_kid, "alg": "EdDSA", "use": "sig",
+    }, None
+
+
+def _gen_issuer_keypair(dir_path: str, kid: str):
+    """Generate a fresh Ed25519 issuance keypair into ``dir_path``:
+    ``private_jwk.json`` (mode 0600; REFUSED if it already exists — a mint
+    must never silently clobber a signing key) and ``jwks.json`` (the
+    public half — the file you share). Same JWK shape as
+    ``examples/issue_meaning_receipt.py``. Returns
+    ``(private_jwk, private_path, jwks_default_path, None)`` or
+    ``(None, None, None, error_message)``. Never prints key material."""
+    from pathlib import Path
+
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import (
+        Ed25519PrivateKey,
+    )
+
+    out = Path(dir_path)
+    private_path = out / "private_jwk.json"
+    if private_path.exists():
+        return None, None, None, (
+            f"refusing to overwrite existing private key {private_path} — "
+            f"pass it via --ed25519-key to reuse it, or point --gen-key at "
+            f"an empty directory"
+        )
+    try:
+        out.mkdir(parents=True, exist_ok=True)
+    except OSError as e:
+        return None, None, None, f"cannot create --gen-key dir {dir_path!r}: {e}"
+
+    sk = Ed25519PrivateKey.generate()
+    seed = sk.private_bytes(
+        serialization.Encoding.Raw,
+        serialization.PrivateFormat.Raw,
+        serialization.NoEncryption(),
+    )
+    x = _b64u_nopad(
+        sk.public_key().public_bytes(
+            serialization.Encoding.Raw, serialization.PublicFormat.Raw
+        )
+    )
+    private_jwk = {
+        "kty": "OKP", "crv": "Ed25519", "d": _b64u_nopad(seed), "x": x,
+        "kid": kid, "alg": "EdDSA", "use": "sig",
+    }
+    try:
+        # O_EXCL + 0600: never clobber, never world-readable.
+        fd = os.open(
+            private_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600
+        )
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            json.dump(private_jwk, fh, indent=2)
+            fh.write("\n")
+    except OSError as e:
+        return None, None, None, f"cannot write {private_path}: {e}"
+    return private_jwk, str(private_path), str(out / "jwks.json"), None
+
+
+def _read_mint_pairs(args: argparse.Namespace):
+    """Resolve mint-meaning's pair inputs → (list[(source, rendering)], None)
+    or (None, error_message)."""
+    if args.pairs:
+        pairs = []
+        try:
+            with open(args.pairs, "r", encoding="utf-8") as fh:
+                for lineno, line in enumerate(fh, 1):
+                    if not line.strip():
+                        continue
+                    rec = json.loads(line)
+                    if (
+                        not isinstance(rec, dict)
+                        or not isinstance(rec.get("source"), str)
+                        or not isinstance(rec.get("rendering"), str)
+                    ):
+                        return None, (
+                            f"--pairs {args.pairs!r} line {lineno}: each "
+                            f'line must be {{"source": "...", '
+                            f'"rendering": "..."}}'
+                        )
+                    pairs.append((rec["source"], rec["rendering"]))
+        except OSError as e:
+            return None, f"cannot read --pairs {args.pairs!r}: {e}"
+        except json.JSONDecodeError as e:
+            return None, f"--pairs {args.pairs!r} is not valid JSONL: {e}"
+        if not pairs:
+            return None, f"--pairs {args.pairs!r} contains no pairs"
+        return pairs, None
+
+    if len(args.source) != len(args.rendering):
+        return None, (
+            f"--source and --rendering must come in pairs "
+            f"(got {len(args.source)} source(s), "
+            f"{len(args.rendering)} rendering(s))"
+        )
+    pairs = []
+    for src_path, ren_path in zip(args.source, args.rendering):
+        src = _read_text_arg(src_path)
+        ren = _read_text_arg(ren_path)
+        if src is None or ren is None:
+            return None, None  # _read_text_arg already printed the error
+        pairs.append((src, ren))
+    return pairs, None
+
+
+def _read_mint_losses(path: str):
+    """Read a --losses file → (list[float], None) or (None, error_message).
+    Accepts a bare JSON array or the metadata-wrapped ``{"losses": [..]}``
+    shape the committed fixtures use (same tolerance as verify-meaning).
+    Every element must be a finite number in [0, 1]."""
+    import math
+
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            obj = json.load(fh)
+    except OSError as e:
+        return None, f"cannot read --losses {path!r}: {e}"
+    except json.JSONDecodeError as e:
+        return None, f"--losses {path!r} is not valid JSON: {e}"
+    if isinstance(obj, dict) and isinstance(obj.get("losses"), list):
+        obj = obj["losses"]
+    if not isinstance(obj, list):
+        return None, (
+            f"--losses {path!r} must be a JSON array of numbers in [0, 1] "
+            f'(or {{"losses": [..]}}); got {type(obj).__name__}'
+        )
+    if not obj:
+        return None, f"--losses {path!r} is empty — need at least one loss"
+    for i, x in enumerate(obj):
+        if (
+            isinstance(x, bool)
+            or not isinstance(x, (int, float))
+            or not math.isfinite(x)
+            or not (0.0 <= float(x) <= 1.0)
+        ):
+            return None, (
+                f"--losses {path!r}[{i}] must be a finite number in [0, 1]; "
+                f"got {x!r}"
+            )
+    return [float(x) for x in obj], None
+
+
+def cmd_mint_meaning(args: argparse.Namespace) -> int:
+    """Mint (issue + sign + self-verify) a ``sum.meaning_risk_receipt.v1``
+    over YOUR OWN (source, rendering) pairs or pre-computed losses — the
+    issuer half of the trust loop, productizing
+    ``examples/issue_meaning_receipt.py``. Scores the pairs under a named
+    judge, certifies a distribution-free upper bound on expected
+    meaning-loss, signs the payload with YOUR Ed25519 key, writes the
+    envelope, then IMMEDIATELY re-verifies it through the same verifier
+    ``sum verify-meaning`` dispatches to (signature + replay). Verdict JSON
+    on stdout; narration on stderr. Exit 0 = minted AND verified, 1 = the
+    minted receipt failed self-verification, 2 = usage / malformed input."""
+    try:
+        from sum_engine_internal.research.meaning.conformal_meaning import (
+            certify_meaning_risk,
+        )
+        from sum_engine_internal.research.meaning.meaning_loss import (
+            score_pairs,
+        )
+        from sum_engine_internal.research.meaning.receipt import (
+            build_payload,
+            sign_meaning_risk_receipt,
+            verify_meaning_risk_receipt,
+        )
+    except ImportError as e:
+        print(
+            f"sum: mint-meaning needs the [research] + [receipt-verify] "
+            f"extras (pip install 'sum-engine[research,receipt-verify]'): {e}",
+            file=sys.stderr,
+        )
+        return 2
+
+    # ---- input mode: pairs (scored here) XOR losses (bring-your-own) ----
+    pair_mode = bool(args.pairs or args.source or args.rendering)
+    if pair_mode and args.losses:
+        print(
+            "sum: --losses is mutually exclusive with --pairs / "
+            "--source/--rendering (score pairs OR bring your own losses)",
+            file=sys.stderr,
+        )
+        return 2
+    if args.pairs and (args.source or args.rendering):
+        print(
+            "sum: use either --pairs JSONL or repeated --source/--rendering "
+            "file pairs, not both",
+            file=sys.stderr,
+        )
+        return 2
+    if not pair_mode and not args.losses:
+        print(
+            "sum: nothing to mint over — give (source, rendering) pairs "
+            "(--source A --rendering B, repeatable; or --pairs pairs.jsonl) "
+            "or pre-computed per-pair losses (--losses losses.json)",
+            file=sys.stderr,
+        )
+        return 2
+
+    # ---- signing key: exactly one of --ed25519-key / --gen-key ----
+    if bool(args.ed25519_key) == bool(args.gen_key):
+        print(
+            "sum: need exactly one of --ed25519-key FILE (existing key) or "
+            "--gen-key DIR (generate a fresh keypair + JWKS there)",
+            file=sys.stderr,
+        )
+        return 2
+
+    # ---- score or load the per-pair losses ----
+    if pair_mode:
+        pairs, err = _read_mint_pairs(args)
+        if pairs is None:
+            if err:
+                print(f"sum: {err}", file=sys.stderr)
+            return 2
+        scorer, err = _load_meaning_scorer(args.scorer)
+        if err:
+            print(f"sum: {err}", file=sys.stderr)
+            return 2
+        print(
+            f"sum: scoring {len(pairs)} pair(s) under {scorer.name} "
+            f"v{scorer.version} …",
+            file=sys.stderr,
+        )
+        losses = [float(x) for x in score_pairs(pairs, scorer)]
+        scorer_name, scorer_version = scorer.name, scorer.version
+        loss_definition = args.loss_definition or (
+            "bidirectional-entailment meaning-loss in [0,1]; "
+            "0 = judge detects no loss"
+        )
+    else:
+        losses, err = _read_mint_losses(args.losses)
+        if losses is None:
+            print(f"sum: {err}", file=sys.stderr)
+            return 2
+        # Bring-your-own-proxy mode: the receipt certifies a NAMED proxy,
+        # so the caller must name it — no default identity is fabricated.
+        if not args.scorer_name or not args.loss_definition:
+            print(
+                "sum: --losses mode certifies YOUR proxy, so you must name "
+                "it: --scorer-name (e.g. 'my-nli-judge') and "
+                "--loss-definition (one line saying what your [0,1] number "
+                "means) are required (--scorer-version recommended)",
+                file=sys.stderr,
+            )
+            return 2
+        scorer_name = args.scorer_name
+        scorer_version = args.scorer_version
+        loss_definition = args.loss_definition
+
+    # ---- certify the distribution-free bound + assemble the payload ----
+    try:
+        guarantee = certify_meaning_risk(
+            losses,
+            scorer_name=scorer_name,
+            scorer_version=scorer_version,
+            delta=args.delta,
+            method=args.method,
+        )
+        payload = build_payload(
+            guarantee=guarantee,
+            losses=losses,
+            corpus_id=args.corpus_id,
+            transform=args.transform,
+            alpha_target=args.alpha_target,
+            loss_definition=loss_definition,
+        )
+    except ValueError as e:
+        print(f"sum: cannot certify: {e}", file=sys.stderr)
+        return 2
+
+    # ---- key material ----
+    private_path = None
+    if args.gen_key:
+        private_jwk, private_path, jwks_default, err = _gen_issuer_keypair(
+            args.gen_key, args.kid
+        )
+        if private_jwk is None:
+            print(f"sum: {err}", file=sys.stderr)
+            return 2
+        jwks_path = args.jwks_out or jwks_default
+    else:
+        private_jwk, err = _load_issuer_private_jwk(args.ed25519_key, args.kid)
+        if private_jwk is None:
+            print(f"sum: {err}", file=sys.stderr)
+            return 2
+        jwks_path = args.jwks_out
+    jwks = {"keys": [{k: v for k, v in private_jwk.items() if k != "d"}]}
+
+    # ---- sign + write ----
+    envelope = sign_meaning_risk_receipt(
+        payload, private_jwk=private_jwk, kid=private_jwk["kid"]
+    )
+
+    def _write_json(path, obj):
+        with open(path, "w", encoding="utf-8") as fh:
+            json.dump(obj, fh, indent=2, ensure_ascii=False)
+            fh.write("\n")
+
+    losses_path = args.losses_out
+    if losses_path is None and pair_mode:
+        # Pair mode computed the losses here; without the side-band file a
+        # third party could never replay the bound, so default it next to
+        # the receipt. (Losses mode: the caller already has the file.)
+        losses_path = args.out + ".losses.json"
+    try:
+        _write_json(args.out, envelope)
+        if jwks_path:
+            _write_json(jwks_path, jwks)
+        if losses_path:
+            _write_json(losses_path, {
+                "judge": scorer_name,
+                "judge_version": scorer_version,
+                "note": "per-pair meaning-loss; side-band replay evidence",
+                "losses": losses,
+            })
+    except OSError as e:
+        print(f"sum: cannot write output: {e}", file=sys.stderr)
+        return 2
+
+    # ---- self-verify: the SAME verifier `sum verify-meaning` dispatches
+    # to, over the BYTES just written (signature + replay against the
+    # losses). A mint that does not verify exits 1 and says so. ----
+    try:
+        with open(args.out, "r", encoding="utf-8") as fh:
+            written = json.load(fh)
+        verified_payload = verify_meaning_risk_receipt(
+            written, jwks, losses=losses
+        )
+    except Exception as e:  # noqa: BLE001 — any failure means: do not ship it
+        print(
+            json.dumps({
+                "verified": False,
+                "error": type(e).__name__,
+                "detail": str(e),
+            }),
+            file=sys.stdout,
+        )
+        print(
+            f"sum: MINT FAILED SELF-VERIFICATION — the receipt at "
+            f"{args.out} does not verify ({type(e).__name__}); do not "
+            f"distribute it",
+            file=sys.stderr,
+        )
+        return 1
+
+    # ---- narration (stderr) — mirrors examples/issue_meaning_receipt.py ----
+    ub = guarantee.risk_upper_bound
+    print(
+        f"Issued sum.meaning_risk_receipt.v1 over {len(losses)} pair(s) "
+        f"under {scorer_name}",
+        file=sys.stderr,
+    )
+    print(
+        f"  certified: expected meaning-loss ≤ {ub:.4f} at "
+        f"{100 * (1 - args.delta):.0f}% (mean {guarantee.point_estimate:.4f}, "
+        f"n={guarantee.n}, method={guarantee.method})",
+        file=sys.stderr,
+    )
+    if args.alpha_target is not None:
+        print(
+            f"  controlled at alpha={args.alpha_target}: "
+            f"{payload.get('controlled')}",
+            file=sys.stderr,
+        )
+    if ub >= 0.95 or payload.get("controlled") is False:
+        ctrl = (
+            "" if payload.get("controlled") is not False
+            else ", and NOT controlled at your alpha"
+        )
+        print(file=sys.stderr)
+        print(
+            f"  ⚠️  WARNING: this bound is near-vacuous (≤ {ub:.4f}{ctrl}, "
+            f"n={guarantee.n}). A distribution-free bound is VALID at any n "
+            f"but loose at small n — with few pairs it degenerates toward "
+            f"≤ 1.0 and certifies almost nothing. Use n ≥ ~32 exchangeable "
+            f"pairs for a meaningful certificate.",
+            file=sys.stderr,
+        )
+    wrote = [args.out]
+    if jwks_path:
+        wrote.append(jwks_path)
+    if losses_path:
+        wrote.append(losses_path)
+    print(f"  wrote: {'  '.join(wrote)}", file=sys.stderr)
+    if private_path:
+        print(
+            f"  wrote: {private_path} (SECRET — never share; mode 0600)",
+            file=sys.stderr,
+        )
+    if not jwks_path:
+        print(
+            "  note: no public JWKS written (pass --jwks-out jwks.json) — "
+            "verifiers need it",
+            file=sys.stderr,
+        )
+    print(file=sys.stderr)
+    print(
+        "What this receipt does and does NOT prove: it proves the payload "
+        f"was signed by the holder of the {private_jwk['kid']!r} private "
+        "key, that the committed losses hash to the payload's losses_hash, "
+        "and that re-running the named certifier on those losses reproduces "
+        f"the bound (≤ {ub:.4f} at {100 * (1 - args.delta):.0f}%). It does "
+        "NOT prove that meaning was preserved — it bounds a NAMED PROXY for "
+        "meaning-loss, on average over this calibration corpus (marginal, "
+        "not per-document), and only under exchangeability between the "
+        "corpus and deployment. It does not cover arrangement, sound, "
+        "connotation, or implicature.",
+        file=sys.stderr,
+    )
+    print(file=sys.stderr)
+    verify_cmd = f"sum verify-meaning {args.out}"
+    if jwks_path:
+        verify_cmd += f" --jwks {jwks_path}"
+    replay_hint = losses_path or args.losses
+    if replay_hint:
+        verify_cmd += f" --losses {replay_hint}"
+    print(f"Verify it (the consumer side):\n  {verify_cmd}", file=sys.stderr)
+
+    # ---- verdict JSON (stdout) — same shape as `sum verify-meaning` ----
+    verdict = {
+        "verified": True,
+        "schema": written.get("schema"),
+        "replayed": True,
+        "scorer": verified_payload.get("scorer"),
+        "not_covered": verified_payload.get("not_covered"),
+        "risk_upper_bound": verified_payload["risk_upper_bound_micro"] / 1_000_000,
+    }
+    if "controlled" in verified_payload:
+        verdict["controlled"] = verified_payload["controlled"]
+    json.dump(
+        verdict, sys.stdout,
+        indent=2 if getattr(args, "pretty", False) else None,
+    )
+    sys.stdout.write("\n")
+    return 0
+
+
 def cmd_verify_meaning(args: argparse.Namespace) -> int:
     """Verify a meaning-risk OR perspective receipt as an external party —
     the on-ramp F21 (dogfood 2026-06-07) flagged as missing. Reads the
@@ -3801,6 +4303,131 @@ def build_parser() -> argparse.ArgumentParser:
         "--pretty", action="store_true", help="Pretty-print the JSON.",
     )
     p_study.set_defaults(func=cmd_study)
+
+    # mint-meaning — the ISSUER on-ramp (twin of verify-meaning); productizes
+    # examples/issue_meaning_receipt.py.
+    p_mint = subparsers.add_parser(
+        "mint-meaning",
+        help="Mint a signed meaning-risk receipt over your own pairs or losses (issuer side).",
+        description=(
+            "Issue, sign, and immediately self-verify a "
+            "sum.meaning_risk_receipt.v1 over YOUR OWN data — the issuer "
+            "half of the trust loop (`sum verify-meaning` is the consumer "
+            "half). Give (source, rendering) pairs to score locally under a "
+            "named judge, or bring pre-computed per-pair losses in [0,1] "
+            "from your own proxy. The receipt certifies a distribution-free "
+            "UPPER BOUND on expected meaning-loss under the named proxy — "
+            "marginal (an average over the calibration pairs), under "
+            "exchangeability, NOT per-document, NOT 'meaning' itself (the "
+            "receipt's enforced disclosure says so). After writing, the "
+            "receipt is re-verified through the same verifier "
+            "`sum verify-meaning` uses (signature + replay); a mint that "
+            "does not verify exits 1. Verdict JSON on stdout, narration on "
+            "stderr. Exit 0 = minted and verified, 1 = self-verification "
+            "failed, 2 = usage error. Needs [research] + [receipt-verify] "
+            "(+ [judge] for the embedding/nli scorers)."
+        ),
+    )
+    p_mint.add_argument(
+        "--source", action="append", metavar="FILE", default=[],
+        help="A source text file ('-' for stdin). Repeat, paired in order "
+             "with --rendering.",
+    )
+    p_mint.add_argument(
+        "--rendering", action="append", metavar="FILE", default=[],
+        help="The transformed/rendered version of the matching --source.",
+    )
+    p_mint.add_argument(
+        "--pairs", metavar="JSONL", default=None,
+        help='JSONL file, one {"source": "...", "rendering": "..."} per '
+             "line — alternative to repeated --source/--rendering.",
+    )
+    p_mint.add_argument(
+        "--losses", metavar="FILE", default=None,
+        help="Bring-your-own-proxy mode: JSON array of per-pair losses in "
+             '[0,1] (or {"losses": [..]}). Mutually exclusive with pairs; '
+             "requires --scorer-name + --loss-definition.",
+    )
+    p_mint.add_argument(
+        "--scorer", default="embedding", choices=["embedding", "nli"],
+        help="Entailment judge for scoring pairs (default: embedding — "
+             "local, paraphrase-aware; nli is the strongest). Both need "
+             "the [judge] extra.",
+    )
+    p_mint.add_argument(
+        "--scorer-name", dest="scorer_name", default=None,
+        help="--losses mode: NAME of the proxy that produced your losses "
+             "(required there — the receipt certifies a named proxy).",
+    )
+    p_mint.add_argument(
+        "--scorer-version", dest="scorer_version", default="unversioned",
+        help="--losses mode: version of your proxy (default 'unversioned').",
+    )
+    p_mint.add_argument(
+        "--loss-definition", dest="loss_definition", default=None,
+        help="One line saying what the [0,1] loss means. Required in "
+             "--losses mode; defaults to the entailment-judge description "
+             "in pairs mode.",
+    )
+    p_mint.add_argument(
+        "--corpus-id", required=True,
+        help="Names YOUR calibration corpus / exchangeability scope, e.g. "
+             "'support-emails-v0' — the bound is meaningless without it.",
+    )
+    p_mint.add_argument(
+        "--transform", required=True,
+        help="Names what produced the renderings, e.g. 'summarize:gpt-4o' "
+             "or 'translate:en-fr'.",
+    )
+    p_mint.add_argument(
+        "--delta", type=float, default=0.05,
+        help="Miscoverage (confidence = 1 - delta); default 0.05 → 95%%.",
+    )
+    p_mint.add_argument(
+        "--method", default="empirical_bernstein",
+        choices=["auto", "hoeffding", "clopper_pearson", "empirical_bernstein"],
+        help="Conformal bound (default empirical_bernstein — tightest for "
+             "low-variance losses; clopper_pearson needs binary 0/1 losses).",
+    )
+    p_mint.add_argument(
+        "--alpha-target", dest="alpha_target", type=float, default=None,
+        help="Optional risk level you want controlled; the receipt records "
+             "whether the certified ceiling met it (the `controlled` field).",
+    )
+    p_mint.add_argument(
+        "--ed25519-key", dest="ed25519_key", metavar="FILE", default=None,
+        help="Existing Ed25519 signing key: a PKCS8 PEM (as from "
+             "`python -m scripts.generate_did_web`) or a private JWK JSON.",
+    )
+    p_mint.add_argument(
+        "--gen-key", dest="gen_key", metavar="DIR", default=None,
+        help="Generate a fresh Ed25519 keypair into DIR: private_jwk.json "
+             "(SECRET, mode 0600, never overwritten) + jwks.json (public).",
+    )
+    p_mint.add_argument(
+        "--kid", default="my-issuer-key-1",
+        help="Key id stamped in the receipt + JWKS (default "
+             "'my-issuer-key-1').",
+    )
+    p_mint.add_argument(
+        "--out", required=True, metavar="FILE",
+        help="Where to write the signed receipt envelope JSON.",
+    )
+    p_mint.add_argument(
+        "--jwks-out", dest="jwks_out", metavar="FILE", default=None,
+        help="Where to write the public JWKS (share this). Default: "
+             "DIR/jwks.json with --gen-key; not written otherwise.",
+    )
+    p_mint.add_argument(
+        "--losses-out", dest="losses_out", metavar="FILE", default=None,
+        help="Where to write the per-pair losses (side-band replay "
+             "evidence). Default in pairs mode: <out>.losses.json; not "
+             "written in --losses mode (you already have the file).",
+    )
+    p_mint.add_argument(
+        "--pretty", action="store_true", help="Pretty-print the verdict.",
+    )
+    p_mint.set_defaults(func=cmd_mint_meaning)
 
     # verify-meaning — external-party on-ramp for the meaning receipt family.
     p_vm = subparsers.add_parser(
