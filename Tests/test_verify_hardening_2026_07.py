@@ -150,6 +150,7 @@ def test_single_except_clause_catches_dispatch_failure() -> None:
 
 
 def test_single_except_clause_catches_crypto_failure() -> None:
+    pytest.importorskip("joserfc")  # same guard as the other jose-path tests
     import sum_verify
 
     golden_dir = (
