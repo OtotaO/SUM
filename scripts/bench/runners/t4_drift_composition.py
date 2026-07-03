@@ -288,46 +288,88 @@ def analyse_receipt(receipt_path: Path) -> dict[str, Any]:
         key=lambda kv: (round(kv[1]["sum_squared_residuals"], 12), preference[kv[0]]),
     )[0]
 
-    # DKW worst-case 95% lower bound on the per-K drift CDF.
+    # DKW-based worst-case bounds on per-K drift. DKW bounds the CDF
+    # uniformly (|F − F̂| ≤ ε w.p. ≥ 1−δ), so its correct use shifts the
+    # QUANTILE LEVEL: the true q-quantile is at least the empirical
+    # (q − 100ε)-percentile. A previous revision subtracted ε from the
+    # drift value itself, mixing probability units into the drift domain;
+    # at these n that made the invariance test anti-conservative.
     dkw_per_K = {}
     for k in range(1, K + 1):
         vals = drift_by_k[k]
         n = len(vals)
         eps = _dkw_epsilon(n, delta=0.05)
-        # P5 of the empirical CDF (5th percentile of drift), minus DKW slack.
-        p5 = _percentile(vals, 5.0)
-        worst_case_drift_lower_95 = max(0.0, p5 - eps)
+        q_shifted = 5.0 - 100.0 * eps
+        vacuous = (not vals) or q_shifted <= 0.0
+        worst_case_drift_lower_95 = (
+            0.0 if vacuous else max(0.0, _percentile(vals, q_shifted))
+        )
         dkw_per_K[str(k)] = {
             "n_observations": n,
-            "epsilon_dkw_95": round(eps, 6),
-            "empirical_p5_drift": round(p5, 6),
+            "epsilon_dkw_95": round(eps, 6) if math.isfinite(eps) else None,
+            "empirical_p5_drift": round(_percentile(vals, 5.0), 6) if vals else None,
             "worst_case_drift_lower_95": round(worst_case_drift_lower_95, 6),
+            "vacuous_at_this_n": vacuous,
             "empirical_median_drift": round(median_by_K[k - 1], 6),
             "empirical_max_drift": round(max(vals), 6) if vals else None,
         }
 
-    # Composition-invariance bound: |drift_K - drift_1| supremum vs DKW slack.
+    # Composition-invariance: is every per-K median drift statistically
+    # indistinguishable from the K=1 median at DKW-95? Build a DKW
+    # confidence interval for each median by quantile-level shift (true
+    # median ∈ [F̂⁻¹(0.5−ε), F̂⁻¹(0.5+ε)] w.p. ≥ 1−δ); the verdict is
+    # invariant iff every K's interval intersects K=1's. If ε ≥ 0.5 the
+    # median cannot be localised at all and the honest verdict is
+    # "too small to distinguish", not "invariant".
+    def _median_ci_dkw(vals: list[float]) -> tuple[float, float] | None:
+        eps = _dkw_epsilon(len(vals), delta=0.05)
+        if not vals or eps >= 0.5:
+            return None
+        lo_q = max(0.0, (0.5 - eps) * 100.0)
+        hi_q = min(100.0, (0.5 + eps) * 100.0)
+        return (_percentile(vals, lo_q), _percentile(vals, hi_q))
+
     delta_K1 = [abs(median_by_K[k - 1] - drift_1) for k in range(1, K + 1)]
     max_delta = max(delta_K1)
     n_min = min(len(drift_by_k[k]) for k in range(1, K + 1))
     eps_corpus = _dkw_epsilon(n_min, delta=0.05)
+    cis = {k: _median_ci_dkw(drift_by_k[k]) for k in range(1, K + 1)}
+    ci_1 = cis[1]
+    if ci_1 is None or any(c is None for c in cis.values()):
+        verdict = "n_too_small_to_distinguish_dkw_95"
+        rationale_tail = (
+            f"DKW ε at n={n_min} is ≥ 0.5 for at least one K — the median cannot be "
+            f"localised at this sample size, so no invariance claim is made."
+        )
+    else:
+        overlap_all = all(
+            not (c[1] < ci_1[0] or ci_1[1] < c[0]) for c in cis.values()
+        )
+        verdict = (
+            "composition_invariant_within_dkw_95"
+            if overlap_all
+            else "composition_drift_exceeds_dkw_95"
+        )
+        rationale_tail = (
+            "Every per-K DKW-95 median interval intersects the K=1 interval — the "
+            "median drift is statistically indistinguishable across K on this corpus."
+            if overlap_all
+            else "At least one per-K DKW-95 median interval is disjoint from the K=1 "
+            "interval — there is a real composition effect on this corpus."
+        )
     composition_invariance = {
         "max_abs_delta_median_vs_K1": round(max_delta, 6),
-        "dkw_epsilon_95_n_min": round(eps_corpus, 6),
+        "dkw_epsilon_95_n_min": round(eps_corpus, 6) if math.isfinite(eps_corpus) else None,
         "n_min_per_K": n_min,
-        "verdict": (
-            "composition_invariant_within_dkw_95"
-            if max_delta <= eps_corpus
-            else "composition_drift_exceeds_dkw_95"
-        ),
+        "method": "dkw_median_ci_overlap_quantile_shift_v2",
+        "median_ci_by_K": {
+            str(k): ([round(c[0], 6), round(c[1], 6)] if c else None)
+            for k, c in cis.items()
+        },
+        "verdict": verdict,
         "rationale": (
-            f"sup_K |median_drift_K - median_drift_1| = {max_delta:.4f}; "
-            f"DKW 95%% bound at n={n_min} is {eps_corpus:.4f}. "
-            + (
-                "Drift differences across K are within DKW worst-case noise — drift_pct is empirically composition-invariant on this corpus."
-                if max_delta <= eps_corpus
-                else "Drift differences across K exceed DKW worst-case noise — there is a real composition effect on this corpus."
-            )
+            f"sup_K |median_drift_K - median_drift_1| = {max_delta:.4f} (descriptive); "
+            f"DKW-95 ε at n={n_min} is {eps_corpus:.4f}. " + rationale_tail
         ),
     }
 

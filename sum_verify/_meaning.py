@@ -30,7 +30,10 @@ import unicodedata
 from typing import Any, Sequence
 
 from sum_engine_internal.infrastructure.jcs import canonicalize
-from sum_engine_internal.infrastructure.jose_envelope import verify_jose_envelope
+from sum_engine_internal.infrastructure.jose_envelope import (
+    SumVerifyError,
+    verify_jose_envelope,
+)
 from sum_verify._conformal import certify_meaning_risk
 
 SUPPORTED_SCHEMA = "sum.meaning_risk_receipt.v1"
@@ -40,14 +43,14 @@ _LOSS_DECIMALS = 6
 _MICRO_SCALE = 10 ** _LOSS_DECIMALS
 
 
-class MeaningReceiptReplayError(Exception):
+class MeaningReceiptReplayError(SumVerifyError):
     """Raised when a meaning-risk receipt is cryptographically valid but
     the supplied losses do not reproduce its committed hash, bound, point
     estimate, ``n``, or ``controlled`` flag. The signature is genuine, but
     the side-band evidence does not back the claim."""
 
 
-class MeaningReceiptDisclosureError(Exception):
+class MeaningReceiptDisclosureError(SumVerifyError):
     """Raised when a meaning-risk receipt is cryptographically valid but
     omits a required disclosure field (``not_covered`` non-empty,
     ``disclosure`` non-empty). A receipt that passes every cryptographic

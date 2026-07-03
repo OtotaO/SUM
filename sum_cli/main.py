@@ -922,7 +922,13 @@ def _build_verify_explanation(
 
 
 def cmd_verify(args: argparse.Namespace) -> int:
-    raw = _read_input(args.input)
+    try:
+        raw = _read_input(args.input)
+    except OSError as e:
+        # Documented contract: 2 = malformed/unreadable input, 1 = a
+        # verification failure. A missing file must not read as "tampered".
+        print(f"sum: cannot read input: {e}", file=sys.stderr)
+        return 2
     try:
         bundle = json.loads(raw)
     except json.JSONDecodeError as e:
@@ -1002,6 +1008,7 @@ def cmd_verify(args: argparse.Namespace) -> int:
     pattern = re.compile(r"^The (\S+) (\S+) (.+)\.$")
     state = 1
     axioms = 0
+    parsed_triples: list[tuple[str, str, str]] = []
     for line in bundle["canonical_tome"].splitlines():
         match = pattern.match(line.strip())
         if not match:
@@ -1010,6 +1017,7 @@ def cmd_verify(args: argparse.Namespace) -> int:
         prime = algebra.get_or_mint_prime(subj, pred, obj)
         state = math.lcm(state, prime)
         axioms += 1
+        parsed_triples.append((subj, pred, obj))
 
     claimed_state_str = bundle["state_integer"]
     try:
@@ -1027,14 +1035,48 @@ def cmd_verify(args: argparse.Namespace) -> int:
         return 1
 
     if state != claimed_state:
-        short_got = str(state)[:32]
-        short_claim = claimed_state_str[:32]
+        got_str = str(state)
+        # Show both ends: low-order tampering leaves long identical
+        # prefixes, which made the old prefix-only message look
+        # self-contradictory.
+        def _abbrev(s: str) -> str:
+            return s if len(s) <= 28 else f"{s[:16]}…{s[-8:]}"
         print(
             f"sum: ✗ state integer mismatch: "
-            f"claimed {short_claim}…, reconstructed {short_got}…",
+            f"claimed {_abbrev(claimed_state_str)} ({len(claimed_state_str)} digits), "
+            f"reconstructed {_abbrev(got_str)} ({len(got_str)} digits)",
             file=sys.stderr,
         )
         return 1
+
+    # The `axioms` key is a convenience mirror written at attest time so
+    # downstream transforms (`sum transform apply compose`) can consume
+    # the bundle without re-parsing canonical_tome. The signature covers
+    # canonical_tome|state_integer|timestamp — NOT the mirror — so a
+    # verified bundle with a silently edited mirror would green-light
+    # data that compose then trusts. Cross-check it against the tome.
+    mirror = bundle.get("axioms")
+    if mirror is not None:
+        try:
+            mirror_triples = [
+                (str(a["subject"]), str(a["predicate"]), str(a["object"]))
+                for a in mirror
+            ]
+        except (TypeError, KeyError, IndexError):
+            print(
+                "sum: ✗ axioms mirror is malformed "
+                "(expected a list of {subject, predicate, object} objects)",
+                file=sys.stderr,
+            )
+            return 1
+        if sorted(mirror_triples) != sorted(parsed_triples):
+            print(
+                "sum: ✗ axioms mirror does not match canonical_tome — the "
+                "unsigned convenience copy was modified after attest "
+                "(downstream compose would consume the modified copy)",
+                file=sys.stderr,
+            )
+            return 1
 
     # Extraction provenance — closes the THREAT_MODEL.md §3.3
     # "signed ≠ true" visibility gap. The signature proves the

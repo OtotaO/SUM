@@ -61,7 +61,10 @@ from __future__ import annotations
 
 from typing import Any, Sequence
 
-from sum_engine_internal.infrastructure.jose_envelope import JoseEnvelopeError
+from sum_engine_internal.infrastructure.jose_envelope import (
+    JoseEnvelopeError,
+    SumVerifyError,
+)
 from sum_engine_internal.render_receipt.verifier import (
     SUPPORTED_SCHEMA as RENDER_SCHEMA,
 )
@@ -100,6 +103,7 @@ __all__ = [
     "verify_meaning_risk_receipt",
     "verify_render_receipt",
     "verify_transform_receipt",
+    "SumVerifyError",
     "UnsupportedSchemaError",
     "MeaningReceiptReplayError",
     "MeaningReceiptDisclosureError",
@@ -108,7 +112,7 @@ __all__ = [
 ]
 
 
-class UnsupportedSchemaError(ValueError):
+class UnsupportedSchemaError(ValueError, SumVerifyError):
     """Raised by :func:`verify` when the envelope's ``schema`` is not one
     of :data:`SUPPORTED_SCHEMAS`. Carries the offending schema so a caller
     can branch on it."""
@@ -137,7 +141,10 @@ def verify(
     :class:`ReceiptVerifyError` for the cryptographic layer,
     :class:`MeaningReceiptReplayError` /
     :class:`MeaningReceiptDisclosureError` for meaning-risk replay), or
-    :class:`UnsupportedSchemaError` for an unrecognised schema.
+    :class:`UnsupportedSchemaError` for an unrecognised schema. Every
+    failure class derives from :class:`SumVerifyError`, so
+    ``except SumVerifyError`` catches any verification failure in one
+    clause.
 
     ``losses`` is honoured only by the meaning-risk path (the other
     receipt types carry no replayable bound); it is ignored elsewhere.
