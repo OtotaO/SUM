@@ -101,7 +101,15 @@ class JoseEnvelopeErrorClass:
     NOT enforce — long-lived archival receipts remain valid."""
 
 
-class JoseEnvelopeError(Exception):
+class SumVerifyError(Exception):
+    """Common base for every error a SUM verification surface raises
+    (envelope/signature failure, meaning-receipt replay and disclosure
+    failure, unsupported schema). ``except SumVerifyError`` is the
+    one-clause way to catch "verification failed for any reason";
+    callers who need to branch keep catching the specific subclasses."""
+
+
+class JoseEnvelopeError(SumVerifyError):
     """Raised when envelope verification fails. ``error_class`` is one
     of the strings in JoseEnvelopeErrorClass; downstream consumers
     branch on it to distinguish failure modes."""

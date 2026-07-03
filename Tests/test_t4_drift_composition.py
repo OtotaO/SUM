@@ -160,3 +160,46 @@ def test_real_receipts_yield_composition_invariant_verdict() -> None:
     out = build_receipt(paths)
     assert out["cross_corpus_summary"]["all_composition_invariant_dkw_95"] is True
     assert out["cross_corpus_summary"]["best_law_distribution"] == {"fixed_point": 3}
+
+
+# ── 2026-07-02 audit regressions: correct DKW usage ──────────────────
+
+
+def test_dkw_vacuous_small_n_returns_too_small_verdict(tmp_path: Path) -> None:
+    """n=4 → ε = sqrt(ln40/8) ≈ 0.68 ≥ 0.5: DKW cannot localise the
+    median at all, so the honest verdict is 'too small to distinguish',
+    not 'invariant'."""
+    series = [[0.125] * 10 for _ in range(4)]
+    receipt = _write_synthetic_t1(tmp_path, "synthetic_tiny", series, K=10)
+    out = analyse_receipt(receipt)
+    assert (
+        out["composition_invariance"]["verdict"]
+        == "n_too_small_to_distinguish_dkw_95"
+    )
+
+
+def test_median_shift_within_old_eps_now_detected(tmp_path: Path) -> None:
+    """Regression for the unit-mixing bug: 16 docs, K=2, every doc drifts
+    0.10 at K=1 and 0.40 at K=2. The old test compared |Δmedian| = 0.30
+    (drift units) against ε ≈ 0.34 (CDF-probability units) and called it
+    invariant. The DKW median CIs are [0.1, 0.1] vs [0.4, 0.4] — disjoint
+    — so the honest verdict is a real composition effect."""
+    series = [[0.10, 0.40] for _ in range(16)]
+    receipt = _write_synthetic_t1(tmp_path, "synthetic_shift", series, K=2)
+    out = analyse_receipt(receipt)
+    assert (
+        out["composition_invariance"]["verdict"]
+        == "composition_drift_exceeds_dkw_95"
+    )
+
+
+def test_worst_case_lower_bound_flags_vacuity(tmp_path: Path) -> None:
+    """At n=16, ε ≈ 0.34 so the 5th-percentile level shifts below 0: no
+    non-trivial DKW lower bound exists and the field must say so instead
+    of reporting a unit-mixed number."""
+    series = [[0.125] * 10 for _ in range(16)]
+    receipt = _write_synthetic_t1(tmp_path, "synthetic_flat_v", series, K=10)
+    out = analyse_receipt(receipt)
+    per_k = out["dkw_per_K_95"]["1"]
+    assert per_k["vacuous_at_this_n"] is True
+    assert per_k["worst_case_drift_lower_95"] == 0.0

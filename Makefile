@@ -122,8 +122,8 @@ iterated-round-trip-dry:  ## T1 dry-run — shape-only smoke without LLM cost. K
 		--corpus scripts/bench/corpora/seed_v1.json \
 		--k 3 --dry-run --pretty
 
-lint:  ## ruff check (same rules as CI).
-	$(PYTHON) -m ruff check sum_cli internal scripts
+lint:  ## ruff check (advisory: ruff is NOT run in CI; known debt is mostly import-order).
+	$(PYTHON) -m ruff check sum_cli sum_engine_internal sum_verify scripts
 
 pre-push:  ## Pre-flight gate: drift + smoke + trust-loop load-bearing gates that CI runs on every PR.
 	@echo "─── Pre-push gate (matches CI's drift + smoke + trust-loop checks) ─"

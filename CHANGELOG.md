@@ -4,6 +4,33 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Verifier hardening from a fresh adversarial audit (2026-07-02).** Five fixes,
+  none changing any wire format or committed receipt: (1) `sum verify` now
+  cross-checks the unsigned `axioms` convenience mirror against
+  `canonical_tome` — previously a bundle whose mirror was edited *after* attest
+  still verified green (the signature covers the tome, not the mirror) while
+  `sum transform apply compose` consumed the edited mirror; (2) `sum verify`
+  exits 2 (malformed input), not 1 (tampered), on an unreadable input path,
+  matching its documented 0/1/2 contract; (3) new `sum_verify.SumVerifyError`
+  common base — `except SumVerifyError` now catches every failure class the
+  SDK raises (previously required 4+ classes; `ReceiptVerifyError` read as a
+  base but was not one); (4) the HMAC bundle verifier compares signatures as
+  bytes — a malformed non-ASCII signature string used to CRASH
+  `hmac.compare_digest` with `TypeError` instead of failing verification
+  (found by the property-based totality sweep); (5) the T4 drift-composition
+  bench runner now applies DKW correctly (quantile-level shift + median
+  confidence-interval overlap, with an explicit `n_too_small_to_distinguish`
+  verdict) — the previous revision compared a drift-domain median delta
+  against a CDF-probability epsilon, which was anti-conservative at small n
+  (the committed 2026-05-22 receipt's verdict is unaffected: its max median
+  delta was exactly 0.0, invariant under both tests). Bonus: the drift-budget
+  `joint_confidence` display clamps at 0 instead of going negative past ~1/δ
+  hops. An independent re-derivation audit of the conformal bound kernels
+  (Hoeffding / empirical-Bernstein / Clopper–Pearson), the integer-micro wire
+  replay, the Bonferroni split, and both committed golden receipts confirmed
+  the statistical core sound (bounds match references to <5e-10; goldens
+  replay byte-exactly).
+
 - **Dependency maintenance (no shipping-package impact).** Merged the Dependabot batch
   opened by the new `.github/dependabot.yml` (#339–#353): GitHub Actions SHA bumps
   (checkout, upload/download-artifact, wrangler-action, harden-runner), the Worker
@@ -12,6 +39,18 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
   Two crypto-vendor majors (`jose` 5→6, `canonicalize` 2→3) were **declined** pending
   deliberate cross-runtime byte-equivalence verification. None of these reach the
   `sum-engine` wheel — its runtime deps remain `cryptography` + `sympy`.
+
+- **Repo hygiene pass (2026-07-02, no behavior change).** `make lint` now checks the
+  real trees (`sum_cli sum_engine_internal sum_verify scripts` — the old target named a
+  directory renamed away pre-0.1.0 and its "same rules as CI" comment was wrong: ruff is
+  not run in CI); six stale per-entry test counts / verb lists refreshed in
+  `FEATURE_CATALOG.md` against live collection (#41, #42, #98, #125, #144, #160); the
+  empty `pkg/` placeholder tree removed. Retro-added below: **PR #335** (2026-06-18)
+  shipped `examples/inspect_meaning_scorer.py` — an Inspect (UK AISI) faithfulness
+  scorer reusing the GEPA meaning-signal core (tested without `inspect_ai` or `[judge]`
+  installed) — and `fixtures/meaning_receipts_billsum/HF_DATASET_CARD.md`, the
+  Hugging Face dataset card for the BillSum binding-gate receipts. It merged minutes
+  after the 0.8.1 release PR and had been listed in neither section.
 
 - **Docs ↔ code concordance pass (no behavior change).** A doc-vs-reality audit fixed
   front-door drift: README scopes `sum verify-meaning` to its real `[research,receipt-verify]`

@@ -236,7 +236,10 @@ class CertifiedDriftBudget:
 
     @property
     def joint_confidence(self) -> float:
-        return 1.0 - self.joint_delta
+        # Bonferroni: 1 − Σδᵢ. Past ~1/δ hops the union bound goes
+        # vacuous; clamp so a 21-hop chain reads "confidence ≥ 0.0"
+        # (vacuously true) rather than a negative confidence.
+        return max(0.0, 1.0 - self.joint_delta)
 
     def within(self, total_budget: float) -> bool:
         """Is the certified chain budget at or below an operator-set

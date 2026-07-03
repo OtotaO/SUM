@@ -475,7 +475,12 @@ class CanonicalCodec:
         expected = self._sign(canonical_tome, state_str, timestamp)
         if expected is None or not isinstance(signature, str):
             return False  # a null/non-string signature is simply invalid
-        return hmac.compare_digest(expected, signature)
+        # Compare as bytes: compare_digest raises TypeError on non-ASCII
+        # str input, which would make a malformed signature CRASH the
+        # verifier instead of failing it (totality-sweep finding).
+        return hmac.compare_digest(
+            expected.encode("utf-8"), signature.encode("utf-8")
+        )
 
     # ------------------------------------------------------------------
     # Ed25519 Signing
