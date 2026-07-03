@@ -36,6 +36,7 @@ License: Apache License 2.0
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from typing import Any, Callable, Mapping, Sequence
 
@@ -46,7 +47,6 @@ from typing import Any, Callable, Mapping, Sequence
 from sum_engine_internal.research.meaning.meaning_loss import (  # type: ignore
     EntailmentScorer,
     MeaningScorer,
-    _content_units,
 )
 
 
@@ -134,6 +134,27 @@ def build_adapter(scorer: MeaningScorer, task_lm: Callable[[str], str], componen
 
 
 # ── a deterministic, key-free judge so this file runs anywhere ────────────────
+# Self-contained content-word tokenizer for the demo judge below, so this example
+# depends only on sum-engine's PUBLIC API (EntailmentScorer / MeaningScorer) and
+# not on any private helper. Lower-cased word tokens minus common stop-words.
+_WORD_RE = re.compile(r"[^\W\d_]+")
+_STOP_WORDS = frozenset(
+    "a above am an and are as at be been being below but by can could did do does "
+    "down for from had has have he her here his i if in into is it it's its may me "
+    "might must my near no nor not of off on or our out over shall she should so "
+    "than that the their them then there these they this those to up us was we were "
+    "which who whom whose will with would yet you your".split()
+)
+
+
+def _content_units(text: str) -> list[str]:
+    """Lower-cased content words, stop-words removed (the lexical 'meaning unit')."""
+    return [
+        w for w in (mt.group(0).lower() for mt in _WORD_RE.finditer(text))
+        if w not in _STOP_WORDS
+    ]
+
+
 def _overlap_entails(premise: str, hypothesis: str, *, threshold: float = 0.6) -> bool:
     """DETERMINISTIC token-overlap stand-in for an NLI judge. Not a real entailment
     model — it shares the lexical blind spot for paraphrase. Lets the example run
