@@ -44,10 +44,10 @@ from pathlib import Path
 
 _CONFIG_PATH = Path(__file__).resolve().parent / "authoring_rules.json"
 
-# Universal secret shapes (baked in, NOT config — these must never be editable
-# away by accident). Each is (label, compiled-regex). Kept deliberately tight to
-# stay near-zero false-positive; when unsure, omit rather than over-match.
-_SECRET_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
+# Universal credential-leak shapes (baked in, NOT config — these must never be
+# editable away by accident). Each is (label, compiled-regex). Kept deliberately
+# tight to stay near-zero false-positive; when unsure, omit rather than over-match.
+_LEAK_RULES: list[tuple[str, re.Pattern[str]]] = [
     ("GitHub token", re.compile(r"\b(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{36,}\b")),
     ("GitHub fine-grained PAT", re.compile(r"\bgithub_pat_[A-Za-z0-9_]{60,}\b")),
     ("OpenAI/Anthropic key", re.compile(r"\bsk-(?:ant-)?[A-Za-z0-9_-]{20,}\b")),
@@ -99,12 +99,21 @@ def lint_text(text: str, cfg: dict) -> list[Finding]:
         if _FENCE_RE.match(raw):
             in_fence = not in_fence
 
+        # Credential leaks — hard, checked everywhere, and checked FIRST: if this
+        # line leaks, every other finding on it must show a redacted snippet too
+        # (otherwise e.g. a glyph finding on the same line would echo the leak).
+        leak_hits = [(label, rx.search(raw)) for label, rx in _LEAK_RULES]
+        leak_hits = [(label, m) for label, m in leak_hits if m]
+        snippet = "<redacted line>" if leak_hits else raw.strip()
+        for label, m in leak_hits:
+            findings.append(Finding(lineno, m.start() + 1, "secret", "error", f"possible {label} leaked", "<redacted line>"))
+
         # Forbidden glyphs — checked everywhere (hard).
         for g in glyphs:
             ch = g["glyph"]
             start = 0
             while (idx := raw.find(ch, start)) != -1:
-                findings.append(Finding(lineno, idx + 1, "glyph", "error", g["name"], raw.strip()))
+                findings.append(Finding(lineno, idx + 1, "glyph", "error", g["name"], snippet))
                 start = idx + 1
 
         # Forbidden literal patterns (em-dash substitutes) — hard.
@@ -112,7 +121,7 @@ def lint_text(text: str, cfg: dict) -> list[Finding]:
             pat = p["pattern"]
             start = 0
             while (idx := raw.find(pat, start)) != -1:
-                findings.append(Finding(lineno, idx + 1, "pattern", "error", p["name"], raw.strip()))
+                findings.append(Finding(lineno, idx + 1, "pattern", "error", p["name"], snippet))
                 start = idx + 1
 
         # Denylisted tokens — hard.
@@ -121,17 +130,11 @@ def lint_text(text: str, cfg: dict) -> list[Finding]:
                 continue
             idx = raw.find(tok)
             if idx != -1:
-                findings.append(Finding(lineno, idx + 1, "denylist", "error", f"denylisted token {tok!r}", raw.strip()))
-
-        # Secrets — hard, checked everywhere.
-        for label, rx in _SECRET_PATTERNS:
-            m = rx.search(raw)
-            if m:
-                findings.append(Finding(lineno, m.start() + 1, "secret", "error", f"possible {label} leaked", "<redacted line>"))
+                findings.append(Finding(lineno, idx + 1, "denylist", "error", f"denylisted token {tok!r}", snippet))
 
         # Stray command line — warning, only OUTSIDE code fences.
         if not in_fence and cmd_re.match(raw):
-            findings.append(Finding(lineno, 1, "stray-command", "warn", "line looks like a stray shell command", raw.strip()))
+            findings.append(Finding(lineno, 1, "stray-command", "warn", "line looks like a stray shell command", snippet))
 
     return findings
 
@@ -172,6 +175,15 @@ def selftest(cfg: dict) -> int:
         passed = e == want_err and w == want_warn
         ok = ok and passed
         print(f"  {'PASS' if passed else 'FAIL'}  {name}: got {e} err / {w} warn (want {want_err}/{want_warn})")
+
+    # A line that both leaks a credential AND trips another rule must never echo
+    # the credential through the other rule's snippet.
+    leaky = "bad — ghp_0123456789ABCDEFabcdef0123456789ABCD\n"
+    fs = lint_text(leaky, cfg)
+    passed = len(fs) == 2 and all("ghp_" not in f.snippet for f in fs)
+    ok = ok and passed
+    print(f"  {'PASS' if passed else 'FAIL'}  leak+glyph same line: all snippets redacted")
+
     print("\nselftest:", "OK" if ok else "FAILED")
     return 0 if ok else 1
 
@@ -194,7 +206,7 @@ def main() -> int:
         print("forbidden glyphs:", ", ".join(f"{g['glyph']!r} ({g['name']})" for g in cfg.get("forbidden_glyphs", [])))
         print("forbidden patterns:", ", ".join(f"{p['pattern']!r}" for p in cfg.get("forbidden_patterns", [])) or "(none)")
         print("denylist tokens:", ", ".join(map(repr, cfg.get("denylist_tokens", []))) or "(none)")
-        print("secret patterns:", ", ".join(label for label, _ in _SECRET_PATTERNS))
+        print("secret patterns:", ", ".join(label for label, _ in _LEAK_RULES))
         print("stray-command prefixes:", ", ".join(cfg.get("command_line_prefixes", [])))
         return 0
 
