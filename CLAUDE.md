@@ -12,8 +12,17 @@ will have the full picture.
 
 ### Operational compass — READ FIRST
 
-These four planning artifacts are how the project actually operates.
-The charter is the compass; the deliberation has the decision tree;
+00. **[`docs/NORTH_STAR.md`](docs/NORTH_STAR.md)** — **the standing
+   doctrine; read before everything else, including the rest of this
+   file.** The destination, the falsifiable wager, seven invariants,
+   the corrected trap definitions (each paid for at real cost), the
+   mechanical session protocol, and the succession rule for
+   disagreeing with it (measure, don't vibe). Where it conflicts with
+   the charter or any handover below, NORTH_STAR wins — it encodes
+   the corrections learned after they were written.
+
+These planning artifacts are how the project actually operates.
+The charter is the detailed map; the deliberation has the decision tree;
 the zenith framing has the destination; the bench-hardening plan has
 the empirical-discipline worktrail. **A session that skips these will
 auto-pivot to substrate work and miss the standing direction.**
@@ -84,7 +93,8 @@ questions.
    audits** + the full 2,564-test suite + independent re-derivation (one
    real cross-runtime bug found + fixed — jcs RFC-8785 float
    canonicalisation, #297); and produced a **final-form Paper-1 draft
-   (PR #298, OPEN for operator shaping)**. Two research scans decided
+   (PR #298, MERGED 2026-06-09; an arXiv-ready LaTeX conversion was
+   built 2026-07-02 — submission is operator-side)**. Two research scans decided
    "adopt nothing from Bellard" and found the BillSum corpus + the AEX
    nearest-prior-art (the cryptographic substrate is now *commodity*; the
    moat is the meaning-preservation + paraphrase-robustness + conformal
@@ -271,7 +281,7 @@ binding-gate receipts over real public-domain corpora**
 (`fixtures/meaning_receipts_billsum/` CC0 ≤ 0.6454 @95%;
 `fixtures/meaning_receipts_translation/` opus-100 ≤ 0.4124 @95%, 39/64 at
 zero loss) — both hardened by a 5-skeptic pre-publication audit. A
-**final-form Paper-1 draft** is open at PR #298. Then the **adoption arc**
+**final-form Paper-1 draft** merged in PR #298. Then the **adoption arc**
 (PRs #300–#302, the live frontier — see handover §9): a 30-guest adoption
 simulation found **the honesty IS the moat** (rigorous skeptics = warmest) and
 ranked the demand; shipped the `verify-meaning` on-ramp fix (#300, the bug 8
