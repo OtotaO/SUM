@@ -370,16 +370,16 @@ Result: **PASS**.
 `sum_engine_internal/infrastructure/jcs.py` — byte-identical to single_file_demo/jcs.js across 26 fixtures.
 
 Verify: `pytest Tests/test_jcs.py -q`
-Expected: 30 passed
-Result: **PASS** — 30/30.
+Expected: 32 passed
+Result: **PASS** — 32/32.
 
 ### 42. W3C Verifiable Credentials 2.0 (`eddsa-jcs-2022`) ✅
 
 `sum_engine_internal/infrastructure/verifiable_credential.py` — Ed25519 Data Integrity proof over SHA-256(JCS(proofConfig)) ‖ SHA-256(JCS(document)). Multibase base58btc `proofValue`.
 
 Verify: `pytest Tests/test_verifiable_credential.py -q`
-Expected: 28 passed
-Result: **PASS** — 28/28.
+Expected: 42 passed
+Result: **PASS** — 42/42.
 
 ### 43. Scheme registry ✅
 
@@ -801,7 +801,7 @@ Result: **PASS**.
 
 ### 98. `sum` CLI binary — agentic-first entry point ✅
 
-`pip install sum-engine` installs the `sum` binary on PATH with subcommands `attest`, `verify`, `resolve`. Stdin/stdout JSON contract, Unix-composable (`sum attest | jq`, `curl -d @bundle.json`). Under 100 ms cold-start for `sum --help` / `sum --version` (heavy imports lazy).
+`pip install sum-engine` installs the `sum` binary on PATH with 16 subcommands (`attest`, `attest-batch`, `verify`, `verify-meaning`, `resolve`, `render`, `transform`, `compliance`, `frontier`, `meaning-diff`, `drift-budget`, `exchangeability`, `study`, `ledger`, `inspect`, `schema`). Stdin/stdout JSON contract, Unix-composable (`sum attest | jq`, `curl -d @bundle.json`). Under 100 ms cold-start for `sum --help` / `sum --version` (heavy imports lazy).
 
 Verify: `pip install -e '.[sieve]' && echo "Alice likes cats." | sum attest --extractor=sieve | sum verify`
 Expected: `sum: ✓ verified 1 axiom(s)`
@@ -1018,7 +1018,7 @@ Expected: `5 passed`.
 `sum_engine_internal/mcp_server/` + `sum-mcp` console script. Eight-property hardening contract (input-size caps, tagged error classes, network opt-in, concurrency-safe, catch-all per tool, forward-compat policy, structured stderr audit, property-tested via Hypothesis). 16 unit tests + 13 fuzz tests = 29/29 passing on ~800 adversarial inputs per release.
 
 Verify: `pytest Tests/test_mcp_server.py Tests/test_mcp_server_fuzz.py -q`
-Expected: `29 passed`.
+Expected: `63 passed` (50 + 13 fuzz).
 
 ### 126. M1 Merkle set-commitment sidecar prototype ✅
 
@@ -1151,7 +1151,7 @@ Expected: `19 passed` — round-trip integrity at density=1.0 (re-extracted stat
 The MCP-side analogue of `sum render`. Closes the bidirectional shell-symmetry that the CLI surface gained at entry 143 *also* on the agent surface, so MCP-aware LLM clients (Claude Desktop, Claude Code, Cursor, Continue) can drive both directions of the trust loop from inside an LLM session. Same algebra, same `generate_controlled`, byte-compatible with the CLI's local path. Local-only by default (actions density deterministically); non-neutral length / formality / audience / perspective return `error_class="schema"` with a message pointing at the Worker's `POST /api/render` for LLM-conditioned rendering — the MCP server stays fully offline by default, preserving the `SUM_MCP_ALLOW_NETWORK` opt-in property. Returns success shape `{tome, sliders, mode, axiom_count_input, title}` or v2-tagged failure `{error_class, errors}`.
 
 Verify: `pytest Tests/test_mcp_server.py -q`
-Expected: `44 passed` — 15 render-specific cases (non-dict bundle, missing canonical_tome, unsupported canonical_format_version, future minor version under 1.x accepted, oversized tome, zero-axiom bundle structural error, density bounds, length bounds, non-neutral-axes-without-worker schema error with actionable message, default-slider canonical output, **round-trip integrity at density=1.0 — rendered tome re-mints to source `state_integer`**, density=0.0 emits no lines, density=0.5 keeps lex-prefix, slider header emitted) plus the 29 prior MCP tests retained green.
+Expected: `50 passed` — 15 render-specific cases (non-dict bundle, missing canonical_tome, unsupported canonical_format_version, future minor version under 1.x accepted, oversized tome, zero-axiom bundle structural error, density bounds, length bounds, non-neutral-axes-without-worker schema error with actionable message, default-slider canonical output, **round-trip integrity at density=1.0 — rendered tome re-mints to source `state_integer`**, density=0.0 emits no lines, density=0.5 keeps lex-prefix, slider header emitted) plus the prior MCP tests retained green (50 total at HEAD).
 
 ### 145. v1 sheaf-Laplacian hallucination detector (research-grade, [research] extras) 🔧
 
@@ -1338,8 +1338,8 @@ Result: **PASS** (verified 2026-05-17).
 `sum transform list [--pretty]` emits `sum.transform_registry.v1`. `sum transform apply <name> --input <path|-> --parameters <json> [--source-chain <path>] [--pretty]` runs the transform and emits an envelope with optional signed receipt (when `SUM_TRANSFORM_SIGNING_JWK` + `SUM_TRANSFORM_SIGNING_KID` env vars are set). Source: `sum_cli/main.py` (`cmd_transform_list` / `cmd_transform_apply`).
 
 Verify: `pytest Tests/test_sum_cli_transform.py -q`
-Expected: 18 passed.
-Result: **PASS**.
+Expected: 14 passed.
+Result: **PASS** (suite consolidated; count went down, all green).
 
 ### 161. T4 source-chain-hash binding ✅
 
