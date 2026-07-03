@@ -2309,6 +2309,99 @@ def cmd_meaning_diff(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_depth_diff(args: argparse.Namespace) -> int:
+    """Semantic depth diff — kept/dropped/added at EACH rung of the faithful→
+    compressed path, plus the local loss-per-compression slope. `sum meaning-diff`
+    is one rung; this is the whole frontier with the rate of change. A per-document
+    MEASUREMENT under a named entailment judge, NOT a certified bound."""
+    try:
+        from sum_engine_internal.research.frontier import RenderFrontier
+        from sum_engine_internal.research.meaning.meaning_loss import (
+            EntailmentScorer,
+        )
+    except ImportError as e:
+        print(
+            f"sum: depth-diff needs the [research] extra "
+            f"(pip install 'sum-engine[research]'): {e}",
+            file=sys.stderr,
+        )
+        return 2
+    source = _read_text_arg(args.source)
+    if source is None:
+        return 2
+    if not args.version:
+        print(
+            "sum: depth-diff needs at least one --version rendering "
+            "(repeat --version, most-faithful first).",
+            file=sys.stderr,
+        )
+        return 2
+    scorer, err = _load_meaning_scorer(args.scorer)
+    if err:
+        print(f"sum: {err}", file=sys.stderr)
+        return 2
+    if not isinstance(scorer, EntailmentScorer):  # belt-and-suspenders vs lexical
+        print(
+            "sum: depth-diff needs an entailment judge (--scorer nli or "
+            "embedding); the 'lexical' scorer has no per-claim entailment.",
+            file=sys.stderr,
+        )
+        return 2
+    if args.scorer == "embedding":
+        print(
+            "sum: note — the embedding judge is brittle at the claim level; "
+            "for a trustworthy per-claim readout use --scorer nli.",
+            file=sys.stderr,
+        )
+    renderings: list[tuple[str, dict, str]] = []
+    for i, vpath in enumerate(args.version):
+        text = _read_text_arg(vpath)
+        if text is None:
+            return 2
+        label = os.path.basename(vpath) or f"v{i}"
+        renderings.append((label, {}, text))
+
+    frontier = RenderFrontier.from_renderings(source, renderings, scorer)
+    rungs = frontier.depth_diff(scorer)
+
+    scope = (
+        "per-document MEASUREMENT under the named judge; not a certified bound. "
+        "Proxy is blind to arrangement, sound, connotation, implicature. For a "
+        "(1-δ) distribution-free bound use a sum.meaning_risk_receipt.v1 over a "
+        "named corpus."
+    )
+    if args.json:
+        print(json.dumps({
+            "source_words": len(source.split()),
+            "scorer": frontier.scorer_name,
+            "scorer_version": frontier.scorer_version,
+            "scope": scope,
+            "rungs": [r.as_dict() for r in rungs],
+        }, ensure_ascii=False))
+        return 0
+
+    print("Semantic depth diff — measured for THIS document (not a certified bound)")
+    print(f"  judge: {frontier.scorer_name} v{frontier.scorer_version}")
+    print("  proxy is blind to arrangement, sound, connotation, implicature;")
+    print("  for a (1-δ) bound use a meaning_risk receipt over a named corpus.")
+    print()
+    print(f"  {'rung':<14}{'compress':>9}{'loss':>7}{'Δloss/Δcompress':>18}  kept/drop/unsup")
+    for r in rungs:
+        comp = f"{(1.0 - r.compression_ratio) * 100:4.0f}%"
+        lpc = "      --" if r.loss_per_compression is None else f"{r.loss_per_compression:+.3f}"
+        kda = f"{r.preserved_claims}/{len(r.dropped_claims)}/{len(r.added_claims)}"
+        print(f"  {r.label:<14}{comp:>9}{r.meaning_loss:>7.3f}{lpc:>18}  {kda}")
+        for d in r.dropped_claims:
+            print(f"       ✗ dropped: {d}")
+        for a in r.added_claims:
+            print(f"       ! unsupported: {a}")
+    print()
+    print("  Δloss/Δcompress = local change in measured loss per unit compression")
+    print("  (a finite difference, sign meaningful; NOT a rate-distortion derivative).")
+    print("  meaning_loss is a directed proxy loss to source — not a metric, not certified.")
+    return 0
+
+
 def cmd_drift_budget(args: argparse.Namespace) -> int:
     """Multi-hop drift budget — meaning-loss composed across a CHAIN of
     transforms (x0 → x1 → … → xN). Prints each hop's measured loss, the
@@ -4090,6 +4183,43 @@ def build_parser() -> argparse.ArgumentParser:
         "--json", action="store_true", help="machine-readable JSON output"
     )
     p_mdiff.set_defaults(func=cmd_meaning_diff)
+
+    # depth-diff — kept/dropped/added at EVERY rung of the frontier + the slope.
+    p_ddiff = subparsers.add_parser(
+        "depth-diff",
+        help="Semantic depth diff: kept/dropped/added at every compression rung + the slope.",
+        description=(
+            "The whole faithful→compressed path made legible. For a SOURCE and "
+            "an ordered list of renderings (--version, most-faithful first), "
+            "print at EACH rung what the named entailment judge says was kept, "
+            "DROPPED, and ADDED, plus the local Δloss/Δcompression slope (how "
+            "fast meaning is changing per unit compression here). `sum meaning-"
+            "diff` is one rung; this is the whole frontier with the rate of "
+            "change. A per-document MEASUREMENT, NOT a certified bound: the "
+            "slope is a finite difference over a named proxy, not a rate-"
+            "distortion derivative, and meaning_loss is a directed proxy loss "
+            "to source (not a metric). For a (1-δ) bound use a "
+            "sum.meaning_risk_receipt over a corpus. Needs [research] + [judge]."
+        ),
+    )
+    p_ddiff.add_argument(
+        "--source", required=True,
+        help="Path to the source text file ('-' for stdin).",
+    )
+    p_ddiff.add_argument(
+        "--version", action="append", metavar="PATH", default=[],
+        help="A rendered version file. Repeat, most-faithful first "
+             "(that order is the compression control).",
+    )
+    p_ddiff.add_argument(
+        "--scorer", default="nli", choices=["nli", "embedding"],
+        help="entailment judge (default: nli — the trustworthy per-claim "
+             "judge; embedding is brittle at the claim level). Both need [judge].",
+    )
+    p_ddiff.add_argument(
+        "--json", action="store_true", help="machine-readable JSON output"
+    )
+    p_ddiff.set_defaults(func=cmd_depth_diff)
 
     # drift-budget — meaning-loss composed across a CHAIN of transforms.
     p_drift = subparsers.add_parser(

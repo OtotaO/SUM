@@ -89,6 +89,74 @@ class FrontierPoint:
 
 
 @dataclass(frozen=True, slots=True)
+class RungDiff:
+    """One rung of a *semantic depth diff* — a per-DOCUMENT MEASUREMENT.
+
+    For one rendering on the frontier, the human-legible decomposition of how
+    its meaning differs from the source under a NAMED entailment proxy, plus the
+    local rate at which the measured loss changes as compression deepens.
+
+    Honest boundary (load-bearing — these labels are the moat):
+
+    - ``meaning_loss`` is a **directed** loss to the source (an asymmetric
+      recall/fidelity blend) under the named judge. It is **not** a metric (no
+      triangle inequality) and **not** a certified bound. Do not compose it
+      across rungs by addition or triangle inequality.
+    - ``loss_per_compression`` is a finite difference of that measured loss over
+      the change in **compression** between this rung and the previous one on
+      the path, where ``compression = 1 - words(rendering)/words(source)``. It
+      is a divided difference over caller-chosen rungs, **not** a derivative of
+      a certified rate-distortion curve and **not** an information-bottleneck
+      rate. Its **sign is meaningful**: negative means the more-compressed rung
+      measured *lower* loss (recovery, or judge noise) — not a smooth descent.
+      ``None`` for the first rung (no left neighbour) and when compression did
+      not change between two rungs.
+    - kept/dropped/added are sentence-level decisions by the named proxy, whose
+      human correlation is modest and which is blind to arrangement, sound,
+      connotation, and implicature.
+    """
+    label: str
+    position: float
+    compression_ratio: float          # words(rendering)/words(source); 1.0 = no length reduction
+    meaning_loss: float               # directed loss to source under the named judge (asymmetric; NOT a metric)
+    recall: float
+    fidelity: float
+    source_claims: int
+    preserved_claims: int
+    dropped_claims: tuple[str, ...]   # source sentences the proxy says were NOT preserved
+    added_claims: tuple[str, ...]     # rendering sentences the named proxy could not ground in the source (unsupported; non-entailment, not proof of fabrication)
+    loss_per_compression: float | None
+
+    def as_dict(self) -> dict[str, Any]:
+        lpc = self.loss_per_compression
+        return {
+            "label": self.label,
+            "position": self.position,
+            "compression_ratio": round(self.compression_ratio, 6),
+            "meaning_loss": round(self.meaning_loss, 6),
+            "meaning_loss_note": (
+                "directed loss to source under the named judge; asymmetric, "
+                "NOT a metric — do not compose by triangle inequality"
+            ),
+            "recall": round(self.recall, 6),
+            "fidelity": round(self.fidelity, 6),
+            "preserved_claims": self.preserved_claims,
+            "source_claims": self.source_claims,
+            "dropped_claims": list(self.dropped_claims),
+            "added_claims": list(self.added_claims),
+            "added_claims_note": (
+                "rendering sentences the named proxy could not ground in the "
+                "source; non-entailment under the proxy, not proof of fabrication"
+            ),
+            "loss_per_compression": None if lpc is None else round(lpc, 6),
+            "loss_per_compression_note": (
+                "finite difference of measured loss over Δcompression vs the "
+                "previous rung; NOT a rate-distortion derivative; sign meaningful"
+            ),
+        }
+
+
+@dataclass(frozen=True, slots=True)
 class RenderFrontier:
     """An ordered path of renderings of one source, most-faithful first.
 
@@ -217,6 +285,66 @@ class RenderFrontier:
         """Per-point measured meaning-loss, in frontier order. These are
         *measurements*, not a certified bound (see module docstring)."""
         return [p.meaning_loss for p in self.points]
+
+    def depth_diff(self, scorer: MeaningScorer) -> list[RungDiff]:
+        """The **semantic depth diff**: for every rung on the faithful→
+        compressed path, what the named proxy says the rendering KEPT, DROPPED,
+        and ADDED versus the source, plus the local rate at which measured loss
+        rises as compression deepens.
+
+        Connect-the-pieces (no new substrate): this iterates the existing
+        points, calls the scorer's ``explain`` — the same per-claim readout
+        ``sum meaning-diff`` produces for one pair — once per rung, and computes
+        ``loss_per_compression`` as a finite difference over a real compression
+        coordinate ``1 - words(rendering)/words(source)``. It deliberately does
+        **not** use the index-assigned ``position`` as the rate axis (position
+        is ordinal, not a compression rate), so the slope is intrinsic and not
+        an artifact of how many rungs the caller chose.
+
+        ``scorer`` must expose ``explain`` (an entailment judge). A lexical
+        word-overlap scorer has no per-claim entailment and is rejected. The
+        whole readout is a per-document MEASUREMENT under a named proxy, never a
+        certified bound (see the module docstring); the only (1-δ) guarantee is
+        a separate ``sum.meaning_risk_receipt.v1`` over a named corpus.
+        """
+        explain = getattr(scorer, "explain", None)
+        if not callable(explain):
+            raise TypeError(
+                "depth_diff needs an entailment judge exposing .explain() "
+                "(e.g. EntailmentScorer / --scorer nli|embedding); a lexical "
+                "word-overlap scorer has no per-claim entailment"
+            )
+        src_words = max(1, len(self.source.split()))
+        rungs: list[RungDiff] = []
+        prev_loss: float | None = None
+        prev_comp: float | None = None
+        for p in self.points:
+            r = explain(self.source, p.rendering)
+            ratio = len(p.rendering.split()) / src_words
+            comp = 1.0 - ratio  # 0.0 = no length reduction, →1.0 = maximal compression
+            lpc: float | None = None
+            if prev_loss is not None and prev_comp is not None:
+                d_comp = comp - prev_comp
+                if abs(d_comp) >= 1e-9:
+                    lpc = (r.loss - prev_loss) / d_comp
+            rungs.append(
+                RungDiff(
+                    label=p.label,
+                    position=p.position,
+                    compression_ratio=ratio,
+                    meaning_loss=r.loss,
+                    recall=r.recall,
+                    fidelity=r.fidelity,
+                    source_claims=r.source_claims,
+                    preserved_claims=r.preserved_claims,
+                    dropped_claims=r.dropped_claims,
+                    added_claims=r.unsupported_claims,
+                    loss_per_compression=lpc,
+                )
+            )
+            prev_loss = r.loss
+            prev_comp = comp
+        return rungs
 
     def as_dict(self) -> dict[str, Any]:
         """Serialise for the API / MCP / CURL surface. The same object
