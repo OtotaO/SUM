@@ -42,9 +42,11 @@ bounds a NAMED PROXY for meaning-loss, marginally (on average over the
 calibration corpus), under exchangeability — never per-document, and
 never the layers its ``not_covered`` field declares out of scope
 (arrangement, sound, connotation, implicature). Where that proxy has been
-measured against human faithfulness judgments (SummEval), it correlated
-only MODESTLY (Spearman rho ~= 0.27-0.33) — directionally valid, not a
-substitute for human review. The verifier ENFORCES that those disclosures
+measured against human faithfulness judgments, it correlated only
+MODESTLY at the per-summary level (Spearman rho ~= 0.27-0.33 on SummEval;
+the NLI judge's ~0.29 replicates out-of-domain on FRANK, while the
+embedding judge is corpus-dependent and can approach zero on abstractive
+text) — directionally valid, not a substitute for human review. The verifier ENFORCES that those disclosures
 are present; it does not let a bare bound through. (The CLI surfaces this
 as a ``proxy_caveat`` on every verified meaning-risk verdict.)
 

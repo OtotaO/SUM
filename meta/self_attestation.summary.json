@@ -1,34 +1,34 @@
 {
   "schema": "sum.self_attestation.v1",
-  "issued_at": "2026-07-03T01:40:18Z",
+  "issued_at": "2026-07-03T02:16:30Z",
   "doc_count": 6,
   "docs": [
     {
       "path": "README.md",
-      "source_uri": "sha256:1d791c5f0058e2cbf79ab45bbba880d2247cef3a9f44ab603871ae10c51ad55b",
+      "source_uri": "sha256:a2d1aea737051f04a51cf19e186ac9ec561f3b5ee76a9fd978901db9c9a8776b",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "1d791c5f0058e2cbf79ab45bbba880d2247cef3a9f44ab603871ae10c51ad55b",
-      "axiom_count": 62,
-      "state_integer_digits": 1170
+      "markdown_sha256": "a2d1aea737051f04a51cf19e186ac9ec561f3b5ee76a9fd978901db9c9a8776b",
+      "axiom_count": 63,
+      "state_integer_digits": 1189
     },
     {
       "path": "CHANGELOG.md",
-      "source_uri": "sha256:2f3c111d3e7fbcb016f1c048e237b34c490a7b4c1da9eaecb904cf81b41b9a17",
+      "source_uri": "sha256:d514e427a65bf8b45ad8acf5eca4fce0cfb38fe34b71ea090c14b594d0b3a73c",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "2f3c111d3e7fbcb016f1c048e237b34c490a7b4c1da9eaecb904cf81b41b9a17",
-      "axiom_count": 761,
-      "state_integer_digits": 14342
+      "markdown_sha256": "d514e427a65bf8b45ad8acf5eca4fce0cfb38fe34b71ea090c14b594d0b3a73c",
+      "axiom_count": 762,
+      "state_integer_digits": 14361
     },
     {
       "path": "docs/PROOF_BOUNDARY.md",
-      "source_uri": "sha256:47e7bb312679bc788891a396d79c6139ee91b9ebfff7fd4d6d6bb982298f4f0b",
+      "source_uri": "sha256:4c265ffb45bb7eeaa4516cb221d9e5978059ece7fb1b2e8a81a87e4084319ea3",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "47e7bb312679bc788891a396d79c6139ee91b9ebfff7fd4d6d6bb982298f4f0b",
-      "axiom_count": 240,
-      "state_integer_digits": 4520
+      "markdown_sha256": "4c265ffb45bb7eeaa4516cb221d9e5978059ece7fb1b2e8a81a87e4084319ea3",
+      "axiom_count": 243,
+      "state_integer_digits": 4577
     },
     {
       "path": "docs/FEATURE_CATALOG.md",

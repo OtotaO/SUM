@@ -62,6 +62,23 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
   directly from the live `/.well-known/jwks.json`) and that the JS verifiers cover all four
   schemas across three files (not one). No signed-field, wire-format, or behavior change.
 
+- **Proxy-calibration scope + second-corpus replication (honesty upgrade, no wire
+  change).** The public "ρ ≈ 0.27–0.33" claim is now explicitly scoped **pooled
+  summary-level** everywhere it appears (README demo caveat, `sum_verify` docstring +
+  `proxy_caveat` string, `PROOF_BOUNDARY.md` §2.11 → v1.8.0): on the same SummEval data
+  and shipped scorers, system-level correlation is ≈ 0.57–0.75 (NLI composite 0.70,
+  bootstrap CI [0.49, 0.83]) — resolving the apparent conflict with published
+  "0.6-class" numbers (aggregation level + corpus, not disagreement). New out-of-domain
+  measurement on FRANK (seed=0, bootstrap CIs): the NLI judge **replicates**
+  (ρ = 0.290 on both FRANK-XSum n=250 and FRANK-CNN/DM n=150); the lexical scorer
+  degrades (0.47 → 0.21); the **embedding judge collapses to ρ ≈ 0.03 on abstractive
+  FRANK-XSum** — surfaced in the caveat because the committed BillSum golden certifies
+  under the embedding judge; prefer `--scorer nli` for load-bearing use. Also recorded:
+  `meaning_loss._sentences` treats whitespace-less sentence boundaries as one sentence,
+  degenerating entailment scorers to loss = 1.0 (conservative direction). Reproduction
+  scripts + results committed under `Tests/benchmarks/` (`frank_proxy_calibration.py`,
+  `summeval_aggregation_recompute.py`, `frank_results.json`).
+
 - **Supply-chain / Scorecard hardening (no shipping-package impact).** A pass over the
   open OpenSSF Scorecard findings, none of which touched the published package: (1)
   removed 21 accidentally-tracked `core-zig/.zig-cache/` build artifacts (already

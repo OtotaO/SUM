@@ -1,7 +1,15 @@
 # Proof Boundary
 
-**Version:** 1.7.1
-**Date:** 2026-06-24
+**Version:** 1.8.0
+**Date:** 2026-07-02
+
+**v1.8.0 (2026-07-02):** the measured proxy↔human correlation is now scoped and
+replicated — ρ ≈ 0.27–0.33 is explicitly **pooled summary-level** (system-level on the
+same data and scorers is ≈ 0.57–0.75); the NLI judge's ρ ≈ 0.29 **replicates
+out-of-domain on FRANK** (both halves); the **embedding judge is corpus-dependent and
+≈ 0 on abstractive FRANK-XSum** — prefer NLI for anything load-bearing. New
+reproduction scripts under `Tests/benchmarks/`. Claims narrowed or scoped only; none
+strengthened without a receipt.
 
 **v1.7.1 (2026-06-24):** header sync — the body's §2.11 already carries the measured
 proxy↔human correlation on SummEval (Spearman ρ ≈ 0.27–0.33; the meaning-loss proxy is
@@ -745,7 +753,35 @@ recalibration is marginal (embedding best at 0.55 vs the 0.5 default, ρ 0.31 vs
 0.31). Read this as: the proxy is a **directionally-valid stand-in, not a
 substitute for human judgment** — a ρ of ~0.3 leaves most of the variance
 unexplained. Reproduce: [`Tests/benchmarks/meaning_proxy_human_calibration.py`](../Tests/benchmarks/meaning_proxy_human_calibration.py)
-→ `meaning_proxy_human_calibration.result.json`. The bound is honest
+→ `meaning_proxy_human_calibration.result.json`.
+
+**Scope + second-corpus replication (measured 2026-07-02):** the ρ ≈ 0.27–0.33
+above is **pooled summary-level** — the strictest read (80.6% of SummEval
+consistency ratings sit at exactly 5.0/5, so range restriction compresses it;
+published summary-level anchors on the same benchmark: ROUGE 0.12–0.19,
+BERTScore 0.11, QuestEval 0.31, BARTScore 0.38, GPT-4 G-Eval 0.51). On the
+*same data and scorers*, **system-level** (n=16 systems; validity confirmed by
+permutation test) correlations are ρ/r ≈ 0.57–0.75 (NLI meaning-composite
+0.70, article-bootstrap 95% CI [0.49, 0.83]) — the aggregation level at which
+most published "0.6-class" meta-evaluation numbers (e.g. the ÚFAL/RWS r ≈ 0.63
+often cited alongside ours) live; the apparent conflict is aggregation +
+corpus, not disagreement. **Out-of-domain replication on FRANK** (Pagnoni et
+al. 2021; deterministic seed=0 subsamples, 1000-resample bootstrap CIs): the
+**NLI judge replicates** — ρ = 0.290 [0.127, 0.451] on FRANK-XSum (n=250) and
+0.290 [0.147, 0.433] on FRANK-CNN/DM (n=150); the lexical scorer degrades
+off-distribution (0.47 → 0.21); the **embedding judge is corpus-dependent and
+collapses on abstractive, hallucination-heavy text** — ρ = 0.032
+[−0.096, 0.167] on FRANK-XSum (published parallels there: MNLI 0.17,
+FactCC −0.07). Because the committed BillSum golden certifies under the
+*embedding* judge, read its bound strictly as a bound on that named embedding
+proxy; **prefer the NLI judge for anything load-bearing.** Known
+scorer-robustness limit found during this run: `meaning_loss._sentences`
+treats text lacking post-period whitespace as a single sentence, degenerating
+both entailment scorers to loss = 1.0 (the conservative direction — loss is
+overstated, never understated); normalize whitespace before scoring.
+Reproduce: [`Tests/benchmarks/frank_proxy_calibration.py`](../Tests/benchmarks/frank_proxy_calibration.py)
++ [`Tests/benchmarks/summeval_aggregation_recompute.py`](../Tests/benchmarks/summeval_aggregation_recompute.py)
+→ [`Tests/benchmarks/frank_results.json`](../Tests/benchmarks/frank_results.json). The bound is honest
 about exactly three limits, each enforced in the receipt: (i) it bounds a
 **proxy**, not meaning itself (the required `not_covered` field declares
 arrangement / sound / connotation / implicature as structurally out of
