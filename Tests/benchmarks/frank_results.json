@@ -1,0 +1,131 @@
+{
+  "corpus": "FRANK (Pagnoni et al. 2021), human Factuality -> loss = 1 - Factuality",
+  "repair": "space inserted after [.!?] when followed by uppercase/quote/( (XSum text stored without inter-sentence spaces)",
+  "halves": {
+    "xsum": {
+      "n": 250,
+      "human_loss_distribution": {
+        "mean": 0.918,
+        "sd": 0.273,
+        "frac_zero_loss": 0.08
+      },
+      "scorers": {
+        "lexical-coverage-bidirectional": {
+          "n": 250,
+          "spearman": 0.2081,
+          "spearman_p": 0.00093,
+          "pearson": 0.1775,
+          "pearson_p": 0.004877,
+          "spearman_ci95": [
+            0.0874,
+            0.3069
+          ],
+          "pearson_ci95": [
+            0.0701,
+            0.2718
+          ],
+          "proxy_loss_sd": 0.065
+        },
+        "embedding-minilm@0.5": {
+          "n": 250,
+          "spearman": 0.0318,
+          "spearman_p": 0.617157,
+          "pearson": 0.0187,
+          "pearson_p": 0.769103,
+          "spearman_ci95": [
+            -0.0964,
+            0.1672
+          ],
+          "pearson_ci95": [
+            -0.1156,
+            0.1504
+          ],
+          "proxy_loss_sd": 0.24
+        },
+        "nli-deberta-mnli-fever-anli@0.5": {
+          "n": 250,
+          "spearman": 0.2902,
+          "spearman_p": 3e-06,
+          "pearson": 0.2895,
+          "pearson_p": 3e-06,
+          "spearman_ci95": [
+            0.1271,
+            0.4513
+          ],
+          "pearson_ci95": [
+            0.1225,
+            0.4446
+          ],
+          "proxy_loss_sd": 0.152
+        },
+        "lexical-RAW-unrepaired": {
+          "n": 250,
+          "spearman": 0.2081,
+          "spearman_p": 0.00093,
+          "pearson": 0.1775,
+          "pearson_p": 0.004877
+        }
+      },
+      "raw_text_note": "NLI on unrepaired xsum text degenerates (splitter sees 1 sentence; probe: losses all 1.0)"
+    },
+    "cnndm": {
+      "n": 150,
+      "human_loss_distribution": {
+        "mean": 0.243,
+        "sd": 0.322,
+        "frac_zero_loss": 0.56
+      },
+      "scorers": {
+        "lexical-coverage-bidirectional": {
+          "n": 150,
+          "spearman": 0.4712,
+          "spearman_p": 0.0,
+          "pearson": 0.4951,
+          "pearson_p": 0.0,
+          "spearman_ci95": [
+            0.3361,
+            0.5936
+          ],
+          "pearson_ci95": [
+            0.3734,
+            0.596
+          ],
+          "proxy_loss_sd": 0.056
+        },
+        "embedding-minilm@0.5": {
+          "n": 150,
+          "spearman": 0.3363,
+          "spearman_p": 2.6e-05,
+          "pearson": 0.3748,
+          "pearson_p": 2e-06,
+          "spearman_ci95": [
+            0.1673,
+            0.4827
+          ],
+          "pearson_ci95": [
+            0.1891,
+            0.5236
+          ],
+          "proxy_loss_sd": 0.145
+        },
+        "nli-deberta-mnli-fever-anli@0.5": {
+          "n": 150,
+          "spearman": 0.2901,
+          "spearman_p": 0.000318,
+          "pearson": 0.2859,
+          "pearson_p": 0.000391,
+          "spearman_ci95": [
+            0.147,
+            0.4331
+          ],
+          "pearson_ci95": [
+            0.1489,
+            0.4205
+          ],
+          "proxy_loss_sd": 0.183
+        }
+      }
+    }
+  },
+  "wall_seconds": 1067
+}

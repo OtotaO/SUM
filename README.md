@@ -64,8 +64,10 @@ python -m sum_verify --demo             # replays the bundled BillSum golden, of
 #    "scorer": "bidirectional-entailment[minilm-cosine-0.5]",
 #    "not_covered": ["arrangement","sound","connotation","implicature"],
 #    "proxy_caveat": "verified=true is a cryptographic fact ... the proxy
-#       correlated only modestly (Spearman rho ~0.27-0.33). Not a substitute
-#       for human review."}
+#       correlated only modestly at summary level (Spearman rho ~0.27-0.33 on
+#       SummEval; NLI ~0.29 replicates on FRANK; the embedding judge is
+#       corpus-dependent, near zero on abstractive FRANK-XSum). Not a
+#       substitute for human review."}
 ```
 
 To verify *your own* receipt — or the source goldens from a git checkout — pass the files explicitly:
