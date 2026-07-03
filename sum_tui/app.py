@@ -103,7 +103,9 @@ class Slider(Widget):
 class SumApp(App):
     CSS_PATH = "app.tcss"
     TITLE = "SUM · Workbench"
-    SUB_TITLE = "chain-of-custody for AI-transformed meaning"
+    # Framing-neutral on purpose: states what the receipt IS (a signed,
+    # replayable bound on a named proxy), not which market story sells it.
+    SUB_TITLE = "signed, replayable bounds on a named meaning-loss proxy"
     BINDINGS = [
         Binding("d", "load_demo", "Load demo"),
         Binding("r", "run", "Run transform"),
