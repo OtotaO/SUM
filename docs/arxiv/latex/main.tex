@@ -1,0 +1,638 @@
+% arXiv submission kit: Paper 1 (cs.CR primary, cs.LG secondary)
+% Converted from docs/arxiv/PAPER1_DRAFT.md (final-form v0, 2026-06-09).
+% \pdfoutput=1 tells arXiv's AutoTeX to produce a PDF directly (required
+% within the first 5 lines when submitting pdflatex sources).
+\pdfoutput=1
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{booktabs}
+\usepackage[hidelinks]{hyperref}
+
+\theoremstyle{definition}
+\newtheorem{algo}{Algorithm}
+
+% --- OPERATOR TODO: fill in the real author block before submission. ---
+\title{Chain-of-Custody for AI-Transformed Text: Signed, Replayable,
+Distribution-Free Receipts for What a Transformation Preserved}
+\author{[AUTHOR NAME]\\ \texttt{[email]}}
+\date{}
+
+% NOTE (kit author): the Markdown draft's header note ("Draft (final-form v0)
+% --- 2026-06-09 ... drafting notes are at the foot.") and its closing
+% "Drafting notes for the operator" block are operator-facing meta-commentary,
+% not paper content; they are preserved as comments at the end of this file.
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Two questions about AI-transformed text lack a portable, offline-verifiable
+answer: \emph{who transformed this, and what did the transformation
+preserve?} Provider disclosure (EU AI Act Article 50) and image-centric
+content provenance (C2PA, SynthID) do not cover text that has been
+paraphrased, summarized, or translated --- a manifest detaches on copy, a
+watermark is defeated by rewriting. We present a receipt family that answers
+both questions for text. A signed, offline-verifiable receipt attests a
+transformation (Ed25519 over RFC 8785 JCS-canonical bytes, detached JWS,
+JWKS keys); on top of it, a \textbf{distribution-free, replayable
+certificate} bounds the expected \emph{meaning-loss} of the transformation
+under a \textbf{named judge}. The certificate replays offline over a
+committed integer loss vector --- a third party re-runs the conformal
+certifier and reproduces the bound to the bit --- while the proof boundary
+stays explicit: it bounds a named proxy \emph{marginally}, under
+\emph{exchangeability}, never per-document truth and never ``meaning''
+itself. We demonstrate on two public-domain corpora: certified expected
+meaning-loss $\le 0.645$ (95\%) for abstractive summarization of US
+Congressional bills (BillSum, CC0; $n=64$) and $\le 0.412$ for EN$\to$FR
+translation (opus-100; $n=64$), with 39/64 faithful translations scoring
+\emph{exactly zero} meaning-loss (under a binary entailment judge at a 0.5
+cut) despite near-zero lexical overlap --- the property no watermark or
+lexical scheme can certify. The thesis is \textbf{attest, don't detect}: a
+signature survives an adversary with a thesaurus; a statistical
+``is-this-AI'' classifier does not.
+\end{abstract}
+
+\section{Introduction}\label{sec:intro}
+
+Pressure on AI-generated and AI-transformed text is converging on two needs.
+First, \textbf{disclosure}: Article 50(2)/(4) of the EU AI Act (applicable
+2 August 2026; a grace window to 2 December 2026 for the machine-readable
+marking obligation on pre-existing systems is provisionally agreed under the
+Digital Omnibus) requires machine-readable, robust marking of AI-generated
+content, and the associated \emph{Code of Practice on Transparency of
+AI-Generated Content} (finalized 10 June 2026) asks that marking be
+``effective, interoperable, robust, and reliable as far as technically
+feasible''~\cite{euaiact}. Second, and far less served,
+\textbf{accountability for transformation}: when a document is summarized,
+re-leveled for a different audience, or translated, \emph{what survived the
+operation, and can it be proven to anyone, offline?}
+
+The dominant provenance tools answer neither well for text.
+C2PA~\cite{c2pa} binds a cryptographic manifest to a media asset; its 2.4
+text binding is a \emph{byte-exact} hard hash, so the manifest verifies the
+exact bytes and breaks the moment text is edited, re-flowed, or paraphrased
+--- it says nothing about what a transform preserved.
+SynthID-Text~\cite{dathathri2024} and statistical ``AI detectors'' target
+\emph{generation}, not transformation-preservation, and degrade under
+exactly the rewriting text invites --- every general detector has failed
+under paraphrase, distribution shift, or bias against non-native writers,
+and a major provider retired its own classifier.
+
+We take a different stance: \textbf{attest, don't detect.} Rather than infer
+whether text is AI-generated, we let any participating transformer
+\emph{attest} what it did and what it preserved, in a receipt anyone
+verifies offline --- robust to rewriting because a signature is indifferent
+to surface form. The technical contribution is a \emph{composition}: a
+signed transformation receipt carrying a \textbf{distribution-free
+certificate of meaning-loss under a named judge}, made \textbf{replayable}
+so the certificate is reproducible rather than merely asserted. The slogan
+is deliberately narrow: what a receipt takes custody of is a
+\emph{transformation} and a \emph{named, bounded proxy} for what it
+preserved --- \textbf{custody of a transform, not of meaning}. The gap
+between ``a bounded named proxy'' and ``meaning'' is never rhetorically
+closed; \S\ref{sec:boundary} holds that line in the wire format. Concurrent
+work (\S\ref{sec:related}) independently arrived at the same cryptographic
+substrate for LLM-API provenance but explicitly disclaims semantic
+correctness; our contribution is precisely that disclaimed delta, turned
+into a finite-sample, replayable certificate.
+
+\paragraph{Contributions.}
+(1) A unified, cross-runtime-verifiable receipt family for
+text-transformation provenance. (2) A \emph{meaning-risk certificate}: a
+signed, same-commit-replayable, distribution-free upper bound on expected
+meaning-loss under a named judge, with its proof boundary enforced in the
+wire format. (3) A group-conditional (``perspective'') extension with a
+Bonferroni simultaneous guarantee. (4) Two real, audited, public-domain
+demonstrations and an empirical coverage validation. (5) An explicit threat
+model and the two load-bearing verification preconditions (trusted
+out-of-band keys; issuer-attestation vs.\ bound-attestation) that any
+``offline-verifiable'' claim must state.
+
+\section{Threat model}\label{sec:threat}
+
+The receipts defend a specific surface; we state it so the guarantees are
+not over-read.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}p{0.40\textwidth}p{0.21\textwidth}p{0.30\textwidth}@{}}
+\toprule
+\textbf{Attacker capability} & \textbf{Outcome} & \textbf{Mechanism} \\
+\midrule
+Tamper with a signed field in transit (bound, corpus, disclosure, \dots) &
+\textbf{Rejected} &
+Ed25519 over the full JCS-canonical payload \\
+\addlinespace
+Strip/empty the disclosure (\texttt{not\_covered}/\texttt{disclosure}) &
+\textbf{Rejected} &
+Stage-A disclosure invariants \\
+\addlinespace
+Algorithm downgrade (\texttt{alg:none}), \texttt{crit}/\texttt{b64}
+downgrade, non-detached JWS &
+\textbf{Rejected} &
+protected-header pinning \\
+\addlinespace
+Self-sign a receipt with a \emph{fabricated} bound but an honest loss-hash &
+\textbf{Rejected by Stage B} (passes Stage A) &
+re-certification over the committed losses \\
+\addlinespace
+Forge a receipt and present it with an \textbf{attacker-controlled JWKS} &
+\textbf{Out of scope} --- verification trusts the JWKS &
+keys must come from a trusted root, out-of-band \\
+\addlinespace
+Replay an expired/stale receipt &
+Rejected when a max-age window is enforced &
+\texttt{signed\_at} window check \\
+\bottomrule
+\end{tabular}
+\caption{Attacker capabilities, outcomes, and mechanisms.}
+\label{tab:threat}
+\end{table}
+
+Two preconditions follow and must accompany any ``tamper-evident,
+offline-verifiable'' claim: \textbf{(P1)} verification reduces to
+\emph{trusting the JWKS}, obtained from a signed trust root out-of-band
+(never from the receipt bundle) --- a forgery verifies against an attacker's
+own JWKS, as for any JWS system; \textbf{(P2)} the signature attests the
+\emph{issuer}, while the conformal \emph{bound} is attested only by the
+Stage-B replay (\S\ref{sec:verify}). Out of scope: the honesty of the
+issuer's labels (\texttt{scorer}/\texttt{model}/\texttt{provider} are
+producer-asserted), the correctness of the transformed output, and any claim
+about human-vs-AI authorship.
+
+\section{The substrate and the receipt family}\label{sec:substrate}
+
+All four schemas (\texttt{render}, \texttt{transform},
+\texttt{meaning\_risk}, \texttt{perspective}) share one envelope: a payload
+signed with \textbf{Ed25519} (RFC 8032~\cite{rfc8032}) over its
+\textbf{JCS-canonical bytes} (RFC 8785~\cite{rfc8785}), carried as a
+\textbf{detached JWS} (RFC 7515~\cite{rfc7515}) and verified against a
+\textbf{JWKS} (RFC 7517~\cite{rfc7517}). The provenance tier
+(\texttt{render}/\texttt{transform}) attests \emph{what happened}: a named
+transform mapped an input (hash) to an output (hash) under named parameters,
+by a named model/provider. The measured-bound tier
+(\texttt{meaning\_risk}/\texttt{perspective}) adds the certificate of
+\S\ref{sec:certificate}--\ref{sec:verify}.
+
+\paragraph{Cross-runtime determinism.}
+A signature is verifiable in another runtime only if that runtime
+canonicalizes the payload to \emph{identical bytes}. JCS fixes key ordering
+and string/number serialization; the one subtlety is number formatting,
+which RFC 8785 \S3.2.2.3 mandates be the ECMAScript
+\texttt{Number::toString} form~\cite{ecma262}. We verify Python, Node, and
+browser canonicalizers agree byte-for-byte on the receipt payloads,
+including across the full sub-$10^{-4}$ float band where a na\"ive
+\texttt{repr}-based encoder diverges. The conformal-tier payloads are
+additionally \textbf{float-free} --- every rate quantity is an integer
+``micro-unit'' (value $\times\, 10^{6}$, $\le 10^{6} \ll 2^{53}$) --- so the
+exact-equality replay of \S\ref{sec:verify} is well-defined across runtimes.
+
+\section{The meaning-risk certificate}\label{sec:certificate}
+
+\paragraph{Meaning-loss proxy.}
+Fix a \emph{named, versioned} judge
+$e:(\text{premise},\text{hypothesis})\to\{0,1\}$ (a local NLI model or
+embedding-entailment model; never assumed to equal ``meaning''). For a
+(source $S$, output $T$) pair with sentence units $\mathrm{sent}(\cdot)$,
+define
+\[
+\mathrm{recall}=\tfrac{1}{|\mathrm{sent}(S)|}\!\!\sum_{s\in\mathrm{sent}(S)}\!\! e(T,s),\quad
+\mathrm{fid}=\tfrac{1}{|\mathrm{sent}(T)|}\!\!\sum_{t\in\mathrm{sent}(T)}\!\! e(S,t),
+\]
+\[
+\ell(S,T)=1-\big(w_r\,\mathrm{recall}+w_f\,\mathrm{fid}\big)\in[0,1],\quad w_r+w_f=1.
+\]
+Recall penalizes omission, fidelity penalizes fabrication; $\ell(S,S)=0$.
+The judge is named and versioned in the receipt, so the certified bound is
+\emph{explicitly conditional on it}.
+
+\paragraph{Certificate.}
+Let $(S_i,T_i)_{i=1}^n$ be a calibration sample exchangeable with
+deployment, $\ell_i=\ell(S_i,T_i)$, preservation $p_i=1-\ell_i\in[0,1]$. By
+Hoeffding's inequality~\cite{hoeffding1963}, the one-sided $(1-\delta)$
+lower confidence bound on $\mathbb{E}[p]$ is
+$\bar p-\sqrt{\ln(1/\delta)/(2n)}$, hence the $(1-\delta)$ \textbf{upper}
+bound on expected meaning-loss is
+\begin{equation}
+U_\delta \;=\; \min\!\Big(1,\; \bar\ell + \sqrt{\tfrac{\ln(1/\delta)}{2n}}\Big),
+\qquad \Pr\big[\mathbb{E}[\ell]\le U_\delta\big]\ge 1-\delta. \tag{1}
+\label{eq:bound}
+\end{equation}
+Three estimators ship: \textbf{Hoeffding} \eqref{eq:bound} for
+$\ell\in[0,1]$; \textbf{Clopper--Pearson} (exact) for the binary
+preserved/lost view; and the variance-adaptive \textbf{empirical-Bernstein}
+bound (Maurer \& Pontil, 2009~\cite{maurerpontil2009}), whose deviation
+scales with the sample variance and is therefore tighter for low-variance
+batches at larger $n$ (its additive $O(1/(n{-}1))$ term makes it
+\emph{looser} than Hoeffding at small $n$ --- a regime fact, not a tuning
+knob). The shipped default selects Clopper--Pearson for binary data and
+Hoeffding otherwise; the choice is made a priori, never by comparing
+realized bounds.
+
+\paragraph{Wire and disclosure.}
+The receipt commits the SHA-256 of the integer-micro loss vector and carries
+\texttt{n}, \texttt{delta\_micro}, \texttt{method},
+\texttt{point\_estimate\_micro}, \texttt{risk\_upper\_bound\_micro}, the
+judge identity, the calibration \texttt{corpus\_id}, and two
+\emph{required, enforced} fields: a non-empty \texttt{not\_covered} list
+(the layers the proxy structurally cannot reach --- arrangement, sound,
+connotation, implicature) and a non-empty \texttt{disclosure} string. A
+receipt that discloses nothing cannot pass as a bare bound.
+
+\section{Verification: two stages}\label{sec:verify}
+
+Verification separates \emph{issuer-attestation} (everywhere) from
+\emph{bound-attestation} (deterministic, offline, where the certifier runs).
+
+\begin{algo}[{\texttt{verify(envelope, jwks, [losses], [max\_age])}}]
+\label{alg:verify}
+\textbf{Stage A (any runtime).} (a) JOSE-verify the detached JWS over
+$\mathrm{JCS}(\text{payload})$ against \texttt{jwks}; (b) gate
+\texttt{schema} (fail closed on unknown); (c) check header invariants
+(\texttt{alg=EdDSA}, matching \texttt{kid}, \texttt{b64:false},
+\texttt{crit:["b64"]}); (d) enforce disclosure
+(\texttt{not\_covered}${}\ne\emptyset$, \texttt{disclosure}${}\ne{}$``'');
+(e) if \texttt{max\_age} given, check the \texttt{signed\_at} window.
+$\to$ \emph{authentic + self-disclosing.}\\
+\textbf{Stage B (when the loss vector is supplied side-band).} (f) recompute
+the loss-vector hash and require equality; (g) re-run the certifier of
+\S\ref{sec:certificate} over the committed integer-micro losses at the
+payload's \texttt{method}/\texttt{delta}; (h) require the reproduced
+\texttt{risk\_upper\_bound\_micro}, \texttt{point\_estimate\_micro}, and
+\texttt{n} to match by \textbf{exact integer equality}. $\to$ \emph{bound
+reproduced.}
+\end{algo}
+
+Stage B is what turns ``measured'' into ``measured and independently
+reproducible,'' and it is what distinguishes a \emph{tampered-in-transit}
+receipt (signature fails) from an \emph{overclaimed-at-issue} one (signature
+valid, bound does not replay). The certificate replays on any machine;
+\emph{re-deriving} the losses from raw text additionally requires the named
+model judge, whose forward pass is machine-pinned (cross-hardware
+floating-point drift) --- a fact the receipt discloses. So ``verifiable in
+every runtime'' means the signature and bound \emph{replay}, not the
+\emph{meaning recomputation}.
+
+\section{Perspective receipts (group-conditional)}\label{sec:perspective}
+
+A marginal bound hides the cohort it is worst on. Given cohort labels
+$g_i$, the \textbf{perspective receipt} certifies \eqref{eq:bound} per
+declared cohort over only that cohort's losses --- the discrete-covariate
+case of group-conditional risk control (Gibbs, Cherian \& Cand\`es,
+2023~\cite{gibbs2023}). The marginal and the per-cohort family are
+\emph{separate} $(1-\delta)$ statements; with \texttt{simultaneous} set,
+each cohort is certified at $\delta/G$ (Bonferroni) so that \emph{all} $G$
+cohort bounds hold \textbf{jointly} at $\ge 1-\delta$. Each cohort pays its
+own finite-sample radius --- a small cohort gets a wide bound, which is
+honest, not a defect.
+
+\section{Empirical demonstration}\label{sec:empirical}
+
+We issue two real receipts over public-domain corpora. Each is committed (a
+signed golden, the integer loss vector, a deterministic generator), replays
+offline via Algorithm~\ref{alg:verify} Stage B, was \textbf{independently
+re-derived to the exact micro-unit} and adversarially audited before
+release.
+
+\subsection{Compression (BillSum, CC0)}\label{sec:billsum}
+
+First 64 bills of the BillSum test split (US Congressional bills + reference
+summaries; CC0-1.0 as US-government works), local MiniLM-cosine entailment
+judge. The abstractive bill$\to$summary transform certifies \textbf{expected
+meaning-loss $\le 0.6454$ at 95\%} ($n=64$, mean $0.4925$), controlled
+against an operator-chosen \textbf{0.70 target} --- an illustrative bar set
+by the issuer, not a regulator/SLA threshold, so ``controlled: true'' means
+``met the bar the issuer picked'', not ``passed an external quality gate''.
+Aggressive summarization loses about half the named proxy on average; the
+receipt \emph{certifies how much}, it does not claim little was lost.
+
+\subsection{Translation (opus-100)}\label{sec:translation}
+
+First 64 length-aligned EN$\to$FR pairs of opus-100, local multilingual NLI
+judge (mDeBERTa-v3-xnli). The translation transform certifies
+\textbf{expected meaning-loss $\le 0.4124$ at 95\%} ($n=64$, mean $0.2594$),
+controlled against an operator-chosen 0.50 target (again illustrative, not
+an external bar). The distribution is the headline: \textbf{39 of 64
+faithful translations score exactly zero meaning-loss despite near-zero
+lexical overlap} between English and French. This headline must be read
+\emph{at the judge's resolution}: at the 0.5 NLI cut the per-pair loss takes
+only five distinct values $\{0.0, 0.4, 0.6, 0.8, 1.0\}$ --- 62/64 pairs fall
+on that grid --- so ``exactly zero'' means \emph{bidirectional entailment
+fired above 0.5 in both directions}, not fine-grained perfect preservation;
+the split is also length-aligned and short, which lowers difficulty. With
+that caveat stated: a lexical or watermark scheme cannot credit a faithful
+translation at all --- there is almost no surface to match --- whereas the
+named judge can. What the receipt takes custody of is the \emph{translation
+transform} and a \emph{bounded named proxy} for what it preserved, issued as
+a signed certificate --- custody of a transform, not of meaning itself.
+
+\subsection{Coverage validation}\label{sec:coverage}
+
+The bounds are only meaningful if valid. We measure empirical coverage of
+the $(1-\delta)$ upper bound --- the fraction of trials in which the
+certified bound does not fall below the true loss rate --- on synthetic data
+with known ground truth ($n=64$, $2\times 10^{4}$ trials):
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+method & tl=0.1, $\delta$=.05 & tl=0.3, $\delta$=.05 & tl=0.5, $\delta$=.05 & tl=0.5, $\delta$=.10 \\
+\midrule
+target & $\ge 0.95$ & $\ge 0.95$ & $\ge 0.95$ & $\ge 0.90$ \\
+Hoeffding & 1.000 & 0.997 & 0.992 & 0.984 \\
+empirical-Bernstein & 1.000 & 1.000 & 1.000 & 1.000 \\
+Clopper--Pearson & 0.961 & 0.972 & 0.970 & 0.919 \\
+\bottomrule
+\end{tabular}
+\caption{Empirical coverage of the $(1-\delta)$ upper bound on synthetic
+data with known ground truth ($n=64$, $2\times 10^{4}$ trials).}
+\label{tab:coverage}
+\end{table}
+
+All estimators clear their target in every regime (Hoeffding and eB
+conservatively, Clopper--Pearson near-nominal). The Bonferroni simultaneous
+path's \emph{joint} (all-cohorts) coverage was separately validated at 0.958
+against a 0.95 target. At the receipts' $n=64$ and observed variance,
+Hoeffding is the tighter honest estimator than empirical-Bernstein (BillSum
+0.645 vs 0.650; translation 0.412 vs 0.518), confirming the a-priori default
+was not a favorable cherry-pick.
+
+\subsection{Honest scope}\label{sec:scope}
+
+Each receipt is certified under its \emph{own} named judge (the two judges
+differ), so the two means are not a single comparable grading scale. The
+bounds are over the \emph{named, filtered} calibration corpora under
+exchangeability --- not over all summarization or all translation; the
+length-alignment filter on the translation corpus plausibly biases its proxy
+\emph{low} relative to the unfiltered split. The certificate is a
+\textbf{batch} primitive: a single document uses a per-document measurement,
+not the bound.
+
+\section{Proof boundary}\label{sec:boundary}
+
+A verified receipt \textbf{proves} (cryptographic, given P1--P2): the named
+issuer signed this exact payload; the committed losses hash to the anchor;
+the named certifier reproduces the bound on those losses. It \textbf{does
+not prove}: output truth or freshness; issuer honesty; that \emph{meaning}
+was preserved (only that a \emph{named proxy} is bounded, marginally, under
+exchangeability); or anything about human-vs-AI authorship --- we ship no
+detection number, and any such signal is advisory, never a guarantee. The
+proxy's structural blind spots are declared in the enforced
+\texttt{not\_covered} field. This is the discipline that keeps the gap
+between ``a bounded named proxy'' and ``preserved meaning'' continuously
+visible rather than rhetorically closed.
+
+\section{Position versus prior and concurrent work}\label{sec:related}
+
+\begin{itemize}
+\item \textbf{Signed-but-semantics-disclaiming receipts.}
+  \textbf{AEX}~\cite{aex2026} independently uses JCS + SHA-256 + Ed25519
+  signed transformation-receipt chains for LLM APIs but \textbf{explicitly
+  disclaims} that an accepted transform is ``semantically correct,
+  reasonable, or minimal.'' The same pattern --- a signed artifact that
+  proves \emph{what was computed} and avoids any quality claim --- recurs in
+  deterministic-inference attestation (EigenAI~\cite{eigenai2026}) and
+  signed tool-call receipts~\cite{toolreceipts2026}. Our contribution is
+  precisely that uniformly-disclaimed semantic delta, as a finite-sample,
+  replayable certificate.
+\item \textbf{The semantic gap, named independently.} A 2026 survey of
+  AI-content identity and provenance~\cite{survey2026} articulates exactly
+  this gap --- that \emph{cryptographic correctness does not imply semantic
+  correctness}, and that prevailing provenance attests output attribution,
+  not ``whether the transformation preserved semantic fidelity.'' Our
+  certificate is a concrete instrument for that independently-named gap.
+\item \textbf{C2PA / Content Credentials}~\cite{c2pa} bind provenance to
+  media; C2PA 2.4 adds text manifests, but the text binding is a
+  \emph{byte-exact} hard hash that breaks under any edit or paraphrase, and
+  the spec itself states provenance is not a truth or quality claim.
+  \textbf{SynthID-Text} (Dathathri et al., 2024~\cite{dathathri2024}) and
+  statistical detectors target generation, not
+  transformation-preservation, and degrade under exactly the rewriting text
+  invites --- a property re-confirmed in 2025 for SynthID
+  specifically~\cite{synthidrobust2025} and across detector families by a
+  single training-free paraphrase attack~\cite{advparaphrase2025};
+  multi-hop rewriting~\cite{chainwash2026} drives watermark detection from
+  $\sim$88\% to under 5\% while holding semantic similarity, the exact
+  regime a meaning-preservation certificate is built for.
+\item \textbf{EU AI Act Article 50}~\cite{euaiact} obliges the
+  \emph{generator} to mark; the associated \emph{Code of Practice on
+  Transparency of AI-Generated Content} (finalized 10 June 2026) sets out
+  the marking expectations. This work is an adjacent, complementary
+  instrument (it attests what a \emph{transform} preserved), not a 50(2)
+  marker substitute; we make no claim about which marking technologies the
+  Code prescribes for text, and this certificate is complementary to
+  whatever marker is used.
+\item \textbf{Distribution-free guarantees.} Hoeffding
+  (1963)~\cite{hoeffding1963}; the empirical-Bernstein bound (Maurer \&
+  Pontil, 2009~\cite{maurerpontil2009}); conformal prediction (Vovk et al.,
+  2005~\cite{vovk2005}; Angelopoulos \& Bates,
+  2023~\cite{angelopoulosbates2023}) and conformal risk control
+  (Angelopoulos et al., ICLR 2024~\cite{angelopoulos2024crc});
+  group-conditional coverage (Gibbs, Cherian \& Cand\`es,
+  2023~\cite{gibbs2023}). The nearest applications to \emph{transform
+  quality} are conformal prediction over a machine-translation quality
+  score~\cite{giovannotti2023} and conformal coverage on summary
+  sentence-importance~\cite{confsumm2025}; the nearest
+  \emph{output}-factuality line is Mohri \& Hashimoto~\cite{mohri2024} and
+  concurrent conditional-factuality certificates~\cite{condfact2026}. None
+  couples its statistical bound to a signed, replayable receipt, and none
+  bounds expected meaning-loss of a \emph{transform} under a named judge.
+  Our contribution is the \emph{composition} --- a signed, replayable
+  receipt over a named meaning-loss proxy --- not a new inequality.
+\end{itemize}
+
+\section{Limitations and future work}\label{sec:limits}
+
+Validity rests on exchangeability between calibration and deployment, which
+is assumed, not sampled --- a deliberately disclosed boundary common to all
+conformal guarantees. Model-judge replay is machine-pinned; de-pinning via
+integer/fixed-point CPU inference (so a meaning-judge forward pass is
+hardware-independent) is named future work --- same-hardware bitwise
+determinism is now an engineering solved problem (batch-invariant kernels),
+but cross-hardware reproducibility remains open, which is the niche this
+de-pinning targets. The proxy is a proxy; stronger faithfulness judges are a
+drop-in upgrade --- MiniCheck (Tang et al., 2024~\cite{minicheck2024}) is
+the lightweight lineage anchor, though lighter open judges have since been
+reported to match or surpass it (e.g.\ Paladin-mini, 2025) --- and any
+judge-conditional bound inherits the judge's \emph{label-noise} ceiling, not
+merely its accuracy (Verifying the
+Verifiers~\cite{verifyingverifiers2025}). A tighter
+betting/empirical-Bernstein confidence sequence is a no-wire-change
+tightening. The corpora here demonstrate the mechanism; they are not a
+benchmark suite. The binding open problem is not a sharper inequality but
+\textbf{adoption}: one external party issuing and verifying a receipt it did
+not author.
+
+% References. The Markdown draft flags these as "to be formatted; primary
+% sources verified"; two entries carry the draft's own "[exact title to
+% verify before submission]" note, preserved below.
+\begin{thebibliography}{99}
+
+\bibitem{rfc8032}
+S.~Josefsson and I.~Liusvaara.
+\newblock {Edwards-Curve Digital Signature Algorithm (EdDSA)}.
+\newblock RFC 8032, 2017.
+\newblock (Ed25519; scheme due to D.~J. Bernstein et al.)
+
+\bibitem{rfc8785}
+A.~Rundgren, B.~Jordan, and S.~Erdtman.
+\newblock {JSON Canonicalization Scheme (JCS)}.
+\newblock RFC 8785, 2020.
+
+\bibitem{rfc7515}
+M.~Jones, J.~Bradley, and N.~Sakimura.
+\newblock {JSON Web Signature (JWS)}.
+\newblock RFC 7515, 2015.
+
+\bibitem{rfc7517}
+M.~Jones.
+\newblock {JSON Web Key (JWK)}.
+\newblock RFC 7517, 2015.
+
+\bibitem{hoeffding1963}
+W.~Hoeffding.
+\newblock Probability inequalities for sums of bounded random variables.
+\newblock \emph{Journal of the American Statistical Association},
+  58(301):13--30, 1963.
+
+\bibitem{maurerpontil2009}
+A.~Maurer and M.~Pontil.
+\newblock Empirical {B}ernstein bounds and sample variance penalization.
+\newblock In \emph{COLT}, 2009.
+
+\bibitem{vovk2005}
+V.~Vovk, A.~Gammerman, and G.~Shafer.
+\newblock \emph{Algorithmic Learning in a Random World}.
+\newblock Springer, 2005.
+
+\bibitem{angelopoulosbates2023}
+A.~N. Angelopoulos and S.~Bates.
+\newblock Conformal prediction: A gentle introduction.
+\newblock \emph{Foundations and Trends in Machine Learning}, 2023.
+
+\bibitem{angelopoulos2024crc}
+A.~N. Angelopoulos et al.
+\newblock Conformal risk control.
+\newblock In \emph{ICLR}, 2024.
+
+\bibitem{gibbs2023}
+I.~Gibbs, J.~J. Cherian, and E.~J. Cand\`es.
+\newblock Conformal prediction with conditional guarantees.
+\newblock 2023.
+
+\bibitem{dathathri2024}
+S.~Dathathri et al.
+\newblock Scalable watermarking for identifying large language model outputs
+  ({SynthID-Text}).
+\newblock \emph{Nature}, 2024.
+
+\bibitem{aex2026}
+{AEX}: Non-intrusive multi-hop attestation and provenance for {LLM} {APIs}.
+\newblock arXiv:2603.14283, 2026.
+
+\bibitem{survey2026}
+(Survey) {AI}-content identity and provenance; names the ``semantic intent
+  gap.''
+\newblock arXiv:2604.23280, 2026.
+\newblock [exact title to verify before submission]
+
+\bibitem{chainwash2026}
+Multi-hop paraphrase removal of {LLM} text watermarks (``Chainwash'').
+\newblock arXiv:2605.05503, 2026.
+\newblock [exact title to verify before submission]
+
+\bibitem{condfact2026}
+Conditional factuality-controlled {LLMs} with generalization certificates.
+\newblock arXiv:2603.27403, 2026.
+
+\bibitem{eigenai2026}
+{EigenAI}: deterministic-inference attestation.
+\newblock arXiv:2602.00182, 2026.
+
+\bibitem{toolreceipts2026}
+Tool receipts, not {ZK} proofs: signed tool-call receipts for agents.
+\newblock arXiv:2603.10060, 2026.
+
+\bibitem{giovannotti2023}
+P.~Giovannotti.
+\newblock Evaluating machine translation quality with conformal predictive
+  distributions.
+\newblock arXiv:2306.01549 ({COPA} 2023).
+
+\bibitem{confsumm2025}
+Document summarization with conformal importance guarantees.
+\newblock arXiv:2509.20461, 2025.
+
+\bibitem{mohri2024}
+C.~Mohri and T.~Hashimoto.
+\newblock Language models with conformal factuality guarantees.
+\newblock arXiv:2402.10978, 2024.
+
+\bibitem{synthidrobust2025}
+Robustness assessment and enhancement of text watermarking for {Google's}
+  {SynthID}.
+\newblock arXiv:2508.20228, 2025.
+
+\bibitem{advparaphrase2025}
+Adversarial paraphrasing: universal training-free evasion of {AI}-text
+  detectors.
+\newblock arXiv:2506.07001 ({NeurIPS} 2025).
+
+\bibitem{minicheck2024}
+L.~Tang et al.
+\newblock {MiniCheck}: efficient fact-checking of {LLMs} on grounding
+  documents.
+\newblock In \emph{EMNLP}, 2024. arXiv:2404.10774.
+
+\bibitem{verifyingverifiers2025}
+Verifying the verifiers: label noise in fact-verification benchmarks.
+\newblock arXiv:2506.13342, 2025.
+
+\bibitem{c2pa}
+{C2PA}.
+\newblock \emph{Coalition for Content Provenance and Authenticity, Technical
+  Specification} (digitalSourceType taxonomy, v2.4; text manifests added in
+  2.x).
+
+\bibitem{euaiact}
+European Union.
+\newblock \emph{Artificial Intelligence Act}, Article 50 (applicable 2 Aug
+  2026), and the \emph{Code of Practice on Transparency of AI-Generated
+  Content} (finalized 10 June 2026).
+
+\bibitem{ecma262}
+{ECMA-262}.
+\newblock \emph{ECMAScript Language Specification} (\S~Number::toString).
+
+\end{thebibliography}
+
+% ---------------------------------------------------------------------------
+% Preserved meta-commentary from the Markdown draft (NOT paper content):
+%
+% Header note: "Draft (final-form v0) --- 2026-06-09. Targeted venue: cs.CR
+% (primary), cs.LG (secondary). Every empirical number is cited from a
+% committed, signed, independently re-derived receipt; every claim is scoped
+% to the proof boundary (S8). Operator-review draft --- voice, emphasis, and
+% final framing are the operator's to shape; drafting notes are at the foot."
+%
+% Drafting notes for the operator (next pass): (i) the Abstract section prose
+% is 1,426 chars --- it fits the arXiv 1,920-char abstract field verbatim
+% as-is (the "Contributions" list stays in the body; abstract + contributions
+% together is 2,113 and would need cutting); (ii) decide whether S3's
+% substrate (bench_digest reproducibility, the six compliance validators)
+% earns its own subsection or stays compressed; (iii) add the coverage figure
+% (the S7.3 table as a plot) and a system diagram; (iv) pick the single
+% running example used end-to-end; (v) fetch full bibliographic details +
+% DOIs and convert to the venue's bib style; (vi) reconcile first-person /
+% voice. The sheaf-detector honest-negative results are intentionally absent
+% --- they are the separate cs.LG Paper 2.
+% ---------------------------------------------------------------------------
+
+\end{document}
