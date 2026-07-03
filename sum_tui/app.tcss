@@ -1,0 +1,95 @@
+/* SUM Workbench — terminal theme. Deep slate ground, signature teal accent,
+   green/red/amber for kept/dropped/unsupported. */
+
+Screen {
+    background: #0b0f14;
+    color: #d7dde4;
+}
+
+Header {
+    background: #11161d;
+    color: #3fd0c9;
+    text-style: bold;
+}
+
+Footer {
+    background: #11161d;
+    color: #6b7785;
+}
+
+#top {
+    height: 1fr;
+}
+
+.col {
+    border: round #232a33;
+    padding: 0 1;
+    margin: 1 1 0 1;
+    height: 1fr;
+}
+
+#col-input { width: 1fr; }
+#col-transform { width: 1fr; }
+#col-results { width: 2fr; }
+
+.panel-title {
+    color: #3fd0c9;
+    text-style: bold;
+    height: 1;
+    margin: 1 0 1 0;
+}
+
+.dim { color: #6b7785; }
+
+#source {
+    height: 1fr;
+    border: round #232a33;
+    background: #0e1319;
+}
+
+.btnrow { height: auto; }
+
+Slider {
+    height: 1;
+    margin: 0 0 1 0;
+    color: #d7dde4;
+}
+Slider:focus {
+    background: #11161d;
+    text-style: bold;
+}
+
+#run {
+    width: 100%;
+    margin: 1 0 1 0;
+}
+
+#lossnum-wrap {
+    height: auto;
+    border: round #232a33;
+    background: #0e1319;
+    padding: 1;
+}
+#lossnum { color: #f0a93b; }
+
+#diff {
+    height: 1fr;
+    border: round #232a33;
+    background: #0e1319;
+    padding: 0 1;
+}
+
+#frontier {
+    height: 9;
+    border: round #232a33;
+}
+
+#nutrition {
+    height: auto;
+    min-height: 4;
+    border: round #3fd0c9;
+    background: #0e1319;
+    color: #9aa6b2;
+    padding: 1;
+    margin: 1 1 0 1;
+}
