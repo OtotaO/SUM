@@ -448,13 +448,24 @@ jobs:
     name: pip install sum-engine (fresh venv smoke)
     needs: zig-core
     runs-on: ubuntu-latest
+    # Interpreter-coverage matrix (2026-07-09 future-proofing audit):
+    # pyproject declares requires-python >=3.10, but until this matrix
+    # every CI job ran only 3.12 — the declared floor was never
+    # exercised (3.10 EOLs Oct 2026), nor the next interpreter users
+    # actually install (3.13). This is the shipping-promise job (cold
+    # wheel install + attest→verify round-trip), so it is the cheapest
+    # honest place to hold the floor and the ceiling.
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.12", "3.13"]
     steps:
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
 
-    - name: Set up Python 3.12
+    - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
       with:
-        python-version: "3.12"
+        python-version: ${{ matrix.python-version }}
 
     - name: Build sdist + wheel
       run: |

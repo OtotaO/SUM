@@ -260,7 +260,7 @@ questions.
 
 Shipping surface at the current HEAD: the `sum` binary (`v0.8.1` on
 `pyproject.toml`; **0.8.1 is LIVE on PyPI** — `sum-engine` latest, verified
-2026-06-24 via the PyPI JSON API. 0.8.0 published the `sum_verify` SDK + the
+2026-07-09 via the PyPI JSON API. 0.8.0 published the `sum_verify` SDK + the
 dependency-light `[verify]` extra (`pip install "sum-engine[verify]"` —
 `cryptography` + `joserfc` only, no numpy/scipy/torch) and folded the
 meaning-loss frontier arc into the release behind the `[research]` extra; see
@@ -309,7 +309,7 @@ iterated-round-trip CLOSED (PRs #248 + #250 — three K=10 receipts,
 all corpora STABLE under composition); F4 attest-axioms-field fix
 (#251 — Scenario A's `attest → compose` step unblocked); F12
 v1/v2/v3 NIM rate-limit retry hardening (#246 / #247 / #249).
-**In-flight:** T4 drift-composition audit (PR #252 — drift_pct fits
+T4 drift-composition audit CLOSED (PR #252, merged — drift_pct fits
 a fixed-point composition law on every measured corpus within DKW
 95% bound). The Node verifier in `standalone_verifier/`, and the
 browser demo in `single_file_demo/`, both verify Ed25519 on the same
@@ -322,7 +322,7 @@ every PR.
 recommended order T5 → T1 → T4 → T2 → T3):
 - T5 — negative-control corpus: **DONE** (`fixtures/bench_receipts/negative_control_2026-05-17.json`)
 - T1 — iterated round-trip: **CLOSED 2026-05-21** (PRs #248 + #250)
-- T4 — drift-composition audit: **CLOSED 2026-05-22** (PR #252 — pending merge)
+- T4 — drift-composition audit: **CLOSED 2026-05-22** (PR #252, merged)
 - T2 — volumetric capability regions for slider bench: **OPEN** (needs `sum.slider_drift_bench.v1` receipts)
 - T3 — DKW worst-case bounds for render receipt trust scope: **OPEN** (needs `sum.slider_drift_bench.v1` receipts)
 

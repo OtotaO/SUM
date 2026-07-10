@@ -49,6 +49,26 @@ from sum_engine_internal.research.meaning.meaning_loss import (
 # model. A BERT-family model — we mean-pool its token embeddings rather
 # than depend on the (version-fragile) sentence-transformers wrapper.
 DEFAULT_MODEL_ID = "sentence-transformers/all-MiniLM-L6-v2"
+# HF repo revisions are mutable refs: the upstream repo can be
+# force-pushed or re-uploaded under the same ID (all-MiniLM-L6-v2 was
+# last modified upstream 2026-06-01), silently changing what a "default
+# judge" computes. Pin the default models to the exact revision current
+# at 2026-07-09 so a fresh cache resolves the same weights this code was
+# validated against. A custom model_id is NOT pinned (revision=None)
+# unless the caller supplies one.
+DEFAULT_MODEL_REVISION = "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
+
+
+def _resolve_revision(
+    model_id: str, revision: "str | None", default_id: str, default_rev: str
+) -> "str | None":
+    """The revision to load: an explicit ``revision`` always wins; the
+    pinned default revision applies only when ``model_id`` IS the default
+    model (a custom model would 404 on another repo's commit); otherwise
+    ``None`` (HF ref ``main``)."""
+    if revision:
+        return revision
+    return default_rev if model_id == default_id else None
 
 
 @dataclass
@@ -59,6 +79,7 @@ class EmbeddingJudge:
 
     threshold: float = 0.5
     model_id: str = DEFAULT_MODEL_ID
+    revision: "str | None" = None
     _tok: Any = field(default=None, init=False, repr=False, compare=False)
     _mdl: Any = field(default=None, init=False, repr=False, compare=False)
 
@@ -73,8 +94,11 @@ class EmbeddingJudge:
                 "EmbeddingJudge needs the [judge] extra (transformers + "
                 "torch): pip install 'sum-engine[judge]'"
             ) from e
-        self._tok = AutoTokenizer.from_pretrained(self.model_id)
-        self._mdl = AutoModel.from_pretrained(self.model_id).eval()
+        rev = _resolve_revision(
+            self.model_id, self.revision, DEFAULT_MODEL_ID, DEFAULT_MODEL_REVISION
+        )
+        self._tok = AutoTokenizer.from_pretrained(self.model_id, revision=rev)
+        self._mdl = AutoModel.from_pretrained(self.model_id, revision=rev).eval()
 
     def _embed(self, texts: list[str]):
         import torch
@@ -150,6 +174,10 @@ def embedding_entailment_scorer(
 # AEX (arXiv:2603.14283) disclaims rewriting-robustness; a real NLI judge
 # is exactly that robustness.
 DEFAULT_NLI_MODEL_ID = "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli"
+# Same mutable-ref rationale as DEFAULT_MODEL_REVISION above — and this
+# one lives under a personal (not org) account, so pinning matters more.
+# Revision current at 2026-07-09 (upstream last modified 2024-04-11).
+DEFAULT_NLI_MODEL_REVISION = "6f5cf0a2b59cabb106aca4c287eed12e357e90eb"
 
 
 def _entailment_index(id2label: dict) -> int:
@@ -199,6 +227,7 @@ class NLIJudge:
 
     threshold: float = 0.5
     model_id: str = DEFAULT_NLI_MODEL_ID
+    revision: "str | None" = None
     _tok: Any = field(default=None, init=False, repr=False, compare=False)
     _mdl: Any = field(default=None, init=False, repr=False, compare=False)
     _entail_idx: int = field(default=-1, init=False, repr=False, compare=False)
@@ -217,9 +246,15 @@ class NLIJudge:
                 "NLIJudge needs the [judge] extra (transformers + torch + "
                 "sentencepiece): pip install 'sum-engine[judge]'"
             ) from e
-        self._tok = AutoTokenizer.from_pretrained(self.model_id)
+        rev = _resolve_revision(
+            self.model_id,
+            self.revision,
+            DEFAULT_NLI_MODEL_ID,
+            DEFAULT_NLI_MODEL_REVISION,
+        )
+        self._tok = AutoTokenizer.from_pretrained(self.model_id, revision=rev)
         self._mdl = AutoModelForSequenceClassification.from_pretrained(
-            self.model_id
+            self.model_id, revision=rev
         ).eval()
         self._entail_idx = _entailment_index(self._mdl.config.id2label)
 
