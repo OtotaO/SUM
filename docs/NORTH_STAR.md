@@ -152,3 +152,42 @@ and it will outlast us all. Serve the dream, tell the truth about the numbers,
 put things in front of real humans, and do not confuse motion for progress.
 
 That is the whole doctrine.
+
+---
+
+## 7. Validation log (dated re-audits of this document — measurements only)
+
+Entries here are the succession rule in practice: a session that re-tested the
+doctrine against live evidence records the result, dated, with evidence classes.
+An entry that merely agrees is still useful — it resets the staleness clock.
+
+**2026-07-09 — full re-validation (Claude Fable 5; first session on this model).
+Verdict: the doctrine HOLDS on every tested point; no rule overruled.**
+
+- MEASURED — the statistical core was independently re-derived from scratch:
+  the BillSum golden's mean, one-sided Hoeffding bound, and losses hash all
+  reproduce from the committed raw losses with zero micro divergence
+  (645438 exactly). Full suite 2741 pass; cross-runtime K1–K4 pass; the
+  pip-install demo replays verified/0.645438 with the proxy caveat intact.
+- WEB-VERIFIED — the moat (signed × conformal bound × named meaning proxy)
+  remains unoccupied across ~20 live sources checked for the 2026-06-10→07-09
+  window. Nearest new neighbor: arXiv:2606.23768 (cryptographic certificates
+  that an agent action satisfies a *deterministic* policy predicate) — cite in
+  Paper 1 and watch; a statistical-predicate follow-up would be a direct
+  occupier. The paraphrase-defeats-detection premise reconfirmed
+  (arXiv:2508.20228v2, 2606.04906). Counter-pressure, named honestly: the
+  receipt *substrate* is commoditizing fast — Ed25519+JCS signed-receipt
+  Internet-Drafts with EU-AI-Act profiles (ACTA, ASQAV), TEE inference
+  attestation, and a hash-commitment "eval receipts" cluster forming around
+  inspect_ai. Every layer under the meaning×bound delta is being paved by
+  others. Consequence: the premium is on *occupying the lane visibly*
+  (paper public, one real adopter), not on more construction.
+- REAL-EXTERNAL — scoreboard unchanged: 9 stars, 0 forks, 0 adopters. The
+  binding constraint is still adoption. One instructive correction this
+  session: a DSPy issue asking for "signed execution receipts (EU AI Act
+  Art. 12)" looked like the first unprompted external demand in our exact
+  category — a direct fetch showed it is a vendor marketing their own
+  occurrence-receipt tool. Invariants 5 (verify before trust, including your
+  own subagents) and 4e (evidence classes) both earned their keep: the
+  occurrence-receipt lane now has competitors; the meaning lane still has
+  no demand-side proof. The wager (§2) remains open, not confirmed.
