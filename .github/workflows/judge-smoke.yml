@@ -76,3 +76,12 @@ jobs:
         print("OK: embedding judge @", DEFAULT_MODEL_REVISION[:12])
         print("OK: NLI judge       @", DEFAULT_NLI_MODEL_REVISION[:12])
         EOF
+
+    - name: Cross-architecture decision-agreement probe
+      # The committed expectations in fixtures/deterministic_judge/ were
+      # generated on the dev machine (arm64/Darwin); this runner is
+      # x86_64/Linux. Agreement on every decisively-margined probe pair is
+      # therefore a MEASURED cross-architecture decision-stability result,
+      # renewed monthly — the de-pinning evidence the receipt replay
+      # boundary cites. Near-threshold pairs are reported, not gated.
+      run: python scripts/research/deterministic_judge_probe.py --check
