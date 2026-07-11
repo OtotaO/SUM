@@ -4,6 +4,68 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **The elevation arc (2026-07-10, PRs #386-#392): judge de-pinning, calibration
+  cards, the certified chain, the witnessed log, the standards profile, and
+  residual-identity cleanup — operator-directed ("elevate all three things...").**
+  - **Deterministic judge + measured cross-architecture replay (#386 + #390).**
+    Default judge models are pinned by HF `revision=` (the embedding model had
+    been force-updated upstream 2026-06-01; the NLI judge lives under a personal
+    account); `transformers<5` ceiling; a monthly `judge-smoke` canary now loads
+    both pinned models AND recomputes a committed 22-pair probe
+    (`fixtures/deterministic_judge/`) generated on arm64/Darwin. **First
+    cross-architecture run (x86_64/Linux, 2026-07-11): all 22 decisions AND all
+    integer micro-margins reproduced exactly (`max_abs_margin_drift_micro: 0`)**
+    — at the receipt wire's 1e-6 resolution the float32 single-thread judge is
+    margin-exact across these architectures, measured monthly, not assumed.
+    Measured NEGATIVE result recorded plainly: naive INT8 dynamic quantization
+    collapses the judge (11/22 decisions flip; every entailment lost) — int8 is
+    an experiment flag excluded from expectations and CI. The per-PR
+    `pypi-install-smoke` job now runs a `{3.10, 3.12, 3.13}` interpreter matrix
+    (the declared 3.10 floor was never previously exercised; EOL Oct 2026).
+  - **Calibration cards (#387, research surface).** Judge validity graduates
+    from caveat to product: four unsigned `sum.calibration_card.v1` JSONs
+    (`fixtures/calibration_cards/`) carry every measured proxy-vs-human number
+    with full scope (corpus, aggregation level, scorer, n, CIs, failure modes) —
+    including the embedding judge's collapse on FRANK-XSum, as prominently as
+    the NLI replication. A CI test hard-locks every card number to its committed
+    measurement artifact, so cards can never drift from measurements. Cards are
+    unsigned BY DESIGN and never enter signed fields (cross-corpus overclaim).
+  - **`sum.chain_receipt.v1` — the certified chain (#392).** The drift budget's
+    named capstone, shipped: one signed envelope binding an ORDERED chain of
+    meaning-risk receipts (canonical per-hop hashes + an order-binding
+    `chain_id`), their integer-exact Bonferroni budget
+    (`budget_micro`/`joint_delta_micro`, byte-exact vs
+    `compose_drift_budget_from_payloads`), and an optional directly-measured
+    end-to-end leg with its own replay anchor. The honesty is structural: a
+    mandatory `budget_scope` field (verifiers fail closed without it) states the
+    budget bounds the SUM of per-hop expected losses, NOT end-to-end loss.
+    Issue with `sum mint-chain` (self-verifies before handing you the file);
+    verify dependency-light via `sum_verify.verify_chain_receipt` /
+    `python -m sum_verify --hops ...`; `sum_verify` 1.0.0 -> 1.1.0; the JS
+    verifier fails closed on the schema in v1. Spec:
+    `docs/CHAIN_RECEIPT_FORMAT.md`; `RECEIPT_FAMILY_SPEC` is now a five-schema
+    family.
+  - **Transparency log — witnessed receipts (#391).** First rung of the witness
+    gap (self-signed is not witnessed): `transparency/log.jsonl`, a public
+    append-only hash chain (entries commit each receipt's canonical envelope
+    hash + the previous entry's hash; verification links on RECOMPUTED hashes so
+    edit-and-restamp cascades). Seeded with both binding-gate goldens; chain +
+    witnessed-file hashes verified in CI on every PR. Trust model stated
+    honestly in `docs/TRANSPARENCY_LOG.md`: v1 is a weak witness; the strong
+    rung (Sigstore Rekor mirroring) is specified and deliberately gated on one
+    external relying party existing.
+  - **Meaning-assertion interoperability profile, DRAFT v0.1 (#389).**
+    `docs/MEANING_ASSERTION_PROFILE.md` — a citable spec for the one assertion
+    the occurrence-receipt ecosystem (C2PA 2.4, IETF ACTA/ASQAV drafts)
+    disclaims: five normative load-bearing properties, a C2PA custom-assertion
+    embedding (`org.sumengine.meaning_risk`), an occurrence-receipt extension
+    claim, and the honest boundary as normative text. Standards submission
+    explicitly gated on an external implementer.
+  - **Residual identity retired from stranger-visible surfaces (#388).** CI
+    workflow display name -> `SUM CI`; `sum --help` prose -> "provenance
+    ledger"; README internal-API phrasing neutralized. Load-bearing identifiers
+    (filenames, class names, module paths) deliberately untouched.
+
 - **Verifier hardening from a fresh adversarial audit (2026-07-02).** Five fixes,
   none changing any wire format or committed receipt: (1) `sum verify` now
   cross-checks the unsigned `axioms` convenience mirror against
