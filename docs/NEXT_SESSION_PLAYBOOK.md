@@ -1,5 +1,227 @@
 # Next-Session Playbook
 
+## ⭐ THE GRAND PLAN (2026-07-11) — the LIVE work queue; everything below it is historical context
+
+*Written by Claude Fable 5 at the operator's direction ("draft a detailed and
+foolproof implementation plan… ensure the success and widespread adoption of
+it… agentic swarms needing parallel access to the SUM engine"). That sentence
+is the named operator pull for every phase here, including Phase D. This
+section supersedes the priority queue lower in this file. It is written to be
+executable by ANY session — follow it mechanically, verify everything.*
+
+### Phase 0 — Session bootstrap (run EVERY session, ~10 min, no exceptions)
+
+1. Read `docs/NORTH_STAR.md` (the doctrine; §7 has dated validation entries),
+   the private memory's top block (auto-loaded), then this section.
+2. Probe live state — do not trust any note, including this one:
+   ```bash
+   git -C . status --short --branch && git log --oneline -3
+   gh pr list --repo OtotaO/SUM --state open --json number --jq 'length'
+   curl -s https://pypi.org/pypi/sum-engine/json | python3 -c "import json,sys;print(json.load(sys.stdin)['info']['version'])"
+   gh api repos/OtotaO/SUM --jq '{stars:.stargazers_count,forks:.forks_count}'
+   python3 -m sum_verify --demo        # expect verified:true, 0.645438, proxy_caveat
+   python3 -m pytest -q                # expect ≥2782 pass / 1 skip / 2 xfail (2026-07-11 baseline)
+   python3 scripts/witness_receipt.py verify   # expect ok:true
+   ```
+   If any expectation fails: STOP, diagnose, update the private memory, and
+   only then continue.
+3. Repo mechanics you MUST obey (each was paid for): stage explicit paths,
+   never `git add -A` (it has leaked private drafts); `git checkout main &&
+   git pull --ff-only` before every `git checkout -b`; editing
+   README/CHANGELOG/PROOF_BOUNDARY/FEATURE_CATALOG/RENDER_RECEIPT_FORMAT/
+   TRANSFORM_RECEIPT_FORMAT requires `python -m scripts.attest_repo_docs` +
+   committing `meta/self_attestation.*` in the SAME commit; changing
+   `pyproject.toml` version (or manifest stable fields) requires
+   `python -m scripts.repo_manifest --out meta/repo_manifest.json` in the
+   same commit; workflow edits must pass `python3 scripts/lint_workflow_pins.py`;
+   outbound text passes `python3 scripts/lint_outbound_text.py` (no em dashes);
+   never touch `single_file_demo/vendor/` without regenerating via
+   `scripts/vendor` (byte-equivalence CI gate); Dependabot's codeql
+   `init`/`analyze`/`upload-sarif` bumps only merge TOGETHER (the split can
+   never self-green — precedent PR #385); squash-merge only on green CI; end
+   commit messages with the Claude co-author trailer; `docs/outreach/*` stays
+   untracked; YOU DRAFT, THE OPERATOR SENDS — never post/email/submit/tag as
+   them; never let an unmeasured claim into a signed field, README headline,
+   or committed note (check numbers against the payloads, not memory).
+
+### Phase A — Make the proof public (do first; ~1 session)
+
+**A1. Verify the arXiv kit compiles, end to end.**
+- `brew install tectonic` (BSD-licensed TeX engine, no TeXLive needed).
+- `cd docs/arxiv/latex && tectonic main.tex` — fix ONLY typography/packaging
+  errors (never scientific content); iterate until a PDF builds. Read
+  `SUBMISSION.md`, run the tarball script it names, confirm the tarball
+  contains everything `main.tex` includes.
+- Commit fixes (docs-only PR). Acceptance: `tectonic main.tex` exits 0 from a
+  clean checkout.
+- Hand the operator a 3-line task: create arXiv account → upload tarball →
+  cs.CR primary (per `docs/arxiv/SUBMISSION_OUTLINE_2026-06-07.md`), license
+  their call. THE single highest-leverage pending action in the project.
+
+**A2. Mint the world's first REAL certified multi-hop meaning chain.**
+- Corpus: `fixtures/meaning_receipts_billsum/corpus_billsum_test_first64.json`
+  (CC0, committed). Chain: document → its summary (hop 1) → deterministic
+  offline compression of the summary via the density slider / sieve distiller
+  (hop 2; `llm_calls_made=0` — see `SliderTransform` `_apply_density` /
+  `sum frontier --distill` internals). n=32 subset for runtime.
+- Judge: the NLI judge (`nli_entailment_scorer`, `[judge]` extra, pinned
+  revisions, deterministic mode from
+  `sum_engine_internal/research/meaning/deterministic_judge.py`). Losses per
+  hop + DIRECT end-to-end (document → hop-2 output).
+- Mint: `sum mint-meaning` twice (hop receipts) + `sum mint-chain --hop …
+  --hop … --end-to-end-losses …` (self-verifies). Follow the committed
+  pattern in `fixtures/meaning_receipts_billsum/generate_billsum_fixture.py`
+  — commit ONLY public JWKS, never the private key.
+- Commit under `fixtures/chain_receipts_billsum/` with a generate script +
+  README (honest labels: n=32, Hoeffding bounds are wide; that is fine and
+  said plainly). Add replay tests mirroring
+  `Tests/research/test_meaning_golden_billsum.py`.
+- Witness all three receipts: `python3 scripts/witness_receipt.py append …`
+  (exact micro bounds in the notes — read them from the payloads).
+- Acceptance: fresh-checkout replay test green; `witness_receipt.py verify`
+  ok; `python -m sum_verify chain.json --jwks … --hops … --losses …` returns
+  verified:true.
+
+**A3. Surface the new layer on the canonical docs.**
+- README: add chain receipt + transparency log + mint-chain to the feature
+  narrative (short, honest). PROOF_BOUNDARY: add (a) the measured
+  cross-architecture judge result — all 22 probe decisions AND integer
+  micro-margins exact across arm64/Darwin ↔ x86_64/Linux, torch 2.7.1,
+  renewed monthly by `judge-smoke` — with that full scope; (b) the chain
+  golden from A2 once committed. BOTH files are attest-gated (Phase 0 rules).
+
+**A4. Prep release 0.9.0 (publish stays operator-side).**
+- Bump `pyproject.toml` 0.8.1 → 0.9.0; cut a `[0.9.0]` CHANGELOG section from
+  `[Unreleased]`; refresh manifest + attest (same commits, Phase 0 rules).
+- After merge, operator runs: `git tag v0.9.0 && git push origin v0.9.0`,
+  then approves the `pypi` environment gate in Actions. Post-publish verify
+  (Claude): fresh venv `pip install "sum-engine[verify]==0.9.0"` →
+  `python -m sum_verify --demo` → verified:true.
+
+### Phase B — Make the dream visible (right after A; ~1 session)
+
+**B1. T0 altitude panel on the live demo page.**
+- Build a small static JSON (committed) of 4-6 altitude rungs from the A2
+  chain or `examples/poetry_frontier/`: per rung — text, measured loss (NLI),
+  kept/dropped/added (reuse `depth-diff` / `EntailmentScorer.explain`).
+- Add a panel to `single_file_demo/index.html`: an `<input type=range>` that
+  scrubs rungs; show the text, the kept/dropped/added lists, the measured
+  loss as the distance between detents; a receipt badge linking the witnessed
+  chain receipt. Header label, verbatim honesty: "per-document MEASUREMENT
+  under the named NLI judge — not a guarantee; corpus-level bounds live in
+  signed receipts." NO external requests; do not touch `vendor/`.
+- Deploy after merge: `gh workflow run deploy-worker.yml` — if it fails with
+  a missing `CLOUDFLARE_API_TOKEN` secret (state was ambiguous 2026-07-02),
+  fall back to local `cd worker && npx wrangler deploy` (wrangler OAuth is
+  logged in on the dev machine). Verify live: the panel renders at
+  https://sum-demo.ototao.workers.dev.
+- Acceptance: a stranger arriving at the live page now experiences the
+  DISTILLER (slider + what-survived readout), not only the certificate —
+  NORTH_STAR §1's quarterly question flips to yes.
+
+### Phase C — Hunt the disputant + the warm humans (Claude drafts, operator sends)
+
+**C1. The legal lane — the wager's first direct test.** Web-research one
+well-documented 2025-26 court sanction over AI-fabricated/unsupported content
+in filings (public record only). Build a one-page artifact: the filing chain
+(sources → AI summary → filing) annotated with what `sum meaning-diff
+--scorer nli` actually surfaces — the "added / unsupported claims" readout is
+the honest hook (SUM does NOT detect fabricated citations; it DOES surface
+claims a source does not entail — say exactly that). Adversarially audit +
+lint before it goes anywhere. Then identify 3 named, reachable legal-tech
+people (research clinics / e-discovery / court-tech press; web-verify each),
+draft one tailored note each. Operator picks and sends.
+**C2.** Draft a follow-up to **aranya-chatterjee** (the third human in gepa
+#381 — check their profile/repos first; offer a concrete way in, e.g. testing
+the tamper-evidence follow-up or replaying the chain golden).
+**C3.** Draft the **sunghunkwag independent vector**: read rsi-metaforge-core
+(active daily), find ONE genuine improvement SUM's substrate offers his
+evidence discipline (e.g. signed/witnessed EVIDENCE.md entries), draft an
+issue-first offer. Only genuine value; no marketing.
+**C4.** Draft ONE tailored touch into the **inspect_ai receipts cluster**
+(issues #4127/#4413): they do hash commitments; SUM adds the bounded
+faithfulness layer + `examples/inspect_meaning_scorer.py` already exists.
+**C5.** GEPA thread per its own trigger (one #381 comment if silent; recruit
+ask `docs/outreach/DO_THIS_TODAY.md` §H on #382 merge). **C6.** Retry the
+daily `/schedule` monitor for gepa/dspy threads (scheduler was down 06-23;
+never retried). **C7.** Prep HF dataset publish steps
+(`fixtures/meaning_receipts_billsum/HF_DATASET_CARD.md`, operator account).
+**C8.** Calendar: CoP sign decision by 07-22 (soft) · EU consultation 07-23 ·
+EU email follow-up ~08-05 · CAIF pre-proposal 08-08 (top fit; draft in
+`DO_THIS_TODAY.md` §G) · IEEE TPS 08-15 · NLnet reopen ~Sept.
+
+### Phase D — The agent-swarm surface (operator-directed 2026-07-11)
+
+**D1. `sum-mcp` — SUM as tools for agents.** New package dir `sum_mcp/` +
+extra `[mcp]` (dep: the official `mcp` Python SDK), console script `sum-mcp`
+(stdio transport first). Tools, each returning the SAME honest verdict
+shapes the CLIs print (proxy caveat + scope fields ride every result):
+- `verify_receipt(receipt, jwks, losses?, hops?)` — any of the 5 schemas,
+  dispatching exactly like `sum_verify.verify` / `verify_chain_receipt`.
+- `meaning_diff(source, rendering, scorer="nli"|"embedding"|"lexical")` —
+  kept/dropped/added + loss; label lexical results with the F18 misranking
+  caveat; nli requires `[judge]` (document it).
+- `depth_frontier(source, versions[])` — per-rung readout (wraps
+  `RenderFrontier`).
+- `mint_meaning_receipt(...)` / `mint_chain_receipt(...)` — BYO private key
+  path ONLY (never generate or store keys inside the server; refuse
+  otherwise).
+- Concurrency (the swarm requirement): verification is pure crypto+math —
+  safe under arbitrary parallelism; the NLI judge is a singleton behind a
+  `threading.Lock` (torch inference is not re-entrant-safe to assume) — for
+  true parallel judging, run N server processes; SAY this in the README and
+  return a `concurrency` hint field. Add an asyncio smoke test: 16 parallel
+  `verify_receipt` calls, all green.
+- Also note for swarms: the LIVE Worker already serves HTTP verify —
+  MCP = local/stdio channel, Worker = remote HTTP channel; document both in
+  one "Agents" README section.
+- Tests: in-process MCP client round-trips per tool + the parallel smoke.
+  Registry listings/announcements = operator-side.
+**D2.** Do NOT market it as a swarm-scale service until D1's parallel smoke
+and an honest throughput number exist (measure before "scalable" — this
+playbook's own rule).
+
+### Phase E — Raise the scientific ceiling (background lane; gate already open)
+
+**E1.** MiniCheck-class judge as a THIRD judge (check license + size first;
+pin `revision=`), measured onto new calibration cards against the committed
+FRANK/SummEval artifacts (`Tests/benchmarks/`; the drift-lock test in
+`Tests/research/test_calibration_cards.py` shows the pattern). Acceptance: a
+card whose numbers CI-lock to a committed result artifact.
+**E2.** Waudby-Smith–Ramdas (WSR) betting bound as method `"wsr"` in BOTH
+kernels (`sum_verify/_conformal.py` + research twin) with cross-checks to
+<1e-9 against a reference implementation and property tests; additive only —
+never touch committed receipts' methods.
+**E3.** INT8 de-pin spike, round 2: static/QAT quantization or calibrated
+ONNX INT8; acceptance = the committed probe set (decisive agreement + F18
+corpus validity preserved). Naive `quantize_dynamic` is measured-dead — do
+not retry it.
+**E4.** Write the human-anchor calibration round into the CAIF proposal
+(08-08) as a funded deliverable.
+
+### Sequencing + budget
+
+A1→A2→A3→A4 strictly ordered (A3 cites A2; A4 releases A1-A3). B needs A2's
+data. C runs parallel to everything (drafting never blocks building). D and E
+are independent lanes after A. If a session has 2 hours: do A1. If it has a
+day: A1-A3. The moment ANY real external human responds (GEPA merge, email
+reply, legal-lane bite, MCP user): drop the queue, serve them, update memory.
+
+### What NOT to do
+
+No new receipt schemas beyond the five without a named external puller. No
+detection claims, no per-document guarantees, no unscoped numbers, no new
+strategy docs (fold into memory / NORTH_STAR / this section). Do not
+re-litigate: naive INT8 (dead), embedding-judge default for load-bearing work
+(use nli), the quantum-ci.yml filename (load-bearing), Rekor/standards
+submissions (gated on a relying party / implementer). "Operator-side" is
+never a stop sign — it means shrink the operator's task to one click.
+
+---
+
+*Everything below this line predates 2026-07-11 and is historical context.*
+
+
 *Re-authored 2026-04-27 at the close of Phase E doc-pass PR A. **State-at-head section refreshed 2026-05-02** to reflect PRs #117–#125 (audit-log substrate, EU AI Act Article 12 validator, sheaf-Laplacian v3 receipt-weighted detector, v3.1 harmonic-extension primitive, audit-tightening pass + λ double-counting bug fix, v3 corpus ROC bench, F3 structural-fail diagnostic). For a focused handover to the immediately-next session see [`docs/SESSION_HANDOVER_2026-05-02_v3_diagnostic_arc.md`](SESSION_HANDOVER_2026-05-02_v3_diagnostic_arc.md) — read that first if you are picking the thread up cold from this session. This playbook below is long-term priority context.*
 
 ## Non-negotiable principles
