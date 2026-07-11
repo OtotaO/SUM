@@ -110,10 +110,9 @@ executable by ANY session — follow it mechanically, verify everything.*
   chain receipt. Header label, verbatim honesty: "per-document MEASUREMENT
   under the named NLI judge — not a guarantee; corpus-level bounds live in
   signed receipts." NO external requests; do not touch `vendor/`.
-- Deploy after merge: `gh workflow run deploy-worker.yml` — if it fails with
-  a missing `CLOUDFLARE_API_TOKEN` secret (state was ambiguous 2026-07-02),
-  fall back to local `cd worker && npx wrangler deploy` (wrangler OAuth is
-  logged in on the dev machine). Verify live: the panel renders at
+- Deploy after merge: `gh workflow run deploy-worker.yml`; if the workflow
+  cannot authenticate, use the local deploy path noted in the LOCAL ops
+  notes (untracked). Verify live: the panel renders at
   https://sum-demo.ototao.workers.dev.
 - Acceptance: a stranger arriving at the live page now experiences the
   DISTILLER (slider + what-survived readout), not only the certificate —
@@ -128,27 +127,20 @@ in filings (public record only). Build a one-page artifact: the filing chain
 --scorer nli` actually surfaces — the "added / unsupported claims" readout is
 the honest hook (SUM does NOT detect fabricated citations; it DOES surface
 claims a source does not entail — say exactly that). Adversarially audit +
-lint before it goes anywhere. Then identify 3 named, reachable legal-tech
-people (research clinics / e-discovery / court-tech press; web-verify each),
-draft one tailored note each. Operator picks and sends.
-**C2.** Draft a follow-up to **aranya-chatterjee** (the third human in gepa
-#381 — check their profile/repos first; offer a concrete way in, e.g. testing
-the tamper-evidence follow-up or replaying the chain golden).
-**C3.** Draft the **sunghunkwag independent vector**: read rsi-metaforge-core
-(active daily), find ONE genuine improvement SUM's substrate offers his
-evidence discipline (e.g. signed/witnessed EVIDENCE.md entries), draft an
-issue-first offer. Only genuine value; no marketing.
-**C4.** Draft ONE tailored touch into the **inspect_ai receipts cluster**
-(issues #4127/#4413): they do hash commitments; SUM adds the bounded
-faithfulness layer + `examples/inspect_meaning_scorer.py` already exists.
-**C5.** GEPA thread per its own trigger (one #381 comment if silent; recruit
-ask `docs/outreach/DO_THIS_TODAY.md` §H on #382 merge). **C6.** Retry the
-daily `/schedule` monitor for gepa/dspy threads (scheduler was down 06-23;
-never retried). **C7.** Prep HF dataset publish steps
+lint before it goes anywhere. Contact identification, names, and drafts live
+ONLY in the LOCAL untracked outreach tracker — never in this file.
+**C2. Warm-contact follow-ups.** The specific people, live threads, approach
+drafts, and per-thread triggers are maintained in the LOCAL untracked
+`docs/outreach/` tracker (grand-plan annex). Rules that ARE public: one
+tailored touch per contact, genuine value first (working code or a real
+improvement to THEIR project), never marketing, never a broadcast; every
+draft passes the outbound linter and an adversarial read; the operator sends.
+**C3.** Retry the daily `/schedule` thread monitor (was down 2026-06-23;
+never retried). **C4.** Prep the HF dataset publish steps
 (`fixtures/meaning_receipts_billsum/HF_DATASET_CARD.md`, operator account).
-**C8.** Calendar: CoP sign decision by 07-22 (soft) · EU consultation 07-23 ·
-EU email follow-up ~08-05 · CAIF pre-proposal 08-08 (top fit; draft in
-`DO_THIS_TODAY.md` §G) · IEEE TPS 08-15 · NLnet reopen ~Sept.
+**C5.** Calendar: EU Code-of-Practice sign decision by 07-22 (soft) · EU
+consultation 07-23 · email follow-ups per tracker · CAIF pre-proposal 08-08
+(strongest grant fit) · IEEE TPS 08-15 · NLnet reopen ~Sept.
 
 ### Phase D — The agent-swarm surface (operator-directed 2026-07-11)
 
