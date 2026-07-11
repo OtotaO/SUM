@@ -3715,7 +3715,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_attest.add_argument(
         "--ledger", default=None, metavar="DB",
         help=(
-            "PATH to an AkashicLedger SQLite file. When set, record per-"
+            "PATH to a provenance-ledger SQLite file. When set, record per-"
             "triple byte-level ProvenanceRecords (source URI, byte range, "
             "sentence excerpt, extractor ID) and attach the resulting "
             "prov_ids to bundle.sum_cli.prov_ids. Later: `sum resolve "
@@ -3922,7 +3922,7 @@ def build_parser() -> argparse.ArgumentParser:
     # resolve
     p_resolve = subparsers.add_parser(
         "resolve",
-        help="Look up a ProvenanceRecord by prov_id in a local Akashic ledger.",
+        help="Look up a ProvenanceRecord by prov_id in a local provenance ledger.",
         description=(
             "Opens the SQLite ledger at --db (default: ./akashic.db) and "
             "returns the ProvenanceRecord matching the given prov_id. Exits "
@@ -3933,12 +3933,12 @@ def build_parser() -> argparse.ArgumentParser:
     p_resolve.add_argument("--db", default="akashic.db", help="Path to the SQLite ledger. Default: ./akashic.db.")
     p_resolve.set_defaults(func=cmd_resolve)
 
-    # ledger — introspect an AkashicLedger without a prov_id in hand.
+    # ledger — introspect a provenance ledger without a prov_id in hand.
     p_ledger = subparsers.add_parser(
         "ledger",
-        help="Introspect an AkashicLedger (list prov_ids, stats, branch heads).",
+        help="Introspect a provenance ledger (list prov_ids, stats, branch heads).",
         description=(
-            "Agentic introspection for an AkashicLedger. Three subcommands: "
+            "Agentic introspection for a provenance ledger (SQLite). Three subcommands: "
             "list (NDJSON rows, one per prov_id), stats (one-shot summary), "
             "head (current state integer per branch)."
         ),
