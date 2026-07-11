@@ -1,0 +1,53 @@
+{
+  "schema": "sum.calibration_card.v1",
+  "signed": false,
+  "card_id": "frank-xsum-2026-07-02",
+  "title": "Out-of-domain replication — FRANK-XSum (abstractive, hallucination-heavy)",
+  "what_this_is": "One out-of-domain replication of the judge-validity measurement, on the half of FRANK built from XSum (highly abstractive one-sentence summaries, hallucination-heavy). This is the card that shows WHICH judge survives off-distribution: the NLI judge replicates; the embedding judge collapses to ~zero here.",
+  "corpus": {
+    "name": "FRANK (Pagnoni et al. 2021), XSum half",
+    "domain": "XSum abstractive news summarization",
+    "human_labels": "human Factuality; loss = 1 - Factuality",
+    "sampling": "deterministic seed=0 subsample, 1000-resample bootstrap CIs"
+  },
+  "aggregation_level": "pooled_summary_level",
+  "measured_at": "2026-07-02",
+  "results": [
+    {
+      "scorer": "nli-deberta-mnli-fever-anli@0.5",
+      "spearman": 0.2902,
+      "spearman_ci95": [0.1271, 0.4513],
+      "n": 250,
+      "note": "REPLICATES the SummEval-level validity out of domain; published parallels on FRANK-XSum: MNLI 0.17, FactCC -0.07."
+    },
+    {
+      "scorer": "embedding-minilm@0.5",
+      "spearman": 0.0318,
+      "spearman_ci95": [-0.0964, 0.1672],
+      "n": 250,
+      "note": "CI spans zero: the embedding judge is corpus-dependent and collapses on abstractive, hallucination-heavy text. This is why --scorer nli is the load-bearing default."
+    },
+    {
+      "scorer": "lexical-coverage-bidirectional",
+      "spearman": 0.2081,
+      "spearman_ci95": [0.0874, 0.3069],
+      "n": 250,
+      "note": "Degrades off-distribution (0.47 on FRANK-CNN/DM -> 0.21 here)."
+    }
+  ],
+  "provenance": {
+    "script": "Tests/benchmarks/frank_proxy_calibration.py",
+    "result_artifact": "Tests/benchmarks/frank_results.json",
+    "result_paths": {
+      "nli-deberta-mnli-fever-anli@0.5": "halves.xsum.scorers['nli-deberta-mnli-fever-anli@0.5']",
+      "embedding-minilm@0.5": "halves.xsum.scorers['embedding-minilm@0.5']",
+      "lexical-coverage-bidirectional": "halves.xsum.scorers['lexical-coverage-bidirectional']"
+    }
+  },
+  "scope_limits": [
+    "Human label is Factuality only (narrower than SummEval's 4-axis meaning composite).",
+    "One replication corpus is evidence of transfer, not proof of universality.",
+    "The committed BillSum golden receipt certifies under the embedding judge; this card is the documented reason new load-bearing work should prefer --scorer nli."
+  ],
+  "reading_guidance": "This is the card a skeptic should read first: it reports the judge family's failure mode (embedding on abstractive text) as prominently as its replication (NLI)."
+}

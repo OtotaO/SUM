@@ -1,0 +1,51 @@
+{
+  "schema": "sum.calibration_card.v1",
+  "signed": false,
+  "card_id": "summeval-pooled-summary-level-2026-07-02",
+  "title": "Judge validity vs human judgment — SummEval, pooled summary level (the strict read)",
+  "what_this_is": "A machine-readable record of how well SUM's meaning-loss proxies track expert human judgments, at the STRICTEST aggregation level. It is evidence ABOUT the judge, published unsigned: calibration is a measurement of the instrument, not a certified property of any document.",
+  "corpus": {
+    "name": "SummEval (mteb/summeval, test split)",
+    "domain": "CNN/DailyMail news summarization",
+    "human_labels": "expert annotations, 1-5 per axis; proxy target = meaning composite, loss = (5 - score)/4"
+  },
+  "aggregation_level": "pooled_summary_level",
+  "aggregation_note": "Per-summary rank correlation pooled across all systems and articles. 80.6% of SummEval consistency ratings sit at exactly 5.0/5, so range restriction compresses correlations at this level; published anchors on the same benchmark at this level: ROUGE 0.12-0.19, BERTScore 0.11, QuestEval 0.31, BARTScore 0.38, GPT-4 G-Eval 0.51.",
+  "measured_at": "2026-07-02",
+  "results": [
+    {
+      "scorer": "lexical-coverage-bidirectional",
+      "target": "meaning_composite",
+      "spearman": 0.2907,
+      "n": 800
+    },
+    {
+      "scorer": "embedding-minilm@0.5",
+      "target": "meaning_composite",
+      "spearman": 0.2672,
+      "n": 800
+    },
+    {
+      "scorer": "nli-deberta-mnli-fever-anli@0.5",
+      "target": "meaning_composite",
+      "spearman": 0.2741,
+      "n": 192
+    }
+  ],
+  "provenance": {
+    "script": "Tests/benchmarks/meaning_proxy_human_calibration.py",
+    "result_artifact": "Tests/benchmarks/meaning_proxy_human_calibration.result.json",
+    "result_paths": {
+      "lexical-coverage-bidirectional": "scorers['lexical-coverage-bidirectional'].meaning_composite",
+      "embedding-minilm@0.5": "scorers['embedding-minilm@0.5'].meaning_composite",
+      "nli-deberta-mnli-fever-anli@0.5": "scorers['nli-deberta-mnli-fever-anli@0.5'].meaning_composite"
+    }
+  },
+  "scope_limits": [
+    "Correlations at this aggregation level are MODEST (~0.27-0.33): the proxy is directionally valid, not a substitute for human judgment.",
+    "Measured on news summarization; transfer to other domains/transforms is NOT established by this card (see the FRANK cards for one out-of-domain replication).",
+    "These numbers must never ride in a signed receipt field: they were measured on this corpus with these judges, not on whatever corpus a receipt certifies.",
+    "See the companion system-level card: on the SAME data the system-level correlations are ~0.57-0.75 — the apparent conflict with published '0.6-class' numbers is aggregation level + corpus, not disagreement."
+  ],
+  "reading_guidance": "Use this card to decide how much weight a meaning_risk bound deserves as evidence about MEANING (as opposed to its exact cryptographic/statistical content, which is corpus- and judge-specific and replayable from the receipt itself)."
+}
