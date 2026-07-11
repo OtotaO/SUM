@@ -41,11 +41,16 @@ for the wire spec.
 Stability: research-grade (behind the ``[research]`` extra). APIs may
 change between minor releases.
 """
-from sum_engine_internal.research.meaning.meaning_loss import (
-    EntailmentScorer,
-    LexicalCoverageScorer,
-    MeaningScorer,
-    score_pairs,
+from sum_engine_internal.research.meaning.chain_receipt import (
+    SUPPORTED_SCHEMA as CHAIN_SCHEMA,
+)
+from sum_engine_internal.research.meaning.chain_receipt import (
+    ChainReceiptDisclosureError,
+    ChainReceiptReplayError,
+    build_chain_payload,
+    build_end_to_end_leg,
+    sign_chain_receipt,
+    verify_chain_receipt,
 )
 from sum_engine_internal.research.meaning.conformal_meaning import (
     GroupedMeaningRisk,
@@ -53,23 +58,6 @@ from sum_engine_internal.research.meaning.conformal_meaning import (
     certify_meaning_risk,
     certify_meaning_risk_by_group,
     empirical_risk_coverage,
-)
-from sum_engine_internal.research.meaning.receipt import (
-    DEFAULT_NOT_COVERED,
-    SUPPORTED_SCHEMA,
-    MeaningReceiptDisclosureError,
-    MeaningReceiptReplayError,
-    build_payload,
-    losses_hash,
-    sign_meaning_risk_receipt,
-    verify_meaning_risk_receipt,
-)
-from sum_engine_internal.research.meaning.perspective_receipt import (
-    SUPPORTED_SCHEMA as PERSPECTIVE_SCHEMA,
-    build_perspective_payload,
-    evidence_hash,
-    sign_perspective_risk_receipt,
-    verify_perspective_risk_receipt,
 )
 from sum_engine_internal.research.meaning.drift_budget import (
     AdditiveAuditResult,
@@ -86,6 +74,31 @@ from sum_engine_internal.research.meaning.exchangeability import (
     advisory_report,
     assess_exchangeability,
     embed_texts,
+)
+from sum_engine_internal.research.meaning.meaning_loss import (
+    EntailmentScorer,
+    LexicalCoverageScorer,
+    MeaningScorer,
+    score_pairs,
+)
+from sum_engine_internal.research.meaning.perspective_receipt import (
+    SUPPORTED_SCHEMA as PERSPECTIVE_SCHEMA,
+)
+from sum_engine_internal.research.meaning.perspective_receipt import (
+    build_perspective_payload,
+    evidence_hash,
+    sign_perspective_risk_receipt,
+    verify_perspective_risk_receipt,
+)
+from sum_engine_internal.research.meaning.receipt import (
+    DEFAULT_NOT_COVERED,
+    SUPPORTED_SCHEMA,
+    MeaningReceiptDisclosureError,
+    MeaningReceiptReplayError,
+    build_payload,
+    losses_hash,
+    sign_meaning_risk_receipt,
+    verify_meaning_risk_receipt,
 )
 
 __all__ = [
@@ -122,6 +135,14 @@ __all__ = [
     "CertifiedDriftBudget",
     "compose_drift_budget",
     "compose_drift_budget_from_payloads",
+    # chain_receipt
+    "CHAIN_SCHEMA",
+    "ChainReceiptDisclosureError",
+    "ChainReceiptReplayError",
+    "build_chain_payload",
+    "build_end_to_end_leg",
+    "sign_chain_receipt",
+    "verify_chain_receipt",
     "AdditiveAuditResult",
     "audit_additive_vs_end_to_end",
     # exchangeability — MMD advisory (is a bound applicable to your text?)

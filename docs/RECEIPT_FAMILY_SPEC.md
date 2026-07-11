@@ -23,7 +23,7 @@ no access to SUM's servers — can verify the claim. The standing line:
 **attest, don't detect** (`PRODUCT_VISION.md` §0). General "is this AI?"
 detection is a paraphrase-defeated liability; a signature is not.
 
-The family has **four schemas**, in two tiers:
+The family has **five schemas**, in two tiers:
 
 | Schema | Tier | Attests |
 |---|---|---|
@@ -31,6 +31,7 @@ The family has **four schemas**, in two tiers:
 | `sum.transform_receipt.v1` | provenance | a named transform mapped an input (hash) to an output (hash) under named parameters (hash) |
 | `sum.meaning_risk_receipt.v1` | provenance **+ measured bound** | the above **plus** a distribution-free upper bound on expected meaning-loss under a *named proxy*, over a named corpus |
 | `sum.perspective_risk_receipt.v1` | provenance **+ measured bound** | the meaning-risk bound **per declared cohort** (novice / expert / regulator / …), optionally with a joint (Bonferroni) guarantee |
+| `sum.chain_receipt.v1` | provenance **+ measured bound** | an ORDERED chain of meaning-risk receipts (by canonical hash) **plus** their integer-exact Bonferroni budget, and optionally a directly-measured end-to-end bound — never conflating the two |
 
 The **provenance tier** is a cryptographic attestation (what happened).
 The **measured-bound tier** adds a conformal certificate that is *replayable*
@@ -128,7 +129,22 @@ The meaning-risk fields **per cohort**: `simultaneous`, `evidence_hash`,
 cohort certified at `delta/G` (Bonferroni) so all cohort bounds hold
 jointly at ≥ 1−δ.
 
-### 3.5 `sum.study_artifact.v1` — a container, not a receipt
+### 3.5 `sum.chain_receipt.v1` → [`CHAIN_RECEIPT_FORMAT.md`](CHAIN_RECEIPT_FORMAT.md)
+
+`chain_id` (order-binding), `n_hops`, `hops[]`
+(`{index, receipt_hash, schema, risk_upper_bound_micro, delta_micro, n,
+method, corpus_id, transform, scorer}` — mirrors replay-checked against
+the referenced hop payloads), `composition_rule`
+(`bonferroni_additive.v1`), `budget_micro` (= Σ hop bounds,
+integer-exact), `joint_delta_micro` (= Σ hop deltas), `budget_scope`
+(MANDATORY: the budget bounds the SUM of per-hop expected losses, NOT
+end-to-end loss — no metric/triangle claim), optional `end_to_end`
+(direct source→final certification with its own `losses_hash`),
+`not_covered`, `disclosure`, `signed_at`. Verified in the `[verify]`
+SDK (`verify_chain_receipt`); the JS verifier fails closed on it in v1
+(`SCHEMA_UNKNOWN`).
+
+### 3.6 `sum.study_artifact.v1` — a container, not a receipt
 
 Emitted by `sum study` (the verifiable cheatsheet; see
 [`MACHINE_STUDYING_APPLICABILITY.md`](MACHINE_STUDYING_APPLICABILITY.md)).

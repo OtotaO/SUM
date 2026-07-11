@@ -78,6 +78,14 @@ from sum_engine_internal.transform_receipt.format import (
     SUPPORTED_SCHEMA as TRANSFORM_SCHEMA,
 )
 from sum_engine_internal.transform_receipt.verifier import verify_transform_receipt
+from sum_verify._chain import (
+    SUPPORTED_SCHEMA as CHAIN_SCHEMA,
+)
+from sum_verify._chain import (
+    ChainReceiptDisclosureError,
+    ChainReceiptReplayError,
+    verify_chain_receipt,
+)
 from sum_verify._meaning import (
     SUPPORTED_SCHEMA as MEANING_RISK_SCHEMA,
 )
@@ -90,12 +98,13 @@ from sum_verify._meaning import (
 # Version of THIS verify surface + the wire formats it accepts. SemVer.
 # Bump minor when a new supported schema is added; major on a
 # backwards-incompatible change to an accepted format or the public API.
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 SUPPORTED_SCHEMAS: tuple[str, ...] = (
     MEANING_RISK_SCHEMA,
     RENDER_SCHEMA,
     TRANSFORM_SCHEMA,
+    CHAIN_SCHEMA,
 )
 
 __all__ = [
@@ -105,10 +114,13 @@ __all__ = [
     "verify_meaning_risk_receipt",
     "verify_render_receipt",
     "verify_transform_receipt",
+    "verify_chain_receipt",
     "SumVerifyError",
     "UnsupportedSchemaError",
     "MeaningReceiptReplayError",
     "MeaningReceiptDisclosureError",
+    "ChainReceiptReplayError",
+    "ChainReceiptDisclosureError",
     "JoseEnvelopeError",
     "ReceiptVerifyError",
 ]
@@ -150,6 +162,10 @@ def verify(
 
     ``losses`` is honoured only by the meaning-risk path (the other
     receipt types carry no replayable bound); it is ignored elsewhere.
+    For a chain receipt's richer side-band (ordered hop envelopes,
+    end-to-end losses), call :func:`verify_chain_receipt` directly —
+    this dispatcher runs the chain's always-on checks (signature,
+    disclosures, integer-exact budget/joint-delta sums, chain-id).
     """
     schema = envelope.get("schema") if isinstance(envelope, dict) else None
     if schema == MEANING_RISK_SCHEMA:
@@ -160,6 +176,10 @@ def verify(
         return verify_render_receipt(envelope, jwks, max_age_seconds=max_age_seconds)
     if schema == TRANSFORM_SCHEMA:
         return verify_transform_receipt(
+            envelope, jwks, max_age_seconds=max_age_seconds
+        )
+    if schema == CHAIN_SCHEMA:
+        return verify_chain_receipt(
             envelope, jwks, max_age_seconds=max_age_seconds
         )
     raise UnsupportedSchemaError(schema)
