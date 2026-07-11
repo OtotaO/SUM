@@ -1,0 +1,51 @@
+{
+  "schema": "sum.calibration_card.v1",
+  "signed": false,
+  "card_id": "frank-cnndm-2026-07-02",
+  "title": "Out-of-domain replication — FRANK-CNN/DM (extractive-leaning)",
+  "what_this_is": "The second half of the FRANK replication: CNN/DailyMail-derived summaries (more extractive than XSum). Together with the XSum card it brackets how each judge behaves as text moves from extractive to abstractive.",
+  "corpus": {
+    "name": "FRANK (Pagnoni et al. 2021), CNN/DM half",
+    "domain": "CNN/DailyMail news summarization",
+    "human_labels": "human Factuality; loss = 1 - Factuality",
+    "sampling": "deterministic seed=0 subsample, 1000-resample bootstrap CIs"
+  },
+  "aggregation_level": "pooled_summary_level",
+  "measured_at": "2026-07-02",
+  "results": [
+    {
+      "scorer": "lexical-coverage-bidirectional",
+      "spearman": 0.4712,
+      "spearman_ci95": [0.3361, 0.5936],
+      "n": 150,
+      "note": "Strong in-distribution-like performance on extractive text; contrast with 0.21 on the XSum half — lexical overlap is a fair judge only where summaries reuse source wording."
+    },
+    {
+      "scorer": "embedding-minilm@0.5",
+      "spearman": 0.3363,
+      "spearman_ci95": [0.1673, 0.4827],
+      "n": 150
+    },
+    {
+      "scorer": "nli-deberta-mnli-fever-anli@0.5",
+      "spearman": 0.2901,
+      "spearman_ci95": [0.147, 0.4331],
+      "n": 150,
+      "note": "Essentially identical to its XSum value (0.2902) — the NLI judge is the STABLE one across the extractive/abstractive divide, which is what a defensible default needs."
+    }
+  ],
+  "provenance": {
+    "script": "Tests/benchmarks/frank_proxy_calibration.py",
+    "result_artifact": "Tests/benchmarks/frank_results.json",
+    "result_paths": {
+      "lexical-coverage-bidirectional": "halves.cnndm.scorers['lexical-coverage-bidirectional']",
+      "embedding-minilm@0.5": "halves.cnndm.scorers['embedding-minilm@0.5']",
+      "nli-deberta-mnli-fever-anli@0.5": "halves.cnndm.scorers['nli-deberta-mnli-fever-anli@0.5']"
+    }
+  },
+  "scope_limits": [
+    "Human label is Factuality only.",
+    "Higher lexical correlation here does NOT make the lexical scorer a good judge in general — the XSum card shows why (paraphrase/abstraction defeats it, the original F18 finding)."
+  ],
+  "reading_guidance": "Read paired with the XSum card. A judge whose validity depends on the text being extractive is a judge whose validity must be re-checked per corpus — the card family exists to make that explicit."
+}
