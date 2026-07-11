@@ -114,15 +114,22 @@ class EmbeddingJudge:
             pooled = (out * mask).sum(1) / mask.sum(1).clamp(min=1e-9)
             return F.normalize(pooled, p=2, dim=1)
 
+    def similarity(self, premise: str, hypothesis: str) -> float:
+        """Max cosine similarity between ``hypothesis`` and any sentence of
+        ``premise`` (0.0 for a blank hypothesis). ``entails`` is exactly
+        this value thresholded — exposed separately so callers can record
+        decision margins."""
+        if not hypothesis.strip():
+            return 0.0
+        premise_sents = _sentences(premise) or [premise]
+        pe = self._embed(premise_sents)
+        he = self._embed([hypothesis])
+        return float((he @ pe.T).max())
+
     def entails(self, premise: str, hypothesis: str) -> bool:
         """True iff ``hypothesis`` is semantically covered by some sentence
         of ``premise`` (max cosine similarity ≥ ``threshold``)."""
-        premise_sents = _sentences(premise) or [premise]
-        if not hypothesis.strip():
-            return False
-        pe = self._embed(premise_sents)
-        he = self._embed([hypothesis])
-        return float((he @ pe.T).max()) >= self.threshold
+        return self.similarity(premise, hypothesis) >= self.threshold
 
     def entails_batch(self, premise: str, hypotheses: "list[str]") -> "list[bool]":
         """Batched :meth:`entails`: one decision per hypothesis against the
@@ -258,11 +265,14 @@ class NLIJudge:
         ).eval()
         self._entail_idx = _entailment_index(self._mdl.config.id2label)
 
-    def entails(self, premise: str, hypothesis: str) -> bool:
-        """True iff the NLI model judges ``premise`` to ENTAIL
-        ``hypothesis`` with probability ≥ ``threshold``."""
+    def entailment_probability(self, premise: str, hypothesis: str) -> float:
+        """The model's softmax probability of the ENTAILMENT class for
+        ``premise ⊨ hypothesis`` (0.0 for a blank hypothesis). ``entails``
+        is exactly this value thresholded — exposed separately so callers
+        (e.g. the deterministic-judge probe harness) can record decision
+        MARGINS, not just booleans."""
         if not hypothesis.strip():
-            return False
+            return 0.0
         import torch
 
         self._ensure_loaded()
@@ -278,7 +288,12 @@ class NLIJudge:
                 truncation=True, max_length=max_len,
             )
             probs = torch.softmax(self._mdl(**enc).logits[0], dim=-1)
-        return float(probs[self._entail_idx]) >= self.threshold
+        return float(probs[self._entail_idx])
+
+    def entails(self, premise: str, hypothesis: str) -> bool:
+        """True iff the NLI model judges ``premise`` to ENTAIL
+        ``hypothesis`` with probability ≥ ``threshold``."""
+        return self.entailment_probability(premise, hypothesis) >= self.threshold
 
     @property
     def name(self) -> str:

@@ -1,0 +1,28 @@
+{
+  "what_this_is": "Fixed probe set for the deterministic-judge cross-architecture decision-agreement canary (sum_engine_internal/research/meaning/deterministic_judge.py). Pairs span clear entailments (paraphrase), clear contradictions, clear non-entailments, lossy compressions, and deliberately near-threshold cases. Expected decisions committed in expected_decisions.json were generated on this repo's dev machine (arm64); the monthly judge-smoke CI canary recomputes on x86_64. Decisive pairs must agree; near-threshold pairs are reported as the known boundary.",
+  "threshold": 0.5,
+  "pairs": [
+    {"premise": "The committee approved the budget on Tuesday after a lengthy debate.", "hypothesis": "The budget was approved by the committee.", "note": "clear entailment: passive paraphrase"},
+    {"premise": "Alice adopted three cats from the shelter last spring.", "hypothesis": "Alice has cats.", "note": "clear entailment: generalization"},
+    {"premise": "The late payment fee is fifty dollars and applies after the fifth day of the month.", "hypothesis": "Paying late costs fifty dollars.", "note": "clear entailment: compression keeps the fact"},
+    {"premise": "The train departs Lyon at 08:15 and arrives in Paris at 10:02.", "hypothesis": "The train goes from Lyon to Paris.", "note": "clear entailment: route from schedule"},
+    {"premise": "Researchers found the drug reduced symptoms in 70 percent of participants.", "hypothesis": "The drug showed no effect on participants.", "note": "clear contradiction"},
+    {"premise": "The museum is closed on Mondays.", "hypothesis": "The museum is open every day of the week.", "note": "clear contradiction"},
+    {"premise": "Alice adores her three cats and dreads the Seattle rain.", "hypothesis": "Alice hates cats.", "note": "clear contradiction: the F18-family case"},
+    {"premise": "The quarterly report shows revenue grew nine percent year over year.", "hypothesis": "The report discusses employee vacation policy.", "note": "clear non-entailment: unrelated"},
+    {"premise": "The bridge was completed in 1937 and spans the strait.", "hypothesis": "The bridge is painted orange.", "note": "clear non-entailment: plausible but unstated"},
+    {"premise": "Either party may terminate this lease with thirty days written notice.", "hypothesis": "The landlord can end the lease with a month of notice.", "note": "entailment-leaning: near-paraphrase with role narrowing"},
+    {"premise": "The city council voted seven to two to fund the new library annex, with construction expected to begin in the fall.", "hypothesis": "The library project was funded.", "note": "entailment: vote outcome implies funding"},
+    {"premise": "Water boils at one hundred degrees Celsius at sea level.", "hypothesis": "Water boils at one hundred degrees Celsius.", "note": "near-threshold by design: dropped qualifier"},
+    {"premise": "The medication may cause drowsiness in some patients.", "hypothesis": "The medication causes drowsiness.", "note": "near-threshold by design: modality dropped"},
+    {"premise": "Most of the survey respondents preferred the new interface.", "hypothesis": "All respondents preferred the new interface.", "note": "quantifier strengthening: should NOT be entailed"},
+    {"premise": "The factory reduced emissions by thirty percent since 2020.", "hypothesis": "The factory eliminated its emissions.", "note": "overclaim: should NOT be entailed"},
+    {"premise": "She sold the painting for two million dollars at auction in London.", "hypothesis": "The painting sold for two million dollars.", "note": "clear entailment: agent dropped"},
+    {"premise": "The two countries signed a trade agreement covering agricultural exports.", "hypothesis": "A trade agreement was signed.", "note": "clear entailment: detail dropped"},
+    {"premise": "The patient's temperature returned to normal after two days of treatment.", "hypothesis": "The treatment made the patient worse.", "note": "contradiction-leaning: improvement vs worse"},
+    {"premise": "The novel was translated into fourteen languages within a year of publication.", "hypothesis": "The novel was never translated.", "note": "clear contradiction"},
+    {"premise": "The hikers reached the summit just before the storm arrived.", "hypothesis": "The hikers reached the summit.", "note": "clear entailment: temporal clause dropped"},
+    {"premise": "The company announced layoffs affecting ten percent of its workforce.", "hypothesis": "The company is hiring aggressively.", "note": "contradiction-leaning: opposite direction"},
+    {"premise": "Under the policy, refunds are issued within fourteen business days of a valid claim.", "hypothesis": "Refunds are issued within two weeks.", "note": "near-threshold by design: business days vs weeks"}
+  ]
+}
