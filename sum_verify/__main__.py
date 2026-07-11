@@ -57,7 +57,18 @@ def main(argv: list[str] | None = None) -> int:
         "--losses",
         help=(
             "per-pair losses (bare list or {'losses': [...]}) to replay a "
-            "meaning-risk receipt's bound offline"
+            "meaning-risk receipt's bound offline; for a chain receipt, "
+            "replays the end_to_end leg"
+        ),
+    )
+    parser.add_argument(
+        "--hops",
+        nargs="+",
+        metavar="HOP_RECEIPT",
+        help=(
+            "for a chain receipt: the per-hop meaning-risk receipt files, "
+            "in order — each is hash-checked against the chain, verified, "
+            "and its mirrored fields compared exactly"
         ),
     )
     parser.add_argument(
@@ -127,7 +138,23 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     try:
-        result = verify(receipt, jwks, losses=losses, max_age_seconds=args.max_age_seconds)
+        if schema == "sum.chain_receipt.v1":
+            from sum_verify import verify_chain_receipt
+
+            hop_envelopes = None
+            if args.hops:
+                hop_envelopes = [_read_json(p) for p in args.hops]
+            result = verify_chain_receipt(
+                receipt,
+                jwks,
+                hop_envelopes=hop_envelopes,
+                end_to_end_losses=losses,
+                max_age_seconds=args.max_age_seconds,
+            )
+        else:
+            result = verify(
+                receipt, jwks, losses=losses, max_age_seconds=args.max_age_seconds
+            )
     except Exception as e:  # noqa: BLE001 — surface every failure as rc=1
         print(
             json.dumps({"verified": False, "error": type(e).__name__, "detail": str(e)})
@@ -140,6 +167,19 @@ def main(argv: list[str] | None = None) -> int:
         "schema": schema,
         "replayed": losses is not None and schema == "sum.meaning_risk_receipt.v1",
     }
+    if schema == "sum.chain_receipt.v1" and isinstance(payload, dict):
+        verdict["replayed"] = bool(args.hops) or losses is not None
+        verdict["hops_replayed"] = bool(args.hops)
+        verdict["end_to_end_replayed"] = losses is not None
+        verdict["n_hops"] = payload.get("n_hops")
+        if "budget_micro" in payload:
+            verdict["budget"] = payload["budget_micro"] / 1_000_000
+        if "joint_delta_micro" in payload:
+            verdict["joint_confidence"] = max(
+                0.0, 1.0 - payload["joint_delta_micro"] / 1_000_000
+            )
+        # The composition honesty line rides every chain verdict, unsigned.
+        verdict["budget_scope"] = payload.get("budget_scope")
     if isinstance(payload, dict):
         if "scorer" in payload:
             verdict["scorer"] = payload.get("scorer")

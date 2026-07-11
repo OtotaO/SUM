@@ -2411,7 +2411,8 @@ def cmd_drift_budget(args: argparse.Namespace) -> int:
     the additive budget is not assumed to bound end-to-end drift (the slack
     sign is reported, never assumed). For a (1-δ) certified ceiling on
     cumulative EXPECTED per-hop loss, compose per-hop meaning_risk
-    receipts (`compose_drift_budget` / a future `sum.drift_budget_receipt`)."""
+    receipts (`compose_drift_budget` / the signed `sum.chain_receipt.v1`
+    minted by `sum mint-chain`)."""
     try:
         from sum_engine_internal.research.meaning.drift_budget import (
             measure_chain_drift,
@@ -3525,6 +3526,200 @@ def cmd_mint_meaning(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_mint_chain(args: argparse.Namespace) -> int:
+    """Mint (issue + sign + self-verify) a ``sum.chain_receipt.v1`` from
+    >= 2 ordered, already-minted meaning-risk receipts — the certified
+    chain: ordered hop hashes + the integer-exact Bonferroni budget +
+    optionally a directly measured end-to-end leg. Exit 0 = minted and
+    self-verified, 1 = self-verification failed, 2 = usage error."""
+    try:
+        from sum_engine_internal.research.meaning.chain_receipt import (
+            build_chain_payload,
+            build_end_to_end_leg,
+            sign_chain_receipt,
+            verify_chain_receipt,
+        )
+    except ImportError:
+        print(
+            "sum: mint-chain needs the research + verify extras: "
+            "pip install 'sum-engine[research,receipt-verify]'",
+            file=sys.stderr,
+        )
+        return 2
+
+    # ---- inputs ----
+    if len(args.hop) < 2:
+        print(
+            "sum: a chain needs at least two --hop receipts (a 1-hop chain "
+            "is just the hop receipt)",
+            file=sys.stderr,
+        )
+        return 2
+    hop_envelopes = []
+    for path in args.hop:
+        try:
+            with open(path, "r", encoding="utf-8") as fh:
+                hop_envelopes.append(json.load(fh))
+        except (OSError, ValueError) as e:
+            print(f"sum: cannot read --hop {path!r}: {e}", file=sys.stderr)
+            return 2
+
+    end_to_end = None
+    e2e_losses = None
+    if args.end_to_end_losses:
+        missing = [
+            flag
+            for flag, val in (
+                ("--scorer-name", args.scorer_name),
+                ("--loss-definition", args.loss_definition),
+            )
+            if not val
+        ]
+        if missing:
+            print(
+                f"sum: --end-to-end-losses needs {', '.join(missing)} (the "
+                f"end-to-end leg must name its judge and loss)",
+                file=sys.stderr,
+            )
+            return 2
+        try:
+            with open(args.end_to_end_losses, "r", encoding="utf-8") as fh:
+                raw = json.load(fh)
+            e2e_losses = raw["losses"] if isinstance(raw, dict) else raw
+            end_to_end = build_end_to_end_leg(
+                e2e_losses,
+                scorer_name=args.scorer_name,
+                scorer_version=args.scorer_version,
+                loss_definition=args.loss_definition,
+                delta=args.delta,
+                method=args.method,
+            )
+        except (OSError, ValueError, KeyError, TypeError) as e:
+            print(
+                f"sum: cannot build end-to-end leg from "
+                f"{args.end_to_end_losses!r}: {e}",
+                file=sys.stderr,
+            )
+            return 2
+
+    try:
+        payload = build_chain_payload(hop_envelopes, end_to_end=end_to_end)
+    except ValueError as e:
+        print(f"sum: {e}", file=sys.stderr)
+        return 2
+
+    # ---- key material (same contract as mint-meaning) ----
+    if bool(args.gen_key) == bool(args.ed25519_key):
+        print(
+            "sum: pass exactly one of --ed25519-key FILE or --gen-key DIR",
+            file=sys.stderr,
+        )
+        return 2
+    if args.gen_key:
+        private_jwk, _private_path, jwks_default, err = _gen_issuer_keypair(
+            args.gen_key, args.kid
+        )
+        if private_jwk is None:
+            print(f"sum: {err}", file=sys.stderr)
+            return 2
+        jwks_path = args.jwks_out or jwks_default
+    else:
+        private_jwk, err = _load_issuer_private_jwk(args.ed25519_key, args.kid)
+        if private_jwk is None:
+            print(f"sum: {err}", file=sys.stderr)
+            return 2
+        jwks_path = args.jwks_out
+    jwks = {"keys": [{k: v for k, v in private_jwk.items() if k != "d"}]}
+    if args.hops_jwks:
+        # Hops signed by other issuers: merge their public keys so the
+        # self-verify below can verify every hop signature too.
+        try:
+            with open(args.hops_jwks, "r", encoding="utf-8") as fh:
+                hops_jwks = json.load(fh)
+            jwks = {"keys": list(jwks["keys"]) + list(hops_jwks.get("keys", []))}
+        except (OSError, ValueError) as e:
+            print(f"sum: cannot read --hops-jwks: {e}", file=sys.stderr)
+            return 2
+
+    envelope = sign_chain_receipt(
+        payload, private_jwk=private_jwk, kid=private_jwk["kid"]
+    )
+
+    def _write_json(path, obj):
+        with open(path, "w", encoding="utf-8") as fh:
+            json.dump(obj, fh, indent=2, ensure_ascii=False)
+            fh.write("\n")
+
+    try:
+        _write_json(args.out, envelope)
+        if jwks_path:
+            _write_json(jwks_path, jwks)
+    except OSError as e:
+        print(f"sum: cannot write output: {e}", file=sys.stderr)
+        return 2
+
+    # ---- self-verify the WRITTEN bytes through the consumer verifier,
+    # full side-band: every hop hash + signature + mirror, and the
+    # end-to-end replay when present. ----
+    try:
+        with open(args.out, "r", encoding="utf-8") as fh:
+            written = json.load(fh)
+        verified = verify_chain_receipt(
+            written, jwks, hop_envelopes=hop_envelopes,
+            end_to_end_losses=e2e_losses,
+        )
+    except Exception as e:  # noqa: BLE001 — any failure means: do not ship it
+        print(
+            json.dumps(
+                {"verified": False, "error": type(e).__name__, "detail": str(e)}
+            )
+        )
+        print(
+            f"sum: MINT FAILED SELF-VERIFICATION — the chain receipt at "
+            f"{args.out} does not verify ({type(e).__name__}); do not "
+            f"distribute it. If the hops were signed by another issuer, "
+            f"pass their public keys via --hops-jwks.",
+            file=sys.stderr,
+        )
+        return 1
+
+    joint_delta = verified["joint_delta_micro"] / 1_000_000
+    print(
+        f"sum: chain minted — {verified['n_hops']} hops, budget "
+        f"{verified['budget_micro'] / 1_000_000:.6f} at joint confidence "
+        f">= {max(0.0, 1.0 - joint_delta):.2f}.",
+        file=sys.stderr,
+    )
+    if joint_delta >= 0.5:
+        print(
+            "sum: WARNING — joint_delta >= 0.5: the composed confidence is "
+            "weak-to-vacuous. Fewer hops or smaller per-hop deltas.",
+            file=sys.stderr,
+        )
+    print(
+        "sum: SCOPE — the budget bounds the SUM of per-hop expected proxy "
+        "losses (Bonferroni). It does NOT bound end-to-end loss; the "
+        "end_to_end leg (if minted) is a separate direct measurement.",
+        file=sys.stderr,
+    )
+    verdict = {
+        "verified": True,
+        "schema": written.get("schema"),
+        "hops_replayed": True,
+        "end_to_end_replayed": e2e_losses is not None,
+        "n_hops": verified["n_hops"],
+        "chain_id": verified["chain_id"],
+        "budget": verified["budget_micro"] / 1_000_000,
+        "joint_confidence": max(0.0, 1.0 - joint_delta),
+    }
+    json.dump(
+        verdict, sys.stdout,
+        indent=2 if getattr(args, "pretty", False) else None,
+    )
+    sys.stdout.write("\n")
+    return 0
+
+
 def cmd_verify_meaning(args: argparse.Namespace) -> int:
     """Verify a meaning-risk OR perspective receipt as an external party —
     the on-ramp F21 (dogfood 2026-06-07) flagged as missing. Reads the
@@ -4558,6 +4753,74 @@ def build_parser() -> argparse.ArgumentParser:
         "--pretty", action="store_true", help="Pretty-print the verdict.",
     )
     p_mint.set_defaults(func=cmd_mint_meaning)
+
+    # mint-chain — bind >= 2 minted meaning-risk receipts into a certified
+    # chain (ordered hop hashes + Bonferroni budget + optional direct
+    # end-to-end leg). The composed half of the drift-budget math.
+    p_chain = subparsers.add_parser(
+        "mint-chain",
+        help=(
+            "Mint a sum.chain_receipt.v1 binding ordered meaning-risk "
+            "receipts + their composed additive budget (research)."
+        ),
+        description=(
+            "Issue, sign, and immediately self-verify a certified chain "
+            "over >= 2 already-minted sum.meaning_risk_receipt.v1 files "
+            "(order matters: pass --hop in transformation order). The "
+            "budget bounds the SUM of per-hop expected proxy losses "
+            "(Bonferroni); it does NOT bound end-to-end loss — mint the "
+            "optional --end-to-end-losses leg for the direct measurement. "
+            "Exit 0 = minted and verified, 1 = self-verification failed, "
+            "2 = usage error."
+        ),
+    )
+    p_chain.add_argument(
+        "--hop", action="append", required=True, metavar="RECEIPT",
+        help="per-hop meaning-risk receipt file, repeated in chain order",
+    )
+    p_chain.add_argument(
+        "--hops-jwks", metavar="FILE", default=None,
+        help=(
+            "public JWKS for hop issuers when the hops were signed by a "
+            "different key than the chain (keys are merged for self-verify)"
+        ),
+    )
+    p_chain.add_argument(
+        "--end-to-end-losses", metavar="FILE", default=None,
+        help=(
+            "per-pair source->final losses (bare list or {'losses': [...]}) "
+            "to certify the DIRECT end-to-end leg alongside the budget"
+        ),
+    )
+    p_chain.add_argument(
+        "--scorer-name", default=None,
+        help="judge identity for the end-to-end leg (required with it)",
+    )
+    p_chain.add_argument("--scorer-version", default="1")
+    p_chain.add_argument(
+        "--loss-definition", default=None,
+        help="loss definition for the end-to-end leg (required with it)",
+    )
+    p_chain.add_argument("--delta", type=float, default=0.05)
+    p_chain.add_argument(
+        "--method", default="hoeffding",
+        choices=["auto", "hoeffding", "clopper_pearson", "empirical_bernstein"],
+    )
+    p_chain.add_argument(
+        "--ed25519-key", dest="ed25519_key", metavar="FILE", default=None,
+        help="issuer private key (OKP JWK JSON or PKCS8 PEM)",
+    )
+    p_chain.add_argument(
+        "--gen-key", dest="gen_key", metavar="DIR", default=None,
+        help="generate a fresh Ed25519 keypair into DIR (refuses overwrite)",
+    )
+    p_chain.add_argument("--kid", default="my-issuer-key-1")
+    p_chain.add_argument("--out", required=True, metavar="FILE")
+    p_chain.add_argument(
+        "--jwks-out", dest="jwks_out", metavar="FILE", default=None
+    )
+    p_chain.add_argument("--pretty", action="store_true")
+    p_chain.set_defaults(func=cmd_mint_chain)
 
     # verify-meaning — external-party on-ramp for the meaning receipt family.
     p_vm = subparsers.add_parser(

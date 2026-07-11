@@ -113,9 +113,14 @@ document's realised path.
 ## Status and the named next rung
 
 Shipped: the composition primitive (both legs), the empirical audit, and
-the `sum drift-budget` CLI. **Not yet shipped:** a signed
-`sum.drift_budget_receipt.v1` envelope that wraps a composed chain budget
-into its own replayable certificate (binding the ordered list of per-hop
-receipt hashes + the Bonferroni `joint_delta`). That is the natural
-capstone — the chain-level analogue of a single meaning-risk receipt — and
-the next increment on this frontier.
+the `sum drift-budget` CLI. **The capstone this section previously named
+as unshipped is now SHIPPED (2026-07-10) as `sum.chain_receipt.v1`** —
+the signed envelope binding the ordered list of per-hop receipt hashes +
+the integer-exact Bonferroni budget/`joint_delta`, with an optional
+directly-measured end-to-end leg carried separately (never conflated with
+the additive budget). Issue with `sum mint-chain`; verify with
+`sum_verify.verify_chain_receipt` or `python -m sum_verify --hops ...`.
+Spec: [`docs/CHAIN_RECEIPT_FORMAT.md`](CHAIN_RECEIPT_FORMAT.md). (The
+shipped name is `chain_receipt`, not the seeded `drift_budget_receipt`:
+the certificate binds the chain structure and BOTH legs, not only the
+budget.)
