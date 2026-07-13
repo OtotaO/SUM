@@ -66,6 +66,7 @@ tiny.
 | `sum.meaning_risk_receipt.v1` | signed, conformal bound on a named meaning-loss proxy (the flagship) | ✅ with `losses=` |
 | `sum.render_receipt.v1` | signed render provenance | — (no replayable bound) |
 | `sum.transform_receipt.v1` | signed transform provenance | — |
+| `sum.chain_receipt.v1` | ordered chain of meaning-risk receipts + integer-exact Bonferroni budget + optional direct end-to-end bound | ✅ hops via `verify_chain_receipt(hop_envelopes=…)`; end-to-end leg via `end_to_end_losses=…` (the `verify()` dispatcher runs the always-on checks; full side-band goes through `verify_chain_receipt` / `python -m sum_verify --hops`) |
 
 Group-conditional **perspective** receipts
 (`sum.perspective_risk_receipt.v1`) are verified by the full
@@ -78,6 +79,7 @@ next increment.
 | --- | --- |
 | `JoseEnvelopeError` | cryptographic / structural failure on a meaning-risk envelope |
 | `ReceiptVerifyError` | cryptographic / structural failure on a render / transform receipt |
+| `ChainReceiptReplayError` / `ChainReceiptDisclosureError` | chain receipt: side-band does not reproduce the committed hashes/sums/bound, or a required disclosure (`not_covered` / `disclosure` / `budget_scope`) is missing |
 | `MeaningReceiptDisclosureError` | signature valid, but the receipt omits a required disclosure (`not_covered` / `disclosure`) — a bare bound is refused |
 | `MeaningReceiptReplayError` | signature valid, but the supplied losses don't reproduce the committed hash / bound / `n` / `controlled` |
 | `UnsupportedSchemaError` | the envelope's `schema` is not one this SDK accepts |

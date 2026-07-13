@@ -1,4 +1,4 @@
-"""``python -m sum_verify <receipt.json> --jwks <jwks.json> [--losses <losses.json>]``
+"""``python -m sum_verify <receipt.json> --jwks <jwks.json> [--losses ...] [--hops ...]``
 
 A minimal command-line on-ramp for the verify SDK — the same verdict the
 library returns, for a quick offline check without writing code. Exit 0 =
@@ -42,7 +42,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="python -m sum_verify",
         description=(
-            "Verify a SUM receipt (meaning-risk / render / transform) "
+            "Verify a SUM receipt (meaning-risk / render / transform / chain) "
             "with no heavy dependencies."
         ),
     )
@@ -107,6 +107,7 @@ def main(argv: list[str] | None = None) -> int:
         except (FileNotFoundError, ModuleNotFoundError, OSError, json.JSONDecodeError) as e:
             print(f"sum_verify: bundled --demo golden unavailable: {e}", file=sys.stderr)
             return 2
+        hop_envelopes = None
         print(
             "sum_verify: --demo — replaying the bundled BillSum binding-gate "
             "golden (CC0), offline.",
@@ -124,7 +125,12 @@ def main(argv: list[str] | None = None) -> int:
             receipt = _read_json(args.receipt)
             jwks = _read_json(args.jwks)
             losses = _unwrap_loss_vector(_read_json(args.losses)) if args.losses else None
+            hop_envelopes = (
+                [_read_json(h) for h in args.hops] if args.hops else None
+            )
         except (OSError, json.JSONDecodeError) as e:
+            # Unreadable/malformed INPUT is a usage error (rc=2), never a
+            # verification verdict (rc=1) — the documented exit contract.
             print(f"sum_verify: cannot read input: {e}", file=sys.stderr)
             return 2
 
@@ -141,9 +147,6 @@ def main(argv: list[str] | None = None) -> int:
         if schema == "sum.chain_receipt.v1":
             from sum_verify import verify_chain_receipt
 
-            hop_envelopes = None
-            if args.hops:
-                hop_envelopes = [_read_json(p) for p in args.hops]
             result = verify_chain_receipt(
                 receipt,
                 jwks,

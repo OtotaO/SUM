@@ -100,3 +100,20 @@ def test_non_envelope_is_refused(tmp_path):
     bad.write_text(json.dumps({"hello": "world"}))
     with pytest.raises(ValueError, match="no 'schema' field"):
         witness.append_entry(bad, log_path=tmp_path / "log.jsonl")
+
+
+def test_duplicated_line_is_flagged(tmp_path):
+    """A byte-identical duplicated entry must be flagged — the verify walk
+    positions entries by enumerate, not list.index (which returns the
+    FIRST equal dict and would satisfy the seq check for a duplicate)."""
+    log = tmp_path / "log.jsonl"
+    receipt = tmp_path / "r.json"
+    receipt.write_text(json.dumps({"schema": "sum.test.v1", "kid": "k",
+                                   "payload": {"a": 1}, "jws": "x"}))
+    witness.append_entry(receipt, log_path=log)
+    line = log.read_text().strip()
+    log.write_text(line + "\n" + line + "\n")  # replay the same line
+    report = witness.verify_log(log, check_files=False)
+    assert not report["ok"]
+    assert any("non-monotonic" in p or "chain broken" in p
+               for p in report["problems"])

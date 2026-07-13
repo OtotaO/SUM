@@ -128,7 +128,11 @@ class EmbeddingJudge:
 
     def entails(self, premise: str, hypothesis: str) -> bool:
         """True iff ``hypothesis`` is semantically covered by some sentence
-        of ``premise`` (max cosine similarity ≥ ``threshold``)."""
+        of ``premise`` (max cosine similarity ≥ ``threshold``). A blank
+        hypothesis is never entailed — unconditionally, so a pathological
+        ``threshold <= 0`` cannot flip the historical contract."""
+        if not hypothesis.strip():
+            return False
         return self.similarity(premise, hypothesis) >= self.threshold
 
     def entails_batch(self, premise: str, hypotheses: "list[str]") -> "list[bool]":
@@ -292,7 +296,11 @@ class NLIJudge:
 
     def entails(self, premise: str, hypothesis: str) -> bool:
         """True iff the NLI model judges ``premise`` to ENTAIL
-        ``hypothesis`` with probability ≥ ``threshold``."""
+        ``hypothesis`` with probability ≥ ``threshold``. A blank hypothesis
+        is never entailed — unconditionally, so a pathological
+        ``threshold <= 0`` cannot flip the historical contract."""
+        if not hypothesis.strip():
+            return False
         return self.entailment_probability(premise, hypothesis) >= self.threshold
 
     @property
