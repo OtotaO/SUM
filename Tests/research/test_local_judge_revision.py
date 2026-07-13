@@ -72,3 +72,16 @@ def test_judges_expose_a_revision_field_defaulting_to_none():
     assert EmbeddingJudge.__dataclass_fields__["revision"].default is None
     assert NLIJudge.__dataclass_fields__["revision"].default is None
     assert DEFAULT_NLI_MODEL_ID != DEFAULT_MODEL_ID
+
+
+def test_blank_hypothesis_never_entailed_even_at_zero_threshold():
+    """The blank-hypothesis guard is unconditional: a pathological
+    threshold <= 0 must not flip the historical contract. Pure test —
+    the blank path returns before any model load."""
+    assert NLIJudge(threshold=-1.0).entails("Alice has a cat.", "   ") is False
+    assert EmbeddingJudge(threshold=-1.0).entails("Alice has a cat.", " \t\n") is False
+    # NOTE deliberately NOT tested as blank: a zero-width-only hypothesis
+    # (U+200B) — .strip() keeps it, so it reaches the model, exactly as it
+    # always has. Changing that would alter scorer semantics without a
+    # version bump; the receipt layer's _has_visible_text handles the
+    # disclosure-field variant of this gotcha.

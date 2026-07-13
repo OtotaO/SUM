@@ -251,3 +251,63 @@ def test_hop_hash_matches_canonical_shape(chain):
     for env in chain["hops"]:
         h = canonical_receipt_hash(env)
         assert h.startswith("sha256-") and len(h) == 71
+
+
+def test_internal_int_failures_use_chain_taxonomy(chain, keys):
+    """A malformed integer field on the CHAIN payload raises
+    ChainReceiptReplayError (not the meaning-receipt class) — the error
+    taxonomy is part of the documented contract."""
+    private, jwks = keys
+    payload = copy.deepcopy(
+        verify_chain_receipt(chain["envelope"], chain["jwks"])
+    )
+    payload["budget_micro"] = str(payload["budget_micro"])  # int -> str
+    resigned = sign_chain_receipt(
+        payload, private_jwk=private, kid="chain-test-key-1"
+    )
+    with pytest.raises(ChainReceiptReplayError, match="integer micro-unit"):
+        verify_chain_receipt(resigned, jwks)
+
+
+def test_max_age_windows_the_chain_not_the_hops(keys):
+    """max_age_seconds applies to the CHAIN envelope only: a fresh chain
+    over old hops verifies; an old chain fails its own window."""
+    private, jwks = keys
+    old_ts = "2020-01-01T00:00:00.000Z"
+    g = certify_meaning_risk(
+        HOP1_LOSSES, scorer_name="test-scorer", scorer_version="1",
+        delta=0.05, method="hoeffding",
+    )
+    old_hops = []
+    for transform in ("compress", "translate"):
+        p = build_payload(
+            guarantee=g, losses=HOP1_LOSSES, corpus_id="test-corpus",
+            transform=transform,
+            loss_definition="1 - recall of source claims (test)",
+            signed_at=old_ts,
+        )
+        old_hops.append(
+            sign_meaning_risk_receipt(
+                p, private_jwk=private, kid="chain-test-key-1"
+            )
+        )
+    fresh_chain = sign_chain_receipt(
+        build_chain_payload(old_hops),
+        private_jwk=private, kid="chain-test-key-1",
+    )
+    # Fresh chain + years-old hops + a 1-hour window: must PASS.
+    payload = verify_chain_receipt(
+        fresh_chain, jwks, hop_envelopes=old_hops, max_age_seconds=3600
+    )
+    assert payload["n_hops"] == 2
+    # An old CHAIN envelope fails the same window on its own signed_at.
+    stale_chain = sign_chain_receipt(
+        build_chain_payload(old_hops, signed_at=old_ts),
+        private_jwk=private, kid="chain-test-key-1",
+    )
+    from sum_engine_internal.infrastructure.jose_envelope import (
+        JoseEnvelopeError,
+    )
+
+    with pytest.raises(JoseEnvelopeError):
+        verify_chain_receipt(stale_chain, jwks, max_age_seconds=3600)

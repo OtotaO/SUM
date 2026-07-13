@@ -135,5 +135,5 @@ extract→compose→render→certify pipeline).
 
 - `docs/MEANING_LOSS_FRONTIER.md` — the sub-factual layer the scorer measures.
 - `docs/PRODUCT_VISION.md` — the `RenderFrontier` the curve is built on.
-- `docs/RECEIPT_FAMILY_SPEC.md` §3.5 — the `sum.study_artifact.v1` container.
+- `docs/RECEIPT_FAMILY_SPEC.md` §3.6 — the `sum.study_artifact.v1` container.
 - `docs/CHARTER_2026-05-17.md` — the gate this work is held behind.

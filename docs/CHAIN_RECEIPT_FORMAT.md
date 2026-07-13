@@ -78,7 +78,9 @@ Stage B (side-band, any combination):
 
 - **`hop_envelopes` (ordered):** each hashes to its committed
   `receipt_hash`; each hop envelope itself VERIFIES (signature +
-  disclosures) against the supplied JWKS — one JWKS may carry multiple
+  disclosures, WITHOUT the replay window — `max_age_seconds` applies to
+  the chain envelope only, since hops predate the chain by construction)
+  against the supplied JWKS — one JWKS may carry multiple
   kids, so multi-issuer chains verify with a merged JWKS; every mirrored
   field equals the hop payload exactly. (Each hop's own LOSS replay stays
   independently available via `verify_meaning_risk_receipt` with that

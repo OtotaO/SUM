@@ -41,6 +41,9 @@ from sum_engine_internal.infrastructure.jose_envelope import (
 )
 from sum_verify._conformal import certify_meaning_risk
 from sum_verify._meaning import (
+    SUPPORTED_SCHEMA as MEANING_RISK_SCHEMA,
+)
+from sum_verify._meaning import (
     MeaningReceiptDisclosureError,
     MeaningReceiptReplayError,
     _from_micro,
@@ -51,11 +54,6 @@ from sum_verify._meaning import (
     _unwrap_loss_vector,
     _validate_side_band_losses,
     losses_hash,
-)
-from sum_verify._meaning import (
-    SUPPORTED_SCHEMA as MEANING_RISK_SCHEMA,
-)
-from sum_verify._meaning import (
     verify_meaning_risk_receipt,
 )
 
@@ -80,6 +78,18 @@ class ChainReceiptDisclosureError(SumVerifyError):
     (``not_covered`` non-empty, ``disclosure`` visible text, or the
     ``budget_scope`` statement that keeps the additive budget from
     masquerading as an end-to-end bound)."""
+
+
+def _chain_int(obj: dict, key: str) -> int:
+    """``_require_int_micro`` re-raised in the CHAIN error taxonomy: a
+    malformed integer field on a chain payload/hop mirror is a chain replay
+    failure, and a caller catching ``ChainReceiptReplayError`` must see it
+    (both classes derive from ``SumVerifyError``, but the specific class is
+    part of the documented taxonomy)."""
+    try:
+        return _require_int_micro(obj, key)
+    except MeaningReceiptReplayError as e:
+        raise ChainReceiptReplayError(str(e)) from e
 
 
 def canonical_receipt_hash(envelope: Any) -> str:
@@ -119,7 +129,7 @@ def _check_internal_consistency(payload: dict) -> list[dict]:
             f"payload.hops must be a list of >= 2 hops; got "
             f"{type(hops).__name__ if not isinstance(hops, list) else len(hops)}"
         )
-    if _require_int_micro(payload, "n_hops") != len(hops):
+    if _chain_int(payload, "n_hops") != len(hops):
         raise ChainReceiptReplayError(
             f"n_hops={payload.get('n_hops')} does not match len(hops)="
             f"{len(hops)}"
@@ -155,15 +165,15 @@ def _check_internal_consistency(payload: dict) -> list[dict]:
                 f"hops[{i}].receipt_hash malformed: {h!r}"
             )
         hop_hashes.append(h)
-        budget += _require_int_micro(hop, "risk_upper_bound_micro")
-        joint_delta += _require_int_micro(hop, "delta_micro")
-    if _require_int_micro(payload, "budget_micro") != budget:
+        budget += _chain_int(hop, "risk_upper_bound_micro")
+        joint_delta += _chain_int(hop, "delta_micro")
+    if _chain_int(payload, "budget_micro") != budget:
         raise ChainReceiptReplayError(
             f"budget_micro does not replay: receipt claims "
             f"{payload.get('budget_micro')} but the hop mirrors sum to "
             f"{budget}"
         )
-    if _require_int_micro(payload, "joint_delta_micro") != joint_delta:
+    if _chain_int(payload, "joint_delta_micro") != joint_delta:
         raise ChainReceiptReplayError(
             f"joint_delta_micro does not replay: receipt claims "
             f"{payload.get('joint_delta_micro')} but the hop mirrors sum "
@@ -196,7 +206,9 @@ def verify_chain_receipt(
     hop envelope must hash to its committed ``receipt_hash``, must itself
     verify against ``jwks`` (a JWKS may carry multiple kids — multi-issuer
     chains supply one JWKS containing every issuer's key), and every
-    mirrored field must equal the hop payload exactly. Note this verifies
+    mirrored field must equal the hop payload exactly. ``max_age_seconds``
+    windows the CHAIN envelope only — hops predate the chain by
+    construction and are verified without a window. Note this verifies
     each hop's signature and disclosures; each hop's own LOSS replay
     remains available independently via ``verify_meaning_risk_receipt``
     with that hop's side-band losses.
@@ -233,9 +245,12 @@ def verify_chain_receipt(
                     f"but the chain commits {hop['receipt_hash']}"
                 )
             try:
-                hop_payload = verify_meaning_risk_receipt(
-                    env, jwks, max_age_seconds=max_age_seconds
-                )
+                # No replay window on the hops: hops predate the chain BY
+                # CONSTRUCTION, so a caller's max_age_seconds (freshness of
+                # the CHAIN attestation) must not false-reject a fresh chain
+                # over legitimately old hop receipts. A caller who cares
+                # about a hop's own age verifies that hop directly.
+                hop_payload = verify_meaning_risk_receipt(env, jwks)
             except SumVerifyError as e:
                 raise ChainReceiptReplayError(
                     f"hops[{i}]: referenced receipt fails verification: {e}"
@@ -275,14 +290,14 @@ def verify_chain_receipt(
                 _quantized(losses),
                 scorer_name=str(leg.get("scorer", "")),
                 scorer_version=str(leg.get("scorer_version", "")),
-                delta=_from_micro(_require_int_micro(leg, "delta_micro")),
+                delta=_from_micro(_chain_int(leg, "delta_micro")),
                 method=leg["method"],
             )
         except ValueError as e:
             raise ChainReceiptReplayError(
                 f"end_to_end losses are not valid [0,1] data: {e}"
             ) from e
-        if _require_int_micro(leg, "risk_upper_bound_micro") != _to_micro(
+        if _chain_int(leg, "risk_upper_bound_micro") != _to_micro(
             replay.risk_upper_bound
         ):
             raise ChainReceiptReplayError(
@@ -291,7 +306,7 @@ def verify_chain_receipt(
                 f"re-certification yields "
                 f"{_to_micro(replay.risk_upper_bound)} micro"
             )
-        if _require_int_micro(leg, "point_estimate_micro") != _to_micro(
+        if _chain_int(leg, "point_estimate_micro") != _to_micro(
             replay.point_estimate
         ):
             raise ChainReceiptReplayError(
@@ -300,7 +315,7 @@ def verify_chain_receipt(
                 f"re-certification yields "
                 f"{_to_micro(replay.point_estimate)} micro"
             )
-        if _require_int_micro(leg, "n") != replay.n:
+        if _chain_int(leg, "n") != replay.n:
             raise ChainReceiptReplayError(
                 f"end_to_end.n does not replay: receipt claims "
                 f"n={leg['n']} but the losses contain {replay.n} samples"

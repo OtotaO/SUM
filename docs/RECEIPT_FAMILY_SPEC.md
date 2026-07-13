@@ -69,7 +69,7 @@ checks `meaning_risk` / `render` / `transform` with one primitive, while
 **`perspective` Python verification is `[research]`-tier**
 (`verify_perspective_risk_receipt`, not the `[verify]` SDK — calling
 `sum_verify.verify` on a perspective envelope raises `UnsupportedSchemaError`).
-The family's JS verifiers cover all four across three files: `meaning_receipt_verifier.js` (`meaning_risk` + `perspective`), `receipt_verifier.js` (`render`), and `transform_receipt_verifier.js` (`transform`). See §4.1.
+The family's JS verifiers cover four of the five schemas across three files: `meaning_receipt_verifier.js` (`meaning_risk` + `perspective`), `receipt_verifier.js` (`render`), and `transform_receipt_verifier.js` (`transform`); `chain_receipt` has no JS implementation in v1 and every JS verifier fails closed on it (`SCHEMA_UNKNOWN`). See §4.1.
 
 ### 2.1 The float discipline (the load-bearing canonicalisation rule)
 
@@ -183,6 +183,7 @@ tier.
 | `render` / `transform` | Python · Node (`standalone_verifier`) · browser (`single_file_demo`) | hash comparison, any runtime |
 | `meaning_risk` | Python (`sum_verify` `[verify]` SDK) · Node/browser (`meaning_receipt_verifier.js`) | **Python only** (`verify_meaning_risk_receipt`); for a **model-judge** scorer, additionally **machine-pinned** (cross-hardware float drift in the judge) |
 | `perspective` | Python **`[research]`-tier only** (`verify_perspective_risk_receipt` — NOT the dependency-light `[verify]` SDK) · Node/browser (`meaning_receipt_verifier.js`) | **Python only** (`verify_perspective_risk_receipt`); machine-pinned for a model-judge scorer |
+| `chain` | Python (`sum_verify` `[verify]` SDK, `verify_chain_receipt`) · **no JS implementation in v1** (JS verifiers fail closed: `SCHEMA_UNKNOWN`) | **Python only** — hop hashes + signature per hop, integer-exact budget/joint-delta re-sums, optional end-to-end leg replay; the replay window applies to the chain envelope only (hops predate the chain by construction) |
 
 "Verifiable in every runtime" means the **signature and format**, not
 necessarily the **meaning recomputation**. The conformal receipts state

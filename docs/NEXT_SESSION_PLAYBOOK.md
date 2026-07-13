@@ -63,7 +63,11 @@ executable by ANY session — follow it mechanically, verify everything.*
   (CC0, committed). Chain: document → its summary (hop 1) → deterministic
   offline compression of the summary via the density slider / sieve distiller
   (hop 2; `llm_calls_made=0` — see `SliderTransform` `_apply_density` /
-  `sum frontier --distill` internals). n=32 subset for runtime.
+  `sum frontier --distill` internals). n=32 subset for runtime. HONESTY:
+  hop 1's "transform" is the DATASET's own reference summarization (as in
+  the existing binding-gate golden), hop 2 is a real deterministic
+  transform — say so verbatim in each hop's `transform`/`loss_definition`
+  fields; never imply hop 1 was performed by SUM.
 - Judge: the NLI judge (`nli_entailment_scorer`, `[judge]` extra, pinned
   revisions, deterministic mode from
   `sum_engine_internal/research/meaning/deterministic_judge.py`). Losses per

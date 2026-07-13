@@ -125,9 +125,12 @@ def verify_log(
     entries = read_log(log_path)
     problems = []
     prev_hash = None
-    for e in entries:
+    for pos, e in enumerate(entries):
         i = e.get("seq")
-        if i != (entries.index(e) + 1):
+        # enumerate, NOT entries.index(e): index() returns the FIRST equal
+        # dict, so a duplicated line would satisfy the seq check instead of
+        # being flagged (and it is O(n^2)).
+        if i != pos + 1:
             problems.append(f"seq {i}: non-monotonic sequence")
         if e.get("prev_entry_hash") != prev_hash:
             problems.append(f"seq {i}: prev_entry_hash chain broken")
