@@ -44,18 +44,28 @@ deliberate decision, it is irrevocable.
 
 ## Compile status
 
-No LaTeX toolchain exists on this machine (pdflatex, tectonic, xelatex,
-latexmk, docker: all absent), so the kit was NOT compiled. A rigorous static
-self-check was run instead and passed: balanced environments (stack-checked),
-balanced braces, even math-dollar count, every `\cite` key has a matching
-`\bibitem`, every `\ref`/`\eqref` has a matching `\label`, no bare `&` outside
-tabulars, no bare `_`/`#` outside math or `\texttt`, no unescaped `%`, and the
-file is 100% ASCII (no encoding surprises). All commands used are standard
-LaTeX / amsmath / amsthm / booktabs. Estimated length when compiled: roughly
-9 to 11 pages (11pt article, 1in margins, two tables, 27 references). Please
-run one local compile (`pdflatex main.tex` twice, for the cross-references)
-before upload; arXiv's AutoTeX will also compile it server-side.
-`\pdfoutput=1` is already in the first 5 lines as arXiv expects.
+**Compiled successfully 2026-07-12 with tectonic 0.16.9** (`tectonic main.tex`,
+exit 0). Output: an 8-page PDF, no TeX errors, no undefined references or
+citations (log inspected), only the expected overfull-box typesetting
+warnings. The earlier static self-check still corroborates the source (balanced
+environments and braces, even math-dollar count, every `\cite` key has a
+matching `\bibitem`, every `\ref`/`\eqref` has a matching `\label`, no bare `&`
+outside tabulars, no unescaped `%`, 100% ASCII). All commands used are standard
+LaTeX / amsmath / amsthm / booktabs / hyperref.
+
+One packaging line was added for local compilation and is **arXiv-safe**:
+`\usepackage{iftex}` followed by `\ifxetex\PassOptionsToPackage{xetex}{hyperref}\fi`
+before `hyperref`. Tectonic's engine is XeTeX-based; with `\pdfoutput=1` set,
+`iftex` misroutes hyperref to its pdfTeX driver, which references a PDF-version
+primitive XeTeX lacks. The guard selects hyperref's xetex driver only under an
+XeTeX engine. On arXiv's AutoTeX (real pdfTeX) `\ifxetex` is false, so the line
+is a no-op and the pdfTeX driver loads exactly as before. Nothing scientific or
+typographic in the rendered paper changes. `\pdfoutput=1` remains in the first
+5 lines as arXiv expects.
+
+To reproduce locally: `cd docs/arxiv/latex && tectonic main.tex` (BSD-licensed,
+self-contained, downloads packages on first run). On a machine with TeXLive:
+`pdflatex main.tex` twice, for the cross-references.
 
 ## Operator steps to submit
 
