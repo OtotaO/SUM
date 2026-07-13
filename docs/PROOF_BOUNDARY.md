@@ -805,6 +805,44 @@ prior-art to *cite*, not code to adopt; de-pinning a model-judge to a
 cross-runtime-replayable receipt remains open research, not a shipped
 claim.
 
+*Cross-architecture agreement — measured, not asserted (2026-07-11).* The
+machine-pinning boundary (iii) is now empirically characterized rather than
+only stated. A committed 22-pair probe
+([`fixtures/deterministic_judge/`](../fixtures/deterministic_judge/)) scored by
+the deterministic NLI judge (`DeterministicNLIJudge`: single-thread,
+deterministic algorithms, recorded environment) reproduces **exact decisions
+AND exact integer micro-margins** across arm64/Darwin (dev) and x86_64/Linux
+(CI) on torch 2.7.1 — all 22 decisions identical, maximum integer micro-margin
+drift **0** — renewed monthly by the `judge-smoke` canary. At wire resolution
+(1e-6) the float32 judge is cross-machine reproducible *on these two platforms
+and this torch build*. This does NOT license a general cross-runtime claim (a
+different stack could drift a near-threshold decision), which is exactly why a
+model-judge receipt still scopes its cross-runtime guarantee to Stage A. Naive
+dynamic INT8 quantization is a MEASURED NEGATIVE on the same probe (flips 11/22;
+every entailment lost); a real de-pin needs static/QAT or calibrated ONNX INT8,
+with this probe as its acceptance test.
+
+**Composition — the certified chain (measured 2026-07-12).** The receipt family
+now composes: `sum.chain_receipt.v1` binds an ordered sequence of hop receipts
+(by canonical hash + an order-binding `chain_id`) into an integer-exact
+Bonferroni budget with a joint confidence, plus an optional directly-measured
+end-to-end leg. The first REAL certified chain is committed at
+[`fixtures/chain_receipts_billsum/`](../fixtures/chain_receipts_billsum/): 32
+BillSum bills (CC0), two real hops — the dataset's own reference summarization
+(SUM did not perform it), then deterministic lead-N extractive compression
+(offline, 0 LLM calls) — scored by the strict NLI judge. Hop 1 (abstractive)
+certifies expected meaning-loss ≤ 0.865768 @95%; hop 2 (extractive) ≤ 0.488860;
+the Bonferroni budget ≤ 1.354628 (sum of hops, joint confidence 0.90). The
+**honest structural point**: the budget bounds the *sum* of per-hop expected
+losses, NOT the end-to-end loss — the proxy is a *directed loss, not a metric*,
+so no triangle inequality holds. The directly-measured end-to-end leg
+(≤ 0.874216) is in fact *below* the additive budget, and the mandatory
+`budget_scope` field says exactly this (the verifier fails closed without it).
+Each hop and the chain replay offline over their committed integer-micro loss
+vectors; all three receipts are witnessed in
+[`transparency/log.jsonl`](../transparency/log.jsonl). Test:
+[`Tests/research/test_chain_golden_billsum.py`](../Tests/research/test_chain_golden_billsum.py).
+
 ---
 
 ## 3. Aspirational / Future Work

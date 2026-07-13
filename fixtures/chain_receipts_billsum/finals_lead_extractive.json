@@ -1,0 +1,134 @@
+{
+  "note": "hop-2 outputs: deterministic lead-N extractive (keep first ceil(0.5*n_sentences)) of each reference summary. Offline, llm_calls_made=0. Committed for full auditability of the (summary -> final) pairs.",
+  "keep": 0.5,
+  "finals": [
+    {
+      "id": "billsum-test-0",
+      "final": "Amends the Water Resources Development Act of 1999 to: (1) authorize appropriations for FY 1999 through 2009 for implementation of a long-term resource monitoring program with respect to the Upper Mississippi River Environmental Management Program (currently, such funding is designated for a program for the planning, construction, and evaluation of measures for fish and wildlife habitat rehabilitation and enhancement); (2) authorize the Secretary of the Army to carry out modifications to the navigation project for the Delaware River, Pennsylvania and Delaware, if such project as modified is technically sound, environmentally (currently, economically) acceptable, and economically justified; (3) subject certain previously deauthorized water resources development projects to the seven-year limitation governing project deauthorizations under the Act, with the exception of such a project for Indian River County, Florida; (4) except from a certain schedule of the non-Federal cost of the periodic nourishment of shore protection projects constructed after December 31, 1999, those projects for which a District Engineer's Report has been completed by such date;  (5) require that the project cooperation agreement for the Comite River Diversion Project for flood control include a provision that specifies that any reduction in the non-Federal share that results from certain modifications be credited toward the share of project costs to be paid by the Amite River Basin Drainage and Water Conservation District; (6) allow the Secretary to provide additional compensation to Chesapeake City, Maryland (currently, to the City of Chesapeake, Maryland) for damage to its water supply resulting from the Chesapeake and Delaware Canal Project; (7) provide for the submission of certain reports on water resources development projects by the Secretary, notwithstanding Federal reporting termination provisions; and (8) authorize and provide for an authorization of appropriations for the existing program for the safety and operations expenses of the Federal Railroad Administration, and make available for obligation funds currently appropriated for such program."
+    },
+    {
+      "id": "billsum-test-1",
+      "final": "Federal Forage Fee Act of 1993 - Subjects grazing operations on Federal land to applicable Federal, State, and local environmental and land use requirements."
+    },
+    {
+      "id": "billsum-test-2",
+      "final": ". Merchant Marine of World War II Congressional Gold Medal Act (Sec. 3) This bill requires the Speaker of the House of Representatives and the President pro tempore of the Senate to arrange for the award, on behalf of Congress, of a single gold medal to the U.S."
+    },
+    {
+      "id": "billsum-test-3",
+      "final": "Small Business Modernization Act of 2004 - Amends the Internal Revenue Code to: (1) terminate subchapter S corporation elections after 2004 and subchapter S status after 2014 and to allow privately-held domestic corporations, in lieu of electing subchapter S treatment, to elect to be treated as partnerships for tax purposes; (2) set forth rules for the tax treatment of former subchapter S corporations electing partnership status; and (3) exclude from net earnings from self-employment partnership income attributable to capital."
+    },
+    {
+      "id": "billsum-test-4",
+      "final": "Fair Access to Investment Research Act of 2016 This bill directs the Securities and Exchange Commission (SEC) to revise a specified regulation to create a safe harbor for certain publications or distributions of research reports by brokers or dealers distributing securities. The revised regulation shall declare that a published or distributed investment fund research report shall not be deemed to constitute an offer for sale or an offer to sell a security that is the subject of the offering pursuant to an effective registration statement, even if the broker or dealer is participating or will participate in the registered offering of the covered investment fund's securities. The covered investment fund research report shall indeed be deemed to satisfy the regulation's requirements as well as those of any self-regulatory organization."
+    },
+    {
+      "id": "billsum-test-5",
+      "final": "Prescription Drug Monitoring Act of 2016 This bill requires a state that receives grant funds under the prescription drug monitoring program (PDMP) or the controlled substance monitoring program to comply with specified requirements. The Department of Justice (DOJ) or Department of Health and Human Services may withhold grant funds from a state that fails to comply."
+    },
+    {
+      "id": "billsum-test-6",
+      "final": "Strategic Gasoline and Fuel Reserve Act of 2005 - Amends the Energy Policy and Conservation Act to direct the Secretary of Energy to establish, maintain, and operate a Strategic Gasoline and Fuel Reserve of gasoline and jet fuel. Instructs the Secretary to determine between three and five regionally strategic Reserve sites throughout the United States."
+    },
+    {
+      "id": "billsum-test-7",
+      "final": "Special Agent Scott K. Carey Public Safety Officer Benefits Enhancement Act - Amends the Omnibus Crime Control and Safe Streets Act of 1968 to extend: (1) educational benefits to public safety officers who become permanently and totally disabled in the line of duty and to their spouses and children; (2) allow payment of retroactive benefits to dependents of such disabled officers; and (3) establish a program of pension payments for certain survivors of deceased public safety officers."
+    },
+    {
+      "id": "billsum-test-8",
+      "final": "Promoting Financial Literacy and Economic Opportunity Act of 2015 This bill amends the Internal Revenue Code to allow up to 20 for-profit organizations in any taxable year a business-related tax credit for 50% of the amount paid or incurred to carry out activities to improve the quality of student understanding of personal finance and economics. The Department of the Treasury shall determine which for-profit organizations are eligible for the credit, ensuring that a majority of credit recipients are: (1) either a socially and economically disadvantaged small business concern, a small business concern owned and controlled by women, or a small business concern that is at least 51% owned by veterans, or (2) do not have more than $60 billion in assets."
+    },
+    {
+      "id": "billsum-test-9",
+      "final": "Amends the Tariff Act of 1930 to define \"delivery sale\" of a tobacco product as any sale of cigarettes or a smokeless tobacco product to a consumer if: (1) the consumer submits the purchase order by means of a telephone or other method of voice transmission, the mail, or the Internet or other online service, or the seller is otherwise not in the buyer's physical presence when the purchase request or order is made; or (2) the cigarettes or smokeless tobacco product is delivered by use of a common carrier, private delivery service, or the mail, or the seller is not in the buyer's physical presence when the buyer obtains personal possession of the delivered cigarettes or smokeless tobacco product. Makes the personal use exemption from tobacco import requirements inapplicable to cigarettes or smokeless tobacco products sold in connection with a delivery sale. Allows states access to copies of Customs Service certifications required for cigarette imports. Permits any tobacco product, cigarette papers, or tube found in violation of the Act to be forfeited for destruction to any state in which it is found."
+    },
+    {
+      "id": "billsum-test-10",
+      "final": "Outer Continental Shelf Revenue Sharing Act of 2005 - Amends the Outer Continental Shelf Lands Act (OCSLA) regarding the coastal impact assistance program to: (1) repeal references to leasing moratoria; (2) redefine a \"producing state\" as one that begins production on a leased tract on or after the date of enactment of this Act, regardless of whether the leased tract was on any date subject to a leasing moratorium; (3) repeal the exclusion of certain revenues from \"qualified Outer Continental Shelf revenues;\" and (4) repeal the exclusion of certain leased tracts from the statutory formula for payments to coastal political subdivisions. Directs the Secretary of the Interior to delineate the lateral boundaries between coastal states in areas of the Outer Continental Shelf under exclusive federal jurisdiction. Prescribes guidelines for petitions to lease within the seaward lateral boundaries of coastal states."
+    },
+    {
+      "id": "billsum-test-11",
+      "final": "Developmental Disabilities Assistance and Bill of Rights Act Amendments of 1993 - Amends the Developmental Disabilities Assistance and Bill of Rights Act to revise the Act's statements of findings and purpose and to declare related policy. Requires:  (1) advance public notice of any Federal programmatic and administrative review; (2) solicitation of public comment on State systems to protect and advocate the rights of persons with developmental disabilities; (3) inclusion of the comment findings in the onsite visit report; and (4) distribution of the review results."
+    },
+    {
+      "id": "billsum-test-12",
+      "final": "Amends the Higher Education Act of 1965 to revise due process standards governing the accreditation process of educational institutions. Requires accrediting agencies and associations to provide educational institutions with: (1) written notice of deficiencies and a reasonable time period to correct such deficiencies; (2) advance notice of any adverse action and an opportunity for a hearing; and (3) a right to appeal an adverse action to an independent and impartial arbitration panel."
+    },
+    {
+      "id": "billsum-test-13",
+      "final": "Robert S. Walker and George E. Brown, Jr."
+    },
+    {
+      "id": "billsum-test-14",
+      "final": "Mercury Health Advisory Act of 2003 - Requires the Administrator of the Environmental Protection Agency and the Commissioner of Food and Drugs jointly to develop fish consumption advisories for methyl-mercury in fish. Directs the Secretary of Health and Human Services to: (1) prepare and distribute to health professionals (and others upon request) a consumer's mercury advisory notice regarding the health risks of fish consumption; and (2) establish a toll-free number for individuals who desire additional information. Requires the Administrator to prepare and distribute to specified State entities and applicants for fishing licenses (and others upon request) a consumer's guide to mercury, including a health advisory for the consumption of recreationally-caught fish."
+    },
+    {
+      "id": "billsum-test-15",
+      "final": "Authorizes the Secretary of Energy to enter into one or more contracts with facilities located within 25 miles of a current or former Department of Energy (DOE) defense nuclear facility for the procurement of products and services to support waste cleanup and modernization activities at such nuclear facilities. Requires the Secretary to give preference to facilities that plan to hire, to the maximum extent practicable, residents in the vicinity of the defense nuclear facility who are employed or who have previously been employed by DOE or its private contractor at the facility. Prohibits any person from bringing a claim against a contractor or subcontractor for injury, cost, damage, illness, death, damage to property, or economic loss caused by a release of a hazardous contaminant during performance of the contract, unless such release or threatened release is caused by contractor or subcontractor negligence or intentional misconduct."
+    },
+    {
+      "id": "billsum-test-16",
+      "final": "Directs the Secretary of Health and Human Services to establish a process under which a physician may request, in writing from a carrier, assistance in addressing questionable codes and procedures under the medicare program."
+    },
+    {
+      "id": "billsum-test-17",
+      "final": "State Innovation Pilot Act of 2011 - Amends part D (Waivers) of title IX (General Provisions) of the Elementary and Secondary Education Act of 1965 to revise the process by which states, LEAs, and Indian tribes obtain waivers of the Act's statutory and regulatory requirements. Requires waiver requests by states, LEAs, or Indian tribes to include a plan that describes how: (1) the waiver will improve instruction and student achievement in accordance with the state's college and career ready academic content and achievement standards; (2) the plan will be evaluated regularly and improved continuously; (3) they will review implementation of the college and career readiness standards; (4) they will identify, support, and intervene in underperforming schools; and (5) they will maintain and improve transparency in reporting to parents and the public on student achievement and school performance. Requires the Secretary of Education to approve requests that meet such requirements and do not involve certain specified statutory or regulatory requirements. Directs the Secretary to establish a multidisciplinary peer review team to review a waiver request if the Secretary requests their input or intends to disapprove the request."
+    },
+    {
+      "id": "billsum-test-18",
+      "final": "No Second Chances for Murderers, Rapists, or Child Molesters Act of 1998 - Expresses the sense of the Congress that any individual convicted of:  (1) murder should receive the death penalty or be imprisoned for life without the possibility of parole; and (2) rape or a dangerous sexual offense involving a child under age 14 should be imprisoned for life without the possibility of parole. Requires the Attorney General to transfer the following amounts from Federal law enforcement assistance funds for a State that convicted a person of a first offense of murder, rape, or a dangerous sexual offense to a State that convicts that person for a subsequent such offense:  (1) up to $100,000 for transfer to each victim of the subsequent offense; and (2) the cost of incarceration, prosecution, and apprehension of such person. Sets forth provisions regarding situations where a person has a prior conviction in more than one State."
+    },
+    {
+      "id": "billsum-test-19",
+      "final": "Amends the Internal Revenue Code to provide that for purposes of determining estate tax the value of the taxable estate shall be determined by deducting from the value of the gross estate an amount equal to the value of any qualified historic property. Defines qualified historic property."
+    },
+    {
+      "id": "billsum-test-20",
+      "final": "Contributions Legally Interdicted from Noncitizens To Our Nonprofits Act of 2016 or the CLINTON Act of 2016  This bill amends the Internal Revenue Code to prohibit a federal official organization from being treated as a tax-exempt organization under section 501(c)(3) for any period after the date on which the organization knowingly or willingly accepts or solicits any contribution from any person connected to a foreign government. A tax-exempt organization is a &quot;federal official organization&quot; if one or more current or former specified federal officials established, control, or actively participate in the management of the organization."
+    },
+    {
+      "id": "billsum-test-21",
+      "final": "Reduce Expenditures in Nuclear Infrastructure Now Act or the REIN-IN Act - Prohibits the obligation or expenditure of funds authorized to be appropriated to the Department of Defense (DOD) for FY2014-FY2023: (1) for the research, development, test, and evaluation (RDT&amp;E) or procurement of a long-range penetrating bomber aircraft; (2) to procure an SSBN-X submarine (and prohibits the use of such funds for FY2024 and thereafter to procure more than eight such submarines); or (3) for the RDT&amp;E or procurement of a new intercontinental ballistic missile (ICBM). Prohibits the obligation or expenditure of funds authorized to be appropriated for FY2014 or thereafter for DOD or the Department of Energy (DOE): (1) to make the F-35 Joint Strike Fighter aircraft capable of carrying nuclear weapons; (2) until the Secretary of Defense and the Secretary of Energy jointly certify that the total cost of the B61 life extension program has been reduced to not more than $5 billion; (3) for the W78 life extension program; (4) for the mixed oxide fuel fabrication facility project; (5) to replace the chemistry and metallurgy research building at Los Alamos National Laboratory, Los Alamos, New Mexico; or (6) for the uranium processing facility at the Y-12 National Security Complex, Oak Ridge, Tennessee. Prohibits Navy forces, beginning in FY2020, from including more than eight operational ballistic-missile submarines available for deployment."
+    },
+    {
+      "id": "billsum-test-22",
+      "final": "Amends the Internal Revenue Code with respect to political organizations to establish a campaign contribution limitation scheme applicable to the campaign committee of a candidate for election to the House of Representatives. Provides that excess campaign contributions received by such an organization shall be included in its gross income."
+    },
+    {
+      "id": "billsum-test-23",
+      "final": "Clinical Laboratory Compliance Improvement Act of 2004 - Amends title XVIII (Medicare) of the Social Security Act to require each provider or clinical laboratory approved for participation under Medicare to provide clinical diagnostic laboratory tests to post in a conspicuous place a notice to employees that indicates the manner in which to report instances of noncompliance with conditions of participation. Prohibits such a provider or clinical laboratory from discriminating against or retaliating in any manner against any employee because that employee, or any other person, has presented a grievance or complaint, or has initiated or cooperated in any investigation or proceeding of any kind, relating to the clinical diagnostic laboratory tests performed or other requirements and prohibitions of Medicare. Provides for judicial action for any employee so aggrieved. Requires the investigative organization, upon receipt of a report of an instance of noncompliance, to: (1) provide notice to the Secretary and other investigative organizations involved of receipt of the report within three business days, using a standard format and manner of transmission developed by the Secretary for such purpose; (2) promptly determine whether to investigate the report; and (3) if appropriate, promptly investigate it."
+    },
+    {
+      "id": "billsum-test-24",
+      "final": "Amends the Internal Revenue Code concerning:  (1) the treatment of bonds issued to finance electric output facilities; and (2) the special rules for nuclear decommissioning costs."
+    },
+    {
+      "id": "billsum-test-25",
+      "final": "United States-Afghanistan Status of Forces Agreement (SOFA) Act of 2011 - Directs the President to seek to enter into a bilateral status of forces agreement with the government of Afghanistan which shall: (1) prohibit the permanent basing or military presence of U.S. Armed Forces in Afghanistan; (2) provide, no later than one year after the date on which such agreement is entered into, for the complete redeployment from Afghanistan of the U.S. Armed Forces and Department of Defense (DOD) civilian employees and contractors; and (3) establish that the temporary presence of U.S. Armed Forces in Afghanistan is at the request of the government of Afghanistan."
+    },
+    {
+      "id": "billsum-test-26",
+      "final": "Amends federal veterans' benefits provisions to direct the Secretary of Veterans Affairs, in providing counseling and other mental health services to a veteran who has limited proficiency in English, to ensure that such services are available in both English and a language in which that veteran is proficient, if requested by the veteran. Requires such availability also for the family members of such a veteran."
+    },
+    {
+      "id": "billsum-test-27",
+      "final": "Ensuring Defense Support to Catastrophic Incident Response Act of 2008 - Directs the Department of Defense (DOD) to undertake civil support operations in response to catastrophic incidents in the United States."
+    },
+    {
+      "id": "billsum-test-28",
+      "final": "Energy Security Act of 2011 - Establishes in the Executive Office of the President the national energy security program to coordinate federal government activities and policies to ensure that the United States meets goals for reducing oil dependence, oil imports, and oil consumption as well as other energy policy goals. Declares it is the goal of the United States to reduce oil consumption by 2030 by an amount equal to or greater than the quantity of oil imported from outside of North America. Directs the President, in coordination with the National Energy Security Council (established by this Act) and the Director of the Office of Management and Budget (OMB), to develop a national oil independence plan, which shall be updated biennially."
+    },
+    {
+      "id": "billsum-test-29",
+      "final": "Return of Talent Act - Amends the Immigration and Nationality Act to direct the Secretary of Homeland Security to establish the Return of Talent Program to permit an eligible permanent resident alien and family members to temporarily return (two years with extension) to the alien's country of citizenship in order to make a material contribution to that country if the country is engaged in post-conflict reconstruction activities."
+    },
+    {
+      "id": "billsum-test-30",
+      "final": "Revises basic educational assistance for veterans' survivors and dependents to: (1) eliminate the present 45 month cap on benefit payments and set an aggregate limit of $80,000; (2) extend from a dependent's 26th to 30th birthday the delimiting age for the use of such assistance; (3) increase the amount of such assistance for survivors and dependents pursuing certain types of education; and (4) authorize the provision of tutorial assistance to such individuals without charge to their educational assistance entitlement."
+    },
+    {
+      "id": "billsum-test-31",
+      "final": "Strategic Withdrawal of Agencies for Meaningful Placement Act of 2018 or the SWAMP Act This bill: (1) repeals the requirement that all offices attached to the seat of government be exercised in the District of Columbia, and not elsewhere; and (2) prohibits new construction or major renovation of certain executive agency headquarters in the Washington Metropolitan area."
+    }
+  ]
+}

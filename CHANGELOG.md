@@ -4,6 +4,42 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-07-12
+
+- **The certified chain lands, and the arXiv kit compiles (2026-07-12, PRs
+  #397 + #398).**
+  - **First REAL certified multi-hop meaning chain (#398).** The
+    `sum.chain_receipt.v1` machinery shipped in #392 now has its first real
+    signed artifact over a public-domain corpus:
+    `fixtures/chain_receipts_billsum/` composes the meaning-loss of two real
+    transforms of the same 32 BillSum bills (CC0) — hop 1 the dataset's own
+    reference summarization (SUM did not perform it), hop 2 a deterministic
+    lead-N extractive compression (offline, 0 LLM calls) — under the strict NLI
+    judge. Certified expected meaning-loss ≤ 0.865768 (hop 1) and ≤ 0.488860
+    (hop 2) at 95%; Bonferroni budget ≤ 1.354628 at joint confidence 0.90;
+    directly-measured end-to-end ≤ 0.874216, which is BELOW the additive budget
+    — a live illustration of the `budget_scope` honesty (the budget bounds the
+    SUM of per-hop expected losses, not the end-to-end loss; the proxy is a
+    directed loss, not a metric, so no triangle inequality holds). Bounds are
+    wide at n=32 (Hoeffding) and said plainly; the lenient judge was NOT
+    substituted to prettify them. Deterministic generator (private key never
+    written; reads committed losses so regeneration is judge-free and
+    byte-stable), 3 signed receipts + public JWKS + 3 committed integer-micro
+    loss vectors + hop-2 finals, a 7-test replay/regression suite
+    (`Tests/research/test_chain_golden_billsum.py`), and all three receipts
+    witnessed in `transparency/log.jsonl`.
+  - **PROOF_BOUNDARY + README surface the new layer (#398).** README "What
+    ships today" gains the certified-chain row; PROOF_BOUNDARY §2.11 records the
+    measured cross-architecture judge result (the 22-pair deterministic probe
+    reproduces exact decisions AND exact integer micro-margins across
+    arm64/Darwin and x86_64/Linux on torch 2.7.1, max drift 0 micro, renewed
+    monthly by `judge-smoke`, honestly scoped to these two platforms) and the
+    certified-chain composition note.
+  - **arXiv Paper-1 kit compiles end to end (#397).** `tectonic
+    docs/arxiv/latex/main.tex` now produces a clean 8-page PDF; the only change
+    is a content-neutral hyperref-driver guard that is a no-op on arXiv's
+    pdfTeX. The submission tarball is one command away; upload is operator-side.
+
 - **The elevation arc (2026-07-10, PRs #386-#392): judge de-pinning, calibration
   cards, the certified chain, the witnessed log, the standards profile, and
   residual-identity cleanup — operator-directed ("elevate all three things...").**

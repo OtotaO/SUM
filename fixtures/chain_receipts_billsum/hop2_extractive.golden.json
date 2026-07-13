@@ -1,0 +1,26 @@
+{
+  "kid": "billsum-chain-fixture-key-2026",
+  "payload": {
+    "scorer": "bidirectional-entailment[nli:MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli]",
+    "scorer_version": "1",
+    "loss_definition": "1 - bidirectional sentence-entailment preservation (recall 0.6 / fidelity 0.4) under the named NLI judge (DeBERTa-v3-mnli-fever-anli, pinned revision) at a 0.5 entailment cut; 0 = full preservation, 1 = none. Hop 2 = deterministic lead-N extractive compression (keep the first ceil(0.5*n) sentences of the summary; lead-N is a standard extractive baseline), offline, llm_calls_made=0. It is NOT a SUM slider render. Single-sentence summaries pass through unchanged.",
+    "n": 32,
+    "method": "hoeffding",
+    "delta_micro": 50000,
+    "point_estimate_micro": 272507,
+    "risk_upper_bound_micro": 488860,
+    "losses_hash": "sha256-1c9127dde682a988ea84f037ef8066453bdaccfbecbd6d2e8286647c17439dab",
+    "corpus_id": "billsum-test-first32-cc0",
+    "transform": "compress:lead-extractive-keep0.5",
+    "not_covered": [
+      "arrangement",
+      "sound",
+      "connotation",
+      "implicature"
+    ],
+    "disclosure": "Meaning-loss of deterministic lead-N extractive compression. Bounds the EXPECTED value of a NAMED meaning-loss proxy MARGINALLY over the first 32 BillSum test bills (CC0-1.0), under exchangeability. NOT a per-document claim and NOT meaning itself. The CERTIFICATE replays offline over the committed integer-micro loss vector; the LOSS COMPUTATION is machine-pinned (NLI float drift + 512-token truncation, F23/F26) and reproduced only on a matching torch/DeBERTa stack.",
+    "signed_at": "2026-07-12T12:00:00.000Z"
+  },
+  "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6ImJpbGxzdW0tY2hhaW4tZml4dHVyZS1rZXktMjAyNiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..oFxgmZB9u891ObX2vFHyF37wqqPkFLIBhd3tzf1eveT2WUt96kkS4HTg12jc_zXKkUlKElt-ZkuyGzphRygiDw",
+  "schema": "sum.meaning_risk_receipt.v1"
+}
