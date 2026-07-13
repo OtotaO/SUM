@@ -114,6 +114,9 @@ test_data/
 *.docx
 *.xlsx
 
+# arXiv LaTeX build artifacts (regenerate: cd docs/arxiv/latex && ./make_tarball.sh)
+docs/arxiv/latex/paper1.tar.gz
+
 # Temporary files
 tmp/
 temp/

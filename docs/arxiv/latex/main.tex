@@ -10,6 +10,13 @@
 \usepackage{amssymb}
 \usepackage{amsthm}
 \usepackage{booktabs}
+\usepackage{iftex}
+% Content-neutral packaging fix: under an XeTeX-based engine (e.g. tectonic,
+% used for local proof-of-compile), select hyperref's xetex driver so it
+% matches the real backend. On pdfTeX (arXiv AutoTeX) \ifxetex is false and
+% this line is a no-op; the pdfTeX driver loads exactly as before. Nothing
+% scientific or typographic in the rendered paper changes.
+\ifxetex\PassOptionsToPackage{xetex}{hyperref}\fi
 \usepackage[hidelinks]{hyperref}
 
 \theoremstyle{definition}
