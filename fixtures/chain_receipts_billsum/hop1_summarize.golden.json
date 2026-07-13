@@ -1,0 +1,26 @@
+{
+  "kid": "billsum-chain-fixture-key-2026",
+  "payload": {
+    "scorer": "bidirectional-entailment[nli:MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli]",
+    "scorer_version": "1",
+    "loss_definition": "1 - bidirectional sentence-entailment preservation (recall 0.6 / fidelity 0.4) under the named NLI judge (DeBERTa-v3-mnli-fever-anli, pinned revision) at a 0.5 entailment cut; 0 = full preservation, 1 = none. Hop 1 = the DATASET's own reference summarization (bill -> reference summary); SUM did not perform it. Long bills are truncated to the judge's ~512-token window before scoring (F23/F26 machine-pinning), so a short abstractive summary of a full bill scores high loss under this strict recall-weighted judge -- the bound is expected to clamp near 1.0.",
+    "n": 32,
+    "method": "hoeffding",
+    "delta_micro": 50000,
+    "point_estimate_micro": 649416,
+    "risk_upper_bound_micro": 865768,
+    "losses_hash": "sha256-0bbf0c7576a24aac88e8eb09c524b1547ce59f368dc154873987fbfed1f7c296",
+    "corpus_id": "billsum-test-first32-cc0",
+    "transform": "summarize:billsum-reference",
+    "not_covered": [
+      "arrangement",
+      "sound",
+      "connotation",
+      "implicature"
+    ],
+    "disclosure": "Meaning-loss of the dataset's reference summarization. Bounds the EXPECTED value of a NAMED meaning-loss proxy MARGINALLY over the first 32 BillSum test bills (CC0-1.0), under exchangeability. NOT a per-document claim and NOT meaning itself. The CERTIFICATE replays offline over the committed integer-micro loss vector; the LOSS COMPUTATION is machine-pinned (NLI float drift + 512-token truncation, F23/F26) and reproduced only on a matching torch/DeBERTa stack.",
+    "signed_at": "2026-07-12T12:00:00.000Z"
+  },
+  "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6ImJpbGxzdW0tY2hhaW4tZml4dHVyZS1rZXktMjAyNiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..wWhHcxNYq1e4GXg0-GarreL2fUVtDQRS8tW0aromDt_xskxflzw0qk6ZEXaYF4F11JerpGVhlCr4_ybGoX0LBg",
+  "schema": "sum.meaning_risk_receipt.v1"
+}
