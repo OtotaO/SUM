@@ -355,6 +355,130 @@
   </div>
 </div>
 
+<div class="card" style="margin-top: 24px; display:none;" id="altitude-panel">
+  <h3>The distiller, live: one real bill, four altitudes <span class="pill">measured, not certified</span></h3>
+  <p style="font-size:12px;opacity:0.75;margin:0 0 10px" id="altitude-doc-line">
+    A real US Congressional bill (BillSum, CC0) descending the altitude ladder. Scrub the slider:
+    each detent shows the text at that altitude and what the named NLI judge measured it
+    <strong>kept</strong>, <strong>dropped</strong>, and <strong>added</strong> versus the full bill.
+  </p>
+  <div class="row" style="margin: 8px 0 2px;">
+    <label for="altitude-slider" style="min-width:60px">altitude</label>
+    <input type="range" id="altitude-slider" min="0" max="3" step="1" value="1">
+    <span class="v" id="altitude-rung-name" style="min-width:130px">&nbsp;</span>
+  </div>
+  <div style="display:flex; justify-content:space-between; font-size:10px; opacity:0.55; margin:0 4px 10px 72px;" id="altitude-ticks"></div>
+  <div style="display:flex; gap:14px; flex-wrap:wrap; font:12px ui-monospace,monospace; opacity:0.85; margin:0 0 8px;" id="altitude-stats"></div>
+  <div id="altitude-text" style="font:12px/1.5 ui-monospace,monospace; white-space:pre-wrap; border:1px solid #8883; border-radius:4px; padding:10px 12px; max-height:170px; overflow-y:auto; background:#8881;"></div>
+  <div id="altitude-diff" style="margin-top:10px;"></div>
+  <p style="font-size:11px;opacity:0.65;margin:10px 0 0;" id="altitude-scope"></p>
+  <p style="font-size:11px;margin:8px 0 0;" id="altitude-receipt-line"></p>
+</div>
+<script>
+(function () {
+  "use strict";
+  var panel = document.getElementById("altitude-panel");
+  fetch("altitude_rungs.json").then(function (r) {
+    if (!r.ok) throw new Error("no altitude data");
+    return r.json();
+  }).then(function (data) {
+    var rungs = data.rungs || [];
+    if (rungs.length < 2) return;
+    var slider = document.getElementById("altitude-slider");
+    slider.max = String(rungs.length - 1);
+    // tick labels under the slider
+    var ticks = document.getElementById("altitude-ticks");
+    rungs.forEach(function (r) {
+      var s = document.createElement("span");
+      s.textContent = r.label.replace("the bill (source)", "bill");
+      ticks.appendChild(s);
+    });
+    function fmtLoss(x) { return (x === null || x === undefined) ? "0 (it IS the source)" : x.toFixed(3); }
+    function stat(label, value) {
+      var d = document.createElement("span");
+      var b = document.createElement("strong");
+      b.textContent = value;
+      d.textContent = label + " ";
+      d.appendChild(b);
+      return d;
+    }
+    function claimList(title, marker, claims, cap, cls) {
+      var wrap = document.createElement("div");
+      if (!claims || !claims.length) return wrap;
+      var h = document.createElement("div");
+      h.style.cssText = "font-size:11px;opacity:0.7;margin:6px 0 2px;text-transform:uppercase;letter-spacing:0.02em;";
+      h.textContent = title + " (" + claims.length + ")";
+      wrap.appendChild(h);
+      var ul = document.createElement("ul");
+      ul.className = "facts";
+      claims.slice(0, cap).forEach(function (c) {
+        var li = document.createElement("li");
+        li.textContent = marker + " " + c;
+        if (cls) li.className = cls;
+        ul.appendChild(li);
+      });
+      if (claims.length > cap) {
+        var li = document.createElement("li");
+        li.style.opacity = "0.55";
+        li.textContent = "… +" + (claims.length - cap) + " more (full list in altitude_rungs.json)";
+        ul.appendChild(li);
+      }
+      wrap.appendChild(ul);
+      return wrap;
+    }
+    function show(i) {
+      var r = rungs[i];
+      var prev = i > 0 ? rungs[i - 1] : null;
+      document.getElementById("altitude-rung-name").textContent = r.label;
+      document.getElementById("altitude-text").textContent = r.text;
+      var stats = document.getElementById("altitude-stats");
+      stats.textContent = "";
+      stats.appendChild(stat("words", String(r.words)));
+      stats.appendChild(stat("compression", r.compression_pct + "%"));
+      stats.appendChild(stat("measured loss vs bill", fmtLoss(r.meaning_loss)));
+      if (prev && r.meaning_loss !== null) {
+        // the source rung's loss is definitionally 0 (stored as null)
+        var prevLoss = (prev.meaning_loss === null || prev.meaning_loss === undefined) ? 0 : prev.meaning_loss;
+        var d = r.meaning_loss - prevLoss;
+        stats.appendChild(stat("Δ from previous detent", (d >= 0 ? "+" : "") + d.toFixed(3)));
+      }
+      if (typeof r.preserved_claims === "number") {
+        stats.appendChild(stat("claims kept", r.preserved_claims + "/" + r.source_claims));
+      }
+      var diff = document.getElementById("altitude-diff");
+      diff.textContent = "";
+      if (r.note) {
+        var note = document.createElement("div");
+        note.style.cssText = "font-size:11px;opacity:0.65;font-style:italic;margin:2px 0 4px;";
+        note.textContent = r.note;
+        diff.appendChild(note);
+      }
+      diff.appendChild(claimList("dropped vs the bill", "✗", r.dropped_claims, 6, "bad"));
+      diff.appendChild(claimList("added / unsupported by the bill", "!", r.added_claims, 3));
+    }
+    slider.addEventListener("input", function () { show(Number(slider.value)); });
+    document.getElementById("altitude-scope").textContent = "Scope: " + data.scope +
+      " Judge: " + data.scorer + " v" + data.scorer_version + ".";
+    var rl = document.getElementById("altitude-receipt-line");
+    var cr = data.chain_receipt || {};
+    rl.textContent = "This bill is one of the 32 bound by the witnessed certified chain " +
+      (cr.chain_id || "") + " — " + (cr.note || "") + " ";
+    if (cr.url) {
+      var a = document.createElement("a");
+      a.href = cr.url;
+      a.textContent = "receipt + JWKS + losses";
+      rl.appendChild(a);
+      rl.appendChild(document.createTextNode("."));
+    }
+    show(Number(slider.value));
+    panel.style.display = "";
+  }).catch(function () {
+    /* file:// open or asset missing: leave the panel hidden — the rest of
+       the page is fully functional without it. */
+  });
+})();
+</script>
+
 <div class="card" style="margin-top: 24px;">
   <h3>Want the per-document readout — &ldquo;what changed in <em>my</em> text&rdquo;?</h3>
   <p style="font-size:13px;opacity:0.85;margin:0 0 8px">

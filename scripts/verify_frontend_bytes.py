@@ -64,6 +64,7 @@ CHECKED_ASSETS: list[tuple[str, str]] = [
     ("vendor/sum-verify-deps.js", "vendor/sum-verify-deps.js"),  # vendored jose + float-capable canonicalize
     ("provenance.js", "provenance.js"),                   # prov_id helper
     ("godel.js", "godel.js"),                             # state-integer helper
+    ("altitude_rungs.json", "altitude_rungs.json"),       # altitude-panel data (fetched by index.html)
 ]
 
 
