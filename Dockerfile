@@ -26,7 +26,7 @@ COPY core-zig/ ./core-zig/
 RUN cd core-zig && zig build -Doptimize=ReleaseFast
 
 # ── Stage 2: Python Runtime ──────────────────────────────────────────
-FROM python:3.14-slim-bookworm@sha256:4ff4b92a68355dbdb52584ab3391dff8d371a61d4e063468bfd0130e3189c6d9
+FROM python:3.14-slim-bookworm@sha256:86f975aca15cf04a40b399eebede9aea7c82eae084d1f1a0a6ef6bcaae871a30
 
 WORKDIR /app
 
