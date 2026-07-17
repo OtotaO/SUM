@@ -91,11 +91,12 @@ self-contained, downloads packages on first run). On a machine with TeXLive:
 
 1. **Author name, affiliation, email.** The draft has no author block;
    `main.tex` carries a placeholder.
-2. **Two reference titles are unverified.** The draft itself marks
-   arXiv:2604.23280 (the provenance survey) and arXiv:2605.05503
-   ("Chainwash") with "[exact title to verify before submission]". Those
-   bracketed notes are preserved verbatim in the bibliography and must be
-   replaced with the real titles/authors.
+2. **Two reference titles: RESOLVED 2026-07-16** (verified against the live
+   arXiv abstract pages; bibliography updated, bracketed notes removed).
+   arXiv:2604.23280 = Otsuka, Toyoda, Leung, "AI Identity: Standards, Gaps,
+   and Research Directions for AI Agents". arXiv:2605.05503 = Ameen, Islam,
+   Mahmud, Hamid, "Chainwash: Multi-Step Rewriting Attacks on Diffusion
+   Language Model Watermarks".
 3. **Bibliography completeness.** The draft's reference list is explicitly
    "to be formatted"; I formatted it mechanically, but several arXiv-only
    entries lack author names, and no entry has a DOI. The draft's own note
