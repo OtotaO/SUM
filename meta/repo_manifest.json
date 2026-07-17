@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-07-13T03:22:00Z",
+  "issued_at": "2026-07-17T04:43:46Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "2624dd7fcc870b8815114ee37a233f0e095ba392",
-    "head_short": "2624dd7",
-    "head_subject": "docs: surface the certified chain + cross-arch judge result (A3)",
-    "head_committer_date": "2026-07-12T23:18:35-04:00",
+    "head_sha": "49bbdd39954cf999bd9de7be38fd85321c453555",
+    "head_short": "49bbdd3",
+    "head_subject": "docs(arxiv): fill the author block (operator-provided byline)",
+    "head_committer_date": "2026-07-16T22:53:41-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -19,7 +19,7 @@
   },
   "release": {
     "pyproject_version": "0.9.0",
-    "pypi_published_version": "0.8.1"
+    "pypi_published_version": "0.9.0"
   },
   "features": {
     "total": 170,
