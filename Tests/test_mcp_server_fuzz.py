@@ -191,3 +191,47 @@ def test_extract_handles_known_tricky_strings(server, text):
     _assert_tool_result_shape(result)
     if "error_class" not in result:
         assert isinstance(result["triples"], list)
+
+
+# --------------------------------------------------------------------------
+# verify_receipt (meaning layer) — fuzz the attacker-facing surface.
+# A receipt envelope arrives from an untrusted counterparty by design, so
+# this tool gets the same totality guarantee as the bundle verbs: never an
+# uncaught raise, never a success shape on a malformed payload.
+# --------------------------------------------------------------------------
+
+_receipt_schemas = st.sampled_from([
+    "sum.meaning_risk_receipt.v1", "sum.chain_receipt.v1",
+    "sum.render_receipt.v1", "sum.transform_receipt.v1",
+    "sum.bogus.v9", "", None,
+])
+
+adversarial_receipt = st.one_of(
+    adversarial_value,
+    st.fixed_dictionaries(
+        {"schema": _receipt_schemas},
+        optional={
+            "kid": adversarial_value,
+            "payload": adversarial_value,
+            "jws": adversarial_value,
+        },
+    ),
+)
+
+
+@given(receipt=adversarial_receipt, jwks=adversarial_value, losses=adversarial_value)
+@settings(max_examples=200, deadline=None)
+def test_verify_receipt_never_raises_or_returns_invalid_shape(
+    server, receipt, jwks, losses
+):
+    pytest.importorskip("joserfc")
+    result = _call(
+        _tool(server, "verify_receipt"),
+        receipt=receipt, jwks=jwks,
+        losses=losses if isinstance(losses, list) else None,
+    )
+    _assert_tool_result_shape(result)
+    # A fuzzed envelope can never actually verify: success shape here is a bug.
+    assert result.get("verified") is not True, (
+        f"fuzzed garbage verified as true: {result!r}"
+    )
