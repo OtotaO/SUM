@@ -4,6 +4,41 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **The distiller made visible + the agent-swarm surface (2026-07-16/18, PRs
+  #404 + #405 + #406).**
+  - **T0 altitude panel on the live demo (#404).** A stranger at
+    sum-demo.ototao.workers.dev now experiences the DISTILLER, not only the
+    certificate: one real BillSum bill (billsum-test-12, one of the 32 bound
+    by the witnessed certified chain) descending four altitudes (bill ->
+    reference summary -> lead-1/2 -> lead-1/4 extractive), with the strict-NLI
+    measured loss (0.629 / 0.668 / 0.941 at 81/89/97% compression), the
+    per-rung kept/dropped/added claim readout, a "measured, not certified"
+    header, and a receipt badge linking the witnessed chain. Committed
+    measurement JSON + offline generator + 5 torch-free CI locks;
+    `altitude_rungs.json` joins the post-deploy byte-drift guard. Deployed
+    and verified byte-identical (11/11 checked assets).
+  - **MCP meaning layer - the receipt family for agent swarms (#406).** Five
+    new tools on the existing hardened `sum-mcp` server: `verify_receipt`
+    (all five receipt schemas, dispatched exactly like `python -m
+    sum_verify`, returning the same honest verdict incl. `proxy_caveat` and
+    `budget_scope`; pure crypto, parallel-safe), `meaning_diff` and
+    `depth_frontier` (per-document measurements under a named judge, judge
+    calls serialised behind one in-process lock; a `concurrency` hint rides
+    every result), and `mint_meaning_receipt` / `mint_chain_receipt` (BYO
+    private key ONLY - the server never generates, stores, or logs key
+    material; both self-verify through the real `sum_verify` path before
+    returning). Measured, not asserted: ~445/s sequential and ~527/s
+    parallel full-chain verifications on one process (scope in
+    `docs/MCP_INTEGRATION.md`, new "Agents and the meaning layer" section).
+    23 new tests incl. a 16-parallel swarm smoke + a 200-example totality
+    fuzz.
+  - **arXiv kit finalised (#405).** The two unverified bibliography
+    placeholders resolved against the live arXiv pages (the AI-identity
+    survey and Chainwash, real titles + authors); author byline filled;
+    `repo_manifest` refreshed to record 0.9.0 as the published PyPI version
+    (the drift gate had correctly redded every CI run started after the
+    publish - lesson: refresh the manifest immediately after any release).
+
 ## [0.9.0] - 2026-07-12
 
 - **The certified chain lands, and the arXiv kit compiles (2026-07-12, PRs
