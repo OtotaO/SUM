@@ -1,6 +1,6 @@
 # MCP integration — calling SUM from MCP-aware LLM clients
 
-SUM ships a Model Context Protocol (MCP) server that exposes its primary verbs (`extract`, `attest`, `verify`, `inspect`, `schema`, `render`) as MCP tools. Any MCP-aware client — Claude Desktop, Claude Code, Cursor, Continue, custom agents built on the MCP Python or TypeScript SDKs — can drive SUM directly without shelling out to the `sum` CLI or hitting the hosted Worker API.
+SUM ships a Model Context Protocol (MCP) server that exposes its primary verbs (`extract`, `attest`, `verify`, `inspect`, `schema`, `render`) as MCP tools, plus the **meaning layer** (`verify_receipt`, `meaning_diff`, `depth_frontier`, `mint_meaning_receipt`, `mint_chain_receipt` — see [Agents and the meaning layer](#agents-and-the-meaning-layer-swarms) below). Any MCP-aware client — Claude Desktop, Claude Code, Cursor, Continue, custom agents built on the MCP Python or TypeScript SDKs — can drive SUM directly without shelling out to the `sum` CLI or hitting the hosted Worker API.
 
 This is the integration surface for **systems calling SUM** — the most common deployment shape.
 
@@ -214,6 +214,49 @@ What the MCP server **does not** do:
 - It does not verify what the user said — `extract` is whatever the chosen extractor produces. The trust boundary is at attest-time signing, same as the CLI.
 - It does not run on a remote endpoint. v1 is stdio-only. A remote-MCP variant (SSE / HTTP) is gated on an auth design that does not yet exist.
 - It does not write to the Akashic Ledger. Ledger writes happen only via `sum attest --ledger` from the CLI — surfacing that path through MCP requires a separate review of provenance-tracking semantics, since MCP tool calls are intended to be safe-by-default.
+
+## Agents and the meaning layer (swarms)
+
+Five additional tools expose the receipt family — the layer built for
+"agentic swarms needing parallel access to the SUM engine":
+
+| Tool | What it does | Extras needed |
+|---|---|---|
+| `verify_receipt` | Any of the five receipt schemas, dispatched exactly like `python -m sum_verify` (Stage A always; Stage B replay when `losses` / `hops` are supplied). Returns the same honest verdict shape the CLI prints — `proxy_caveat` on meaning-risk receipts, `budget_scope` on chains. | `[verify]` |
+| `meaning_diff` | Per-document kept / dropped / added under a named entailment judge (`sum meaning-diff`). A MEASUREMENT, never a certified bound; the `scope` field says so on every result. `scorer="lexical"` is rejected (no per-claim entailment); `"embedding"` results carry the brittleness caveat. | `[research]` (+`[judge]` for nli) |
+| `depth_frontier` | The whole faithful→compressed ladder with per-rung diffs and the loss-per-compression slope (`sum depth-diff`). | `[research]` (+`[judge]`) |
+| `mint_meaning_receipt` | Guided issuance of a `sum.meaning_risk_receipt.v1` — BYO losses (with a named `scorer_name`) or pairs scored in-server. Self-verifies through the real `sum_verify` path before returning; small-`n` and vacuous-bound warnings ride the result. | `[research]` + `[verify]` |
+| `mint_chain_receipt` | Compose ≥2 hop receipts into a `sum.chain_receipt.v1` with the integer-exact Bonferroni budget, optional direct end-to-end leg, and the mandatory `budget_scope` honesty field. Self-verifies before returning. | `[research]` + `[verify]` |
+
+**Key policy (mint tools).** BYO private key ONLY: the server never
+generates, stores, or logs key material (the stderr audit logs shapes, not
+values). A request without a usable Ed25519 private JWK is refused with
+`error_class: "schema"`. Generate keys offline (`sum mint-meaning
+--gen-key DIR`) and keep custody at the caller.
+
+**Concurrency contract, stated honestly.** Verification is pure crypto +
+integer math over per-call inputs — no shared mutable state, safe under
+arbitrary parallelism; `verify_receipt` runs in the default executor so
+concurrent calls genuinely overlap. The model judge is NOT assumed
+re-entrant: every `meaning_diff` / `depth_frontier` / pairs-mode mint call
+serialises behind one in-process lock. **For true parallel judging, run N
+server processes.** Every result carries a `concurrency` hint field naming
+which regime it ran under.
+
+**Measured, not asserted** (2026-07-17, arm64 dev machine, one process):
+16 sequential full-chain verifications (chain + 2 hop replays + end-to-end
+leg) ran at ~445/s; the same 16 in parallel at ~527/s (1.18x). Each verify
+is ~2 ms, so single-process parallelism adds little — the lock-free claim
+is about *safety*, not single-process speedup. The 16-parallel smoke is
+CI-locked in `Tests/test_mcp_meaning_tools.py`. No swarm-scale throughput
+claims beyond these measurements.
+
+**Two channels, one verifier.** MCP (this server) is the **local / stdio**
+channel. The hosted Worker at `sum-demo.ototao.workers.dev` is the
+**remote HTTP** channel (`/api/*` + the `/.well-known` trust endpoints)
+for swarms that cannot spawn a local process. Both run the same
+verification substrate; a receipt minted over MCP verifies byte-identically
+everywhere the trust triangle reaches.
 
 ## Cross-references
 

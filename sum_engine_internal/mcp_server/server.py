@@ -100,7 +100,18 @@ def build_server() -> FastMCP:
             "payloads; see docs/AGENT_SURFACE_FINDINGS.md). "
             "Default extractor is offline-only (sieve). The LLM extractor "
             "is disabled unless SUM_MCP_ALLOW_NETWORK=1 was set when the "
-            "server started. Every tool returns either a tool-specific "
+            "server started. "
+            "Meaning layer (the receipt family, for agent swarms): "
+            "verify_receipt (all five schemas, same honest verdict the "
+            "sum_verify CLI prints; pure crypto, parallel-safe) / "
+            "meaning_diff / depth_frontier (per-document measurements "
+            "under a named judge, never certified bounds; judge calls "
+            "serialise behind one in-process lock — run N processes for "
+            "parallel judging) / mint_meaning_receipt / mint_chain_receipt "
+            "(BYO private key ONLY; this server never generates or stores "
+            "keys). The live Worker serves the same verification over "
+            "HTTP for remote swarms; MCP is the local/stdio channel. "
+            "Every tool returns either a tool-specific "
             "success shape or an `error_class` tag from a fixed enum: "
             "schema, signature, structural, input_too_large, "
             "extractor_unavailable, network_disallowed, revoked, internal. "
@@ -674,6 +685,12 @@ def build_server() -> FastMCP:
         "render": render,
         "inspect": inspect,
     })
+
+    # Meaning layer — the receipt family (verify / diff / frontier / mint)
+    # for agent swarms. Verification is parallel-safe; judge calls
+    # serialise behind one in-process lock. See meaning_tools.py.
+    from sum_engine_internal.mcp_server.meaning_tools import register_meaning_tools
+    register_meaning_tools(mcp)
 
     return mcp
 

@@ -56,11 +56,17 @@ def test_server_boots_with_expected_tools(server):
         "extract_bind", "attest_bind", "verify_bind", "render_bind",
         "inspect_bind", "agent_surface_manifest",
     }
+    meaning_surface = {
+        "verify_receipt", "meaning_diff", "depth_frontier",
+        "mint_meaning_receipt", "mint_chain_receipt",
+    }
     assert legacy_inline <= names, f"legacy tools regressed: {legacy_inline - names}"
     assert bind_surface <= names, f"bind surface missing: {bind_surface - names}"
-    assert names == legacy_inline | bind_surface, (
-        f"unexpected tools registered: {names - (legacy_inline | bind_surface)}"
+    assert meaning_surface <= names, (
+        f"meaning surface missing: {meaning_surface - names}"
     )
+    expected = legacy_inline | bind_surface | meaning_surface
+    assert names == expected, f"unexpected tools registered: {names - expected}"
 
 
 def test_every_tool_has_a_non_empty_description(server):
