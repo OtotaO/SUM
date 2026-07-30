@@ -38,6 +38,13 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    groups:
+      # codeql-action's init/analyze/upload-sarif sub-actions must move as ONE
+      # SHA: a lone analyze bump fails CI on the init/analyze version-match
+      # check (recurred as #378/#380, #408/#413; fixed manually in #420).
+      # Grouping makes Dependabot propose all three refs in a single PR.
+      codeql-action:
+        patterns: ["github/codeql-action/*", "github/codeql-action"]
 
   # ── Dockerfile base images — the index digests pinned in ./Dockerfile ──
   - package-ecosystem: "docker"
