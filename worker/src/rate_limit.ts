@@ -73,12 +73,21 @@ export function classifyScope(
 ): RateLimitScope {
   if (endpoint === "qid") return "qid";
 
-  // BYO-key detection: any of the recognised LLM-key headers present
-  // and non-empty puts the caller in the byok bucket. The route still
-  // validates the key against the LLM call; we just classify here.
+  // /api/complete never honours a BYO key — it always calls the operator's
+  // provider key (complete.ts uses env.ANTHROPIC_API_KEY / env.OPENAI_API_KEY
+  // unconditionally). So a BYO header must NOT promote the caller out of the
+  // operator-funded demo bucket: otherwise a stray header (even garbage) drains
+  // operator credit at the 100/hr byok rate instead of 5/day (2026-07-31 #10).
+  if (endpoint === "complete") return "llm-axis-demo";
+
+  // BYO-key detection MUST use the same TRIMMED emptiness test the key
+  // selection uses (render.ts: `(userKey && userKey.trim()) || env.…`). With a
+  // raw `!!get()` a whitespace-only header ("  ") classifies as byok (100/hr)
+  // yet the render still falls back to the operator key — 20x operator-credit
+  // amplification (2026-07-31 #11). One rule for both, so they cannot drift.
   const hasByoKey =
-    !!request.headers.get("x-render-llm-key-anthropic") ||
-    !!request.headers.get("x-render-llm-key-openai");
+    !!request.headers.get("x-render-llm-key-anthropic")?.trim() ||
+    !!request.headers.get("x-render-llm-key-openai")?.trim();
 
   return hasByoKey ? "llm-axis-byok" : "llm-axis-demo";
 }
