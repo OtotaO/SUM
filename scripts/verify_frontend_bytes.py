@@ -65,6 +65,11 @@ CHECKED_ASSETS: list[tuple[str, str]] = [
     ("provenance.js", "provenance.js"),                   # prov_id helper
     ("godel.js", "godel.js"),                             # state-integer helper
     ("altitude_rungs.json", "altitude_rungs.json"),       # altitude-panel data (fetched by index.html)
+    # The meaning-verifier "Load sample" flow fetches these at runtime (the
+    # flagship BillSum binding-gate demo); a lagged deploy would verify a stale
+    # sample against the current verifier — exactly the PR-#243 drift class.
+    ("sample_meaning_risk_receipt.json", "sample_meaning_risk_receipt.json"),
+    ("sample_meaning_jwks.json", "sample_meaning_jwks.json"),
 ]
 
 
@@ -84,11 +89,16 @@ def main() -> int:
         base += "/"
     print(f"  url base : {base}")
 
-    drift, fetch_err, ok = [], [], []
+    drift, fetch_err, ok, missing = [], [], [], []
     for url_path, repo_rel in CHECKED_ASSETS:
         repo_file = DEMO_DIR / repo_rel
         if not repo_file.exists():
-            print(f"  [skip] {repo_rel} — repo file missing", file=sys.stderr)
+            # A CHECKED_ASSETS entry whose repo file is gone (renamed, deleted,
+            # moved) means the guard's coverage claim is FALSE for that asset —
+            # the live Worker keeps serving the old bytes unchecked. Fail, do
+            # not [skip]-then-exit-0 (2026-07-31 review #3).
+            print(f"  [MISSING] {repo_rel} — repo file absent; CHECKED_ASSETS is stale", file=sys.stderr)
+            missing.append(repo_rel)
             continue
         repo_digest = _sha256(repo_file.read_bytes())
         try:
@@ -105,9 +115,18 @@ def main() -> int:
             drift.append(repo_rel)
             print(f"  ✗ {repo_rel}  DRIFT (repo {repo_digest[:12]} != live {live_digest[:12]})")
 
-    print(f"\n  {len(ok)} concordant, {len(drift)} drifted, {len(fetch_err)} unfetchable "
-          f"(of {len(CHECKED_ASSETS)} assets)")
+    print(f"\n  {len(ok)} concordant, {len(drift)} drifted, {len(fetch_err)} unfetchable, "
+          f"{len(missing)} missing (of {len(CHECKED_ASSETS)} assets)")
 
+    if missing:
+        print(
+            "[verify-frontend-bytes] STALE COVERAGE — CHECKED_ASSETS names repo "
+            f"files that no longer exist: {missing}\n"
+            "  The guard silently stopped covering these. Update CHECKED_ASSETS "
+            "to the current asset paths (or remove the dropped entries).",
+            file=sys.stderr,
+        )
+        return 2
     if fetch_err:
         print(f"[verify-frontend-bytes] could not fetch: {fetch_err}", file=sys.stderr)
         return 2
