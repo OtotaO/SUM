@@ -28,6 +28,10 @@ certificate.
 > | direct end-to-end (bill → final) | **≤ 0.874216** | — |
 >
 > `chain_id = 9a8ab39f08522c50`.
+>
+> *Micro-unit rounding: each `≤` value is the true bound rounded to nearest at
+> 1e-6 resolution (the signed `*_micro` wire convention — see
+> `docs/RECEIPT_FAMILY_SPEC.md` §2). A strictly-conservative reading adds 1e-6.*
 
 **Read this honestly, it is the point.** Strict recall-weighted NLI reports
 that abstractive summarization of a full bill loses a lot of the named proxy

@@ -1,7 +1,7 @@
 # SUM Receipt Family — unified specification (v1 overview)
 
 *Status: consolidating overview, 2026-06-08. This document is the single
-entry point to SUM's four transformation-receipt schemas — what they share,
+entry point to SUM's five transformation-receipt schemas — what they share,
 how they differ, and what each does and does not prove. It is an **overview
 that references the per-schema format docs as the authoritative source of
 truth**; it deliberately does not restate their exact field algorithms, to
@@ -82,6 +82,18 @@ JS canonicaliser **rejects floats outright**. The family therefore splits:
   required because their replay (§5) demands **exact integer equality** of
   a re-certified bound, and because the float-free wire is what
   canonicalises byte-identically across Python and Node.
+  - **Rounding convention (`*_micro` bound fields).** The micro-unit wire
+    value is the true (real-valued) bound **rounded to nearest**, not
+    ceiling — so a signed `risk_upper_bound_micro` may sit up to 0.5e-6
+    *below* the exact bound the method licenses. This is well below any
+    decision threshold and the boolean `controlled` flag is computed from
+    the unrounded float (so it is unaffected), but a consumer that needs a
+    *strictly* conservative upper bound should read `risk_upper_bound_micro
+    + 1` micro. The committed fixtures follow this convention (their READMEs
+    repeat it). Point-estimate fields use the same round-to-nearest. A
+    future schema version may switch bound fields to ceiling; that would
+    change wire bytes and so must be a versioned change with goldens
+    regenerated in the same commit.
 - **Provenance receipts (`render`, `transform`)** carry JCS-normalised
   quantized slider floats in the payload; their replay is **hash-based**
   (`input_hash` / `output_hash` / `parameters_hash` / `triples_hash` /
@@ -93,7 +105,7 @@ float-free (integer micro-units or a hash), or a Node verifier cannot
 canonicalise it. (Exact canonicalisation rules: `CANONICAL_ABI_SPEC.md`,
 `RENDER_RECEIPT_FORMAT.md` §4.)
 
-## 3. The four payloads (overview — format docs are authoritative)
+## 3. The five payloads (overview — format docs are authoritative)
 
 Field names are reproduced for orientation; the cited format doc is the
 source of truth for types, semantics, and optionality.
@@ -162,7 +174,8 @@ the embedded receipt, not on the container.
 Two stages, applied uniformly; the second only exists for the conformal
 tier.
 
-- **Stage A — cryptographic + disclosure (all four, every runtime).**
+- **Stage A — cryptographic + disclosure (all five schemas; every
+  runtime except chain, which is Python-only — see §4.1).**
   Verify the JWS signature; gate the `schema`; check header invariants;
   for the conformal tier, enforce the **disclosure invariants**
   (`not_covered` non-empty, `disclosure` non-empty). On success the

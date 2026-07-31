@@ -45,7 +45,16 @@ Equivalent invocation without installing the script: `python -m sum_engine_inter
 
 MCP's stdio transport: the client spawns `sum-mcp` as a subprocess, writes JSON-RPC 2.0 requests to stdin, reads responses from stdout. This is the standard MCP wire for **local** LLM clients. (Remote SSE / HTTP transports are not enabled in v1; they are a follow-on once authentication semantics are designed — `sum-mcp` over the network is a different threat model than `sum-mcp` on the same host.)
 
-The six tools the server registers:
+The server registers **17 tools** in three groups: the **six core verbs**
+documented in detail below (`extract`, `attest`, `verify`, `render`,
+`inspect`, `schema`); the **five meaning-layer tools** (the receipt family —
+see "Agents and the meaning layer" below); and the **six bind-aware tools**
+(`agent_surface_manifest` plus `extract_bind` / `attest_bind` / `verify_bind` /
+`inspect_bind` / `render_bind` — content-addressed handles so agents do not
+round-trip full payloads; specified in
+[`AGENT_SURFACE_FINDINGS.md`](AGENT_SURFACE_FINDINGS.md)).
+
+The six core verbs:
 
 ### `extract`
 

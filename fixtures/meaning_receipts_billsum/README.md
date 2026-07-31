@@ -21,6 +21,10 @@ was lost.
 exercise the `controlled` flag — not a tuned or claimed quality bar. The
 bound 0.6454 and mean 0.4925 are the load-bearing measured numbers.)*
 
+*(Micro-unit rounding: the signed `risk_upper_bound_micro` is the true bound
+rounded to nearest at 1e-6 resolution, the `*_micro` wire convention — see
+`docs/RECEIPT_FAMILY_SPEC.md` §2. A strictly-conservative reading adds 1e-6.)*
+
 - **Corpus:** [BillSum](https://huggingface.co/datasets/FiscalNote/billsum)
   test split, first 64 examples in dataset order. **CC0-1.0** (US-government
   works are public domain), so the full (bill, summary) pairs are committed
