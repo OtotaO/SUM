@@ -3,10 +3,12 @@
 Registered on the same hardened server as the legacy bundle surface
 (``server.py``). These tools expose SUM's flagship layer over stdio:
 
-  verify_receipt        any of the five receipt schemas, dispatched exactly
-                        like ``python -m sum_verify`` (Stage A + optional
-                        side-band replay); returns the same honest verdict
-                        shape the CLI prints, proxy caveat included.
+  verify_receipt        the four sum_verify schemas (meaning-risk, render,
+                        transform, chain), dispatched exactly like
+                        ``python -m sum_verify`` (Stage A + optional side-band
+                        replay); returns the same honest verdict shape the CLI
+                        prints, proxy caveat included. The research-tier
+                        perspective schema is not in this offline path.
   meaning_diff          per-document kept / dropped / added readout under a
                         named entailment judge (``sum meaning-diff``).
   depth_frontier        the whole faithful-to-compressed ladder with
@@ -266,7 +268,13 @@ def register_meaning_tools(mcp: Any) -> None:
         hops: "list[dict] | None" = None,
         max_age_seconds: "int | None" = None,
     ) -> dict:
-        """Verify any SUM receipt (all five schemas), offline.
+        """Verify a SUM receipt offline (the four schemas ``sum_verify``
+        handles: meaning-risk, render, transform, chain).
+
+        The fifth family schema, ``sum.perspective_risk_receipt.v1``, is
+        research-tier and is not verifiable through this dependency-light
+        offline path; it is rejected with ``error_class="schema"`` naming the
+        supported schemas.
 
         Dispatches exactly like ``python -m sum_verify``: Stage A
         (signature / schema / disclosure) always; Stage B replay when the
@@ -585,11 +593,19 @@ def register_meaning_tools(mcp: Any) -> None:
                 lerr = _validate_losses(losses)
                 if lerr is not None:
                     return error_result("mint_meaning_receipt", t0, *lerr)
-                if not scorer_name:
+                if not isinstance(scorer_name, str) or not scorer_name.strip():
                     return error_result(
                         "mint_meaning_receipt", t0, ErrorClass.SCHEMA,
-                        "BYO losses require scorer_name (name the judge that "
-                        "produced them; the receipt is conditional on it)",
+                        "BYO losses require scorer_name as a NON-EMPTY STRING "
+                        "(name the judge that produced them; it rides the "
+                        "signed payload, so it must be a string, not a dict/"
+                        "list — the receipt is conditional on it)",
+                    )
+                if not isinstance(scorer_version, str) or not scorer_version.strip():
+                    return error_result(
+                        "mint_meaning_receipt", t0, ErrorClass.SCHEMA,
+                        "scorer_version must be a non-empty string (it rides "
+                        "the signed payload)",
                     )
                 loss_vec = [float(x) for x in losses]
                 judge_name, judge_version = scorer_name, scorer_version
@@ -742,12 +758,23 @@ def register_meaning_tools(mcp: Any) -> None:
                 lerr = _validate_losses(end_to_end_losses)
                 if lerr is not None:
                     return error_result("mint_chain_receipt", t0, *lerr)
-                if not scorer_name or not loss_definition:
+                if (
+                    not isinstance(scorer_name, str) or not scorer_name.strip()
+                    or not isinstance(loss_definition, str)
+                    or not loss_definition.strip()
+                ):
                     return error_result(
                         "mint_chain_receipt", t0, ErrorClass.SCHEMA,
                         "end_to_end_losses require scorer_name and "
-                        "loss_definition (the leg is a separate DIRECT "
-                        "measurement with its own named judge)",
+                        "loss_definition as NON-EMPTY STRINGS (the leg is a "
+                        "separate DIRECT measurement with its own named judge; "
+                        "both ride the signed payload)",
+                    )
+                if not isinstance(scorer_version, str) or not scorer_version.strip():
+                    return error_result(
+                        "mint_chain_receipt", t0, ErrorClass.SCHEMA,
+                        "scorer_version must be a non-empty string (it rides "
+                        "the signed end-to-end leg)",
                     )
             rerr = _need_research_extra()
             if rerr is not None:
@@ -781,8 +808,18 @@ def register_meaning_tools(mcp: Any) -> None:
                 public_jwks = _public_jwks_of(private_jwk, kid)
                 if isinstance(hops_jwks, dict):
                     for key in hops_jwks.get("keys", []):
-                        if isinstance(key, dict) and key not in public_jwks["keys"]:
-                            public_jwks["keys"].append(key)
+                        if not isinstance(key, dict):
+                            continue
+                        # Strip private members before merging: this field is
+                        # named public_jwks and callers are invited to
+                        # distribute it. A caller easily passes the PRIVATE hop
+                        # signing JWKS by mistake (the dict it minted the hops
+                        # with); republishing 'd' would leak the hop key. This
+                        # is the same filter _public_jwks_of applies to the
+                        # chain key (#7).
+                        pub_key = {k: v for k, v in key.items() if k != "d"}
+                        if pub_key not in public_jwks["keys"]:
+                            public_jwks["keys"].append(pub_key)
                 verified_payload = sum_verify.verify_chain_receipt(
                     receipt, public_jwks,
                     hop_envelopes=hop_envelopes,
