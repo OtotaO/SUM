@@ -126,10 +126,39 @@ def _require_int_micro(payload: dict[str, Any], key: str) -> int:
     return v
 
 
+def _require_str(payload: dict[str, Any], key: str) -> str:
+    """Return ``payload[key]`` only if a genuine string. ``method`` is the one
+    replay field previously read by bare dict indexing: a cryptographically
+    valid receipt whose signed payload omits ``method`` (or carries a non-string
+    there — a malformed-but-signed wire from a trusted-but-buggy or malicious
+    issuer whose key is in the caller's JWKS) otherwise raised an unhandled
+    ``KeyError``/``TypeError`` out of the verifier, breaking the totality
+    contract every other field already honours. Mirrors ``_require_int_micro``.
+    The method VALUE (known vs unknown algorithm) is still validated downstream
+    by ``certify_meaning_risk``, so an unknown-but-string method keeps its
+    'unknown method' error rather than being masked here."""
+    v = payload.get(key)
+    if not isinstance(v, str):
+        raise MeaningReceiptReplayError(
+            f"payload.{key} must be a string; got {v!r}"
+        )
+    return v
+
+
 def _validate_side_band_losses(losses: Sequence[float]) -> None:
     """Reject non-finite or out-of-[0,1] side-band losses with a clean replay
     error before ``losses_hash`` / ``_quantized``, where a NaN/inf would raise
-    an unhandled ``ValueError``/``OverflowError`` from ``int(round(...))``."""
+    an unhandled ``ValueError``/``OverflowError`` from ``int(round(...))``. The
+    leading type guard rejects a non-sequence (e.g. ``losses=5`` from a losses
+    file holding a bare JSON number, or the metadata-wrapped dict passed through
+    unrecognised) with the same clean replay error instead of a ``TypeError``
+    out of ``enumerate``. Strings are excluded deliberately: iterating one would
+    silently treat characters as losses."""
+    if not isinstance(losses, (list, tuple)):
+        raise MeaningReceiptReplayError(
+            f"side-band losses must be a list of numbers in [0, 1]; got "
+            f"{losses!r}"
+        )
     for i, x in enumerate(losses):
         if (
             isinstance(x, bool)
@@ -213,7 +242,7 @@ def verify_meaning_risk_receipt(
             scorer_name=str(payload.get("scorer", "")),
             scorer_version=str(payload.get("scorer_version", "")),
             delta=_from_micro(_require_int_micro(payload, "delta_micro")),
-            method=payload["method"],
+            method=_require_str(payload, "method"),
         )
     except ValueError as e:
         raise MeaningReceiptReplayError(

@@ -311,3 +311,104 @@ def test_max_age_windows_the_chain_not_the_hops(keys):
 
     with pytest.raises(JoseEnvelopeError):
         verify_chain_receipt(stale_chain, jwks, max_age_seconds=3600)
+
+
+# ---- Totality property coverage for the chain verifier (2026-07-31 review #4) ----
+# The chain verifier (added after the 06-14 hardening arc) had no hypothesis
+# totality test, so malformed caller-supplied hop envelopes / end-to-end losses
+# could raise an undeclared ValueError/TypeError out of canonicalize()/enumerate
+# instead of failing closed in the chain taxonomy. These pin totality.
+from hypothesis import HealthCheck, given, settings  # noqa: E402
+from hypothesis import strategies as st  # noqa: E402
+from sum_engine_internal.infrastructure.jose_envelope import (  # noqa: E402
+    JoseEnvelopeError as _JoseEnvelopeError,
+)
+# The research chain verifier re-exports sum_verify._chain.verify_chain_receipt,
+# so the classes it actually raises are sum_verify's (the end-to-end losses path
+# shares sum_verify's meaning validator).
+from sum_verify._meaning import (  # noqa: E402
+    MeaningReceiptReplayError as _MeaningReceiptReplayError,
+)
+
+_CK = OKPKey.generate_key("Ed25519")
+_CPRIV = _CK.as_dict(private=True)
+_CPRIV.update(kid="chain-prop", alg="EdDSA", use="sig")
+_CPUB = _CK.as_dict(private=False)
+_CPUB.update(kid="chain-prop", alg="EdDSA", use="sig")
+_CJWKS = {"keys": [_CPUB]}
+
+
+def _prop_hop(losses, transform):
+    g = certify_meaning_risk(
+        losses, scorer_name="s", scorer_version="1", delta=0.05, method="hoeffding"
+    )
+    pl = build_payload(
+        guarantee=g, losses=losses, corpus_id="c",
+        transform=transform, loss_definition="d",
+    )
+    return sign_meaning_risk_receipt(pl, private_jwk=_CPRIV, kid="chain-prop")
+
+
+_PROP_HOP1 = _prop_hop(HOP1_LOSSES, "compress")
+_PROP_HOP2 = _prop_hop(HOP2_LOSSES, "translate")
+_PROP_LEG = build_end_to_end_leg(
+    E2E_LOSSES, scorer_name="s", scorer_version="1", loss_definition="d"
+)
+_PROP_CHAIN = sign_chain_receipt(
+    build_chain_payload([_PROP_HOP1, _PROP_HOP2], end_to_end=_PROP_LEG),
+    private_jwk=_CPRIV, kid="chain-prop",
+)
+
+# Both replay classes count as declared: the end-to-end losses path shares the
+# meaning validator, which raises MeaningReceiptReplayError (still a SumVerifyError).
+_CHAIN_DECLARED = (
+    _JoseEnvelopeError,
+    ChainReceiptReplayError,
+    ChainReceiptDisclosureError,
+    _MeaningReceiptReplayError,
+)
+
+_NASTY_CHAIN = (
+    st.none() | st.booleans()
+    | st.integers(min_value=-(10 ** 9), max_value=10 ** 9)
+    | st.floats() | st.text(max_size=6) | st.binary(max_size=6)
+)
+_CHAIN_JSON = st.recursive(
+    _NASTY_CHAIN,
+    lambda c: st.lists(c, max_size=3) | st.dictionaries(st.text(max_size=4), c, max_size=3),
+    max_leaves=6,
+)
+
+
+def _assert_chain_total(fn):
+    try:
+        fn()
+    except _CHAIN_DECLARED:
+        pass
+
+
+@settings(max_examples=250, suppress_health_check=[HealthCheck.too_slow], deadline=None)
+@given(hop_envelopes=st.one_of(_NASTY_CHAIN, _CHAIN_JSON, st.lists(_CHAIN_JSON, max_size=3)))
+def test_chain_hop_envelopes_totality(hop_envelopes):
+    """Malformed caller-supplied hop envelopes (non-sequence, bytes, a hop
+    payload carrying NaN) must fail closed in the chain taxonomy, never an
+    undeclared exception out of canonicalize()."""
+    _assert_chain_total(
+        lambda: verify_chain_receipt(_PROP_CHAIN, _CJWKS, hop_envelopes=hop_envelopes)
+    )
+
+
+@settings(max_examples=250, suppress_health_check=[HealthCheck.too_slow], deadline=None)
+@given(end_to_end_losses=st.one_of(
+    _NASTY_CHAIN,
+    _CHAIN_JSON,
+    st.lists(st.floats() | st.none() | st.integers() | st.text(max_size=3), max_size=8),
+))
+def test_chain_end_to_end_losses_totality(end_to_end_losses):
+    """With the REAL hops supplied, arbitrary end-to-end losses (incl. a bare
+    non-sequence scalar and a missing/garbage vector) must reject cleanly."""
+    _assert_chain_total(lambda: verify_chain_receipt(
+        _PROP_CHAIN, _CJWKS,
+        hop_envelopes=[_PROP_HOP1, _PROP_HOP2],
+        end_to_end_losses=end_to_end_losses,
+    ))

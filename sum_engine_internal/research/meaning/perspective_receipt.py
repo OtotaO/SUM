@@ -54,6 +54,7 @@ from sum_engine_internal.research.meaning.receipt import (
     _has_visible_text,
     _quantized,
     _require_int_micro,
+    _require_str,
     _to_micro,
     _from_micro,
     _validate_side_band_losses,
@@ -237,7 +238,7 @@ def verify_perspective_risk_receipt(
             scorer_name=str(payload.get("scorer", "")),
             scorer_version=str(payload.get("scorer_version", "")),
             delta=_from_micro(_require_int_micro(payload, "delta_micro")),
-            method=payload["method"],
+            method=_require_str(payload, "method"),
             simultaneous=bool(payload.get("simultaneous", False)),
         )
     except ValueError as e:

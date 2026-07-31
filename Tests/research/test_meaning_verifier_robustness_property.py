@@ -98,11 +98,35 @@ def test_resigned_field_mutation_never_crashes(key, val):
     _assert_total(lambda: verify_meaning_risk_receipt(env, _JWKS, losses=_BASE_LOSSES))
 
 
+@settings(max_examples=200, suppress_health_check=[HealthCheck.too_slow], deadline=None)
+@given(key=st.sampled_from(_KEYS))
+def test_resigned_field_deletion_never_crashes(key):
+    """DELETE one signed field, re-sign with the real key, verify WITH side-band
+    losses. The mutation test above only ever assigns VALUES, so a MISSING key
+    was unexplored — exactly how a deleted ``method`` slipped through as an
+    undeclared ``KeyError`` out of the replay path (2026-07-31 review #5)."""
+    pl = copy.deepcopy(_BASE_PAYLOAD)
+    del pl[key]
+    try:
+        env = sign_meaning_risk_receipt(pl, private_jwk=_PRIV, kid="robust")
+    except Exception:
+        assume(False)
+        return
+    _assert_total(lambda: verify_meaning_risk_receipt(env, _JWKS, losses=_BASE_LOSSES))
+
+
 @settings(max_examples=400, suppress_health_check=[HealthCheck.too_slow], deadline=None)
-@given(losses=st.lists(st.floats() | st.integers() | st.none() | st.text(max_size=3), max_size=24))
+@given(losses=st.one_of(
+    _NASTY,                                                        # bare scalar
+    _JSON,                                                         # nested garbage
+    st.lists(st.floats() | st.integers() | st.none() | st.text(max_size=3), max_size=24),
+))
 def test_arbitrary_side_band_losses_never_crash(losses):
     """Arbitrary side-band losses (incl nan/inf/out-of-range/wrong-type/wrong-
-    length) must reject cleanly — never an unhandled numeric exception."""
+    length AND a bare non-sequence scalar like ``losses=5`` from a losses file
+    holding a single JSON number) must reject cleanly — never an unhandled
+    numeric or ``TypeError``-out-of-``enumerate`` exception (2026-07-31 review
+    #17)."""
     _assert_total(lambda: verify_meaning_risk_receipt(_BASE_ENV, _JWKS, losses=losses))
 
 

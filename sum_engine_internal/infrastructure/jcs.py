@@ -48,6 +48,12 @@ from typing import Any, Mapping
 
 __all__ = ["canonicalize", "canonicalize_to_str"]
 
+# IEEE-754 double exactly-represents every integer with |n| <= 2^53; below
+# 2^53 the stored integer is also its own shortest round-tripping decimal, so
+# the integer fast path in _encode_float is byte-identical to ECMAScript
+# Number::toString only within this bound (finding #18, 2026-07-31 review).
+_MAX_SAFE_INTEGER = 2 ** 53
+
 
 def canonicalize(obj: Any) -> bytes:
     """Return the RFC 8785 canonical UTF-8 bytes for ``obj``."""
@@ -106,7 +112,19 @@ def _encode_float(f: float) -> str:
     # Number.prototype.toString: 1.0 → "1", -0.0 → "0".
     if f == 0.0:
         return "0"
-    if f == int(f) and -1e21 < f < 1e21:
+    # Fast path ONLY within the IEEE-754 exactly-representable-integer range
+    # (|f| < 2^53). There, the stored integer is unambiguous and equals its own
+    # shortest round-tripping decimal, so ``str(int(f))`` matches ECMAScript
+    # Number::toString / Erdtman ``canonicalize``. At and beyond 2^53 the exact
+    # stored value can have MORE significant digits than the shortest decimal
+    # that round-trips (e.g. 1.2345678901234568e20 stores as
+    # ...683968 but ECMAScript emits ...680000), so those integer-valued floats
+    # must fall through to _ecmascript_number_to_string, which derives digits
+    # from the shortest round-trip and agrees with JS across the full range.
+    # (Reachable only by a hand-authored payload — every shipping receipt field
+    # is a bounded [0,1] float or a small micro-integer — but the trust-triangle
+    # byte-identity contract must hold generally.)
+    if f == int(f) and abs(f) < _MAX_SAFE_INTEGER:
         return str(int(f))
     # Non-integer floats: emit the ECMAScript Number::toString form
     # (ECMA-262 §6.1.6.1.20), which RFC 8785 §3.2.2.3 mandates and which
