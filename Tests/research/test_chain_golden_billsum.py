@@ -174,7 +174,16 @@ def test_hop2_finals_are_deterministic_lead_n(hop2):
             / "corpus_billsum_test_first64.json"
         ).read_text("utf-8")
     )
-    for entry, pair in zip(finals["finals"], corpus["pairs"][:32]):
+    # Pin the fixture shape so a truncated/regenerated-at-wrong-keep finals
+    # file cannot pass silently (2026-07-31 review #26): the committed hop-2
+    # receipt is transform="compress:lead-extractive-keep0.5" over 32 pairs, so
+    # keep MUST be 0.5 and there must be exactly 32 aligned entries. Without
+    # these, a finals file regenerated at keep=0.3 stays self-consistent and
+    # green while desyncing from the signed receipt's evidence.
+    assert finals["keep"] == 0.5
+    assert len(finals["finals"]) == 32
+    for entry, pair in zip(finals["finals"], corpus["pairs"][:32], strict=True):
+        assert entry["id"] == pair["id"]
         assert entry["final"] == gen.lead_extractive(pair["rendering"], finals["keep"])
 
 

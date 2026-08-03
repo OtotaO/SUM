@@ -297,22 +297,35 @@ class TestDeterministicArbiterDefence:
     without an LLM call."""
 
     def test_arbiter_resolves_deterministically_across_calls(self):
-        try:
-            from sum_engine_internal.ensemble.deterministic_arbiter import DeterministicArbiter
-        except ImportError:
-            pytest.skip("DeterministicArbiter module not present in this build")
+        # Import from the REAL module. The previous path
+        # (`...ensemble.deterministic_arbiter`) never existed, so this test
+        # permanently skipped and §3.5 had zero live coverage while the index
+        # claimed it (2026-07-31 review #14). No try/except-skip: a broken
+        # import must fail loudly, not silently disable the defence.
+        import asyncio
+
+        from sum_engine_internal.ensemble.epistemic_arbiter import (
+            DeterministicArbiter,
+        )
 
         arb = DeterministicArbiter()
-        # Two competing objects for (subject, predicate)
-        winner_1 = arb.resolve_curvature(
-            subject="earth", predicate="orbits",
-            object_a="sun", object_b="moon",
+        # The winner is min-by-SHA-256 over (subject||predicate||object), so
+        # swapping obj_a/obj_b must not change the resolution.
+        res_1 = asyncio.run(
+            arb.collapse_wave_function([("earth", "orbits", "sun", "moon")])
         )
-        winner_2 = arb.resolve_curvature(
-            subject="earth", predicate="orbits",
-            object_a="moon", object_b="sun",  # swapped order — must not change result
+        res_2 = asyncio.run(
+            arb.collapse_wave_function([("earth", "orbits", "moon", "sun")])
         )
-        assert winner_1 == winner_2
+        assert res_1[("earth", "orbits")] == res_2[("earth", "orbits")]
+        # And the winner is genuinely the lower-hash object, not just "obj_a".
+        import hashlib
+
+        def _h(o: str) -> str:
+            return hashlib.sha256(f"earth||orbits||{o}".encode()).hexdigest()
+
+        expected = "sun" if _h("sun") <= _h("moon") else "moon"
+        assert res_1[("earth", "orbits")] == expected
 
 
 # ===========================================================================
