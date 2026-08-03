@@ -75,6 +75,20 @@ MAX_STATE_INTEGER_DIGITS: int = 1_000_000  # > 100 k axioms × ~6 digits per pri
 # Network-side-effect opt-in. Default fail-closed.
 NETWORK_ALLOWED: bool = os.environ.get("SUM_MCP_ALLOW_NETWORK") == "1"
 
+# Enforce the offline-by-default contract at the transformers / HF Hub layer.
+# The NLI + embedding judges (reachable via meaning_diff / depth_frontier /
+# mint_meaning_receipt with the DEFAULT scorer="nli") lazily download their
+# model from the Hugging Face Hub on first score. Without this, a default tool
+# argument — reachable through a prompt-injected client — triggers a
+# hundreds-of-MB network fetch even though this server advertises "fully
+# offline unless SUM_MCP_ALLOW_NETWORK=1". Setting the HF offline flags makes an
+# uncached model FAIL CLOSED (cached models still load) rather than silently
+# fetch (2026-07-31 review #9). setdefault so an explicit operator override
+# still wins.
+if not NETWORK_ALLOWED:
+    os.environ.setdefault("HF_HUB_OFFLINE", "1")
+    os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
+
 # Concurrency guard around the spaCy nlp pipeline. spaCy is
 # documented as not thread-safe under concurrent calls; FastMCP
 # may run multiple tool invocations concurrently on its asyncio
@@ -102,7 +116,9 @@ def build_server() -> FastMCP:
             "is disabled unless SUM_MCP_ALLOW_NETWORK=1 was set when the "
             "server started. "
             "Meaning layer (the receipt family, for agent swarms): "
-            "verify_receipt (all five schemas, same honest verdict the "
+            "verify_receipt (the four sum_verify schemas — meaning-risk, "
+            "render, transform, chain; the research-tier perspective schema "
+            "is not in this offline path; same honest verdict the "
             "sum_verify CLI prints; pure crypto, parallel-safe) / "
             "meaning_diff / depth_frontier (per-document measurements "
             "under a named judge, never certified bounds; judge calls "

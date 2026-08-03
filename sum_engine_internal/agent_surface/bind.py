@@ -22,20 +22,33 @@ boundaries is post-spike (Phase 26 territory); for the current spike,
 process locality is sufficient — agent tool calls happen within a
 single process instance of the bind-aware MCP server.
 
-Thread-safe via an ``RLock``. The registry is intentionally
-*append-only*: ``bind`` does not delete previous entries with the
-same content (it returns the same bind_id deterministically).
-``resolve`` raises ``BindNotFoundError`` for unknown bind_ids,
-distinguishing "agent passed a stale bind_id from a different
-session" from "agent passed an inline value that happens to look
-like a bind_id" (the latter never happens because we require the
-``sha256:`` prefix).
+Thread-safe via an ``RLock``. The registry is content-addressed and
+idempotent (``bind`` of equivalent values returns the same bind_id and
+does not overwrite), but it is NOT unbounded: it is a bounded LRU capped
+by entry count AND total canonical bytes. On a long-running server a
+client issuing many distinct large binds would otherwise grow memory
+without limit — the one DoS axis the per-call size caps do not cover
+(2026-07-31 review #20). When a cap is exceeded the least-recently-used
+entries are evicted; a subsequently-``resolve``d evicted id raises
+``BindNotFoundError`` (a declared, graceful failure), so eviction is safe
+for the agent loop. ``resolve`` also distinguishes "agent passed a stale
+bind_id from a different session" from "agent passed an inline value that
+happens to look like a bind_id" (the latter never happens because we
+require the ``sha256:`` prefix).
 """
 from __future__ import annotations
 
 import hashlib
+from collections import OrderedDict
 from threading import RLock
 from typing import Any
+
+# Default caps. A bind entry is at most MAX_TOME_CHARS (~10 MB) of canonical
+# bytes; these bound the aggregate the per-call caps leave open. Both are
+# constructor-overridable so tests (and tight-memory deployments) can shrink
+# them.
+DEFAULT_MAX_ENTRIES = 2048
+DEFAULT_MAX_TOTAL_BYTES = 256 * 1024 * 1024  # 256 MB
 
 
 class BindNotFoundError(KeyError):
@@ -54,25 +67,51 @@ class BindRegistry:
     is supported (each registry has its own store).
     """
 
-    def __init__(self) -> None:
-        self._store: dict[str, Any] = {}
+    def __init__(
+        self,
+        max_entries: int = DEFAULT_MAX_ENTRIES,
+        max_total_bytes: int = DEFAULT_MAX_TOTAL_BYTES,
+    ) -> None:
+        # OrderedDict keyed by bind_id → (value, nbytes); insertion/most-recent
+        # order at the end. move_to_end on access makes eviction LRU.
+        self._store: "OrderedDict[str, tuple[Any, int]]" = OrderedDict()
+        self._total_bytes = 0
+        self._max_entries = max(1, int(max_entries))
+        self._max_total_bytes = max(1, int(max_total_bytes))
         self._lock = RLock()
+
+    def _evict_to_fit(self, incoming_bytes: int) -> None:
+        """Evict least-recently-used entries until the store can admit one more
+        entry of ``incoming_bytes`` without breaching either cap. Caller holds
+        the lock. Never evicts below one entry for the incoming value itself."""
+        while self._store and (
+            len(self._store) >= self._max_entries
+            or self._total_bytes + incoming_bytes > self._max_total_bytes
+        ):
+            _evicted_id, (_evicted_val, nbytes) = self._store.popitem(last=False)
+            self._total_bytes -= nbytes
 
     def bind(self, value: Any) -> str:
         """Content-address ``value``. Returns ``sha256:<hex>`` bind_id.
 
         Idempotent: calling ``bind`` with equivalent values returns the
-        same bind_id. The registry stores the value the first time it
-        is bound; subsequent ``bind`` calls with the same canonical
-        bytes do not overwrite (the original value is returned by
-        ``resolve``).
+        same bind_id and refreshes its recency. The registry stores the
+        value the first time it is bound; subsequent ``bind`` calls with
+        the same canonical bytes do not overwrite. Bounded: admitting a new
+        entry may evict least-recently-used ones to stay within the entry /
+        byte caps.
         """
         canonical = self._canonical_bytes(value)
+        nbytes = len(canonical)
         digest = hashlib.sha256(canonical).hexdigest()
         bind_id = f"sha256:{digest}"
         with self._lock:
-            if bind_id not in self._store:
-                self._store[bind_id] = value
+            if bind_id in self._store:
+                self._store.move_to_end(bind_id)  # LRU touch
+                return bind_id
+            self._evict_to_fit(nbytes)
+            self._store[bind_id] = (value, nbytes)
+            self._total_bytes += nbytes
         return bind_id
 
     def resolve(self, bind_id: str) -> Any:
@@ -87,7 +126,9 @@ class BindRegistry:
             )
         with self._lock:
             try:
-                return self._store[bind_id]
+                value, _nbytes = self._store[bind_id]
+                self._store.move_to_end(bind_id)  # LRU touch
+                return value
             except KeyError:
                 raise BindNotFoundError(
                     f"unknown bind_id {bind_id!r}; the value was not bound "

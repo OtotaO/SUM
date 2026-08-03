@@ -269,20 +269,20 @@ def _underlying_verify():
     from sum_engine_internal.mcp_server.errors import ErrorClass
 
     async def verify(bundle: dict) -> dict:
+        # Wrapper-detection MUST run before the non-dict guard: the
+        # {bind_id, preview} wrapper IS a dict, so nesting this inside
+        # `if not isinstance(bundle, dict)` made it permanently unreachable
+        # and the agent got a confusing structural error instead of the
+        # typed remedy (2026-07-31 review #22).
+        if isinstance(bundle, dict) and set(bundle.keys()) == {"bind_id", "preview"}:
+            return {
+                "error_class": ErrorClass.SCHEMA.value,
+                "errors": [
+                    "verify received a {bind_id, preview} wrapper. "
+                    "Pass the bind_id string directly, not the wrapper."
+                ],
+            }
         if not isinstance(bundle, dict):
-            # If bundle came in as the result of a prior bind-wrapped
-            # attest call, the agent should pass the bundle's BIND
-            # not the wrapper dict. This branch catches the case
-            # where the agent passed the wrapper {bind_id, preview}
-            # by mistake — give a typed error.
-            if isinstance(bundle, dict) and "bind_id" in bundle:
-                return {
-                    "error_class": ErrorClass.SCHEMA.value,
-                    "errors": [
-                        "verify received a {bind_id, preview} wrapper. "
-                        "Pass the bind_id string directly, not the wrapper."
-                    ],
-                }
             return {
                 "error_class": ErrorClass.SCHEMA.value,
                 "errors": [f"bundle must be a dict; got {type(bundle).__name__}"],
@@ -488,6 +488,14 @@ def register_bind_tools(
     FastMCP's prior handler for that name.
     """
     import inspect as _inspect
+    import time as _time
+
+    from sum_engine_internal.mcp_server.errors import (
+        ErrorClass as _ErrorClass,
+    )
+    from sum_engine_internal.mcp_server.errors import (
+        error_result as _error_result,
+    )
 
     async def _maybe_await(value):
         if _inspect.isawaitable(value):
@@ -495,12 +503,25 @@ def register_bind_tools(
         return value
 
     async def _call_wrapped(name: str, real: Callable, kwargs: dict) -> dict:
+        # Route bind-layer errors through the audited error_result choke point
+        # (the v2 idiom: every error that leaves a tool is audited) and wrap
+        # the whole body in a catch-all so a future non-JCS-canonicalizable
+        # result cannot propagate a raw exception through FastMCP's generic
+        # path with an untagged message (2026-07-31 review #21). Underlying
+        # tools already audit their own success/error, so the wrapped success
+        # ({bind_id, preview}) passes through unchanged.
+        t0 = _time.perf_counter()
         try:
-            resolved = _resolve_kwargs(kwargs, registry)
-        except BindNotFoundError as e:
-            return {"error_class": "schema", "errors": [str(e)]}
-        raw = await _maybe_await(real(**resolved))
-        return _wrap_result(name, raw, registry)
+            try:
+                resolved = _resolve_kwargs(kwargs, registry)
+            except BindNotFoundError as e:
+                return _error_result(f"{name}_bind", t0, _ErrorClass.SCHEMA, str(e))
+            raw = await _maybe_await(real(**resolved))
+            return _wrap_result(name, raw, registry)
+        except Exception as exc:  # noqa: BLE001 — fail-closed tagged internal
+            return _error_result(
+                f"{name}_bind", t0, _ErrorClass.INTERNAL, type(exc).__name__
+            )
 
     # Each bind tool needs an explicit signature so FastMCP can derive
     # its pydantic arg model. ``**kwargs`` would collapse to a single
@@ -606,9 +627,16 @@ def register_bind_tools(
 
         Also reports the runtime ``registry_size`` for observability.
         """
-        manifest = dict(BIND_TOOL_MANIFEST)
-        manifest["runtime"] = {"registry_size": registry.size()}
-        return manifest
+        t0 = _time.perf_counter()
+        try:
+            manifest = dict(BIND_TOOL_MANIFEST)
+            manifest["runtime"] = {"registry_size": registry.size()}
+            return manifest
+        except Exception as exc:  # noqa: BLE001 — fail-closed tagged internal
+            return _error_result(
+                "agent_surface_manifest", t0, _ErrorClass.INTERNAL,
+                type(exc).__name__,
+            )
 
     mcp.tool(name="agent_surface_manifest")(agent_surface_manifest)
 

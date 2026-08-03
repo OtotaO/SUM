@@ -231,6 +231,39 @@ def test_bind_is_idempotent_across_registry_instances(triples):
     assert reg_a.bind(payload) == reg_b.bind(payload)
 
 
+def test_bind_registry_is_bounded_lru():
+    """2026-07-31 review #20: the registry is a bounded LRU, not append-only —
+    it evicts least-recently-used entries past the entry / byte caps so a
+    long-running server cannot grow memory without limit. An evicted id
+    resolves to a clean BindNotFoundError, and an LRU-touched id survives."""
+    from sum_engine_internal.agent_surface.bind import (
+        BindNotFoundError,
+        BindRegistry,
+    )
+
+    # entry cap
+    reg = BindRegistry(max_entries=3, max_total_bytes=10 ** 9)
+    ids = [reg.bind(f"value-{i}") for i in range(5)]
+    assert reg.size() == 3
+    with pytest.raises(BindNotFoundError):
+        reg.resolve(ids[0])                       # oldest evicted
+    assert reg.resolve(ids[4]) == "value-4"       # newest survives
+
+    # LRU recency: touching the oldest spares it from the next eviction
+    reg2 = BindRegistry(max_entries=3, max_total_bytes=10 ** 9)
+    a, b, c = (reg2.bind(f"v{i}") for i in range(3))
+    reg2.resolve(a)                               # a is now most-recent
+    reg2.bind("v3")                               # evicts LRU == b, not a
+    assert reg2.contains(a)
+    assert not reg2.contains(b)
+
+    # byte cap
+    reg3 = BindRegistry(max_entries=10 ** 6, max_total_bytes=20)
+    reg3.bind("x" * 8); reg3.bind("y" * 8); reg3.bind("z" * 8)  # 24B > 20B
+    assert reg3.size() == 2
+    assert reg3._total_bytes <= 20
+
+
 # ─── 6. UnionFindStore lex-canonical extraction ──────────────────────
 
 

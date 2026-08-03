@@ -33,6 +33,7 @@ from joserfc.jwk import OKPKey  # noqa: E402
 _REPO = Path(__file__).resolve().parents[1]
 _MEANING_FIX = _REPO / "fixtures" / "meaning_receipts_billsum"
 _CHAIN_FIX = _REPO / "fixtures" / "chain_receipts_billsum"
+_PERSP_FIX = _REPO / "fixtures" / "perspective_receipts"
 
 
 def _load(base: Path, name: str):
@@ -395,3 +396,68 @@ def test_mint_chain_requires_two_hops(server, keypair):
         fn(private_jwk=keypair, kid="k", hop_envelopes=[{"schema": "x"}])
     )
     assert out["error_class"] == "schema"
+
+
+# --------------------------------------------------------------------------
+# 2026-07-31 review regressions (#7, #8, #12)
+# --------------------------------------------------------------------------
+
+
+def test_mint_chain_strips_private_d_from_merged_hops_jwks(server, keypair):
+    """#7: a caller who passes the PRIVATE hop signing JWKS to hops_jwks must
+    NOT get 'd' republished in the returned public_jwks (callers distribute
+    that field)."""
+    mint = _tool(server, "mint_meaning_receipt")
+    mint_chain = _tool(server, "mint_chain_receipt")
+
+    def _hop(transform, losses):
+        out = asyncio.run(mint(
+            private_jwk=keypair, kid="mcp-test-key-1",
+            corpus_id="c", transform=transform,
+            loss_definition="d", losses=losses,
+            scorer_name="s", scorer_version="1", method="hoeffding",
+        ))
+        assert "error_class" not in out, out
+        return out["receipt"]
+
+    hop1 = _hop("compress:test", [0.1, 0.2, 0.15, 0.05] * 8)
+    hop2 = _hop("translate:test", [0.05, 0.1, 0.1, 0.2] * 8)
+    out = asyncio.run(mint_chain(
+        private_jwk=keypair, kid="mcp-test-key-1",
+        hop_envelopes=[hop1, hop2],
+        hops_jwks={"keys": [dict(keypair)]},   # the PRIVATE jwk, by mistake
+    ))
+    assert "error_class" not in out, out
+    for k in out["public_jwks"]["keys"]:
+        assert "d" not in k, "private 'd' leaked into public_jwks via hops_jwks"
+    assert keypair["d"] not in json.dumps(out["public_jwks"])
+
+
+def test_mint_meaning_rejects_non_string_scorer_fields(server, keypair):
+    """#8: scorer_name / scorer_version must be strings — a dict/list must not
+    ride into the signed payload."""
+    mint = _tool(server, "mint_meaning_receipt")
+    losses = [0.1, 0.2, 0.15, 0.05, 0.3, 0.25, 0.1, 0.2]
+    base = dict(
+        private_jwk=keypair, kid="mcp-test-key-1", corpus_id="c",
+        transform="t", loss_definition="d", losses=losses, method="hoeffding",
+    )
+    out = asyncio.run(mint(**base, scorer_name={"injected": "dict"}, scorer_version="1"))
+    assert out["error_class"] == "schema"
+    out = asyncio.run(mint(**base, scorer_name="s", scorer_version=["list", 1]))
+    assert out["error_class"] == "schema"
+
+
+def test_verify_receipt_rejects_perspective_with_named_schemas(server):
+    """#12: the research-tier perspective schema is not in the offline SDK path;
+    verify_receipt must reject it cleanly and name the four supported schemas
+    (the contract the docstring now advertises)."""
+    fn = _tool(server, "verify_receipt")
+    persp = _PERSP_FIX / "perspective_risk_receipt.golden.json"
+    if not persp.exists():
+        pytest.skip("perspective golden fixture not present")
+    receipt = json.loads(persp.read_text())
+    out = asyncio.run(fn(receipt, {"keys": []}))
+    assert out["verified"] is False
+    assert out["error_class"] == "schema"
+    assert "sum.meaning_risk_receipt.v1" in out["errors"][0]
