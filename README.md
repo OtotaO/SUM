@@ -13,14 +13,17 @@
 
 ```text
 $ sum meaning-diff examples/poetry_frontier/source.txt examples/poetry_frontier/sonnet.txt --scorer nli
+Meaning readout — measured for THIS document (not a certified bound)
+  judge: nli:MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli v1
   preservation: 55%   (loss 0.450)
   source claims: 4 — 1 preserved, 3 DROPPED:
      ✗ Late payment after the fifth day incurs a 50 dollar fee.
      ✗ The landlord must give 24 hours notice before entering the unit.
      ✗ Either party may terminate this lease with 30 days written notice.
   added / unsupported claims: none ✓
-  (measured for THIS document under the named NLI judge — a per-document MEASUREMENT,
-   not a guarantee; for a (1−δ) corpus bound use a signed meaning_risk receipt)
+
+  → 3 dropped — review before relying on this rendering.
+  (measured for THIS document under the named judge — a per-document MEASUREMENT, not a certified bound or a guarantee; for a (1-δ) bound use a meaning_risk receipt over a named corpus.)
 ```
 
 Every transformation — extract triples from prose, render a tome at a controlled slider position, compose bundles across documents, share a render — emits a cryptographically-signed receipt that any third party can verify offline. The receipt attests *that the transformation happened and what its inputs were*. Separate per-axis benchmarks attest *how much the transformation preserved meaning*. Both are kept honest by separate proof discipline — and the project never blurs the line between them.
