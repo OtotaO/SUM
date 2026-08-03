@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: cloudflare-worker
-      url: https://sum-demo.workers.dev
+      url: https://sum-demo.ototao.workers.dev
     steps:
       - name: Harden runner (audit-only)
         # R0.3: StepSecurity Harden-Runner in audit mode. Watches but
@@ -66,3 +66,21 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: worker
           command: deploy
+
+      - name: Set up Python 3.12 for the post-deploy byte guard
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Verify live frontend is byte-identical to the repo
+        # The whole point of the byte guard is catching a missed/lagged
+        # deploy — so run it right AFTER the deploy, not only on an operator's
+        # manual `make verify-frontend-bytes` (2026-07-31 review #15). Retry a
+        # few times: Cloudflare edge propagation is eventually-consistent, so a
+        # fresh deploy can serve the old bytes for a few seconds.
+        run: |
+          n=0
+          until python -m scripts.verify_frontend_bytes; do
+            n=$((n+1)); [ "$n" -ge 5 ] && { echo "frontend byte guard failed after 5 attempts"; exit 1; }
+            echo "byte guard retry $n/5 (edge propagation) in $((n*10))s..."; sleep $((n*10))
+          done
