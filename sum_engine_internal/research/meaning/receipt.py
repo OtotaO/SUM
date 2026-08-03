@@ -315,11 +315,34 @@ def _require_int_micro(payload: dict[str, Any], key: str) -> int:
     return v
 
 
+def _require_str(payload: dict[str, Any], key: str) -> str:
+    """Return ``payload[key]`` only if a genuine string. ``method`` was the one
+    replay field read by bare dict indexing; a signature-valid receipt whose
+    payload omits it (or carries a non-string) otherwise raised an unhandled
+    ``KeyError``/``TypeError``, breaking the totality contract. The method
+    VALUE is still validated downstream by the certify call, so an
+    unknown-but-string method keeps its 'unknown method' error."""
+    v = payload.get(key)
+    if not isinstance(v, str):
+        raise MeaningReceiptReplayError(
+            f"payload.{key} must be a string; got {v!r}"
+        )
+    return v
+
+
 def _validate_side_band_losses(losses: Sequence[float]) -> None:
     """Reject non-finite or out-of-[0,1] side-band losses with a clean replay
     error before they reach ``losses_hash`` / ``_quantized``, where a NaN or
     infinity would otherwise raise an unhandled ``ValueError``/``OverflowError``
-    from ``int(round(...))``."""
+    from ``int(round(...))``. The leading type guard rejects a non-sequence
+    (e.g. a losses file holding a bare JSON number) with the same clean replay
+    error instead of a ``TypeError`` out of ``enumerate``; strings are excluded
+    so their characters are not silently treated as losses."""
+    if not isinstance(losses, (list, tuple)):
+        raise MeaningReceiptReplayError(
+            f"side-band losses must be a list of numbers in [0, 1]; got "
+            f"{losses!r}"
+        )
     for i, x in enumerate(losses):
         if (
             isinstance(x, bool)
@@ -420,7 +443,7 @@ def verify_meaning_risk_receipt(
             scorer_name=str(payload.get("scorer", "")),
             scorer_version=str(payload.get("scorer_version", "")),
             delta=_from_micro(_require_int_micro(payload, "delta_micro")),
-            method=payload["method"],
+            method=_require_str(payload, "method"),
         )
     except ValueError as e:
         raise MeaningReceiptReplayError(

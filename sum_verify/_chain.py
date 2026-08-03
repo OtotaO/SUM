@@ -50,6 +50,7 @@ from sum_verify._meaning import (
     _has_visible_text,
     _quantized,
     _require_int_micro,
+    _require_str,
     _to_micro,
     _unwrap_loss_vector,
     _validate_side_band_losses,
@@ -88,6 +89,15 @@ def _chain_int(obj: dict, key: str) -> int:
     part of the documented taxonomy)."""
     try:
         return _require_int_micro(obj, key)
+    except MeaningReceiptReplayError as e:
+        raise ChainReceiptReplayError(str(e)) from e
+
+
+def _chain_str(obj: dict, key: str) -> str:
+    """``_require_str`` re-raised in the CHAIN error taxonomy — the string
+    sibling of ``_chain_int`` (used for the end-to-end leg's ``method``)."""
+    try:
+        return _require_str(obj, key)
     except MeaningReceiptReplayError as e:
         raise ChainReceiptReplayError(str(e)) from e
 
@@ -232,13 +242,30 @@ def verify_chain_receipt(
     hops = _check_internal_consistency(payload)
 
     if hop_envelopes is not None:
+        if not isinstance(hop_envelopes, (list, tuple)):
+            raise ChainReceiptReplayError(
+                f"hop_envelopes must be a list of receipt envelopes; got "
+                f"{hop_envelopes!r}"
+            )
         if len(hop_envelopes) != len(hops):
             raise ChainReceiptReplayError(
                 f"supplied {len(hop_envelopes)} hop envelopes but the "
                 f"receipt commits {len(hops)} hops"
             )
         for i, (hop, env) in enumerate(zip(hops, hop_envelopes)):
-            actual_hash = canonical_receipt_hash(env)
+            # A caller-supplied hop envelope is untrusted input: a value JCS
+            # cannot canonicalize (NaN, which json.load accepts by default; a
+            # non-JSON-serialisable object) must fail closed in the chain
+            # replay taxonomy, not as a raw ValueError/TypeError out of
+            # canonicalize — the same guard jose_envelope.py wraps its own
+            # canonicalize call in.
+            try:
+                actual_hash = canonical_receipt_hash(env)
+            except (TypeError, ValueError) as e:
+                raise ChainReceiptReplayError(
+                    f"hops[{i}]: supplied envelope is not JCS-canonicalizable: "
+                    f"{e}"
+                ) from e
             if actual_hash != hop["receipt_hash"]:
                 raise ChainReceiptReplayError(
                     f"hops[{i}]: supplied envelope hashes to {actual_hash} "
@@ -291,7 +318,7 @@ def verify_chain_receipt(
                 scorer_name=str(leg.get("scorer", "")),
                 scorer_version=str(leg.get("scorer_version", "")),
                 delta=_from_micro(_chain_int(leg, "delta_micro")),
-                method=leg["method"],
+                method=_chain_str(leg, "method"),
             )
         except ValueError as e:
             raise ChainReceiptReplayError(

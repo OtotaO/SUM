@@ -35,6 +35,16 @@ _FLOAT_CASES = [
     0.5, 0.3, 0.1, 0.7, 0.9, 0.123, 1.5, 3.14159, 0.2, 0.25, 0.999999,
     1e-4, 9.9e-5, 5e-5, 2e-5, 1e-5, 1e-6, 0.000001, 1e-7, 5e-7, 0.0000005,
     0.00012345, -0.5, -1e-6, -0.000123,
+    # Large integer-valued floats around the IEEE-754 2^53 boundary (review
+    # #18). Below 2^53 the exact integer is its own shortest round-trip; at and
+    # beyond it the shortest decimal can be shorter than the stored value, so
+    # Python must defer to the ECMAScript shortest-round-trip form rather than
+    # emit str(int(f)). Erdtman is the oracle for each.
+    9007199254740992.0,          # 2^53 exactly
+    9007199254740994.0,          # 2^53 + 2 (representable)
+    1.2345678901234568e20,       # stored ...683968, ECMAScript ...680000
+    1e21, 5e21, 1e22,            # exponential-notation range
+    -1.2345678901234568e20,
 ]
 _PAYLOAD_CASES = [
     # the exact shape + the exact value that broke the Worker→Python chain
