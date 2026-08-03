@@ -101,7 +101,13 @@ verify = ["joserfc>=1.0.0,<2.0.0"]
 # Cursor, Continue, custom agents) can call SUM directly. The
 # `mcp` package is the official Python SDK; FastMCP is its
 # decorator-style high-level API. See docs/MCP_INTEGRATION.md.
-mcp = ["mcp>=1.0.0"]
+# Capped <2: mcp 2.0.0 (2026-07-28) removed `mcp.server.fastmcp`, which
+# server.py imports; an unbounded pin resolves to 2.x and breaks the
+# documented `sum-mcp` at import. Verified working through 1.29.0. The
+# `mcp-install-smoke` CI gate holds this floor→ceiling the same way the
+# [sieve] floor gate does (F13/F14). Migrating to the 2.x API is a
+# separate change behind its own smoke.
+mcp = ["mcp>=1.0.0,<2"]
 # Research-grade modules under sum_engine_internal/research/. NOT on
 # the production install path; APIs may change between minor releases
 # without backwards-compatibility guarantees. Currently provides the

@@ -536,3 +536,35 @@ jobs:
         /tmp/sumfloor/bin/sum --version
         echo "Alice likes cats. Bob owns a dog." | /tmp/sumfloor/bin/sum attest --extractor=sieve > /tmp/floor_bundle.json
         /tmp/sumfloor/bin/sum verify --input /tmp/floor_bundle.json
+
+  mcp-install-smoke:
+    name: pip install sum-engine[mcp] (fresh venv startup smoke)
+    needs: zig-core
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+      with:
+        python-version: "3.12"
+
+    - name: Build sdist + wheel
+      run: |
+        python -m pip install --upgrade pip build
+        python -m build --sdist --wheel --outdir dist
+
+    - name: Install [mcp] extra in a clean venv and construct the server
+      # The documented MCP on-ramp (`pip install 'sum-engine[mcp]'` then
+      # `sum-mcp`) has no other CI coverage: the dev env pins mcp 1.x, so
+      # the full test suite stays green even when a fresh resolve of the
+      # extra pulls an SDK that breaks the import. mcp 2.0.0 (2026-07-28)
+      # dropped `mcp.server.fastmcp` and did exactly that (finding #1).
+      # build_server() constructs the FastMCP app and registers every
+      # tool WITHOUT entering the blocking stdio loop, so it is the
+      # cheapest honest startup check. Mirrors the [sieve] floor gate.
+      run: |
+        python -m venv /tmp/summcp
+        /tmp/summcp/bin/pip install --quiet "dist/$(ls dist | grep '.whl$')[mcp]"
+        /tmp/summcp/bin/python -c "import mcp, importlib.metadata as m; print('mcp', m.version('mcp'))"
+        /tmp/summcp/bin/python -c "from sum_engine_internal.mcp_server.server import build_server; s = build_server(); print('sum-mcp server constructed OK')"
