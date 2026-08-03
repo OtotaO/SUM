@@ -104,10 +104,10 @@ export async function handleComplete(request: Request, env: Env): Promise<Respon
     return json({ error: "method not allowed; use POST" }, 405);
   }
 
-  // Rate limit before body parse. Same policy as /api/render and
-  // /api/transform — operator-keyed calls get the 5/day demo bucket;
-  // (the /api/complete route doesn't currently honour BYO headers, but
-  // the classification still routes through the demo bucket correctly.)
+  // Rate limit before body parse. This route does NOT honour BYO headers
+  // (it always calls the operator's provider key), so classifyScope pins it
+  // to the 5/day demo bucket unconditionally — a stray BYO header cannot
+  // promote a caller to the 100/hr byok rate on operator-funded calls.
   if (env.RENDER_CACHE) {
     const scope = classifyScope("complete", request);
     const rl = await checkRateLimit(request, env.RENDER_CACHE, scope);
