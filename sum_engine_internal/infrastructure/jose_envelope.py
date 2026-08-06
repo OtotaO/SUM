@@ -293,6 +293,18 @@ def verify_jose_envelope(
             JoseEnvelopeErrorClass.MALFORMED_JWS,
             f"protected header is not valid JSON: {e}",
         ) from e
+    # Valid JSON is not enough: RFC 7515 §4 requires the protected header to
+    # be a JSON *object*. `[1,2]`, `5`, `"x"` and `null` all parse cleanly and
+    # would reach `.get` below as a raw AttributeError, escaping the
+    # SumVerifyError contract the public SDK documents. The JS verifiers
+    # already fail closed here (meaning_receipt_verifier.js,
+    # transform_receipt_verifier.js); this keeps the error classes in parity.
+    if not isinstance(header, dict):
+        raise JoseEnvelopeError(
+            JoseEnvelopeErrorClass.MALFORMED_JWS,
+            f"protected header must be a JSON object, got "
+            f"{type(header).__name__}",
+        )
     crit = header.get("crit")
     if isinstance(crit, list):
         for ext in crit:

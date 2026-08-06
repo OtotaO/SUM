@@ -92,6 +92,39 @@ def test_jose_family_verifier_is_total(family, field, val):
     _assert_total(lambda: verify(e, jwks), JoseEnvelopeError)
 
 
+@pytest.mark.parametrize("family", ["render", "transform"])
+@pytest.mark.parametrize(
+    "header_json", ["[1,2]", "5", '"x"', "null", "true"],
+    ids=["array", "number", "string", "null", "bool"],
+)
+def test_jose_family_rejects_non_object_protected_header(family, header_json):
+    """A protected header that is valid JSON but not an OBJECT must raise the
+    declared class, not a raw AttributeError.
+
+    RFC 7515 §4 requires an object. These inputs parse cleanly and then reach
+    ``header.get(...)``, which is how an undeclared AttributeError escaped the
+    ``SumVerifyError`` contract the public SDK documents. The property test
+    above cannot reach this: it replaces ``jws`` wholesale, so it effectively
+    never generates a well-formed 3-segment JWS whose first segment decodes to
+    valid non-object JSON. Cross-runtime parity for the same inputs is pinned
+    in test_differential_cross_runtime_fuzz.py.
+    """
+    import base64
+
+    env, jwks, verify = (
+        (_RENDER_ENV, _RENDER_JWKS, _RENDER_VERIFY) if family == "render"
+        else (_XFORM_ENV, _XFORM_JWKS, _XFORM_VERIFY))
+    proto = base64.urlsafe_b64encode(header_json.encode()).decode().rstrip("=")
+    _, middle, sig = env["jws"].split(".")
+    e = copy.deepcopy(env); e["jws"] = f"{proto}.{middle}.{sig}"
+    with pytest.raises(JoseEnvelopeError) as ei:
+        verify(e, jwks)
+    assert ei.value.error_class == "malformed_jws", (
+        f"expected malformed_jws for a {header_json} protected header, "
+        f"got {ei.value.error_class}"
+    )
+
+
 # ─────────────────────────────  CanonicalBundle (sum verify)  ────────────────
 
 from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra  # noqa: E402

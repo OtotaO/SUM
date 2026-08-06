@@ -189,7 +189,10 @@ export async function verifyTransformReceipt(receipt, jwks, opts) {
       `protected header is not valid JSON: ${e.message}`,
     );
   }
-  if (!header || typeof header !== "object") {
+  // Array.isArray is load-bearing: typeof [] === "object", so a JSON array
+  // header slipped past this check and failed later as signature_invalid,
+  // diverging from Python's malformed_jws. RFC 7515 §4 requires an object.
+  if (!header || typeof header !== "object" || Array.isArray(header)) {
     throw new VerifyError(
       ERROR_CLASSES.MALFORMED_JWS,
       "protected header is not an object",
