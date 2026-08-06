@@ -26,16 +26,25 @@
   Strict-Transport-Security: max-age=31536000; includeSubDomains
 
   # ── Content Security Policy ────────────────────────────────────────
-  # The demo is intentionally self-contained: one inline <style>, one
-  # inline <script>, zero external resources. `'unsafe-inline'` on
-  # script-src and style-src is the price of the single-file property
-  # and is mitigated by `default-src 'none'` locking everything else
-  # down. `connect-src 'self'` allows a future v1 Pages Function at
-  # /api/* on the same origin without requiring a CSP update.
-  # `frame-ancestors 'none'` blocks embedding the Pages deployment in
-  # a third-party iframe (clickjacking defense); Claude artifact use
-  # is unaffected because those headers only apply to the Pages origin.
-  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; font-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+  # The page is mostly inline (one inline <style>, several inline
+  # <script> blocks) but no longer self-contained: it also loads three
+  # SAME-ORIGIN scripts — sum_core_wasm.js plus the two ES modules that
+  # bind the in-page verify boxes (receipt_verifier.js,
+  # meaning_receipt_verifier.js). `'unsafe-inline'` covers only the
+  # inline blocks; `'self'` is what permits those three fetches, and
+  # module imports are governed by script-src just like classic script
+  # tags. Omitting `'self'` silently kills both verify boxes — the
+  # buttons render but bind no handlers. `'wasm-unsafe-eval'` is
+  # separately required because `default-src 'none'` otherwise blocks
+  # WebAssembly compilation for the sum_core.wasm fast path.
+  # Everything else stays locked down by `default-src 'none'`.
+  # `connect-src 'self'` allows the same-origin /api/* calls.
+  # `frame-ancestors 'none'` blocks embedding the deployment in a
+  # third-party iframe (clickjacking defense); Claude artifact use is
+  # unaffected because those headers only apply to this origin.
+  # Keep in sync with worker/src/index.ts BASELINE_HEADERS, and see
+  # Tests/test_csp_permits_page_scripts.py for the guard that pins it.
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; font-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
 
   # ── Permissions Policy ─────────────────────────────────────────────
   # Deny every browser capability the demo does not use. Fewer

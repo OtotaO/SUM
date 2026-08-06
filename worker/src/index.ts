@@ -61,9 +61,19 @@ export interface Env {
 }
 
 // Security-baseline Response headers — ported from the Pages `_headers`
-// file. Keep in sync. The demo's zero-external-resource property lets
-// us run a very tight CSP; if we ever add a CDN-hosted asset, widen
-// script-src / style-src accordingly.
+// file. Keep in sync.
+//
+// script-src carries 'self' because the page loads three same-origin
+// scripts: sum_core_wasm.js and the two ES modules behind the in-page
+// verify boxes (receipt_verifier.js, meaning_receipt_verifier.js).
+// 'unsafe-inline' covers only inline blocks — it never permits an
+// external fetch, and module imports are script-src-governed too — so
+// dropping 'self' silently kills both verify boxes (buttons render,
+// no handlers bind). 'wasm-unsafe-eval' is separately required because
+// default-src 'none' otherwise blocks WebAssembly compilation.
+// If a CDN-hosted asset is ever added, widen script-src / style-src
+// again. Tests/test_csp_permits_page_scripts.py pins this against the
+// page's actual script references.
 const BASELINE_HEADERS: Record<string, string> = {
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "DENY",
@@ -71,7 +81,7 @@ const BASELINE_HEADERS: Record<string, string> = {
   "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
   "Content-Security-Policy": [
     "default-src 'none'",
-    "script-src 'unsafe-inline'",
+    "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
     "style-src 'unsafe-inline'",
     "connect-src 'self'",
     "img-src 'self' data:",
