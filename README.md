@@ -26,7 +26,7 @@ Meaning readout — measured for THIS document (not a certified bound)
   (measured for THIS document under the named judge — a per-document MEASUREMENT, not a certified bound or a guarantee; for a (1-δ) bound use a meaning_risk receipt over a named corpus.)
 ```
 
-*To run that exact command:* `pip install 'sum-engine[judge]'` (the `--scorer nli` judge needs it) **from a git checkout** — `examples/` ships in the repo, not in the wheel. The zero-clone path is the receipt replay in [Verify it yourself in 60 seconds](#verify-it-yourself-in-60-seconds) below.
+*To run that exact command:* `pip install 'sum-engine[research,judge]'` (`meaning-diff` needs `[research]`; the `--scorer nli` judge needs `[judge]`) **from a git checkout** — `examples/` ships in the repo, not in the wheel. The zero-clone path is the receipt replay in [Verify it yourself in 60 seconds](#verify-it-yourself-in-60-seconds) below.
 
 Every transformation — extract triples from prose, render a tome at a controlled slider position, compose bundles across documents, share a render — emits a cryptographically-signed receipt that any third party can verify offline. The receipt attests *that the transformation happened and what its inputs were*. Separate per-axis benchmarks attest *how much the transformation preserved meaning*. Both are kept honest by separate proof discipline — and the project never blurs the line between them.
 
@@ -91,12 +91,15 @@ python -m sum_verify <receipt.json> --jwks <jwks.json> --losses <losses.json>
 Verifying someone else's receipt is half the loop. To issue one over *your own* corpus:
 
 ```bash
-pip install 'sum-engine[research,receipt-verify]'
-sum mint-meaning --source <src.txt> --rendering <out.txt> \
-    --corpus-id my-corpus --transform my-transform --scorer nli
+pip install 'sum-engine[research,receipt-verify,judge]'
+sum mint-meaning --pairs pairs.jsonl --scorer nli \
+    --corpus-id my-corpus --transform my-transform \
+    --out out/receipt.json --gen-key out/
 # self-verifies through the verify path before handing you the file,
-# and warns when n is too small for the bound to mean anything
+# and prints the exact `sum verify-meaning …` line a third party runs
 ```
+
+`pairs.jsonl` is your own data, one `{"source": "…", "rendering": "…"}` per line. Aim for **n ≥ ~32**: the bound is distribution-free and valid at any n, but at n = 1 it degenerates to ≤ 1.0 and certifies nothing, and the CLI says so. (`--source FILE --rendering FILE` mints from a single pair, which is exactly that vacuous case.) `--gen-key` writes a fresh keypair plus JWKS; the private half is mode 0600 and never leaves your machine.
 
 [`docs/THIRD_PARTY_VERIFY.md`](docs/THIRD_PARTY_VERIFY.md) walks the full mint-then-verify round trip, and [`examples/issue_meaning_receipt.py`](examples/issue_meaning_receipt.py) is the scripted version. Read the vacuity and exchangeability warnings it prints — a bound over a corpus your text does not resemble is not evidence about your text.
 
