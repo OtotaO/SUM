@@ -296,9 +296,10 @@ def verify_jose_envelope(
     # Valid JSON is not enough: RFC 7515 §4 requires the protected header to
     # be a JSON *object*. `[1,2]`, `5`, `"x"` and `null` all parse cleanly and
     # would reach `.get` below as a raw AttributeError, escaping the
-    # SumVerifyError contract the public SDK documents. The JS verifiers
-    # already fail closed here (meaning_receipt_verifier.js,
-    # transform_receipt_verifier.js); this keeps the error classes in parity.
+    # SumVerifyError contract the public SDK documents. The three JS verifiers
+    # are fixed to match in this same commit (they had no guard at all in
+    # receipt_verifier.js, and a bare `typeof` check that arrays passed in the
+    # other two), so the error classes stay in parity.
     if not isinstance(header, dict):
         raise JoseEnvelopeError(
             JoseEnvelopeErrorClass.MALFORMED_JWS,
@@ -308,7 +309,13 @@ def verify_jose_envelope(
     crit = header.get("crit")
     if isinstance(crit, list):
         for ext in crit:
-            if ext not in known_crit_extensions:
+            # `known_crit_extensions` is a frozenset, so an UNHASHABLE element
+            # (a nested list or object) raises TypeError from the membership
+            # test itself, escaping the declared error contract on
+            # unauthenticated bytes. A non-str element cannot name a crit
+            # extension anyway, so reject it as an unknown one. JS reaches the
+            # same verdict because Set.has never throws.
+            if not isinstance(ext, str) or ext not in known_crit_extensions:
                 raise JoseEnvelopeError(
                     JoseEnvelopeErrorClass.CRIT_UNKNOWN_EXTENSION,
                     f"protected header crit contains unsupported "

@@ -140,6 +140,22 @@ def _mutations(env, jwks):
         for _name, _json in (
             ("array", "[1,2]"), ("number", "5"), ("string", '"x"'),
             ("null", "null"), ("bool", "true"),
+            # Object headers whose FIELDS are adversarial. These are what
+            # actually differed between runtimes once the non-object case was
+            # closed: an unhashable `crit` element crashed Python's frozenset
+            # membership test, and a falsy/absent `alg` skipped the
+            # algorithm-registry check in two of the three JS verifiers.
+            ("crit-nested-list", '{"alg":"EdDSA","b64":false,"crit":[["b64"]]}'),
+            ("crit-nested-object", '{"alg":"EdDSA","b64":false,"crit":[{"b64":1}]}'),
+            ("crit-null-elem", '{"alg":"EdDSA","b64":false,"crit":[null]}'),
+            ("crit-int-elem", '{"alg":"EdDSA","b64":false,"crit":[1]}'),
+            ("alg-missing", '{"b64":false,"crit":["b64"]}'),
+            ("alg-empty-string", '{"alg":"","b64":false,"crit":["b64"]}'),
+            ("alg-null", '{"alg":null,"b64":false,"crit":["b64"]}'),
+            ("alg-false", '{"alg":false,"b64":false,"crit":["b64"]}'),
+            ("alg-zero", '{"alg":0,"b64":false,"crit":["b64"]}'),
+            ("alg-object", '{"alg":{"a":1},"b64":false,"crit":["b64"]}'),
+            ("empty-object", "{}"),
         ):
             _proto = base64.urlsafe_b64encode(_json.encode()).decode().rstrip("=")
             yield (f"jws-header-{_name}",

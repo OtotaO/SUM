@@ -13,6 +13,9 @@ from __future__ import annotations
 
 import copy
 import math
+from pathlib import Path
+
+_REPO_ROOT = Path(__file__).resolve().parents[1]
 
 import pytest
 
@@ -166,3 +169,62 @@ def test_bundle_verifier_total_on_arbitrary_dict(b):
     """An entirely arbitrary dict (not even a real bundle) must still fail
     closed with a declared exception, not crash."""
     _assert_total(lambda: _BUNDLE_CODEC.import_bundle(b), _BUNDLE_DECLARED)
+
+
+# ─────────────────────────  meaning family (node-free)  ──────────────────────
+
+@pytest.mark.parametrize(
+    "header_json", ["[1,2]", "5", '"x"', "null", "true"],
+    ids=["array", "number", "string", "null", "bool"],
+)
+def test_meaning_verifier_rejects_non_object_protected_header(header_json):
+    """Same guard as the JOSE families, exercised through the MEANING schema.
+
+    The meaning family shares the Python envelope core, but it reaches it via a
+    different public entry point (``sum_verify.verify``), and without this case
+    its behaviour is pinned only by the cross-runtime fuzzer, which is skipped
+    on a runner without node. Uses the committed BillSum golden so no signing
+    key is needed.
+    """
+    import base64
+    import json
+
+    sum_verify = pytest.importorskip("sum_verify")
+    fx = _REPO_ROOT / "fixtures" / "meaning_receipts_billsum"
+    env = json.loads((fx / "meaning_risk_receipt.billsum.golden.json").read_text("utf-8"))
+    jwks = json.loads((fx / "jwks.json").read_text("utf-8"))
+
+    # Sanity: the pristine golden still verifies, so a failure below is the guard.
+    assert sum_verify.verify(env, jwks)
+
+    proto = base64.urlsafe_b64encode(header_json.encode()).decode().rstrip("=")
+    _, middle, sig = env["jws"].split(".")
+    bad = dict(env); bad["jws"] = f"{proto}.{middle}.{sig}"
+    with pytest.raises(sum_verify.SumVerifyError):
+        sum_verify.verify(bad, jwks)
+
+
+@pytest.mark.parametrize(
+    "crit", [[["b64"]], [{"b64": 1}], [None], [1]],
+    ids=["nested-list", "nested-object", "null-elem", "int-elem"],
+)
+def test_jose_family_rejects_unhashable_crit_elements(crit):
+    """A non-string ``crit`` element must raise the declared class.
+
+    ``known_crit_extensions`` is a frozenset, so an unhashable element made the
+    membership test itself raise TypeError on unauthenticated bytes, before any
+    signature check. JS never crashed here (``Set.has`` is total), so this was a
+    totality break and a cross-runtime class divergence at once.
+    """
+    import base64
+    import json
+
+    header = {"alg": "EdDSA", "kid": "totality", "b64": False, "crit": crit}
+    proto = base64.urlsafe_b64encode(
+        json.dumps(header, separators=(",", ":")).encode()
+    ).decode().rstrip("=")
+    _, middle, sig = _RENDER_ENV["jws"].split(".")
+    e = copy.deepcopy(_RENDER_ENV); e["jws"] = f"{proto}.{middle}.{sig}"
+    with pytest.raises(JoseEnvelopeError) as ei:
+        _RENDER_VERIFY(e, _RENDER_JWKS)
+    assert ei.value.error_class in {"crit_unknown_extension", "malformed_jws"}
