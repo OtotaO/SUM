@@ -70,7 +70,9 @@ export interface Env {
 // external fetch, and module imports are script-src-governed too — so
 // dropping 'self' silently kills both verify boxes (buttons render,
 // no handlers bind). 'wasm-unsafe-eval' is separately required because
-// default-src 'none' otherwise blocks WebAssembly compilation.
+// WebAssembly compilation is governed by script-src and 'self' does not
+// grant it (note default-src is NOT consulted once script-src exists, so
+// removing default-src 'none' would not make this directive unnecessary).
 // If a CDN-hosted asset is ever added, widen script-src / style-src
 // again. Tests/test_csp_permits_page_scripts.py pins this against the
 // page's actual script references.

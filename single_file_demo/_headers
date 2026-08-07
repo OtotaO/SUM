@@ -35,8 +35,11 @@
   # module imports are governed by script-src just like classic script
   # tags. Omitting `'self'` silently kills both verify boxes — the
   # buttons render but bind no handlers. `'wasm-unsafe-eval'` is
-  # separately required because `default-src 'none'` otherwise blocks
-  # WebAssembly compilation for the sum_core.wasm fast path.
+  # separately required because WebAssembly compilation is governed by
+  # script-src and `'self'` does not grant it, so the sum_core.wasm fast
+  # path needs it explicitly. (default-src is NOT consulted once
+  # script-src exists, so dropping `default-src 'none'` would not make
+  # this directive unnecessary.)
   # Everything else stays locked down by `default-src 'none'`.
   # `connect-src 'self'` allows the same-origin /api/* calls.
   # `frame-ancestors 'none'` blocks embedding the deployment in a
