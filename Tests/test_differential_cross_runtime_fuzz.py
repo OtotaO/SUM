@@ -17,6 +17,7 @@ KNOWN_CLASS_DIVERGENCE allow-list is therefore empty; any new divergence fails.
 """
 from __future__ import annotations
 
+import base64
 import copy
 import json
 import shutil
@@ -131,6 +132,34 @@ def _mutations(env, jwks):
     if len(parts) == 3:
         sig = list(parts[2]); sig[3] = "A" if sig[3] != "A" else "B"
         yield ("jws-sig-corrupt", E(jws=".".join([parts[0], parts[1], "".join(sig)])), jwks)
+        # Protected header that is VALID JSON but not an object. RFC 7515 §4
+        # requires an object; these parse cleanly and then reach `.get`/property
+        # access, which is how a raw AttributeError once escaped the declared
+        # error contract on the Python side. Mutating the header segment (rather
+        # than the middle/signature) is the case this fuzzer previously missed.
+        for _name, _json in (
+            ("array", "[1,2]"), ("number", "5"), ("string", '"x"'),
+            ("null", "null"), ("bool", "true"),
+            # Object headers whose FIELDS are adversarial. These are what
+            # actually differed between runtimes once the non-object case was
+            # closed: an unhashable `crit` element crashed Python's frozenset
+            # membership test, and a falsy/absent `alg` skipped the
+            # algorithm-registry check in two of the three JS verifiers.
+            ("crit-nested-list", '{"alg":"EdDSA","b64":false,"crit":[["b64"]]}'),
+            ("crit-nested-object", '{"alg":"EdDSA","b64":false,"crit":[{"b64":1}]}'),
+            ("crit-null-elem", '{"alg":"EdDSA","b64":false,"crit":[null]}'),
+            ("crit-int-elem", '{"alg":"EdDSA","b64":false,"crit":[1]}'),
+            ("alg-missing", '{"b64":false,"crit":["b64"]}'),
+            ("alg-empty-string", '{"alg":"","b64":false,"crit":["b64"]}'),
+            ("alg-null", '{"alg":null,"b64":false,"crit":["b64"]}'),
+            ("alg-false", '{"alg":false,"b64":false,"crit":["b64"]}'),
+            ("alg-zero", '{"alg":0,"b64":false,"crit":["b64"]}'),
+            ("alg-object", '{"alg":{"a":1},"b64":false,"crit":["b64"]}'),
+            ("empty-object", "{}"),
+        ):
+            _proto = base64.urlsafe_b64encode(_json.encode()).decode().rstrip("=")
+            yield (f"jws-header-{_name}",
+                   E(jws=".".join([_proto, parts[1], parts[2]])), jwks)
     if isinstance(P, dict) and P:
         k = sorted(P.keys())[0]
         e = copy.deepcopy(env); e["payload"] = dict(P); e["payload"][k] = "TAMPERED"
