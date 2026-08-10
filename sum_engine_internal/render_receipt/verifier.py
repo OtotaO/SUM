@@ -124,6 +124,49 @@ def _check_revoked_kid(receipt: dict, revoked_kids: list[dict]) -> None:
         return
 
 
+# Payload fields REQUIRED by sum.render_receipt.v1, per
+# docs/RENDER_RECEIPT_FORMAT.md 1.1. The `schema` field sits OUTSIDE the
+# signature, so it is attacker-editable: relabelling another receipt family
+# to this schema makes the schema check pass on a payload this verifier has
+# never validated. Checking the payload shape closes that, because a foreign
+# payload cannot carry this family's fields.
+REQUIRED_PAYLOAD_FIELDS = frozenset({
+    "render_id",
+    "sliders_quantized",
+    "triples_hash",
+    "tome_hash",
+    "model",
+    "provider",
+    "signed_at",
+    "digital_source_type",
+})
+
+
+def _check_payload_shape(receipt: dict) -> None:
+    """Reject a payload that does not carry this receipt family's fields.
+
+    Receipt-type confusion is the same bug class as JWT alg-confusion: an
+    unsigned discriminator decides which validator runs. The signature alone
+    does not prevent it, because a genuine signature over a DIFFERENT
+    family's payload is still a genuine signature.
+    """
+    payload = receipt.get("payload") if isinstance(receipt, dict) else None
+    if not isinstance(payload, dict):
+        raise VerifyError(
+            ErrorClass.MALFORMED_RECEIPT,
+            "payload must be a JSON object, got "
+            f"{type(payload).__name__}",
+        )
+    missing = sorted(REQUIRED_PAYLOAD_FIELDS - payload.keys())
+    if missing:
+        raise VerifyError(
+            ErrorClass.MALFORMED_RECEIPT,
+            f"payload declares schema {SUPPORTED_SCHEMA!r} but is missing "
+            f"required field(s) {missing}: refusing to verify a payload of "
+            "another receipt family (schema is not covered by the signature)",
+        )
+
+
 def verify_receipt(
     receipt,
     jwks,
@@ -172,7 +215,7 @@ def verify_receipt(
         _check_revoked_kid(receipt, revoked_kids)
 
     try:
-        return verify_jose_envelope(
+        result = verify_jose_envelope(
             receipt,
             jwks,
             supported_schema=SUPPORTED_SCHEMA,
@@ -184,3 +227,10 @@ def verify_receipt(
         # Re-raise as the receipt-specific subclass so callers
         # importing only `VerifyError` still get a useful match.
         raise VerifyError(e.error_class, str(e)) from e
+
+    # AFTER the signature is proven. Ordering is deliberate twice over: it
+    # preserves the malformed_jws / signature_invalid precedence the error
+    # taxonomy already guarantees, and it refuses to leak payload-shape
+    # information to a caller who has not yet produced a valid signature.
+    _check_payload_shape(receipt)
+    return result
