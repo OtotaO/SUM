@@ -423,10 +423,13 @@ def register_meaning_tools(mcp: Any) -> None:
                 "loss": r.loss,
                 "recall": r.recall,
                 "fidelity": r.fidelity,
-                "source_claims": r.source_claims,
-                "preserved_claims": r.preserved_claims,
-                "dropped_claims": r.dropped_claims,
-                "added_claims": r.added_claims,
+                "source_claims": list(r.source_claims),
+                "preserved_claims": list(r.preserved_claims),
+                "dropped_claims": list(r.dropped_claims),
+                # MeaningReadout names this ``unsupported_claims`` (transform
+                # sentences the source does not ground). The wire key stays
+                # ``added_claims`` for the documented tool contract.
+                "added_claims": list(r.unsupported_claims),
                 "scorer": loaded.name,
                 "scorer_version": loaded.version,
                 "scope": _DIFF_SCOPE,
