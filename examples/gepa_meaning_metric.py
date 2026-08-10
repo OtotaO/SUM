@@ -199,7 +199,20 @@ def _extract_pred(pred: Any, pred_key: str | None) -> str:
         except TypeError:
             if hasattr(pred, field):
                 return str(getattr(pred, field))
-    return str(pred)
+    # Deliberately NOT `return str(pred)`. Falling back to the object's repr
+    # scores something like "Prediction(foo='...')" against the source, which
+    # a faithfulness judge correctly rates as near-total loss. The optimiser
+    # then sees score ~0 on a perfectly faithful transform and steers away
+    # from it, with no error and no warning anywhere.
+    #
+    # A wrong number that looks like a measurement is the exact failure this
+    # project exists to prevent, so this fails loudly instead. Mirrors the
+    # gold-side _extract, which has always raised.
+    raise KeyError(
+        f"could not read the transform text off {type(pred).__name__}: "
+        f"tried fields {list(_DEFAULT_PRED_FIELDS)}; "
+        f"pass pred_key= to name the right field"
+    )
 
 
 class _ScoreWithFeedback(dict):
