@@ -1,16 +1,16 @@
 {
   "schema": "sum.self_attestation.v1",
-  "issued_at": "2026-07-31T10:30:36Z",
+  "issued_at": "2026-08-10T10:12:13Z",
   "doc_count": 6,
   "docs": [
     {
       "path": "README.md",
-      "source_uri": "sha256:cba9ecc921cb5a2fecee9da948d7833b7fc07142c26a51fd29df460e474a5dfe",
+      "source_uri": "sha256:2051a3775830b59b83479710d253e9c048af262f154fc90f50a0bee622dfd2f5",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "cba9ecc921cb5a2fecee9da948d7833b7fc07142c26a51fd29df460e474a5dfe",
-      "axiom_count": 63,
-      "state_integer_digits": 1189
+      "markdown_sha256": "2051a3775830b59b83479710d253e9c048af262f154fc90f50a0bee622dfd2f5",
+      "axiom_count": 64,
+      "state_integer_digits": 1205
     },
     {
       "path": "CHANGELOG.md",
@@ -23,10 +23,10 @@
     },
     {
       "path": "docs/PROOF_BOUNDARY.md",
-      "source_uri": "sha256:a08da7a37bcafb9adeab4c5eaec0b640c7292baf0f1f7894143ca6a992d8b2e0",
+      "source_uri": "sha256:bfefec2b29b5c75ee3a6c465e11b76d3df75401d942c6aa77e18a6fb07fd3fb2",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "a08da7a37bcafb9adeab4c5eaec0b640c7292baf0f1f7894143ca6a992d8b2e0",
+      "markdown_sha256": "bfefec2b29b5c75ee3a6c465e11b76d3df75401d942c6aa77e18a6fb07fd3fb2",
       "axiom_count": 246,
       "state_integer_digits": 4633
     },

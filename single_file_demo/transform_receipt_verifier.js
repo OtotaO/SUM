@@ -22,6 +22,44 @@ import { flattenedVerify, canonicalize } from "./vendor/sum-verify-deps.js";
 
 export const SUPPORTED_SCHEMA = "sum.transform_receipt.v1";
 
+// Payload fields REQUIRED by sum.transform_receipt.v1. `receipt.schema` sits OUTSIDE the
+// JWS and is therefore attacker-editable: relabelling another receipt
+// family to this schema makes the schema check above pass on a payload
+// this verifier has never validated. A genuine signature over a DIFFERENT
+// family's payload is still a genuine signature, so the crypto alone does
+// not close this. Same bug class as JWT alg-confusion.
+//
+// Kept byte-for-byte in step with the Python REQUIRED_PAYLOAD_FIELDS in
+// sum_engine_internal/transform_receipt/verifier.py. Cross-runtime accept/reject parity is the
+// contract the trust triangle asserts; a divergence here is a defect.
+export const REQUIRED_PAYLOAD_FIELDS = Object.freeze([
+  "transform",
+  "transform_id",
+  "input_hash",
+  "output_hash",
+  "parameters_hash",
+  "model",
+  "provider",
+  "signed_at",
+  "digital_source_type",
+]);
+
+function checkPayloadShape(payload) {
+  const missing = REQUIRED_PAYLOAD_FIELDS.filter(
+    (f) => !Object.prototype.hasOwnProperty.call(payload, f),
+  );
+  if (missing.length > 0) {
+    throw new VerifyError(
+      ERROR_CLASSES.MALFORMED_RECEIPT,
+      `payload declares schema ${SUPPORTED_SCHEMA} but is missing ` +
+        `required field(s) ${JSON.stringify(missing)}: refusing to verify ` +
+        `a payload of another receipt family ` +
+        `(schema is not covered by the signature)`,
+    );
+  }
+}
+
+
 export const KNOWN_CRIT_EXTENSIONS = new Set(["b64"]);
 
 export const ERROR_CLASSES = Object.freeze({
@@ -189,13 +227,21 @@ export async function verifyTransformReceipt(receipt, jwks, opts) {
       `protected header is not valid JSON: ${e.message}`,
     );
   }
-  if (!header || typeof header !== "object") {
+  // Array.isArray is load-bearing: typeof [] === "object", so a JSON array
+  // header slipped past this check and failed later as signature_invalid,
+  // diverging from Python's malformed_jws. RFC 7515 §4 requires an object.
+  if (!header || typeof header !== "object" || Array.isArray(header)) {
     throw new VerifyError(
       ERROR_CLASSES.MALFORMED_JWS,
       "protected header is not an object",
     );
   }
-  if (header.alg && !SUPPORTED_SIGNATURE_ALGORITHMS.has(header.alg)) {
+  // `header.alg && …` would SKIP the registry check whenever alg is absent or
+  // falsy (missing, "", 0, false, null), so the anti-downgrade control could be
+  // bypassed by simply omitting the claim; those cases then failed later as
+  // signature_invalid where Python says unsupported_alg. Require a string, as
+  // receipt_verifier.js and the Python core both do.
+  if (typeof header.alg !== "string" || !SUPPORTED_SIGNATURE_ALGORITHMS.has(header.alg)) {
     throw new VerifyError(
       ERROR_CLASSES.UNSUPPORTED_ALG,
       `unsupported alg ${header.alg}; this verifier accepts ${
@@ -274,6 +320,11 @@ export async function verifyTransformReceipt(receipt, jwks, opts) {
   if (maxAgeSeconds !== null) {
     enforceSignedAtWindow(payload, maxAgeSeconds, maxFutureSkewSeconds);
   }
+
+  // AFTER the signature is proven, mirroring the Python ordering: it keeps
+  // the malformed_jws / signature_invalid precedence intact and does not
+  // leak payload shape to a caller without a valid signature.
+  checkPayloadShape(payload);
 
   return {
     verified: true,

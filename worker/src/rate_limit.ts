@@ -93,12 +93,26 @@ export function classifyScope(
 }
 
 /**
- * Atomic-ish increment-and-check against the rate-limit bucket. KV
- * doesn't have true atomic increments, but for our throughput level
- * the read-then-write race is benign (worst case: a burst of
- * concurrent requests at the boundary briefly under-counts by ~1).
- * A counter that under-counts by 1 once an hour is not the threat
- * model.
+ * Increment-and-check against the rate-limit bucket.
+ *
+ * KNOWN LIMITATION — this is NOT atomic, and the bound it enforces is
+ * weaker than the policy table implies. The read (`kv.get`) and the write
+ * (`kv.put`) are separate awaits with nothing serializing them, and Workers
+ * serves requests concurrently. N requests that arrive together all read the
+ * same `count`, all evaluate `count < limit` against it, and all proceed;
+ * the final `put` leaves the counter at `count + 1`. So a concurrent burst
+ * is bounded by the attacker's concurrency, not by `policy.limit`.
+ *
+ * An earlier version of this comment claimed the race "briefly under-counts
+ * by ~1". That is wrong, and it mattered: on `llm-axis-demo` (5/day) the
+ * over-spend is on the OPERATOR's provider key. KV's eventual consistency
+ * across colos widens the window further.
+ *
+ * The counter is still worth keeping — it stops the sequential/naive case,
+ * which is the common one — but closing the concurrent case needs a real
+ * atomic counter (a Durable Object keyed by scope+IP, which serializes by
+ * construction). That is an architectural change and is deliberately NOT
+ * done here; it is tracked as an operator decision.
  */
 export async function checkRateLimit(
   request: Request,

@@ -461,3 +461,90 @@ def test_verify_receipt_rejects_perspective_with_named_schemas(server):
     assert out["verified"] is False
     assert out["error_class"] == "schema"
     assert "sum.meaning_risk_receipt.v1" in out["errors"][0]
+
+
+# ---------------------------------------------------------------------------
+# meaning_diff SUCCESS path — the layer this file's header said was uncovered.
+#
+# Regression pin for a bug that made the tool 100% broken on EVERY call since
+# it shipped: the result builder read ``r.added_claims``, which MeaningReadout
+# has never had (the field is ``unsupported_claims``). Every invocation paid
+# the full judge cost, then died on AttributeError swallowed into a generic
+# ``internal`` error. No test drove the success path because the [judge] extra
+# never runs in per-PR CI -- so the judge is stubbed here and the REAL
+# MeaningReadout dataclass is constructed, which keeps the test torch-free
+# while still failing if the dataclass is renamed again.
+# ---------------------------------------------------------------------------
+
+def _stub_readout():
+    from sum_engine_internal.research.meaning.meaning_loss import MeaningReadout
+    return MeaningReadout(
+        loss=0.25, preservation=0.75, recall=0.8, fidelity=1.0,
+        source_claims=("a claim", "another claim"),
+        preserved_claims=("a claim",),
+        dropped_claims=("another claim",),
+        transform_claims=("a claim", "an invented claim"),
+        unsupported_claims=("an invented claim",),
+        judge="stub-judge", judge_version="0",
+    )
+
+
+class _StubScorer:
+    name = "stub-judge"
+    version = "0"
+
+    def explain(self, source, rendering):
+        return _stub_readout()
+
+
+@pytest.fixture
+def stub_judge(monkeypatch):
+    from sum_engine_internal.mcp_server import meaning_tools as mt
+    monkeypatch.setattr(mt, "_need_research_extra", lambda: None)
+    monkeypatch.setattr(mt, "_load_scorer", lambda scorer: (_StubScorer(), None))
+    return mt
+
+
+def test_meaning_diff_success_returns_the_documented_shape(server, stub_judge):
+    """The docstring promises these keys. Before the fix, NONE were returned."""
+    fn = _tool(server, "meaning_diff")
+    out = asyncio.run(fn(source="a claim. another claim.", rendering="a claim."))
+
+    assert "error_class" not in out, f"meaning_diff failed: {out}"
+    for key in (
+        "loss", "recall", "fidelity", "source_claims", "preserved_claims",
+        "dropped_claims", "added_claims", "scorer", "scorer_version",
+        "scope", "concurrency",
+    ):
+        assert key in out, f"documented key {key!r} missing from meaning_diff result"
+
+
+def test_meaning_diff_added_claims_carries_the_unsupported_sentences(server, stub_judge):
+    """``added_claims`` on the wire is MeaningReadout.unsupported_claims.
+
+    This is the exact assertion the original bug failed: the builder reached
+    for an attribute that does not exist on the readout.
+    """
+    fn = _tool(server, "meaning_diff")
+    out = asyncio.run(fn(source="a claim. another claim.", rendering="a claim."))
+
+    assert out["added_claims"] == ["an invented claim"]
+    assert out["dropped_claims"] == ["another claim"]
+    assert out["preserved_claims"] == ["a claim"]
+
+
+def test_meaning_readout_has_no_added_claims_attribute():
+    """Pins WHY the wire key is renamed, so nobody 'fixes' it back.
+
+    If MeaningReadout ever grows a real ``added_claims`` field this test fails
+    loudly and the rename in meaning_tools can be reconsidered deliberately.
+    """
+    assert not hasattr(_stub_readout(), "added_claims")
+
+
+def test_meaning_diff_result_carries_the_scope_caveat(server, stub_judge):
+    """A per-document MEASUREMENT must never be presentable as a bound."""
+    fn = _tool(server, "meaning_diff")
+    out = asyncio.run(fn(source="a claim. another claim.", rendering="a claim."))
+    assert out["scope"]
+    assert "bound" in out["scope"].lower() or "measurement" in out["scope"].lower()

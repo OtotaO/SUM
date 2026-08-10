@@ -26,6 +26,8 @@ Meaning readout — measured for THIS document (not a certified bound)
   (measured for THIS document under the named judge — a per-document MEASUREMENT, not a certified bound or a guarantee; for a (1-δ) bound use a meaning_risk receipt over a named corpus.)
 ```
 
+*To run that exact command:* `pip install 'sum-engine[research,judge]'` (`meaning-diff` needs `[research]`; the `--scorer nli` judge needs `[judge]`) **from a git checkout** — `examples/` ships in the repo, not in the wheel. The zero-clone path is the receipt replay in [Verify it yourself in 60 seconds](#verify-it-yourself-in-60-seconds) below.
+
 Every transformation — extract triples from prose, render a tome at a controlled slider position, compose bundles across documents, share a render — emits a cryptographically-signed receipt that any third party can verify offline. The receipt attests *that the transformation happened and what its inputs were*. Separate per-axis benchmarks attest *how much the transformation preserved meaning*. Both are kept honest by separate proof discipline — and the project never blurs the line between them.
 
 *Live trust loop:* https://sum-demo.ototao.workers.dev — three runtimes (Python, Node, modern browsers) produce byte-identical Ed25519 signatures over the same JCS-canonical bytes; verify offline against `/.well-known/jwks.json`. Mechanically proven; locked in CI on every PR.
@@ -58,20 +60,22 @@ SUM is built to be that layer **in the open**: Apache-2.0, offline-verifiable by
 
 ## Verify it yourself in 60 seconds
 
-**The differentiator — replay a meaning-loss bound, fully offline.** SUM's flagship receipt is a *signed, replayable* certificate over a named meaning-loss proxy. The verifier is dependency-light (`cryptography` + `joserfc` only — no numpy / scipy / torch, no GPU, no network), and a real binding-gate golden over public-domain text (BillSum, CC0) **ships inside the wheel** — so this works straight from `pip`, no clone:
+**The differentiator — replay a meaning-loss bound, fully offline.** SUM's flagship receipt is a *signed, replayable* certificate over a named meaning-loss proxy. The verifier is dependency-light — `sum_verify` imports only `cryptography` and `joserfc`, with **no numpy / scipy / torch, no GPU, and no network** — and a real binding-gate golden over public-domain text (BillSum, CC0) **ships inside the wheel**, so this works straight from `pip`, no clone:
 
 ```bash
-pip install 'sum-engine[verify]'        # cryptography + joserfc only
+pip install 'sum-engine[verify]'        # no numpy/scipy/torch; see note below
 python -m sum_verify --demo             # replays the bundled BillSum golden, offline
 # → {"verified": true, "schema": "sum.meaning_risk_receipt.v1", "replayed": true,
 #    "scorer": "bidirectional-entailment[minilm-cosine-0.5]",
 #    "not_covered": ["arrangement","sound","connotation","implicature"],
 #    "proxy_caveat": "verified=true is a cryptographic fact ... the proxy
-#       correlated only modestly at summary level (Spearman rho ~0.27-0.33 on
+#       correlated only modestly at summary level (Spearman rho 0.267-0.291 on
 #       SummEval; NLI ~0.29 replicates on FRANK; the embedding judge is
 #       corpus-dependent, near zero on abstractive FRANK-XSum). Not a
 #       substitute for human review."}
 ```
+
+**What `[verify]` actually installs.** `cryptography`, `joserfc`, and `sympy` (a base dependency of the package, used by the state-integer path — not imported by `sum_verify`). The load-bearing promise is the one above: no numpy, scipy, torch, GPU, or network on the verification path.
 
 To verify *your own* receipt — or the source goldens from a git checkout — pass the files explicitly:
 
@@ -81,6 +85,23 @@ python -m sum_verify <receipt.json> --jwks <jwks.json> --losses <losses.json>
 ```
 
 `verified: true` + `replayed: true` means the committed per-pair losses hash to the receipt's anchor and re-certify to its stated bound (≤ 0.6454 at 95%) by exact integer equality — on your machine, against the issuer's JWKS, trusting nobody. **Read the `proxy_caveat`:** that PASS is a *cryptographic* fact, not proof meaning was preserved — the bound is over a proxy that tracks human judgment only modestly. The richer readout (the bound itself, perspective cohorts) is `sum verify-meaning` (which needs the heavier `pip install "sum-engine[research,receipt-verify]"` — the no-numpy promise above is scoped to `python -m sum_verify`); for non-extractive rewrites use `--scorer nli` — [`examples/poetry_frontier/`](examples/poetry_frontier/) shows exactly where the embedding judge's blind spot is.
+
+### Mint your own receipt
+
+Verifying someone else's receipt is half the loop. To issue one over *your own* corpus:
+
+```bash
+pip install 'sum-engine[research,receipt-verify,judge]'
+sum mint-meaning --pairs pairs.jsonl --scorer nli \
+    --corpus-id my-corpus --transform my-transform \
+    --out out/receipt.json --gen-key out/
+# self-verifies through the verify path before handing you the file,
+# and prints the exact `sum verify-meaning …` line a third party runs
+```
+
+`pairs.jsonl` is your own data, one `{"source": "…", "rendering": "…"}` per line. Aim for **n ≥ ~32**: the bound is distribution-free and valid at any n, but at n = 1 it degenerates to ≤ 1.0 and certifies nothing, and the CLI says so. (`--source FILE --rendering FILE` mints from a single pair, which is exactly that vacuous case.) `--gen-key` writes a fresh keypair plus JWKS; the private half is mode 0600 and never leaves your machine.
+
+[`docs/THIRD_PARTY_VERIFY.md`](docs/THIRD_PARTY_VERIFY.md) walks the full mint-then-verify round trip, and [`examples/issue_meaning_receipt.py`](examples/issue_meaning_receipt.py) is the scripted version. Read the vacuity and exchangeability warnings it prints — a bound over a corpus your text does not resemble is not evidence about your text.
 
 **The render trust loop (signed provenance).** The other receipt family attests *that* a transformation happened (issuer, inputs, slider position, model, time) — the same JWS verifiable byte-for-byte in three independent runtimes:
 
@@ -114,7 +135,7 @@ A render receipt attests the *render*, not the truth of its content (trust scope
 | Replay-defense window (`signed_at_out_of_window`) | shipped | opt-in `max_age_seconds` parameter across all four verifier surfaces (Python render / Python transform / JS render / JS transform). Default-off preserves archival use; receivers opt in per use-case (agent-swarm 60s, real-time 600s, newsletter 1d, legal-discovery no window). |
 | `sum verify --explain` layered output | shipped | Per-dimension report (`sum.verify_explained.v1`): cryptographic integrity / canonical reconstruction / axiom consistency / extraction provenance / source evidence coverage / semantic preservation / truth of content. Each carries `epistemic_status` (`provable` / `certified` / `empirical-benchmark` / `not-asserted`). Truth of content is ALWAYS `not_asserted` — locked by test. |
 | Meaning-loss receipts + `sum_verify` SDK | shipped on PyPI ≥ 0.8.0 | `sum.meaning_risk_receipt.v1` — a signed, replayable, distribution-free bound on a *named meaning-loss proxy* (`pip install 'sum-engine[verify]'` → `import sum_verify` / `python -m sum_verify`, dependency-light: no numpy/scipy/torch). Plus `sum meaning-diff` (per-document "what was kept / dropped / added"), `sum drift-budget` (compose meaning-loss across a transform chain), and `sum exchangeability` (advisory: is a bound applicable to *your* text?). Research-flagged; the affirmative contribution behind arXiv Paper-1. |
-| Certified chains + transparency log | on main; shipping in 0.9.0 | `sum.chain_receipt.v1` binds ordered hop receipts (by canonical hash + an order-binding `chain_id`) into an integer-exact Bonferroni budget with a joint confidence (`sum mint-chain`; verify with `python -m sum_verify … --hops`). The first REAL certified chain over public-domain text is committed at [`fixtures/chain_receipts_billsum/`](fixtures/chain_receipts_billsum/): BillSum (CC0), 2 real hops — the dataset's own reference summary, then deterministic lead-N extractive compression — under the strict NLI judge; budget ≤ 1.3546 at joint confidence 0.90. Honest by construction: the budget bounds the *sum* of per-hop expected losses, **not** the end-to-end loss (a directed loss, not a metric, so no triangle inequality holds), and the mandatory `budget_scope` field says exactly that. Every committed golden is witnessed in an append-only [`transparency/log.jsonl`](transparency/log.jsonl) (`python scripts/witness_receipt.py verify`). |
+| Certified chains + transparency log | shipped on PyPI ≥ 0.9.0 | `sum.chain_receipt.v1` binds ordered hop receipts (by canonical hash + an order-binding `chain_id`) into an integer-exact Bonferroni budget with a joint confidence (`sum mint-chain`; verify with `python -m sum_verify … --hops`). The first REAL certified chain over public-domain text is committed at [`fixtures/chain_receipts_billsum/`](fixtures/chain_receipts_billsum/): BillSum (CC0), 2 real hops — the dataset's own reference summary, then deterministic lead-N extractive compression — under the strict NLI judge; budget ≤ 1.3546 at joint confidence 0.90. Honest by construction: the budget bounds the *sum* of per-hop expected losses, **not** the end-to-end loss (a directed loss, not a metric, so no triangle inequality holds), and the mandatory `budget_scope` field says exactly that. Every committed golden is witnessed in an append-only [`transparency/log.jsonl`](transparency/log.jsonl) (`python scripts/witness_receipt.py verify`). |
 | Negative-control corpus (T5 of bench-hardening) | shipped | 20 hand-authored documents across 5 failure modes (ambiguous coref / predicate-alias / contradictions / entity-resolution-adversarial / non-extractable). Runner exits 1 if observed failures don't match annotations. Baseline at [`fixtures/bench_receipts/negative_control_2026-05-17.json`](fixtures/bench_receipts/negative_control_2026-05-17.json). |
 | Compliance validators (six regimes) | shipped | `sum compliance check --regime <id> --audit-log <path>` — EU AI Act Article 12, GDPR Article 30, HIPAA § 164.312(b), ISO/IEC 27001 A.8.15, SOC 2 CC 7.2, PCI DSS v4.0 Req 10. All six produce the same `sum.compliance_report.v1` schema; per-regime docs at `docs/COMPLIANCE_*.md`. |
 
@@ -128,7 +149,7 @@ The operational compass — read in this order if you want the project's intent 
 - [`docs/PRODUCT_VISION.md`](docs/PRODUCT_VISION.md) — the product vision (the slider workbench: drop text → render it from a tag to a tome, with a signed receipt of what was preserved) and the **positioning**: SUM is the chain-of-custody *standard* for AI-transformed text — **provenance-first, attest-don't-detect** (a cryptographic guarantee robust to rewriting; an "is this AI?" answer ships only as an honest advisory signal, never a "99 %").
 - [`docs/PRODUCT_DELIBERATION_2026-05-14.md`](docs/PRODUCT_DELIBERATION_2026-05-14.md) — three-option strategic analysis + grant-outcome decision tree.
 - [`docs/ZENITH_FRAMING_2026-05-16.md`](docs/ZENITH_FRAMING_2026-05-16.md) — destination framing (SUM as chain-of-custody for AI-transformed knowledge) plus three new concepts (Perspective Receipts, Trust Profiles, Epistemic Nutrition Label) on the design queue.
-- [`docs/BENCH_HARDENING_FROM_QCVV.md`](docs/BENCH_HARDENING_FROM_QCVV.md) — five-task empirical-benchmark hardening plan (T1–T5; T5 shipped, T1–T4 queued).
+- [`docs/BENCH_HARDENING_FROM_QCVV.md`](docs/BENCH_HARDENING_FROM_QCVV.md) — five-task empirical-benchmark hardening plan (T5 shipped 2026-05-17; T1 closed 2026-05-21; T4 closed 2026-05-22; T2 + T3 still open, gated on `sum.slider_drift_bench.v1` receipts).
 - [`docs/DOGFOOD_QUICKSTART.md`](docs/DOGFOOD_QUICKSTART.md) — five-minute guide to running SUM on your own writing.
 
 ### LLM narrative round-trip — closed across measured corpora (2026-04-28)
@@ -205,7 +226,7 @@ pip install 'sum-engine[mcp,sieve]'
 
 ### Calling SUM over HTTP
 
-The hosted Worker at `https://sum-demo.ototao.workers.dev` exposes `/api/render`, `/api/complete`, `/api/qid`, and the `/.well-known/{jwks,revoked-kids}.json` verification surfaces. [`docs/API_REFERENCE.md`](docs/API_REFERENCE.md) is the wire spec — request/response shapes, error codes, the six-step receipt-verification flow, working Node + Python examples. Use this when the caller is a web app, mobile app, or server-side service; use the MCP server when the caller is a local LLM client.
+The hosted Worker at `https://sum-demo.ototao.workers.dev` exposes `/api/render`, `/api/transform`, `/api/complete`, `/api/qid`, and the `/.well-known/{jwks,revoked-kids}.json` verification surfaces. [`docs/API_REFERENCE.md`](docs/API_REFERENCE.md) is the wire spec — request/response shapes, error codes, the six-step receipt-verification flow, working Node + Python examples. Use this when the caller is a web app, mobile app, or server-side service; use the MCP server when the caller is a local LLM client.
 
 ---
 
@@ -289,7 +310,7 @@ Both runners require `OPENAI_API_KEY` (NLI audit + extraction). Pinned model sna
 
 This roadmap names only unshipped work. Items already landed live in [`CHANGELOG.md`](CHANGELOG.md) `[Unreleased]`. Detailed sequencing lives in [`docs/NEXT_SESSION_PLAYBOOK.md`](docs/NEXT_SESSION_PLAYBOOK.md).
 
-**Closing the LLM round-trip drift.** This is the headline open problem. The full LLM round-trip (`text → LLM-extract → axioms → LLM-generate → prose' → LLM-extract → axioms'`) currently produces 107.75 % drift and 0.12 exact-match recall on `seed_v1` — facts preserved, keys not. Closing this gap is a canonicalisation problem (entity resolution, predicate normalisation, pinned-vocabulary extraction); none of those passes are shipped yet. See [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §2.5 for the full attribution and per-document failure modes.
+**Generalising the LLM round-trip result beyond the measured corpora.** The round-trip gap itself is **closed** — see the section above and [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §2.5 (closed 2026-05-21 across all measured corpora; the unprompted baseline was 107.75 % drift / 0.12 recall on `seed_v1`, now 0.00 % / 1.00 there). What is *not* shipped is evidence that the intervention (canonical-first generator prompt + constrained-decoding extractor + lemma-exclusion) holds on corpora nobody has measured yet, and a same-commit replay receipt for it. Treat the closure as an empirical result with a stated envelope, not a universal guarantee.
 
 **Hardening backlog**
 

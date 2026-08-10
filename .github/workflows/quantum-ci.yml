@@ -568,3 +568,37 @@ jobs:
         /tmp/summcp/bin/pip install --quiet "dist/$(ls dist | grep '.whl$')[mcp]"
         /tmp/summcp/bin/python -c "import mcp, importlib.metadata as m; print('mcp', m.version('mcp'))"
         /tmp/summcp/bin/python -c "from sum_engine_internal.mcp_server.server import build_server; s = build_server(); print('sum-mcp server constructed OK')"
+
+  worker-typecheck:
+    name: Worker TypeScript typecheck (tsc --noEmit)
+    # worker/ ships the live demo's front door, the operator-funded LLM
+    # routes, and the rate-limit / BYO-key gate — and until now NO per-PR
+    # job compiled it. `npm run typecheck` existed in worker/package.json
+    # but nothing ran it: the only workflow touching worker/ is
+    # deploy-worker.yml, which is workflow_dispatch-only. So Dependabot
+    # merged weekly worker-toolchain bumps (typescript, wrangler,
+    # @cloudflare/workers-types — all majors at some point) with zero
+    # compile verification, and a type-level break would have surfaced
+    # first at deploy time against production.
+    #
+    # This is the cheapest honest gate: it pins the toolchain bumps and
+    # every future edit to worker/src. It does NOT replace behavioural
+    # tests for the rate limiter (worker/ still has none — tracked
+    # separately); it only guarantees the code compiles under the
+    # lockfile-pinned toolchain.
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+    - name: Set up Node 22
+      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+      with:
+        node-version: "22"
+
+    - name: npm ci (lockfile-pinned wrangler + typescript + workers-types)
+      working-directory: worker
+      run: npm ci
+
+    - name: tsc --noEmit
+      working-directory: worker
+      run: npm run typecheck

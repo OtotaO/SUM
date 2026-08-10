@@ -18,6 +18,43 @@ import { flattenedVerify, canonicalize } from "./vendor/sum-verify-deps.js";
 
 export const SUPPORTED_SCHEMA = "sum.render_receipt.v1";
 
+// Payload fields REQUIRED by sum.render_receipt.v1. `receipt.schema` sits OUTSIDE the
+// JWS and is therefore attacker-editable: relabelling another receipt
+// family to this schema makes the schema check above pass on a payload
+// this verifier has never validated. A genuine signature over a DIFFERENT
+// family's payload is still a genuine signature, so the crypto alone does
+// not close this. Same bug class as JWT alg-confusion.
+//
+// Kept byte-for-byte in step with the Python REQUIRED_PAYLOAD_FIELDS in
+// sum_engine_internal/render_receipt/verifier.py. Cross-runtime accept/reject parity is the
+// contract the trust triangle asserts; a divergence here is a defect.
+export const REQUIRED_PAYLOAD_FIELDS = Object.freeze([
+  "render_id",
+  "sliders_quantized",
+  "triples_hash",
+  "tome_hash",
+  "model",
+  "provider",
+  "signed_at",
+  "digital_source_type",
+]);
+
+function checkPayloadShape(payload) {
+  const missing = REQUIRED_PAYLOAD_FIELDS.filter(
+    (f) => !Object.prototype.hasOwnProperty.call(payload, f),
+  );
+  if (missing.length > 0) {
+    throw new VerifyError(
+      ERROR_CLASSES.MALFORMED_RECEIPT,
+      `payload declares schema ${SUPPORTED_SCHEMA} but is missing ` +
+        `required field(s) ${JSON.stringify(missing)}: refusing to verify ` +
+        `a payload of another receipt family ` +
+        `(schema is not covered by the signature)`,
+    );
+  }
+}
+
+
 // crit extensions this verifier knows how to handle. RFC 7515
 // §4.1.11: a verifier MUST reject closed on critical extensions it
 // doesn't understand. b64=false is the unencoded-payload semantics
@@ -275,6 +312,19 @@ export async function verifyReceipt(receipt, jwks, revokedKids, opts) {
       `protected header is not valid JSON: ${e.message}`,
     );
   }
+  // Valid JSON is not enough: RFC 7515 §4 requires an object. `null` would
+  // throw a raw TypeError on the property access below, and an array would
+  // slip past a bare typeof check (typeof [] === "object") to fail later as
+  // signature_invalid — both escaping the declared class. Matches the Python
+  // guard in jose_envelope.py.
+  if (!header || typeof header !== "object" || Array.isArray(header)) {
+    throw new VerifyError(
+      ERROR_CLASSES.MALFORMED_JWS,
+      `protected header must be a JSON object, got ${
+        header === null ? "null" : Array.isArray(header) ? "array" : typeof header
+      }`,
+    );
+  }
   if (Array.isArray(header.crit)) {
     for (const ext of header.crit) {
       if (!KNOWN_CRIT_EXTENSIONS.has(ext)) {
@@ -372,6 +422,11 @@ export async function verifyReceipt(receipt, jwks, revokedKids, opts) {
   if (maxAgeSeconds !== null) {
     enforceSignedAtWindow(payload, maxAgeSeconds, maxFutureSkewSeconds);
   }
+
+  // AFTER the signature is proven, mirroring the Python ordering: it keeps
+  // the malformed_jws / signature_invalid precedence intact and does not
+  // leak payload shape to a caller without a valid signature.
+  checkPayloadShape(payload);
 
   return {
     verified: true,

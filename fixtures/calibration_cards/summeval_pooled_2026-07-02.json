@@ -42,7 +42,7 @@
     }
   },
   "scope_limits": [
-    "Correlations at this aggregation level are MODEST (~0.27-0.33): the proxy is directionally valid, not a substitute for human judgment.",
+    "Correlations at this aggregation level are MODEST (0.267-0.291 across the three scorers in the results block above, meaning-composite target): the proxy is directionally valid, not a substitute for human judgment.",
     "Measured on news summarization; transfer to other domains/transforms is NOT established by this card (see the FRANK cards for one out-of-domain replication).",
     "These numbers must never ride in a signed receipt field: they were measured on this corpus with these judges, not on whatever corpus a receipt certifies.",
     "See the companion system-level card: on the SAME data the system-level correlations are ~0.57-0.75 — the apparent conflict with published '0.6-class' numbers is aggregation level + corpus, not disagreement."
