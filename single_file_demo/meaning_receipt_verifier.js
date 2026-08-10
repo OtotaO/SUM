@@ -142,10 +142,18 @@ export async function verifyMeaningEnvelope(receipt, jwks, supportedSchema) {
   } catch (e) {
     throw new VerifyError(ERROR_CLASSES.MALFORMED_JWS, `protected header is not valid JSON: ${e.message}`);
   }
-  if (!header || typeof header !== "object") {
+  // Array.isArray is load-bearing: typeof [] === "object", so a JSON array
+  // header slipped past this check and failed later as signature_invalid,
+  // diverging from Python's malformed_jws. RFC 7515 §4 requires an object.
+  if (!header || typeof header !== "object" || Array.isArray(header)) {
     throw new VerifyError(ERROR_CLASSES.MALFORMED_JWS, "protected header is not an object");
   }
-  if (header.alg && !SUPPORTED_SIGNATURE_ALGORITHMS.has(header.alg)) {
+  // `header.alg && …` would SKIP the registry check whenever alg is absent or
+  // falsy (missing, "", 0, false, null), so the anti-downgrade control could be
+  // bypassed by simply omitting the claim; those cases then failed later as
+  // signature_invalid where Python says unsupported_alg. Require a string, as
+  // receipt_verifier.js and the Python core both do.
+  if (typeof header.alg !== "string" || !SUPPORTED_SIGNATURE_ALGORITHMS.has(header.alg)) {
     throw new VerifyError(
       ERROR_CLASSES.UNSUPPORTED_ALG,
       `unsupported alg ${header.alg}; this verifier accepts ${[...SUPPORTED_SIGNATURE_ALGORITHMS].join(", ")}`,

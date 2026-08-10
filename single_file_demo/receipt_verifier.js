@@ -275,6 +275,19 @@ export async function verifyReceipt(receipt, jwks, revokedKids, opts) {
       `protected header is not valid JSON: ${e.message}`,
     );
   }
+  // Valid JSON is not enough: RFC 7515 §4 requires an object. `null` would
+  // throw a raw TypeError on the property access below, and an array would
+  // slip past a bare typeof check (typeof [] === "object") to fail later as
+  // signature_invalid — both escaping the declared class. Matches the Python
+  // guard in jose_envelope.py.
+  if (!header || typeof header !== "object" || Array.isArray(header)) {
+    throw new VerifyError(
+      ERROR_CLASSES.MALFORMED_JWS,
+      `protected header must be a JSON object, got ${
+        header === null ? "null" : Array.isArray(header) ? "array" : typeof header
+      }`,
+    );
+  }
   if (Array.isArray(header.crit)) {
     for (const ext of header.crit) {
       if (!KNOWN_CRIT_EXTENSIONS.has(ext)) {
