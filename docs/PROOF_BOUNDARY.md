@@ -4,7 +4,8 @@
 **Date:** 2026-07-02
 
 **v1.8.0 (2026-07-02):** the measured proxy↔human correlation is now scoped and
-replicated — ρ ≈ 0.27–0.33 is explicitly **pooled summary-level** (system-level on the
+replicated — ρ = 0.267–0.291 is explicitly **pooled summary-level, meaning-composite
+target** (system-level on the
 same data and scorers is ≈ 0.57–0.75); the NLI judge's ρ ≈ 0.29 **replicates
 out-of-domain on FRANK** (both halves); the **embedding judge is corpus-dependent and
 ≈ 0 on abstractive FRANK-XSum** — prefer NLI for anything load-bearing. New
@@ -12,7 +13,8 @@ reproduction scripts under `Tests/benchmarks/`. Claims narrowed or scoped only; 
 strengthened without a receipt.
 
 **v1.7.1 (2026-06-24):** header sync — the body's §2.11 already carries the measured
-proxy↔human correlation on SummEval (Spearman ρ ≈ 0.27–0.33; the meaning-loss proxy is
+proxy↔human correlation on SummEval (Spearman ρ = 0.267–0.291 pooled summary-level
+against the meaning composite; the meaning-loss proxy is
 honest-modest and *advisory*, never a guarantee). This is a version-bump to align the
 header with that content; no claim was changed.
 
@@ -755,7 +757,7 @@ substitute for human judgment** — a ρ of ~0.3 leaves most of the variance
 unexplained. Reproduce: [`Tests/benchmarks/meaning_proxy_human_calibration.py`](../Tests/benchmarks/meaning_proxy_human_calibration.py)
 → `meaning_proxy_human_calibration.result.json`.
 
-**Scope + second-corpus replication (measured 2026-07-02):** the ρ ≈ 0.27–0.33
+**Scope + second-corpus replication (measured 2026-07-02):** the ρ = 0.267–0.291
 above is **pooled summary-level** — the strictest read (80.6% of SummEval
 consistency ratings sit at exactly 5.0/5, so range restriction compresses it;
 published summary-level anchors on the same benchmark: ROUGE 0.12–0.19,

@@ -46,7 +46,7 @@ smuggle it back.)
    that was not computed, replayably, from committed inputs. Descriptive prose
    ("zero overlap", "preserving", "faithful") never rides in a signed field or a
    headline unless the descriptive claim was itself *measured*.
-2. **Every number ships with its scope.** ρ ≈ 0.27–0.33 without "pooled
+2. **Every number ships with its scope.** ρ = 0.267–0.291 without "pooled
    summary-level, SummEval" is an overclaim by omission — this exact omission
    survived in our own headline for weeks. State: corpus, aggregation level,
    scorer, n. If a number's scope is unknown, the number is not ready.

@@ -37,10 +37,47 @@ the card family documents the judge; the two must stay separate surfaces.
 | [`frank_xsum_2026-07-02.json`](../fixtures/calibration_cards/frank_xsum_2026-07-02.json) | FRANK-XSum (abstractive) | pooled | NLI **replicates** (0.290); embedding **collapses** (0.032, CI spans 0) | The failure-mode card. Why `--scorer nli` is the load-bearing default. |
 | [`frank_cnndm_2026-07-02.json`](../fixtures/calibration_cards/frank_cnndm_2026-07-02.json) | FRANK-CNN/DM (extractive-leaning) | pooled | NLI stable (0.290); lexical strong here (0.47) but collapses on XSum | The bracket: judges whose validity depends on text style must be re-checked per corpus. |
 
+## Correction, 2026-08-10: the headline range was mis-scoped
+
+Every surface in this repo used to quote **"ρ ≈ 0.27–0.33 (pooled
+summary-level, SummEval)"**. That range was wrong, and it was wrong in the
+flattering direction. Corrected here and on all five other surfaces that
+carried it.
+
+**What the pooled card actually measures** (its own `results` block, against
+the `meaning_composite` target):
+
+| scorer | ρ | n |
+|---|---|---|
+| lexical-coverage-bidirectional | 0.2907 | 800 |
+| embedding-minilm@0.5 | 0.2672 | 800 |
+| nli-deberta-mnli-fever-anli@0.5 | 0.2741 | 192 |
+
+So the honest pooled range is **0.267–0.291**. The maximum is 0.2907, not 0.33.
+
+**Where 0.33 actually came from.** It is real, but it is a *different target*:
+`scorers['nli-deberta-mnli-fever-anli@0.5'].consistency.spearman = 0.3273`
+(n=192) in `Tests/benchmarks/meaning_proxy_human_calibration.result.json` — the
+NLI judge against the **consistency axis alone**, not the meaning composite.
+Splicing it onto the composite range produced a single number spanning two
+targets at two sample sizes, with the upper endpoint borrowed from whichever
+measurement happened to look best.
+
+**Why this correction matters more than its size.** `NORTH_STAR.md` invariant 2
+is "every number ships with its scope", and it used *this very range* as its
+worked example of a correctly-scoped number. The rule was being violated by its
+own illustration, on the four surfaces a stranger reads first. Nobody outside
+the project found this; an adversarial audit of our own materials did.
+
+If you are citing this work, cite 0.267–0.291 pooled summary-level against the
+meaning composite, and cite 0.3273 separately if you want the consistency-axis
+figure. They are not the same claim.
+
 ## Reading rules (the ones that keep this honest)
 
 1. **Never quote a card number without its aggregation level and corpus.**
-   "ρ ≈ 0.27–0.33 (pooled summary-level, SummEval)" is a claim;
+   "ρ = 0.267–0.291 (pooled summary-level, SummEval, meaning-composite
+   target)" is a claim;
    "ρ ≈ 0.3" is an overclaim by omission.
 2. **A card is evidence about the judge, not about your document.** Per-document
    trust still comes from reading the receipt's own losses/diff, not the card.
