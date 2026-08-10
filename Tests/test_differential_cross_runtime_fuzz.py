@@ -65,12 +65,25 @@ def _setup(family):
         from sum_engine_internal.transform_receipt import (
             verify_transform_receipt, SUPPORTED_SCHEMA as TS)
         schema = RS if family == "render" else TS
-        payload = {"render_id": "r", "tome_hash": "sha256-" + "0" * 64,
-                   "triples_hash": "sha256-" + "1" * 64,
-                   "sliders_quantized": {"density": 50, "audience": 20},
-                   "model": "demo", "provider": "canonical-path",
+        # Family-specific payloads. This USED to sign one render-shaped
+        # payload and relabel it for the transform family, which made the
+        # "pristine" transform case an instance of the very receipt-type
+        # confusion the verifiers now reject. See
+        # Tests/test_receipt_type_confusion.py.
+        _common = {"model": "demo", "provider": "canonical-path",
                    "digital_source_type": "trainedAlgorithmicMedia",
                    "signed_at": "2026-06-06T12:00:00.000Z"}
+        if family == "render":
+            payload = {"render_id": "r", "tome_hash": "sha256-" + "0" * 64,
+                       "triples_hash": "sha256-" + "1" * 64,
+                       "sliders_quantized": {"density": 50, "audience": 20},
+                       **_common}
+        else:
+            payload = {"transform": "slider", "transform_id": "t",
+                       "input_hash": "sha256-" + "0" * 64,
+                       "output_hash": "sha256-" + "1" * 64,
+                       "parameters_hash": "sha256-" + "2" * 64,
+                       **_common}
         env = sign_jose_envelope(copy.deepcopy(payload), private_jwk=pr, kid=kid)
         env["schema"] = schema
         return env, jwks, schema, (verify_receipt if family == "render" else verify_transform_receipt)

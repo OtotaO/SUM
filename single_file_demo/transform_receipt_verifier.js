@@ -22,6 +22,44 @@ import { flattenedVerify, canonicalize } from "./vendor/sum-verify-deps.js";
 
 export const SUPPORTED_SCHEMA = "sum.transform_receipt.v1";
 
+// Payload fields REQUIRED by sum.transform_receipt.v1. `receipt.schema` sits OUTSIDE the
+// JWS and is therefore attacker-editable: relabelling another receipt
+// family to this schema makes the schema check above pass on a payload
+// this verifier has never validated. A genuine signature over a DIFFERENT
+// family's payload is still a genuine signature, so the crypto alone does
+// not close this. Same bug class as JWT alg-confusion.
+//
+// Kept byte-for-byte in step with the Python REQUIRED_PAYLOAD_FIELDS in
+// sum_engine_internal/transform_receipt/verifier.py. Cross-runtime accept/reject parity is the
+// contract the trust triangle asserts; a divergence here is a defect.
+export const REQUIRED_PAYLOAD_FIELDS = Object.freeze([
+  "transform",
+  "transform_id",
+  "input_hash",
+  "output_hash",
+  "parameters_hash",
+  "model",
+  "provider",
+  "signed_at",
+  "digital_source_type",
+]);
+
+function checkPayloadShape(payload) {
+  const missing = REQUIRED_PAYLOAD_FIELDS.filter(
+    (f) => !Object.prototype.hasOwnProperty.call(payload, f),
+  );
+  if (missing.length > 0) {
+    throw new VerifyError(
+      ERROR_CLASSES.MALFORMED_RECEIPT,
+      `payload declares schema ${SUPPORTED_SCHEMA} but is missing ` +
+        `required field(s) ${JSON.stringify(missing)}: refusing to verify ` +
+        `a payload of another receipt family ` +
+        `(schema is not covered by the signature)`,
+    );
+  }
+}
+
+
 export const KNOWN_CRIT_EXTENSIONS = new Set(["b64"]);
 
 export const ERROR_CLASSES = Object.freeze({
@@ -282,6 +320,11 @@ export async function verifyTransformReceipt(receipt, jwks, opts) {
   if (maxAgeSeconds !== null) {
     enforceSignedAtWindow(payload, maxAgeSeconds, maxFutureSkewSeconds);
   }
+
+  // AFTER the signature is proven, mirroring the Python ordering: it keeps
+  // the malformed_jws / signature_invalid precedence intact and does not
+  // leak payload shape to a caller without a valid signature.
+  checkPayloadShape(payload);
 
   return {
     verified: true,
