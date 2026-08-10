@@ -27,7 +27,7 @@
   },
   "scope_limits": [
     "n=16 systems is small; the bootstrap CI on the headline (0.70 [0.49, 0.83]) is wide.",
-    "System-level validity means the proxy ranks SYSTEMS sensibly; it does not upgrade the per-summary (pooled) validity of ~0.27-0.33.",
+    "System-level validity means the proxy ranks SYSTEMS sensibly; it does not upgrade the per-summary (pooled) validity of 0.267-0.291 against the meaning composite.",
     "Do not quote the 0.57-0.75 range without naming the aggregation level; that omission is exactly the overclaim-by-omission this card family exists to prevent."
   ],
   "reading_guidance": "Cite this card when comparing SUM's proxy to published system-level meta-evaluation numbers; cite the pooled card when the question is per-document trustworthiness."
