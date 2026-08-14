@@ -28,6 +28,27 @@ import { flattenedVerify, canonicalize } from "./vendor/sum-verify-deps.js";
 export const MEANING_RISK_SCHEMA = "sum.meaning_risk_receipt.v1";
 export const PERSPECTIVE_SCHEMA = "sum.perspective_risk_receipt.v1";
 
+// Fields that make a payload a member of its declared family rather than a
+// sibling. `schema` sits OUTSIDE the JWS and is attacker-editable, so a
+// genuine signature over another family's payload still verifies; PR #444
+// closed this for render and transform and left meaning, perspective and
+// chain open. This verifier is GENERIC over two schemas, so the required set
+// is keyed by schema: perspective carries groups /
+// marginal_risk_upper_bound_micro where meaning carries
+// risk_upper_bound_micro, and a single shared list would false-reject one of
+// them. Mirrors sum_verify/_meaning.py REQUIRED_PAYLOAD_FIELDS for the
+// meaning family.
+export const REQUIRED_PAYLOAD_FIELDS = Object.freeze({
+  [MEANING_RISK_SCHEMA]: Object.freeze([
+    "corpus_id", "scorer", "n", "method",
+    "risk_upper_bound_micro", "delta_micro", "loss_definition",
+  ]),
+  [PERSPECTIVE_SCHEMA]: Object.freeze([
+    "corpus_id", "scorer", "n", "method", "groups",
+    "marginal_risk_upper_bound_micro", "delta_micro", "loss_definition",
+  ]),
+});
+
 export const KNOWN_CRIT_EXTENSIONS = new Set(["b64"]);
 export const SUPPORTED_SIGNATURE_ALGORITHMS = new Set(["EdDSA"]);
 
@@ -222,6 +243,26 @@ export async function verifyMeaningEnvelope(receipt, jwks, supportedSchema) {
       ERROR_CLASSES.DISCLOSURE_MISSING,
       `payload.disclosure must be a non-empty string with visible text; got ${JSON.stringify(payload.disclosure)}`,
     );
+  }
+
+  // Receipt-family shape gate, AFTER the signature is proven, mirroring the
+  // Python ordering: it preserves the malformed_jws / signature_invalid
+  // precedence and does not leak payload shape to a caller without a valid
+  // signature.
+  const required = REQUIRED_PAYLOAD_FIELDS[supportedSchema];
+  if (required) {
+    const missingFields = required.filter(
+      (f) => !Object.prototype.hasOwnProperty.call(payload, f),
+    );
+    if (missingFields.length > 0) {
+      throw new VerifyError(
+        ERROR_CLASSES.MALFORMED_RECEIPT,
+        `payload declares schema ${supportedSchema} but is missing required ` +
+          `field(s) ${JSON.stringify(missingFields)}: refusing to verify a ` +
+          `payload of another receipt family ` +
+          `(schema is not covered by the signature)`,
+      );
+    }
   }
 
   return { verified: true, kid, protectedHeader, payload };

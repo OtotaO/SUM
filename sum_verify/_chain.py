@@ -114,7 +114,37 @@ def chain_id_for(hop_hashes: Sequence[str]) -> str:
     return hashlib.sha256(canonicalize(list(hop_hashes))).hexdigest()[:16]
 
 
+# Fields that make a payload a CHAIN receipt rather than a sibling family.
+# See the note in _meaning.py: `schema` is outside the signature, so a genuine
+# signature over another family's payload still verifies, and the shared
+# not_covered / disclosure gate cannot discriminate.
+REQUIRED_PAYLOAD_FIELDS = (
+    "chain_id",
+    "hops",
+    "n_hops",
+    "composition_rule",
+    "budget_micro",
+    "joint_delta_micro",
+)
+
+
+def _check_payload_shape(payload: object) -> None:
+    """Reject a payload that is not of this receipt family. Fails closed."""
+    if not isinstance(payload, dict):
+        raise ChainReceiptDisclosureError(
+            f"payload must be a JSON object, got {type(payload).__name__}"
+        )
+    missing = [f for f in REQUIRED_PAYLOAD_FIELDS if f not in payload]
+    if missing:
+        raise ChainReceiptDisclosureError(
+            "payload declares schema sum.chain_receipt.v1 but is missing "
+            f"required field(s) {missing}: refusing to verify a payload of "
+            "another receipt family (schema is not covered by the signature)"
+        )
+
+
 def _check_disclosures(payload: dict) -> None:
+    _check_payload_shape(payload)
     not_covered = payload.get("not_covered")
     if not isinstance(not_covered, list) or not not_covered:
         raise ChainReceiptDisclosureError(

@@ -130,3 +130,77 @@ def test_meaning_golden_still_verifies_under_its_own_verifier(meaning_golden, me
     sum_verify = pytest.importorskip("sum_verify")
     out = sum_verify.verify(meaning_golden, meaning_jwks)
     assert out is not None
+
+
+# ---------------------------------------------------------------------------
+# The OTHER half of the same defect, left open by PR #444.
+#
+# #444 gated render and transform. The original reproduction was the CHAIN
+# golden relabelled `sum.meaning_risk_receipt.v1` verifying end to end through
+# `python -m sum_verify`, and that path was untouched: sum_verify/_meaning.py
+# and _chain.py had no shape gate. It was live in the SHIPPED [verify] SDK,
+# the one surface with production status.
+#
+# The shared disclosure gate cannot catch it. BOTH families carry non-empty
+# not_covered and disclosure, which is exactly why the relabel passed.
+# ---------------------------------------------------------------------------
+
+@pytest.fixture(scope="module")
+def chain_jwks():
+    return _load(_CHAIN / "jwks.json")
+
+
+def test_sdk_rejects_chain_receipt_relabelled_as_meaning(chain_golden, chain_jwks):
+    """The exact original repro, against the shipped SDK.
+
+    Uses the CHAIN jwks deliberately: with the meaning jwks this dies at
+    unknown_kid before reaching the shape gate, which would make the test pass
+    for the wrong reason.
+    """
+    sum_verify = pytest.importorskip("sum_verify")
+    evil = _relabel(chain_golden, "sum.meaning_risk_receipt.v1")
+    with pytest.raises(Exception) as ei:
+        sum_verify.verify(evil, chain_jwks)
+    assert "another receipt family" in str(ei.value), (
+        f"rejected, but not by the shape gate: {type(ei.value).__name__}: {ei.value}"
+    )
+
+
+def test_sdk_rejects_meaning_receipt_relabelled_as_chain(meaning_golden, meaning_jwks):
+    sum_verify = pytest.importorskip("sum_verify")
+    evil = _relabel(meaning_golden, "sum.chain_receipt.v1")
+    with pytest.raises(Exception) as ei:
+        sum_verify.verify(evil, meaning_jwks)
+    assert "another receipt family" in str(ei.value)
+
+
+def test_pristine_chain_golden_still_verifies(chain_golden, chain_jwks):
+    """No regression on the committed chain golden."""
+    sum_verify = pytest.importorskip("sum_verify")
+    assert sum_verify.verify(chain_golden, chain_jwks) is not None
+
+
+def test_meaning_and_chain_required_sets_discriminate():
+    """The gate only works while the two field sets stay mutually non-subset."""
+    from sum_verify._chain import REQUIRED_PAYLOAD_FIELDS as C
+    from sum_verify._meaning import REQUIRED_PAYLOAD_FIELDS as M
+    m, c = set(M), set(C)
+    assert not m.issubset(c) and not c.issubset(m)
+
+
+def test_sdk_does_not_handle_perspective_so_the_gate_cannot_break_it():
+    """Pins WHY the Python gate uses one field list while the JS uses a map.
+
+    The JS verifier is generic over meaning AND perspective, and perspective
+    carries groups / marginal_risk_upper_bound_micro instead of
+    risk_upper_bound_micro, so a shared list would false-reject it. The Python
+    SDK does not accept perspective at all, so one list is safe there. If that
+    ever changes, this test fails and the Python gate must become a map too.
+    """
+    sum_verify = pytest.importorskip("sum_verify")
+    persp = _REPO / "fixtures" / "perspective_receipts" / "perspective_risk_receipt.golden.json"
+    if not persp.exists():
+        pytest.skip("perspective golden not present")
+    with pytest.raises(Exception) as ei:
+        sum_verify.verify(_load(persp), {"keys": []})
+    assert "unsupported receipt schema" in str(ei.value).lower()

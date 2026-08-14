@@ -99,6 +99,38 @@ def losses_hash(losses: Sequence[float]) -> str:
     ).hexdigest()
 
 
+
+# Fields that make a payload a MEANING RISK receipt rather than a sibling
+# family. Deliberately narrow: every one is structurally guaranteed by the
+# format and none exists on sum.chain_receipt.v1, so the two discriminate
+# without risking a false reject on an unusual but valid receipt.
+REQUIRED_PAYLOAD_FIELDS = (
+    "corpus_id",
+    "scorer",
+    "n",
+    "method",
+    "risk_upper_bound_micro",
+    "delta_micro",
+    "loss_definition",
+)
+
+
+def _check_payload_shape(payload: object) -> None:
+    """Reject a payload that is not of this receipt family. Fails closed."""
+    if not isinstance(payload, dict):
+        raise MeaningReceiptDisclosureError(
+            f"payload must be a JSON object, got {type(payload).__name__}"
+        )
+    missing = [f for f in REQUIRED_PAYLOAD_FIELDS if f not in payload]
+    if missing:
+        raise MeaningReceiptDisclosureError(
+            "payload declares schema sum.meaning_risk_receipt.v1 but is "
+            f"missing required field(s) {missing}: refusing to verify a "
+            "payload of another receipt family (schema is not covered by "
+            "the signature)"
+        )
+
+
 def _has_visible_text(s: str) -> bool:
     """True iff ``s`` has a character that is neither whitespace nor a
     zero-width / format / control character. ``str.strip()`` does not remove
@@ -200,6 +232,19 @@ def verify_meaning_risk_receipt(
         max_age_seconds=max_age_seconds,
     )
     payload = result.payload
+
+    # ---- receipt-family shape gate (BEFORE the disclosure checks) ----
+    # `schema` sits OUTSIDE the JWS and is attacker-editable, so a genuine
+    # signature over ANOTHER family's payload still verifies. PR #444 closed
+    # this for render and transform; meaning and chain were left open, and a
+    # chain receipt relabelled `sum.meaning_risk_receipt.v1` verified end to
+    # end through this SDK with chain_id / budget_micro / hops silently
+    # skipped. The disclosure gate below cannot catch it: BOTH families carry
+    # not_covered and disclosure, which is exactly why the relabel passed.
+    #
+    # Requiring risk_upper_bound_micro here also converts a later bare
+    # subscript (KeyError on a payload that omits it) into a clean verdict.
+    _check_payload_shape(payload)
 
     # ---- structural disclosure invariants (always, losses or not) ----
     not_covered = payload.get("not_covered")
