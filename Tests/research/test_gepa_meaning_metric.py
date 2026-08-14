@@ -10,6 +10,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 # examples/ is not a package; put it on the path so the adapter is importable.
 _EXAMPLES = Path(__file__).resolve().parents[2] / "examples"
 sys.path.insert(0, str(_EXAMPLES))
@@ -95,3 +97,53 @@ def test_lexical_scorer_has_no_readout_and_feedback_flags_limitation():
     assert sig.readout is None  # lexical scorer has no .explain
     assert "cannot itemise" in sig.feedback
     assert 0.0 <= sig.score <= 1.0
+
+
+# ---------------------------------------------------------------------------
+# Regression pin: a prediction with none of the probed fields must RAISE, not
+# have its Python repr scored.
+#
+# The old fallback was `return str(pred)`. A dspy Prediction whose output field
+# is named something unexpected would have "Prediction(foo='...')" scored
+# against the source; a faithfulness judge rates that as near-total loss, so
+# the optimiser saw score ~0 on a perfectly faithful transform and steered
+# away from it. Silently. Inside a THIRD PARTY's optimisation loop.
+#
+# This is the failure the project exists to prevent, aimed at the adoption
+# channel chosen precisely because of the honesty. Fail loudly instead.
+# ---------------------------------------------------------------------------
+
+def test_unreadable_prediction_raises_instead_of_scoring_its_repr():
+    from examples.gepa_meaning_metric import _extract_pred
+
+    class Odd:
+        def __init__(self):
+            self.unexpected_field = "a perfectly good summary"
+
+        def __str__(self):
+            return "Odd(unexpected_field='a perfectly good summary')"
+
+    with pytest.raises(KeyError) as ei:
+        _extract_pred(Odd(), None)
+    msg = str(ei.value)
+    assert "pred_key" in msg, "the error must tell the caller how to fix it"
+    assert "Odd" in msg, "the error must name the offending type"
+
+
+def test_explicit_pred_key_still_reads_an_unusual_field():
+    """The escape hatch the error message points at must actually work."""
+    from examples.gepa_meaning_metric import _extract_pred
+
+    class Odd:
+        def __init__(self):
+            self.unexpected_field = "a perfectly good summary"
+
+    assert _extract_pred(Odd(), "unexpected_field") == "a perfectly good summary"
+
+
+def test_default_fields_still_resolve_without_pred_key():
+    """No regression: the happy path must not have become stricter."""
+    from examples.gepa_meaning_metric import _extract_pred
+
+    assert _extract_pred({"summary": "s"}, None) == "s"
+    assert _extract_pred("already a string", None) == "already a string"
