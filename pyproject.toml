@@ -128,7 +128,7 @@ research = ["numpy>=1.24.0", "scipy>=1.10.0"]
 # code path never runs in the per-PR suite — a break would ship silently.
 # Lift the ceiling only with a green judge-smoke run
 # (.github/workflows/judge-smoke.yml).
-judge = ["transformers>=4.30.0,<5", "torch>=2.0.0", "sentencepiece>=0.1.99"]
+judge = ["transformers>=4.30.0,<6", "torch>=2.0.0", "sentencepiece>=0.1.99"]
 # Omni-format adapter. Markdown is the canonical pivot for the
 # attest pipeline: any input format -> markdown -> existing
 # extract/state/bundle path. Source URI anchors to the original
