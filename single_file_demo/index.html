@@ -957,15 +957,25 @@ async function verifyEd25519InBrowser(b) {
 // Report the signatures this bundle carries. HMAC cannot be verified
 // in-browser (no key input); Ed25519 is self-contained and, when the
 // browser supports it, is actually verified by verifyEd25519InBrowser.
+// Each entry is { status, label }: `status` is the machine-readable
+// verdict that security decisions branch on, `label` is presentation
+// only. These MUST stay separate. This function previously returned
+// bare label strings, and verifyBundle re-derived the security verdict
+// by testing whether the label started with '✗' — so rewording,
+// localising, or re-glyphing a user-facing sentence would silently turn
+// a checked-and-FAILED signature into ok:true. That is a fail-open in
+// the page's only cryptographic gate, reachable by a copy edit.
+// verifyEd25519InBrowser already returns a clean enum; the bug was
+// throwing it away. Never branch on `label`.
 async function inspectSignatures(b) {
   const out = {};
   if (typeof b.signature === 'string' && b.signature && b.signature !== 'unsigned:v0') {
-    out.hmac = 'present (use `sum verify --signing-key …`)';
+    out.hmac = { status: 'present', label: 'present (use `sum verify --signing-key …`)' };
   }
   const ed = await verifyEd25519InBrowser(b);
-  if (ed === 'verified') out.ed25519 = '✓ verified in-browser (SubtleCrypto)';
-  else if (ed === 'invalid') out.ed25519 = '✗ INVALID — signature does not match public key';
-  else if (ed === 'unsupported') out.ed25519 = 'present (browser lacks Ed25519; use `sum verify` or a W3C VC 2.0 verifier)';
+  if (ed === 'verified') out.ed25519 = { status: 'verified', label: '✓ verified in-browser (SubtleCrypto)' };
+  else if (ed === 'invalid') out.ed25519 = { status: 'invalid', label: '✗ INVALID — signature does not match public key' };
+  else if (ed === 'unsupported') out.ed25519 = { status: 'unsupported', label: 'present (browser lacks Ed25519; use `sum verify` or a W3C VC 2.0 verifier)' };
   return out;
 }
 
@@ -999,7 +1009,7 @@ async function verifyBundle(b) {
       return { ok: false, reason: `state mismatch: claimed ${b.state_integer.slice(0,32)}… vs reconstructed ${reconstructed.slice(0,32)}…` };
     }
     const signatures = await inspectSignatures(b);
-    if (signatures.ed25519 && signatures.ed25519.startsWith('✗')) {
+    if (signatures.ed25519 && signatures.ed25519.status === 'invalid') {
       // Ed25519 was actually checked and failed — a forged bundle with
       // a valid tome structure but a tampered signature must not pass.
       return {
@@ -1449,8 +1459,9 @@ $('verify').addEventListener('click', async () => {
     // Show which cryptographic signatures the bundle CARRIES but the
     // browser did NOT verify. Truthful: structure is verified; these
     // require the CLI or a W3C verifier and are reported, not claimed.
+    // Render `label` only. `status` is for security decisions, never display.
     const notes = Object.entries(r.signatures).map(
-      ([k, v]) => `<div class="sig-note">• ${k}: ${v}</div>`
+      ([k, v]) => `<div class="sig-note">• ${k}: ${v.label}</div>`
     ).join('');
     if (notes) html += notes;
   }
