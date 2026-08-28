@@ -8,7 +8,7 @@ This is the integration surface for **systems calling SUM** — the most common 
 
 The server is **fail-closed by default**. Eight hardening properties hold under adversarial input from a prompt-injected LLM client:
 
-1. **Input size caps.** `text` is capped at 200 000 chars. Bundles are capped at 10 MB tome, 100 000 axioms, 1 000 000 state-integer digits. Oversized inputs return `error_class: "input_too_large"`.
+1. **Input size caps.** `text` is capped at 200 000 chars. Bundles are capped at 10 MB tome, 100 000 axioms, 1 000 000 state-integer digits. On the meaning layer: `losses` at 100 000 entries, `hops` / `hop_envelopes` at 64, `versions` at 16, `pairs` at 1 000 entries **and** 10 000 000 chars of prose in total, any JWKS at 65 keys (one per hop plus the chain key). Oversized inputs return `error_class: "input_too_large"` and are **refused, never truncated** — see the note under the meaning-layer table.
 2. **Tagged error classes.** Every failure carries `error_class` from a fixed enum: `schema | signature | structural | input_too_large | extractor_unavailable | network_disallowed | revoked | internal`. Branch on the tag, never on the `errors[i]` substring.
 3. **Network opt-in.** The LLM extractor is disabled unless `SUM_MCP_ALLOW_NETWORK=1` was set when the server started. Even then, `extractor="llm"` must be explicit per call. Prevents a prompt-injected client from spending the user's API tokens.
 4. **Concurrency-safe.** spaCy's nlp pipeline is serialised behind an asyncio lock; concurrent `extract`/`attest` calls do not race.
@@ -236,6 +236,19 @@ Five additional tools expose the receipt family — the layer built for
 | `depth_frontier` | The whole faithful→compressed ladder with per-rung diffs and the loss-per-compression slope (`sum depth-diff`). | `[research]` (+`[judge]`) |
 | `mint_meaning_receipt` | Guided issuance of a `sum.meaning_risk_receipt.v1` — BYO losses (with a named `scorer_name`) or pairs scored in-server. Self-verifies through the real `sum_verify` path before returning; small-`n` and vacuous-bound warnings ride the result. | `[research]` + `[verify]` |
 | `mint_chain_receipt` | Compose ≥2 hop receipts into a `sum.chain_receipt.v1` with the integer-exact Bonferroni budget, optional direct end-to-end leg, and the mandatory `budget_scope` honesty field. Self-verifies before returning. | `[research]` + `[verify]` |
+
+**Corpus caps, refused not truncated.** `mint_meaning_receipt`'s in-server
+`pairs` mode is capped at **1 000 pairs** and **10 000 000 chars** of prose
+per call — >15x the largest corpus this project has ever certified (n=64 in
+both committed binding-gate goldens, 728 462 chars) and two orders below the
+`losses` cap, because each pair costs a model-judge call rather than arriving
+as a pre-computed number. Over either limit the call is refused with
+`error_class: "input_too_large"` naming the limit. Nothing is ever silently
+trimmed: a receipt minted over a shortened corpus would carry a valid
+signature over a **different corpus than the `corpus_id` it names**. A larger
+corpus is scored offline and minted through the BYO `losses` path (<= 100 000
+entries, with `scorer_name`). The size gate runs before the optional-extra
+and judge loads, so an oversized request costs nothing.
 
 **Key policy (mint tools).** BYO private key ONLY: the server never
 generates, stores, or logs key material (the stderr audit logs shapes, not
