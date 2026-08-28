@@ -1031,6 +1031,18 @@ async function verifyBundle(b) {
 // ─── UI wiring ───────────────────────────────────────────────────────
 
 const $ = id => document.getElementById(id);
+
+// Escape a value before it is interpolated into an innerHTML template.
+// Every dynamic value in the two templates below is attacker reachable:
+// triple components are derived from pasted prose, and the verify panel's
+// reason string, signature keys, and signature labels all come straight out
+// of a bundle the user was handed by someone else. The live CSP ships
+// script-src 'unsafe-inline', so an injected `onerror=` handler executes.
+// A trust surface that can be made to run someone else's script while it
+// is displaying a verdict is worse than no trust surface at all.
+const escHtml = v => String(v).replace(/[&<>"']/g, c => (
+  { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+));
 let lastBundle = null;
 const ATTEST_LABEL = $('attest').innerHTML;  // preserve label + kbd hint
 
@@ -1128,7 +1140,7 @@ $('attest').addEventListener('click', async () => {
       const li = document.createElement('li');
       li.className = 'animate-in';
       li.style.animationDelay = `${delay}ms`;
-      li.innerHTML = `${s} <b>${p}</b> ${o} <span class="prime">#${prime.toString().slice(0, 16)}…</span>`;
+      li.innerHTML = `${escHtml(s)} <b>${escHtml(p)}</b> ${escHtml(o)} <span class="prime">#${prime.toString().slice(0, 16)}…</span>`;
       listEl.appendChild(li);
       delay += 24;  // cascade effect — brief, not annoying
     }
@@ -1446,22 +1458,22 @@ $('verify').addEventListener('click', async () => {
   let bundle;
   try { bundle = JSON.parse(raw); }
   catch (e) {
-    resultEl.innerHTML = `<span class="bad">✗ JSON parse error: ${e.message}</span>`;
+    resultEl.innerHTML = `<span class="bad">✗ JSON parse error: ${escHtml(e.message)}</span>`;
     return;
   }
 
   resultEl.textContent = 'verifying…';
   const r = await verifyBundle(bundle);
   let html = r.ok
-    ? `<span class="good">✓ ${r.reason}</span>`
-    : `<span class="bad">✗ ${r.reason}</span>`;
+    ? `<span class="good">✓ ${escHtml(r.reason)}</span>`
+    : `<span class="bad">✗ ${escHtml(r.reason)}</span>`;
   if (r.ok && r.signatures) {
     // Show which cryptographic signatures the bundle CARRIES but the
     // browser did NOT verify. Truthful: structure is verified; these
     // require the CLI or a W3C verifier and are reported, not claimed.
     // Render `label` only. `status` is for security decisions, never display.
     const notes = Object.entries(r.signatures).map(
-      ([k, v]) => `<div class="sig-note">• ${k}: ${v.label}</div>`
+      ([k, v]) => `<div class="sig-note">• ${escHtml(k)}: ${escHtml(v.label)}</div>`
     ).join('');
     if (notes) html += notes;
   }
@@ -1496,6 +1508,15 @@ $('verify').addEventListener('click', async () => {
   document.addEventListener("sum:render", () => {
     verifyBtn.disabled = false;
   });
+
+  // Module scope: redeclared rather than depending on a classic script's
+  // top-level binding surviving. Values interpolated below come from a
+  // receipt, a JWKS, or an error string, and in the paste panels the visitor
+  // supplies BOTH the receipt and the JWKS, so a validly signed receipt with
+  // an attacker chosen kid / scorer / not_covered is trivial to mint.
+  const esc = v => String(v).replace(/[&<>"']/g, c => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+  ));
 
   function showResult(kind, html) {
     resultEl.style.display = "";
@@ -1539,9 +1560,9 @@ $('verify').addEventListener('click', async () => {
       showResult(
         "ok",
         `<div><strong>✓ Receipt verified.</strong> ` +
-          `Issuer signed (kid=<code>${result.kid}</code>) using ` +
-          `<code>${ph.alg}</code> with detached payload (` +
-          `<code>b64=false</code>, <code>crit=${JSON.stringify(ph.crit)}</code>).</div>` +
+          `Issuer signed (kid=<code>${esc(result.kid)}</code>) using ` +
+          `<code>${esc(ph.alg)}</code> with detached payload (` +
+          `<code>b64=false</code>, <code>crit=${esc(JSON.stringify(ph.crit))}</code>).</div>` +
           `<div style="margin-top:6px;opacity:0.75;">` +
           `Verified in-page using vendored <code>jose</code> + <code>canonicalize</code> ` +
           `(no CDN; same bytes the offline single-file demo carries). ` +
@@ -1552,8 +1573,8 @@ $('verify').addEventListener('click', async () => {
       const cls = e instanceof VerifyError ? e.errorClass : "uncategorized_error";
       showResult(
         "reject",
-        `<div><strong>✗ Verification failed.</strong> error class: <code>${cls}</code>.</div>` +
-          `<div style="margin-top:6px;opacity:0.75;">${e.message}</div>` +
+        `<div><strong>✗ Verification failed.</strong> error class: <code>${esc(cls)}</code>.</div>` +
+          `<div style="margin-top:6px;opacity:0.75;">${esc(e.message)}</div>` +
           `<div style="margin-top:6px;opacity:0.75;">` +
           `Receipts that fail this verifier MUST NOT be trusted as ` +
           `provenance attestations. See ` +
@@ -1589,6 +1610,15 @@ $('verify').addEventListener('click', async () => {
     "The bound is over a named proxy that tracks human judgment only modestly " +
     "(Spearman rho ~0.27-0.33 on SummEval). Not a substitute for human review.";
 
+  // Module scope: redeclared rather than depending on a classic script's
+  // top-level binding surviving. Values interpolated below come from a
+  // receipt, a JWKS, or an error string, and in the paste panels the visitor
+  // supplies BOTH the receipt and the JWKS, so a validly signed receipt with
+  // an attacker chosen kid / scorer / not_covered is trivial to mint.
+  const esc = v => String(v).replace(/[&<>"']/g, c => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+  ));
+
   function show(kind, html) {
     out.style.display = "";
     const border = {
@@ -1610,7 +1640,7 @@ $('verify').addEventListener('click', async () => {
       jwksEl.value = j.trim();
       show("err", "Loaded the BillSum binding-gate golden (CC0). Click <strong>Verify (Stage A)</strong>.");
     } catch (e) {
-      show("err", `Could not load sample (the page must be served, not opened as file://): ${e.message}`);
+      show("err", `Could not load sample (the page must be served, not opened as file://): ${esc(e.message)}`);
     }
   });
 
@@ -1620,7 +1650,7 @@ $('verify').addEventListener('click', async () => {
       receipt = JSON.parse(recEl.value);
       jwks = JSON.parse(jwksEl.value);
     } catch (e) {
-      show("err", `<strong>Invalid JSON.</strong> ${e.message}`);
+      show("err", `<strong>Invalid JSON.</strong> ${esc(e.message)}`);
       return;
     }
     const schema = receipt && receipt.schema;
@@ -1629,7 +1659,7 @@ $('verify').addEventListener('click', async () => {
       schema === PERSPECTIVE_SCHEMA ? verifyPerspectiveReceipt : null;
     if (!verifier) {
       show("reject",
-        `<strong>✗ Unsupported schema</strong> <code>${schema}</code>. ` +
+        `<strong>✗ Unsupported schema</strong> <code>${esc(schema)}</code>. ` +
         `This box handles <code>${MEANING_RISK_SCHEMA}</code> / <code>${PERSPECTIVE_SCHEMA}</code>.`);
       return;
     }
@@ -1641,13 +1671,13 @@ $('verify').addEventListener('click', async () => {
       const bound = typeof p.risk_upper_bound_micro === "number"
         ? (p.risk_upper_bound_micro / 1e6).toFixed(4) : "n/a";
       const nc = Array.isArray(p.not_covered) ? p.not_covered.join(", ") : "—";
-      const ctrl = ("controlled" in p) ? ` · controlled: <code>${p.controlled}</code>` : "";
+      const ctrl = ("controlled" in p) ? ` · controlled: <code>${esc(p.controlled)}</code>` : "";
       show("ok",
-        `<div><strong>✓ Stage A verified.</strong> Issuer signed (kid=<code>${res.kid}</code>), ` +
-          `schema <code>${schema}</code>, disclosure present.</div>` +
-        `<div style="margin-top:6px;">scorer: <code>${p.scorer ?? "?"}</code> · ` +
+        `<div><strong>✓ Stage A verified.</strong> Issuer signed (kid=<code>${esc(res.kid)}</code>), ` +
+          `schema <code>${esc(schema)}</code>, disclosure present.</div>` +
+        `<div style="margin-top:6px;">scorer: <code>${esc(p.scorer ?? "?")}</code> · ` +
           `stated bound (NOT replayed here): <code>≤ ${bound}</code>${ctrl}</div>` +
-        `<div style="margin-top:6px;opacity:0.8;">not&nbsp;covered: ${nc}</div>` +
+        `<div style="margin-top:6px;opacity:0.8;">not&nbsp;covered: ${esc(nc)}</div>` +
         `<div style="margin-top:6px;opacity:0.75;">${PROXY_CAVEAT}</div>` +
         `<div style="margin-top:6px;opacity:0.75;">Stage A = signature + schema + disclosure. ` +
           `The conformal bound is <em>replayed</em> offline by ` +
@@ -1656,8 +1686,8 @@ $('verify').addEventListener('click', async () => {
     } catch (e) {
       const cls = e instanceof VerifyError ? e.errorClass : "uncategorized_error";
       show("reject",
-        `<div><strong>✗ Verification failed.</strong> error class: <code>${cls}</code>.</div>` +
-        `<div style="margin-top:6px;opacity:0.75;">${e.message}</div>`);
+        `<div><strong>✗ Verification failed.</strong> error class: <code>${esc(cls)}</code>.</div>` +
+        `<div style="margin-top:6px;opacity:0.75;">${esc(e.message)}</div>`);
     } finally {
       btn.disabled = false;
     }
