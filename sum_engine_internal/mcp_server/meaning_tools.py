@@ -58,6 +58,26 @@ MAX_TEXT_CHARS: int = 200_000
 MAX_LOSSES: int = 100_000       # far above any real corpus, below DoS
 MAX_HOPS: int = 64              # chains are short; 64 is generous
 MAX_VERSIONS: int = 16          # frontier rungs per call
+# `pairs` is the JUDGED twin of `losses` — one pair yields exactly one loss —
+# but every entry costs a model-judge call over prose instead of arriving as a
+# pre-computed number, so it cannot share MAX_LOSSES. 1 000 is >15x the
+# largest corpus this project has ever certified (n=64 in BOTH committed
+# binding-gate goldens, n=16 in the demo golden) and sits in the existing tier
+# structure: 16 judged prose rungs < 64 hops < 1 000 judged pairs << 100 000
+# cheap numbers. A caller with a genuinely larger corpus scores it offline and
+# mints through the BYO-`losses` path, which stays capped at MAX_LOSSES.
+MAX_PAIRS: int = 1_000
+# The count cap alone still admits 1 000 x 2 x MAX_TEXT_CHARS = 400 MB of
+# prose, so the aggregate is capped too, at the same value as server.py's
+# MAX_TOME_CHARS — the largest single-call text volume this server already
+# accepts. (Duplicated rather than imported: server.py imports this module.)
+# ~13.7x the 728 462 chars of the BillSum binding-gate corpus.
+MAX_PAIRS_TOTAL_CHARS: int = 10_000_000
+# Derived, not invented: a chain carries at most MAX_HOPS hops, each possibly
+# signed by a distinct key, plus the chain key itself. Above that a caller-
+# supplied JWKS is not a key directory, it is a work amplifier (the hop-JWKS
+# merge below is a linear scan per key).
+MAX_JWKS_KEYS: int = MAX_HOPS + 1
 
 # One lock for every model-judge invocation (torch inference is not
 # assumed re-entrant-safe). Verification never takes this lock.
@@ -167,6 +187,76 @@ def _validate_losses(losses: Any) -> "tuple[ErrorClass, str] | None":
             return (ErrorClass.SCHEMA, "losses entries must be numbers")
         if not (0.0 <= float(x) <= 1.0):
             return (ErrorClass.SCHEMA, "losses entries must lie in [0, 1]")
+    return None
+
+
+def _validate_pairs(pairs: Any) -> "tuple[ErrorClass, str] | None":
+    """Shape + size gate for the judged corpus, mirroring ``_validate_losses``.
+
+    Called BEFORE the optional-extra gates and before any judge loads, which
+    is the doctrine server.py already states for its own caps: reject
+    oversized input before any extractor runs.
+
+    Fails CLOSED and never truncates. Silent truncation here would be the
+    worst bug this surface could have: the receipt names ``corpus_id`` and
+    binds a bound to the losses actually scored, so minting over a silently
+    shortened corpus would certify a DIFFERENT corpus than the caller named,
+    with a valid signature over it.
+    """
+    if not isinstance(pairs, list) or not pairs or not all(
+        isinstance(p, dict) and isinstance(p.get("source"), str)
+        and isinstance(p.get("rendering"), str)
+        for p in pairs
+    ):
+        return (
+            ErrorClass.SCHEMA,
+            'pairs must be a non-empty list of {"source": str, '
+            '"rendering": str}',
+        )
+    if len(pairs) > MAX_PAIRS:
+        return (
+            ErrorClass.INPUT_TOO_LARGE,
+            f"pairs exceeds {MAX_PAIRS} entries (got {len(pairs)}); each "
+            "entry costs a model-judge call. Nothing is truncated — a "
+            "receipt minted over a shortened corpus would certify a "
+            "different corpus than the one it names. Score a larger corpus "
+            f"offline and mint through the BYO losses path (<= {MAX_LOSSES} "
+            "entries, with scorer_name).",
+        )
+    total_chars = 0
+    for i, p in enumerate(pairs):
+        for field in ("source", "rendering"):
+            err = _validate_prose(f"pairs[{i}].{field}", p[field])
+            if err is not None:
+                return err
+            total_chars += len(p[field])
+    if total_chars > MAX_PAIRS_TOTAL_CHARS:
+        return (
+            ErrorClass.INPUT_TOO_LARGE,
+            f"pairs total prose exceeds {MAX_PAIRS_TOTAL_CHARS} chars "
+            f"(got {total_chars}); split the corpus and mint per part, or "
+            "score offline and use the BYO losses path. Nothing is "
+            "truncated.",
+        )
+    return None
+
+
+def _validate_jwks_size(name: str, jwks: Any) -> "tuple[ErrorClass, str] | None":
+    """Cap a caller-supplied key list at ``MAX_JWKS_KEYS``.
+
+    Only fires when ``keys`` is actually a list: a missing / non-list ``keys``
+    stays with the verifier's existing MALFORMED_JWKS taxonomy so the error
+    class does not shift under this change.
+    """
+    if isinstance(jwks, dict):
+        keys = jwks.get("keys")
+        if isinstance(keys, list) and len(keys) > MAX_JWKS_KEYS:
+            return (
+                ErrorClass.INPUT_TOO_LARGE,
+                f"{name}.keys exceeds {MAX_JWKS_KEYS} entries "
+                f"(got {len(keys)}); a chain needs at most one key per hop "
+                f"(<= {MAX_HOPS}) plus the chain key.",
+            )
     return None
 
 
@@ -287,7 +377,8 @@ def register_meaning_tools(mcp: Any) -> None:
         Args:
             receipt: The signed envelope (dict with ``schema``/``kid``/
                 ``payload``/``jws``).
-            jwks: Issuer public JWKS ``{"keys": [...]}``.
+            jwks: Issuer public JWKS ``{"keys": [...]}``, at most
+                ``MAX_JWKS_KEYS`` keys.
             losses: Optional committed loss vector — replays a
                 meaning-risk receipt's bound, or a chain's end_to_end leg.
             hops: Optional ordered per-hop envelopes for a chain receipt
@@ -309,6 +400,9 @@ def register_meaning_tools(mcp: Any) -> None:
                     "verify_receipt", t0, ErrorClass.SCHEMA,
                     "receipt and jwks must both be dicts", verified=False,
                 )
+            jerr = _validate_jwks_size("jwks", jwks)
+            if jerr is not None:
+                return error_result("verify_receipt", t0, *jerr, verified=False)
             import sum_verify
 
             schema = receipt.get("schema")
@@ -541,7 +635,14 @@ def register_meaning_tools(mcp: Any) -> None:
         The MCP analogue of ``sum mint-meaning``. Two modes: BYO ``losses``
         (requires ``scorer_name`` naming the judge that produced them), or
         ``pairs`` = [{"source":..., "rendering":...}] scored here under
-        ``scorer`` (judge lock applies). The receipt self-verifies through
+        ``scorer`` (judge lock applies). ``pairs`` is capped at
+        ``MAX_PAIRS`` (1 000) entries and ``MAX_PAIRS_TOTAL_CHARS``
+        (10 000 000) chars of prose in total; over either, the call is
+        REFUSED with ``error_class="input_too_large"`` — never truncated,
+        because a receipt over a trimmed corpus would certify a different
+        corpus than the ``corpus_id`` it names. Larger corpora go through
+        the BYO ``losses`` path (<= ``MAX_LOSSES``).
+        The receipt self-verifies through
         the sum_verify path before it is returned; if that fails you get an
         error, never a bad receipt. This server NEVER generates or stores
         keys — supply an Ed25519 private JWK; only the derived public JWKS
@@ -572,6 +673,13 @@ def register_meaning_tools(mcp: Any) -> None:
                     "provide exactly one of losses (BYO, with scorer_name) "
                     "or pairs (scored here)",
                 )
+            if pairs is not None:
+                # Size gate BEFORE the extras / judge load: an oversized
+                # corpus is rejected before any dependency or model is
+                # touched, and never silently trimmed.
+                perr = _validate_pairs(pairs)
+                if perr is not None:
+                    return error_result("mint_meaning_receipt", t0, *perr)
             if method not in {"auto", "hoeffding", "clopper_pearson", "empirical_bernstein"}:
                 return error_result(
                     "mint_meaning_receipt", t0, ErrorClass.SCHEMA,
@@ -613,21 +721,8 @@ def register_meaning_tools(mcp: Any) -> None:
                 loss_vec = [float(x) for x in losses]
                 judge_name, judge_version = scorer_name, scorer_version
             else:
-                if not isinstance(pairs, list) or not pairs or not all(
-                    isinstance(p, dict) and isinstance(p.get("source"), str)
-                    and isinstance(p.get("rendering"), str)
-                    for p in pairs
-                ):
-                    return error_result(
-                        "mint_meaning_receipt", t0, ErrorClass.SCHEMA,
-                        'pairs must be a non-empty list of {"source": str, '
-                        '"rendering": str}',
-                    )
-                for i, p in enumerate(pairs):
-                    for field in ("source", "rendering"):
-                        err = _validate_prose(f"pairs[{i}].{field}", p[field])
-                        if err is not None:
-                            return error_result("mint_meaning_receipt", t0, *err)
+                # pairs were shape- and size-validated above, before the
+                # extras gates.
                 loaded, serr = _load_scorer(scorer)
                 if serr is not None:
                     return error_result("mint_meaning_receipt", t0, *serr)
@@ -726,7 +821,8 @@ def register_meaning_tools(mcp: Any) -> None:
         budget bounds the SUM of per-hop expected losses, NOT the
         end-to-end loss (directed loss, no triangle inequality). The chain
         self-verifies (with ``hops_jwks`` merged in when the hops were
-        signed by other keys) before it is returned. BYO key only.
+        signed by other keys; at most ``MAX_JWKS_KEYS`` keys) before it is
+        returned. BYO key only.
 
         Returns:
             Success: ``{receipt, public_jwks, verdict, concurrency}``.
@@ -757,6 +853,9 @@ def register_meaning_tools(mcp: Any) -> None:
                     "mint_chain_receipt", t0, ErrorClass.INPUT_TOO_LARGE,
                     f"hop_envelopes exceeds {MAX_HOPS} entries",
                 )
+            jerr = _validate_jwks_size("hops_jwks", hops_jwks)
+            if jerr is not None:
+                return error_result("mint_chain_receipt", t0, *jerr)
             if end_to_end_losses is not None:
                 lerr = _validate_losses(end_to_end_losses)
                 if lerr is not None:

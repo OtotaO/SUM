@@ -291,6 +291,113 @@ def test_mint_requires_exactly_one_evidence_mode(server, keypair):
     assert "exactly one" in out["errors"][0]
 
 
+def test_mint_caps_pair_count(server, keypair):
+    """The judged corpus is capped by COUNT. Fail closed, name the limit,
+    never truncate: a receipt minted over a silently shortened corpus would
+    certify a different corpus than the ``corpus_id`` it names."""
+    from sum_engine_internal.mcp_server.meaning_tools import MAX_PAIRS
+    fn = _tool(server, "mint_meaning_receipt")
+    out = asyncio.run(
+        fn(
+            private_jwk=keypair, kid="k", corpus_id="c", transform="t",
+            loss_definition="l",
+            pairs=[{"source": "a source.", "rendering": "a rendering."}]
+                  * (MAX_PAIRS + 1),
+        )
+    )
+    assert out["error_class"] == "input_too_large"
+    assert str(MAX_PAIRS) in out["errors"][0]
+    # No receipt escapes on the refusal path.
+    assert "receipt" not in out
+
+
+def test_mint_caps_pair_total_chars(server, keypair):
+    """Count alone is not enough: MAX_PAIRS entries each at the per-field
+    prose cap would still be hundreds of MB. The aggregate cap fires on a
+    pair list that is well under the count cap."""
+    from sum_engine_internal.mcp_server.meaning_tools import (
+        MAX_PAIRS,
+        MAX_PAIRS_TOTAL_CHARS,
+        MAX_TEXT_CHARS,
+    )
+    fn = _tool(server, "mint_meaning_receipt")
+    n = MAX_PAIRS_TOTAL_CHARS // (2 * MAX_TEXT_CHARS) + 1  # 26 pairs
+    assert n <= MAX_PAIRS  # the COUNT cap must not be what fires here
+    big = {"source": "x" * MAX_TEXT_CHARS, "rendering": "y" * MAX_TEXT_CHARS}
+    out = asyncio.run(
+        fn(
+            private_jwk=keypair, kid="k", corpus_id="c", transform="t",
+            loss_definition="l", pairs=[dict(big) for _ in range(n)],
+        )
+    )
+    assert out["error_class"] == "input_too_large"
+    assert str(MAX_PAIRS_TOTAL_CHARS) in out["errors"][0]
+    assert "receipt" not in out
+
+
+def test_real_binding_gate_corpus_passes_the_pair_caps():
+    """The largest corpus this project has ever certified — the committed
+    BillSum binding-gate corpus, n=64 — sails through both caps untouched.
+    This is what makes the numbers honest rather than arbitrary."""
+    from sum_engine_internal.mcp_server.meaning_tools import _validate_pairs
+    corpus = _load(_MEANING_FIX, "corpus_billsum_test_first64.json")["pairs"]
+    assert len(corpus) == 64
+    assert _validate_pairs(corpus) is None
+
+
+def test_mint_normal_pair_count_is_not_capped(server, keypair):
+    """A normal-sized pairs request passes the size gate and reaches the
+    scorer gate. scorer='lexical' is used so the assertion is deterministic
+    everywhere (no model load, no [judge] extra): the rejection that comes
+    back is the scorer policy, NOT the cap."""
+    fn = _tool(server, "mint_meaning_receipt")
+    out = asyncio.run(
+        fn(
+            private_jwk=keypair, kid="k", corpus_id="c", transform="t",
+            loss_definition="l",
+            pairs=[
+                {"source": f"source {i}.", "rendering": f"rendering {i}."}
+                for i in range(3)
+            ],
+            scorer="lexical",
+        )
+    )
+    assert out["error_class"] == "schema"
+    assert "scorer must be" in out["errors"][0]
+
+
+def test_verify_receipt_caps_jwks_key_count(server, billsum_golden):
+    """An oversized caller JWKS is a work amplifier, not a key directory."""
+    from sum_engine_internal.mcp_server.meaning_tools import MAX_JWKS_KEYS
+    fn = _tool(server, "verify_receipt")
+    key = billsum_golden["jwks"]["keys"][0]
+    fat = {"keys": [dict(key, kid=f"k{i}") for i in range(MAX_JWKS_KEYS + 1)]}
+    out = asyncio.run(fn(billsum_golden["receipt"], fat))
+    assert out["error_class"] == "input_too_large"
+    assert out["verified"] is False
+    # The same receipt with its real (1-key) JWKS still verifies.
+    ok = asyncio.run(
+        fn(billsum_golden["receipt"], billsum_golden["jwks"])
+    )
+    assert ok["verified"] is True
+
+
+def test_mint_chain_caps_hops_jwks_key_count(server, keypair, chain_golden):
+    from sum_engine_internal.mcp_server.meaning_tools import MAX_JWKS_KEYS
+    fn = _tool(server, "mint_chain_receipt")
+    key = chain_golden["jwks"]["keys"][0]
+    fat = {"keys": [dict(key, kid=f"k{i}") for i in range(MAX_JWKS_KEYS + 1)]}
+    out = asyncio.run(
+        fn(
+            private_jwk=keypair, kid="k",
+            hop_envelopes=[chain_golden["hop1"], chain_golden["hop2"]],
+            hops_jwks=fat,
+        )
+    )
+    assert out["error_class"] == "input_too_large"
+    assert "receipt" not in out
+
+
 def test_mint_byo_losses_requires_scorer_name(server, keypair):
     fn = _tool(server, "mint_meaning_receipt")
     out = asyncio.run(
