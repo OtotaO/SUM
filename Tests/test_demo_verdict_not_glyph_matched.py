@@ -101,9 +101,19 @@ def test_signature_entries_carry_both_status_and_label(source: str) -> None:
 
 def test_render_site_prints_the_label_not_the_record(source: str) -> None:
     """Presentation reads `.label`; if it printed the record it would leak
-    `[object Object]` onto the front door."""
-    assert "${k}: ${v.label}" in source, (
-        "the signature-note render must print v.label"
+    `[object Object]` onto the front door.
+
+    Asserted on the `.label` accessor rather than on the whole template
+    literal: the template now wraps both halves in ``escHtml`` (the key and
+    the label both come out of a pasted bundle, see
+    ``test_demo_html_sinks_escaped.py``). Pinning the exact literal made this
+    test fail on an escaping fix that did not change what is printed, so it
+    pinned formatting rather than the property it cares about.
+    """
+    assert "v.label" in source, "the signature-note render must print v.label"
+    assert "${v}" not in source, (
+        "REGRESSION: the whole signatures record is being interpolated; that "
+        "prints [object Object] on the front door instead of the label"
     )
 
 
