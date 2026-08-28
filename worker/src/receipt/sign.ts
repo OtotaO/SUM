@@ -16,7 +16,7 @@
 // uses C2PA terminology (`trainedAlgorithmicMedia`) so consumers
 // know unambiguously the tome is AI-generated.
 
-import { CompactSign, importJWK, type JWK } from "jose";
+import { FlattenedSign, importJWK, type JWK } from "jose";
 import canonicalize from "canonicalize";
 
 export const RECEIPT_SCHEMA = "sum.render_receipt.v1";
@@ -130,8 +130,15 @@ export async function signReceipt(
     throw new Error("canonicalize returned undefined for payload");
   }
   const canonicalBytes = new TextEncoder().encode(canonicalStr);
-  const jws = await new CompactSign(canonicalBytes)
+  // FlattenedSign, not CompactSign: jose 6.2.5 made CompactSign throw
+  // `TypeError: use the flattened module for creating JWS with b64: false`,
+  // and this header carries b64:false because the payload is DETACHED.
+  // Assembling `<protected>..<signature>` here reproduces byte-for-byte what
+  // CompactSign emitted on jose <= 6.2.4, so already-issued receipts and the
+  // committed fixtures stay valid and nothing needs re-signing.
+  const flat = await new FlattenedSign(canonicalBytes)
     .setProtectedHeader({ alg: "EdDSA", kid, b64: false, crit: ["b64"] })
     .sign(key);
+  const jws = `${flat.protected}..${flat.signature}`;
   return { schema: RECEIPT_SCHEMA, kid, payload, jws };
 }

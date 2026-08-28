@@ -602,3 +602,12 @@ jobs:
     - name: tsc --noEmit
       working-directory: worker
       run: npm run typecheck
+
+    # Runtime gate, added after the jose 6.2.5 regression (PR #424, merged
+    # 2026-07-31) silently broke BOTH receipt signers for four weeks. tsc
+    # passed throughout, because `b64: false` stayed type-legal while
+    # CompactSign began rejecting it at runtime. Typechecking a signer is
+    # not the same as signing with it.
+    - name: Worker signer smoke (signs, verifies, rejects a tamper)
+      working-directory: worker
+      run: npm run test:sign
