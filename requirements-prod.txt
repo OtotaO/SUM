@@ -11,7 +11,7 @@ fastapi>=0.141.1
 starlette<2.0
 uvicorn>=0.52.1
 pydantic>=2.0.0
-openai>=1.40.0,<3.0.0
+openai>=1.40.0,<4.0.0
 httpx>=0.24.0
 networkx>=3.4.2
 numpy>=1.24.0
