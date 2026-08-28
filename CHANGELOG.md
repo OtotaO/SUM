@@ -4,6 +4,94 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-08-28
+
+The release that ships six weeks of correctness work, and that restores a
+signing path which had been dead in the repo for four weeks without a single
+red CI run.
+
+Minor rather than patch because 0.9.0 predates the five MCP meaning-layer
+tools (#406), which are new user-facing capability, not a fix.
+
+- **The Worker receipt signers, restored and gated (#465).** Both
+  `signReceipt` and `signTransformReceipt` had thrown on every call since the
+  jose bump in #424 landed on 2026-07-31: jose 6.2.5 made `CompactSign` reject
+  the `b64: false` header that a DETACHED payload requires. Typechecking never
+  caught it, because `b64: false` stayed type-legal while the runtime began
+  refusing it. Deploying the Worker in that state would have returned HTTP 200
+  with the receipt silently absent, cached for 24 hours. Ported both signers to
+  `FlattenedSign` and reassembled `<protected>..<signature>` by hand, which
+  reproduces the pre-6.2.5 bytes exactly, so every already-issued receipt and
+  every committed fixture stays valid and nothing needed re-signing. Bisected
+  by hand across jose 5.10.0 through 6.2.8. Adds `worker/test/sign_smoke.mjs`,
+  the first runtime test the `worker/` package has ever had, wired into CI:
+  it signs with both signers, verifies as a third party would by
+  re-canonicalising the payload, asserts the protected-header shape, and
+  asserts a tampered payload is rejected. Confirmed to fail against the
+  unfixed signers before being wired in.
+
+- **Verifier correctness and totality (#428, #440, #444, #453).** The
+  receipt-type confusion is closed on both halves: an unsigned field could
+  select the validator (#444), and the same shape was still live in the
+  shipped `sum_verify` SDK (#453). All four verifier surfaces now reject
+  non-object JWS protected headers (#440). The verifiers are total on missing
+  method, non-sequence losses, and malformed hops, and jcs float parity holds
+  above 2^53 (#428).
+
+- **The MCP surface, made real and bounded (#427, #430, #443, #466).**
+  `meaning_diff` had been 100% broken on every call since it shipped (#443).
+  The `[mcp]` extra was uncapped, so the documented `sum-mcp` on-ramp did not
+  install (#427). Hardening pass over key-echo, scorer type guards, the
+  offline judge, the perspective contract, and the LRU and choke points
+  (#430). `mint_meaning_receipt` now caps pair count, total input size, and
+  JWKS key count, and no longer holds the judge unboundedly (#466).
+
+- **Worker and front-door hardening (#429, #439, #441, #454, #469).** Two
+  BYO-key rate-limit bypasses that drain operator credit are closed (#429).
+  The live CSP was blocking both in-page verifiers (#439). The Worker is now
+  compiled in per-PR CI (#441). The demo's only in-page crypto gate had been
+  deciding pass or fail by matching the first glyph of a display label, so a
+  copy edit could have turned a checked-and-FAILED signature into a pass
+  (#454). Ten unescaped interpolations across the demo's four panels are
+  escaped, including receipt fields an attacker can mint since the visitor
+  pastes both the receipt and the JWKS (#469).
+
+- **Honesty passes (#431, #432, #433, #442, #445, #468).** Our own headline
+  number was mis-scoped in the flattering direction and is corrected (#445).
+  Front-door truth pass over README with five verified drifts plus the missing
+  mint path (#442). Five doc-truth drifts reconciled against the live surface
+  (#432). Three test coverage gaps closed: a stale skip, an under-pinned chain
+  golden, and the replay window (#433). Concordance now covers the sample
+  assets, fails on stale coverage, and runs in CI (#431). The arXiv draft gains
+  an artifact availability statement, and now cites arXiv:2508.20228 in full
+  rather than for its negative half only (#468).
+
+- **The distiller made visible, and the agent-swarm surface (#404, #405,
+  #406).** Carried over from the previous unreleased block.
+  - **T0 altitude panel on the live demo (#404).** A stranger at
+    sum-demo.ototao.workers.dev now experiences the DISTILLER, not only the
+    certificate: one real BillSum bill descending four altitudes with the
+    strict-NLI measured loss, the per-rung kept/dropped/added claim readout, a
+    "measured, not certified" header, and a receipt badge linking the
+    witnessed chain.
+  - **MCP meaning layer (#406).** Five tools on the hardened `sum-mcp`
+    server: `verify_receipt` across all five receipt schemas, `meaning_diff`,
+    `depth_frontier`, and BYO-key-only `mint_meaning_receipt` and
+    `mint_chain_receipt`. The server never generates, stores, or logs key
+    material.
+  - **arXiv kit finalised (#405).** Two unverified bibliography placeholders
+    resolved against the live arXiv pages.
+
+- **Supply chain and CI (#446, #467, plus dependency bumps).** The Worker
+  deploy path pins its install with `npm ci` and no longer persists
+  credentials (#467). GEPA metric no longer scores a prediction's `repr` when
+  no output field is found (#446). `canonicalize` moves to 4.0.0 in the Worker
+  with the cross-runtime trust triangle and the vendored byte-equivalence gate
+  both green. The `transformers` ceiling stays at `<5` deliberately: the
+  DeBERTa-v3 slow-tokenizer path is untested in the per-PR suite, so a break
+  would ship silently.
+
+
 - **The distiller made visible + the agent-swarm surface (2026-07-16/18, PRs
   #404 + #405 + #406).**
   - **T0 altitude panel on the live demo (#404).** A stranger at
