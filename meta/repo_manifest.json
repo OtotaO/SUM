@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-08-28T18:09:12Z",
+  "issued_at": "2026-08-28T18:28:00Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,10 +8,10 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "89b3048daa62a29f436fd580bfcafe218ff29454",
-    "head_short": "89b3048",
-    "head_subject": "fix(demo): escape every attacker-reachable value before it reaches innerHTML (#469)",
-    "head_committer_date": "2026-08-28T14:06:30-04:00",
+    "head_sha": "7b5d09cc8e6122794e6e819c397f6774efb51d14",
+    "head_short": "7b5d09c",
+    "head_subject": "release: 0.10.0 (#470)",
+    "head_committer_date": "2026-08-28T14:21:57-04:00",
     "commits_last_30d": null
   },
   "github": {
@@ -19,7 +19,7 @@
   },
   "release": {
     "pyproject_version": "0.10.0",
-    "pypi_published_version": "0.9.0"
+    "pypi_published_version": "0.10.0"
   },
   "features": {
     "total": 170,
