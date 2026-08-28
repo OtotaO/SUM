@@ -46,6 +46,15 @@ jobs:
           egress-policy: audit
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          # Don't leave the job's GITHUB_TOKEN in .git/config. This job runs
+          # `npm ci`, whose dependency lifecycle scripts execute arbitrary
+          # code with access to the workspace — a persisted credential is
+          # reachable by anything in that blast radius. Nothing downstream
+          # needs git auth (wrangler authenticates via its own API token; the
+          # byte guard is plain HTTPS), so scope it away. Matches
+          # scorecard.yml.
+          persist-credentials: false
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
@@ -53,7 +62,14 @@ jobs:
 
       - name: Install worker deps
         working-directory: worker
-        run: npm install
+        # `npm ci`, not `npm install`: this step feeds a PRODUCTION deploy, so
+        # the tree wrangler bundles must be exactly the tree the lockfile
+        # pins. `npm install` is free to resolve a newer in-range version and
+        # to rewrite package-lock.json, which would make the deployed artifact
+        # differ from the reviewed/tested one. `npm ci` installs the lockfile
+        # verbatim and hard-fails if it has drifted from package.json.
+        # (worker/package-lock.json is committed, lockfileVersion 3.)
+        run: npm ci
 
       - name: Typecheck
         working-directory: worker
