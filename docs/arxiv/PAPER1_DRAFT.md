@@ -309,7 +309,16 @@ visible rather than rhetorically closed.
   single training-free paraphrase attack (arXiv:2506.07001); multi-hop rewriting
   (arXiv:2605.05503) drives watermark detection from ~88% to under 5% while
   holding semantic similarity, the exact regime a meaning-preservation
-  certificate is built for.
+  certificate is built for. We cite arXiv:2508.20228 in full rather than for
+  its negative half only: the same work proposes SynGuard, a semantic-aware
+  hybrid that recovers an average of 11.1% F1 over SynthID-Text under those
+  attacks. That is a genuine mitigation and the closest prior work in spirit.
+  It remains detection: it raises the probability that a mark survives a
+  rewrite, and makes no statement about what the rewrite preserved. The
+  certificate here is orthogonal and composable with it, carrying an
+  issuer-signed, replayable, distribution-free bound on a named meaning-loss
+  proxy, which is a claim about the transformation rather than a probability
+  about the artifact.
 - **EU AI Act Article 50** obliges the *generator* to mark; the associated
   *Code of Practice on Transparency of AI-Generated Content* (finalized
   10 June 2026) sets out the marking expectations. This work is an adjacent,
@@ -350,6 +359,35 @@ sequence is a no-wire-change tightening.
 The corpora here demonstrate the mechanism; they are not a benchmark suite. The
 binding open problem is not a sharper inequality but **adoption**: one external
 party issuing and verifying a receipt it did not author.
+
+## 11. Artifact availability
+
+Every number in Section 7 is reproducible from committed bytes, and every
+verification claim in Section 5 is executable by a third party without
+contacting the authors.
+
+- **Source.** `https://github.com/OtotaO/SUM`, Apache-2.0. Archived in Software
+  Heritage for permanent citation as
+  `swh:1:snp:1904bd383765f5cf553f08ea7ee46aca9925f25d`
+  (origin `swh:1:ori:a7b5385a59a6fb561cbad53ce12da3149439401e`).
+- **Verifier.** `pip install "sum-engine[verify]"` installs the
+  dependency-light `sum_verify` SDK (`cryptography` and `joserfc` only, no
+  numpy, scipy, or torch); `python -m sum_verify <receipt>` reproduces the
+  verdicts described in Section 5. Two independent reimplementations verify the
+  same bytes and are exercised against the same fixtures in CI: a Node verifier
+  (`standalone_verifier/`) and a browser verifier
+  (`single_file_demo/meaning_receipt_verifier.js`).
+- **Certificates.** Both binding-gate receipts reported in Section 7 are
+  committed together with their public keys, their per-example loss vectors,
+  and the generator that rebuilds them from the public corpus:
+  `fixtures/meaning_receipts_billsum/` (BillSum, CC0) and
+  `fixtures/meaning_receipts_translation/` (opus-100, EN to FR). Each directory
+  contains the signed receipt, `jwks.json`, the losses file, and a
+  `generate_*_fixture.py`.
+- **Scope of the artifact.** These artifacts replay the certificate and its
+  bound from committed bytes. They do not re-run the judge model: the judge is
+  named and pinned inside the receipt, and Section 8 states exactly what that
+  dependence does and does not license a reader to conclude.
 
 ## References (to be formatted; primary sources verified)
 
