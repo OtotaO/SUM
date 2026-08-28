@@ -10,7 +10,7 @@
 // receipts; legacy /api/render keeps producing render receipts.
 // Existing render receipts remain valid forever.
 
-import { CompactSign, importJWK, type JWK } from "jose";
+import { FlattenedSign, importJWK, type JWK } from "jose";
 import canonicalize from "canonicalize";
 
 import type {
@@ -158,18 +158,18 @@ export async function signTransformReceipt(
     throw new Error("canonicalize returned undefined for transform receipt payload");
   }
   const canonicalBytes = new TextEncoder().encode(canonicalStr);
-  const jws = await new CompactSign(canonicalBytes)
+  // FlattenedSign, not CompactSign: jose 6.2.5 made CompactSign throw
+  // `TypeError: use the flattened module for creating JWS with b64: false`,
+  // and this header carries b64:false because the payload is DETACHED.
+  const flat = await new FlattenedSign(canonicalBytes)
     .setProtectedHeader({ alg: "EdDSA", kid, b64: false, crit: ["b64"] })
     .sign(key);
 
-  // Detach the payload from the compact form per RFC 7515 §A.5:
+  // Detached compact form per RFC 7515 §A.5:
   // "<protected>.<empty>.<signature>" — middle segment empty
-  // because the canonical bytes are the detached payload.
-  const parts = jws.split(".");
-  if (parts.length !== 3) {
-    throw new Error(`unexpected JWS shape: ${parts.length} segments`);
-  }
-  const detachedJws = `${parts[0]}..${parts[2]}`;
+  // because the canonical bytes are the detached payload. Byte-identical
+  // to what CompactSign + split emitted on jose <= 6.2.4.
+  const detachedJws = `${flat.protected}..${flat.signature}`;
 
   return {
     schema: TRANSFORM_RECEIPT_SCHEMA,
