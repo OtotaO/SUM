@@ -1,9 +1,13 @@
 """Tests for TomeSliders + controlled rendering."""
 from __future__ import annotations
 
+import json
+import pathlib
+
 import pytest
 
 from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+from sum_engine_internal.ensemble.slider_renderer import _axiom_key
 from sum_engine_internal.ensemble.tome_generator import AutoregressiveTomeGenerator
 from sum_engine_internal.ensemble.tome_sliders import TomeSliders, apply_density
 
@@ -85,6 +89,64 @@ class TestApplyDensity:
     def test_density_rounds_down(self) -> None:
         # 3 elements × 0.7 = 2.1 → floor to 2
         assert apply_density(["a", "b", "c"], 0.7) == ["a", "b"]
+
+
+# ─── Cross-runtime pin: Python is the reference for the Worker twin ───
+#
+# worker/src/render/axis_prompts.ts::applyDensity must keep the same
+# subset, in the same order, as apply_density does here. It sorted with
+# ICU `localeCompare` instead of by codepoint, so on these keys the two
+# runtimes kept DIFFERENT triples at the same density, and the surviving
+# subset is what the deterministic tome (hence the signed tome_hash) is
+# built from.
+#
+# This fixture is the shared source of truth. The Node side asserts
+# against the same JSON in worker/test/density_smoke.mjs (`npm run
+# test:density`, wired into quantum-ci.yml). These tests hold Python
+# still: if they ever go red, the fixture must be regenerated with
+# fixtures/density_sort/generate_fixture.py AND the Worker rechecked.
+
+_FIXTURE_PATH = (
+    pathlib.Path(__file__).resolve().parents[1]
+    / "fixtures"
+    / "density_sort"
+    / "apply_density_cross_runtime_v1.json"
+)
+
+
+def _load_fixture() -> dict:
+    return json.loads(_FIXTURE_PATH.read_text(encoding="utf-8"))
+
+
+class TestDensityCrossRuntimeFixture:
+    def test_fixture_keys_are_built_by_the_production_key_function(self) -> None:
+        fx = _load_fixture()
+        # The Worker's keyOf is `${s}||${p}||${o}`; the fixture's keys must
+        # be exactly what the production Python key builder emits, or the
+        # two runtimes are agreeing on the wrong string.
+        all_keys = {k for case in fx["cases"] for k in case["expected_kept_keys"]}
+        built = {_axiom_key((t[0], t[1], t[2])) for t in fx["triples"]}
+        assert all_keys <= built
+        assert built == {"a||p||o", "ab||p||o", "a b||p||o", "A||p||o"}
+
+    def test_fixture_pins_a_case_where_icu_and_codepoint_disagree(self) -> None:
+        # Guard the guard: if the triple set ever loses the property that
+        # ICU collation and codepoint order disagree, the Node test stops
+        # being able to catch a localeCompare regression.
+        fx = _load_fixture()
+        keys = [_axiom_key((t[0], t[1], t[2])) for t in fx["triples"]]
+        icu_order = ["a b||p||o", "a||p||o", "A||p||o", "ab||p||o"]
+        assert sorted(icu_order) != icu_order
+        assert sorted(keys) != icu_order
+
+    def test_apply_density_matches_every_fixture_case(self) -> None:
+        fx = _load_fixture()
+        keys = [_axiom_key((t[0], t[1], t[2])) for t in fx["triples"]]
+        assert fx["cases"], "fixture carries no density cases"
+        for case in fx["cases"]:
+            assert apply_density(keys, case["density"]) == case["expected_kept_keys"], (
+                f"density={case['density']}"
+            )
 
 
 # ─── Integration: generate_controlled on AutoregressiveTomeGenerator ──
