@@ -4,6 +4,29 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Correction to the 0.10.0 notes, and the actual fix (#473).** The 0.10.0
+  entry credited #443 with fixing `meaning_diff`. It did not. #443 removed an
+  AttributeError; the very next line called `list()` on
+  `MeaningReadout.source_claims`, which the dataclass declares `int`, so every
+  real call still died with `TypeError` behind `error_class: internal`, after
+  paying the full judge cost. The regression pin could not fire because its
+  hand-typed stub passed tuples for those int fields, a shape the real judge
+  never produces. Re-found by the 2026-09-02 audit by reading both halves.
+  Fix: wire the two count fields as the ints they are. Guard: the pin now
+  builds its readout through the real `explain_meaning_loss` with a
+  deterministic containment judge, so it can only carry production's types,
+  and a new test pins those types against the dataclass annotations.
+  Confirmed to reproduce the exact production failure on the unfixed tool.
+
+- **Node verifier exit code carried the structural verdict, not the Ed25519
+  one (#472).** `standalone_verifier/verify.js` printed FAILED and exited 0 on
+  a bundle with intact content and a forged signature. A Critical from the
+  2026-08-28 audit that was never fixed; the file had not been touched since
+  April. Fixed by returning `overallMatch`; guarded by adversarial case A7
+  (signature-only tamper), which fails on the unfixed file and runs in
+  per-PR CI.
+
+
 ## [0.10.0] - 2026-08-28
 
 The release that ships six weeks of correctness work, and that restores a
@@ -39,7 +62,11 @@ tools (#406), which are new user-facing capability, not a fix.
   above 2^53 (#428).
 
 - **The MCP surface, made real and bounded (#427, #430, #443, #466).**
-  `meaning_diff` had been 100% broken on every call since it shipped (#443).
+  `meaning_diff` had been 100% broken on every call since it shipped; #443
+  fixed the AttributeError it died on, and a second crash (a `TypeError` from
+  `list()` over an int count) survived it, so this line overclaimed when
+  written. The tool still failed on every real call in 0.10.0. See the
+  correction under Unreleased.
   The `[mcp]` extra was uncapped, so the documented `sum-mcp` on-ramp did not
   install (#427). Hardening pass over key-echo, scorer type guards, the
   offline judge, the perspective contract, and the LRU and choke points
