@@ -221,6 +221,29 @@ def _signature_ed25519_tome_tampered() -> Fixture:
     )
 
 
+def _signature_ed25519_signature_only_tampered() -> Fixture:
+    """Only the signature bytes change. Tome, state integer, and public key
+    are all byte-identical to a valid bundle, so every STRUCTURAL check
+    passes and the verdict rests on Ed25519 alone.
+
+    A6 never reached this path: tampering the tome also breaks the
+    structural match, and verify.js used to return the structural result
+    as its exit status, so a forged signature over an intact bundle
+    printed FAILED and exited 0. This case pins the exit code, which is
+    what a script or CI consumer of verify.js actually reads.
+    """
+    b = _mint_valid_ed25519_bundle()
+    sig = b["public_signature"]
+    tail = "AAAAAA" if not sig.endswith("AAAAAA") else "BBBBBB"
+    b["public_signature"] = sig[: -len(tail)] + tail
+    return Fixture(
+        name="A7-signature-ed25519-signature-only-tampered",
+        bundle=b,
+        expected_class="signature",
+        description="Ed25519-signed bundle, intact content, signature bytes altered",
+    )
+
+
 FIXTURES: Sequence[Callable[[], Fixture]] = (
     _structural_missing_tome,
     _structural_tome_truncated,
@@ -228,6 +251,7 @@ FIXTURES: Sequence[Callable[[], Fixture]] = (
     _structural_state_integer_negative_string,
     _version_unknown_format,
     _signature_ed25519_tome_tampered,
+    _signature_ed25519_signature_only_tampered,
 )
 
 

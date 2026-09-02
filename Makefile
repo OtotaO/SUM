@@ -54,7 +54,7 @@ bench:  ## Bench harness on seed_v1 (requires SUM_BENCH_MODEL or --no-llm).
 xruntime:  ## Cross-runtime valid-path K1/K1-mw/K2/K3/K4 (Python ↔ Node).
 	$(PYTHON) -m scripts.verify_cross_runtime
 
-xruntime-adversarial:  ## Cross-runtime rejection-matrix A1-A6 (Python ↔ Node).
+xruntime-adversarial:  ## Cross-runtime rejection-matrix A1-A7 (Python ↔ Node).
 	$(PYTHON) -m scripts.verify_cross_runtime_adversarial
 
 fortress:  ## 21-check fortress gate (pure-math invariants).
