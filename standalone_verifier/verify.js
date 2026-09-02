@@ -480,7 +480,12 @@ async function verifyBundle(bundlePath) {
   }
   console.log('═══════════════════════════════════════════════════════════');
 
-  return match;
+  // The exit status must carry the SAME verdict the banner just printed.
+  // Returning the structural `match` here let a bundle with intact content
+  // and a forged Ed25519 signature print FAILED and exit 0, so any script
+  // reading the exit code accepted the forgery. Pinned by A7 in
+  // scripts/verify_cross_runtime_adversarial.py.
+  return overallMatch;
 }
 
 // ─── Main ──────────────────────────────────────────────────────────
