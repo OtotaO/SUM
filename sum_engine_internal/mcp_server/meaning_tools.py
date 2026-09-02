@@ -517,8 +517,13 @@ def register_meaning_tools(mcp: Any) -> None:
                 "loss": r.loss,
                 "recall": r.recall,
                 "fidelity": r.fidelity,
-                "source_claims": list(r.source_claims),
-                "preserved_claims": list(r.preserved_claims),
+                # Counts, not sentences: MeaningReadout declares these int
+                # (len(src) and len(src) - len(dropped)). list() on an int
+                # raised TypeError on every real call while the regression
+                # test's hand-typed tuple stub sailed through. The pin now
+                # builds its readout via the real explain_meaning_loss.
+                "source_claims": r.source_claims,
+                "preserved_claims": r.preserved_claims,
                 "dropped_claims": list(r.dropped_claims),
                 # MeaningReadout names this ``unsupported_claims`` (transform
                 # sentences the source does not ground). The wire key stays

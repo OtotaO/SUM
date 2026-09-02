@@ -583,16 +583,26 @@ def test_verify_receipt_rejects_perspective_with_named_schemas(server):
 # while still failing if the dataclass is renamed again.
 # ---------------------------------------------------------------------------
 
-def _stub_readout():
-    from sum_engine_internal.research.meaning.meaning_loss import MeaningReadout
-    return MeaningReadout(
-        loss=0.25, preservation=0.75, recall=0.8, fidelity=1.0,
-        source_claims=("a claim", "another claim"),
-        preserved_claims=("a claim",),
-        dropped_claims=("another claim",),
-        transform_claims=("a claim", "an invented claim"),
-        unsupported_claims=("an invented claim",),
-        judge="stub-judge", judge_version="0",
+def _entails(premise: str, hypothesis: str) -> bool:
+    """Deterministic, model-free judge: containment. Enough to drive the
+    REAL readout builder so the dataclass carries its REAL field types."""
+    return hypothesis.strip().lower() in premise.lower()
+
+
+def _stub_readout(source="a claim. another claim.", rendering="a claim. an invented claim."):
+    """Build the readout through the real ``explain_meaning_loss`` rather
+    than by hand.
+
+    The previous stub hand-typed ``source_claims=("a claim", ...)`` for a
+    field the dataclass declares ``int`` (it is ``len(src)``). The tool then
+    called ``list()`` on it, which works on a tuple and raises TypeError on
+    the int the real judge produces. So the pin passed while production
+    crashed on every call. Going through the real builder means the stub can
+    only ever carry the types production carries.
+    """
+    from sum_engine_internal.research.meaning.meaning_loss import explain_meaning_loss
+    return explain_meaning_loss(
+        source, rendering, entails=_entails, judge_name="stub-judge", judge_version="0",
     )
 
 
@@ -601,7 +611,7 @@ class _StubScorer:
     version = "0"
 
     def explain(self, source, rendering):
-        return _stub_readout()
+        return _stub_readout(source, rendering)
 
 
 @pytest.fixture
@@ -633,11 +643,28 @@ def test_meaning_diff_added_claims_carries_the_unsupported_sentences(server, stu
     for an attribute that does not exist on the readout.
     """
     fn = _tool(server, "meaning_diff")
-    out = asyncio.run(fn(source="a claim. another claim.", rendering="a claim."))
+    out = asyncio.run(fn(
+        source="a claim. another claim.", rendering="a claim. an invented claim.",
+    ))
 
-    assert out["added_claims"] == ["an invented claim"]
-    assert out["dropped_claims"] == ["another claim"]
-    assert out["preserved_claims"] == ["a claim"]
+    assert any("invented" in c for c in out["added_claims"]), out
+    assert any("another" in c for c in out["dropped_claims"]), out
+    # Counts, not sentences: MeaningReadout.source_claims and
+    # preserved_claims are ints (len(src), len(src) - len(dropped)).
+    assert out["source_claims"] == 2, out
+    assert out["preserved_claims"] == 1, out
+
+
+def test_meaning_diff_count_fields_are_ints_like_the_dataclass():
+    """Pin the field TYPES against the dataclass annotations, so a future
+    stub cannot drift back to tuples and hide a TypeError in production."""
+    import dataclasses
+    from sum_engine_internal.research.meaning.meaning_loss import MeaningReadout
+    ann = {f.name: f.type for f in dataclasses.fields(MeaningReadout)}
+    r = _stub_readout()
+    for name in ("source_claims", "preserved_claims", "transform_claims"):
+        assert ann[name] in ("int", int), (name, ann[name])
+        assert isinstance(getattr(r, name), int), (name, type(getattr(r, name)))
 
 
 def test_meaning_readout_has_no_added_claims_attribute():
