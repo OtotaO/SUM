@@ -68,6 +68,12 @@ the math says **attest, don't detect.**
 
 ## 3. The strategic abstraction — the *render frontier*
 
+> **Scope stamp (2026-09-02):** this section is a target, not a description of
+> the code. Today `RenderFrontier` powers `sum frontier` / `depth-diff` / `study`
+> and the MCP `depth_frontier` tool; the Worker contains no frontier object and
+> `/api/render` does not return one. The table below says where each surface
+> is meant to end up.
+
 Process intensification means one object powers every surface. That
 object is the **render frontier**: for a source text, an *ordered path*
 of renderings from most-faithful to most-compressed, each point carrying

@@ -135,9 +135,16 @@ replay of §5 is well-defined across runtimes.
 **Meaning-loss proxy.** Fix a *named, versioned* judge
 $e:(\text{premise},\text{hypothesis})\to\{0,1\}$ (a local NLI model or
 embedding-entailment model; never assumed to equal "meaning"). For a (source
-$S$, output $T$) pair with sentence units $\mathrm{sent}(\cdot)$, define
+$S$, output $T$) pair with units $\mathrm{sent}(\cdot)$, define
 $$\mathrm{recall}=\tfrac{1}{|\mathrm{sent}(S)|}\!\!\sum_{s\in\mathrm{sent}(S)}\!\! e(T,s),\quad
 \mathrm{fid}=\tfrac{1}{|\mathrm{sent}(T)|}\!\!\sum_{t\in\mathrm{sent}(T)}\!\! e(S,t),$$
+
+The unit $\mathrm{sent}(\cdot)$ in the shipped v1 scorer is a punctuation-or-newline-delimited
+segment, not a linguistic sentence: hard-wrapped sources split at line breaks, and
+abbreviations split at their periods. On the BillSum golden 48% of the 12,149 units
+begin with a lowercase character for this reason. The bound is over whatever units
+the named scorer produced; the receipt pins the scorer, so replay reproduces the
+same units.
 $$\ell(S,T)=1-\big(w_r\,\mathrm{recall}+w_f\,\mathrm{fid}\big)\in[0,1],\quad w_r+w_f=1.$$
 Recall penalizes omission, fidelity penalizes fabrication; $\ell(S,S)=0$. The
 judge is named and versioned in the receipt, so the certified bound is
@@ -374,9 +381,10 @@ contacting the authors.
   dependency-light `sum_verify` SDK (`cryptography` and `joserfc` only, no
   numpy, scipy, or torch); `python -m sum_verify <receipt>` reproduces the
   verdicts described in Section 5. Two independent reimplementations verify the
-  same bytes and are exercised against the same fixtures in CI: a Node verifier
-  (`standalone_verifier/`) and a browser verifier
-  (`single_file_demo/meaning_receipt_verifier.js`).
+  same bytes and are exercised against the same fixtures in CI: the JS verifier
+  `single_file_demo/meaning_receipt_verifier.js`, run under Node in CI and in
+  the browser demo. (`standalone_verifier/` verifies the older CanonicalBundle
+  format, not meaning receipts.)
 - **Certificates.** Both binding-gate receipts reported in Section 7 are
   committed together with their public keys, their per-example loss vectors,
   and the generator that rebuilds them from the public corpus:

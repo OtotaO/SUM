@@ -15,13 +15,15 @@
 // reads as a bare bound and is rejected.
 //
 // SCOPE (honest): this is Stage A — signature + schema + header +
-// disclosure. Stage B (replay: recompute the per-pair losses with the
-// named scorer and re-derive every bound) is NOT done here, because it
-// requires running the scorer over the source/transform pairs, which is
-// the producer's Python/model surface. A verified signature here proves
-// the receipt is authentic and self-disclosing; replay remains a
-// side-band Python check. The receipt FORMAT verifies cross-runtime;
-// the meaning re-computation does not (and says so).
+// disclosure. Stage B, as RECEIPT_FAMILY_SPEC section 4 defines it, is
+// re-hashing the committed integer-micro loss vector and re-running the
+// conformal certifier over it; it runs NO scorer. Stage B is not done here
+// because no JS port of the bound kernel exists and JS lacks the primitives
+// it needs (no fsum, no lgamma; Clopper-Pearson needs the latter). It is
+// `python -m sum_verify <receipt> --losses <file>`. A verified signature
+// here proves the receipt is authentic and self-disclosing; the bound is
+// attested only after Stage B. The receipt FORMAT verifies cross-runtime;
+// the bound replay does not yet (and says so).
 
 import { flattenedVerify, canonicalize } from "./vendor/sum-verify-deps.js";
 

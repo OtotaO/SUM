@@ -204,7 +204,7 @@ def main(argv: list[str] | None = None) -> int:
         # replay to) — NOT evidence that meaning was preserved. The bound is
         # over a NAMED PROXY; where that proxy has been measured against human
         # faithfulness judgments it correlated only modestly at the
-        # per-summary level (Spearman rho ~= 0.27-0.33 on SummEval; the NLI
+        # per-summary level (Spearman rho = 0.267-0.291, pooled summary-level, on SummEval; the NLI
         # judge's ~0.29 replicates on FRANK; the embedding judge is
         # corpus-dependent and collapsed to ~0 on abstractive FRANK-XSum).
         # We deliberately do NOT bake a number into a signed field (rho was
@@ -214,7 +214,7 @@ def main(argv: list[str] | None = None) -> int:
             "verified=true is a cryptographic fact (signature + replayed "
             "bound), not evidence meaning was preserved. The bound is over a "
             "named proxy; vs human judgments the proxy correlated only "
-            "modestly at summary level (Spearman rho ~0.27-0.33 on SummEval; "
+            "modestly at summary level (Spearman rho = 0.267-0.291, pooled summary-level, on SummEval; "
             "NLI ~0.29 replicates on FRANK; the embedding judge is "
             "corpus-dependent, near zero on abstractive FRANK-XSum). Not a "
             "substitute for human review."

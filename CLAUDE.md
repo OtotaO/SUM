@@ -251,16 +251,18 @@ questions.
     and the sheaf-Laplacian theory of Hansen & Ghrist (2019). The
     SUM-to-Knowledge-Sheaves mapping is charted concretely (§2.3 of
     that doc); v1/v2/v3 procedures specified; falsifiable predictions
-    named; bounded claims set. **No code shipped yet** — the present
-    document is the specification; `sum_engine_internal/research/`
-    will scaffold in a separate PR. This is the first artifact that
+    named; bounded claims set. Code exists under the `[research]` extra
+    (`sum_engine_internal/sheaf_laplacian*.py`, about 1,559 LOC, with
+    tests); it is research, not a cataloged feature. This is the first artifact that
     grounds SUM's primitives inside the peer-reviewed categorical-AI
     conversation; read it before adding new research-flavoured
     directions to the project.
 
-Shipping surface at the current HEAD: the `sum` binary (`v0.8.1` on
-`pyproject.toml`; **0.8.1 is LIVE on PyPI** — `sum-engine` latest, verified
-2026-07-09 via the PyPI JSON API. 0.8.0 published the `sum_verify` SDK + the
+Shipping surface at the current HEAD: the `sum` binary. The version is
+whatever `pyproject.toml` says; the published version is
+`meta/repo_manifest.json` `release.pypi_published_version` (refreshed on
+every release; the CI drift gate keeps it honest). Do not copy a version
+number into this file. 0.8.0 published the `sum_verify` SDK + the
 dependency-light `[verify]` extra (`pip install "sum-engine[verify]"` —
 `cryptography` + `joserfc` only, no numpy/scipy/torch) and folded the
 meaning-loss frontier arc into the release behind the `[research]` extra; see
@@ -327,7 +329,7 @@ recommended order T5 → T1 → T4 → T2 → T3):
 - T3 — DKW worst-case bounds for render receipt trust scope: **OPEN** (needs `sum.slider_drift_bench.v1` receipts)
 
 **Internal research surfaces (NOT shipping, but present in repo):**
-- `api/quantum_router.py` + `quantum_main.py` — FastAPI surface with 26+ endpoints (`/state`, `/sync`, `/branch`, `/merge`, `/zk/prove`, `/zk/verify`, `/peers`, `/time-travel`, `/auth/token`, etc.). 1,684 LOC of working code, 58/58 tests pass via pytest default discovery (`Tests/test_phase13_zenith.py`, `test_phase14_ouroboros.py`, `test_phase15_abi.py`, `test_browser_extension.py`). NOT in PyPI wheel (`pyproject.toml:167` excludes `api*`); NOT in live Worker; NOT in dogfood quickstart. Banners at top of both files explain. **Promote to a shipping `[api]` extra only if a named buyer or grant deliverable explicitly references one of the endpoint clusters.** Demoted 2026-05-30 per operator decision following deeper-audit triage; substrate it composes (`GodelStateAlgebra`, `AkashicLedger`, `OuroborosVerifier`, `ZKSemanticProver`, `EpistemicMeshNetwork`) remains load-bearing for the shipping surfaces under `sum_engine_internal/`.
+- `api/quantum_router.py` + `quantum_main.py` — FastAPI surface with 26+ endpoints (`/state`, `/sync`, `/branch`, `/merge`, `/zk/prove`, `/zk/verify`, `/peers`, `/time-travel`, `/auth/token`, etc.). 1,684 LOC of working code, 58/58 tests pass via pytest default discovery (`Tests/test_phase13_zenith.py`, `test_phase14_ouroboros.py`, `test_phase15_abi.py`, `test_browser_extension.py`). NOT in PyPI wheel (`pyproject.toml:167` excludes `api*`); NOT in live Worker; NOT in dogfood quickstart. Banners at top of both files explain. **Promote to a shipping `[api]` extra only if a named buyer or grant deliverable explicitly references one of the endpoint clusters.** Demoted 2026-05-30 per operator decision following deeper-audit triage; of the substrate it composes, `GodelStateAlgebra` and `AkashicLedger` are reachable from the shipping `sum_cli` entry point; `OuroborosVerifier`, `ZKSemanticProver`, and `EpistemicMeshNetwork` are reached only by `api/`, bench runners, and tests (import-graph walk, 2026-09-02).
 
 If you're about to make a change and want to know what's already deferred,
 check the task list for items marked "deferred" (Wikidata QIDs SPARQL

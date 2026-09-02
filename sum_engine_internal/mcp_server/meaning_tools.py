@@ -103,7 +103,7 @@ _PROXY_CAVEAT = (
     "verified=true is a cryptographic fact (signature + replayed bound), "
     "not evidence meaning was preserved. The bound is over a named proxy; "
     "vs human judgments the proxy correlated only modestly at summary level "
-    "(Spearman rho ~0.27-0.33 on SummEval; NLI ~0.29 replicates on FRANK; "
+    "(Spearman rho = 0.267-0.291, pooled summary-level, on SummEval; NLI 0.290 replicates on FRANK; "
     "the embedding judge is corpus-dependent, near zero on abstractive "
     "FRANK-XSum). Not a substitute for human review."
 )

@@ -780,7 +780,13 @@ proxy; **prefer the NLI judge for anything load-bearing.** Known
 scorer-robustness limit found during this run: `meaning_loss._sentences`
 treats text lacking post-period whitespace as a single sentence, degenerating
 both entailment scorers to loss = 1.0 (the conservative direction — loss is
-overstated, never understated); normalize whitespace before scoring.
+overstated, never understated); normalize whitespace before scoring. The
+opposite direction is also real and was undisclosed until 2026-09-02: the unit
+is a punctuation-or-newline-delimited segment, so hard-wrapped text and
+abbreviations OVER-split (on the BillSum golden 48% of 12,149 units start
+lowercase). Over-splitting changes the unit the recall/fidelity averages run
+over; it does not change the receipt's replayability, because the receipt pins
+the scorer that produced the units.
 Reproduce: [`Tests/benchmarks/frank_proxy_calibration.py`](../Tests/benchmarks/frank_proxy_calibration.py)
 + [`Tests/benchmarks/summeval_aggregation_recompute.py`](../Tests/benchmarks/summeval_aggregation_recompute.py)
 → [`Tests/benchmarks/frank_results.json`](../Tests/benchmarks/frank_results.json). The bound is honest

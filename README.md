@@ -107,14 +107,20 @@ sum mint-meaning --pairs pairs.jsonl --scorer nli \
 
 ```bash
 # JWKS — single Ed25519 OKP JWK, application/jwk-set+json
-curl -sS https://sum-demo.ototao.workers.dev/.well-known/jwks.json | jq .
+curl -sS https://sum-demo.ototao.workers.dev/.well-known/jwks.json > jwks.json
 
-# Render — tome + render_receipt (signed JWS over JCS payload)
+# Render — tome + render_receipt (signed JWS over JCS payload); keep the receipt
 curl -sS -X POST https://sum-demo.ototao.workers.dev/api/render \
   -H 'content-type: application/json' \
   -d '{"triples":[["alice","graduated","2012"],["alice","born","1990"]],
        "slider_position":{"density":1.0,"length":0.5,"formality":0.7,"audience":0.5,"perspective":0.5}}' \
-  | jq '.render_receipt | {schema, kid, payload, jws_segments: (.jws | split(".") | length)}'
+  | jq '.render_receipt' > render_receipt.json
+
+# Verify it offline against the key you just fetched
+pip install "sum-engine[verify]"
+python -m sum_verify render_receipt.json --jwks jwks.json
+# -> verified: true, replayed: false. A render receipt has no bound to replay;
+#    it attests that this issuer signed this render, not what the render preserved.
 ```
 
 A render receipt attests the *render*, not the truth of its content (trust scope in [`docs/RENDER_RECEIPT_FORMAT.md`](docs/RENDER_RECEIPT_FORMAT.md) §5); a minimal Node verifier using `jose` + `canonicalize` is in §A.5, and the same format is reachable from Python (`joserfc` + `jcs`), Go, and Rust per §3.
@@ -131,7 +137,7 @@ A render receipt attests the *render*, not the truth of its content (trust scope
 | Cross-runtime trust triangle | locked by CI (`make xruntime`) | K1 / K1-mw / K2 / K3 / K4 — Python ↔ Node ↔ Browser agree byte-for-byte on valid bundles. `make xruntime-adversarial` adds A1–A6 rejection-class equivalence. |
 | 5-axis slider rendering surface | density actioned deterministically; length / formality / audience / perspective LLM-conditioned. Two dispatch paths: Worker `/api/render` (Anthropic + Cloudflare AI Gateway optional) producing `sum.render_receipt.v1`, OR Python `sum transform apply slider` (OpenAI via `OPENAI_API_KEY`) producing `sum.transform_receipt.v1` | bench: median LLM-axis fact preservation 1.000, p10 0.769 (long, n=16) / 0.818 (short, n=8), order preservation 1.000 wherever measurable. Tightening worktrail at [`docs/BENCH_HARDENING_FROM_QCVV.md`](docs/BENCH_HARDENING_FROM_QCVV.md) adds iteration-stability + DKW worst-case bounds + capability-region headlines |
 | MCP server (`sum-mcp` console script) | shipped; meaning layer on main | bundle tools (`extract` / `attest` / `verify` / `inspect` / `render` / `schema`) plus the meaning layer for agent swarms (`verify_receipt` for all five receipt schemas with the same honest verdict the `sum_verify` CLI prints, `meaning_diff`, `depth_frontier`, `mint_meaning_receipt` / `mint_chain_receipt` BYO-private-key only) over stdio; verification is parallel-safe, judge calls serialise (run N processes for parallel judging); measured ~450-530 full-chain verifies/s on one process (see [`docs/MCP_INTEGRATION.md`](docs/MCP_INTEGRATION.md)) |
-| Transform substrate (`sum.transform_receipt.v1` + registry) | shipped on PyPI ≥ 0.7.0 | `sum transform list` / `sum transform apply <name>` — three registered transforms (`slider` / `extract` / `compose`); receipts via Ed25519 / JCS / detached JWS just like render-receipts; 20-fixture cross-runtime K-matrix locks accept + reject across Python ↔ Node ↔ browser; T4 `source_chain_hash` binds receipts to source byte ranges; T5 `ShareableRender` round-trips signed renders for offline verification; T6 multi-school extract runs two extractors in tandem for adversarial-divergence detection. Wire spec at [`docs/TRANSFORM_RECEIPT_FORMAT.md`](docs/TRANSFORM_RECEIPT_FORMAT.md); design at [`docs/TRANSFORM_REGISTRY.md`](docs/TRANSFORM_REGISTRY.md). |
+| Transform substrate (`sum.transform_receipt.v1` + registry) | shipped on PyPI ≥ 0.7.0 | `sum transform list` / `sum transform apply <name>` — three registered transforms (`slider` / `extract` / `compose`); receipts via Ed25519 / JCS / detached JWS just like render-receipts; 20-fixture cross-runtime K-matrix locks accept + reject across Python ↔ Node ↔ browser; T4 `source_chain_hash` binds receipts to source byte ranges; T5 `ShareableRender` round-trips signed renders for offline verification (library API only, no CLI door yet); T6 multi-school extract runs two extractors in tandem for adversarial-divergence detection. Wire spec at [`docs/TRANSFORM_RECEIPT_FORMAT.md`](docs/TRANSFORM_RECEIPT_FORMAT.md); design at [`docs/TRANSFORM_REGISTRY.md`](docs/TRANSFORM_REGISTRY.md). |
 | Replay-defense window (`signed_at_out_of_window`) | shipped | opt-in `max_age_seconds` parameter across all four verifier surfaces (Python render / Python transform / JS render / JS transform). Default-off preserves archival use; receivers opt in per use-case (agent-swarm 60s, real-time 600s, newsletter 1d, legal-discovery no window). |
 | `sum verify --explain` layered output | shipped | Per-dimension report (`sum.verify_explained.v1`): cryptographic integrity / canonical reconstruction / axiom consistency / extraction provenance / source evidence coverage / semantic preservation / truth of content. Each carries `epistemic_status` (`provable` / `certified` / `empirical-benchmark` / `not-asserted`). Truth of content is ALWAYS `not_asserted` — locked by test. |
 | Meaning-loss receipts + `sum_verify` SDK | shipped on PyPI ≥ 0.8.0 | `sum.meaning_risk_receipt.v1` — a signed, replayable, distribution-free bound on a *named meaning-loss proxy* (`pip install 'sum-engine[verify]'` → `import sum_verify` / `python -m sum_verify`, dependency-light: no numpy/scipy/torch). Plus `sum meaning-diff` (per-document "what was kept / dropped / added"), `sum drift-budget` (compose meaning-loss across a transform chain), and `sum exchangeability` (advisory: is a bound applicable to *your* text?). Research-flagged; the affirmative contribution behind arXiv Paper-1. |

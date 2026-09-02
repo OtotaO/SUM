@@ -1351,7 +1351,7 @@ Result: **PASS**.
 
 ### 162. T5 ShareableRender ✅
 
-`sum_engine_internal.transforms.share.ShareableRender` dataclass + `verify_share` helper. Wraps a signed render + its `source_chain` + `bundle_hash` + verification context into a round-trippable artifact. `signature_verified` + `integrity_checks` dict surface what was actually checked vs assumed.
+`sum_engine_internal.transforms.share.ShareableRender` dataclass + `verify_share` helper. **Library API only:** no CLI subcommand, Worker route, or MCP tool reaches it (zero importers outside its test as of 2026-09-02). Wraps a signed render + its `source_chain` + `bundle_hash` + verification context into a round-trippable artifact. `signature_verified` + `integrity_checks` dict surface what was actually checked vs assumed.
 
 Verify: `pytest Tests/test_transform_share.py -q`
 Expected: 11 passed.
