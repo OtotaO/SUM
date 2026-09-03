@@ -142,7 +142,9 @@ sum transform apply compose --input bundles.json --parameters '{"merge":"lcm"}'
 
 ### 3.3 MCP server (design-intent — NOT yet shipped)
 
-A generic `transform(name, input, parameters) → output + receipt` MCP tool is the design target so an MCP-aware agent can invoke the registry without per-transform tool definitions. **It is not yet implemented:** the MCP server today registers `extract` / `attest` / `verify` / `inspect` / `schema` / `render` (see [`MCP_INTEGRATION.md`](MCP_INTEGRATION.md)) — there is no generic `transform` dispatch tool. Treat §3.3 as deferred until that tool lands.
+A generic `transform(name, input, parameters) → output + receipt` MCP tool is the design target so an MCP-aware agent can invoke the registry without per-transform tool definitions. **It is not yet implemented:** there is no generic `transform` dispatch tool. Treat §3.3 as deferred until that tool lands.
+
+The MCP server today registers seventeen tools (enumerated from the running server, 2026-09-03): the bundle verbs `extract` / `attest` / `verify` / `inspect` / `schema` / `render`; the meaning layer `verify_receipt` / `meaning_diff` / `depth_frontier` / `mint_meaning_receipt` / `mint_chain_receipt`; the five `*_bind` variants; and `agent_surface_manifest`. See [`MCP_INTEGRATION.md`](MCP_INTEGRATION.md) for what each does and which extra it needs. This paragraph previously listed only the six bundle verbs, which predated the meaning layer.
 
 ---
 
