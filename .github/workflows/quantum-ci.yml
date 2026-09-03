@@ -611,3 +611,14 @@ jobs:
     - name: Worker signer smoke (signs, verifies, rejects a tamper)
       working-directory: worker
       run: npm run test:sign
+
+    # Cross-runtime gate for the density slider. `applyDensity` decides which
+    # triples survive density < 1, and that subset is what the deterministic
+    # tome (and therefore the signed `tome_hash`) is built from. The Worker
+    # sorted the axiom keys with ICU `localeCompare` while the Python twin
+    # sorts by codepoint, so the two runtimes kept different subsets of the
+    # same input. tsc cannot see this: both comparators typecheck. The
+    # fixture is generated from the Python reference.
+    - name: Worker density cross-runtime (subset matches Python byte-for-byte)
+      working-directory: worker
+      run: npm run test:density

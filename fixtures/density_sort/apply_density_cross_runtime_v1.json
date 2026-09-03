@@ -1,0 +1,55 @@
+{
+  "schema": "sum.density_sort_cross_runtime.v1",
+  "generated_by": "fixtures/density_sort/generate_fixture.py",
+  "reference_runtime": "python",
+  "key_format": "s||p||o, built by sum_engine_internal.ensemble.slider_renderer._axiom_key",
+  "note": "Python sorted() orders these keys by Unicode codepoint. JavaScript String.prototype.localeCompare orders them by ICU collation, which is a different order, which changed which triples survive density < 1 and therefore changed the signed tome_hash. Every runtime must reproduce expected_kept_keys exactly, in this order.",
+  "triples": [
+    [
+      "a",
+      "p",
+      "o"
+    ],
+    [
+      "ab",
+      "p",
+      "o"
+    ],
+    [
+      "a b",
+      "p",
+      "o"
+    ],
+    [
+      "A",
+      "p",
+      "o"
+    ]
+  ],
+  "cases": [
+    {
+      "density": 0.5,
+      "expected_kept_keys": [
+        "A||p||o",
+        "a b||p||o"
+      ]
+    },
+    {
+      "density": 0.75,
+      "expected_kept_keys": [
+        "A||p||o",
+        "a b||p||o",
+        "ab||p||o"
+      ]
+    },
+    {
+      "density": 1.0,
+      "expected_kept_keys": [
+        "A||p||o",
+        "a b||p||o",
+        "ab||p||o",
+        "a||p||o"
+      ]
+    }
+  ]
+}

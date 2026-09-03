@@ -8,6 +8,7 @@
     "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit",
     "test:sign": "node --experimental-strip-types test/sign_smoke.mjs",
+    "test:density": "node --experimental-strip-types test/density_smoke.mjs",
     "tail": "wrangler tail"
   },
   "devDependencies": {

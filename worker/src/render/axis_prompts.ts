@@ -114,12 +114,38 @@ export function requiresExtrapolator(sliders: SlidersForPrompt): boolean {
   );
 }
 
+/**
+ * Codepoint comparison of two axiom keys. Matches Python's builtin
+ * `sorted()` on the same `s||p||o` strings.
+ *
+ * Earlier draft used `keyOf(a).localeCompare(keyOf(b))`, which sorts by
+ * ICU collation, not by codepoint. On keys `a`, `ab`, `a b`, `A` that is
+ * the order [`a b`, `a`, `A`, `ab`] where Python gives
+ * [`A`, `a b`, `ab`, `a`] — locale collation ignores case and treats the
+ * space as a low-weight separator, while Python compares raw code units.
+ * Because `applyDensity` keeps a PREFIX of the sorted list, a different
+ * order is a different surviving SUBSET, and that subset is what the
+ * deterministic tome (hence the signed `tome_hash`) is built from. Same
+ * class of leak as the join-sort fixed in receipt/sign.ts::hashTriples.
+ *
+ * `<` on JS strings compares UTF-16 code units, which equals codepoint
+ * order for the BMP; the pre-existing hashTriples comparator makes the
+ * same trade.
+ */
+function compareKeys(a: [string, string, string], b: [string, string, string]): number {
+  const ka = keyOf(a);
+  const kb = keyOf(b);
+  return ka < kb ? -1 : ka > kb ? 1 : 0;
+}
+
 export function applyDensity(triples: Array<[string, string, string]>, density: number): Array<[string, string, string]> {
-  // Mirror of Python apply_density: lex-sort by canonical key, keep first floor(N * density).
+  // Mirror of Python apply_density: codepoint-sort by canonical key, keep
+  // first floor(N * density). Pinned cross-runtime by
+  // worker/test/density_smoke.mjs against a Python-generated fixture.
   if (triples.length === 0) return [];
-  if (density >= 1.0) return triples.slice().sort((a, b) => keyOf(a).localeCompare(keyOf(b)));
+  if (density >= 1.0) return triples.slice().sort(compareKeys);
   if (density <= 0.0) return [];
-  const sorted = triples.slice().sort((a, b) => keyOf(a).localeCompare(keyOf(b)));
+  const sorted = triples.slice().sort(compareKeys);
   const k = Math.floor(sorted.length * density);
   return sorted.slice(0, k);
 }
