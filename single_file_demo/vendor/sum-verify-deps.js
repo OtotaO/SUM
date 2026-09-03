@@ -2,74 +2,8 @@
 // Regenerated via `scripts/vendor/build.js`; CI verifies byte-equivalence.
 // DO NOT EDIT BY HAND.
 // jose@5.9.6        — MIT (panva). Filip Skokan and contributors.
-// canonicalize@2.0.0 — Apache-2.0 (Erdtman). Anders Rundgren and contributors.
+// canonicalize@4.0.0 — Apache-2.0 (Erdtman). Anders Rundgren and contributors.
 // Full LICENSE bodies in `single_file_demo/vendor/LICENSE.txt`.
-var __create = Object.create;
-var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getProtoOf = Object.getPrototypeOf;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __commonJS = (cb, mod) => function __require() {
-  try {
-    return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
-  } catch (e) {
-    throw mod = 0, e;
-  }
-};
-var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
-  }
-  return to;
-};
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
-  // If the importer is in node compatibility mode or this is not an ESM
-  // file that has been converted to a CommonJS file using a Babel-
-  // compatible transform (i.e. "__esModule" has not been set), then set
-  // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
-  mod
-));
-
-// node_modules/canonicalize/lib/canonicalize.js
-var require_canonicalize = __commonJS({
-  "node_modules/canonicalize/lib/canonicalize.js"(exports, module) {
-    "use strict";
-    module.exports = function serialize(object) {
-      if (typeof object === "number" && isNaN(object)) {
-        throw new Error("NaN is not allowed");
-      }
-      if (typeof object === "number" && !isFinite(object)) {
-        throw new Error("Infinity is not allowed");
-      }
-      if (object === null || typeof object !== "object") {
-        return JSON.stringify(object);
-      }
-      if (object.toJSON instanceof Function) {
-        return serialize(object.toJSON());
-      }
-      if (Array.isArray(object)) {
-        const values2 = object.reduce((t, cv, ci) => {
-          const comma = ci === 0 ? "" : ",";
-          const value = cv === void 0 || typeof cv === "symbol" ? null : cv;
-          return `${t}${comma}${serialize(value)}`;
-        }, "");
-        return `[${values2}]`;
-      }
-      const values = Object.keys(object).sort().reduce((t, cv) => {
-        if (object[cv] === void 0 || typeof object[cv] === "symbol") {
-          return t;
-        }
-        const comma = t.length === 0 ? "" : ",";
-        return `${t}${comma}${serialize(cv)}:${serialize(object[cv])}`;
-      }, "");
-      return `{${values}}`;
-    };
-  }
-});
 
 // node_modules/jose/dist/browser/runtime/webcrypto.js
 var webcrypto_default = crypto;
@@ -1171,11 +1105,73 @@ function createRemoteJWKSet(url, options) {
   return remoteJWKSet;
 }
 
-// entry-sum-verify-deps.js
-var import_canonicalize = __toESM(require_canonicalize(), 1);
-var export_canonicalize = import_canonicalize.default;
+// node_modules/canonicalize/lib/canonicalize.js
+function hasLoneSurrogate(value) {
+  for (let i = 0; i < value.length; i++) {
+    const code = value.charCodeAt(i);
+    if (code >= 55296 && code <= 56319) {
+      if (i === value.length - 1) {
+        return true;
+      }
+      const next = value.charCodeAt(i + 1);
+      if (!(next >= 56320 && next <= 57343)) {
+        return true;
+      }
+      i++;
+    } else if (code >= 56320 && code <= 57343) {
+      return true;
+    }
+  }
+  return false;
+}
+function canonicalize(object, seen = /* @__PURE__ */ new Set()) {
+  if (typeof object === "number" && isNaN(object)) {
+    throw new Error("NaN is not allowed");
+  }
+  if (typeof object === "number" && !isFinite(object)) {
+    throw new Error("Infinity is not allowed");
+  }
+  if (typeof object === "string" && hasLoneSurrogate(object)) {
+    throw new Error("Lone surrogate is not allowed");
+  }
+  if (object === null || typeof object !== "object") {
+    return JSON.stringify(object);
+  }
+  if (typeof object.toJSON === "function") {
+    if (seen.has(object)) {
+      throw new Error("Circular reference detected");
+    }
+    seen.add(object);
+    const result2 = canonicalize(object.toJSON(), seen);
+    seen.delete(object);
+    return result2;
+  }
+  if (seen.has(object)) {
+    throw new Error("Circular reference detected");
+  }
+  seen.add(object);
+  let result;
+  if (Array.isArray(object)) {
+    const values = object.map((cv) => {
+      const value = cv === void 0 || typeof cv === "symbol" ? null : cv;
+      return canonicalize(value, seen);
+    });
+    result = `[${values.join(",")}]`;
+  } else {
+    const parts = [];
+    for (const key of Object.keys(object).sort()) {
+      if (object[key] === void 0 || typeof object[key] === "symbol") {
+        continue;
+      }
+      parts.push(`${canonicalize(key)}:${canonicalize(object[key], seen)}`);
+    }
+    result = `{${parts.join(",")}}`;
+  }
+  seen.delete(object);
+  return result;
+}
 export {
-  export_canonicalize as canonicalize,
+  canonicalize,
   createRemoteJWKSet,
   flattenedVerify
 };
