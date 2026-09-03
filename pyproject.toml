@@ -154,7 +154,7 @@ omni-format = [
 dev = [
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",
-    "mypy>=1.0.0",
+    "mypy>=2.3.1",
     "ruff>=0.1.0",
     "types-setuptools",
     # Required to collect Tests/test_phase13_zenith.py, test_phase14_ouroboros.py,
