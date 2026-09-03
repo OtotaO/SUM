@@ -90,8 +90,8 @@ In each case the migration steps are:
 
 Two design documents previously stood as separate files in `docs/` but are now archived because their content is either subsumed by this registry or by shipping code:
 
-- [`docs/archive/STAGE3_128BIT_DESIGN.md`](archive/STAGE3_128BIT_DESIGN.md) — full design rationale for `sha256_128_v2` (BPSW primality, 128-bit collision-resistance budget). The activation criteria are summarised in this registry; the full design history is preserved in the archive for any reader who needs the byte-level rationale.
-- [`docs/archive/NLI_MODEL_REGISTRY.md`](archive/NLI_MODEL_REGISTRY.md) — the NLI model registry that pins which entailment models the slider bench accepts. Today's entailment-model contract lives at the top of `sum_engine_internal/ensemble/live_llm_adapter.py` (pinned-snapshot list the harness raises `SystemExit` on) and in `docs/SLIDER_CONTRACT.md` §"Layered fact-preservation metrics"; the archived doc has the longer-form rationale.
+- [`docs/archive/STAGE3_128BIT_DESIGN.md` (tag archive-2026-09-02)](https://github.com/OtotaO/SUM/blob/archive-2026-09-02/docs/archive/STAGE3_128BIT_DESIGN.md) — full design rationale for `sha256_128_v2` (BPSW primality, 128-bit collision-resistance budget). The activation criteria are summarised in this registry; the full design history is preserved in the archive for any reader who needs the byte-level rationale.
+- [`docs/archive/NLI_MODEL_REGISTRY.md` (tag archive-2026-09-02)](https://github.com/OtotaO/SUM/blob/archive-2026-09-02/docs/archive/NLI_MODEL_REGISTRY.md) — the NLI model registry that pins which entailment models the slider bench accepts. Today's entailment-model contract lives at the top of `sum_engine_internal/ensemble/live_llm_adapter.py` (pinned-snapshot list the harness raises `SystemExit` on) and in `docs/SLIDER_CONTRACT.md` §"Layered fact-preservation metrics"; the archived doc has the longer-form rationale.
 
 ## Cross-references
 

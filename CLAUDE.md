@@ -72,111 +72,15 @@ auto-pivot to substrate work and miss the standing direction.**
    `sum.slider_capability_region.v1`,
    `sum.slider_drift_bench.v2`).
 
-### Historical research-arc handovers
+### Historical research-arc handovers (retired 2026-09-02)
 
-The session-handover documents below are research-arc-specific
-context (Path 2 / Sprint 7 / intensification / v3-diagnostic /
-v0.5.0 work). Read them when a specific narrative is in question.
-The compass above takes precedence for strategic-direction
-questions.
+The nine `docs/SESSION_HANDOVER_*` documents (about 2,000 lines) were removed from the
+working tree on 2026-09-02. They are preserved verbatim at the tag
+[`archive-2026-09-02`](https://github.com/OtotaO/SUM/blob/archive-2026-09-02/docs), together with `docs/archive/`.
+The doctrine (NORTH_STAR 4f) names handover-minting as the anti-pattern; the rolling
+continuation state lives in the private memory that auto-loads each session, and
+`CHANGELOG.md` is the in-repo narrative. Read those instead of re-creating this list.
 
-0. **[`docs/SESSION_HANDOVER_2026-06-09_binding_gate_arc.md`](docs/SESSION_HANDOVER_2026-06-09_binding_gate_arc.md)**
-   — **most recent session-block handover** (PRs #261–#298 over
-   2026-06-01 → 2026-06-09). The arc that **CLOSED the arXiv Paper-1
-   binding gate**: two REAL signed `meaning_risk` receipts over real
-   public-domain corpora (BillSum compression ≤ 0.6454 @95%; opus-100
-   EN→FR translation ≤ 0.4124 @95%, 39/64 at exactly zero loss),
-   replacing the self-authored smoke-test fixture; shipped the
-   Perspective receipt + empirical-Bernstein + the cross-runtime JS
-   verifier + the `verify-meaning` CLI + the unified
-   `RECEIPT_FAMILY_SPEC`; survived **two adversarial pre-publication
-   audits** + the full 2,564-test suite + independent re-derivation (one
-   real cross-runtime bug found + fixed — jcs RFC-8785 float
-   canonicalisation, #297); and produced a **final-form Paper-1 draft
-   (PR #298, MERGED 2026-06-09; an arXiv-ready LaTeX conversion was
-   built 2026-07-02 — submission is operator-side)**. Two research scans decided
-   "adopt nothing from Bellard" and found the BillSum corpus + the AEX
-   nearest-prior-art (the cryptographic substrate is now *commodity*; the
-   moat is the meaning-preservation + paraphrase-robustness + conformal
-   delta). **READ THIS HANDOVER FIRST** — §5 names the operator queue
-   (shape + submit Paper-1; one real adopter; NLnet ~Sept), §6 where to
-   focus, §7 the disciplines (never let an unverified descriptive claim
-   ride in a signed field; audit before publishing). The prior handover at
-   [`docs/SESSION_HANDOVER_2026-06-01_post_v0.7.0_arc.md`](docs/SESSION_HANDOVER_2026-06-01_post_v0.7.0_arc.md)
-   covers PRs #246–#260 over 2026-05-21 → 2026-06-01: the 13-PR arc that closed bench-hardening
-   T1 + T4 (§2.5 closure is now empirically multi-stage load-bearing
-   under DKW 95% on every measured corpus), fixed F4 (`sum attest`
-   missing axioms field, Scenario A unblocker), fixed F13 + F14
-   (spacy/typer/click dep rot in `[sieve]` install path + spacy floor
-   broken at runtime; both shipped with a new 2-axis floor-venv-smoke
-   CI gate), aligned 5+3+2 doc surfaces with reality (PRs #253 / #255
-   / #259 — outcome-coherence pass + live-state-probe corrections +
-   self-inflicted orphan cross-links), shipped the categorical-
-   foundations DisCoCat-vocabulary recasting for §2.5.1 (PR #254),
-   and demoted `api/quantum_router.py` (1684 LOC, 26+ endpoints, 58
-   passing tests) to internal-research per operator decision (PR #260)
-   with banner-only approach preserving substrate option value. Two
-   load-bearing process disciplines established + memorialised:
-   **live-state empirical probing > source-presence checks**
-   (`feedback_live_state_probing.md`), and **`git pull --ff-only`
-   before `git checkout -b`** (`feedback_pull_before_branch.md`).
-   **READ THIS HANDOVER FIRST** — §6 names the operator queue that
-   is the actual rate-limit on outcome delivery; §7 names anti-
-   patterns the next session must avoid. The prior handover at
-   [`docs/SESSION_HANDOVER_2026-05-05_path2_arc.md`](docs/SESSION_HANDOVER_2026-05-05_path2_arc.md)
-   — covers PRs #156 / #157 / #158 /
-   #159 / #160 / #161 / #163 / #164 — Path 2 real-LLM-rendered
-   adversarial bench closes the §7 asterisk; multi-LLM cross-family
-   corroboration extends to six LLM lineages from six organisations
-   across closed + open weights; cross-corpus extension across three
-   corpora initially appears corpus-specific, then resolved by
-   §4.7.4.1 as extremal-Goodhart at small n — at controlled sample
-   sizes (n ≥ 16) across 3 corpora × 4-6 LLM lineages, joint finding
-   is `STRUCTURAL_GAP_NO_MODEL_BEATS` in 3/3 corpora). The
-   synthetic-bench WIN (+0.043) is now read as a Goodhart artifact:
-   hybrid selected to compose well on a measure (the synthetic
-   harness), measure stops being a good measure once it is the
-   target. The "Phase 1 same-process contamination" was
-   misdiagnosed and root-caused as a dict-iteration-order bug fixed
-   in PR #160; the open-weights extension routes through HF
-   Inference Providers via the HF route in
-   `llm_dispatch.get_adapter`. §7 restructured into a four-tier
-   audit; PROOF_BOUNDARY §2.10 reframed as continuous-enforcement
-   against mutualism breakdown. Open v0.4+ candidates:
-   real-LLM-aware per-triple V training, naturalistic perturbation
-   synthesis, deeper corpus sampling (5-10 corpora at n ≥ 16).
-   **Read this first if the §4.7.x narrative is in question.** The
-   prior handover at
-   [`docs/SESSION_HANDOVER_2026-05-05_sprint_7_5_arc.md`](docs/SESSION_HANDOVER_2026-05-05_sprint_7_5_arc.md)
-   — Sprint 7 v0.1 prose fold-in + Sprint 7.5 hardening arc (PRs
-   #142 / #146 / #144 / #145 / #147 — complementary-hybrid
-   detector recovery and cross-machine bench_digest verification;
-   five-PR arc summary; preprint v0 → v0.1; baseline-comparison
-   gate fires STOP-THE-LINE; four recovery experiments produce
-   HYBRID_BEATS_BASELINE WIN at trusted-mean AUC 0.876, Δ=+0.043
-   vs B2; Modal cross-machine confirms both digest and verdict
-   reproduce; substrate-first reframe lands; in-repo doc sync).
-   Names operator-only items remaining before arXiv submit:
-   optional v0.6.0 release, pre-circulation packet, arXiv submit
-   — those are still open at the §4.7.3 close. The prior handover at
-   [`docs/SESSION_HANDOVER_2026-05-04_intensification_arc.md`](docs/SESSION_HANDOVER_2026-05-04_intensification_arc.md)
-   carries the intensification-arc context (PRs #134–#140 — catalog
-   refresh, bench-digest determinism, fastapi pin, shared compliance
-   predicates, sheaf detector library API doc, PROOF_BOUNDARY v1.6.0
-   refresh, PCI user-id gap closure). The handover before that at
-   [`docs/SESSION_HANDOVER_2026-05-02_v3_diagnostic_arc.md`](docs/SESSION_HANDOVER_2026-05-02_v3_diagnostic_arc.md)
-   carries the v3-diagnostic-arc context (PRs #119–#125: audit-log
-   gap closure, EU AI Act Article 12 validator, v3 receipt-
-   weighted detector, v3.1 harmonic extension, F3 STRUCTURAL FAIL
-   diagnostic, `bench_digest` substrate). The earlier handover at
-   [`docs/SESSION_HANDOVER_2026-05-01_research_arc.md`](docs/SESSION_HANDOVER_2026-05-01_research_arc.md)
-   (PRs #103–#117 + v0.5.0 + initial sheaf-Laplacian work) carries
-   the previous arc's context;
-   [`docs/SESSION_HANDOVER_2026-05-01.md`](docs/SESSION_HANDOVER_2026-05-01.md)
-   (PRs #97–#102; v0.4.0 → v0.4.1 publish-path arc) and
-   [`docs/SESSION_HANDOVER_2026-04-30.md`](docs/SESSION_HANDOVER_2026-04-30.md)
-   (PRs #83–#95; v0.3 → v0.4 substrate arc) carry the earlier
-   thread-pickup context.
 1. **[`CHANGELOG.md`](CHANGELOG.md)** — release history. `[0.1.0]`
    was the first PyPI release (2026-04-22); `[0.2.0]` /`[0.2.1]`
    are hygiene fixes; `[0.3.0]` (2026-04-23) added the agentic

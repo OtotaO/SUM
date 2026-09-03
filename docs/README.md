@@ -43,15 +43,9 @@ which `CLAUDE.md` links directly.
 
 ## Archive
 
-`docs/archive/` holds session-shaped or superseded documents preserved for git history and external-link continuity:
-- `WASM_PERFORMANCE.md` — older WASM benchmark notes
-- `MODEL_CALL_EVIDENCE_FORMAT.md` — design for an unshipped surface
-- `DEMO_RECORDING.md` — screen-recording instructions
-- `STAGE3_128BIT_DESIGN.md` — `sha256_128_v2` design rationale
-- `SLIDER_V02_RESEARCH.md` — v0.2 slider-substrate research; load-bearing decisions folded into `SLIDER_CONTRACT.md`
-- `NLI_MODEL_REGISTRY.md` — supported NLI models; folded into `ALGORITHM_REGISTRY.md`
-- `FORMAL_MODELS.md` — formal-verification roadmap; folded into `PROOF_BOUNDARY.md` §3
-- `TRANSPARENCY_ANCHOR.md` — Rekor/CT anchoring design; folded into `TRUST_ROOT_FORMAT.md`
-- Older archive entries (`ULTIMATE_VISION.md`, etc.) preserve pre-v0.4 vision documents
-
-These are reachable in the public repo via the `archive/` path so external links survive. Folded content has a forwarding pointer at the original path.
+`docs/archive/` (72 session-shaped or superseded documents) was removed from the
+working tree on 2026-09-02 after a reachability audit found none of it linked from
+README or CLAUDE.md. Every file is preserved at the tag [`archive-2026-09-02`](https://github.com/OtotaO/SUM/blob/archive-2026-09-02/docs/archive).
+The nine `SESSION_HANDOVER_*` documents were removed at the same time; the rolling
+continuation state lives outside the repo, and the doctrine (NORTH_STAR 4f) names
+handover-minting as the anti-pattern.

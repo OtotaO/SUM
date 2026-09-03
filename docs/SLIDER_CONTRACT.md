@@ -493,7 +493,7 @@ contract is recorded in the trust-root manifest:
 - [`fixtures/render_receipts/`](../fixtures/render_receipts/) — the
   cross-runtime receipt-fixture set; positive control verifies the
   same way regardless of which slider position produced it.
-- [`docs/archive/SLIDER_V02_RESEARCH.md`](archive/SLIDER_V02_RESEARCH.md)
+- [`docs/archive/SLIDER_V02_RESEARCH.md` (tag archive-2026-09-02)](https://github.com/OtotaO/SUM/blob/archive-2026-09-02/docs/archive/SLIDER_V02_RESEARCH.md)
   — research/methodology behind the slider's v0.2+ substrate. The
   load-bearing decisions (verifiable rewards, cycle-consistency,
   content-addressed provenance, IB Pareto frontier, constrained-

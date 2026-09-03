@@ -89,6 +89,8 @@ anthropic = ["anthropic>=0.97.0", "pydantic>=2.0.0"]
 # (RFC 9864 favours explicit Ed25519/Ed448 alg identifiers). The whole
 # render-receipt trust loop signs with "EdDSA", so we pin below 2.0.0
 # until we confirm a major release does not drop the "EdDSA" alias.
+# Alias of [verify]; byte-identical by design (audit 2026-09-02). Kept so an
+# existing `pip install "sum-engine[receipt-verify]"` keeps working.
 receipt-verify = ["joserfc>=1.0.0,<2.0.0"]
 # The stable, dependency-light verify SDK (`import sum_verify`). The
 # package an integrator pins to CHECK SUM receipts — meaning-risk /
