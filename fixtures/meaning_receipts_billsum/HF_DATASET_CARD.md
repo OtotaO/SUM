@@ -63,7 +63,7 @@ The receipt's own disclosure, verbatim:
 
 - **Bound:** expected meaning-loss ≤ **0.6454** at **95%** (n = 64), `controlled = true`.
 - **`not_covered`:** `arrangement`, `sound`, `connotation`, `implicature` — the layers the proxy explicitly does not measure.
-- The meaning proxy tracks *human* faithfulness only **modestly** (Spearman ρ ≈ 0.27–0.33 on SummEval). This is a directionally-valid, distribution-free bound on a *named proxy*, **not** a substitute for human judgment. Provenance is cryptographically solid; the meaning recomputation is advisory.
+- The meaning proxy tracks *human* faithfulness only **modestly** (Spearman ρ = 0.267–0.291, pooled summary-level, on SummEval). This is a directionally-valid, distribution-free bound on a *named proxy*, **not** a substitute for human judgment. Provenance is cryptographically solid; the meaning recomputation is advisory.
 
 ## Cite / reuse
 

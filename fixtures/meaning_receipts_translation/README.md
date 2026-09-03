@@ -28,7 +28,7 @@ the chain-of-custody-for-meaning moat.)
   biases the proxy **low** vs the unfiltered split. Quote the number *with*
   the "filtered subset" qualifier.
 - The NLI judge emits a **small discrete set** of per-pair loss values
-  (recall/fidelity are booleans per sentence), so the loss vector is coarse,
+  (recall/fidelity are booleans per unit, where a unit is a punctuation-or-newline-delimited segment rather than a linguistic sentence), so the loss vector is coarse,
   not continuous — the mean/bound rest on that grid.
 - The 0.50 `alpha_target` is an **illustrative** control threshold, not a
   tuned or claimed quality bar.

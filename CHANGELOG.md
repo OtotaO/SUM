@@ -2547,7 +2547,11 @@ OpenAI render path into the existing threat model.
   (`a7965803…`). All four recovery experiments are now byte-digest
   pinned.
 
-## [0.6.0] - 2026-05-05
+## [0.6.0-precut] - 2026-05-05
+
+> Superseded by the `[0.6.0] - 2026-05-11` section above; the tag `v0.6.0` was
+> cut on 2026-05-11. Relabelled 2026-09-02 so `publish-release.yml`, whose
+> header regex stops at the first `## [x.y.z]`, mirrors one section per version.
 
 The Sprint 7 + 7.5 release. arXiv preprint v0.1 in
 `docs/arxiv/sheaf-detector-note-v0.md` is the headline artifact;

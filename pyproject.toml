@@ -5,18 +5,22 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "sum-engine"
 version = "0.10.0"
-description = "SUM — bidirectional knowledge distillation with optional cryptographic attestation. Pipe prose, get a CanonicalBundle (HMAC / Ed25519 / W3C VC 2.0), verify anywhere."
+description = "Signed, replayable receipts for what an AI transformation did to a text's meaning: Ed25519 over JCS, detached JWS, a distribution-free bound on a named meaning-loss proxy, verifiable offline with no ML stack."
 readme = "README.md"
 license = { text = "Apache-2.0" }
 authors = [{ name = "ototao" }]
 requires-python = ">=3.10"
 keywords = [
-    "knowledge-graph",
-    "verifiable-credentials",
+    "provenance",
+    "receipt",
+    "meaning-loss",
+    "conformal-prediction",
+    "ed25519",
+    "jws",
+    "jcs",
+    "content-authenticity",
     "attestation",
-    "godel-encoding",
-    "semantic-web",
-    "agent-cli",
+    "mcp",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",

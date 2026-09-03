@@ -1376,7 +1376,7 @@ def cmd_render(args: argparse.Namespace) -> int:
             "actions only the density slider. Either:\n"
             "  • drop the affected sliders to 0.5 (neutral) for a "
             "deterministic local render, or\n"
-            "  • pass --use-worker https://sum.ototao.com to render via "
+            "  • pass --use-worker https://sum-demo.ototao.workers.dev to render via "
             "the hosted Worker (returns a signed render_receipt).",
             file=sys.stderr,
         )
@@ -3824,9 +3824,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="sum",
         description=(
-            "SUM — bidirectional knowledge distillation with optional "
-            "cryptographic attestation. Pipe prose, get a CanonicalBundle "
-            "whose state integer anyone can re-derive, verify anywhere."
+            "Signed, replayable receipts for what an AI transformation did to a "
+            "text's meaning. Start with `sum meaning-diff` (per-document readout) "
+            "and `sum verify-meaning` (replay a signed bound offline). The "
+            "CanonicalBundle attest/verify path (Gödel state integer) is the "
+            "older substrate and remains available."
         ),
         epilog=(
             "Examples:\n"
@@ -3834,7 +3836,7 @@ def build_parser() -> argparse.ArgumentParser:
             "  sum verify < bundle.json                  # structural only\n"
             "  sum render < bundle.json > tome.md        # inverse: bundle → prose\n"
             "  sum render --density 0.5 < bundle.json    # half the axioms, lex-prefix\n"
-            "  sum render --length 0.9 --use-worker https://sum.ototao.com < bundle.json --json\n"
+            "  sum render --length 0.9 --use-worker https://sum-demo.ototao.workers.dev < bundle.json --json\n"
             "  sum attest --ed25519-key keys/issuer.pem | sum verify --strict\n"
             "  sum attest --ledger akashic.db < prose.txt\n"
             "  sum resolve prov:abc123... --db akashic.db\n"
@@ -4103,7 +4105,7 @@ def build_parser() -> argparse.ArgumentParser:
             "POST triples + slider position to <URL>/api/render and "
             "return the LLM-conditioned tome + signed render_receipt. "
             "Required when any non-density slider is non-neutral. "
-            "Hosted Worker: https://sum.ototao.com."
+            "Hosted Worker: https://sum-demo.ototao.workers.dev."
         ),
     )
     p_render.add_argument(
