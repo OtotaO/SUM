@@ -218,7 +218,7 @@ never a stop sign — it means shrink the operator's task to one click.
 *Everything below this line predates 2026-07-11 and is historical context.*
 
 
-*Re-authored 2026-04-27 at the close of Phase E doc-pass PR A. **State-at-head section refreshed 2026-05-02** to reflect PRs #117–#125 (audit-log substrate, EU AI Act Article 12 validator, sheaf-Laplacian v3 receipt-weighted detector, v3.1 harmonic-extension primitive, audit-tightening pass + λ double-counting bug fix, v3 corpus ROC bench, F3 structural-fail diagnostic). For a focused handover to the immediately-next session see [`docs/SESSION_HANDOVER_2026-05-02_v3_diagnostic_arc.md`](SESSION_HANDOVER_2026-05-02_v3_diagnostic_arc.md) — read that first if you are picking the thread up cold from this session. This playbook below is long-term priority context.*
+*Re-authored 2026-04-27 at the close of Phase E doc-pass PR A. **State-at-head section refreshed 2026-05-02** to reflect PRs #117–#125 (audit-log substrate, EU AI Act Article 12 validator, sheaf-Laplacian v3 receipt-weighted detector, v3.1 harmonic-extension primitive, audit-tightening pass + λ double-counting bug fix, v3 corpus ROC bench, F3 structural-fail diagnostic). For a focused handover to the immediately-next session see [`docs/SESSION_HANDOVER_2026-05-02_v3_diagnostic_arc.md` (tag archive-2026-09-02)](https://github.com/OtotaO/SUM/blob/archive-2026-09-02/docs/SESSION_HANDOVER_2026-05-02_v3_diagnostic_arc.md) — read that first if you are picking the thread up cold from this session. This playbook below is long-term priority context.*
 
 ## Non-negotiable principles
 
@@ -241,7 +241,7 @@ Before any work: read [`docs/PROOF_BOUNDARY.md`](PROOF_BOUNDARY.md) cover-to-cov
 > past it: **v0.7.1 is live on PyPI**, bench-hardening T1 + T4 are CLOSED,
 > `api/quantum_router.py` was demoted to internal-research (PR #260), and
 > the meaning-loss frontier arc shipped (PRs #270–#288). For **live**
-> state read the latest [`docs/`](.) `SESSION_HANDOVER_*` (most recent
+> state read the rolling private memory (the handover documents were retired 2026-09-02; the last ones are at tag `archive-2026-09-02`) (most recent
 > first) and [`CHANGELOG.md`](../CHANGELOG.md) `[Unreleased]`. The
 > priority-queue and principles sections of this playbook remain
 > long-term context; this state table is a historical record.
@@ -337,7 +337,7 @@ SEP-1649 / SEP-1960 progress through June 2026.
 
 ### ✅ v0.5.0 + audit-log + compliance + sheaf-Laplacian arc (PRs #103–#125)
 
-Three composing layers shipped between 2026-05-01 and 2026-05-02 — see [`docs/SESSION_HANDOVER_2026-05-01_research_arc.md`](SESSION_HANDOVER_2026-05-01_research_arc.md) for the v0.5.0 release + initial sheaf-Laplacian work (PRs #103–#117), and [`docs/SESSION_HANDOVER_2026-05-02_v3_diagnostic_arc.md`](SESSION_HANDOVER_2026-05-02_v3_diagnostic_arc.md) for the v3 / v3.1 / F3 diagnostic arc (PRs #119–#125). Net substrate added:
+Three composing layers shipped between 2026-05-01 and 2026-05-02 — see [`docs/SESSION_HANDOVER_2026-05-01_research_arc.md` (tag archive-2026-09-02)](https://github.com/OtotaO/SUM/blob/archive-2026-09-02/docs/SESSION_HANDOVER_2026-05-01_research_arc.md) for the v0.5.0 release + initial sheaf-Laplacian work (PRs #103–#117), and [`docs/SESSION_HANDOVER_2026-05-02_v3_diagnostic_arc.md` (tag archive-2026-09-02)](https://github.com/OtotaO/SUM/blob/archive-2026-09-02/docs/SESSION_HANDOVER_2026-05-02_v3_diagnostic_arc.md) for the v3 / v3.1 / F3 diagnostic arc (PRs #119–#125). Net substrate added:
 
 - **Audit-log primitive** (`sum.audit_log.v1`, PR #117 + hardened by PR #119). Regime-agnostic JSONL stream emitted by every CLI op when `SUM_AUDIT_LOG` is set; fail-open semantics; 17/17 contract tests including signed-bundle paths, true multi-process O_APPEND atomicity (8 procs × 20 emits), worker-mode render rows, empty-string env handling. Spec: [`docs/AUDIT_LOG_FORMAT.md`](AUDIT_LOG_FORMAT.md).
 
