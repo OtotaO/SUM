@@ -4,6 +4,52 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Gate 0 of the 2026-09-02 first-principles audit, closed (#474 to #478).**
+  The audit found that the shipped verifier is about 2,832 lines of a ~130K
+  line repository, that 18 of 23 enhancement proposals fail the project's own
+  buyer-or-dream filter because no adopter exists to pull them, and that what
+  survives is defect repair on stranger-facing surfaces, honesty corrections
+  with receipts, and distribution acts. These five PRs are the first two
+  classes. Nothing here adds capability.
+  - **The per-PR test job never ran the shipped SDK's tests (#478).** It
+    installed only `requirements-prod.txt`, which carries no `joserfc`, `mcp`,
+    or `hypothesis`; 17 test files (574 tests after parametrization, the
+    `[verify]` SDK suite among them) `importorskip`'d away and the job stayed
+    green at 2,330 collected against 2,904 locally. CI now installs
+    `.[verify,mcp,dev]`, a `conftest` guard reds any whole-tree CI run that
+    would under-collect (keyed on the `CI` env var so it cannot be switched
+    off by editing the step that regressed), and `[verify]` joins the wheel
+    smoke matrix with a no-numpy/scipy/torch assertion. Proven in a fresh
+    production-floor venv: guard fires (exit 4), then 2,794 collected.
+  - **Worker and Python kept different triples at density < 1 (#475).** The
+    Worker sorted axiom keys with ICU `localeCompare`; Python sorts by
+    codepoint. The kept prefix differs, and it is hashed into the signed
+    `tome_hash`. Codepoint sort in the Worker; a Python-generated fixture
+    asserted by both runtimes (`npm run test:density`, in CI). Fails 5 of 9
+    checks against the old comparator.
+  - **Issuer and verifier used different mean kernels (#476).** numpy
+    pairwise mean versus the SDK's `fsum`; `point_estimate_micro` could land
+    either side of a round-half-even tie on even-n inputs (the bound never
+    diverged). The issuer now uses the SDK kernel; a brute-force test over
+    the micro grid asserts the seam exists and is closed.
+  - **Node verifier passed unparseable keys (#477).** Every throw inside
+    `verifyEd25519` became `unsupported`, rendered as a green PASS with a
+    false "Node lacks Ed25519" excuse. Five statuses with one meaning each;
+    `malformed` fails closed; genuine `unsupported` exits 5, "could not
+    verify", so scripts can tell it from both pass and fail. Adversarial
+    case A8; harness now 8 of 8.
+  - **Honesty pass over eleven surfaces measured false at source (#474).**
+    The retracted rho range still printed by five executable surfaces in
+    0.10.0; PyPI summary and `sum --help` describing the pre-receipt
+    product; a dead example host in the CLI; the paper's artifact statement
+    naming the wrong Node verifier; the proxy's unit disclosed as a
+    punctuation-or-newline segment rather than a sentence; two incompatible
+    definitions of "Stage B"; three stale facts in CLAUDE.md; a scope stamp
+    on the render-frontier vision; ShareableRender marked library-only; the
+    README curl block now verifies the receipt it fetches; the duplicate
+    `[0.6.0]` heading relabelled so the release mirror sees one section per
+    version.
+
 - **Correction to the 0.10.0 notes, and the actual fix (#473).** The 0.10.0
   entry credited #443 with fixing `meaning_diff`. It did not. #443 removed an
   AttributeError; the very next line called `list()` on
