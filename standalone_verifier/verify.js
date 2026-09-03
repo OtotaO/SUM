@@ -19,8 +19,12 @@
  *   - Ed25519 signatures (if present) ARE verified here via Node's
  *     WebCrypto SubtleCrypto — the same API the browser demo uses. A
  *     tampered bundle with a valid tome but a mismatched signature
- *     fails. Requires Node 18.4+; older Node falls back to a
- *     'present (upgrade Node to verify)' report without false ✓.
+ *     fails, and so does a bundle whose public key or signature cannot
+ *     be decoded: a signature that could not be checked never passes.
+ *     Requires Node 18.4+; on older Node nothing can be checked, so
+ *     the verifier says so and exits 5 ("could not verify"), which is
+ *     neither a pass nor a proven failure. See the verdict rule above
+ *     verifyEd25519 and the exit-code table in the usage text.
  *   - HMAC signatures are NOT verified here (shared-secret, not public witness).
  *   - Collision resolution: Python uses sympy.nextprime with a while-loop for
  *     collisions. This verifier implements the same deterministic derivation.
@@ -313,34 +317,128 @@ function runV2SelfTest() {
 // two.
 //
 // Node 18.4+ ships Ed25519 in WebCrypto. On older Node, importKey
-// throws and we report 'unsupported' — never a false ✓.
+// throws and we report 'unsupported' — never a false ✓, and (since
+// the split below) never a green exit either.
+//
+// ── The verdict rule ──────────────────────────────────────────────
+//
+// verifyEd25519 returns exactly one of five statuses, and this is the
+// whole contract. Keep it in sync with the banner labels below and
+// with the exit codes documented in main().
+//
+//   'verified'    → PASS (exit 0). The signature checks out against
+//                   the embedded public key.
+//   'invalid'     → FAIL (exit 1). The signature was checked and does
+//                   not match. Forgery or post-signing tampering.
+//   'malformed'   → FAIL (exit 1). The public key or the signature
+//                   could not be decoded or imported, so NO check was
+//                   possible. An unusable key is not an excuse to
+//                   pass: fail closed. Python's `_ed25519_verify`
+//                   returns False on the same inputs, so both
+//                   runtimes reject, in the same rejection class.
+//   'absent'      → PASS structurally (exit 0), labelled 'absent'.
+//                   An unsigned bundle is not a forgery; this witness
+//                   reports the state reconstruction and says the
+//                   bundle carries no public signature. That
+//                   semantics is deliberate and unchanged.
+//   'unsupported' → FAIL CLOSED with a distinct exit code (5) and an
+//                   explicit warning. Reserved for the ONE case it
+//                   honestly describes: this Node build genuinely has
+//                   no Ed25519 in WebCrypto. Nothing was checked, so
+//                   a script must be able to tell "could not verify"
+//                   from "verified" — hence 5 rather than 0 or 1.
+//
+// Before the split, every failure inside the try block (an
+// unparseable public key, a non-string field, a key of the wrong
+// length) returned 'unsupported', and the banner printed a green PASS
+// carrying the false excuse "Node lacks Ed25519 in WebCrypto" on a
+// Node that has it. Pinned by A8 in
+// scripts/verify_cross_runtime_adversarial.py.
 
 function decodeEd25519Field(s) {
+  // Deliberately mirrors Python's CanonicalCodec._ed25519_verify:
+  // split on the first colon, base64-decode the tail, validate
+  // nothing else. Python does not check the "ed25519:" prefix, so
+  // neither do we — a stricter Node would reject bundles Python
+  // accepts, which is an accept-side asymmetry, not a hardening.
+  // Buffer.from(..., 'base64') is lenient (it drops junk characters
+  // rather than throwing), so a wrong-length or garbage field is
+  // caught downstream by importKey, not here.
+  if (typeof s !== 'string') throw new TypeError('Ed25519 field is not a string');
   const b64 = s.split(':', 2)[1] || '';
   return new Uint8Array(Buffer.from(b64, 'base64'));
 }
 
+// Does THIS runtime have Ed25519 in WebCrypto at all? Probed with a
+// syntactically valid 32-byte key so the answer depends only on the
+// runtime, never on the bundle. Used to tell a genuinely missing
+// primitive apart from a key this runtime could not import — matching
+// on error names or messages would couple the verdict to Node's
+// wording, which is not a stable contract.
+async function ed25519PrimitiveAvailable(subtle) {
+  try {
+    await subtle.importKey(
+      'raw', new Uint8Array(32), { name: 'Ed25519' }, false, ['verify']
+    );
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 async function verifyEd25519(bundle) {
   if (!bundle.public_signature || !bundle.public_key) return 'absent';
+
+  const subtle = (crypto.webcrypto && crypto.webcrypto.subtle) || null;
+  if (!subtle) return 'unsupported';
+
+  let pubBytes, sigBytes;
   try {
-    const subtle = (crypto.webcrypto && crypto.webcrypto.subtle) || null;
-    if (!subtle) return 'unsupported';
-    const pubBytes = decodeEd25519Field(bundle.public_key);
-    const sigBytes = decodeEd25519Field(bundle.public_signature);
-    const payload = new TextEncoder().encode(
-      `${bundle.canonical_tome}|${bundle.state_integer}|${bundle.timestamp}`
-    );
-    const key = await subtle.importKey(
+    pubBytes = decodeEd25519Field(bundle.public_key);
+    sigBytes = decodeEd25519Field(bundle.public_signature);
+  } catch (e) {
+    return 'malformed';
+  }
+
+  let key;
+  try {
+    key = await subtle.importKey(
       'raw', pubBytes, { name: 'Ed25519' }, false, ['verify']
     );
+  } catch (e) {
+    // Two unrelated failures land here: the runtime has no Ed25519, or
+    // the key bytes are not an importable Ed25519 key. Only the first
+    // one may be called 'unsupported'.
+    return (await ed25519PrimitiveAvailable(subtle)) ? 'malformed' : 'unsupported';
+  }
+
+  const payload = new TextEncoder().encode(
+    `${bundle.canonical_tome}|${bundle.state_integer}|${bundle.timestamp}`
+  );
+  try {
     const ok = await subtle.verify({ name: 'Ed25519' }, key, sigBytes, payload);
     return ok ? 'verified' : 'invalid';
   } catch (e) {
-    return 'unsupported';
+    // The key imported, so the primitive exists; a throw here means the
+    // signature bytes were unusable. Note that a merely wrong-length
+    // signature does NOT throw — WebCrypto returns false for it, which
+    // is 'invalid', the same verdict Python reaches. Only a hard throw
+    // reaches this branch.
+    return 'malformed';
   }
 }
 
 // ─── Bundle Verification ───────────────────────────────────────────
+//
+// Exit codes. These are the machine-readable half of the verdict and
+// scripts branch on them, so they are append-only: never reuse or
+// renumber one. Also documented in the usage text printed by main().
+const EXIT_OK = 0;                    // verified, or structurally valid + unsigned
+const EXIT_VERIFICATION_FAILED = 1;   // state mismatch, or Ed25519 invalid/malformed
+const EXIT_BAD_INPUT = 2;             // unreadable file, bad JSON, missing field
+const EXIT_UNSUPPORTED_FORMAT = 3;    // unknown canonical format version or prime scheme
+const EXIT_RECONSTRUCTION_ERROR = 4;  // state reconstruction threw
+const EXIT_ED25519_UNCHECKABLE = 5;   // this runtime cannot check Ed25519 at all
 
 async function verifyBundle(bundlePath) {
   console.log('═══════════════════════════════════════════════════════════');
@@ -354,7 +452,7 @@ async function verifyBundle(bundlePath) {
     bundleJson = fs.readFileSync(bundlePath, 'utf-8');
   } catch (e) {
     console.error(`❌ Cannot read bundle file: ${bundlePath}`);
-    process.exit(2);
+    process.exit(EXIT_BAD_INPUT);
   }
 
   let bundle;
@@ -362,7 +460,7 @@ async function verifyBundle(bundlePath) {
     bundle = JSON.parse(bundleJson);
   } catch (e) {
     console.error('❌ Invalid JSON in bundle file.');
-    process.exit(2);
+    process.exit(EXIT_BAD_INPUT);
   }
 
   // 2. Validate bundle structure
@@ -370,7 +468,7 @@ async function verifyBundle(bundlePath) {
   for (const field of required) {
     if (!(field in bundle)) {
       console.error(`❌ Missing required field: ${field}`);
-      process.exit(2);
+      process.exit(EXIT_BAD_INPUT);
     }
   }
 
@@ -384,7 +482,7 @@ async function verifyBundle(bundlePath) {
   if (bundle.canonical_format_version !== '1.0.0') {
     console.error(`\n❌ Unsupported canonical format version: ${bundle.canonical_format_version}`);
     console.error('   This witness only supports version 1.0.0.');
-    process.exit(3);
+    process.exit(EXIT_UNSUPPORTED_FORMAT);
   }
 
   // 3b. Scheme validation
@@ -393,7 +491,7 @@ async function verifyBundle(bundlePath) {
   if (!KNOWN_SCHEMES.includes(scheme)) {
     console.error(`\n❌ Unknown prime scheme: ${scheme}`);
     console.error(`   Known schemes: ${KNOWN_SCHEMES.join(', ')}`);
-    process.exit(3);
+    process.exit(EXIT_UNSUPPORTED_FORMAT);
   }
   console.log(`  Prime Scheme:      ${scheme}`);
 
@@ -411,7 +509,7 @@ async function verifyBundle(bundlePath) {
     reconstructed = reconstructState(axiomKeys, scheme);
   } catch (e) {
     console.error(`\n❌ Reconstruction failed: ${e.message}`);
-    process.exit(4);
+    process.exit(EXIT_RECONSTRUCTION_ERROR);
   }
   const exported = BigInt(bundle.state_integer);
 
@@ -433,10 +531,25 @@ async function verifyBundle(bundlePath) {
   let ed25519Label;
   if (ed25519Status === 'verified') ed25519Label = '✓ verified (Node SubtleCrypto)';
   else if (ed25519Status === 'invalid') ed25519Label = '✗ INVALID — signature does not match public key';
-  else if (ed25519Status === 'unsupported') ed25519Label = 'present (Node lacks Ed25519 in WebCrypto; upgrade to ≥18.4)';
+  else if (ed25519Status === 'malformed') ed25519Label = '✗ MALFORMED — public key or signature could not be decoded; signature NOT checked';
+  else if (ed25519Status === 'unsupported') ed25519Label = '⚠ NOT CHECKED — this Node lacks Ed25519 in WebCrypto (upgrade to ≥18.4)';
   else ed25519Label = 'absent';
 
-  const overallMatch = match && ed25519Status !== 'invalid';
+  // Only 'verified' and 'absent' are pass verdicts. 'invalid' and
+  // 'malformed' are failures; 'unsupported' is not a pass either,
+  // because nothing was checked (see the verdict rule above).
+  const overallMatch =
+    match && (ed25519Status === 'verified' || ed25519Status === 'absent');
+  // Exit-code precedence: a structural mismatch is the strongest claim
+  // we can make, so it wins; otherwise an unchecked signature reports
+  // "could not verify" rather than "verification failed".
+  const exitCode = !match
+    ? EXIT_VERIFICATION_FAILED
+    : ed25519Status === 'unsupported'
+      ? EXIT_ED25519_UNCHECKABLE
+      : overallMatch
+        ? EXIT_OK
+        : EXIT_VERIFICATION_FAILED;
 
   console.log('\n═══════════════════════════════════════════════════════════');
   if (overallMatch) {
@@ -463,7 +576,11 @@ async function verifyBundle(bundlePath) {
       console.log('  • v2 collisions are fatal (no advancement loop)');
     }
   } else {
-    console.log('  ❌ WITNESS VERIFICATION FAILED');
+    if (exitCode === EXIT_ED25519_UNCHECKABLE) {
+      console.log('  ⚠️  WITNESS VERIFICATION INCOMPLETE — Ed25519 NOT CHECKED');
+    } else {
+      console.log('  ❌ WITNESS VERIFICATION FAILED');
+    }
     console.log('');
     console.log(`  Scheme:   ${scheme}`);
     console.log(`  Ed25519:  ${ed25519Label}`);
@@ -477,6 +594,23 @@ async function verifyBundle(bundlePath) {
       console.log('  Either the tome was tampered with after signing, or the');
       console.log('  public_key field was swapped. Do not trust this bundle.');
     }
+    if (ed25519Status === 'malformed') {
+      console.log('  The embedded Ed25519 public key or signature could not be');
+      console.log('  decoded or imported, so the signature was NOT checked.');
+      console.log('  This is a broken bundle, not a missing runtime primitive:');
+      console.log('  a field that will not decode, or a key that will not');
+      console.log('  import where Ed25519 IS available, fails on any runtime.');
+      console.log('  A signature that cannot be checked is not a signature.');
+      console.log('  Do not trust this bundle.');
+    }
+    if (ed25519Status === 'unsupported') {
+      console.log('  This Node build has no Ed25519 in WebCrypto, so the embedded');
+      console.log('  signature could NOT be checked. The state reconstruction');
+      console.log(`  ${match ? 'DID match' : 'did NOT match'}, but the provenance claim is unverified.`);
+      console.log(`  Exiting ${EXIT_ED25519_UNCHECKABLE} ("could not verify"), which is NOT exit 0`);
+      console.log('  ("verified") and NOT exit 1 ("verification failed").');
+      console.log('  Upgrade to Node ≥ 18.4, or verify with `sum verify`.');
+    }
   }
   console.log('═══════════════════════════════════════════════════════════');
 
@@ -485,7 +619,7 @@ async function verifyBundle(bundlePath) {
   // and a forged Ed25519 signature print FAILED and exit 0, so any script
   // reading the exit code accepted the forgery. Pinned by A7 in
   // scripts/verify_cross_runtime_adversarial.py.
-  return overallMatch;
+  return exitCode;
 }
 
 // ─── Main ──────────────────────────────────────────────────────────
@@ -497,7 +631,17 @@ async function main() {
     console.log('Usage:');
     console.log('  node verify.js <bundle.json>   — Verify a canonical bundle');
     console.log('  node verify.js --self-test      — Run deterministic test vectors');
-    process.exit(0);
+    console.log('  node verify.js --v2-test        — Run sha256_128_v2 parity vectors');
+    console.log('');
+    console.log('Exit codes:');
+    console.log(`  ${EXIT_OK}  verified (or structurally valid and carrying no signature)`);
+    console.log(`  ${EXIT_VERIFICATION_FAILED}  verification FAILED: state mismatch, or Ed25519 invalid/malformed`);
+    console.log(`  ${EXIT_BAD_INPUT}  bad input: unreadable file, invalid JSON, missing required field`);
+    console.log(`  ${EXIT_UNSUPPORTED_FORMAT}  unsupported canonical format version or prime scheme`);
+    console.log(`  ${EXIT_RECONSTRUCTION_ERROR}  state reconstruction error`);
+    console.log(`  ${EXIT_ED25519_UNCHECKABLE}  COULD NOT VERIFY: this Node lacks Ed25519 in WebCrypto`);
+    console.log('     (nothing was checked; this is neither a pass nor a proven failure)');
+    process.exit(EXIT_OK);
   }
 
   if (args[0] === '--self-test') {
@@ -510,11 +654,15 @@ async function main() {
     process.exit(ok ? 0 : 1);
   }
 
-  const ok = await verifyBundle(args[0]);
-  process.exit(ok ? 0 : 1);
+  // verifyBundle returns the exit code itself, not a boolean: exit 5
+  // ("Ed25519 could not be checked at all") is a third outcome that no
+  // boolean can carry, and collapsing it into 0 is exactly the
+  // fail-open this verifier had.
+  const code = await verifyBundle(args[0]);
+  process.exit(code);
 }
 
 main().catch((err) => {
   console.error('❌ verify.js: unexpected error:', err);
-  process.exit(2);
+  process.exit(EXIT_BAD_INPUT);
 });

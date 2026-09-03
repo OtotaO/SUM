@@ -42,6 +42,7 @@ or:
 """
 from __future__ import annotations
 
+import base64
 import copy
 import json
 import math
@@ -95,7 +96,17 @@ def classify_node(stdout: str, stderr: str, exit_code: int) -> str:
     if exit_code == 0:
         return "ACCEPTED"
     blob = (stdout + "\n" + stderr).lower()
-    if "ed25519" in blob and "invalid" in blob:
+    # "malformed" is Node's verdict when the public key or the signature
+    # could not be decoded or imported, so no signature check was
+    # possible. Python reports the same inputs through its single
+    # `_ed25519_verify` -> False path, i.e. "Ed25519 signature invalid".
+    # The wording differs (Node can afford to be more precise); the
+    # rejection CLASS is the same one -- the signature did not check out
+    # -- and the class is what this harness asserts on. Without the
+    # "malformed" arm here, A8 would fall through to the
+    # "witness verification failed" arm below and be miscategorised as
+    # structural.
+    if "ed25519" in blob and ("invalid" in blob or "malformed" in blob):
         return "signature"
     if "unsupported canonical format version" in blob:
         return "version"
@@ -244,6 +255,35 @@ def _signature_ed25519_signature_only_tampered() -> Fixture:
     )
 
 
+def _signature_ed25519_public_key_unparseable() -> Fixture:
+    """The public key is replaced by base64 that decodes to 31 bytes, so
+    it cannot be imported as an Ed25519 key at all. Tome, state integer
+    and signature are untouched, so every structural check passes and
+    the verdict again rests on Ed25519 alone.
+
+    A7 covers a signature that WAS checked and failed. This case covers
+    the one that could not be checked. verify.js used to funnel every
+    throw inside verifyEd25519 into the status 'unsupported', which the
+    banner rendered as a green PASS carrying the excuse "Node lacks
+    Ed25519 in WebCrypto" -- on a Node that has it -- and exited 0. An
+    unusable key must fail closed, and only a genuinely missing
+    primitive may claim to be one.
+    """
+    b = _mint_valid_ed25519_bundle()
+    b["public_key"] = "ed25519:" + base64.b64encode(b"\x01" * 31).decode("ascii")
+    return Fixture(
+        name="A8-signature-ed25519-public-key-unparseable",
+        bundle=b,
+        # Python's CanonicalCodec._ed25519_verify catches every decode
+        # and import error and returns False, which the CLI reports as
+        # "Ed25519 signature invalid" -> classify_python: "signature".
+        # Node reports the more precise MALFORMED, classified into the
+        # same bucket by classify_node. Measured, not assumed.
+        expected_class="signature",
+        description="Ed25519 public_key base64-decodes to 31 bytes; key import is impossible",
+    )
+
+
 FIXTURES: Sequence[Callable[[], Fixture]] = (
     _structural_missing_tome,
     _structural_tome_truncated,
@@ -252,6 +292,7 @@ FIXTURES: Sequence[Callable[[], Fixture]] = (
     _version_unknown_format,
     _signature_ed25519_tome_tampered,
     _signature_ed25519_signature_only_tampered,
+    _signature_ed25519_public_key_unparseable,
 )
 
 
