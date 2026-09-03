@@ -113,7 +113,7 @@ verify = ["joserfc>=1.0.0,<2.0.0"]
 # `mcp-install-smoke` CI gate holds this floor→ceiling the same way the
 # [sieve] floor gate does (F13/F14). Migrating to the 2.x API is a
 # separate change behind its own smoke.
-mcp = ["mcp>=1.0.0,<2"]
+mcp = ["mcp>=2.1.1,<3"]
 # Research-grade modules under sum_engine_internal/research/. NOT on
 # the production install path; APIs may change between minor releases
 # without backwards-compatibility guarantees. Currently provides the
