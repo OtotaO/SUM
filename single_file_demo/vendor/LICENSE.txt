@@ -27,7 +27,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-canonicalize@2.0.0 — https://github.com/erdtman/canonicalize
+canonicalize@4.0.0 — https://github.com/erdtman/canonicalize
 -------------------------------------------------------------------------------------
 
 Apache License
