@@ -326,6 +326,21 @@ visible rather than rhetorically closed.
   issuer-signed, replayable, distribution-free bound on a named meaning-loss
   proxy, which is a claim about the transformation rather than a probability
   about the artifact.
+- **SCITT (RFC 9943) and COSE Receipts (RFC 9942), June 2026.** The IETF's
+  standards-track architecture for single-issuer signed statements with
+  transparency receipts is now published: an Issuer signs a Statement as a
+  COSE_Sign1 Signed Statement, a Transparency Service registers it and
+  returns a COSE Receipt (defined in RFC 9942), and the receipt travels in the
+  statement's unprotected header as a Transparent Statement. The architecture
+  states its own scope: "Transparency does not prevent dishonest or
+  compromised Issuers, but it holds them accountable." It certifies that a
+  statement was made and registered; it makes no claim about the statement's
+  content. That is complementary to this work, not competing: a
+  `sum.meaning_risk_receipt.v1` is a natural Signed Statement payload, and
+  registering one would add third-party witnessing of *occurrence* to the
+  issuer-signed bound on *meaning*. We have not implemented the COSE_Sign1
+  re-envelope; the current wire format is JWS over JCS bytes (Section 3), and
+  the mapping is future work (Section 10).
 - **EU AI Act Article 50** obliges the *generator* to mark; the associated
   *Code of Practice on Transparency of AI-Generated Content* (finalized
   10 June 2026) sets out the marking expectations. This work is an adjacent,
@@ -341,9 +356,20 @@ visible rather than rhetorically closed.
   machine-translation quality score (arXiv:2306.01549) and conformal coverage
   on summary sentence-importance (arXiv:2509.20461); the nearest *output*-
   factuality line is Mohri & Hashimoto (arXiv:2402.10978) and concurrent
-  conditional-factuality certificates (arXiv:2603.27403). None couples its
-  statistical bound to a signed, replayable receipt, and none bounds expected
-  meaning-loss of a *transform* under a named judge. Our contribution is the
+  conditional-factuality certificates (arXiv:2603.27403). Two June 2026
+  results sit closest. **CARE** (arXiv:2606.08969) applies conformal risk
+  control to medical summarization, overlaying calibrated omission and
+  hallucination flags with finite-sample, distribution-free guarantees; it
+  is a post-hoc safety layer and produces no signed or verifiable artifact
+  (the paper contains no notion of receipt, certificate, or provenance).
+  **Kotte** (arXiv:2606.29054) characterizes when conformal risk control can
+  certify structured LLM outputs at all, proves an impossibility result, and
+  analyzes a certification hierarchy across Hoeffding, empirical-Bernstein,
+  and a betting-based e-CRC bound with strict gains in low-variance and
+  large-sample regimes; that hierarchy is the one our `method` field names,
+  and the betting bound is a candidate fourth rung we have not adopted. None
+  of these couples its statistical bound to a signed, replayable receipt, and
+  none bounds expected meaning-loss of a *transform* under a named judge. Our contribution is the
   *composition* — a signed, replayable receipt over a named meaning-loss proxy
   — not a new inequality.
 
@@ -402,6 +428,10 @@ contacting the authors.
 - D. J. Bernstein et al. *Ed25519.* RFC 8032.
 - A. Rundgren et al. *JSON Canonicalization Scheme (JCS).* RFC 8785.
 - M. Jones et al. *JSON Web Signature (JWS).* RFC 7515; *JSON Web Key (JWK).* RFC 7517.
+- H. Birkholz, A. Delignat-Lavaud, C. Fournet, Y. Deshpande, S. Lasker. *An Architecture for Trustworthy and Transparent Digital Supply Chains.* RFC 9943 (Supply Chain Integrity, Transparency, and Trust), Proposed Standard, June 2026.
+- O. Steele, H. Birkholz, A. Delignat-Lavaud, C. Fournet. *CBOR Object Signing and Encryption (COSE) Receipts.* RFC 9942, Proposed Standard, June 2026.
+- S. Bedi, B. Lin, A. Y. Zhou, C. O. Stanwyck, J. A. Jindal, S. Koyejo, D. Stutz, N. H. Shah. *CARE: A Conformal Safety Layer for Medical Summarization.* arXiv:2606.08969, 2026.
+- V. Kotte. *When Can Conformal Risk Control Certify LLM Outputs? Bounds, Impossibility, and Adaptation for Structured Generation.* arXiv:2606.29054, 2026.
 - W. Hoeffding. *Probability inequalities for sums of bounded random variables.* JASA, 1963.
 - A. Maurer, M. Pontil. *Empirical Bernstein bounds and sample variance penalization.* COLT 2009.
 - V. Vovk, A. Gammerman, G. Shafer. *Algorithmic Learning in a Random World.* Springer 2005.
