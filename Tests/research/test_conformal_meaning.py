@@ -10,6 +10,9 @@ Two layers:
 """
 from __future__ import annotations
 
+import itertools
+import math
+
 import numpy as np
 import pytest
 
@@ -184,3 +187,86 @@ def test_is_deterministic():
     a = certify_meaning_risk(losses, **_SCORER)
     b = certify_meaning_risk(losses, **_SCORER)
     assert a == b
+
+
+# ── Issuer/verifier kernel parity on the quantised micro grid ─────────
+#
+# The issuer (this module) and the shipped verifier
+# (``sum_verify._conformal``) must agree on ``point_estimate`` to the last
+# micro-unit, or a minted receipt fails its own replay check. The verifier
+# uses ``math.fsum(values) / len(values)``; ``np.ndarray.mean`` uses pairwise
+# summation. On the micro grid the two land either side of a round-half-even
+# tie for some even-n inputs, which is exactly the seam these tests pin.
+
+_MICRO = 1_000_000
+# Micro values chosen so a small exhaustive product still surfaces ties.
+_TIE_POOL = (1, 3, 999_997, 999_999)
+
+
+def _micro(x: float) -> int:
+    return int(round(float(x) * _MICRO))
+
+
+def _numpy_mean(values):
+    """The pre-fix issuer kernel, spelled exactly as it was written."""
+    return float(np.asarray(values, dtype=np.float64).mean())
+
+
+def _fsum_mean(values):
+    """The shipped verifier's kernel (``sum_verify._conformal._mean``)."""
+    return math.fsum(values) / len(values)
+
+
+def _divergent_micro_grid_cases():
+    """Brute-force the even-n quantised micro grid (values k/1e6) for
+    inputs where the numpy mean and the fsum mean disagree *after*
+    rounding to micro."""
+    cases = []
+    for n in (2, 4, 6, 8):
+        for combo in itertools.product(_TIE_POOL, repeat=n):
+            values = [m / _MICRO for m in combo]
+            if _micro(_numpy_mean(values)) != _micro(_fsum_mean(values)):
+                cases.append(values)
+    return cases
+
+
+def test_micro_grid_actually_has_numpy_vs_fsum_ties():
+    """The seam exists. Without this the parity tests below could pass
+    vacuously on a grid that never ties."""
+    cases = _divergent_micro_grid_cases()
+    assert cases, (
+        "no numpy-vs-fsum micro divergence found on the tie pool; the "
+        "parity tests below would be vacuous"
+    )
+
+
+def test_point_estimate_uses_the_sdk_fsum_kernel_on_micro_ties():
+    """On every input where the two kernels diverge, the issuer must now
+    report the fsum value, byte-identical to what the shipped verifier
+    recomputes during replay."""
+    cases = _divergent_micro_grid_cases()
+    assert cases
+    for values in cases:
+        want = _fsum_mean(values)
+        g = certify_meaning_risk(values, delta=0.05, method="hoeffding", **_SCORER)
+        assert g.point_estimate == want, values
+        assert _micro(g.point_estimate) == _micro(want), values
+
+
+def test_issuer_and_sdk_agree_on_point_estimate_for_tie_inputs():
+    """End to end: the research certifier and ``sum_verify``'s certifier
+    return the same ``point_estimate``, exactly and to the micro, on the
+    inputs that used to split them."""
+    from sum_verify import _conformal as sdk
+
+    cases = _divergent_micro_grid_cases()
+    assert cases
+    for values in cases:
+        c = certify_meaning_risk(values, delta=0.05, method="hoeffding", **_SCORER)
+        s = sdk.certify_meaning_risk(
+            values, delta=0.05, method="hoeffding", **_SCORER
+        )
+        assert c.point_estimate == s.point_estimate, values
+        assert _micro(c.point_estimate) == _micro(s.point_estimate), values
+        # the bound itself never diverged; guard that it stays that way
+        assert _micro(c.risk_upper_bound) == _micro(s.risk_upper_bound), values

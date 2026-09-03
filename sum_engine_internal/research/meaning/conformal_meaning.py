@@ -47,6 +47,7 @@ License: Apache License 2.0
 """
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from typing import Literal, Sequence
 
@@ -158,9 +159,17 @@ def certify_meaning_risk(
         raise ValueError(f"unknown method {method!r}")
 
     risk_ub = max(0.0, min(1.0, 1.0 - preservation_lb))
+    # Kernel parity with the shipped verifier. ``sum_verify._conformal._mean``
+    # is ``math.fsum(values) / len(values)``; ``np.ndarray.mean`` uses pairwise
+    # summation, so the two can disagree in the last ULP and land either side
+    # of a round-half-even tie once quantised to micro-units. The issuer and
+    # the verifier must agree to the last micro-unit or a receipt fails its
+    # own replay, so compute this one number with the SDK's kernel over the
+    # exact float sequence the SDK would see. Do not "optimise" back to
+    # ``arr.mean()``.
     return MeaningRiskGuarantee(
         risk_upper_bound=risk_ub,
-        point_estimate=float(arr.mean()),
+        point_estimate=math.fsum(arr.tolist()) / n,
         n=n,
         delta=float(delta),
         method=chosen,
