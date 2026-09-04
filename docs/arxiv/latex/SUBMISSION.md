@@ -1,7 +1,24 @@
 # arXiv submission checklist: Paper 1
 
 Kit generated 2026-07-02 from `docs/arxiv/PAPER1_DRAFT.md` (final-form v0,
-2026-06-09). No repo files were modified.
+2026-06-09) and refreshed 2026-09-04 against the current draft.
+
+The 2026-09-04 refresh folded in every draft change merged after the kit was
+built (PRs #468, #474, #481), which the kit had been missing for seven weeks:
+the Section 4 unit disclosure (the scorer's unit is a punctuation-or-newline
+segment, not a linguistic sentence), the SynthID citation in full including
+SynGuard, the SCITT / COSE Receipts positioning, the CARE and Kotte conformal
+comparisons, a new Section 11 (Artifact availability), and four bibliography
+entries. It also corrected one sentence that was wrong in the draft: the
+artifact statement claimed "two independent reimplementations" of the meaning
+receipt verifier and then named one. There is one (the JS verifier), exercised
+in two runtimes; both files now say so.
+
+The draft `PAPER1_DRAFT.md` was edited in the same pass to carry the two
+reference titles this kit resolved in July, so the two files no longer
+disagree. Direction matters here: `main.tex` was AHEAD of the Markdown draft
+on those titles and on the author block. Do not regenerate this kit from the
+Markdown wholesale; patch it.
 
 ## Title
 
@@ -44,10 +61,18 @@ deliberate decision, it is irrevocable.
 
 ## Compile status
 
-**Compiled successfully 2026-07-12 with tectonic 0.16.9** (`tectonic main.tex`,
-exit 0). Output: an 8-page PDF, no TeX errors, no undefined references or
-citations (log inspected), only the expected overfull-box typesetting
-warnings. The earlier static self-check still corroborates the source (balanced
+**Recompiled successfully 2026-09-04 with tectonic** (`tectonic main.tex`,
+exit 0). Output: a 10-page PDF (8 before the refresh), no TeX errors, no
+undefined references or citations (log inspected), and exactly one overfull
+box (10.98pt, at the Section 5 verification paragraph), which predates the
+refresh. The long typewriter paths introduced in Section 11 needed
+`\allowbreak` hints and a `\sloppy` scoped inside that one `itemize` to keep
+them out of the margin; both are plain LaTeX, no new package. All 20
+corrections were verified present in the rendered PDF text, not merely in the
+source.
+
+(Earlier: compiled 2026-07-12 with tectonic 0.16.9, 8-page PDF, same clean
+log.) The earlier static self-check still corroborates the source (balanced
 environments and braces, even math-dollar count, every `\cite` key has a
 matching `\bibitem`, every `\ref`/`\eqref` has a matching `\label`, no bare `&`
 outside tabulars, no unescaped `%`, 100% ASCII). All commands used are standard
@@ -69,15 +94,14 @@ self-contained, downloads packages on first run). On a machine with TeXLive:
 
 ## Operator steps to submit
 
-1. Fill in the author block in `main.tex` (search for `[AUTHOR NAME]`).
-2. Resolve the open questions below (especially the two unverified reference
-   titles).
+1. ~~Fill in the author block in `main.tex`.~~ **Done** (PR #405): Umar
+   Syed, Independent Researcher, ototao@pm.me.
+2. ~~Resolve the two unverified reference titles.~~ **Done** (PR #405,
+   verified against the live arXiv abstract pages 2026-07-16).
 3. Compile locally twice on any machine with TeX (or trust AutoTeX): check
    the rendered PDF once, end to end.
-4. arXiv account: create/log in at arxiv.org. First-time submitters to cs.CR
-   typically need an **endorsement**; arXiv tells you at submission start and
-   gives you an endorsement code to send to an endorser (someone with prior
-   cs.CR submissions). Budget a few days for this if needed.
+4. **Endorsement: still open, and it is the binding blocker.** See the
+   status section below before spending effort here.
 5. Run `./make_tarball.sh` and upload `paper1.tar.gz` (or upload `main.tex`
    alone, it is fully self-contained with no figures or .bib).
 6. In the submission form: paste title and abstract from this file, set
@@ -87,10 +111,43 @@ self-contained, downloads packages on first run). On a machine with TeXLive:
    grant narrative (NLnet decision ~Sept); the outline flags timing as
    operator sub-decision 8.5.
 
+## Endorsement status (as of 2026-09-04)
+
+A first-time cs.CR submitter needs an endorsement. arXiv issues the submitter
+a one-time endorsement code at submission start, which the submitter sends to
+an eligible endorser; the endorser enters it at
+`https://arxiv.org/auth/endorse`. Endorsement only attests that the
+submission is legitimate research. It is not review or agreement.
+
+**A code was issued to the operator in July 2026** (the value is not recorded
+in this public file; it is in the operator's private notes). Codes expire, so
+confirm it is still live before reusing it, and expect to request a fresh one.
+
+**Two requests were sent on 2026-07-17.** Neither produced an endorsement.
+
+- **Request 1 replied and is the useful data point.** The recipient read the
+  draft, judged it relevant to cs.CR, and *attempted the endorsement*, but
+  arXiv refused: the account did not meet the category's eligibility bar.
+- **Request 2 has no recorded reply** as of 2026-09-04.
+
+**The rule worth remembering, learned at the cost of one request:** being a
+published author in the area is *not* sufficient. arXiv requires the endorser
+to have a minimum number of the category's own submissions inside a trailing
+time window (the refusal in request 1 was 2 qualifying papers against a
+threshold of 3). Screen a candidate on *recent, repeated cs.CR submission
+volume*, not on topical fit or seniority. A perfect topical match with two
+cs.CR papers cannot endorse; a less perfect match with a steady cs.CR record
+can.
+
+Practical consequence: prefer someone who posts to cs.CR routinely. Ask one
+person at a time, and ask them to check eligibility at
+`https://arxiv.org/auth/endorse` before writing anything substantive.
+
 ## Open questions (not resolvable mechanically; answer before upload)
 
-1. **Author name, affiliation, email.** The draft has no author block;
-   `main.tex` carries a placeholder.
+1. **Author name, affiliation, email: RESOLVED 2026-07-16** (PR #405). The
+   Markdown draft still has no author block; `main.tex` carries the real one.
+   This is a deliberate one-way difference, not drift.
 2. **Two reference titles: RESOLVED 2026-07-16** (verified against the live
    arXiv abstract pages; bibliography updated, bracketed notes removed).
    arXiv:2604.23280 = Otsuka, Toyoda, Leung, "AI Identity: Standards, Gaps,

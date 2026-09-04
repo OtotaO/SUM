@@ -205,12 +205,20 @@ exact-equality replay of \S\ref{sec:verify} is well-defined across runtimes.
 Fix a \emph{named, versioned} judge
 $e:(\text{premise},\text{hypothesis})\to\{0,1\}$ (a local NLI model or
 embedding-entailment model; never assumed to equal ``meaning''). For a
-(source $S$, output $T$) pair with sentence units $\mathrm{sent}(\cdot)$,
+(source $S$, output $T$) pair with units $\mathrm{sent}(\cdot)$,
 define
 \[
 \mathrm{recall}=\tfrac{1}{|\mathrm{sent}(S)|}\!\!\sum_{s\in\mathrm{sent}(S)}\!\! e(T,s),\quad
 \mathrm{fid}=\tfrac{1}{|\mathrm{sent}(T)|}\!\!\sum_{t\in\mathrm{sent}(T)}\!\! e(S,t),
 \]
+
+The unit $\mathrm{sent}(\cdot)$ in the shipped v1 scorer is a
+punctuation-or-newline-delimited segment, not a linguistic sentence:
+hard-wrapped sources split at line breaks, and abbreviations split at their
+periods. On the BillSum golden 48\% of the 12,149 units begin with a
+lowercase character for this reason. The bound is over whatever units the
+named scorer produced; the receipt pins the scorer, so replay reproduces the
+same units.
 \[
 \ell(S,T)=1-\big(w_r\,\mathrm{recall}+w_f\,\mathrm{fid}\big)\in[0,1],\quad w_r+w_f=1.
 \]
@@ -426,7 +434,34 @@ visible rather than rhetorically closed.
   single training-free paraphrase attack~\cite{advparaphrase2025};
   multi-hop rewriting~\cite{chainwash2026} drives watermark detection from
   $\sim$88\% to under 5\% while holding semantic similarity, the exact
-  regime a meaning-preservation certificate is built for.
+  regime a meaning-preservation certificate is built for. We cite
+  \cite{synthidrobust2025} in full rather than for its negative half only:
+  the same work proposes SynGuard, a semantic-aware hybrid that recovers an
+  average of 11.1\% F1 over SynthID-Text under those attacks. That is a
+  genuine mitigation and the closest prior work in spirit. It remains
+  detection: it raises the probability that a mark survives a rewrite, and
+  makes no statement about what the rewrite preserved. The certificate here
+  is orthogonal and composable with it, carrying an issuer-signed,
+  replayable, distribution-free bound on a named meaning-loss proxy, which is
+  a claim about the transformation rather than a probability about the
+  artifact.
+\item \textbf{SCITT (RFC 9943) and COSE Receipts (RFC 9942), June 2026.}
+  The IETF's standards-track architecture for single-issuer signed statements
+  with transparency receipts is now published~\cite{rfc9943}: an Issuer signs
+  a Statement as a \texttt{COSE\_Sign1} Signed Statement, a Transparency
+  Service registers it and returns a COSE Receipt (defined in RFC
+  9942~\cite{rfc9942}), and the receipt travels in the statement's
+  unprotected header as a Transparent Statement. The architecture states its
+  own scope: ``Transparency does not prevent dishonest or compromised
+  Issuers, but it holds them accountable.'' It certifies that a statement was
+  made and registered; it makes no claim about the statement's content. That
+  is complementary to this work, not competing: a
+  \texttt{sum.meaning\_risk\_receipt.v1} is a natural Signed Statement
+  payload, and registering one would add third-party witnessing of
+  \emph{occurrence} to the issuer-signed bound on \emph{meaning}. We have
+  not implemented the \texttt{COSE\_Sign1} re-envelope; the current wire
+  format is JWS over JCS bytes (\S\ref{sec:substrate}), and the mapping is
+  future work (\S\ref{sec:limits}).
 \item \textbf{EU AI Act Article 50}~\cite{euaiact} obliges the
   \emph{generator} to mark; the associated \emph{Code of Practice on
   Transparency of AI-Generated Content} (finalized 10 June 2026) sets out
@@ -447,9 +482,21 @@ visible rather than rhetorically closed.
   score~\cite{giovannotti2023} and conformal coverage on summary
   sentence-importance~\cite{confsumm2025}; the nearest
   \emph{output}-factuality line is Mohri \& Hashimoto~\cite{mohri2024} and
-  concurrent conditional-factuality certificates~\cite{condfact2026}. None
-  couples its statistical bound to a signed, replayable receipt, and none
-  bounds expected meaning-loss of a \emph{transform} under a named judge.
+  concurrent conditional-factuality certificates~\cite{condfact2026}. Two
+  June 2026 results sit closest. \textbf{CARE}~\cite{care2026} applies
+  conformal risk control to medical summarization, overlaying calibrated
+  omission and hallucination flags with finite-sample, distribution-free
+  guarantees; it is a post-hoc safety layer and produces no signed or
+  verifiable artifact (the paper contains no notion of receipt, certificate,
+  or provenance). \textbf{Kotte}~\cite{kotte2026} characterizes when
+  conformal risk control can certify structured LLM outputs at all, proves an
+  impossibility result, and analyzes a certification hierarchy across
+  Hoeffding, empirical-Bernstein, and a betting-based e-CRC bound with strict
+  gains in low-variance and large-sample regimes; that hierarchy is the one
+  our \texttt{method} field names, and the betting bound is a candidate
+  fourth rung we have not adopted. None of these couples its statistical
+  bound to a signed, replayable receipt, and none bounds expected
+  meaning-loss of a \emph{transform} under a named judge.
   Our contribution is the \emph{composition} --- a signed, replayable
   receipt over a named meaning-loss proxy --- not a new inequality.
 \end{itemize}
@@ -476,9 +523,54 @@ benchmark suite. The binding open problem is not a sharper inequality but
 \textbf{adoption}: one external party issuing and verifying a receipt it did
 not author.
 
+\section{Artifact availability}\label{sec:artifact}
+
+Every number in \S\ref{sec:empirical} is reproducible from committed bytes,
+and every verification claim in \S\ref{sec:verify} is executable by a third
+party without contacting the authors.
+
+\begin{itemize}
+% Long, unhyphenatable typewriter paths in this list; \sloppy trades slightly
+% loose interword space for keeping them out of the margin. itemize is a
+% group, so this is scoped to this list only.
+\sloppy
+\item \textbf{Source.} \url{https://github.com/OtotaO/SUM}, Apache-2.0.
+  Archived in Software Heritage for permanent citation as
+  \texttt{swh:1:snp:1904bd383765f5cf553f08ea7ee46aca9925f25d} (origin
+  \texttt{swh:1:ori:a7b5385a59a6fb561cbad53ce12da3149439401e}).
+\item \textbf{Verifier.} \texttt{pip install "sum-engine[verify]"} installs
+  the dependency-light \texttt{sum\_verify} SDK (\texttt{cryptography} and
+  \texttt{joserfc} only, no numpy, scipy, or torch);
+  \texttt{python -m sum\_verify <receipt>} reproduces the verdicts described
+  in \S\ref{sec:verify}. A second, independent implementation verifies the
+  same bytes: the JS verifier
+  \texttt{single\_file\_demo/\allowbreak meaning\_receipt\_\allowbreak verifier.js},
+  exercised
+  against the same fixtures in two runtimes, under Node in CI and in the
+  browser demo. (\texttt{standalone\_verifier/} verifies the older
+  CanonicalBundle format, not meaning receipts.)
+\item \textbf{Certificates.} Both binding-gate receipts reported in
+  \S\ref{sec:empirical} are committed together with their public keys, their
+  per-example loss vectors, and the generator that rebuilds them from the
+  public corpus: \texttt{fixtures/\allowbreak meaning\_receipts\_\allowbreak billsum/}
+  (BillSum, CC0) and
+  \texttt{fixtures/\allowbreak meaning\_receipts\_\allowbreak translation/}
+  (opus-100, EN to FR). Each directory contains the signed receipt,
+  \texttt{jwks.json}, the losses file, and a
+  \texttt{generate\_*\_fixture.py}.
+\item \textbf{Scope of the artifact.} These artifacts replay the certificate
+  and its bound from committed bytes. They do not re-run the judge model: the
+  judge is named and pinned inside the receipt, and \S\ref{sec:boundary}
+  states exactly what that dependence does and does not license a reader to
+  conclude.
+\end{itemize}
+
 % References. The Markdown draft flags these as "to be formatted; primary
-% sources verified"; two entries carry the draft's own "[exact title to
-% verify before submission]" note, preserved below.
+% sources verified". The two entries that once carried the draft's
+% "[exact title to verify before submission]" note (survey2026,
+% chainwash2026) were resolved against the live arXiv abstract pages on
+% 2026-07-16 (PR #405); the note is now gone from this file and from the
+% Markdown draft.
 \begin{thebibliography}{99}
 
 \bibitem{rfc8032}
@@ -501,6 +593,18 @@ M.~Jones, J.~Bradley, and N.~Sakimura.
 M.~Jones.
 \newblock {JSON Web Key (JWK)}.
 \newblock RFC 7517, 2015.
+
+\bibitem{rfc9943}
+H.~Birkholz, A.~Delignat-Lavaud, C.~Fournet, Y.~Deshpande, and S.~Lasker.
+\newblock {An Architecture for Trustworthy and Transparent Digital Supply
+Chains}.
+\newblock RFC 9943 (Supply Chain Integrity, Transparency, and Trust),
+Proposed Standard, June 2026.
+
+\bibitem{rfc9942}
+O.~Steele, H.~Birkholz, A.~Delignat-Lavaud, and C.~Fournet.
+\newblock {CBOR Object Signing and Encryption (COSE) Receipts}.
+\newblock RFC 9942, Proposed Standard, June 2026.
 
 \bibitem{hoeffding1963}
 W.~Hoeffding.
@@ -558,6 +662,18 @@ M.~R. Ameen, A.~Islam, N.~Mahmud, and M.~E. Hamid.
 \bibitem{condfact2026}
 Conditional factuality-controlled {LLMs} with generalization certificates.
 \newblock arXiv:2603.27403, 2026.
+
+\bibitem{care2026}
+S.~Bedi, B.~Lin, A.~Y. Zhou, C.~O. Stanwyck, J.~A. Jindal, S.~Koyejo,
+D.~Stutz, and N.~H. Shah.
+\newblock {CARE}: a conformal safety layer for medical summarization.
+\newblock arXiv:2606.08969, 2026.
+
+\bibitem{kotte2026}
+V.~Kotte.
+\newblock When can conformal risk control certify {LLM} outputs? {B}ounds,
+impossibility, and adaptation for structured generation.
+\newblock arXiv:2606.29054, 2026.
 
 \bibitem{eigenai2026}
 {EigenAI}: deterministic-inference attestation.
