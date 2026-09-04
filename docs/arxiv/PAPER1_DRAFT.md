@@ -292,14 +292,27 @@ visible rather than rhetorically closed.
 ## 9. Position versus prior and concurrent work
 
 - **Signed-but-semantics-disclaiming receipts.** **AEX** (arXiv:2603.14283)
-  independently uses JCS + SHA-256 + Ed25519 signed transformation-receipt
+  uses JCS + SHA-256 + Ed25519 signed transformation-receipt
   chains for LLM APIs but **explicitly disclaims** that an accepted transform is
   "semantically correct, reasonable, or minimal." The same pattern — a signed
   artifact that proves *what was computed* and avoids any quality claim — recurs
-  in deterministic-inference attestation (EigenAI, arXiv:2602.00182) and signed
-  tool-call receipts (arXiv:2603.10060). Our contribution is precisely that
-  uniformly-disclaimed semantic delta, as a finite-sample, replayable
-  certificate.
+  in deterministic-inference attestation (EigenAI, arXiv:2602.00182). Our
+  contribution is precisely that disclaimed semantic delta, as a finite-sample,
+  replayable certificate.
+- **The receipt scheme that does not disclaim semantics.** Tool receipts for
+  agents (arXiv:2603.10060) are the closest counterexample to the bullet above,
+  and we name them as one rather than list them among the disclaiming schemes:
+  that work cross-references per-claim receipts specifically *to detect
+  hallucination*, and reports detection rates by error type. Two differences are
+  load-bearing. Its receipts are HMAC-authenticated, a symmetric MAC, so they
+  are unforgeable by the model under its stated threat model but carry no
+  third-party verifiability and no non-repudiation: anyone who can verify can
+  also mint. And its semantic claim is a per-claim heuristic detection rate on a
+  self-introduced benchmark, not a calibrated bound, so there is no coverage
+  guarantee and no quantity a reader can hold the issuer to. The line this paper
+  draws is therefore not detection versus silence about meaning; it is an
+  unbound heuristic versus a publicly verifiable, distribution-free bound that
+  replays offline.
 - **The semantic gap, named independently.** A 2026 survey of AI-content
   identity and provenance (arXiv:2604.23280) articulates exactly this gap — that
   *cryptographic correctness does not imply semantic correctness*, and that
@@ -356,7 +369,7 @@ visible rather than rhetorically closed.
   machine-translation quality score (arXiv:2306.01549) and conformal coverage
   on summary sentence-importance (arXiv:2509.20461); the nearest *output*-
   factuality line is Mohri & Hashimoto (arXiv:2402.10978) and concurrent
-  conditional-factuality certificates (arXiv:2603.27403). Two June 2026
+  conditional-factuality certificates from March 2026 (arXiv:2603.27403). Two June 2026
   results sit closest. **CARE** (arXiv:2606.08969) applies conformal risk
   control to medical summarization, overlaying calibrated omission and
   hallucination flags with finite-sample, distribution-free guarantees; it
@@ -383,11 +396,18 @@ hardware-independent) is named future work — same-hardware bitwise determinism
 is now an engineering solved problem (batch-invariant kernels), but
 cross-hardware reproducibility remains open, which is the niche this de-pinning
 targets. The proxy is a proxy; stronger faithfulness judges are a drop-in
-upgrade — MiniCheck (Tang et al., 2024) is the lightweight lineage anchor,
-though lighter open judges have since been reported to match or surpass it
-(e.g. Paladin-mini, 2025) — and any judge-conditional bound inherits the
-judge's *label-noise* ceiling, not merely its accuracy (Verifying the
-Verifiers, arXiv:2506.13342). A tighter betting/empirical-Bernstein confidence
+upgrade — MiniCheck (Tang et al., 2024) is the lightweight lineage anchor, and
+lighter open judges now report stronger aggregate results, though on their own
+benchmarks: Paladin-mini (3.8B) reports 91.8% average balanced accuracy against
+78.2% for Bespoke-MiniCheck-7B on the grounding benchmark it introduces, while
+losing that benchmark's time-and-date subset (82.0% against 90.0%)
+(arXiv:2506.20384) — and any judge-conditional bound inherits the
+judge's *label-noise* ceiling, not merely its accuracy. That last step is our
+inference, not a result of the work we draw it from: Seo et al.
+(arXiv:2506.13342) report empirically that roughly 16% ambiguous or incorrectly
+labelled data is enough to shift model rankings on fact-verification
+benchmarks, and we take the consequence for a judge-conditional bound from
+there. A tighter betting/empirical-Bernstein confidence
 sequence is a no-wire-change tightening.
 The corpora here demonstrate the mechanism; they are not a benchmark suite. The
 binding open problem is not a sharper inequality but **adoption**: one external
@@ -440,19 +460,20 @@ contacting the authors.
 - A. Angelopoulos et al. *Conformal Risk Control.* ICLR 2024.
 - I. Gibbs, J. Cherian, E. Candès. *Conformal prediction with conditional guarantees.* 2023.
 - S. Dathathri et al. *Scalable watermarking for identifying large language model outputs (SynthID-Text).* Nature, 2024.
-- *AEX: Non-Intrusive Multi-Hop Attestation and Provenance for LLM APIs.* arXiv:2603.14283, 2026.
+- Y. Guan. *AEX: Non-Intrusive Multi-Hop Attestation and Provenance for LLM APIs.* arXiv:2603.14283, 2026.
 - T. Otsuka, K. Toyoda, A. Leung. *AI identity: standards, gaps, and research directions for AI agents.* arXiv:2604.23280, 2026.
 - M. R. Ameen, A. Islam, N. Mahmud, M. E. Hamid. *Chainwash: multi-step rewriting attacks on diffusion language model watermarks.* arXiv:2605.05503, 2026.
-- *Conditional Factuality-Controlled LLMs with Generalization Certificates.* arXiv:2603.27403, 2026.
-- *EigenAI: deterministic-inference attestation.* arXiv:2602.00182, 2026.
-- *Tool Receipts, Not ZK Proofs: signed tool-call receipts for agents.* arXiv:2603.10060, 2026.
+- K. Ye, Q. Pan, S. Li. *Conditional Factuality Controlled LLMs with Generalization Certificates via Conformal Sampling.* arXiv:2603.27403, 2026.
+- D. Ribeiro Alves, V. Patankar, M. Pereira, J. Stephens, N. Vaziri, S. Kannan. *EigenAI: Deterministic Inference, Verifiable Results.* arXiv:2602.00182, 2026.
+- A. Basu. *Tool Receipts, Not Zero-Knowledge Proofs: Practical Hallucination Detection for AI Agents.* arXiv:2603.10060, 2026.
 - P. Giovannotti. *Evaluating Machine Translation Quality with Conformal Predictive Distributions.* arXiv:2306.01549 (COPA 2023).
-- *Document Summarization with Conformal Importance Guarantees.* arXiv:2509.20461, 2025.
+- B. Kuwahara, C.-Y. Lin, X. S. Huang, K. K. Leung, J. A. Yapeter, I. Stanevich, F. Perez, J. C. Cresswell. *Document Summarization with Conformal Importance Guarantees.* NeurIPS 2025; arXiv:2509.20461.
 - C. Mohri, T. Hashimoto. *Language Models with Conformal Factuality Guarantees.* arXiv:2402.10978, 2024.
-- *Robustness Assessment and Enhancement of Text Watermarking for Google's SynthID.* arXiv:2508.20228, 2025.
-- *Adversarial Paraphrasing: universal training-free evasion of AI-text detectors.* arXiv:2506.07001 (NeurIPS 2025).
+- X. Han, Q. Li, J. Ni, M. Zulkernine. *Robustness Assessment and Enhancement of Text Watermarking for Google's SynthID.* arXiv:2508.20228, 2025.
+- Y. Cheng, V. S. Sadasivan, M. Saberi, S. Saha, S. Feizi. *Adversarial Paraphrasing: A Universal Attack for Humanizing AI-Generated Text.* NeurIPS 2025; arXiv:2506.07001.
 - L. Tang et al. *MiniCheck: efficient fact-checking of LLMs on grounding documents.* EMNLP 2024 (arXiv:2404.10774).
-- *Verifying the Verifiers: label noise in fact-verification benchmarks.* arXiv:2506.13342, 2025.
+- D. Ivry, O. Nahum. *Paladin-mini: A Compact and Efficient Grounding Model Excelling in Real-World Scenarios.* arXiv:2506.20384, 2025.
+- W. Seo, S. Han, J. Jung, B. Newman, S. Lim, S. Lee, X. Lu, Y. Choi, Y. Yu. *Verifying the Verifiers: Unveiling Pitfalls and Potentials in Fact Verifiers.* COLM 2025; arXiv:2506.13342.
 - C2PA. *Coalition for Content Provenance and Authenticity, Technical Specification* (digitalSourceType taxonomy, v2.4; text manifests added in 2.x).
 - European Union. *Artificial Intelligence Act, Article 50* (applicable 2 Aug 2026), and the *Code of Practice on Transparency of AI-Generated Content* (finalized 10 June 2026).
 - ECMA-262. *ECMAScript Language Specification* (§ Number::toString).

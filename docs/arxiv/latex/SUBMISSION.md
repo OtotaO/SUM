@@ -154,25 +154,68 @@ person at a time, and ask them to check eligibility at
    and Research Directions for AI Agents". arXiv:2605.05503 = Ameen, Islam,
    Mahmud, Hamid, "Chainwash: Multi-Step Rewriting Attacks on Diffusion
    Language Model Watermarks".
-3. **Bibliography completeness.** The draft's reference list is explicitly
-   "to be formatted"; I formatted it mechanically, but several arXiv-only
-   entries lack author names, and no entry has a DOI. The draft's own note
-   (v) asks for full bibliographic details before submission.
-4. **RFC 8032 authorship correction.** The draft credits Ed25519's RFC to
-   "D. J. Bernstein et al."; RFC 8032's actual listed authors are Josefsson
-   and Liusvaara (Bernstein et al. designed the scheme). I used the real RFC
-   authors and kept a parenthetical credit to Bernstein. Confirm you accept
-   this factual correction.
-5. **Paladin-mini has no reference entry.** Section 10 mentions it in prose
-   ("e.g. Paladin-mini, 2025") and the draft's reference list omits it. I
-   left it as a prose mention, faithful to the draft. Add a citation or leave
-   as is.
+3. **Bibliography completeness: RESOLVED 2026-09-04, and it was not
+   cosmetic.** All eight author-less arXiv entries were resolved live against
+   their abstract pages and now carry full author lists in printed order, plus
+   the peer-reviewed venue where one exists (NeurIPS 2025 for
+   `confsumm2025` and `advparaphrase2025`, COLM 2025 for
+   `verifyingverifiers2025`). Every id resolved to the work described: there
+   are no fabricated references.
+
+   **Five of the eight titles were wrong.** They had been written as
+   descriptive paraphrases rather than copied from the source, and four
+   carried an invented subtitle:
+
+   | key | printed | actual |
+   | --- | --- | --- |
+   | `toolreceipts2026` | "...signed tool-call receipts for agents" | "...Practical Hallucination Detection for AI Agents" |
+   | `verifyingverifiers2025` | "...label noise in fact-verification benchmarks" | "...Unveiling Pitfalls and Potentials in Fact Verifiers" |
+   | `eigenai2026` | "...deterministic-inference attestation" | "...Deterministic Inference, Verifiable Results" |
+   | `advparaphrase2025` | "...universal training-free evasion of AI-text detectors" | "...A Universal Attack for Humanizing AI-Generated Text" |
+   | `condfact2026` | title truncated, subtitle "via Conformal Sampling" dropped, spurious hyphen | full title restored |
+
+   Three prose defects came out of the same pass and are fixed in Sections 9
+   and 10:
+
+   - **`toolreceipts2026` was cited on the wrong side of the argument.** It sat
+     in the list of "signed-but-semantics-disclaiming" receipts. It is the
+     opposite: it cross-references per-claim receipts specifically to detect
+     hallucination and reports detection rates by error type, so as printed it
+     undercut the very sentence it was supporting. Its receipts are also
+     HMAC-authenticated, a symmetric MAC with no third-party verifiability,
+     which should never have been grouped under an unqualified "signed"
+     alongside Ed25519/JWS in a cs.CR venue. It now has its own bullet naming
+     it as the closest counterexample and stating both distinctions.
+   - **`verifyingverifiers2025` was cited for a claim it does not make.** The
+     label-noise *ceiling on a bound* is our inference; Seo et al. report the
+     empirical premise (roughly 16% ambiguous or mislabelled data shifts model
+     rankings). Section 10 now attributes each half explicitly.
+   - **"concurrent" was a priority claim we cannot support.** `condfact2026`
+     is dated 28 March 2026, months before this arc. Section 9 now names the
+     date instead.
+4. **RFC 8032 authorship: CONFIRMED at source 2026-09-04.** rfc-editor.org
+   lists exactly two authors, S. Josefsson (SJD AB) and I. Liusvaara
+   (Independent), "Edwards-Curve Digital Signature Algorithm (EdDSA)",
+   January 2017. The kit's correction stands; Bernstein et al. keep the
+   parenthetical scheme credit. Also checked: RFC 8032 is IRTF Informational,
+   NOT Standards Track, and the paper nowhere claims otherwise (it cites it
+   only as "Ed25519 (RFC 8032)"). Nothing to change.
+5. **Paladin-mini: RESOLVED 2026-09-04.** Now cited as arXiv:2506.20384,
+   D. Ivry and O. Nahum, 25 June 2025. Verifying it changed the prose, which
+   is why this mattered: the draft said lighter judges "match or surpass"
+   MiniCheck, but the Paladin-mini abstract names no comparison at all, and
+   the body compares against *Bespoke*-MiniCheck-7B on the *grounding
+   benchmark the paper itself introduces*, winning 91.8% to 78.2% on average
+   while LOSING the time-and-date subset 82.0% to 90.0%. Section 10 now
+   states that scope instead of the bare comparative.
 6. **Contributions placement.** The draft holds the Contributions list inside
    its Abstract section but its own drafting note says the abstract field is
    the prose only and "the Contributions list stays in the body". I placed it
    as an unnumbered paragraph at the end of Section 1. Confirm or move.
-7. **Coverage table header "tl".** Kept verbatim from the draft; presumably
-   "true loss". A reviewer may ask; consider expanding it in the caption.
+7. **Coverage table header "tl": RESOLVED 2026-09-04.** The caption of
+   Table 2 now defines `tl` as the true loss rate of the generating
+   distribution and *target* as the nominal coverage, and states the read:
+   a method is valid where its row meets its target.
 8. **Draft meta-commentary.** The draft's italic header note and the closing
    "Drafting notes for the operator" block are preserved as LaTeX comments at
    the top and bottom of `main.tex` (not rendered). The unfinished items in
