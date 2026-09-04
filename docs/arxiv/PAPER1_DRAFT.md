@@ -404,10 +404,11 @@ losing that benchmark's time-and-date subset (82.0% against 90.0%)
 (arXiv:2506.20384) — and any judge-conditional bound inherits the
 judge's *label-noise* ceiling, not merely its accuracy. That last step is our
 inference, not a result of the work we draw it from: Seo et al.
-(arXiv:2506.13342) report empirically that roughly 16% ambiguous or incorrectly
-labelled data is enough to shift model rankings on fact-verification
-benchmarks, and we take the consequence for a judge-conditional bound from
-there. A tighter betting/empirical-Bernstein confidence
+(arXiv:2506.13342) report empirically that approximately 16% *of* ambiguous or
+incorrectly labelled data substantially influences model rankings on
+fact-verification benchmarks, which is a statement about annotation quality
+rather than a flat benchmark error rate, and we take the consequence for a
+judge-conditional bound from there. A tighter betting/empirical-Bernstein confidence
 sequence is a no-wire-change tightening.
 The corpora here demonstrate the mechanism; they are not a benchmark suite. The
 binding open problem is not a sharper inequality but **adoption**: one external
