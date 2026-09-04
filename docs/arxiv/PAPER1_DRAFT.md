@@ -406,11 +406,12 @@ contacting the authors.
 - **Verifier.** `pip install "sum-engine[verify]"` installs the
   dependency-light `sum_verify` SDK (`cryptography` and `joserfc` only, no
   numpy, scipy, or torch); `python -m sum_verify <receipt>` reproduces the
-  verdicts described in Section 5. Two independent reimplementations verify the
-  same bytes and are exercised against the same fixtures in CI: the JS verifier
-  `single_file_demo/meaning_receipt_verifier.js`, run under Node in CI and in
-  the browser demo. (`standalone_verifier/` verifies the older CanonicalBundle
-  format, not meaning receipts.)
+  verdicts described in Section 5. A second, independent implementation
+  verifies the same bytes: the JS verifier
+  `single_file_demo/meaning_receipt_verifier.js`, exercised against the same
+  fixtures in two runtimes, under Node in CI and in the browser demo.
+  (`standalone_verifier/` verifies the older CanonicalBundle format, not
+  meaning receipts.)
 - **Certificates.** Both binding-gate receipts reported in Section 7 are
   committed together with their public keys, their per-example loss vectors,
   and the generator that rebuilds them from the public corpus:
@@ -440,8 +441,8 @@ contacting the authors.
 - I. Gibbs, J. Cherian, E. Candès. *Conformal prediction with conditional guarantees.* 2023.
 - S. Dathathri et al. *Scalable watermarking for identifying large language model outputs (SynthID-Text).* Nature, 2024.
 - *AEX: Non-Intrusive Multi-Hop Attestation and Provenance for LLM APIs.* arXiv:2603.14283, 2026.
-- *(Survey) AI-content identity and provenance; names the "semantic intent gap."* arXiv:2604.23280, 2026. [exact title to verify before submission]
-- *Multi-hop paraphrase removal of LLM text watermarks ("Chainwash").* arXiv:2605.05503, 2026. [exact title to verify before submission]
+- T. Otsuka, K. Toyoda, A. Leung. *AI identity: standards, gaps, and research directions for AI agents.* arXiv:2604.23280, 2026.
+- M. R. Ameen, A. Islam, N. Mahmud, M. E. Hamid. *Chainwash: multi-step rewriting attacks on diffusion language model watermarks.* arXiv:2605.05503, 2026.
 - *Conditional Factuality-Controlled LLMs with Generalization Certificates.* arXiv:2603.27403, 2026.
 - *EigenAI: deterministic-inference attestation.* arXiv:2602.00182, 2026.
 - *Tool Receipts, Not ZK Proofs: signed tool-call receipts for agents.* arXiv:2603.10060, 2026.
