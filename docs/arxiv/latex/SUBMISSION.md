@@ -100,6 +100,18 @@ self-contained, downloads packages on first run). On a machine with TeXLive:
    verified against the live arXiv abstract pages 2026-07-16).
 3. Compile locally twice on any machine with TeX (or trust AutoTeX): check
    the rendered PDF once, end to end.
+3a. **Re-archive in Software Heritage and update the SWHID in Section 11.**
+   This is a submission blocker, not a nicety. Section 11 offers
+   `swh:1:snp:1904bd38...` for "permanent citation", but that snapshot predates
+   the 2026-09 corrections, so a reviewer who follows the artifact link lands on
+   the version that still carries the five wrong reference titles, the
+   mis-framed `toolreceipts2026` bullet, and the "two independent
+   reimplementations" sentence. Trigger a save of `main` at
+   `https://archive.softwareheritage.org/save/`, wait for the visit to report
+   `full`, read the new snapshot id from
+   `https://archive.softwareheritage.org/api/1/origin/https://github.com/OtotaO/SUM/visit/latest/`,
+   replace the `swh:1:snp:` in Section 11 of `main.tex` (the origin
+   `swh:1:ori:a7b5385a...` does not change), and recompile.
 4. **Endorsement: still open, and it is the binding blocker.** See the
    status section below before spending effort here.
 5. Run `./make_tarball.sh` and upload `paper1.tar.gz` (or upload `main.tex`
