@@ -366,7 +366,10 @@ Clopper--Pearson & 0.961 & 0.972 & 0.970 & 0.919 \\
 \bottomrule
 \end{tabular}
 \caption{Empirical coverage of the $(1-\delta)$ upper bound on synthetic
-data with known ground truth ($n=64$, $2\times 10^{4}$ trials).}
+data with known ground truth ($n=64$, $2\times 10^{4}$ trials). Here
+\texttt{tl} is the \emph{true loss} rate of the generating distribution, the
+quantity the bound must not fall below; \emph{target} is the nominal coverage
+$1-\delta$. A method is valid where its row meets its target.}
 \label{tab:coverage}
 \end{table}
 
@@ -407,15 +410,28 @@ visible rather than rhetorically closed.
 
 \begin{itemize}
 \item \textbf{Signed-but-semantics-disclaiming receipts.}
-  \textbf{AEX}~\cite{aex2026} independently uses JCS + SHA-256 + Ed25519
-  signed transformation-receipt chains for LLM APIs but \textbf{explicitly
+  \textbf{AEX}~\cite{aex2026} uses JCS + SHA-256 + Ed25519 signed
+  transformation-receipt chains for LLM APIs but \textbf{explicitly
   disclaims} that an accepted transform is ``semantically correct,
   reasonable, or minimal.'' The same pattern --- a signed artifact that
   proves \emph{what was computed} and avoids any quality claim --- recurs in
-  deterministic-inference attestation (EigenAI~\cite{eigenai2026}) and
-  signed tool-call receipts~\cite{toolreceipts2026}. Our contribution is
-  precisely that uniformly-disclaimed semantic delta, as a finite-sample,
-  replayable certificate.
+  deterministic-inference attestation (EigenAI~\cite{eigenai2026}). Our
+  contribution is precisely that disclaimed semantic delta, as a
+  finite-sample, replayable certificate.
+\item \textbf{The receipt scheme that does not disclaim semantics.} Tool
+  receipts for agents~\cite{toolreceipts2026} are the closest counterexample
+  to the bullet above, and we name them as one rather than list them among
+  the disclaiming schemes: that work cross-references per-claim receipts
+  specifically \emph{to detect hallucination}, and reports detection rates by
+  error type. Two differences are load-bearing. Its receipts are
+  HMAC-authenticated, a symmetric MAC, so they are unforgeable by the model
+  under its stated threat model but carry no third-party verifiability and no
+  non-repudiation: anyone who can verify can also mint. And its semantic claim
+  is a per-claim heuristic detection rate on a self-introduced benchmark, not
+  a calibrated bound, so there is no coverage guarantee and no quantity a
+  reader can hold the issuer to. The line this paper draws is therefore not
+  detection versus silence about meaning; it is an unbound heuristic versus a
+  publicly verifiable, distribution-free bound that replays offline.
 \item \textbf{The semantic gap, named independently.} A 2026 survey of
   AI-content identity and provenance~\cite{survey2026} articulates exactly
   this gap --- that \emph{cryptographic correctness does not imply semantic
@@ -482,7 +498,7 @@ visible rather than rhetorically closed.
   score~\cite{giovannotti2023} and conformal coverage on summary
   sentence-importance~\cite{confsumm2025}; the nearest
   \emph{output}-factuality line is Mohri \& Hashimoto~\cite{mohri2024} and
-  concurrent conditional-factuality certificates~\cite{condfact2026}. Two
+  conditional-factuality certificates from March 2026~\cite{condfact2026}. Two
   June 2026 results sit closest. \textbf{CARE}~\cite{care2026} applies
   conformal risk control to medical summarization, overlaying calibrated
   omission and hallucination flags with finite-sample, distribution-free
@@ -512,11 +528,18 @@ determinism is now an engineering solved problem (batch-invariant kernels),
 but cross-hardware reproducibility remains open, which is the niche this
 de-pinning targets. The proxy is a proxy; stronger faithfulness judges are a
 drop-in upgrade --- MiniCheck (Tang et al., 2024~\cite{minicheck2024}) is
-the lightweight lineage anchor, though lighter open judges have since been
-reported to match or surpass it (e.g.\ Paladin-mini, 2025) --- and any
+the lightweight lineage anchor, and lighter open judges now report stronger
+aggregate results, though on their own benchmarks: Paladin-mini (3.8B) reports
+91.8\% average balanced accuracy against 78.2\% for Bespoke-MiniCheck-7B on
+the grounding benchmark it introduces, while losing that benchmark's
+time-and-date subset (82.0\% against 90.0\%)~\cite{paladinmini2025} --- and
+any
 judge-conditional bound inherits the judge's \emph{label-noise} ceiling, not
-merely its accuracy (Verifying the
-Verifiers~\cite{verifyingverifiers2025}). A tighter
+merely its accuracy. That last step is our inference, not a result of the work
+we draw it from: Seo et al.~\cite{verifyingverifiers2025} report empirically
+that roughly 16\% ambiguous or incorrectly labelled data is enough to shift
+model rankings on fact-verification benchmarks, and we take the consequence for
+a judge-conditional bound from there. A tighter
 betting/empirical-Bernstein confidence sequence is a no-wire-change
 tightening. The corpora here demonstrate the mechanism; they are not a
 benchmark suite. The binding open problem is not a sharper inequality but
@@ -644,7 +667,9 @@ S.~Dathathri et al.
 \newblock \emph{Nature}, 2024.
 
 \bibitem{aex2026}
-{AEX}: Non-intrusive multi-hop attestation and provenance for {LLM} {APIs}.
+Y.~Guan.
+\newblock {AEX}: Non-intrusive multi-hop attestation and provenance for {LLM}
+  {APIs}.
 \newblock arXiv:2603.14283, 2026.
 
 \bibitem{survey2026}
@@ -660,7 +685,9 @@ M.~R. Ameen, A.~Islam, N.~Mahmud, and M.~E. Hamid.
 \newblock arXiv:2605.05503, 2026.
 
 \bibitem{condfact2026}
-Conditional factuality-controlled {LLMs} with generalization certificates.
+K.~Ye, Q.~Pan, and S.~Li.
+\newblock Conditional factuality controlled {LLMs} with generalization
+  certificates via conformal sampling.
 \newblock arXiv:2603.27403, 2026.
 
 \bibitem{care2026}
@@ -676,11 +703,15 @@ impossibility, and adaptation for structured generation.
 \newblock arXiv:2606.29054, 2026.
 
 \bibitem{eigenai2026}
-{EigenAI}: deterministic-inference attestation.
+D.~Ribeiro~Alves, V.~Patankar, M.~Pereira, J.~Stephens, N.~Vaziri, and
+S.~Kannan.
+\newblock {EigenAI}: deterministic inference, verifiable results.
 \newblock arXiv:2602.00182, 2026.
 
 \bibitem{toolreceipts2026}
-Tool receipts, not {ZK} proofs: signed tool-call receipts for agents.
+A.~Basu.
+\newblock Tool receipts, not zero-knowledge proofs: practical hallucination
+  detection for {AI} agents.
 \newblock arXiv:2603.10060, 2026.
 
 \bibitem{giovannotti2023}
@@ -690,8 +721,10 @@ P.~Giovannotti.
 \newblock arXiv:2306.01549 ({COPA} 2023).
 
 \bibitem{confsumm2025}
-Document summarization with conformal importance guarantees.
-\newblock arXiv:2509.20461, 2025.
+B.~Kuwahara, C.-Y. Lin, X.~S. Huang, K.~K. Leung, J.~A. Yapeter,
+I.~Stanevich, F.~Perez, and J.~C. Cresswell.
+\newblock Document summarization with conformal importance guarantees.
+\newblock {NeurIPS} 2025; arXiv:2509.20461.
 
 \bibitem{mohri2024}
 C.~Mohri and T.~Hashimoto.
@@ -699,14 +732,16 @@ C.~Mohri and T.~Hashimoto.
 \newblock arXiv:2402.10978, 2024.
 
 \bibitem{synthidrobust2025}
-Robustness assessment and enhancement of text watermarking for {Google's}
-  {SynthID}.
+X.~Han, Q.~Li, J.~Ni, and M.~Zulkernine.
+\newblock Robustness assessment and enhancement of text watermarking for
+  {Google's} {SynthID}.
 \newblock arXiv:2508.20228, 2025.
 
 \bibitem{advparaphrase2025}
-Adversarial paraphrasing: universal training-free evasion of {AI}-text
-  detectors.
-\newblock arXiv:2506.07001 ({NeurIPS} 2025).
+Y.~Cheng, V.~S. Sadasivan, M.~Saberi, S.~Saha, and S.~Feizi.
+\newblock Adversarial paraphrasing: a universal attack for humanizing
+  {AI}-generated text.
+\newblock {NeurIPS} 2025; arXiv:2506.07001.
 
 \bibitem{minicheck2024}
 L.~Tang et al.
@@ -714,9 +749,18 @@ L.~Tang et al.
   documents.
 \newblock In \emph{EMNLP}, 2024. arXiv:2404.10774.
 
+\bibitem{paladinmini2025}
+D.~Ivry and O.~Nahum.
+\newblock Paladin-mini: a compact and efficient grounding model excelling in
+real-world scenarios.
+\newblock arXiv:2506.20384, 2025.
+
 \bibitem{verifyingverifiers2025}
-Verifying the verifiers: label noise in fact-verification benchmarks.
-\newblock arXiv:2506.13342, 2025.
+W.~Seo, S.~Han, J.~Jung, B.~Newman, S.~Lim, S.~Lee, X.~Lu, Y.~Choi, and
+Y.~Yu.
+\newblock Verifying the verifiers: unveiling pitfalls and potentials in fact
+  verifiers.
+\newblock {COLM} 2025; arXiv:2506.13342.
 
 \bibitem{c2pa}
 {C2PA}.
