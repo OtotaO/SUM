@@ -1,4 +1,4 @@
-% arXiv submission kit: Paper 1 (cs.CR primary, cs.LG secondary)
+% arXiv submission kit: Paper 1 (cs.CR primary; cs.LG and cs.CL cross-lists)
 % Converted from docs/arxiv/PAPER1_DRAFT.md (final-form v0, 2026-06-09).
 % \pdfoutput=1 tells arXiv's AutoTeX to produce a PDF directly (required
 % within the first 5 lines when submitting pdflatex sources).
@@ -52,7 +52,9 @@ committed integer loss vector --- a third party re-runs the conformal
 certifier and reproduces the bound to the bit --- while the proof boundary
 stays explicit: it bounds a named proxy \emph{marginally}, over an
 \emph{i.i.d.} calibration sample and only where that sample matches
-deployment, never per-document truth and never ``meaning'' itself. We demonstrate on two public-domain corpora: certified expected
+deployment, never per-document truth and never ``meaning'' itself. We demonstrate on two public-domain corpora, over each corpus's own
+reference outputs rather than model outputs (the mechanism is
+producer-indifferent): certified expected
 meaning-loss $\le 0.646$ (95\%) for abstractive summarization of US
 Congressional bills (BillSum, CC0; $n=64$) and $\le 0.413$ for EN$\to$FR
 translation (opus-100; $n=64$), with 39/64 faithful translations scoring
@@ -316,8 +318,10 @@ valid, bound does not replay). The certificate replays on any machine;
 \emph{re-deriving} the losses from raw text additionally requires the named
 model judge, whose forward pass is machine-pinned (cross-hardware
 floating-point drift) --- a fact the receipt discloses. So ``verifiable in
-every runtime'' means the signature and bound \emph{replay}, not the
-\emph{meaning recomputation}.
+every runtime'' means authenticity and disclosure: Stage B's exact-integer
+replay is \emph{well-defined} in any runtime (\S\ref{sec:substrate}) but is at
+present implemented only in Python (\S\ref{sec:artifact}), and the
+\emph{meaning recomputation} is machine-pinned in every runtime.
 
 \section{Perspective receipts (group-conditional)}\label{sec:perspective}
 
@@ -602,7 +606,10 @@ substantially influences model rankings on fact-verification benchmarks, which
 is a statement about annotation quality rather than a flat benchmark error
 rate, and we take the consequence for a judge-conditional bound from there. A tighter
 betting/empirical-Bernstein confidence sequence is a no-wire-change
-tightening. The corpora here demonstrate the mechanism; they are not a
+tightening. Re-enveloping the receipt as a COSE\_Sign1 Signed Statement and
+registering it with a transparency service, so the meaning layer composes with
+SCITT (\S\ref{sec:related}) rather than duplicating it, is named future work
+and is not implemented. The corpora here demonstrate the mechanism; they are not a
 benchmark suite. The binding open problem is not a sharper inequality but
 \textbf{adoption}: one external party issuing and verifying a receipt it did
 not author.
@@ -616,9 +623,9 @@ shipped certifier over the data-generating process stated there ($n=64$ i.i.d.\
 Bernoulli draws at each true rate, $2\times 10^{4}$ trials, seed 11); we re-ran
 it on 2026-09-05 and all twelve cells of Table~\ref{tab:coverage} matched, as
 did the $0.958$ joint-coverage figure from
-\texttt{Tests/research/test\_group\_conditional.py}. Separately,
-and every verification claim in \S\ref{sec:verify} is executable by a third
-party without contacting the authors.
+\texttt{Tests/research/test\_group\_conditional.py}. Separately, every
+verification claim in \S\ref{sec:verify} is executable by a third party
+without contacting the authors.
 
 \begin{itemize}
 % Long, unhyphenatable typewriter paths in this list; \sloppy trades slightly
