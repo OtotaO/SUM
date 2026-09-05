@@ -50,11 +50,11 @@ certificate} bounds the expected \emph{meaning-loss} of the transformation
 under a \textbf{named judge}. The certificate replays offline over a
 committed integer loss vector --- a third party re-runs the conformal
 certifier and reproduces the bound to the bit --- while the proof boundary
-stays explicit: it bounds a named proxy \emph{marginally}, under
-\emph{exchangeability}, never per-document truth and never ``meaning''
-itself. We demonstrate on two public-domain corpora: certified expected
-meaning-loss $\le 0.645$ (95\%) for abstractive summarization of US
-Congressional bills (BillSum, CC0; $n=64$) and $\le 0.412$ for EN$\to$FR
+stays explicit: it bounds a named proxy \emph{marginally}, over an
+\emph{i.i.d.} calibration sample and only where that sample matches
+deployment, never per-document truth and never ``meaning'' itself. We demonstrate on two public-domain corpora: certified expected
+meaning-loss $\le 0.646$ (95\%) for abstractive summarization of US
+Congressional bills (BillSum, CC0; $n=64$) and $\le 0.413$ for EN$\to$FR
 translation (opus-100; $n=64$), with 39/64 faithful translations scoring
 \emph{exactly zero} meaning-loss (under a binary entailment judge at a 0.5
 cut) despite near-zero lexical overlap --- the property no watermark or
@@ -122,7 +122,7 @@ out-of-band keys; issuer-attestation vs.\ bound-attestation) that any
 \section{Threat model}\label{sec:threat}
 
 The receipts defend a specific surface; we state it so the guarantees are
-not over-read.
+not over-read (Table~\ref{tab:threat}).
 
 \begin{table}[htbp]
 \centering
@@ -211,6 +211,15 @@ define
 \mathrm{recall}=\tfrac{1}{|\mathrm{sent}(S)|}\!\!\sum_{s\in\mathrm{sent}(S)}\!\! e(T,s),\quad
 \mathrm{fid}=\tfrac{1}{|\mathrm{sent}(T)|}\!\!\sum_{t\in\mathrm{sent}(T)}\!\! e(S,t),
 \]
+\[
+\ell(S,T)=1-\big(w_r\,\mathrm{recall}+w_f\,\mathrm{fid}\big)\in[0,1],\quad w_r+w_f=1.
+\]
+Recall penalizes omission, fidelity penalizes fabrication; $\ell(S,S)=0$.
+Both committed receipts use $w_r=0.6$ and $w_f=0.4$, weighting omission above
+fabrication; the weights are recorded verbatim in each receipt's signed
+\texttt{loss\_definition} field, so a verifier reads them rather than
+assuming them. The judge is named and versioned in the receipt, so the
+certified bound is \emph{explicitly conditional on it}.
 
 The unit $\mathrm{sent}(\cdot)$ in the shipped v1 scorer is a
 punctuation-or-newline-delimited segment, not a linguistic sentence:
@@ -219,16 +228,11 @@ periods. On the BillSum golden 48\% of the 12,149 units begin with a
 lowercase character for this reason. The bound is over whatever units the
 named scorer produced; the receipt pins the scorer, so replay reproduces the
 same units.
-\[
-\ell(S,T)=1-\big(w_r\,\mathrm{recall}+w_f\,\mathrm{fid}\big)\in[0,1],\quad w_r+w_f=1.
-\]
-Recall penalizes omission, fidelity penalizes fabrication; $\ell(S,S)=0$.
-The judge is named and versioned in the receipt, so the certified bound is
-\emph{explicitly conditional on it}.
 
 \paragraph{Certificate.}
-Let $(S_i,T_i)_{i=1}^n$ be a calibration sample exchangeable with
-deployment, $\ell_i=\ell(S_i,T_i)$, preservation $p_i=1-\ell_i\in[0,1]$. By
+Let $(S_i,T_i)_{i=1}^n$ be a calibration sample drawn i.i.d.\ from the
+deployment distribution, $\ell_i=\ell(S_i,T_i)$, preservation
+$p_i=1-\ell_i\in[0,1]$. By
 Hoeffding's inequality~\cite{hoeffding1963}, the one-sided $(1-\delta)$
 lower confidence bound on $\mathbb{E}[p]$ is
 $\bar p-\sqrt{\ln(1/\delta)/(2n)}$, hence the $(1-\delta)$ \textbf{upper}
@@ -249,6 +253,25 @@ knob). The shipped default selects Clopper--Pearson for binary data and
 Hoeffding otherwise; the choice is made a priori, never by comparing
 realized bounds.
 
+\paragraph{What the precondition actually is.}
+Two assumptions carry \eqref{eq:bound} and we separate them, because one is
+stronger than this project previously stated. \textbf{Within} the calibration
+set the draws must be \emph{independent}: Hoeffding, Clopper--Pearson (an
+exact Binomial interval) and the empirical-Bernstein bound are all
+inequalities for independent bounded variables, and exchangeability alone
+does not suffice. The counterexample is immediate: a sequence that is
+all-zeros or all-ones with probability $1/2$ each is exchangeable and bounded
+in $[0,1]$ with $\mathbb{E}[\ell]=1/2$, yet $U_\delta$ falls below $1/2$ on
+half of all draws, giving coverage $1/2$ against a nominal $0.95$.
+\textbf{Between} calibration and deployment, the distributions must match for
+the bound to transfer; that assumption is not testable from the calibration
+sample and we do not claim it is. Exchangeability is the right precondition
+for conformal \emph{prediction}, which is not the procedure used here.
+The \texttt{disclosure} strings inside the two committed receipts say
+``exchangeability''; that wording is weaker than what \eqref{eq:bound}
+requires. We state the stronger requirement here rather than silently re-sign
+the receipts, and \S\ref{sec:boundary} carries the same correction.
+
 \paragraph{Wire and disclosure.}
 The receipt commits the SHA-256 of the integer-micro loss vector and carries
 \texttt{n}, \texttt{delta\_micro}, \texttt{method},
@@ -266,6 +289,9 @@ Verification separates \emph{issuer-attestation} (everywhere) from
 
 \begin{algo}[{\texttt{verify(envelope, jwks, [losses], [max\_age])}}]
 \label{alg:verify}
+% Long underscored identifiers cannot hyphenate; \sloppy keeps them out of the
+% margin. algo is a theorem-like environment, so this is scoped to it.
+\sloppy
 \textbf{Stage A (any runtime).} (a) JOSE-verify the detached JWS over
 $\mathrm{JCS}(\text{payload})$ against \texttt{jwks}; (b) gate
 \texttt{schema} (fail closed on unknown); (c) check header invariants
@@ -318,8 +344,11 @@ release.
 
 First 64 bills of the BillSum test split (US Congressional bills + reference
 summaries; CC0-1.0 as US-government works), local MiniLM-cosine entailment
-judge. The abstractive bill$\to$summary transform certifies \textbf{expected
-meaning-loss $\le 0.6454$ at 95\%} ($n=64$, mean $0.4925$), controlled
+judge (mean-pooled \texttt{all-MiniLM-L6-v2} cosine at a 0.5 cut). The output
+side of each pair is the dataset's own human-written reference summary, not a
+model's; see \S\ref{sec:scope}. The abstractive bill$\to$summary transform
+certifies \textbf{expected
+meaning-loss $\le 0.6455$ at 95\%} ($n=64$, mean $0.4925$), controlled
 against an operator-chosen \textbf{0.70 target} --- an illustrative bar set
 by the issuer, not a regulator/SLA threshold, so ``controlled: true'' means
 ``met the bar the issuer picked'', not ``passed an external quality gate''.
@@ -329,15 +358,17 @@ receipt \emph{certifies how much}, it does not claim little was lost.
 \subsection{Translation (opus-100)}\label{sec:translation}
 
 First 64 length-aligned EN$\to$FR pairs of opus-100, local multilingual NLI
-judge (mDeBERTa-v3-xnli). The translation transform certifies
+judge (mDeBERTa-v3-xnli). As with BillSum, the French side is the corpus's own
+reference translation, not a system output. The translation transform certifies
 \textbf{expected meaning-loss $\le 0.4124$ at 95\%} ($n=64$, mean $0.2594$),
 controlled against an operator-chosen 0.50 target (again illustrative, not
 an external bar). The distribution is the headline: \textbf{39 of 64
 faithful translations score exactly zero meaning-loss despite near-zero
 lexical overlap} between English and French. This headline must be read
 \emph{at the judge's resolution}: at the 0.5 NLI cut the per-pair loss takes
-only five distinct values $\{0.0, 0.4, 0.6, 0.8, 1.0\}$ --- 62/64 pairs fall
-on that grid --- so ``exactly zero'' means \emph{bidirectional entailment
+only five distinct values $\{0.0, 0.4, 0.6, 0.8, 1.0\}$ --- the 64 committed
+losses are $39\times 0.0$, $8\times 0.4$, $8\times 0.6$, $2\times 0.8$,
+$7\times 1.0$ --- so ``exactly zero'' means \emph{bidirectional entailment
 fired above 0.5 in both directions}, not fine-grained perfect preservation;
 the split is also length-aligned and short, which lowers difficulty. With
 that caveat stated: a lexical or watermark scheme cannot credit a faithful
@@ -351,7 +382,9 @@ a signed certificate --- custody of a transform, not of meaning itself.
 The bounds are only meaningful if valid. We measure empirical coverage of
 the $(1-\delta)$ upper bound --- the fraction of trials in which the
 certified bound does not fall below the true loss rate --- on synthetic data
-with known ground truth ($n=64$, $2\times 10^{4}$ trials):
+with known ground truth, each trial drawing $n=64$ i.i.d.\ Bernoulli losses
+(the binary preserved/lost view) at the stated true rate, $2\times 10^{4}$
+trials; Table~\ref{tab:coverage} reports the result.
 
 \begin{table}[htbp]
 \centering
@@ -376,21 +409,42 @@ $1-\delta$. A method is valid where its row meets its target.}
 All estimators clear their target in every regime (Hoeffding and eB
 conservatively, Clopper--Pearson near-nominal). The Bonferroni simultaneous
 path's \emph{joint} (all-cohorts) coverage was separately validated at 0.958
-against a 0.95 target. At the receipts' $n=64$ and observed variance,
+against a 0.95 target (Clopper--Pearson; $G=3$ cohorts of $n=60$ drawn
+Bernoulli at true loss rates $0.10/0.20/0.30$, $\delta=0.05$,
+$2\times 10^{3}$ trials, seed 17). At the receipts' $n=64$ and observed variance,
 Hoeffding is the tighter honest estimator than empirical-Bernstein (BillSum
-0.645 vs 0.650; translation 0.412 vs 0.518), confirming the a-priori default
+0.6455 vs 0.650; translation 0.4124 vs 0.518), confirming the a-priori default
 was not a favorable cherry-pick.
 
 \subsection{Honest scope}\label{sec:scope}
 
 Each receipt is certified under its \emph{own} named judge (the two judges
 differ), so the two means are not a single comparable grading scale. The
-bounds are over the \emph{named, filtered} calibration corpora under
-exchangeability --- not over all summarization or all translation; the
-length-alignment filter on the translation corpus plausibly biases its proxy
-\emph{low} relative to the unfiltered split. The certificate is a
-\textbf{batch} primitive: a single document uses a per-document measurement,
-not the bound.
+bounds are over the \emph{named, filtered} calibration corpora --- not over
+all summarization or all translation; the length-alignment filter on the
+translation corpus plausibly biases its proxy \emph{low} relative to the
+unfiltered split. The certificate is a \textbf{batch} primitive: a single
+document uses a per-document measurement, not the bound.
+
+Two limits of these demonstrations deserve stating plainly rather than being
+left for a reader to discover. First, \textbf{neither output side was produced
+by a model}. BillSum's outputs are the dataset's human-written reference
+summaries and opus-100's are its reference translations, so what is
+demonstrated is that the certificate machinery works end to end over real
+(source, output) pairs, not that it has been exercised on the output of an AI
+system. The mechanism is indifferent to who produced the output --- the
+issuer signs whatever pair it certifies --- but a paper about AI-transformed
+text should not let a reader assume these pairs were AI-transformed.
+Second, \textbf{judge validity is a separate question from bound validity}. A
+verified receipt is a cryptographic fact about a named proxy; it is not
+evidence that the proxy tracks human judgment. On SummEval the proxy
+correlates only modestly with human faithfulness ratings at summary level
+(Spearman $\rho$ between $0.267$ and $0.291$), the NLI judge replicates at
+$\rho \approx 0.29$ on FRANK, and the embedding judge used in the BillSum
+demonstration above is corpus-dependent and falls to near zero on abstractive
+FRANK-XSum. The shipped verifier prints this caveat on every verified
+meaning-risk verdict; we repeat it here so the flagship number is not read
+without it.
 
 \section{Proof boundary}\label{sec:boundary}
 
@@ -398,8 +452,9 @@ A verified receipt \textbf{proves} (cryptographic, given P1--P2): the named
 issuer signed this exact payload; the committed losses hash to the anchor;
 the named certifier reproduces the bound on those losses. It \textbf{does
 not prove}: output truth or freshness; issuer honesty; that \emph{meaning}
-was preserved (only that a \emph{named proxy} is bounded, marginally, under
-exchangeability); or anything about human-vs-AI authorship --- we ship no
+was preserved (only that a \emph{named proxy} is bounded, marginally, over an
+i.i.d.\ calibration sample and only where that sample matches deployment, per
+\S\ref{sec:certificate}); or anything about human-vs-AI authorship --- we ship no
 detection number, and any such signal is advisory, never a guarantee. The
 proxy's structural blind spots are declared in the enforced
 \texttt{not\_covered} field. This is the discipline that keeps the gap
@@ -519,9 +574,14 @@ visible rather than rhetorically closed.
 
 \section{Limitations and future work}\label{sec:limits}
 
-Validity rests on exchangeability between calibration and deployment, which
-is assumed, not sampled --- a deliberately disclosed boundary common to all
-conformal guarantees. Model-judge replay is machine-pinned; de-pinning via
+Validity rests on two assumptions separated in \S\ref{sec:certificate}:
+independence within the calibration sample, which the three shipped
+inequalities require, and a calibration-to-deployment match, which is assumed
+rather than sampled and is not testable from the calibration set. Earlier
+versions of this work, and the \texttt{disclosure} strings in the two
+committed receipts, said ``exchangeability'' for both; that is the right
+precondition for conformal \emph{prediction} but weaker than these
+inequalities need, and the correction is stated rather than quietly applied. Model-judge replay is machine-pinned; de-pinning via
 integer/fixed-point CPU inference (so a meaning-judge forward pass is
 hardware-independent) is named future work --- same-hardware bitwise
 determinism is now an engineering solved problem (batch-invariant kernels),
@@ -549,7 +609,10 @@ not author.
 
 \section{Artifact availability}\label{sec:artifact}
 
-Every number in \S\ref{sec:empirical} is reproducible from committed bytes,
+Every receipt number in \S\ref{sec:billsum} and \S\ref{sec:translation} is
+reproducible from committed bytes (the synthetic coverage sweep of
+\S\ref{sec:coverage} is not: its generator is not committed, and it is
+reported as a validation of the estimators rather than as an artifact),
 and every verification claim in \S\ref{sec:verify} is executable by a third
 party without contacting the authors.
 
@@ -563,15 +626,24 @@ party without contacting the authors.
   \texttt{swh:1:snp:1904bd383765f5cf553f08ea7ee46aca9925f25d} (origin
   \texttt{swh:1:ori:a7b5385a59a6fb561cbad53ce12da3149439401e}).
 \item \textbf{Verifier.} \texttt{pip install "sum-engine[verify]"} installs
-  the dependency-light \texttt{sum\_verify} SDK (\texttt{cryptography} and
-  \texttt{joserfc} only, no numpy, scipy, or torch);
-  \texttt{python -m sum\_verify <receipt>} reproduces the verdicts described
-  in \S\ref{sec:verify}. A second, independent implementation verifies the
-  same bytes: the JS verifier
+  the dependency-light \texttt{sum\_verify} SDK. The load-bearing promise is
+  the exclusion, not a count: \textbf{no numpy, scipy, torch, GPU or network}
+  on the verification path. It pulls \texttt{joserfc} plus the package's base
+  \texttt{cryptography} and \texttt{sympy} (the latter is not imported by
+  \texttt{sum\_verify}). To replay a committed golden with no arguments,
+\begin{quote}\texttt{python -m sum\_verify -{}-demo}\end{quote}
+  and to verify a receipt of your own, pass the files explicitly,
+\begin{quote}\texttt{python -m sum\_verify <receipt> -{}-jwks <jwks.json> -{}-losses <losses.json>}\end{quote}
+  which reproduces both stages of \S\ref{sec:verify}; the receipt alone is
+  not enough, and \texttt{sum\_verify} says so rather than guessing.
+  A second, independent implementation performs \textbf{Stage A} on the same
+  bytes --- signature, schema gate, header invariants, disclosure --- namely
+  the JS verifier
   \texttt{single\_file\_demo/\allowbreak meaning\_receipt\_\allowbreak verifier.js},
-  exercised
-  against the same fixtures in two runtimes, under Node in CI and in the
-  browser demo. (\texttt{standalone\_verifier/} verifies the older
+  run under Node in CI and in the browser demo. \textbf{Stage B replay is
+  Python-only}: no JavaScript port of the bound kernel exists, so the
+  cross-runtime claim in this paper covers authenticity and disclosure, not
+  bound reproduction. (\texttt{standalone\_verifier/} verifies the older
   CanonicalBundle format, not meaning receipts.)
 \item \textbf{Certificates.} Both binding-gate receipts reported in
   \S\ref{sec:empirical} are committed together with their public keys, their

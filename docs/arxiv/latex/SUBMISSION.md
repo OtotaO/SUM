@@ -39,13 +39,13 @@ Chain-of-Custody for AI-Transformed Text: Signed, Replayable, Distribution-Free 
 
 ## Abstract (plain text, ready to paste into the arXiv abstract field)
 
-Character count of the paragraph below: 1,589, which fits the 1,920-char
+Character count of the paragraph below: 1,647, which fits the 1,920-char
 field. (The draft's own note says 1,426; that figure counts its Markdown
 source differently. Both are under the limit.) The Contributions list stays
 in the paper body, as the draft prescribes. Em dashes below are the draft's
 own punctuation, kept verbatim.
 
-Two questions about AI-transformed text lack a portable, offline-verifiable answer: who transformed this, and what did the transformation preserve? Provider disclosure (EU AI Act Article 50) and image-centric content provenance (C2PA, SynthID) do not cover text that has been paraphrased, summarized, or translated — a manifest detaches on copy, a watermark is defeated by rewriting. We present a receipt family that answers both questions for text. A signed, offline-verifiable receipt attests a transformation (Ed25519 over RFC 8785 JCS-canonical bytes, detached JWS, JWKS keys); on top of it, a distribution-free, replayable certificate bounds the expected meaning-loss of the transformation under a named judge. The certificate replays offline over a committed integer loss vector — a third party re-runs the conformal certifier and reproduces the bound to the bit — while the proof boundary stays explicit: it bounds a named proxy marginally, under exchangeability, never per-document truth and never "meaning" itself. We demonstrate on two public-domain corpora: certified expected meaning-loss <= 0.645 (95%) for abstractive summarization of US Congressional bills (BillSum, CC0; n=64) and <= 0.412 for EN->FR translation (opus-100; n=64), with 39/64 faithful translations scoring exactly zero meaning-loss (under a binary entailment judge at a 0.5 cut) despite near-zero lexical overlap — the property no watermark or lexical scheme can certify. The thesis is attest, don't detect: a signature survives an adversary with a thesaurus; a statistical "is-this-AI" classifier does not.
+Two questions about AI-transformed text lack a portable, offline-verifiable answer: who transformed this, and what did the transformation preserve? Provider disclosure (EU AI Act Article 50) and image-centric content provenance (C2PA, SynthID) do not cover text that has been paraphrased, summarized, or translated — a manifest detaches on copy, a watermark is defeated by rewriting. We present a receipt family that answers both questions for text. A signed, offline-verifiable receipt attests a transformation (Ed25519 over RFC 8785 JCS-canonical bytes, detached JWS, JWKS keys); on top of it, a distribution-free, replayable certificate bounds the expected meaning-loss of the transformation under a named judge. The certificate replays offline over a committed integer loss vector — a third party re-runs the conformal certifier and reproduces the bound to the bit — while the proof boundary stays explicit: it bounds a named proxy marginally, over an i.i.d. calibration sample and only where that sample matches deployment, never per-document truth and never "meaning" itself. We demonstrate on two public-domain corpora: certified expected meaning-loss <= 0.646 (95%) for abstractive summarization of US Congressional bills (BillSum, CC0; n=64) and <= 0.413 for EN->FR translation (opus-100; n=64), with 39/64 faithful translations scoring exactly zero meaning-loss (under a binary entailment judge at a 0.5 cut) despite near-zero lexical overlap — the property no watermark or lexical scheme can certify. The thesis is attest, don't detect: a signature survives an adversary with a thesaurus; a statistical "is-this-AI" classifier does not.
 
 Note: arXiv's abstract field accepts inline TeX; if preferred, replace
 `<=` with `$\le$` and `EN->FR` with `EN$\to$FR`.
@@ -122,6 +122,60 @@ self-contained, downloads packages on first run). On a machine with TeXLive:
 7. Timing note from the repo's own planning: an announced preprint helps the
    grant narrative (NLnet decision ~Sept); the outline flags timing as
    operator sub-decision 8.5.
+
+## Pre-submission audit (2026-09-05)
+
+Six independent lenses over the paper, the draft and the repository, each
+finding verified by two skeptics defaulting to refutation. 21 findings
+survived. Every one was then re-checked by hand against the repo before it
+became an edit. The corrections, grouped:
+
+**Wrong against the committed artifacts.**
+- `62/64 pairs fall on that grid` was false *and* self-contradictory (if the
+  loss takes only five values, all 64 land on them by definition). The
+  committed vector is 39/8/8/2/7 = 64. Found independently by five of the six
+  lenses, and checkable by a reviewer in thirty seconds through the artifact
+  link. Replaced with the histogram itself.
+- The three printed upper bounds were rounded **down**: certified 0.645438 and
+  0.412359 were printed as 0.6454, 0.645 and 0.412, each claiming a tighter
+  bound than the receipt certifies. Upper bounds now round up.
+- `python -m sum_verify <receipt>`, the paper's one printed verifier command,
+  exits with a usage error. Replaced with `--demo` and the explicit-files form.
+- "cryptography and joserfc only" is falsified by one `pip install`; `sympy` is
+  a base dependency. The README already said so correctly; the paper did not.
+
+**Claimed more than the mathematics or the code delivers.**
+- Eq. (1) was stated under **exchangeability**, but Hoeffding, Clopper-Pearson
+  and empirical-Bernstein all require **independence**. An exchangeable
+  all-zeros-or-all-ones sequence has coverage 1/2 against a nominal 0.95. The
+  two assumptions are now separated, the counterexample is given, and the fact
+  that the signed receipts' own `disclosure` strings use the weaker word is
+  disclosed rather than quietly re-signed.
+- The cross-runtime claim implied full parity. The JS verifier does Stage A
+  only; Stage B replay is Python-only. Now stated.
+- **Neither demonstration certifies an AI transformation.** BillSum's outputs
+  are the dataset's human-written reference summaries, opus-100's are its
+  reference translations. The fixture code was honest about this
+  (`TRANSFORM = "summarize:billsum-reference"`); the paper was not. Now in 7.4.
+- The paper omitted the proxy-vs-human validity that its own verifier prints on
+  every run, for the exact judge in the flagship demo (near zero on abstractive
+  FRANK-XSum). Now in 7.4.
+
+**Unverifiable from the page.**
+- The loss weights were never given, so neither headline number nor 7.2's
+  five-value grid was derivable. Both receipts use w_r = 0.6, w_f = 0.4,
+  recorded in the signed `loss_definition`.
+- The 0.958 joint-coverage figure shipped with no parameters. Reproduced
+  2026-09-05 and now printed with them (Clopper-Pearson, G = 3, n = 60, rates
+  0.10/0.20/0.30, delta 0.05, 2000 trials, seed 17).
+- Section 11 promised "every number in Section 7" is reproducible from
+  committed bytes. False for 7.3, whose sweep generator is not committed.
+  Narrowed to the receipt sections, with the exclusion named.
+
+**Typesetting.** Both tables are now referenced from the prose; the loss
+definition's two displays are contiguous again; the last overfull box is gone.
+The paper compiles with zero overfull boxes and zero undefined references for
+the first time.
 
 ## Endorsement status (as of 2026-09-04)
 

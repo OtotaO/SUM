@@ -23,10 +23,11 @@ it, a **distribution-free, replayable certificate** bounds the expected
 replays offline over a committed integer loss vector — a third party re-runs
 the conformal certifier and reproduces the bound to the bit — while the proof
 boundary stays explicit: it bounds a named proxy *marginally*, under
-*exchangeability*, never per-document truth and never "meaning" itself. We
+*i.i.d.* calibration sample and only where that sample matches deployment,
+never per-document truth and never "meaning" itself. We
 demonstrate on two public-domain corpora: certified expected meaning-loss
-≤ 0.645 (95%) for abstractive summarization of US Congressional bills
-(BillSum, CC0; n=64) and ≤ 0.412 for EN→FR translation (opus-100; n=64), with
+≤ 0.646 (95%) for abstractive summarization of US Congressional bills
+(BillSum, CC0; n=64) and ≤ 0.413 for EN→FR translation (opus-100; n=64), with
 39/64 faithful translations scoring *exactly zero* meaning-loss (under a binary
 entailment judge at a 0.5 cut) despite near-zero lexical overlap — the property
 no watermark or lexical scheme can certify. The thesis is **attest, don't detect**: a signature survives an
@@ -146,12 +147,16 @@ begin with a lowercase character for this reason. The bound is over whatever uni
 the named scorer produced; the receipt pins the scorer, so replay reproduces the
 same units.
 $$\ell(S,T)=1-\big(w_r\,\mathrm{recall}+w_f\,\mathrm{fid}\big)\in[0,1],\quad w_r+w_f=1.$$
-Recall penalizes omission, fidelity penalizes fabrication; $\ell(S,S)=0$. The
-judge is named and versioned in the receipt, so the certified bound is
+Recall penalizes omission, fidelity penalizes fabrication; $\ell(S,S)=0$. Both
+committed receipts use $w_r=0.6$ and $w_f=0.4$, weighting omission above
+fabrication; the weights are recorded verbatim in each receipt's signed
+`loss_definition` field, so a verifier reads them rather than assuming them.
+The judge is named and versioned in the receipt, so the certified bound is
 *explicitly conditional on it*.
 
-**Certificate.** Let $(S_i,T_i)_{i=1}^n$ be a calibration sample exchangeable
-with deployment, $\ell_i=\ell(S_i,T_i)$, preservation $p_i=1-\ell_i\in[0,1]$.
+**Certificate.** Let $(S_i,T_i)_{i=1}^n$ be a calibration sample drawn i.i.d.
+from the deployment distribution, $\ell_i=\ell(S_i,T_i)$, preservation
+$p_i=1-\ell_i\in[0,1]$.
 By Hoeffding's inequality, the one-sided $(1-\delta)$ lower confidence bound on
 $\mathbb{E}[p]$ is $\bar p-\sqrt{\ln(1/\delta)/(2n)}$, hence the
 $(1-\delta)$ **upper** bound on expected meaning-loss is
@@ -221,8 +226,11 @@ micro-unit** and adversarially audited before release.
 
 **7.1 Compression (BillSum, CC0).** First 64 bills of the BillSum test split
 (US Congressional bills + reference summaries; CC0-1.0 as US-government works),
-local MiniLM-cosine entailment judge. The abstractive bill→summary transform
-certifies **expected meaning-loss $\le 0.6454$ at 95%** ($n=64$, mean
+local MiniLM-cosine entailment judge (mean-pooled `all-MiniLM-L6-v2` cosine at
+a 0.5 cut). The output side of each pair is the dataset's own human-written
+reference summary, not a model's; see Section 7.4. The abstractive
+bill→summary transform
+certifies **expected meaning-loss $\le 0.6455$ at 95%** ($n=64$, mean
 $0.4925$), controlled against an operator-chosen **0.70 target** — an
 illustrative bar set by the issuer, not a regulator/SLA threshold, so
 "controlled: true" means "met the bar the issuer picked", not "passed an
@@ -231,14 +239,16 @@ proxy on average; the receipt *certifies how much*, it does not claim little
 was lost.
 
 **7.2 Translation (opus-100).** First 64 length-aligned EN→FR pairs of
-opus-100, local multilingual NLI judge (mDeBERTa-v3-xnli). The translation
+opus-100, local multilingual NLI judge (mDeBERTa-v3-xnli). As with BillSum, the French side is the corpus's own
+reference translation, not a system output. The translation
 transform certifies **expected meaning-loss $\le 0.4124$ at 95%** ($n=64$, mean
 $0.2594$), controlled against an operator-chosen 0.50 target (again illustrative,
 not an external bar). The distribution is the headline: **39 of 64 faithful
 translations score exactly zero meaning-loss despite near-zero lexical overlap**
 between English and French. This headline must be read *at the judge's
 resolution*: at the 0.5 NLI cut the per-pair loss takes only five distinct
-values $\{0.0, 0.4, 0.6, 0.8, 1.0\}$ — 62/64 pairs fall on that grid — so
+values $\{0.0, 0.4, 0.6, 0.8, 1.0\}$ — the 64 committed losses are
+$39\times 0.0$, $8\times 0.4$, $8\times 0.6$, $2\times 0.8$, $7\times 1.0$ — so
 "exactly zero" means *bidirectional entailment fired above 0.5 in both
 directions*, not fine-grained perfect preservation; the split is also
 length-aligned and short, which lowers difficulty. With that caveat stated:
@@ -263,18 +273,37 @@ on synthetic data with known ground truth ($n=64$, $2\times10^4$ trials):
 All estimators clear their target in every regime (Hoeffding and eB
 conservatively, Clopper–Pearson near-nominal). The Bonferroni simultaneous
 path's *joint* (all-cohorts) coverage was separately validated at 0.958 against
-a 0.95 target. At the receipts' $n=64$ and observed variance, Hoeffding is the
+a 0.95 target (Clopper-Pearson; $G=3$ cohorts of $n=60$ drawn Bernoulli at true
+loss rates 0.10/0.20/0.30, $\delta=0.05$, $2\times10^{3}$ trials, seed 17). At the receipts' $n=64$ and observed variance, Hoeffding is the
 tighter honest estimator than empirical-Bernstein (BillSum 0.645 vs 0.650;
-translation 0.412 vs 0.518), confirming the a-priori default was not a
+translation 0.4124 vs 0.518), confirming the a-priori default was not a
 favorable cherry-pick.
 
 **7.4 Honest scope.** Each receipt is certified under its *own* named judge
 (the two judges differ), so the two means are not a single comparable grading
-scale. The bounds are over the *named, filtered* calibration corpora under
-exchangeability — not over all summarization or all translation; the
-length-alignment filter on the translation corpus plausibly biases its proxy
-*low* relative to the unfiltered split. The certificate is a **batch**
-primitive: a single document uses a per-document measurement, not the bound.
+scale. The bounds are over the *named, filtered* calibration corpora — not
+over all summarization or all translation; the length-alignment filter on the
+translation corpus plausibly biases its proxy *low* relative to the unfiltered
+split. The certificate is a **batch** primitive: a single document uses a
+per-document measurement, not the bound.
+
+Two limits of these demonstrations deserve stating plainly rather than being
+left for a reader to discover. First, **neither output side was produced by a
+model**. BillSum's outputs are the dataset's human-written reference summaries
+and opus-100's are its reference translations, so what is demonstrated is that
+the certificate machinery works end to end over real (source, output) pairs,
+not that it has been exercised on the output of an AI system. The mechanism is
+indifferent to who produced the output, but a paper about AI-transformed text
+should not let a reader assume these pairs were AI-transformed. Second,
+**judge validity is a separate question from bound validity**. A verified
+receipt is a cryptographic fact about a named proxy; it is not evidence that
+the proxy tracks human judgment. On SummEval the proxy correlates only
+modestly with human faithfulness ratings at summary level (Spearman rho
+between 0.267 and 0.291), the NLI judge replicates at rho about 0.29 on FRANK,
+and the embedding judge used in the BillSum demonstration is corpus-dependent
+and falls to near zero on abstractive FRANK-XSum. The shipped verifier prints
+this caveat on every verified meaning-risk verdict; we repeat it here so the
+flagship number is not read without it.
 
 ## 8. Proof boundary
 
@@ -282,7 +311,8 @@ A verified receipt **proves** (cryptographic, given P1–P2): the named issuer
 signed this exact payload; the committed losses hash to the anchor; the named
 certifier reproduces the bound on those losses. It **does not prove**: output
 truth or freshness; issuer honesty; that *meaning* was preserved (only that a
-*named proxy* is bounded, marginally, under exchangeability); or anything about
+*named proxy* is bounded, marginally, over an i.i.d. calibration sample and
+only where that sample matches deployment, per Section 4); or anything about
 human-vs-AI authorship — we ship no detection number, and any such signal is
 advisory, never a guarantee. The proxy's structural blind spots are declared
 in the enforced `not_covered` field. This is the discipline that keeps the
@@ -368,7 +398,7 @@ visible rather than rhetorically closed.
   nearest applications to *transform quality* are conformal prediction over a
   machine-translation quality score (arXiv:2306.01549) and conformal coverage
   on summary sentence-importance (arXiv:2509.20461); the nearest *output*-
-  factuality line is Mohri & Hashimoto (arXiv:2402.10978) and concurrent
+  factuality line is Mohri & Hashimoto (arXiv:2402.10978) and
   conditional-factuality certificates from March 2026 (arXiv:2603.27403). Two June 2026
   results sit closest. **CARE** (arXiv:2606.08969) applies conformal risk
   control to medical summarization, overlaying calibrated omission and
@@ -388,7 +418,9 @@ visible rather than rhetorically closed.
 
 ## 10. Limitations and future work
 
-Validity rests on exchangeability between calibration and deployment, which is
+Validity rests on two assumptions separated in Section 4: independence within
+the calibration sample, which the three shipped inequalities require, and a
+calibration-to-deployment match, which is
 assumed, not sampled — a deliberately disclosed boundary common to all
 conformal guarantees. Model-judge replay is machine-pinned; de-pinning via
 integer/fixed-point CPU inference (so a meaning-judge forward pass is
@@ -416,7 +448,10 @@ party issuing and verifying a receipt it did not author.
 
 ## 11. Artifact availability
 
-Every number in Section 7 is reproducible from committed bytes, and every
+Every receipt number in Sections 7.1 and 7.2 is reproducible from committed
+bytes (the synthetic coverage sweep of Section 7.3 is not: its generator is not
+committed, and it is reported as a validation of the estimators rather than as
+an artifact), and every
 verification claim in Section 5 is executable by a third party without
 contacting the authors.
 
@@ -425,8 +460,14 @@ contacting the authors.
   `swh:1:snp:1904bd383765f5cf553f08ea7ee46aca9925f25d`
   (origin `swh:1:ori:a7b5385a59a6fb561cbad53ce12da3149439401e`).
 - **Verifier.** `pip install "sum-engine[verify]"` installs the
-  dependency-light `sum_verify` SDK (`cryptography` and `joserfc` only, no
-  numpy, scipy, or torch); `python -m sum_verify <receipt>` reproduces the
+  dependency-light `sum_verify` SDK. The load-bearing promise is the
+  exclusion, not a count: **no numpy, scipy, torch, GPU or network** on the
+  verification path. It pulls `joserfc` plus the package's base `cryptography`
+  and `sympy` (the latter is not imported by `sum_verify`). Replay a committed
+  golden with `python -m sum_verify --demo`; verify your own receipt with
+  `python -m sum_verify <receipt> --jwks <jwks.json> --losses <losses.json>`,
+  which reproduces both stages of Section 5. The receipt alone is not enough.
+  This
   verdicts described in Section 5. A second, independent implementation
   verifies the same bytes: the JS verifier
   `single_file_demo/meaning_receipt_verifier.js`, exercised against the same
