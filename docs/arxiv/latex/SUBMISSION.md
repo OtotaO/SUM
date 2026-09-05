@@ -33,19 +33,24 @@ Chain-of-Custody for AI-Transformed Text: Signed, Replayable, Distribution-Free 
   serve the attestation claim, not the other way around. cs.CR is right.
 - **Cross-list: cs.LG** (the conformal / distribution-free bound machinery,
   per the outline's stated venue plan).
-- Optional second cross-list to consider: **cs.CL** (the judges, corpora, and
-  transformations are all NLP objects). The outline does not name it; operator
-  call.
+- **Second cross-list: cs.CL.** Added. The judges, corpora and transformations
+  are all NLP objects: the paper's headline demonstrations are summarization
+  and translation, its proxy is a sentence-entailment score, and Section 10's
+  judge discussion is an NLP argument. The audience that cares whether a
+  transformation preserved meaning reads cs.CL, and the paper's own
+  positioning is against watermarking and detection work that lives there. The
+  outline did not name it; this is the reversible, wider-reach choice, and a
+  cross-list costs nothing but a checkbox.
 
 ## Abstract (plain text, ready to paste into the arXiv abstract field)
 
-Character count of the paragraph below: 1,647, which fits the 1,920-char
+Character count of the paragraph below: 1,755, which fits the 1,920-char
 field. (The draft's own note says 1,426; that figure counts its Markdown
 source differently. Both are under the limit.) The Contributions list stays
 in the paper body, as the draft prescribes. Em dashes below are the draft's
 own punctuation, kept verbatim.
 
-Two questions about AI-transformed text lack a portable, offline-verifiable answer: who transformed this, and what did the transformation preserve? Provider disclosure (EU AI Act Article 50) and image-centric content provenance (C2PA, SynthID) do not cover text that has been paraphrased, summarized, or translated — a manifest detaches on copy, a watermark is defeated by rewriting. We present a receipt family that answers both questions for text. A signed, offline-verifiable receipt attests a transformation (Ed25519 over RFC 8785 JCS-canonical bytes, detached JWS, JWKS keys); on top of it, a distribution-free, replayable certificate bounds the expected meaning-loss of the transformation under a named judge. The certificate replays offline over a committed integer loss vector — a third party re-runs the conformal certifier and reproduces the bound to the bit — while the proof boundary stays explicit: it bounds a named proxy marginally, over an i.i.d. calibration sample and only where that sample matches deployment, never per-document truth and never "meaning" itself. We demonstrate on two public-domain corpora: certified expected meaning-loss <= 0.646 (95%) for abstractive summarization of US Congressional bills (BillSum, CC0; n=64) and <= 0.413 for EN->FR translation (opus-100; n=64), with 39/64 faithful translations scoring exactly zero meaning-loss (under a binary entailment judge at a 0.5 cut) despite near-zero lexical overlap — the property no watermark or lexical scheme can certify. The thesis is attest, don't detect: a signature survives an adversary with a thesaurus; a statistical "is-this-AI" classifier does not.
+Two questions about AI-transformed text lack a portable, offline-verifiable answer: who transformed this, and what did the transformation preserve? Provider disclosure (EU AI Act Article 50) and image-centric content provenance (C2PA, SynthID) do not cover text that has been paraphrased, summarized, or translated — a manifest detaches on copy, a watermark is defeated by rewriting. We present a receipt family that answers both questions for text. A signed, offline-verifiable receipt attests a transformation (Ed25519 over RFC 8785 JCS-canonical bytes, detached JWS, JWKS keys); on top of it, a distribution-free, replayable certificate bounds the expected meaning-loss of the transformation under a named judge. The certificate replays offline over a committed integer loss vector — a third party re-runs the conformal certifier and reproduces the bound to the bit — while the proof boundary stays explicit: it bounds a named proxy marginally, over an i.i.d. calibration sample and only where that sample matches deployment, never per-document truth and never "meaning" itself. We demonstrate on two public-domain corpora, over each corpus's own reference outputs rather than model outputs (the mechanism is producer-indifferent): certified expected meaning-loss <= 0.646 (95%) for abstractive summarization of US Congressional bills (BillSum, CC0; n=64) and <= 0.413 for EN->FR translation (opus-100; n=64), with 39/64 faithful translations scoring exactly zero meaning-loss (under a binary entailment judge at a 0.5 cut) despite near-zero lexical overlap — the property no watermark or lexical scheme can certify. The thesis is attest, don't detect: a signature survives an adversary with a thesaurus; a statistical "is-this-AI" classifier does not.
 
 Note: arXiv's abstract field accepts inline TeX; if preferred, replace
 `<=` with `$\le$` and `EN->FR` with `EN$\to$FR`.
@@ -193,11 +198,40 @@ definition's two displays are contiguous again; the last overfull box is gone.
 The paper compiles with zero overfull boxes and zero undefined references for
 the first time.
 
+## Cold read (2026-09-05, after the audit)
+
+Every check before this one was *targeted* at a defect class. Nobody had read
+the paper end to end since about forty edits landed across three revisions, so
+two reviewers read the compiled PDF cold, with no edit history, reporting only
+repetition, contradiction, promises the body walks back, and flow breaks. Five
+findings survived unanimous refutation, and **three were caused by the repairs
+themselves**:
+
+- **Section 5 contradicted Section 11.** Section 5 said "verifiable in every
+  runtime" means the signature *and the bound replay*; Section 11, corrected
+  the day before, says the cross-runtime claim covers authenticity and
+  disclosure and explicitly *not* bound reproduction. Both sentences defined
+  the same phrase, oppositely. Section 5 now matches, and separates
+  well-defined-in-any-runtime from implemented-in-one-runtime.
+- **The abstract formed the assumption that Section 7.4 corrects.** The
+  disclosure that neither output side was model-produced sat in 7.1, 7.2 and
+  7.4 but never where a reader forms the belief. The abstract now carries it.
+- **A sentence was left grammatically broken** by the previous commit: "…
+  Separately, / and every verification claim …". The same half-edit failure
+  mode as the markdown corruption, one commit later, in the first paragraph a
+  reviewer reads for artifact credibility.
+- Section 9 deferred the COSE_Sign1 re-envelope to Section 10, which never
+  mentioned it. Section 10 now names it as future work.
+
+The lesson: a targeted audit cannot see coherence damage it caused. A cold
+read is a different instrument, and it should be the last gate before any
+future submission, not the first.
+
 ## Software Heritage re-archive: attempted and failing (2026-09-05)
 
-Step 3a below could not be completed today. Four save requests were submitted
-to `archive.softwareheritage.org` (ids 2464739, 2464741, 2464747, 2464763) and
-all four returned `save_task_status: failed` with `visit_status: not_found`,
+Step 3a below could not be completed today. Five save requests were submitted
+to `archive.softwareheritage.org` (ids 2464739, 2464741, 2464747, 2464763,
+2464799) and all five returned `save_task_status: failed` with `visit_status: not_found`,
 within seconds. The origin is genuinely reachable: `GET
 https://github.com/OtotaO/SUM.git/info/refs?service=git-upload-pack` returns
 200, and the same URL archived successfully twice on 2026-08-28. This reads as
@@ -306,20 +340,32 @@ person at a time, and ask them to check eligibility at
    benchmark the paper itself introduces*, winning 91.8% to 78.2% on average
    while LOSING the time-and-date subset 82.0% to 90.0%. Section 10 now
    states that scope instead of the bare comparative.
-6. **Contributions placement.** The draft holds the Contributions list inside
-   its Abstract section but its own drafting note says the abstract field is
-   the prose only and "the Contributions list stays in the body". I placed it
-   as an unnumbered paragraph at the end of Section 1. Confirm or move.
+6. **Contributions placement: CONFIRMED as-is 2026-09-05.** The list sits as
+   an unnumbered paragraph at the end of Section 1, which is what the draft's
+   own note prescribes ("the Contributions list stays in the body") and what
+   the plain-text abstract above assumes. No change; reopen only if you want
+   it bulleted.
 7. **Coverage table header "tl": RESOLVED 2026-09-04.** The caption of
    Table 2 now defines `tl` as the true loss rate of the generating
    distribution and *target* as the nominal coverage, and states the read:
    a method is valid where its row meets its target.
 8. **Draft meta-commentary.** The draft's italic header note and the closing
    "Drafting notes for the operator" block are preserved as LaTeX comments at
-   the top and bottom of `main.tex` (not rendered). The unfinished items in
-   those notes remain open: coverage figure / system diagram (iii), a single
-   running example (iv), first-person voice reconciliation (vi).
-9. **Optional cs.CL cross-list** (see Categories above).
+   the top and bottom of `main.tex` (not rendered). Of the three unfinished
+   items in those notes, as of 2026-09-05:
+   - *(iii) system diagram* — in progress in a follow-up change; this note
+     will be updated when it lands. A coverage *plot* was deliberately not
+     added: Table 2 already carries those numbers, is referenced from the
+     prose, and reproduces 12/12, so a plot would be redundant and would pull
+     in `pgfplots`.
+   - *(iv) a single running example* — **deliberately left.** Threading one
+     example through Sections 3 to 7 is a structural rewrite of the paper, not
+     a polish pass, and it is the author's call.
+   - *(vi) first-person voice reconciliation* — **deliberately left.** The
+     paper mixes "we" with passive constructions. It is consistent enough to
+     read cleanly and a global voice edit is an authorial decision. Neither
+     the audit nor the cold read raised it.
+9. **cs.CL cross-list: DECIDED 2026-09-05** (added; see Categories above).
 
 ## Ambiguities in the Markdown and what the conversion did
 
