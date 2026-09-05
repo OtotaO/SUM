@@ -45,8 +45,9 @@ Chain-of-Custody for AI-Transformed Text: Signed, Replayable, Distribution-Free 
 ## Abstract (plain text, ready to paste into the arXiv abstract field)
 
 Character count of the paragraph below: 1,755, which fits the 1,920-char
-field. (The draft's own note says 1,426; that figure counts its Markdown
-source differently. Both are under the limit.) The Contributions list stays
+field. (The Markdown draft's own drafting note still says 1,426. That figure
+predates several revisions and no longer describes either abstract; treat the
+count on this line as the only current one.) The Contributions list stays
 in the paper body, as the draft prescribes. Em dashes below are the draft's
 own punctuation, kept verbatim.
 
@@ -66,15 +67,16 @@ deliberate decision, it is irrevocable.
 
 ## Compile status
 
-**Recompiled successfully 2026-09-04 with tectonic** (`tectonic main.tex`,
-exit 0). Output: a 10-page PDF (8 before the refresh), no TeX errors, no
-undefined references or citations (log inspected), and exactly one overfull
-box (10.98pt, at the Section 5 verification paragraph), which predates the
-refresh. The long typewriter paths introduced in Section 11 needed
-`\allowbreak` hints and a `\sloppy` scoped inside that one `itemize` to keep
-them out of the margin; both are plain LaTeX, no new package. All 20
-corrections were verified present in the rendered PDF text, not merely in the
-source.
+**Recompiled successfully 2026-09-05 with tectonic** (`tectonic main.tex`,
+exit 0). Output: a **12-page PDF, zero overfull boxes and zero undefined
+references**, the first fully clean build this kit has produced. Seven
+underfull hboxes remain and are cosmetic. Long typewriter paths in Section 11
+needed `\allowbreak` hints and a `\sloppy` scoped inside that one `itemize`,
+and the verify algorithm needed the same treatment; both are plain LaTeX, no
+new package.
+
+(Earlier in the same arc: 10 pages with exactly one overfull box at 2026-09-04,
+and 8 pages at 2026-07-12 with tectonic 0.16.9.)
 
 (Earlier: compiled 2026-07-12 with tectonic 0.16.9, 8-page PDF, same clean
 log.) The earlier static self-check still corroborates the source (balanced
@@ -122,7 +124,8 @@ self-contained, downloads packages on first run). On a machine with TeXLive:
 5. Run `./make_tarball.sh` and upload `paper1.tar.gz` (or upload `main.tex`
    alone, it is fully self-contained with no figures or .bib).
 6. In the submission form: paste title and abstract from this file, set
-   primary cs.CR, cross-list cs.LG, pick the license, submit, and review the
+   primary cs.CR, cross-list **cs.LG and cs.CL** (see Categories), pick the
+   license, submit, and review the
    AutoTeX-produced PDF before finalizing.
 7. Timing note from the repo's own planning: an announced preprint helps the
    grant narrative (NLnet decision ~Sept); the outline flags timing as
@@ -204,12 +207,14 @@ Every check before this one was *targeted* at a defect class. Nobody had read
 the paper end to end since about forty edits landed across three revisions, so
 two reviewers read the compiled PDF cold, with no edit history, reporting only
 repetition, contradiction, promises the body walks back, and flow breaks. Five
-findings survived unanimous refutation, and **three were caused by the repairs
-themselves**:
+findings survived unanimous refutation, covering **four distinct defects** (both
+readers independently reported the broken sentence). **Three were caused by the
+repairs themselves**:
 
 - **Section 5 contradicted Section 11.** Section 5 said "verifiable in every
   runtime" means the signature *and the bound replay*; Section 11, corrected
-  the day before, says the cross-runtime claim covers authenticity and
+  earlier the same day in #494, says the cross-runtime claim covers
+  authenticity and
   disclosure and explicitly *not* bound reproduction. Both sentences defined
   the same phrase, oppositely. Section 5 now matches, and separates
   well-defined-in-any-runtime from implemented-in-one-runtime.
@@ -353,15 +358,15 @@ person at a time, and ask them to check eligibility at
    "Drafting notes for the operator" block are preserved as LaTeX comments at
    the top and bottom of `main.tex` (not rendered). Of the three unfinished
    items in those notes, as of 2026-09-05:
-   - *(iii) system diagram* — in progress in a follow-up change; this note
+   - *(iii) system diagram*: in progress in a follow-up change; this note
      will be updated when it lands. A coverage *plot* was deliberately not
      added: Table 2 already carries those numbers, is referenced from the
      prose, and reproduces 12/12, so a plot would be redundant and would pull
      in `pgfplots`.
-   - *(iv) a single running example* — **deliberately left.** Threading one
+   - *(iv) a single running example*: **deliberately left.** Threading one
      example through Sections 3 to 7 is a structural rewrite of the paper, not
      a polish pass, and it is the author's call.
-   - *(vi) first-person voice reconciliation* — **deliberately left.** The
+   - *(vi) first-person voice reconciliation*: **deliberately left.** The
      paper mixes "we" with passive constructions. It is consistent enough to
      read cleanly and a global voice edit is an authorial decision. Neither
      the audit nor the cold read raised it.
