@@ -169,13 +169,45 @@ became an edit. The corrections, grouped:
   2026-09-05 and now printed with them (Clopper-Pearson, G = 3, n = 60, rates
   0.10/0.20/0.30, delta 0.05, 2000 trials, seed 17).
 - Section 11 promised "every number in Section 7" is reproducible from
-  committed bytes. False for 7.3, whose sweep generator is not committed.
-  Narrowed to the receipt sections, with the exclusion named.
+  committed bytes. The first repair narrowed this by excluding 7.3, "whose
+  generator is not committed". A pre-merge critic then falsified the
+  *exclusion*: all twelve cells of Table 2 reproduce exactly from the shipped
+  certifier at the stated data-generating process and seed 11, and the 0.958
+  joint figure reproduces from a committed test. The promise is restored and
+  now says how to reproduce it, which is stronger than either the original
+  claim or the narrowed one. Recorded because it is the instructive failure
+  here: an honesty pass can over-correct into an underclaim, and an underclaim
+  is falsifiable too.
+
+**Caught by the pre-merge critic, after the first pass.** The markdown draft
+received a partial copy of the corrections and had to be repaired: a literal
+half-applied edit left the fragment "This / verdicts described in Section 5.";
+one round-down bound survived in 7.3's own comparison; the precondition
+paragraph, the receipts-say-exchangeability disclosure and the Stage A/B limit
+had landed only in the LaTeX; and the abstract clause was ungrammatical. The
+lesson is mechanical: the PDF verification pass reads `main.tex` only and
+structurally cannot see the draft, so the draft needs its own check.
 
 **Typesetting.** Both tables are now referenced from the prose; the loss
 definition's two displays are contiguous again; the last overfull box is gone.
 The paper compiles with zero overfull boxes and zero undefined references for
 the first time.
+
+## Software Heritage re-archive: attempted and failing (2026-09-05)
+
+Step 3a below could not be completed today. Four save requests were submitted
+to `archive.softwareheritage.org` (ids 2464739, 2464741, 2464747, 2464763) and
+all four returned `save_task_status: failed` with `visit_status: not_found`,
+within seconds. The origin is genuinely reachable: `GET
+https://github.com/OtotaO/SUM.git/info/refs?service=git-upload-pack` returns
+200, and the same URL archived successfully twice on 2026-08-28. This reads as
+a fault on their side, so it was not retried further.
+
+Consequence: Section 11 still cites `swh:1:snp:1904bd38...`, which is a valid,
+resolvable snapshot but predates the September corrections. **Retry before
+submitting**, and if it keeps failing, either cite the newer 2026-08-28
+snapshot `swh:1:snp:ed5945eb0d9da62091021878469ebb2b6e43f3cc` or drop the
+SWHID and cite the repository plus a git tag instead.
 
 ## Endorsement status (as of 2026-09-04)
 

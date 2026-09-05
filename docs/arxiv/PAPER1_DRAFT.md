@@ -22,7 +22,7 @@ it, a **distribution-free, replayable certificate** bounds the expected
 *meaning-loss* of the transformation under a **named judge**. The certificate
 replays offline over a committed integer loss vector — a third party re-runs
 the conformal certifier and reproduces the bound to the bit — while the proof
-boundary stays explicit: it bounds a named proxy *marginally*, under
+boundary stays explicit: it bounds a named proxy *marginally*, over an
 *i.i.d.* calibration sample and only where that sample matches deployment,
 never per-document truth and never "meaning" itself. We
 demonstrate on two public-domain corpora: certified expected meaning-loss
@@ -162,6 +162,23 @@ $\mathbb{E}[p]$ is $\bar p-\sqrt{\ln(1/\delta)/(2n)}$, hence the
 $(1-\delta)$ **upper** bound on expected meaning-loss is
 $$U_\delta \;=\; \min\!\Big(1,\; \bar\ell + \sqrt{\tfrac{\ln(1/\delta)}{2n}}\Big),
 \qquad \Pr\big[\mathbb{E}[\ell]\le U_\delta\big]\ge 1-\delta. \tag{1}$$
+
+**What the precondition actually is.** Two assumptions carry (1) and we
+separate them, because one is stronger than this project previously stated.
+*Within* the calibration set the draws must be **independent**: Hoeffding,
+Clopper-Pearson (an exact Binomial interval) and the empirical-Bernstein bound
+are all inequalities for independent bounded variables, and exchangeability
+alone does not suffice. The counterexample is immediate: a sequence that is
+all-zeros or all-ones with probability 1/2 each is exchangeable and bounded in
+[0,1] with $\mathbb{E}[\ell]=1/2$, yet $U_\delta$ falls below 1/2 on half of
+all draws, giving coverage 1/2 against a nominal 0.95. *Between* calibration
+and deployment, the distributions must match for the bound to transfer; that
+assumption is not testable from the calibration sample and we do not claim it
+is. Exchangeability is the right precondition for conformal *prediction*,
+which is not the procedure used here. The `disclosure` strings inside the two
+committed receipts say "exchangeability"; that wording is weaker than what (1)
+requires. We state the stronger requirement here rather than silently re-sign
+the receipts, and Section 8 carries the same correction.
 Three estimators ship: **Hoeffding** (1) for $\ell\in[0,1]$;
 **Clopper–Pearson** (exact) for the binary preserved/lost view; and the
 variance-adaptive **empirical-Bernstein** bound (Maurer & Pontil, 2009), whose
@@ -275,7 +292,7 @@ conservatively, Clopper–Pearson near-nominal). The Bonferroni simultaneous
 path's *joint* (all-cohorts) coverage was separately validated at 0.958 against
 a 0.95 target (Clopper-Pearson; $G=3$ cohorts of $n=60$ drawn Bernoulli at true
 loss rates 0.10/0.20/0.30, $\delta=0.05$, $2\times10^{3}$ trials, seed 17). At the receipts' $n=64$ and observed variance, Hoeffding is the
-tighter honest estimator than empirical-Bernstein (BillSum 0.645 vs 0.650;
+tighter honest estimator than empirical-Bernstein (BillSum 0.6455 vs 0.650;
 translation 0.4124 vs 0.518), confirming the a-priori default was not a
 favorable cherry-pick.
 
@@ -448,10 +465,13 @@ party issuing and verifying a receipt it did not author.
 
 ## 11. Artifact availability
 
-Every receipt number in Sections 7.1 and 7.2 is reproducible from committed
-bytes (the synthetic coverage sweep of Section 7.3 is not: its generator is not
-committed, and it is reported as a validation of the estimators rather than as
-an artifact), and every
+Every number in Section 7 is reproducible from committed bytes. The two
+receipt sections replay from the committed loss vectors. The synthetic sweep of
+Section 7.3 is not a fixture, but it reproduces from the shipped certifier over
+the data-generating process stated there ($n=64$ i.i.d. Bernoulli draws at each
+true rate, $2\times10^{4}$ trials, seed 11); we re-ran it on 2026-09-05 and all
+twelve cells matched, as did the 0.958 joint-coverage figure from
+`Tests/research/test_group_conditional.py`. Every
 verification claim in Section 5 is executable by a third party without
 contacting the authors.
 
@@ -466,12 +486,14 @@ contacting the authors.
   and `sympy` (the latter is not imported by `sum_verify`). Replay a committed
   golden with `python -m sum_verify --demo`; verify your own receipt with
   `python -m sum_verify <receipt> --jwks <jwks.json> --losses <losses.json>`,
-  which reproduces both stages of Section 5. The receipt alone is not enough.
-  This
-  verdicts described in Section 5. A second, independent implementation
-  verifies the same bytes: the JS verifier
-  `single_file_demo/meaning_receipt_verifier.js`, exercised against the same
-  fixtures in two runtimes, under Node in CI and in the browser demo.
+  which reproduces both stages of Section 5. The receipt alone is not enough,
+  and `sum_verify` says so rather than guessing. A second, independent
+  implementation performs **Stage A** on the same bytes (signature, schema
+  gate, header invariants, disclosure): the JS verifier
+  `single_file_demo/meaning_receipt_verifier.js`, run under Node in CI and in
+  the browser demo. **Stage B replay is Python-only**: no JavaScript port of
+  the bound kernel exists, so the cross-runtime claim in this paper covers
+  authenticity and disclosure, not bound reproduction.
   (`standalone_verifier/` verifies the older CanonicalBundle format, not
   meaning receipts.)
 - **Certificates.** Both binding-gate receipts reported in Section 7 are

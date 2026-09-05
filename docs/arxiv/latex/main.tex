@@ -384,7 +384,7 @@ the $(1-\delta)$ upper bound --- the fraction of trials in which the
 certified bound does not fall below the true loss rate --- on synthetic data
 with known ground truth, each trial drawing $n=64$ i.i.d.\ Bernoulli losses
 (the binary preserved/lost view) at the stated true rate, $2\times 10^{4}$
-trials; Table~\ref{tab:coverage} reports the result.
+trials, seed 11; Table~\ref{tab:coverage} reports the result.
 
 \begin{table}[htbp]
 \centering
@@ -609,10 +609,14 @@ not author.
 
 \section{Artifact availability}\label{sec:artifact}
 
-Every receipt number in \S\ref{sec:billsum} and \S\ref{sec:translation} is
-reproducible from committed bytes (the synthetic coverage sweep of
-\S\ref{sec:coverage} is not: its generator is not committed, and it is
-reported as a validation of the estimators rather than as an artifact),
+Every number in \S\ref{sec:empirical} is reproducible from committed bytes.
+The two receipt sections replay from the committed loss vectors. The synthetic
+sweep of \S\ref{sec:coverage} is not a fixture, but it reproduces from the
+shipped certifier over the data-generating process stated there ($n=64$ i.i.d.\
+Bernoulli draws at each true rate, $2\times 10^{4}$ trials, seed 11); we re-ran
+it on 2026-09-05 and all twelve cells of Table~\ref{tab:coverage} matched, as
+did the $0.958$ joint-coverage figure from
+\texttt{Tests/research/test\_group\_conditional.py}. Separately,
 and every verification claim in \S\ref{sec:verify} is executable by a third
 party without contacting the authors.
 
