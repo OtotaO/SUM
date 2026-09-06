@@ -10,6 +10,8 @@
 \usepackage{amssymb}
 \usepackage{amsthm}
 \usepackage{booktabs}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,calc}
 \usepackage{iftex}
 % Content-neutral packaging fix: under an XeTeX-based engine (e.g. tectonic,
 % used for local proof-of-compile), select hyperref's xetex driver so it
@@ -200,6 +202,68 @@ including across the full sub-$10^{-4}$ float band where a na\"ive
 additionally \textbf{float-free} --- every rate quantity is an integer
 ``micro-unit'' (value $\times\, 10^{6}$, $\le 10^{6} \ll 2^{53}$) --- so the
 exact-equality replay of \S\ref{sec:verify} is well-defined across runtimes.
+
+\begin{figure}[tbp]
+\centering
+\begin{tikzpicture}[
+  font=\footnotesize,
+  node distance=3.2mm,
+  box/.style={draw, rounded corners=1.5pt, align=center, inner sep=4pt,
+              text width=58mm},
+  stage/.style={box, text width=66mm},
+  tag/.style={font=\scriptsize\itshape},
+  >={Stealth[length=1.8mm]},
+  flow/.style={->, thick},
+  side/.style={->, thick, dashed},
+]
+\node[box] (pair) {source $S$, output $T$};
+\node[box, below=of pair] (loss) {per-pair losses, \textbf{integer micro}};
+\node[box, below=of loss] (payload)
+  {payload: $n$, \texttt{method}, \texttt{delta}, bound,
+   \texttt{losses\_hash}, judge, \texttt{not\_covered}, \texttt{disclosure}};
+\node[box, below=of payload] (sig)
+  {\textbf{JCS}-canonical bytes, signed \textbf{Ed25519},\\
+   carried as a detached \textbf{JWS}};
+\node[stage, below=6.5mm of sig] (stageA)
+  {\textbf{Stage A}\quad any runtime\\[1pt]
+   JWS against \textbf{JWKS}; schema gate; header
+   invariants; disclosure\\[2pt]
+   $\rightarrow$ \emph{authentic + self-disclosing}};
+\node[stage, below=of stageA] (stageB)
+  {\textbf{Stage B}\quad Python only at present\\[1pt]
+   loss-vector hash; re-run the certifier;
+   \textbf{exact integer equality}\\[2pt]
+   $\rightarrow$ \emph{bound reproduced}};
+
+\draw[flow] (pair)    -- node[right, tag] {named transform} (loss);
+\draw[flow] (loss)    -- node[right, tag] {certifier (\S\ref{sec:certificate})} (payload);
+\draw[flow] (payload) -- node[right, tag] {sign} (sig);
+\draw[flow] (sig)     -- node[right, tag] {verify} (stageA);
+\draw[flow] (stageA)  -- (stageB);
+
+% the loss vector travels beside the receipt, never inside it
+\coordinate (c1) at ($(loss.east)+(9mm,0)$);
+\coordinate (c2) at ($(stageB.east)+(9mm,0)$);
+\draw[side] (loss.east) -- (c1) -- (c2) -- (stageB.east);
+\node[tag, right=9.5mm of payload, align=left, text width=32mm]
+  {\raggedright committed loss vector,\\ supplied side-band\par};
+
+\node[tag, below=2.5mm of stageB, text width=76mm, align=center]
+  {Python, Node and the browser all run Stage A on the same bytes.
+   No JavaScript port of the bound kernel exists.};
+\end{tikzpicture}
+\caption{The receipt chain and the two verification stages of
+\S\ref{sec:verify}. The issuer derives everything top to bottom; nothing on
+the verifier side needs the issuer. \textbf{Stage A} establishes that the
+receipt is authentic and self-disclosing, and runs in any runtime.
+\textbf{Stage B} additionally reproduces the bound by exact integer equality
+over the committed loss vector, which travels \emph{beside} the receipt rather
+than inside it; that replay is well-defined in any runtime
+(\S\ref{sec:substrate}) but is implemented only in Python today
+(\S\ref{sec:artifact}). Re-deriving the losses from raw text is a third thing
+again, and is machine-pinned to the named judge.}
+\label{fig:chain}
+\end{figure}
 
 \section{The meaning-risk certificate}\label{sec:certificate}
 

@@ -68,8 +68,8 @@ deliberate decision, it is irrevocable.
 ## Compile status
 
 **Recompiled successfully 2026-09-05 with tectonic** (`tectonic main.tex`,
-exit 0). Output: a **12-page PDF, zero overfull boxes and zero undefined
-references**, the first fully clean build this kit has produced. Seven
+exit 0). Output: a **13-page PDF, zero overfull boxes and zero undefined
+references** (12 pages before Figure 1 was added). Seven
 underfull hboxes remain and are cosmetic. Long typewriter paths in Section 11
 needed `\allowbreak` hints and a `\sloppy` scoped inside that one `itemize`,
 and the verify algorithm needed the same treatment; both are plain LaTeX, no
@@ -358,11 +358,18 @@ person at a time, and ask them to check eligibility at
    "Drafting notes for the operator" block are preserved as LaTeX comments at
    the top and bottom of `main.tex` (not rendered). Of the three unfinished
    items in those notes, as of 2026-09-05:
-   - *(iii) system diagram*: in progress in a follow-up change; this note
-     will be updated when it lands. A coverage *plot* was deliberately not
-     added: Table 2 already carries those numbers, is referenced from the
-     prose, and reproduces 12/12, so a plot would be redundant and would pull
-     in `pgfplots`.
+   - *(iii) system diagram*: **done.** Figure 1 in Section 3 draws the receipt
+     chain and the two verification stages. Every box, arrow and label is a
+     phrase taken from Sections 3, 4, 5 or 11, so the figure asserts nothing
+     the text does not; the one thing it had to get right is that Stage A
+     spans every runtime while Stage B is Python-only today, because a figure
+     showing the JS verifier reaching Stage B would visually undo the
+     correction made in #494. Drawn in TikZ with `positioning`, `arrows.meta`
+     and `calc` only: no external files, no shell-escape, nothing AutoTeX
+     cannot build. A coverage *plot* was deliberately not added: Table 2
+     already carries those numbers, is referenced from the prose, and
+     reproduces 12/12, so a plot would be redundant and would pull in
+     `pgfplots`.
    - *(iv) a single running example*: **deliberately left.** Threading one
      example through Sections 3 to 7 is a structural rewrite of the paper, not
      a polish pass, and it is the author's call.
