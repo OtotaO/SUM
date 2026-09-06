@@ -168,7 +168,7 @@ whatever `pyproject.toml` says; the published version is
 every release; the CI drift gate keeps it honest). Do not copy a version
 number into this file. 0.8.0 published the `sum_verify` SDK + the
 dependency-light `[verify]` extra (`pip install "sum-engine[verify]"` —
-`cryptography` + `joserfc` only, no numpy/scipy/torch) and folded the
+`cryptography` + `joserfc` + the base `sympy`, and no numpy/scipy/torch) and folded the
 meaning-loss frontier arc into the release behind the `[research]` extra; see
 `CHANGELOG.md`). **Shipped in 0.8.0 (the `[verify]` SDK is production; the rest
 `[research]`-flagged):** the
