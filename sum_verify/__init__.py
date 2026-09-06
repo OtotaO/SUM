@@ -2,9 +2,12 @@
 
 This is the package an integrator pins. It exposes a *stable* public API
 for verifying SUM's signed receipts without installing the CLI, the
-research extras, or a numeric stack (no numpy / scipy / torch). The only
-runtime dependencies are ``cryptography`` (already a SUM core dep) and
-``joserfc`` (the ``sum-engine[verify]`` extra).
+research extras, or a numeric stack. The load-bearing promise is the
+exclusion: **no numpy, scipy or torch, no GPU, and no network** on the
+verification path. ``sum_verify`` itself imports only ``cryptography`` (for
+Ed25519) and ``joserfc`` (the ``sum-engine[verify]`` extra); installing the
+extra also pulls the package's base ``sympy``, which ``sum_verify`` never
+imports.
 
     pip install "sum-engine[verify]"
 

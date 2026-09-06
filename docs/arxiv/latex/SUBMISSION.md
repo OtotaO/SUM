@@ -244,13 +244,21 @@ future submission, not the first.
 
 ## Software Heritage re-archive: attempted and failing (2026-09-05)
 
-Step 3a below could not be completed today. Five save requests were submitted
-to `archive.softwareheritage.org` (ids 2464739, 2464741, 2464747, 2464763,
-2464799) and all five returned `save_task_status: failed` with `visit_status: not_found`,
-within seconds. The origin is genuinely reachable: `GET
+Step 3a below could not be completed. Six save requests were submitted to
+`archive.softwareheritage.org` across two days (ids 2464739, 2464741, 2464747,
+2464763, 2464799 on 2026-09-05 and 2465159 on 2026-09-06) and all six returned
+`save_task_status: failed` with `visit_status: not_found`, within seconds. The
+origin is genuinely reachable: `GET
 https://github.com/OtotaO/SUM.git/info/refs?service=git-upload-pack` returns
-200, and the same URL archived successfully twice on 2026-08-28. This reads as
-a fault on their side, so it was not retried further.
+200, and the same URL archived successfully twice on 2026-08-28.
+
+**The failure is specific to this origin rather than a general outage**, which
+is the more actionable reading. The archive's own visit history for
+`https://github.com/OtotaO/SUM` shows two `full` visits on 2026-08-28 followed
+by six consecutive `not_found` visits beginning 2026-09-05, so something
+changed in how their loader resolves this origin. Six attempts across two days
+is enough evidence; a seventh would be pointless and impolite. If it still
+fails when you try, the next step is to ask Software Heritage, not to retry.
 
 Consequence: Section 11 still cites `swh:1:snp:1904bd38...`, which is a valid,
 resolvable snapshot but predates the September corrections. **Retry before
