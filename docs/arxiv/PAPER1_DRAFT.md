@@ -25,7 +25,9 @@ the conformal certifier and reproduces the bound to the bit — while the proof
 boundary stays explicit: it bounds a named proxy *marginally*, over an
 *i.i.d.* calibration sample and only where that sample matches deployment,
 never per-document truth and never "meaning" itself. We
-demonstrate on two public-domain corpora: certified expected meaning-loss
+demonstrate on two public-domain corpora, over each corpus's own reference
+outputs rather than model outputs (the mechanism is producer-indifferent):
+certified expected meaning-loss
 ≤ 0.646 (95%) for abstractive summarization of US Congressional bills
 (BillSum, CC0; n=64) and ≤ 0.413 for EN→FR translation (opus-100; n=64), with
 39/64 faithful translations scoring *exactly zero* meaning-loss (under a binary
@@ -220,8 +222,10 @@ reproducible," and it is what distinguishes a *tampered-in-transit* receipt
 does not replay). The certificate replays on any machine; *re-deriving* the
 losses from raw text additionally requires the named model judge, whose
 forward pass is machine-pinned (cross-hardware floating-point drift) — a fact
-the receipt discloses. So "verifiable in every runtime" means the signature
-and bound *replay*, not the *meaning recomputation*.
+the receipt discloses. So "verifiable in every runtime" means authenticity and
+disclosure: Stage B's exact-integer replay is *well-defined* in any runtime
+(Section 3) but is at present implemented only in Python (Section 11), and the
+*meaning recomputation* is machine-pinned in every runtime.
 
 ## 6. Perspective receipts (group-conditional)
 
@@ -458,7 +462,10 @@ incorrectly labelled data substantially influences model rankings on
 fact-verification benchmarks, which is a statement about annotation quality
 rather than a flat benchmark error rate, and we take the consequence for a
 judge-conditional bound from there. A tighter betting/empirical-Bernstein confidence
-sequence is a no-wire-change tightening.
+sequence is a no-wire-change tightening. Re-enveloping the receipt as a
+COSE_Sign1 Signed Statement and registering it with a transparency service, so
+the meaning layer composes with SCITT (Section 9) rather than duplicating it,
+is named future work and is not implemented.
 The corpora here demonstrate the mechanism; they are not a benchmark suite. The
 binding open problem is not a sharper inequality but **adoption**: one external
 party issuing and verifying a receipt it did not author.
