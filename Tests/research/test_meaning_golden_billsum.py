@@ -16,7 +16,7 @@ The load-bearing honesty split these tests pin:
     ``disclosure`` field rather than hiding it.
 
 So these tests use the committed losses, never the judge — they run in CI
-with numpy + joserfc only (no torch).
+with numpy + joserfc + cryptography (no torch).
 """
 from __future__ import annotations
 

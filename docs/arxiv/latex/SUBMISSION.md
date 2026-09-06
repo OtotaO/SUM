@@ -126,7 +126,8 @@ self-contained, downloads packages on first run). On a machine with TeXLive:
 4. **Endorsement: still open, and it is the binding blocker.** See the
    status section below before spending effort here.
 5. Run `./make_tarball.sh` and upload `paper1.tar.gz` (or upload `main.tex`
-   alone, it is fully self-contained with no figures or .bib).
+   alone: Figure 1 is drawn in TikZ inside the source, so there are no image
+   files and no .bib to upload alongside it).
 6. In the submission form: paste title and abstract from this file, set
    primary cs.CR, cross-list **cs.LG and cs.CL** (see Categories), pick the
    license, submit, and review the

@@ -11,7 +11,7 @@ plus a DIRECT end-to-end leg (bill -> hop-2 output).
 Honesty these tests pin, same discipline as the binding-gate golden:
   * The CERTIFICATE (each hop + the chain) replays offline over the committed
     integer-micro loss vectors — pure-Python, NO model, NO GPU, deterministic
-    everywhere. That is what CI checks here (numpy + joserfc only, no torch).
+    everywhere. That is what CI checks here (numpy + joserfc + cryptography, no torch).
   * The Bonferroni budget bounds the SUM of per-hop expected proxy losses; it
     does NOT bound the end-to-end loss (the proxy is a directed loss, not a
     metric — no triangle inequality). The budget can exceed 1.0.
