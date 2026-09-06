@@ -82,7 +82,7 @@ python -m sum_verify fixtures/chain_receipts_billsum/chain_receipt.billsum.golde
   --losses fixtures/chain_receipts_billsum/losses_e2e.json
 # -> {"verified": true, "replayed": true, "hops_replayed": true, "end_to_end_replayed": true, ...}
 
-# Full replay + regression + byte-stable regeneration test (numpy + joserfc only):
+# Full replay + regression + byte-stable regeneration test (numpy + joserfc + cryptography):
 python -m pytest Tests/research/test_chain_golden_billsum.py
 
 # Regenerate byte-identically (judge-free; reads the committed losses):

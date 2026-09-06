@@ -38,8 +38,9 @@ n ≥ ~32 so the bound is meaningful. You now have `out/receipt.json`,
 > commands, no account, no data leaves your machine:
 >
 > ```bash
-> pip install "sum-engine[verify]"        # cryptography + joserfc only — no ML stack
+> pip install "sum-engine[verify]"        # no numpy/scipy/torch, no GPU
 > python -m sum_verify receipt.json --jwks jwks.json --losses losses.json
+> #   ^ fully offline: nothing leaves your machine
 > ```
 >
 > You should see `{"verified": true, "replayed": true, …}`. That means: the

@@ -15,9 +15,9 @@ surface; the per-document readout is [`sum meaning-diff`](MEANING_LOSS_FRONTIER.
 pip install "sum-engine[verify]"
 ```
 
-That pulls exactly two runtime dependencies: `cryptography` (already a
-SUM core dep, for Ed25519) and `joserfc` (the detached-JWS / RFC 7797
-machinery). **No numpy, scipy, or torch** — verifying a meaning-risk
+That pulls `joserfc` (the detached-JWS / RFC 7797 machinery) on top of the
+package's base `cryptography` (for Ed25519) and `sympy` (used by the
+state-integer path, not imported by `sum_verify`). **No numpy, scipy, or torch** — verifying a meaning-risk
 receipt *replays its conformal bound offline* through a pure-Python
 re-derivation of the same inequality (`sum_verify/_conformal.py`). The
 property is pinned in a clean subprocess by `Tests/test_sum_verify_sdk.py`.
