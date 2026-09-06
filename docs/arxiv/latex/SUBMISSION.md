@@ -111,18 +111,18 @@ self-contained, downloads packages on first run). On a machine with TeXLive:
    verified against the live arXiv abstract pages 2026-07-16).
 3. Compile locally twice on any machine with TeX (or trust AutoTeX): check
    the rendered PDF once, end to end.
-3a. **Re-archive in Software Heritage and update the SWHID in Section 11.**
-   This is a submission blocker, not a nicety. Section 11 offers
-   `swh:1:snp:1904bd38...` for "permanent citation", but that snapshot predates
-   the 2026-09 corrections, so a reviewer who follows the artifact link lands on
-   the version that still carries the five wrong reference titles, the
-   mis-framed `toolreceipts2026` bullet, and the "two independent
-   reimplementations" sentence. Trigger a save of `main` at
-   `https://archive.softwareheritage.org/save/`, wait for the visit to report
-   `full`, read the new snapshot id from
+3a. ~~Re-archive in Software Heritage and update the SWHID in Section 11.~~
+   **Done 2026-09-06.** Section 11 cites
+   `swh:1:snp:93b83ca29d9b468a9f034f0bc3d4259983d63339`, capturing `main` at
+   `996707c`. Only redo this if you make further changes to the paper before
+   uploading; if you do, the recipe is: save at
+   `https://archive.softwareheritage.org/save/`, wait for `full`, read the id
+   from
    `https://archive.softwareheritage.org/api/1/origin/https://github.com/OtotaO/SUM/visit/latest/`,
-   replace the `swh:1:snp:` in Section 11 of `main.tex` (the origin
-   `swh:1:ori:a7b5385a...` does not change), and recompile.
+   replace the `swh:1:snp:` in Section 11 of both `main.tex` and the draft (the
+   origin `swh:1:ori:a7b5385a...` does not change), and recompile. **If a save
+   returns `not_found`, retry**; that failure mode is intermittent on their
+   side, as the section below records.
 4. **Endorsement: still open, and it is the binding blocker.** See the
    status section below before spending effort here.
 5. Run `./make_tarball.sh` and upload `paper1.tar.gz` (or upload `main.tex`
@@ -242,21 +242,42 @@ The lesson: a targeted audit cannot see coherence damage it caused. A cold
 read is a different instrument, and it should be the last gate before any
 future submission, not the first.
 
-## Software Heritage re-archive: attempted and failing (2026-09-05)
+## Software Heritage re-archive: RESOLVED 2026-09-06
 
-Step 3a below could not be completed today. Five save requests were submitted
-to `archive.softwareheritage.org` (ids 2464739, 2464741, 2464747, 2464763,
-2464799) and all five returned `save_task_status: failed` with `visit_status: not_found`,
-within seconds. The origin is genuinely reachable: `GET
-https://github.com/OtotaO/SUM.git/info/refs?service=git-upload-pack` returns
-200, and the same URL archived successfully twice on 2026-08-28. This reads as
-a fault on their side, so it was not retried further.
+Step 3a is done. Section 11 now cites
+`swh:1:snp:93b83ca29d9b468a9f034f0bc3d4259983d63339`, which captures `main` at
+commit `996707c`, the state that produced this paper. The origin SWHID is
+unchanged. Verified: the snapshot resolves 200 from the API and its
+`refs/heads/main` points at `996707c`.
 
-Consequence: Section 11 still cites `swh:1:snp:1904bd38...`, which is a valid,
-resolvable snapshot but predates the September corrections. **Retry before
-submitting**, and if it keeps failing, either cite the newer 2026-08-28
-snapshot `swh:1:snp:ed5945eb0d9da62091021878469ebb2b6e43f3cc` or drop the
-SWHID and cite the repository plus a git tag instead.
+**How it was resolved is the part worth keeping, because the first diagnosis
+was wrong and the wrong diagnosis produced the wrong instruction.**
+
+Six save requests failed across 2026-09-05 and 2026-09-06, all
+`save_task_status: failed` with `visit_status: not_found`, while the origin was
+verifiably fetchable. From that, this file previously concluded that the
+failure was "specific to this origin rather than a general outage", and told
+the operator that a seventh attempt would be "pointless and impolite" and that
+the next step was to ask Software Heritage.
+
+That inference was invalid and the conclusion was false. One origin's own
+history cannot discriminate an origin-specific fault from an archive-wide one;
+only a comparator can. Querying comparators settles it:
+
+- `django/django`, all `git`-type scheduled visits: `not_found` at
+  2026-09-03T18:54:35, **`full` at 18:56:16**, `not_found` again at 19:37:57.
+  A success sandwiched between two failures inside 43 minutes.
+- `torvalds/linux`: `not_found` on 2026-09-05 and 2026-09-03, `full` before.
+- `rust-lang/rust`: `not_found` on 2026-09-05, `full` on 2026-09-03.
+
+So the fault was archive-wide and **intermittent** in Software Heritage's `git`
+loader. For an intermittent fault the correct action is precisely the one the
+old note forbade: retry. The next retry succeeded on the first attempt.
+
+The lesson, recorded because it cost a day: **a conclusion drawn from a single
+series, with no comparator, is not evidence, and an operational instruction
+derived from it can be exactly inverted.** If a save fails again, retry a few
+times before concluding anything.
 
 ## Endorsement status (as of 2026-09-04)
 
