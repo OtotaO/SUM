@@ -183,7 +183,7 @@ All four schemas (\texttt{render}, \texttt{transform},
 signed with \textbf{Ed25519} (RFC 8032~\cite{rfc8032}) over its
 \textbf{JCS-canonical bytes} (RFC 8785~\cite{rfc8785}), carried as a
 \textbf{detached JWS} (RFC 7515~\cite{rfc7515}) and verified against a
-\textbf{JWKS} (RFC 7517~\cite{rfc7517}). The provenance tier
+\textbf{JWKS} (RFC 7517~\cite{rfc7517}). Figure~\ref{fig:chain} draws the chain end to end. The provenance tier
 (\texttt{render}/\texttt{transform}) attests \emph{what happened}: a named
 transform mapped an input (hash) to an output (hash) under named parameters,
 by a named model/provider. The measured-bound tier
@@ -216,10 +216,10 @@ exact-equality replay of \S\ref{sec:verify} is well-defined across runtimes.
   flow/.style={->, thick},
   side/.style={->, thick, dashed},
 ]
-\node[box] (pair) {source $S$, output $T$};
+\node[box] (pair) {source $S$, output $T$ of a named transform};
 \node[box, below=of pair] (loss) {per-pair losses, \textbf{integer micro}};
 \node[box, below=of loss] (payload)
-  {payload: $n$, \texttt{method}, \texttt{delta}, bound,
+  {payload: $n$, \texttt{method}, \texttt{delta\_micro}, bound,
    \texttt{losses\_hash}, judge, \texttt{not\_covered}, \texttt{disclosure}};
 \node[box, below=of payload] (sig)
   {\textbf{JCS}-canonical bytes, signed \textbf{Ed25519},\\
@@ -235,17 +235,18 @@ exact-equality replay of \S\ref{sec:verify} is well-defined across runtimes.
    \textbf{exact integer equality}\\[2pt]
    $\rightarrow$ \emph{bound reproduced}};
 
-\draw[flow] (pair)    -- node[right, tag] {named transform} (loss);
+\draw[flow] (pair)    -- node[right, tag] {named judge (\S\ref{sec:certificate})} (loss);
 \draw[flow] (loss)    -- node[right, tag] {certifier (\S\ref{sec:certificate})} (payload);
 \draw[flow] (payload) -- node[right, tag] {sign} (sig);
 \draw[flow] (sig)     -- node[right, tag] {verify} (stageA);
 \draw[flow] (stageA)  -- (stageB);
 
 % the loss vector travels beside the receipt, never inside it
-\coordinate (c1) at ($(loss.east)+(9mm,0)$);
 \coordinate (c2) at ($(stageB.east)+(9mm,0)$);
+\coordinate (c1) at (c2 |- loss.east);
 \draw[side] (loss.east) -- (c1) -- (c2) -- (stageB.east);
-\node[tag, right=9.5mm of payload, align=left, text width=32mm]
+\node[tag, anchor=west, align=left, text width=30mm]
+  at ($(c2 |- payload.east)+(2.5mm,0)$)
   {\raggedright committed loss vector,\\ supplied side-band\par};
 
 \node[tag, below=2.5mm of stageB, text width=76mm, align=center]
@@ -254,7 +255,8 @@ exact-equality replay of \S\ref{sec:verify} is well-defined across runtimes.
 \end{tikzpicture}
 \caption{The receipt chain and the two verification stages of
 \S\ref{sec:verify}. The issuer derives everything top to bottom; nothing on
-the verifier side needs the issuer. \textbf{Stage A} establishes that the
+the verifier side contacts the issuer at verification time, the public key
+having been obtained out of band (\S\ref{sec:threat}). \textbf{Stage A} establishes that the
 receipt is authentic and self-disclosing, and runs in any runtime.
 \textbf{Stage B} additionally reproduces the bound by exact integer equality
 over the committed loss vector, which travels \emph{beside} the receipt rather
@@ -461,7 +463,7 @@ trials, seed 11; Table~\ref{tab:coverage} reports the result.
 method & tl=0.1, $\delta$=.05 & tl=0.3, $\delta$=.05 & tl=0.5, $\delta$=.05 & tl=0.5, $\delta$=.10 \\
 \midrule
 target & $\ge 0.95$ & $\ge 0.95$ & $\ge 0.95$ & $\ge 0.90$ \\
-Hoeffding & 1.000 & 0.997 & 0.992 & 0.984 \\
+Hoeffding & 1.000 & 0.997 & 0.991 & 0.984 \\
 empirical-Bernstein & 1.000 & 1.000 & 1.000 & 1.000 \\
 Clopper--Pearson & 0.961 & 0.972 & 0.970 & 0.919 \\
 \bottomrule
@@ -685,7 +687,9 @@ The two receipt sections replay from the committed loss vectors. The synthetic
 sweep of \S\ref{sec:coverage} is not a fixture, but it reproduces from the
 shipped certifier over the data-generating process stated there ($n=64$ i.i.d.\
 Bernoulli draws at each true rate, $2\times 10^{4}$ trials, seed 11); we re-ran
-it on 2026-09-05 and all twelve cells of Table~\ref{tab:coverage} matched, as
+it on 2026-09-05 and all twelve cells of Table~\ref{tab:coverage} matched (one
+cell, Hoeffding at $\mathrm{tl}=0.5$, $\delta=.05$, previously printed $0.992$
+and is corrected here to the reproducing $0.991$), as
 did the $0.958$ joint-coverage figure from
 \texttt{Tests/research/test\_group\_conditional.py}. Separately, every
 verification claim in \S\ref{sec:verify} is executable by a third party

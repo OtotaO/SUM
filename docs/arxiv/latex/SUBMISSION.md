@@ -83,7 +83,11 @@ log.) The earlier static self-check still corroborates the source (balanced
 environments and braces, even math-dollar count, every `\cite` key has a
 matching `\bibitem`, every `\ref`/`\eqref` has a matching `\label`, no bare `&`
 outside tabulars, no unescaped `%`, 100% ASCII). All commands used are standard
-LaTeX / amsmath / amsthm / booktabs / hyperref.
+LaTeX / amsmath / amsthm / booktabs / hyperref, plus **`tikz` with the
+`positioning`, `arrows.meta` and `calc` libraries** (added 2026-09-05 for
+Figure 1). No `\includegraphics`, no `\input`, no `\write18` or shell-escape,
+and no `pgfplots`: the figure is drawn in the source, so the tarball still
+ships `main.tex` alone.
 
 One packaging line was added for local compilation and is **arXiv-safe**:
 `\usepackage{iftex}` followed by `\ifxetex\PassOptionsToPackage{xetex}{hyperref}\fi`
@@ -179,9 +183,14 @@ became an edit. The corrections, grouped:
 - Section 11 promised "every number in Section 7" is reproducible from
   committed bytes. The first repair narrowed this by excluding 7.3, "whose
   generator is not committed". A pre-merge critic then falsified the
-  *exclusion*: all twelve cells of Table 2 reproduce exactly from the shipped
-  certifier at the stated data-generating process and seed 11, and the 0.958
-  joint figure reproduces from a committed test. The promise is restored and
+  *exclusion*: the coverage sweep does reproduce from the shipped certifier at
+  the stated data-generating process and seed 11, and the 0.958 joint figure
+  reproduces from a committed test. A later pass found that eleven of the
+  twelve cells matched exactly and the twelfth, Hoeffding at tl = 0.5,
+  delta = .05, printed 0.992 where the kernel returns 0.99145. The table now
+  prints the reproducing 0.991 and Section 11 says so. The first pass missed
+  this because it compared with a tolerance instead of comparing what is
+  printed. The promise is restored and
   now says how to reproduce it, which is stronger than either the original
   claim or the narrowed one. Recorded because it is the instructive failure
   here: an honesty pass can over-correct into an underclaim, and an underclaim
@@ -368,8 +377,8 @@ person at a time, and ask them to check eligibility at
      and `calc` only: no external files, no shell-escape, nothing AutoTeX
      cannot build. A coverage *plot* was deliberately not added: Table 2
      already carries those numbers, is referenced from the prose, and
-     reproduces 12/12, so a plot would be redundant and would pull in
-     `pgfplots`.
+     reproduces from the shipped certifier, so a plot would be redundant and
+     would pull in `pgfplots`.
    - *(iv) a single running example*: **deliberately left.** Threading one
      example through Sections 3 to 7 is a structural rewrite of the paper, not
      a polish pass, and it is the author's call.

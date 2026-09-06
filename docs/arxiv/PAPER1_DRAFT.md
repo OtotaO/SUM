@@ -287,7 +287,7 @@ on synthetic data with known ground truth ($n=64$, $2\times10^4$ trials):
 | method | tl=0.1, δ=.05 | tl=0.3, δ=.05 | tl=0.5, δ=.05 | tl=0.5, δ=.10 |
 |---|---|---|---|---|
 | target | ≥ 0.95 | ≥ 0.95 | ≥ 0.95 | ≥ 0.90 |
-| Hoeffding | 1.000 | 0.997 | 0.992 | 0.984 |
+| Hoeffding | 1.000 | 0.997 | 0.991 | 0.984 |
 | empirical-Bernstein | 1.000 | 1.000 | 1.000 | 1.000 |
 | Clopper–Pearson | 0.961 | 0.972 | 0.970 | 0.919 |
 
@@ -477,7 +477,9 @@ receipt sections replay from the committed loss vectors. The synthetic sweep of
 Section 7.3 is not a fixture, but it reproduces from the shipped certifier over
 the data-generating process stated there ($n=64$ i.i.d. Bernoulli draws at each
 true rate, $2\times10^{4}$ trials, seed 11); we re-ran it on 2026-09-05 and all
-twelve cells matched, as did the 0.958 joint-coverage figure from
+twelve cells matched (one cell, Hoeffding at tl = 0.5, delta = .05, previously
+printed 0.992 and is corrected here to the reproducing 0.991), as did the 0.958
+joint-coverage figure from
 `Tests/research/test_group_conditional.py`. Every
 verification claim in Section 5 is executable by a third party without
 contacting the authors.
