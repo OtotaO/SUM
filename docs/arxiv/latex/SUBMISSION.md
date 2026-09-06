@@ -68,8 +68,8 @@ deliberate decision, it is irrevocable.
 ## Compile status
 
 **Recompiled successfully 2026-09-05 with tectonic** (`tectonic main.tex`,
-exit 0). Output: a **12-page PDF, zero overfull boxes and zero undefined
-references**, the first fully clean build this kit has produced. Seven
+exit 0). Output: a **13-page PDF, zero overfull boxes and zero undefined
+references** (12 pages before Figure 1 was added). Seven
 underfull hboxes remain and are cosmetic. Long typewriter paths in Section 11
 needed `\allowbreak` hints and a `\sloppy` scoped inside that one `itemize`,
 and the verify algorithm needed the same treatment; both are plain LaTeX, no
@@ -83,7 +83,11 @@ log.) The earlier static self-check still corroborates the source (balanced
 environments and braces, even math-dollar count, every `\cite` key has a
 matching `\bibitem`, every `\ref`/`\eqref` has a matching `\label`, no bare `&`
 outside tabulars, no unescaped `%`, 100% ASCII). All commands used are standard
-LaTeX / amsmath / amsthm / booktabs / hyperref.
+LaTeX / amsmath / amsthm / booktabs / hyperref, plus **`tikz` with the
+`positioning`, `arrows.meta` and `calc` libraries** (added 2026-09-05 for
+Figure 1). No `\includegraphics`, no `\input`, no `\write18` or shell-escape,
+and no `pgfplots`: the figure is drawn in the source, so the tarball still
+ships `main.tex` alone.
 
 One packaging line was added for local compilation and is **arXiv-safe**:
 `\usepackage{iftex}` followed by `\ifxetex\PassOptionsToPackage{xetex}{hyperref}\fi`
@@ -179,9 +183,14 @@ became an edit. The corrections, grouped:
 - Section 11 promised "every number in Section 7" is reproducible from
   committed bytes. The first repair narrowed this by excluding 7.3, "whose
   generator is not committed". A pre-merge critic then falsified the
-  *exclusion*: all twelve cells of Table 2 reproduce exactly from the shipped
-  certifier at the stated data-generating process and seed 11, and the 0.958
-  joint figure reproduces from a committed test. The promise is restored and
+  *exclusion*: the coverage sweep does reproduce from the shipped certifier at
+  the stated data-generating process and seed 11, and the 0.958 joint figure
+  reproduces from a committed test. A later pass found that eleven of the
+  twelve cells matched exactly and the twelfth, Hoeffding at tl = 0.5,
+  delta = .05, printed 0.992 where the kernel returns 0.99145. The table now
+  prints the reproducing 0.991 and Section 11 says so. The first pass missed
+  this because it compared with a tolerance instead of comparing what is
+  printed. The promise is restored and
   now says how to reproduce it, which is stronger than either the original
   claim or the narrowed one. Recorded because it is the instructive failure
   here: an honesty pass can over-correct into an underclaim, and an underclaim
@@ -358,11 +367,18 @@ person at a time, and ask them to check eligibility at
    "Drafting notes for the operator" block are preserved as LaTeX comments at
    the top and bottom of `main.tex` (not rendered). Of the three unfinished
    items in those notes, as of 2026-09-05:
-   - *(iii) system diagram*: in progress in a follow-up change; this note
-     will be updated when it lands. A coverage *plot* was deliberately not
-     added: Table 2 already carries those numbers, is referenced from the
-     prose, and reproduces 12/12, so a plot would be redundant and would pull
-     in `pgfplots`.
+   - *(iii) system diagram*: **done.** Figure 1 in Section 3 draws the receipt
+     chain and the two verification stages. Every box, arrow and label is a
+     phrase taken from Sections 3, 4, 5 or 11, so the figure asserts nothing
+     the text does not; the one thing it had to get right is that Stage A
+     spans every runtime while Stage B is Python-only today, because a figure
+     showing the JS verifier reaching Stage B would visually undo the
+     correction made in #494. Drawn in TikZ with `positioning`, `arrows.meta`
+     and `calc` only: no external files, no shell-escape, nothing AutoTeX
+     cannot build. A coverage *plot* was deliberately not added: Table 2
+     already carries those numbers, is referenced from the prose, and
+     reproduces from the shipped certifier, so a plot would be redundant and
+     would pull in `pgfplots`.
    - *(iv) a single running example*: **deliberately left.** Threading one
      example through Sections 3 to 7 is a structural rewrite of the paper, not
      a polish pass, and it is the author's call.
