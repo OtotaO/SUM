@@ -71,8 +71,8 @@ hard hash, so the manifest verifies the exact bytes and breaks the moment text
 is edited, re-flowed, or paraphrased — it says nothing about what a transform
 preserved. SynthID-Text and statistical "AI detectors" target *generation*,
 not transformation-preservation, and degrade under exactly the rewriting text
-invites: detectors across families have repeatedly failed under paraphrase
-and multi-step rewriting (see Section 9).
+invites: detectors have repeatedly failed under paraphrase and multi-step
+rewriting (see Section 9).
 
 We take a different stance: **attest, don't detect.** Rather than infer whether
 text is AI-generated, we let any participating transformer *attest* what it did
