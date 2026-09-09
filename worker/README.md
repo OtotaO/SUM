@@ -16,13 +16,13 @@ artifact). This Worker is the routing shell around it.
 |--------------------------------|-------------------------------|---------------------------------------------------------------------------------------------------------------|
 | `/api/render`                  | `src/routes/render.ts`        | Slider render → tome + `sum.render_receipt.v1` (Ed25519 / JCS / detached JWS). Public, per-IP rate-limited.    |
 | `/api/transform`               | `src/routes/transform.ts`     | Transform-registry dispatch → `sum.transform_receipt.v1`. **Worker-side registry currently registers `slider` only** (`worker/src/transforms/_registry.ts`); `compose` + `extract` are Python-CLI-only today via `sum transform apply <name>`. Same signing path as `/api/render`. |
-| `/api/complete`                | `src/routes/complete.ts`      | LLM proxy — Anthropic / OpenAI / AI Gateway. Public, per-IP rate-limited. BYO key via `X-Render-LLM-Key-*`.   |
+| `/api/complete`                | `src/routes/complete.ts`      | LLM proxy using operator credentials (Anthropic / OpenAI / AI Gateway). Shared 5/day demo allowance per IP; BYO headers ignored. |
 | `/api/qid`                     | `src/routes/qid.ts`           | Wikidata QID/PID resolver (`wbsearchentities` + 30-day edge cache).                                            |
 | `/.well-known/jwks.json`       | `src/routes/jwks.ts`          | Issuer's Ed25519 public-key set for offline receipt verification (RFC 7517).                                   |
 | `/.well-known/revoked-kids.json` | `src/routes/revoked_kids.ts`| Operator-curated kid revocation list. Receipt verifiers should reject signed-with-revoked-kid envelopes.        |
 | _everything else_              | `ASSETS` binding              | `../single_file_demo/` static files (the SUM hosted demo HTML).                                                |
 
-The trust loop — `/api/render` + `/.well-known/jwks.json` + offline verifier — is reachable end-to-end from this Worker. Receipt format specs at `../docs/RENDER_RECEIPT_FORMAT.md` and `../docs/TRANSFORM_RECEIPT_FORMAT.md`. Rate-limiter design at `../docs/PUBLIC_API_RATE_LIMITS.md` (5/24h operator-keyed demo; 100/hr with BYO key).
+The trust loop (`/api/render` + `/.well-known/jwks.json` + offline verifier) is reachable end-to-end from this Worker. Receipt format specs at `../docs/RENDER_RECEIPT_FORMAT.md` and `../docs/TRANSFORM_RECEIPT_FORMAT.md`. Rate-limiter design at `../docs/PUBLIC_API_RATE_LIMITS.md`: shared 5/24h demo allowance, including all transform requests; 100/hr for render with the selected provider's BYO key. Non-atomic KV counters do not impose a hard spending cap.
 
 ### `/api/qid` — Wikidata resolver
 

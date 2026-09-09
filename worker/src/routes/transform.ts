@@ -81,11 +81,10 @@ export async function handleTransform(
     return json({ error: "method not allowed; use POST" }, 405);
   }
 
-  // Rate limit BEFORE parsing the body. BYO-key classification looks
-  // at headers only, so we can decide the bucket without committing
-  // CPU to parse + dispatch.
+  // This registry does not yet dispatch LLM calls. Keep the conservative
+  // demo allowance; BYO headers cannot establish actual funding here.
   if (env.RENDER_CACHE) {
-    const scope = classifyScope("transform", request);
+    const scope = classifyScope("transform");
     const rl = await checkRateLimit(request, env.RENDER_CACHE, scope);
     if (!rl.allowed) {
       return rateLimitedResponse(rl);
@@ -130,11 +129,11 @@ export async function handleTransform(
   // Same BYO-key precedence as the legacy /api/render path.
   const transformEnv: TransformEnv = {
     anthropicApiKey:
-      request.headers.get("x-render-llm-key-anthropic") ??
-      env.ANTHROPIC_API_KEY,
+      request.headers.get("x-render-llm-key-anthropic")?.trim() ||
+      env.ANTHROPIC_API_KEY?.trim(),
     openaiApiKey:
-      request.headers.get("x-render-llm-key-openai") ??
-      env.OPENAI_API_KEY,
+      request.headers.get("x-render-llm-key-openai")?.trim() ||
+      env.OPENAI_API_KEY?.trim(),
     cfAiGatewayBase: env.CF_AI_GATEWAY_BASE,
     defaultAnthropicModel: env.SUM_DEFAULT_MODEL_ANTHROPIC,
     defaultOpenaiModel: env.SUM_DEFAULT_MODEL_OPENAI,
