@@ -111,11 +111,13 @@ self-contained, downloads packages on first run). On a machine with TeXLive:
    verified against the live arXiv abstract pages 2026-07-16).
 3. Compile locally twice on any machine with TeX (or trust AutoTeX): check
    the rendered PDF once, end to end.
-3a. ~~Re-archive in Software Heritage and update the SWHID in Section 11.~~
-   **Done 2026-09-06.** Section 11 cites
-   `swh:1:snp:93b83ca29d9b468a9f034f0bc3d4259983d63339`, capturing `main` at
-   `996707c`. Only redo this if you make further changes to the paper before
-   uploading; if you do, the recipe is: save at
+3a. **Re-archive in Software Heritage and update the SWHID in Section 11.
+   REQUIRED before upload; do not skip.** This was done once on 2026-09-06,
+   capturing `main` at `996707c`, but the paper has been corrected since (the
+   quotation and overclaim pass). The snapshot Section 11 currently cites,
+   `swh:1:snp:93b83ca29d9b468a9f034f0bc3d4259983d63339`, therefore does NOT
+   contain the paper you are about to upload. Re-archive against merged `main`
+   and replace the identifier. The recipe: save at
    `https://archive.softwareheritage.org/save/`, wait for `full`, read the id
    from
    `https://archive.softwareheritage.org/api/1/origin/https://github.com/OtotaO/SUM/visit/latest/`,

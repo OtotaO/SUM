@@ -502,7 +502,7 @@ contacting the authors.
 - **Source.** `https://github.com/OtotaO/SUM`, Apache-2.0. Archived in Software
   Heritage for permanent citation as
   `swh:1:snp:93b83ca29d9b468a9f034f0bc3d4259983d63339`, which captures `main`
-  at commit `996707c`, the state that produced this paper
+  at commit `996707c`
   (origin `swh:1:ori:a7b5385a59a6fb561cbad53ce12da3149439401e`).
 - **Verifier.** `pip install "sum-engine[verify]"` installs the
   dependency-light `sum_verify` SDK. The load-bearing promise is the
