@@ -71,8 +71,8 @@ hard hash, so the manifest verifies the exact bytes and breaks the moment text
 is edited, re-flowed, or paraphrased — it says nothing about what a transform
 preserved. SynthID-Text and statistical "AI detectors" target *generation*,
 not transformation-preservation, and degrade under exactly the rewriting text
-invites: general detectors have repeatedly failed under paraphrase and
-multi-step rewriting (see Section 9).
+invites: detectors across families have repeatedly failed under paraphrase
+and multi-step rewriting (see Section 9).
 
 We take a different stance: **attest, don't detect.** Rather than infer whether
 text is AI-generated, we let any participating transformer *attest* what it did
@@ -381,8 +381,9 @@ visible rather than rhetorically closed.
   we instrument a different corner of the same error, the transformation.
 - **C2PA / Content Credentials** bind provenance to media; C2PA has carried text
   manifests since 2.3 (2.4 adds structured-text blocks), but the text binding is a *byte-exact* hard hash that breaks under
-  any edit or paraphrase, and the spec itself states provenance is not a truth
-  or quality claim. **SynthID-Text** (Dathathri et al., 2024) and statistical
+  any edit or paraphrase, and the C2PA Explainer (§7.2.2) states that
+  provenance information alone cannot tell you whether the content is true,
+  accurate or factual. **SynthID-Text** (Dathathri et al., 2024) and statistical
   detectors target generation, not transformation-preservation, and degrade
   under exactly the rewriting text invites — a property re-confirmed in 2025 for
   SynthID specifically (arXiv:2508.20228) and across detector families by a
@@ -452,8 +453,8 @@ visible rather than rhetorically closed.
 Validity rests on two assumptions separated in Section 4: independence within
 the calibration sample, which the three shipped inequalities require, and a
 calibration-to-deployment match, which is
-assumed, not sampled — a deliberately disclosed boundary common to all
-conformal guarantees. Model-judge replay is machine-pinned; de-pinning via
+assumed, not sampled — a deliberately disclosed boundary common to
+distribution-free guarantees of this kind. Model-judge replay is machine-pinned; de-pinning via
 integer/fixed-point CPU inference (so a meaning-judge forward pass is
 hardware-independent) is named future work — same-hardware bitwise determinism
 is now an engineering solved problem (batch-invariant kernels), but
