@@ -386,8 +386,9 @@ visible rather than rhetorically closed.
   accurate or factual. **SynthID-Text** (Dathathri et al., 2024) and statistical
   detectors target generation, not transformation-preservation, and degrade
   under exactly the rewriting text invites — a property re-confirmed in 2025 for
-  SynthID specifically (arXiv:2508.20228) and across detector families by a
-  single training-free paraphrase attack (arXiv:2506.07001); multi-step
+  SynthID specifically (arXiv:2508.20228) and across neural, watermark-based
+  and zero-shot detectors by a single training-free paraphrase attack
+  (arXiv:2506.07001); multi-step
   rewriting drives detection of a diffusion-LM watermark (arXiv:2605.05503)
   from ~88% to under 5% while
   holding semantic similarity, the exact regime a meaning-preservation
@@ -562,7 +563,7 @@ contacting the authors.
 - L. Tang et al. *MiniCheck: efficient fact-checking of LLMs on grounding documents.* EMNLP 2024 (arXiv:2404.10774).
 - D. Ivry, O. Nahum. *Paladin-mini: A Compact and Efficient Grounding Model Excelling in Real-World Scenarios.* arXiv:2506.20384, 2025.
 - W. Seo, S. Han, J. Jung, B. Newman, S. Lim, S. Lee, X. Lu, Y. Choi, Y. Yu. *Verifying the Verifiers: Unveiling Pitfalls and Potentials in Fact Verifiers.* COLM 2025; arXiv:2506.13342.
-- C2PA. *Coalition for Content Provenance and Authenticity, Technical Specification* (digitalSourceType taxonomy, v2.4; text manifests added in 2.x).
+- C2PA. *Coalition for Content Provenance and Authenticity, Technical Specification* (digitalSourceType taxonomy, v2.4; text manifests added in 2.3), and the companion *Explainer* §7.2.2.
 - European Union. *Artificial Intelligence Act, Article 50* (applicable 2 Aug 2026), and the *Code of Practice on Transparency of AI-Generated Content* (finalized 10 June 2026).
 - ECMA-262. *ECMAScript Language Specification* (§ Number::toString).
 
