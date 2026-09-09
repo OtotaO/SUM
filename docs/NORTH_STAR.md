@@ -50,9 +50,14 @@ smuggle it back.)
    summary-level, SummEval" is an overclaim by omission — this exact omission
    survived in our own headline for weeks. State: corpus, aggregation level,
    scorer, n. If a number's scope is unknown, the number is not ready.
-3. **The bound is marginal, under exchangeability, over a named proxy.** Never
-   per-document, never a guarantee of meaning, never extended past the
-   calibration envelope. The `not_covered` field and the proxy caveat are
+3. **A mean confidence bound needs independent calibration draws from the
+   target distribution, a fixed policy, and a named bounded proxy.**
+   Exchangeability alone is insufficient for the implemented Hoeffding,
+   Clopper-Pearson and empirical-Bernstein mean bounds. Unaccounted adaptive
+   selection or calibration reuse invalidates this interpretation. Without a
+   supplied sampling contract, report descriptive batch measurement and
+   conditional arithmetic. Never per-document, never a guarantee of meaning,
+   never extended past the calibration envelope. The `not_covered` field and the proxy caveat are
    load-bearing product features, not legal boilerplate.
 4. **Adversarial audit before anything becomes public.** Every outbound text,
    every release, every paper claim gets an independent hostile pass first. This
@@ -191,3 +196,14 @@ Verdict: the doctrine HOLDS on every tested point; no rule overruled.**
   own subagents) and 4e (evidence classes) both earned their keep: the
   occurrence-receipt lane now has competitors; the meaning lane still has
   no demand-side proof. The wager (§2) remains open, not confirmed.
+
+
+**2026-09-09 correction (CODE and replayed committed evidence).** Invariant 3
+now matches the independence requirement already derived in
+`docs/arxiv/PAPER1_DRAFT.md`: exchangeability alone cannot justify the implemented
+mean-confidence kernels. New issuance defaults to descriptive batch scope when
+sampling metadata is absent. Historical signed evidence is preserved. The T4
+composition closure is likewise descriptive: stable medians coexist with
+individual deterioration; see `docs/DRIFT_METRIC_COMPOSITION.md` for the corrected
+paired analysis. Neither green verification nor interval overlap proves semantic
+preservation, population equivalence or product demand.

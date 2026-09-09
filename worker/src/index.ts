@@ -21,7 +21,11 @@ import { handleRender } from "./routes/render";
 import { handleRevokedKids } from "./routes/revoked_kids";
 import { handleTransform } from "./routes/transform";
 
+export { LLMBudget } from "./llm_budget";
+
 export interface Env {
+  // SQLite Durable Object: missing or unavailable fails closed for provider work.
+  LLM_BUDGET?: DurableObjectNamespace;
   // Static-asset binding — resolves to the ../single_file_demo/
   // directory at deploy time.
   ASSETS: Fetcher;

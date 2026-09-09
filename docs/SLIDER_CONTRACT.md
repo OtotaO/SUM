@@ -2,8 +2,8 @@
 
 **Version:** 0.6 (Phase E.1 v0.7 — prompt hardening eliminates
 catastrophic failure mode)
-**Status:** **slider's product claim verified at scale with no
-catastrophic outliers.** v0.7 adds a fact-preservation reinforcement
+**Status:** historical, selectively NLI-audited benchmark observations;
+not a deployment guarantee or independent human validation. v0.7 adds a fact-preservation reinforcement
 to the system prompt when any non-density axis is at ≤ 0.3.
 Re-running the v0.6 scale bench: real fact losses on LLM axes
 dropped from 36 to 1 (97% reduction); catastrophic outliers (≥5
@@ -15,7 +15,7 @@ drift tolerance. This document is the source of truth for every
 behaviour the slider UI claims; every numeric tolerance below is
 *designed to be* empirically falsifiable by
 `Tests/benchmarks/slider_drift_bench.py` — see the reproducibility-status
-note under "Headline result" for that harness's current scaffold state.
+note under "Headline result" for that harness's current evidence status.
 
 ## Headline result (NLI-verified, scale-checked)
 
@@ -28,8 +28,8 @@ note under "Headline result" for that harness's current scaffold state.
 "proved").** The figures above were *measured* in the v0.4 / v0.6 /
 v0.7 bench runs summarised below, but they are not yet replayable from
 a same-commit receipt: `Tests/benchmarks/slider_drift_bench.py` is
-still **scaffold-state** (type signatures + JSON schema; the full bench
-loop ships in EXECUTE state), and no `sum.slider_drift_bench.v1` receipt
+implemented with `_bench_one_cell` and `main_async`; its scaffold label
+is stale, but the missing committed production-loop evidence remains, and no `sum.slider_drift_bench.v1` receipt
 is committed under `fixtures/bench_receipts/`. Closing that gap is
 bench-hardening tasks **T2 / T3** (`docs/BENCH_HARDENING_FROM_QCVV.md`),
 which remain OPEN. Per the bench-hardening discipline, treat these as
@@ -67,22 +67,26 @@ deterministic; mirrored in the TS Worker.
 **Why median dropped to 52% perfect cells (from 60%):** the
 reinforcement makes the LLM's surface forms slightly more
 defensive, so the strict embedding-similarity layer triggers NLI
-audit more often. The audit then rescues every flagged fact (NLI
+audit more often. The audit accepts 653 of 654 flagged facts (NLI
 rescue rate ≈ 99.8% on LLM axes). The "1.000 by semantic, no audit
 needed" path narrows; the "1.000 by NLI after audit" path widens.
 Net: more cells get verified rigorously, real losses near-zero.
 
-**Operational read:** the slider preserves facts. Median = 1.000.
-Worst-case = 0.700. ~99.8% of audited unmatched facts are recovered
-by NLI; the remaining 0.2% (1 fact across 654 audit calls) is at the
-LLM's hard ceiling, not a contract violation.
+**Operational read:** the historical v0.7 audit reports a minimum observed
+cell-level preservation of 0.700 and 653/654 unmatched facts accepted by its
+NLI judge. This is a judge decision on a selected subset, not human-confirmed
+preservation or a lower bound on deployment performance. One unmatched fact
+remained a reported loss; the v0.4 statement that all audited facts were rescued
+must not be applied to v0.7. Similarity-matched facts were not independently
+audited at the same rate, so these runs do not estimate validator false-safe
+rates across the score range.
 
-Every previously-reported "fact loss" at non-neutral axis positions
-turned out to be an embedding-similarity false negative — the LLM
-was preserving the fact in rephrased form that text-embedding-3-small
-at threshold τ=0.85 didn't recognize. NLI verifies actual semantic
-entailment, and on every audited LLM-axis cell, NLI rescued 100% of
-the embedding-flagged "missing" facts.
+The next production-loop evaluation must sample independently across all score
+ranges and separately report generator errors, validator false positives and
+false negatives. Include number, date, entity, negation, attribution and
+exception changes. A proposed threshold is a product policy target until the
+runtime actually measures it and handles failures visibly; existing historical
+bench percentages are not runtime enforcement.
 
 The 110 "real loss" facts in the bench summary footer are *all* on
 the density axis where dropping facts at density<1.0 is the explicit
@@ -250,21 +254,21 @@ hardest because the LLM tends to commit to one mode rather than
 blend. Pronoun-ratio is a coarse signal; perspective remains the
 hardest axis to measure deterministically.
 
-## Fact preservation invariant
+## Intended fact-preservation threshold
 
-Independent of the per-axis drifts above, the following must hold for
-every render at every slider position EXCEPT density:
+The intended product policy for non-density axes is:
 
 ```
 |source_triples ∩ reextracted_triples| / |source_triples| >= 0.95
 ```
 
-I.e. at least 95% of source triples must survive the round-trip. This
-is the load-bearing claim of the slider product: "no matter what
-register / audience / perspective the LLM uses, the underlying facts
-are preserved." A render that violates this invariant is shown red in
-the UI regardless of per-axis drifts; the bundle still includes the
-measurement so the consumer can decide.
+This is a design target of at least 95% measured triple survival, not an
+implemented runtime guarantee. The current Worker does not re-extract and
+validate every output against this threshold, and the browser does not implement
+a corresponding measured red-state policy. Source-linked human review and
+explicit incomplete-review states must remain visible. A future validator must
+measure false-safe rates independently before any threshold is described as
+reliable deployment protection.
 
 ## Cache semantics
 

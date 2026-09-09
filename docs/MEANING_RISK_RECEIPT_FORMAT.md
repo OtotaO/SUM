@@ -44,10 +44,10 @@ the render-receipt and trust-root verifiers use).
 | `point_estimate_micro` | int | observed mean meaning-loss in micro-units. e.g. `349024` = 0.349024. |
 | `risk_upper_bound_micro` | int | the certified `(1−delta)` **upper** bound on `E[loss]` in micro-units. The headline number. e.g. `654992` = 0.654992. |
 | `losses_hash` | string | `"sha256-<hex>"` over JCS-canonical bytes of the **integer micro-unit** per-pair loss vector. **The replay anchor.** |
-| `corpus_id` | string | names the calibration envelope — the exchangeability scope the bound is valid within. |
+| `corpus_id` | string | names the declared corpus; a name does not establish independent sampling or deployment match. |
 | `transform` | string | free label of what produced the pairs (e.g. `"slider:density=0.5"`). |
 | `not_covered` | string[] | layers the proxy structurally cannot bound. Default: `["arrangement","sound","connotation","implicature"]`. **Required and non-empty.** |
-| `disclosure` | string | the proxy/marginal/exchangeability caveat in prose. |
+| `disclosure` | string | the proxy/population/independent-sampling caveat in prose. |
 | `signed_at` | string | ISO-8601 UTC, millisecond precision + `Z` (byte-identical to the transform-receipt stamp). |
 | `alpha_target_micro` | int | *(optional)* the risk level the operator wanted controlled, in micro-units. e.g. `500000` = 0.5. |
 | `controlled` | bool | *(present iff `alpha_target_micro` is)* whether `risk_upper_bound_micro ≤ alpha_target_micro`. |
@@ -147,7 +147,7 @@ certifier reproduces the bound, `point_estimate_micro`, `n`, and
   the scorer label is trust in the issuer, not in the math.
 - **anything about `not_covered` layers** — arrangement (*naẓm*), sound,
   connotation, implicature. The proxy is blind to them; the field says
-  so. Validity also rests on **exchangeability** with `corpus_id`.
+  so. A deployment confidence interpretation requires **independent draws from the target population**, a fixed policy and no unaccounted calibration reuse. Merely naming `corpus_id` or asserting exchangeability is insufficient.
 
 See `docs/MEANING_LOSS_FRONTIER.md` §5 and `docs/PROOF_BOUNDARY.md`. The
 "no guarantee-language without a same-commit replay receipt" rule from
@@ -201,3 +201,41 @@ by exact integer equality. The off-grid-δ discipline (§3) applies per
 cohort: the scalar δ is quantised in build so a Bonferroni `delta/G` (e.g.
 1/30) cannot shift a bound by ~1 micro and false-reject. Same cross-runtime
 scope as §3 — Stage A everywhere, Stage B Python-only.
+
+
+## Issuance correction and evidence extensions (2026-09-09)
+
+Historical signed receipts remain byte-identical and still verify. Their
+exchangeability-only disclosure is under-specified: the implemented mean
+confidence bounds require independent calibration observations from the target
+population, a fixed transformation/scoring policy, and no unaccounted adaptive
+selection or calibration tuning reuse. Signature validity and arithmetic replay
+do not establish these assumptions. This correction applies to the historical
+BillSum and translation examples as well as any other receipt using the old
+wording; it does not revoke their signatures or alter their observed losses.
+
+New Python meaning and perspective issuance includes these additive fields:
+
+| Field | Interpretation |
+|---|---|
+| `statistical_scope` | `descriptive_batch` by default; `conditional_expected_proxy_loss` only with an explicit sampling contract. |
+| `sampling_status` | `not_supplied` or `issuer_asserted_not_verified`; never inferred from a corpus name. |
+| `sampling_contract`, `sampling_contract_hash` | Optional independent sampling design, experimental unit, target population, selection procedure, source clustering, fixed-policy declaration and no-tuning declaration. Assertions remain unverified. |
+| `evaluation_evidence_status` | `not_supplied` or `hash_linked_not_rederived`. |
+| `evaluation_manifest`, `evaluation_manifest_hash` | Optional `sum.evaluation_manifest.v1` commitment to ordered exact UTF-8 source/output hashes, instrument and supplied generation/selection metadata. |
+| `scorer_instrument_hash` | Digest of `sum.scorer_instrument.v1`, including algorithm, model/tokenizer revision, exact float-hex threshold and weights, unitizer, truncation policy, implementation source hashes and numerical environment. |
+
+CLI and MCP pair-based minting attach evaluation evidence automatically. BYO
+losses cannot invent source provenance and remain `not_supplied`. Custom model
+IDs without an explicit revision are labelled `mutable_unresolved`. Instrument
+hashes identify supplied configuration; they do not attest model weights or
+prove cross-machine numerical identity. Source-code digests supplement human
+readable names and versions without relabelling historical signed instruments.
+
+The research helper `verify_evaluation_pairs(payload, pairs)` checks text and
+order commitments after normal receipt verification. It reports source/output
+binding separately from `score_derivation=not_rederived` and
+`sampling_assumptions=not_verified`. Cheap signature verification alone does
+not run this deeper check. A source/output hash proves binding, not truth or
+honest scoring. Historical receipts without these extensions continue through
+the legacy verification path; missing evidence is not a successful check.

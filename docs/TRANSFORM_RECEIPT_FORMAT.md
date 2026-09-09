@@ -206,7 +206,23 @@ Existing pre-T1 render receipts are NOT migrated automatically. They remain vali
 
 ### 6.1 Revocation
 
-Revocation is **not yet wired for transform receipts** (v1): `verify_transform_receipt(receipt, jwks)` takes no `revoked_kids` argument and there is no `revoked_kid` error class. Render receipts *do* implement it — `verify_receipt(..., revoked_kids=...)` rejects with `revoked_kid` when the receipt's `signed_at` is at or after the revocation's `effective_revocation_at` (historical receipts, signed before that, keep verifying — revocation invalidates future trust only). Transform-receipt parity against a published `/.well-known/revoked-kids.json` list is planned; until it lands, transform-receipt trust relies on the `signed_at` freshness window (§6.2) plus key rotation.
+The Python transform verifier accepts `revoked_kids=` with the same legacy
+effective-time behavior as the render verifier: a matching key is rejected
+with `revoked_kid` when `signed_at >= effective_revocation_at`. `None` skips
+the check; an explicitly supplied empty list checks an empty snapshot.
+Historical receipts before the effective time retain legacy acceptance.
+
+For relying applications, `sum_verify.verify(..., trust_policy=TrustPolicy(...))`
+and `verify_report()` provide explicit offline policy across render, transform,
+meaning-risk and chain envelopes. The policy can pin actual key material,
+require a caller-trusted revocation snapshot and bound its age. It rejects all
+listed keys even if the signer claims an earlier `signed_at`: a compromised
+key can backdate a receipt, so that field alone cannot prove historical
+existence. Archival mode deliberately skips receipt freshness and does not
+waive revocation. Unrequested checks are reported as `not_checked`, distinct
+from `passed`. See [VERIFY_SDK.md](VERIFY_SDK.md#explicit-offline-trust-policy).
+Browser/Node verifier policy remains separate; this addition changes the
+Python SDK, not the signed wire format or historical fixtures.
 
 ### 6.2 Replay defense (`signed_at` window)
 

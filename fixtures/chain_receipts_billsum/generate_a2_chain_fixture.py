@@ -65,6 +65,9 @@ Run:  python fixtures/chain_receipts_billsum/generate_a2_chain_fixture.py
 """
 from __future__ import annotations
 
+from scripts.fixture_history import historical_fixture_payload
+from scripts.fixture_history import HISTORICAL_CHAIN_DISCLOSURE
+
 import base64
 import json
 import math
@@ -212,6 +215,7 @@ def _mint_hop(losses, *, transform, loss_def, disclosure, scorer, private):
         transform=transform, alpha_target=None, loss_definition=loss_def,
         disclosure=disclosure, signed_at=SIGNED_AT,
     )
+    payload = historical_fixture_payload(payload)
     return sign_meaning_risk_receipt(payload, private_jwk=private, kid=KID), guarantee
 
 
@@ -246,6 +250,7 @@ def build():
     )
     chain_payload = build_chain_payload(
         [hop1, hop2], end_to_end=e2e_leg, signed_at=SIGNED_AT,
+        disclosure=HISTORICAL_CHAIN_DISCLOSURE,
     )
     chain = sign_chain_receipt(chain_payload, private_jwk=private, kid=KID)
     return {

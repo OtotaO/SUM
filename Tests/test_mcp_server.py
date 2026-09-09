@@ -663,3 +663,42 @@ def test_bind_unknown_id_returns_typed_schema_error(server):
     ))
     assert result["error_class"] == "schema"
     assert "could not be resolved" in result["errors"][0]
+
+
+@pytest.mark.parametrize("tool_name", ["extract", "attest", "extract_bind", "attest_bind"])
+@pytest.mark.parametrize("network_allowed", [False, True])
+def test_missing_sieve_model_never_downloads_from_mcp(server, monkeypatch, tool_name, network_allowed):
+    """Cold model caches must return setup guidance, even with LLM opt-in."""
+    import asyncio
+    import subprocess
+
+    import spacy
+
+    from sum_engine_internal.mcp_server import server as srv_mod
+
+    calls = []
+
+    def missing_model(*args, **kwargs):
+        raise OSError("model missing in test")
+
+    def forbidden_download(*args, **kwargs):
+        calls.append(args)
+        raise AssertionError("MCP must never install a spaCy model")
+
+    monkeypatch.setattr(srv_mod, "NETWORK_ALLOWED", network_allowed)
+    monkeypatch.setattr(spacy, "load", missing_model)
+    monkeypatch.setattr(subprocess, "check_call", forbidden_download)
+    result = asyncio.run(_tool(server, tool_name)(text="Alice likes cats."))
+    assert result["error_class"] == "extractor_unavailable"
+    assert "python -m spacy download en_core_web_sm" in result["errors"][0]
+    assert not calls
+    assert "bundle" not in result and "bind_id" not in result
+
+
+def test_missing_spacy_dependency_reports_extractor_unavailable(server, monkeypatch):
+    import asyncio
+    import sys
+    monkeypatch.setitem(sys.modules, "spacy", None)
+    result = asyncio.run(_tool(server, "extract")(text="Alice likes cats."))
+    assert result["error_class"] == "extractor_unavailable"
+    assert "sum-engine[sieve]" in result["errors"][0]

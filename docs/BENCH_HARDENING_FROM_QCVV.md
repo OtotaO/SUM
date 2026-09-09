@@ -21,15 +21,15 @@ Recommended order: T5 → T1 → T4 → T2 → T3.
 
 ---
 
-## T1 — Iterated round-trip (amplificational sensitivity) — CLOSED 2026-05-21
+## T1 - Iterated round-trip - data collected; interpretation corrected 2026-09-09
 
-**Status:** **CLOSED.** Runner shipped at `scripts/bench/runners/s25_iterated_round_trip.py` 2026-05-18; K=10 receipts landed across all three seed corpora 2026-05-21. **All three corpora return composition verdict STABLE** (`max-vs-K=1 drift delta = 0.00pp ≤ ε=1.0pp`). PROOF_BOUNDARY §2.5.1 carries the receipts and the structured per-corpus tables. The §2.5 closure claim is empirically composition-stable on every measured corpus shape — first acceptance criterion of this task is met. Receipts:
+**Status:** Three K=10 receipts landed on 2026-05-21. Their recorded median drift is unchanged across K=1..10. That aggregate does not establish document-level stability or composition invariance. The historical `STABLE` labels describe the runner's aggregate rule only. The corrected T4 analysis in [DRIFT_METRIC_COMPOSITION.md](DRIFT_METRIC_COMPOSITION.md) reports endpoint pairing and supersedes the stronger closure interpretation.
 
-- `fixtures/bench_receipts/s25_iterated_K10_seed_v1_2026-05-21.json` (50 docs × K=10, median=mean=0.00 across K)
-- `fixtures/bench_receipts/s25_iterated_K10_seed_v2_2026-05-21.json` (20 docs × K=10, median=mean=0.00 across K)
-- `fixtures/bench_receipts/s25_iterated_K10_seed_long_paragraphs_2026-05-21.json` (16 docs × K=10, median=12.50 flat across K)
+- `fixtures/bench_receipts/s25_iterated_K10_seed_v1_2026-05-21.json`: 50 documents, median 0% at every K; mean 4% at K1 and K10.
+- `fixtures/bench_receipts/s25_iterated_K10_seed_v2_2026-05-21.json`: 20 documents, median 0% at every K; mean 15% at K1 and K10; one document worsens by 100 percentage points while another improves by 100 points.
+- `fixtures/bench_receipts/s25_iterated_K10_seed_long_paragraphs_2026-05-21.json`: 16 documents, median 12.5% at every K; mean rises from 16.7584% to 21.0987%; five documents worsen and the observed maximum rises from 42.8571% to 50%.
 
-The classifier emits one of: **stable** (Δmax ≤ ε from K=1), **accumulating** (monotone growing), **saturating** (grows then plateaus), **noisy**, **insufficient_data**.
+These are reaggregations of existing proxy measurements, with no new model calls or independent human assessment. The reference is the initial extracted axiom set; upstream extraction omissions are not measured.
 
 Original design below for context.
 
@@ -54,9 +54,7 @@ Output: NDJSON receipt under new schema `sum.iterated_round_trip_drift.v1`, writ
 
 Run on all three corpora that §2.5 closed against: `seed_v1`, `seed_v2`, `seed_long_paragraphs`.
 
-**Acceptance.** One of two outcomes, both informative:
-- **Drift stays flat across k** (e.g., max drift_k ≤ max drift_1 + ε for ε ≤ 1pp). §2.5 closure is genuinely a fixed point. PROOF_BOUNDARY.md §2.5 gains a sentence: "closure is stable under K-step iteration; receipt at `fixtures/bench_receipts/s25_iterated_K10_*`."
-- **Drift accumulates with k** (e.g., drift_k grows monotonically or super-linearly). §2.5 is qualified: the single-step result is a local neighbourhood, not a global fixed point. PROOF_BOUNDARY.md §2.5 gains an explicit composition caveat. This is *the* claim that needs qualification before any release that cites §2.5 as load-bearing.
+**Acceptance, corrected 2026-09-09.** Publish paired per-document changes and per-K counts, medians, means, observed maxima, and additions. Flat aggregate curves may be described as flat on the measured sample. A fixed-point or noninferiority claim additionally requires a predeclared practical margin, independent document sampling, a justified paired inference design, and correction for selected or multiple comparisons. The existing three receipts meet the descriptive reporting requirement; they do not meet that inferential requirement.
 
 **Cost.** ~10× the per-corpus cost of `s25_generator_side_combined` (i.e., ~$0.70–$2.00 per corpus). One sitting.
 
@@ -81,51 +79,40 @@ Compute the **capability region** per axis: the maximal contiguous set of (compl
 
 ---
 
-## T3 — Worst-case tail bounds for the render receipt's trust scope
+## T3 - Population-tail bounds for the render receipt's trust scope - OPEN
 
-**Concept.** Average-case and worst-case error tell you operationally different things. Any guarantee a downstream system can actually rely on — i.e., what a render receipt's trust scope should attest — is a worst-case high-probability bound, not a tail percentile of an empirical distribution. "Median 1.000" is a marketing claim; "fact preservation ≥ X with 95% confidence over the tested envelope" is a guarantee. The DKW inequality is the cheapest tool for the job and requires no assumptions beyond i.i.d. sampling within a (corpus × axis) cell.
+**Correction, 2026-09-09.** The former formula subtracted DKW epsilon from a measured preservation value, mixing probability and value units. It must not be implemented or cited. A population quantile bound is also not an absolute worst-case guarantee for every document.
 
-**Intervention.** Post-processing pass over existing `sum.slider_drift_bench.v1` receipts. For each (corpus × axis) cell with n observations and empirical fact-preservation CDF F̂(x):
+**Concept.** For n independent, identically distributed document observations under a fixed policy, DKW bounds the difference between the population and empirical CDFs. A proposed lower bound on the population q-quantile must shift the **quantile level** and invert the empirical CDF, without linear interpolation:
 
 ```
-ε(n, δ) = sqrt(ln(2/δ) / (2n))          # DKW bound, two-sided
-worst_case_95 = inf { x : F̂(x) ≥ 0.05 } - ε(n, 0.05)
+epsilon(n, delta) = sqrt(ln(2 / delta) / (2 * n))
+q_lower = q - epsilon(n, delta)
+quantile_lower = empirical_CDF_inverse(q_lower)  if q_lower > 0
+                 0                              otherwise  # bounded preservation in [0, 1]
 ```
 
-Report `worst_case_preservation_95ci` per cell. Bump schema to `sum.slider_drift_bench.v2`; preserve v1 alongside per `docs/COMPATIBILITY_POLICY.md` (this is a minor bump — additive field). Receipt at `fixtures/bench_receipts/s25_slider_v2_<YYYY-MM-DD>.json`.
+At a nonpositive shifted level, the lower bound is vacuous. State q and delta separately: a 5th-percentile lower bound with 95% confidence is not a claim that every document preserves that much. Allocate the error probability across multiple cells or claims, and justify independence at the document level; treating iterations from one document as independent samples does not supply it. See [Massart's DKW result](https://projecteuclid.org/journals/annals-of-probability/volume-18/issue-3/The-Tight-Constant-in-the-Dvoretzky-Kiefer-Wolfowitz-Inequality/10.1214/aop/1176990746.short).
 
-Update `docs/RENDER_RECEIPT_FORMAT.md` §5 (trust scope) to reference this bound, not the median. The receipt's attestation language becomes: *"the issuer attests, with 95% confidence over the tested slider envelope as defined by `sum.slider_capability_region.v1`, fact preservation ≥ X"* — citing the actual measured X per axis, not a hand-wave.
+**Intervention.** Require committed production-loop measurements, a documented sampling design, fixed scorer/policy, per-cell sample counts, chosen q/delta and multiplicity allocation. Validate the empirical-CDF inverse on discrete and boundary cases before emitting a versioned quantile-bound field. Historical artifacts remain unchanged; amended guidance must be linked explicitly.
 
-**Acceptance.** §5 of `docs/RENDER_RECEIPT_FORMAT.md` cites a numeric worst-case bound per axis. README's slider claim block ("Slider fact preservation: median 1.000, p10 0.769 ...") gains a third number: the worst-case 95% lower bound. PROOF_BOUNDARY.md §5 (truthfulness contract) explicitly permits the new language as `empirical-benchmark` because it is a measured bound, not an absolute guarantee.
+**Acceptance.** Documentation cites the precise population quantity, assumptions, source data, and valid confidence procedure. No numeric production bound or new receipt is claimed by this plan. Any change to render trust-scope language waits for that evidence; provenance alone does not establish quality.
 
-**Cost.** Pure post-processing. No new LLM calls.
+**Cost.** Post-processing is inexpensive, but obtaining an appropriate production sample is separate work.
 
 ---
 
-## T4 — Compositional metric audit for `drift_pct` — CLOSED 2026-05-22
+## T4 - Compositional metric audit - descriptive analysis corrected 2026-09-09
 
-**Status:** **CLOSED.** Distilled finding: drift_pct fits a **fixed-point** composition law (`drift_K = drift_1`) on every measured corpus, within DKW 95% worst-case bound, by a margin of ≥17×. Independent evidence from doc-frequency Hellinger fidelity rejects the multiplicative-survival hypothesis decisively on seed_v2. PROOF_BOUNDARY §2.5.1.d carries the receipts. The multi-stage closure claim (`extract ∘ generate ∘ extract = extract` under K-step iteration) is now load-bearing.
+**Status:** The runner emits `sum.drift_metric_composition.v2`: descriptive median-curve fits, per-K observation counts and drift summaries, and paired K1-to-Kmax document changes. It hash-binds each input T1 receipt and explicitly reports that population inference and equivalence testing were not performed. Stable medians coexist with worsening documents in two measured corpora. There is no established multi-stage closure guarantee.
 
-Receipt: `fixtures/bench_receipts/drift_composition_2026-05-22.json` (schema `sum.drift_metric_composition.v1`). Runner: `scripts/bench/runners/t4_drift_composition.py`. Doc: `docs/DRIFT_METRIC_COMPOSITION.md`.
+The historical `fixtures/bench_receipts/drift_composition_2026-05-22.json` (`sum.drift_metric_composition.v1`) remains byte-identical. Its composition-invariance interpretation is superseded by the dated erratum in [DRIFT_METRIC_COMPOSITION.md](DRIFT_METRIC_COMPOSITION.md#historical-erratum-2026-09-09). Neither the old comparison of drift differences to DKW epsilon nor later confidence-interval overlap establishes equivalence. The document-frequency coefficient is a count-share diagnostic on the same observations, not independent confirmation or a derived composition law.
 
-Original design below for context.
+Runner: `scripts/bench/runners/t4_drift_composition.py`. The corrected analysis is reproducible from the three existing T1 receipts with no new model calls. It does not rederive source-level scores or add independent human assessments.
 
----
+**Acceptance.** The descriptive reporting correction is complete. Any future population or equivalence claim remains open pending a predeclared margin, document-level paired design, adequate independent sampling, multiplicity treatment, and independent source annotations covering omissions and additions. No release may infer that individual documents preserve meaning from unchanged corpus medians.
 
-
-**Concept.** Some metrics compose cleanly across independent stages; others do not. The classical example: total variation distance does not compose under N independent samples, but classical (Hellinger) fidelity does — `F(p⊗N, p⊗N) = F(p,p)^N`. SUM reports `drift_pct` per corpus without analysis of its composition law. Before §2.5's single-step result can be cited as a load-bearing claim across multi-stage pipelines (extraction → generation → re-extraction → downstream consumer extracting again), the composition law of `drift_pct` must be either derived or empirically bounded.
-
-**Intervention.** Write `docs/DRIFT_METRIC_COMPOSITION.md`. Three subsections:
-
-1. **Definition.** Pin the exact computation of `drift_pct` currently used in the §2.5 receipts. Currently it appears to be `1 - exact_match_recall(axioms_predicted, axioms_truth)`; confirm or correct against `scripts/bench/runners/s25_generator_side.py`.
-
-2. **Composition (empirical).** Using T1's iterated-round-trip data, fit `drift_pct(K)` as a function of K. Test against candidate composition laws: additive (`drift_K = K · drift_1`), multiplicative-survival (`(1 - drift_K) = (1 - drift_1)^K`), and saturating (`drift_K = drift_∞ · (1 - exp(-K/τ))`). Report best-fit and goodness-of-fit per corpus.
-
-3. **Alternative metric.** Compute Hellinger fidelity over the multinomial distribution of axiom keys (treating each axiom set as a sparse categorical) on the same data. Report whether its empirical composition under K iterations matches the analytical `F^K` law within DKW bounds. If yes, propose Hellinger-on-axioms as the *secondary* metric in `docs/SLIDER_CONTRACT.md` and PROOF_BOUNDARY.md §2.5, retaining `drift_pct` as the primary for backward compatibility but with an explicit cross-reference.
-
-**Acceptance.** `docs/PROOF_BOUNDARY.md` §2.5 cites either (a) an empirical composition bound for `drift_pct` with confidence interval, or (b) a switch to a compositional metric, with full justification. No load-bearing multi-stage claim in any release until this lands.
-
-**Cost.** Pure analysis over T1's receipts. No new LLM calls.
+**Cost.** Pure analysis for this correction; new empirical validation is separate.
 
 ---
 
@@ -162,6 +149,7 @@ New or modified schemas introduced by this plan:
 | `sum.iterated_round_trip_drift.v1` | new (T1) | `docs/PROOF_BOUNDARY.md` §2.5 (extended) |
 | `sum.slider_capability_region.v1` | new (T2) | `docs/SLIDER_CONTRACT.md` (extended) |
 | `sum.slider_drift_bench.v2` | minor bump from v1 (T3) | `docs/SLIDER_CONTRACT.md` |
+| `sum.drift_metric_composition.v2` | corrected descriptive analysis (T4); v1 retained | `docs/DRIFT_METRIC_COMPOSITION.md` |
 | `sum.qid_resolution_accuracy.v1` | existing — no change | already shipped |
 
 All new receipts follow the existing convention: NDJSON, pinned-model-snapshot field mandatory, `fixtures/bench_receipts/<schema_short>_<corpus?>_<YYYY-MM-DD>.json`, reproducible with one command.
@@ -172,8 +160,8 @@ Every claim added to SUM docs by this plan must carry its epistemic status per `
 
 - T1's iteration-stability result: `empirical-benchmark`.
 - T2's capability regions: `empirical-benchmark`.
-- T3's DKW worst-case bound: `empirical-benchmark` (it is a measured statistical bound, not an absolute guarantee).
-- T4's composition law: `empirical-benchmark` if measured; `provable` only if derived analytically and the derivation is in-doc.
+- T3's proposed population-quantile confidence bound: `empirical-benchmark` only after the stated sampling and inference gates are met.
+- T4's current result: `empirical-benchmark` (descriptive only), with no population inference or composition-equivalence claim.
 - T5's negative-control detection: `certified` (it is a property of the test suite itself, not the system under test).
 
-Do not use the word "guarantee" anywhere in this plan's outputs without a same-commit benchmark receipt or a §5-compliant proof citation.
+A benchmark receipt authenticates its recorded evidence; its existence alone does not justify a guarantee. Any statistical claim additionally requires a valid procedure, supported assumptions, a precise population quantity, and its stated limits.

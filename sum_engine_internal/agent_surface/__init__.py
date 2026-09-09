@@ -16,7 +16,8 @@ them as the access path.
 from sum_engine_internal.agent_surface.bind import (
     BindRegistry,
     BindNotFoundError,
+    BindTooLargeError,
     DEFAULT_REGISTRY,
 )
 
-__all__ = ["BindRegistry", "BindNotFoundError", "DEFAULT_REGISTRY"]
+__all__ = ["BindRegistry", "BindNotFoundError", "BindTooLargeError", "DEFAULT_REGISTRY"]

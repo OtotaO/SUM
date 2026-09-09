@@ -1,7 +1,8 @@
 """Content-addressed bind registry.
 
 Each value bound through the registry gets a deterministic handle of
-the form ``sha256:<hex>``, derived from the value's canonical bytes.
+the form ``sha256:<hex>`` for text or ``sha256:v2:<kind>:<hex>``
+for bytes and JSON, derived from the value's canonical bytes.
 Subsequent agent tool calls can pass the bind_id instead of inlining
 the full value, eliminating two failure modes documented in
 ``docs/AGENT_SURFACE_FINDINGS.md``:
@@ -11,11 +12,19 @@ the full value, eliminating two failure modes documented in
   - Token-cost compounding from re-passing large structures.
 
 Identity rules:
-  - ``str``: canonical bytes are the UTF-8 encoding.
-  - ``bytes``: canonical bytes are the value itself.
+  - ``str``: canonical bytes are the UTF-8 encoding; legacy handles stay stable.
+  - ``bytes``: canonical bytes are the value itself, in the v2 bytes namespace.
   - JSON-serialisable (dict, list, primitives): canonical bytes are
     JCS-canonicalised (RFC 8785) UTF-8 bytes — same canonicalisation
-    the substrate uses for ``bench_digest`` and signed receipts.
+    the substrate uses for ``bench_digest`` and signed receipts, in the v2
+    json namespace. Resolution returns JSON-normalized values (tuples become
+    lists; equivalent JSON numbers can share a representation).
+
+Stored values are immutable byte snapshots; resolving JSON decodes a fresh
+copy. Text, bytes and JSON cannot alias one another. Registries are process-
+local, so legacy non-text handles cannot survive a server restart anyway:
+clients must bind again to obtain v2 handles. There is no ambiguous legacy
+non-text alias or change to signed receipt formats.
 
 The registry is process-local (in-memory). Persistence across process
 boundaries is post-spike (Phase 26 territory); for the current spike,
@@ -39,6 +48,7 @@ require the ``sha256:`` prefix).
 from __future__ import annotations
 
 import hashlib
+import json
 from collections import OrderedDict
 from threading import RLock
 from typing import Any
@@ -60,6 +70,10 @@ class BindNotFoundError(KeyError):
     """
 
 
+class BindTooLargeError(ValueError):
+    """A single canonical value cannot fit the registry byte budget."""
+
+
 class BindRegistry:
     """Process-local content-addressed value registry.
 
@@ -72,9 +86,9 @@ class BindRegistry:
         max_entries: int = DEFAULT_MAX_ENTRIES,
         max_total_bytes: int = DEFAULT_MAX_TOTAL_BYTES,
     ) -> None:
-        # OrderedDict keyed by bind_id → (value, nbytes); insertion/most-recent
+        # OrderedDict keyed by bind_id -> (kind, immutable bytes); insertion/most-recent
         # order at the end. move_to_end on access makes eviction LRU.
-        self._store: "OrderedDict[str, tuple[Any, int]]" = OrderedDict()
+        self._store: "OrderedDict[str, tuple[str, bytes]]" = OrderedDict()
         self._total_bytes = 0
         self._max_entries = max(1, int(max_entries))
         self._max_total_bytes = max(1, int(max_total_bytes))
@@ -83,52 +97,63 @@ class BindRegistry:
     def _evict_to_fit(self, incoming_bytes: int) -> None:
         """Evict least-recently-used entries until the store can admit one more
         entry of ``incoming_bytes`` without breaching either cap. Caller holds
-        the lock. Never evicts below one entry for the incoming value itself."""
+        the lock. Oversized values are rejected before this method is called."""
         while self._store and (
             len(self._store) >= self._max_entries
             or self._total_bytes + incoming_bytes > self._max_total_bytes
         ):
-            _evicted_id, (_evicted_val, nbytes) = self._store.popitem(last=False)
-            self._total_bytes -= nbytes
+            _evicted_id, (_kind, canonical) = self._store.popitem(last=False)
+            self._total_bytes -= len(canonical)
 
     def bind(self, value: Any) -> str:
-        """Content-address ``value``. Returns ``sha256:<hex>`` bind_id.
+        """Content-address a snapshot of ``value`` and return its typed bind_id.
 
         Idempotent: calling ``bind`` with equivalent values returns the
         same bind_id and refreshes its recency. The registry stores the
-        value the first time it is bound; subsequent ``bind`` calls with
+        canonical bytes the first time it is bound; subsequent ``bind`` calls with
         the same canonical bytes do not overwrite. Bounded: admitting a new
         entry may evict least-recently-used ones to stay within the entry /
-        byte caps.
+        byte caps. An oversized value raises ``BindTooLargeError`` before
+        any eviction.
         """
         canonical = self._canonical_bytes(value)
         nbytes = len(canonical)
+        if nbytes > self._max_total_bytes:
+            raise BindTooLargeError(
+                f"canonical value is {nbytes} bytes; registry limit is "
+                f"{self._max_total_bytes} bytes"
+            )
+        kind = "text" if isinstance(value, str) else "bytes" if isinstance(value, bytes) else "json"
         digest = hashlib.sha256(canonical).hexdigest()
-        bind_id = f"sha256:{digest}"
+        bind_id = f"sha256:{digest}" if kind == "text" else f"sha256:v2:{kind}:{digest}"
         with self._lock:
             if bind_id in self._store:
                 self._store.move_to_end(bind_id)  # LRU touch
                 return bind_id
             self._evict_to_fit(nbytes)
-            self._store[bind_id] = (value, nbytes)
+            self._store[bind_id] = (kind, canonical)
             self._total_bytes += nbytes
         return bind_id
 
     def resolve(self, bind_id: str) -> Any:
-        """Return the value for ``bind_id``. Raises ``BindNotFoundError``
+        """Return an independent, JSON-normalized value for ``bind_id``. Raises ``BindNotFoundError``
         for unknown bind_ids (use ``contains`` to check first if you
         want the boolean form).
         """
         if not isinstance(bind_id, str) or not bind_id.startswith("sha256:"):
             raise BindNotFoundError(
-                f"bind_id must be a 'sha256:<hex>' string; got "
+                f"bind_id must be a sha256-prefixed string; got "
                 f"{type(bind_id).__name__}: {bind_id!r}"
             )
         with self._lock:
             try:
-                value, _nbytes = self._store[bind_id]
+                kind, canonical = self._store[bind_id]
                 self._store.move_to_end(bind_id)  # LRU touch
-                return value
+                if kind == "json":
+                    return json.loads(canonical)
+                if kind == "text":
+                    return canonical.decode("utf-8")
+                return canonical
             except KeyError:
                 raise BindNotFoundError(
                     f"unknown bind_id {bind_id!r}; the value was not bound "
@@ -158,19 +183,12 @@ class BindRegistry:
         → JCS-canonicalised UTF-8. Anything else raises TypeError.
         """
         if isinstance(value, bytes):
-            return value
+            return bytes(value)
         if isinstance(value, str):
             return value.encode("utf-8")
-        # JSON-serialisable: use JCS for cross-platform identity.
-        try:
-            from sum_engine_internal.infrastructure.jcs import canonicalize
-        except ImportError:  # pragma: no cover - defensive
-            # Fall back to sorted-keys json if JCS isn't importable for
-            # any reason. This loses cross-runtime identity but works
-            # in-process for the spike.
-            import json
-            return json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
-        # canonicalize returns bytes (RFC 8785 JCS-canonical UTF-8).
+        # Fail closed if canonicalization is unavailable; a fallback would
+        # change content identities for the same input.
+        from sum_engine_internal.infrastructure.jcs import canonicalize
         return canonicalize(value)
 
 

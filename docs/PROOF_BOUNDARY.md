@@ -1,7 +1,11 @@
 # Proof Boundary
 
-**Version:** 1.8.0
-**Date:** 2026-07-02
+**Version:** 1.9.0
+**Date:** 2026-09-09
+
+**v1.9.0:** the composition-invariance interpretation of T4 is withdrawn. The corrected v2 analysis reports paired document changes; stable medians do not establish equivalence or absence of accumulated drift. New meaning receipts default to descriptive batch scope and can bind an instrument/evaluation manifest; confidence interpretations require independent calibration draws from the target population under a fixed policy. Browser literal review, source hashes, human decisions and signed render bindings are separate evidence classes. The older version notes below describe historical interpretations and are superseded where they conflict with these corrections.
+
+The source-review packet is an unsigned container. Its source and human decisions are not authenticated. A valid render receipt can bind the exact output, selected triples and slider settings; it cannot establish what the original prose meant. The caller establishes issuer-key trust and revocation/freshness policy separately.
 
 **v1.8.0 (2026-07-02):** the measured proxy↔human correlation is now scoped and
 replicated — ρ = 0.267–0.291 is explicitly **pooled summary-level, meaning-composite
@@ -435,110 +439,43 @@ The combined intervention lands ≥ 0.97 recall and ≤ 5 % drift on every measu
 
 **Status:** §2.5 closed across all measured corpora. The §6 row in the progress table reflects this. The intervention pattern (canonical-first generator + constrained-decoding extractor + lemma-exclusion of source-predicate lemmas from the canonical-padding set) is the load-bearing engineering finding; the receipt artifacts are the durable proof.
 
-**~~Open characterization (does not invalidate, but qualifies): the §2.5 measurement is single-step. Whether closure holds under K-step iteration (`extract → generate → extract → … → extract`) is not yet measured. Single-step closure could be a genuine fixed point or a local neighbourhood that drifts under composition. The bench-hardening worktrail at [`docs/BENCH_HARDENING_FROM_QCVV.md`](BENCH_HARDENING_FROM_QCVV.md) — task T1 — is the runner that produces the receipt that settles this; until that lands, the §2.5 result MUST NOT be cited as a load-bearing multi-stage claim. The same constraint applies to T3 (DKW worst-case bound across the slider envelope) and T4 (composition law for `drift_pct`).~~** — **RETIRED 2026-05-21.** §2.5.1 below carries the receipts (all three measured corpora STABLE under K=10). T3 (DKW worst-case bound) and T4 (composition law for `drift_pct`) remain open as separate worktrails — closing T1 does NOT close those.
+### 2.5.1. Iterated round trips: historical measurements and corrected interpretation
 
-### 2.5.1. Iteration stability — T1 receipts landed 2026-05-21 (all three measured corpora)
+The T1 runner measured ten iterations of extraction/generation on three committed corpora. Its baseline is the initial extracted axiom set, not an independently annotated set of source facts. Original receipts and their historical verdict strings remain unchanged. The 2026-09-09 audit recomputed per-document endpoint changes and found that a stable median hid worsening examples.
 
-The bench-hardening T1 runner (`scripts/bench/runners/s25_iterated_round_trip.py`) executes K=10 iterations of `extract → generate → re-extract → measure drift` per document, via NIM Llama 3.3 70B. **All three corpus runs are complete and all three return composition verdict `STABLE`.** The "open characterization" caveat above is retired by these receipts: §2.5 closure is empirically composition-stable under K=10 iteration on every measured corpus shape.
+| Corpus | Documents | Median drift K1 / K10 | Mean drift K1 / K10 | Maximum drift K1 / K10 | Worse / better / unchanged |
+|---|---:|---|---|---|---|
+| seed_v1 | 50 | 0% / 0% | 4% / 4% | 100% / 100% | 0 / 0 / 50 |
+| seed_v2 | 20 | 0% / 0% | 15% / 15% | 100% / 100% | 1 / 1 / 18 |
+| seed_long_paragraphs | 16 | 12.5% / 12.5% | 16.7584% / 21.0987% | 42.8571% / 50% | 5 / 0 / 11 |
 
-#### 2.5.1.a. seed_long_paragraphs — STABLE
+These are descriptive results from the stored per-document drift values, rounded for display. The corrected artifact retains complete pairs and original input hashes: [`drift_composition_2026-09-09.json`](../fixtures/bench_receipts/drift_composition_2026-09-09.json).
 
-16 documents, 11–28 axioms each (dense multi-paragraph prose; the hardest measured corpus shape).
+#### 2.5.1.a. seed_long_paragraphs: five worsening endpoints
 
-**Receipt:** [`fixtures/bench_receipts/s25_iterated_K10_seed_long_paragraphs_2026-05-21.json`](../fixtures/bench_receipts/s25_iterated_K10_seed_long_paragraphs_2026-05-21.json) (schema `sum.iterated_round_trip_drift.v1`, PR #248).
+Five of sixteen documents have greater measured drift at K10 than K1 despite an unchanged median. This contradicts the earlier blanket inference that drift does not accumulate. It does not prove a population-wide effect either; the corpus and measurement proxy limit the observation.
 
-**Composition verdict:** `STABLE` — `max-vs-K=1 drift delta = 0.00pp ≤ ε=1.0pp`.
+#### 2.5.1.b. seed_v2: offsetting changes
 
-**By-K aggregate:**
+One document worsened and one improved, leaving the mean and median unchanged. Counts and means must be calculated from the per-document rows, not copied from historical aggregate fields that disagree with them.
 
-| K | median drift% | p10 drift% | max drift% |
-|---:|---:|---:|---:|
-| 1 | 12.5 | 0.0 | 42.86 |
-| 2–5 | 12.5 | 0.0 | 42.86 |
-| 6–10 | 12.5 | 0.0 | 50.0 |
+#### 2.5.1.c. seed_v1: unchanged endpoint drift
 
-Median + p10 + central tendency perfectly flat across all 10 iterations. The slight uptick in max at K≥6 traces to a single outlier document.
+All fifty documents have unchanged endpoint drift, including existing losses. Equality of drift percentages does not imply equality of axiom identities or generated text. It does not establish zero source-meaning loss.
 
-**What this does NOT say:** the 12.5% median drift at K=1 is non-zero — meaning sieve re-extraction of LLM-generated prose recovers ~87.5% of source axioms per doc (matches F2 from `docs/DOGFOOD_FINDINGS_2026-05-17.md`: sieve conservatism on multi-paragraph corpora). The §2.5 closure claim "drift = 0%" referred specifically to seed_v1 single-fact docs; long_paragraphs has always shown higher single-step drift on the sieve path. **The load-bearing T1 finding for this corpus is that the 12.5% baseline is composition-stable, not that all corpora hit 0% drift.**
+#### 2.5.1.d. Composition audit: descriptive fits, not an invariance theorem
 
-#### 2.5.1.b. seed_v2 — STABLE
+T4 v2 fits additive, multiplicative-survival, saturating and constant candidate curves to observed medians and reports their residuals. A constant curve fits these medians; it is not a law of individual document evolution. Overlapping DKW confidence bands do not prove equivalence, and subtracting a CDF-probability radius from a drift value does not create a value-scale confidence bound.
 
-20 documents, 2–5 axioms each (multi-fact difficulty-pattern corpus).
+The document-frequency coefficient reuses the same observations and does not retain axiom identities. Its comparison with a candidate power curve is descriptive, not independent evidence or a hypothesis test. The former `composition_invariant_within_dkw_95` interpretation is retired; the historical artifact stays byte-identical with an explicit [erratum](DRIFT_METRIC_COMPOSITION.md#historical-erratum-2026-09-09).
 
-**Receipt:** [`fixtures/bench_receipts/s25_iterated_K10_seed_v2_2026-05-21.json`](../fixtures/bench_receipts/s25_iterated_K10_seed_v2_2026-05-21.json) (schema `sum.iterated_round_trip_drift.v1`).
-
-**Composition verdict:** `STABLE` — `max-vs-K=1 drift delta = 0.00pp ≤ ε=1.0pp`.
-
-**By-K aggregate:**
-
-| K | median drift% | p10 drift% | mean drift% | max drift% |
-|---:|---:|---:|---:|---:|
-| 1 | 0.00 | 0.00 | 0.00 | 100.0 |
-| 2–10 | 0.00 | 0.00 | 0.00 | 100.0 |
-
-Median, p10, and mean drift% are all **identically zero** across all 10 iterations. The 100% max is a single doc-level outlier whose drift number is also flat under iteration. This is the strongest possible iteration-stability signal: not just stable around a non-zero baseline, but a literal fixed point on 19 of 20 documents.
-
-#### 2.5.1.c. seed_v1 — STABLE
-
-50 documents, 1 axiom each (single-fact short-form corpus — the canonical §2.5 corpus the lemma-exclusion intervention was first tuned against).
-
-**Receipt:** [`fixtures/bench_receipts/s25_iterated_K10_seed_v1_2026-05-21.json`](../fixtures/bench_receipts/s25_iterated_K10_seed_v1_2026-05-21.json) (schema `sum.iterated_round_trip_drift.v1`).
-
-**Composition verdict:** `STABLE` — `max-vs-K=1 drift delta = 0.00pp ≤ ε=1.0pp`.
-
-**By-K aggregate:**
-
-| K | median drift% | p10 drift% | mean drift% | max drift% |
-|---:|---:|---:|---:|---:|
-| 1 | 0.00 | 0.00 | 0.00 | 100.0 |
-| 2–10 | 0.00 | 0.00 | 0.00 | 100.0 |
-
-Identical shape to seed_v2: median, p10, and mean are identically zero across all 10 iterations. The 100% max traces to a single outlier doc whose drift is also flat under K-step composition. 49 of 50 single-fact docs are literal fixed points.
-
-#### Status update — §2.5 closure fully grounded under iteration
-
-All three measured corpora are STABLE under K=10 iteration:
-
-| Corpus | n_docs | axioms/doc | median K=10 | mean K=10 | verdict |
-|---|---:|---|---:|---:|---|
-| seed_v1 | 50 | 1 | 0.00 | 0.00 | STABLE |
-| seed_v2 | 20 | 2–5 | 0.00 | 0.00 | STABLE |
-| seed_long_paragraphs | 16 | 11–28 | 12.50 | — | STABLE |
-
-The §2.5 closure claim — `extract ∘ generate ∘ extract = extract` — is now empirically composition-stable on every measured corpus shape from single-fact short-form through multi-paragraph dense prose. The "open characterization" caveat at the top of §2.5 is retired. T1 from `docs/BENCH_HARDENING_FROM_QCVV.md` is closed.
-
-#### 2.5.1.d. Composition-law audit — T4 closed 2026-05-22
-
-T4 ([`docs/DRIFT_METRIC_COMPOSITION.md`](DRIFT_METRIC_COMPOSITION.md)) post-processed the three T1 receipts above and fit the four candidate composition laws (additive, multiplicative-survival, saturating, fixed-point) by minimum sum-of-squared-residuals against the per-K median.
-
-**Result on every measured corpus: best-fitting law is `fixed-point` (`drift_K = drift_1`).** Median drift is K-invariant; the supremum across K of `|median_drift_K − drift_1|` is exactly 0.00 on all three corpora.
-
-The Dvoretzky-Kiefer-Wolfowitz 95% bound at the smallest corpus (n=16) is `ε = 0.3395`. The observed supremum delta is 0.0000 — within DKW worst-case noise by a margin of at least 17×. Verdict on every corpus: `composition_invariant_within_dkw_95`.
-
-Independent evidence from a different metric: T4 also computed a doc-frequency Hellinger fidelity approximation `F(p, q_K)` and tested it against the multiplicative-survival prediction `F(p, q_1)^K`. On seed_v2 the observed F10 = 0.941 vs predicted 0.545 — residual 0.40 — **multiplicative-survival is decisively rejected**. The composition law is closer to fixed-point than to independent-stagewise-noise on this corpus.
-
-**Load-bearing implication.** §2.5 closure can be cited as a *multi-stage* claim, not just single-step: re-extracting from generated prose, then re-generating, then re-extracting does not accumulate drift up to K=10 iterations within DKW worst-case 95% bound. T4 from `docs/BENCH_HARDENING_FROM_QCVV.md` is closed.
-
-Receipt: [`fixtures/bench_receipts/drift_composition_2026-05-22.json`](../fixtures/bench_receipts/drift_composition_2026-05-22.json) (schema `sum.drift_metric_composition.v1`). Runner: [`scripts/bench/runners/t4_drift_composition.py`](../scripts/bench/runners/t4_drift_composition.py). Reproducer (no LLM cost, pure post-processing):
+Reproduce the corrected post-processing without model calls:
 
 ```bash
 python -m scripts.bench.runners.t4_drift_composition --pretty
 ```
 
-**Categorical reading.** The fixed-point composition law also has a vocabulary in the Coecke / Sadrzadeh / Clark (DisCoCat, 2010) tradition: the `extract` morphism is an idempotent endomorphism on the bundle-object in the FRel × P Boolean-restricted variant the 2010 paper itself names. The recasting does not strengthen the empirical claim — only gives standards-track readers a vocabulary to locate this result inside the compact-closed-category literature. See [`docs/CATEGORICAL_FOUNDATIONS.md`](CATEGORICAL_FOUNDATIONS.md) for the precise framing, the explicit non-claims (no Frobenius-algebra structure), and the open conjectures.
-
-**Reproducible** (any corpus):
-```bash
-export NVIDIA_API_KEY=<your nvapi key>
-export SUM_TRANSFORM_MODEL=nim:meta/llama-3.3-70b-instruct
-make iterated-round-trip CORPUS=scripts/bench/corpora/<corpus>.json K=10
-```
-
-Cost: ~0.5–1 NIM credit per LLM call. For K=10, that's ~10 calls per doc plus the initial extract — so ~$N per N-doc corpus, well inside any NIM free-tier signup allowance per account. Wall clock under NIM's 40-req/min cap: ~5 min/doc + retry overhead. PRs #248 + this PR captured the first two receipts; the seed_v1 receipt will append in a follow-on.
-
-**Status update:** the §2.5 row in §6's progress table moves from `Measured (drift = 107.75%, recall = 0.12)` to `Closed on seed_v1 (combined intervention with lemma-exclusion fix: drift = 0.00%, recall = 1.0000, 50/50 docs at full recall)`. The unprompted pipeline's 107.75/0.12 numbers stand as the *baseline measurement under no intervention*; the post-fix numbers are the load-bearing result.
-
-The receipt schema is `sum.s25_generator_side.v1` (with sibling per-ablation schemas `sum.s25_canonical_first_generator.v1`, `sum.s25_constrained_extractor.v1`, `sum.s25_combined.v1`). Receipts compare cleanly to the prior `sum.s25_canonicalization_replay.v1` receipt — same `seed_v1` corpus, same pinned model, same `n_docs = 50`. Reproducible: `python -m scripts.bench.runners.s25_generator_side --ablation all --out <path>` (requires `OPENAI_API_KEY`).
+A future equivalence claim needs a prespecified practical tolerance, paired design and appropriate uncertainty/multiplicity treatment. The existing corpus does not establish it. The earlier single-step intervention measurements in section 2.5 remain separately scoped to their own generator, extractor and corpus; T1/T4 cannot strengthen them into a general multi-stage claim.
 
 ### 2.5.2. `/api/qid` Resolution Accuracy Floor
 
@@ -558,7 +495,7 @@ Reproducible: `python -m scripts.bench.runners.qid_accuracy --out <path>` (no AP
 
 ### 2.6. Slider Axis Fact-Preservation (Phase E.1 v0.4 → v0.7)
 
-The slider's load-bearing claim — *axis changes do not lose facts* — has been **empirically verified** across two independently-authored corpora, a four-layer fact-preservation substrate, and a deterministic prompt-hardening mechanism that closed the catastrophic-failure mode v0.6 surfaced. [`docs/SLIDER_CONTRACT.md`](SLIDER_CONTRACT.md) is the canonical contract document; this section pins the load-bearing numbers as `empirical-benchmark` and links the failure-mode arc.
+Historical slider experiments measured named preservation proxies on two authored corpora and evaluated a prompt-hardening change. They did not establish that axis changes never lose facts. Their selective NLI audit leaves high-scoring embedding misses unmeasured. [`docs/SLIDER_CONTRACT.md`](SLIDER_CONTRACT.md) is the canonical contract document; this section pins the load-bearing numbers as `empirical-benchmark` and links the failure-mode arc.
 
 **Bench harness measurements:**
 
@@ -568,7 +505,7 @@ The slider's load-bearing claim — *axis changes do not lose facts* — has bee
 | v0.6 (no hardening) | `seed_long_paragraphs.json` (n=16 long, 9–24 triples/doc) | 320 | 1.000 | 0.769 | 0.111 | 95.7 % (800/836) | 36 | **2** |
 | v0.7 (`FACT_PRESERVATION_REINFORCEMENT`) | same long bench | 319 | 1.000 | 0.750 | **0.700** | 99.8 % (653/654) | **1** | **0** |
 
-**Reading the v0.7 row:** the v0.7 p10 (0.750) sits slightly below v0.6's (0.769) despite catastrophic outliers being eliminated and the floor lifting (0.111 → 0.700). This is distribution-shape, not regression: the reinforcement clause makes the LLM's surface forms more defensive, so the strict embedding-similarity layer triggers NLI audit on more cells. Audit then rescues every flagged fact (99.8 % rate); cells move from "1.000 by semantic alone" to "1.000 with NLI confirmation," which sits in the 0.7–0.99 band on the strict score. Net: 1 confirmed loss across 654 audit calls, catastrophic outliers gone, p10 nominally lower because the perfect-cells share narrowed (60 % → 52 %). [`docs/SLIDER_CONTRACT.md`](SLIDER_CONTRACT.md) §"Headline result" describes the same trade in product terms.
+**Reading the v0.7 row:** its reported p10 is lower than v0.6 while its minimum is higher. The NLI audit rescues 653 of 654 flagged cases, leaving one reported loss. These aggregate observations do not establish why the distribution changed or exclude errors among cases the embedding threshold did not flag. A prospective paired evaluation, including high-scoring cases, is needed before drawing broader quality conclusions.
 
 **Layered fact-preservation metrics** (all reported per cell in the JSONL artifact):
 
@@ -581,8 +518,7 @@ The slider's load-bearing claim — *axis changes do not lose facts* — has bee
 
 **Reproducibility status (bench-hardening T2/T3 open).** The numbers in
 the table above carry the `empirical-benchmark` status — measured per-corpus,
-**not same-commit-replayable**: `Tests/benchmarks/slider_drift_bench.py` is
-scaffold-state and no `sum.slider_drift_bench.v1` receipt is committed under
+**not same-commit-replayable**: `Tests/benchmarks/slider_drift_bench.py` implements a live runner, but no `sum.slider_drift_bench.v1` receipt is committed under
 `fixtures/bench_receipts/`. Per `docs/BENCH_HARDENING_FROM_QCVV.md` §6,
 "Median 1.000" is a marketing figure until a DKW worst-case bound (T3) over a
 capability region (T2) lands; until then these are observations, not a
@@ -785,19 +721,14 @@ opposite direction is also real and was undisclosed until 2026-09-02: the unit
 is a punctuation-or-newline-delimited segment, so hard-wrapped text and
 abbreviations OVER-split (on the BillSum golden 48% of 12,149 units start
 lowercase). Over-splitting changes the unit the recall/fidelity averages run
-over; it does not change the receipt's replayability, because the receipt pins
-the scorer that produced the units.
+over; it does not change the receipt's replayability, because new receipts can commit the scorer configuration through an instrument manifest. Historical name/version labels alone did not distinguish every threshold and model configuration.
 Reproduce: [`Tests/benchmarks/frank_proxy_calibration.py`](../Tests/benchmarks/frank_proxy_calibration.py)
 + [`Tests/benchmarks/summeval_aggregation_recompute.py`](../Tests/benchmarks/summeval_aggregation_recompute.py)
 → [`Tests/benchmarks/frank_results.json`](../Tests/benchmarks/frank_results.json). The bound is honest
 about exactly three limits, each enforced in the receipt: (i) it bounds a
 **proxy**, not meaning itself (the required `not_covered` field declares
 arrangement / sound / connotation / implicature as structurally out of
-reach); (ii) it is **marginal** over a named corpus under
-**exchangeability** — not per-document and not conditionally valid off the
-calibration envelope; (iii) Stage-B replay of a **model-judge** receipt is
-machine-pinned (cross-hardware float drift), so its cross-runtime claim is
-Stage-A (signature/schema/disclosure) only. A meaning-risk receipt is a
+reach); (ii) it is **population-level** only under independent calibration sampling from the target distribution with a fixed policy and no unaccounted adaptive selection. Exchangeability alone is insufficient; an arbitrary supplied batch has descriptive scope, not a future-population guarantee; (iii) re-deriving a model judge's per-example losses can depend on its hardware/software stack. Signature verification and arithmetic replay from supplied losses do not run that model and remain separate reproducible checks. A meaning-risk receipt is a
 batch primitive; a single item uses the per-document **measurement**, not
 the certificate.
 
@@ -809,9 +740,7 @@ of a transformer forward pass requires **identical hardware and software**
 boundary SUM names here. A 2026-06-08 source-level review of Bellard's
 neural-compression stack (NNCP / ts_zip / LibNC) found the determinism
 techniques are real but live in a closed binary (LibNC), so they are
-prior-art to *cite*, not code to adopt; de-pinning a model-judge to a
-cross-runtime-replayable receipt remains open research, not a shipped
-claim.
+prior-art to *cite*, not code to adopt; general cross-machine agreement when re-running a model judge remains an empirical question, distinct from portable signature and loss-vector arithmetic verification.
 
 *Cross-architecture agreement — measured, not asserted (2026-07-11).* The
 machine-pinning boundary (iii) is now empirically characterized rather than
@@ -824,8 +753,7 @@ AND exact integer micro-margins** across arm64/Darwin (dev) and x86_64/Linux
 drift **0** — renewed monthly by the `judge-smoke` canary. At wire resolution
 (1e-6) the float32 judge is cross-machine reproducible *on these two platforms
 and this torch build*. This does NOT license a general cross-runtime claim (a
-different stack could drift a near-threshold decision), which is exactly why a
-model-judge receipt still scopes its cross-runtime guarantee to Stage A. Naive
+different stack could drift a near-threshold decision), so a successful arithmetic replay must not be described as a successful cross-machine remeasurement of the source texts. Naive
 dynamic INT8 quantization is a MEASURED NEGATIVE on the same probe (flips 11/22;
 every entailment lost); a real de-pin needs static/QAT or calibrated ONNX INT8,
 with this probe as its acceptance test.

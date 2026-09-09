@@ -50,16 +50,17 @@ import math
 import os
 import re
 import time
+from functools import partial
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
+from sum_engine_internal.algorithms.syntactic_sieve import SieveUnavailableError
 from sum_engine_internal.mcp_server.errors import (
     ErrorClass,
     error_result,
     success_result,
 )
-
 
 _SUPPORTED_CANONICAL_FORMAT = "1.0.0"
 _SUPPORTED_PRIME_SCHEME = "sha256_64_v1"
@@ -171,7 +172,7 @@ def build_server() -> FastMCP:
             async with _EXTRACTOR_LOCK:
                 from sum_cli.main import _extract
                 triples = await asyncio.get_running_loop().run_in_executor(
-                    None, _extract, text.strip(), chosen, None
+                    None, partial(_extract, text.strip(), chosen, None, allow_download=False)
                 )
 
             return success_result(
@@ -181,6 +182,8 @@ def build_server() -> FastMCP:
                 extractor=chosen,
                 count=len(triples),
             )
+        except SieveUnavailableError as exc:
+            return error_result("extract", t0, ErrorClass.EXTRACTOR_UNAVAILABLE, str(exc))
         except Exception as exc:
             return error_result(
                 "extract",
@@ -236,7 +239,7 @@ def build_server() -> FastMCP:
             async with _EXTRACTOR_LOCK:
                 from sum_cli.main import _extract
                 triples = await asyncio.get_running_loop().run_in_executor(
-                    None, _extract, text.strip(), chosen, None
+                    None, partial(_extract, text.strip(), chosen, None, allow_download=False)
                 )
 
             if not triples:
@@ -250,6 +253,7 @@ def build_server() -> FastMCP:
                 )
 
             from datetime import datetime, timezone
+
             from sum_cli import __version__ as cli_version
             from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
             from sum_engine_internal.ensemble.tome_generator import AutoregressiveTomeGenerator
@@ -278,6 +282,8 @@ def build_server() -> FastMCP:
                 source_uri=source_uri,
                 extractor=chosen,
             )
+        except SieveUnavailableError as exc:
+            return error_result("attest", t0, ErrorClass.EXTRACTOR_UNAVAILABLE, str(exc))
         except Exception as exc:
             return error_result(
                 "attest", t0, ErrorClass.INTERNAL, type(exc).__name__

@@ -1,0 +1,10 @@
+{
+  "name": "sum-browser-workbench-tests",
+  "private": true,
+  "scripts": {
+    "test": "node --test test_review_packet.mjs test_workbench_flow.mjs"
+  },
+  "devDependencies": {
+    "jsdom": "26.1.0"
+  }
+}

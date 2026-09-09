@@ -10,7 +10,7 @@ The server is **fail-closed by default**. Eight hardening properties hold under 
 
 1. **Input size caps.** `text` is capped at 200 000 chars. Bundles are capped at 10 MB tome, 100 000 axioms, 1 000 000 state-integer digits. On the meaning layer: `losses` at 100 000 entries, `hops` / `hop_envelopes` at 64, `versions` at 16, `pairs` at 1 000 entries **and** 10 000 000 chars of prose in total, any JWKS at 65 keys (one per hop plus the chain key). Oversized inputs return `error_class: "input_too_large"` and are **refused, never truncated** — see the note under the meaning-layer table.
 2. **Tagged error classes.** Every failure carries `error_class` from a fixed enum: `schema | signature | structural | input_too_large | extractor_unavailable | network_disallowed | revoked | internal`. Branch on the tag, never on the `errors[i]` substring.
-3. **Network opt-in.** The LLM extractor is disabled unless `SUM_MCP_ALLOW_NETWORK=1` was set when the server started. Even then, `extractor="llm"` must be explicit per call. Prevents a prompt-injected client from spending the user's API tokens.
+3. **Network opt-in.** Sieve extraction never downloads dependencies or models, even when LLM networking is enabled. A missing spaCy installation or model returns `extractor_unavailable` with a manual setup command. The LLM extractor is disabled unless `SUM_MCP_ALLOW_NETWORK=1` was set when the server started. Even then, `extractor="llm"` must be explicit per call. Prevents a prompt-injected client from spending the user's API tokens.
 4. **Concurrency-safe.** spaCy's nlp pipeline is serialised behind an asyncio lock; concurrent `extract`/`attest` calls do not race.
 5. **Catch-all per tool.** Every tool body wraps a `try/except Exception` returning `error_class: "internal"` with the exception type name only — no traceback, no internal paths leaked. Server stays up.
 6. **Forward-compat.** Bundles with unknown top-level fields under `canonical_format_version=1.x` are accepted (additive); future major versions fail closed.
@@ -23,6 +23,7 @@ The fuzz suite is `Tests/test_mcp_server_fuzz.py`. Run with `pytest Tests/test_m
 
 ```bash
 pip install 'sum-engine[mcp,sieve]'    # MCP server + offline sieve extractor
+python -m spacy download en_core_web_sm  # explicit, one-time setup before server start
 # or
 pip install 'sum-engine[mcp,openai]'   # MCP server + OpenAI structured-output extractor
 # or
@@ -53,6 +54,14 @@ see "Agents and the meaning layer" below); and the **six bind-aware tools**
 `inspect_bind` / `render_bind` — content-addressed handles so agents do not
 round-trip full payloads; specified in
 [`AGENT_SURFACE_FINDINGS.md`](AGENT_SURFACE_FINDINGS.md)).
+
+Bind handles are opaque strings. Text keeps legacy `sha256:<hex>` identities;
+JSON and bytes use `sha256:v2:<kind>:<hex>` to prevent cross-type aliasing.
+The registry retains immutable canonical snapshots and returns fresh JSON values
+(tuples normalize to arrays). Handles expire with the process or LRU eviction.
+Non-text values must be rebound after an upgrade; ambiguous legacy aliases are
+not created. A value larger than the registry byte budget is refused before
+existing entries are evicted.
 
 The six core verbs:
 

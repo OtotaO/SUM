@@ -33,8 +33,8 @@ from sum_engine_internal.infrastructure.jose_envelope import (
     JoseEnvelopeResult,
     verify_jose_envelope,
 )
+from sum_engine_internal.render_receipt.verifier import _check_revoked_kid
 from sum_engine_internal.transform_receipt.format import SUPPORTED_SCHEMA
-
 
 KNOWN_CRIT_EXTENSIONS = DEFAULT_KNOWN_CRIT_EXTENSIONS
 
@@ -54,6 +54,7 @@ class ErrorClass:
     CRIT_UNKNOWN_EXTENSION = JoseEnvelopeErrorClass.CRIT_UNKNOWN_EXTENSION
     HEADER_INVARIANT_VIOLATED = JoseEnvelopeErrorClass.HEADER_INVARIANT_VIOLATED
     SIGNATURE_INVALID = JoseEnvelopeErrorClass.SIGNATURE_INVALID
+    REVOKED_KID = JoseEnvelopeErrorClass.REVOKED_KID
     UNSUPPORTED_ALG = JoseEnvelopeErrorClass.UNSUPPORTED_ALG
     SIGNED_AT_OUT_OF_WINDOW = JoseEnvelopeErrorClass.SIGNED_AT_OUT_OF_WINDOW
 
@@ -117,6 +118,7 @@ def verify_transform_receipt(
     receipt: dict,
     jwks: dict,
     *,
+    revoked_kids: list[dict] | None = None,
     max_age_seconds: int | None = None,
     max_future_skew_seconds: int = 60,
 ) -> VerifyResult:
@@ -140,6 +142,13 @@ def verify_transform_receipt(
         per ``Cache-Control: max-age`` as documented in §1.4 of the
         render-receipt format (same cache cadence applies here).
 
+    revoked_kids
+        Optional legacy render-compatible effective-time revocation entries.
+        None skips revocation; [] checks an empty supplied list. For relying
+        workflows use sum_verify.TrustPolicy: it rejects revoked keys even
+        when signed_at claims a pre-compromise time, and can require a fresh
+        caller-trusted offline snapshot.
+
     Application-layer integrity checks
     ----------------------------------
     A verified receipt does NOT automatically check that ``parameters_
@@ -154,6 +163,8 @@ def verify_transform_receipt(
                == receipt["payload"]["output_hash"]
     """
     try:
+        if revoked_kids is not None and isinstance(receipt, dict) and isinstance(receipt.get("payload"), dict):
+            _check_revoked_kid(receipt, revoked_kids)
         result = verify_jose_envelope(
             receipt,
             jwks=jwks,

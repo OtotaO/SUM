@@ -81,9 +81,13 @@ DEFAULT_CHAIN_DISCLOSURE = (
     "This certificate binds an ordered chain of per-hop meaning-risk "
     "certificates and their composed additive budget. Every per-hop "
     "caveat applies unchanged: each bound is over a NAMED PROXY for "
-    "meaning-loss, marginal over its calibration corpus, valid under "
-    "exchangeability. Composition adds no new knowledge about any "
-    "single document's fate across the chain."
+    "meaning-loss. Interpreting it as an expected deployment-loss confidence "
+    "bound requires independent identically distributed calibration draws "
+    "from the target distribution and a fixed policy without unaccounted "
+    "adaptive selection or calibration reuse. Exchangeability alone is "
+    "insufficient. These assumptions are not verified by replay. Hops without "
+    "a sampling contract remain descriptive batch measurements. Composition "
+    "adds no new knowledge about any single document's fate across the chain."
 )
 
 # Mandatory, verifier-enforced. THE honesty line for composition: without

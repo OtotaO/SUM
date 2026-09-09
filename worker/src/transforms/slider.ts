@@ -1,3 +1,4 @@
+import { compareTriples } from "../unicode_order";
 // slider — first registered transform on the Worker side.
 //
 // Mirrors sum_engine_internal/transforms/slider.py byte-for-byte
@@ -126,13 +127,7 @@ function deterministicTome(triples: Array<[string, string, string]>): string {
 function sortComponentwise(
   triples: Array<[string, string, string]>,
 ): Array<[string, string, string]> {
-  return [...triples].sort((a, b) => {
-    for (let i = 0; i < 3; i++) {
-      if (a[i] < b[i]) return -1;
-      if (a[i] > b[i]) return 1;
-    }
-    return 0;
-  });
+  return [...triples].sort(compareTriples);
 }
 
 export const SLIDER_TRANSFORM: Transform = {

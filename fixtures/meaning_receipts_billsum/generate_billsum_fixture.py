@@ -37,6 +37,8 @@ Run:  python fixtures/meaning_receipts_billsum/generate_billsum_fixture.py
 """
 from __future__ import annotations
 
+from scripts.fixture_history import historical_fixture_payload
+
 import base64
 import json
 from pathlib import Path
@@ -161,6 +163,7 @@ def build() -> tuple[dict, dict, list[float]]:
         loss_definition=LOSS_DEFINITION, disclosure=DISCLOSURE,
         signed_at=SIGNED_AT,
     )
+    payload = historical_fixture_payload(payload)
     private, public = _keypair()
     receipt = sign_meaning_risk_receipt(payload, private_jwk=private, kid=KID)
     return receipt, {"keys": [public]}, losses

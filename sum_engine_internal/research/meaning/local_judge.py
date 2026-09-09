@@ -71,6 +71,14 @@ def _resolve_revision(
     return default_rev if model_id == default_id else None
 
 
+def _revision_status(revision: str | None) -> str:
+    if revision is None:
+        return "mutable_unresolved"
+    if len(revision) == 40 and all(c in "0123456789abcdef" for c in revision):
+        return "commit_identifier_supplied"
+    return "symbolic_ref_unresolved"
+
+
 @dataclass
 class EmbeddingJudge:
     """A local, deterministic ``entails`` judge backed by a mean-pooled
@@ -159,20 +167,31 @@ class EmbeddingJudge:
     def name(self) -> str:
         return f"minilm-cosine-{self.threshold:g}"
 
+    def manifest(self) -> dict[str, Any]:
+        revision = _resolve_revision(self.model_id, self.revision, DEFAULT_MODEL_ID, DEFAULT_MODEL_REVISION)
+        return {"algorithm": "mean-pool-max-sentence-cosine-v1", "model_id": self.model_id,
+                "model_revision": revision, "tokenizer_revision": revision,
+                "revision_status": _revision_status(revision),
+                "threshold_float_hex": float(self.threshold).hex(),
+                "tokenization": "per-sentence padding; tokenizer-default truncation",
+                "coverage": "long sentences may be truncated; no completeness claim"}
+
 
 def embedding_entailment_scorer(
     threshold: float = 0.5,
     model_id: str = DEFAULT_MODEL_ID,
+    *, revision: str | None = None,
 ) -> EntailmentScorer:
     """An ``EntailmentScorer`` driven by a local ``EmbeddingJudge`` — the
     zero-$, offline, deterministic, paraphrase-aware meaning-loss scorer
     that fixes F18. Lazily loads the model on first ``loss`` call."""
-    judge = EmbeddingJudge(threshold=threshold, model_id=model_id)
+    judge = EmbeddingJudge(threshold=threshold, model_id=model_id, revision=revision)
     return EntailmentScorer(
         entails=judge.entails,
         entails_batch=judge.entails_batch,  # fast path: embed each sentence once
         judge_name=judge.name,
         judge_version="1",
+        judge_manifest=judge.manifest,
     )
 
 
@@ -307,18 +326,44 @@ class NLIJudge:
     def name(self) -> str:
         return f"nli:{self.model_id}"
 
+    def manifest(self) -> dict[str, Any]:
+        revision = _resolve_revision(self.model_id, self.revision, DEFAULT_NLI_MODEL_ID, DEFAULT_NLI_MODEL_REVISION)
+        return {"algorithm": "directional-nli-softmax-v1", "model_id": self.model_id,
+                "model_revision": revision, "tokenizer_revision": revision,
+                "revision_status": _revision_status(revision),
+                "threshold_float_hex": float(self.threshold).hex(),
+                "tokenization": "paired-input longest-first truncation",
+                "max_length_policy": "model max_position_embeddings if integer in 1..4096; otherwise 512",
+                "coverage": "truncated context is not inspected; no completeness claim"}
+
+    def inspect_pair(self, premise: str, hypothesis: str) -> dict[str, Any]:
+        """Report window coverage without treating an unseen suffix as checked.
+
+        This preserves the historical scoring algorithm. A partial result is
+        advisory and must not be displayed as complete source-support review.
+        """
+        self._ensure_loaded()
+        mpe = getattr(self._mdl.config, "max_position_embeddings", 512)
+        limit = int(mpe) if isinstance(mpe, int) and 0 < mpe <= 4096 else 512
+        encoded = self._tok(premise, hypothesis, truncation=False, add_special_tokens=True)
+        count = len(encoded["input_ids"])
+        return {"truncated": count > limit, "input_tokens": count,
+                "token_limit": limit, "uninspected_tokens": max(0, count - limit)}
+
 
 def nli_entailment_scorer(
     threshold: float = 0.5,
     model_id: str = DEFAULT_NLI_MODEL_ID,
+    *, revision: str | None = None,
 ) -> EntailmentScorer:
     """An ``EntailmentScorer`` driven by a local NLI cross-encoder
-    (``NLIJudge``) — the production-grade, paraphrase-aware, contradiction-
-    catching, offline, deterministic meaning-loss scorer. The strict
-    upgrade over both lexical (F18) and embedding-similarity scoring."""
-    judge = NLIJudge(threshold=threshold, model_id=model_id)
+    (``NLIJudge``). This is a fallible directional proxy; its finite token
+    window and limited human calibration do not establish factual truth."""
+    judge = NLIJudge(threshold=threshold, model_id=model_id, revision=revision)
     return EntailmentScorer(
         entails=judge.entails,
         judge_name=judge.name,
         judge_version="1",
+        judge_manifest=judge.manifest,
+        inspect_pair=judge.inspect_pair,
     )

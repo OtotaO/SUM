@@ -1,0 +1,1442 @@
+{
+  "cross_corpus_summary": {
+    "all_observed_medians_unchanged": true,
+    "best_law_distribution": {
+      "fixed_point": 3
+    },
+    "inference": "descriptive_only; no population inference or equivalence test",
+    "max_observed_delta_vs_K1": 0.0,
+    "n_corpora": 3,
+    "n_documents_worsened_at_endpoint": 6
+  },
+  "definition": {
+    "K_iterations": "extract -> generate -> re-extract repeated K times per document; receipt records per-K drift.",
+    "drift_pct": "T1 records 100 * (1 - exact_match_recall); T4 divides by 100 to report fractions in [0, 1].",
+    "reference_scope": "Initial extracted axiom set, not independent source annotations; upstream omissions and full meaning are not measured.",
+    "source": "scripts/bench/runners/s25_iterated_round_trip.py line ~258."
+  },
+  "generated_at": "2026-09-09T01:30:55.208219+00:00",
+  "method": {
+    "equivalence_test": "not_performed",
+    "fit_objective": "sum_squared_residuals against median-per-K observed drift",
+    "fitted_laws": [
+      "additive",
+      "multiplicative_survival",
+      "saturating",
+      "fixed_point"
+    ],
+    "paired_analysis": "Within-document K_max minus K1 drift on complete endpoint pairs; missing pairs reported and excluded.",
+    "population_inference": "not_performed",
+    "saturating_grid": {
+      "drift_inf_step": 0.005,
+      "tau_grid": [
+        1e-06,
+        0.01,
+        0.05,
+        0.1,
+        0.25,
+        0.5,
+        1.0,
+        2.0,
+        5.0,
+        10.0,
+        25.0,
+        100.0
+      ]
+    },
+    "scope": "Post-processing supplied T1 receipts; no new generation, scorer replay, or independent human assessment."
+  },
+  "per_corpus": [
+    {
+      "K": 10,
+      "best_law_by_ssr": "fixed_point",
+      "corpus_id": "seed_v1",
+      "descriptive_per_K": {
+        "1": {
+          "empirical_max_drift": 1.0,
+          "empirical_mean_drift": 0.04,
+          "empirical_median_drift": 0.0,
+          "n_observations": 50
+        },
+        "10": {
+          "empirical_max_drift": 1.0,
+          "empirical_mean_drift": 0.04,
+          "empirical_median_drift": 0.0,
+          "n_observations": 50
+        },
+        "2": {
+          "empirical_max_drift": 1.0,
+          "empirical_mean_drift": 0.04,
+          "empirical_median_drift": 0.0,
+          "n_observations": 50
+        },
+        "3": {
+          "empirical_max_drift": 1.0,
+          "empirical_mean_drift": 0.04,
+          "empirical_median_drift": 0.0,
+          "n_observations": 50
+        },
+        "4": {
+          "empirical_max_drift": 1.0,
+          "empirical_mean_drift": 0.04,
+          "empirical_median_drift": 0.0,
+          "n_observations": 50
+        },
+        "5": {
+          "empirical_max_drift": 1.0,
+          "empirical_mean_drift": 0.04,
+          "empirical_median_drift": 0.0,
+          "n_observations": 50
+        },
+        "6": {
+          "empirical_max_drift": 1.0,
+          "empirical_mean_drift": 0.04,
+          "empirical_median_drift": 0.0,
+          "n_observations": 50
+        },
+        "7": {
+          "empirical_max_drift": 1.0,
+          "empirical_mean_drift": 0.04,
+          "empirical_median_drift": 0.0,
+          "n_observations": 50
+        },
+        "8": {
+          "empirical_max_drift": 1.0,
+          "empirical_mean_drift": 0.04,
+          "empirical_median_drift": 0.0,
+          "n_observations": 50
+        },
+        "9": {
+          "empirical_max_drift": 1.0,
+          "empirical_mean_drift": 0.04,
+          "empirical_median_drift": 0.0,
+          "n_observations": 50
+        }
+      },
+      "hellinger_doc_frequency": {
+        "K_max": 10,
+        "compositional_predicted_F1_pow_K": 1.0,
+        "compositional_residual": 0.02,
+        "fidelity_K1": 1.0,
+        "fidelity_KK": 0.98,
+        "n_complete_pairs": 50,
+        "notes": "Document-frequency approximation over complete endpoint pairs; axiom identities were not retained. F1**K is a candidate curve, not a derived composition law for these transitions. No hypothesis test or independent evidence is supplied."
+      },
+      "laws_fitted": {
+        "additive": {
+          "drift_1": 0.0,
+          "form": "drift_K = K * drift_1",
+          "free_parameters": 0,
+          "predicted_by_K": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "sum_squared_residuals": 0.0
+        },
+        "fixed_point": {
+          "drift_1": 0.0,
+          "form": "median_drift_K = median_drift_1 (descriptive constant curve)",
+          "free_parameters": 0,
+          "predicted_by_K": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "sum_squared_residuals": 0.0
+        },
+        "multiplicative_survival": {
+          "drift_1": 0.0,
+          "form": "drift_K = 1 - (1 - drift_1)^K",
+          "free_parameters": 0,
+          "predicted_by_K": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "sum_squared_residuals": 0.0
+        },
+        "saturating": {
+          "drift_inf_fit": 0.0,
+          "form": "drift_K = drift_inf * (1 - exp(-K/tau))",
+          "free_parameters": 2,
+          "predicted_by_K": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "sum_squared_residuals": 0.0,
+          "tau_fit": 1e-06
+        }
+      },
+      "mean_drift_by_K": [
+        0.04,
+        0.04,
+        0.04,
+        0.04,
+        0.04,
+        0.04,
+        0.04,
+        0.04,
+        0.04,
+        0.04
+      ],
+      "median_drift_by_K": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "median_stability": {
+        "inference": "descriptive_only; stable medians can hide worsening individual documents",
+        "max_abs_delta_median_vs_K1": 0.0,
+        "verdict": "observed_medians_unchanged"
+      },
+      "n_documents": 50,
+      "paired_endpoint_changes": {
+        "K_end": 10,
+        "K_start": 1,
+        "incomplete_documents": [],
+        "inference": "descriptive_only; no population inference or equivalence test",
+        "max_delta_drift": 0.0,
+        "max_drift_K1": 1.0,
+        "max_drift_Kmax": 1.0,
+        "mean_delta_drift": 0.0,
+        "median_delta_drift": 0.0,
+        "min_delta_drift": 0.0,
+        "n_complete_pairs": 50,
+        "n_improved": 0,
+        "n_incomplete_pairs": 0,
+        "n_unchanged": 50,
+        "n_worsened": 0,
+        "per_document": [
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_001",
+            "document_index": 0,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_002",
+            "document_index": 1,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_003",
+            "document_index": 2,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_004",
+            "document_index": 3,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_005",
+            "document_index": 4,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_006",
+            "document_index": 5,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_007",
+            "document_index": 6,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_008",
+            "document_index": 7,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_009",
+            "document_index": 8,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_010",
+            "document_index": 9,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_011",
+            "document_index": 10,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_012",
+            "document_index": 11,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_013",
+            "document_index": 12,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_014",
+            "document_index": 13,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_015",
+            "document_index": 14,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_016",
+            "document_index": 15,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_017",
+            "document_index": 16,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_018",
+            "document_index": 17,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_019",
+            "document_index": 18,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_020",
+            "document_index": 19,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_021",
+            "document_index": 20,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_022",
+            "document_index": 21,
+            "drift_K1": 1.0,
+            "drift_Kmax": 1.0,
+            "n_extra_K1": 1,
+            "n_extra_Kmax": 1
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_023",
+            "document_index": 22,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_024",
+            "document_index": 23,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_025",
+            "document_index": 24,
+            "drift_K1": 1.0,
+            "drift_Kmax": 1.0,
+            "n_extra_K1": 1,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_026",
+            "document_index": 25,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_027",
+            "document_index": 26,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_028",
+            "document_index": 27,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_029",
+            "document_index": 28,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_030",
+            "document_index": 29,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_031",
+            "document_index": 30,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_032",
+            "document_index": 31,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_033",
+            "document_index": 32,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_034",
+            "document_index": 33,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_035",
+            "document_index": 34,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_036",
+            "document_index": 35,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_037",
+            "document_index": 36,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_038",
+            "document_index": 37,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_039",
+            "document_index": 38,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_040",
+            "document_index": 39,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_041",
+            "document_index": 40,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_042",
+            "document_index": 41,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_043",
+            "document_index": 42,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_044",
+            "document_index": 43,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_045",
+            "document_index": 44,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_046",
+            "document_index": 45,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_047",
+            "document_index": 46,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_048",
+            "document_index": 47,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_049",
+            "document_index": 48,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_050",
+            "document_index": 49,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          }
+        ],
+        "units": "drift fraction in [0, 1]; delta in [-1, 1]"
+      },
+      "t1_receipt_path": "fixtures/bench_receipts/s25_iterated_K10_seed_v1_2026-05-21.json",
+      "t1_receipt_sha256": "a1678e8cff94a7bb79fd9c021393ace847a2ed940480933660b84e7f65432fb4"
+    },
+    {
+      "K": 10,
+      "best_law_by_ssr": "fixed_point",
+      "corpus_id": "seed_v2",
+      "descriptive_per_K": {
+        "1": {
+          "empirical_max_drift": 1.0,
+          "empirical_mean_drift": 0.15,
+          "empirical_median_drift": 0.0,
+          "n_observations": 20
+        },
+        "10": {
+          "empirical_max_drift": 1.0,
+          "empirical_mean_drift": 0.15,
+          "empirical_median_drift": 0.0,
+          "n_observations": 20
+        },
+        "2": {
+          "empirical_max_drift": 1.0,
+          "empirical_mean_drift": 0.1,
+          "empirical_median_drift": 0.0,
+          "n_observations": 20
+        },
+        "3": {
+          "empirical_max_drift": 1.0,
+          "empirical_mean_drift": 0.1,
+          "empirical_median_drift": 0.0,
+          "n_observations": 20
+        },
+        "4": {
+          "empirical_max_drift": 1.0,
+          "empirical_mean_drift": 0.15,
+          "empirical_median_drift": 0.0,
+          "n_observations": 20
+        },
+        "5": {
+          "empirical_max_drift": 1.0,
+          "empirical_mean_drift": 0.15,
+          "empirical_median_drift": 0.0,
+          "n_observations": 20
+        },
+        "6": {
+          "empirical_max_drift": 1.0,
+          "empirical_mean_drift": 0.15,
+          "empirical_median_drift": 0.0,
+          "n_observations": 20
+        },
+        "7": {
+          "empirical_max_drift": 1.0,
+          "empirical_mean_drift": 0.15,
+          "empirical_median_drift": 0.0,
+          "n_observations": 20
+        },
+        "8": {
+          "empirical_max_drift": 1.0,
+          "empirical_mean_drift": 0.15,
+          "empirical_median_drift": 0.0,
+          "n_observations": 20
+        },
+        "9": {
+          "empirical_max_drift": 1.0,
+          "empirical_mean_drift": 0.2,
+          "empirical_median_drift": 0.0,
+          "n_observations": 20
+        }
+      },
+      "hellinger_doc_frequency": {
+        "K_max": 10,
+        "compositional_predicted_F1_pow_K": 0.545394,
+        "compositional_residual": 0.395782,
+        "fidelity_K1": 0.941176,
+        "fidelity_KK": 0.941176,
+        "n_complete_pairs": 20,
+        "notes": "Document-frequency approximation over complete endpoint pairs; axiom identities were not retained. F1**K is a candidate curve, not a derived composition law for these transitions. No hypothesis test or independent evidence is supplied."
+      },
+      "laws_fitted": {
+        "additive": {
+          "drift_1": 0.0,
+          "form": "drift_K = K * drift_1",
+          "free_parameters": 0,
+          "predicted_by_K": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "sum_squared_residuals": 0.0
+        },
+        "fixed_point": {
+          "drift_1": 0.0,
+          "form": "median_drift_K = median_drift_1 (descriptive constant curve)",
+          "free_parameters": 0,
+          "predicted_by_K": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "sum_squared_residuals": 0.0
+        },
+        "multiplicative_survival": {
+          "drift_1": 0.0,
+          "form": "drift_K = 1 - (1 - drift_1)^K",
+          "free_parameters": 0,
+          "predicted_by_K": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "sum_squared_residuals": 0.0
+        },
+        "saturating": {
+          "drift_inf_fit": 0.0,
+          "form": "drift_K = drift_inf * (1 - exp(-K/tau))",
+          "free_parameters": 2,
+          "predicted_by_K": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "sum_squared_residuals": 0.0,
+          "tau_fit": 1e-06
+        }
+      },
+      "mean_drift_by_K": [
+        0.15,
+        0.1,
+        0.1,
+        0.15,
+        0.15,
+        0.15,
+        0.15,
+        0.15,
+        0.2,
+        0.15
+      ],
+      "median_drift_by_K": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "median_stability": {
+        "inference": "descriptive_only; stable medians can hide worsening individual documents",
+        "max_abs_delta_median_vs_K1": 0.0,
+        "verdict": "observed_medians_unchanged"
+      },
+      "n_documents": 20,
+      "paired_endpoint_changes": {
+        "K_end": 10,
+        "K_start": 1,
+        "incomplete_documents": [],
+        "inference": "descriptive_only; no population inference or equivalence test",
+        "max_delta_drift": 1.0,
+        "max_drift_K1": 1.0,
+        "max_drift_Kmax": 1.0,
+        "mean_delta_drift": 0.0,
+        "median_delta_drift": 0.0,
+        "min_delta_drift": -1.0,
+        "n_complete_pairs": 20,
+        "n_improved": 1,
+        "n_incomplete_pairs": 0,
+        "n_unchanged": 18,
+        "n_worsened": 1,
+        "per_document": [
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_001",
+            "document_index": 0,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_002",
+            "document_index": 1,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_003",
+            "document_index": 2,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_004",
+            "document_index": 3,
+            "drift_K1": 1.0,
+            "drift_Kmax": 1.0,
+            "n_extra_K1": 1,
+            "n_extra_Kmax": 1
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_005",
+            "document_index": 4,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_006",
+            "document_index": 5,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_007",
+            "document_index": 6,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_008",
+            "document_index": 7,
+            "drift_K1": 1.0,
+            "drift_Kmax": 1.0,
+            "n_extra_K1": 1,
+            "n_extra_Kmax": 1
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_009",
+            "document_index": 8,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_010",
+            "document_index": 9,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_011",
+            "document_index": 10,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_012",
+            "document_index": 11,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_013",
+            "document_index": 12,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_014",
+            "document_index": 13,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_015",
+            "document_index": 14,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_016",
+            "document_index": 15,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_017",
+            "document_index": 16,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 1.0,
+            "doc_id": "doc_018",
+            "document_index": 17,
+            "drift_K1": 0.0,
+            "drift_Kmax": 1.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 1
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_019",
+            "document_index": 18,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": -1.0,
+            "doc_id": "doc_020",
+            "document_index": 19,
+            "drift_K1": 1.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 1,
+            "n_extra_Kmax": 0
+          }
+        ],
+        "units": "drift fraction in [0, 1]; delta in [-1, 1]"
+      },
+      "t1_receipt_path": "fixtures/bench_receipts/s25_iterated_K10_seed_v2_2026-05-21.json",
+      "t1_receipt_sha256": "f2c038835d2e182f754965e41d33c1ac0ec94d5971021f885eb3d3e8aef59fb4"
+    },
+    {
+      "K": 10,
+      "best_law_by_ssr": "fixed_point",
+      "corpus_id": "seed_long_paragraphs",
+      "descriptive_per_K": {
+        "1": {
+          "empirical_max_drift": 0.42857100000000004,
+          "empirical_mean_drift": 0.1675843125,
+          "empirical_median_drift": 0.125,
+          "n_observations": 16
+        },
+        "10": {
+          "empirical_max_drift": 0.5,
+          "empirical_mean_drift": 0.210987,
+          "empirical_median_drift": 0.125,
+          "n_observations": 16
+        },
+        "2": {
+          "empirical_max_drift": 0.42857100000000004,
+          "empirical_mean_drift": 0.1858134375,
+          "empirical_median_drift": 0.125,
+          "n_observations": 16
+        },
+        "3": {
+          "empirical_max_drift": 0.42857100000000004,
+          "empirical_mean_drift": 0.1962300625,
+          "empirical_median_drift": 0.125,
+          "n_observations": 16
+        },
+        "4": {
+          "empirical_max_drift": 0.42857100000000004,
+          "empirical_mean_drift": 0.1962300625,
+          "empirical_median_drift": 0.125,
+          "n_observations": 16
+        },
+        "5": {
+          "empirical_max_drift": 0.42857100000000004,
+          "empirical_mean_drift": 0.1962300625,
+          "empirical_median_drift": 0.125,
+          "n_observations": 16
+        },
+        "6": {
+          "empirical_max_drift": 0.5,
+          "empirical_mean_drift": 0.2040425625,
+          "empirical_median_drift": 0.125,
+          "n_observations": 16
+        },
+        "7": {
+          "empirical_max_drift": 0.5,
+          "empirical_mean_drift": 0.2040425625,
+          "empirical_median_drift": 0.125,
+          "n_observations": 16
+        },
+        "8": {
+          "empirical_max_drift": 0.5,
+          "empirical_mean_drift": 0.2040425625,
+          "empirical_median_drift": 0.125,
+          "n_observations": 16
+        },
+        "9": {
+          "empirical_max_drift": 0.5,
+          "empirical_mean_drift": 0.210987,
+          "empirical_median_drift": 0.125,
+          "n_observations": 16
+        }
+      },
+      "hellinger_doc_frequency": {
+        "K_max": 10,
+        "compositional_predicted_F1_pow_K": 0.968576,
+        "compositional_residual": 0.026481,
+        "fidelity_K1": 0.996812,
+        "fidelity_KK": 0.995057,
+        "n_complete_pairs": 16,
+        "notes": "Document-frequency approximation over complete endpoint pairs; axiom identities were not retained. F1**K is a candidate curve, not a derived composition law for these transitions. No hypothesis test or independent evidence is supplied."
+      },
+      "laws_fitted": {
+        "additive": {
+          "drift_1": 0.125,
+          "form": "drift_K = K * drift_1",
+          "free_parameters": 0,
+          "predicted_by_K": [
+            0.125,
+            0.25,
+            0.375,
+            0.5,
+            0.625,
+            0.75,
+            0.875,
+            1.0,
+            1.125,
+            1.25
+          ],
+          "sum_squared_residuals": 4.453125
+        },
+        "fixed_point": {
+          "drift_1": 0.125,
+          "form": "median_drift_K = median_drift_1 (descriptive constant curve)",
+          "free_parameters": 0,
+          "predicted_by_K": [
+            0.125,
+            0.125,
+            0.125,
+            0.125,
+            0.125,
+            0.125,
+            0.125,
+            0.125,
+            0.125,
+            0.125
+          ],
+          "sum_squared_residuals": 0.0
+        },
+        "multiplicative_survival": {
+          "drift_1": 0.125,
+          "form": "drift_K = 1 - (1 - drift_1)^K",
+          "free_parameters": 0,
+          "predicted_by_K": [
+            0.125,
+            0.234375,
+            0.330078,
+            0.413818,
+            0.487091,
+            0.551205,
+            0.607304,
+            0.656391,
+            0.699342,
+            0.736924
+          ],
+          "sum_squared_residuals": 1.669510529
+        },
+        "saturating": {
+          "drift_inf_fit": 0.125,
+          "form": "drift_K = drift_inf * (1 - exp(-K/tau))",
+          "free_parameters": 2,
+          "predicted_by_K": [
+            0.125,
+            0.125,
+            0.125,
+            0.125,
+            0.125,
+            0.125,
+            0.125,
+            0.125,
+            0.125,
+            0.125
+          ],
+          "sum_squared_residuals": 0.0,
+          "tau_fit": 1e-06
+        }
+      },
+      "mean_drift_by_K": [
+        0.167584,
+        0.185813,
+        0.19623,
+        0.19623,
+        0.19623,
+        0.204043,
+        0.204043,
+        0.204043,
+        0.210987,
+        0.210987
+      ],
+      "median_drift_by_K": [
+        0.125,
+        0.125,
+        0.125,
+        0.125,
+        0.125,
+        0.125,
+        0.125,
+        0.125,
+        0.125,
+        0.125
+      ],
+      "median_stability": {
+        "inference": "descriptive_only; stable medians can hide worsening individual documents",
+        "max_abs_delta_median_vs_K1": 0.0,
+        "verdict": "observed_medians_unchanged"
+      },
+      "n_documents": 16,
+      "paired_endpoint_changes": {
+        "K_end": 10,
+        "K_start": 1,
+        "incomplete_documents": [],
+        "inference": "descriptive_only; no population inference or equivalence test",
+        "max_delta_drift": 0.166666,
+        "max_drift_K1": 0.42857100000000004,
+        "max_drift_Kmax": 0.5,
+        "mean_delta_drift": 0.0434026875,
+        "median_delta_drift": 0.0,
+        "min_delta_drift": 0.0,
+        "n_complete_pairs": 16,
+        "n_improved": 0,
+        "n_incomplete_pairs": 0,
+        "n_unchanged": 11,
+        "n_worsened": 5,
+        "per_document": [
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_long_internet_history",
+            "document_index": 0,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.125,
+            "doc_id": "doc_long_quantum_mechanics",
+            "document_index": 1,
+            "drift_K1": 0.25,
+            "drift_Kmax": 0.375,
+            "n_extra_K1": 2,
+            "n_extra_Kmax": 3
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_long_evolution",
+            "document_index": 2,
+            "drift_K1": 0.125,
+            "drift_Kmax": 0.125,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_long_roman_empire",
+            "document_index": 3,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.0,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_long_solar_system",
+            "document_index": 4,
+            "drift_K1": 0.1,
+            "drift_Kmax": 0.1,
+            "n_extra_K1": 1,
+            "n_extra_Kmax": 1
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_long_neural_networks",
+            "document_index": 5,
+            "drift_K1": 0.111111,
+            "drift_Kmax": 0.111111,
+            "n_extra_K1": 1,
+            "n_extra_Kmax": 1
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_long_climate_change",
+            "document_index": 6,
+            "drift_K1": 0.42857100000000004,
+            "drift_Kmax": 0.42857100000000004,
+            "n_extra_K1": 2,
+            "n_extra_Kmax": 2
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_long_relativity",
+            "document_index": 7,
+            "drift_K1": 0.125,
+            "drift_Kmax": 0.125,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_long_french_revolution",
+            "document_index": 8,
+            "drift_K1": 0.4,
+            "drift_Kmax": 0.4,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_long_cell_biology",
+            "document_index": 9,
+            "drift_K1": 0.1,
+            "drift_Kmax": 0.1,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.111111,
+            "doc_id": "doc_long_world_war_two",
+            "document_index": 10,
+            "drift_K1": 0.0,
+            "drift_Kmax": 0.111111,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 1
+          },
+          {
+            "delta_drift": 0.166666,
+            "doc_id": "doc_long_periodic_table",
+            "document_index": 11,
+            "drift_K1": 0.16666699999999998,
+            "drift_Kmax": 0.333333,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.166666,
+            "doc_id": "doc_long_human_genome",
+            "document_index": 12,
+            "drift_K1": 0.16666699999999998,
+            "drift_Kmax": 0.333333,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_long_cryptography",
+            "document_index": 13,
+            "drift_K1": 0.222222,
+            "drift_Kmax": 0.222222,
+            "n_extra_K1": 1,
+            "n_extra_Kmax": 1
+          },
+          {
+            "delta_drift": 0.125,
+            "doc_id": "doc_long_industrial_revolution",
+            "document_index": 14,
+            "drift_K1": 0.375,
+            "drift_Kmax": 0.5,
+            "n_extra_K1": 1,
+            "n_extra_Kmax": 2
+          },
+          {
+            "delta_drift": 0.0,
+            "doc_id": "doc_long_immune_system",
+            "document_index": 15,
+            "drift_K1": 0.111111,
+            "drift_Kmax": 0.111111,
+            "n_extra_K1": 0,
+            "n_extra_Kmax": 0
+          }
+        ],
+        "units": "drift fraction in [0, 1]; delta in [-1, 1]"
+      },
+      "t1_receipt_path": "fixtures/bench_receipts/s25_iterated_K10_seed_long_paragraphs_2026-05-21.json",
+      "t1_receipt_sha256": "806a68e8d3b30a4c94a1292d3f1678644b8f48865df08c67e73048d090629168"
+    }
+  ],
+  "schema": "sum.drift_metric_composition.v2",
+  "supersedes_interpretation": {
+    "artifact": "fixtures/bench_receipts/drift_composition_2026-05-22.json",
+    "artifact_sha256": "cfc53e67fa5aa19f2068a7ccdb1a70fb00789f4d9502a6d9a072b542fa9acad1",
+    "erratum": "docs/DRIFT_METRIC_COMPOSITION.md#historical-erratum-2026-09-09",
+    "schema": "sum.drift_metric_composition.v1",
+    "status": "historical_bytes_preserved; composition_invariance_inference_retired"
+  }
+}

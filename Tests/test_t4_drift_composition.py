@@ -1,33 +1,23 @@
-"""T4 — drift_pct composition-law audit.
-
-Pins: the runner ingests T1 iterated-round-trip receipts and emits a
-`sum.drift_metric_composition.v1` receipt naming the best-fitting
-composition law per corpus + a DKW worst-case bound on
-composition-invariance.
-
-Source: docs/BENCH_HARDENING_FROM_QCVV.md task T4.
-License: Apache License 2.0
-"""
+"""Descriptive T4 analysis must expose paired regressions and preserve history."""
 
 from __future__ import annotations
 
+import hashlib
 import json
-import math
 from pathlib import Path
 
 import pytest
 
 from scripts.bench.runners.t4_drift_composition import (
     SCHEMA,
-    _dkw_epsilon,
     _fit_additive,
     _fit_fixed_point,
     _fit_multiplicative_survival,
     _fit_saturating,
-    _percentile,
     _ssr,
     analyse_receipt,
     build_receipt,
+    main,
 )
 
 
@@ -54,17 +44,6 @@ def _write_synthetic_t1(tmp_path: Path, corpus_id: str, drift_series_per_doc: li
     return p
 
 
-def test_dkw_epsilon_matches_formula() -> None:
-    assert _dkw_epsilon(50, 0.05) == pytest.approx(math.sqrt(math.log(2 / 0.05) / 100))
-    assert _dkw_epsilon(0) == math.inf
-
-
-def test_percentile_linear_interpolation() -> None:
-    assert _percentile([1.0, 2.0, 3.0, 4.0], 50) == 2.5
-    assert _percentile([0.0, 0.0, 1.0], 50) == 0.0
-    assert _percentile([], 50) != _percentile([], 50)  # NaN
-
-
 def test_ssr_zero_on_perfect_fit() -> None:
     assert _ssr([1.0, 2.0, 3.0], [1.0, 2.0, 3.0]) == 0.0
 
@@ -88,16 +67,14 @@ def test_saturating_grid_recovers_flat_series() -> None:
 
 
 def test_analyse_receipt_flat_series_picks_fixed_point(tmp_path: Path) -> None:
-    """All docs report drift=0.125 flat across K=1..10. The best law
-    must be 'fixed_point' (tie-break preference) and the composition-
-    invariance verdict must be 'composition_invariant_within_dkw_95'."""
+    """A constant median curve is descriptive, including with small n."""
     series = [[0.125] * 10 for _ in range(16)]
     receipt = _write_synthetic_t1(tmp_path, "synthetic_flat", series, K=10)
     out = analyse_receipt(receipt)
     assert out["corpus_id"] == "synthetic_flat"
     assert out["best_law_by_ssr"] == "fixed_point"
-    assert out["composition_invariance"]["verdict"] == "composition_invariant_within_dkw_95"
-    assert out["composition_invariance"]["max_abs_delta_median_vs_K1"] == 0.0
+    assert out["median_stability"]["verdict"] == "observed_medians_unchanged"
+    assert out["median_stability"]["max_abs_delta_median_vs_K1"] == 0.0
     assert out["median_drift_by_K"] == pytest.approx([0.125] * 10)
 
 
@@ -140,66 +117,133 @@ def test_build_receipt_cross_corpus_summary(tmp_path: Path) -> None:
     assert out["schema"] == SCHEMA
     s = out["cross_corpus_summary"]
     assert s["n_corpora"] == 2
-    assert s["all_composition_invariant_dkw_95"] is True
+    assert s["all_observed_medians_unchanged"] is True
     assert s["best_law_distribution"] == {"fixed_point": 2}
     assert s["max_observed_delta_vs_K1"] == 0.0
 
 
-def test_real_receipts_yield_composition_invariant_verdict() -> None:
-    """Smoke test against the actual T1 receipts on main. If any of
-    the three corpora regresses from composition-invariant, this test
-    fires — that is a §2.5 load-bearing-claim regression."""
+def test_stable_medians_expose_paired_regressions(tmp_path: Path) -> None:
+    # Equal medians and means, but one document loses all captured facts.
+    receipt = _write_synthetic_t1(tmp_path, "paired", [[0, 1], [1, 0], [0, 0]], K=2)
+    out = analyse_receipt(receipt)
+    assert out["median_stability"]["verdict"] == "observed_medians_unchanged"
+    paired = out["paired_endpoint_changes"]
+    assert paired["n_worsened"] == 1
+    assert paired["n_improved"] == 1
+    assert paired["n_unchanged"] == 1
+    assert paired["mean_delta_drift"] == 0
+    assert paired["max_delta_drift"] == 1
+    assert paired["min_delta_drift"] == -1
+    assert paired["inference"].startswith("descriptive_only")
+    assert "composition_invariance" not in out
+    assert "dkw_per_K_95" not in out
+
+
+def test_missing_endpoint_is_excluded_and_disclosed(tmp_path: Path) -> None:
+    receipt = _write_synthetic_t1(tmp_path, "incomplete", [[0, 0.5], [0.8]], K=2)
+    out = analyse_receipt(receipt)
+    paired = out["paired_endpoint_changes"]
+    assert paired["n_complete_pairs"] == 1
+    assert paired["n_incomplete_pairs"] == 1
+    assert paired["incomplete_documents"][0]["doc_id"] == "doc_002"
+    assert paired["n_worsened"] == 1
+    assert paired["mean_delta_drift"] == 0.5
+    assert out["descriptive_per_K"]["1"]["n_observations"] == 2
+    assert out["descriptive_per_K"]["2"]["n_observations"] == 1
+    assert out["hellinger_doc_frequency"]["n_complete_pairs"] == 1
+
+
+def test_pairing_uses_declared_endpoint_not_row_order(tmp_path: Path) -> None:
+    receipt = _write_synthetic_t1(tmp_path, "order", [[0.1, 0.3, 0.8]], K=3)
+    payload = json.loads(receipt.read_text())
+    payload["per_document"][0]["iterations"].reverse()
+    receipt.write_text(json.dumps(payload))
+    pair = analyse_receipt(receipt)["paired_endpoint_changes"]["per_document"][0]
+    assert pair["drift_K1"] == 0.1
+    assert pair["drift_Kmax"] == 0.8
+    assert pair["delta_drift"] == pytest.approx(0.7)
+
+
+def test_source_digest_binds_exact_bytes(tmp_path: Path) -> None:
+    receipt = _write_synthetic_t1(tmp_path, "digest", [[0, 0]], K=2)
+    first = analyse_receipt(receipt)
+    assert first["t1_receipt_sha256"] == hashlib.sha256(receipt.read_bytes()).hexdigest()
+    receipt.write_text(receipt.read_text() + "\n")
+    assert analyse_receipt(receipt)["t1_receipt_sha256"] != first["t1_receipt_sha256"]
+
+
+@pytest.mark.parametrize("drift", [float("nan"), float("inf"), -0.1, 1.1])
+def test_invalid_drift_rejected(tmp_path: Path, drift: float) -> None:
+    receipt = _write_synthetic_t1(tmp_path, "invalid", [[drift]], K=1)
+    with pytest.raises(ValueError, match="drift_pct"):
+        analyse_receipt(receipt)
+
+
+def test_duplicate_iteration_rejected(tmp_path: Path) -> None:
+    receipt = _write_synthetic_t1(tmp_path, "duplicate", [[0, 0.5]], K=2)
+    payload = json.loads(receipt.read_text())
+    payload["per_document"][0]["iterations"][1]["k"] = 1
+    receipt.write_text(json.dumps(payload))
+    with pytest.raises(ValueError, match="unique"):
+        analyse_receipt(receipt)
+
+
+def test_missing_whole_iteration_rejected(tmp_path: Path) -> None:
+    receipt = _write_synthetic_t1(tmp_path, "missing", [[0]], K=2)
+    with pytest.raises(ValueError, match="each declared iteration"):
+        analyse_receipt(receipt)
+
+
+def test_empty_corpus_and_input_list_rejected(tmp_path: Path) -> None:
+    receipt = _write_synthetic_t1(tmp_path, "empty", [], K=2)
+    with pytest.raises(ValueError, match="at least one document"):
+        analyse_receipt(receipt)
+    with pytest.raises(ValueError, match="at least one T1 receipt"):
+        build_receipt([])
+
+
+def test_real_receipts_report_worsening_documents_without_inference() -> None:
     paths = [
         Path("fixtures/bench_receipts/s25_iterated_K10_seed_v1_2026-05-21.json"),
         Path("fixtures/bench_receipts/s25_iterated_K10_seed_v2_2026-05-21.json"),
         Path("fixtures/bench_receipts/s25_iterated_K10_seed_long_paragraphs_2026-05-21.json"),
     ]
-    for p in paths:
-        if not p.exists():
-            pytest.skip(f"T1 receipt not present: {p}")
     out = build_receipt(paths)
-    assert out["cross_corpus_summary"]["all_composition_invariant_dkw_95"] is True
-    assert out["cross_corpus_summary"]["best_law_distribution"] == {"fixed_point": 3}
+    assert out["schema"] == "sum.drift_metric_composition.v2"
+    summary = out["cross_corpus_summary"]
+    assert summary["all_observed_medians_unchanged"] is True
+    assert summary["best_law_distribution"] == {"fixed_point": 3}
+    assert out["method"]["population_inference"] == "not_performed"
+    assert out["method"]["equivalence_test"] == "not_performed"
+    long = out["per_corpus"][2]["paired_endpoint_changes"]
+    assert long["n_complete_pairs"] == 16
+    assert long["n_worsened"] == 5
+    assert long["max_drift_K1"] == pytest.approx(0.428571)
+    assert long["max_drift_Kmax"] == 0.5
+    seed_v2 = out["per_corpus"][1]["paired_endpoint_changes"]
+    assert seed_v2["max_delta_drift"] == 1
+    assert seed_v2["min_delta_drift"] == -1
+    # The old artifact is retained as evidence, not silently regenerated.
+    historical = out["supersedes_interpretation"]
+    assert hashlib.sha256(Path(historical["artifact"]).read_bytes()).hexdigest() == historical["artifact_sha256"]
+    json.dumps(out, allow_nan=False)
 
 
-# ── 2026-07-02 audit regressions: correct DKW usage ──────────────────
+def test_cli_refuses_to_overwrite_historical_schema(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    source = _write_synthetic_t1(tmp_path, "cli", [[0]], K=1)
+    historical = tmp_path / "historical.json"
+    original = b'{"schema":"sum.drift_metric_composition.v1","evidence":"preserve"}'
+    historical.write_bytes(original)
+    monkeypatch.setattr("sys.argv", ["t4", "--receipts", str(source), "--out", str(historical)])
+    assert main() == 2
+    assert historical.read_bytes() == original
 
 
-def test_dkw_vacuous_small_n_returns_too_small_verdict(tmp_path: Path) -> None:
-    """n=4 → ε = sqrt(ln40/8) ≈ 0.68 ≥ 0.5: DKW cannot localise the
-    median at all, so the honest verdict is 'too small to distinguish',
-    not 'invariant'."""
-    series = [[0.125] * 10 for _ in range(4)]
-    receipt = _write_synthetic_t1(tmp_path, "synthetic_tiny", series, K=10)
-    out = analyse_receipt(receipt)
-    assert (
-        out["composition_invariance"]["verdict"]
-        == "n_too_small_to_distinguish_dkw_95"
-    )
-
-
-def test_median_shift_within_old_eps_now_detected(tmp_path: Path) -> None:
-    """Regression for the unit-mixing bug: 16 docs, K=2, every doc drifts
-    0.10 at K=1 and 0.40 at K=2. The old test compared |Δmedian| = 0.30
-    (drift units) against ε ≈ 0.34 (CDF-probability units) and called it
-    invariant. The DKW median CIs are [0.1, 0.1] vs [0.4, 0.4] — disjoint
-    — so the honest verdict is a real composition effect."""
-    series = [[0.10, 0.40] for _ in range(16)]
-    receipt = _write_synthetic_t1(tmp_path, "synthetic_shift", series, K=2)
-    out = analyse_receipt(receipt)
-    assert (
-        out["composition_invariance"]["verdict"]
-        == "composition_drift_exceeds_dkw_95"
-    )
-
-
-def test_worst_case_lower_bound_flags_vacuity(tmp_path: Path) -> None:
-    """At n=16, ε ≈ 0.34 so the 5th-percentile level shifts below 0: no
-    non-trivial DKW lower bound exists and the field must say so instead
-    of reporting a unit-mixed number."""
-    series = [[0.125] * 10 for _ in range(16)]
-    receipt = _write_synthetic_t1(tmp_path, "synthetic_flat_v", series, K=10)
-    out = analyse_receipt(receipt)
-    per_k = out["dkw_per_K_95"]["1"]
-    assert per_k["vacuous_at_this_n"] is True
-    assert per_k["worst_case_drift_lower_95"] == 0.0
+def test_zero_observed_count_does_not_fabricate_coefficient(tmp_path: Path) -> None:
+    receipt = _write_synthetic_t1(tmp_path, "zero", [[0, 1]], K=2)
+    payload = json.loads(receipt.read_text())
+    payload["per_document"][0]["iterations"][1]["n_observed"] = 0
+    receipt.write_text(json.dumps(payload))
+    coefficient = analyse_receipt(receipt)["hellinger_doc_frequency"]
+    assert coefficient["fidelity_KK"] is None
+    assert coefficient["compositional_residual"] is None

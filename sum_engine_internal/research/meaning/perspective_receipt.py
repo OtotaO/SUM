@@ -22,7 +22,7 @@ re-running the group-conditional certifier reproduces the marginal bound
 AND every cohort's bound (and ``controlled`` / ``controls_all`` when an
 ``alpha_target`` is set).
 Does NOT prove: meaning was preserved (a named PROXY, per-cohort
-*marginally within the cohort*, under exchangeability); the per-cohort
+*marginally within the cohort*, requiring independent sampling within it); the per-cohort
 bounds pay full finite-sample cost (small cohorts are wide); nothing about
 the ``not_covered`` layers.
 
@@ -33,7 +33,8 @@ from __future__ import annotations
 
 import hashlib
 from datetime import datetime, timezone
-from typing import Any, Sequence
+from typing import Any, Mapping, Sequence
+from sum_engine_internal.research.meaning.evidence import evaluation_fields, sampling_metadata
 
 from sum_engine_internal.infrastructure.jcs import canonicalize
 from sum_engine_internal.infrastructure.jose_envelope import (
@@ -95,6 +96,8 @@ def build_perspective_payload(
     not_covered: Sequence[str] = DEFAULT_NOT_COVERED,
     disclosure: str = _DEFAULT_DISCLOSURE,
     signed_at: str | None = None,
+    sampling_contract: Mapping[str, Any] | None = None,
+    evaluation_manifest: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Assemble a ``sum.perspective_risk_receipt.v1`` payload.
 
@@ -136,6 +139,10 @@ def build_perspective_payload(
     with_ctrl = alpha_target is not None
 
     payload: dict[str, Any] = {
+        **sampling_metadata(sampling_contract),
+        **evaluation_fields(evaluation_manifest, n=grouped.marginal.n,
+                            scorer=grouped.marginal.scorer_name,
+                            scorer_version=grouped.marginal.scorer_version),
         "scorer": grouped.marginal.scorer_name,
         "scorer_version": grouped.marginal.scorer_version,
         "loss_definition": loss_definition,

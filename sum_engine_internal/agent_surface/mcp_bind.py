@@ -42,9 +42,10 @@ from __future__ import annotations
 from typing import Any, Awaitable, Callable
 
 from sum_engine_internal.agent_surface.bind import (
-    BindNotFoundError, BindRegistry,
+    BindNotFoundError,
+    BindRegistry,
+    BindTooLargeError,
 )
-
 
 # ─── argument resolution ─────────────────────────────────────────────
 
@@ -152,7 +153,10 @@ def _wrap_result(
     pass an error result through unchanged."""
     if _is_error(raw):
         return raw
-    bind_id = registry.bind(_what_to_bind(tool_name, raw))
+    try:
+        bind_id = registry.bind(_what_to_bind(tool_name, raw))
+    except BindTooLargeError as exc:
+        return {"error_class": "input_too_large", "errors": [str(exc)]}
     preview = _preview_for(tool_name, raw)
     return {"bind_id": bind_id, "preview": preview}
 
@@ -517,7 +521,12 @@ def register_bind_tools(
             except BindNotFoundError as e:
                 return _error_result(f"{name}_bind", t0, _ErrorClass.SCHEMA, str(e))
             raw = await _maybe_await(real(**resolved))
-            return _wrap_result(name, raw, registry)
+            wrapped = _wrap_result(name, raw, registry)
+            if not _is_error(raw) and _is_error(wrapped):
+                return _error_result(
+                    f"{name}_bind", t0, _ErrorClass.INPUT_TOO_LARGE, *wrapped["errors"]
+                )
+            return wrapped
         except Exception as exc:  # noqa: BLE001 — fail-closed tagged internal
             return _error_result(
                 f"{name}_bind", t0, _ErrorClass.INTERNAL, type(exc).__name__
@@ -572,7 +581,7 @@ def register_bind_tools(
         ) -> dict:
             """Bind-aware variant of `verify`. The `bundle` argument
             accepts either an inline bundle dict or a bind reference
-            (a `sha256:<hex>` string from a prior `attest_bind` call).
+            (an opaque bind_id string from a prior `attest_bind` call).
             Returns `{bind_id, preview: {ok, axioms, ...}}` on
             success."""
             return await _call_wrapped("verify", verify_real, {
@@ -650,41 +659,41 @@ BIND_TOOL_MANIFEST: dict[str, Any] = {
     "summary": (
         "Bind-aware MCP tool surface. Every tool returns "
         "{bind_id, preview}; every tool accepts either inline values or "
-        "bind: references. The bind_id is sha256:<hex> over "
-        "JCS-canonical bytes (deterministic, content-addressed). "
-        "The runtime memoises bind_id → object so the agent never "
+        "bind: references. Text retains sha256:<hex>; JSON and bytes use "
+        "sha256:v2:<kind>:<hex> over canonical bytes. Handles are opaque. "
+        "The runtime stores immutable snapshots and resolves fresh JSON so the agent never "
         "round-trips full payloads."
     ),
     "tools": {
         "extract": {
             "args": {"text": "str"},
-            "returns": {"bind_id": "sha256:<hex>", "preview": {"n_triples": "int"}},
+            "returns": {"bind_id": "sha256:v2:<kind>:<hex> | sha256:<hex>", "preview": {"n_triples": "int"}},
             "errors": ["schema", "extractor_unavailable"],
         },
         "attest": {
             "args": {"text": "str"},
-            "returns": {"bind_id": "sha256:<hex>", "preview": {
+            "returns": {"bind_id": "sha256:v2:<kind>:<hex> | sha256:<hex>", "preview": {
                 "axiom_count": "int", "state_integer_short": "str",
             }},
             "errors": ["schema", "internal"],
         },
         "verify": {
-            "args": {"bundle": "dict | bind:sha256:<hex>"},
-            "returns": {"bind_id": "sha256:<hex>", "preview": {
+            "args": {"bundle": "dict | bind:<opaque bind_id>"},
+            "returns": {"bind_id": "sha256:v2:<kind>:<hex> | sha256:<hex>", "preview": {
                 "ok": "bool", "axioms": "int",
             }},
             "errors": ["schema", "structural", "signature"],
         },
         "render": {
             "args": {
-                "bundle": "dict | bind:sha256:<hex>",
+                "bundle": "dict | bind:<opaque bind_id>",
                 "density": "float in [0,1] (default 1.0)",
                 "length": "float (must be 0.5 in offline mode)",
                 "formality": "float (must be 0.5 in offline mode)",
                 "audience": "float (must be 0.5 in offline mode)",
                 "perspective": "float (must be 0.5 in offline mode)",
             },
-            "returns": {"bind_id": "sha256:<hex>", "preview": {
+            "returns": {"bind_id": "sha256:v2:<kind>:<hex> | sha256:<hex>", "preview": {
                 "tome_chars": "int", "tome_head": "str (first 120 chars)",
             }},
             "errors": ["schema (with structured.axes_requiring_worker)", "internal"],
@@ -697,8 +706,8 @@ BIND_TOOL_MANIFEST: dict[str, Any] = {
             },
         },
         "inspect": {
-            "args": {"bundle": "dict | bind:sha256:<hex>"},
-            "returns": {"bind_id": "sha256:<hex>", "preview": "dict (small)"},
+            "args": {"bundle": "dict | bind:<opaque bind_id>"},
+            "returns": {"bind_id": "sha256:v2:<kind>:<hex> | sha256:<hex>", "preview": "dict (small)"},
             "errors": ["schema"],
         },
     },

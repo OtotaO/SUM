@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-08-28T18:28:00Z",
+  "issued_at": "2026-09-09T01:53:47Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,18 +8,18 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "7b5d09cc8e6122794e6e819c397f6774efb51d14",
-    "head_short": "7b5d09c",
-    "head_subject": "release: 0.10.0 (#470)",
-    "head_committer_date": "2026-08-28T14:21:57-04:00",
+    "head_sha": "622613c0884096f3f803cda74c942963c898d1b0",
+    "head_short": "622613c",
+    "head_subject": "fix(workbench): preserve mixed modules and recover export after reset",
+    "head_committer_date": "2026-09-09T03:52:48+02:00",
     "commits_last_30d": null
   },
   "github": {
-    "stars": 9
+    "stars": null
   },
   "release": {
-    "pyproject_version": "0.10.0",
-    "pypi_published_version": "0.10.0"
+    "pyproject_version": "0.11.0",
+    "pypi_published_version": null
   },
   "features": {
     "total": 170,
@@ -27,6 +27,74 @@
     "scaffolded": 18,
     "designed": 1
   },
+  "product_surfaces": [
+    {
+      "name": "cli",
+      "status": "supported_source",
+      "entry_paths": [
+        "sum_cli/main.py"
+      ],
+      "boundary": "Optional extras vary by command"
+    },
+    {
+      "name": "offline_verifier",
+      "status": "supported_source",
+      "entry_paths": [
+        "sum_verify/__init__.py"
+      ],
+      "boundary": "Caller establishes key trust and requested policy"
+    },
+    {
+      "name": "mcp",
+      "status": "supported_source",
+      "entry_paths": [
+        "sum_engine_internal/mcp_server/server.py"
+      ],
+      "boundary": "Local stdio; judging requires optional dependencies"
+    },
+    {
+      "name": "web_workbench",
+      "status": "supported_source",
+      "entry_paths": [
+        "single_file_demo/index.html",
+        "worker/src/index.ts"
+      ],
+      "boundary": "Deployment is separate; browser comparison is literal"
+    },
+    {
+      "name": "capture_extension",
+      "status": "development_packages",
+      "entry_paths": [
+        "browser_extension/build.py"
+      ],
+      "boundary": "Explicit local capture; store distribution is separate"
+    },
+    {
+      "name": "terminal_demo",
+      "status": "prototype",
+      "entry_paths": [
+        "sum_tui/app.py"
+      ],
+      "boundary": "Historical receipt replay; transforms are illustrative"
+    },
+    {
+      "name": "quantum_api",
+      "status": "internal_research",
+      "entry_paths": [
+        "quantum_main.py",
+        "Dockerfile"
+      ],
+      "boundary": "Not a supported production deployment"
+    },
+    {
+      "name": "meaning_judges",
+      "status": "research",
+      "entry_paths": [
+        "sum_engine_internal/research/meaning/local_judge.py"
+      ],
+      "boundary": "Fallible proxies; sampling and token-window limits apply"
+    }
+  ],
   "receipts": {
     "fixtures": [
       {
@@ -57,6 +125,11 @@
       {
         "path": "fixtures/bench_receipts/drift_composition_2026-05-22.json",
         "schema": "sum.drift_metric_composition.v1",
+        "issued_at": null
+      },
+      {
+        "path": "fixtures/bench_receipts/drift_composition_2026-09-09.json",
+        "schema": "sum.drift_metric_composition.v2",
         "issued_at": null
       },
       {

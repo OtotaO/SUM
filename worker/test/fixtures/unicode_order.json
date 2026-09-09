@@ -1,0 +1,171 @@
+{
+  "schema": "sum.unicode_order_cross_runtime.v1",
+  "reference": "Python sorted tuples and SUM JCS; no Unicode normalization",
+  "triples": [
+    [
+      "𐀀",
+      "p",
+      "o"
+    ],
+    [
+      "",
+      "p",
+      "o"
+    ],
+    [
+      "a",
+      "𐀀",
+      "o"
+    ],
+    [
+      "a",
+      "",
+      "o"
+    ],
+    [
+      "a",
+      "p",
+      "😀"
+    ],
+    [
+      "a",
+      "p",
+      "￿"
+    ],
+    [
+      "a,",
+      "p",
+      "o"
+    ],
+    [
+      "a",
+      "z",
+      "o"
+    ],
+    [
+      "é",
+      "p",
+      "o"
+    ],
+    [
+      "é",
+      "p",
+      "o"
+    ]
+  ],
+  "source_chain": [
+    {
+      "claim": "𐀀",
+      "provenance": {
+        "source_uri": "local:𐀀",
+        "byte_start": 0,
+        "byte_end": 1
+      }
+    },
+    {
+      "claim": "𐀀",
+      "provenance": {
+        "source_uri": "local:",
+        "byte_start": 0,
+        "byte_end": 1
+      }
+    },
+    {
+      "claim": "",
+      "provenance": {
+        "source_uri": "local:𐀀",
+        "byte_start": 0,
+        "byte_end": 1
+      }
+    },
+    {
+      "claim": "",
+      "provenance": {
+        "source_uri": "local:",
+        "byte_start": 0,
+        "byte_end": 1
+      }
+    }
+  ],
+  "source_chain_hash": "sha256-6bdbba7de29cd90a1d40c32b8c5849ff820feaf75ce2b6805c974c932e160d83",
+  "sorted_triples": [
+    [
+      "a",
+      "p",
+      "￿"
+    ],
+    [
+      "a",
+      "p",
+      "😀"
+    ],
+    [
+      "a",
+      "z",
+      "o"
+    ],
+    [
+      "a",
+      "",
+      "o"
+    ],
+    [
+      "a",
+      "𐀀",
+      "o"
+    ],
+    [
+      "a,",
+      "p",
+      "o"
+    ],
+    [
+      "é",
+      "p",
+      "o"
+    ],
+    [
+      "é",
+      "p",
+      "o"
+    ],
+    [
+      "",
+      "p",
+      "o"
+    ],
+    [
+      "𐀀",
+      "p",
+      "o"
+    ]
+  ],
+  "triples_hash": "sha256-cd094769019c55ccbc726e77e23abf750d23cdedd74f7ce96a23819a702e66e0",
+  "density_half": [
+    [
+      "a,",
+      "p",
+      "o"
+    ],
+    [
+      "a",
+      "p",
+      "￿"
+    ],
+    [
+      "a",
+      "p",
+      "😀"
+    ],
+    [
+      "a",
+      "z",
+      "o"
+    ],
+    [
+      "a",
+      "",
+      "o"
+    ]
+  ]
+}

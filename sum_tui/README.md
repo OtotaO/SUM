@@ -1,51 +1,18 @@
-# SUM Workbench (`sum_tui`)
+# SUM terminal receipt-demo prototype
 
-The terminal front-end for SUM — a [Textual](https://textual.textualize.io) TUI
-that realizes the locked product-vision workbench:
+This checkout-only Textual app replays and verifies the bundled historical BillSum receipt offline. Its sliders, meaning-diff examples, and candidate table are illustrative. The app does not run a transform or mint a receipt for pasted text. Use the browser workbench for source review and export, or the CLI for research judging.
 
-```
-① SOURCE  →  ② TRANSFORM  →  ③ MEANING LOSS  →  ④ MEANING-DIFF  →  ⑤ FRONTIER  →  signed receipt
-```
-
-It is the *door* the substrate has been missing: a one-keystroke way to mint and
-verify a meaning receipt, instead of running an orchestration script. Today it
-runs **fully offline** by replaying the real signed BillSum binding-gate golden
-(`verified` + `replayed` are cryptographic facts, no network, no model). The
-honesty discipline is surfaced in-UI as an **Epistemic Nutrition Label** (the
-proxy caveat + the proxy's blind spots travel with every number).
-
-## Run
+Install the checkout with verification support and Textual:
 
 ```bash
-pip install textual          # the only extra the TUI itself needs
-python -m sum_tui            # launch
-python -m sum_tui --smoke    # headless self-test (CI-safe)
+pip install -e '.[verify]'
+pip install textual
+python -m sum_tui
+python -m sum_tui --smoke
 ```
 
-Keys: `d` replay the signed demo · `r` run a transform · `←/→` adjust a focused
-slider · `tab` cycle panels · `c` clear · `?` help · `q` quit.
+Keys: `d` replays the signed demo, `r` shows CLI instructions, `c` clears, `?` opens help, and `q` quits. Arrow keys adjust an illustrative slider; Tab changes focus. Unmeasured input says **Not measured**. Editing or clearing the source invalidates a prior demo result and pending demo responses.
 
-## The web front-end, for free (first cut)
+The historical bound describes its named BillSum proxy and corpus. It is not a score for the user's input, a factual-truth verdict, or a new model measurement. Verification and arithmetic replay do not re-run the historical judge.
 
-Textual serves the same app to a browser, which is the on-ramp to a dedicated web
-UI:
-
-```bash
-textual serve "python -m sum_tui"
-```
-
-## Status (v0.1)
-
-- **Wired + real:** the offline signed-golden loop (replay + Ed25519 verify),
-  the number-box, the Epistemic Nutrition Label.
-- **Illustrative (clearly labelled):** the meaning-diff and frontier panels show
-  sample structure; live numbers come from `sum meaning-diff` / `sum frontier`
-  once a judge (`sum-engine[research,judge]`) and a transform (LLM key or local
-  Ollama) are wired through the `Run` action.
-- **Architecture:** the TUI never imports the heavy engine — it shells out to the
-  shipped `sum` / `sum_verify` CLI, so it stays snappy, dependency-light, and
-  degrades honestly when the live judge is absent.
-
-This is **building ahead of a named puller** (operator-directed dream work). It is
-deliberately shaped as the low-friction mint/verify surface an adopter would
-actually say yes to — so the dream and the adoption strategy point the same way.
+`sum_tui` is excluded from the published wheel. The adapter invokes the lightweight verifier with the current Python interpreter; Textual is a separate developer dependency.

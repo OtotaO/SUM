@@ -257,7 +257,7 @@ def verify_meaning_risk_receipt(
     if not isinstance(disclosure, str) or not _has_visible_text(disclosure):
         raise MeaningReceiptDisclosureError(
             "payload.disclosure must be a non-empty string with visible text "
-            "stating the proxy / marginal / exchangeability caveat; got "
+            "stating the proxy / marginal / sampling-assumptions caveat; got "
             f"{disclosure!r}"
         )
 

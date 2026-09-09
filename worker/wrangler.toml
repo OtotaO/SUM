@@ -103,3 +103,12 @@ RENDER_RECEIPT_PUBLIC_JWKS = '{"keys":[{"crv":"Ed25519","kty":"OKP","x":"MCzgC4f
 [[kv_namespaces]]
 binding = "RENDER_CACHE"
 id = "314f046b5e0b4c0ba6a5c8283e57b781"
+
+# Atomic provider admission. SQLite is supported on the Workers Free plan.
+[[durable_objects.bindings]]
+name = "LLM_BUDGET"
+class_name = "LLMBudget"
+
+[[migrations]]
+tag = "v1-llm-budget"
+new_sqlite_classes = ["LLMBudget"]

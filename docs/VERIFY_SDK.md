@@ -45,6 +45,81 @@ verified payload dict (meaning-risk) or a `VerifyResult` whose `.payload`
 carries the body (render / transform). On failure it raises — see
 *Errors* below.
 
+## Explicit offline trust policy
+
+The default `verify()` remains a signature/structure check against supplied
+keys, preserving historical receipt acceptance and return types. A relying
+application can add `trust_policy=TrustPolicy(...)`, or use `verify_report()`
+for individual `passed` / `not_checked` outcomes. Reports snapshot their payload
+and check metadata at verification time; their `result` field preserves the
+legacy verifier return object. Failures raise
+`TrustPolicyError` (also a `SumVerifyError`), with a machine-readable `check`.
+
+```python
+from sum_verify import (
+    RevocationSnapshot, TrustPolicy, key_fingerprint, verify_report,
+)
+
+# These three values come from the relying application's trusted configuration
+# and recorded acquisition process, not the untrusted receipt packet:
+# approved_jwks, revocation_document, revocations_retrieved_at
+policy = TrustPolicy(
+    trusted_keys={
+        key["kid"]: key_fingerprint(key) for key in approved_jwks["keys"]
+    },
+    revocations=RevocationSnapshot.from_document(
+        revocation_document, retrieved_at=revocations_retrieved_at,
+    ),
+    require_revocations=True,
+    max_revocation_age_seconds=3600,
+    max_age_seconds=300,
+)
+report = verify_report(receipt, jwks, trust_policy=policy)
+print(report.to_dict())
+```
+
+The trusted catalog pins both Ed25519 public key material and its approved
+key ID; an attacker-chosen `kid` cannot rename a revoked key into acceptance.
+An empty catalog rejects every key. Revocation checks reject every known alias
+of revoked material. Retain historical keys in the trusted catalog: a snapshot
+with unresolved revoked IDs fails closed with `revocation_key_unresolved`,
+because the verifier cannot otherwise determine their material or aliases. The caller
+must authenticate its approved keys and revocation document; the SDK does not
+fetch them or authenticate an organization's identity. A receipt packet's own
+JWKS is useful for signature checking but cannot establish that independent
+trust decision.
+
+`revocations=None` means **not checked**. An explicitly supplied empty snapshot
+means the key was absent from that snapshot. `require_revocations=True` or a
+snapshot age limit fails closed if the snapshot is missing. Snapshot freshness
+uses the caller-recorded retrieval time, not a field supplied by the signer;
+that clock and the snapshot's authenticity remain caller responsibilities.
+Older cached snapshots cannot establish whether a newer revocation exists.
+
+`archival=True` deliberately leaves receipt freshness **not checked** and is
+mutually exclusive with an age limit. It does not prove historical existence
+or waive revocation: the policy rejects every listed key even when `signed_at`
+claims a pre-compromise time. A compromised key can sign a backdated receipt.
+Independent timestamp/transparency evidence and organizational archival policy
+are outside this verifier. Direct render and transform `revoked_kids=` remain
+legacy effective-time checks; use `TrustPolicy` for the stronger policy above.
+
+For artifact commitments, use `expected_bindings={"input_hash": computed_hash}`
+and optionally `required_bindings={"input_hash"}`. Values must be independently
+computed using that receipt family's canonicalization rules, not copied from
+the receipt. Required bindings need supplied comparison values; merely having
+a signed hash is insufficient. Supported names are signed top-level `*_hash`
+fields; using a field absent from that family fails. This checks hash equality,
+not source retrieval, conversion fidelity, model remeasurement, or truth.
+
+The generic chain path applies policy to the outer envelope. For supplied
+hops, verify each with its own policy and use
+`verify_chain_receipt(hop_envelopes=...)` to check the chain's commitments.
+The report marks absent hop checks explicitly. Meaning-risk loss replay is
+reported independently from source remeasurement and sampling assumptions,
+which remain **not checked**. Historical receipts without `statistical_scope`
+report `not_declared`; their signed bytes are not rewritten.
+
 ## Use it from the shell
 
 ```bash
@@ -82,6 +157,7 @@ next increment.
 | `ChainReceiptReplayError` / `ChainReceiptDisclosureError` | chain receipt: side-band does not reproduce the committed hashes/sums/bound, or a required disclosure (`not_covered` / `disclosure` / `budget_scope`) is missing |
 | `MeaningReceiptDisclosureError` | signature valid, but the receipt omits a required disclosure (`not_covered` / `disclosure`) — a bare bound is refused |
 | `MeaningReceiptReplayError` | signature valid, but the supplied losses don't reproduce the committed hash / bound / `n` / `controlled` |
+| `TrustPolicyError` | valid signed receipt rejected by a requested key, revocation, freshness, or artifact-binding check |
 | `UnsupportedSchemaError` | the envelope's `schema` is not one this SDK accepts |
 
 ## What a verified receipt proves — and does NOT
@@ -94,8 +170,11 @@ equality* on the micro-unit wire grid.
 
 **Does NOT prove that meaning was preserved.** A meaning-risk receipt
 bounds a **named proxy** for meaning-loss, **marginally** (the average
-over the calibration corpus, never per-document), and only **under
-exchangeability** between that corpus and deployment. It says nothing
+over the calibration corpus, never per-document). Interpreting the bound
+as a population statement requires the named method's assumptions, including
+independent calibration draws from the target distribution under a fixed
+evaluation policy; exchangeability alone is insufficient. Arithmetic replay
+does not validate those assumptions. It says nothing
 about the layers its `not_covered` field declares out of scope —
 arrangement, sound, connotation, implicature. The verifier *enforces*
 that those disclosures are present; it does not let a bare bound through.

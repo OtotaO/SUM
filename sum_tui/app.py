@@ -23,7 +23,6 @@ from textual.widget import Widget
 from textual.widgets import (
     Button,
     DataTable,
-    Digits,
     Footer,
     Header,
     Static,
@@ -102,13 +101,13 @@ class Slider(Widget):
 
 class SumApp(App):
     CSS_PATH = "app.tcss"
-    TITLE = "SUM · Workbench"
+    TITLE = "SUM · Receipt demo prototype"
     # Framing-neutral on purpose: states what the receipt IS (a signed,
     # replayable bound on a named proxy), not which market story sells it.
     SUB_TITLE = "signed, replayable bounds on a named meaning-loss proxy"
     BINDINGS = [
         Binding("d", "load_demo", "Load demo"),
-        Binding("r", "run", "Run transform"),
+        Binding("r", "run", "CLI instructions"),
         Binding("c", "clear", "Clear"),
         Binding("question_mark", "help", "Help"),
         Binding("q", "quit", "Quit"),
@@ -128,11 +127,11 @@ class SumApp(App):
                 yield Slider("compress", value=0.60, id="s-compress")
                 yield Slider("formality", value=0.40, id="s-formality")
                 yield Slider("simplify", value=0.50, id="s-simplify")
-                yield Button("Run ▶  [r]", id="run", variant="success")
+                yield Button("CLI instructions  [r]", id="run")
                 yield Static("③ MEANING LOSS", classes="panel-title")
                 with Vertical(id="lossnum-wrap"):
-                    yield Digits("0.000", id="lossnum")
-                    yield Static("risk upper bound", id="loss-cap", classes="dim")
+                    yield Static("Not measured", id="lossnum")
+                    yield Static("No measurement for your text", id="loss-cap", classes="dim")
             with Vertical(id="col-results", classes="col"):
                 yield Static("④ MEANING-DIFF", classes="panel-title")
                 with VerticalScroll(id="diff"):
@@ -143,6 +142,8 @@ class SumApp(App):
         yield Footer()
 
     def on_mount(self) -> None:
+        self._demo_generation = 0
+        self._demo_source_text = None
         table = self.query_one("#frontier", DataTable)
         table.add_columns("rung", "compress", "loss", "Δloss/Δcompress")
         table.cursor_type = "row"
@@ -164,42 +165,64 @@ class SumApp(App):
             handler()
 
     def action_load_demo(self) -> None:
+        self._demo_generation += 1
+        generation = self._demo_generation
+        self._reset_measurement()
         self.query_one("#nutrition", Static).update(
             Text("⟳ replaying the signed golden offline…", style=ACCENT)
         )
-        self._load_demo_worker()
+        self._load_demo_worker(generation)
 
     @work(thread=True)
-    def _load_demo_worker(self) -> None:
+    def _load_demo_worker(self, generation: int) -> None:
         data = engine.run_demo()
-        self.call_from_thread(self._apply_demo, data)
+        self.call_from_thread(self._apply_demo, data, generation)
 
-    def _apply_demo(self, data: dict) -> None:
-        if not data.get("verified"):
+    def _apply_demo(self, data: dict, generation: int) -> None:
+        if generation != self._demo_generation:
+            return
+        bound = data.get("risk_upper_bound")
+        if (not data.get("verified") or not data.get("replayed")
+                or not isinstance(bound, (int, float)) or isinstance(bound, bool)
+                or not 0 <= bound <= 1):
             self.query_one("#nutrition", Static).update(
                 Text(f"✗ demo failed: {data.get('error', 'unknown')}", style=RED)
             )
             return
-        bound = float(data.get("risk_upper_bound", 0.0) or 0.0)
-        self.query_one("#lossnum", Digits).update(f"{bound:.4f}")
+        self.query_one("#lossnum", Static).update(f"{bound:.4f}")
         self.query_one("#loss-cap", Static).update(
-            f"risk upper bound @95% · n={data.get('n', '?')}"
+            f"Historical BillSum proxy bound @95% · n={data.get('n', '?')}"
         )
-        self.query_one("#source", TextArea).text = (
+        self._demo_source_text = (
             "DEMO · BillSum binding-gate golden (CC0).\n\n"
             "The receipt below was replayed and its Ed25519 signature verified "
             "OFFLINE. 'verified' and 'replayed' are cryptographic facts — not, by "
             "themselves, evidence that meaning was preserved (see the label below)."
         )
+        self.query_one("#source", TextArea).text = self._demo_source_text
         self.query_one("#nutrition", Static).update(self._nutrition_for(data))
+
+    def _reset_measurement(self) -> None:
+        self.query_one("#lossnum", Static).update("Not measured")
+        self.query_one("#loss-cap", Static).update("No measurement for your text")
+
+    def on_text_area_changed(self, event: TextArea.Changed) -> None:
+        if event.text_area.id != "source" or not hasattr(self, "_demo_generation"):
+            return
+        if event.text_area.text == self._demo_source_text:
+            return
+        self._demo_generation += 1
+        self._reset_measurement()
+        self.query_one("#nutrition", Static).update(self._nutrition_idle())
 
     def action_run(self) -> None:
         self.query_one("#nutrition", Static).update(self._nutrition_run_hint())
 
     def action_clear(self) -> None:
+        self._demo_generation += 1
+        self._demo_source_text = None
         self.query_one("#source", TextArea).text = ""
-        self.query_one("#lossnum", Digits).update("0.000")
-        self.query_one("#loss-cap", Static).update("risk upper bound")
+        self._reset_measurement()
         self.query_one("#nutrition", Static).update(self._nutrition_idle())
 
     def action_help(self) -> None:
@@ -251,12 +274,12 @@ class SumApp(App):
 
     def _nutrition_run_hint(self) -> Text:
         text = Text()
-        text.append("LIVE TRANSFORM\n", style=f"bold {AMBER}")
+        text.append("CLI INSTRUCTIONS (this prototype does not run transforms)\n", style=f"bold {AMBER}")
         text.append(
-            "  v0.1 wires the offline signed demo (press d). A live transform mints a\n"
-            "  sum.meaning_risk_receipt over YOUR text — needs  pip install 'sum-engine[research]'\n"
-            "  + a judge ([judge]) + an LLM key (or local Ollama). The sliders above map to the\n"
-            "  perspective/compression axes; the receipt is the door this front-end opens.",
+            "  Press d to replay the historical signed demo. These sliders are illustrative.\n"
+            "  To compare your own files, install sum-engine[research,judge] and run:\n"
+            "  sum meaning-diff --help\n"
+            "  Use the browser workbench for source review and export.",
             style="#9aa6b2",
         )
         return text
@@ -266,7 +289,7 @@ class SumApp(App):
         text.append("SUM WORKBENCH — keys\n", style=f"bold {ACCENT}")
         rows = [
             ("d", "replay the signed BillSum golden offline (real verify + replay)"),
-            ("r", "run a transform (live: needs sum[research,judge] + an LLM key)"),
+            ("r", "show CLI instructions; the TUI does not run a transform"),
             ("◂ ▸", "adjust a focused slider   ·   tab cycles panels"),
             ("c", "clear     ·     q  quit"),
             ("web", "textual serve \"python -m sum_tui\"  →  the same UI in a browser"),

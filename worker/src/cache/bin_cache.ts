@@ -1,3 +1,4 @@
+import { compareTriples } from "../unicode_order";
 // Bin-quantized KV cache for slider renders.
 //
 // Mirrors the contract of sum_engine_internal.ensemble.slider_renderer.
@@ -65,7 +66,7 @@ export async function deriveCacheKey(
   triples: Array<[string, string, string]>,
   quantizedSliders: RenderResult["quantized_sliders"],
 ): Promise<string> {
-  const sortedTriples = [...triples].sort();
+  const sortedTriples = [...triples].sort(compareTriples);
   // Construct with keys in alphabetical order so JSON.stringify
   // preserves the same ordering as Python's sort_keys=True.
   const sliders = {

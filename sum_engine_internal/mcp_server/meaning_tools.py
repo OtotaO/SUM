@@ -532,6 +532,8 @@ def register_meaning_tools(mcp: Any) -> None:
                 "scorer": loaded.name,
                 "scorer_version": loaded.version,
                 "scope": _DIFF_SCOPE,
+                "inspection": getattr(r, "inspection", None),
+                "scorer_instrument": getattr(loaded, "instrument", None),
                 "concurrency": _JUDGE_HINT,
             }
             if scorer == "embedding":
@@ -705,6 +707,7 @@ def register_meaning_tools(mcp: Any) -> None:
             )
             import sum_verify
 
+            evaluation_manifest = None
             if losses is not None:
                 lerr = _validate_losses(losses)
                 if lerr is not None:
@@ -737,6 +740,11 @@ def register_meaning_tools(mcp: Any) -> None:
                         None, score_pairs, tuples, loaded
                     )
                 judge_name, judge_version = loaded.name, loaded.version
+                from sum_engine_internal.research.meaning.evidence import build_evaluation_manifest
+                evaluation_manifest = build_evaluation_manifest(
+                    tuples, loaded, transform_configuration={"description": transform,
+                                                            "generation_provenance": "caller_supplied_outputs"},
+                )
 
             def _mint() -> "tuple[dict, dict, dict]":
                 guarantee = certify_meaning_risk(
@@ -747,6 +755,7 @@ def register_meaning_tools(mcp: Any) -> None:
                     guarantee=guarantee, losses=loss_vec, corpus_id=corpus_id,
                     transform=transform, alpha_target=alpha_target,
                     loss_definition=loss_definition,
+                    evaluation_manifest=evaluation_manifest,
                 )
                 receipt = sign_meaning_risk_receipt(
                     payload, private_jwk=private_jwk, kid=kid

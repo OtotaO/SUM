@@ -41,7 +41,8 @@ import {
 import { computeSourceChainHash } from "../receipt/source_chain";
 import { getTransform, hasTransform, listTransforms } from "../transforms/_registry";
 import type { TransformEnv } from "../transforms/_base";
-import { checkRateLimit, classifyScope, rateLimitedResponse } from "../rate_limit";
+import { checkRateLimit, rateLimitedResponse } from "../rate_limit";
+import { readBoundedJSON, requireObject, validateTriples, validateSliders, RequestError, errorResponse } from "../request_limits";
 
 interface TransformRequest {
   transform?: string;
@@ -81,21 +82,33 @@ export async function handleTransform(
     return json({ error: "method not allowed; use POST" }, 405);
   }
 
-  // This registry does not yet dispatch LLM calls. Keep the conservative
-  // demo allowance; BYO headers cannot establish actual funding here.
-  if (env.RENDER_CACHE) {
-    const scope = classifyScope("transform");
-    const rl = await checkRateLimit(request, env.RENDER_CACHE, scope);
-    if (!rl.allowed) {
-      return rateLimitedResponse(rl);
-    }
-  }
-
   let body: TransformRequest;
   try {
-    body = (await request.json()) as TransformRequest;
-  } catch {
-    return json({ error: "invalid JSON body" }, 400);
+    const value = await readBoundedJSON(request);
+    requireObject(value);
+    if (value.parameters !== undefined) requireObject(value.parameters, "parameters");
+    if (value.transform === "slider") {
+      requireObject(value.input, "input");
+      validateTriples(value.input.triples);
+      validateSliders(value.parameters ?? {});
+    }
+    if (value.source_chain !== undefined) {
+      if (!Array.isArray(value.source_chain) || value.source_chain.length > 256) throw new RequestError("source_chain must contain at most 256 records");
+      for (const record of value.source_chain) {
+        requireObject(record, "source_chain record");
+        requireObject(record.provenance, "provenance");
+        const p = record.provenance;
+        if (typeof record.claim !== "string" || record.claim.length > 4096 || typeof p.source_uri !== "string" || p.source_uri.length > 2048 || !Number.isSafeInteger(p.byte_start) || !Number.isSafeInteger(p.byte_end) || (p.byte_start as number) < 0 || (p.byte_end as number) < (p.byte_start as number)) throw new RequestError("invalid source_chain record");
+      }
+    }
+    body = value as unknown as TransformRequest;
+  } catch (error) { return errorResponse(error); }
+
+  // The registry currently supports deterministic work only. It uses the
+  // cheap-route allowance and remains usable without provider controls.
+  if (env.RENDER_CACHE) {
+    const rl = await checkRateLimit(request, env.RENDER_CACHE, "canonical");
+    if (!rl.allowed) return rateLimitedResponse(rl);
   }
 
   if (!body.transform || typeof body.transform !== "string") {

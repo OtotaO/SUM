@@ -35,7 +35,7 @@ The family has **five schemas**, in two tiers:
 
 The **provenance tier** is a cryptographic attestation (what happened).
 The **measured-bound tier** adds a conformal certificate that is *replayable*
-but bounds a *named proxy marginally under exchangeability* — never a
+but bounds a *named proxy in expectation under independent calibration sampling*, never a
 per-document truth claim. The two tiers must never be conflated; §6.
 
 Supporting infrastructure (own specs, out of scope here): the trust root
@@ -237,7 +237,7 @@ EU AI Act Art 50 disclosure surface.
   not that the issuer is trustworthy. `scorer` / `model` / `provider`
   labels are **producer-asserted, not attested**.
 - **That meaning was preserved.** The conformal tier bounds a *named
-  proxy* for meaning-loss, **marginally**, under **exchangeability** with
+  proxy* for meaning-loss, **in expectation**, requiring independent calibration draws from
   the named corpus — never per-document, never the layers `not_covered`
   declares out of reach (arrangement, sound, connotation, implicature).
 - **AI-vs-human authorship.** SUM does not ship a detection number; any

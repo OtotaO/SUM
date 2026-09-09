@@ -1,5 +1,17 @@
 # Feature Catalog
 
+> Current product status (2026-09-09): this is an implementation inventory, not a count of finished customer workflows. The historical Production marker includes internal research consumers. Use the surface table below and README for supported entry points; verify deployment/package versions separately.
+
+| Surface | Status in source | Boundary |
+|---|---|---|
+| CLI, offline verifier, local MCP | Supported interfaces | Optional extraction/judge dependencies differ from the lightweight verifier |
+| Browser workbench and Worker | Supported web source | Deployment must pass its own gates; literal review is not semantic remeasurement |
+| Selection-capture extension | Checkout development packages | Explicit capture/copy/paste; browser-store distribution is separate |
+| Terminal UI | Receipt-demo prototype | Historical replay; no transform of pasted text |
+| Quantum API and Docker recipe | Internal research | Excluded from the shipping API/package promise; no production deployment claim |
+| Meaning judges, frontier and benchmark runners | Research | Instrument/sampling/truncation limits apply; an ordered candidate list is not a Pareto guarantee |
+
+
 **Generated 2026-04-21; extended 2026-04-27 with the Phase E.1 v0.4 → v0.9.A.2 surface (Layer 10 added; Layer 9 feature 97 promoted to ✅); refreshed through 2026-05-25 (entries 169–170: evidence-chain layer + T1 iterated round-trip runner).** One pass across the codebase, one verification test per feature, actual test output recorded below each. Intent: no more "shipped or not?" ambiguity, no more stale pointers in the README or PROOF_BOUNDARY. A new contributor can read this file and reproduce every claim in under fifteen minutes.
 
 ## Status tiers
@@ -654,7 +666,7 @@ Result: **PASS**.
 
 > **⚠️ Internal-research only — NOT shipped.** Entries 76–84 below live exclusively in `api/quantum_router.py`, which was **demoted to internal-research per PR #260** (1684 LOC; **excluded from the PyPI wheel** via `pyproject.toml`, **not** in the live Cloudflare Worker, **not** in the dogfood quickstart). They are marked ✅ under this catalog's definition — *wired into a working FastAPI surface and tested* — but a user installing `sum-engine` **cannot reach them**. They deliver no shipped outcome to any named buyer. Promotion to a shipping `[api]` extra is gated on a named buyer or grant deliverable referencing one of the endpoint clusters (see PR #260 / `CLAUDE.md` "Internal research surfaces"). Read the ✅ on these nine as "implemented + tested," not "shipped."
 
-**Note:** Four Tests/test_phase1*_abi.py / test_phase1*_zenith.py / test_browser_extension.py files currently fail collection due to a missing `jwt` Python module. The API code itself is not broken — the tests that import `api.quantum_router` transitively pull in `jwt` via the auth module. All Layer-7 verifications below rely on grep-level code presence + the tests that pass in isolation.
+**Dependency scope:** these internal API tests require the full developer environment (`make install`). A lightweight verification installation intentionally omits the research API dependencies. A passing source-presence check is not an executed endpoint test.
 
 ### 76. `POST /ingest` ✅
 
@@ -1415,7 +1427,7 @@ Result: **PASS**.
 
 ### 170. T1 iterated round-trip runner (bench-hardening) ✅
 
-`scripts/bench/runners/s25_iterated_round_trip.py` + `make iterated-round-trip` ship the runner for the §2.5 closure-under-iteration claim. Algorithm per document: `axioms_0 = extract(text); for k in 1..K: prose_k = generate(axioms_{k-1}); axioms_k = extract(prose_k); drift_k = 1 - exact_match_recall(axioms_k, axioms_0)`. Output: NDJSON receipt under `sum.iterated_round_trip_drift.v1`, per-doc per-K rows + aggregate (median / p10 / max drift) + composition verdict (`stable` / `accumulating` / `saturating` / `noisy` / `insufficient_data`). All three seed corpora landed K=10 receipts 2026-05-21 with verdict STABLE — PROOF_BOUNDARY §2.5.1.a/b/c carries the receipts. The "open characterization" caveat on §2.5 is retired by these landings; T1 from `docs/BENCH_HARDENING_FROM_QCVV.md` is CLOSED.
+`scripts/bench/runners/s25_iterated_round_trip.py` and `make iterated-round-trip` generate per-document observations across K iterations relative to the initial extracted axiom set. The historical output carries heuristic composition verdicts; those labels are not equivalence tests. All three stored corpus medians were unchanged at K=10, but the corrected T4 v2 endpoint analysis finds six worsening pairs across 86 documents. See PROOF_BOUNDARY section 2.5.1 and DRIFT_METRIC_COMPOSITION for the erratum. The runner is implemented; a general closure-under-iteration claim remains unestablished.
 
 Verify: `pytest Tests/test_iterated_round_trip_runner.py -q`
 Expected: 5 passed.
@@ -1427,7 +1439,7 @@ Result: **PASS**.
 
 Counts regenerated mechanically from this file's headings via the recipe `grep -cE "^### .*<emoji>" docs/FEATURE_CATALOG.md`. Total entries: **170**.
 
-- **Production ✅: 151 features** — tested green; each has a verification command in its entry. (Up from 149 after the post-0.7.0 catalog refresh added entry 169 — evidence-chain layer — back-filling pre-0.7.0 PR #200 — and entry 170 — T1 iterated round-trip runner closing the §2.5 closure-under-iteration acceptance criterion.) **Caveat:** 9 of these (entries 76–84, Layer 7) are `api/quantum_router.py` endpoints that are **internal-research only** — wired + tested but excluded from the shipped wheel and the live Worker (demoted PR #260). They satisfy the ✅ definition ("wired into a non-test consumer + tested") but are not user-reachable; the genuinely user-shippable production surface is therefore **142**. See the Layer 7 banner.
+- **Production ✅: 151 features** — tested green; each has a verification command in its entry. (Up from 149 after the post-0.7.0 catalog refresh added entry 169 — evidence-chain layer — back-filling pre-0.7.0 PR #200 — and entry 170, the T1 iterated round-trip measurement runner; its old composition-closure interpretation has been retired.) **Caveat:** 9 of these (entries 76–84, Layer 7) are `api/quantum_router.py` endpoints that are **internal-research only** — wired + tested but excluded from the shipped wheel and the live Worker (demoted PR #260). They satisfy the ✅ definition ("wired into a non-test consumer + tested") but are not user-reachable; subtracting those nine leaves **142 inventory entries**, which still does not establish 142 usable or independently validated customer workflows. See the Layer 7 banner.
 - **Scaffolded 🔧: 18 features** — tests pass, production activation pending. All catalogued in `docs/MODULE_AUDIT.md` with activation checklists.
 - **Designed 📄: 1 feature** (sha256_128_v2 default-promotion; cross-runtime byte-identity locked, default-flip is a separate operator decision).
 
