@@ -129,14 +129,15 @@ async function callAnthropic(
   // operator's env var (operator-funded mode). Empty user-key strings
   // are treated as absent so a stray empty header doesn't break the
   // operator-funded path.
-  const apiKey = (userKey && userKey.trim()) || env.ANTHROPIC_API_KEY;
+  const byoKey = userKey?.trim();
+  const apiKey = byoKey || env.ANTHROPIC_API_KEY?.trim();
   if (!apiKey) {
     throw new Error("ANTHROPIC_API_KEY not set on Worker and no X-Render-LLM-Key-Anthropic header supplied");
   }
   // CF AI Gateway routing is only honoured for operator-funded calls;
   // a BYO-key user shouldn't be silently proxied through the
   // operator's gateway (would mix metrics and could double-bill).
-  const usingGateway = Boolean(env.CF_AI_GATEWAY_BASE) && !userKey;
+  const usingGateway = Boolean(env.CF_AI_GATEWAY_BASE) && !byoKey;
   const base = usingGateway
     ? `${env.CF_AI_GATEWAY_BASE!.replace(/\/$/, "")}/anthropic/v1/messages`
     : "https://api.anthropic.com/v1/messages";
@@ -187,11 +188,12 @@ async function callOpenAI(
   userKey?: string,
 ): Promise<LLMRenderResult> {
   // Same BYO-key precedence as callAnthropic; see its comments.
-  const apiKey = (userKey && userKey.trim()) || env.OPENAI_API_KEY;
+  const byoKey = userKey?.trim();
+  const apiKey = byoKey || env.OPENAI_API_KEY?.trim();
   if (!apiKey) {
     throw new Error("OPENAI_API_KEY not set on Worker and no X-Render-LLM-Key-OpenAI header supplied");
   }
-  const usingGateway = Boolean(env.CF_AI_GATEWAY_BASE) && !userKey;
+  const usingGateway = Boolean(env.CF_AI_GATEWAY_BASE) && !byoKey;
   const base = usingGateway
     ? `${env.CF_AI_GATEWAY_BASE!.replace(/\/$/, "")}/openai/chat/completions`
     : "https://api.openai.com/v1/chat/completions";
@@ -243,8 +245,8 @@ function resolveProvider(
   // operator env vars as "configured." A BYO-keys user who supplied
   // an Anthropic key gets the anthropic path even if the operator
   // has no Anthropic env var.
-  const hasAnthropic = Boolean((userKeys?.anthropic && userKeys.anthropic.trim()) || env.ANTHROPIC_API_KEY);
-  const hasOpenAI = Boolean((userKeys?.openai && userKeys.openai.trim()) || env.OPENAI_API_KEY);
+  const hasAnthropic = Boolean(userKeys?.anthropic?.trim() || env.ANTHROPIC_API_KEY?.trim());
+  const hasOpenAI = Boolean(userKeys?.openai?.trim() || env.OPENAI_API_KEY?.trim());
   if (hasAnthropic) return "anthropic";
   if (hasOpenAI) return "openai";
   throw new Error(
@@ -268,18 +270,6 @@ export async function handleRender(
 ): Promise<Response> {
   if (request.method !== "POST") {
     return json({ error: "method not allowed; use POST" }, 405);
-  }
-
-  // Rate limit BEFORE body parse. BYO-key headers classify the bucket;
-  // operator-keyed calls go in the 5/day demo bucket per IP, BYO-keyed
-  // calls go in the 100/hr bucket. Protects the operator's LLM credits
-  // from abuse.
-  if (env.RENDER_CACHE) {
-    const scope = classifyScope("render", request);
-    const rl = await checkRateLimit(request, env.RENDER_CACHE, scope);
-    if (!rl.allowed) {
-      return rateLimitedResponse(rl);
-    }
   }
 
   let body: RenderRequest;
@@ -310,8 +300,8 @@ export async function handleRender(
   // actually served (`anthropic` / `openai`); the Worker never
   // persists the user-supplied key.
   const userKeys = {
-    anthropic: request.headers.get("x-render-llm-key-anthropic") ?? undefined,
-    openai: request.headers.get("x-render-llm-key-openai") ?? undefined,
+    anthropic: request.headers.get("x-render-llm-key-anthropic")?.trim() || undefined,
+    openai: request.headers.get("x-render-llm-key-openai")?.trim() || undefined,
   };
 
   // Provider resolution. If the request explicitly names one we honour
@@ -325,6 +315,19 @@ export async function handleRender(
     providerChoice = resolveProvider(env, body.provider, userKeys);
   } catch (e) {
     return json({ error: (e as Error).message }, 503);
+  }
+
+  // Body.provider determines who serves this request. Resolve it before
+  // accounting, then give BOTH the quota classifier and the dispatcher
+  // this same selected credential. A BYO key for the other provider must
+  // never promote an operator-funded call to the 100/hr BYO allowance.
+  const selectedUserKey = userKeys[providerChoice];
+  if (env.RENDER_CACHE) {
+    const scope = classifyScope("render", selectedUserKey);
+    const rl = await checkRateLimit(request, env.RENDER_CACHE, scope);
+    if (!rl.allowed) {
+      return rateLimitedResponse(rl);
+    }
   }
 
   // Cache key includes the resolved provider so OpenAI and Anthropic
@@ -370,8 +373,8 @@ export async function handleRender(
     try {
       const llmResult =
         providerChoice === "openai"
-          ? await callOpenAI(env, systemPrompt, userPrompt, userKeys.openai)
-          : await callAnthropic(env, systemPrompt, userPrompt, userKeys.anthropic);
+          ? await callOpenAI(env, systemPrompt, userPrompt, selectedUserKey)
+          : await callAnthropic(env, systemPrompt, userPrompt, selectedUserKey);
       tome = llmResult.tome;
       modelUsed = llmResult.model_used;
       providerUsed = llmResult.provider;

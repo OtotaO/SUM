@@ -10,7 +10,7 @@
 //
 //   LLM-axis routes (/api/render off-centre, /api/transform off-centre,
 //                    /api/complete):
-//     - BYO key (X-Render-LLM-Key-Anthropic|OpenAI present):
+//     - /api/render with a BYO key for the selected provider:
 //         100 calls per IP per hour. Defends the Worker's CPU + KV
 //         budget; the caller is paying their own LLM bill.
 //     - Operator-keyed demo:
@@ -62,14 +62,13 @@ const POLICY: Record<RateLimitScope, RateLimitConfig> = {
 };
 
 /**
- * Classify the request's rate-limiting scope. The route handler calls
- * this BEFORE the LLM dispatch. Returns the policy scope + whether
- * the caller has supplied a BYO key for the LLM provider this route
- * may use.
+ * Classify BEFORE dispatch, using only the BYO credential selected for
+ * that dispatch. A key for a different provider cannot fund this call.
+ * Omit selectedUserKey when the route cannot establish BYO funding.
  */
 export function classifyScope(
   endpoint: "render" | "transform" | "complete" | "qid",
-  request: Request,
+  selectedUserKey?: string,
 ): RateLimitScope {
   if (endpoint === "qid") return "qid";
 
@@ -80,16 +79,13 @@ export function classifyScope(
   // operator credit at the 100/hr byok rate instead of 5/day (2026-07-31 #10).
   if (endpoint === "complete") return "llm-axis-demo";
 
-  // BYO-key detection MUST use the same TRIMMED emptiness test the key
-  // selection uses (render.ts: `(userKey && userKey.trim()) || env.…`). With a
-  // raw `!!get()` a whitespace-only header ("  ") classifies as byok (100/hr)
-  // yet the render still falls back to the operator key — 20x operator-credit
-  // amplification (2026-07-31 #11). One rule for both, so they cannot drift.
-  const hasByoKey =
-    !!request.headers.get("x-render-llm-key-anthropic")?.trim() ||
-    !!request.headers.get("x-render-llm-key-openai")?.trim();
+  // /api/transform has no LLM dispatch yet, so headers alone do not
+  // establish caller funding. Keep its conservative demo allowance until
+  // the dispatcher can prove which credential a transform will consume.
+  if (endpoint === "transform") return "llm-axis-demo";
 
-  return hasByoKey ? "llm-axis-byok" : "llm-axis-demo";
+  // Whitespace-only credentials must match dispatch's operator fallback.
+  return selectedUserKey?.trim() ? "llm-axis-byok" : "llm-axis-demo";
 }
 
 /**
@@ -159,8 +155,9 @@ export function rateLimitedResponse(result: RateLimitResult): Response {
     case "llm-axis-demo":
       remediation =
         "Operator-keyed demo allowance exhausted (5 / 24h per IP). " +
-        "Supply X-Render-LLM-Key-Anthropic or X-Render-LLM-Key-OpenAI " +
-        "header with your own key for 100/hr quota, retry after the " +
+        "For /api/render, select a provider and supply its matching " +
+        "X-Render-LLM-Key-Anthropic or X-Render-LLM-Key-OpenAI header " +
+        "with your own key for 100/hr quota. Otherwise retry after the " +
         "window resets, or run locally via `pip install sum-engine[openai]` " +
         "and `sum render` / `sum transform apply slider`.";
       break;

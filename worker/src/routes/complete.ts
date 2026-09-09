@@ -109,7 +109,7 @@ export async function handleComplete(request: Request, env: Env): Promise<Respon
   // to the 5/day demo bucket unconditionally — a stray BYO header cannot
   // promote a caller to the 100/hr byok rate on operator-funded calls.
   if (env.RENDER_CACHE) {
-    const scope = classifyScope("complete", request);
+    const scope = classifyScope("complete");
     const rl = await checkRateLimit(request, env.RENDER_CACHE, scope);
     if (!rl.allowed) {
       return rateLimitedResponse(rl);

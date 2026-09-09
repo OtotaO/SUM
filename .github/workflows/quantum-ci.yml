@@ -618,10 +618,8 @@ jobs:
     # first at deploy time against production.
     #
     # This is the cheapest honest gate: it pins the toolchain bumps and
-    # every future edit to worker/src. It does NOT replace behavioural
-    # tests for the rate limiter (worker/ still has none — tracked
-    # separately); it only guarantees the code compiles under the
-    # lockfile-pinned toolchain.
+    # every future edit to worker/src. Runtime gates below also exercise
+    # signing, density parity, and provider-funded quota classification.
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -638,6 +636,10 @@ jobs:
     - name: tsc --noEmit
       working-directory: worker
       run: npm run typecheck
+
+    - name: Worker provider credentials and sequential quota regressions
+      working-directory: worker
+      run: npm run test:rate-limit
 
     # Runtime gate, added after the jose 6.2.5 regression (PR #424, merged
     # 2026-07-31) silently broke BOTH receipt signers for four weeks. tsc
