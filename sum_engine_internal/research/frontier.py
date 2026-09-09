@@ -2,8 +2,8 @@
 
 The product vision (``docs/PRODUCT_VISION.md``) describes a slider, a
 number box, a frontier scrubber, and an API/MCP/CURL surface. They are
-all **views over one object**: for a source text, an *ordered path* of
-renderings from most-faithful to most-compressed, each point carrying
+all **views over one object**: for a source text, a caller-ordered candidate
+path of renderings, each point carrying
 its measured numbers. Build the frontier once; every surface is a thin
 view.
 
@@ -54,10 +54,10 @@ from sum_engine_internal.research.meaning.meaning_loss import MeaningScorer
 
 @dataclass(frozen=True, slots=True)
 class FrontierPoint:
-    """One rendering on the frontier.
+    """One rendering on the candidate path (not a proven Pareto frontier).
 
     ``position`` is the point's place on the faithful→compressed path,
-    ``0.0`` = most faithful, ``1.0`` = most compressed (assigned by
+    ``0.0`` = first candidate, ``1.0`` = last candidate (assigned by
     index, the caller's compression-control order — *not* by the
     measured loss, which is the outcome, not the control).
 
@@ -82,6 +82,7 @@ class FrontierPoint:
             "rendering": self.rendering,
             "meaning_loss": self.meaning_loss,
             "position": self.position,
+            "word_count": len(self.rendering.split()),
         }
         if self.fact_preservation is not None:
             d["fact_preservation"] = self.fact_preservation
@@ -126,6 +127,7 @@ class RungDiff:
     dropped_claims: tuple[str, ...]   # source sentences the proxy says were NOT preserved
     added_claims: tuple[str, ...]     # rendering sentences the named proxy could not ground in the source (unsupported; non-entailment, not proof of fabrication)
     loss_per_compression: float | None
+    inspection: Mapping[str, Any] | None = None
 
     def as_dict(self) -> dict[str, Any]:
         lpc = self.loss_per_compression
@@ -140,6 +142,7 @@ class RungDiff:
             ),
             "recall": round(self.recall, 6),
             "fidelity": round(self.fidelity, 6),
+            "inspection": self.inspection,
             "preserved_claims": self.preserved_claims,
             "source_claims": self.source_claims,
             "dropped_claims": list(self.dropped_claims),
@@ -158,7 +161,10 @@ class RungDiff:
 
 @dataclass(frozen=True, slots=True)
 class RenderFrontier:
-    """An ordered path of renderings of one source, most-faithful first.
+    """A caller-ordered candidate path of renderings of one source.
+
+    Neither length nor quality is assumed monotone. Legacy endpoint names
+    ``faithful`` and ``compressed`` are positional aliases only.
 
     Construct with :meth:`from_renderings` (you already have the
     renderings) or :meth:`from_render_fn` (inject a render function).
@@ -170,6 +176,7 @@ class RenderFrontier:
     scorer_name: str
     scorer_version: str
     points: tuple[FrontierPoint, ...] = field(default_factory=tuple)
+    scorer_instrument: Mapping[str, Any] | None = None
 
     # ---- constructors ----
 
@@ -224,6 +231,7 @@ class RenderFrontier:
             scorer_name=scorer.name,
             scorer_version=scorer.version,
             points=tuple(pts),
+            scorer_instrument=getattr(scorer, "instrument", None),
         )
 
     @classmethod
@@ -340,6 +348,7 @@ class RenderFrontier:
                     dropped_claims=r.dropped_claims,
                     added_claims=r.unsupported_claims,
                     loss_per_compression=lpc,
+                    inspection=getattr(r, "inspection", None),
                 )
             )
             prev_loss = r.loss
@@ -353,12 +362,16 @@ class RenderFrontier:
             "source": self.source,
             "scorer": self.scorer_name,
             "scorer_version": self.scorer_version,
+            "scorer_instrument": self.scorer_instrument,
+            "path_kind": "caller_ordered_candidates",
+            "ordering_note": "Position is an index; no monotone length, quality, or Pareto optimality is established.",
             "n": len(self.points),
             "measurement_note": (
                 "meaning_loss is a per-document measurement under the "
                 "named scorer, not a certified bound; the marginal "
-                "distribution-free guarantee is a sum.meaning_risk_"
-                "receipt.v1 over a named corpus"
+                "confidence interpretation of sum.meaning_risk_receipt.v1 "
+                "requires independent calibration draws from the target "
+                "distribution and a fixed policy"
             ),
             "points": [p.as_dict() for p in self.points],
         }

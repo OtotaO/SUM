@@ -58,6 +58,8 @@ CHECKED_ASSETS: list[tuple[str, str]] = [
     ("sum_core_wasm.js", "sum_core_wasm.js"),             # wasm loader (script src)
     ("sum_core.wasm", "sum_core.wasm"),                   # the wasm binary itself
     ("receipt_verifier.js", "receipt_verifier.js"),       # render-receipt verifier (imported by index.html)
+    ("review_packet.js", "review_packet.js"),             # displayed-output binding and portable review
+    ("workbench.js", "workbench.js"),                     # source/rewrite review UI
     ("meaning_receipt_verifier.js", "meaning_receipt_verifier.js"),    # meaning/perspective browser verifier
     ("transform_receipt_verifier.js", "transform_receipt_verifier.js"),  # transform browser verifier
     ("jcs.js", "jcs.js"),                                 # float-free canonicalizer

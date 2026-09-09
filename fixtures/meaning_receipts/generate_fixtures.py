@@ -20,6 +20,9 @@ Run:  python fixtures/meaning_receipts/generate_fixtures.py
 """
 from __future__ import annotations
 
+from scripts.fixture_history import historical_fixture_payload
+from scripts.fixture_history import HISTORICAL_MEANING_DISCLOSURE
+
 import base64
 import json
 from pathlib import Path
@@ -93,6 +96,7 @@ def build() -> tuple[dict, dict]:
         loss_definition=LOSS_DEFINITION,
         signed_at=SIGNED_AT,
     )
+    payload = historical_fixture_payload(payload, disclosure=HISTORICAL_MEANING_DISCLOSURE)
     private, public = _keypair()
     receipt = sign_meaning_risk_receipt(payload, private_jwk=private, kid=KID)
     return receipt, {"keys": [public]}

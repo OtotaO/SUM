@@ -18,11 +18,11 @@
 // extractTriples() walks at runtime.
 
 import type { Env } from "../index";
-import { checkRateLimit, classifyScope, rateLimitedResponse } from "../rate_limit";
+import { admitLLM } from "../llm_budget";
+import { readBoundedJSON, requireObject, RequestError, errorResponse, MAX_PROMPT_CHARS, providerJSON } from "../request_limits";
 
 const ANTHROPIC_DEFAULT = "claude-haiku-4-5-20251001";
 const OPENAI_DEFAULT = "gpt-4o-mini";
-const MAX_PROMPT_CHARS = 40_000;
 const MAX_OUTPUT_TOKENS = 2048;
 
 interface CompleteRequest {
@@ -45,11 +45,11 @@ async function callAnthropic(env: Env, prompt: string, model: string): Promise<s
     ? `${env.CF_AI_GATEWAY_BASE.replace(/\/$/, "")}/anthropic/v1/messages`
     : "https://api.anthropic.com/v1/messages";
 
-  const res = await fetch(base, {
+  const data = await providerJSON(base, {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-api-key": env.ANTHROPIC_API_KEY!,
+      "x-api-key": env.ANTHROPIC_API_KEY!.trim(),
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
@@ -57,14 +57,7 @@ async function callAnthropic(env: Env, prompt: string, model: string): Promise<s
       max_tokens: MAX_OUTPUT_TOKENS,
       messages: [{ role: "user", content: prompt }],
     }),
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`anthropic ${res.status}: ${text.slice(0, 500)}`);
-  }
-
-  const data = (await res.json()) as { content?: Array<{ type: string; text?: string }> };
+  }) as { content?: Array<{ type: string; text?: string }> };
   const block = (data.content ?? []).find((b) => b.type === "text");
   if (!block?.text) throw new Error("anthropic: empty completion");
   return block.text;
@@ -75,25 +68,18 @@ async function callOpenAI(env: Env, prompt: string, model: string): Promise<stri
     ? `${env.CF_AI_GATEWAY_BASE.replace(/\/$/, "")}/openai/chat/completions`
     : "https://api.openai.com/v1/chat/completions";
 
-  const res = await fetch(base, {
+  const data = await providerJSON(base, {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      authorization: `Bearer ${env.OPENAI_API_KEY!}`,
+      authorization: `Bearer ${env.OPENAI_API_KEY!.trim()}`,
     },
     body: JSON.stringify({
       model,
       max_tokens: MAX_OUTPUT_TOKENS,
       messages: [{ role: "user", content: prompt }],
     }),
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`openai ${res.status}: ${text.slice(0, 500)}`);
-  }
-
-  const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
+  }) as { choices?: Array<{ message?: { content?: string } }> };
   const text = data.choices?.[0]?.message?.content;
   if (!text) throw new Error("openai: empty completion");
   return text;
@@ -104,24 +90,13 @@ export async function handleComplete(request: Request, env: Env): Promise<Respon
     return json({ error: "method not allowed; use POST" }, 405);
   }
 
-  // Rate limit before body parse. This route does NOT honour BYO headers
-  // (it always calls the operator's provider key), so classifyScope pins it
-  // to the 5/day demo bucket unconditionally — a stray BYO header cannot
-  // promote a caller to the 100/hr byok rate on operator-funded calls.
-  if (env.RENDER_CACHE) {
-    const scope = classifyScope("complete");
-    const rl = await checkRateLimit(request, env.RENDER_CACHE, scope);
-    if (!rl.allowed) {
-      return rateLimitedResponse(rl);
-    }
-  }
-
   let body: CompleteRequest;
   try {
-    body = (await request.json()) as CompleteRequest;
-  } catch {
-    return json({ error: "invalid JSON body" }, 400);
-  }
+    const value = await readBoundedJSON(request);
+    requireObject(value);
+    if (value.model !== undefined && typeof value.model !== "string") throw new RequestError("model must be a string");
+    body = value as unknown as CompleteRequest;
+  } catch (error) { return errorResponse(error); }
 
   const prompt = body?.prompt;
   if (typeof prompt !== "string" || !prompt.trim()) {
@@ -131,8 +106,8 @@ export async function handleComplete(request: Request, env: Env): Promise<Respon
     return json({ error: `prompt exceeds ${MAX_PROMPT_CHARS} chars` }, 413);
   }
 
-  const useAnthropic = Boolean(env.ANTHROPIC_API_KEY);
-  const useOpenAI = !useAnthropic && Boolean(env.OPENAI_API_KEY);
+  const useAnthropic = Boolean(env.ANTHROPIC_API_KEY?.trim());
+  const useOpenAI = !useAnthropic && Boolean(env.OPENAI_API_KEY?.trim());
 
   if (!useAnthropic && !useOpenAI) {
     // 503 signals the demo's JS to fall through to the naive tokeniser
@@ -148,17 +123,23 @@ export async function handleComplete(request: Request, env: Env): Promise<Respon
     );
   }
 
+  // Public callers may select only the configured model for this provider.
+  // Adding a more expensive model requires an operator configuration change.
+  const model = useAnthropic
+    ? env.SUM_DEFAULT_MODEL_ANTHROPIC ?? ANTHROPIC_DEFAULT
+    : env.SUM_DEFAULT_MODEL_OPENAI ?? OPENAI_DEFAULT;
+  if (body.model !== undefined && body.model !== model) return json({ error: "model is not enabled for the public demo" }, 400);
+  const admission = await admitLLM(request, env, "llm-axis-demo");
+  if (admission instanceof Response) return admission;
   try {
     if (useAnthropic) {
-      const model = body.model ?? env.SUM_DEFAULT_MODEL_ANTHROPIC ?? ANTHROPIC_DEFAULT;
       const completion = await callAnthropic(env, prompt, model);
       return json({ completion, source: "anthropic", model });
     }
-    const model = body.model ?? env.SUM_DEFAULT_MODEL_OPENAI ?? OPENAI_DEFAULT;
     const completion = await callOpenAI(env, prompt, model);
     return json({ completion, source: "openai", model });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     return json({ error: `upstream failure: ${msg}` }, 502);
-  }
+  } finally { await admission.release(); }
 }

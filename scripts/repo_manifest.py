@@ -135,6 +135,31 @@ def collect_pyproject_version() -> str:
     return m.group(1)
 
 
+def collect_product_surfaces() -> list[dict]:
+    """Publish declared interface scope, validating its entry paths exist.
+
+    This taxonomy describes source availability, not deployment, store
+    approval, measured adoption, or a count of completed user workflows.
+    """
+    declarations = (
+        ("cli", "supported_source", ("sum_cli/main.py",), "Optional extras vary by command"),
+        ("offline_verifier", "supported_source", ("sum_verify/__init__.py",), "Caller establishes key trust and requested policy"),
+        ("mcp", "supported_source", ("sum_engine_internal/mcp_server/server.py",), "Local stdio; judging requires optional dependencies"),
+        ("web_workbench", "supported_source", ("single_file_demo/index.html", "worker/src/index.ts"), "Deployment is separate; browser comparison is literal"),
+        ("capture_extension", "development_packages", ("browser_extension/build.py",), "Explicit local capture; store distribution is separate"),
+        ("terminal_demo", "prototype", ("sum_tui/app.py",), "Historical receipt replay; transforms are illustrative"),
+        ("quantum_api", "internal_research", ("quantum_main.py", "Dockerfile"), "Not a supported production deployment"),
+        ("meaning_judges", "research", ("sum_engine_internal/research/meaning/local_judge.py",), "Fallible proxies; sampling and token-window limits apply"),
+    )
+    result = []
+    for name, status, paths, boundary in declarations:
+        for path in paths:
+            if not (REPO_ROOT / path).is_file():
+                raise RuntimeError(f"product surface {name} references missing entry path {path}")
+        result.append({"name": name, "status": status, "entry_paths": list(paths), "boundary": boundary})
+    return result
+
+
 def collect_pypi_published_version(timeout_s: float = 10.0) -> str | None:
     """Fetch the latest version published to PyPI for sum-engine.
 
@@ -218,6 +243,7 @@ def build_manifest() -> dict:
             "pypi_published_version": collect_pypi_published_version(),
         },
         "features": collect_feature_catalog_counts(),
+        "product_surfaces": collect_product_surfaces(),
         "receipts": {
             "fixtures": collect_receipt_fixtures(),
         },

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sum-engine"
-version = "0.10.0"
+version = "0.11.0"
 description = "Signed, replayable receipts for what an AI transformation did to a text's meaning: Ed25519 over JCS, detached JWS, a distribution-free bound on a named meaning-loss proxy, verifiable offline with no ML stack."
 readme = "README.md"
 license = { text = "Apache-2.0" }

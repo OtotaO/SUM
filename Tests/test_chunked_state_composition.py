@@ -2,10 +2,10 @@
 
 The algebra invariant under test:
 
-    For any context-local extractor f (DeterministicSieve qualifies),
-    splitting a corpus into chunks, encoding each chunk's state, and
-    composing them with LCM yields the SAME state integer as encoding
-    the entire corpus end-to-end.
+    LCM preserves the union of per-chunk triples exactly. Whole-document
+    extraction equivalence additionally requires matching sentence boundaries
+    and sentence-local parsing. These named fixtures check that condition;
+    they do not prove it for arbitrary prose.
 
 This is the load-bearing property for arbitrary-size input handling
 (Item 1 of the omni-format roadmap). If it ever regresses, the
@@ -19,7 +19,7 @@ Coverage layers:
                      associative, idempotent under duplicates,
                      and equal to ``math.lcm`` over the inputs.
   2. Corpus-level:   ``state_for_corpus`` produces the same state
-                     for any chunk_chars and matches the unchunked
+                     on named corpora and tested chunk sizes as the unchunked
                      ``encode_chunk_state(extract_triplets(text))``.
   3. Edge-case:      single chunk, empty extraction, abbreviation-
                      heavy text, very small chunk_chars.
@@ -315,3 +315,54 @@ def test_chunk_text_on_sentences_respects_chunk_chars():
         # Either ≤ chunk_chars, or contains no internal sentence boundary
         # (i.e. it's a single sentence longer than chunk_chars).
         assert len(c) <= 80 or ". " not in c.rstrip(".")
+
+
+@pytest.mark.parametrize("chunk_chars", [100, 30_000, 100_000])
+def test_overlong_window_sentence_keeps_subject_and_predicate_together(chunk_chars):
+    from sum_engine_internal.algorithms.chunked_corpus import state_for_corpus
+    text = "Alice " + " " * 50_000 + "likes cats."
+    unchunked, sieve, algebra = _state_unchunked(text)
+    expected = sieve.extract_triplets(text)
+    assert expected == [("alice", "like", "cat")]
+    state, triples = state_for_corpus(text, algebra, chunk_chars=chunk_chars, sieve=sieve)
+    assert state == unchunked
+    assert triples == expected
+
+
+def test_overlong_sentence_fails_with_source_continuation_metadata():
+    from sum_engine_internal.algorithms.chunked_corpus import SentenceTooLongError, state_for_corpus
+    text = "Bob owns dogs. Alice " + " " * 200 + "likes cats."
+    with pytest.raises(SentenceTooLongError) as failure:
+        state_for_corpus(text, _algebra(), chunk_chars=20, max_sentence_chars=100)
+    assert failure.value.start_char == len("Bob owns dogs. ")
+    assert failure.value.limit == 100
+
+
+def test_window_carry_preserves_every_source_character():
+    from sum_engine_internal.algorithms.chunked_corpus import chunk_text_on_sentences
+    text = "  Bob owns dogs.\n\nAlice " + " " * 50_000 + "likes cats.\n  Carol owns birds.  "
+    chunks = list(chunk_text_on_sentences(text, chunk_chars=100))
+    assert "".join(chunks) == text
+    assert any(len(chunk) > 50_000 for chunk in chunks)
+
+
+@pytest.mark.parametrize("field", ["chunk_chars", "max_sentence_chars"])
+@pytest.mark.parametrize("bad", [0, -1, True, 2.5])
+def test_chunk_limits_are_positive_integers_even_for_empty_input(field, bad):
+    from sum_engine_internal.algorithms.chunked_corpus import chunk_text_on_sentences
+    with pytest.raises(ValueError, match="positive integer"):
+        list(chunk_text_on_sentences("", **{field: bad}))
+
+
+
+def test_large_requested_chunk_cannot_bypass_loaded_model_limit(monkeypatch):
+    from sum_engine_internal.algorithms.chunked_corpus import SentenceTooLongError, chunk_text_on_sentences
+    nlp = spacy.blank("en")
+    nlp.add_pipe("sentencizer")
+    nlp.max_length = 100
+    monkeypatch.setattr(spacy, "load", lambda *args, **kwargs: nlp)
+    text = "Alice " + " " * 200 + "likes cats."
+    with pytest.raises(SentenceTooLongError) as failure:
+        list(chunk_text_on_sentences(text, chunk_chars=1_000_000, max_sentence_chars=1_000_000))
+    assert failure.value.limit == 100
+    assert failure.value.start_char == 0

@@ -24,8 +24,10 @@ import assert from "node:assert/strict";
 import { generateKeyPair, exportJWK, flattenedVerify, importJWK } from "jose";
 import canonicalize from "canonicalize";
 
-import { signReceipt } from "../src/receipt/sign.ts";
-import { signTransformReceipt } from "../src/receipt/transform_sign.ts";
+import { register } from "node:module";
+register("./ts_resolve.mjs", import.meta.url);
+const { signReceipt } = await import("../src/receipt/sign.ts");
+const { signTransformReceipt } = await import("../src/receipt/transform_sign.ts");
 
 const KID = "sign-smoke-test-key";
 const { publicKey, privateKey } = await generateKeyPair("EdDSA", {

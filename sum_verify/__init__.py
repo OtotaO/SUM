@@ -36,13 +36,15 @@ Supported schemas (``SUPPORTED_SCHEMAS``):
 What a verified receipt proves — and does NOT
 ---------------------------------------------
 PROVES: the payload was signed by the holder of ``kid``'s private key;
-the envelope is well-formed and unexpired; and — for a meaning-risk
+the envelope is well-formed (freshness is checked only when requested); and — for a meaning-risk
 receipt replayed with its losses — that the committed losses hash to the
 anchor and re-certify to the stated bound by exact integer equality.
 
 Does NOT prove that *meaning was preserved*. A meaning-risk receipt
 bounds a NAMED PROXY for meaning-loss, marginally (on average over the
-calibration corpus), under exchangeability — never per-document, and
+calibration corpus), under the named method's sampling assumptions: independent calibration draws
+from the target distribution for a fixed evaluation policy, not merely
+exchangeability. It is never per-document, and
 never the layers its ``not_covered`` field declares out of scope
 (arrangement, sound, connotation, implicature). Where that proxy has been
 measured against human faithfulness judgments, it correlated only
@@ -64,6 +66,7 @@ License: Apache License 2.0
 """
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any, Sequence
 
 from sum_engine_internal.infrastructure.jose_envelope import (
@@ -97,11 +100,19 @@ from sum_verify._meaning import (
     MeaningReceiptReplayError,
     verify_meaning_risk_receipt,
 )
+from sum_verify._policy import (
+    RevocationSnapshot,
+    TrustPolicy,
+    TrustPolicyError,
+    VerificationReport,
+    key_fingerprint,
+    policy_checks,
+)
 
 # Version of THIS verify surface + the wire formats it accepts. SemVer.
 # Bump minor when a new supported schema is added; major on a
 # backwards-incompatible change to an accepted format or the public API.
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
 SUPPORTED_SCHEMAS: tuple[str, ...] = (
     MEANING_RISK_SCHEMA,
@@ -114,6 +125,12 @@ __all__ = [
     "__version__",
     "SUPPORTED_SCHEMAS",
     "verify",
+    "verify_report",
+    "TrustPolicy",
+    "TrustPolicyError",
+    "RevocationSnapshot",
+    "VerificationReport",
+    "key_fingerprint",
     "verify_meaning_risk_receipt",
     "verify_render_receipt",
     "verify_transform_receipt",
@@ -142,7 +159,7 @@ class UnsupportedSchemaError(ValueError, SumVerifyError):
         )
 
 
-def verify(
+def _verify(
     envelope: Any,
     jwks: Any,
     *,
@@ -186,3 +203,66 @@ def verify(
             envelope, jwks, max_age_seconds=max_age_seconds
         )
     raise UnsupportedSchemaError(schema)
+
+
+def verify(
+    envelope: Any,
+    jwks: Any,
+    *,
+    losses: Sequence[float] | None = None,
+    max_age_seconds: int | None = None,
+    trust_policy: TrustPolicy | None = None,
+) -> Any:
+    """Verify a receipt and optionally apply an explicit offline trust policy.
+
+    Return types and default acceptance remain identical to the legacy API.
+    A valid signature authenticates bytes against the supplied JWKS; it does
+    not by itself establish that a caller trusts the key or organization.
+    Use verify_report() to distinguish passed checks from not_checked.
+    The generic chain path checks the outer envelope, not absent hop artifacts.
+    """
+    return verify_report(
+        envelope, jwks, losses=losses, max_age_seconds=max_age_seconds,
+        trust_policy=trust_policy,
+    ).result
+
+
+def verify_report(
+    envelope: Any,
+    jwks: Any,
+    *,
+    losses: Sequence[float] | None = None,
+    max_age_seconds: int | None = None,
+    trust_policy: TrustPolicy | None = None,
+    now: datetime | None = None,
+) -> VerificationReport:
+    """Verify offline and return explicit per-check status for this envelope.
+
+    Failed checks raise the existing verification error or TrustPolicyError.
+    Unrequested checks are not_checked, never passed. ``now`` is an optional
+    caller-controlled clock for policy checks (timezone aware); it does not
+    override the historical max_age_seconds argument's existing system clock.
+    Use TrustPolicy.max_age_seconds when supplying a deterministic clock.
+    """
+    if trust_policy is not None and not isinstance(trust_policy, TrustPolicy):
+        raise TypeError("trust_policy must be a TrustPolicy")
+    if trust_policy is not None and max_age_seconds is not None:
+        raise ValueError("put max_age_seconds inside TrustPolicy when using a policy")
+    result = _verify(envelope, jwks, losses=losses, max_age_seconds=max_age_seconds)
+    checks = policy_checks(envelope, jwks, trust_policy, now=now)
+    checks["signature_and_structure"] = {
+        "status": "passed", "detail": "Existing receipt-family signature, structure and disclosure checks passed."
+    }
+    if max_age_seconds is not None:
+        checks["receipt_freshness"] = {"status": "passed", "detail": "Legacy receipt age check passed against the system clock."}
+    replayed = envelope["schema"] == MEANING_RISK_SCHEMA and losses is not None
+    checks["loss_arithmetic_replay"] = {
+        "status": "passed" if replayed else "not_checked",
+        "detail": "Supplied losses reproduce the committed hash and bound arithmetic; source/model judgments were not rerun."
+        if replayed else "No meaning-risk loss vector was replayed on this path.",
+    }
+    checks["chain_hop_artifacts"] = {
+        "status": "not_checked",
+        "detail": "The generic path does not inspect hop artifacts. Verify each supplied hop with its own policy and use verify_chain_receipt(hop_envelopes=...) for chain binding.",
+    }
+    return VerificationReport(result, envelope["schema"], envelope["kid"], trust_policy is not None, checks)

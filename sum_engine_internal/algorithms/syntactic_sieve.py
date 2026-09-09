@@ -390,6 +390,10 @@ def detect_hedging(text: str) -> float:
     return max(HEDGE_FLOOR, certainty)
 
 
+class SieveUnavailableError(RuntimeError):
+    """The local extractor or its language model is not installed."""
+
+
 class DeterministicSieve:
     """
     High-Fidelity Edge NLP.
@@ -400,12 +404,22 @@ class DeterministicSieve:
     Cost: $0. Speed: 10,000+ words per second.
     """
 
-    def __init__(self):
-        import spacy  # Lazy import: only required when sieve is instantiated
+    def __init__(self, *, allow_download: bool = True):
+        try:
+            import spacy  # Lazy import: only required when sieve is instantiated
+        except ImportError as exc:
+            raise SieveUnavailableError(
+                "Install sum-engine[sieve] and run: python -m spacy download en_core_web_sm"
+            ) from exc
 
         try:
             self.nlp = spacy.load("en_core_web_sm")
-        except OSError:
+        except OSError as exc:
+            if not allow_download:
+                raise SieveUnavailableError(
+                    "spaCy model en_core_web_sm is missing; automatic downloads are disabled. "
+                    "Install it before starting the server: python -m spacy download en_core_web_sm"
+                ) from exc
             import subprocess
             import sys
 

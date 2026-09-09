@@ -1,3 +1,4 @@
+import { compareTriples } from "../unicode_order";
 // Render receipt signing — Phase E.1 v0.9.A.
 //
 // Each /api/render response carries a `render_receipt` block: a
@@ -92,13 +93,7 @@ export async function hashTriples(
   // leaks rightmost component bytes into the leftmost comparison
   // space. Componentwise comparison fixes this without losing
   // determinism. v0.9.A.1 review-pass fix.
-  const sorted = [...triples].sort((a, b) => {
-    for (let i = 0; i < 3; i++) {
-      if (a[i] < b[i]) return -1;
-      if (a[i] > b[i]) return 1;
-    }
-    return 0;
-  });
+  const sorted = [...triples].sort(compareTriples);
   const canonical = canonicalize(sorted);
   if (typeof canonical !== "string") throw new Error("canonicalize returned undefined");
   return sha256Hex(new TextEncoder().encode(canonical));

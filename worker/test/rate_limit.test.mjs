@@ -1,6 +1,5 @@
-// Local route regressions: all provider calls are mocked, all credentials
-// are synthetic, and the in-memory KV intentionally tests sequential policy.
-// This does not model KV consistency or assert an atomic spending limit.
+// Provider selection regressions with synthetic credentials and mocked admission.
+// hardening.test.mjs separately exercises SQLite admission inside workerd.
 import assert from "node:assert/strict";
 import { register } from "node:module";
 import { test } from "node:test";
@@ -10,6 +9,18 @@ const { classifyScope, checkRateLimit } = await import("../src/rate_limit.ts");
 const { handleRender } = await import("../src/routes/render.ts");
 const { handleComplete } = await import("../src/routes/complete.ts");
 const { handleTransform } = await import("../src/routes/transform.ts");
+
+function budgetMock(initialCount = 0) {
+  const calls = [];
+  return { calls, idFromName: (name) => name, get: () => ({ fetch: async (url, init) => {
+    const body = JSON.parse(init.body);
+    if (url.endsWith("/release")) return Response.json({ released: true });
+    calls.push(body);
+    const limit = body.scope === "llm-axis-demo" ? 5 : 100;
+    if (initialCount >= limit) return Response.json({ scope: body.scope, limit }, { status: 429, headers: { "x-ratelimit-remaining": "0", "retry-after": "30" } });
+    return Response.json({ lease: "test-lease" });
+  } }) };
+}
 
 const DEMO = "llm-axis-demo";
 const BYO = "llm-axis-byok";
@@ -76,10 +87,11 @@ function mockProvider(t) {
 test("scope uses only a selected render credential; other endpoints stay conservative", () => {
   for (const key of [undefined, "", " \t "]) assert.equal(classifyScope("render", key), DEMO);
   assert.equal(classifyScope("render", "  selected-key  "), BYO);
-  for (const endpoint of ["complete", "transform"]) {
+  for (const endpoint of ["complete"]) {
     assert.equal(classifyScope(endpoint), DEMO);
     assert.equal(classifyScope(endpoint, "selected-key"), DEMO);
   }
+  assert.equal(classifyScope("transform", "selected-key"), "canonical");
   assert.equal(classifyScope("qid", "selected-key"), "qid");
 });
 
@@ -108,7 +120,8 @@ for (const scenario of cases) {
   test(`render: ${scenario.name}`, async (t) => {
     const calls = mockProvider(t);
     const kv = memoryKV();
-    const env = { ...(scenario.env ?? OPERATOR), RENDER_CACHE: kv };
+    const budget = budgetMock();
+    const env = { ...(scenario.env ?? OPERATOR), RENDER_CACHE: kv, LLM_BUDGET: budget };
     if (scenario.gateway) env.CF_AI_GATEWAY_BASE = GATEWAY;
     const response = await handleRender(request({ ...RENDER_BODY, provider: scenario.provider }, scenario.keys), env, {});
     assert.equal(response.status, 200);
@@ -117,10 +130,8 @@ for (const scenario of cases) {
     assert.equal(calls[0].provider, scenario.expected);
     assert.equal(calls[0].credential, `${scenario.scope === BYO ? "user" : "operator"}-${scenario.expected}`);
     assert.equal(calls[0].url.startsWith(GATEWAY), Boolean(scenario.gateway && scenario.scope === DEMO));
-    assert.match(kv.reads[0], new RegExp(`^rl:${scenario.scope}:`));
-    const quotaWrites = kv.writes.filter(({ key }) => key.startsWith("rl:"));
-    assert.equal(quotaWrites.length, 1);
-    assert.equal(quotaWrites[0].value, "1");
+    assert.equal(budget.calls[0].scope, scenario.scope);
+    assert.equal(budget.calls.length, 1);
   });
 }
 
@@ -137,10 +148,11 @@ for (const provider of ["anthropic", "openai"]) {
       return Response.json({ error: "mock credential rejected" }, { status: 401 });
     });
     const kv = memoryKV();
-    const response = await handleRender(request({ ...RENDER_BODY, provider }, { [provider]: "rejected-user-key" }), { ...OPERATOR, RENDER_CACHE: kv }, {});
+    const budget = budgetMock();
+    const response = await handleRender(request({ ...RENDER_BODY, provider }, { [provider]: "rejected-user-key" }), { ...OPERATOR, RENDER_CACHE: kv, LLM_BUDGET: budget }, {});
     assert.equal(response.status, 502);
     assert.equal(calls, 1);
-    assert.match(kv.reads[0], /^rl:llm-axis-byok:/);
+    assert.equal(budget.calls[0].scope, BYO);
   });
 
   test(`render: explicit missing ${provider} credential does not switch providers`, async (t) => {
@@ -148,16 +160,17 @@ for (const provider of ["anthropic", "openai"]) {
     const other = provider === "anthropic" ? "openai" : "anthropic";
     const kv = memoryKV();
     const response = await handleRender(request({ ...RENDER_BODY, provider }, { [other]: `user-${other}` }), { RENDER_CACHE: kv }, {});
-    assert.equal(response.status, 502);
+    assert.equal(response.status, 503);
     assert.equal(calls.length, 0);
-    assert.match(kv.reads[0], /^rl:llm-axis-demo:/);
+    assert.equal(kv.reads.length, 0);
   });
 
   test(`render: exhausted demo bucket blocks ${provider} dispatch despite other-provider key`, async (t) => {
     const calls = mockProvider(t);
     const other = provider === "anthropic" ? "openai" : "anthropic";
     const kv = memoryKV(5);
-    const response = await handleRender(request({ ...RENDER_BODY, provider }, { [other]: `user-${other}` }), { ...OPERATOR, RENDER_CACHE: kv }, {});
+    const budget = budgetMock(5);
+    const response = await handleRender(request({ ...RENDER_BODY, provider }, { [other]: `user-${other}` }), { ...OPERATOR, RENDER_CACHE: kv, LLM_BUDGET: budget }, {});
     assert.equal(response.status, 429);
     const body = await response.json();
     assert.equal(body.scope, DEMO);
@@ -171,14 +184,14 @@ for (const provider of ["anthropic", "openai"]) {
 
 test("render: exhausted BYO bucket blocks dispatch", async (t) => {
   const calls = mockProvider(t);
-  const response = await handleRender(request(RENDER_BODY, { anthropic: "user-anthropic" }), { ...OPERATOR, RENDER_CACHE: memoryKV(100) }, {});
+  const response = await handleRender(request(RENDER_BODY, { anthropic: "user-anthropic" }), { ...OPERATOR, RENDER_CACHE: memoryKV(100), LLM_BUDGET: budgetMock(100) }, {});
   assert.equal(response.status, 429);
   assert.equal((await response.json()).scope, BYO);
   assert.equal(calls.length, 0);
 });
 
-for (const [scope, limit, window] of [[DEMO, 5, 86400], [BYO, 100, 3600]]) {
-  test(`sequential quota boundary and headers: ${scope}`, async (t) => {
+for (const [scope, limit, window] of [["canonical", 100, 3600], ["qid", 60, 3600]]) {
+  test(`best-effort KV sequential boundary: ${scope}`, async (t) => {
     t.mock.method(Date, "now", () => 1_800_000_000_000);
     const kv = memoryKV(limit - 1);
     const req = request(RENDER_BODY);
@@ -198,18 +211,19 @@ for (const [scope, limit, window] of [[DEMO, 5, 86400], [BYO, 100, 3600]]) {
 test("complete ignores BYO headers and dispatches on the operator's demo allowance", async (t) => {
   const calls = mockProvider(t);
   const kv = memoryKV();
-  const response = await handleComplete(request({ prompt: "Extract triples." }, { anthropic: "user-anthropic", openai: "user-openai" }, "complete"), { ...OPERATOR, RENDER_CACHE: kv });
+  const budget = budgetMock();
+  const response = await handleComplete(request({ prompt: "Extract triples." }, { anthropic: "user-anthropic", openai: "user-openai" }, "complete"), { ...OPERATOR, RENDER_CACHE: kv, LLM_BUDGET: budget });
   assert.equal(response.status, 200);
   assert.equal(calls[0].credential, "operator-anthropic");
-  assert.match(kv.reads[0], /^rl:llm-axis-demo:/);
+  assert.equal(budget.calls[0].scope, DEMO);
 });
 
-test("transform stays conservative and canonical even when both BYO keys are present", async (t) => {
+test("transform uses the canonical allowance even when both BYO keys are present", async (t) => {
   const calls = mockProvider(t);
   const kv = memoryKV();
   const response = await handleTransform(request({ transform: "slider", input: { triples: RENDER_BODY.triples }, parameters: CENTER }, { anthropic: "user-anthropic", openai: "user-openai" }, "transform"), { ...OPERATOR, RENDER_CACHE: kv });
   assert.equal(response.status, 200);
   assert.equal((await response.json()).llm_calls_made, 0);
   assert.equal(calls.length, 0);
-  assert.match(kv.reads[0], /^rl:llm-axis-demo:/);
+  assert.match(kv.reads[0], /^rl:canonical:/);
 });

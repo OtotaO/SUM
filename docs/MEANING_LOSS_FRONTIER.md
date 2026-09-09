@@ -78,7 +78,9 @@ caveats, not a priority race. It does **not** claim to have measured
 meaning (the shipped lexical default is, by construction, a *lexical*
 overlap measure — it over-reports loss on a faithful reword). It bounds
 a *named proxy* for meaning-loss, *marginally* (on average over a named
-corpus), under *exchangeability*. Those three caveats are the contract,
+target population), requiring independent calibration draws, a fixed policy
+and no unaccounted adaptive selection. Exchangeability alone is insufficient.
+Those caveats are the contract,
 and they ride inside the receipt.
 
 The decisive design choice — and the defensible contrast — is **checkable
@@ -150,7 +152,7 @@ It does **not** prove:
 - **anything about arrangement, sound, connotation, or implicature** —
   these are listed in the payload's `not_covered` field. The proxy is
   structurally blind to them, and the honest act is to *say so*, not to
-  let silence imply coverage. (Validity also rests on exchangeability
+  let silence imply coverage. (Validity also requires independent calibration draws from the target distribution
   with the named corpus; state the envelope with the number, always.)
 
 This is the same discipline as `docs/PROOF_BOUNDARY.md`, one layer
@@ -188,3 +190,24 @@ Introduction", FnT ML (2023). Beauchemin et al., "MeaningBERT", 2023.
 Allaway & McKeown, connotation frames, EACL 2021. al-Jurjānī, Dalāʾil
 al-Iʿjāz (on naẓm). Peptenatu et al., Scientific Reports 12 (2022),
 Kolmogorov complexity of canonical iconography.*
+
+
+## Candidate-path and inspection scope (2026-09-09)
+
+`RenderFrontier` keeps its API name for compatibility. It stores a caller-ordered
+candidate path, not a computed Pareto optimum. Position is an index; neither
+length nor proxy quality is assumed monotone. The legacy `faithful` and
+`compressed` accessors return the first and last candidates. JSON includes
+`path_kind`, actual word counts and the scorer instrument when available.
+Compare observed candidate outputs from the same original source before making
+a dominance or quality claim.
+
+The local NLI scorer keeps its historical longest-first finite-window algorithm.
+Its explanatory readout now reports input-token coverage and identifies partial
+judgments by direction and claim index. A partial score may have missed support
+or part of the hypothesis and must not be presented as complete review.
+`within_token_window` means only that token truncation was not needed; it says
+nothing about judge accuracy, sentence segmentation or full meaning coverage.
+Other callbacks without a coverage inspector report `not_inspected`.
+Retrieval of support windows, richer source spans and independent human
+validation remain required before promoting this proxy to a complete reviewer.

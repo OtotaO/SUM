@@ -100,15 +100,11 @@ continuation state lives in the private memory that auto-loads each session, and
 4. **[`Makefile`](Makefile)** — every dev command canonicalised. `make help`
    renders the full list. Common ones: `make install`, `make test`,
    `make xruntime`, `make smoke`.
-5. **[`docs/NEXT_SESSION_PLAYBOOK.md`](docs/NEXT_SESSION_PLAYBOOK.md)** —
-   ordered work queue (Priorities 1–8) plus post-hardening platform
-   trajectory (Phases A–D), principles you must internalise before
-   editing claims, stop-the-line triggers. Read first if you are
-   picking the thread up cold. The ordering is precedence, not
-   preference: earlier priorities harden existing claims; later ones
-   extend the surface. Phases B and C depend on Phase A priorities
-   being closed first — do not start Phase B work while Phase A
-   priorities are still open.
+5. **[`docs/NEXT_SESSION_PLAYBOOK.md`](docs/NEXT_SESSION_PLAYBOOK.md)**: the
+   current ordered repair, release and validation queue. Read its live contents;
+   historical priority numbers and phase labels are not current authorization
+   gates. The operator's explicit direction and measured defects determine the
+   current work.
 6. **[`docs/SLIDER_CONTRACT.md`](docs/SLIDER_CONTRACT.md)** — slider
    product contract. Five axes, per-axis drift formulas, fact-
    preservation thresholds, the v0.4 → v0.7 NLI-audit / scale-bench /
@@ -117,7 +113,7 @@ continuation state lives in the private memory that auto-loads each session, and
    n=8, 0.769 long-doc n=16; min lifted from 0.111 → 0.700 by v0.7
    prompt hardening; catastrophic outliers eliminated 2 → 0). These
    are **measured, not same-commit-replayable** — the bench harness
-   (`Tests/benchmarks/slider_drift_bench.py`) is scaffold-state and no
+   (`Tests/benchmarks/slider_drift_bench.py`) has an implemented execution loop, but no
    `sum.slider_drift_bench.v1` receipt is committed; closing that to a
    replayable guarantee is bench-hardening T2/T3 (per
    `docs/BENCH_HARDENING_FROM_QCVV.md` §6, "Median 1.000" is a
@@ -176,7 +172,7 @@ meaning-loss frontier arc, now **matured into the closed arXiv Paper-1
 binding gate** (PRs #270–#298; full detail in the 2026-06-09 handover
 above). `sum.meaning_risk_receipt.v1` + `sum.perspective_risk_receipt.v1`
 (signed, replayable certificates over a *named meaning-loss proxy*;
-float-free integer-micro wire; conformal upper bound via Hoeffding /
+float-free integer-micro wire; mean confidence bound requiring independent calibration sampling via Hoeffding /
 Clopper–Pearson / **empirical-Bernstein**; group-conditional + Bonferroni
 joint coverage), the cross-runtime JS verifier
 (`single_file_demo/meaning_receipt_verifier.js`), the `sum verify-meaning`
@@ -212,12 +208,12 @@ rate limiter + BYO-key gate on public Worker LLM-axis routes, `sum
 verify --explain` layered output (`sum.verify_explained.v1`), F1 / F7
 fixes, T5 negative-control bench corpus. **Post-0.7.0 on main:** T1
 iterated-round-trip CLOSED (PRs #248 + #250 — three K=10 receipts,
-all corpora STABLE under composition); F4 attest-axioms-field fix
+median drift unchanged on the tested corpora; some individual documents worsen); F4 attest-axioms-field fix
 (#251 — Scenario A's `attest → compose` step unblocked); F12
 v1/v2/v3 NIM rate-limit retry hardening (#246 / #247 / #249).
-T4 drift-composition audit CLOSED (PR #252, merged — drift_pct fits
-a fixed-point composition law on every measured corpus within DKW
-95% bound). The Node verifier in `standalone_verifier/`, and the
+T4 drift-composition audit: PR #252 supplied historical analysis. The corrected
+v2 reanalysis is descriptive; interval overlap does not establish equivalence
+or a 95% composition-invariance guarantee. The Node verifier in `standalone_verifier/`, and the
 browser demo in `single_file_demo/`, both verify Ed25519 on the same
 bundle bytes — single_file_demo extended in PR #243 with cascade
 BYO-keys + CLI-recipe builder. The cross-runtime harness (`make

@@ -122,6 +122,8 @@ jobs:
         # hard-fails a whole-tree CI run if any of the three goes missing
         # again, so this cannot silently regress.
         pip install -e ".[verify,mcp,dev]"
+        # Exercise the checkout-only receipt-demo state regression too.
+        pip install "textual==8.2.8"
 
     - name: Download Spacy Model
       # Retry with backoff: the model wheel is fetched live from
@@ -640,6 +642,21 @@ jobs:
     - name: Worker provider credentials and sequential quota regressions
       working-directory: worker
       run: npm run test:rate-limit
+
+    - name: Worker bounded input and atomic admission regressions
+      working-directory: worker
+      run: npm run test:hardening
+
+    - name: Browser review packet and DOM workflow regressions
+      working-directory: single_file_demo
+      run: |
+        npm ci --ignore-scripts
+        npm test
+
+    - name: Source capture behavior and generated package checks
+      run: |
+        node --test browser_extension/test_capture.mjs
+        python browser_extension/build.py --check
 
     # Runtime gate, added after the jose 6.2.5 regression (PR #424, merged
     # 2026-07-31) silently broke BOTH receipt signers for four weeks. tsc

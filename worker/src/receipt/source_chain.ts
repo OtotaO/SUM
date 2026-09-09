@@ -1,3 +1,4 @@
+import { compareUnicodeCodepoints } from "../unicode_order";
 // T4: source-chain canonicalisation for the receipt's
 // `source_chain_hash` field. Mirrors
 // sum_engine_internal/transform_receipt/format.py::compute_source_chain_hash
@@ -51,9 +52,9 @@ export async function computeSourceChainHash(
   }));
 
   normalised.sort((a, b) => {
-    if (a.claim !== b.claim) return a.claim < b.claim ? -1 : 1;
+    if (a.claim !== b.claim) return compareUnicodeCodepoints(a.claim, b.claim);
     if (a.provenance.source_uri !== b.provenance.source_uri) {
-      return a.provenance.source_uri < b.provenance.source_uri ? -1 : 1;
+      return compareUnicodeCodepoints(a.provenance.source_uri, b.provenance.source_uri);
     }
     if (a.provenance.byte_start !== b.provenance.byte_start) {
       return a.provenance.byte_start - b.provenance.byte_start;

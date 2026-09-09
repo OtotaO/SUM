@@ -27,7 +27,7 @@ certificate that bounds a named proxy for meaning-loss** — computed in
 checkable text space (not from model internals), distribution-free, and
 marginal. The certificate does not claim to have measured meaning — it
 bounds a *named proxy*, marginally (on average over the corpus), under
-exchangeability. Those three caveats are not fine print; they are the
+independent calibration draws from the target distribution. Those caveats are not fine print; they are the
 contract, and they ride inside the receipt. (We are not aware of a prior
 artifact combining a distribution-free meaning-loss-proxy bound with a
 replayable signed receipt; the novelty is the composition, not a claim
@@ -38,9 +38,11 @@ Honest boundary (identical to the rate kernel's):
   - **marginal, not conditional** — it bounds the *average* loss over
     the corpus, not any single document's loss. Per-document control is
     provably not free (conditional conformal).
-  - **exchangeability** — validity rests on the calibration corpus being
-    exchangeable with deployment. State the corpus envelope alongside
-    the bound; the number is meaningless without it.
+  - **independence and target match**: calibration draws must be independent
+    and identically distributed from the deployment population, with a fixed
+    scoring/transformation policy and no unaccounted adaptive selection or
+    calibration reuse. Exchangeability alone is insufficient. The numeric
+    kernel does not verify these assumptions.
 
 Author: ototao
 License: Apache License 2.0
@@ -67,7 +69,7 @@ class MeaningRiskGuarantee:
 
     Reads as: "with confidence ≥ ``confidence``, the expected
     meaning-loss (under ``scorer_name`` v``scorer_version``) over data
-    exchangeable with the calibration corpus is ≤ ``risk_upper_bound``."
+    drawn independently from the calibration population is ≤ ``risk_upper_bound``."
     """
     risk_upper_bound: float    # the certified ceiling on E[loss]
     point_estimate: float      # observed mean loss on the calibration sample
@@ -267,7 +269,7 @@ def certify_meaning_risk_by_group(
 
     Honesty boundary — what this is and is NOT:
       - **Is:** an exact, finite-sample, distribution-free bound *within
-        each declared cohort* (each cohort is its own exchangeable
+        each declared cohort* (each cohort needs its own independent
         calibration set). Strictly more informative than the marginal
         bound: it surfaces the worst cohort the average hides.
       - **Pays full cost per cohort:** each group's bound has its own

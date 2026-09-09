@@ -99,14 +99,16 @@ def test_no_raw_interpolation_left_in_those_templates(source: str) -> None:
 
 
 def test_module_blocks_define_their_own_escaper(source: str) -> None:
-    """Both ``<script type="module">`` verifier panels escape locally.
+    """The inline meaning panel escapes locally; workbench uses text nodes.
 
     A module must not depend on a classic script's top-level ``const``
     surviving into its scope, so each block declares its own ``esc``.
     """
-    assert source.count("const esc = v => String(v).replace") == 2, (
-        "expected one local escaper in each of the two module verifier panels"
+    assert source.count("const esc = v => String(v).replace") == 1, (
+        "expected a local escaper in the inline meaning verifier panel"
     )
+    workbench = (_INDEX.parent / "workbench.js").read_text("utf-8")
+    assert "innerHTML" not in workbench, "workbench receipt and review fields must use text nodes"
 
 
 def test_pasted_receipt_fields_are_escaped(source: str) -> None:
@@ -121,9 +123,6 @@ def test_pasted_receipt_fields_are_escaped(source: str) -> None:
         "${esc(nc)}",
         "${esc(p.controlled)}",
         "${esc(schema)}",
-        "${esc(result.kid)}",
-        "${esc(ph.alg)}",
-        "${esc(JSON.stringify(ph.crit))}",
     ):
         assert frag in source, f"REGRESSION: unescaped receipt field, expected {frag}"
 

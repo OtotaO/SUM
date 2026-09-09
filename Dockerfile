@@ -1,3 +1,7 @@
+# INTERNAL RESEARCH PROTOTYPE: this Dockerfile runs quantum_main.py, not the
+# shipped CLI or Cloudflare workbench. The Zig/Python combination is not part
+# of the release test matrix; do not use this recipe as a production deploy.
+# See CLAUDE.md for the supported shipping surfaces.
 # ─── SUM Quantum Knowledge OS ────────────────────────────────────────
 # Multi-stage build: Zig core → Python API
 # Usage:

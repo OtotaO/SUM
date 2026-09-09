@@ -34,11 +34,12 @@ here are the tighter, purpose-built instrument. Use DKW for the
 full-distribution worst-case envelope and these for the headline rate;
 they are complementary, not redundant.
 
-Honest boundary: like all conformal-family guarantees, validity rests
-on **exchangeability** between the calibration sample and deployment —
-i.e. the bound holds *within the tested envelope* (the T2 capability
-region), degrading on out-of-distribution inputs. State the envelope
-alongside the bound; never quote the rate without it.
+Honest boundary: these mean-confidence bounds require independent bounded
+calibration draws from the target distribution and a policy fixed before
+calibration, without unaccounted adaptive selection or tuning reuse.
+Exchangeability alone is insufficient. Within-document facts generally are
+not independent sampling units. The numeric kernel cannot verify sampling
+assumptions; absent that evidence it provides conditional arithmetic only.
 
 Author: ototao
 License: Apache License 2.0
@@ -57,8 +58,8 @@ class RateGuarantee:
     """A finite-sample, distribution-free lower bound on a rate.
 
     Reads as: "with confidence ≥ ``confidence``, the true rate is
-    ≥ ``rate_lower_bound``", valid under exchangeability of the
-    sample with deployment (i.e. within the tested envelope).
+    ≥ ``rate_lower_bound``", conditional on independent calibration
+    draws from the deployment population under a fixed policy.
     """
     rate_lower_bound: float   # the certified floor X
     point_estimate: float     # observed mean / proportion

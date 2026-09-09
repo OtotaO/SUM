@@ -72,7 +72,7 @@ from __future__ import annotations
 import math
 import re
 from dataclasses import dataclass
-from typing import Callable, Protocol, Sequence, runtime_checkable
+from typing import Any, Callable, Protocol, Sequence, runtime_checkable
 
 # A small, frozen, language-agnostic-ish English stop set. Deliberately
 # minimal and *frozen* — the scorer is deterministic only if this set
@@ -205,6 +205,14 @@ class LexicalCoverageScorer:
         val = self.w_drop * drop + self.w_fab * fab
         return max(0.0, min(1.0, val))
 
+    @property
+    def instrument(self) -> dict[str, Any]:
+        from .evidence import instrument_manifest
+        return instrument_manifest(self, {
+            "unitizer": "unicode-content-words-stop-set-v1",
+            "weights": {"drop": float(self.w_drop).hex(), "fabrication": float(self.w_fab).hex()},
+        })
+
 
 @dataclass(frozen=True, slots=True)
 class EntailmentScorer:
@@ -254,6 +262,8 @@ class EntailmentScorer:
     # bit-exact, ~25× on the embedding path. Falls back to the scalar
     # ``entails`` callback (e.g. the NLI cross-encoder) when absent.
     entails_batch: Callable[[str, "Sequence[str]"], "list[bool]"] | None = None
+    judge_manifest: Callable[[], dict[str, Any]] | None = None
+    inspect_pair: Callable[[str, str], dict[str, Any]] | None = None
 
     def __post_init__(self) -> None:
         if not math.isclose(self.w_recall + self.w_fidelity, 1.0, abs_tol=1e-9):
@@ -271,6 +281,19 @@ class EntailmentScorer:
     def version(self) -> str:
         return self.judge_version
 
+    @property
+    def instrument(self) -> dict[str, Any]:
+        from .evidence import instrument_manifest
+        return instrument_manifest(self, {
+            "unitizer": "punctuation-whitespace-or-newline-v1",
+            "weights": {"recall": float(self.w_recall).hex(),
+                        "fidelity": float(self.w_fidelity).hex()},
+            "judge": (self.judge_manifest() if self.judge_manifest else {
+                "name": self.judge_name, "version": self.judge_version,
+                "configuration_status": "caller_callback_not_inspected",
+            }),
+        })
+
     def _decisions(self, premise: str, hypotheses: "Sequence[str]") -> "list[bool]":
         """Per-hypothesis entailment decisions against one ``premise``. Uses
         the batch hook (one embed pass over the unique sentences) when the
@@ -281,21 +304,14 @@ class EntailmentScorer:
         return [self.entails(premise, h) for h in hypotheses]
 
     def loss(self, source: str, transform: str) -> float:
-        src_units = _sentences(source)
-        tr_units = _sentences(transform)
-        if not src_units and not tr_units:
-            return 0.0
-        if not src_units:
-            return 1.0
-        recall = sum(self._decisions(transform, src_units)) / len(src_units)
-        if tr_units:
-            fidelity = sum(self._decisions(source, tr_units)) / len(tr_units)
-        else:
-            # Transform asserts nothing: no fabrication, but recall
-            # already captures the total omission.
-            fidelity = 1.0
-        preservation = self.w_recall * recall + self.w_fidelity * fidelity
-        return max(0.0, min(1.0, 1.0 - preservation))
+        # One kernel defines scalar and explanatory edge cases. Inspection
+        # metadata is only requested for the explanatory path.
+        return explain_meaning_loss(
+            source, transform, entails=self.entails,
+            judge_name=self.judge_name, judge_version=self.judge_version,
+            w_recall=self.w_recall, w_fidelity=self.w_fidelity,
+            entails_batch=self.entails_batch,
+        ).loss
 
     def explain(self, source: str, transform: str) -> "MeaningReadout":
         """Per-DOCUMENT readout: the same bidirectional-entailment loss this
@@ -307,6 +323,7 @@ class EntailmentScorer:
             judge_name=self.judge_name, judge_version=self.judge_version,
             w_recall=self.w_recall, w_fidelity=self.w_fidelity,
             entails_batch=self.entails_batch,
+            inspect_pair=self.inspect_pair,
         )
 
 
@@ -336,6 +353,7 @@ class MeaningReadout:
     unsupported_claims: tuple[str, ...]   # transform sentences NOT grounded → "what was added"
     judge: str
     judge_version: str
+    inspection: dict[str, Any] | None = None
 
     @property
     def scope(self) -> str:
@@ -355,6 +373,7 @@ def explain_meaning_loss(
     w_recall: float = 0.6,
     w_fidelity: float = 0.4,
     entails_batch: "Callable[[str, Sequence[str]], list[bool]] | None" = None,
+    inspect_pair: Callable[[str, str], dict[str, Any]] | None = None,
 ) -> MeaningReadout:
     """Build a :class:`MeaningReadout` for one (source, transform) pair via the
     injected ``entails`` judge. Mirrors ``EntailmentScorer.loss`` exactly
@@ -370,9 +389,17 @@ def explain_meaning_loss(
         )
     src = _sentences(source)
     tr = _sentences(transform)
-    if entails_batch is not None:
+    if not src:
+        # No source can support a nonempty assertion, even if a broken or
+        # permissive callback returns True. Never invoke the judge here.
+        dropped, unsupported = (), tuple(tr)
+    elif not tr:
+        dropped, unsupported = tuple(src), ()
+    elif entails_batch is not None:
         src_keep = entails_batch(transform, src) if src else []
         tr_keep = entails_batch(source, tr) if tr else []
+        if len(src_keep) != len(src) or len(tr_keep) != len(tr):
+            raise ValueError("batch judge must return one decision per hypothesis")
         dropped = tuple(s for s, k in zip(src, src_keep) if not k)
         unsupported = tuple(t for t, k in zip(tr, tr_keep) if not k)
     else:
@@ -381,16 +408,30 @@ def explain_meaning_loss(
     if not src and not tr:
         recall = fidelity = 1.0                 # identity-empty → loss 0
     elif not src:
-        recall, fidelity = 0.0, 1.0             # source empty but transform asserts → loss 1
+        recall, fidelity = 0.0, 0.0             # unsupported output from empty source
     else:
-        recall = 1.0 - len(dropped) / len(src)
-        fidelity = 1.0 if not tr else 1.0 - len(unsupported) / len(tr)
+        recall = (len(src) - len(dropped)) / len(src)
+        fidelity = 1.0 if not tr else (len(tr) - len(unsupported)) / len(tr)
     loss = max(0.0, min(1.0, 1.0 - (w_recall * recall + w_fidelity * fidelity)))
+    inspection: dict[str, Any] = {"status": "not_inspected", "partial_judgments": []}
+    if not src or not tr:
+        inspection["status"] = "not_applicable_empty_input"
+    elif inspect_pair is not None:
+        partial = []
+        for direction, premise, units in (("recall", transform, src), ("fidelity", source, tr)):
+            for index, unit in enumerate(units):
+                detail = inspect_pair(premise, unit)
+                if detail.get("truncated"):
+                    partial.append({"direction": direction, "claim_index": index, **detail})
+        inspection = {"status": "partial" if partial else "within_token_window",
+                      "partial_judgments": partial,
+                      "note": "Token coverage only; no claim of judge accuracy or complete meaning coverage."}
     return MeaningReadout(
         loss=loss, preservation=1.0 - loss, recall=recall, fidelity=fidelity,
         source_claims=len(src), preserved_claims=len(src) - len(dropped),
         dropped_claims=dropped, transform_claims=len(tr),
         unsupported_claims=unsupported, judge=judge_name, judge_version=judge_version,
+        inspection=inspection,
     )
 
 

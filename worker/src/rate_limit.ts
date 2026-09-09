@@ -1,35 +1,7 @@
-// Per-IP rate limiter with BYO-key escape valve.
-//
-// Why this exists: the Worker is public-facing. Without rate limiting,
-// any caller can drain the operator's LLM credits via /api/render or
-// /api/transform off-centre slider calls (each one bills Anthropic).
-// Without BYO-key gating, the operator is one bad actor away from a
-// surprise bill on credits they may not have.
-//
-// Policy:
-//
-//   LLM-axis routes (/api/render off-centre, /api/transform off-centre,
-//                    /api/complete):
-//     - /api/render with a BYO key for the selected provider:
-//         100 calls per IP per hour. Defends the Worker's CPU + KV
-//         budget; the caller is paying their own LLM bill.
-//     - Operator-keyed demo:
-//         5 calls per IP per 24 hours. Funders + first-time visitors
-//         get a frictionless try; the operator's LLM credits are
-//         shielded from abuse.
-//
-//   Canonical / cheap routes (/api/qid, canonical-path renders):
-//     - 60-100 calls per IP per hour. CPU + KV protection only;
-//       no LLM cost.
-//
-//   /.well-known/* (jwks, revoked-kids):
-//     - No limit. Browser verifiers fetch these on every receipt
-//       verify; rate-limiting them breaks the trust loop.
-//
-// Storage: RENDER_CACHE KV namespace, keyed by
-// `rl:<scope>:<ip>:<window-index>`. TTL is the window length plus a
-// small buffer. Free-tier-compatible: no paid Cloudflare Rate
-// Limiting API, no Durable Objects required.
+// Best-effort KV quotas for cheap routes, plus shared quota policy and errors.
+// Paid provider work uses SQLite transactions in llm_budget.ts; this module's
+// KV read/modify/write helper must never be used as paid-work admission.
+// Trust endpoints remain unlimited so receipt verification stays independent.
 
 import type { KVNamespace } from "@cloudflare/workers-types";
 
@@ -54,7 +26,7 @@ interface RateLimitConfig {
 
 // Policy table — single source of truth for limits. Tunable per
 // scope without touching the dispatch code.
-const POLICY: Record<RateLimitScope, RateLimitConfig> = {
+export const POLICY: Record<RateLimitScope, RateLimitConfig> = {
   "llm-axis-byok": { limit: 100, window_seconds: 3600 },      // 100/hr per IP with BYO key
   "llm-axis-demo": { limit: 5, window_seconds: 86400 },        // 5/day per IP on operator key
   canonical: { limit: 100, window_seconds: 3600 },             // 100/hr per IP, no LLM
@@ -79,10 +51,9 @@ export function classifyScope(
   // operator credit at the 100/hr byok rate instead of 5/day (2026-07-31 #10).
   if (endpoint === "complete") return "llm-axis-demo";
 
-  // /api/transform has no LLM dispatch yet, so headers alone do not
-  // establish caller funding. Keep its conservative demo allowance until
-  // the dispatcher can prove which credential a transform will consume.
-  if (endpoint === "transform") return "llm-axis-demo";
+  // /api/transform is deterministic today. If provider dispatch is added,
+  // it must separately establish funding and use atomic LLM admission.
+  if (endpoint === "transform") return "canonical";
 
   // Whitespace-only credentials must match dispatch's operator fallback.
   return selectedUserKey?.trim() ? "llm-axis-byok" : "llm-axis-demo";
@@ -104,11 +75,8 @@ export function classifyScope(
  * over-spend is on the OPERATOR's provider key. KV's eventual consistency
  * across colos widens the window further.
  *
- * The counter is still worth keeping — it stops the sequential/naive case,
- * which is the common one — but closing the concurrent case needs a real
- * atomic counter (a Durable Object keyed by scope+IP, which serializes by
- * construction). That is an architectural change and is deliberately NOT
- * done here; it is tracked as an operator decision.
+ * Paid provider calls now use LLMBudget instead. This helper is retained
+ * only for deterministic and QID routes, where it is best-effort CPU control.
  */
 export async function checkRateLimit(
   request: Request,
@@ -130,7 +98,7 @@ export async function checkRateLimit(
   if (allowed) {
     // Increment with TTL slightly past the window so abandoned buckets
     // self-clean. KV writes are eventually consistent within the region;
-    // for our threat model this is acceptable.
+    // this is best-effort protection for cheap routes only.
     await kv.put(key, String(count + 1), {
       expirationTtl: policy.window_seconds + 60,
     });

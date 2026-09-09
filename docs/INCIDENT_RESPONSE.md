@@ -63,7 +63,7 @@ gh workflow run deploy-worker.yml
 
 Verifiers fetching `/.well-known/revoked-kids.json` and passing it to `verify_receipt(receipt, jwks, revoked_kids=...)` will reject receipts under the compromised kid whose `signed_at` ≥ `effective_revocation_at` with the `revoked_kid` error class — distinct from `signature_invalid` so the operator-side distinction is visible at the consumer.
 
-Receipts signed BEFORE `effective_revocation_at` retain their original validity (revocation invalidates future trust, not past). This preserves the audit trail for legitimate historical renders signed before the compromise window. Set `effective_revocation_at` to the suspected first-compromise timestamp; receipts before that survive, receipts after reject.
+The legacy low-level verifier uses the signed timestamp and `effective_revocation_at`; that alone cannot establish that a receipt existed before compromise, because a compromised signer can backdate `signed_at`. The explicit SDK `TrustPolicy` rejects revoked trusted key material, including known aliases, even in archival mode. Preserve historical bytes, but require separate trusted evidence of historical existence and an explicit relying-party decision before accepting a revoked-key archive. Do not treat archival mode as a revocation bypass.
 
 The rotation grace window (case 1's containment step 7) covers the JWKS-side hygiene; the revocation list covers the operator-intent side. Both should be set on a real compromise — JWKS removal stops new responses being issued under the kid; revocation list tells consumers to stop trusting cached / archived receipts under it. See [`docs/RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) §6.1.
 

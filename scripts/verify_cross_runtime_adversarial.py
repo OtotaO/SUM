@@ -56,7 +56,7 @@ from typing import Callable, Sequence
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 JS_VERIFIER = REPO_ROOT / "standalone_verifier" / "verify.js"
-PY_VERIFIER = ["python", "-m", "sum_cli.main", "verify"]
+PY_VERIFIER = [sys.executable, "-m", "sum_cli.main", "verify"]
 
 
 # ─── Rejection classifier ──────────────────────────────────────────

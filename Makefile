@@ -5,7 +5,7 @@
 # If you want to know what a target really does, read it below.
 
 .DEFAULT_GOAL := help
-.PHONY: help install test test-cli test-codec bench xruntime xruntime-adversarial \
+.PHONY: help install install-verify test test-cli test-codec bench xruntime xruntime-adversarial \
         demo wheel sdist smoke fortress clean lint wasm wasm-bench wasm-bench-python \
         vendor test-receipt-verify test-receipt-verify-py \
         test-transform-receipt-verify test-transform-receipt-fixtures \
@@ -24,12 +24,16 @@ help:  ## Show this help.
 	@echo "For the shipping CLI, prefer the installed binary:"
 	@echo "  echo 'Alice likes cats.' | sum attest | sum verify"
 
-install:  ## Editable install with sieve extras + dev tools.
+install:  ## Editable developer install matching the full pytest CI dependency set.
 	$(PYTHON) -m pip install --upgrade pip
-	$(PYTHON) -m pip install -e '.[sieve,dev]'
+	$(PYTHON) -m pip install -r requirements-prod.txt
+	$(PYTHON) -m pip install -e '.[verify,mcp,dev]'
 	$(PYTHON) -m spacy download en_core_web_sm
 
-test:  ## Full pytest run (2000+ tests).
+install-verify:  ## Minimal editable verifier SDK install; excludes the full test stack.
+	$(PYTHON) -m pip install -e '.[verify]'
+
+test:  ## Full pytest run (run make install first; optional research models are separate).
 	$(PYTHON) -m pytest Tests/ -q
 
 test-cli:  ## CLI + codec + VC tests only (fast).

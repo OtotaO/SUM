@@ -46,6 +46,8 @@ import {
 } from "../receipt/sign";
 import type { JWK } from "jose";
 import { checkRateLimit, classifyScope, rateLimitedResponse } from "../rate_limit";
+import { admitLLM } from "../llm_budget";
+import { readBoundedJSON, requireObject, validateTriples, validateSliders, RequestError, errorResponse, providerJSON } from "../request_limits";
 
 type ProviderChoice = "anthropic" | "openai";
 
@@ -143,7 +145,7 @@ async function callAnthropic(
     : "https://api.anthropic.com/v1/messages";
   const requestedModel = env.SUM_DEFAULT_MODEL_ANTHROPIC ?? ANTHROPIC_DEFAULT;
 
-  const res = await fetch(base, {
+  const data = await providerJSON(base, {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -156,17 +158,11 @@ async function callAnthropic(
       system: systemPrompt,
       messages: [{ role: "user", content: userPrompt }],
     }),
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`anthropic ${res.status}: ${text.slice(0, 500)}`);
-  }
-
-  const data = (await res.json()) as {
+  }) as {
     content?: Array<{ type: string; text?: string }>;
     model?: string;
   };
+
   const block = (data.content ?? []).find((b) => b.type === "text");
   if (!block?.text) throw new Error("anthropic: empty completion");
   // Honest model identifier: prefer the API's reported model (which
@@ -199,7 +195,7 @@ async function callOpenAI(
     : "https://api.openai.com/v1/chat/completions";
   const requestedModel = env.SUM_DEFAULT_MODEL_OPENAI ?? OPENAI_DEFAULT;
 
-  const res = await fetch(base, {
+  const data = await providerJSON(base, {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -213,17 +209,11 @@ async function callOpenAI(
         { role: "user", content: userPrompt },
       ],
     }),
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`openai ${res.status}: ${text.slice(0, 500)}`);
-  }
-
-  const data = (await res.json()) as {
+  }) as {
     choices?: Array<{ message?: { content?: string } }>;
     model?: string;
   };
+
   const text = data.choices?.[0]?.message?.content;
   if (!text) throw new Error("openai: empty completion");
   const modelUsed = data.model ?? `${requestedModel}_inferred`;
@@ -274,17 +264,15 @@ export async function handleRender(
 
   let body: RenderRequest;
   try {
-    body = (await request.json()) as RenderRequest;
-  } catch {
-    return json({ error: "invalid JSON body" }, 400);
-  }
-
-  if (!Array.isArray(body.triples) || body.triples.length === 0) {
-    return json({ error: "missing or empty 'triples' array" }, 400);
-  }
-  if (!body.slider_position) {
-    return json({ error: "missing 'slider_position'" }, 400);
-  }
+    const value = await readBoundedJSON(request);
+    requireObject(value);
+    validateTriples(value.triples);
+    validateSliders(value.slider_position);
+    if (value.provider !== undefined && value.provider !== "anthropic" && value.provider !== "openai") throw new RequestError("provider must be anthropic or openai");
+    if (value.force_render !== undefined && typeof value.force_render !== "boolean") throw new RequestError("force_render must be boolean");
+    if (value.cache_ttl_seconds !== undefined && (typeof value.cache_ttl_seconds !== "number" || !Number.isInteger(value.cache_ttl_seconds) || value.cache_ttl_seconds < 60 || value.cache_ttl_seconds > DEFAULT_TTL_SECONDS)) throw new RequestError("cache_ttl_seconds must be an integer from 60 to 86400");
+    body = value as unknown as RenderRequest;
+  } catch (error) { return errorResponse(error); }
 
   const tStart = Date.now();
   let quantized: RenderResult["quantized_sliders"];
@@ -304,39 +292,27 @@ export async function handleRender(
     openai: request.headers.get("x-render-llm-key-openai")?.trim() || undefined,
   };
 
-  // Provider resolution. If the request explicitly names one we honour
-  // it (and fail fast if the matching key is absent). With no explicit
-  // choice, Anthropic-if-configured-else-OpenAI preserves prior
-  // single-provider deploy behaviour. requiresExtrapolator() may make
-  // this moot for canonical-path renders, but resolving up-front keeps
-  // the cache key consistent.
-  let providerChoice: ProviderChoice;
-  try {
-    providerChoice = resolveProvider(env, body.provider, userKeys);
-  } catch (e) {
-    return json({ error: (e as Error).message }, 503);
+  // Canonical rendering needs neither provider credentials nor a paid quota.
+  const needsLLM = requiresExtrapolator(quantized);
+  let providerChoice: ProviderChoice | undefined;
+  if (needsLLM) {
+    try {
+      providerChoice = resolveProvider(env, body.provider, userKeys);
+      if (!(userKeys[providerChoice] || (providerChoice === "openai" ? env.OPENAI_API_KEY?.trim() : env.ANTHROPIC_API_KEY?.trim()))) {
+        return json({ error: `no credential configured for ${providerChoice}` }, 503);
+      }
+    } catch (e) { return json({ error: (e as Error).message }, 503); }
+  }
+  const selectedUserKey = providerChoice ? userKeys[providerChoice] : undefined;
+  if (!needsLLM && env.RENDER_CACHE) {
+    const rl = await checkRateLimit(request, env.RENDER_CACHE, "canonical");
+    if (!rl.allowed) return rateLimitedResponse(rl);
   }
 
-  // Body.provider determines who serves this request. Resolve it before
-  // accounting, then give BOTH the quota classifier and the dispatcher
-  // this same selected credential. A BYO key for the other provider must
-  // never promote an operator-funded call to the 100/hr BYO allowance.
-  const selectedUserKey = userKeys[providerChoice];
-  if (env.RENDER_CACHE) {
-    const scope = classifyScope("render", selectedUserKey);
-    const rl = await checkRateLimit(request, env.RENDER_CACHE, scope);
-    if (!rl.allowed) {
-      return rateLimitedResponse(rl);
-    }
-  }
-
-  // Cache key includes the resolved provider so OpenAI and Anthropic
-  // renders of the same (triples, sliders) live in disjoint cache
-  // namespaces. The default-provider path (no body.provider) uses the
-  // bare key for backwards compatibility with cached entries written
-  // before this dispatch shipped.
+  // Versioned provider namespace avoids reusing old ambiguous default-provider
+  // cache entries after provider configuration changes. Receipts stay immutable.
   const baseKey = await deriveCacheKey(body.triples, quantized);
-  const key = body.provider ? `${baseKey}:${providerChoice}` : baseKey;
+  const key = `render-v2:${baseKey}:${providerChoice ?? "canonical"}`;
 
   // Cache-first. The cached value already carries its render_receipt
   // (signed at the time of the original miss render); HIT path
@@ -348,6 +324,7 @@ export async function handleRender(
       return json({
         ...cached,
         cache_status: "hit",
+        llm_calls_made: 0,
         wall_clock_ms: Date.now() - tStart,
       });
     }
@@ -364,12 +341,15 @@ export async function handleRender(
   // snapshot resolution).
   let modelUsed: string = "canonical-deterministic-v0";
   let providerUsed: LLMRenderResult["provider"] = "canonical-path";
-  if (!requiresExtrapolator(quantized)) {
+  if (!needsLLM) {
     // Canonical path: deterministic tome from kept triples; no LLM.
     tome = deterministicTome(keptTriples);
   } else {
     const systemPrompt = buildSystemPrompt(quantized);
     const userPrompt = formatTriplesForLLM(keptTriples);
+    const scope = classifyScope("render", selectedUserKey) as "llm-axis-demo" | "llm-axis-byok";
+    const admission = await admitLLM(request, env, scope);
+    if (admission instanceof Response) return admission;
     try {
       const llmResult =
         providerChoice === "openai"
@@ -384,7 +364,7 @@ export async function handleRender(
         { error: `render failed: ${(e as Error).message}`, cache_key: key },
         502,
       );
-    }
+    } finally { await admission.release(); }
   }
 
   const renderId = await sha256Hex32(key + tome);

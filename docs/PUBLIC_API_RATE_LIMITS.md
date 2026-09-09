@@ -1,114 +1,127 @@
-# PUBLIC_API_RATE_LIMITS.md
+# Public API resource and admission limits
 
-**Operator-facing.** Documents the per-IP rate-limit policy on the hosted Worker at `https://sum-demo.ototao.workers.dev`. Public callers (funders, journalists, agent builders, contributors poking at the demo) should also read this so they understand what they get for free, what BYO-keys unlocks, and how to retry under quota.
+The hosted Worker admits provider work through a single SQLite Durable Object.
+One transaction checks the caller quota, the shared operator budget, and active
+call limits before any provider request. Deterministic rendering remains usable
+without provider credentials or the admission binding.
 
-## Why this exists
+## Policy
 
-The Worker is public-facing. Calls to `/api/render` and `/api/complete` can spend the operator's LLM credits (Anthropic / OpenAI). The counters reduce sequential overuse; they are not a hard spending cap (see limitations below).
-
-This policy:
-- Limits sequential use of operator-keyed routes.
-- Preserves a frictionless first-try experience for funders and casual visitors (the README's "verify in 60 seconds" example still works on a fresh IP).
-- Gives heavy users a path to higher quota: BYO key.
-- Keeps the trust-loop infrastructure (`/.well-known/*`) unlimited so verifiers don't get rate-limited.
-
-## Policy table
-
-| Route | Mode | Per-IP limit | Window |
+| Route | Mode | Per-IP allowance | Enforcement |
 |---|---|---:|---|
-| `/api/render` | no nonempty BYO key for the selected provider | **5** | 24 hours |
-| `/api/render` | nonempty BYO key for the selected provider | **100** | 1 hour |
-| `/api/transform` | all requests, including canonical renders and BYO headers | **5** | 24 hours |
-| `/api/complete` | always operator-keyed; BYO headers ignored | **5** | 24 hours |
-| `/api/qid` | n/a (no LLM cost; Wikidata upstream) | **60** | 1 hour |
-| `/.well-known/jwks.json` | n/a (cheap, browser verifiers need it) | **no limit** | — |
-| `/.well-known/revoked-kids.json` | n/a (cheap, browser verifiers need it) | **no limit** | — |
+| `/api/render` | Provider call using the operator key | 5 per UTC day | Atomic admission |
+| `/api/render` | Provider call using the selected provider's BYO key | 100 per UTC hour | Atomic admission |
+| `/api/complete` | Operator key; BYO headers ignored | Shares 5 per UTC day with render | Atomic admission |
+| `/api/render` | All non-density axes centered | 100 per UTC hour | Best-effort KV |
+| `/api/transform` | Canonical slider transform | Shares canonical 100 per UTC hour | Best-effort KV |
+| `/api/qid` | Wikidata resolution | 60 per UTC hour | Best-effort KV |
+| `/.well-known/*` | Verification keys and revocations | Unlimited | No admission dependency |
 
-The demo routes share one 5/day bucket per IP. Canonical `/api/render` requests and cache hits still consume their applicable allowance. `/api/transform` currently implements only canonical slider rendering; off-centre requests return 501. Its BYO quota promotion is intentionally disabled until its dispatcher can establish actual caller funding.
+The operator-funded routes together admit at most **100 provider attempts per
+UTC day across all IPs**. All provider work shares **8 active leases globally**
+and **2 per IP**, including BYO calls. Denied admission consumes no quota.
+Admitted attempts consume quota even when a provider rejects or times out; there
+is no automatic retry or refund. Cache hits consume no provider allowance.
+Windows are fixed UTC windows, not rolling intervals.
 
-## What the 429 response looks like
+A successful call releases its concurrency lease in `finally`; abandoned leases
+expire after 35 seconds. The provider deadline is 30 seconds. Leases bound
+admitted Worker calls, not work an upstream provider may continue after an abort.
+These are request-count controls, not a dollar-denominated provider billing cap.
 
-When a limit is exceeded, the route returns HTTP `429 Too Many Requests` with:
+`/api/transform` currently implements canonical slider rendering only; off-center
+requests return 501. It does not spend provider quota. Adding LLM dispatch there
+must use the same admission service.
 
-**Headers:**
-```
-content-type: application/json; charset=utf-8
-x-ratelimit-limit: <limit>
-x-ratelimit-remaining: 0
-x-ratelimit-reset: <seconds-until-window-resets>
-retry-after: <same>
-```
+## Request and provider limits
 
-**Body:**
-```json
-{
-  "error": "rate limit exceeded",
-  "scope": "llm-axis-demo",
-  "limit": 5,
-  "remaining": 0,
-  "reset_seconds": 73421,
-  "remediation": "Operator-keyed demo allowance exhausted (5 / 24h per IP). For /api/render, select a provider and supply its matching X-Render-LLM-Key-Anthropic or X-Render-LLM-Key-OpenAI header with your own key for 100/hr quota. Otherwise retry after the window resets, or run locally via `pip install sum-engine[openai]` and `sum render` / `sum transform apply slider`."
-}
-```
+Render, complete, and transform accept JSON bodies up to **192 KiB**. The Worker
+counts streamed bytes before JSON parsing, including requests without
+Content-Length, and stops a stalled read after 10 seconds.
 
-The `scope` field distinguishes:
-- `llm-axis-demo`: shared conservative allowance for operator-keyed renders, complete, and transform (5/day)
-- `llm-axis-byok`: render with the selected provider's BYO credential (100/hr)
-- `canonical` — non-LLM route (reserved; not yet active)
-- `qid` — Wikidata resolver
+- Render and slider transform: 1 to 256 triples, exactly three nonempty strings
+  per triple, at most 512 characters per string and 40,000 characters total.
+- Every supplied slider axis must be a finite number in [0, 1]. Render requires
+  all five axes; the slider transform also requires them in its parameters.
+- Complete: a nonempty prompt of at most 40,000 characters. A requested model
+  must equal the configured model for the selected operator provider. There is
+  no caller-controlled expensive-model escape hatch.
+- Render: provider must be `anthropic` or `openai`; force_render must be boolean;
+  an optional cache TTL must be an integer from 60 through 86,400 seconds.
+- Transform source chains: at most 256 records, bounded claim and URI strings,
+  nonnegative safe-integer byte offsets, and end no earlier than start.
+- Provider output requests are capped at 2,048 tokens. Response JSON is capped
+  at 256 KiB, and the 30-second deadline includes reading the response body.
 
-## How to use BYO keys
+Malformed or oversized requests are rejected before provider admission or
+provider dispatch. An empty or missing matching provider key also fails before
+admission. Body errors return 400, size limits 413, and stalled body reads 408.
+Provider failures return 502 without returning provider error bodies to callers.
 
-Use the header matching your selected provider on `/api/render`:
+## BYO provider credentials
 
-- `X-Render-LLM-Key-Anthropic: sk-ant-...`: for Anthropic
-- `X-Render-LLM-Key-OpenAI: sk-...`: for OpenAI
+On `/api/render`, supply the header matching `provider` in the JSON body:
 
-Set `provider` in the JSON body to `anthropic` or `openai`. Without an explicit choice, the Worker prefers configured Anthropic credentials, then OpenAI. A key for the other provider does not unlock BYO quota or change that preference. Whitespace-only keys count as absent. The selected BYO key is used for dispatch; provider rejection does not trigger an operator-key retry.
+- `X-Render-LLM-Key-Anthropic` for `anthropic`.
+- `X-Render-LLM-Key-OpenAI` for `openai`.
 
-The Worker forwards a selected BYO key directly to that provider, bypassing the operator's AI Gateway, and does not intentionally log or persist it. The receipt's `provider` field identifies the serving provider/gateway; it does not itself attest who paid.
+Without an explicit provider, configured Anthropic credentials are preferred,
+then OpenAI. A key for the other provider cannot promote an operator-funded call
+to the BYO allowance. Whitespace-only keys are absent. The exact selected,
+trimmed credential funds dispatch; rejection never retries on the operator key.
+BYO calls bypass the operator's AI Gateway. Credentials are not intentionally
+logged or stored. Receipt provider fields identify service provenance, not payer.
 
-Example using Anthropic with your own key:
+## Failure responses
 
-```bash
-curl -sS -X POST https://sum-demo.ototao.workers.dev/api/render \
-  -H 'content-type: application/json' \
-  -H "x-render-llm-key-anthropic: $YOUR_ANTHROPIC_KEY" \
-  -d '{"provider":"anthropic","triples":[["alice","graduated","2012"]],"slider_position":{"density":1.0,"length":0.5,"formality":0.7,"audience":0.5,"perspective":0.5}}'
-```
+Per-IP quota exhaustion returns 429 with `scope`, `limit`, `remaining: 0`,
+`reset_seconds`, and remediation in the JSON body. Headers include
+`x-ratelimit-limit`, `x-ratelimit-remaining`, `x-ratelimit-reset`, and `retry-after`.
+Shared daily-budget or concurrency exhaustion also returns 429 with a specific
+error and `retry-after`; concurrency pressure asks callers to retry in 5 seconds.
 
-## Local fallback (no Worker, no limit)
+Missing, failed, or malformed `LLM_BUDGET` responses return 503 and `retry-after:
+30`. No provider call follows that failure. Canonical rendering and previously
+cached renders can still succeed. An absent `RENDER_CACHE` only degrades caching
+and best-effort cheap-route limits; it cannot bypass provider admission.
 
-If you need higher quota than even the 100/hr BYO bucket gives, or you want privacy / offline, install locally:
+## Deployment and operations
 
-```bash
-pip install 'sum-engine[openai,sieve,receipt-verify]'
-export OPENAI_API_KEY=sk-...
-sum transform apply slider --input doc.json --parameters '{"density":1.0,"length":0.5,...}'
-```
+`worker/wrangler.toml` declares the `LLM_BUDGET` Durable Object binding and the
+`v1-llm-budget` migration with `new_sqlite_classes = ["LLMBudget"]`. Deployment
+provisions the namespace with the Worker; no manual namespace ID or additional
+secret is needed. Keep the migration history and class export on future deploys.
+Cloudflare supports SQLite Durable Objects on both Free and Paid plans; account
+quotas still apply. See [Cloudflare's Durable Objects overview](https://developers.cloudflare.com/durable-objects/)
+and [transactional SQLite storage](https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/).
 
-The CLI exposes the same transform-registry surface as `/api/transform`, signs receipts with your own key (set `SUM_TRANSFORM_SIGNING_JWK` + `SUM_TRANSFORM_SIGNING_KID`), and has no rate limit.
+Admission uses one stable object name, `public-llm-v1`. Changing that name,
+recreating its namespace, or deleting its storage resets budget history; do not
+use those actions as a deployment workaround. The object stores daily IP digests
+and expiry times, never raw IPs or provider keys. Expired rows are removed during
+admission; bounded bucket capacity fails closed under excessive distinct callers.
 
-Free-provider routing (Hugging Face, Ollama, llama.cpp, custom OpenAI-compatible endpoints like Modal or Fireworks.ai) is wired in `sum_engine_internal/ensemble/llm_dispatch.get_adapter` — see `docs/BYOK_AND_FREE_PROVIDERS.md` for the matrix.
+Before deployment run `npm ci`, `npm run typecheck`, `npm run test:rate-limit`,
+and `npm run test:hardening` in `worker/`. The hardening suite executes concurrent
+requests against local workerd and SQLite, with all provider traffic mocked.
+`npx wrangler deploy --dry-run` checks the bundle and binding declaration.
+After deployment verify frontend bytes and perform a canonical render plus
+receipt verification. Any paid smoke request consumes real quota and should be
+intentional. An incident can disable generation by removing provider secrets
+while leaving canonical rendering available. Preserve the admission class and
+storage in a fix-forward deployment rather than deleting its migration.
 
-## Operator notes
+## Limits of the controls
 
-- **Storage:** the rate limiter uses the `RENDER_CACHE` KV namespace, key shape `rl:<scope>:<ip>:<window-index>`, with TTL slightly past the window length. No new KV namespace required; no Cloudflare Paid Rate Limiting API required. Free-tier-compatible.
-- **Bypass during outage:** if `RENDER_CACHE` is unbound for any reason, the rate limit silently disables (route handler's `if (env.RENDER_CACHE)` guard). The route still serves; only the rate limit is degraded. This is intentional fail-open behaviour — the operator can choose to fail-closed by making `RENDER_CACHE` mandatory (would require touching each route).
-- **Tuning:** all limits are in `worker/src/rate_limit.ts::POLICY`. Tunable per scope without touching the route handlers.
-- **Render accounting order:** JSON parsing, validation, and provider resolution precede the quota check; cache lookup and LLM dispatch follow it. Invalid or unconfigured requests can return before consuming quota. Complete and transform retain their pre-parse checks.
-- **Headers respected:** `CF-Connecting-IP` (set automatically by Cloudflare). If absent (impossible in production but possible in local dev), the IP defaults to `"unknown"` — all-unknown traffic shares one bucket.
+A distributed caller can exhaust the shared allowance and deny demo generation
+to other visitors. KV limits on cheap routes remain non-atomic and eventually
+consistent. Provider prices, operator changes to configured models, upstream
+billing after cancellation, and unrelated uses of the same provider account are
+outside the request counter. Maintain provider-account spending controls as an
+independent layer. No claim of a universal spending cap or semantic safety is
+made by successful admission.
 
-## What this does NOT defend against
-
-- **Concurrent overspending.** KV read/increment/write is non-atomic and eventually consistent, so concurrent requests can exceed the stated limits. This is not a hard per-IP or global spend cap; an atomic counter and aggregate budget controls remain separate work.
-- **Distributed abuse from many IPs.** A botnet can amplify within the per-IP limit. Mitigation: Cloudflare's WAF + Bot Management at the edge. Free Cloudflare plan ships some of this; paid tiers expand it. Out of scope for the in-Worker policy.
-- **Application-layer logic abuse.** A caller within their quota can still craft expensive inputs (very large triples lists, very long source-chain arrays). Mitigation: `MAX_PROMPT_CHARS` on `/api/complete` already exists; similar caps belong on `/api/render` + `/api/transform` (deferred).
-- **BYO-key abuse against the caller's own wallet.** If you give the Worker a key with broad scope, the Worker forwards calls to that provider. Use scoped keys.
-
-## Pointers
-
-- `worker/src/rate_limit.ts` — implementation.
-- `worker/src/routes/{render,transform,complete,qid}.ts` — call sites.
-- `worker/wrangler.toml` — RENDER_CACHE KV binding declaration.
-- `docs/CHARTER_2026-05-17.md` §6 — constraint: "no shipping substrate that exposes the operator's wallet to abuse."
+For heavier use, run locally with your own provider credentials and signing
+configuration; see [BYO and free providers](BYOK_AND_FREE_PROVIDERS.md).
+Implementation: `worker/src/llm_budget.ts`, `worker/src/request_limits.ts`, and
+`worker/src/rate_limit.ts`.

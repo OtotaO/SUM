@@ -25,7 +25,9 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-import { applyDensity } from "../src/render/axis_prompts.ts";
+import { register } from "node:module";
+register("./ts_resolve.mjs", import.meta.url);
+const { applyDensity } = await import("../src/render/axis_prompts.ts");
 
 const FIXTURE_URL = new URL(
   "../../fixtures/density_sort/apply_density_cross_runtime_v1.json",

@@ -10,12 +10,15 @@
     "test:sign": "node --experimental-strip-types test/sign_smoke.mjs",
     "test:density": "node --experimental-strip-types test/density_smoke.mjs",
     "test:rate-limit": "node --experimental-strip-types --test test/rate_limit.test.mjs",
-    "tail": "wrangler tail"
+    "tail": "wrangler tail",
+    "test:hardening": "node --experimental-strip-types --test test/hardening.test.mjs"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260831.1",
     "typescript": "^7.0.2",
-    "wrangler": "^4.127.1"
+    "wrangler": "^4.127.1",
+    "esbuild": "0.28.1",
+    "miniflare": "5.20260828.0-alpha"
   },
   "dependencies": {
     "canonicalize": "^4.0.0",

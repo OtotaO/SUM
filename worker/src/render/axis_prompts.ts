@@ -1,3 +1,4 @@
+import { compareUnicodeCodepoints } from "../unicode_order";
 // TypeScript port of sum_engine_internal/ensemble/tome_sliders.py's
 // per-axis prompt fragments + build_system_prompt. Keep byte-for-byte
 // equivalent to the Python so a Python-rendered tome and a Worker-
@@ -114,28 +115,11 @@ export function requiresExtrapolator(sliders: SlidersForPrompt): boolean {
   );
 }
 
-/**
- * Codepoint comparison of two axiom keys. Matches Python's builtin
- * `sorted()` on the same `s||p||o` strings.
- *
- * Earlier draft used `keyOf(a).localeCompare(keyOf(b))`, which sorts by
- * ICU collation, not by codepoint. On keys `a`, `ab`, `a b`, `A` that is
- * the order [`a b`, `a`, `A`, `ab`] where Python gives
- * [`A`, `a b`, `ab`, `a`] — locale collation ignores case and treats the
- * space as a low-weight separator, while Python compares raw code units.
- * Because `applyDensity` keeps a PREFIX of the sorted list, a different
- * order is a different surviving SUBSET, and that subset is what the
- * deterministic tome (hence the signed `tome_hash`) is built from. Same
- * class of leak as the join-sort fixed in receipt/sign.ts::hashTriples.
- *
- * `<` on JS strings compares UTF-16 code units, which equals codepoint
- * order for the BMP; the pre-existing hashTriples comparator makes the
- * same trade.
- */
+// Match Python's sorted() on the same joined keys, including supplementary
+// Unicode characters. Density selection intentionally sorts keys, while signed
+// triple hashing sorts components; these are separate existing contracts.
 function compareKeys(a: [string, string, string], b: [string, string, string]): number {
-  const ka = keyOf(a);
-  const kb = keyOf(b);
-  return ka < kb ? -1 : ka > kb ? 1 : 0;
+  return compareUnicodeCodepoints(keyOf(a), keyOf(b));
 }
 
 export function applyDensity(triples: Array<[string, string, string]>, density: number): Array<[string, string, string]> {

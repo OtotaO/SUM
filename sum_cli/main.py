@@ -96,9 +96,9 @@ def _pick_extractor(override: Optional[str] = None) -> str:
     )
 
 
-def _extract_sieve(text: str) -> list[tuple[str, str, str]]:
+def _extract_sieve(text: str, *, allow_download: bool = True) -> list[tuple[str, str, str]]:
     from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
-    sieve = DeterministicSieve()  # type: ignore[no-untyped-call]
+    sieve = DeterministicSieve(allow_download=allow_download)
     return sieve.extract_triplets(text)
 
 
@@ -128,9 +128,11 @@ def _extract_llm(text: str, model: str) -> list[tuple[str, str, str]]:
     return asyncio.run(adapter.extract_triplets(text))
 
 
-def _extract(text: str, extractor: str, model: Optional[str]) -> list[tuple[str, str, str]]:
+def _extract(
+    text: str, extractor: str, model: Optional[str], *, allow_download: bool = True,
+) -> list[tuple[str, str, str]]:
     if extractor == "sieve":
-        return _extract_sieve(text)
+        return _extract_sieve(text, allow_download=allow_download)
     if extractor == "llm":
         return _extract_llm(text, model or "gpt-4o-mini-2024-07-18")
     raise SystemExit(f"sum: unknown extractor {extractor!r}")
@@ -2270,6 +2272,8 @@ def cmd_meaning_diff(args: argparse.Namespace) -> int:
             "judge": r.judge,
             "judge_version": r.judge_version,
             "scope": r.scope,
+            "inspection": r.inspection,
+            "scorer_instrument": scorer.instrument,
         }, ensure_ascii=False))
         return 0
 
@@ -2277,6 +2281,8 @@ def cmd_meaning_diff(args: argparse.Namespace) -> int:
     print("Meaning readout — measured for THIS document (not a certified bound)")
     print(f"  judge: {r.judge} v{r.judge_version}")
     print(f"  preservation: {pct}%   (loss {r.loss:.3f})")
+    if r.inspection and r.inspection.get("status") == "partial":
+        print("  review incomplete: the judge truncated one or more inputs; inspect the source manually.")
     if r.dropped_claims:
         print(
             f"  source claims: {r.source_claims} — {r.preserved_claims} "
@@ -2294,7 +2300,7 @@ def cmd_meaning_diff(args: argparse.Namespace) -> int:
         print("  added / unsupported claims: none ✓")
     print()
     if not r.dropped_claims and not r.unsupported_claims:
-        print("  → argument preserved under the named judge.")
+        print("  → no dropped or unsupported claims detected by this proxy; inspect coverage before relying on it.")
     else:
         bits = []
         if r.dropped_claims:
@@ -3297,6 +3303,7 @@ def cmd_mint_meaning(args: argparse.Namespace) -> int:
         return 2
 
     # ---- score or load the per-pair losses ----
+    evaluation_manifest = None
     if pair_mode:
         pairs, err = _read_mint_pairs(args)
         if pairs is None:
@@ -3313,6 +3320,11 @@ def cmd_mint_meaning(args: argparse.Namespace) -> int:
             file=sys.stderr,
         )
         losses = [float(x) for x in score_pairs(pairs, scorer)]
+        from sum_engine_internal.research.meaning.evidence import build_evaluation_manifest
+        evaluation_manifest = build_evaluation_manifest(
+            pairs, scorer, transform_configuration={"description": args.transform,
+                                                    "generation_provenance": "caller_supplied_outputs"},
+        )
         scorer_name, scorer_version = scorer.name, scorer.version
         loss_definition = args.loss_definition or (
             "bidirectional-entailment meaning-loss in [0,1]; "
@@ -3354,6 +3366,7 @@ def cmd_mint_meaning(args: argparse.Namespace) -> int:
             transform=args.transform,
             alpha_target=args.alpha_target,
             loss_definition=loss_definition,
+            evaluation_manifest=evaluation_manifest,
         )
     except ValueError as e:
         print(f"sum: cannot certify: {e}", file=sys.stderr)

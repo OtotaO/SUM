@@ -32,7 +32,7 @@ PROVES (cryptographically + by replay):
 Does NOT prove:
   - that meaning was preserved — only that a *named proxy* for
     meaning-loss is bounded *on average* (marginally) under
-    *exchangeability* with the calibration corpus;
+    independent calibration sampling from the deployment population under a fixed policy;
   - anything about arrangement (*naẓm*), sound, connotation, or
     implicature — those layers are explicitly outside the proxy and the
     payload's ``not_covered`` field says so.
@@ -45,7 +45,7 @@ from __future__ import annotations
 import math
 import unicodedata
 from datetime import datetime, timezone
-from typing import Any, Sequence
+from typing import Any, Mapping, Sequence
 
 from sum_engine_internal.infrastructure.jcs import canonicalize
 from sum_engine_internal.infrastructure.jose_envelope import (
@@ -56,6 +56,7 @@ from sum_engine_internal.research.meaning.conformal_meaning import (
     MeaningRiskGuarantee,
     certify_meaning_risk,
 )
+from sum_engine_internal.research.meaning.evidence import evaluation_fields, sampling_metadata
 
 SUPPORTED_SCHEMA = "sum.meaning_risk_receipt.v1"
 
@@ -77,11 +78,17 @@ DEFAULT_NOT_COVERED: tuple[str, ...] = (
 )
 
 _DEFAULT_DISCLOSURE = (
-    "This certificate bounds a NAMED PROXY for meaning-loss, not meaning "
-    "itself. The bound is marginal (the average over the calibration "
-    "corpus), not per-document, and is valid only under exchangeability "
-    "between that corpus and deployment. It does not cover arrangement "
-    "(naẓm), sound, connotation, or implicature."
+    "This receipt records a NAMED PROXY for meaning-loss, not meaning itself. "
+    "A confidence interpretation for expected deployment loss requires "
+    "independent, identically distributed calibration draws from the target "
+    "deployment distribution, a fixed scoring/transformation policy, and no "
+    "unaccounted adaptive selection or calibration reuse. Exchangeability alone "
+    "is insufficient. Without a supplied sampling contract this is a descriptive "
+    "batch measurement with conditional bound arithmetic. It is not per-document "
+    "and does not establish truth or complete meaning preservation. It does not "
+    "cover arrangement (naẓm), sound, connotation, or implicature. Verification "
+    "checks authenticity and, with losses supplied, arithmetic replay; it does "
+    "not verify sampling assumptions or derive scores from the source texts."
 )
 
 
@@ -142,13 +149,15 @@ def build_payload(
     not_covered: Sequence[str] = DEFAULT_NOT_COVERED,
     disclosure: str = _DEFAULT_DISCLOSURE,
     signed_at: str | None = None,
+    sampling_contract: Mapping[str, Any] | None = None,
+    evaluation_manifest: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Assemble a ``sum.meaning_risk_receipt.v1`` payload from a
     certified guarantee and the losses it was certified over.
 
     ``corpus_id`` names the calibration envelope (e.g.
-    ``"abrahamic-parallel-translations-v0"``) — the exchangeability
-    scope the bound is valid within. ``transform`` is a free string
+    ``"abrahamic-parallel-translations-v0"``): the declared corpus scope does
+    not establish a sampling design. ``transform`` is a free string
     naming what produced the pairs (e.g. ``"slider:density=0.5"``).
     ``alpha_target`` is the risk level the operator wanted controlled;
     when supplied, ``controlled`` records whether the certified ceiling
@@ -233,6 +242,10 @@ def build_payload(
         "not_covered": list(not_covered),
         "disclosure": disclosure,
         "signed_at": signed_at,
+        **sampling_metadata(sampling_contract),
+        **evaluation_fields(evaluation_manifest, n=guarantee.n,
+                            scorer=guarantee.scorer_name,
+                            scorer_version=guarantee.scorer_version),
     }
     if alpha_target is not None:
         # Evaluate `controlled` against the QUANTISED alpha (the value
@@ -412,7 +425,7 @@ def verify_meaning_risk_receipt(
     if not isinstance(disclosure, str) or not _has_visible_text(disclosure):
         raise MeaningReceiptDisclosureError(
             "payload.disclosure must be a non-empty string with visible text "
-            "stating the proxy / marginal / exchangeability caveat; got "
+            "stating the proxy / population / sampling-assumption caveat; got "
             f"{disclosure!r}"
         )
 
