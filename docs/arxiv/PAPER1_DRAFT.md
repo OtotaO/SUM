@@ -10,13 +10,10 @@ operator's to shape; drafting notes are at the foot.*
 
 ## Abstract
 
-Two questions about AI-transformed text lack a portable, offline-verifiable
-answer: *who transformed this, and what did the transformation preserve?*
-Provider disclosure (EU AI Act Article 50) and image-centric content
-provenance (C2PA, SynthID) do not cover text that has been paraphrased,
-summarized, or translated — a manifest detaches on copy, a watermark is
-defeated by rewriting. We present a receipt family that answers both questions
-for text. A signed, offline-verifiable receipt attests a transformation
+For transformed text, provenance and watermarking address attribution and
+detection, while preservation needs a separate measurement. We present a
+receipt family linking signed transformation records to a named meaning-loss
+proxy. A signed, offline-verifiable receipt attests a transformation
 (Ed25519 over RFC 8785 JCS-canonical bytes, detached JWS, JWKS keys); on top of
 it, a **distribution-free, replayable certificate** bounds the expected
 *meaning-loss* of the transformation under a **named judge**. The certificate
@@ -31,10 +28,11 @@ outputs rather than model outputs (the mechanism is producer-indifferent):
 certified expected meaning-loss
 ≤ 0.646 (95%) for abstractive summarization of US Congressional bills
 (BillSum, CC0; n=64) and ≤ 0.413 for EN→FR translation (opus-100; n=64), with
-39/64 faithful translations scoring *exactly zero* meaning-loss (under a binary
-entailment judge at a 0.5 cut) despite near-zero lexical overlap — the property
-no watermark or lexical scheme can certify. The thesis is **attest, don't detect**: a signature survives an
-adversary with a thesaurus; a statistical "is-this-AI" classifier does not.
+39/64 reference translations scoring *exactly zero* meaning-loss (under a binary
+entailment judge at a 0.5 cut) despite near-zero lexical overlap. The thesis is
+**attest, don't detect**: a receipt authenticates a recorded transformation.
+Its signature does not extend coverage to subsequent rewrites, which require
+new linked receipts.
 
 **Contributions.** (1) A unified, cross-runtime-verifiable receipt family for
 text-transformation provenance. (2) A *meaning-risk certificate*: a signed,
@@ -55,7 +53,9 @@ First, **disclosure**: Article 50(2) of the EU AI Act (applicable 2 August
 format and to ensure their technical solutions are "effective, interoperable,
 robust and reliable as far as this is technically feasible"; Article 50(4)
 separately obliges *deployers* to disclose deep fakes and AI-generated text
-published to inform the public on matters of public interest. Providers whose
+published to inform the public on matters of public interest, subject to the
+Article's exceptions, including human review or editorial control together
+with editorial responsibility for that text. Providers whose
 systems were placed on the market before 2 August 2026 have until 2 December
 2026 to comply with Article 50(2), under Regulation (EU) 2026/1744 (Digital
 Omnibus on AI, in force 27 July 2026). The associated *Code of Practice on
@@ -65,10 +65,10 @@ and far less served,
 re-leveled for a different audience, or translated, *what survived the
 operation, and can it be proven to anyone, offline?*
 
-The dominant provenance tools answer neither well for text. C2PA binds a
-cryptographic manifest to a media asset; its 2.4 text binding is a *byte-exact*
-hard hash, so the manifest verifies the exact bytes and breaks the moment text
-is edited, re-flowed, or paraphrased — it says nothing about what a transform
+C2PA supports text manifests, including Unicode-embedded manifests designed
+to persist through copying. Its hard bindings cover a specified text
+representation, with NFC normalization for unstructured text (v2.4, Appendix
+A.8). Those bindings do not themselves quantify what a transformation
 preserved. SynthID-Text and statistical "AI detectors" target *generation*,
 not transformation-preservation, and degrade under exactly the rewriting text
 invites: detectors have repeatedly failed under paraphrase and multi-step
@@ -76,8 +76,10 @@ rewriting (see Section 9).
 
 We take a different stance: **attest, don't detect.** Rather than infer whether
 text is AI-generated, we let any participating transformer *attest* what it did
-and what it preserved, in a receipt anyone verifies offline — robust to
-rewriting because a signature is indifferent to surface form. The technical
+and what it preserved, in a receipt anyone verifies offline under the trust
+preconditions below. A receipt authenticates the recorded transformation;
+subsequent rewrites require new linked receipts and their own measurements.
+The technical
 contribution is a *composition*: a signed transformation receipt carrying a
 **distribution-free certificate of meaning-loss under a named judge**, made
 **replayable** so the certificate is reproducible rather than merely asserted.
@@ -190,8 +192,9 @@ variance-adaptive **empirical-Bernstein** bound (Maurer & Pontil, 2009), whose
 deviation scales with the sample variance and is therefore tighter for
 low-variance batches at larger $n$ (its additive $O(1/(n{-}1))$ term makes it
 *looser* than Hoeffding at small $n$ — a regime fact, not a tuning knob). The
-shipped default selects Clopper–Pearson for binary data and Hoeffding
-otherwise; the choice is made a priori, never by comparing realized bounds.
+shipped default is Hoeffding. Optional `auto` mode selects Clopper–Pearson for
+binary data and Hoeffding otherwise. Both demonstrations use Hoeffding;
+their receipt payloads record that method.
 
 **Wire and disclosure.** The receipt commits the SHA-256 of the integer-micro
 loss vector and carries `n`, `delta_micro`, `method`,
@@ -304,7 +307,7 @@ path's *joint* (all-cohorts) coverage was separately validated at 0.958 against
 a 0.95 target (Clopper-Pearson; $G=3$ cohorts of $n=60$ drawn Bernoulli at true
 loss rates 0.10/0.20/0.30, $\delta=0.05$, $2\times10^{3}$ trials, seed 17). At the receipts' $n=64$ and observed variance, Hoeffding is the
 tighter honest estimator than empirical-Bernstein (BillSum 0.6455 vs 0.650;
-translation 0.4124 vs 0.518), so the a-priori default of Section 4 is also the
+translation 0.4124 vs 0.518), so the shipped Hoeffding default of Section 4 is also the
 tighter of the two at this $n$; we report both.
 
 **7.4 Honest scope.** Each receipt is certified under its *own* named judge
@@ -380,8 +383,10 @@ visible rather than rhetorically closed.
   an *intent-integrity* problem for agents, which this paper does not address;
   we instrument a different corner of the same error, the transformation.
 - **C2PA / Content Credentials** bind provenance to media; C2PA has carried text
-  manifests since 2.3 (2.4 adds structured-text blocks), but the text binding is a *byte-exact* hard hash that breaks under
-  any edit or paraphrase, and the C2PA Explainer (§7.2.2) states that
+  manifests since 2.3 (2.4 adds structured-text blocks). Text manifests use
+  cryptographic content bindings, with NFC normalization for unstructured
+  text (v2.4, Appendix A.8); those bindings do not measure preservation under
+  substantive rewriting. The C2PA Explainer (§7.2.2) states that
   provenance information alone cannot tell you whether the content is true,
   accurate or factual. **SynthID-Text** (Dathathri et al., 2024) and statistical
   detectors target generation, not transformation-preservation, and degrade
@@ -390,7 +395,7 @@ visible rather than rhetorically closed.
   and zero-shot detectors by a single training-free paraphrase attack
   (arXiv:2506.07001); multi-step
   rewriting drives detection of a diffusion-LM watermark (arXiv:2605.05503)
-  from ~88% to under 5% while
+  from ~88% to under 5% in its strongest five-hop settings while
   holding semantic similarity, the exact regime a meaning-preservation
   certificate is built for. We cite arXiv:2508.20228 in full rather than for
   its negative half only: the same work proposes SynGuard, a semantic-aware
@@ -469,11 +474,11 @@ losing that benchmark's time-and-date subset (82.0% against 90.0%)
 (arXiv:2506.20384) — and any judge-conditional bound inherits the
 judge's *label-noise* ceiling, not merely its accuracy. That last step is our
 inference, not a result of the work we draw it from: Seo et al.
-(arXiv:2506.13342) report empirically that approximately 16% *of* ambiguous or
-incorrectly labelled data substantially influences model rankings on
-fact-verification benchmarks, which is a statement about annotation quality
-rather than a flat benchmark error rate, and we take the consequence for a
-judge-conditional bound from there. A tighter betting/empirical-Bernstein confidence
+(arXiv:2506.13342) identified 117 mislabeled and 159 ambiguous instances among
+1,749 collected benchmark examples, and observed model-ranking changes after
+correcting labels and removing ambiguous instances. These results concern
+their collected sample, rather than establishing a universal benchmark error
+rate. A tighter betting/empirical-Bernstein confidence
 sequence is a no-wire-change tightening. Re-enveloping the receipt as a
 COSE_Sign1 Signed Statement and registering it with a transparency service, so
 the meaning layer composes with SCITT (Section 9) rather than duplicating it,
