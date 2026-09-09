@@ -10,37 +10,36 @@ operator's to shape; drafting notes are at the foot.*
 
 ## Abstract
 
-Two questions about AI-transformed text lack a portable, offline-verifiable
-answer: *who transformed this, and what did the transformation preserve?*
-Provider disclosure (EU AI Act Article 50) and image-centric content
-provenance (C2PA, SynthID) do not cover text that has been paraphrased,
-summarized, or translated — a manifest detaches on copy, a watermark is
-defeated by rewriting. We present a receipt family that answers both questions
-for text. A signed, offline-verifiable receipt attests a transformation
+For transformed text, provenance and watermarking address attribution and
+detection, while preservation needs a separate measurement. We present a
+receipt family linking signed transformation records to a named meaning-loss
+proxy. A signed, offline-verifiable receipt attests a transformation
 (Ed25519 over RFC 8785 JCS-canonical bytes, detached JWS, JWKS keys); on top of
 it, a **distribution-free, replayable certificate** bounds the expected
 *meaning-loss* of the transformation under a **named judge**. The certificate
 replays offline over a committed integer loss vector — a third party re-runs
-the conformal certifier and reproduces the bound to the bit — while the proof
+the certifier and reproduces the bound to the bit — while the proof
 boundary stays explicit: it bounds a named proxy *marginally*, over an
 *i.i.d.* calibration sample and only where that sample matches deployment,
 never per-document truth and never "meaning" itself. We
-demonstrate on two public-domain corpora, over each corpus's own reference
+demonstrate on two public benchmark corpora — BillSum (CC0) and opus-100
+(mixed-licence, raw text not redistributed) — over each corpus's own reference
 outputs rather than model outputs (the mechanism is producer-indifferent):
 certified expected meaning-loss
 ≤ 0.646 (95%) for abstractive summarization of US Congressional bills
 (BillSum, CC0; n=64) and ≤ 0.413 for EN→FR translation (opus-100; n=64), with
-39/64 faithful translations scoring *exactly zero* meaning-loss (under a binary
-entailment judge at a 0.5 cut) despite near-zero lexical overlap — the property
-no watermark or lexical scheme can certify. The thesis is **attest, don't detect**: a signature survives an
-adversary with a thesaurus; a statistical "is-this-AI" classifier does not.
+39/64 reference translations scoring *exactly zero* meaning-loss (under a binary
+entailment judge at a 0.5 cut) despite near-zero lexical overlap. The thesis is
+**attest, don't detect**: a receipt authenticates a recorded transformation.
+Its signature does not extend coverage to subsequent rewrites, which require
+new linked receipts.
 
 **Contributions.** (1) A unified, cross-runtime-verifiable receipt family for
 text-transformation provenance. (2) A *meaning-risk certificate*: a signed,
 same-commit-replayable, distribution-free upper bound on expected meaning-loss
 under a named judge, with its proof boundary enforced in the wire format.
 (3) A group-conditional ("perspective") extension with a Bonferroni
-simultaneous guarantee. (4) Two real, audited, public-domain demonstrations
+simultaneous guarantee. (4) Two real, audited demonstrations on public benchmark corpora
 and an empirical coverage validation. (5) An explicit threat model and the two
 load-bearing verification preconditions (trusted out-of-band keys;
 issuer-attestation vs. bound-attestation) that any "offline-verifiable" claim
@@ -49,32 +48,38 @@ must state.
 ## 1. Introduction
 
 Pressure on AI-generated and AI-transformed text is converging on two needs.
-First, **disclosure**: Article 50(2)/(4) of the EU AI Act (applicable
-2 August 2026; a grace window to 2 December 2026 for the machine-readable
-marking obligation on pre-existing systems is provisionally agreed under the
-Digital Omnibus) requires machine-readable, robust marking of AI-generated
-content, and the associated *Code of Practice on Transparency of AI-Generated
-Content* (finalized 10 June 2026) asks that marking be "effective,
-interoperable, robust, and reliable as far as technically feasible." Second,
+First, **disclosure**: Article 50(2) of the EU AI Act (applicable 2 August
+2026) obliges *providers* to mark AI-generated content in a machine-readable
+format and to ensure their technical solutions are "effective, interoperable,
+robust and reliable as far as this is technically feasible"; Article 50(4)
+separately obliges *deployers* to disclose deep fakes and AI-generated text
+published to inform the public on matters of public interest, subject to the
+Article's exceptions, including human review or editorial control together
+with editorial responsibility for that text. Providers whose
+systems were placed on the market before 2 August 2026 have until 2 December
+2026 to comply with Article 50(2), under Regulation (EU) 2026/1744 (Digital
+Omnibus on AI, in force 27 July 2026). The associated *Code of Practice on
+Transparency of AI-Generated Content* was finalized 10 June 2026. Second,
 and far less served,
 **accountability for transformation**: when a document is summarized,
 re-leveled for a different audience, or translated, *what survived the
 operation, and can it be proven to anyone, offline?*
 
-The dominant provenance tools answer neither well for text. C2PA binds a
-cryptographic manifest to a media asset; its 2.4 text binding is a *byte-exact*
-hard hash, so the manifest verifies the exact bytes and breaks the moment text
-is edited, re-flowed, or paraphrased — it says nothing about what a transform
+C2PA supports text manifests, including Unicode-embedded manifests designed
+to persist through copying. Its hard bindings cover a specified text
+representation, with NFC normalization for unstructured text (v2.4, Appendix
+A.8). Those bindings do not themselves quantify what a transformation
 preserved. SynthID-Text and statistical "AI detectors" target *generation*,
 not transformation-preservation, and degrade under exactly the rewriting text
-invites — every general detector has failed under paraphrase, distribution
-shift, or bias against non-native writers, and a major provider retired its
-own classifier.
+invites: detectors have repeatedly failed under paraphrase and multi-step
+rewriting (see Section 9).
 
 We take a different stance: **attest, don't detect.** Rather than infer whether
 text is AI-generated, we let any participating transformer *attest* what it did
-and what it preserved, in a receipt anyone verifies offline — robust to
-rewriting because a signature is indifferent to surface form. The technical
+and what it preserved, in a receipt anyone verifies offline under the trust
+preconditions below. A receipt authenticates the recorded transformation;
+subsequent rewrites require new linked receipts and their own measurements.
+The technical
 contribution is a *composition*: a signed transformation receipt carrying a
 **distribution-free certificate of meaning-loss under a named judge**, made
 **replayable** so the certificate is reproducible rather than merely asserted.
@@ -105,7 +110,7 @@ Two preconditions follow and must accompany any "tamper-evident,
 offline-verifiable" claim: **(P1)** verification reduces to *trusting the
 JWKS*, obtained from a signed trust root out-of-band (never from the receipt
 bundle) — a forgery verifies against an attacker's own JWKS, as for any JWS
-system; **(P2)** the signature attests the *issuer*, while the conformal
+system; **(P2)** the signature attests the *issuer*, while the
 *bound* is attested only by the Stage-B replay (§5). Out of scope: the honesty
 of the issuer's labels (`scorer`/`model`/`provider` are producer-asserted),
 the correctness of the transformed output, and any claim about human-vs-AI
@@ -129,7 +134,7 @@ formatting, which RFC 8785 §3.2.2.3 mandates be the ECMAScript
 `Number::toString` form. We verify Python, Node, and browser canonicalizers
 agree byte-for-byte on the receipt payloads, including across the full
 sub-10⁻⁴ float band where a naïve `repr`-based encoder diverges. The
-conformal-tier payloads are additionally **float-free** — every rate quantity
+measured-bound-tier payloads are additionally **float-free** — every rate quantity
 is an integer "micro-unit" (value × 10⁶, ≤ 10⁶ ≪ 2⁵³) — so the exact-equality
 replay of §5 is well-defined across runtimes.
 
@@ -187,8 +192,9 @@ variance-adaptive **empirical-Bernstein** bound (Maurer & Pontil, 2009), whose
 deviation scales with the sample variance and is therefore tighter for
 low-variance batches at larger $n$ (its additive $O(1/(n{-}1))$ term makes it
 *looser* than Hoeffding at small $n$ — a regime fact, not a tuning knob). The
-shipped default selects Clopper–Pearson for binary data and Hoeffding
-otherwise; the choice is made a priori, never by comparing realized bounds.
+shipped default is Hoeffding. Optional `auto` mode selects Clopper–Pearson for
+binary data and Hoeffding otherwise. Both demonstrations use Hoeffding;
+their receipt payloads record that method.
 
 **Wire and disclosure.** The receipt commits the SHA-256 of the integer-micro
 loss vector and carries `n`, `delta_micro`, `method`,
@@ -231,8 +237,9 @@ disclosure: Stage B's exact-integer replay is *well-defined* in any runtime
 
 A marginal bound hides the cohort it is worst on. Given cohort labels
 $g_i$, the **perspective receipt** certifies (1) per declared cohort over only
-that cohort's losses — the discrete-covariate case of group-conditional risk
-control (Gibbs, Cherian & Candès, 2023). The marginal and the per-cohort
+that cohort's losses. The group-conditional coverage literature (Gibbs,
+Cherian & Candès, 2023) addresses the same worst-cohort concern in the
+conformal-prediction setting. The marginal and the per-cohort
 family are *separate* $(1-\delta)$ statements; with `simultaneous` set, each
 cohort is certified at $\delta/G$ (Bonferroni) so that *all* $G$ cohort bounds
 hold **jointly** at $\ge 1-\delta$. Each cohort pays its own finite-sample
@@ -240,7 +247,8 @@ radius — a small cohort gets a wide bound, which is honest, not a defect.
 
 ## 7. Empirical demonstration
 
-We issue two real receipts over public-domain corpora. Each is committed (a
+We issue two real receipts over public benchmark corpora (BillSum, CC0;
+opus-100, mixed-licence OPUS sources, raw text not redistributed). Each is committed (a
 signed golden, the integer loss vector, a deterministic generator), replays
 offline via Algorithm 1 Stage B, was **independently re-derived to the exact
 micro-unit** and adversarially audited before release.
@@ -259,8 +267,10 @@ external quality gate". Aggressive summarization loses about half the named
 proxy on average; the receipt *certifies how much*, it does not claim little
 was lost.
 
-**7.2 Translation (opus-100).** First 64 length-aligned EN→FR pairs of
-opus-100, local multilingual NLI judge (mDeBERTa-v3-xnli). As with BillSum, the French side is the corpus's own
+**7.2 Translation (opus-100, mixed-licence).** First 64 length-aligned EN→FR pairs of
+opus-100, local multilingual NLI judge (mDeBERTa-v3-xnli). opus-100 aggregates
+mixed-licence OPUS sources, so the raw text is not redistributed here; the
+committed corpus pointer is sha256-pinned instead. As with BillSum, the French side is the corpus's own
 reference translation, not a system output. The translation
 transform certifies **expected meaning-loss $\le 0.4124$ at 95%** ($n=64$, mean
 $0.2594$), controlled against an operator-chosen 0.50 target (again illustrative,
@@ -297,8 +307,8 @@ path's *joint* (all-cohorts) coverage was separately validated at 0.958 against
 a 0.95 target (Clopper-Pearson; $G=3$ cohorts of $n=60$ drawn Bernoulli at true
 loss rates 0.10/0.20/0.30, $\delta=0.05$, $2\times10^{3}$ trials, seed 17). At the receipts' $n=64$ and observed variance, Hoeffding is the
 tighter honest estimator than empirical-Bernstein (BillSum 0.6455 vs 0.650;
-translation 0.4124 vs 0.518), confirming the a-priori default was not a
-favorable cherry-pick.
+translation 0.4124 vs 0.518), so the shipped Hoeffding default of Section 4 is also the
+tighter of the two at this $n$; we report both.
 
 **7.4 Honest scope.** Each receipt is certified under its *own* named judge
 (the two judges differ), so the two means are not a single comparable grading
@@ -319,7 +329,7 @@ should not let a reader assume these pairs were AI-transformed. Second,
 **judge validity is a separate question from bound validity**. A verified
 receipt is a cryptographic fact about a named proxy; it is not evidence that
 the proxy tracks human judgment. On SummEval the proxy correlates only
-modestly with human faithfulness ratings at summary level (Spearman rho
+modestly with the pooled summary-level human meaning composite (Spearman rho
 between 0.267 and 0.291), the NLI judge replicates at rho about 0.29 on FRANK,
 and the embedding judge used in the BillSum demonstration is corpus-dependent
 and falls to near zero on abstractive FRANK-XSum. The shipped verifier prints
@@ -364,21 +374,28 @@ visible rather than rhetorically closed.
   draws is therefore not detection versus silence about meaning; it is an
   unbound heuristic versus a publicly verifiable, distribution-free bound that
   replays offline.
-- **The semantic gap, named independently.** A 2026 survey of AI-content
-  identity and provenance (arXiv:2604.23280) articulates exactly this gap — that
-  *cryptographic correctness does not imply semantic correctness*, and that
-  prevailing provenance attests output attribution, not "whether the
-  transformation preserved semantic fidelity." Our certificate is a concrete
-  instrument for that independently-named gap.
-- **C2PA / Content Credentials** bind provenance to media; C2PA 2.4 adds text
-  manifests, but the text binding is a *byte-exact* hard hash that breaks under
-  any edit or paraphrase, and the spec itself states provenance is not a truth
-  or quality claim. **SynthID-Text** (Dathathri et al., 2024) and statistical
+- **The category error, named independently.** A 2026 analysis report on
+  AI-agent identity standards (arXiv:2604.23280) names the same category
+  error: its §5.1, *The Semantic Intent Gap*, calls "the assumption that
+  cryptographic correctness implies semantic correctness" exactly that, and
+  its §4.4 describes C2PA's contribution as output attribution, binding an
+  agent's identity to the content it produces. That report poses the error as
+  an *intent-integrity* problem for agents, which this paper does not address;
+  we instrument a different corner of the same error, the transformation.
+- **C2PA / Content Credentials** bind provenance to media; C2PA has carried text
+  manifests since 2.3 (2.4 adds structured-text blocks). Text manifests use
+  cryptographic content bindings, with NFC normalization for unstructured
+  text (v2.4, Appendix A.8); those bindings do not measure preservation under
+  substantive rewriting. The C2PA Explainer (§7.2.2) states that
+  provenance information alone cannot tell you whether the content is true,
+  accurate or factual. **SynthID-Text** (Dathathri et al., 2024) and statistical
   detectors target generation, not transformation-preservation, and degrade
   under exactly the rewriting text invites — a property re-confirmed in 2025 for
-  SynthID specifically (arXiv:2508.20228) and across detector families by a
-  single training-free paraphrase attack (arXiv:2506.07001); multi-hop rewriting
-  (arXiv:2605.05503) drives watermark detection from ~88% to under 5% while
+  SynthID specifically (arXiv:2508.20228) and across neural, watermark-based
+  and zero-shot detectors by a single training-free paraphrase attack
+  (arXiv:2506.07001); multi-step
+  rewriting drives detection of a diffusion-LM watermark (arXiv:2605.05503)
+  from ~88% to under 5% in its strongest five-hop settings while
   holding semantic similarity, the exact regime a meaning-preservation
   certificate is built for. We cite arXiv:2508.20228 in full rather than for
   its negative half only: the same work proposes SynGuard, a semantic-aware
@@ -442,8 +459,8 @@ visible rather than rhetorically closed.
 Validity rests on two assumptions separated in Section 4: independence within
 the calibration sample, which the three shipped inequalities require, and a
 calibration-to-deployment match, which is
-assumed, not sampled — a deliberately disclosed boundary common to all
-conformal guarantees. Model-judge replay is machine-pinned; de-pinning via
+assumed, not sampled — a deliberately disclosed boundary common to
+distribution-free guarantees of this kind. Model-judge replay is machine-pinned; de-pinning via
 integer/fixed-point CPU inference (so a meaning-judge forward pass is
 hardware-independent) is named future work — same-hardware bitwise determinism
 is now an engineering solved problem (batch-invariant kernels), but
@@ -457,11 +474,11 @@ losing that benchmark's time-and-date subset (82.0% against 90.0%)
 (arXiv:2506.20384) — and any judge-conditional bound inherits the
 judge's *label-noise* ceiling, not merely its accuracy. That last step is our
 inference, not a result of the work we draw it from: Seo et al.
-(arXiv:2506.13342) report empirically that approximately 16% *of* ambiguous or
-incorrectly labelled data substantially influences model rankings on
-fact-verification benchmarks, which is a statement about annotation quality
-rather than a flat benchmark error rate, and we take the consequence for a
-judge-conditional bound from there. A tighter betting/empirical-Bernstein confidence
+(arXiv:2506.13342) identified 117 mislabeled and 159 ambiguous instances among
+1,749 collected benchmark examples, and observed model-ranking changes after
+correcting labels and removing ambiguous instances. These results concern
+their collected sample, rather than establishing a universal benchmark error
+rate. A tighter betting/empirical-Bernstein confidence
 sequence is a no-wire-change tightening. Re-enveloping the receipt as a
 COSE_Sign1 Signed Statement and registering it with a transparency service, so
 the meaning layer composes with SCITT (Section 9) rather than duplicating it,
@@ -472,7 +489,10 @@ party issuing and verifying a receipt it did not author.
 
 ## 11. Artifact availability
 
-Every number in Section 7 is reproducible from committed bytes. The two
+Every number in Sections 7.1-7.3 is reproducible from committed bytes; the
+judge-validity correlations of Section 7.4 come from the calibration cards in
+`docs/CALIBRATION_CARDS.md` and the benchmark artifacts they name, not from a
+receipt fixture. The two
 receipt sections replay from the committed loss vectors. The synthetic sweep of
 Section 7.3 is not a fixture, but it reproduces from the shipped certifier over
 the data-generating process stated there ($n=64$ i.i.d. Bernoulli draws at each
@@ -487,7 +507,7 @@ contacting the authors.
 - **Source.** `https://github.com/OtotaO/SUM`, Apache-2.0. Archived in Software
   Heritage for permanent citation as
   `swh:1:snp:93b83ca29d9b468a9f034f0bc3d4259983d63339`, which captures `main`
-  at commit `996707c`, the state that produced this paper
+  at commit `996707c`
   (origin `swh:1:ori:a7b5385a59a6fb561cbad53ce12da3149439401e`).
 - **Verifier.** `pip install "sum-engine[verify]"` installs the
   dependency-light `sum_verify` SDK. The load-bearing promise is the
@@ -548,7 +568,7 @@ contacting the authors.
 - L. Tang et al. *MiniCheck: efficient fact-checking of LLMs on grounding documents.* EMNLP 2024 (arXiv:2404.10774).
 - D. Ivry, O. Nahum. *Paladin-mini: A Compact and Efficient Grounding Model Excelling in Real-World Scenarios.* arXiv:2506.20384, 2025.
 - W. Seo, S. Han, J. Jung, B. Newman, S. Lim, S. Lee, X. Lu, Y. Choi, Y. Yu. *Verifying the Verifiers: Unveiling Pitfalls and Potentials in Fact Verifiers.* COLM 2025; arXiv:2506.13342.
-- C2PA. *Coalition for Content Provenance and Authenticity, Technical Specification* (digitalSourceType taxonomy, v2.4; text manifests added in 2.x).
+- C2PA. *Coalition for Content Provenance and Authenticity, Technical Specification* (digitalSourceType taxonomy, v2.4; text manifests added in 2.3), and the companion *Explainer* §7.2.2.
 - European Union. *Artificial Intelligence Act, Article 50* (applicable 2 Aug 2026), and the *Code of Practice on Transparency of AI-Generated Content* (finalized 10 June 2026).
 - ECMA-262. *ECMAScript Language Specification* (§ Number::toString).
 

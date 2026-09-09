@@ -31,7 +31,7 @@ Chain-of-Custody for AI-Transformed Text: Signed, Replayable, Distribution-Free 
   (Ed25519 / JCS / detached JWS / JWKS), an explicit threat model with
   attacker capabilities, and verification preconditions P1/P2. The statistics
   serve the attestation claim, not the other way around. cs.CR is right.
-- **Cross-list: cs.LG** (the conformal / distribution-free bound machinery,
+- **Cross-list: cs.LG** (the distribution-free bound machinery,
   per the outline's stated venue plan).
 - **Second cross-list: cs.CL.** Added. The judges, corpora and transformations
   are all NLP objects: the paper's headline demonstrations are summarization
@@ -44,14 +44,14 @@ Chain-of-Custody for AI-Transformed Text: Signed, Replayable, Distribution-Free 
 
 ## Abstract (plain text, ready to paste into the arXiv abstract field)
 
-Character count of the paragraph below: 1,755, which fits the 1,920-char
+Character count of the paragraph below: 1,595, which fits the 1,920-char
 field. (The Markdown draft's own drafting note still says 1,426. That figure
 predates several revisions and no longer describes either abstract; treat the
 count on this line as the only current one.) The Contributions list stays
 in the paper body, as the draft prescribes. Em dashes below are the draft's
 own punctuation, kept verbatim.
 
-Two questions about AI-transformed text lack a portable, offline-verifiable answer: who transformed this, and what did the transformation preserve? Provider disclosure (EU AI Act Article 50) and image-centric content provenance (C2PA, SynthID) do not cover text that has been paraphrased, summarized, or translated — a manifest detaches on copy, a watermark is defeated by rewriting. We present a receipt family that answers both questions for text. A signed, offline-verifiable receipt attests a transformation (Ed25519 over RFC 8785 JCS-canonical bytes, detached JWS, JWKS keys); on top of it, a distribution-free, replayable certificate bounds the expected meaning-loss of the transformation under a named judge. The certificate replays offline over a committed integer loss vector — a third party re-runs the conformal certifier and reproduces the bound to the bit — while the proof boundary stays explicit: it bounds a named proxy marginally, over an i.i.d. calibration sample and only where that sample matches deployment, never per-document truth and never "meaning" itself. We demonstrate on two public-domain corpora, over each corpus's own reference outputs rather than model outputs (the mechanism is producer-indifferent): certified expected meaning-loss <= 0.646 (95%) for abstractive summarization of US Congressional bills (BillSum, CC0; n=64) and <= 0.413 for EN->FR translation (opus-100; n=64), with 39/64 faithful translations scoring exactly zero meaning-loss (under a binary entailment judge at a 0.5 cut) despite near-zero lexical overlap — the property no watermark or lexical scheme can certify. The thesis is attest, don't detect: a signature survives an adversary with a thesaurus; a statistical "is-this-AI" classifier does not.
+For transformed text, provenance and watermarking address attribution and detection, while preservation needs a separate measurement. We present a receipt family linking signed transformation records to a named meaning-loss proxy. A signed, offline-verifiable receipt attests a transformation (Ed25519 over RFC 8785 JCS-canonical bytes, detached JWS, JWKS keys); on top of it, a distribution-free, replayable certificate bounds the expected meaning-loss of the transformation under a named judge. The certificate replays offline over a committed integer loss vector — a third party re-runs the certifier and reproduces the bound to the bit — while the proof boundary stays explicit: it bounds a named proxy marginally, over an i.i.d. calibration sample and only where that sample matches deployment, never per-document truth and never "meaning" itself. We demonstrate on two public benchmark corpora — BillSum (CC0) and opus-100 (mixed-licence, raw text not redistributed) — over each corpus's own reference outputs rather than model outputs (the mechanism is producer-indifferent): certified expected meaning-loss <= 0.646 (95%) for abstractive summarization of US Congressional bills (BillSum, CC0; n=64) and <= 0.413 for EN->FR translation (opus-100; n=64), with 39/64 reference translations scoring exactly zero meaning-loss (under a binary entailment judge at a 0.5 cut) despite near-zero lexical overlap. The thesis is attest, don't detect: a receipt authenticates a recorded transformation. Its signature does not extend coverage to subsequent rewrites, which require new linked receipts.
 
 Note: arXiv's abstract field accepts inline TeX; if preferred, replace
 `<=` with `$\le$` and `EN->FR` with `EN$\to$FR`.
@@ -111,11 +111,13 @@ self-contained, downloads packages on first run). On a machine with TeXLive:
    verified against the live arXiv abstract pages 2026-07-16).
 3. Compile locally twice on any machine with TeX (or trust AutoTeX): check
    the rendered PDF once, end to end.
-3a. ~~Re-archive in Software Heritage and update the SWHID in Section 11.~~
-   **Done 2026-09-06.** Section 11 cites
-   `swh:1:snp:93b83ca29d9b468a9f034f0bc3d4259983d63339`, capturing `main` at
-   `996707c`. Only redo this if you make further changes to the paper before
-   uploading; if you do, the recipe is: save at
+3a. **Re-archive in Software Heritage and update the SWHID in Section 11.
+   REQUIRED before upload; do not skip.** This was done once on 2026-09-06,
+   capturing `main` at `996707c`, but the paper has been corrected since (the
+   quotation and overclaim pass). The snapshot Section 11 currently cites,
+   `swh:1:snp:93b83ca29d9b468a9f034f0bc3d4259983d63339`, therefore does NOT
+   contain the paper you are about to upload. Re-archive against merged `main`
+   and replace the identifier. The recipe: save at
    `https://archive.softwareheritage.org/save/`, wait for `full`, read the id
    from
    `https://archive.softwareheritage.org/api/1/origin/https://github.com/OtotaO/SUM/visit/latest/`,
