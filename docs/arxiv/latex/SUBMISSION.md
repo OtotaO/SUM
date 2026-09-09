@@ -31,7 +31,7 @@ Chain-of-Custody for AI-Transformed Text: Signed, Replayable, Distribution-Free 
   (Ed25519 / JCS / detached JWS / JWKS), an explicit threat model with
   attacker capabilities, and verification preconditions P1/P2. The statistics
   serve the attestation claim, not the other way around. cs.CR is right.
-- **Cross-list: cs.LG** (the conformal / distribution-free bound machinery,
+- **Cross-list: cs.LG** (the distribution-free bound machinery,
   per the outline's stated venue plan).
 - **Second cross-list: cs.CL.** Added. The judges, corpora and transformations
   are all NLP objects: the paper's headline demonstrations are summarization
@@ -44,7 +44,7 @@ Chain-of-Custody for AI-Transformed Text: Signed, Replayable, Distribution-Free 
 
 ## Abstract (plain text, ready to paste into the arXiv abstract field)
 
-Character count of the paragraph below: 1,755, which fits the 1,920-char
+Character count of the paragraph below: 1,822, which fits the 1,920-char
 field. (The Markdown draft's own drafting note still says 1,426. That figure
 predates several revisions and no longer describes either abstract; treat the
 count on this line as the only current one.) The Contributions list stays

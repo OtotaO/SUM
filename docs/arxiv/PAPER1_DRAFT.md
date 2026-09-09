@@ -50,14 +50,16 @@ must state.
 ## 1. Introduction
 
 Pressure on AI-generated and AI-transformed text is converging on two needs.
-First, **disclosure**: Article 50(2)/(4) of the EU AI Act (applicable
-2 August 2026; a grace window to 2 December 2026 for the machine-readable
-marking obligation on pre-existing systems is provisionally agreed under the
-Digital Omnibus) requires machine-readable, robust marking of AI-generated
-content, requiring providers to ensure their technical solutions are
-"effective, interoperable, robust and reliable as far as this is technically
-feasible" (Art. 50(2)); the associated *Code of Practice on Transparency of
-AI-Generated Content* was finalized 10 June 2026. Second,
+First, **disclosure**: Article 50(2) of the EU AI Act (applicable 2 August
+2026) obliges *providers* to mark AI-generated content in a machine-readable
+format and to ensure their technical solutions are "effective, interoperable,
+robust and reliable as far as this is technically feasible"; Article 50(4)
+separately obliges *deployers* to disclose deep fakes and AI-generated text
+published to inform the public on matters of public interest. Providers whose
+systems were placed on the market before 2 August 2026 have until 2 December
+2026 to comply with Article 50(2), under Regulation (EU) 2026/1744 (Digital
+Omnibus on AI, in force 27 July 2026). The associated *Code of Practice on
+Transparency of AI-Generated Content* was finalized 10 June 2026. Second,
 and far less served,
 **accountability for transformation**: when a document is summarized,
 re-leveled for a different audience, or translated, *what survived the
@@ -70,7 +72,7 @@ is edited, re-flowed, or paraphrased — it says nothing about what a transform
 preserved. SynthID-Text and statistical "AI detectors" target *generation*,
 not transformation-preservation, and degrade under exactly the rewriting text
 invites: general detectors have repeatedly failed under paraphrase and
-distribution shift (see Section 9).
+multi-step rewriting (see Section 9).
 
 We take a different stance: **attest, don't detect.** Rather than infer whether
 text is AI-generated, we let any participating transformer *attest* what it did
@@ -106,7 +108,7 @@ Two preconditions follow and must accompany any "tamper-evident,
 offline-verifiable" claim: **(P1)** verification reduces to *trusting the
 JWKS*, obtained from a signed trust root out-of-band (never from the receipt
 bundle) — a forgery verifies against an attacker's own JWKS, as for any JWS
-system; **(P2)** the signature attests the *issuer*, while the conformal
+system; **(P2)** the signature attests the *issuer*, while the
 *bound* is attested only by the Stage-B replay (§5). Out of scope: the honesty
 of the issuer's labels (`scorer`/`model`/`provider` are producer-asserted),
 the correctness of the transformed output, and any claim about human-vs-AI
@@ -369,23 +371,24 @@ visible rather than rhetorically closed.
   draws is therefore not detection versus silence about meaning; it is an
   unbound heuristic versus a publicly verifiable, distribution-free bound that
   replays offline.
-- **The semantic gap, named independently.** A 2026 survey of AI-content
-  identity and provenance (arXiv:2604.23280) names the same gap. Its §5.1,
-  titled *The Semantic Intent Gap*, calls "the assumption that cryptographic
-  correctness implies semantic correctness" a category error, and it
-  characterizes C2PA's contribution as output attribution — binding an agent's
-  identity to the content it produces — rather than any claim about what a
-  transformation preserved. Our certificate is a concrete instrument for that
-  independently-named gap.
-- **C2PA / Content Credentials** bind provenance to media; C2PA 2.4 adds text
-  manifests, but the text binding is a *byte-exact* hard hash that breaks under
+- **The category error, named independently.** A 2026 analysis report on
+  AI-agent identity standards (arXiv:2604.23280) names the same category
+  error: its §5.1, *The Semantic Intent Gap*, calls "the assumption that
+  cryptographic correctness implies semantic correctness" exactly that, and
+  its §4.4 describes C2PA's contribution as output attribution, binding an
+  agent's identity to the content it produces. That report poses the error as
+  an *intent-integrity* problem for agents, which this paper does not address;
+  we instrument a different corner of the same error, the transformation.
+- **C2PA / Content Credentials** bind provenance to media; C2PA has carried text
+  manifests since 2.3 (2.4 adds structured-text blocks), but the text binding is a *byte-exact* hard hash that breaks under
   any edit or paraphrase, and the spec itself states provenance is not a truth
   or quality claim. **SynthID-Text** (Dathathri et al., 2024) and statistical
   detectors target generation, not transformation-preservation, and degrade
   under exactly the rewriting text invites — a property re-confirmed in 2025 for
   SynthID specifically (arXiv:2508.20228) and across detector families by a
-  single training-free paraphrase attack (arXiv:2506.07001); multi-hop rewriting
-  (arXiv:2605.05503) drives watermark detection from ~88% to under 5% while
+  single training-free paraphrase attack (arXiv:2506.07001); multi-step
+  rewriting drives detection of a diffusion-LM watermark (arXiv:2605.05503)
+  from ~88% to under 5% while
   holding semantic similarity, the exact regime a meaning-preservation
   certificate is built for. We cite arXiv:2508.20228 in full rather than for
   its negative half only: the same work proposes SynGuard, a semantic-aware
