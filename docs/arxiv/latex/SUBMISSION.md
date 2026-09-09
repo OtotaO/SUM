@@ -111,20 +111,18 @@ self-contained, downloads packages on first run). On a machine with TeXLive:
    verified against the live arXiv abstract pages 2026-07-16).
 3. Compile locally twice on any machine with TeX (or trust AutoTeX): check
    the rendered PDF once, end to end.
-3a. **Re-archive in Software Heritage and update the SWHID in Section 11.
-   REQUIRED before upload; do not skip.** This was done once on 2026-09-06,
-   capturing `main` at `996707c`, but the paper has been corrected since (the
-   quotation and overclaim pass). The snapshot Section 11 currently cites,
-   `swh:1:snp:93b83ca29d9b468a9f034f0bc3d4259983d63339`, therefore does NOT
-   contain the paper you are about to upload. Re-archive against merged `main`
-   and replace the identifier. The recipe: save at
-   `https://archive.softwareheritage.org/save/`, wait for `full`, read the id
-   from
-   `https://archive.softwareheritage.org/api/1/origin/https://github.com/OtotaO/SUM/visit/latest/`,
-   replace the `swh:1:snp:` in Section 11 of both `main.tex` and the draft (the
-   origin `swh:1:ori:a7b5385a...` does not change), and recompile. **If a save
-   returns `not_found`, retry**; that failure mode is intermittent on their
-   side, as the section below records.
+3a. ~~Re-archive in Software Heritage and update the SWHID in Section 11.~~
+   **Done 2026-09-09 for the corrections merged in PR #501.** Visit 10 is
+   `full`; snapshot `swh:1:snp:503d73855f8b2829ea227865c61729aa16e79d60`
+   captures `main` at `b64e57b43ed01da8b9dfe6ed4f40f6cb6d016efb`.
+   Section 11 in both sources cites this verified snapshot. It contains the
+   corrected paper before this archive-citation and checklist update, not
+   byte-identical upload source. Rebuild after updating the citation.
+   **If the paper's claims, evidence or implementation change again before
+   upload, reopen this step:** save merged `main`, wait for a `full` visit,
+   verify the snapshot's `refs/heads/main` target, update both citations and
+   recompile. The origin SWHID does not change. See the verified archive
+   record below for API links and the earlier failure history.
 4. **Endorsement: still open, and it is the binding blocker.** See the
    status section below before spending effort here.
 5. Run `./make_tarball.sh` and upload `paper1.tar.gz` (or upload `main.tex`
@@ -244,13 +242,27 @@ The lesson: a targeted audit cannot see coherence damage it caused. A cold
 read is a different instrument, and it should be the last gate before any
 future submission, not the first.
 
-## Software Heritage re-archive: RESOLVED 2026-09-06
+## Software Heritage re-archive: verified 2026-09-09
 
-Step 3a is done. Section 11 now cites
-`swh:1:snp:93b83ca29d9b468a9f034f0bc3d4259983d63339`, which captures `main` at
-commit `996707c`, the state that produced this paper. The origin SWHID is
-unchanged. Verified: the snapshot resolves 200 from the API and its
-`refs/heads/main` points at `996707c`.
+After PR #501 merged, [save request 2467571](https://archive.softwareheritage.org/api/1/origin/save/2467571/)
+was accepted and succeeded. Visit 10 is `full`, dated
+`2026-09-09T04:05:48.751000+00:00`. The
+[snapshot API](https://archive.softwareheritage.org/api/1/snapshot/503d73855f8b2829ea227865c61729aa16e79d60/?branches_from=refs/heads/main&branches_count=1)
+confirms `refs/heads/main` targets
+`b64e57b43ed01da8b9dfe6ed4f40f6cb6d016efb`, the merge containing the independently
+reviewed paper corrections. Both Section 11 citations now use
+`swh:1:snp:503d73855f8b2829ea227865c61729aa16e79d60`; the origin SWHID is
+unchanged. This later citation and checklist update is outside that snapshot.
+
+The request used the [documented save API](https://docs.softwareheritage.org/devel/swh-web/uri-scheme-api-request-archival.html).
+One request sufficed. A successful request alone would not have established
+archive parity: the `full` visit and exact branch target were checked as well.
+
+### Earlier refresh and intermittent failures (2026-09-06, superseded)
+
+The earlier snapshot `swh:1:snp:93b83ca29d9b468a9f034f0bc3d4259983d63339`
+captured `main` at `996707c`. It predates PR #501 and is retained here only as
+historical context, not the current submission archive.
 
 **How it was resolved is the part worth keeping, because the first diagnosis
 was wrong and the wrong diagnosis produced the wrong instruction.**
