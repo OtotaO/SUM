@@ -64,7 +64,7 @@ sieve = [
   # `pip install sum-engine[sieve]` does not ImportError on first
   # spacy import. CI: `pip install sum-engine (fresh venv smoke)`
   # caught this 2026-05-28. See F13.
-  "click>=8.0",
+  "click>=8.5.0",
 ]
 # `[openai]` is the canonical, vendor-named extra; `[llm]` is kept as a
 # back-compat alias because it predates the multi-provider dispatcher
