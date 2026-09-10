@@ -27,4 +27,4 @@ feedparser>=6.0.14
 spacy>=3.8.0
 PyJWT>=2.13.0
 cryptography>=41.0.0
-click>=8.0.0
+click>=8.5.0
