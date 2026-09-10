@@ -91,7 +91,7 @@ anthropic = ["anthropic>=0.97.0", "pydantic>=2.0.0"]
 # until we confirm a major release does not drop the "EdDSA" alias.
 # Alias of [verify]; byte-identical by design (audit 2026-09-02). Kept so an
 # existing `pip install "sum-engine[receipt-verify]"` keeps working.
-receipt-verify = ["joserfc>=1.0.0,<2.0.0"]
+receipt-verify = ["joserfc>=1.7.5,<2.0.0"]
 # The stable, dependency-light verify SDK (`import sum_verify`). The
 # package an integrator pins to CHECK SUM receipts — meaning-risk /
 # render / transform — without the CLI or the research numeric stack.
@@ -101,7 +101,7 @@ receipt-verify = ["joserfc>=1.0.0,<2.0.0"]
 # meaning-risk receipt offline pulls NO numpy / scipy / torch — the
 # property `Tests/test_sum_verify_sdk.py` pins in a clean subprocess.
 # Same joserfc pin/rationale as [receipt-verify] above.
-verify = ["joserfc>=1.0.0,<2.0.0"]
+verify = ["joserfc>=1.7.5,<2.0.0"]
 # MCP (Model Context Protocol) server. Exposes SUM verbs as MCP
 # tools so any MCP-aware LLM client (Claude Desktop, Claude Code,
 # Cursor, Continue, custom agents) can call SUM directly. The
