@@ -14,14 +14,14 @@
     "test:hardening": "node --experimental-strip-types --test test/hardening.test.mjs"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^5.20260831.1",
+    "@cloudflare/workers-types": "^5.20260907.1",
     "typescript": "^7.0.2",
-    "wrangler": "^4.127.1",
-    "esbuild": "0.28.1",
+    "wrangler": "^4.129.0",
+    "esbuild": "0.28.2",
     "miniflare": "5.20260828.0-alpha"
   },
   "dependencies": {
     "canonicalize": "^4.0.0",
-    "jose": "^6.2.10"
+    "jose": "^6.2.12"
   }
 }
