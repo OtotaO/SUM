@@ -599,7 +599,7 @@ Result: **PASS**.
 
 ### 67. Density slider (lexicographic subset) ✅
 
-0.1 → 1.0 continuous. Subsets triples by `localeCompare(axiomKey)` order — byte-compatible with Python `tome_sliders.apply_density`.
+0.1 → 1.0 continuous. Subsets triples by axiom-key order — byte-compatible with Python `tome_sliders.apply_density`, which sorts by Unicode code point. (Earlier text here said `localeCompare`; no such call exists in the tree, and a locale-sensitive comparator would not be byte-compatible with Python.)
 
 Verify: (code at `single_file_demo/index.html` attest handler).
 Result: **PASS**.

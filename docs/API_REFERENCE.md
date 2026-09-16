@@ -605,15 +605,29 @@ async function renderAndVerify(triples, sliders) {
   );
 
   // 5. Re-derive hashes; compare
-  // Componentwise tuple-lex sort — matches Python's
-  // `sorted(tuple(t) for t in triples)` byte-for-byte. The Worker's
-  // hashTriples helper uses the same comparator. Default `.sort()`
-  // works for triples without separator-collisions but the explicit
-  // version is safe under all string contents.
+  // Componentwise tuple-lex sort by Unicode CODE POINT — matches Python's
+  // `sorted(tuple(t) for t in triples)` byte-for-byte, and matches the
+  // Worker's hashTriples helper (worker/src/receipt/sign.ts, which sorts
+  // with compareTriples from worker/src/unicode_order.ts).
+  //
+  // Do NOT use `<` or default `.sort()` here. JavaScript compares UTF-16
+  // code units, Python compares code points, and the two disagree whenever
+  // a supplementary character (U+10000 and up) meets a BMP character above
+  // U+DFFF — fullwidth forms, U+FFFD, CJK compatibility ideographs. Getting
+  // this wrong makes your recomputed triples_hash differ from the signed
+  // one on exactly that text, while every ASCII fixture still passes.
+  const cmpCodepoints = (left, right) => {
+    const a = Array.from(left, (c) => c.codePointAt(0));
+    const b = Array.from(right, (c) => c.codePointAt(0));
+    for (let i = 0; i < Math.min(a.length, b.length); i++) {
+      if (a[i] !== b[i]) return a[i] - b[i];
+    }
+    return a.length - b.length;
+  };
   const sortedTriples = [...triples].map((t) => [...t]).sort((a, b) => {
     for (let i = 0; i < 3; i++) {
-      if (a[i] < b[i]) return -1;
-      if (a[i] > b[i]) return 1;
+      const order = cmpCodepoints(a[i], b[i]);
+      if (order) return order;
     }
     return 0;
   });

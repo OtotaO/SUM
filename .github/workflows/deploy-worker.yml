@@ -100,3 +100,30 @@ jobs:
             n=$((n+1)); [ "$n" -ge 5 ] && { echo "frontend byte guard failed after 5 attempts"; exit 1; }
             echo "byte guard retry $n/5 (edge propagation) in $((n*10))s..."; sleep $((n*10))
           done
+
+      - name: Verify the live Worker sorts by Unicode code point
+        # The byte guard above compares served STATIC assets, so it detects
+        # that a deploy is stale but not what a stale deploy gets wrong: the
+        # Worker script is bundled and never served as bytes. On 2026-09-11
+        # that gap hid a live correctness defect, where the deployed build
+        # predated PR #500 and derived input_hash / triples_hash /
+        # source_chain_hash by UTF-16 code unit instead of by Unicode code
+        # point, disagreeing with Python for text that mixes supplementary
+        # characters with BMP characters above U+DFFF. Same retry shape as the
+        # byte guard, for the same edge-propagation reason.
+        run: |
+          n=0
+          while true; do
+            python -m scripts.verify_worker_unicode_order && break
+            rc=$?
+            # Exit 1 is drift and only drift; 2 is unreachable or a changed
+            # canonicalisation. Both are worth retrying through edge
+            # propagation, but they are reported separately so a failing
+            # deploy says which one it was.
+            n=$((n+1))
+            if [ "$n" -ge 5 ]; then
+              echo "unicode order guard failed after 5 attempts (last exit $rc)"; exit 1
+            fi
+            echo "unicode order guard retry $n/5 (exit $rc, edge propagation) in $((n*10))s..."
+            sleep $((n*10))
+          done
