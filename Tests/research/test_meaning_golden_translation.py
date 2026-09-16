@@ -8,7 +8,8 @@ most extreme rewriting (a different language). Corpus = opus-100 en-fr test
 
 Like the BillSum golden, CI checks only the offline-replayable half (Stage A
 + Stage B over the committed integer-micro loss vector) — no torch, no fetch.
-opus-100's raw text is NOT redistributed (mixed licence): the corpus is a
+opus-100's raw text is NOT redistributed (its dataset card lists the licence
+as "unknown"): the corpus is a
 sha256-pinned pointer; re-deriving the losses re-fetches it under its own
 terms. The judge loss computation is machine-pinned (F23/F26), disclosed.
 """
@@ -95,8 +96,9 @@ def test_translation_golden_reports_controlled_honestly(golden):
 
 
 def test_translation_corpus_pointer_is_hash_pinned():
-    """The corpus is a sha256-pinned pointer (raw text not redistributed —
-    mixed-licence opus-100), so the selection is reproducible + verifiable."""
+    """The corpus is a sha256-pinned pointer (raw text not redistributed, since
+    opus-100's card lists its licence as "unknown"), so the selection is
+    reproducible + verifiable."""
     ptr = _load("corpus_pointer.json")
     assert ptr["source_dataset"] == "Helsinki-NLP/opus-100"
     assert ptr["n"] == 64

@@ -12,7 +12,8 @@ Judge = the local, offline multilingual NLI judge
 (``MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7`` — the F24
 model, ``model_id``-parameterised, no new code).
 
-LICENSE-CLEAN HANDLING: opus-100 aggregates mixed-licence OPUS web sources,
+LICENCE HANDLING: opus-100 aggregates OPUS web sources and its dataset card
+lists the licence as ``unknown``,
 so — unlike the CC0 BillSum fixture — this generator does **not redistribute
 the raw text**. It commits the per-pair **loss vector** plus a **hash-pinned
 corpus pointer** (dataset + deterministic selection + sha256 of the pairs).

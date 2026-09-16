@@ -271,7 +271,10 @@ was lost.
 opus-100, local multilingual NLI judge (mDeBERTa-v3-xnli). opus-100 aggregates
 OPUS sources and its dataset card lists the licence as "unknown", so the raw
 text is not redistributed here; the
-committed corpus pointer is sha256-pinned instead. As with BillSum, the French side is the corpus's own
+committed corpus pointer is sha256-pinned instead. The committed receipt's
+`disclosure` field records this as a "mixed-licence corpus": that wording
+predates this characterization and the signed artifact is left byte-identical
+rather than re-signed. As with BillSum, the French side is the corpus's own
 reference translation, not a system output. The translation
 transform certifies **expected meaning-loss $\le 0.4124$ at 95%** ($n=64$, mean
 $0.2594$), controlled against an operator-chosen 0.50 target (again illustrative,
