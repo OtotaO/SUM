@@ -17,17 +17,16 @@ area. Before #500 the Worker sorted triples and source-chain links with bare
 ``<``, so for such text it derived ``input_hash``, ``triples_hash`` and
 ``source_chain_hash`` differently from the Python implementation. The signature
 over those fields still verified; an independent Python verifier recomputing
-them did not agree. That is the cross-runtime trust triangle of
-the cross-runtime property the receipt family rests on failing for one input
-class. (Note the scope: ``docs/PROOF_BOUNDARY.md`` 1.3.1 claims that the same
-*bundle bytes* verify identically in all three runtimes, which stayed true
-throughout. What broke was upstream of that, in how the issuer *derived* the
-hash it then signed.)
+them did not agree. Note the scope carefully:
+``docs/PROOF_BOUNDARY.md`` 1.3.1 claims the same *bundle bytes* verify
+identically in all three runtimes, and that stayed true throughout. What broke
+was upstream of it, in how the issuer *derived* the hash it then signed.
 
 This script probes the property directly rather than inferring it from asset
-bytes. It posts two triples whose relative order differs between the two
-orderings through the canonical (no LLM) slider transform, and compares the
-returned ``input_hash`` against both candidate values computed locally.
+bytes. It posts four triples through the canonical (no LLM) slider transform
+and compares the returned ``input_hash`` against three candidate values
+computed locally: the code-point ordering, the UTF-16 ordering, and the
+as-posted ordering that a Worker which stopped sorting would produce.
 
 Note this is not a JCS bug and the JCS layer is not what is probed here. RFC
 8785 3.2.3 requires object *keys* be sorted by UTF-16 code unit, and both
@@ -63,19 +62,28 @@ import urllib.request
 DEFAULT_URL = "https://sum-demo.ototao.workers.dev"
 TIMEOUT_S = 30
 
-# Three triples, posted in an order that is NEITHER candidate ordering, so the
-# three hypotheses "sorts by code point", "sorts by UTF-16 code unit" and "does
-# not sort at all" each produce a distinct hash. A two-element fixture in
-# code-point order cannot do this: the unsorted and code-point hashes coincide,
-# so a Worker that stopped sorting entirely would report ok.
-#
 # Fullwidth capital A (U+FF21) against an emoji (U+1F600) is the pair that
-# separates the two orderings: by code point U+FF21 < U+1F600, but by UTF-16
-# code unit 0xD83D < 0xFF21, so their order inverts. The ASCII "a" sorts first
-# under both and is here only to make the posted order distinct from both.
-# The subject differs in every row, so a comparator that inspects only the
-# first component is still distinguished.
-TRIPLES = [["Ａ", "p", "o"], ["\U0001f600", "p", "o"], ["a", "p", "o"]]
+# separates the orderings: by code point U+FF21 < U+1F600, but by UTF-16 code
+# unit 0xD83D < 0xFF21, so their order inverts.
+#
+# Posted in an order that is none of the candidates, so "sorts by code point",
+# "sorts by UTF-16 code unit" and "does not sort at all" each yield a distinct
+# hash. A two-row fixture already in code-point order cannot do this: its
+# unsorted and code-point hashes coincide, so a Worker that stopped sorting
+# would have reported ok.
+#
+# The first two rows share the subject "a" and differ only in the predicate,
+# which is what makes a comparator reading ONLY the first component visible:
+# such a comparator leaves those two rows in posted order, so it cannot produce
+# the code-point hash and cannot report ok. It aliases into one of the two
+# drift buckets rather than getting its own verdict, which is enough -- the
+# property being guarded is "agrees with Python", not "names the bug".
+TRIPLES = [
+    ["a", "\U0001f600", "o"],
+    ["a", "Ａ", "o"],
+    ["Ａ", "p", "o"],
+    ["\U0001f600", "p", "o"],
+]
 
 
 def _candidates() -> dict[str, str]:
@@ -130,7 +138,7 @@ def main() -> int:
     try:
         with urllib.request.urlopen(request, timeout=TIMEOUT_S) as response:
             payload = json.loads(response.read().decode("utf-8"))
-    except Exception as exc:  # noqa: BLE001 - exit 1 must mean drift and only drift
+    except Exception as exc:  # noqa: BLE001
         print(f"FAIL: could not probe {url}: {type(exc).__name__}: {exc}")
         return 2
 
@@ -170,4 +178,12 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    # Exit 1 is reserved for a drift verdict. Anything unexpected -- a failed
+    # import in _candidates(), a response whose shape is not what we assume --
+    # would otherwise surface as an uncaught traceback, which also exits 1 and
+    # would be read as drift by the deploy workflow.
+    try:
+        sys.exit(main())
+    except Exception as exc:  # noqa: BLE001
+        print(f"FAIL: unexpected error: {type(exc).__name__}: {exc}")
+        sys.exit(2)

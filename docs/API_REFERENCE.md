@@ -607,7 +607,8 @@ async function renderAndVerify(triples, sliders) {
   // 5. Re-derive hashes; compare
   // Componentwise tuple-lex sort by Unicode CODE POINT — matches Python's
   // `sorted(tuple(t) for t in triples)` byte-for-byte, and matches the
-  // Worker's hashTriples helper (worker/src/unicode_order.ts).
+  // Worker's hashTriples helper (worker/src/receipt/sign.ts, which sorts
+  // with compareTriples from worker/src/unicode_order.ts).
   //
   // Do NOT use `<` or default `.sort()` here. JavaScript compares UTF-16
   // code units, Python compares code points, and the two disagree whenever
