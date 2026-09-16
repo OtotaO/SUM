@@ -163,7 +163,7 @@ dev = [
     # pulls PyJWT in as a transitive; `pip install -e .[dev]` on a fresh
     # clone should not silently skip those four test files.
     "PyJWT>=2.13.0",
-    "build>=1.0.0",
+    "build>=1.6.0",
     # R0.4: Hypothesis property-based fuzz harness on JCS + verifier
     # surfaces. Tests live under Tests/test_property_*.py; without
     # this, those tests skip via pytest.importorskip and the property
