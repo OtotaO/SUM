@@ -180,7 +180,7 @@ CLI, `RenderFrontier` + `sum frontier`, the unified
 `docs/RECEIPT_FAMILY_SPEC.md`, the **provenance-first** product vision
 (`docs/PRODUCT_VISION.md` — "attest, don't detect"), and **two REAL
 binding-gate receipts over real public benchmark corpora (BillSum, CC0;
-opus-100, mixed-licence)**
+opus-100, licence unspecified)**
 (`fixtures/meaning_receipts_billsum/` CC0 ≤ 0.6454 @95%;
 `fixtures/meaning_receipts_translation/` opus-100 ≤ 0.4124 @95%, 39/64 at
 zero loss) — both hardened by a 5-skeptic pre-publication audit. A

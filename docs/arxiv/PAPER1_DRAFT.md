@@ -23,7 +23,7 @@ boundary stays explicit: it bounds a named proxy *marginally*, over an
 *i.i.d.* calibration sample and only where that sample matches deployment,
 never per-document truth and never "meaning" itself. We
 demonstrate on two public benchmark corpora — BillSum (CC0) and opus-100
-(mixed-licence, raw text not redistributed) — over each corpus's own reference
+(licence unspecified, raw text not redistributed) — over each corpus's own reference
 outputs rather than model outputs (the mechanism is producer-indifferent):
 certified expected meaning-loss
 ≤ 0.646 (95%) for abstractive summarization of US Congressional bills
@@ -248,7 +248,7 @@ radius — a small cohort gets a wide bound, which is honest, not a defect.
 ## 7. Empirical demonstration
 
 We issue two real receipts over public benchmark corpora (BillSum, CC0;
-opus-100, mixed-licence OPUS sources, raw text not redistributed). Each is committed (a
+opus-100, aggregated OPUS sources of unspecified licence, raw text not redistributed). Each is committed (a
 signed golden, the integer loss vector, a deterministic generator), replays
 offline via Algorithm 1 Stage B, was **independently re-derived to the exact
 micro-unit** and adversarially audited before release.
@@ -267,9 +267,10 @@ external quality gate". Aggressive summarization loses about half the named
 proxy on average; the receipt *certifies how much*, it does not claim little
 was lost.
 
-**7.2 Translation (opus-100, mixed-licence).** First 64 length-aligned EN→FR pairs of
+**7.2 Translation (opus-100, licence unspecified).** First 64 length-aligned EN→FR pairs of
 opus-100, local multilingual NLI judge (mDeBERTa-v3-xnli). opus-100 aggregates
-mixed-licence OPUS sources, so the raw text is not redistributed here; the
+OPUS sources and its dataset card lists the licence as "unknown", so the raw
+text is not redistributed here; the
 committed corpus pointer is sha256-pinned instead. As with BillSum, the French side is the corpus's own
 reference translation, not a system output. The translation
 transform certifies **expected meaning-loss $\le 0.4124$ at 95%** ($n=64$, mean
@@ -355,9 +356,10 @@ visible rather than rhetorically closed.
 - **Signed-but-semantics-disclaiming receipts.** **AEX** (arXiv:2603.14283)
   uses JCS + SHA-256 + Ed25519 signed transformation-receipt
   chains for LLM APIs but **explicitly disclaims** that an accepted transform is
-  "semantically correct, reasonable, or minimal." The same pattern — a signed
-  artifact that proves *what was computed* and avoids any quality claim — recurs
-  in deterministic-inference attestation (EigenAI, arXiv:2602.00182). Our
+  "semantically correct, reasonable, or minimal." A related boundary appears in
+  deterministic-inference verification (EigenAI, arXiv:2602.00182), where
+  bit-exact re-execution reduces verification to a byte-equality check over
+  *what was computed*, and output quality is not addressed. Our
   contribution is precisely that disclaimed semantic delta, as a finite-sample,
   replayable certificate.
 - **The receipt scheme that does not disclaim semantics.** Tool receipts for
@@ -446,8 +448,9 @@ visible rather than rhetorically closed.
   **Kotte** (arXiv:2606.29054) characterizes when conformal risk control can
   certify structured LLM outputs at all, proves an impossibility result, and
   analyzes a certification hierarchy across Hoeffding, empirical-Bernstein,
-  and a betting-based e-CRC bound with strict gains in low-variance and
-  large-sample regimes; that hierarchy is the one our `method` field names,
+  and a betting-based e-CRC bound; the nesting holds in low-variance and
+  large-sample regimes, and the betting bound is strongest under calibration
+  scarcity. That hierarchy is the one our `method` field names,
   and the betting bound is a candidate fourth rung we have not adopted. None
   of these couples its statistical bound to a signed, replayable receipt, and
   none bounds expected meaning-loss of a *transform* under a named judge. Our contribution is the
@@ -463,7 +466,7 @@ assumed, not sampled — a deliberately disclosed boundary common to
 distribution-free guarantees of this kind. Model-judge replay is machine-pinned; de-pinning via
 integer/fixed-point CPU inference (so a meaning-judge forward pass is
 hardware-independent) is named future work — same-hardware bitwise determinism
-is now an engineering solved problem (batch-invariant kernels), but
+is addressed by batch-invariant kernels, while
 cross-hardware reproducibility remains open, which is the niche this de-pinning
 targets. The proxy is a proxy; stronger faithfulness judges are a drop-in
 upgrade — MiniCheck (Tang et al., 2024) is the lightweight lineage anchor, and

@@ -44,7 +44,7 @@ Chain-of-Custody for AI-Transformed Text: Signed, Replayable, Distribution-Free 
 
 ## Abstract (plain text, ready to paste into the arXiv abstract field)
 
-Character count of the paragraph below: 1,595, which fits the 1,920-char
+Character count of the paragraph below: 1,601, which fits the 1,920-char
 field. (The Markdown draft's own drafting note still says 1,426. That figure
 predates several revisions and no longer describes either abstract; treat the
 count on this line as the only current one.) The Contributions list stays
