@@ -4,7 +4,7 @@ pretty_name: "SUM BillSum binding-gate meaning-risk receipt"
 tags:
   - provenance
   - faithfulness
-  - conformal-prediction
+  - distribution-free-bounds
   - ai-transparency
   - chain-of-custody
 language:
@@ -16,8 +16,8 @@ size_categories:
 # SUM BillSum binding-gate meaning-risk receipt
 
 A **signed, independently re-verifiable** certificate of how much meaning an AI
-transformation could have lost — bounded with a distribution-free conformal
-guarantee over a public-domain corpus. This is a worked, citable example of
+transformation could have lost — bounded with a distribution-free
+certificate over a public-domain corpus. This is a worked, citable example of
 `sum.meaning_risk_receipt.v1` from [SUM](https://github.com/OtotaO/SUM); the
 files here are copies of `fixtures/meaning_receipts_billsum/` in that repo.
 

@@ -52,7 +52,8 @@ the chain-of-custody-for-meaning moat.)
 
 ## License-clean handling (why no raw text here)
 
-opus-100 aggregates mixed-licence OPUS web sources, so — unlike the **CC0**
+opus-100 aggregates OPUS web sources and its dataset card lists the licence as
+`unknown`, so — unlike the **CC0**
 BillSum fixture, which commits its text in full — this fixture does **not
 redistribute the raw text**. It commits:
 
