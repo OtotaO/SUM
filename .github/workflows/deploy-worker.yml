@@ -113,7 +113,17 @@ jobs:
         # byte guard, for the same edge-propagation reason.
         run: |
           n=0
-          until python -m scripts.verify_worker_unicode_order; do
-            n=$((n+1)); [ "$n" -ge 5 ] && { echo "unicode order guard failed after 5 attempts"; exit 1; }
-            echo "unicode order guard retry $n/5 (edge propagation) in $((n*10))s..."; sleep $((n*10))
+          while true; do
+            python -m scripts.verify_worker_unicode_order && break
+            rc=$?
+            # Exit 1 is drift and only drift; 2 is unreachable or a changed
+            # canonicalisation. Both are worth retrying through edge
+            # propagation, but they are reported separately so a failing
+            # deploy says which one it was.
+            n=$((n+1))
+            if [ "$n" -ge 5 ]; then
+              echo "unicode order guard failed after 5 attempts (last exit $rc)"; exit 1
+            fi
+            echo "unicode order guard retry $n/5 (exit $rc, edge propagation) in $((n*10))s..."
+            sleep $((n*10))
           done

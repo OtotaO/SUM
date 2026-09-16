@@ -18,7 +18,11 @@ area. Before #500 the Worker sorted triples and source-chain links with bare
 ``source_chain_hash`` differently from the Python implementation. The signature
 over those fields still verified; an independent Python verifier recomputing
 them did not agree. That is the cross-runtime trust triangle of
-``docs/PROOF_BOUNDARY.md`` 1.3.1 failing for one input class.
+the cross-runtime property the receipt family rests on failing for one input
+class. (Note the scope: ``docs/PROOF_BOUNDARY.md`` 1.3.1 claims that the same
+*bundle bytes* verify identically in all three runtimes, which stayed true
+throughout. What broke was upstream of that, in how the issuer *derived* the
+hash it then signed.)
 
 This script probes the property directly rather than inferring it from asset
 bytes. It posts two triples whose relative order differs between the two
@@ -38,8 +42,10 @@ Usage:
 
 Exit codes:
     0  live hash matches the code-point ordering (deploy carries the #500 fix)
-    1  live hash matches the UTF-16 ordering (deploy predates #500 -- redeploy)
-    2  could not reach the endpoint, or the response matched neither candidate
+    1  live hash matches the UTF-16 ordering (deploy predates #500), or the
+       unsorted ordering (a different, worse defect). Exit 1 means drift and
+       only drift; every error path returns 2.
+    2  could not reach the endpoint, or the response matched no candidate
 
 Author: ototao
 License: Apache License 2.0
@@ -57,32 +63,44 @@ import urllib.request
 DEFAULT_URL = "https://sum-demo.ototao.workers.dev"
 TIMEOUT_S = 30
 
-# Fullwidth capital A (U+FF21) against an emoji (U+1F600). By code point
-# U+FF21 < U+1F600; by UTF-16 code unit 0xD83D < 0xFF21, so the order inverts.
-TRIPLES = [["Ａ", "p", "o"], ["\U0001f600", "p", "o"]]
+# Three triples, posted in an order that is NEITHER candidate ordering, so the
+# three hypotheses "sorts by code point", "sorts by UTF-16 code unit" and "does
+# not sort at all" each produce a distinct hash. A two-element fixture in
+# code-point order cannot do this: the unsorted and code-point hashes coincide,
+# so a Worker that stopped sorting entirely would report ok.
+#
+# Fullwidth capital A (U+FF21) against an emoji (U+1F600) is the pair that
+# separates the two orderings: by code point U+FF21 < U+1F600, but by UTF-16
+# code unit 0xD83D < 0xFF21, so their order inverts. The ASCII "a" sorts first
+# under both and is here only to make the posted order distinct from both.
+# The subject differs in every row, so a comparator that inspects only the
+# first component is still distinguished.
+TRIPLES = [["Ａ", "p", "o"], ["\U0001f600", "p", "o"], ["a", "p", "o"]]
 
 
-def _candidates() -> tuple[str, str]:
-    """Return (code_point_hash, utf16_hash) for the probe triples."""
+def _candidates() -> dict[str, str]:
+    """Return {ordering: hash} for the three hypotheses the probe separates."""
     from sum_engine_internal.infrastructure.jcs import canonicalize
 
     def digest(rows: list[list[str]]) -> str:
         return hashlib.sha256(canonicalize([list(r) for r in rows])).hexdigest()
 
-    by_code_point = sorted(TRIPLES, key=tuple)
-    by_utf16 = sorted(
-        TRIPLES, key=lambda r: tuple(c.encode("utf-16-be") for c in r)
-    )
-    return digest(by_code_point), digest(by_utf16)
+    return {
+        "code_point": digest(sorted(TRIPLES, key=tuple)),
+        "utf16": digest(
+            sorted(TRIPLES, key=lambda r: tuple(c.encode("utf-16-be") for c in r))
+        ),
+        "unsorted": digest(TRIPLES),
+    }
 
 
 def main() -> int:
     base = os.environ.get("SUM_DEMO_URL", DEFAULT_URL).rstrip("/")
     url = f"{base}/api/transform"
-    code_point_hash, utf16_hash = _candidates()
+    candidates = _candidates()
 
-    if code_point_hash == utf16_hash:  # pragma: no cover - guards the fixture
-        print("FAIL: probe triples no longer distinguish the two orderings")
+    if len(set(candidates.values())) != len(candidates):  # pragma: no cover
+        print("FAIL: probe triples no longer separate the three orderings")
         return 2
 
     body = json.dumps(
@@ -112,8 +130,8 @@ def main() -> int:
     try:
         with urllib.request.urlopen(request, timeout=TIMEOUT_S) as response:
             payload = json.loads(response.read().decode("utf-8"))
-    except (urllib.error.URLError, OSError, ValueError) as exc:
-        print(f"FAIL: could not probe {url}: {exc}")
+    except Exception as exc:  # noqa: BLE001 - exit 1 must mean drift and only drift
+        print(f"FAIL: could not probe {url}: {type(exc).__name__}: {exc}")
         return 2
 
     receipt = payload.get("transform_receipt") or {}
@@ -125,13 +143,13 @@ def main() -> int:
     live_hex = live.split("-", 1)[-1]
     print(f"probe:      {url}")
     print(f"live:       {live}")
-    print(f"code point: sha256-{code_point_hash}")
-    print(f"utf-16:     sha256-{utf16_hash}")
+    for name, value in candidates.items():
+        print(f"{name + ':':12}sha256-{value}")
 
-    if live_hex == code_point_hash:
+    if live_hex == candidates["code_point"]:
         print("\nok: deploy sorts by Unicode code point, matching Python (PR #500 present)")
         return 0
-    if live_hex == utf16_hash:
+    if live_hex == candidates["utf16"]:
         print(
             "\nDRIFT: deploy sorts by UTF-16 code unit. It derives input_hash, "
             "triples_hash and source_chain_hash differently from Python for text "
@@ -139,7 +157,15 @@ def main() -> int:
             "Worker to pick up worker/src/unicode_order.ts (PR #500)."
         )
         return 1
-    print("\nFAIL: live hash matches neither candidate; the canonicalisation changed")
+    if live_hex == candidates["unsorted"]:
+        print(
+            "\nDRIFT: deploy does not sort the triples at all, so input_hash "
+            "depends on caller ordering and no longer identifies the triple set. "
+            "This is a different defect from the UTF-16 one and is not fixed by "
+            "redeploying #500 alone."
+        )
+        return 1
+    print("\nFAIL: live hash matches no candidate ordering; the canonicalisation changed")
     return 2
 
 
