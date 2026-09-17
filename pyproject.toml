@@ -36,7 +36,7 @@ classifiers = [
 # Core dependencies — enough for the default `sum attest` and `sum verify`
 # paths. Optional extras below add the heavy NLP / LLM paths.
 dependencies = [
-    "cryptography>=41.0.0",
+    "cryptography>=50.0.1",
     "sympy>=1.12",
 ]
 

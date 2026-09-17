@@ -26,5 +26,5 @@ feedparser>=6.0.14
 # 3.8.0 is the verified-working floor and matches pyproject.toml [sieve].
 spacy>=3.8.0
 PyJWT>=2.13.0
-cryptography>=41.0.0
+cryptography>=50.0.1
 click>=8.5.0
