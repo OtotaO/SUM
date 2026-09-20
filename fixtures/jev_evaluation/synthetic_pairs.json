@@ -1,0 +1,63 @@
+{
+  "schema": "sum.jev_evaluation_input.v1",
+  "dataset_id": "synthetic-change-diagnostics-v1",
+  "provenance": "Handwritten synthetic diagnostic examples and expected labels, not human-adjudicated validation or actual SUM generations. No Jev responses are included.",
+  "pairs": [
+    {
+      "id": "identity",
+      "source_id": "meeting",
+      "source": "The meeting starts on Monday.",
+      "output": "The meeting starts on Monday.",
+      "labels": {"recall": [true], "fidelity": [true]}
+    },
+    {
+      "id": "negation-flip",
+      "source_id": "door",
+      "source": "The door is not locked.",
+      "output": "The door is locked.",
+      "labels": {"recall": [false], "fidelity": [false]}
+    },
+    {
+      "id": "uncertainty-lost",
+      "source_id": "forecast",
+      "source": "The team may finish tomorrow.",
+      "output": "The team will finish tomorrow.",
+      "labels": {"recall": [true], "fidelity": [false]}
+    },
+    {
+      "id": "unsupported-addition",
+      "source_id": "garden",
+      "source": "The garden has roses.",
+      "output": "The garden has roses. The garden has tulips.",
+      "labels": {"recall": [true], "fidelity": [true, false]}
+    },
+    {
+      "id": "omitted-claim",
+      "source_id": "garden",
+      "source": "The garden has roses. The garden has tulips.",
+      "output": "The garden has roses.",
+      "labels": {"recall": [true, false], "fidelity": [true]}
+    },
+    {
+      "id": "quantity-changed",
+      "source_id": "boxes",
+      "source": "There are twelve boxes in storage.",
+      "output": "There are twenty boxes in storage.",
+      "labels": {"recall": [false], "fidelity": [false]}
+    },
+    {
+      "id": "attribution-lost",
+      "source_id": "witness",
+      "source": "A witness alleged that the gate was open.",
+      "output": "The gate was open.",
+      "labels": {"recall": [false], "fidelity": [false]}
+    },
+    {
+      "id": "empty-source",
+      "source_id": "empty",
+      "source": "",
+      "output": "The gate was open.",
+      "labels": {"recall": [], "fidelity": [false]}
+    }
+  ]
+}
