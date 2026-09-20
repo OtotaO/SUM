@@ -242,3 +242,48 @@ Contract: [TypeSafe API](https://docs.typesafe.ai/api) and
 [current model limits](https://docs.typesafe.ai/models), checked 2026-09-20.
 Tests use fake transports and establish protocol behavior only. A live,
 human-labeled assessment of actual SUM transformations remains necessary.
+
+### Run a descriptive evaluation or replay saved responses
+
+The installed research module accepts exact source/output pairs and optional
+sentence-aligned Boolean labels. `source_id` groups related originals; pair IDs
+are unique. The fixture below is handwritten synthetic diagnostic material,
+not a benchmark of actual SUM generations or independent human validation.
+Labels and dataset metadata are never sent to the model.
+
+```bash
+# Live, paid evaluation: explicitly opt in and supply TYPESAFE_API_KEY securely.
+python -m sum_engine_internal.research.meaning.jev_evaluation \
+  --input fixtures/jev_evaluation/synthetic_pairs.json \
+  --out /tmp/jev-live.json --allow-network
+
+# Offline: recompute from the exact recorded requests and responses.
+python -m sum_engine_internal.research.meaning.jev_evaluation \
+  --input fixtures/jev_evaluation/synthetic_pairs.json \
+  --out /tmp/jev-replayed.json --replay /tmp/jev-live.json
+```
+
+Output paths must be new. Files use mode 0600 and contain complete source,
+output, claim-level findings, configuration, and unsigned observations. Each
+direction is assessed even when the other abstains. An abstained document has
+no numeric readout. Empty-input rules are deterministic and never masquerade
+as model probabilities. Provider/protocol failure stops further calls, marks
+the run incomplete, and retains completed directions and available responses.
+Exit 0 means execution completed; it does not mean the document passed review.
+
+Metrics are descriptive counts, Brier score, false-support fraction among
+accepted labelled claims, and two separate coverage denominators: observed
+labels versus requested labels, and non-abstained decisions versus observed
+labels. Unlabelled input yields no accuracy estimate. Claims sharing an original
+are not independent observations, and no population confidence bound is issued.
+
+The command defaults to 100 attempted requests and a 64,000-byte response cap.
+Input files are capped at 16 MB and replay reports at 64 MB. A conservative
+report-size preflight reserves the maximum response storage before inference;
+split large datasets when it rejects a run. Use `--max-requests`,
+`--max-response-bytes`, `--accept-at-or-above`, and `--reject-at-or-below` to
+declare a different experiment. Replay requires the same configuration and
+scoring/evaluation implementations and checks recomputed results against the
+saved report. It does not call the provider, reproduce original timing, verify
+human labels, or authenticate an unsigned report. Saved source text requires
+the same handling as the original documents.
