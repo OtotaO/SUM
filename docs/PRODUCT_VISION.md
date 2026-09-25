@@ -8,7 +8,7 @@ Help a person reshape a source for a purpose, inspect consequential changes, res
 
 Receipts make the review portable. Source fidelity and the usefulness of the review make it worth doing. A signature proves that a particular key signed particular bytes; a caller must establish trust in that key separately. It does not establish factual truth, human identity, semantic preservation, or statistical applicability.
 
-The unit SUM builds toward (2026-09-25) is the reviewed, source-linked claim map: each source claim marked kept, changed, not carried or added, and each output sentence linked to the exact source words. A judge can flag what a rewrite changed; whether an omission matters depends on the reader's purpose, so perspectives are recorded weightings over claims, not inferences. Error detectors and text signing already exist elsewhere (MiniCheck-class checkers, grounding APIs, C2PA text manifests); SUM interoperates with them rather than competing on detection.
+The unit SUM builds toward (2026-09-25) is the reviewed, source-linked claim map: each source claim marked kept, changed, not carried or added, and each output sentence linked to the exact source words. A judge can flag what a rewrite changed; whether an omission matters depends on the reader's purpose, so perspectives are recorded weightings over claims, not inferences. Error detectors and text signing already exist elsewhere (MiniCheck-class checkers, grounding APIs, C2PA text manifests; WEB-VERIFIED 2026-09-23); SUM interoperates with them rather than competing on detection.
 
 ## Measures
 

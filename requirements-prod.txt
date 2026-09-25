@@ -23,7 +23,8 @@ pytest-asyncio>=1.3.0
 feedparser>=6.0.14
 # spacy 3.7.x floor is empirically broken on a fresh venv (F14 — the
 # 3.7 wheels' thinc/blis chain fails to resolve under current pip);
-# 3.8.0 is the verified-working floor and matches pyproject.toml [sieve].
+# 3.8.0 and 3.8.1 were later yanked on PyPI, so 3.8.2 is the floor and
+# matches pyproject.toml [sieve].
 spacy>=3.8.2
 PyJWT>=2.13.0
 cryptography>=41.0.0

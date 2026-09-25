@@ -1,6 +1,6 @@
 # SUM next-session playbook
 
-Updated 2026-09-25. The plan below comes from the 2026-09-23 adversarial review and roadmap, which the operator approved on 2026-09-25; finding IDs (H1, M1, ...) refer to that review. The 2026-09-09 repair queue further down still applies where the plan does not supersede it. The July queue is historical and is preserved in git.
+Updated 2026-09-25. The plan below comes from the 2026-09-23 adversarial review and roadmap, which the operator approved on 2026-09-25; finding IDs (H1, M1, ...) refer to that review, whose report is held privately until the listed trust fixes land; each item below states its own scope. The 2026-09-09 repair queue further down still applies where the plan does not supersede it. The July queue is historical and is preserved in git.
 
 ## Plan from 2026-09-25: make trust true, test the wager by a date, ship the distiller either way
 
@@ -8,9 +8,9 @@ Operator-only actions are marked (operator). Claude prepares drafts and never co
 
 ### Phase 0: make trust true (to 2026-10-07)
 
-Addressed in the 2026-09-25 change set: H1 (a supplied HMAC key now requires the HMAC signature); dependency floors reset to tested minimums, with floor jobs that fail on drift; the canonicalize 5.1.0 verifier bundle; dependabot #507, #516 and #517 merged, #511 to #515 superseded. Remaining, in order:
+Addressed in the 2026-09-25 change set: H1 (a supplied HMAC key now requires the HMAC signature); dependency floors reset to tested minimums, with floor jobs that fail on drift; the canonicalize 5.1.0 verifier bundle; dependabot #507, #516 and #517 merged, #512 to #515 and #522 superseded (#522 replaced #511). Remaining, in order:
 
-1. Release decision (operator) before the PyPI approval on run 35148438334 expires, about 2026-10-16. Package code at tag v0.11.0 equals main as of 2026-09-23, and H1 is also present in published 0.10.0. Approve with a known-issues note, or ship 0.11.1 with the H1 fix.
+1. Release decision (operator) before the PyPI approval on run 35148438334 expires, about 2026-10-16. Python sources at tag v0.11.0 equal main as of 2026-09-23 (dependency metadata differs), and H1 is present in every published release. Approve with a known-issues note, or ship 0.11.1 with the H1 fix.
 2. Key pin: the review-packet verifier checks an embedded key against the site JWKS and flags key-ID collisions. No packet is offered to anyone until this is live.
 3. One fix PR, each fix with a test that fails on the old code: M3 (browser fails closed on a malformed key), M18 (explicit error instead of silent truncation above 100k characters), M4 (extractor fallback only on ImportError, with an egress notice), M17 (`inspect` field names). Then a Worker-only redeploy with a live-bytes check, targeted for 2026-09-30; it does not wait for 0.11.1.
 4. M1: warn on the RFC 8032 test-vector key and rename the test key IDs `test-vector-zero-seed-DO-NOT-TRUST`. Operator key ceremony: offline key, two backups, a rotation date, revocation through TrustPolicy. The goldens stay byte-for-byte as test vectors and are re-minted once, after the scorer freeze.
@@ -42,7 +42,7 @@ Claim map as `sum.review_packet.v2`: verbatim, clause-bounded source spans; labe
 - Every task cites a finding, a person or a loop step. From 2026-10-07, at most one feature PR and one fix PR are open at a time.
 - Until the verdict, stop: repo-wide multi-agent reviews (one diff-scoped audit per release instead), new receipt families, research imports, standards work without a partner, and "compliant", "certified", "faithful" or "guarantee" wording.
 - Freeze: the Gödel/CanonicalBundle substrate, the sieve beyond H1 and H2, the compliance validators, the extension, Zig/WASM, the MCP tool count, and the size of `sum_cli/main.py`.
-- `docs/` does not grow in net lines in a month. Three weeks without external contact, or more than two finished but unshipped artifacts, freezes Claude's feature work; fixes continue.
+- From October 2026, `docs/` does not grow in net lines in a month. Three weeks without external contact, or more than two finished but unshipped artifacts, freezes Claude's feature work; fixes continue.
 
 ### Parking list (at most 10 lines; an item leaves only when a named user or funded deliverable asks)
 

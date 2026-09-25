@@ -717,13 +717,18 @@ def _verify_hmac_bundle(bundle: dict, signing_key: Optional[str]) -> str:
       * "invalid"   — field present but does not verify.
 
     Truthful: "skipped" is not a pass. In --strict mode the caller
-    must treat it as a failure.
+    must treat it as a failure. An empty key counts as no key, as in
+    CanonicalCodec; a non-string signature is "invalid", not a crash.
     """
+    if not signing_key:
+        signing_key = None
     sig = bundle.get("signature")
     if not sig:
         return "missing" if signing_key is not None else "absent"
     if signing_key is None:
         return "skipped"
+    if not isinstance(sig, str):
+        return "invalid"
     import hashlib
     import hmac as _hmac
 
@@ -736,7 +741,13 @@ def _verify_hmac_bundle(bundle: dict, signing_key: Optional[str]) -> str:
         "hmac-sha256:"
         + _hmac.new(signing_key.encode("utf-8"), payload, hashlib.sha256).hexdigest()
     )
-    return "verified" if _hmac.compare_digest(expected, sig) else "invalid"
+    return (
+        "verified"
+        if _hmac.compare_digest(
+            expected.encode("utf-8"), sig.encode("utf-8", "surrogatepass")
+        )
+        else "invalid"
+    )
 
 
 def _build_verify_explanation(
@@ -4037,8 +4048,9 @@ def build_parser() -> argparse.ArgumentParser:
             "(1) Ed25519 signature over the payload line, if present. "
             "Self-contained — the public key is embedded in the bundle. "
             "(2) HMAC-SHA256 signature, if --signing-key is supplied. "
-            "Without the key, a present HMAC is reported as 'skipped' "
-            "(not a pass). "
+            "Supplying the key makes the HMAC mandatory: a bundle without "
+            "it is rejected. Without the key, a present HMAC is reported "
+            "as 'skipped' (not a pass). "
             "(3) Canonical tome reconstruction — re-derive primes via "
             "sha256_64_v1, LCM them, compare to the claimed state_integer. "
             "Exits 0 on match, 1 on signature or state mismatch, 2 on "
@@ -4051,7 +4063,8 @@ def build_parser() -> argparse.ArgumentParser:
         "--signing-key", default=None,
         help=(
             "HMAC key to verify the bundle's 'signature' field against. "
-            "Omit for Ed25519-only or unsigned bundles."
+            "When supplied, a bundle without that HMAC signature is "
+            "rejected. Omit for Ed25519-only or unsigned bundles."
         ),
     )
     p_verify.add_argument(

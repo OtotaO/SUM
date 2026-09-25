@@ -161,26 +161,31 @@ class TestHmacStripDowngrade:
     downgrade protection.
     """
 
-    def test_attacker_ed25519_bundle_without_hmac_rejected_strict(self, tmp_path):
+    MISSING = "carries no HMAC signature"
+
+    def test_attacker_ed25519_bundle_without_hmac_rejected_strict(self, tmp_path, capsys):
         forged = _mint_signed_bundle(signing_key=None, with_ed25519=True)
         assert "signature" not in forged and "public_signature" in forged
         path = _write_bundle(tmp_path, forged)
         code, _ = _run_verify(path, signing_key="correct-key", strict=True)
         assert code == 1
+        assert self.MISSING in capsys.readouterr().err
 
-    def test_attacker_ed25519_bundle_without_hmac_rejected_default(self, tmp_path):
+    def test_attacker_ed25519_bundle_without_hmac_rejected_default(self, tmp_path, capsys):
         forged = _mint_signed_bundle(signing_key=None, with_ed25519=True)
         path = _write_bundle(tmp_path, forged)
         code, _ = _run_verify(path, signing_key="correct-key")
         assert code == 1
+        assert self.MISSING in capsys.readouterr().err
 
-    def test_stripped_hmac_bundle_rejected(self, tmp_path):
+    def test_stripped_hmac_bundle_rejected(self, tmp_path, capsys):
         bundle = _mint_signed_bundle(signing_key="correct-key", with_ed25519=False)
         stripped = copy.deepcopy(bundle)
         del stripped["signature"]
         path = _write_bundle(tmp_path, stripped)
         code, _ = _run_verify(path, signing_key="correct-key")
         assert code == 1
+        assert self.MISSING in capsys.readouterr().err
 
     def test_missing_status_is_reported_by_helper(self):
         from sum_cli.main import _verify_hmac_bundle
@@ -188,6 +193,23 @@ class TestHmacStripDowngrade:
         unsigned = _mint_signed_bundle(signing_key=None, with_ed25519=False)
         assert _verify_hmac_bundle(unsigned, "correct-key") == "missing"
         assert _verify_hmac_bundle(unsigned, None) == "absent"
+
+    def test_empty_key_counts_as_no_key(self):
+        """Matches CanonicalCodec, which treats signing_key='' as no key."""
+        from sum_cli.main import _verify_hmac_bundle
+
+        unsigned = _mint_signed_bundle(signing_key=None, with_ed25519=False)
+        signed = _mint_signed_bundle(signing_key="correct-key", with_ed25519=False)
+        assert _verify_hmac_bundle(unsigned, "") == "absent"
+        assert _verify_hmac_bundle(signed, "") == "skipped"
+
+    @pytest.mark.parametrize("bad_sig", [123, ["hmac-sha256:00"], "hmac-sha256:é", "\ud800"])
+    def test_malformed_signature_is_invalid_not_a_crash(self, bad_sig):
+        from sum_cli.main import _verify_hmac_bundle
+
+        bundle = _mint_signed_bundle(signing_key="correct-key", with_ed25519=False)
+        bundle["signature"] = bad_sig
+        assert _verify_hmac_bundle(bundle, "correct-key") == "invalid"
 
 
 # ─── 3. Ed25519-signed bundle ──────────────────────────────────────

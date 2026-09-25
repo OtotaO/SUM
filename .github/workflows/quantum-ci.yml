@@ -313,7 +313,7 @@ jobs:
       # across runtimes."
       run: |
         python -m pip install --upgrade pip
-        pip install pytest "joserfc>=1.2.0,<2.0.0" "cryptography>=41.0.0"
+        pip install pytest "joserfc>=1.6.8,<2.0.0" "cryptography>=45.0.1"
         python -m pytest Tests/test_render_receipt_verifier.py -q
 
     - name: Transform-receipt-verifier smoke — JS (20 fixtures)
@@ -568,9 +568,10 @@ jobs:
         python -m venv /tmp/sumfloor
         /tmp/sumfloor/bin/pip install --quiet "spacy==3.8.2" "click==8.0.0"
         /tmp/sumfloor/bin/pip install --quiet "dist/$(ls dist | grep '.whl$')[sieve]"
-        /tmp/sumfloor/bin/pip freeze | grep -iE "^(spacy|click)=="
-        /tmp/sumfloor/bin/pip freeze | grep -qx "spacy==3.8.2" || { echo "floor drift: spacy is not 3.8.2"; exit 1; }
-        /tmp/sumfloor/bin/pip freeze | grep -qx "click==8.0.0" || { echo "floor drift: click is not 8.0.0"; exit 1; }
+        /tmp/sumfloor/bin/pip freeze > /tmp/sumfloor_freeze.txt
+        grep -iE "^(spacy|click)==" /tmp/sumfloor_freeze.txt
+        grep -qx "spacy==3.8.2" /tmp/sumfloor_freeze.txt || { echo "floor drift: spacy is not 3.8.2"; exit 1; }
+        grep -qx "click==8.0.0" /tmp/sumfloor_freeze.txt || { echo "floor drift: click is not 8.0.0"; exit 1; }
         n=0; until /tmp/sumfloor/bin/python -m spacy download en_core_web_sm; do
           n=$((n+1)); [ "$n" -ge 5 ] && { echo "spacy model download failed after 5 attempts"; exit 1; }
           echo "spacy download retry $n/5 in $((n*10))s..."; sleep $((n*10))
@@ -580,16 +581,19 @@ jobs:
         /tmp/sumfloor/bin/sum verify --input /tmp/floor_bundle.json
 
     - name: Install wheel at floor of [verify] extra and replay the golden
-      # joserfc 1.0.x/1.1.0 were declared as supported but fail this replay;
-      # this step keeps the declared [verify] floor honest.
+      # joserfc 1.0.x/1.1.0 were declared as supported but fail this replay,
+      # and releases below 1.6.8 carry published advisories; this step keeps
+      # the declared [verify] floor (joserfc 1.6.8 -> cryptography 45.0.1) honest.
       run: |
         python -m venv /tmp/sumverifyfloor
-        /tmp/sumverifyfloor/bin/pip install --quiet "joserfc==1.2.0" "cryptography==41.0.0"
+        /tmp/sumverifyfloor/bin/pip install --quiet "joserfc==1.6.8" "cryptography==45.0.1"
         /tmp/sumverifyfloor/bin/pip install --quiet "dist/$(ls dist | grep '.whl$')[verify]"
-        /tmp/sumverifyfloor/bin/pip freeze | grep -iE "^(joserfc|cryptography)=="
-        /tmp/sumverifyfloor/bin/pip freeze | grep -qx "joserfc==1.2.0" || { echo "floor drift: joserfc is not 1.2.0"; exit 1; }
-        /tmp/sumverifyfloor/bin/pip freeze | grep -qx "cryptography==41.0.0" || { echo "floor drift: cryptography is not 41.0.0"; exit 1; }
-        /tmp/sumverifyfloor/bin/python -m sum_verify --demo | tee /tmp/verify_floor.json
+        /tmp/sumverifyfloor/bin/pip freeze > /tmp/sumverifyfloor_freeze.txt
+        grep -iE "^(joserfc|cryptography)==" /tmp/sumverifyfloor_freeze.txt
+        grep -qx "joserfc==1.6.8" /tmp/sumverifyfloor_freeze.txt || { echo "floor drift: joserfc is not 1.6.8"; exit 1; }
+        grep -qx "cryptography==45.0.1" /tmp/sumverifyfloor_freeze.txt || { echo "floor drift: cryptography is not 45.0.1"; exit 1; }
+        /tmp/sumverifyfloor/bin/python -m sum_verify --demo > /tmp/verify_floor.json
+        cat /tmp/verify_floor.json
         grep -q '"verified": true' /tmp/verify_floor.json
 
   mcp-install-smoke:
@@ -655,6 +659,14 @@ jobs:
     - name: tsc --noEmit
       working-directory: worker
       run: npm run typecheck
+
+    - name: esbuild and miniflare pins match wrangler (no nested copies)
+      # test/hardening.test.mjs imports esbuild and miniflare directly; their
+      # pins must equal wrangler's exact dependencies or npm nests a second
+      # copy (#507 nested 61 packages). Bump all three together by hand.
+      working-directory: worker
+      run: |
+        node -e 'const p=require("./package-lock.json").packages;const n=Object.keys(p).filter(k=>/^node_modules\/wrangler\/node_modules\/(esbuild|miniflare)$/.test(k));if(n.length){console.error("nested under wrangler:",n.join(", "));process.exit(1)}console.log("esbuild and miniflare are single copies")'
 
     - name: Worker provider credentials and sequential quota regressions
       working-directory: worker

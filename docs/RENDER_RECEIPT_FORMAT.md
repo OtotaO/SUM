@@ -185,7 +185,7 @@ Same expected error if `sliders_quantized.formality` is changed, if any characte
 
 | Runtime | JOSE | JCS |
 |---|---|---|
-| TypeScript / JavaScript (Node ≥ 20, browsers, Cloudflare Workers, Deno, Bun) | [`jose@>=6`](https://github.com/panva/jose) (panva, MIT) | [`canonicalize@>=3`](https://www.npmjs.com/package/canonicalize) (Erdtman, Apache 2.0) |
+| TypeScript / JavaScript (Node ≥ 20 verified; canonicalize 5 declares ≥ 22; browsers, Cloudflare Workers, Deno, Bun) | [`jose@>=6`](https://github.com/panva/jose) (panva, MIT) | [`canonicalize@>=3`](https://www.npmjs.com/package/canonicalize) (Erdtman, Apache 2.0) |
 | Python (3.10+) | [`joserfc`](https://pypi.org/project/joserfc/) or [`authlib`](https://pypi.org/project/Authlib/) (both active, both EdDSA + detached JWS) | [`jcs`](https://pypi.org/project/jcs/) (Erdtman, Apache 2.0) |
 | Go | `github.com/go-jose/go-jose/v3` | `github.com/cyberphone/json-canonicalization/go/src/webpki.org/jsoncanonicalizer` |
 | Rust | `josekit` or `jsonwebtoken` | `serde-jcs` |

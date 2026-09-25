@@ -108,7 +108,9 @@ verify(bundle: dict, signing_key: str | None = None, strict: bool = False) -> {
   branch: <str>,
   bundle_version: <str>,
   signatures: { ed25519: "valid" | "invalid" | "absent",
-                hmac: "valid" | "invalid" | "absent" | "skipped" },
+                hmac: "verified" | "invalid" | "absent" | "skipped" | "missing" },
+                // "missing": a signing_key was supplied but the bundle carries
+                // no HMAC signature; always a failure.
   // On failure additionally:
   error_class: "schema" | "signature" | "structural" | "input_too_large" | "internal",
   errors: [<reason>, ...],

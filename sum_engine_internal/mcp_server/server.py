@@ -299,7 +299,10 @@ def build_server() -> FastMCP:
 
         Args:
             bundle: The CanonicalBundle dict.
-            signing_key: Optional HMAC key.
+            signing_key: Optional HMAC key. When supplied (non-empty),
+                the bundle must carry a valid HMAC signature; a bundle
+                without one is rejected (``signatures.hmac`` is
+                ``"missing"``). An empty string counts as no key.
             strict: Reject bundles with no signatures or with
                 an HMAC signature present without a key.
 

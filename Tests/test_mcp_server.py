@@ -163,13 +163,10 @@ def test_verify_rejects_non_dict_bundle(server):
     assert result["ok"] is False
 
 
-def test_verify_rejects_hmac_strip_and_ed25519_resign(server):
-    """A supplied signing_key must require the HMAC signature: a bundle
-    with the HMAC stripped and an attacker's own valid Ed25519 signature
-    must not verify (strict or not). Regression for the strip-and-re-sign
-    downgrade; mirrors CanonicalCodec.import_bundle."""
+def _mint_attacker_ed25519_bundle(key_dir) -> dict:
+    """A bundle with no HMAC signature and a valid Ed25519 signature under
+    an attacker-generated key: the strip-and-re-sign forgery shape."""
     import math
-    import tempfile
 
     from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
     from sum_engine_internal.ensemble.tome_generator import AutoregressiveTomeGenerator
@@ -179,7 +176,7 @@ def test_verify_rejects_hmac_strip_and_ed25519_resign(server):
     algebra = GodelStateAlgebra()
     codec = CanonicalCodec(
         algebra, AutoregressiveTomeGenerator(algebra),
-        signing_key=None, key_manager=KeyManager(key_dir=tempfile.mkdtemp()),
+        signing_key=None, key_manager=KeyManager(key_dir=str(key_dir)),
     )
     algebra.get_or_mint_prime("mallory", "owns", "vault")
     state = 1
@@ -187,7 +184,15 @@ def test_verify_rejects_hmac_strip_and_ed25519_resign(server):
         state = math.lcm(state, prime)
     forged = codec.export_bundle(state, branch="forged")
     assert "signature" not in forged and "public_signature" in forged
+    return forged
 
+
+def test_verify_rejects_hmac_strip_and_ed25519_resign(server, tmp_path):
+    """A supplied signing_key must require the HMAC signature: a bundle
+    with the HMAC stripped and an attacker's own valid Ed25519 signature
+    must not verify (strict or not). Regression for the strip-and-re-sign
+    downgrade; mirrors CanonicalCodec.import_bundle."""
+    forged = _mint_attacker_ed25519_bundle(tmp_path)
     for strict in (True, False):
         result = _tool(server, "verify")(
             bundle=forged, signing_key="operator-key", strict=strict,
@@ -195,6 +200,21 @@ def test_verify_rejects_hmac_strip_and_ed25519_resign(server):
         assert result["ok"] is False, result
         assert result["error_class"] == "signature"
         assert result["signatures"]["hmac"] == "missing"
+
+
+def test_verify_bind_rejects_hmac_strip_and_ed25519_resign(server, tmp_path):
+    """verify_bind delegates to verify; the downgrade rejection must reach
+    the caller through the bind wrapper too."""
+    import asyncio
+    import json
+
+    forged = _mint_attacker_ed25519_bundle(tmp_path)
+    result = asyncio.run(_tool(server, "verify_bind")(
+        bundle=forged, signing_key="operator-key", strict=True,
+    ))
+    flat = json.dumps(result)
+    assert '"ok": true' not in flat, result
+    assert "missing" in flat, result
 
 
 def test_verify_rejects_missing_canonical_tome(server):

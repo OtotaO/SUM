@@ -96,11 +96,13 @@ anthropic = ["anthropic>=0.97.0", "pydantic>=2.0.0"]
 # until we confirm a major release does not drop the "EdDSA" alias.
 # Alias of [verify]; byte-identical by design (audit 2026-09-02). Kept so an
 # existing `pip install "sum-engine[receipt-verify]"` keeps working.
-# Floor 1.2.0: joserfc 1.0.x and 1.1.0 fail `python -m sum_verify --demo`
-# (deserialize_compact rejects a keyword argument); 1.2.0 with
-# cryptography 41.0.0 passes the SDK and receipt suites. The floor venv
-# smoke job installs exactly these versions.
-receipt-verify = ["joserfc>=1.2.0,<2.0.0"]
+# Floor 1.6.8: joserfc 1.0.x and 1.1.0 cannot replay a receipt
+# (deserialize_compact rejects a keyword argument), and releases below
+# 1.6.8 carry published advisories, including GHSA-wphv-vfrh-23q5
+# (b64=false detached payloads bypass the payload-size limit; the path
+# jose_envelope uses). joserfc 1.6.8 requires cryptography>=45.0.1. The
+# floor venv smoke job installs exactly joserfc 1.6.8 + cryptography 45.0.1.
+receipt-verify = ["joserfc>=1.6.8,<2.0.0"]
 # The stable, dependency-light verify SDK (`import sum_verify`). The
 # package an integrator pins to CHECK SUM receipts — meaning-risk /
 # render / transform — without the CLI or the research numeric stack.
@@ -110,7 +112,7 @@ receipt-verify = ["joserfc>=1.2.0,<2.0.0"]
 # meaning-risk receipt offline pulls NO numpy / scipy / torch — the
 # property `Tests/test_sum_verify_sdk.py` pins in a clean subprocess.
 # Same joserfc pin/rationale as [receipt-verify] above.
-verify = ["joserfc>=1.2.0,<2.0.0"]
+verify = ["joserfc>=1.6.8,<2.0.0"]
 # MCP (Model Context Protocol) server. Exposes SUM verbs as MCP
 # tools so any MCP-aware LLM client (Claude Desktop, Claude Code,
 # Cursor, Continue, custom agents) can call SUM directly. The
