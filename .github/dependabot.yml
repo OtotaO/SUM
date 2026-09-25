@@ -7,11 +7,16 @@
 version: 2
 updates:
   # ── Python — the shipping `sum-engine` package (pyproject + requirements) ──
+  #    sum-engine is a library: raising a declared floor narrows what
+  #    integrators can install alongside it, so floors move only when a new
+  #    release falls outside the declared range (increase-if-necessary).
+  #    Floors that CI installs exactly live in the floor venv smoke job.
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
+      interval: "monthly"
+    open-pull-requests-limit: 2
+    versioning-strategy: "increase-if-necessary"
 
   # ── Cloudflare Worker toolchain — wrangler/esbuild/undici/ws live here as
   #    transitive dev deps; this is where the 2026-06 npm CVE bumps came from ──
@@ -24,6 +29,13 @@ updates:
       worker-toolchain:
         patterns: ["*"]
         update-types: ["minor", "patch"]
+    # esbuild and miniflare are pinned to wrangler's exact dependency
+    # versions (test/hardening.test.mjs imports them). Bumping them on
+    # their own nests a second copy under wrangler (#507 nested 61
+    # packages), so they move by hand together with wrangler.
+    ignore:
+      - dependency-name: "esbuild"
+      - dependency-name: "miniflare"
 
   # ── Vendoring build (esbuild) for the browser verifier bundle ──
   - package-ecosystem: "npm"

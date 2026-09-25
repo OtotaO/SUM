@@ -313,7 +313,7 @@ jobs:
       # across runtimes."
       run: |
         python -m pip install --upgrade pip
-        pip install pytest "joserfc>=1.0.0,<2.0.0" "cryptography>=41.0.0"
+        pip install pytest "joserfc>=1.2.0,<2.0.0" "cryptography>=41.0.0"
         python -m pytest Tests/test_render_receipt_verifier.py -q
 
     - name: Transform-receipt-verifier smoke — JS (20 fixtures)
@@ -552,7 +552,8 @@ jobs:
     - name: Install wheel at floor of [sieve] extra and run attest | verify
       # Sibling of the LATEST-resolution smoke above. This pins the
       # transitive chain of [sieve] to the floor versions declared in
-      # pyproject.toml (spacy>=3.8.0, click>=8.0). The 2-axis signal:
+      # pyproject.toml (spacy>=3.8.2, click>=8.0), then fails if pip
+      # silently resolved anything else. The 2-axis signal:
       #
       #   floor PASS, latest FAIL  → upstream broke at HEAD; bump CI
       #                              caught it before users (F13/F14 shape)
@@ -565,8 +566,11 @@ jobs:
       # docs/DOGFOOD_FINDINGS_2026-05-28.md and -2026-05-29.md.
       run: |
         python -m venv /tmp/sumfloor
-        /tmp/sumfloor/bin/pip install --quiet "spacy==3.8.0" "click==8.0.0"
+        /tmp/sumfloor/bin/pip install --quiet "spacy==3.8.2" "click==8.0.0"
         /tmp/sumfloor/bin/pip install --quiet "dist/$(ls dist | grep '.whl$')[sieve]"
+        /tmp/sumfloor/bin/pip freeze | grep -iE "^(spacy|click)=="
+        /tmp/sumfloor/bin/pip freeze | grep -qx "spacy==3.8.2" || { echo "floor drift: spacy is not 3.8.2"; exit 1; }
+        /tmp/sumfloor/bin/pip freeze | grep -qx "click==8.0.0" || { echo "floor drift: click is not 8.0.0"; exit 1; }
         n=0; until /tmp/sumfloor/bin/python -m spacy download en_core_web_sm; do
           n=$((n+1)); [ "$n" -ge 5 ] && { echo "spacy model download failed after 5 attempts"; exit 1; }
           echo "spacy download retry $n/5 in $((n*10))s..."; sleep $((n*10))
@@ -574,6 +578,19 @@ jobs:
         /tmp/sumfloor/bin/sum --version
         echo "Alice likes cats. Bob owns a dog." | /tmp/sumfloor/bin/sum attest --extractor=sieve > /tmp/floor_bundle.json
         /tmp/sumfloor/bin/sum verify --input /tmp/floor_bundle.json
+
+    - name: Install wheel at floor of [verify] extra and replay the golden
+      # joserfc 1.0.x/1.1.0 were declared as supported but fail this replay;
+      # this step keeps the declared [verify] floor honest.
+      run: |
+        python -m venv /tmp/sumverifyfloor
+        /tmp/sumverifyfloor/bin/pip install --quiet "joserfc==1.2.0" "cryptography==41.0.0"
+        /tmp/sumverifyfloor/bin/pip install --quiet "dist/$(ls dist | grep '.whl$')[verify]"
+        /tmp/sumverifyfloor/bin/pip freeze | grep -iE "^(joserfc|cryptography)=="
+        /tmp/sumverifyfloor/bin/pip freeze | grep -qx "joserfc==1.2.0" || { echo "floor drift: joserfc is not 1.2.0"; exit 1; }
+        /tmp/sumverifyfloor/bin/pip freeze | grep -qx "cryptography==41.0.0" || { echo "floor drift: cryptography is not 41.0.0"; exit 1; }
+        /tmp/sumverifyfloor/bin/python -m sum_verify --demo | tee /tmp/verify_floor.json
+        grep -q '"verified": true' /tmp/verify_floor.json
 
   mcp-install-smoke:
     name: pip install sum-engine[mcp] (fresh venv startup smoke)
