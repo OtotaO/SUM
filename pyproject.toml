@@ -57,7 +57,7 @@ sieve = [
   # (floor venv smoke)` job pins to floor and runs the full smoke,
   # so the next time the floor decays we catch it before users do.
   # See `docs/DOGFOOD_FINDINGS_2026-05-29.md` F14.
-  "spacy>=3.8.0",
+  "spacy>=3.8.16",
   # spacy ≥ 3.8 imports `from click import NoSuchOption` at module
   # load (spacy/cli/_util.py); typer ≥ 0.13 stopped pulling click
   # transitively. Pin click explicitly so a fresh
