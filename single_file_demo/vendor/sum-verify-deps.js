@@ -2,7 +2,7 @@
 // Regenerated via `scripts/vendor/build.js`; CI verifies byte-equivalence.
 // DO NOT EDIT BY HAND.
 // jose@5.9.6        — MIT (panva). Filip Skokan and contributors.
-// canonicalize@4.0.0 — Apache-2.0 (Erdtman). Anders Rundgren and contributors.
+// canonicalize@5.1.0 — Apache-2.0 (Erdtman). Anders Rundgren and contributors.
 // Full LICENSE bodies in `single_file_demo/vendor/LICENSE.txt`.
 
 // node_modules/jose/dist/browser/runtime/webcrypto.js
@@ -1106,68 +1106,148 @@ function createRemoteJWKSet(url, options) {
 }
 
 // node_modules/canonicalize/lib/canonicalize.js
-function hasLoneSurrogate(value) {
-  for (let i = 0; i < value.length; i++) {
-    const code = value.charCodeAt(i);
-    if (code >= 55296 && code <= 56319) {
-      if (i === value.length - 1) {
-        return true;
-      }
-      const next = value.charCodeAt(i + 1);
-      if (!(next >= 56320 && next <= 57343)) {
-        return true;
-      }
-      i++;
-    } else if (code >= 56320 && code <= 57343) {
-      return true;
-    }
-  }
-  return false;
-}
-function canonicalize(object, seen = /* @__PURE__ */ new Set()) {
-  if (typeof object === "number" && isNaN(object)) {
-    throw new Error("NaN is not allowed");
-  }
-  if (typeof object === "number" && !isFinite(object)) {
-    throw new Error("Infinity is not allowed");
-  }
-  if (typeof object === "string" && hasLoneSurrogate(object)) {
+function serializeString(value) {
+  if (!value.isWellFormed()) {
     throw new Error("Lone surrogate is not allowed");
   }
-  if (object === null || typeof object !== "object") {
-    return JSON.stringify(object);
+  return JSON.stringify(value);
+}
+function serializePrimitive(value) {
+  switch (typeof value) {
+    case "number":
+      if (isNaN(value)) {
+        throw new Error("NaN is not allowed");
+      }
+      if (!isFinite(value)) {
+        throw new Error("Infinity is not allowed");
+      }
+      return JSON.stringify(value);
+    case "string":
+      return serializeString(value);
+    case "boolean":
+      return value ? "true" : "false";
+    default:
+      return JSON.stringify(value);
   }
-  if (typeof object.toJSON === "function") {
-    if (seen.has(object)) {
+}
+function enterValue(value, seen) {
+  let wrappers = null;
+  while (value !== null && typeof value === "object" && typeof value.toJSON === "function") {
+    if (seen.has(value)) {
       throw new Error("Circular reference detected");
     }
-    seen.add(object);
-    const result2 = canonicalize(object.toJSON(), seen);
-    seen.delete(object);
-    return result2;
+    seen.add(value);
+    (wrappers ?? (wrappers = [])).push(value);
+    value = value.toJSON();
   }
-  if (seen.has(object)) {
+  if (value instanceof Number || value instanceof String || value instanceof Boolean) {
+    value = value.valueOf();
+  }
+  if (value === null || typeof value !== "object") {
+    if (wrappers !== null) {
+      for (const wrapper of wrappers) seen.delete(wrapper);
+    }
+    return serializePrimitive(value);
+  }
+  if (seen.has(value)) {
     throw new Error("Circular reference detected");
   }
-  seen.add(object);
-  let result;
-  if (Array.isArray(object)) {
-    const values = object.map((cv) => {
-      const value = cv === void 0 || typeof cv === "symbol" ? null : cv;
-      return canonicalize(value, seen);
-    });
-    result = `[${values.join(",")}]`;
-  } else {
-    const parts = [];
-    for (const key of Object.keys(object).sort()) {
-      if (object[key] === void 0 || typeof object[key] === "symbol") {
-        continue;
-      }
-      parts.push(`${canonicalize(key)}:${canonicalize(object[key], seen)}`);
-    }
-    result = `{${parts.join(",")}}`;
+  seen.add(value);
+  return {
+    container: value,
+    // null marks an array frame; object frames carry their sorted keys.
+    // `sort()`'s default comparator orders by UTF-16 code unit, which is the
+    // order JCS requires.
+    keys: Array.isArray(value) ? null : Object.keys(value).sort(),
+    // Next child to serialize; the frame resumes here after a nested
+    // container's subtree completes.
+    index: 0,
+    // Whether no member has been emitted yet (controls comma placement).
+    first: true,
+    // toJSON wrappers to release from `seen` when this frame completes.
+    wrappers
+  };
+}
+function canonicalize(object) {
+  if (object === null || typeof object !== "object") {
+    return serializePrimitive(object);
   }
-  seen.delete(object);
+  const seen = /* @__PURE__ */ new Set();
+  const root = enterValue(object, seen);
+  if (typeof root !== "object") {
+    return root;
+  }
+  let result = root.keys === null ? "[" : "{";
+  const stack = [root];
+  outer:
+    while (stack.length > 0) {
+      const frame = stack[stack.length - 1];
+      const container = frame.container;
+      if (frame.keys === null) {
+        while (frame.index < container.length) {
+          const i = frame.index++;
+          if (i > 0) {
+            result += ",";
+          }
+          const element = container[i];
+          const value = element === void 0 || typeof element === "symbol" || typeof element === "function" ? null : element;
+          if (value === null || typeof value !== "object") {
+            result += serializePrimitive(value);
+            continue;
+          }
+          const child = enterValue(value, seen);
+          if (typeof child !== "object") {
+            result += child === void 0 ? "null" : child;
+            continue;
+          }
+          result += child.keys === null ? "[" : "{";
+          stack.push(child);
+          continue outer;
+        }
+        result += "]";
+      } else {
+        const keys = frame.keys;
+        while (frame.index < keys.length) {
+          const key = keys[frame.index++];
+          const value = container[key];
+          if (value === void 0 || typeof value === "symbol" || typeof value === "function") {
+            continue;
+          }
+          if (value === null || typeof value !== "object") {
+            if (frame.first) {
+              frame.first = false;
+            } else {
+              result += ",";
+            }
+            result += serializeString(key) + ":" + serializePrimitive(value);
+            continue;
+          }
+          const child = enterValue(value, seen);
+          if (child === void 0) {
+            continue;
+          }
+          if (frame.first) {
+            frame.first = false;
+          } else {
+            result += ",";
+          }
+          result += serializeString(key) + ":";
+          if (typeof child !== "object") {
+            result += child;
+            continue;
+          }
+          result += child.keys === null ? "[" : "{";
+          stack.push(child);
+          continue outer;
+        }
+        result += "}";
+      }
+      seen.delete(container);
+      if (frame.wrappers !== null) {
+        for (const wrapper of frame.wrappers) seen.delete(wrapper);
+      }
+      stack.pop();
+    }
   return result;
 }
 export {

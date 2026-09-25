@@ -5,6 +5,7 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 ## [Unreleased]
 
 - **Security: a supplied HMAC key now requires the HMAC signature.** `sum verify --signing-key K` and MCP `verify` / `verify_bind` with `signing_key` reject a bundle that carries no HMAC `signature`, in default and `--strict` modes, matching `CanonicalCodec.import_bundle`'s downgrade protection. Previously an attacker could delete the HMAC, change the content, add their own valid Ed25519 signature, and pass `--strict --signing-key K` with exit code 0. The MCP `signatures.hmac` field reports the new `missing` status. The defect is present in 0.10.0 and in the v0.11.0 tag. THREAT_MODEL §2.1 corrected; regression tests fail on the previous code.
+- Regenerated the vendored browser verifier bundle (`single_file_demo/vendor/sum-verify-deps.js` and `LICENSE.txt`) for canonicalize 5.1.0 (from 4.0.0; supersedes dependabot #511, whose CI failed because the bundle was not rebuilt). A differential fuzz of 40,000 documents found 0 byte differences against 4.0.0; outputs differ only for inputs that are not JSON. The stated Node floor for the in-page verifier is now 20 (canonicalize 5 uses `String.prototype.isWellFormed`; the package itself declares Node >= 22). The Worker signer stays on canonicalize ^4.0.0; the live site serves the old bundle until the next Worker deploy.
 
 ## [0.11.0] - release candidate (2026-09-09)
 
