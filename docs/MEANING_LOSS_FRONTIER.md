@@ -211,3 +211,34 @@ nothing about judge accuracy, sentence segmentation or full meaning coverage.
 Other callbacks without a coverage inspector report `not_inspected`.
 Retrieval of support windows, richer source spans and independent human
 validation remain required before promoting this proxy to a complete reviewer.
+
+## Optional Jev judge (research, 2026-09-20)
+
+`sum_engine_internal.research.meaning.jev_judge.JevJudge` adapts TypeSafe's
+Noul support questions to the existing bidirectional `EntailmentScorer`.
+`JevJudge.from_env(allow_network=True)` explicitly enables the fixed HTTPS
+endpoint using `TYPESAFE_API_KEY`; `judge.as_scorer()` supplies the scorer.
+Construction otherwise stays offline. This does not add a hosted browser/MCP
+route or enable Jev for receipt issuance.
+
+The default pinned version is `jev-1.13.0`. Probabilities at or below 0.1 map
+to unsupported, at or above 0.9 to supported, and the intervening interval
+raises `JevAbstention` instead of producing a Boolean loss. These thresholds
+are experimental, not calibrated on human labels. `assess_batch()` exposes
+the probabilities and abstentions directly. It evaluates narrow questions
+over shared premises; it never silently truncates input. Byte caps are resource
+limits, not tokenizer coverage measurements. Oversized inputs need an explicit
+windowing/evidence policy outside this adapter.
+
+Each instance bounds attempts, questions, request/response bytes, and socket
+timeouts. Failed calls consume attempts; automatic retries are disabled. The
+model identity, answer IDs/types, finite probabilities and usage are validated.
+`observations()` returns detached, unsigned request/response records, including
+uncertain responses, for a caller to save privately. These records contain
+source text. They do not prove provider identity, semantic accuracy, or hosted
+inference reproducibility. The existing offline verifier has no Jev dependency.
+
+Contract: [TypeSafe API](https://docs.typesafe.ai/api) and
+[current model limits](https://docs.typesafe.ai/models), checked 2026-09-20.
+Tests use fake transports and establish protocol behavior only. A live,
+human-labeled assessment of actual SUM transformations remains necessary.
