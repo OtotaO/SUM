@@ -384,6 +384,14 @@ def build_server() -> FastMCP:
                     ok=False,
                     signatures={"ed25519": ed25519_status, "hmac": hmac_status},
                 )
+            if hmac_status == "missing":
+                return error_result(
+                    "verify", t0, ErrorClass.SIGNATURE,
+                    "signing_key supplied but the bundle carries no HMAC signature "
+                    "(possible strip/downgrade)",
+                    ok=False,
+                    signatures={"ed25519": ed25519_status, "hmac": hmac_status},
+                )
             if strict:
                 if ed25519_status == "absent" and hmac_status == "absent":
                     return error_result(

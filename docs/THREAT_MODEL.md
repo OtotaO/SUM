@@ -34,9 +34,9 @@ Producer ──(shared key)──> Bundle ──(shared key)──> Consumer
 
 **Threat:** An attacker intercepts a bundle in transit and modifies the canonical tome, state integer, or timestamp.
 
-**Defense:** HMAC-SHA256 signature covers `canonical_tome|state_integer|timestamp`. Any modification invalidates the signature. The importer rejects bundles with invalid signatures.
+**Defense:** HMAC-SHA256 signature covers `canonical_tome|state_integer|timestamp`. Any modification invalidates the signature. The importer rejects bundles with invalid signatures. A verifier that is given the HMAC key (`CanonicalCodec(signing_key=...)`, `sum verify --signing-key`, MCP `verify(signing_key=...)`) also rejects a bundle that carries no HMAC signature, so an attacker cannot strip the HMAC and substitute an Ed25519 signature of their own (downgrade).
 
-**Residual risk:** None, assuming the HMAC key is not compromised.
+**Residual risk:** A verifier that supplies neither the HMAC key nor a pinned Ed25519 key accepts a bundle on the strength of its embedded public key alone; that proves integrity relative to that key, not who signed it. Until 2026-09-25 the CLI and MCP verifiers did not enforce the downgrade rule above (present in 0.10.0 and the v0.11.0 tag; now covered by regression tests in `Tests/test_sum_cli_verify.py` and `Tests/test_mcp_server.py`). All of this assumes the HMAC key is not compromised.
 
 ### 2.2. State Integer Forgery (✅ Protected within trust boundary)
 

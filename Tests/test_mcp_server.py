@@ -163,6 +163,40 @@ def test_verify_rejects_non_dict_bundle(server):
     assert result["ok"] is False
 
 
+def test_verify_rejects_hmac_strip_and_ed25519_resign(server):
+    """A supplied signing_key must require the HMAC signature: a bundle
+    with the HMAC stripped and an attacker's own valid Ed25519 signature
+    must not verify (strict or not). Regression for the strip-and-re-sign
+    downgrade; mirrors CanonicalCodec.import_bundle."""
+    import math
+    import tempfile
+
+    from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+    from sum_engine_internal.ensemble.tome_generator import AutoregressiveTomeGenerator
+    from sum_engine_internal.infrastructure.canonical_codec import CanonicalCodec
+    from sum_engine_internal.infrastructure.key_manager import KeyManager
+
+    algebra = GodelStateAlgebra()
+    codec = CanonicalCodec(
+        algebra, AutoregressiveTomeGenerator(algebra),
+        signing_key=None, key_manager=KeyManager(key_dir=tempfile.mkdtemp()),
+    )
+    algebra.get_or_mint_prime("mallory", "owns", "vault")
+    state = 1
+    for prime in algebra.axiom_to_prime.values():
+        state = math.lcm(state, prime)
+    forged = codec.export_bundle(state, branch="forged")
+    assert "signature" not in forged and "public_signature" in forged
+
+    for strict in (True, False):
+        result = _tool(server, "verify")(
+            bundle=forged, signing_key="operator-key", strict=strict,
+        )
+        assert result["ok"] is False, result
+        assert result["error_class"] == "signature"
+        assert result["signatures"]["hmac"] == "missing"
+
+
 def test_verify_rejects_missing_canonical_tome(server):
     result = _tool(server, "verify")(bundle={
         "state_integer": "1", "canonical_format_version": "1.0.0"

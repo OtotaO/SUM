@@ -147,6 +147,49 @@ class TestHmacSignedBundle:
         assert code == 1
 
 
+# ─── 2b. HMAC strip-and-re-sign downgrade ──────────────────────────
+
+
+class TestHmacStripDowngrade:
+    """A supplied --signing-key asserts the bundle must carry that HMAC.
+
+    Regression for the strip-and-re-sign bypass: an attacker drops the
+    HMAC ``signature`` and adds their own (valid) Ed25519 signature over
+    new content. Before the fix, ``--strict --signing-key K`` exited 0
+    because a missing HMAC reported "absent" and the attacker's Ed25519
+    satisfied the strict gate. Mirrors CanonicalCodec.import_bundle's
+    downgrade protection.
+    """
+
+    def test_attacker_ed25519_bundle_without_hmac_rejected_strict(self, tmp_path):
+        forged = _mint_signed_bundle(signing_key=None, with_ed25519=True)
+        assert "signature" not in forged and "public_signature" in forged
+        path = _write_bundle(tmp_path, forged)
+        code, _ = _run_verify(path, signing_key="correct-key", strict=True)
+        assert code == 1
+
+    def test_attacker_ed25519_bundle_without_hmac_rejected_default(self, tmp_path):
+        forged = _mint_signed_bundle(signing_key=None, with_ed25519=True)
+        path = _write_bundle(tmp_path, forged)
+        code, _ = _run_verify(path, signing_key="correct-key")
+        assert code == 1
+
+    def test_stripped_hmac_bundle_rejected(self, tmp_path):
+        bundle = _mint_signed_bundle(signing_key="correct-key", with_ed25519=False)
+        stripped = copy.deepcopy(bundle)
+        del stripped["signature"]
+        path = _write_bundle(tmp_path, stripped)
+        code, _ = _run_verify(path, signing_key="correct-key")
+        assert code == 1
+
+    def test_missing_status_is_reported_by_helper(self):
+        from sum_cli.main import _verify_hmac_bundle
+
+        unsigned = _mint_signed_bundle(signing_key=None, with_ed25519=False)
+        assert _verify_hmac_bundle(unsigned, "correct-key") == "missing"
+        assert _verify_hmac_bundle(unsigned, None) == "absent"
+
+
 # ─── 3. Ed25519-signed bundle ──────────────────────────────────────
 
 

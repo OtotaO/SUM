@@ -705,7 +705,13 @@ def _verify_hmac_bundle(bundle: dict, signing_key: Optional[str]) -> str:
     """Verify the HMAC-SHA256 signature over the SUM payload line.
 
     Returns one of:
-      * "absent"    — no signature field present.
+      * "absent"    — no signature field present and no key supplied.
+      * "missing"   — a key was supplied but the bundle carries no HMAC
+                      signature. Callers MUST reject: supplying a key
+                      asserts the bundle must carry that HMAC, and
+                      accepting its absence lets an attacker strip the
+                      HMAC and re-sign with their own Ed25519 key
+                      (downgrade). Mirrors CanonicalCodec.import_bundle.
       * "skipped"   — field present but no --signing-key supplied.
       * "verified"  — field present and verifies under the supplied key.
       * "invalid"   — field present but does not verify.
@@ -715,7 +721,7 @@ def _verify_hmac_bundle(bundle: dict, signing_key: Optional[str]) -> str:
     """
     sig = bundle.get("signature")
     if not sig:
-        return "absent"
+        return "missing" if signing_key is not None else "absent"
     if signing_key is None:
         return "skipped"
     import hashlib
@@ -983,6 +989,13 @@ def cmd_verify(args: argparse.Namespace) -> int:
         print(
             "sum: ✗ HMAC signature invalid — "
             "bundle tampered or signed with a different key",
+            file=sys.stderr,
+        )
+        return 1
+    if hmac_status == "missing":
+        print(
+            "sum: ✗ --signing-key supplied but the bundle carries no HMAC "
+            "signature — refusing a possibly stripped (downgraded) bundle",
             file=sys.stderr,
         )
         return 1

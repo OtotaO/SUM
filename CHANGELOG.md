@@ -4,6 +4,8 @@ All notable changes to the `sum-engine` package. Dates in ISO-8601 UTC.
 
 ## [Unreleased]
 
+- **Security: a supplied HMAC key now requires the HMAC signature.** `sum verify --signing-key K` and MCP `verify` / `verify_bind` with `signing_key` reject a bundle that carries no HMAC `signature`, in default and `--strict` modes, matching `CanonicalCodec.import_bundle`'s downgrade protection. Previously an attacker could delete the HMAC, change the content, add their own valid Ed25519 signature, and pass `--strict --signing-key K` with exit code 0. The MCP `signatures.hmac` field reports the new `missing` status. The defect is present in 0.10.0 and in the v0.11.0 tag. THREAT_MODEL §2.1 corrected; regression tests fail on the previous code.
+
 ## [0.11.0] - release candidate (2026-09-09)
 
 This section describes source and prepared package changes. GitHub merge, Worker deployment and PyPI publication are separate release steps; the published version is recorded by the repository manifest.
