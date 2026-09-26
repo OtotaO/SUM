@@ -821,10 +821,10 @@ Result: **PASS**.
 
 ### 99. `sum verify` — cryptographic signature verification ✅
 
-Not just structural reconstruction — verifies HMAC (when `--signing-key` supplied) AND Ed25519 (always, self-contained via embedded public key). `--strict` mode fails if no signature is verifiable. JSON result carries `signatures: {hmac, ed25519}` with values in `{verified, skipped, absent, invalid}`.
+Not just structural reconstruction — requires and verifies the HMAC when `--signing-key` is supplied (a bundle without it is rejected with status `missing`; an empty key is a usage error) AND verifies Ed25519 (always, self-contained via the embedded public key, which is not pinned). `--strict` mode fails if no signature is verifiable. JSON result carries `signatures: {hmac, ed25519}` with values in `{verified, skipped, absent, invalid, missing}`.
 
-Verify: `Tests/test_sum_cli_verify.py` (15 cases pinning every branch)
-Expected: all 15 pass
+Verify: `Tests/test_sum_cli_verify.py` (26 cases pinning every branch)
+Expected: all 26 pass
 Result: **PASS**.
 
 ### 100. `sum attest --ed25519-key` — agentic public-key attestation ✅
