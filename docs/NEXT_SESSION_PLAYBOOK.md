@@ -10,7 +10,7 @@ Operator-only actions are marked (operator). Claude prepares drafts and never co
 
 Addressed in the 2026-09-25 change set: H1 (a supplied HMAC key now requires the HMAC signature); dependency floors reset to tested minimums, with floor jobs that fail on drift; the canonicalize 5.1.0 verifier bundle; dependabot #507, #516 and #517 merged, #512 to #515 and #522 superseded (#522 replaced #511). Remaining, in order:
 
-1. Release decision (operator) before the PyPI approval on run 35148438334 expires, about 2026-10-16. Python sources at tag v0.11.0 equal main as of 2026-09-23 (dependency metadata differs), and H1 is present in every published release. Approve with a known-issues note, or ship 0.11.1 with the H1 fix.
+1. Release decision (operator) before the PyPI approval on run 35148438334 expires, about 2026-10-16. Package sources (sum_cli, sum_engine_internal, sum_verify) at tag v0.11.0 equal main as of 2026-09-23 (dependency metadata differs), and H1 is present in every published release. Approve with a known-issues note, or ship 0.11.1 with the H1 fix.
 2. Key pin: the review-packet verifier checks an embedded key against the site JWKS and flags key-ID collisions. No packet is offered to anyone until this is live.
 3. One fix PR, each fix with a test that fails on the old code: M3 (browser fails closed on a malformed key), M18 (explicit error instead of silent truncation above 100k characters), M4 (extractor fallback only on ImportError, with an egress notice), M17 (`inspect` field names). Then a Worker-only redeploy with a live-bytes check, targeted for 2026-09-30; it does not wait for 0.11.1.
 4. M1: warn on the RFC 8032 test-vector key and rename the test key IDs `test-vector-zero-seed-DO-NOT-TRUST`. Operator key ceremony: offline key, two backups, a rotation date, revocation through TrustPolicy. The goldens stay byte-for-byte as test vectors and are re-minted once, after the scorer freeze.
@@ -47,7 +47,7 @@ Claim map as `sum.review_packet.v2`: verbatim, clause-bounded source spans; labe
 ### Parking list (at most 10 lines; an item leaves only when a named user or funded deliverable asks)
 
 - TypeSafe Jev judge (#518, #519): on hold; only as a disclosed baseline, after egress disclosure, abstention tests and a request-budget preflight.
-- Review items not scheduled above: M5 legacy revocation string comparison; M15 and M16 Worker admission and KV fail-open (before any launch post); M24 catalog verify-line CI; 72 stale remote branches.
+- Review items not scheduled above: M5 legacy revocation string comparison; M15 and M16 Worker admission and KV fail-open (before any launch post); M24 catalog verify-line CI; stale remote branches (69 on 2026-09-26).
 
 ## Start from live evidence
 

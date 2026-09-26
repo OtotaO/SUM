@@ -33,8 +33,11 @@ updates:
     # versions (test/hardening.test.mjs imports them). Bumping any one of
     # the three alone nests a second copy under wrangler (#507 nested 61
     # packages), so version updates for all three are made by hand, together.
-    # update-types limits the ignore to version updates: security updates
-    # still arrive, and CI fails if they recreate the nesting.
+    # update-types limits the ignore to version updates. Dependabot security
+    # updates are currently DISABLED for this repository (2026-09-26), so
+    # these three get no automated PRs at all: bump them by hand, or enable
+    # security updates in the repository settings to restore that path. CI
+    # fails if a bump recreates the nesting.
     ignore:
       - dependency-name: "wrangler"
         update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]

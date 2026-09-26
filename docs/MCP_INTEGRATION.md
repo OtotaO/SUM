@@ -107,7 +107,7 @@ verify(bundle: dict, signing_key: str | None = None, strict: bool = False) -> {
   state_integer_digits: <int>,
   branch: <str>,
   bundle_version: <str>,
-  signatures: { ed25519: "valid" | "invalid" | "absent",
+  signatures: { ed25519: "verified" | "invalid" | "absent",
                 hmac: "verified" | "invalid" | "absent" | "skipped" | "missing" },
                 // "missing": a signing_key was supplied but the bundle carries
                 // no HMAC signature; always a failure.

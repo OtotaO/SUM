@@ -202,6 +202,18 @@ def test_verify_rejects_hmac_strip_and_ed25519_resign(server, tmp_path):
         assert result["signatures"]["hmac"] == "missing"
 
 
+def test_verify_rejects_empty_signing_key(server, tmp_path):
+    """An empty signing_key (typically an unset secret) is a caller error,
+    not "no key": otherwise the attacker's embedded-key bundle passes."""
+    forged = _mint_attacker_ed25519_bundle(tmp_path)
+    for strict in (True, False):
+        result = _tool(server, "verify")(
+            bundle=forged, signing_key="", strict=strict,
+        )
+        assert result["ok"] is False, result
+        assert result["error_class"] == "schema"
+
+
 def test_verify_bind_rejects_hmac_strip_and_ed25519_resign(server, tmp_path):
     """verify_bind delegates to verify; the downgrade rejection must reach
     the caller through the bind wrapper too."""

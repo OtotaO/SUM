@@ -1,6 +1,6 @@
 {
   "schema": "sum.self_attestation.v1",
-  "issued_at": "2026-09-25T02:53:45Z",
+  "issued_at": "2026-09-26T05:08:52Z",
   "doc_count": 6,
   "docs": [
     {
@@ -14,12 +14,12 @@
     },
     {
       "path": "CHANGELOG.md",
-      "source_uri": "sha256:c67c392dadbf272b08ac6a11bc85dfc0f815ab9173d15f8d1cf0468066e0af76",
+      "source_uri": "sha256:8706d678d4a76d54e27ba57a144160b83b50e7711302a0a9a3b4f505b3955777",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "c67c392dadbf272b08ac6a11bc85dfc0f815ab9173d15f8d1cf0468066e0af76",
-      "axiom_count": 846,
-      "state_integer_digits": 15941
+      "markdown_sha256": "8706d678d4a76d54e27ba57a144160b83b50e7711302a0a9a3b4f505b3955777",
+      "axiom_count": 848,
+      "state_integer_digits": 15978
     },
     {
       "path": "docs/PROOF_BOUNDARY.md",
@@ -37,7 +37,7 @@
       "converter": "passthrough",
       "markdown_sha256": "b5f14fd8f903c872a916c0e175a8c3290b61f5d646433731623c28fefb093151",
       "axiom_count": 255,
-      "state_integer_digits": 4801
+      "state_integer_digits": 4800
     },
     {
       "path": "docs/RENDER_RECEIPT_FORMAT.md",

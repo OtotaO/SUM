@@ -302,7 +302,8 @@ def build_server() -> FastMCP:
             signing_key: Optional HMAC key. When supplied (non-empty),
                 the bundle must carry a valid HMAC signature; a bundle
                 without one is rejected (``signatures.hmac`` is
-                ``"missing"``). An empty string counts as no key.
+                ``"missing"``). An empty string is rejected as a
+                schema error rather than read as "no key".
             strict: Reject bundles with no signatures or with
                 an HMAC signature present without a key.
 
@@ -318,6 +319,16 @@ def build_server() -> FastMCP:
                 return error_result(
                     "verify", t0, ErrorClass.SCHEMA,
                     f"bundle must be a dict, got {type(bundle).__name__}",
+                    ok=False,
+                )
+
+            # An empty key is a caller error (typically an unset secret),
+            # not "no key": treating it as absent would silently drop the
+            # HMAC requirement the caller asked for.
+            if signing_key is not None and not signing_key:
+                return error_result(
+                    "verify", t0, ErrorClass.SCHEMA,
+                    "signing_key is empty; pass the HMAC key or omit it",
                     ok=False,
                 )
 

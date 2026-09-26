@@ -719,6 +719,8 @@ def _verify_hmac_bundle(bundle: dict, signing_key: Optional[str]) -> str:
     Truthful: "skipped" is not a pass. In --strict mode the caller
     must treat it as a failure. An empty key counts as no key, as in
     CanonicalCodec; a non-string signature is "invalid", not a crash.
+    The CLI and MCP callers reject an explicitly empty key as a usage
+    error before calling this helper.
     """
     if not signing_key:
         signing_key = None
@@ -941,6 +943,17 @@ def _build_verify_explanation(
 
 
 def cmd_verify(args: argparse.Namespace) -> int:
+    # An explicitly empty key is a usage error, not "no key": it is what
+    # `--signing-key "$UNSET_VAR"` produces, and silently falling back to
+    # Ed25519-only (embedded-key) verification would drop the HMAC
+    # requirement the caller asked for.
+    if args.signing_key is not None and not args.signing_key:
+        print(
+            "sum: --signing-key is empty; pass the HMAC key, or omit the "
+            "flag to verify without HMAC",
+            file=sys.stderr,
+        )
+        return 2
     try:
         raw = _read_input(args.input)
     except OSError as e:
@@ -4064,7 +4077,8 @@ def build_parser() -> argparse.ArgumentParser:
         help=(
             "HMAC key to verify the bundle's 'signature' field against. "
             "When supplied, a bundle without that HMAC signature is "
-            "rejected. Omit for Ed25519-only or unsigned bundles."
+            "rejected, and an empty value is a usage error (exit 2). "
+            "Omit for Ed25519-only or unsigned bundles."
         ),
     )
     p_verify.add_argument(

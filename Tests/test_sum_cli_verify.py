@@ -203,6 +203,16 @@ class TestHmacStripDowngrade:
         assert _verify_hmac_bundle(unsigned, "") == "absent"
         assert _verify_hmac_bundle(signed, "") == "skipped"
 
+    @pytest.mark.parametrize("strict", [False, True])
+    def test_empty_signing_key_flag_is_a_usage_error(self, tmp_path, capsys, strict):
+        """`--signing-key "$UNSET_VAR"` must not fall back to embedded-key
+        Ed25519 verification: the attacker bundle would otherwise pass."""
+        forged = _mint_signed_bundle(signing_key=None, with_ed25519=True)
+        path = _write_bundle(tmp_path, forged)
+        code, _ = _run_verify(path, signing_key="", strict=strict)
+        assert code == 2
+        assert "--signing-key is empty" in capsys.readouterr().err
+
     @pytest.mark.parametrize("bad_sig", [123, ["hmac-sha256:00"], "hmac-sha256:é", "\ud800"])
     def test_malformed_signature_is_invalid_not_a_crash(self, bad_sig):
         from sum_cli.main import _verify_hmac_bundle
