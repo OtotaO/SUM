@@ -1,17 +1,22 @@
 # Dependabot — the maintainable half of the Scorecard PinnedDependencies /
 # Vulnerabilities story. Pinning by SHA / digest / lockfile only helps if the
 # pins stay current instead of freezing onto an eventually-vulnerable version;
-# Dependabot opens the bump PRs that keep them fresh. Weekly cadence with
-# conservative open-PR limits for a small project. Action updates preserve the
+# Dependabot opens the bump PRs that keep them fresh. Weekly cadence (monthly
+# for pip) with conservative open-PR limits for a small project. Action updates preserve the
 # SHA-pin-plus-comment convention enforced by scripts/lint_workflow_pins.py.
 version: 2
 updates:
   # ── Python — the shipping `sum-engine` package (pyproject + requirements) ──
+  #    sum-engine is a library: raising a declared floor narrows what
+  #    integrators can install alongside it, so floors move only when a new
+  #    release falls outside the declared range (increase-if-necessary).
+  #    Floors that CI installs exactly live in the floor venv smoke job.
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
+      interval: "monthly"
+    open-pull-requests-limit: 2
+    versioning-strategy: "increase-if-necessary"
 
   # ── Cloudflare Worker toolchain — wrangler/esbuild/undici/ws live here as
   #    transitive dev deps; this is where the 2026-06 npm CVE bumps came from ──
@@ -24,6 +29,23 @@ updates:
       worker-toolchain:
         patterns: ["*"]
         update-types: ["minor", "patch"]
+    # esbuild and miniflare are pinned to wrangler's exact dependency
+    # versions (test/hardening.test.mjs imports them). Bumping any one of
+    # the three alone nests a second copy under wrangler (#507 nested 61
+    # packages), so version updates for all three are made by hand, together.
+    # update-types limits the ignore to version updates. Dependabot alerts and
+    # security updates are both DISABLED for this repository (2026-09-26), so
+    # these three get no automated PRs at all: bump them by hand, or enable
+    # alerts and security updates in the repository settings to restore that
+    # path. The weekly Scorecard OSV scan still reports known vulnerabilities
+    # as code-scanning alerts. CI fails if a bump recreates the nesting.
+    ignore:
+      - dependency-name: "wrangler"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      - dependency-name: "esbuild"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      - dependency-name: "miniflare"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
 
   # ── Vendoring build (esbuild) for the browser verifier bundle ──
   - package-ecosystem: "npm"

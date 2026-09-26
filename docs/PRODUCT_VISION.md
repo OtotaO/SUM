@@ -1,12 +1,20 @@
 # SUM product vision: retained sources, useful views, portable review
 
-Updated 2026-09-09 after the repository audit and the operator's authorization to complete and revise the product. This replaces the June first-increment design; its history remains in git. NORTH_STAR governs the destination. PROOF_BOUNDARY governs claims.
+Updated 2026-09-25 (claim-map unit and measures, from the 2026-09-23 roadmap); previously 2026-09-09 after the repository audit and the operator's authorization to complete and revise the product. This replaces the June first-increment design; its history remains in git. NORTH_STAR governs the destination. PROOF_BOUNDARY governs claims.
 
 ## Destination
 
 Help a person reshape a source for a purpose, inspect consequential changes, restore needed detail, and share a checkable result. Adjustable depth and perspective are views over retained source material. A tag cannot uniquely reconstruct discarded information: expansion must return to the retained source or identify newly retrieved/generated material.
 
 Receipts make the review portable. Source fidelity and the usefulness of the review make it worth doing. A signature proves that a particular key signed particular bytes; a caller must establish trust in that key separately. It does not establish factual truth, human identity, semantic preservation, or statistical applicability.
+
+The unit SUM builds toward (2026-09-25) is the reviewed, source-linked claim map: each source claim marked kept, changed, not carried or added, and each output sentence linked to the exact source words. A judge can flag what a rewrite changed; whether an omission matters depends on the reader's purpose, so perspectives are recorded weightings over claims, not inferences. Error detectors and text signing already exist elsewhere (MiniCheck-class checkers, grounding APIs, C2PA text manifests; WEB-VERIFIED 2026-09-23); SUM interoperates with them rather than competing on detection.
+
+## Measures
+
+- North star: second-party checks. A real outside person reviews their own rewrite and sends the exported packet to a different person, who opens it. Baseline 0 on 2026-09-23. Stars, installs, page views and simulations count as zero.
+- Distiller check, each quarter, recorded in NORTH_STAR section 7: can a stranger paste their own text on the live page, read it at three or more depths with source links, and find no invented facts in the extractive depths?
+- The wager (NORTH_STAR section 2) is tested by hand against thresholds pre-registered in NEXT_SESSION_PLAYBOOK, with a verdict on 2026-11-06. The distiller ships whichever way it goes.
 
 ## The completed loop to maintain
 

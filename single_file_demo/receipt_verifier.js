@@ -108,8 +108,11 @@ function b64urlDecodeToBytes(s) {
 
 async function importEd25519Jwk(jwk) {
   // EdDSA / Ed25519 (OKP) JWK import via SubtleCrypto. Supported in
-  // Node ≥18.4, Chrome 113+, Firefox 129+, Safari 17+. Older
-  // browsers fail at this step with a precise error message.
+  // Node ≥20, Chrome 113+, Firefox 129+, Safari 17+. Older
+  // browsers fail at this step with a precise error message. (Node
+  // gained Ed25519 in 18.4, but the vendored canonicalize@5 calls
+  // String.prototype.isWellFormed, which Node has only from 20.
+  // Node 20 is verified; canonicalize 5 itself declares Node >= 22.)
   if (jwk.kty !== "OKP" || jwk.crv !== "Ed25519") {
     throw new VerifyError(
       ERROR_CLASSES.MALFORMED_JWKS,
