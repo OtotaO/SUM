@@ -6,8 +6,11 @@ import { verifyReceipt } from './receipt_verifier.js';
 export const REVIEW_SCHEMA = 'sum.review_packet.v1';
 export const MAX_REVIEW_CHARS = 100000;
 export const MAX_REVIEW_SPANS = 300;
-// literal-spans-v1 is frozen: its splitter and scope string must never change,
-// because packets exported with it are verified by recomputing through them.
+// literal-spans-v1 and literal-spans-v2 are FROZEN: their splitters, pairing
+// and scope strings must never change, because packets exported with them are
+// verified by recomputing through them. Pinned packets in
+// test_review_packet.mjs fail if either changes. A different rule needs a new
+// method name.
 export const REVIEW_SCOPE = 'Literal sentence comparison with lexical suggestions. Paraphrases, entailment, factual accuracy and meaning preservation are not measured. Human decisions and the original source are unsigned.';
 export const REVIEW_SCOPE_V2 = 'Literal sentence comparison with word-level string evidence recomputed from the texts. Paraphrases, entailment, factual accuracy and meaning preservation are not measured. Human decisions and the original source are unsigned.';
 export const REVIEW_METHOD_V1 = 'literal-spans-v1';
@@ -37,15 +40,19 @@ export function sourceSpans(text) {
   }).filter(s => s.text);
 }
 
-// literal-spans-v2 splitter. A passage ends at . ! or ? (plus closing quotes or
-// brackets) followed by whitespace or the end of the text, unless the "." is a
-// single one after a listed abbreviation or a single letter, or the next
-// non-space character is a lowercase letter or a digit. A newline always ends a
-// passage, and nothing swallows the rest of a line.
+// literal-spans-v2 splitter (frozen). A passage ends at . ! or ? (plus closing
+// quotes or brackets) followed by whitespace or the end of the text, unless the
+// "." is a single one after a listed abbreviation or a single letter, or the
+// next non-space character is a lowercase letter or a digit. A passage also
+// ends after the Chinese and Japanese marks 。！？ (plus closing quotes or
+// brackets), with or without a following space. A newline always ends a
+// passage, and nothing swallows the rest of a line. Linear in the text length.
 export const ABBREVIATIONS = new Set(['dr', 'mr', 'mrs', 'ms', 'mx', 'prof', 'st', 'jr', 'sr', 'inc', 'ltd', 'co', 'corp', 'llc', 'plc',
   'no', 'nos', 'vs', 'v', 'etc', 'e.g', 'i.e', 'cf', 'al', 'approx', 'art', 'sec', 'para', 'fig', 'vol', 'ch', 'p', 'pp', 'ed', 'eds',
   'u.s', 'u.k', 'e.u', 'jan', 'feb', 'mar', 'apr', 'jun', 'jul', 'aug', 'sep', 'sept', 'oct', 'nov', 'dec', 'mon', 'tue', 'wed',
   'thu', 'fri', 'sat', 'sun', 'est', 'dept', 'univ', 'gen', 'gov', 'rev', 'hon', 'ave', 'rd', 'blvd', 'mt', 'ft', 'oz', 'lb', 'lbs']);
+const V2_END = /[.!?]+["'”’)\]]*(?=\s|$)|[。！？]+[」』）"'”’)\]]*/g;
+const WORD_CP = /[\p{L}\p{N}.]/u;
 export function sourceSpansV2(text) {
   checkLength(text);
   const spans = [];
@@ -58,13 +65,23 @@ export function sourceSpansV2(text) {
   let lineStart = 0;
   for (const line of text.split('\n')) {
     let start = lineStart;
-    const re = /[.!?]+["'”’)\]]*(?=\s|$)/g;
+    const re = new RegExp(V2_END.source, 'g');
     let m;
     while ((m = re.exec(line))) {
       const endInLine = m.index + m[0].length;
-      const before = line.slice(0, m.index).match(/([\p{L}\p{N}.]+)$/u);
-      const word = before ? before[1].toLocaleLowerCase('en') : '';
-      const next = line.slice(endInLine).trimStart().charAt(0);
+      if (!/^[.!?]/.test(m[0])) { push(start, lineStart + endInLine); start = lineStart + endInLine; continue; }
+      // The word before the mark: the longest run of letters, digits and "." ending there.
+      let k = m.index;
+      while (k > 0) {
+        const low = line.charCodeAt(k - 1), pair = k > 1 && low >= 0xdc00 && low <= 0xdfff && line.charCodeAt(k - 2) >= 0xd800 && line.charCodeAt(k - 2) <= 0xdbff;
+        const ch = pair ? line.slice(k - 2, k) : line[k - 1];
+        if (!WORD_CP.test(ch)) break;
+        k -= ch.length;
+      }
+      const word = line.slice(k, m.index).toLocaleLowerCase('en');
+      let f = endInLine;
+      while (f < line.length && /\s/.test(line[f])) f++;
+      const next = f < line.length ? line[f] : '';
       const isAbbrev = m[0] === '.' && (ABBREVIATIONS.has(word) || /^\p{L}$/u.test(word));
       const continues = next !== '' && /[\p{Ll}\p{N}]/u.test(next);
       if (isAbbrev || continues) continue;
@@ -77,15 +94,21 @@ export function sourceSpansV2(text) {
   return spans;
 }
 
+// Pairing words. v1 (frozen): runs of letters and digits. v2 (frozen): the
+// same, except that each Chinese or Japanese character is a word of its own.
+const bagV1 = text => new Set(text.toLocaleLowerCase('en').match(/[\p{L}\p{N}]+/gu) || []);
+const CJK_CLASS = '\\p{Script=Han}\\p{Script=Hiragana}\\p{Script=Katakana}';
+const BAG_V2 = new RegExp(`[${CJK_CLASS}]|(?:(?![${CJK_CLASS}])[\\p{L}\\p{N}])+`, 'gu');
+const bagV2 = text => new Set(text.toLocaleLowerCase('en').match(BAG_V2) || []);
+
 const METHODS = {
-  [REVIEW_METHOD_V1]: { split: sourceSpans, scope: REVIEW_SCOPE },
-  [REVIEW_METHOD_V2]: { split: sourceSpansV2, scope: REVIEW_SCOPE_V2 },
+  [REVIEW_METHOD_V1]: { split: sourceSpans, scope: REVIEW_SCOPE, bag: bagV1 },
+  [REVIEW_METHOD_V2]: { split: sourceSpansV2, scope: REVIEW_SCOPE_V2, bag: bagV2 },
 };
 
-const tokens = text => new Set(text.toLocaleLowerCase('en').match(/[\p{L}\p{N}]+/gu) || []);
-function overlap(a, b) {
-  const left = tokens(a), right = tokens(b);
-  const common = [...left].filter(t => right.has(t)).length;
+function overlap(left, right) {
+  let common = 0;
+  for (const t of left) if (right.has(t)) common++;
   return common / Math.max(1, left.size + right.size - common);
 }
 
@@ -96,6 +119,8 @@ export function compareTexts(source, output, method = REVIEW_METHOD) {
   // Bound pairwise work; never silently truncate the source itself.
   if (originals.length > MAX_REVIEW_SPANS || rewrites.length > MAX_REVIEW_SPANS) throw new Error('Review supports up to 300 sentence or line passages per text. Split this document into sections.');
   const used = new Set(), rows = [];
+  const bags = new Map();
+  const bagOf = span => { if (!bags.has(span)) bags.set(span, spec.bag(span.text)); return bags.get(span); };
   for (const span of originals) {
     const exact = rewrites.find(s => !used.has(s.id) && s.text === span.text);
     if (exact) used.add(exact.id);
@@ -104,7 +129,7 @@ export function compareTexts(source, output, method = REVIEW_METHOD) {
   for (const row of rows.filter(r => !r.output)) {
     let candidate = null, best = 0.2;
     for (const span of rewrites.filter(s => !used.has(s.id))) {
-      const score = overlap(row.source.text, span.text);
+      const score = overlap(bagOf(row.source), bagOf(span));
       if (score > best) { candidate = span; best = score; }
     }
     if (candidate) {

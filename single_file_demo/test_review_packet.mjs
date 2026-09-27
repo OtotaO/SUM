@@ -205,3 +205,43 @@ test('a packet exported by the shipped v1 code still verifies and still rejects 
   decided.review.rows[0].decision = 'approved';
   await assert.rejects(verifyReviewPacket(decided), /span or decision/);
 });
+
+// literal-spans-v2 is frozen the same way: a packet exported with it is pinned
+// byte for byte (fixtures/review_packets/). verifyReviewPacket recomputes its
+// passages through the v2 splitter and pairing, so any change to those rules
+// fails here: its canary text has every listed abbreviation before a
+// capitalized word, a single-letter initial, decimals, a lowercase
+// continuation, quotes and brackets after a stop, and Chinese sentence marks.
+// A changed rule needs a new method name, not an edit to v2.
+const PINNED_V2 = await readFile(new URL('../fixtures/review_packets/review_packet.literal-spans-v2.pinned.json', import.meta.url), 'utf8');
+
+test('the pinned literal-spans-v2 packet still verifies and still rejects tampering', async () => {
+  const packet = JSON.parse(PINNED_V2);
+  assert.equal(packet.review.method, 'literal-spans-v2');
+  assert.equal(packet.review.rows.length, 85);
+  const result = await verifyReviewPacket(packet);
+  assert.equal(result.review_spans, 'recomputed');
+  const tampered = JSON.parse(PINNED_V2);
+  tampered.review.rows[80].output.end--;
+  await assert.rejects(verifyReviewPacket(tampered), /span or decision/);
+  // Relabelled as v1, the same rows no longer match: v1 splits the canary differently.
+  const relabelled = JSON.parse(PINNED_V2);
+  relabelled.review.method = 'literal-spans-v1';
+  relabelled.review.scope = REVIEW_SCOPE;
+  await assert.rejects(verifyReviewPacket(relabelled));
+});
+
+test('v2 splits Chinese and Japanese sentences and pairs them character by character', () => {
+  assert.deepEqual(sourceSpansV2('租金必须在30天内支付。押金可以退还！真的吗？').map(s => s.text), ['租金必须在30天内支付。', '押金可以退还！', '真的吗？']);
+  assert.deepEqual(sourceSpansV2('他说：“好的。”然后离开。').map(s => s.text), ['他说：“好的。”', '然后离开。']);
+  assert.deepEqual(compareTexts('押金可以退还。', '押金不可退还。').rows.map(r => r.kind), ['changed-candidate']);
+  // v1 is frozen, so it still reads a CJK sentence run as one passage.
+  assert.equal(sourceSpans('租金必须在30天内支付。押金可以退还。').length, 1);
+});
+
+test('the v2 splitter is linear: long runs of short sentences split quickly', () => {
+  const started = performance.now();
+  assert.equal(sourceSpansV2('a. '.repeat(33000)).length, 1);
+  assert.equal(sourceSpansV2('Go. '.repeat(25000)).length, 25000);
+  assert.ok(performance.now() - started < 1500, `took ${(performance.now() - started).toFixed(0)} ms`);
+});
