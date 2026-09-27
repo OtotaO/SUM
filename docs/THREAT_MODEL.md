@@ -1,7 +1,7 @@
 # Threat Model
 
-**Version:** 1.3.0
-**Date:** 2026-04-20
+**Version:** 1.3.1
+**Date:** 2026-09-25
 
 This document describes what the SUM engine's security and integrity mechanisms protect against, and — critically — what they do NOT protect against.
 
@@ -34,9 +34,9 @@ Producer ──(shared key)──> Bundle ──(shared key)──> Consumer
 
 **Threat:** An attacker intercepts a bundle in transit and modifies the canonical tome, state integer, or timestamp.
 
-**Defense:** HMAC-SHA256 signature covers `canonical_tome|state_integer|timestamp`. Any modification invalidates the signature. The importer rejects bundles with invalid signatures.
+**Defense:** HMAC-SHA256 signature covers `canonical_tome|state_integer|timestamp`. Any modification invalidates the signature. The importer rejects bundles with invalid signatures. A verifier that is given the HMAC key (`CanonicalCodec(signing_key=...)`, `sum verify --signing-key`, MCP `verify(signing_key=...)`) also rejects a bundle that carries no HMAC signature, so an attacker cannot strip the HMAC and substitute an Ed25519 signature of their own (downgrade).
 
-**Residual risk:** None, assuming the HMAC key is not compromised.
+**Residual risk:** No CanonicalBundle verifier pins the Ed25519 key. Without the HMAC key, a bundle is accepted on its embedded public key alone, which proves integrity relative to that key, not who signed it. The CLI and MCP verifiers did not enforce the downgrade rule above in any published release (the CLI from 0.1.0 and the MCP tool from 0.4.1 through 0.10.0, and the v0.11.0 tag); the fix listed in CHANGELOG [Unreleased] adds regression tests in `Tests/test_sum_cli_verify.py` and `Tests/test_mcp_server.py`. All of this assumes the HMAC key is not compromised.
 
 ### 2.2. State Integer Forgery (✅ Protected within trust boundary)
 
