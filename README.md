@@ -319,7 +319,7 @@ Both runners require `OPENAI_API_KEY` (NLI audit + extraction). Pinned model sna
 
 ## Future developments
 
-This roadmap names only unshipped work. Items already landed live in [`CHANGELOG.md`](CHANGELOG.md) `[Unreleased]`. Detailed sequencing lives in [`docs/NEXT_SESSION_PLAYBOOK.md`](docs/NEXT_SESSION_PLAYBOOK.md).
+This roadmap names only unshipped work. Items already landed are recorded in [`CHANGELOG.md`](CHANGELOG.md). Detailed sequencing lives in [`docs/NEXT_SESSION_PLAYBOOK.md`](docs/NEXT_SESSION_PLAYBOOK.md).
 
 **Generalising the LLM round-trip result beyond the measured corpora.** The round-trip gap itself is **closed** — see the section above and [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §2.5 (closed 2026-05-21 across all measured corpora; the unprompted baseline was 107.75 % drift / 0.12 recall on `seed_v1`, now 0.00 % / 1.00 there). What is *not* shipped is evidence that the intervention (canonical-first generator prompt + constrained-decoding extractor + lemma-exclusion) holds on corpora nobody has measured yet, and a same-commit replay receipt for it. Treat the closure as an empirical result with a stated envelope, not a universal guarantee.
 

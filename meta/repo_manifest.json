@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-09-09T01:53:47Z",
+  "issued_at": "2026-09-27T04:00:45Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,18 +8,18 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "622613c0884096f3f803cda74c942963c898d1b0",
-    "head_short": "622613c",
-    "head_subject": "fix(workbench): preserve mixed modules and recover export after reset",
-    "head_committer_date": "2026-09-09T03:52:48+02:00",
+    "head_sha": "a2469d7cdb1db5f86f484e7a4648ac635e78e964",
+    "head_short": "a2469d7",
+    "head_subject": "Phase 0 steps 5 and 6: verdicts state scope and replay, descriptive goldens, demo-key warning, witness rename, CI scope (#531)",
+    "head_committer_date": "2026-09-27T04:47:20+01:00",
     "commits_last_30d": null
   },
   "github": {
-    "stars": null
+    "stars": 9
   },
   "release": {
-    "pyproject_version": "0.11.0",
-    "pypi_published_version": null
+    "pyproject_version": "0.11.1",
+    "pypi_published_version": "0.10.0"
   },
   "features": {
     "total": 170,
