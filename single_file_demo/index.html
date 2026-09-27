@@ -3,109 +3,393 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
 <title>SUM | Review a rewrite against its source</title>
+<meta name="description" content="Compare an original with its rewrite, see literal change evidence per passage, record decisions and export a review packet someone else can check.">
 <style>
-  :root { color-scheme: light dark; font-family: ui-sans-serif, system-ui, -apple-system; }
-  body { max-width: 980px; margin: 40px auto; padding: 0 16px; line-height: 1.5; }
-  h1 { font-weight: 600; margin: 0 0 12px; font-size: 28px; letter-spacing: -0.01em; line-height: 1.2; }
-  .sub { opacity: 0.7; margin-bottom: 24px; font-size: 14px; line-height: 1.5; max-width: 62ch; }
-  .sub em { font-style: italic; opacity: 0.95; font-weight: 500; }
-  textarea { width: 100%; min-height: 140px; padding: 12px; font: 14px/1.45 ui-monospace, monospace; border: 1px solid #8886; border-radius: 6px; box-sizing: border-box; resize: vertical; background: transparent; color: inherit; }
-  textarea:focus { outline: 2px solid #4a90e2; outline-offset: 0; border-color: transparent; }
-  .row { display: flex; gap: 12px; align-items: center; margin: 12px 0; }
-  .row label { font-size: 13px; opacity: 0.8; min-width: 90px; }
-  input[type=range] { flex: 1; accent-color: #4a90e2; }
-  .v { font: 13px ui-monospace, monospace; opacity: 0.75; min-width: 44px; text-align: right; }
-  button { padding: 10px 18px; border: 1px solid #8886; border-radius: 6px; background: #4a90e2; color: white; font: inherit; font-weight: 500; cursor: pointer; }
-  button:disabled { opacity: 0.4; cursor: not-allowed; }
-  button.ghost { background: transparent; color: inherit; }
-  .card { border: 1px solid #8884; border-radius: 8px; padding: 16px; margin: 16px 0; background: #8881; }
-  .card h3 { margin: 0 0 10px; font-size: 14px; font-weight: 600; letter-spacing: 0.02em; opacity: 0.8; text-transform: uppercase; }
-  ul.facts { list-style: none; padding: 0; margin: 0; }
-  ul.facts li { font: 13px/1.7 ui-monospace, monospace; padding: 4px 0; border-bottom: 1px solid #8882; }
-  ul.facts li:last-child { border-bottom: none; }
-  ul.facts .prime { opacity: 0.55; margin-left: 10px; }
-  .state-int { font: 12px/1.4 ui-monospace, monospace; word-break: break-all; opacity: 0.85; background: #8881; padding: 8px; border-radius: 4px; border: 1px solid #8883; max-height: 120px; overflow-y: auto; }
-  .footer { opacity: 0.5; font-size: 11px; margin-top: 40px; border-top: 1px solid #8883; padding-top: 12px; }
-  .footer a { color: inherit; }
-  .bad { color: #c0392b; }
-  .good { color: #27ae60; }
-  .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; background: #8882; margin-left: 6px; }
-  details summary { cursor: pointer; opacity: 0.75; font-size: 12px; margin-top: 8px; }
-  .extractor-src { font-size: 11px; opacity: 0.7; margin: 8px 0 4px; font-style: italic; }
-  .extractor-src.claude { color: #2e86ab; opacity: 0.9; font-style: normal; }
-  .extractor-src.claude::before { content: "✶ "; }
-  .extractor-src.naive::before { content: "· "; }
-  .sig-note { font-size: 11px; opacity: 0.65; font-style: italic; }
-  .sig-note code { font-style: normal; }
-
-  /* ─── Polish ──────────────────────────────────────────────────── */
-  button { transition: filter 120ms ease, transform 80ms ease, background-color 160ms ease; }
-  button:hover:not(:disabled) { filter: brightness(1.06); }
-  button:active:not(:disabled) { transform: translateY(1px); }
-  button:focus-visible { outline: 2px solid #4a90e2; outline-offset: 2px; }
-  button.primary { box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-
-  @keyframes fade-in-up {
-    from { opacity: 0; transform: translateY(6px); }
-    to   { opacity: 1; transform: translateY(0);  }
-  }
-  .animate-in { animation: fade-in-up 240ms ease-out; }
-  ul.facts li.animate-in { animation-duration: 180ms; }
-
-  .copy-btn {
-    font: 500 11px ui-sans-serif, system-ui;
-    padding: 3px 8px;
-    border: 1px solid #8886;
-    border-radius: 4px;
-    background: transparent;
-    color: inherit;
-    opacity: 0.7;
-    cursor: pointer;
-  }
-  .copy-btn:hover:not(:disabled) { opacity: 1; background: #8881; }
-  .copy-btn.copied {
-    background: #27ae60;
-    color: #fff;
-    border-color: #27ae60;
-    opacity: 1;
-  }
-
-  .kbd {
-    font: 500 11px ui-monospace, monospace;
-    padding: 1px 6px;
-    border: 1px solid currentColor;
-    border-radius: 3px;
-    opacity: 0.45;
-    margin-left: 8px;
-    vertical-align: 1px;
-  }
-
-  .state-int-row { display: flex; align-items: flex-start; gap: 8px; }
-  .state-int-row .state-int { flex: 1; }
-
-  .link-btn {
-    background: none;
-    border: none;
-    padding: 0;
-    color: #4a90e2;
-    cursor: pointer;
-    font: inherit;
-    text-decoration: underline;
-    text-underline-offset: 2px;
-  }
-  .link-btn:hover { filter: brightness(0.9); }
-  .review-inputs, .review-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .review-inputs label, .field-label { display: block; font-weight: 600; margin: 10px 0 6px; }
-  .review-row { border-top: 1px solid #8885; padding: 16px 0; }
-  .review-row p { white-space: pre-wrap; overflow-wrap: anywhere; margin: 8px 0; }
-  .review-row select { padding: 6px; max-width: 100%; background: Canvas; color: CanvasText; }
-  .review-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-  #workbench-status, #packet-status { min-height: 1.5em; }
-  .review-scope { font-size: 13px; }
-  details > summary { font-size: 14px; font-weight: 600; }
-  @media (max-width: 640px) { .review-inputs, .review-pair { grid-template-columns: 1fr; } .row { flex-wrap: wrap; } body { margin-top: 20px; } }
-  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+:root{color-scheme:light dark;
+  --desk:#EDEFF2;--paper:#FFFFFF;--margin:#F4F6F8;--sunk:#F7F8FA;
+  --ink:#14171B;--ink-2:#3B424B;--ink-3:#59616B;--rule:#D8DCE1;--rule-2:#A5ADB6;--ctl:#80888F;--on-ink:#FFFFFF;
+  --del:#B42318;--del-bg:#FCEAE8;--ins:#1747C4;--ins-bg:#E9EFFD;
+  --ok:#1B6B43;--ok-bg:#E5F2EA;--warn:#8A5100;--warn-bg:#FAEFD9;--hl:#14171B;
+  --serif:"Iowan Old Style","Charter","Bitstream Charter","Sitka Text",Cambria,ui-serif,Georgia,serif;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --gut:84px;--mcol:452px;--pad:40px;--textpad:40px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --desk:#0E1013;--paper:#16191D;--margin:#1B1F24;--sunk:#1B1E23;
+  --ink:#E8EAED;--ink-2:#BAC0C8;--ink-3:#959DA7;--rule:#2C3138;--rule-2:#4C535C;--ctl:#6A727C;--on-ink:#16191D;
+  --del:#FF8F84;--del-bg:#3A1F1E;--ins:#9DBAFF;--ins-bg:#1B2A46;
+  --ok:#7BD3A0;--ok-bg:#15301F;--warn:#F2B662;--warn-bg:#36290F;--hl:#E8EAED}}
+:root[data-theme="dark"]{
+  --desk:#0E1013;--paper:#16191D;--margin:#1B1F24;--sunk:#1B1E23;
+  --ink:#E8EAED;--ink-2:#BAC0C8;--ink-3:#959DA7;--rule:#2C3138;--rule-2:#4C535C;--ctl:#6A727C;--on-ink:#16191D;
+  --del:#FF8F84;--del-bg:#3A1F1E;--ins:#9DBAFF;--ins-bg:#1B2A46;
+  --ok:#7BD3A0;--ok-bg:#15301F;--warn:#F2B662;--warn-bg:#36290F;--hl:#E8EAED}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;background:var(--desk);color:var(--ink);font:15px/1.55 var(--sans);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit;text-decoration-thickness:1px;text-underline-offset:3px}
+button,input,select,textarea{font:inherit;color:inherit}
+code{font-family:var(--mono);font-size:.92em}
+:focus-visible{outline:2px solid var(--hl);outline-offset:2px}
+.vh{position:absolute!important;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.skip{position:absolute;left:16px;top:-60px;background:var(--ink);color:var(--on-ink);padding:8px 12px;z-index:20}
+.skip:focus{top:8px}
+.wrap{max-width:1312px;margin:0 auto;padding:0 var(--pad)}
+.sc{font-family:var(--serif);font-variant-caps:all-small-caps;letter-spacing:.09em;font-weight:600;color:var(--ink-2)}
+.mono{font-family:var(--mono)}
+/* masthead */
+.masthead{border-bottom:1px solid var(--rule)}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:16px;height:56px}
+.brand{display:flex;align-items:center;gap:12px;text-decoration:none;white-space:nowrap}
+.brand svg{width:26px;height:26px;flex:none}
+.wordmark{font:600 21px/1 var(--serif);letter-spacing:.06em}
+.brand-sub{font-size:14px;color:var(--ink-2);padding-left:12px;border-left:1px solid var(--rule-2)}
+.nav{display:flex;gap:24px;font-size:14px;white-space:nowrap}
+.nav a{text-decoration:none;color:var(--ink-2)}
+.nav a:hover{color:var(--ink);text-decoration:underline}
+.nav a.primary{color:var(--ink);font-weight:600}
+/* hero */
+.hero{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:56px;align-items:end;padding:24px 0 18px}
+h1{font:400 48px/1.02 var(--serif);letter-spacing:-.02em;margin:0;max-width:13em}
+h1 em{font-style:italic}
+.lede{max-width:62ch}
+.lede p{margin:0;font-size:15px;line-height:1.5;color:var(--ink-2)}
+.lede .door{margin-top:6px;font-size:14px;color:var(--ink)}
+.lede .door a{font-weight:600}
+/* inputs */
+.inputs{border-top:1px solid var(--rule);padding-top:12px}
+.example-strip{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:10px}
+.tag{font:700 11px/1 var(--sans);letter-spacing:.12em;text-transform:uppercase;border:1.5px solid var(--ink);padding:5px 7px 4px;white-space:nowrap}
+.example-strip p{margin:0;font-size:14px;color:var(--ink-2);flex:1 1 300px}
+.examples{display:flex;align-items:center;gap:8px}
+.examples-label{font-size:13px;color:var(--ink-3);white-space:nowrap}
+.ex-btn{border:1px solid var(--ctl);background:var(--paper);padding:6px 11px;font-size:13.5px;cursor:pointer;border-radius:2px;white-space:nowrap}
+.ex-btn[aria-pressed="true"]{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
+.text-btn{background:none;border:0;padding:4px 2px;font-size:13.5px;text-decoration:underline;text-underline-offset:3px;cursor:pointer;color:var(--ink-2);white-space:nowrap}
+.text-btn:hover{color:var(--ink)}
+.divider{width:1px;height:22px;background:var(--rule-2)}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.field{min-width:0}
+.field-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:6px}
+.field-head label{font-weight:600;font-size:15px;display:flex;align-items:center;gap:9px}
+.letter{display:inline-grid;place-items:center;width:22px;height:22px;border:1.5px solid var(--ink);font:700 12px/1 var(--sans)}
+.count{font:12px var(--mono);color:var(--ink-3);white-space:nowrap}
+.ta-wrap{position:relative}
+textarea.doc{display:block;width:100%;resize:vertical;border:1px solid var(--ctl);background:var(--paper);border-radius:2px;
+  font:17px/1.55 var(--serif);padding:10px 14px;min-height:calc(2 * 1.55em + 22px);max-height:calc(6 * 1.55em + 22px);overflow:auto}
+textarea.doc.open{max-height:none}
+textarea.doc:focus-visible{outline:2px solid var(--hl);outline-offset:1px}
+.ta-wrap.clipped::after{content:"";position:absolute;left:1px;right:1px;bottom:1px;height:34px;background:linear-gradient(to bottom,transparent,var(--paper));pointer-events:none}
+.show-all{margin-top:4px}
+.actions{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin:12px 0 18px}
+.btn{border:1.5px solid var(--ink);background:var(--paper);color:var(--ink);padding:9px 16px;font-weight:600;font-size:14.5px;border-radius:2px;cursor:pointer;white-space:nowrap}
+.btn.ink{background:var(--ink);color:var(--on-ink)}
+.btn.small{padding:5px 11px;font-size:13px;border-width:1px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.hint{margin:0;font-size:13.5px;color:var(--ink-2);flex:1 1 320px;max-width:66ch}
+#workbench-status{margin:0 0 0 auto;font:12.5px var(--mono);color:var(--ink-3);min-height:1.5em}
+/* placeholder (empty, stale, error) */
+.placeholder{background:var(--paper);border:1px dashed var(--ctl);padding:28px 32px 26px;margin-bottom:56px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,420px);gap:12px 48px;align-items:start}
+.placeholder h2{font:400 26px/1.2 var(--serif);margin:0 0 6px}
+.placeholder p{margin:0;font-size:14.5px;color:var(--ink-2);max-width:62ch}
+.placeholder .key{margin:4px 0 0}
+/* the sheet */
+.sheet{background:var(--paper);border:1px solid var(--rule);display:grid;grid-template-columns:var(--gut) minmax(0,1fr) var(--mcol);grid-template-rows:repeat(6,auto);margin-bottom:56px}
+.head-gut{grid-column:1;grid-row:1;border-bottom:1px solid var(--rule)}
+.head-title{grid-column:2;grid-row:1;padding:13px var(--textpad) 10px 0;border-bottom:1px solid var(--rule)}
+.head-title h2{font:400 26px/1.2 var(--serif);letter-spacing:-.01em;margin:0}
+#review-summary{margin:3px 0 0;font-size:13px;color:var(--ink-3)}
+.head-m{grid-column:3;grid-row:1;border-bottom:1px solid var(--rule);border-left:1px solid var(--rule)}
+.sheet-bar{grid-column:3;grid-row:1 / 5;align-self:start;min-height:var(--headh,0px);position:sticky;top:0;z-index:4;background:var(--paper);display:flex;align-items:center;justify-content:space-between;gap:14px;
+  padding:10px 24px;border-bottom:1px solid var(--rule);border-left:1px solid var(--rule)}
+.decided{margin:0;display:flex;align-items:center;gap:9px;font-size:13.5px;color:var(--ink-2);min-width:0;flex:1 1 auto}
+.minis{display:flex;flex-wrap:wrap;gap:4px;max-width:64px;flex:none}
+.mini{display:inline-block;width:12px;height:12px;border:1.5px dashed var(--ink-3);flex:none}
+.mini[data-d="accepted"]{border:1.5px solid var(--ok);background:var(--ok)}
+.mini[data-d="needs-change"]{border:1.5px solid var(--warn);background:var(--warn)}
+/* summary ledger (left) */
+.ledger{grid-column:2;grid-row:2 / span 2;padding:14px var(--textpad) 14px 0}
+.ledger-h{display:flex;align-items:center;gap:6px 12px;margin:0 0 8px;flex-wrap:wrap}
+.ledger-h .readas{margin-left:auto}
+.ledger-h h3{margin:0;font-size:17px;color:var(--ink)}
+.ledger-h .lmeta{font-size:12.5px;color:var(--ink-3)}
+.ledger ul{list-style:none;margin:0;padding:0;border-top:1.5px solid var(--ink)}
+.ledger li{display:grid;grid-template-columns:174px minmax(0,1fr);gap:0 14px;align-items:baseline;border-bottom:1px solid var(--rule);padding:7px 0}
+.filter{display:grid;grid-template-columns:34px 1fr auto;align-items:baseline;gap:6px;width:100%;background:none;border:0;padding:2px 0;cursor:pointer;text-align:left;color:var(--ink)}
+.filter .state{font-weight:600;font-size:14px}
+.filter .n{font:500 21px/1 var(--serif);font-variant-numeric:lining-nums tabular-nums;min-width:1.2em;text-align:right}
+.filter[aria-pressed="true"]{outline:2px solid var(--hl);outline-offset:3px}
+.filter[aria-pressed="true"] .state::after{content:" (shown)";font-weight:400;color:var(--ink-3);font-size:12.5px}
+.items{margin:0;font:16px/1.6 var(--serif)}
+.items a{text-decoration:none}
+.items a:hover .it,.items a:focus-visible .it{text-decoration:underline;text-decoration-color:var(--ink-3)}
+.items .it{white-space:normal}
+.items .k{font:12px var(--sans);color:var(--ink-3);margin-left:2px;white-space:nowrap}
+.items .sep{color:var(--ink-3);margin:0 8px}
+.items .more{font:13px var(--sans);color:var(--ink-3)}
+.ledger li.zero,.ledger li.line{display:block;font-size:13px;color:var(--ink-3);border-bottom:0;padding:8px 0 0}
+.ledger li.line{font-size:14.5px;color:var(--ink-2);padding:10px 0 4px}
+.ledger li.both .filter .state,.ledger li.both .filter .n{color:var(--ink-2)}
+/* evidence column head (right, tinted) */
+.ev-head{grid-column:3;grid-row:2 / span 2;background:var(--margin);border-left:1px solid var(--rule);padding:16px 26px 14px}
+.ev-h{display:flex;justify-content:space-between;align-items:baseline;gap:6px 14px;flex-wrap:wrap;margin:0 0 8px}
+.ev-head h3{margin:0;font-size:17px;color:var(--ink)}
+.honesty{margin:0;padding:0 0 0 14px;border-left:3px solid var(--ink)}
+.honesty p{margin:0;font-size:14px;line-height:1.52;color:var(--ink-2)}
+.honesty strong{color:var(--ink)}
+.ev-head .to-plate{font-size:12.5px;color:var(--ink-2)}
+/* scope plate (foot of the sheet) */
+.plate{grid-column:2 / span 2;grid-row:5;display:grid;grid-template-columns:1fr 1fr;gap:28px;padding:18px 28px 20px 0;border-top:1px solid var(--rule)}
+.plate h3{margin:0 0 6px;font-size:14px}
+.plate ul{margin:0;padding:0;list-style:none;font-size:13.5px;line-height:1.45;color:var(--ink-2)}
+.plate li{padding-left:16px;position:relative;margin:3px 0}
+.plate li::before{position:absolute;left:0;top:0;color:var(--ink-3)}
+.plate .yes li::before{content:"\2713"}
+.plate .no li::before{content:"\2013"}
+/* glyphs */
+.g{display:inline-block;font:600 13px/1 var(--serif);color:var(--ink-2);text-align:center;white-space:nowrap}
+.g-del{text-decoration:line-through;text-decoration-thickness:1.5px}
+.g-ins{text-decoration:underline double;text-underline-offset:2px}
+.readas{display:flex;align-items:center;gap:10px;border:0;margin:0;padding:0;min-width:0}
+.readas legend{float:left;font-size:12.5px;color:var(--ink-3);margin-right:8px;padding:0}
+.seg{display:inline-flex;border:1px solid var(--ctl);border-radius:2px}
+.seg label{padding:3px 9px;font-size:12.5px;cursor:pointer;border-left:1px solid var(--ctl);white-space:nowrap}
+.seg label:first-of-type{border-left:0}
+.seg input{position:absolute;opacity:0;width:1px;height:1px}
+.seg input:checked+label{background:var(--ink);color:var(--on-ink)}
+.seg input:focus-visible+label{outline:2px solid var(--hl);outline-offset:2px}
+.key{list-style:none;margin:10px 0 0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:2px 16px;font-size:12.5px;color:var(--ink-2)}
+.key del,.key ins{font:14.5px var(--serif)}
+.key .boxkey{display:inline-block;width:12px;height:12px;border:1.5px dashed var(--ink-3);vertical-align:-1px;margin:0 3px 0 1px}
+.key .caretkey{display:none}
+.key .caret-g{color:var(--del);font-weight:700;margin:0 3px}
+body:has(#view-rewrite:checked) .key .caretkey{display:list-item;list-style:none}
+.key .barkey{display:inline-block;width:3px;height:14px;background:var(--ink);vertical-align:-2px;margin:0 3px 0 2px}
+.key sup{font:italic 600 13px/1 var(--serif);color:var(--ink);margin:0 2px 0 3px;vertical-align:.3em}
+/* marks */
+del,ins{text-decoration-skip-ink:none;border-radius:1px;padding:0 1px}
+del{color:var(--del);background:var(--del-bg);text-decoration:line-through;text-decoration-thickness:1.5px;text-decoration-color:var(--del)}
+ins{color:var(--ins);background:var(--ins-bg);text-decoration:underline double;text-decoration-thickness:1px;text-underline-offset:3px}
+sup.ref{font:italic 600 .62em/0 var(--serif);vertical-align:.55em;margin-left:1px;color:var(--ink-2)}
+sup.ref a{text-decoration:none;padding:0 1px}
+.hl{outline:2px solid var(--hl);outline-offset:1px}
+sup.ref.hl{background:var(--ink);color:var(--on-ink);outline:0}
+sup.ref.hl a{color:var(--on-ink)}
+/* passages */
+#review-rows{grid-column:1/-1;grid-row:4}
+.passage{display:grid;grid-template-columns:var(--gut) minmax(0,1fr) var(--mcol);grid-template-rows:auto auto auto 1fr;border-top:1px solid var(--rule)}
+.gut{grid-row:1/-1;grid-column:1;padding:20px 12px 20px 0;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative}
+.passage.changed .gut::after{content:"";position:absolute;right:14px;top:22px;bottom:22px;width:3px;background:var(--ink)}
+.num{font:400 38px/1 var(--serif);font-variant-numeric:oldstyle-nums;margin-right:12px}
+.num.small{font-size:24px}
+.refs{font:11px/1.35 var(--mono);color:var(--ink-3);text-align:center;margin-right:12px}
+.refs span{display:block}
+.initial{width:24px;height:24px;border:1.5px dashed var(--ink-3);display:grid;place-items:center;font:700 14px/1 var(--sans);margin:6px 12px 0 0}
+.passage:has(input[value="accepted"]:checked) .initial{border:1.5px solid var(--ok);background:var(--ok-bg);color:var(--ok)}
+.passage:has(input[value="accepted"]:checked) .initial::after{content:"\2713"}
+.passage:has(input[value="needs-change"]:checked) .initial{border:1.5px solid var(--warn);background:var(--warn-bg);color:var(--warn)}
+.passage:has(input[value="needs-change"]:checked) .initial::after{content:"\2038"}
+.pmeta{grid-column:2;margin:0;padding:18px var(--textpad) 0 0;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px;font:400 13px var(--sans);color:var(--ink-3)}
+.pmeta .sc{font-size:15px;color:var(--ink)}
+.span-link{font:12px/1.2 var(--mono);color:var(--ink-2);background:none;border:0;border-bottom:1px dotted var(--ink-3);padding:1px 0;cursor:pointer;white-space:nowrap}
+.span-link:hover{color:var(--ink);border-bottom-style:solid}
+.blackline{grid-column:2;margin:8px var(--textpad) 0 0;font:20px/1.62 var(--serif);max-width:40em;overflow-wrap:break-word;white-space:pre-wrap}
+.decision{grid-column:2;margin:14px var(--textpad) 22px 0;padding:0;border:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;align-self:start;min-width:0}
+.decision input{position:absolute;opacity:0;width:1px;height:1px}
+.decision label{font-size:13.5px;padding:6px 12px;border:1px solid var(--ctl);border-radius:2px;cursor:pointer;white-space:nowrap;line-height:1.3}
+.decision label .on{display:none}
+.decision input:focus-visible+label{outline:2px solid var(--hl);outline-offset:2px}
+.decision input:checked+label{font:700 12px/1.3 var(--sans);letter-spacing:.1em;text-transform:uppercase;border:3px double currentColor;padding:5px 12px;border-radius:0}
+.decision input:checked+label .off{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.decision input:checked+label .on{display:inline}
+.decision input[value="accepted"]:checked+label{color:var(--ok)}
+.decision input[value="needs-change"]:checked+label{color:var(--warn)}
+.decision input[value="unreviewed"]:checked+label{color:var(--ink-3);border:1.5px dashed var(--ink-3);padding:6px 12px}
+.decision .dmeta{font-size:12.5px;color:var(--ink-3);margin-left:4px}
+.also{grid-column:2;margin:10px var(--textpad) 0 0;font-size:13px;color:var(--ink-3);align-self:start}
+.also del,.also ins{font:15px var(--serif)}
+.passage.same .blackline{color:var(--ink-2)}
+/* notes (margin column) */
+.notes{grid-column:3;grid-row:1/-1;background:var(--margin);border-left:1px solid var(--rule);padding:10px 26px 14px;min-width:0}
+.notes-h{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;margin:0}
+.notes ol{list-style:none;margin:0;padding:0}
+.note{display:grid;grid-template-columns:22px minmax(0,1fr);gap:0 8px;padding:8px 0;border-bottom:1px solid var(--rule)}
+.note:last-child{border-bottom:0}
+.nl{font:italic 600 17px/1.5 var(--serif);color:var(--ink-2);text-align:center;height:24px}
+.note.hl{outline:0;background:var(--paper);box-shadow:-26px 0 0 var(--paper),26px 0 0 var(--paper)}
+.note.hl .nl{background:var(--ink);color:var(--on-ink)}
+.nh{margin:0;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;gap:4px 10px}
+.nh .lk{min-width:0;overflow-wrap:break-word}
+.lit{font:17.5px/1.45 var(--serif)}
+.lit .arrow{color:var(--ink-3);margin:0 5px;font-family:var(--sans)}
+.kind{font-size:12.5px;font-weight:600;color:var(--ink-2);margin-left:10px;white-space:nowrap}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--rule-2);padding:1px 7px;font-size:12px;color:var(--ink-2);white-space:nowrap;border-radius:2px;background:var(--paper)}
+.ns{margin:2px 0 0;font-size:13.5px;line-height:1.45;color:var(--ink-2)}
+.ns .span-link{margin-left:6px}
+.notes .ns.alone{margin:8px 0}
+.inboth{margin:8px 0 0;padding-top:8px;border-top:1px solid var(--rule);font-size:13px;color:var(--ink-3);display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}
+.notes>.inboth:first-of-type:not(ol+.inboth){border-top:0;padding-top:0}
+.inboth .lit{font-size:16px;color:var(--ink)}
+.inboth .g{margin-right:2px}
+.inboth.hl{outline:0;background:var(--paper)}
+.note.filtered-out,.inboth.filtered-out{display:none}
+/* read-as views */
+body:has(#view-original:checked) .blackline .irun{display:none}
+body:has(#view-original:checked) .blackline del{text-decoration:none}
+body:has(#view-rewrite:checked) .blackline .drun.sub{display:none}
+body:has(#view-rewrite:checked) .blackline .drun.gap{font-size:0}
+body:has(#view-rewrite:checked) .blackline .drun.gap::before{content:"\2038";font-size:20px;color:var(--del);font-family:var(--sans);padding:0 2px}
+body:has(#view-rewrite:checked) .blackline ins{text-decoration:none;background:none;color:inherit}
+/* sign-off */
+.signoff{grid-column:1/-1;grid-row:6;display:grid;grid-template-columns:var(--gut) minmax(0,.8fr) minmax(0,1.25fr) minmax(0,1fr);gap:0 36px;border-top:3px double var(--rule-2);padding:24px 28px 28px 0}
+.signoff h3{margin:0 0 8px;font-size:15px}
+.signoff .rec{grid-column:2}
+.big{font:400 23px/1.25 var(--serif);margin:0 0 8px}
+.reclist{list-style:none;margin:0;padding:0;font-size:14px}
+.reclist li{display:flex;gap:10px;align-items:center;padding:3px 0}
+.reclist .ref{font:12px var(--mono);color:var(--ink-3);min-width:32px}
+.contents{margin:0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:5px 16px;font-size:13.5px}
+.contents dt{color:var(--ink-3)}
+.contents dd{margin:0;overflow-wrap:anywhere}
+.signoff .note-col p{margin:0 0 10px;font-size:13.5px;color:var(--ink-2);max-width:48ch}
+/* annexes */
+.annexes{margin:0 0 40px}
+.annexes-h{display:flex;align-items:baseline;gap:18px;flex-wrap:wrap;border-bottom:1.5px solid var(--ink);padding-bottom:10px}
+.annexes-h h2{font:400 26px/1.2 var(--serif);margin:0}
+.annexes-h p{margin:0;font-size:14px;color:var(--ink-2)}
+details.annex{border-bottom:1px solid var(--rule)}
+details.annex>summary{list-style:none;display:grid;grid-template-columns:44px minmax(0,1fr) auto 28px;gap:4px 18px;align-items:baseline;padding:14px 4px;cursor:pointer}
+details.annex>summary::-webkit-details-marker{display:none}
+.anx-no{font:400 22px/1 var(--serif);font-variant-numeric:oldstyle-nums;color:var(--ink-2)}
+.anx-t{font-weight:600;font-size:15.5px}
+.anx-d{display:block;font-weight:400;font-size:13.5px;color:var(--ink-2);margin-top:2px}
+.anx-tag{font:12px var(--mono);color:var(--ink-3);text-align:right;white-space:nowrap}
+.pm{font:300 22px/1 var(--sans);text-align:center}
+.pm::before{content:"+"}
+details[open]>summary .pm::before{content:"\2212"}
+.anx-body{padding:4px 4px 22px 66px;max-width:900px;font-size:14px;color:var(--ink-2)}
+.anx-body p{margin:0 0 10px;max-width:72ch}
+.anx-body textarea{display:block;width:100%;min-height:90px;border:1px solid var(--ctl);background:var(--paper);font:13px/1.5 var(--mono);padding:8px 10px;border-radius:2px;resize:vertical}
+.anx-body textarea+textarea{margin-top:8px}
+.anx-body pre{font-family:var(--mono);font-size:12.5px;background:var(--sunk);border:1px solid var(--rule);padding:10px 12px;white-space:pre-wrap;overflow-wrap:anywhere;margin:0 0 10px;color:var(--ink)}
+.anx-body pre:empty{border:0;padding:0;margin:0;background:none}
+.anx-body h4{font-size:13.5px;margin:14px 0 6px;color:var(--ink)}
+.row{display:flex;gap:12px;align-items:center;margin:8px 0;flex-wrap:wrap}
+.row.end{justify-content:flex-end}
+.row label{min-width:92px;font-size:13.5px}
+.row input[type=range]{flex:1;min-width:160px;accent-color:var(--ink)}
+.row .v{font:12.5px var(--mono);min-width:40px;text-align:right}
+.field-label{display:block;font-weight:600;font-size:13.5px;margin:0 0 6px;color:var(--ink)}
+.sub-d{border:1px solid var(--rule);padding:8px 12px;margin:10px 0;background:var(--sunk)}
+.sub-d>summary{cursor:pointer;font-weight:600;font-size:13.5px;color:var(--ink)}
+.sub-d .row label{min-width:110px;font-size:12.5px}
+.sub-d input[type=password],.sub-d input[type=text],.sub-d select{flex:1;min-width:0;padding:6px 8px;font:12px var(--mono);border:1px solid var(--ctl);border-radius:2px;background:var(--paper)}
+.sub-d .small-note{font-size:12px;color:var(--ink-3)}
+.settings-status{margin-left:8px;font:400 12px var(--mono);color:var(--ink-3)}
+.facts{list-style:none;padding:0;margin:0}
+.facts li{font:13px/1.7 var(--mono);padding:4px 0;border-bottom:1px solid var(--rule);color:var(--ink);overflow-wrap:anywhere}
+.facts li:last-child{border-bottom:0}
+.facts .prime{color:var(--ink-3);margin-left:10px}
+.facts li.more{color:var(--ink-3)}
+.pill{display:inline-block;padding:1px 8px;border:1px solid var(--rule-2);border-radius:2px;font:12px var(--mono);color:var(--ink-2);margin-left:6px;vertical-align:1px}
+.state-int{font:12px/1.4 var(--mono);word-break:break-all;background:var(--sunk);padding:8px;border:1px solid var(--rule);max-height:120px;overflow-y:auto;color:var(--ink)}
+.copy-btn{font:500 12px var(--sans);padding:3px 8px;border:1px solid var(--ctl);border-radius:2px;background:var(--paper);cursor:pointer;margin-left:8px}
+.copy-btn.copied{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
+.kbd{font:500 11px var(--mono);padding:1px 6px;border:1px solid currentColor;border-radius:2px;opacity:.6;margin-left:8px;vertical-align:1px}
+.extractor-src{font-size:12.5px;color:var(--ink-3);margin:4px 0 8px;font-style:italic}
+.sig-note{font-size:12.5px;color:var(--ink-3);margin-top:4px}
+.trust{border:1px solid var(--rule);background:var(--sunk);padding:10px 12px;font-size:13px;line-height:1.5;margin:10px 0}
+.trust div+div{margin-top:4px}
+.result-box{margin-top:8px;padding:10px 12px;border:1px solid var(--rule-2);background:var(--sunk);font:12.5px/1.5 var(--mono);color:var(--ink);overflow-wrap:anywhere}
+.result-box[data-kind="reject"]{border-left:3px solid var(--ink)}
+.result-box .mr{margin-top:6px}
+.result-box .dim{color:var(--ink-2)}
+#verify-result{font-size:13.5px;color:var(--ink)}
+.good,.bad{font-weight:600;color:var(--ink)}
+.alt-ticks{display:flex;justify-content:space-between;font:11px var(--mono);color:var(--ink-3);margin:0 50px 10px 104px}
+.alt-stats{display:flex;gap:6px 18px;flex-wrap:wrap;font:12.5px var(--mono);margin:6px 0 8px;color:var(--ink-2)}
+.alt-stats strong{color:var(--ink)}
+.alt-text{font:13px/1.55 var(--serif);white-space:pre-wrap;border:1px solid var(--rule);background:var(--sunk);padding:10px 12px;max-height:170px;overflow-y:auto;color:var(--ink)}
+.alt-list-h{font-size:12px;color:var(--ink-3);margin:10px 0 2px;letter-spacing:.04em}
+.alt-note{font-size:12.5px;color:var(--ink-3);font-style:italic;margin:4px 0}
+#altitude-scope,#altitude-receipt-line{font-size:12.5px;color:var(--ink-3);margin:10px 0 0}
+.foot{border-top:1px solid var(--rule);padding:18px 0 40px;font-size:13px;color:var(--ink-3)}
+.foot p{margin:0 0 6px;max-width:80ch}
+.foot .small{font-size:12px}
+@keyframes fade-in-up{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.animate-in{animation:fade-in-up 240ms ease-out}
+.facts li.animate-in{animation-duration:180ms}
+/* motion */
+@media (prefers-reduced-motion:no-preference){.note,.initial,.decision label,.ex-btn,.btn{transition:background-color .12s,color .12s,border-color .12s}html{scroll-behavior:smooth}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+/* medium */
+@media (max-width:1180px){:root{--gut:60px;--mcol:360px;--textpad:28px;--pad:28px}h1{font-size:42px}.num{font-size:32px}.key{grid-template-columns:1fr}.decided .w{display:none}.ledger li{grid-template-columns:150px minmax(0,1fr)}.filter .state{font-size:13.5px}.placeholder{grid-template-columns:1fr}}
+/* phone */
+@media (max-width:760px){
+  :root{--pad:16px;--textpad:0px}
+  .bar{height:52px}
+  .brand-sub,.nav .wide{display:none}
+  .nav{gap:14px}
+  .hero{grid-template-columns:1fr;gap:12px;padding:20px 0 16px}
+  h1{font-size:33px;line-height:1.06}
+  .example-strip{gap:8px 10px}
+  .example-strip p{flex:1 1 200px;font-size:13.5px}
+  .examples{flex-wrap:wrap}
+  .examples-label{display:none}
+  .divider{height:18px}
+  .fields{grid-template-columns:1fr;gap:14px}
+  textarea.doc{font-size:16.5px;max-height:calc(5 * 1.55em + 22px)}
+  .actions{gap:10px;margin:12px 0 18px}
+  .actions .btn{flex:1 1 100%}
+  #workbench-status{margin:0}
+  .placeholder{margin:0 -16px 40px;border-left:0;border-right:0;padding:22px 16px}
+  .sheet{display:flex;flex-direction:column;margin:0 -16px 40px;border-left:0;border-right:0}
+  .head-gut,.head-m{display:none}
+  .head-title{order:0;padding:16px 16px 12px;border-bottom:0}
+  .head-title h2{font-size:23px}
+  .sheet-bar{order:1;align-self:stretch;min-height:0;padding:9px 16px;border-left:0;border-top:1px solid var(--rule)}
+  .minis,.decided .w{display:none}
+  .sheet-bar .btn{padding:9px 14px}
+  .ledger{order:2;padding:14px 16px 6px}
+  .ledger li{grid-template-columns:1fr;gap:4px}
+  .items{padding-left:40px;font-size:16px}
+  .ev-head{order:3;border-left:0;border-top:1px solid var(--rule);padding:14px 16px}
+  .ledger-h .readas{margin-left:0}
+  .key{grid-template-columns:1fr}
+  .plate{order:6;padding:18px 16px;grid-template-columns:1fr;gap:14px}
+  #review-rows{order:5}
+  .passage{display:flex;flex-direction:column;position:relative;padding:0 16px 0 22px}
+  .passage.changed::before{content:"";position:absolute;left:8px;top:18px;bottom:18px;width:3px;background:var(--ink)}
+  .passage.changed .gut::after{display:none}
+  .gut{flex-direction:row;padding:16px 0 0;gap:12px;align-items:center;order:0}
+  .num{font-size:28px;margin:0}
+  .refs{text-align:left;margin:0;font-size:12px}
+  .refs span{display:inline;margin-right:6px}
+  .initial{margin:0 0 0 auto}
+  .pmeta{order:1;padding:6px 0 0}
+  .blackline{order:2;font-size:18.5px;margin:8px 0 0}
+  .also{order:3;margin:8px 0 0}
+  .notes{order:4;border-left:0;margin:14px -16px 0 -22px;padding:12px 16px 12px 22px}
+  .notes-h{position:static;width:auto;height:auto;overflow:visible;clip:auto;white-space:normal;display:block;margin:0 0 4px;font-size:14px}
+  .note.hl{box-shadow:none}
+  .decision{order:5;margin:14px 0 18px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;align-items:stretch}
+  .decision label{display:flex;align-items:center;justify-content:center;text-align:center;padding:9px 4px;white-space:normal}
+  .decision input:checked+label{padding:8px 2px;font-size:11px;letter-spacing:.04em}
+  .decision input[value="unreviewed"]:checked+label{padding:9px 2px}
+  .decision .dmeta{grid-column:1/-1;margin:2px 0 0}
+  .signoff{order:7;display:block;padding:20px 16px}
+  .signoff>div{margin-bottom:18px}
+  .annexes-h h2{font-size:23px}
+  details.annex>summary{grid-template-columns:30px minmax(0,1fr) 22px;gap:2px 10px}
+  .anx-tag{grid-column:2;grid-row:2;text-align:left;white-space:normal}
+  .pm{grid-column:3;grid-row:1}
+  .anx-body{padding:4px 0 20px}
+  .alt-ticks{margin:0 0 10px}
+  .row label{min-width:0}
+}
 </style>
 
 <!-- WASM acceleration loader (optional; falls back gracefully when the
@@ -115,299 +399,242 @@
 <script src="sum_core_wasm.js"></script>
 </head>
 <body>
+<a class="skip" href="#evidence">Skip to the change evidence</a>
+<header class="masthead"><div class="wrap bar">
+  <a class="brand" href="#top" aria-label="SUM, rewrite review">
+    <svg viewBox="0 0 26 26" aria-hidden="true"><path d="M3 9.5h13" style="stroke:var(--del);stroke-width:2.2"/><path d="M16.5 21.5l3.5-7 3.5 7" style="stroke:var(--ins);stroke-width:2;fill:none;stroke-linejoin:miter"/><path d="M3 21.5h11" style="stroke:var(--ink);stroke-width:2.2"/><path d="M3 15.5h8" style="stroke:var(--ink);stroke-width:2.2"/></svg>
+    <span class="wordmark">SUM</span><span class="brand-sub">Rewrite review</span></a>
+  <nav class="nav" aria-label="Page"><a class="primary" href="#packet-verifier-panel" data-open>Open a packet</a><a class="wide" href="#annexes">Other tools</a><a class="wide" href="https://github.com/OtotaO/SUM">Source</a></nav>
+</div></header>
 
-<main>
-<h1>See what changed. Keep the source.</h1>
-<p class="sub">Compare a rewrite with its original, inspect the passages, record your decisions, and export the review. Comparison runs in this browser. Generated rewrites can also carry an independently verifiable render receipt.</p>
-<div class="review-inputs">
-  <div><label for="prose">Original source</label>
-    <textarea id="prose" maxlength="100000" placeholder="Alice may cancel the lease with 30 days notice. The deposit is refundable unless rent is overdue."></textarea>
-  </div>
-  <div><label for="rewrite">Rewrite to review</label>
-    <textarea id="rewrite" maxlength="100000" placeholder="Alice can cancel the lease. The deposit is refundable."></textarea>
-  </div>
-</div>
-<p class="review-scope">Literal comparison only: unchanged passages are matched exactly; suggested changed passages share words. Read every change for negation, conditions, quantities and attribution. This is not a semantic judge or a meaning-preservation score.</p>
-<div class="review-actions">
-  <button id="compare-btn" class="primary">Compare texts</button>
-  <button id="export-review-btn" class="ghost" disabled>Export review packet</button>
-</div>
-<p id="workbench-status" role="status" aria-live="polite"></p>
-<section id="review-panel" class="card" hidden aria-labelledby="review-heading">
-  <h2 id="review-heading">Passage review</h2>
-  <p id="review-summary"></p>
-  <p>Accepting a passage records your decision; it does not create a signed claim or verify factual accuracy. Source links select the exact retained passage above.</p>
-  <div id="review-rows"></div>
+<main id="top" class="wrap">
+<section class="hero">
+  <h1>See <em>exactly</em> what the rewrite changed.</h1>
+  <div class="lede"><p>Paste an original and its rewrite. SUM pairs the passages, marks every word that differs, and lists the numbers, dates, negations, modal verbs, conditions and names involved. Decide on each passage, then export a packet someone else can open and check.</p>
+  <p class="door">Received a review packet? <a href="#packet-verifier-panel" data-open>Open and check it here</a>.</p></div>
 </section>
-<div class="row" style="justify-content: space-between; margin-top: 4px;">
-  <button id="try-example" type="button" class="link-btn" style="font-size: 12px;">↳ try the example</button>
-  <span id="char-count" style="font-size: 11px; opacity: 0.55; font: 11px ui-monospace, monospace;">0</span>
-</div>
 
-<details id="generate-panel" class="card">
-<summary>Optional: extract claims and generate a rewrite</summary>
-<p>Extraction sends the source to the configured extraction service. Review extracted claims against the original before rendering. Generating a rewrite sends those claims to the selected provider. The original remains available for review.</p>
-<div class="row">
-  <label for="density">density</label>
-  <input type="range" id="density" min="0.1" max="1.0" step="0.05" value="1.0">
-  <span class="v" id="density-val">1.00</span>
-</div>
-
-<div class="row" style="justify-content: flex-end;">
-  <button id="attest" class="primary">Extract claims<span class="kbd">⌘↵</span></button>
-</div>
-
-<div id="result" style="display:none;">
-  <div class="card">
-    <h3>Extracted claims (not verified) <span class="pill" id="fact-count">0</span></h3>
-    <div class="extractor-src naive" id="extractor-source"></div>
-    <ul class="facts" id="facts"></ul>
-  </div>
-  <div class="card">
-    <h3>Gödel state integer <button id="copy-state" class="copy-btn" type="button" style="float: right; text-transform: none; letter-spacing: 0;">copy</button></h3>
-    <div class="state-int-row">
-      <div class="state-int" id="state-int">—</div>
+<section class="inputs" aria-label="The two texts">
+  <div class="example-strip">
+    <span class="tag" id="strip-tag">Example</span>
+    <p id="strip-copy">A lease clause and an AI rewrite of it, loaded in both boxes. Replace either text with your own.</p>
+    <div class="examples" role="group" aria-label="Examples, each fills both boxes">
+      <span class="examples-label">Examples</span>
+      <button type="button" class="ex-btn" id="try-example" data-example="lease" aria-pressed="false">Lease clause</button>
+      <button type="button" class="ex-btn" data-example="refund" aria-pressed="false">Refund policy</button>
     </div>
-    <details><summary>what is this</summary>
-      <p style="font-size:12px;opacity:0.75">Each fact (subject, predicate, object) is deterministically mapped to a unique prime via SHA-256(axiom_key) → seed → nextprime(seed). The state integer is the LCM of every prime. Two SUM states merge losslessly by taking their LCM. Entailment: <code>state % prime == 0</code> answers "does this knowledge base contain fact X?"</p>
-    </details>
+    <span class="divider" aria-hidden="true"></span>
+    <button type="button" class="text-btn" id="clear-both">Clear both</button>
   </div>
-  <div class="row" style="justify-content: space-between; gap: 8px;">
-    <span class="sig-note">
-      unsigned in-browser mint — bundle carries <code>signature: "unsigned:v0"</code>.
-      Structural integrity (state integer ↔ tome) is still verifiable by anyone.
-      For HMAC or Ed25519 signatures, run <code>sum attest --signing-key …</code>
-      (see <a href="https://github.com/OtotaO/SUM/blob/main/docs/DID_SETUP.md">DID_SETUP.md</a>).
-    </span>
-    <button id="download" class="ghost">Download unsigned claim bundle</button>
+  <div class="fields">
+    <div class="field">
+      <div class="field-head"><label for="prose"><span class="letter" aria-hidden="true">A</span>Original</label><span class="count" id="char-count">0 characters</span></div>
+      <div class="ta-wrap"><textarea class="doc" id="prose" spellcheck="false" placeholder="Paste the original text here."></textarea></div>
+      <button type="button" class="text-btn show-all" data-for="prose" aria-controls="prose" hidden>Show all lines</button>
+    </div>
+    <div class="field">
+      <div class="field-head"><label for="rewrite"><span class="letter" aria-hidden="true">B</span>Rewrite</label><span class="count" id="rewrite-count">0 characters</span></div>
+      <div class="ta-wrap"><textarea class="doc" id="rewrite" spellcheck="false" placeholder="Paste the rewrite to review here."></textarea></div>
+      <button type="button" class="text-btn show-all" data-for="rewrite" aria-controls="rewrite" hidden>Show all lines</button>
+    </div>
   </div>
+  <div class="actions">
+    <button type="button" id="compare-btn" class="btn ink">Compare texts</button>
+    <p class="hint" id="compare-hint" hidden>The results below match these texts; editing either one clears them. Nothing is sent anywhere.</p>
+    <p id="workbench-status" role="status" aria-live="polite"></p>
+  </div>
+</section>
 
-  <div class="card" style="margin-top: 16px;">
-    <h3>Render tome with sliders <span class="pill" id="render-cache-status" style="display:none;"></span></h3>
-    <p style="font-size:12px;opacity:0.7;margin:0 0 12px;">
-      Five axes shape the tome from the same facts. Density (above) is deterministic — selects which facts to include.
-      The four below condition an LLM render via <code>/api/render</code>, which returns a signed
-      <code>sum.render_receipt.v1</code> attesting the render. Across a fixed benchmark corpus, fact preservation
-      across the non-density axes measured median 1.000 (p10 0.818 short-corpus n=8, 0.769 long-corpus n=16) —
-      <em>corpus-level, not certified for your document, and this live render does not re-measure it</em>; measured,
-      not yet same-commit-replayable; see
-      <a href="https://github.com/OtotaO/SUM/blob/main/docs/SLIDER_CONTRACT.md">SLIDER_CONTRACT.md</a>.
-    </p>
-    <!--
-      Settings — bring-your-own API keys. Default is operator-funded
-      (Worker env vars). When a user-supplied key is present, the
-      Worker uses THAT key for the LLM call instead of the operator's,
-      so the user pays their own quota. Keys stored in localStorage on
-      this page only; never persisted server-side. The signed receipt's
-      `provider` field still reflects what actually served the call.
-    -->
-    <details id="settings-panel" style="margin: 0 0 12px; padding: 8px 10px; border: 1px solid #8884; border-radius: 4px;">
-      <summary style="cursor: pointer; font-size: 12px; opacity: 0.8;">
-        ⚙ Settings — bring your own API keys
-        <span id="settings-status" style="margin-left: 8px; font-size: 11px; opacity: 0.65;">operator-funded</span>
-      </summary>
-      <p style="font-size: 11px; opacity: 0.7; margin: 8px 0;">
-        Default: operator-funded (the demo's keys). To use your own quota, paste a
-        <strong>scoped/restricted</strong> API key below — stored in this browser's localStorage only,
-        sent to <code>/api/render</code> as a request header per render, never persisted server-side.
-        The signed receipt's <code>provider</code> still reflects which API actually served the call.
-      </p>
-      <div class="row" style="margin: 6px 0;">
-        <label for="settings-anthropic-key" style="font-size: 12px; min-width: 100px;">Anthropic key</label>
-        <input
-          type="password" id="settings-anthropic-key"
-          placeholder="sk-ant-… (leave empty to use operator's)"
-          autocomplete="off" spellcheck="false"
-          style="flex: 1; padding: 6px 8px; font: 12px ui-monospace, monospace; border: 1px solid #8886; border-radius: 4px; background: transparent; color: inherit;"
-        >
+<section id="review-placeholder" class="placeholder" aria-labelledby="placeholder-h">
+  <div>
+    <h2 id="placeholder-h">Nothing compared yet</h2>
+    <p id="placeholder-body">Paste an original into A and its rewrite into B, then Compare texts. Or load an example above.</p>
+  </div>
+  <ul class="key" aria-label="Marks used in the comparison"><li><del>struck</del> in the original only</li><li><ins>underlined</ins> in the rewrite only</li><li><sup>a</sup> letter: its note in this column</li><li><span class="barkey"></span> bar: the passage differs</li><li><span class="boxkey"></span> dashed box: no decision yet</li></ul>
+</section>
+
+<section id="review-panel" class="sheet" aria-labelledby="review-heading" hidden>
+  <div class="head-gut" aria-hidden="true"></div>
+  <div class="head-title">
+    <h2 id="review-heading">Passages compared.</h2>
+    <p id="review-summary"></p>
+  </div>
+  <div class="head-m" aria-hidden="true"></div>
+  <div class="sheet-bar">
+    <p class="decided"><span class="minis" id="decided-minis" aria-hidden="true"></span><span id="decided-count">0 of 0 <span class="w">passages </span>decided</span></p>
+    <button type="button" id="export-review-btn" class="btn ink" disabled>Export review packet</button>
+  </div>
+  <section class="ledger" aria-labelledby="ledger-h">
+    <div class="ledger-h"><h3 class="sc" id="ledger-h">What changed</h3><span class="lmeta">literal strings, in document order</span>
+      <fieldset class="readas"><legend>Read as</legend><span class="seg">
+      <input type="radio" name="view" id="view-marked" checked><label for="view-marked">Marked</label>
+      <input type="radio" name="view" id="view-original"><label for="view-original">Original</label>
+      <input type="radio" name="view" id="view-rewrite"><label for="view-rewrite">Rewrite</label></span></fieldset></div>
+    <ul id="ledger-list"></ul>
+  </section>
+  <aside class="ev-head" id="evidence" aria-labelledby="evidence-h" tabindex="-1">
+    <div class="ev-h"><h3 class="sc" id="evidence-h">Change evidence</h3><a class="to-plate" href="#scope">What is and is not checked</a></div>
+    <div class="honesty"><p><strong>Literal string evidence, not a judgment.</strong> Each note says only which exact strings appear in one text and not the other, or in both. SUM does not read for meaning, decide whether a difference matters, or score the rewrite. That call is yours, and your decisions are exported unsigned.</p></div>
+    <ul class="key" aria-label="Marks used on this sheet"><li><del>struck</del> in the original only</li><li><ins>underlined</ins> in the rewrite only</li><li><sup>a</sup> letter: its note in this column</li><li><span class="barkey"></span> bar: the passage differs</li><li><span class="boxkey"></span> dashed box: no decision yet</li><li class="caretkey"><span class="caret-g">&#x2038;</span> the rewrite has nothing here</li></ul>
+  </aside>
+  <div id="review-rows"></div>
+  <div class="plate" id="scope">
+    <div class="yes"><h3 class="sc">Checked here</h3><ul><li>Every word that differs within each passage pair</li><li>Numbers, dates, durations, negations, modal verbs, conditions and exceptions, capitalized names</li><li>The exact character position of each string in both texts</li></ul></div>
+    <div class="no"><h3 class="sc">Not checked</h3><ul><li>Meaning, paraphrase or entailment</li><li>Whether either text is accurate</li><li>Whether a difference matters to you</li><li>Capitalization and punctuation between words</li><li>Who wrote or approved either text</li></ul></div>
+  </div>
+  <footer class="signoff" aria-labelledby="signoff-h">
+    <div></div>
+    <div class="rec"><h3 class="sc" id="signoff-h">Review record</h3><p class="big"><span id="review-record-count">0 of 0</span> passages decided</p><ul class="reclist" id="record-list"></ul></div>
+    <div><h3 class="sc">What Export writes</h3>
+      <dl class="contents">
+        <dt>Original</dt><dd id="export-original">&nbsp;</dd>
+        <dt>Rewrite</dt><dd id="export-rewrite">&nbsp;</dd>
+        <dt>Passages</dt><dd id="export-passages">&nbsp;</dd>
+        <dt>Decisions</dt><dd id="export-decisions">&nbsp;</dd>
+        <dt>Receipt</dt><dd id="export-receipt">&nbsp;</dd>
+        <dt>Evidence</dt><dd>not stored; the recipient’s browser recomputes it from the two texts</dd>
+      </dl></div>
+    <div class="note-col"><h3 class="sc">Before you send it</h3><p>The packet is one unsigned JSON file. The person you send it to can recompute the hashes, the passage spans and this comparison in their own browser.</p><p>Nothing in it shows who reviewed it. Keep it private if the texts are private.</p></div>
+  </footer>
+</section>
+
+<section class="annexes" id="annexes" aria-labelledby="annexes-h">
+  <div class="annexes-h"><h2 id="annexes-h">Other tools on this page</h2><p>Each opens in place. None is needed to review a rewrite.</p></div>
+
+  <details class="annex" id="packet-verifier-panel"><summary><span class="anx-no">1</span><span><span class="anx-t">Open and check a review packet</span><span class="anx-d">For the person who received one. The hashes and passage spans are recomputed here.</span></span><span class="anx-tag">runs in this browser</span><span class="pm" aria-hidden="true"></span></summary>
+    <div class="anx-body">
+      <p>Paste the packet JSON. No account, key or network call is needed. Included public keys show signature consistency, not who the issuer is. The texts and the decisions are unsigned.</p>
+      <label for="packet-input" class="field-label">Review packet JSON</label>
+      <textarea id="packet-input" spellcheck="false" placeholder='{"schema":"sum.review_packet.v1", ...}'></textarea>
+      <div class="row"><button type="button" id="verify-packet-btn" class="btn">Check packet</button><button type="button" id="open-packet-btn" class="btn" disabled>Open its texts and decisions</button></div>
+      <p>Opening replaces both boxes above with the packet’s texts and shows its decisions, which stay unsigned.</p>
+      <pre id="packet-status" role="status" aria-live="polite"></pre>
+    </div></details>
+
+  <details class="annex" id="generate-panel"><summary><span class="anx-no">2</span><span><span class="anx-t">Extract claims and generate a rewrite</span><span class="anx-d">Get a candidate rewrite with five sliders. It arrives with a signed render receipt you can check here.</span></span><span class="anx-tag">sends text to this site’s model service</span><span class="pm" aria-hidden="true"></span></summary>
+    <div class="anx-body">
+      <p>Extraction sends the original in box A to this site’s model service. Check the extracted claims against the original before generating. Generating sends those claims to the selected provider; the original stays in box A for review.</p>
+      <div class="row">
+        <label for="density">Density</label>
+        <input type="range" id="density" min="0.1" max="1.0" step="0.05" value="1.0">
+        <span class="v" id="density-val">1.00</span>
+        <button type="button" id="attest" class="btn">Extract claims<span class="kbd">⌘↵</span></button>
       </div>
-      <div class="row" style="margin: 6px 0;">
-        <label for="settings-openai-key" style="font-size: 12px; min-width: 100px;">OpenAI key</label>
-        <input
-          type="password" id="settings-openai-key"
-          placeholder="sk-… (leave empty to use operator's)"
-          autocomplete="off" spellcheck="false"
-          style="flex: 1; padding: 6px 8px; font: 12px ui-monospace, monospace; border: 1px solid #8886; border-radius: 4px; background: transparent; color: inherit;"
-        >
+      <div id="result" style="display:none;">
+        <h4>Extracted claims (not checked) <span class="pill" id="fact-count">0</span></h4>
+        <div class="extractor-src" id="extractor-source"></div>
+        <ul class="facts" id="facts"></ul>
+        <h4>Gödel state integer <button id="copy-state" class="copy-btn" type="button">copy</button></h4>
+        <div class="state-int" id="state-int">—</div>
+        <details class="sub-d"><summary>What is this</summary>
+          <p class="small-note">Each claim (subject, predicate, object) is mapped to a prime via SHA-256(axiom_key) → seed → nextprime(seed). The state integer is the LCM of every prime. Two states merge by taking their LCM, and <code>state % prime == 0</code> answers “does this state contain claim X?”. It is arithmetic over the extracted claims, not a check of the original.</p>
+        </details>
+        <p class="sig-note">Unsigned in-browser mint: the bundle carries <code>signature: "unsigned:v0"</code>. Anyone can recheck that the state integer matches the tome. For HMAC or Ed25519 signatures, run <code>sum attest --signing-key …</code> (see <a href="https://github.com/OtotaO/SUM/blob/main/docs/DID_SETUP.md">DID_SETUP.md</a>).</p>
+        <div class="row"><button type="button" id="download" class="btn small">Download unsigned claim bundle</button></div>
       </div>
-      <div class="row" style="margin: 6px 0;">
-        <label for="settings-provider" style="font-size: 12px; min-width: 100px;">Provider</label>
-        <select id="settings-provider" style="flex: 1; padding: 6px 8px; font: 12px ui-sans-serif; border: 1px solid #8886; border-radius: 4px; background: transparent; color: inherit;">
+      <h4>Generate a rewrite with sliders <span class="pill" id="render-cache-status" style="display:none;"></span></h4>
+      <p class="small-note">Density (above) selects which claims are included; it is deterministic. The four sliders below condition a model through <code>/api/render</code>, which returns a signed <code>sum.render_receipt.v1</code>. On a fixed benchmark corpus, claim preservation across these four axes measured median 1.000 (p10 0.818 short-corpus n=8, 0.769 long-corpus n=16): corpus-level, not measured for your document, and not re-measured for this rewrite; measured, not yet same-commit-replayable. See <a href="https://github.com/OtotaO/SUM/blob/main/docs/SLIDER_CONTRACT.md">SLIDER_CONTRACT.md</a>.</p>
+      <div class="row"><label for="length">Length</label><input type="range" id="length" min="0.0" max="1.0" step="0.05" value="0.5"><span class="v" id="length-val">0.50</span></div>
+      <div class="row"><label for="formality">Formality</label><input type="range" id="formality" min="0.0" max="1.0" step="0.05" value="0.5"><span class="v" id="formality-val">0.50</span></div>
+      <div class="row"><label for="audience">Audience</label><input type="range" id="audience" min="0.0" max="1.0" step="0.05" value="0.5"><span class="v" id="audience-val">0.50</span></div>
+      <div class="row"><label for="perspective">Perspective</label><input type="range" id="perspective" min="0.0" max="1.0" step="0.05" value="0.5"><span class="v" id="perspective-val">0.50</span></div>
+      <!--
+        Bring-your-own API keys. Default is operator-funded (Worker env vars).
+        When a user-supplied key is present, the Worker uses THAT key for the
+        model call instead of the operator's. Keys are stored in localStorage
+        on this page only and never persisted server-side. The signed
+        receipt's `provider` field still reflects what actually served the call.
+      -->
+      <details class="sub-d" id="settings-panel">
+        <summary>Use your own API key <span id="settings-status" class="settings-status">operator-funded</span></summary>
+        <p class="small-note">Default: operator-funded. To use your own quota, paste a <strong>scoped, restricted</strong> API key. It is stored in this browser’s localStorage only and sent to <code>/api/render</code> as a request header per request, never persisted server-side. The signed receipt’s <code>provider</code> still names which API served the call.</p>
+        <div class="row"><label for="settings-anthropic-key">Anthropic key</label><input type="password" id="settings-anthropic-key" placeholder="sk-ant-… (leave empty to use the operator’s)" autocomplete="off" spellcheck="false"></div>
+        <div class="row"><label for="settings-openai-key">OpenAI key</label><input type="password" id="settings-openai-key" placeholder="sk-… (leave empty to use the operator’s)" autocomplete="off" spellcheck="false"></div>
+        <div class="row"><label for="settings-provider">Provider</label><select id="settings-provider">
           <option value="">auto (Anthropic if configured, else OpenAI)</option>
           <option value="anthropic">anthropic</option>
           <option value="openai">openai</option>
-        </select>
-      </div>
-
-      <p style="font-size: 11px; opacity: 0.7; margin: 12px 0 6px;">
-        <strong>Free-tier cascade providers</strong> — used by the Python CLI today
-        (the hosted Worker's <code>/api/render</code> currently only honours Anthropic + OpenAI
-        BYO headers). Keys stored in localStorage; the CLI recipe panel below the slider
-        builds a copy-paste invocation that uses these.
-        See <a href="https://github.com/OtotaO/SUM/blob/main/docs/BYOK_AND_FREE_PROVIDERS.md">BYOK_AND_FREE_PROVIDERS.md</a>
-        for full cascade design.
-      </p>
-      <div class="row" style="margin: 6px 0;">
-        <label for="settings-nim-key" style="font-size: 12px; min-width: 100px;">NVIDIA NIM</label>
-        <input
-          type="password" id="settings-nim-key"
-          placeholder="nvapi-… (1000 free credits at build.nvidia.com)"
-          autocomplete="off" spellcheck="false"
-          style="flex: 1; padding: 6px 8px; font: 12px ui-monospace, monospace; border: 1px solid #8886; border-radius: 4px; background: transparent; color: inherit;"
-        >
-      </div>
-      <div class="row" style="margin: 6px 0;">
-        <label for="settings-groq-key" style="font-size: 12px; min-width: 100px;">Groq</label>
-        <input
-          type="password" id="settings-groq-key"
-          placeholder="gsk_… (free daily quota at console.groq.com)"
-          autocomplete="off" spellcheck="false"
-          style="flex: 1; padding: 6px 8px; font: 12px ui-monospace, monospace; border: 1px solid #8886; border-radius: 4px; background: transparent; color: inherit;"
-        >
-      </div>
-      <div class="row" style="margin: 6px 0;">
-        <label for="settings-cerebras-key" style="font-size: 12px; min-width: 100px;">Cerebras</label>
-        <input
-          type="password" id="settings-cerebras-key"
-          placeholder="csk-… (free daily quota at cloud.cerebras.ai)"
-          autocomplete="off" spellcheck="false"
-          style="flex: 1; padding: 6px 8px; font: 12px ui-monospace, monospace; border: 1px solid #8886; border-radius: 4px; background: transparent; color: inherit;"
-        >
-      </div>
-      <div class="row" style="margin: 6px 0;">
-        <label for="settings-hf-token" style="font-size: 12px; min-width: 100px;">HuggingFace</label>
-        <input
-          type="password" id="settings-hf-token"
-          placeholder="hf_… (any HF model via `org/model` route)"
-          autocomplete="off" spellcheck="false"
-          style="flex: 1; padding: 6px 8px; font: 12px ui-monospace, monospace; border: 1px solid #8886; border-radius: 4px; background: transparent; color: inherit;"
-        >
-      </div>
-      <div class="row" style="margin: 6px 0;">
-        <label for="settings-transform-model" style="font-size: 12px; min-width: 100px;">Model id</label>
-        <input
-          type="text" id="settings-transform-model"
-          placeholder="nim:meta/llama-3.3-70b-instruct (or groq:… / ollama:… / org/model …)"
-          autocomplete="off" spellcheck="false"
-          style="flex: 1; padding: 6px 8px; font: 12px ui-monospace, monospace; border: 1px solid #8886; border-radius: 4px; background: transparent; color: inherit;"
-        >
-      </div>
-
-      <div class="row" style="justify-content: flex-end; gap: 6px; margin-top: 8px;">
-        <button id="settings-clear" class="ghost" style="font-size: 11px; padding: 4px 10px;">Clear</button>
-        <button id="settings-save" class="ghost" style="font-size: 11px; padding: 4px 10px;">Save</button>
-      </div>
-      <p style="font-size: 10px; opacity: 0.55; margin: 8px 0 0;">
-        Security: localStorage is per-origin and survives reloads. Use a <strong>scoped key with a low spend cap</strong>
-        and rotate it after this session if anyone else uses this browser. XSS would expose the key — the demo's
-        CSP is tight (<code>script-src 'unsafe-inline'</code>, <code>connect-src 'self'</code>), but no browser-stored
-        secret is invulnerable. Receipt-verifier path does not use these keys.
-      </p>
-    </details>
-    <div class="row">
-      <label for="length">length</label>
-      <input type="range" id="length" min="0.0" max="1.0" step="0.05" value="0.5">
-      <span class="v" id="length-val">0.50</span>
-    </div>
-    <div class="row">
-      <label for="formality">formality</label>
-      <input type="range" id="formality" min="0.0" max="1.0" step="0.05" value="0.5">
-      <span class="v" id="formality-val">0.50</span>
-    </div>
-    <div class="row">
-      <label for="audience">audience</label>
-      <input type="range" id="audience" min="0.0" max="1.0" step="0.05" value="0.5">
-      <span class="v" id="audience-val">0.50</span>
-    </div>
-    <div class="row">
-      <label for="perspective">perspective</label>
-      <input type="range" id="perspective" min="0.0" max="1.0" step="0.05" value="0.5">
-      <span class="v" id="perspective-val">0.50</span>
-    </div>
-    <div class="row" style="justify-content: flex-end; margin-top: 8px;">
-      <button id="render-btn" class="ghost">Render tome</button>
-    </div>
-
-    <details id="cli-recipe-panel" style="margin: 10px 0 0; padding: 8px 10px; border: 1px solid #8884; border-radius: 4px;">
-      <summary style="cursor: pointer; font-size: 12px; opacity: 0.8; user-select: none;">
-        🛠 Free-tier / local CLI recipe (NIM / Groq / Cerebras / HF / Ollama)
-      </summary>
-      <p style="font-size: 11px; opacity: 0.7; margin: 8px 0 6px;">
-        The hosted Worker today only routes Anthropic + OpenAI BYO-keys. For the rest of the cascade
-        (1000 free NIM credits, Groq daily quota, Cerebras daily quota, your HF credits, Ollama free
-        + local), the Python CLI is the path. This panel builds the exact invocation matching your
-        current slider position + the keys you've configured above. See
-        <a href="https://github.com/OtotaO/SUM/blob/main/docs/FALLBACK_PROVIDER_CASCADE_2026-05-18.md">FALLBACK_PROVIDER_CASCADE</a>
-        for the full design.
-      </p>
-      <pre id="cli-recipe-body" style="white-space: pre-wrap; word-wrap: break-word; background: #8881; padding: 10px; border-radius: 4px; font-size: 11px; line-height: 1.5; margin: 0; font-family: ui-monospace, monospace;">(set at least one key above to see a CLI recipe)</pre>
-      <div class="row" style="justify-content: flex-end; gap: 6px; margin-top: 6px;">
-        <button id="cli-recipe-copy" class="ghost" style="font-size: 11px; padding: 4px 10px;">Copy</button>
-      </div>
-    </details>
-    <div id="render-output" style="display:none; margin-top: 12px;">
-      <div class="extractor-src claude" id="render-meta"></div>
-      <pre id="render-tome" style="white-space: pre-wrap; word-wrap: break-word; background: #8881; padding: 12px; border-radius: 4px; font-size: 13px; line-height: 1.5; margin: 0;"></pre>
-      <!--
-        Three-line trust label: matches docs/RENDER_RECEIPT_FORMAT.md §5
-        and docs/SLIDER_CONTRACT.md "Headline result" verbatim. Closes the
-        "more verified than it is" misread by separating render-attestation
-        provenance from offline-benchmark fact preservation, and surfacing
-        "signed ≠ true" at point of use.
-      -->
-      <div style="margin-top: 10px; padding: 10px 12px; border: 1px solid #8884; border-radius: 4px; font-size: 11px; line-height: 1.5; opacity: 0.85;">
-        <div style="margin-bottom: 4px;">
-          <strong id="render-trust-status">Receipt not checked:</strong> use Verify below to check the signature and the exact output, selected claims and slider bindings
-          (<a href="https://github.com/OtotaO/SUM/blob/main/docs/RENDER_RECEIPT_FORMAT.md#5-trust-scope">§5 trust scope</a>).
+        </select></div>
+        <p class="small-note"><strong>Free-tier cascade providers</strong> are used by the Python CLI today (the hosted Worker’s <code>/api/render</code> only honours Anthropic and OpenAI keys). The command-line recipe below builds an invocation that uses these. See <a href="https://github.com/OtotaO/SUM/blob/main/docs/BYOK_AND_FREE_PROVIDERS.md">BYOK_AND_FREE_PROVIDERS.md</a>.</p>
+        <div class="row"><label for="settings-nim-key">NVIDIA NIM</label><input type="password" id="settings-nim-key" placeholder="nvapi-… (free credits at build.nvidia.com)" autocomplete="off" spellcheck="false"></div>
+        <div class="row"><label for="settings-groq-key">Groq</label><input type="password" id="settings-groq-key" placeholder="gsk_… (free daily quota at console.groq.com)" autocomplete="off" spellcheck="false"></div>
+        <div class="row"><label for="settings-cerebras-key">Cerebras</label><input type="password" id="settings-cerebras-key" placeholder="csk-… (free daily quota at cloud.cerebras.ai)" autocomplete="off" spellcheck="false"></div>
+        <div class="row"><label for="settings-hf-token">Hugging Face</label><input type="password" id="settings-hf-token" placeholder="hf_… (any HF model via the org/model route)" autocomplete="off" spellcheck="false"></div>
+        <div class="row"><label for="settings-transform-model">Model id</label><input type="text" id="settings-transform-model" placeholder="nim:meta/llama-3.3-70b-instruct (or groq:… / ollama:… / org/model …)" autocomplete="off" spellcheck="false"></div>
+        <div class="row end"><button type="button" id="settings-clear" class="btn small">Clear</button><button type="button" id="settings-save" class="btn small">Save</button></div>
+        <p class="small-note">Security: localStorage is per-origin and survives reloads. Use a <strong>scoped key with a low spend cap</strong>, and rotate it after this session if anyone else uses this browser. Script injection would expose the key; the page’s CSP is tight (<code>connect-src 'self'</code>), but no secret stored in a browser is out of reach. The receipt check does not use these keys.</p>
+      </details>
+      <details class="sub-d" id="cli-recipe-panel">
+        <summary>Command-line recipe (NIM, Groq, Cerebras, HF, Ollama)</summary>
+        <p class="small-note">The hosted Worker routes only Anthropic and OpenAI keys. For the rest of the cascade (NIM, Groq, Cerebras, your HF credits, Ollama locally) the Python CLI is the path. This builds the invocation for your slider positions and the keys set above. See <a href="https://github.com/OtotaO/SUM/blob/main/docs/FALLBACK_PROVIDER_CASCADE_2026-05-18.md">FALLBACK_PROVIDER_CASCADE</a>.</p>
+        <pre id="cli-recipe-body">(set at least one key above to see a CLI recipe)</pre>
+        <div class="row end"><button type="button" id="cli-recipe-copy" class="btn small">Copy</button></div>
+      </details>
+      <div class="row"><button type="button" id="render-btn" class="btn">Generate rewrite</button></div>
+      <div id="render-output" style="display:none;">
+        <div class="extractor-src" id="render-meta"></div>
+        <pre id="render-tome"></pre>
+        <!--
+          Three-line trust label: separates render-attestation provenance from
+          offline-benchmark claim preservation and says at the point of use that
+          a signature is not a statement that the content is true
+          (docs/RENDER_RECEIPT_FORMAT.md §5, docs/SLIDER_CONTRACT.md).
+        -->
+        <div class="trust">
+          <div><strong id="render-trust-status">Receipt not checked:</strong> use Check the receipt here to check the signature and the exact output, selected claims and slider bindings (<a href="https://github.com/OtotaO/SUM/blob/main/docs/RENDER_RECEIPT_FORMAT.md#5-trust-scope">§5 trust scope</a>). The rewrite also fills box B for review.</div>
+          <div><strong>Preservation benchmarked:</strong> median 1.000; p10 0.769 long / 0.818 short. <em>Not recomputed for this rewrite</em>; see <a href="https://github.com/OtotaO/SUM/blob/main/docs/SLIDER_CONTRACT.md#headline-result-nli-verified-scale-checked">SLIDER_CONTRACT.md</a>.</div>
+          <div><strong>A signature is not a truth check:</strong> it shows which key signed which bytes, not that the rewrite is accurate.</div>
         </div>
-        <div style="margin-bottom: 4px;">
-          <strong>Preservation benchmarked:</strong> median 1.000; p10 0.769 long / 0.818 short.
-          <em>Not recomputed for this render</em> — see
-          <a href="https://github.com/OtotaO/SUM/blob/main/docs/SLIDER_CONTRACT.md#headline-result-nli-verified-scale-checked">SLIDER_CONTRACT.md</a>.
-        </div>
-        <div>
-          <strong>Signed does not mean true:</strong> the receipt is not a truth oracle.
-        </div>
+        <!--
+          In-page render-receipt check. workbench.js runs the same verifier
+          algorithm as test_render_receipt_verify.js against the receipt the
+          page just received and the JWKS at /.well-known/jwks.json, in this
+          browser, with vendored jose + canonicalize (no CDN).
+        -->
+        <div class="row"><button type="button" id="verify-receipt-btn" class="btn" disabled>Check the receipt here</button></div>
+        <div role="status" aria-live="polite" id="verify-receipt-result" class="result-box" style="display:none;"></div>
       </div>
-      <!--
-        v0.9.B: in-page receipt verifier. The button runs the same
-        six-step verifier algorithm test_render_receipt_verify.js
-        runs against the captured fixture set, but live: against the
-        receipt the page just received and the JWKS at /.well-
-        known/jwks.json. Cryptographic verification happens in this
-        browser using vendored jose + canonicalize (no CDN). Wiring
-        is in the `<script type="module">` block at the bottom of
-        the page.
-      -->
-      <div class="row" style="justify-content: flex-end; margin-top: 8px;">
-        <button id="verify-receipt-btn" class="ghost" disabled>Verify receipt in-page</button>
-      </div>
-      <div role="status" aria-live="polite" id="verify-receipt-result" style="display:none; margin-top: 8px; padding: 10px 12px; border-radius: 4px; font-size: 11px; line-height: 1.5; font-family: ui-monospace, monospace;"></div>
-    </div>
-  </div>
-</div>
+    </div></details>
 
-</details>
+  <details class="annex" id="altitude-panel" style="display:none;"><summary><span class="anx-no">3</span><span><span class="anx-t">Recorded example: one real bill, four depths</span><span class="anx-d">A BillSum bill at four lengths, with what one named judge counted as kept, dropped and added.</span></span><span class="anx-tag">recorded data · measured on one bill</span><span class="pm" aria-hidden="true"></span></summary>
+    <div class="anx-body">
+      <p id="altitude-doc-line">A real US Congressional bill (BillSum, CC0) at four depths. Move the slider: each step shows the text at that depth and what the named NLI judge counted as <strong>kept</strong>, <strong>dropped</strong> and <strong>added</strong> against the full bill. This is recorded data, not a live measurement of your text.</p>
+      <div class="row"><label for="altitude-slider">Depth</label><input type="range" id="altitude-slider" min="0" max="3" step="1" value="1"><span class="v" id="altitude-rung-name" style="min-width:130px">&nbsp;</span></div>
+      <div class="alt-ticks" id="altitude-ticks"></div>
+      <div class="alt-stats" id="altitude-stats"></div>
+      <div class="alt-text" id="altitude-text"></div>
+      <div id="altitude-diff"></div>
+      <p id="altitude-scope"></p>
+      <p id="altitude-receipt-line"></p>
+    </div></details>
 
-<div class="card" style="margin-top: 24px; display:none;" id="altitude-panel">
-  <h3>Recorded example: one real bill, four altitudes <span class="pill">measured, not certified</span></h3>
-  <p style="font-size:12px;opacity:0.75;margin:0 0 10px" id="altitude-doc-line">
-    A real US Congressional bill (BillSum, CC0) descending the altitude ladder. Scrub the slider:
-    each detent shows the text at that altitude and what the named NLI judge measured it
-    <strong>kept</strong>, <strong>dropped</strong>, and <strong>added</strong> versus the full bill.
-  </p>
-  <div class="row" style="margin: 8px 0 2px;">
-    <label for="altitude-slider" style="min-width:60px">altitude</label>
-    <input type="range" id="altitude-slider" min="0" max="3" step="1" value="1">
-    <span class="v" id="altitude-rung-name" style="min-width:130px">&nbsp;</span>
-  </div>
-  <div style="display:flex; justify-content:space-between; font-size:10px; opacity:0.55; margin:0 4px 10px 72px;" id="altitude-ticks"></div>
-  <div style="display:flex; gap:14px; flex-wrap:wrap; font:12px ui-monospace,monospace; opacity:0.85; margin:0 0 8px;" id="altitude-stats"></div>
-  <div id="altitude-text" style="font:12px/1.5 ui-monospace,monospace; white-space:pre-wrap; border:1px solid #8883; border-radius:4px; padding:10px 12px; max-height:170px; overflow-y:auto; background:#8881;"></div>
-  <div id="altitude-diff" style="margin-top:10px;"></div>
-  <p style="font-size:11px;opacity:0.65;margin:10px 0 0;" id="altitude-scope"></p>
-  <p style="font-size:11px;margin:8px 0 0;" id="altitude-receipt-line"></p>
-</div>
+  <details class="annex" id="judge-annex"><summary><span class="anx-no">4</span><span><span class="anx-t">Measure with a local semantic judge</span><span class="anx-d">A per-document measurement under a named local model, from the command line.</span></span><span class="anx-tag">runs on your machine</span><span class="pm" aria-hidden="true"></span></summary>
+    <div class="anx-body">
+      <p>The comparison above is literal. For a separate per-document proxy measurement under a named local judge, run:</p>
+      <pre><code>pip install "sum-engine[research,judge]"
+sum meaning-diff source.txt rewrite.txt --scorer nli</code></pre>
+      <p>This is a per-document <em>measurement</em> under a named judge, not a corpus bound (a <code>sum.meaning_risk_receipt.v1</code> over a corpus states a bound under its sampling assumptions). Integrators check any SUM receipt offline with few dependencies: <code>pip install "sum-engine[verify]"</code>, then <code>python -m sum_verify</code>. See <a href="https://github.com/OtotaO/SUM/blob/main/docs/MEANING_LOSS_FRONTIER.md">the meaning-loss frontier</a>.</p>
+    </div></details>
+
+  <details class="annex" id="bundle-annex"><summary><span class="anx-no">5</span><span><span class="anx-t">Verify a claim bundle</span><span class="anx-d">Recompute a bundle’s state integer from its text and check an Ed25519 signature.</span></span><span class="anx-tag">runs in this browser</span><span class="pm" aria-hidden="true"></span></summary>
+    <div class="anx-body">
+      <p>Paste a SUM bundle JSON. Two checks run here: <strong>structural</strong>, which recomputes the state integer from the canonical tome and compares it with the claimed one, and <strong>Ed25519</strong>, which checks the <code>public_signature</code> against the bundle’s <code>public_key</code> with the browser’s own SubtleCrypto (Chrome 113+, Firefox 129+, Safari 17+). A key or signature that cannot be decoded fails the check. HMAC (shared-secret) signatures need <code>sum verify --signing-key …</code>. A passing check shows which key signed the bundle, not who holds that key or whether the claims are true.</p>
+      <label for="verify-input" class="field-label">Bundle JSON</label>
+      <textarea id="verify-input" spellcheck="false" placeholder='{"bundle_version":"1.1.0","canonical_format_version":"1.0.0",...}'></textarea>
+      <div class="row"><button type="button" id="verify" class="btn">Verify bundle</button><span id="verify-result" role="status" aria-live="polite"></span></div>
+    </div></details>
+
+  <details class="annex" id="meaning-annex"><summary><span class="anx-no">6</span><span><span class="anx-t">Verify a meaning receipt</span><span class="anx-d">Check the signature, schema and disclosure of a sum.meaning_risk_receipt.v1 (Stage A).</span></span><span class="anx-tag">runs in this browser</span><span class="pm" aria-hidden="true"></span></summary>
+    <div class="anx-body">
+      <p>Paste a <code>sum.meaning_risk_receipt.v1</code> (or <code>sum.perspective_risk_receipt.v1</code>) and its issuer JWKS. This runs <strong>Stage A</strong> here: the Ed25519 signature, the schema, and the required meaning-loss <em>disclosure</em>, the same checks the Python <code>sum_verify</code> SDK and the Node verifier run. <strong>Stage B (replaying the bound) stays in Python</strong> (<code>python -m sum_verify --demo</code>). There is no live meaning-issuing key, so paste or load a JWKS rather than fetching one. A clean result is a cryptographic fact, not a measurement of meaning.</p>
+      <label for="meaning-receipt-input" class="field-label">Meaning receipt JSON</label>
+      <textarea id="meaning-receipt-input" spellcheck="false" placeholder='{"schema":"sum.meaning_risk_receipt.v1","kid":"…","payload":{…},"jws":"…"}'></textarea>
+      <label for="meaning-jwks-input" class="field-label" style="margin-top:10px">Issuer public keys (JWKS)</label>
+      <textarea id="meaning-jwks-input" spellcheck="false" placeholder='{"keys":[{"kty":"OKP","crv":"Ed25519","x":"…","kid":"…"}]}'></textarea>
+      <div class="row"><button type="button" id="meaning-sample-btn" class="btn">Load the BillSum sample</button><button type="button" id="meaning-verify-btn" class="btn">Verify (Stage A)</button></div>
+      <div role="status" aria-live="polite" id="meaning-verify-result" class="result-box" style="display:none;"></div>
+    </div></details>
+</section>
 <script>
 (function () {
   "use strict";
@@ -424,7 +651,7 @@
     var ticks = document.getElementById("altitude-ticks");
     rungs.forEach(function (r) {
       var s = document.createElement("span");
-      s.textContent = r.label.replace("the bill (source)", "bill");
+      s.textContent = r.label.replace("the bill (source)", "the bill");
       ticks.appendChild(s);
     });
     function fmtLoss(x) { return (x === null || x === undefined) ? "0 (it IS the source)" : x.toFixed(3); }
@@ -440,7 +667,7 @@
       var wrap = document.createElement("div");
       if (!claims || !claims.length) return wrap;
       var h = document.createElement("div");
-      h.style.cssText = "font-size:11px;opacity:0.7;margin:6px 0 2px;text-transform:uppercase;letter-spacing:0.02em;";
+      h.className = "alt-list-h";
       h.textContent = title + " (" + claims.length + ")";
       wrap.appendChild(h);
       var ul = document.createElement("ul");
@@ -453,7 +680,7 @@
       });
       if (claims.length > cap) {
         var li = document.createElement("li");
-        li.style.opacity = "0.55";
+        li.className = "more";
         li.textContent = "… +" + (claims.length - cap) + " more (full list in altitude_rungs.json)";
         ul.appendChild(li);
       }
@@ -483,20 +710,21 @@
       diff.textContent = "";
       if (r.note) {
         var note = document.createElement("div");
-        note.style.cssText = "font-size:11px;opacity:0.65;font-style:italic;margin:2px 0 4px;";
+        note.className = "alt-note";
         note.textContent = r.note;
         diff.appendChild(note);
       }
-      diff.appendChild(claimList("dropped vs the bill", "✗", r.dropped_claims, 6, "bad"));
-      diff.appendChild(claimList("added / unsupported by the bill", "!", r.added_claims, 3));
+      diff.appendChild(claimList("counted as dropped against the bill", "–", r.dropped_claims, 6));
+      diff.appendChild(claimList("counted as added, not supported by the bill", "+", r.added_claims, 3));
     }
     slider.addEventListener("input", function () { show(Number(slider.value)); });
     document.getElementById("altitude-scope").textContent = "Scope: " + data.scope +
       " Judge: " + data.scorer + " v" + data.scorer_version + ".";
     var rl = document.getElementById("altitude-receipt-line");
     var cr = data.chain_receipt || {};
-    rl.textContent = "This bill is one of the 32 bound by the witnessed certified chain " +
-      (cr.chain_id || "") + " — " + (cr.note || "") + " ";
+    rl.textContent = "This bill is one of the 32 covered by the signed chain receipt " +
+      (cr.chain_id || "") + ", recorded in the transparency log. " +
+      (cr.note ? cr.note.charAt(0).toUpperCase() + cr.note.slice(1) + ". " : "");
     if (cr.url) {
       var a = document.createElement("a");
       a.href = cr.url;
@@ -512,61 +740,6 @@
   });
 })();
 </script>
-
-<div class="card" style="margin-top: 24px;">
-  <h3>Optional: measure with a local semantic judge</h3>
-  <p style="font-size:13px;opacity:0.85;margin:0 0 8px">
-    The browser comparison above is literal and advisory. For a separate per-document proxy measurement under a named local judge, run:
-  </p>
-  <pre style="background:#8881;padding:10px 12px;border-radius:4px;font-size:12px;overflow:auto;margin:0 0 8px"><code>pip install "sum-engine[research,judge]"
-sum meaning-diff source.txt rewrite.txt --scorer nli</code></pre>
-  <p style="font-size:12px;opacity:0.7;margin:0">
-    A per-document <em>measurement</em> under a named judge — not a certified bound (a
-    <code>sum.meaning_risk_receipt.v1</code> over a corpus states a bound under its sampling assumptions).
-    Integrators verify any SUM receipt offline, dependency-light:
-    <code>pip install &quot;sum-engine[verify]&quot;</code> &rarr; <code>python -m sum_verify</code>.
-    See <a href="https://github.com/OtotaO/SUM/blob/main/docs/MEANING_LOSS_FRONTIER.md">the meaning-loss frontier</a>.
-  </p>
-</div>
-
-<details class="card" id="packet-verifier-panel">
-  <summary>Open and verify an exported review packet</summary>
-  <p>Paste the packet JSON. Checks run here without an account, API key or network call. Included public keys establish signature consistency, not the issuer's identity. Source and review decisions remain unsigned.</p>
-  <label for="packet-input" class="field-label">Review packet JSON</label>
-  <textarea id="packet-input" placeholder='{"schema":"sum.review_packet.v1", ...}'></textarea>
-  <button id="verify-packet-btn" class="ghost">Verify review packet</button>
-  <button id="open-packet-btn" class="ghost" disabled>Open checked packet texts and decisions</button>
-  <p>Opening replaces the source and rewrite above with this packet's texts. Its review decisions remain unsigned.</p>
-  <pre id="packet-status" role="status" aria-live="polite" style="white-space:pre-wrap"></pre>
-</details>
-
-<hr style="margin: 40px 0; border: none; border-top: 1px solid #8883;">
-
-<div class="card">
-  <h3>Verify a bundle</h3>
-  <p style="font-size:12px;opacity:0.7;margin:0 0 10px">Paste a SUM bundle JSON. This in-browser verifier runs two checks: <strong>structural</strong> — recomputes the state integer from the canonical tome and confirms it matches the claim; <strong>Ed25519</strong> — if the bundle carries a <code>public_signature</code> and <code>public_key</code>, the signature is verified natively via SubtleCrypto (Chrome 113+, Firefox 129+, Safari 17+). No server, no network, no keys to supply. HMAC (shared-secret) signatures still require <code>sum verify --signing-key …</code>.</p>
-  <textarea id="verify-input" aria-label="Bundle JSON" placeholder='{"bundle_version":"1.1.0","canonical_format_version":"1.0.0",...}'></textarea>
-  <div class="row" style="justify-content: flex-end; margin-top: 8px;">
-    <button id="verify" class="ghost">Verify</button>
-    <span id="verify-result" role="status" aria-live="polite"></span>
-  </div>
-</div>
-
-<div class="card">
-  <h3>Verify a meaning receipt</h3>
-  <p style="font-size:12px;opacity:0.7;margin:0 0 10px">Paste a <code>sum.meaning_risk_receipt.v1</code> (or <code>sum.perspective_risk_receipt.v1</code>) and its issuer JWKS. This runs <strong>Stage&nbsp;A</strong> in-browser — Ed25519 signature, schema, and the required meaning-loss <em>disclosure</em> — the same checks the Python <code>sum_verify</code> SDK and the Node verifier run, byte-for-byte. <strong>Stage&nbsp;B (the conformal-bound replay) stays Python-side</strong> (<code>python -m sum_verify --demo</code>). There is no live meaning-issuing key, so load/paste a JWKS rather than fetching one. A clean ✓ is a <em>cryptographic</em> fact, not proof meaning was preserved.</p>
-  <textarea id="meaning-receipt-input" aria-label="Meaning receipt JSON" placeholder='{"schema":"sum.meaning_risk_receipt.v1","kid":"…","payload":{…},"jws":"…"}'></textarea>
-  <textarea id="meaning-jwks-input" aria-label="Meaning receipt public keys JSON" placeholder='{"keys":[{"kty":"OKP","crv":"Ed25519","x":"…","kid":"…"}]}' style="margin-top:8px"></textarea>
-  <div class="row" style="justify-content: flex-end; margin-top: 8px;">
-    <button id="meaning-sample-btn" class="ghost">Load BillSum sample</button>
-    <button id="meaning-verify-btn" class="ghost">Verify (Stage A)</button>
-  </div>
-  <div role="status" aria-live="polite" id="meaning-verify-result" style="display:none; margin-top: 8px; padding: 10px 12px; border-radius: 4px; font-size: 11px; line-height: 1.5; font-family: ui-monospace, monospace;"></div>
-</div>
-
-<p class="footer">
-  This file is both a standalone HTML page AND a Claude artifact. Paste it into a Claude artifact conversation and extraction upgrades automatically to Claude-grade recall (SVO, lowercased, underscore-joined subjects, negation suppressed, passive inverted — the same rules SUM's Python sieve enforces). Outside an artifact it uses a naive tokeniser; the attestation layer is identical either way. Source + cross-runtime harnesses: <a href="https://github.com/OtotaO/SUM">github.com/OtotaO/SUM</a>.
-</p>
 
 <script>
 'use strict';
@@ -939,7 +1112,11 @@ async function makeBundle(triples, title) {
 }
 
 // Decode "ed25519:<base64>" → Uint8Array (just the key/signature bytes).
+// Mirrors standalone_verifier/verify.js: split on the first colon and decode
+// the tail. A non-string field or undecodable base64 throws; the caller maps
+// that to 'malformed', never to 'unsupported'.
 function decodeEd25519Field(s) {
+  if (typeof s !== 'string') throw new TypeError('Ed25519 field is not a string');
   const b64 = s.split(':', 2)[1] ?? '';
   const bin = atob(b64);
   const out = new Uint8Array(bin.length);
@@ -947,33 +1124,62 @@ function decodeEd25519Field(s) {
   return out;
 }
 
+// Does THIS browser have Ed25519 in WebCrypto at all? Probed with a
+// syntactically valid 32-byte key, as the Node verifier does, so the answer
+// depends only on the browser and never on the bundle. Matching on error
+// names would tie the verdict to each browser's wording.
+async function ed25519Available() {
+  try {
+    await crypto.subtle.importKey('raw', new Uint8Array(32), { name: 'Ed25519' }, false, ['verify']);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // Verify the embedded Ed25519 signature via Web Crypto SubtleCrypto.
-// Ships natively in Chrome 113+, Firefox 129+, Safari 17+. On older
-// browsers (or non-secure contexts) importKey throws and we fall back
-// to "present (use CLI)" — never a false positive.
+// Ships natively in Chrome 113+, Firefox 129+, Safari 17+.
 //
-// Returns one of: 'verified', 'invalid', 'unsupported' (API missing),
-// or 'absent' (no Ed25519 fields in the bundle).
+// Returns one of five statuses, the same contract as the Node verifier
+// (standalone_verifier/verify.js); Node and Python both reject a key they
+// cannot use:
+//   'verified'    the signature checks out against the embedded key
+//   'invalid'     the signature was checked and does not match
+//   'malformed'   the key or signature could not be decoded or imported, so
+//                 nothing was checked: FAIL CLOSED
+//   'unsupported' this browser genuinely has no Ed25519 in WebCrypto (the only
+//                 case that may be reported as not checkable here)
+//   'absent'      the bundle carries no Ed25519 fields
 async function verifyEd25519InBrowser(b) {
   if (!b.public_signature || !b.public_key) return 'absent';
   if (!(globalThis.crypto && crypto.subtle && crypto.subtle.importKey)) {
     return 'unsupported';
   }
+  let pubBytes, sigBytes;
   try {
-    const pubBytes = decodeEd25519Field(b.public_key);
-    const sigBytes = decodeEd25519Field(b.public_signature);
-    const payload = new TextEncoder().encode(
-      `${b.canonical_tome}|${b.state_integer}|${b.timestamp}`
-    );
-    const key = await crypto.subtle.importKey(
-      'raw', pubBytes, { name: 'Ed25519' }, false, ['verify']
-    );
+    pubBytes = decodeEd25519Field(b.public_key);
+    sigBytes = decodeEd25519Field(b.public_signature);
+  } catch {
+    return 'malformed';
+  }
+  let key;
+  try {
+    key = await crypto.subtle.importKey('raw', pubBytes, { name: 'Ed25519' }, false, ['verify']);
+  } catch {
+    // Either the browser has no Ed25519, or these key bytes are not an
+    // importable Ed25519 key (wrong length, not a point). Only the first
+    // may be called 'unsupported'.
+    return (await ed25519Available()) ? 'malformed' : 'unsupported';
+  }
+  const payload = new TextEncoder().encode(
+    `${b.canonical_tome}|${b.state_integer}|${b.timestamp}`
+  );
+  try {
     const ok = await crypto.subtle.verify({ name: 'Ed25519' }, key, sigBytes, payload);
     return ok ? 'verified' : 'invalid';
   } catch {
-    // Browser lacks Ed25519 in SubtleCrypto, or crypto threw on the
-    // key shape. Caller will report "present (use CLI)".
-    return 'unsupported';
+    // The key imported, so the primitive exists; the signature bytes were unusable.
+    return 'malformed';
   }
 }
 
@@ -998,7 +1204,8 @@ async function inspectSignatures(b) {
   const ed = await verifyEd25519InBrowser(b);
   if (ed === 'verified') out.ed25519 = { status: 'verified', label: '✓ verified in-browser (SubtleCrypto)' };
   else if (ed === 'invalid') out.ed25519 = { status: 'invalid', label: '✗ INVALID — signature does not match public key' };
-  else if (ed === 'unsupported') out.ed25519 = { status: 'unsupported', label: 'present (browser lacks Ed25519; use `sum verify` or a W3C VC 2.0 verifier)' };
+  else if (ed === 'malformed') out.ed25519 = { status: 'malformed', label: '✗ MALFORMED — the public key or signature could not be decoded or imported; signature NOT checked' };
+  else if (ed === 'unsupported') out.ed25519 = { status: 'unsupported', label: 'present, not checked: this browser has no Ed25519 in WebCrypto; use `sum verify` or a W3C VC 2.0 verifier' };
   return out;
 }
 
@@ -1038,6 +1245,15 @@ async function verifyBundle(b) {
       return {
         ok: false,
         reason: 'Ed25519 signature INVALID — content does not match embedded public key',
+        signatures,
+      };
+    }
+    if (signatures.ed25519 && signatures.ed25519.status === 'malformed') {
+      // An unusable key or signature is not an excuse to pass: fail closed,
+      // as the Node and Python verifiers do on the same input.
+      return {
+        ok: false,
+        reason: 'Ed25519 public key or signature is MALFORMED — it could not be decoded or imported, so the signature was not checked',
         signatures,
       };
     }
@@ -1088,23 +1304,18 @@ function invalidateSource() {
 $('prose').addEventListener('input', invalidateSource);
 const ATTEST_LABEL = $('attest').innerHTML;  // preserve label + kbd hint
 
-// Live char count — low-stakes affordance but makes the surface feel alive.
+// Character and passage counts for both boxes. workbench.js (a module that
+// loads after this script) installs window.__sumUpdateCounts, which also
+// counts passages with the same splitter the comparison uses.
 function updateCharCount() {
-  const n = $('prose').value.length;
-  $('char-count').textContent = n ? `${n.toLocaleString()} chars` : '0 chars';
+  if (typeof window.__sumUpdateCounts === 'function') { window.__sumUpdateCounts(); return; }
+  const fmt = n => `${n.toLocaleString('en-US')} character${n === 1 ? '' : 's'}`;
+  $('char-count').textContent = fmt($('prose').value.length);
+  $('rewrite-count').textContent = fmt($('rewrite').value.length);
 }
 $('prose').addEventListener('input', updateCharCount);
+$('rewrite').addEventListener('input', updateCharCount);
 updateCharCount();
-
-// Example-prefill: if the textarea is empty, fill with the placeholder
-// text; otherwise no-op (never clobber user input silently).
-$('try-example').addEventListener('click', () => {
-  if ($('prose').value.trim()) return;
-  $('prose').value = $('prose').placeholder;
-  $('prose').focus();
-  updateCharCount();
-  invalidateSource();
-});
 
 // ⌘/Ctrl+Enter triggers attest when the prose textarea is focused.
 // Agentic muscle-memory: the same shortcut that submits messages in most
@@ -1155,7 +1366,7 @@ $('attest').addEventListener('click', async () => {
     const { triples: all, source } = await extractTriples(text);
     if (revision !== sourceRevision) return;
     if (all.length === 0) {
-      $('workbench-status').textContent = 'Extraction unavailable or no claims returned. No heuristic claims were invented. You can still paste a rewrite and compare it with the original.';
+      $('workbench-status').textContent = 'Extraction unavailable or no claims returned. No claims were invented. You can still paste a rewrite into box B and compare it with the original.';
       return;
     }
 
@@ -1187,7 +1398,7 @@ $('attest').addEventListener('click', async () => {
     const SOURCE_LABEL = {
       'claude-artifact': 'Model-extracted claims. Original qualifiers may be lost; review against the source.',
       'claude-pages-fn': 'Model-extracted claims via /api/complete. Review each claim against the retained source.',
-      'naive': 'extracted by naive tokeniser — paste this page into a Claude artifact for LLM-grade recall',
+      'naive': 'Extraction unavailable here; no claims were invented.',
     };
     srcEl.textContent = SOURCE_LABEL[source] ?? 'Extraction unavailable';
     srcEl.className = source === 'naive' ? 'extractor-src naive' : 'extractor-src claude';
@@ -1406,7 +1617,7 @@ if (cliCopyBtn) {
 $('render-btn').addEventListener('click', async () => {
   const triples = window.__sumLastTriples;
   if (!triples || triples.length === 0 || extractedSource !== $('prose').value) {
-    alert('Attest a tome first — the render panel uses the extracted triples as input.');
+    alert('Extract claims first: generating a rewrite uses the extracted claims as input.');
     return;
   }
   invalidateRender();
@@ -1415,7 +1626,7 @@ $('render-btn').addEventListener('click', async () => {
   const btn = $('render-btn');
   btn.disabled = true;
   const original = btn.textContent;
-  btn.textContent = 'Rendering…';
+  btn.textContent = 'Generating…';
   const meta = $('render-meta');
   const out = $('render-output');
   const tomeEl = $('render-tome');
@@ -1529,18 +1740,12 @@ $('verify').addEventListener('click', async () => {
 });
 </script>
 
-<!--
-  v0.9.B in-page render-receipt verifier wiring. ESM module so it
-  can import the vendored jose + canonicalize bundle. Runs the
-  same six-step verifier algorithm as
-  test_render_receipt_verify.js, but against:
-    - the receipt from the page's most recent /api/render call
-    - the live /.well-known/jwks.json (fetched once, cached for
-      the page's lifetime)
 
-  Triggered by the "Verify receipt in-page" button inside the
-  render-output div, which the script enables when a `sum:render`
-  event fires from the existing render handler.
+<!--
+  The review workbench: comparison, change evidence, decisions, export,
+  packet checks and the in-page render-receipt check. An ES module, so it
+  imports review_packet.js, change_evidence.js and the vendored jose +
+  canonicalize bundle (same origin, no CDN).
 -->
 <script type="module" src="./workbench.js"></script>
 
@@ -1577,12 +1782,7 @@ $('verify').addEventListener('click', async () => {
 
   function show(kind, html) {
     out.style.display = "";
-    const border = {
-      ok: "rgba(80,200,80,0.8)",
-      reject: "rgba(220,120,80,0.8)",
-      err: "rgba(200,200,80,0.8)",
-    }[kind];
-    out.style.border = `1px solid ${border}`;
+    out.dataset.kind = kind;  // a neutral result box; the words carry the verdict
     out.innerHTML = html;
   }
 
@@ -1631,11 +1831,11 @@ $('verify').addEventListener('click', async () => {
       show("ok",
         `<div><strong>✓ Stage A verified.</strong> Issuer signed (kid=<code>${esc(res.kid)}</code>), ` +
           `schema <code>${esc(schema)}</code>, disclosure present.</div>` +
-        `<div style="margin-top:6px;">scorer: <code>${esc(p.scorer ?? "?")}</code> · ` +
+        `<div class="mr">scorer: <code>${esc(p.scorer ?? "?")}</code> · ` +
           `stated bound (NOT replayed here): <code>≤ ${bound}</code>${ctrl}</div>` +
-        `<div style="margin-top:6px;opacity:0.8;">not&nbsp;covered: ${esc(nc)}</div>` +
-        `<div style="margin-top:6px;opacity:0.75;">${PROXY_CAVEAT}</div>` +
-        `<div style="margin-top:6px;opacity:0.75;">Stage A = signature + schema + disclosure. ` +
+        `<div class="mr dim">not&nbsp;covered: ${esc(nc)}</div>` +
+        `<div class="mr dim">${PROXY_CAVEAT}</div>` +
+        `<div class="mr dim">Stage A = signature + schema + disclosure. ` +
           `The conformal bound is <em>replayed</em> offline by ` +
           `<code>python -m sum_verify --losses …</code> (or <code>--demo</code>).</div>`,
       );
@@ -1643,7 +1843,7 @@ $('verify').addEventListener('click', async () => {
       const cls = e instanceof VerifyError ? e.errorClass : "uncategorized_error";
       show("reject",
         `<div><strong>✗ Verification failed.</strong> error class: <code>${esc(cls)}</code>.</div>` +
-        `<div style="margin-top:6px;opacity:0.75;">${esc(e.message)}</div>`);
+        `<div class="mr dim">${esc(e.message)}</div>`);
     } finally {
       btn.disabled = false;
     }
@@ -1651,5 +1851,11 @@ $('verify').addEventListener('click', async () => {
 </script>
 
 </main>
+<footer class="foot"><div class="wrap">
+  <p>A signature shows which key signed which bytes. It does not show that the content is true or who holds the key. Human decisions are unsigned.</p>
+  <p>Comparison, change evidence and export run in your browser. Only the optional generator sends text to a server. SUM is open source: <a href="https://github.com/OtotaO/SUM">github.com/OtotaO/SUM</a>.</p>
+  <p class="small">Pasted into a Claude artifact, this page’s claim extraction uses the artifact’s model instead of this site’s <code>/api/complete</code> service; if neither is available, extraction abstains rather than inventing claims. Source and cross-runtime harnesses: <a href="https://github.com/OtotaO/SUM">github.com/OtotaO/SUM</a>.</p>
+</div></footer>
+
 </body>
 </html>

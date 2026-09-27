@@ -1,8 +1,8 @@
 """Generate ``altitude_rungs.json`` — the static data behind the demo page's
 T0 altitude panel (the distiller made visible).
 
-One REAL document from the witnessed certified chain's corpus
-(``billsum-test-12``, BillSum test split, CC0-1.0; one of the 32 bills bound
+One REAL document from the signed chain receipt's corpus
+(``billsum-test-12``, BillSum test split, CC0-1.0; one of the 32 bills covered
 by chain ``9a8ab39f08522c50`` in ``fixtures/chain_receipts_billsum/``),
 descending the altitude ladder:
 
@@ -20,7 +20,8 @@ source, and the kept / dropped / added claim readout — the exact output of
 once, offline, into a static JSON the Worker ships as an asset.
 
 HONESTY (also carried inside the JSON's ``scope`` field): every number here
-is a per-document MEASUREMENT under the named NLI judge, not a guarantee.
+is a per-document MEASUREMENT under the named NLI judge, not a bound for any
+other document.
 The (1-delta) corpus-level bounds live in the signed, witnessed chain
 receipt the panel links to. The loss computation is machine-pinned (NLI
 float drift, F23/F26): regenerating this file on a different stack may move
@@ -49,10 +50,11 @@ DOC_ID = "billsum-test-12"
 CHAIN_ID = "9a8ab39f08522c50"
 
 SCOPE = (
-    "per-document MEASUREMENT under the named NLI judge; not a guarantee. "
+    "Per-document MEASUREMENT under the named NLI judge, on this one bill; "
+    "not a bound for other documents. "
     "The proxy is blind to arrangement, sound, connotation, implicature. "
     "Corpus-level (1-delta) bounds live in signed receipts: this document is "
-    "one of the 32 bills bound by the witnessed certified chain."
+    "one of the 32 bills covered by the signed, logged chain receipt."
 )
 
 

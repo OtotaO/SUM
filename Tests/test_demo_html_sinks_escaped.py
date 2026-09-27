@@ -111,6 +111,23 @@ def test_module_blocks_define_their_own_escaper(source: str) -> None:
     assert "innerHTML" not in workbench, "workbench receipt and review fields must use text nodes"
 
 
+def test_change_evidence_engine_has_no_dom_sink() -> None:
+    """The change evidence engine returns plain data; workbench.js renders it
+    with createElement and text nodes. The engine reads the visitor's texts, so
+    it must never touch the DOM, let alone an HTML sink."""
+    engine = (_INDEX.parent / "change_evidence.js").read_text("utf-8")
+    for sink in ("innerHTML", "outerHTML", "insertAdjacentHTML", "document.", "window.", "eval(", "new Function"):
+        assert sink not in engine, f"change_evidence.js must stay DOM-free and sink-free: found {sink!r}"
+
+
+def test_workbench_uses_no_html_sink_at_all() -> None:
+    """Every review string (both texts, packet fields, receipt kid) is
+    untrusted. The review UI builds nodes only; no HTML-parsing sink at all."""
+    workbench = (_INDEX.parent / "workbench.js").read_text("utf-8")
+    for sink in ("outerHTML", "insertAdjacentHTML", "document.write", "createContextualFragment", "DOMParser"):
+        assert sink not in workbench, f"workbench.js must not use {sink}"
+
+
 def test_pasted_receipt_fields_are_escaped(source: str) -> None:
     """The paste panels take BOTH the receipt and the JWKS from the visitor.
 

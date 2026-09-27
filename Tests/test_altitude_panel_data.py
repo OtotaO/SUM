@@ -41,9 +41,9 @@ def test_altitude_data_has_ladder_shape():
 
 
 def test_altitude_document_is_in_the_witnessed_chain_corpus():
-    """The panel's story is 'this bill is one of the 32 in the certified
-    chain' — lock that the document really is, and that the source text is
-    byte-identical to the committed corpus."""
+    """The panel's story is 'this bill is one of the 32 covered by the signed
+    chain receipt' — lock that the document really is, and that the source
+    text is byte-identical to the committed corpus."""
     d = _load()
     corpus = json.loads(
         (
@@ -79,12 +79,13 @@ def test_altitude_chain_linkage_matches_committed_chain():
 
 
 def test_altitude_scope_is_honest():
-    """The scope string must carry the measurement-not-guarantee framing and
-    the proxy blindness disclosure, and name the judge."""
+    """The scope string must say this is a measurement on one bill and not a
+    bound for other documents, carry the proxy blindness disclosure, and name
+    the judge."""
     d = _load()
     scope = d["scope"].lower()
     assert "measurement" in scope
-    assert "not a guarantee" in scope
+    assert "not a bound for other documents" in scope
     assert "arrangement" in scope  # the not_covered blindness list
     assert d["scorer"].startswith("bidirectional-entailment[nli:")
 
@@ -96,4 +97,30 @@ def test_altitude_panel_wired_into_page():
     html = (_REPO / "single_file_demo" / "index.html").read_text("utf-8")
     assert 'fetch("altitude_rungs.json")' in html
     assert 'id="altitude-panel"' in html
-    assert "measured, not certified" in html
+    assert "measured on one bill" in html
+
+
+def test_page_copy_makes_no_overclaim():
+    """The page and its data never call SUM's outputs certified, faithful,
+    guaranteed, compliant or verified-true. A signature shows which key
+    signed which bytes; a comparison is literal string evidence.
+
+    The one exemption is the extraction prompt sent to the model (it asks the
+    model to abstain on a clause it cannot represent faithfully); it is never
+    rendered."""
+    import re
+
+    demo = _REPO / "single_file_demo"
+    html = (demo / "index.html").read_text("utf-8")
+    prompt = re.search(r"const CLAUDE_PROMPT_TEMPLATE = `.*?`;", html, re.S)
+    assert prompt, "extraction prompt not found; update this exemption"
+    html = html.replace(prompt.group(0), "")
+    banned = re.compile(r"certif|faithful|guarantee|compliant|verified-true", re.I)
+    for name, text in (
+        ("index.html", html),
+        ("altitude_rungs.json", _DATA.read_text("utf-8")),
+        ("workbench.js", (demo / "workbench.js").read_text("utf-8")),
+        ("change_evidence.js", (demo / "change_evidence.js").read_text("utf-8")),
+    ):
+        hits = sorted({m.group(0) for m in banned.finditer(text)})
+        assert not hits, f"{name} uses {hits}"
