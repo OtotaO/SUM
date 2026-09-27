@@ -18,7 +18,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { verifyReceipt, VerifyError } from "./receipt_verifier.js";
+import { verifyReceipt, VerifyError, parseInstantMs } from "./receipt_verifier.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(__dirname, "..", "fixtures", "render_receipts");
@@ -91,6 +91,64 @@ for (const filename of fixtureFiles) {
         message: e.message,
       });
     }
+  }
+}
+
+// Legacy revokedKids input: the served document, malformed shapes and
+// the same-second instant case (parity with the Python verifier tests).
+{
+  const active = JSON.parse(readFileSync(join(FIXTURES_DIR, "revoked_kid_active.json"), "utf8"));
+  const { receipt, jwks } = active;
+  const entry = active.revoked_kids[0];
+  const cases = [
+    ["served document", { schema: "sum.revoked_kids.v1", revoked: active.revoked_kids }, "reject"],
+    ["string input", "sum-render-2026-04-27-1", "reject"],
+    ["number input", 5, "reject"],
+    ["unrecognised object", { entries: [] }, "reject"],
+    ["other schema", { schema: "some.other.list", revoked: [] }, "reject"],
+    ["null schema", { schema: null, revoked: [] }, "reject"],
+    ["null entry", [null], "reject"],
+    ["string entry", ["sum-render-2026-04-27-1"], "reject"],
+    ["entry without kid", [{}], "reject"],
+    ["entry with numeric kid", [{ kid: 5, effective_revocation_at: "2026-01-01T00:00:00Z" }], "reject"],
+    ["entry with empty kid", [{ kid: "", effective_revocation_at: "2026-01-01T00:00:00Z" }], "reject"],
+    ["same second, whole-second effective", [{ ...entry, effective_revocation_at: "2026-04-27T00:45:16Z" }], "reject"],
+    ["effective one second later", [{ ...entry, effective_revocation_at: "2026-04-27T00:45:17Z" }], "verify"],
+    ["bare empty list form (spec 6.1)", { revoked: [] }, "verify"],
+    ["served empty document", { schema: "sum.revoked_kids.v1", revoked: [] }, "verify"],
+  ];
+  for (const [name, revoked, expected] of cases) {
+    let outcome;
+    let cls;
+    try {
+      await verifyReceipt(receipt, jwks, revoked);
+      outcome = "verify";
+    } catch (e) {
+      outcome = e instanceof VerifyError ? "reject" : `raw ${e && e.name}`;
+      cls = e && e.errorClass;
+    }
+    const ok = outcome === expected && (expected === "verify" || cls === "revoked_kid");
+    console.log(`  ${ok ? "✓" : "✗"} revokedKids: ${name} (${outcome}${cls ? ` ${cls}` : ""})`);
+    if (ok) pass++;
+    else {
+      fail++;
+      failures.push({ name: `revokedKids: ${name}`, kind: "revocation input", expected, actual: `${outcome} ${cls || ""}` });
+    }
+  }
+}
+
+// Shared instant grammar: the same table the Python verifier test runs.
+{
+  const table = JSON.parse(
+    readFileSync(join(__dirname, "..", "Tests", "fixtures", "revocation_instants.json"), "utf8"),
+  );
+  const mismatches = table.cases.filter((c) => parseInstantMs(c.value) !== c.expected_ms);
+  const ok = mismatches.length === 0;
+  console.log(`  ${ok ? "✓" : "✗"} instant grammar: ${table.cases.length - mismatches.length}/${table.cases.length} shared cases`);
+  if (ok) pass++;
+  else {
+    fail++;
+    failures.push({ name: "instant grammar", kind: "parse mismatch", actual: JSON.stringify(mismatches.map((c) => c.value)) });
   }
 }
 

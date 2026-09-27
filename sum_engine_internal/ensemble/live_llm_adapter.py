@@ -179,6 +179,20 @@ class RenderedTome(BaseModel):
 
 # ─── Adapter ─────────────────────────────────────────────────────────
 
+# Prefixes that ``LiveLLMAdapter.from_model`` routes somewhere other than
+# api.openai.com. Kept next to ``from_model`` so the two cannot drift.
+_NON_OPENAI_PREFIXES = ("ollama:", "llamacpp:", "local:", "nim:", "groq:", "cerebras:")
+
+
+def routes_to_openai(model: str) -> bool:
+    """True when ``LiveLLMAdapter.from_model`` sends ``model`` to api.openai.com.
+
+    Callers that forward an OpenAI API key must gate on this, so the key is
+    never handed to a provider it was not issued for (Groq, Cerebras, NIM,
+    Hugging Face or a local server)."""
+    return not model.lower().startswith(_NON_OPENAI_PREFIXES) and "/" not in model
+
+
 class LiveLLMAdapter:
     """
     Production connector that maps natural language to the Gödel universe

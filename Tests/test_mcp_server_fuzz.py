@@ -135,7 +135,8 @@ malformed_bundle = st.dictionaries(
     st.sampled_from([
         "canonical_tome", "state_integer", "canonical_format_version",
         "prime_scheme", "axiom_count", "branch", "title",
-        "ed25519_signature", "public_key", "hmac_signature",
+        "signature", "public_signature", "public_key", "timestamp",
+        "ed25519_signature", "hmac_signature",
         "extra_unexpected_field",
     ]),
     adversarial_value,

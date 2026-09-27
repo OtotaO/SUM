@@ -47,7 +47,7 @@ Claim map as `sum.review_packet.v2`: verbatim, clause-bounded source spans; labe
 ### Parking list (at most 10 lines; an item leaves only when a named user or funded deliverable asks)
 
 - TypeSafe Jev judge (#518, #519): on hold; only as a disclosed baseline, after egress disclosure, abstention tests and a request-budget preflight.
-- Review items not scheduled above: M5 legacy revocation string comparison; M15 and M16 Worker admission and KV fail-open (before any launch post); M24 catalog verify-line CI; stale remote branches (69 on 2026-09-26).
+- Review items not scheduled above (M5, the legacy revocation string comparison, was fixed in #530): M15 and M16 Worker admission and KV fail-open (before any launch post); M24 catalog verify-line CI; stale remote branches (69 on 2026-09-26).
 
 ## Start from live evidence
 

@@ -346,6 +346,72 @@ def test_inspect_handles_empty_bundle(server):
     assert result["signatures_present"] == {"ed25519": False, "hmac": False}
 
 
+def _mint_bundle(key_dir, *, hmac_key, with_ed25519) -> dict:
+    import math
+
+    from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+    from sum_engine_internal.ensemble.tome_generator import AutoregressiveTomeGenerator
+    from sum_engine_internal.infrastructure.canonical_codec import CanonicalCodec
+    from sum_engine_internal.infrastructure.key_manager import KeyManager
+
+    algebra = GodelStateAlgebra()
+    codec = CanonicalCodec(
+        algebra, AutoregressiveTomeGenerator(algebra),
+        signing_key=hmac_key,
+        key_manager=KeyManager(key_dir=str(key_dir)) if with_ed25519 else None,
+    )
+    algebra.get_or_mint_prime("alice", "likes", "cats")
+    state = 1
+    for prime in algebra.axiom_to_prime.values():
+        state = math.lcm(state, prime)
+    return codec.export_bundle(state, branch="main")
+
+
+@pytest.mark.parametrize("hmac_key,with_ed25519", [
+    ("k", False), (None, True), ("k", True), (None, False),
+])
+def test_inspect_reports_real_signature_fields(server, tmp_path, hmac_key, with_ed25519):
+    """inspect must read the wire field names `signature` (HMAC) and
+    `public_signature` (Ed25519). It used to test for names no bundle
+    carries, so a genuinely HMAC-signed bundle reported hmac: False and an
+    agent could skip the HMAC check (Phase 0 M17)."""
+    bundle = _mint_bundle(tmp_path, hmac_key=hmac_key, with_ed25519=with_ed25519)
+    result = _tool(server, "inspect")(bundle=bundle)
+    assert result["signatures_present"] == {
+        "ed25519": with_ed25519, "hmac": hmac_key is not None,
+    }
+
+
+def test_schema_catalogue_lists_exactly_the_bundle_fields(server, tmp_path):
+    """The schema tool lists every field a fully signed bundle carries and
+    nothing else; the research metadata fields (present only when their
+    optional dependencies are installed) are listed separately as unsigned."""
+    bundle = _mint_bundle(tmp_path, hmac_key="k", with_ed25519=True)
+    entry = _tool(server, "schema")(name="sum.canonical_bundle.v1")
+    core = set(entry["fields"])
+    research = set(entry["unsigned_research_metadata"]) - {"note"}
+    assert core <= set(bundle)
+    assert set(bundle) <= core | research
+    assert not core & research
+
+
+def test_schema_catalogue_matches_a_real_render_receipt():
+    """The render-receipt entry lists exactly the payload fields of a real
+    receipt signed by the Worker (the committed positive control)."""
+    import json
+    from pathlib import Path
+
+    from sum_engine_internal.mcp_server.server import _build_schema_catalogue
+
+    root = Path(__file__).resolve().parents[1]
+    receipt = json.loads(
+        (root / "fixtures" / "render_receipts" / "positive_control.json").read_text()
+    )["receipt"]
+    entry = _build_schema_catalogue()["sum.render_receipt.v1"]
+    assert set(entry["fields"]) == set(receipt["payload"])
+    assert set(entry["envelope_fields"]) == set(receipt)
+
+
 # --------------------------------------------------------------------------
 # Roundtrip — extract → attest → verify
 # --------------------------------------------------------------------------

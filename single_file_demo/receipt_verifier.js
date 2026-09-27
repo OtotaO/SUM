@@ -128,45 +128,123 @@ async function importEd25519Jwk(jwk) {
   );
 }
 
+const REVOKED_KIDS_SCHEMA = "sum.revoked_kids.v1";
+// RFC 3339 instant, seconds required, fraction truncated to milliseconds.
+// Shared line for line with _instant_ms in the Python verifier.
+const INSTANT = /^([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})(?:\.([0-9]{1,9}))?(Z|([+-])([0-9]{2}):([0-9]{2}))$/;
+
+function daysFromCivil(y, m, d) {
+  y -= m <= 2 ? 1 : 0;
+  const era = Math.floor((y >= 0 ? y : y - 399) / 400);
+  const yoe = y - era * 400;
+  const doy = Math.floor((153 * (m + (m > 2 ? -3 : 9)) + 2) / 5) + d - 1;
+  const doe = yoe * 365 + Math.floor(yoe / 4) - Math.floor(yoe / 100) + doy;
+  return era * 146097 + doe - 719468;
+}
+
+// Epoch milliseconds for an RFC 3339 instant, or null if malformed.
+export function parseInstantMs(value) {
+  if (typeof value !== "string") return null;
+  const m = INSTANT.exec(value);
+  if (!m) return null;
+  const [y, mo, d, h, mi, s] = [1, 2, 3, 4, 5, 6].map((i) => Number(m[i]));
+  const ms = Number((m[7] || "").padEnd(3, "0").slice(0, 3));
+  const leap = y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0);
+  const daysInMonth = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  if (!(mo >= 1 && mo <= 12 && d >= 1 && d <= daysInMonth[mo - 1] && h <= 23 && mi <= 59 && s <= 59)) {
+    return null;
+  }
+  let offset = 0;
+  if (m[8] !== "Z") {
+    const oh = Number(m[10]);
+    const om = Number(m[11]);
+    if (oh > 23 || om > 59) return null;
+    offset = (oh * 60 + om) * (m[9] === "+" ? 1 : -1);
+  }
+  return (((daysFromCivil(y, mo, d) * 24 + h) * 60 + mi) * 60 + s) * 1000 + ms - offset * 60000;
+}
+
+// Accept the entry list or the served sum.revoked_kids.v1 document; fail
+// closed on anything else, and on any entry that is not an object.
+function revocationEntries(revokedKids) {
+  let list = revokedKids;
+  if (list && typeof list === "object" && !Array.isArray(list)) {
+    // The served document, or the bare {"revoked": [...]} form that
+    // RENDER_RECEIPT_FORMAT §6.1 describes; any other object fails closed.
+    const schema = list.schema === undefined ? REVOKED_KIDS_SCHEMA : list.schema;
+    if (schema === REVOKED_KIDS_SCHEMA && Array.isArray(list.revoked)) {
+      list = list.revoked;
+    } else {
+      throw new VerifyError(
+        ERROR_CLASSES.REVOKED_KID,
+        "revoked_kids must be a list of revocation entries or the " +
+          "sum.revoked_kids.v1 document served at " +
+          "/.well-known/revoked-kids.json; failing closed",
+      );
+    }
+  }
+  if (!Array.isArray(list)) {
+    throw new VerifyError(
+      ERROR_CLASSES.REVOKED_KID,
+      `revoked_kids must be a list of revocation entries, got ${typeof list}; failing closed`,
+    );
+  }
+  for (const entry of list) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+      throw new VerifyError(
+        ERROR_CLASSES.REVOKED_KID,
+        "revocation list contains a non-object entry; failing closed",
+      );
+    }
+    if (typeof entry.kid !== "string" || entry.kid === "") {
+      throw new VerifyError(
+        ERROR_CLASSES.REVOKED_KID,
+        "revocation list entry has no non-empty string kid; failing closed",
+      );
+    }
+  }
+  return list;
+}
+
 /**
- * Check the receipt's kid against a G3 revocation list. Throws
- * VerifyError(REVOKED_KID) if the kid is on the list AND the
- * receipt's signed_at is at or after the revocation's
- * effective_revocation_at. See docs/RENDER_RECEIPT_FORMAT.md §6.1.
- *
- * Mirrors sum_engine_internal.render_receipt._check_revoked_kid
- * exactly so cross-runtime fixtures produce byte-identical
- * outcomes.
+ * Check the receipt's kid against a revocation list and reject with
+ * REVOKED_KID when signed_at is at or after effective_revocation_at.
+ * Mirrors sum_engine_internal.render_receipt.verifier._check_revoked_kid:
+ * the same accepted input shapes, the same instant grammar and the same
+ * millisecond arithmetic (cases: Tests/fixtures/revocation_instants.json).
  *
  * @param {object} receipt
- * @param {Array<{kid: string, effective_revocation_at: string, reason?: string}>} revokedKids
+ * @param {Array<{kid: string, effective_revocation_at: string, reason?: string}>|{schema?: string, revoked: Array}} revokedKids
+ *   the entry list, or the sum.revoked_kids.v1 document; anything else fails closed
  */
 function checkRevokedKid(receipt, revokedKids) {
+  const entries = revocationEntries(revokedKids);
   const kid = receipt && receipt.kid;
   if (typeof kid !== "string") return;
-  const payload = (receipt && receipt.payload) || {};
-  const signedAt = payload.signed_at;
+  const payload = receipt && receipt.payload;
+  const signedAt = payload && typeof payload === "object" ? payload.signed_at : undefined;
 
-  for (const entry of revokedKids) {
-    if (!entry || typeof entry !== "object") continue;
+  for (const entry of entries) {
     if (entry.kid !== kid) continue;
     const effectiveAt = entry.effective_revocation_at;
-    if (typeof effectiveAt !== "string") {
+    const effective = parseInstantMs(effectiveAt);
+    if (effective === null) {
       throw new VerifyError(
         ERROR_CLASSES.REVOKED_KID,
         `kid ${JSON.stringify(kid)} appears on revocation list with malformed ` +
           `effective_revocation_at=${JSON.stringify(effectiveAt)}; failing closed`,
       );
     }
-    if (typeof signedAt !== "string") {
+    const signed = parseInstantMs(signedAt);
+    if (signed === null) {
       throw new VerifyError(
         ERROR_CLASSES.REVOKED_KID,
         `kid ${JSON.stringify(kid)} on revocation list and receipt has no ` +
           `parseable signed_at; failing closed`,
       );
     }
-    // ISO-8601 UTC strings compare correctly via lex-order.
-    if (signedAt >= effectiveAt) {
+    // Compare instants; a string compare put "...16.849Z" before "...16Z".
+    if (signed >= effective) {
       throw new VerifyError(
         ERROR_CLASSES.REVOKED_KID,
         `kid ${JSON.stringify(kid)} revoked effective ${effectiveAt}; ` +

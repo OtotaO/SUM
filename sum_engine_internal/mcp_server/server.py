@@ -522,8 +522,8 @@ def build_server() -> FastMCP:
                 state_integer_digits=state_digits,
                 tome_lines=tome_lines,
                 signatures_present={
-                    "ed25519": "ed25519_signature" in bundle or "public_key" in bundle,
-                    "hmac": "hmac_signature" in bundle,
+                    "ed25519": "public_signature" in bundle,
+                    "hmac": "signature" in bundle,
                 },
                 sum_cli=bundle.get("sum_cli"),
             )
@@ -788,8 +788,9 @@ def _resolve_extractor(extractor: str) -> str:
 
     ``extractor="auto"`` resolves to ``"sieve"`` unconditionally
     here — even if ``OPENAI_API_KEY`` is set. The CLI's
-    ``_pick_extractor`` falls through to ``llm`` on auto when
-    the env var is set; the MCP path does not, because a
+    ``_pick_extractor`` uses ``llm`` on auto only when spaCy is not
+    installed and the env var is set (and says so on stderr); the MCP
+    path never does, because a
     prompt-injected client should not be able to drive
     network calls via the auto path. Set
     ``SUM_MCP_ALLOW_NETWORK=1`` and pass ``extractor="llm"``
@@ -811,32 +812,53 @@ def _build_schema_catalogue() -> dict:
             "version": _SUPPORTED_CANONICAL_FORMAT,
             "prime_scheme": _SUPPORTED_PRIME_SCHEME,
             "fields": {
-                "canonical_tome": "Newline-delimited 'The {s} {p} {o}.' lines",
+                "canonical_tome": "Newline-delimited 'The {s} {p} {o}.' lines under section headers",
                 "state_integer": "LCM of all axiom primes (decimal string)",
+                "state_integer_hex": "The same state integer in hex (convenience copy, unsigned)",
                 "axiom_count": "Number of axioms in the tome",
                 "branch": "Branch name (default 'main')",
-                "title": "Optional human-readable title",
-                "canonical_format_version": "Format version (currently 1.0.0)",
+                "bundle_version": "Bundle format version",
+                "canonical_format_version": "Tome format version (currently 1.0.0)",
                 "prime_scheme": "Prime-derivation scheme (currently sha256_64_v1)",
-                "ed25519_signature": "Optional — base64url Ed25519 over canonical bytes",
-                "public_key": "Optional — base64url Ed25519 public key",
-                "hmac_signature": "Optional — hex HMAC-SHA256",
+                "is_delta": "Whether the bundle is a delta against another state",
+                "timestamp": "ISO 8601 timestamp; covered by both signatures",
+                "signature": "Optional 'hmac-sha256:<hex>' HMAC over "
+                             "'canonical_tome|state_integer|timestamp'; "
+                             "required when a verifier supplies the key",
+                "public_signature": "Optional 'ed25519:<base64>' Ed25519 signature over "
+                                    "'canonical_tome|state_integer|timestamp'",
+                "public_key": "Optional 'ed25519:<base64>' public key embedded in the "
+                              "bundle; it is not a trust anchor, so pin it out of band",
+            },
+            "unsigned_research_metadata": {
+                "axiom_graph_entropy": "Optional; present only when numpy is installed",
+                "axiom_graph_entropy_ci": "Optional; present only when numpy is installed",
+                "axiom_consistency_check": "Optional z3 check; present only when z3 is installed",
+                "axiom_distribution_mmd": "Optional; present only when numpy is installed",
+                "axiom_distribution_mmd_threshold": "Optional; present only when numpy is installed",
+                "axiom_corruption_score": "Optional; present only when numpy is installed",
+                "note": "None of these fields is signed; do not base trust decisions on them",
             },
             "spec": "docs/PROOF_BOUNDARY.md §1.3.1, §1.4",
         },
         "sum.render_receipt.v1": {
             "schema": "sum.render_receipt.v1",
-            "fields": {
-                "schema": "Always 'sum.render_receipt.v1'",
-                "render_id": "UUID of the render call",
-                "issued_at": "ISO 8601 UTC timestamp",
-                "engine_version": "Worker version that signed",
-                "input_triples_hash": "sha256 over JCS-canonical triples",
-                "input_slider_position": "5-axis slider snapshot",
-                "output_tome_hash": "sha256 over the rendered tome",
-                "digital_source_type": "C2PA digital_source_type alignment",
+            "envelope_fields": {
+                "schema": "Always 'sum.render_receipt.v1' (outside the signature)",
                 "kid": "JWKS key ID used to sign",
-                "alg": "Signing algorithm (currently EdDSA)",
+                "payload": "The signed object below",
+                "jws": "Detached JWS '<protected>..<signature>'; header alg EdDSA, b64 false",
+            },
+            "fields": {
+                "render_id": "First 16 hex chars of sha256(cache_key || tome)",
+                "sliders_quantized": "Post-quantize 5-axis slider values",
+                "triples_hash": "'sha256-<hex>' of JCS-canonical post-density triples, "
+                                "componentwise sorted",
+                "tome_hash": "'sha256-<hex>' of the tome's UTF-8 bytes",
+                "model": "Model the provider reported, or 'canonical-deterministic-v0'",
+                "provider": "anthropic | openai | cf-ai-gateway-* | canonical-path",
+                "signed_at": "ISO 8601 UTC timestamp at issuance",
+                "digital_source_type": "C2PA digitalSourceType value",
             },
             "spec": "docs/RENDER_RECEIPT_FORMAT.md",
             "envelope": "RFC 7515 §A.5 detached JWS over RFC 8785 JCS bytes",

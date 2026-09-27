@@ -566,3 +566,103 @@ async def test_llm_axis_receipt_round_trips_through_verifier():
     assert verify_result.verified is True
     assert receipt["payload"]["provider"] == "openai"
     assert receipt["payload"]["digital_source_type"] == "trainedAlgorithmicMedia"
+
+
+# ---------------------------------------------------------------------------
+# Provider key scoping: the OpenAI key must never reach another provider
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("model,expected", [
+    ("gpt-4o-mini", True),
+    ("o3-mini", True),
+    ("groq:llama-3.3-70b-versatile", False),
+    ("cerebras:llama-4-scout-17b-16e-instruct", False),
+    ("nim:glm-4", False),
+    ("nim:meta/llama-3.3-70b-instruct", False),
+    ("ollama:llama3.1", False),
+    ("llamacpp:model", False),
+    ("local:my-model", False),
+    ("meta-llama/Llama-3.3-70B-Instruct", False),
+])
+def test_routes_to_openai_matches_from_model(model, expected):
+    from sum_engine_internal.ensemble.live_llm_adapter import routes_to_openai
+
+    assert routes_to_openai(model) is expected
+
+
+@pytest.mark.parametrize("model", [
+    "gpt-4o-mini", "o3-mini", "groq:llama-3.3-70b-versatile", "cerebras:llama3.1-8b",
+    "nim:glm-4", "nim:meta/llama-3.3-70b-instruct", "ollama:llama3.1",
+    "llamacpp:model", "local:my-model", "meta-llama/Llama-3.3-70B-Instruct",
+])
+def test_routes_to_openai_agrees_with_from_model_routing(model, monkeypatch):
+    """routes_to_openai(m) is True exactly when from_model targets
+    api.openai.com (base_url None), so the key gate cannot drift from the
+    router it guards."""
+    from sum_engine_internal.ensemble.live_llm_adapter import LiveLLMAdapter, routes_to_openai
+
+    for var in ("OPENAI_API_KEY", "GROQ_API_KEY", "CEREBRAS_API_KEY",
+                "NVIDIA_API_KEY", "HF_TOKEN"):
+        monkeypatch.setenv(var, f"test-{var.lower()}")
+    monkeypatch.setenv("SUM_LOCAL_LLM_BASE", "http://127.0.0.1:9/v1")
+    adapter = LiveLLMAdapter.from_model(model)
+    assert (adapter.base_url is None) is routes_to_openai(model)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("model", [
+    "groq:llama-3.3-70b-versatile",
+    "cerebras:llama-4-scout-17b-16e-instruct",
+    "nim:glm-4",
+])
+async def test_slider_never_forwards_the_openai_key_to_another_provider(model):
+    """The documented free-tier recipes use slash-free groq:/cerebras: ids.
+    The slider used to pass env.openai_api_key explicitly for those, and
+    from_model's `api_key or GROQ_API_KEY` then sent the OpenAI key to
+    api.groq.com / api.cerebras.ai."""
+    slider = get_transform("slider")
+    env = TransformEnv(openai_api_key="sk-openai-must-not-leak", model=model)
+    seen: dict = {}
+    fake_extractor = _FakeExtractor([("alice", "likes", "cats")])
+
+    def fake_from_model(m, api_key=None):
+        seen["model"], seen["api_key"] = m, api_key
+        return _FakeLiveLLMAdapter(fake_extractor=fake_extractor, api_key=api_key, model=m)
+
+    with patch(
+        "sum_engine_internal.ensemble.live_llm_adapter.LiveLLMAdapter.from_model",
+        fake_from_model,
+    ), patch(
+        "sum_engine_internal.ensemble.live_llm_adapter.make_chat_client",
+        lambda adapter: _FakeOpenAIChatClient(adapter, tome="alice likes cats."),
+    ):
+        await slider.apply(
+            {"triples": [["alice", "likes", "cats"]]},
+            {"density": 1.0, "length": 0.9, "formality": 0.5,
+             "audience": 0.5, "perspective": 0.5},
+            env,
+        )
+    assert seen["model"] == model
+    assert seen["api_key"] is None
+
+
+def test_llm_dispatch_never_forwards_the_openai_key(monkeypatch):
+    """get_adapter's HF route and LocalLLMAdapter used to fall back to
+    OPENAI_API_KEY, sending it to router.huggingface.co or a local base."""
+    pytest.importorskip("openai")
+    from sum_engine_internal.ensemble import llm_dispatch
+
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-openai-must-not-leak")
+    monkeypatch.delenv("HF_TOKEN", raising=False)
+    with pytest.raises(ValueError, match="HF_TOKEN"):
+        llm_dispatch.get_adapter("meta-llama/Llama-3.3-70B-Instruct")
+
+    local = llm_dispatch.get_adapter("ollama:llama3.1")
+    assert local._client.api_key != "sk-openai-must-not-leak"
+
+    with pytest.raises(ValueError, match="never forwarded"):
+        llm_dispatch.OpenAIAdapter(model="x", base_url="https://example.invalid/v1")
+
+    direct = llm_dispatch.OpenAIAdapter(model="gpt-4o-mini")
+    assert direct._client.api_key == "sk-openai-must-not-leak"

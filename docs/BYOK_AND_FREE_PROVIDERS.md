@@ -46,6 +46,8 @@ echo '{"triples":[["alice","graduated","2012"]]}' \
 
 Rate cap is 40 req/min/model regardless of credit balance.
 
+Each hosted prefix uses only its own key: `OPENAI_API_KEY` is never sent to NIM, Groq, Cerebras or Hugging Face. It goes to api.openai.com, and, on the `local:` route only, to the `SUM_LOCAL_LLM_BASE` you configure (see the Modal and Fireworks recipes below).
+
 ## Recipe: Groq (free daily token quota, fastest TTFT)
 
 Best for low-latency UX. <300ms time-to-first-token consistently; Llama 3.3 70B at ~476 tok/s.
