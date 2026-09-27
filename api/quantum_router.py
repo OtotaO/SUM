@@ -10,7 +10,7 @@ reachable from the README's "What ships today" surfaces, the live Worker
 at ``sum-demo.ototao.workers.dev``, or the dogfood quickstart.
 
 The substrate (``GodelStateAlgebra``, ``AkashicLedger``, ``OuroborosVerifier``,
-``ZKSemanticProver``, ``EpistemicMeshNetwork``, etc.) IS load-bearing for the
+``DivisibilityWitness``, ``EpistemicMeshNetwork``, etc.) IS load-bearing for the
 shipping surfaces under ``sum_engine_internal/``; only the FastAPI HTTP
 layer wrapping them is internal-research.
 
@@ -23,7 +23,8 @@ today and run in CI via default pytest discovery.
 When to PROMOTE this to a shipping ``[api]`` PyPI extra: when a named
 buyer or grant deliverable explicitly references one of the endpoint
 clusters — branchable KG (``/branch`` + ``/merge`` + ``/time-travel``),
-ZK semantic proofs (``/zk/prove`` + ``/zk/verify``), federated KG sync
+divisibility witnesses (``/zk/prove`` + ``/zk/verify``; the paths keep
+their historical names, but these are NOT zero-knowledge), federated KG sync
 (``/sync`` + ``/peers``), or JWT-tenant knowledge OS (``/auth/token``).
 The web research of 2026-05-30 found these align with recognized 2026
 directions (VersionRAG, ConVer-G, Microsoft GraphRAG, ZK for AI agents,
@@ -54,7 +55,7 @@ Exposes the Gödel-State Engine to the outside world via FastAPI:
     /merge           – LCM-based branch merging
     /time-travel     – Chronos Engine (historical state rebuild)
     /peers           – P2P Holographic Mesh peer management
-    /zk/prove        – Zero-Knowledge Semantic Proofs
+    /zk/prove        – Divisibility witness (reveals the state; not zero-knowledge)
     /tick            – Current Akashic Ledger tick
     /auth/token      – Quantum Passport (JWT multi-tenancy)
 
@@ -90,7 +91,7 @@ from sum_engine_internal.ensemble.epistemic_loop import QuantumExtrapolator
 from sum_engine_internal.ensemble.causal_triggers import CausalTriggerMap
 from sum_engine_internal.ensemble.tome_generator import AutoregressiveTomeGenerator
 from sum_engine_internal.ensemble.ouroboros import OuroborosVerifier
-from sum_engine_internal.algorithms.zk_semantics import ZKSemanticProver
+from sum_engine_internal.algorithms.divisibility_witness import DivisibilityWitness
 from sum_engine_internal.infrastructure.p2p_mesh import EpistemicMeshNetwork
 from sum_engine_internal.ensemble.mass_semantic_engine import MassSemanticEngine
 from sum_engine_internal.ensemble.confidence_calibrator import ConfidenceCalibrator
@@ -1095,7 +1096,7 @@ async def get_latest_tick():
     return {"latest_tick": tick}
 
 
-# ─── Zero-Knowledge Semantic Proofs ──────────────────────────────────
+# ─── Divisibility witnesses (historical /zk/* paths; not zero-knowledge) ─
 
 @router.post("/zk/prove")
 async def generate_zk_proof(
@@ -1103,10 +1104,10 @@ async def generate_zk_proof(
     user_id: str = Depends(get_current_user),
 ):
     """
-    Generates a Zero-Knowledge proof that this node knows a specific
-    axiom without revealing the full state integer.
-
-    Returns a salted hash commitment over the quotient.
+    Returns a divisibility witness for a known axiom on the branch state:
+    the prime, the quotient ``state // prime``, a salt and a SHA-256
+    commitment to the quotient. NOT zero-knowledge: ``quotient * prime``
+    is the full state integer, so the response reveals the state.
     """
     if not kos.is_booted:
         raise HTTPException(status_code=503, detail="KOS booting")
@@ -1118,7 +1119,7 @@ async def generate_zk_proof(
     effective_branch = user_id if user_id != "main" else req.branch
     state = _get_branch_state(effective_branch)
     try:
-        proof = ZKSemanticProver.generate_proof(state, prime)
+        proof = DivisibilityWitness.generate_proof(state, prime)
         return proof
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -1126,8 +1127,9 @@ async def generate_zk_proof(
 
 @router.post("/zk/verify")
 async def verify_zk_proof(proof: dict):
-    """Verifies a Zero-Knowledge semantic proof."""
-    valid = ZKSemanticProver.verify_proof(proof)
+    """Checks a divisibility witness's hash commitment over its quotient and
+    salt. It does not bind the prime or any state (see DivisibilityWitness)."""
+    valid = DivisibilityWitness.verify_proof(proof)
     return {"valid": valid}
 
 

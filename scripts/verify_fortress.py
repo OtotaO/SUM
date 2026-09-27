@@ -157,16 +157,16 @@ def main():
         all_pass &= check("Both keys trusted", len(trusted) == 2)
         all_pass &= check("Old key in trusted list", pub1 in trusted)
 
-    # ── 6. ZK Semantic Proof ──────────────────────────────────
-    print("\n[6] ZK Semantic Proof Round-Trip")
-    from sum_engine_internal.algorithms.zk_semantics import ZKSemanticProver
-    zk_alg = GodelStateAlgebra()
-    zk_p = zk_alg.get_or_mint_prime("fortress", "zk", "proof")
-    zk_proof = ZKSemanticProver.generate_proof(zk_p, zk_p)
-    all_pass &= check("ZK proof generates", "commitment" in zk_proof)
-    all_pass &= check("ZK proof verifies", ZKSemanticProver.verify_proof(zk_proof))
-    zk_proof["quotient"] = str(int(zk_proof["quotient"]) + 1)
-    all_pass &= check("Tampered ZK rejected", not ZKSemanticProver.verify_proof(zk_proof))
+    # ── 6. Divisibility witness (not zero-knowledge) ──────────
+    print("\n[6] Divisibility Witness Round-Trip")
+    from sum_engine_internal.algorithms.divisibility_witness import DivisibilityWitness
+    wit_alg = GodelStateAlgebra()
+    wit_p = wit_alg.get_or_mint_prime("fortress", "zk", "proof")
+    witness = DivisibilityWitness.generate_proof(wit_p, wit_p)
+    all_pass &= check("Witness generates", "commitment" in witness)
+    all_pass &= check("Witness commitment verifies", DivisibilityWitness.verify_proof(witness))
+    witness["quotient"] = str(int(witness["quotient"]) + 1)
+    all_pass &= check("Tampered witness rejected", not DivisibilityWitness.verify_proof(witness))
 
     # ── 7. Akashic Ledger Replay ──────────────────────────────
     print("\n[7] Akashic Ledger Replay")

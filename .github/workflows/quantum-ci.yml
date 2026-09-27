@@ -195,7 +195,7 @@ jobs:
       # Non-zero exit here means the trust triangle drifted — hard-stop merge.
       run: python -m scripts.verify_cross_runtime
 
-    - name: Run A1-A6 adversarial rejection matrix
+    - name: Run A1-A8 adversarial rejection matrix
       # Companion to the K-matrix: proves the two verifiers agree on
       # INVALIDITY as well as validity. Each fixture is a deliberately
       # malformed bundle (missing tome, tampered signature, unknown

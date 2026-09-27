@@ -56,9 +56,11 @@ sidesteps this entirely: it bounds Σ E[L_i], a quantity that IS additive
 by definition of the sum, never E[L_e2e].
 
 Honest boundary (inherited from the receipt family): every loss is a
-NAMED PROXY, marginal, valid under exchangeability with each hop's
-calibration corpus; nothing here covers arrangement / sound / connotation
-/ implicature.
+NAMED PROXY, marginal over each hop's calibration corpus. A confidence
+reading needs independent draws from each hop's target distribution, a fixed
+policy and no calibration reuse (exchangeability alone is insufficient);
+without a sampling contract each hop is a descriptive batch measurement.
+Nothing here covers arrangement / sound / connotation / implicature.
 
 Author: ototao
 License: Apache License 2.0
@@ -154,8 +156,9 @@ class ChainDriftReadout:
             "MEASUREMENT, not a certified bound. The additive budget Σ Lᵢ is "
             "the drift consumed hop-by-hop; its relationship to the "
             "end-to-end loss is proxy-dependent and not guaranteed in either "
-            "direction (see slack). For a (1-δ) bound on cumulative EXPECTED "
-            "per-hop loss, compose per-hop meaning_risk receipts "
+            "direction (see slack). For corpus-level bound arithmetic on "
+            "cumulative EXPECTED per-hop loss (descriptive unless every hop's "
+            "sampling assumptions hold), compose per-hop meaning_risk receipts "
             "(compose_drift_budget)"
         )
 
@@ -209,8 +212,9 @@ def measure_chain_drift(
 
 @dataclass(frozen=True, slots=True)
 class CertifiedDriftBudget:
-    """A certified ceiling on the cumulative EXPECTED per-hop meaning-loss
-    across a chain, holding JOINTLY.
+    """An additive ceiling on the cumulative EXPECTED per-hop meaning-loss
+    across a chain, holding JOINTLY only if every per-hop bound is a valid
+    confidence bound (see ``scope``); otherwise descriptive arithmetic.
 
     Reads as: "with confidence ≥ ``joint_confidence``, EVERY hop's expected
     meaning-loss is at or below its own certified bound simultaneously,
@@ -221,7 +225,7 @@ class CertifiedDriftBudget:
     What this does NOT say: it does not bound the end-to-end expected loss
     E[L_e2e] (that is not additive — see the module docstring), and it is
     not a per-document statement. It bounds the additive sum of per-hop
-    expectations, each within its own corpus's exchangeability scope.
+    expectations, each conditional on its own hop's sampling assumptions.
     """
 
     per_hop_bounds: tuple[float, ...]
@@ -255,13 +259,17 @@ class CertifiedDriftBudget:
     @property
     def scope(self) -> str:
         return (
-            f"certified ceiling on cumulative EXPECTED per-hop meaning-loss "
-            f"Σ E[Lᵢ] ≤ {self.budget:.6f}, holding JOINTLY across all "
-            f"{self.n_hops} hops with confidence ≥ {self.joint_confidence:.4f} "
-            f"(Bonferroni union of the per-hop receipts). Each per-hop bound "
-            f"is marginal, valid under exchangeability with that hop's "
-            f"calibration corpus, over a NAMED proxy; this composition does "
-            f"NOT bound end-to-end expected loss and is NOT per-document"
+            f"additive ceiling on cumulative EXPECTED per-hop meaning-loss "
+            f"Σ E[Lᵢ] ≤ {self.budget:.6f}, jointly across all {self.n_hops} "
+            f"hops at confidence ≥ {self.joint_confidence:.4f} (Bonferroni "
+            f"union of the per-hop receipts) ONLY IF every per-hop bound is a "
+            f"valid confidence bound: each is marginal over that hop's "
+            f"calibration corpus, over a NAMED "
+            f"proxy, and needs independent draws from that hop's target "
+            f"distribution, a fixed policy and no calibration reuse "
+            f"(exchangeability alone is insufficient); without them this is "
+            f"descriptive batch arithmetic. This composition "
+            f"does NOT bound end-to-end expected loss and is NOT per-document"
         )
 
 

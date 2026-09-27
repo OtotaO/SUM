@@ -2,7 +2,7 @@
 Phase 10 Tests — The Chronos Engine & The Holographic Mesh
 
 Validates:
-    - Zero-Knowledge Semantic Proofs (ZK-SP)
+    - Divisibility witnesses over Gödel states (not zero-knowledge)
     - Chronos Engine (Time Travel via Akashic Ledger replay)
     - P2P Holographic Mesh (Gossip-based Gödel Integer sync)
     - Proof verification (tamper detection)
@@ -18,24 +18,24 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
-from sum_engine_internal.algorithms.zk_semantics import ZKSemanticProver
+from sum_engine_internal.algorithms.divisibility_witness import DivisibilityWitness
 from sum_engine_internal.infrastructure.akashic_ledger import AkashicLedger
 from sum_engine_internal.infrastructure.p2p_mesh import EpistemicMeshNetwork
 
 
-# ─── 1. Zero-Knowledge Semantic Proofs ───────────────────────────────
+# ─── 1. Divisibility witnesses ───────────────────────────────────────
 
-class TestZeroKnowledgeProofs:
+class TestDivisibilityWitness:
 
     def test_valid_proof_generation(self):
-        """Generate and verify a valid ZK-SP."""
+        """Generate and verify a valid divisibility witness."""
         algebra = GodelStateAlgebra()
         p1 = algebra.get_or_mint_prime("earth", "orbits", "sun")
         p2 = algebra.get_or_mint_prime("moon", "orbits", "earth")
 
         state = p1 * p2
 
-        proof = ZKSemanticProver.generate_proof(state, p1)
+        proof = DivisibilityWitness.generate_proof(state, p1)
 
         assert "commitment" in proof
         assert "salt" in proof
@@ -48,8 +48,8 @@ class TestZeroKnowledgeProofs:
         p1 = algebra.get_or_mint_prime("sky", "color", "blue")
         state = p1
 
-        proof = ZKSemanticProver.generate_proof(state, p1)
-        assert ZKSemanticProver.verify_proof(proof) is True
+        proof = DivisibilityWitness.generate_proof(state, p1)
+        assert DivisibilityWitness.verify_proof(proof) is True
 
     def test_tampered_proof_fails(self):
         """Modifying the quotient invalidates the proof."""
@@ -58,12 +58,12 @@ class TestZeroKnowledgeProofs:
         p2 = algebra.get_or_mint_prime("moon", "orbits", "earth")
         state = p1 * p2
 
-        proof = ZKSemanticProver.generate_proof(state, p1)
-        assert ZKSemanticProver.verify_proof(proof) is True
+        proof = DivisibilityWitness.generate_proof(state, p1)
+        assert DivisibilityWitness.verify_proof(proof) is True
 
         # Tamper with the quotient
         proof["quotient"] = "999"
-        assert ZKSemanticProver.verify_proof(proof) is False
+        assert DivisibilityWitness.verify_proof(proof) is False
 
     def test_proof_rejects_non_entailed_prime(self):
         """Cannot generate a proof for a prime not in the state."""
@@ -74,10 +74,11 @@ class TestZeroKnowledgeProofs:
         state = p1  # Only contains p1
 
         with pytest.raises(ValueError, match="does not entail"):
-            ZKSemanticProver.generate_proof(state, p2)
+            DivisibilityWitness.generate_proof(state, p2)
 
-    def test_proof_hides_full_state(self):
-        """The proof does not contain the full state integer."""
+    def test_witness_reveals_full_state(self):
+        """The state is not a field, but quotient * prime recovers it, so the
+        witness reveals the state (it is not zero-knowledge)."""
         algebra = GodelStateAlgebra()
         primes = []
         for i in range(10):
@@ -88,7 +89,7 @@ class TestZeroKnowledgeProofs:
         for p in primes:
             state *= p
 
-        proof = ZKSemanticProver.generate_proof(state, primes[0])
+        proof = DivisibilityWitness.generate_proof(state, primes[0])
 
         # Quotient is State // prime, not State itself
         quotient = int(proof["quotient"])
@@ -101,8 +102,8 @@ class TestZeroKnowledgeProofs:
         p1 = algebra.get_or_mint_prime("x", "is", "1")
         state = p1
 
-        proof1 = ZKSemanticProver.generate_proof(state, p1)
-        proof2 = ZKSemanticProver.generate_proof(state, p1)
+        proof1 = DivisibilityWitness.generate_proof(state, p1)
+        proof2 = DivisibilityWitness.generate_proof(state, p1)
 
         assert proof1["salt"] != proof2["salt"]
         assert proof1["commitment"] != proof2["commitment"]
@@ -334,13 +335,13 @@ class TestHolographicMesh:
         assert not mesh.is_running
 
 
-# ─── 4. Integration: ZK + Branching + Time Travel ───────────────────
+# ─── 4. Integration: witnesses + Branching + Time Travel ────────────
 
 class TestPhase10Integration:
 
     @pytest.mark.asyncio
-    async def test_zk_proof_across_branches(self):
-        """ZK proofs work on branch-specific states."""
+    async def test_witness_across_branches(self):
+        """Divisibility witnesses work on branch-specific states."""
         algebra = GodelStateAlgebra()
 
         p_base = algebra.get_or_mint_prime("base", "is", "truth")
@@ -350,16 +351,16 @@ class TestPhase10Integration:
         branches["experiment"] = math.lcm(branches["main"], p_exp)
 
         # Can prove experiment axiom on experiment branch
-        proof = ZKSemanticProver.generate_proof(branches["experiment"], p_exp)
-        assert ZKSemanticProver.verify_proof(proof) is True
+        proof = DivisibilityWitness.generate_proof(branches["experiment"], p_exp)
+        assert DivisibilityWitness.verify_proof(proof) is True
 
         # Cannot prove experiment axiom on main branch
         with pytest.raises(ValueError):
-            ZKSemanticProver.generate_proof(branches["main"], p_exp)
+            DivisibilityWitness.generate_proof(branches["main"], p_exp)
 
     @pytest.mark.asyncio
     async def test_time_travel_creates_provable_branch(self, tmp_path):
-        """Time-travel branches support ZK proofs."""
+        """Time-travel branches support divisibility witnesses."""
         db_path = str(tmp_path / "integration.db")
         algebra = GodelStateAlgebra()
         ledger = AkashicLedger(db_path)
@@ -379,9 +380,9 @@ class TestPhase10Integration:
         past_state = await ledger.rebuild_state(past_alg, max_seq_id=tick_1)
 
         # Can prove alice was 30 in the past
-        proof_30 = ZKSemanticProver.generate_proof(past_state, p1)
-        assert ZKSemanticProver.verify_proof(proof_30) is True
+        proof_30 = DivisibilityWitness.generate_proof(past_state, p1)
+        assert DivisibilityWitness.verify_proof(proof_30) is True
 
         # Cannot prove alice was 31 in the past
         with pytest.raises(ValueError):
-            ZKSemanticProver.generate_proof(past_state, p2)
+            DivisibilityWitness.generate_proof(past_state, p2)

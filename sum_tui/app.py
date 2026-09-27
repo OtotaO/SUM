@@ -189,9 +189,12 @@ class SumApp(App):
                 Text(f"✗ demo failed: {data.get('error', 'unknown')}", style=RED)
             )
             return
-        self.query_one("#lossnum", Static).update(f"{bound:.4f}")
+        # An upper bound is shown rounded UP to 4 places (from the signed
+        # micro-unit value), never down: 0.645438 displays as 0.6455.
+        shown = -(-round(bound * 1_000_000) // 100) / 10_000
+        self.query_one("#lossnum", Static).update(f"{shown:.4f}")
         self.query_one("#loss-cap", Static).update(
-            f"Historical BillSum proxy bound @95% · n={data.get('n', '?')}"
+            f"BillSum proxy bound value, delta 0.05, descriptive · n={data.get('n', '?')}"
         )
         self._demo_source_text = (
             "DEMO · BillSum binding-gate golden (CC0).\n\n"

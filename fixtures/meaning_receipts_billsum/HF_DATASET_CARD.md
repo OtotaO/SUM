@@ -15,9 +15,11 @@ size_categories:
 
 # SUM BillSum binding-gate meaning-risk receipt
 
-A **signed, independently re-verifiable** certificate of how much meaning an AI
-transformation could have lost — bounded with a distribution-free
-certificate over a public-domain corpus. This is a worked, citable example of
+A **signed, independently re-verifiable** receipt recording a named
+meaning-loss proxy over 64 public-domain BillSum (bill, reference summary)
+pairs: a mean loss and a Hoeffding bound value that a verifier reproduces
+exactly. The summaries are the dataset's human-written references, not AI
+output, and the values describe these 64 pairs only. This is a worked, citable example of
 `sum.meaning_risk_receipt.v1` from [SUM](https://github.com/OtotaO/SUM); the
 files here are copies of `fixtures/meaning_receipts_billsum/` in that repo.
 
@@ -27,8 +29,8 @@ files here are copies of `fixtures/meaning_receipts_billsum/` in that repo.
 |---|---|
 | `meaning_risk_receipt.billsum.golden.json` | the signed receipt (Ed25519 detached JWS over JCS-canonical bytes) |
 | `jwks.json` | the issuer public key set (verify against this) |
-| `losses_billsum.json` | the committed per-pair meaning-loss vector (integer-micro), to replay the bound |
-| `corpus_billsum_test_first64.json` | the 64 BillSum test bills (CC0-1.0) the bound is over |
+| `losses_billsum.json` | the committed per-pair meaning-loss vector (integer-micro), to replay the bound arithmetic |
+| `corpus_billsum_test_first64.json` | the 64 BillSum test bills (CC0-1.0) the values are computed over |
 
 Corpus: the first 64 bills of the [BillSum](https://huggingface.co/datasets/billsum)
 test split (US Congressional/California legislation, public domain / CC0).
@@ -46,11 +48,11 @@ python -m sum_verify meaning_risk_receipt.billsum.golden.json \
 ```
 
 `verified: true` + `replayed: true` means the committed losses hash to the
-receipt's anchor and re-certify to its stated bound by exact integer equality —
-on your machine, against the issuer's key, trusting nobody. Schema +
+receipt's anchor and reproduce its stated bound arithmetic by exact integer
+equality, on your machine. **Demo key:** the signing key is derived from a publicly known all-zero Ed25519 seed, so anyone can sign under this JWKS: the signature authenticates no issuer, and only the arithmetic replay is meaningful. Schema +
 verification algorithm: [`docs/RECEIPT_FAMILY_SPEC.md`](https://github.com/OtotaO/SUM/blob/main/docs/RECEIPT_FAMILY_SPEC.md).
 
-## What it bounds — and what it does NOT (read this)
+## What it records — and what it does NOT (read this)
 
 The receipt's own disclosure, verbatim:
 
@@ -61,9 +63,9 @@ The receipt's own disclosure, verbatim:
 > loss vector; the LOSS COMPUTATION is machine-pinned (model-judge float drift,
 > F23/F26) and reproduced only on a matching torch/MiniLM stack.
 
-- **Bound:** expected meaning-loss ≤ **0.6454** at **95%** (n = 64), `controlled = true`.
+- **Recorded values:** mean loss 0.4925 and a Hoeffding bound value of **0.6455** at δ = 0.05 (rounded up from the signed 0.645438; n = 64), with `controlled = true` against the issuer's illustrative 0.70 target. The first 64 bills are a fixed prefix, not an independent random draw, so these values describe these 64 pairs; they are not a 95% bound on expected meaning-loss. (The signed wording above says "under exchangeability"; it predates the correction that exchangeability alone would not support such a bound either.)
 - **`not_covered`:** `arrangement`, `sound`, `connotation`, `implicature` — the layers the proxy explicitly does not measure.
-- The meaning proxy tracks *human* faithfulness only **modestly** (Spearman ρ = 0.267–0.291, pooled summary-level, on SummEval). This is a directionally-valid, distribution-free bound on a *named proxy*, **not** a substitute for human judgment. Provenance is cryptographically solid; the meaning recomputation is advisory.
+- The meaning proxy tracks *human* faithfulness only **modestly** (Spearman ρ = 0.267–0.291, pooled summary-level, on SummEval). The values describe a *named proxy* and are **not** a substitute for human judgment. The signature shows only that the holder of the demo key signed these bytes (see **Demo key** above); the arithmetic replay is the meaningful check, and re-deriving the losses from text is machine-pinned.
 
 ## Cite / reuse
 

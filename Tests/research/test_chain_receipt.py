@@ -412,3 +412,27 @@ def test_chain_end_to_end_losses_totality(end_to_end_losses):
         hop_envelopes=[_PROP_HOP1, _PROP_HOP2],
         end_to_end_losses=end_to_end_losses,
     ))
+
+
+def test_new_budget_scope_is_conditional_and_historical_is_pinned():
+    """New chains sign the conditional statement (introduced with PR #531);
+    the earlier unconditional wording is kept verbatim only for historical fixtures
+    and is flagged in verdicts."""
+    from sum_verify._verdict import (
+        HISTORICAL_BUDGET_SCOPE_NOTE,
+        HISTORICAL_BUDGET_SCOPE_STATEMENT,
+        scope_fields,
+    )
+
+    s = BUDGET_SCOPE_STATEMENT
+    assert s != HISTORICAL_BUDGET_SCOPE_STATEMENT
+    assert s.startswith("budget_micro is the sum of the per-hop upper-bound values")
+    assert "IF each hop's bound holds" in s and "descriptive sum" in s
+    assert "does NOT bound the end-to-end loss" in s and "no triangle inequality" in s
+    assert "joint confidence" not in s
+    old = {"budget_micro": 1, "joint_delta_micro": 1,
+           "budget_scope": HISTORICAL_BUDGET_SCOPE_STATEMENT}
+    new = dict(old, budget_scope=s)
+    chain = "sum.chain_receipt.v1"
+    assert scope_fields(chain, old, replayed=False)["budget_scope_note"] == HISTORICAL_BUDGET_SCOPE_NOTE
+    assert "budget_scope_note" not in scope_fields(chain, new, replayed=False)

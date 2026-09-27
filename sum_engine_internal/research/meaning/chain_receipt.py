@@ -17,8 +17,10 @@ receipt binds:
 3. optionally, a DIRECTLY measured end-to-end leg (source→final losses
    certified like any meaning-risk bound, with its own replay anchor).
 
-The honest split is structural: the additive budget bounds the SUM of
-per-hop expected proxy losses; it does NOT bound end-to-end loss (the
+The honest split is structural: the additive budget is the sum of the
+per-hop upper-bound values (a bound on the SUM of per-hop expected proxy
+losses only under each hop's sampling assumptions); it does NOT bound
+end-to-end loss (the
 proxy is a directed loss, not a metric — both over- and under-counting
 regimes are real and measured; see ``drift_budget.py``). The payload
 carries that statement in a mandatory ``budget_scope`` field a verifier
@@ -93,13 +95,21 @@ DEFAULT_CHAIN_DISCLOSURE = (
 # Mandatory, verifier-enforced. THE honesty line for composition: without
 # it a reader will read Σ(bounds) as an end-to-end guarantee — the exact
 # overclaim the drift-budget audit measured both failure directions of.
+# Conditional since PR #531; receipts signed earlier (including builds of the
+# v0.11.0 tag) carry sum_verify._verdict.HISTORICAL_BUDGET_SCOPE_STATEMENT,
+# and verdicts flag it.
 BUDGET_SCOPE_STATEMENT = (
-    "budget_micro bounds the SUM of per-hop expected proxy losses "
-    "(Bonferroni union bound: joint confidence >= 1 - joint_delta). It "
-    "does NOT bound the end-to-end loss: the proxy is a directed loss, "
-    "not a metric, and no triangle inequality holds in either direction. "
-    "The end_to_end leg, when present, is a separate DIRECT measurement "
-    "over source-to-final pairs with its own replay anchor."
+    "budget_micro is the sum of the per-hop upper-bound values. IF each "
+    "hop's bound holds with probability >= 1 - delta_i under that hop's own "
+    "sampling assumptions (independent draws from its target distribution, "
+    "a fixed policy, no calibration reuse), THEN with probability >= "
+    "1 - joint_delta the SUM of per-hop expected proxy losses is at most "
+    "budget_micro (Bonferroni union bound). Without those assumptions it is "
+    "a descriptive sum. It does NOT bound the end-to-end loss: the proxy is "
+    "a directed loss, not a metric, and no triangle inequality holds in "
+    "either direction. The end_to_end leg, when present, is a separate "
+    "DIRECT measurement over source-to-final pairs with its own replay "
+    "anchor."
 )
 
 

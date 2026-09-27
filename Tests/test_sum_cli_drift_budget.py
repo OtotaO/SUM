@@ -52,6 +52,9 @@ def test_drift_budget_json(tmp_path):
     assert d["additive_budget"] == round(sum(h["loss"] for h in d["hops"]), 6)
     # scope must declare this is a measurement, not a bound
     assert "not a certified bound" in d["scope"]
+    # ... and must not promise an unconditional (1-delta) bound from receipts
+    assert "(1-δ) bound" not in d["scope"]
+    assert "descriptive unless every hop's sampling assumptions hold" in d["scope"]
     assert "slack" in d and "additive_is_conservative" in d
 
 
@@ -76,3 +79,18 @@ def test_drift_budget_missing_file_rc2(tmp_path):
     files = _chain(tmp_path)
     rc, _, _ = run(["drift-budget", files[0], "/no/such/file.txt", "--scorer", "lexical"])
     assert rc == 2
+
+
+def test_drift_budget_help_does_not_promise_a_certified_ceiling():
+    """The help points at receipts for corpus-level bound arithmetic and says
+    it is descriptive unless the sampling assumptions hold."""
+    import contextlib
+
+    from sum_cli.main import build_parser
+
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf), contextlib.suppress(SystemExit):
+        build_parser().parse_args(["drift-budget", "--help"])
+    text = " ".join(buf.getvalue().split())
+    assert "certified ceiling" not in text
+    assert "descriptive unless every hop's sampling assumptions hold" in text

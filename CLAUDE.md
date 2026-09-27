@@ -181,9 +181,10 @@ CLI, `RenderFrontier` + `sum frontier`, the unified
 (`docs/PRODUCT_VISION.md` — "attest, don't detect"), and **two REAL
 binding-gate receipts over real public benchmark corpora (BillSum, CC0;
 opus-100, licence unspecified)**
-(`fixtures/meaning_receipts_billsum/` CC0 ≤ 0.6454 @95%;
-`fixtures/meaning_receipts_translation/` opus-100 ≤ 0.4124 @95%, 39/64 at
-zero loss) — both hardened by a 5-skeptic pre-publication audit. A
+(`fixtures/meaning_receipts_billsum/` CC0 ≤ 0.6455 at δ = 0.05;
+`fixtures/meaning_receipts_translation/` opus-100 ≤ 0.4124 at δ = 0.05, 39/64
+at zero loss; both descriptive: fixed-prefix samples, not independent draws,
+so no 95% confidence reading applies) — both hardened by a 5-skeptic pre-publication audit. A
 **final-form Paper-1 draft** merged in PR #298. Then the **adoption arc**
 (PRs #300–#302, the live frontier — see handover §9): a 30-guest adoption
 simulation found **the honesty IS the moat** (rigorous skeptics = warmest) and
@@ -218,8 +219,9 @@ or a 95% composition-invariance guarantee. The Node verifier in `standalone_veri
 browser demo in `single_file_demo/`, both verify Ed25519 on the same
 bundle bytes — single_file_demo extended in PR #243 with cascade
 BYO-keys + CLI-recipe builder. The cross-runtime harness (`make
-xruntime` → K1 / K1-mw / K2 / K3 / K4) proves this and runs on
-every PR.
+xruntime` → K1 / K1-mw / K2 / K3 / K4, plus `make xruntime-adversarial`
+→ A1–A8) checks Python ↔ Node on every PR; no browser engine runs in CI,
+so the browser demo's verification is not CI-tested.
 
 **Bench-hardening worktrail status** (per `docs/BENCH_HARDENING_FROM_QCVV.md`,
 recommended order T5 → T1 → T4 → T2 → T3):
@@ -230,7 +232,7 @@ recommended order T5 → T1 → T4 → T2 → T3):
 - T3 — DKW worst-case bounds for render receipt trust scope: **OPEN** (needs `sum.slider_drift_bench.v1` receipts)
 
 **Internal research surfaces (NOT shipping, but present in repo):**
-- `api/quantum_router.py` + `quantum_main.py` — FastAPI surface with 26+ endpoints (`/state`, `/sync`, `/branch`, `/merge`, `/zk/prove`, `/zk/verify`, `/peers`, `/time-travel`, `/auth/token`, etc.). 1,684 LOC of working code, 58/58 tests pass via pytest default discovery (`Tests/test_phase13_zenith.py`, `test_phase14_ouroboros.py`, `test_phase15_abi.py`, `test_browser_extension.py`). NOT in PyPI wheel (`pyproject.toml:167` excludes `api*`); NOT in live Worker; NOT in dogfood quickstart. Banners at top of both files explain. **Promote to a shipping `[api]` extra only if a named buyer or grant deliverable explicitly references one of the endpoint clusters.** Demoted 2026-05-30 per operator decision following deeper-audit triage; of the substrate it composes, `GodelStateAlgebra` and `AkashicLedger` are reachable from the shipping `sum_cli` entry point; `OuroborosVerifier`, `ZKSemanticProver`, and `EpistemicMeshNetwork` are reached only by `api/`, bench runners, and tests (import-graph walk, 2026-09-02).
+- `api/quantum_router.py` + `quantum_main.py` — FastAPI surface with 26+ endpoints (`/state`, `/sync`, `/branch`, `/merge`, `/zk/prove`, `/zk/verify`, `/peers`, `/time-travel`, `/auth/token`, etc.). 1,684 LOC of working code, 58/58 tests pass via pytest default discovery (`Tests/test_phase13_zenith.py`, `test_phase14_ouroboros.py`, `test_phase15_abi.py`, `test_browser_extension.py`). NOT in PyPI wheel (`pyproject.toml:167` excludes `api*`); NOT in live Worker; NOT in dogfood quickstart. Banners at top of both files explain. **Promote to a shipping `[api]` extra only if a named buyer or grant deliverable explicitly references one of the endpoint clusters.** Demoted 2026-05-30 per operator decision following deeper-audit triage; of the substrate it composes, `GodelStateAlgebra` and `AkashicLedger` are reachable from the shipping `sum_cli` entry point; `OuroborosVerifier`, `DivisibilityWitness` (renamed from `ZKSemanticProver`; not zero-knowledge), and `EpistemicMeshNetwork` are reached only by `api/`, bench runners, and tests (import-graph walk, 2026-09-02).
 
 If you're about to make a change and want to know what's already deferred,
 check the task list for items marked "deferred" (Wikidata QIDs SPARQL

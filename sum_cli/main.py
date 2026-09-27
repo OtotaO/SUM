@@ -2480,10 +2480,11 @@ def cmd_drift_budget(args: argparse.Namespace) -> int:
     end-to-end loss, and the slack between them. A per-document MEASUREMENT,
     NOT a certified bound — and honest about the additive↔end-to-end gap:
     the additive budget is not assumed to bound end-to-end drift (the slack
-    sign is reported, never assumed). For a (1-δ) certified ceiling on
-    cumulative EXPECTED per-hop loss, compose per-hop meaning_risk
-    receipts (`compose_drift_budget` / the signed `sum.chain_receipt.v1`
-    minted by `sum mint-chain`)."""
+    sign is reported, never assumed). For corpus-level bound arithmetic on
+    cumulative EXPECTED per-hop loss (descriptive unless every hop's sampling
+    assumptions hold), compose per-hop meaning_risk receipts
+    (`compose_drift_budget` / the signed `sum.chain_receipt.v1` minted by
+    `sum mint-chain`)."""
     try:
         from sum_engine_internal.research.meaning.drift_budget import (
             measure_chain_drift,
@@ -2876,15 +2877,21 @@ def cmd_study(args: argparse.Namespace) -> int:
     path (the study notes). It scores each point's meaning-loss under a
     named proxy, reports SUM's native **expertise** scalar (weighted AUC of
     fidelity vs. consultation budget, favouring the cheap end), and — with
-    --certify + a signing key — seals a ``sum.meaning_risk_receipt.v1``
+    --certify --research + a signing key — signs a ``sum.meaning_risk_receipt.v1``
     over the per-document loss of consulting the cheatsheet.
 
     Honest boundary: expertise and the frontier losses are per-run
     MEASUREMENTS under the named scorer (an analogy to studying-expertise,
-    NOT a task-accuracy metric); the only certified element is the embedded
-    receipt. Offline + zero-$ on the default (sieve) path. Emits a
-    sum.study_artifact.v1 JSON. Needs the [research] extra.
+    NOT a task-accuracy metric). The embedded receipt is IN-SAMPLE: the same
+    documents are studied and measured, so it is a descriptive measurement of
+    this corpus, not a bound on other documents. Offline + zero-$ on the
+    default (sieve) path. Emits a sum.study_artifact.v1 JSON. Needs [research].
     """
+    if args.certify and not args.research:
+        print("sum: --certify is research-only; pass --research to acknowledge "
+              "that the same documents are studied and measured, so the receipt "
+              "is an in-sample descriptive measurement", file=sys.stderr)
+        return 2
     try:
         from sum_engine_internal.research.study import StudyArtifact, expertise
         from sum_engine_internal.research.frontier import RenderFrontier
@@ -3001,15 +3008,16 @@ def cmd_study(args: argparse.Namespace) -> int:
     cheatsheet = best[2]
     actual_density = best[1]["density"]
 
-    # 5. optional --certify: seal a meaning-risk receipt over the per-document
-    # loss of consulting the cheatsheet (each doc is one exchangeable unit).
+    # 5. optional --certify --research: sign a meaning-risk receipt over the
+    # per-document loss of consulting the cheatsheet. IN-SAMPLE: the notes were
+    # built from these same documents, so the result describes this corpus only.
     receipt = None
     if args.certify:
+        print("sum: WARNING: in-sample measurement: the cheatsheet was studied "
+              "from these same documents, so the receipt is descriptive of this "
+              "corpus only, not a bound on other documents.", file=sys.stderr)
         if not (args.signing_jwk and args.kid):
-            print(
-                "sum: --certify needs --signing-jwk FILE and --kid",
-                file=sys.stderr,
-            )
+            print("sum: --certify needs --signing-jwk FILE and --kid", file=sys.stderr)
             return 2
         try:
             from sum_engine_internal.research.meaning.conformal_meaning import (
@@ -3020,10 +3028,7 @@ def cmd_study(args: argparse.Namespace) -> int:
                 sign_meaning_risk_receipt,
             )
         except ImportError as e:
-            print(
-                f"sum: --certify needs the [research] extra: {e}",
-                file=sys.stderr,
-            )
+            print(f"sum: --certify needs the [research] extra: {e}", file=sys.stderr)
             return 2
         try:
             private_jwk = json.loads(_read_text_arg(args.signing_jwk) or "")
@@ -3307,8 +3312,8 @@ def cmd_mint_meaning(args: argparse.Namespace) -> int:
     over YOUR OWN (source, rendering) pairs or pre-computed losses — the
     issuer half of the trust loop, productizing
     ``examples/issue_meaning_receipt.py``. Scores the pairs under a named
-    judge, certifies a distribution-free upper bound on expected
-    meaning-loss, signs the payload with YOUR Ed25519 key, writes the
+    judge, computes the conditional upper-bound arithmetic over them (a
+    descriptive batch measurement), signs it with YOUR Ed25519 key, writes the
     envelope, then IMMEDIATELY re-verifies it through the same verifier
     ``sum verify-meaning`` dispatches to (signature + replay). Verdict JSON
     on stdout; narration on stderr. Exit 0 = minted AND verified, 1 = the
@@ -3513,36 +3518,31 @@ def cmd_mint_meaning(args: argparse.Namespace) -> int:
         return 1
 
     # ---- narration (stderr) — mirrors examples/issue_meaning_receipt.py ----
-    ub = guarantee.risk_upper_bound
+    # It must match the SIGNED scope: without a sampling contract the payload
+    # says descriptive_batch, so no confidence claim is narrated. The bound is
+    # printed as signed (6 decimals), never rounded down.
+    ub = payload["risk_upper_bound_micro"] / 1_000_000
+    scope = payload.get("statistical_scope", "not_declared")
     print(
         f"Issued sum.meaning_risk_receipt.v1 over {len(losses)} pair(s) "
-        f"under {scorer_name}",
-        file=sys.stderr,
-    )
-    print(
-        f"  certified: expected meaning-loss ≤ {ub:.4f} at "
-        f"{100 * (1 - args.delta):.0f}% (mean {guarantee.point_estimate:.4f}, "
-        f"n={guarantee.n}, method={guarantee.method})",
+        f"under {scorer_name}\n  scope: {scope} (no sampling contract "
+        f"supplied; a descriptive measurement of these pairs)\n  mean proxy "
+        f"loss {guarantee.point_estimate:.4f}; conditional bound arithmetic "
+        f"≤ {ub:.6f} at delta={args.delta} (n={guarantee.n}, "
+        f"method={guarantee.method})",
         file=sys.stderr,
     )
     if args.alpha_target is not None:
-        print(
-            f"  controlled at alpha={args.alpha_target}: "
-            f"{payload.get('controlled')}",
-            file=sys.stderr,
-        )
+        print(f"  controlled at alpha={args.alpha_target}: "
+              f"{payload.get('controlled')}", file=sys.stderr)
     if ub >= 0.95 or payload.get("controlled") is False:
-        ctrl = (
-            "" if payload.get("controlled") is not False
-            else ", and NOT controlled at your alpha"
-        )
-        print(file=sys.stderr)
+        ctrl = ("" if payload.get("controlled") is not False
+                else ", and NOT controlled at your alpha")
         print(
-            f"  ⚠️  WARNING: this bound is near-vacuous (≤ {ub:.4f}{ctrl}, "
-            f"n={guarantee.n}). A distribution-free bound is VALID at any n "
-            f"but loose at small n — with few pairs it degenerates toward "
-            f"≤ 1.0 and certifies almost nothing. Use n ≥ ~32 exchangeable "
-            f"pairs for a meaningful certificate.",
+            f"\n  ⚠️  WARNING: this bound is near-vacuous (≤ {ub:.6f}{ctrl}, "
+            f"n={guarantee.n}). Small samples can produce a bound near 1.0. "
+            f"More pairs alone do not establish independent sampling, "
+            f"distribution match or a fixed policy.",
             file=sys.stderr,
         )
     wrote = [args.out]
@@ -3567,13 +3567,14 @@ def cmd_mint_meaning(args: argparse.Namespace) -> int:
         "What this receipt does and does NOT prove: it proves the payload "
         f"was signed by the holder of the {private_jwk['kid']!r} private "
         "key, that the committed losses hash to the payload's losses_hash, "
-        "and that re-running the named certifier on those losses reproduces "
-        f"the bound (≤ {ub:.4f} at {100 * (1 - args.delta):.0f}%). It does "
-        "NOT prove that meaning was preserved — it bounds a NAMED PROXY for "
-        "meaning-loss, on average over this calibration corpus (marginal, "
-        "not per-document), and only under exchangeability between the "
-        "corpus and deployment. It does not cover arrangement, sound, "
-        "connotation, or implicature.",
+        "and that re-running the named bound arithmetic on those losses "
+        f"reproduces ≤ {ub:.6f} at delta={args.delta}. It does NOT prove "
+        "that meaning was preserved: it is a descriptive batch measurement of "
+        "a NAMED PROXY for meaning-loss over these pairs (an average, not "
+        "per-document). A confidence reading about other documents needs "
+        "independent draws from the target distribution, a fixed policy and "
+        "no calibration reuse; exchangeability alone is insufficient. It does "
+        "not cover arrangement, sound, connotation, or implicature.",
         file=sys.stderr,
     )
     print(file=sys.stderr)
@@ -3586,16 +3587,11 @@ def cmd_mint_meaning(args: argparse.Namespace) -> int:
     print(f"Verify it (the consumer side):\n  {verify_cmd}", file=sys.stderr)
 
     # ---- verdict JSON (stdout) — same shape as `sum verify-meaning` ----
-    verdict = {
-        "verified": True,
-        "schema": written.get("schema"),
-        "replayed": True,
-        "scorer": verified_payload.get("scorer"),
-        "not_covered": verified_payload.get("not_covered"),
-        "risk_upper_bound": verified_payload["risk_upper_bound_micro"] / 1_000_000,
-    }
-    if "controlled" in verified_payload:
-        verdict["controlled"] = verified_payload["controlled"]
+    from sum_verify._verdict import scope_fields
+    verdict = {"verified": True, "schema": written.get("schema"), "replayed": True,
+               "scorer": verified_payload.get("scorer"),
+               "not_covered": verified_payload.get("not_covered"),
+               **scope_fields(written.get("schema"), verified_payload, replayed=True)}
     json.dump(
         verdict, sys.stdout,
         indent=2 if getattr(args, "pretty", False) else None,
@@ -3606,7 +3602,7 @@ def cmd_mint_meaning(args: argparse.Namespace) -> int:
 
 def cmd_mint_chain(args: argparse.Namespace) -> int:
     """Mint (issue + sign + self-verify) a ``sum.chain_receipt.v1`` from
-    >= 2 ordered, already-minted meaning-risk receipts — the certified
+    >= 2 ordered, already-minted meaning-risk receipts — the signed
     chain: ordered hop hashes + the integer-exact Bonferroni budget +
     optionally a directly measured end-to-end leg. Exit 0 = minted and
     self-verified, 1 = self-verification failed, 2 = usage error."""
@@ -3764,32 +3760,28 @@ def cmd_mint_chain(args: argparse.Namespace) -> int:
     joint_delta = verified["joint_delta_micro"] / 1_000_000
     print(
         f"sum: chain minted — {verified['n_hops']} hops, budget "
-        f"{verified['budget_micro'] / 1_000_000:.6f} at joint confidence "
-        f">= {max(0.0, 1.0 - joint_delta):.2f}.",
+        f"{verified['budget_micro'] / 1_000_000:.6f} at joint delta "
+        f"{joint_delta:g} (descriptive: the sum of the per-hop bound values; "
+        f"reading it as a joint bound needs every hop's sampling assumptions: "
+        f"independent draws, a fixed policy, no calibration reuse).",
         file=sys.stderr,
     )
     if joint_delta >= 0.5:
-        print(
-            "sum: WARNING — joint_delta >= 0.5: the composed confidence is "
-            "weak-to-vacuous. Fewer hops or smaller per-hop deltas.",
-            file=sys.stderr,
-        )
+        print("sum: WARNING — joint_delta >= 0.5: even under those assumptions "
+              "the joint reading is weak-to-vacuous. Fewer hops or smaller "
+              "per-hop deltas.", file=sys.stderr)
     print(
-        "sum: SCOPE — the budget bounds the SUM of per-hop expected proxy "
-        "losses (Bonferroni). It does NOT bound end-to-end loss; the "
+        "sum: SCOPE — the budget is the sum of the per-hop bound values "
+        "(Bonferroni). It does NOT bound end-to-end loss; the "
         "end_to_end leg (if minted) is a separate direct measurement.",
         file=sys.stderr,
     )
-    verdict = {
-        "verified": True,
-        "schema": written.get("schema"),
-        "hops_replayed": True,
-        "end_to_end_replayed": e2e_losses is not None,
-        "n_hops": verified["n_hops"],
-        "chain_id": verified["chain_id"],
-        "budget": verified["budget_micro"] / 1_000_000,
-        "joint_confidence": max(0.0, 1.0 - joint_delta),
-    }
+    from sum_verify._verdict import scope_fields
+    verdict = {"verified": True, "schema": written.get("schema"),
+               "replayed": e2e_losses is not None, "hop_envelopes_checked": True,
+               "end_to_end_replayed": e2e_losses is not None,
+               "n_hops": verified["n_hops"], "chain_id": verified["chain_id"],
+               **scope_fields(written.get("schema"), verified, replayed=False)}
     json.dump(
         verdict, sys.stdout,
         indent=2 if getattr(args, "pretty", False) else None,
@@ -3849,6 +3841,13 @@ def cmd_verify_meaning(args: argparse.Namespace) -> int:
         return 2
 
     schema = receipt.get("schema")
+    if schema == PERSPECTIVE_SCHEMA and (losses is None) != (group_ids is None):
+        # A perspective replay needs BOTH side-band files; with only one the
+        # verifier would check the signature alone, so refuse rather than
+        # print a verdict that looks replayed.
+        print("sum: replaying a perspective receipt needs both --losses and "
+              "--group-ids", file=sys.stderr)
+        return 2
     try:
         if schema == PERSPECTIVE_SCHEMA:
             payload = verify_perspective_risk_receipt(
@@ -3871,26 +3870,15 @@ def cmd_verify_meaning(args: argparse.Namespace) -> int:
         )
         return 1
 
+    from sum_verify._verdict import scope_fields
+    # Scope, n / method / delta, and the bound labelled issuer-asserted
+    # unless the losses were replayed; `controlled` / `controls_all` only
+    # ride a replayed bound.
     replayed = losses is not None
-    verdict = {
-        "verified": True,
-        "schema": schema,
-        "replayed": replayed,
-        "scorer": payload.get("scorer"),
-        "not_covered": payload.get("not_covered"),
-    }
-    if schema == PERSPECTIVE_SCHEMA:
-        verdict["cohorts"] = [
-            {"group_id": g["group_id"],
-             "risk_upper_bound": g["risk_upper_bound_micro"] / 1_000_000}
-            for g in payload.get("groups", [])
-        ]
-        if "controls_all" in payload:
-            verdict["controls_all"] = payload["controls_all"]
-    else:
-        verdict["risk_upper_bound"] = payload["risk_upper_bound_micro"] / 1_000_000
-        if "controlled" in payload:
-            verdict["controlled"] = payload["controlled"]
+    verdict = {"verified": True, "schema": schema, "replayed": replayed,
+               "scorer": payload.get("scorer"),
+               "not_covered": payload.get("not_covered"),
+               **scope_fields(schema, payload, replayed=replayed)}
     json.dump(verdict, sys.stdout, indent=2 if getattr(args, "pretty", False) else None)
     sys.stdout.write("\n")
     return 0
@@ -4441,8 +4429,8 @@ def build_parser() -> argparse.ArgumentParser:
             "Compare a SOURCE and a RENDERING and print, in plain language, "
             "what the transform PRESERVED, DROPPED, and ADDED — under a named "
             "entailment judge. A per-document MEASUREMENT (the readout a "
-            "writer/editor actually wants), NOT a certified bound: for a "
-            "(1-δ) distribution-free guarantee use a sum.meaning_risk_receipt "
+            "writer/editor actually wants), NOT a certified bound: for "
+            "corpus-level bound arithmetic use a sum.meaning_risk_receipt "
             "over a corpus (`sum verify-meaning`). The readout's loss equals "
             "the per-pair loss such a certificate is built from. Needs the "
             "[research] + [judge] extras."
@@ -4510,9 +4498,11 @@ def build_parser() -> argparse.ArgumentParser:
             "directly-measured end-to-end loss, and the slack between them. "
             "A per-document MEASUREMENT, not a certified bound — and honest "
             "about the gap: the additive budget is NOT assumed to bound "
-            "end-to-end drift (the slack sign is reported). For a (1-δ) "
-            "certified ceiling on cumulative expected per-hop loss, compose "
-            "per-hop sum.meaning_risk_receipt receipts. Needs [research] "
+            "end-to-end drift (the slack sign is reported). For corpus-level "
+            "bound arithmetic on cumulative expected per-hop loss, compose "
+            "per-hop sum.meaning_risk_receipt receipts; that is descriptive "
+            "unless every hop's sampling assumptions hold (independent draws, "
+            "a fixed policy, no calibration reuse). Needs [research] "
             "(+ [judge] for the nli/embedding scorers)."
         ),
     )
@@ -4636,12 +4626,13 @@ def build_parser() -> argparse.ArgumentParser:
             "merged bundle down a faithful→compressed density path (the "
             "notes). Reports SUM's native EXPERTISE scalar (weighted AUC of "
             "fidelity vs. consultation budget, favouring the cheap end) and, "
-            "with --certify + a signing key, seals a "
+            "with --certify --research + a signing key, signs a "
             "sum.meaning_risk_receipt.v1 over the per-document loss of "
             "consulting the cheatsheet. Honest boundary: expertise + the "
             "frontier losses are per-run MEASUREMENTS under a named proxy (an "
-            "analogy to studying-expertise, not a task-accuracy metric); only "
-            "the embedded receipt is certified. Offline + zero-$ on the "
+            "analogy to studying-expertise, not a task-accuracy metric); the "
+            "receipt is IN-SAMPLE (the same documents are studied and "
+            "measured), a descriptive measurement. Offline + zero-$ on the "
             "default sieve path. Emits sum.study_artifact.v1 JSON. Needs the "
             "[research] (+ [sieve]) extra. See docs/MACHINE_STUDYING_"
             "APPLICABILITY.md."
@@ -4681,13 +4672,18 @@ def build_parser() -> argparse.ArgumentParser:
     p_study.add_argument(
         "--corpus-id", default="study-corpus-v0", dest="corpus_id",
         metavar="ID",
-        help="Name of the calibration envelope for --certify (the "
-             "exchangeability scope; default 'study-corpus-v0').",
+        help="Name of the studied corpus recorded by --certify "
+             "(default 'study-corpus-v0').",
     )
     p_study.add_argument(
         "--certify", action="store_true",
-        help="Seal a sum.meaning_risk_receipt.v1 over the per-document loss "
-             "of consulting the cheatsheet. Requires --signing-jwk + --kid.",
+        help="Research only (needs --research): sign an IN-SAMPLE "
+             "sum.meaning_risk_receipt.v1 over the per-document loss of "
+             "consulting the cheatsheet. Requires --signing-jwk + --kid.",
+    )
+    p_study.add_argument(
+        "--research", action="store_true",
+        help="Required with --certify: accept an in-sample, descriptive receipt.",
     )
     p_study.add_argument(
         "--signing-jwk", dest="signing_jwk", metavar="FILE",
@@ -4696,7 +4692,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_study.add_argument("--kid", help="Key id for the --certify receipt.")
     p_study.add_argument(
         "--alpha", type=float, default=0.05, metavar="A",
-        help="Risk level / delta for the certified bound (default 0.05 = 95%%).",
+        help="Delta for the --certify bound arithmetic (default 0.05).",
     )
     p_study.add_argument(
         "--method", default="hoeffding",
@@ -4723,11 +4719,12 @@ def build_parser() -> argparse.ArgumentParser:
             "half of the trust loop (`sum verify-meaning` is the consumer "
             "half). Give (source, rendering) pairs to score locally under a "
             "named judge, or bring pre-computed per-pair losses in [0,1] "
-            "from your own proxy. The receipt certifies a distribution-free "
-            "UPPER BOUND on expected meaning-loss under the named proxy — "
-            "marginal (an average over the calibration pairs), under "
-            "exchangeability, NOT per-document, NOT 'meaning' itself (the "
-            "receipt's enforced disclosure says so). After writing, the "
+            "from your own proxy. The receipt signs a descriptive batch "
+            "measurement of the named proxy over your pairs plus conditional "
+            "upper-bound arithmetic: an average, NOT per-document, NOT "
+            "'meaning' itself. A confidence reading needs independent draws "
+            "from the target distribution, a fixed policy and no calibration "
+            "reuse (exchangeability alone is insufficient). After writing, the "
             "receipt is re-verified through the same verifier "
             "`sum verify-meaning` uses (signature + replay); a mint that "
             "does not verify exits 1. Verdict JSON on stdout, narration on "
@@ -4765,7 +4762,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_mint.add_argument(
         "--scorer-name", dest="scorer_name", default=None,
         help="--losses mode: NAME of the proxy that produced your losses "
-             "(required there — the receipt certifies a named proxy).",
+             "(required there — the receipt names the proxy it measures).",
     )
     p_mint.add_argument(
         "--scorer-version", dest="scorer_version", default="unversioned",
@@ -4779,7 +4776,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_mint.add_argument(
         "--corpus-id", required=True,
-        help="Names YOUR calibration corpus / exchangeability scope, e.g. "
+        help="Names YOUR calibration corpus (the batch measured), e.g. "
              "'support-emails-v0' — the bound is meaningless without it.",
     )
     p_mint.add_argument(
@@ -4789,7 +4786,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_mint.add_argument(
         "--delta", type=float, default=0.05,
-        help="Miscoverage (confidence = 1 - delta); default 0.05 → 95%%.",
+        help="Delta for the bound arithmetic (default 0.05); 1 - delta is a "
+             "confidence level only with independent draws, a fixed policy "
+             "and no calibration reuse.",
     )
     p_mint.add_argument(
         "--method", default="empirical_bernstein",
@@ -4800,7 +4799,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_mint.add_argument(
         "--alpha-target", dest="alpha_target", type=float, default=None,
         help="Optional risk level you want controlled; the receipt records "
-             "whether the certified ceiling met it (the `controlled` field).",
+             "whether the bound met it (the `controlled` field).",
     )
     p_mint.add_argument(
         "--ed25519-key", dest="ed25519_key", metavar="FILE", default=None,
@@ -4837,7 +4836,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_mint.set_defaults(func=cmd_mint_meaning)
 
-    # mint-chain — bind >= 2 minted meaning-risk receipts into a certified
+    # mint-chain — bind >= 2 minted meaning-risk receipts into a signed
     # chain (ordered hop hashes + Bonferroni budget + optional direct
     # end-to-end leg). The composed half of the drift-budget math.
     p_chain = subparsers.add_parser(
@@ -4847,11 +4846,12 @@ def build_parser() -> argparse.ArgumentParser:
             "receipts + their composed additive budget (research)."
         ),
         description=(
-            "Issue, sign, and immediately self-verify a certified chain "
+            "Issue, sign, and immediately self-verify a signed chain "
             "over >= 2 already-minted sum.meaning_risk_receipt.v1 files "
             "(order matters: pass --hop in transformation order). The "
-            "budget bounds the SUM of per-hop expected proxy losses "
-            "(Bonferroni); it does NOT bound end-to-end loss — mint the "
+            "budget is the sum of the per-hop bound values (Bonferroni), "
+            "descriptive unless every hop's sampling assumptions hold; it "
+            "does NOT bound end-to-end loss — mint the "
             "optional --end-to-end-losses leg for the direct measurement. "
             "Exit 0 = minted and verified, 1 = self-verification failed, "
             "2 = usage error."
@@ -4872,7 +4872,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--end-to-end-losses", metavar="FILE", default=None,
         help=(
             "per-pair source->final losses (bare list or {'losses': [...]}) "
-            "to certify the DIRECT end-to-end leg alongside the budget"
+            "to compute the DIRECT end-to-end leg alongside the budget"
         ),
     )
     p_chain.add_argument(
@@ -4927,7 +4927,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_vm.add_argument(
         "--group-ids", dest="group_ids", default=None,
-        help="Optional path to a JSON array of cohort labels (perspective replay).",
+        help="JSON array of cohort labels; a perspective replay needs it AND --losses.",
     )
     p_vm.add_argument("--pretty", action="store_true", help="Pretty-print the verdict.")
     p_vm.set_defaults(func=cmd_verify_meaning)

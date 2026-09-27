@@ -1,7 +1,9 @@
 # Proof Boundary
 
-**Version:** 1.9.0
-**Date:** 2026-09-09
+**Version:** 1.9.1
+**Date:** 2026-09-27
+
+**v1.9.1 (2026-09-27):** claims narrowed only. The BillSum chain golden is described as descriptive bound arithmetic at a stated delta over a fixed prefix of 32 bills, with no 95% per-hop or 0.90 joint reading; §1.2, §1.3.1 and the capability table state that CI runs Python and Node only (no browser engine), that the v1 Gödel byte-identity harness and the browser-minted check are manual, and that the A-matrix is A1–A8.
 
 **v1.9.0:** the composition-invariance interpretation of T4 is withdrawn. The corrected v2 analysis reports paired document changes; stable medians do not establish equivalence or absence of accumulated drift. New meaning receipts default to descriptive batch scope and can bind an instrument/evaluation manifest; confidence interpretations require independent calibration draws from the target population under a fixed policy. Browser literal review, source hashes, human decisions and signed render bindings are separate evidence classes. The older version notes below describe historical interpretations and are superseded where they conflict with these corrections.
 
@@ -51,13 +53,13 @@ reconstruct(parse(canonical_tome(S))) == S
 
 ### 1.2. Cross-Runtime State Equivalence
 
-**Claim:** The Gödel State Integer is runtime-independent. Given the same canonical tome, Python (sympy), Node.js (BigInt + Miller-Rabin via `standalone_verifier/math.js`), and in-browser JavaScript (the inlined copy in `single_file_demo/index.html`) all produce byte-identical state integers.
+**Claim:** The Gödel State Integer is runtime-independent. Given the same canonical tome, Python (sympy) and Node.js (BigInt + Miller-Rabin via `standalone_verifier/math.js`) produce byte-identical state integers, checked in CI on every PR. The in-browser JavaScript (the inlined copy in `single_file_demo/index.html`) implements the same derivation, but no browser engine runs in CI, so the browser leg is not CI-tested.
 
-**Proof mechanism:** Four independent harnesses lock the contract in CI (the first three cover valid inputs; the fourth covers adversarial inputs):
-- `scripts/verify_cross_runtime.py` — Python mints a CanonicalBundle via `CanonicalCodec.export_bundle`; Node.js reconstructs via `standalone_verifier/verify.js`; state integers must match byte-for-byte. K1 / K1-multiword / K2 / K3 / K4.
-- `scripts/verify_godel_cross_runtime.py` — 12 axiom keys (including UTF-8 and multi-word cases) minted in both Python and Node; 6 triple-lists encoded to state integers in both. 18 / 18 fixtures byte-identical.
-- Browser-minted bundle → `node standalone_verifier/verify.js` — the inlined JavaScript in the single-file demo produces a CanonicalBundle that validates under the Node verifier unchanged, closing the three-runtime loop.
-- `scripts/verify_cross_runtime_adversarial.py` — ADVERSARIAL rejection matrix. Six deliberately-malformed bundles (missing tome, truncated tome, state integer = 0, state integer = -42, canonical_format_version = 99.0.0, Ed25519-signed bundle with tome tampered post-sign). Both verifiers must reject AND classify the rejection equivalently (`structural` / `signature` / `version` / `scheme`). This closes the "agree on invalidity" gap that the first three harnesses left open — see Priority 1 in `docs/NEXT_SESSION_PLAYBOOK.md`.
+**Proof mechanism:** CI runs the K-matrix and the A-matrix (plus the `sha256_128_v2` gate below) on every PR, all Python ↔ Node; the other two checks are manual:
+- `scripts/verify_cross_runtime.py` (CI) — Python mints a CanonicalBundle via `CanonicalCodec.export_bundle`; Node.js reconstructs via `standalone_verifier/verify.js`; state integers must match byte-for-byte. K1 / K1-multiword / K2 / K3 / K4.
+- `scripts/verify_godel_cross_runtime.py` (manual; not wired into CI) — 12 axiom keys (including UTF-8 and multi-word cases) minted in both Python and Node; 6 triple-lists encoded to state integers in both. 18 / 18 fixtures byte-identical when run.
+- Browser-minted bundle → `node standalone_verifier/verify.js` (manual; needs a real browser) — the inlined JavaScript in the single-file demo produces a CanonicalBundle that validates under the Node verifier unchanged.
+- `scripts/verify_cross_runtime_adversarial.py` (CI) — ADVERSARIAL rejection matrix, A1–A8. Eight deliberately-malformed bundles (missing tome, truncated tome, state integer = 0, state integer = -42, canonical_format_version = 99.0.0, Ed25519-signed bundle with tome tampered post-sign, Ed25519 signature alone tampered, unparseable Ed25519 public key). Both verifiers must reject AND classify the rejection equivalently (`structural` / `signature` / `version` / `scheme`). This closes the "agree on invalidity" gap that the valid-input harnesses left open — see Priority 1 in `docs/NEXT_SESSION_PLAYBOOK.md`.
 
 **Boundary:** All three implementations use the same deterministic prime derivation (`SHA-256(axiom_key) → first 8 bytes big-endian → seed → nextprime(seed)`) via the `sha256_64_v1` scheme. The collision-resolution path depends on minting order; it has cross-*instance* coverage (two `GodelStateAlgebra` instances minting in different orders produce identical primes for identical keys, stress-tested at 1,000 axioms) but is not yet cross-*runtime* collision-verified. Production corpora up to ~2³² axioms have birthday-bound collision probability < 10⁻⁹; the path is not load-bearing at current scale.
 
@@ -73,14 +75,14 @@ reconstruct(parse(canonical_tome(S))) == S
 
 ### 1.3.1. Bundle Public-Key Attestation (Any Third-Party Verifier)
 
-**Claim:** Ed25519-signed CanonicalBundles are tamper-detectable by any third party with no shared secret. The same bundle bytes verify identically in Python, Node.js, and modern browsers — the three-runtime trust triangle is byte-symmetric.
+**Claim:** Ed25519-signed CanonicalBundles are tamper-detectable by any third party with no shared secret. The same bundle bytes verify identically in Python and Node.js, checked in CI on every PR; the browser implementation performs the same check, but no browser engine runs in CI.
 
-**Proof mechanism:** Three cross-runtime gates:
+**Proof mechanism:** Three verifier implementations (the first two are exercised in CI):
 - `sum verify` (Python, `sum_cli/main.py::_verify_ed25519_bundle`) — decodes the embedded `public_key` and `public_signature`, re-computes the `{tome|state|timestamp}` payload, verifies with `cryptography.Ed25519PublicKey.verify`.
 - `standalone_verifier/verify.js` (Node ≥ 18.4, `verifyEd25519`) — same payload, same key bytes, `crypto.webcrypto.subtle.verify({name:'Ed25519'})`.
 - `single_file_demo/index.html` (Browser Chrome 113+ / Firefox 129+ / Safari 17+, `verifyEd25519InBrowser`) — same payload, same key bytes, `crypto.subtle.verify({name:'Ed25519'})`.
 
-Locked in CI by the cross-runtime harness K3 (positive: Python mints Ed25519 bundle → Node verifies ✓) and K4 (negative: tampered tome → Node reports `✗ INVALID`). K4 is what proves verify.js actually runs the signature check rather than reporting `verified` unconditionally.
+Locked in CI by the cross-runtime harness K3 (positive: Python mints Ed25519 bundle → Node verifies ✓) and K4 (negative: tampered tome → Node reports `✗ INVALID`). K4 is what proves verify.js actually runs the signature check rather than reporting `verified` unconditionally. No browser engine runs in CI, so the browser path (`verifyEd25519InBrowser`) is implemented but not CI-tested.
 
 **Boundary:** The signature authenticates the Gödel state + tome + timestamp. It does NOT authenticate the source of the prose the tome was extracted from — that's what the `AkashicLedger` provenance layer (feature 101) exists for. Bundles without Ed25519 fields fall back to structural verification only; `--strict` enforces at least one verifiable signature.
 
@@ -758,22 +760,33 @@ dynamic INT8 quantization is a MEASURED NEGATIVE on the same probe (flips 11/22;
 every entailment lost); a real de-pin needs static/QAT or calibrated ONNX INT8,
 with this probe as its acceptance test.
 
-**Composition — the certified chain (measured 2026-07-12).** The receipt family
+**Composition — the signed chain (measured 2026-07-12).** The receipt family
 now composes: `sum.chain_receipt.v1` binds an ordered sequence of hop receipts
 (by canonical hash + an order-binding `chain_id`) into an integer-exact
-Bonferroni budget with a joint confidence, plus an optional directly-measured
-end-to-end leg. The first REAL certified chain is committed at
+Bonferroni budget with a joint δ, plus an optional directly-measured
+end-to-end leg. The first real signed chain is committed at
 [`fixtures/chain_receipts_billsum/`](../fixtures/chain_receipts_billsum/): 32
 BillSum bills (CC0), two real hops — the dataset's own reference summarization
 (SUM did not perform it), then deterministic lead-N extractive compression
 (offline, 0 LLM calls) — scored by the strict NLI judge. Hop 1 (abstractive)
-certifies expected meaning-loss ≤ 0.865768 @95%; hop 2 (extractive) ≤ 0.488860;
-the Bonferroni budget ≤ 1.354628 (sum of hops, joint confidence 0.90). The
-**honest structural point**: the budget bounds the *sum* of per-hop expected
-losses, NOT the end-to-end loss — the proxy is a *directed loss, not a metric*,
+gives bound arithmetic ≤ 0.865768 at δ = 0.05; hop 2 (extractive) ≤ 0.488860;
+the Bonferroni budget ≤ 1.354628 (sum of hops, joint δ = 0.10). These are
+descriptive measurements of the first 32 bills of the test split, a fixed
+prefix rather than independent draws, so no 95% per-hop or 0.90 joint
+confidence reading applies. The
+**honest structural point**: the budget is the *sum* of the per-hop bound
+values, NOT a bound on the end-to-end loss — the proxy is a *directed loss, not a metric*,
 so no triangle inequality holds. The directly-measured end-to-end leg
-(≤ 0.874216) is in fact *below* the additive budget, and the mandatory
-`budget_scope` field says exactly this (the verifier fails closed without it).
+(≤ 0.874216) is in fact *below* the additive budget. The mandatory
+`budget_scope` field (the verifier fails closed without it) always says the
+budget does NOT bound the end-to-end loss. Its Bonferroni sentence differs by
+issue date: this golden, like every chain minted before PR #531, states it
+unconditionally ("budget_micro bounds the SUM of per-hop expected proxy
+losses ... joint confidence >= 1 - joint_delta"), and verdicts add an
+unsigned `budget_scope_note` saying it holds only under each hop's sampling
+assumptions; chains minted from PR #531 on sign the conditional form
+(IF each hop's bound holds under its sampling assumptions, THEN the
+Bonferroni reading; otherwise a descriptive sum).
 Each hop and the chain replay offline over their committed integer-micro loss
 vectors; all three receipts are witnessed in
 [`transparency/log.jsonl`](../transparency/log.jsonl). Test:
@@ -855,7 +868,7 @@ SUM's ultimate goal is a **bidirectional knowledge distillation engine**: turn n
 | Round-trip conservation (LLM narrative prose, full loop) | **Closed across measured corpora** | Baseline (2026-04-19): drift = 107.75 %, recall = 0.12. Combined intervention (canonical-first generator + constrained-decoding extractor with `Literal`-enum vocab pin + lemma-exclusion of source-predicate lemmas from canonical-padding): seed_v1 (50 docs, single-fact SVO) **recall 1.0000 / drift 0.00 / 50-of-50**; seed_v2 (20 docs, difficulty patterns + multi-fact) **recall 0.9750 / drift 5.00 / 19-of-20**; seed_long_paragraphs (16 docs, 11–28 axioms each) **recall 0.9972 / drift 0.57 / 15-of-16**. Each remaining gap is an upstream source-extraction artifact, not an intervention failure. Per-ablation breakdowns + receipts in §2.5. |
 | Extraction ceiling investigation (en_core_web_trf upgrade or LLM fallback) | seed_v1 at F1 = 1.000 (no remaining failures); seed_v2 at F1 = 0.762 with precision = 1.000 — every remaining failure is a RECALL miss not a TRUTH inversion (apposition secondary, relative-clause subordinate, compound non-head conjuncts). **Strategic placeholder:** decision deferred until §2.5 LLM round-trip drift attack lands. Kill condition: §2.5 work resolves whether the LLM-as-extractor path is the right fix (in which case the trf upgrade is dropped) or whether the sieve needs to stay primary (in which case trf is the right next step). Decision required before any further sieve-recall work. | Gated on §2.5 |
 | Sliding-scale rendering parameters | **Shipped end-to-end** — 5 axes (density / length / formality / audience / perspective). Density actioned deterministically via lexicographic axiom subsetting. Length / formality / audience / perspective LLM-conditioned via the Cloudflare Worker render path (`worker/src/routes/render.ts`, Anthropic provider, optional CF AI Gateway). Fact-preservation verified at scale (§2.6); robustness layered (§2.7). Every render carries a signed receipt (§1.8). | **Measured + cryptographically attested** |
-| Cryptographic attestation | Working, cross-runtime | Ed25519 + HMAC-SHA256 + Merkle chain. Ed25519 verified in all three shipping runtimes against the same bundle bytes: Python (`sum verify`), Node (`standalone_verifier/verify.js` via WebCrypto), Browser (`single_file_demo/index.html` via SubtleCrypto). Locked by cross-runtime K3/K4 harness + A1–A6 adversarial-rejection matrix in CI. |
+| Cryptographic attestation | Working, cross-runtime | Ed25519 + HMAC-SHA256 + Merkle chain. Ed25519 verifiers exist for Python (`sum verify`), Node (`standalone_verifier/verify.js` via WebCrypto) and the browser (`single_file_demo/index.html` via SubtleCrypto). CI checks Python ↔ Node on the same bundle bytes with the K3/K4 harness and the A1–A8 adversarial-rejection matrix; no browser engine runs in CI. |
 | Per-render attestation (Phase E.1 v0.9.A) | **Shipped** | `sum.render_receipt.v1` — Ed25519 (RFC 8032) over JCS-canonical (RFC 8785) payload bytes, wrapped as detached JWS (RFC 7515 §A.5) with public keys distributed via JWKS (RFC 7517) at `/.well-known/jwks.json`. Active kid `sum-render-2026-04-27-1`. Cryptographic binding documented in §1.8; full wire spec in [`docs/RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md). v0.9.B (browser verifier) and v0.9.C (Python verifier) are queued in [`docs/NEXT_SESSION_PLAYBOOK.md`](NEXT_SESSION_PLAYBOOK.md); they will close the negative-path proof across runtimes. |
 | Epistemic-status labeling | Shipped v1.2.0 | See §5 |
 | SHACL structural validation (Polytaxis Bucket A) | Not yet | Phase 25 |

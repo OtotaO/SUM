@@ -83,8 +83,8 @@ def test_translation_demonstrates_the_moat(committed_losses):
 
 
 def test_translation_golden_reports_controlled_honestly(golden):
-    """Real, non-vacuous, CONTROLLED: certified meaning-loss ≤ 0.4124 at 95%
-    over 64 pairs, under the 0.5 target. Mean loss < BillSum compression's —
+    """Real, non-vacuous, CONTROLLED: bound arithmetic ≤ 0.4124 at delta 0.05
+    over 64 pairs (descriptive: a fixed prefix), under the 0.5 target. Mean loss < BillSum compression's —
     translation preserves more than aggressive summarization (the dial
     grades). Pinned so a regeneration that moves it is noticed."""
     pl = golden["payload"]

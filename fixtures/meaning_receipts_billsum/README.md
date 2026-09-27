@@ -4,22 +4,27 @@ A **real** `sum.meaning_risk_receipt.v1` over a **real public-domain
 corpus** — the "one real signed receipt over a real corpus" gate the arXiv
 Paper-1 plan ([`docs/arxiv/SUBMISSION_OUTLINE_2026-06-07.md`](../../docs/arxiv/SUBMISSION_OUTLINE_2026-06-07.md))
 and the product-vision roadmap both name. Demonstrates **compression with a
-certified meaning-loss bound** (bill → summary) — *"bounded", not
-"preserving"*: aggressive summarization loses ~49% of the named proxy on
-average; the receipt's job is to **certify how much**, not to claim little
-was lost.
+signed, replayable meaning-loss measurement** (bill → summary) — *"bounded
+arithmetic", not "preserving"*: aggressive summarization loses ~49% of the
+named proxy on average; the receipt's job is to **record how much**, not to
+claim little was lost.
 
-## What it certifies
+## What it measures
 
-> With 95% confidence, the **expected meaning-loss** of the BillSum
-> bill→summary transform is **≤ 0.6454** — measured by the named
-> `bidirectional-entailment[minilm-cosine-0.5]` judge, marginally over the
-> first 64 BillSum test bills, under exchangeability. Controlled at the
-> 0.70 target. (n=64, mean loss 0.4925.)
+> A descriptive batch measurement of the BillSum bill→summary transform over
+> the **first 64 BillSum test bills**, by the named
+> `bidirectional-entailment[minilm-cosine-0.5]` judge: mean meaning-loss
+> **0.4925**, Hoeffding bound arithmetic at δ = 0.05 **≤ 0.6455** (n=64; signed as 0.645438).
+> Controlled at the 0.70 target. The 64 bills are a fixed prefix of the
+> split, not an independent random draw from a named target distribution,
+> so no 95% confidence reading applies: this describes these bills, not
+> bills in general. (The signed `disclosure` says "under exchangeability";
+> that wording predates the correction that exchangeability alone is
+> insufficient, and the signed receipt is kept byte-for-byte.)
 
 *(The 0.70 `alpha_target` is an **illustrative** control threshold to
 exercise the `controlled` flag — not a tuned or claimed quality bar. The
-bound 0.6454 and mean 0.4925 are the load-bearing measured numbers.)*
+bound 0.6455 and mean 0.4925 are the load-bearing measured numbers.)*
 
 *(Micro-unit rounding: the signed `risk_upper_bound_micro` is the true bound
 rounded to nearest at 1e-6 resolution, the `*_micro` wire convention — see
@@ -58,6 +63,8 @@ this certificate.
 | `meaning_risk_receipt.billsum.golden.json` | the signed receipt envelope |
 | `jwks.json` | public key to verify the signature |
 | `generate_billsum_fixture.py` | deterministic generator (private key never written; reads the committed losses, so regeneration is judge-free) |
+
+**Demo key:** the signing key is derived from a publicly known all-zero Ed25519 seed, so anyone can sign under this JWKS: the signature authenticates no issuer, and only the arithmetic replay is meaningful.
 
 ## Reproduce / verify
 

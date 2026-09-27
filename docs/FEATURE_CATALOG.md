@@ -133,11 +133,11 @@ Verify: `pytest Tests/test_causal_cascade.py -q`
 Expected: all pass
 Result: **PASS** (within broader batch).
 
-### 11. Zero-knowledge entailment proofs 🔧
+### 11. Divisibility witnesses over Gödel states 🔧
 
-`ZKSemanticProver` — Pedersen-style SHA-256 commitments over the quotient `state // prime`. Proves "this state contains this axiom" without revealing the full state integer. Implementation shipped and unit-tested; `/zk/prove` endpoint exposes it; no end-to-end federated-proof workflow wired yet.
+`DivisibilityWitness` (renamed from `ZKSemanticProver`, 2026-09) publishes a prime, the quotient `state // prime`, a random salt and a salted SHA-256 commitment to the quotient. It is **not** zero-knowledge: `quotient × prime` is the full state integer, so the witness reveals the state. Verification recomputes only the hash commitment; it binds neither the prime nor a state. Implementation shipped and unit-tested; the `/zk/prove` endpoint (historical path name) exposes it; no end-to-end federated workflow wired yet.
 
-Verify: `pytest Tests/test_zk_proofs.py -q`
+Verify: `pytest Tests/test_divisibility_witness.py -q`
 Expected: all pass
 Result: **PASS** (within broader batch).
 
@@ -697,7 +697,7 @@ Result: **PASS**.
 
 ### 81. `POST /zk/prove` ✅
 
-Emit ZK commitment proving axiom containment without revealing the state.
+Return a divisibility witness for a known axiom on the branch state (prime, quotient, salt, SHA-256 commitment). Not zero-knowledge: the response reveals the state (`quotient × prime`). The path keeps its historical name.
 Result: **PASS**.
 
 ### 82. `GET /telemetry` (SSE) ✅
@@ -1450,7 +1450,7 @@ If the totals above ever disagree with the grep recipe, this file drifted; rerun
 Cross-cutting coverage:
 - pytest batch-1 (core Layer-1–3): **300 passed**
 - pytest batch-2 (broader Layer-1–3 + bench): **291 passed**
-- Cross-runtime harnesses: **K-matrix + A-matrix green** — K1 / K1-mw / K2 / K3 / K4 valid-input agreement (CanonicalBundle structural + Ed25519, Python ↔ Node) + A1–A6 adversarial-input rejection-class equivalence (Priority 1, closed); JCS, prov_id, Gödel byte-identity fixtures all green
+- Cross-runtime harnesses: **K-matrix + A-matrix green** — K1 / K1-mw / K2 / K3 / K4 valid-input agreement (CanonicalBundle structural + Ed25519, Python ↔ Node) + A1–A8 adversarial-input rejection-class equivalence (Priority 1, closed; Python ↔ Node, no browser engine in CI); JCS, prov_id, Gödel byte-identity fixtures all green
 - JS self-tests: **50 / 50 green** (30 JCS + 20 provenance)
 - Node verifier self-tests: **28 / 28 green** (10 v1 + 18 v2-parity)
 - Bench (extraction / canonical): **seed_v1 F1 = 1.000 / canonical drift 0.00 %**, **seed_v2 F1 = 0.762 with precision 1.000 / canonical drift 0.00 %**

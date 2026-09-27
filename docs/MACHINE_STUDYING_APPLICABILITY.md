@@ -58,9 +58,10 @@ silent-drop gap with a signed meaning-loss bound. That is exactly what
    under a named meaning-loss proxy (`--scorer nli|embedding|lexical`);
 4. report SUM's native **`expertise`** scalar and emit the cheatsheet at
    `--study-density` (default = the floor: the smallest, cheapest note);
-5. with `--certify --signing-jwk … --kid …`, seal a
+5. with `--certify --research --signing-jwk … --kid …`, sign a
    `sum.meaning_risk_receipt.v1` over the **per-document loss of consulting
-   the cheatsheet** (each document is one exchangeable unit).
+   the cheatsheet**. This is research-only and IN-SAMPLE: the same documents
+   are studied and measured, so it is a descriptive measurement of this corpus.
 
 Output is a `sum.study_artifact.v1` JSON. Code: `sum_engine_internal/research/study.py`
 (the `StudyArtifact` container + the `expertise` function) and `cmd_study`
@@ -95,10 +96,12 @@ proof-boundary and meaning-loss frontier docs hold one layer up:
   declared blind spots (arrangement, sound, connotation, implicature) it
   inherits. A high expertise number means "this study artifact stays faithful
   even when small," nothing about downstream task performance.
-- **Only the embedded receipt is certified.** The `sum.meaning_risk_receipt.v1`
-  carries the one distribution-free, marginal, replayable claim; the expertise
-  scalar and the frontier losses are measurements. The `measurement_note`
-  travels on every emitted artifact saying so.
+- **The embedded receipt is in-sample.** The `sum.meaning_risk_receipt.v1`
+  is the one signed, replayable element, but it measures the same documents
+  the cheatsheet was studied from, so it is a descriptive measurement of this
+  corpus, not a bound on other documents. The expertise scalar and the
+  frontier losses are measurements too. The `measurement_note` travels on
+  every emitted artifact saying so.
 - **The lexical scorer misranks paraphrase** (F18): for a real corpus prefer
   `--scorer nli`.
 
@@ -124,7 +127,7 @@ meaning-loss frontier took.
 pip install 'sum-engine[research,sieve]'        # + [judge] for --scorer nli
 sum study --corpus path/to/corpus --scorer nli --pretty
 # verifiable cheatsheet:
-sum study --corpus path/to/corpus --certify \
+sum study --corpus path/to/corpus --certify --research \
           --signing-jwk key.jwk --kid mykey --corpus-id my-corpus-v0
 ```
 

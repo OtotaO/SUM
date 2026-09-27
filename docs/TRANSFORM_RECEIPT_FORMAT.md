@@ -159,11 +159,11 @@ The verifier algorithm in §2.1 does NOT do these comparisons automatically — 
 
 ## 3. Cross-runtime byte-equivalence
 
-The transform-receipt format is byte-identical across Python / Node / browser verifiers, the same way `sum.render_receipt.v1` is. Specifically:
+The transform-receipt format verifies identically in the Python and JS verifiers, the same way `sum.render_receipt.v1` does. CI exercises Python and the JS verifier under Node; the browser loads the same JS verifier, but no browser engine runs in CI. Specifically:
 
 - JCS canonicalisation of `payload` produces identical bytes in `sum_engine_internal/infrastructure/jcs.py` (Python), `scripts/vendor/canonicalize` (Node, bundled into `worker/`), and `single_file_demo/vendor/sum-verify-deps.js` (browser).
 - Ed25519 verification produces identical accept/reject across `cryptography` (Python), `jose` (Node), and `SubtleCrypto` (browser).
-- The K1 / K1-multiword / K2 / K3 / K4 / A1–A6 cross-runtime gate matrix that locks `sum.render_receipt.v1` is extended in T1 to also lock `sum.transform_receipt.v1` — same fixtures, same outcomes, same byte-equivalence guarantee.
+- The 20-fixture transform-receipt matrix (`fixtures/transform_receipts/`) is consumed unchanged by the Python verifier and by the JS verifier under Node (`single_file_demo/test_transform_receipt_fixtures.js`) in CI: same fixtures, same outcomes. (The K1–K4 / A1–A8 harnesses cover CanonicalBundles, Python ↔ Node.)
 
 ---
 

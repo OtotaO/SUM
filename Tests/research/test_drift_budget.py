@@ -206,3 +206,17 @@ def test_audit_needs_a_chain():
     s = _scorer(_subset_judge)
     with pytest.raises(ValueError):
         audit_additive_vs_end_to_end([], s)
+
+
+def test_scope_states_sampling_conditions_not_exchangeability():
+    """The emitted scope must not say a per-hop bound is 'valid under
+    exchangeability' (insufficient for Hoeffding / Clopper-Pearson /
+    empirical-Bernstein) or call the sum a certified ceiling."""
+    b = compose_drift_budget([_G(0.10, 0.05), _G(0.20, 0.05)])
+    scope = b.scope
+    assert "valid under exchangeability" not in scope
+    assert "certified ceiling" not in scope
+    assert "exchangeability alone is insufficient" in scope
+    assert "independent draws" in scope and "fixed policy" in scope
+    assert "descriptive batch" in scope
+    assert "does NOT bound end-to-end" in scope
