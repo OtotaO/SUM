@@ -4,6 +4,16 @@ const extension = globalThis.browser || globalThis.chrome;
 const source = document.getElementById('source');
 const status = document.getElementById('status');
 const MAX_SOURCE_CHARS = 100000;
+const count = n => n.toLocaleString('en-US');
+
+// No maxlength on the box: a browser would cut a longer paste silently. The
+// popup says how long the text is instead, and never shortens it.
+source.addEventListener('input', () => {
+  const n = source.value.length;
+  status.textContent = n > MAX_SOURCE_CHARS
+    ? `This text has ${count(n)} characters; the workbench accepts at most 100,000. Nothing was cut. Copy a smaller part.`
+    : `${count(n)} characters, not yet copied.`;
+});
 
 document.getElementById('capture').addEventListener('click', async () => {
   status.textContent = 'Reading your selection...';
@@ -35,9 +45,13 @@ document.getElementById('copy').addEventListener('click', async () => {
     status.textContent = 'Capture or paste a source first.';
     return;
   }
+  if (source.value.length > MAX_SOURCE_CHARS) {
+    status.textContent = `Nothing copied: this text has ${count(source.value.length)} characters and the workbench accepts at most 100,000. Nothing was cut. Copy a smaller part.`;
+    return;
+  }
   try {
     await navigator.clipboard.writeText(source.value);
-    status.textContent = 'Source copied. Open the workbench and paste it into Source.';
+    status.textContent = 'Source copied. Open the workbench and paste it into box A, Original.';
   } catch {
     source.focus();
     source.select();
