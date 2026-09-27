@@ -458,7 +458,7 @@ def _enforce_signed_at_window(
         )
     try:
         signed_at = _parse_signed_at(signed_at_str)
-    except (ValueError, TypeError) as e:
+    except (ValueError, TypeError, OverflowError) as e:
         raise JoseEnvelopeError(
             JoseEnvelopeErrorClass.SIGNED_AT_OUT_OF_WINDOW,
             f"max_age_seconds={max_age_seconds} requested but "

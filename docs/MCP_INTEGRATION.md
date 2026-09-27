@@ -77,7 +77,7 @@ extract(text: str, extractor: "auto" | "sieve" | "llm" = "auto") -> {
 
 Pulls (subject, predicate, object) triples out of natural-language prose. Fast, side-effect-free; no canonical bundle, no signing, no state integer.
 
-**v2 default:** `extractor="auto"` resolves to **sieve only** in the MCP path (the CLI's auto falls through to LLM if `OPENAI_API_KEY` is set; the MCP path does not). To reach the LLM extractor: set `SUM_MCP_ALLOW_NETWORK=1` at server start, then pass `extractor="llm"` explicitly. Asking for `extractor="llm"` without the env var returns `error_class: "network_disallowed"`.
+**v2 default:** `extractor="auto"` resolves to **sieve only** in the MCP path (the CLI's auto uses the LLM only when spaCy is not installed and `OPENAI_API_KEY` is set, and says so on stderr; the MCP path never does). To reach the LLM extractor: set `SUM_MCP_ALLOW_NETWORK=1` at server start, then pass `extractor="llm"` explicitly. Asking for `extractor="llm"` without the env var returns `error_class: "network_disallowed"`.
 
 ### `attest`
 

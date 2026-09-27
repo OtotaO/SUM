@@ -1030,7 +1030,7 @@ Expected: `5 passed`.
 `sum_engine_internal/mcp_server/` + `sum-mcp` console script. Eight-property hardening contract (input-size caps, tagged error classes, network opt-in, concurrency-safe, catch-all per tool, forward-compat policy, structured stderr audit, property-tested via Hypothesis). 16 unit tests + 13 fuzz tests = 29/29 passing on ~800 adversarial inputs per release.
 
 Verify: `pytest Tests/test_mcp_server.py Tests/test_mcp_server_fuzz.py -q`
-Expected: `63 passed` (50 + 13 fuzz).
+Expected: `82 passed` (68 + 14 fuzz).
 
 ### 126. M1 Merkle set-commitment sidecar prototype ✅
 
@@ -1148,8 +1148,10 @@ Expected: `11 passed` — original 6 batch contract tests + 5 new dedup tests (s
 
 `_pick_extractor` now constructs ``DeterministicSieve()`` instead of probing via bare ``spacy.load()``. The sieve constructor's OSError fallback path auto-downloads ``en_core_web_sm`` on cold installs and announces the download on stderr; the previous direct-load probe raised on the missing model, was caught by a broad ``except Exception``, and fell through to a "no extractor available" SystemExit even though ``[sieve]`` had just installed spaCy. Surfaced by an empirical audit on a fresh venv: ``pip install 'sum-engine[sieve]'`` → ``echo "..." | sum attest`` errored with exit 1. Now succeeds in 13s end-to-end on first call, instant on subsequent calls — the README's "Verify it yourself in 60 seconds" pitch lines up with reality.
 
+Since 2026-09 (Phase 0 M4) the probe never falls back to a network extractor when spaCy is installed but the sieve cannot start: it stops with the fix and the explicit ``--extractor llm`` option. With spaCy absent and ``OPENAI_API_KEY`` set it uses OpenAI and says so on stderr.
+
 Verify: `pytest Tests/test_pick_extractor_cold_install.py -q`
-Expected: `4 passed` — probe routes through DeterministicSieve, falls back to LLM if sieve construction fails, SystemExit carries the install hint, ``--extractor`` override short-circuits the probe.
+Expected: `7 passed` — probe routes through DeterministicSieve, a sieve that cannot start (or an installed spaCy that fails to import, including a missing dependency) stops with the fix-it message instead of sending text to OpenAI, the spaCy-missing OpenAI fallback announces itself, SystemExit carries the install hint, ``--extractor`` override short-circuits the probe.
 
 ### 143. `sum render` CLI verb (bundle → tome under 5-axis slider control) ✅
 
@@ -1163,7 +1165,7 @@ Expected: `19 passed` — round-trip integrity at density=1.0 (re-extracted stat
 The MCP-side analogue of `sum render`. Closes the bidirectional shell-symmetry that the CLI surface gained at entry 143 *also* on the agent surface, so MCP-aware LLM clients (Claude Desktop, Claude Code, Cursor, Continue) can drive both directions of the trust loop from inside an LLM session. Same algebra, same `generate_controlled`, byte-compatible with the CLI's local path. Local-only by default (actions density deterministically); non-neutral length / formality / audience / perspective return `error_class="schema"` with a message pointing at the Worker's `POST /api/render` for LLM-conditioned rendering — the MCP server stays fully offline by default, preserving the `SUM_MCP_ALLOW_NETWORK` opt-in property. Returns success shape `{tome, sliders, mode, axiom_count_input, title}` or v2-tagged failure `{error_class, errors}`.
 
 Verify: `pytest Tests/test_mcp_server.py -q`
-Expected: `50 passed` — 15 render-specific cases (non-dict bundle, missing canonical_tome, unsupported canonical_format_version, future minor version under 1.x accepted, oversized tome, zero-axiom bundle structural error, density bounds, length bounds, non-neutral-axes-without-worker schema error with actionable message, default-slider canonical output, **round-trip integrity at density=1.0 — rendered tome re-mints to source `state_integer`**, density=0.0 emits no lines, density=0.5 keeps lex-prefix, slider header emitted) plus the prior MCP tests retained green (50 total at HEAD).
+Expected: `68 passed` — 15 render-specific cases (non-dict bundle, missing canonical_tome, unsupported canonical_format_version, future minor version under 1.x accepted, oversized tome, zero-axiom bundle structural error, density bounds, length bounds, non-neutral-axes-without-worker schema error with actionable message, default-slider canonical output, **round-trip integrity at density=1.0 — rendered tome re-mints to source `state_integer`**, density=0.0 emits no lines, density=0.5 keeps lex-prefix, slider header emitted) plus the other MCP tests (68 total as of 2026-09-27).
 
 ### 145. v1 sheaf-Laplacian hallucination detector (research-grade, [research] extras) 🔧
 
@@ -1406,7 +1408,7 @@ Result: **PASS**.
 `SliderTransform.apply()` routes off-centre LLM axes (any of length / formality / audience / perspective ≠ 0.5) through `slider_renderer.render` via `LiveLLMAdapter` + `OpenAIChatClient` built from `env.openai_api_key`. Receipts produced on the LLM path carry `provider = "openai"` and `digital_source_type = "trainedAlgorithmicMedia"`, shipping as `sum.transform_receipt.v1` envelopes (the signed-receipt substrate) instead of legacy `sum.render_receipt.v1`. Missing `OPENAI_API_KEY` raises clean `ValueError` with operator-actionable hint. Worker TS sibling for this route is pending; until it lands, the Worker's POST /api/transform returns 501 for off-centre axes and Worker LLM-axis renders go through legacy POST /api/render.
 
 Verify: `pytest Tests/test_transform_slider_llm_axis.py -q`
-Expected: 4 passed.
+Expected: 40 passed.
 Result: **PASS**.
 
 ### 168. Receipt-replay window check (`signed_at_out_of_window`) ✅
@@ -1414,7 +1416,7 @@ Result: **PASS**.
 Opt-in `max_age_seconds` + `max_future_skew_seconds` parameters across all four verifier surfaces (Python render / Python transform / JS render / JS transform). When the caller opts in, the verifier rejects receipts with `now − signed_at > max_age_seconds` or `signed_at − now > max_future_skew_seconds`. Default behaviour (`max_age_seconds=None`) does NOT enforce — historical fixtures and long-lived archival receipts remain valid. New error class `signed_at_out_of_window`, distinct from `signature_invalid` so the operator distinction between "tampered" and "replay-rejected" is visible to incident response. Receiver-policy guidance documented per use-case in `docs/RENDER_RECEIPT_FORMAT.md` §6.2 + `docs/TRANSFORM_RECEIPT_FORMAT.md` §6.2.
 
 Verify: `pytest Tests/test_receipt_signed_at_window.py -q` + `node single_file_demo/test_receipt_signed_at_window.js`
-Expected: 10 passed (Python) + 3 pass / 0 fail (JS).
+Expected: 12 passed (Python) + 3 pass / 0 fail (JS).
 Result: **PASS**.
 
 ### 169. Evidence-chain layer — structural claims about a bundle ✅

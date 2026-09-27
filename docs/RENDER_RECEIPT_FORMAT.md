@@ -315,7 +315,7 @@ The revocation surface lives at `/.well-known/revoked-kids.json`:
 | Field | Meaning |
 |---|---|
 | `kid` | The render-receipt kid being revoked. |
-| `effective_revocation_at` | UTC ISO-8601 timestamp. Receipts with `signed_at` **at or after** this moment MUST be rejected. Receipts with `signed_at` **before** this moment retain their original validity (they were signed legitimately, before the compromise window). |
+| `effective_revocation_at` | RFC 3339 instant with seconds, uppercase `T` and a `Z` or `±HH:MM` offset, for example `2026-04-27T00:45:16Z` (a fraction is allowed and truncated to milliseconds). Verifiers treat any other form as malformed and fail closed, so a receipt under that kid is rejected. Receipts with `signed_at` **at or after** this moment MUST be rejected. Receipts with `signed_at` **before** this moment retain their original validity (they were signed legitimately, before the compromise window). |
 | `reason` | One of `compromise`, `superseded`, `policy`. Audit-trail honesty; consumers can branch policy on the reason but the verifier reject decision is reason-agnostic. |
 
 **Verifier behaviour.** A verifier given a revocation list:

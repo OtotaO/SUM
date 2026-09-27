@@ -195,3 +195,33 @@ def test_render_receipt_window_surface_exists():
     sig = inspect.signature(verify_receipt)
     assert "max_age_seconds" in sig.parameters
     assert "max_future_skew_seconds" in sig.parameters
+
+
+# ---------------------------------------------------------------------------
+# Calendar-edge timestamps: no raw OverflowError on either time check
+# ---------------------------------------------------------------------------
+
+
+EDGE = "0001-01-01T00:00:00+01:00"  # 0000-12-31T23:00:00Z, before year 1 in UTC
+
+
+def test_replay_window_fails_closed_on_a_calendar_edge_timestamp() -> None:
+    """datetime.astimezone overflowed on this well-formed value and escaped
+    as a raw OverflowError from a validly signed receipt."""
+    receipt, jwks = _make_receipt(EDGE)
+    with pytest.raises(VerifyError) as exc:
+        verify_transform_receipt(receipt, jwks, max_age_seconds=10**12)
+    assert exc.value.error_class == "signed_at_out_of_window"
+
+
+def test_revocation_arithmetic_at_the_calendar_edge() -> None:
+    """The revocation check compares instants with integer arithmetic, so
+    an edge timestamp is ordered correctly instead of overflowing."""
+    receipt, jwks = _make_receipt(EDGE)
+    kid = receipt["kid"]
+    later = [{"kid": kid, "effective_revocation_at": "0001-01-01T00:00:00Z"}]
+    assert verify_transform_receipt(receipt, jwks, revoked_kids=later).verified
+    same = [{"kid": kid, "effective_revocation_at": "0000-12-31T23:00:00Z"}]
+    with pytest.raises(VerifyError) as exc:
+        verify_transform_receipt(receipt, jwks, revoked_kids=same)
+    assert exc.value.error_class == "revoked_kid"

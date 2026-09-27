@@ -1,0 +1,171 @@
+{
+ "schema": "sum.test.revocation_instants.v1",
+ "description": "RFC 3339 instants shared by the Python and browser revocation checks: expected epoch milliseconds, or null when the verifier must treat the value as malformed (fail closed).",
+ "cases": [
+  {
+   "value": "2026-04-27T00:45:16.849Z",
+   "expected_ms": 1777250716849,
+   "note": "Worker format"
+  },
+  {
+   "value": "2026-04-27T00:45:16Z",
+   "expected_ms": 1777250716000,
+   "note": "whole second"
+  },
+  {
+   "value": "2026-04-27T00:45:16.8491Z",
+   "expected_ms": 1777250716849,
+   "note": "fraction truncated to ms"
+  },
+  {
+   "value": "2026-04-27T00:45:17.123456789Z",
+   "expected_ms": 1777250717123,
+   "note": "nanoseconds truncated"
+  },
+  {
+   "value": "2026-04-27T00:45:16.8Z",
+   "expected_ms": 1777250716800,
+   "note": "one fraction digit"
+  },
+  {
+   "value": "2026-04-27T02:45:16.849+02:00",
+   "expected_ms": 1777250716849,
+   "note": "positive offset"
+  },
+  {
+   "value": "2026-04-26T23:45:16.849-01:00",
+   "expected_ms": 1777250716849,
+   "note": "negative offset"
+  },
+  {
+   "value": "2024-02-29T00:00:00Z",
+   "expected_ms": 1709164800000,
+   "note": "leap day"
+  },
+  {
+   "value": "2000-02-29T12:00:00Z",
+   "expected_ms": 951825600000,
+   "note": "400-year leap day"
+  },
+  {
+   "value": "0001-01-01T00:00:00+01:00",
+   "expected_ms": -62135600400000,
+   "note": "earliest year with offset (datetime overflowed)"
+  },
+  {
+   "value": "9999-12-31T23:59:59-23:59",
+   "expected_ms": 253402387139000,
+   "note": "latest instant with offset"
+  },
+  {
+   "value": "0000-01-01T00:00:00Z",
+   "expected_ms": -62167219200000,
+   "note": "year zero"
+  },
+  {
+   "value": "2023-02-29T00:00:00Z",
+   "expected_ms": null,
+   "note": "not a leap year"
+  },
+  {
+   "value": "1900-02-29T00:00:00Z",
+   "expected_ms": null,
+   "note": "century not a leap year"
+  },
+  {
+   "value": "2026-04-31T00:00:00Z",
+   "expected_ms": null,
+   "note": "day past month end"
+  },
+  {
+   "value": "2026-13-01T00:00:00Z",
+   "expected_ms": null,
+   "note": "month 13"
+  },
+  {
+   "value": "2026-04-27T24:00:00Z",
+   "expected_ms": null,
+   "note": "hour 24"
+  },
+  {
+   "value": "2026-04-27T00:60:00Z",
+   "expected_ms": null,
+   "note": "minute 60"
+  },
+  {
+   "value": "2026-04-27T00:45:60Z",
+   "expected_ms": null,
+   "note": "leap second"
+  },
+  {
+   "value": "2026-04-28T00:00Z",
+   "expected_ms": null,
+   "note": "seconds missing"
+  },
+  {
+   "value": "2026-04-27 00:45:17Z",
+   "expected_ms": null,
+   "note": "space separator"
+  },
+  {
+   "value": "2026-04-27T00:45:17",
+   "expected_ms": null,
+   "note": "no zone"
+  },
+  {
+   "value": "2026-04-27T00:45:17z",
+   "expected_ms": null,
+   "note": "lowercase z"
+  },
+  {
+   "value": "2026-04-27t00:45:17Z",
+   "expected_ms": null,
+   "note": "lowercase t"
+  },
+  {
+   "value": "2026-04-27T00:45:16.Z",
+   "expected_ms": null,
+   "note": "empty fraction"
+  },
+  {
+   "value": "2026-04-27T00:45:16.1234567890Z",
+   "expected_ms": null,
+   "note": "ten fraction digits"
+  },
+  {
+   "value": "2026-04-27T00:45:16+24:00",
+   "expected_ms": null,
+   "note": "offset hour 24"
+  },
+  {
+   "value": "2026-04-27T00:45:16+0200",
+   "expected_ms": null,
+   "note": "offset without colon"
+  },
+  {
+   "value": "2026-04-27T00:45:16.849Z\n",
+   "expected_ms": null,
+   "note": "trailing newline"
+  },
+  {
+   "value": "２０２６-04-27T00:45:16Z",
+   "expected_ms": null,
+   "note": "fullwidth digits"
+  },
+  {
+   "value": "",
+   "expected_ms": null,
+   "note": "empty string"
+  },
+  {
+   "value": 1777251916849,
+   "expected_ms": null,
+   "note": "number, not a string"
+  },
+  {
+   "value": null,
+   "expected_ms": null,
+   "note": "null"
+  }
+ ]
+}

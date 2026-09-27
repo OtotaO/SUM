@@ -70,23 +70,51 @@ def _pick_extractor(override: Optional[str] = None) -> str:
          and would silently fall through, which broke cold-install
          onboarding (PyPI install → first ``sum attest`` → "no
          extractor available" even though [sieve] was just installed).
-      3. If OPENAI_API_KEY is set, use 'llm' (network-dependent).
-      4. Otherwise, fail with a helpful install hint.
+      3. If spaCy is importable but the sieve cannot start (for example
+         the model download fails offline), stop with a fix-it message.
+         Never fall back to a network extractor silently: that would
+         send the user's text to a third party they did not choose.
+      4. Only when spaCy is NOT importable and OPENAI_API_KEY is set,
+         use 'llm', and say on stderr that the text goes to OpenAI.
+      5. Otherwise, fail with a helpful install hint.
     """
     if override:
         return override
+    import importlib.util
+
     try:
-        import spacy  # noqa: F401 — availability check only
-        # Construct the sieve so its OSError-catching auto-downloader
-        # fires when en_core_web_sm is absent. The sieve instance is
-        # discarded; ``cmd_attest`` will reconstruct it. Cheap because
-        # spaCy caches the loaded model in-process.
-        from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
-        DeterministicSieve()
-        return "sieve"
+        # Presence, not importability: an installed spaCy that fails to
+        # import (a missing dependency, a numpy ABI break) is broken, not
+        # absent, and must get the fix-it message below.
+        spacy_installed = importlib.util.find_spec("spacy") is not None
     except Exception:
-        pass
+        spacy_installed = True
+    if spacy_installed:
+        try:
+            import spacy  # noqa: F401 — availability check only
+            # Construct the sieve so its OSError-catching auto-downloader
+            # fires when en_core_web_sm is absent. The sieve instance is
+            # discarded; ``cmd_attest`` will reconstruct it. Cheap because
+            # spaCy caches the loaded model in-process.
+            from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
+            DeterministicSieve()
+        except Exception as exc:
+            raise SystemExit(
+                "sum: spaCy is installed but the offline sieve could not start "
+                f"({type(exc).__name__}: {exc}).\n"
+                "    Repair spaCy and its model:\n"
+                "                     pip install -U 'sum-engine[sieve]' && python -m spacy download en_core_web_sm\n"
+                "    Or extract with OpenAI instead (sends the text to api.openai.com):\n"
+                "                     --extractor llm\n"
+                "SUM does not switch to a network extractor on its own."
+            ) from None
+        return "sieve"
     if os.environ.get("OPENAI_API_KEY"):
+        print(
+            "sum: spaCy is not installed, so extraction uses OpenAI and sends "
+            "the text to api.openai.com. Pass --extractor to choose explicitly.",
+            file=sys.stderr,
+        )
         return "llm"
     raise SystemExit(
         "sum: no extractor available. Install one of:\n"

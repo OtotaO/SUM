@@ -590,7 +590,9 @@ async function renderAndVerify(triples, sliders) {
   // 3. Revocation
   const revoked = await (await fetch(`${BASE}/.well-known/revoked-kids.json`)).json();
   const hit = revoked.revoked.find((r) => r.kid === kid);
-  if (hit && payload.signed_at >= hit.effective_revocation_at) {
+  // Compare instants, not strings: "...16.849Z" sorts before "...16Z".
+  // (single_file_demo/receipt_verifier.js does this with a strict parser.)
+  if (hit && Date.parse(payload.signed_at) >= Date.parse(hit.effective_revocation_at)) {
     return { tome: result.tome, verified: false, reason: "kid revoked" };
   }
 

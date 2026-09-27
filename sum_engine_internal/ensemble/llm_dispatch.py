@@ -206,6 +206,11 @@ def get_adapter(
     # belong to HF.
     if "/" in model:
         hf_token = api_key or os.environ.get("HF_TOKEN")
+        if not hf_token:
+            raise ValueError(
+                f"llm_dispatch: HF-namespaced model {model!r} needs the "
+                f"HF_TOKEN env var or an explicit api_key."
+            )
         return OpenAIAdapter(
             model=model, api_key=hf_token, base_url=HF_ROUTER_BASE_URL,
         )
@@ -273,8 +278,18 @@ class OpenAIAdapter(_BaseAdapter):
                 "OpenAIAdapter requires the [llm] extra. "
                 "Run: pip install 'sum-engine[llm]'"
             ) from e
+        # The OpenAI key is a default only for api.openai.com itself. The
+        # SDK would read OPENAI_API_KEY on its own if given None, so a
+        # caller pointing at another base must pass that provider's key.
+        if api_key is None:
+            if base_url is not None:
+                raise ValueError(
+                    "OpenAIAdapter: a non-OpenAI base_url needs that "
+                    "provider's api_key; OPENAI_API_KEY is never forwarded."
+                )
+            api_key = os.environ.get("OPENAI_API_KEY")
         self._client = AsyncOpenAI(
-            api_key=api_key or os.environ.get("OPENAI_API_KEY"),
+            api_key=api_key,
             base_url=base_url,
         )
 
@@ -366,7 +381,8 @@ class LocalLLMAdapter(OpenAIAdapter):
         # Local servers typically ignore the bearer; the SDK requires
         # *something* truthy in `api_key`. "local" is a placeholder that
         # signals intent in any server-side log that records it.
-        effective_key = api_key or os.environ.get("OPENAI_API_KEY") or "local"
+        # Never forward OPENAI_API_KEY to a non-OpenAI base.
+        effective_key = api_key or "local"
         super().__init__(model=model, api_key=effective_key, base_url=base_url)
         self._base_url = base_url
 

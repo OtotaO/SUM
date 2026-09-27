@@ -65,10 +65,11 @@ def test_pick_extractor_routes_through_sieve_constructor(monkeypatch):
     )
 
 
-def test_pick_extractor_falls_back_to_llm_when_sieve_construction_fails(monkeypatch):
-    """If sieve construction raises (e.g., spaCy auto-download
-    itself fails — air-gapped install with no PyPI access), the
-    probe MUST fall through to LLM if OPENAI_API_KEY is set."""
+def test_pick_extractor_does_not_fall_back_to_network_when_sieve_fails(monkeypatch):
+    """If spaCy is importable but the sieve cannot start (e.g. the model
+    download fails offline), the probe MUST stop with a fix-it message
+    instead of silently sending the text to OpenAI, even when
+    OPENAI_API_KEY is set (Phase 0 M4: no unannounced egress)."""
     from sum_cli import main as sum_main
 
     class _BrokenSieve:
@@ -88,29 +89,37 @@ def test_pick_extractor_falls_back_to_llm_when_sieve_construction_fails(monkeypa
     except ImportError:
         pytest.skip("spaCy not installed; cannot exercise the sieve branch")
 
+    with pytest.raises(SystemExit) as excinfo:
+        sum_main._pick_extractor(None)
+    msg = str(excinfo.value)
+    assert "sieve could not start" in msg
+    assert "spacy download en_core_web_sm" in msg
+    assert "--extractor llm" in msg
+    assert "simulated" in msg
+
+
+def test_pick_extractor_uses_llm_only_when_spacy_missing_and_says_so(monkeypatch, capsys):
+    """With spaCy not importable and OPENAI_API_KEY set, the probe picks
+    'llm' and announces on stderr that the text goes to OpenAI."""
+    from sum_cli import main as sum_main
+
+    monkeypatch.setitem(sys.modules, "spacy", None)  # import spacy -> ImportError
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+
     assert sum_main._pick_extractor(None) == "llm"
+    err = capsys.readouterr().err
+    assert "extraction uses OpenAI and sends the text to" in err
+    assert "--extractor" in err
 
 
 def test_pick_extractor_systemexit_when_no_extractor_available(monkeypatch):
-    """If neither sieve nor LLM is reachable, the SystemExit must
+    """If spaCy is missing and no LLM key is set, the SystemExit must
     carry the install hint string so users see actionable guidance,
     not a stack trace."""
     from sum_cli import main as sum_main
 
-    class _BrokenSieve:
-        def __init__(self):
-            raise RuntimeError("simulated")
-
-    monkeypatch.setattr(
-        "sum_engine_internal.algorithms.syntactic_sieve.DeterministicSieve",
-        _BrokenSieve,
-    )
+    monkeypatch.setitem(sys.modules, "spacy", None)  # import spacy -> ImportError
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-
-    try:
-        import spacy  # noqa: F401
-    except ImportError:
-        pytest.skip("spaCy not installed; cannot exercise the sieve branch")
 
     with pytest.raises(SystemExit) as excinfo:
         sum_main._pick_extractor(None)
@@ -119,6 +128,48 @@ def test_pick_extractor_systemexit_when_no_extractor_available(monkeypatch):
     assert "sum-engine[sieve]" in msg
     assert "sum-engine[llm]" in msg
     assert "--extractor" in msg
+
+
+def test_pick_extractor_broken_spacy_install_gets_the_fix_it_message(monkeypatch):
+    """`import spacy` failing with something other than ImportError (a
+    broken install) must produce the fix-it message, not a traceback and
+    not a network fallback."""
+    from sum_cli import main as sum_main
+
+    class _BrokenSpacyFinder:
+        def find_spec(self, name, path=None, target=None):
+            if name == "spacy":
+                raise RuntimeError("simulated broken spaCy install")
+            return None
+
+    monkeypatch.delitem(sys.modules, "spacy", raising=False)
+    monkeypatch.setattr(sys, "meta_path", [_BrokenSpacyFinder(), *sys.meta_path])
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+
+    with pytest.raises(SystemExit) as excinfo:
+        sum_main._pick_extractor(None)
+    assert "sieve could not start" in str(excinfo.value)
+    assert "simulated broken spaCy install" in str(excinfo.value)
+
+
+def test_pick_extractor_installed_spacy_with_missing_dependency_is_not_absent(monkeypatch, tmp_path):
+    """An installed spaCy whose import raises ImportError (a missing
+    dependency, a numpy ABI break) is broken, not absent: it gets the fix-it
+    message, not the OpenAI fallback that says spaCy is not installed."""
+    from sum_cli import main as sum_main
+
+    pkg = tmp_path / "spacy"
+    pkg.mkdir()
+    (pkg / "__init__.py").write_text("import thinc_missing_dependency_for_test  # noqa\n")
+    monkeypatch.delitem(sys.modules, "spacy", raising=False)
+    monkeypatch.syspath_prepend(str(tmp_path))
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+
+    with pytest.raises(SystemExit) as excinfo:
+        sum_main._pick_extractor(None)
+    msg = str(excinfo.value)
+    assert "sieve could not start" in msg
+    assert "thinc_missing_dependency_for_test" in msg
 
 
 def test_pick_extractor_honors_override(monkeypatch):

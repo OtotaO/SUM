@@ -268,11 +268,10 @@ class SliderTransform:
         # Inference Providers ($HF_TOKEN), ollama:/llamacpp:/local:
         # → matching local endpoint. See docs/BYOK_AND_FREE_PROVIDERS.md.
         model = env.model or env.default_openai_model
-        m = model.lower()
-        needs_openai_key = (
-            "/" not in model
-            and not m.startswith(("ollama:", "llamacpp:", "local:"))
-        )
+        # Only a model that actually routes to api.openai.com may receive
+        # the OpenAI key; nim:/groq:/cerebras:/HF/local ids use their own.
+        from sum_engine_internal.ensemble.live_llm_adapter import routes_to_openai
+        needs_openai_key = routes_to_openai(model)
         if needs_openai_key and not env.openai_api_key and not os.environ.get("OPENAI_API_KEY"):
             raise ValueError(
                 "slider transform: LLM-axis render with model "
