@@ -57,6 +57,15 @@ SCOPE = (
     "one of the 32 bills covered by the signed, logged chain receipt."
 )
 
+# Descriptive: the bound values the signed chain receipt records, with the
+# delta each was computed at. Not a confidence reading about other documents.
+CHAIN_NOTE = (
+    "signed sum.chain_receipt.v1 over all 32 bills (Hoeffding, n=32): hop bound values "
+    "0.865768 and 0.488860, each at delta 0.05; their sum, 1.354628, at joint delta 0.10; "
+    "direct end-to-end bound value 0.874216, at delta 0.05. These are the values the receipt "
+    "records for these 32 bills, not a confidence statement about other documents"
+)
+
 
 def _load_chain_gen():
     """Import the committed chain-fixture generator so rung 2/3 use the
@@ -150,12 +159,7 @@ def build() -> dict:
             "path": "fixtures/chain_receipts_billsum/chain_receipt.billsum.golden.json",
             "witnessed_in": "transparency/log.jsonl",
             "url": "https://github.com/OtotaO/SUM/tree/main/fixtures/chain_receipts_billsum",
-            "note": (
-                "signed sum.chain_receipt.v1 over all 32 bills: hop-1 bound "
-                "0.865768, hop-2 bound 0.488860, Bonferroni budget 1.354628 "
-                "at joint confidence 0.90, direct end-to-end 0.874216 (95% "
-                "per hop, Hoeffding, n=32)"
-            ),
+            "note": CHAIN_NOTE,
         },
         "rungs": out_rungs,
     }
