@@ -85,9 +85,10 @@ def test_billsum_golden_discloses_machine_pinning(golden, jwks):
 
 
 def test_billsum_golden_reports_controlled_honestly(golden):
-    """A real, non-vacuous, CONTROLLED bound: certified meaning-loss
-    ≤ 0.6454 at 95% over 64 bills, under the 0.7 target. Pinned so a
-    regeneration that moves it is noticed."""
+    """A real, non-vacuous, CONTROLLED bound: bound arithmetic
+    ≤ 0.6455 at delta 0.05 over 64 bills (descriptive: a fixed prefix, not
+    independent draws), under the 0.7 target. Pinned so a regeneration that
+    moves it is noticed."""
     pl = golden["payload"]
     assert pl["alpha_target_micro"] == 700_000
     assert pl["controlled"] is True

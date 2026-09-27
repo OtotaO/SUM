@@ -123,8 +123,26 @@ class TestMintLossesMode:
         narration = err.getvalue()
         assert "does NOT prove" in narration
         assert "NAMED PROXY" in narration
-        assert "exchangeability" in narration
         assert "near-vacuous" not in narration  # n=40, tight bound
+        # The narration matches the SIGNED scope (descriptive_batch, no
+        # sampling contract): no "certified ... at 95%" headline and no
+        # "under exchangeability" confidence claim.
+        signed_scope = json.loads((tmp_path / "receipt.json").read_text())[
+            "payload"]["statistical_scope"]
+        assert signed_scope == "descriptive_batch"
+        assert f"scope: {signed_scope}" in narration
+        assert "certified:" not in narration and "95%" not in narration
+        assert "under exchangeability" not in narration
+        assert "exchangeability alone is insufficient" in narration
+        assert "independent draws" in narration
+        # The bound is narrated exactly as signed (never rounded down).
+        signed_ub = json.loads((tmp_path / "receipt.json").read_text())[
+            "payload"]["risk_upper_bound_micro"] / 1_000_000
+        assert f"≤ {signed_ub:.6f} at delta=0.05" in narration
+        # ... and the verdict echoes the scope + arithmetic parameters.
+        assert verdict["statistical_scope"] == "descriptive_batch"
+        assert verdict["sampling_status"] == "not_supplied"
+        assert (verdict["n"], verdict["delta"]) == (40, 0.05)
 
         # files written: receipt + public JWKS + 0600 private key
         assert (tmp_path / "receipt.json").exists()
@@ -153,7 +171,8 @@ class TestMintLossesMode:
             rc = cmd_mint_meaning(args)
         assert rc == 0  # a vacuous bound is still VALID — warn, don't fail
         assert "near-vacuous" in err.getvalue()
-        assert "n ≥ ~32" in err.getvalue()
+        assert "do not establish independent sampling" in err.getvalue()
+        assert "exchangeable pairs" not in err.getvalue()
         assert json.loads(out.getvalue())["verified"] is True
 
     def test_byo_losses_must_name_the_proxy(self, tmp_path):
@@ -441,3 +460,39 @@ class TestParserWiring:
         assert args.method == "empirical_bernstein"
         assert args.delta == 0.05
         assert args.scorer == "embedding"
+
+
+class TestMintChainNarration:
+    """`sum mint-chain` over the committed BillSum hop goldens: the budget is
+    the sum of per-hop bound values, reported at a joint delta, never as a
+    joint confidence, and labelled as the issuer's (no per-hop losses are
+    replayed when minting a chain)."""
+
+    def test_mint_chain_reports_joint_delta_not_confidence(self, tmp_path):
+        from sum_cli.main import main
+
+        d = Path(__file__).resolve().parents[1] / "fixtures" / "chain_receipts_billsum"
+        with _cap() as (out, err):
+            rc = main([
+                "mint-chain",
+                "--hop", str(d / "hop1_summarize.golden.json"),
+                "--hop", str(d / "hop2_extractive.golden.json"),
+                "--hops-jwks", str(d / "jwks.json"),
+                "--gen-key", str(tmp_path / "keys"),
+                "--out", str(tmp_path / "chain.json"),
+            ])
+        assert rc == 0, err.getvalue()
+        narration = err.getvalue()
+        assert "joint confidence" not in narration
+        assert "at joint delta 0.1" in narration and "descriptive" in narration
+        verdict = json.loads(out.getvalue())
+        assert verdict["issuer_asserted_budget"] == 1.354628
+        assert verdict["joint_delta"] == 0.1
+        assert "budget" not in verdict and "joint_confidence" not in verdict
+        # No end-to-end leg was minted, so nothing was replayed from losses.
+        assert verdict["replayed"] is False and verdict["hop_envelopes_checked"] is True
+        assert "hops_replayed" not in verdict
+        # A new chain signs the conditional budget_scope (no historical note).
+        signed = json.loads((tmp_path / "chain.json").read_text())["payload"]
+        assert signed["budget_scope"].startswith("budget_micro is the sum of the per-hop")
+        assert "budget_scope_note" not in verdict

@@ -67,6 +67,7 @@ from __future__ import annotations
 
 from scripts.fixture_history import historical_fixture_payload
 from scripts.fixture_history import HISTORICAL_CHAIN_DISCLOSURE
+from scripts.fixture_history import HISTORICAL_BUDGET_SCOPE_STATEMENT
 
 import base64
 import json
@@ -251,6 +252,7 @@ def build():
     chain_payload = build_chain_payload(
         [hop1, hop2], end_to_end=e2e_leg, signed_at=SIGNED_AT,
         disclosure=HISTORICAL_CHAIN_DISCLOSURE,
+        budget_scope=HISTORICAL_BUDGET_SCOPE_STATEMENT,
     )
     chain = sign_chain_receipt(chain_payload, private_jwk=private, kid=KID)
     return {

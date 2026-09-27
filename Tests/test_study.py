@@ -143,6 +143,16 @@ def test_cli_no_documents_is_usage_error():
     assert "sum:" in err
 
 
+def test_cli_certify_requires_research_flag(tmp_path):
+    # --certify signs a receipt over the same documents the cheatsheet was
+    # studied from (in-sample). It is research-only: without --research it is
+    # a usage error, checked before any extraction or key handling.
+    rc, out, err = _run_cli(["study", "--doc", str(tmp_path / "x.txt"), "--certify",
+                             "--signing-jwk", "k.jwk", "--kid", "k"])
+    assert rc == 2 and out == ""
+    assert "--research" in err and "in-sample" in err
+
+
 # ── end-to-end pipeline (needs extras; skips gracefully otherwise) ─────────
 
 
@@ -249,12 +259,15 @@ def test_e2e_certify_round_trips(tmp_path):
     jwk_path.write_text(json.dumps(private_jwk), encoding="utf-8")
 
     corpus = _write_corpus(tmp_path)
-    rc, out, _ = _run_cli([
+    rc, out, err = _run_cli([
         "study", "--corpus", corpus, "--scorer", "lexical", "--certify",
-        "--signing-jwk", str(jwk_path), "--kid", "test",
+        "--research", "--signing-jwk", str(jwk_path), "--kid", "test",
         "--corpus-id", "study-test-v0",
     ])
     assert rc == 0
     d = json.loads(out)
     assert d["certified"] is True
     assert d["receipt"]["schema"] == "sum.meaning_risk_receipt.v1"
+    # In-sample: warned on stderr, and the signed scope is descriptive.
+    assert "in-sample" in err
+    assert d["receipt"]["payload"]["statistical_scope"] == "descriptive_batch"

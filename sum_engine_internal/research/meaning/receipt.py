@@ -57,6 +57,7 @@ from sum_engine_internal.research.meaning.conformal_meaning import (
     certify_meaning_risk,
 )
 from sum_engine_internal.research.meaning.evidence import evaluation_fields, sampling_metadata
+from sum_verify._meaning import REQUIRED_PAYLOAD_FIELDS as _REQUIRED_PAYLOAD_FIELDS
 
 SUPPORTED_SCHEMA = "sum.meaning_risk_receipt.v1"
 
@@ -293,6 +294,24 @@ class MeaningReceiptDisclosureError(Exception):
     verify, with or without side-band losses."""
 
 
+def _check_payload_shape(
+    payload: Any, schema: str, required: Sequence[str]
+) -> None:
+    """Reject a payload that is not of the declared receipt family. Fails
+    closed with :class:`MeaningReceiptDisclosureError`, as the SDK does."""
+    if not isinstance(payload, dict):
+        raise MeaningReceiptDisclosureError(
+            f"payload must be a JSON object, got {type(payload).__name__}"
+        )
+    missing = [f for f in required if f not in payload]
+    if missing:
+        raise MeaningReceiptDisclosureError(
+            f"payload declares schema {schema} but is missing required "
+            f"field(s) {missing}: refusing to verify a payload of another "
+            "receipt family (schema is not covered by the signature)"
+        )
+
+
 def _has_visible_text(s: str) -> bool:
     """True iff ``s`` contains a character that is neither whitespace nor a
     zero-width / format / control character.
@@ -396,7 +415,8 @@ def verify_meaning_risk_receipt(
     JoseEnvelopeError
         On any cryptographic / structural failure (propagated).
     MeaningReceiptDisclosureError
-        When the payload omits a required disclosure field
+        When the payload lacks this family's required fields (a relabelled
+        receipt of another family) or omits a required disclosure field
         (``not_covered`` non-empty, ``disclosure`` non-empty). Enforced
         on every verify, with or without ``losses``.
     MeaningReceiptReplayError
@@ -410,6 +430,13 @@ def verify_meaning_risk_receipt(
         max_age_seconds=max_age_seconds,
     )
     payload = result.payload
+
+    # ---- receipt-family shape gate (before the disclosure checks) ----
+    # `schema` sits outside the JWS, so a genuine signature over another
+    # family's payload (a chain or perspective receipt relabelled as this
+    # schema) would otherwise verify. Same required fields as the SDK
+    # (sum_verify._meaning) and the JS verifier, imported so they cannot drift.
+    _check_payload_shape(payload, SUPPORTED_SCHEMA, _REQUIRED_PAYLOAD_FIELDS)
 
     # ---- structural disclosure invariants (always, losses or not) ----
     # The receipt's whole purpose is to bound a NAMED proxy while

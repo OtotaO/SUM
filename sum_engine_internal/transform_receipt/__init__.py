@@ -14,14 +14,14 @@ Public surface:
     ErrorClass                  — string enum mirrored across runtimes
     VerifyResult                — JoseEnvelopeResult re-export
 
-The cross-runtime byte-equivalence guarantee that locks the render-
-receipt format (K1/K1-mw/K2/K3/K4 + A1-A6 gate matrix) extends to
-this format unchanged: same JCS canonicalisation, same Ed25519, same
-detached JWS, same JWKS distribution. The 20-fixture set in
+The render-receipt format's cross-runtime checks extend to this format
+unchanged: same JCS canonicalisation, same Ed25519, same detached JWS,
+same JWKS distribution (CI exercises Python and the JS verifier under
+Node; no browser engine runs in CI). The 20-fixture set in
 ``fixtures/transform_receipts/`` is consumed by both the Python
-verifier here and the browser verifier under ``single_file_demo/``;
-both runtimes produce byte-identical accept/reject + error_class
-outcomes on every fixture.
+verifier here and the JS verifier under ``single_file_demo/`` (run
+under Node in CI); both produce byte-identical accept/reject +
+error_class outcomes on every fixture.
 """
 from sum_engine_internal.transform_receipt.format import (
     SUPPORTED_SCHEMA,

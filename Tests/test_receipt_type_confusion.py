@@ -204,3 +204,76 @@ def test_sdk_does_not_handle_perspective_so_the_gate_cannot_break_it():
     with pytest.raises(Exception) as ei:
         sum_verify.verify(_load(persp), {"keys": []})
     assert "unsupported receipt schema" in str(ei.value).lower()
+
+
+# ---------------------------------------------------------------------------
+# The research verifiers behind `sum verify-meaning` (2026-09 review finding).
+#
+# research/meaning/receipt.py and perspective_receipt.py had no shape gate, so
+# `sum verify-meaning` printed verified:true for a meaning receipt relabelled
+# as perspective, and crashed with KeyError on a relabelled chain. They now
+# apply the same per-schema required fields as the SDK and the JS verifier.
+# ---------------------------------------------------------------------------
+
+_PERSPECTIVE = _REPO / "fixtures" / "perspective_receipts"
+
+
+def _research():
+    return pytest.importorskip(
+        "sum_engine_internal.research.meaning", reason="[research] not installed"
+    )
+
+
+@pytest.mark.parametrize("source", ["meaning", "chain"])
+def test_research_perspective_verifier_rejects_relabelled_receipt(
+    source, meaning_golden, meaning_jwks, chain_golden, chain_jwks,
+):
+    rm = _research()
+    golden, jwks = (
+        (meaning_golden, meaning_jwks) if source == "meaning" else (chain_golden, chain_jwks)
+    )
+    evil = _relabel(golden, "sum.perspective_risk_receipt.v1")
+    with pytest.raises(rm.MeaningReceiptDisclosureError, match="another receipt family"):
+        rm.verify_perspective_risk_receipt(evil, jwks)
+
+
+@pytest.mark.parametrize("source", ["perspective", "chain"])
+def test_research_meaning_verifier_rejects_relabelled_receipt(
+    source, chain_golden, chain_jwks,
+):
+    rm = _research()
+    if source == "chain":
+        golden, jwks = chain_golden, chain_jwks
+    else:
+        golden = _load(_PERSPECTIVE / "perspective_risk_receipt.golden.json")
+        jwks = _load(_PERSPECTIVE / "jwks.json")
+    evil = _relabel(golden, "sum.meaning_risk_receipt.v1")
+    with pytest.raises(rm.MeaningReceiptDisclosureError, match="another receipt family"):
+        rm.verify_meaning_risk_receipt(evil, jwks)
+
+
+def test_research_gate_fields_match_the_sdk_and_js_verifier():
+    """One required-field set per schema across Python SDK, research
+    verifiers and the JS verifier, so the three reject the same relabels."""
+    _research()
+    import re
+
+    from sum_engine_internal.research.meaning import perspective_receipt, receipt
+    from sum_verify._meaning import REQUIRED_PAYLOAD_FIELDS as sdk_meaning
+
+    assert tuple(receipt._REQUIRED_PAYLOAD_FIELDS) == tuple(sdk_meaning)
+    js = (_REPO / "single_file_demo" / "meaning_receipt_verifier.js").read_text("utf-8")
+    block = js[js.index("REQUIRED_PAYLOAD_FIELDS = Object.freeze({"):]
+    persp_js = re.search(r"\[PERSPECTIVE_SCHEMA\]: Object\.freeze\(\[(.*?)\]\)", block, re.S)
+    meaning_js = re.search(r"\[MEANING_RISK_SCHEMA\]: Object\.freeze\(\[(.*?)\]\)", block, re.S)
+    assert re.findall(r'"([a-z_]+)"', persp_js.group(1)) == list(
+        perspective_receipt.REQUIRED_PAYLOAD_FIELDS
+    )
+    assert re.findall(r'"([a-z_]+)"', meaning_js.group(1)) == list(sdk_meaning)
+
+
+def test_research_verifiers_still_accept_their_own_goldens(meaning_golden, meaning_jwks):
+    rm = _research()
+    assert rm.verify_meaning_risk_receipt(meaning_golden, meaning_jwks)["n"] == 64
+    persp = _load(_PERSPECTIVE / "perspective_risk_receipt.golden.json")
+    assert rm.verify_perspective_risk_receipt(persp, _load(_PERSPECTIVE / "jwks.json"))["groups"]

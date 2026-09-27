@@ -34,10 +34,11 @@ quantity: the blog measures downstream **task accuracy**; SUM measures
 **meaning-fidelity** under a named scorer whose declared blind spots
 (arrangement, sound, connotation, implicature) it inherits. A higher
 expertise number means "this study artifact stays faithful even when
-small," nothing more. The only *certified* claim a study artifact can
-carry is its embedded ``sum.meaning_risk_receipt.v1`` (a marginal,
-distribution-free corpus bound); the expertise scalar and the frontier
-losses are per-run measurements. A surface must never present the
+small," nothing more. The only signed element a study artifact can
+carry is its embedded ``sum.meaning_risk_receipt.v1``: an IN-SAMPLE
+descriptive measurement, because the same documents are studied and
+measured; the expertise scalar and the frontier losses are per-run
+measurements. A surface must never present the
 expertise scalar as a guarantee.
 
 This module is dependency-free and offline (no numpy, no LLM, no
@@ -122,7 +123,7 @@ class StudyArtifact:
     + axiom count), the study notes at the chosen density (``cheatsheet``),
     the faithful→compressed ``frontier`` it sits on, the ``expertise``
     scalar, and an OPTIONAL signed ``sum.meaning_risk_receipt.v1``
-    (``receipt``) — the only certified element. ``as_dict`` serialises a
+    (``receipt``, in-sample and descriptive). ``as_dict`` serialises a
     ``sum.study_artifact.v1`` for the CLI / API / persistence surface.
     """
     corpus_id: str
@@ -138,13 +139,14 @@ class StudyArtifact:
     receipt: Mapping[str, Any] | None = None
 
     # The same honest-boundary string the frontier carries, one layer up:
-    # the artifact is a MEASUREMENT except for its embedded receipt.
+    # everything here is a MEASUREMENT, the embedded receipt included.
     _MEASUREMENT_NOTE = (
         "expertise and frontier meaning_loss are per-run MEASUREMENTS "
         "under the named scorer (an analogy to studying-expertise, not a "
-        "task-accuracy metric), not certified bounds; the only certified "
-        "claim is the embedded sum.meaning_risk_receipt.v1 (a marginal, "
-        "distribution-free corpus bound) when present"
+        "task-accuracy metric), not bounds; the embedded "
+        "sum.meaning_risk_receipt.v1, when present, is a signed IN-SAMPLE "
+        "descriptive measurement (the same documents built the cheatsheet "
+        "and were measured), not a bound on other documents"
     )
 
     def as_dict(self) -> dict[str, Any]:

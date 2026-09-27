@@ -124,6 +124,7 @@ def test_verify_receipt_replays_billsum_golden(server, billsum_golden):
     assert out["replayed"] is True
     assert out["schema"] == "sum.meaning_risk_receipt.v1"
     assert out["risk_upper_bound"] == pytest.approx(0.645438)
+    assert out["controlled"] is True  # a decision only rides a replayed bound
     assert out["n"] == 64
     # The honesty layer rides the MCP verdict exactly as it rides the CLI's.
     assert "proxy_caveat" in out
@@ -143,13 +144,47 @@ def test_verify_receipt_full_chain_replay(server, chain_golden):
     )
     assert "error_class" not in out
     assert out["verified"] is True
-    assert out["hops_replayed"] is True
-    assert out["end_to_end_replayed"] is True
+    assert out["hop_envelopes_checked"] is True and "hops_replayed" not in out
+    assert out["end_to_end_replayed"] is True and out["replayed"] is True
     assert out["n_hops"] == 2
-    assert out["budget"] == pytest.approx(1.354628)
-    assert out["joint_confidence"] == pytest.approx(0.90)
+    # Hop envelopes confirm signatures and mirrors, not per-hop bound
+    # arithmetic, so the budget stays the issuer's assertion even with hops
+    # and end-to-end losses supplied; no derived confidence is shown.
+    assert out["issuer_asserted_budget"] == pytest.approx(1.354628)
+    assert "budget" not in out and "joint_confidence" not in out
+    assert out["joint_delta"] == pytest.approx(0.10)
+    assert out["statistical_scope"] == "not_declared"
     # The no-triangle honesty line rides every chain verdict.
     assert "directed loss" in out["budget_scope"]
+    # The golden signs the earlier unconditional wording: an unsigned note says so.
+    assert "earlier unconditional wording" in out["budget_scope_note"]
+
+
+def test_chain_verdict_replayed_only_with_end_to_end_losses(server, chain_golden):
+    """Hop envelopes alone replay no bound arithmetic, so `replayed` stays
+    false; they are reported as `hop_envelopes_checked`."""
+    fn = _tool(server, "verify_receipt")
+    out = asyncio.run(fn(
+        chain_golden["chain"], chain_golden["jwks"],
+        hops=[chain_golden["hop1"], chain_golden["hop2"]],
+    ))
+    assert out["verified"] is True
+    assert out["replayed"] is False and out["end_to_end_replayed"] is False
+    assert out["hop_envelopes_checked"] is True and "hops_replayed" not in out
+
+
+def test_verify_receipt_without_losses_labels_bound_issuer_asserted(server, billsum_golden):
+    """No losses: nothing was replayed, so no `controlled` decision, the bound
+    is the issuer's assertion, and the caveat must not claim a replay."""
+    fn = _tool(server, "verify_receipt")
+    out = asyncio.run(fn(billsum_golden["receipt"], billsum_golden["jwks"]))
+    assert out["verified"] is True and out["replayed"] is False
+    assert "controlled" not in out and "risk_upper_bound" not in out
+    assert out["issuer_asserted_risk_upper_bound"] == pytest.approx(0.645438)
+    assert "replayed bound" not in out["proxy_caveat"]
+    assert (out["n"], out["method"], out["delta"]) == (64, "hoeffding", 0.05)
+    assert out["statistical_scope"] == "not_declared"
+    assert out["sampling_status"] == "not_declared"
 
 
 def test_verify_receipt_rejects_tampered_bound(server, billsum_golden):
@@ -202,8 +237,8 @@ def test_sixteen_parallel_chain_verifications_all_green(server, chain_golden):
     for out in results:
         assert "error_class" not in out, out
         assert out["verified"] is True
-        assert out["hops_replayed"] is True
-        assert out["budget"] == pytest.approx(1.354628)
+        assert out["hop_envelopes_checked"] is True
+        assert out["issuer_asserted_budget"] == pytest.approx(1.354628)
 
 
 # --------------------------------------------------------------------------
@@ -484,6 +519,8 @@ def test_mint_chain_receipt_roundtrip(server, keypair):
     assert out["verdict"]["verified"] is True
     assert out["verdict"]["n_hops"] == 2
     assert "directed loss" in out["verdict"]["budget_scope"]
+    assert "joint_confidence" not in out["verdict"] and "budget" not in out["verdict"]
+    assert out["verdict"]["joint_delta"] == pytest.approx(0.10)
     assert keypair["d"] not in json.dumps(out["receipt"])
     assert keypair["d"] not in json.dumps(out["public_jwks"])
 
@@ -494,7 +531,10 @@ def test_mint_chain_receipt_roundtrip(server, keypair):
         )
     )
     assert out2["verified"] is True
-    assert out2["hops_replayed"] is True and out2["end_to_end_replayed"] is True
+    assert out2["hop_envelopes_checked"] is True and out2["end_to_end_replayed"] is True
+    # A newly minted chain signs the conditional budget_scope: no note.
+    assert out2["budget_scope"].startswith("budget_micro is the sum of the per-hop")
+    assert "budget_scope_note" not in out2
 
 
 def test_mint_chain_requires_two_hops(server, keypair):

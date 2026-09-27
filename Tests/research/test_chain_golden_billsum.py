@@ -12,8 +12,9 @@ Honesty these tests pin, same discipline as the binding-gate golden:
   * The CERTIFICATE (each hop + the chain) replays offline over the committed
     integer-micro loss vectors — pure-Python, NO model, NO GPU, deterministic
     everywhere. That is what CI checks here (numpy + joserfc + cryptography, no torch).
-  * The Bonferroni budget bounds the SUM of per-hop expected proxy losses; it
-    does NOT bound the end-to-end loss (the proxy is a directed loss, not a
+  * The Bonferroni budget is the sum of the per-hop bound values (a bound on
+    the SUM of per-hop expected proxy losses only under each hop's sampling
+    assumptions); it does NOT bound the end-to-end loss (the proxy is a directed loss, not a
     metric — no triangle inequality). The budget can exceed 1.0.
   * Hop 1 (strict NLI on a full bill) is near-vacuous by design; hop 2 is
     gentler. The chain surfaces WHERE meaning is lost. We do not swap to a
@@ -38,6 +39,7 @@ from sum_engine_internal.research.meaning import (  # noqa: E402
 from sum_engine_internal.research.meaning.chain_receipt import (  # noqa: E402
     BUDGET_SCOPE_STATEMENT,
 )
+from sum_verify._verdict import HISTORICAL_BUDGET_SCOPE_STATEMENT  # noqa: E402
 
 _REPO = Path(__file__).resolve().parents[2]
 _FIX = _REPO / "fixtures" / "chain_receipts_billsum"
@@ -104,7 +106,11 @@ def test_chain_golden_verifies_and_replays(chain, jwks, hop1, hop2, losses_e2e):
         h["risk_upper_bound_micro"] for h in payload["hops"]
     )
     assert payload["joint_delta_micro"] == 100_000  # 2 x 0.05
-    assert payload["budget_scope"] == BUDGET_SCOPE_STATEMENT
+    # Like every chain minted before PR #531, the golden signs the historical
+    # (unconditional) wording, pinned so the bytes never move; new receipts
+    # sign the conditional statement.
+    assert payload["budget_scope"] == HISTORICAL_BUDGET_SCOPE_STATEMENT
+    assert payload["budget_scope"] != BUDGET_SCOPE_STATEMENT
     # regression locks
     assert payload["chain_id"] == EXPECTED_CHAIN_ID
     assert payload["budget_micro"] == EXPECTED_BUDGET_MICRO

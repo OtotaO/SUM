@@ -18,7 +18,7 @@ A module is **production-wired** if at least one of its importers is API, SCRIPT
 
 Every module in this category is reached from at least one of `api/quantum_router.py`, `scripts/bench/*`, `scripts/verify_*`, or another production-wired internal module.
 
-- **`sum_engine_internal/algorithms/`** — 5 / 5 wired: `causal_discovery`, `predicate_canon`, `semantic_arithmetic`, `syntactic_sieve`, `zk_semantics`.
+- **`sum_engine_internal/algorithms/`** — 5 / 5 wired: `causal_discovery`, `predicate_canon`, `semantic_arithmetic`, `syntactic_sieve`, `divisibility_witness` (renamed from `zk_semantics`; not zero-knowledge).
 - **`sum_engine_internal/ensemble/`** — 15 / 17 wired: `automated_scientist`, `causal_triggers`, `confidence_calibrator`, `epistemic_arbiter`, `epistemic_loop`, `extraction_validator`, `live_llm_adapter`, `llm_entailment`, `mass_semantic_engine`, `ouroboros`, `semantic_dedup`, `tome_generator`, `tome_sliders` (via `tome_generator.generate_controlled`), `vector_bridge`, `venn_abers`.
 - **`sum_engine_internal/infrastructure/`** — 13 / 15 wired: `akashic_ledger`, `canonical_codec`, `jcs`, `key_manager`, `p2p_mesh`, `prov_o`, `provenance`, `resource_guards`, `scheme_registry`, `state_encoding`, `tome_parser`, `verifiable_credential`, `zig_bridge`.
 

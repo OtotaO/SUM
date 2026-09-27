@@ -20,14 +20,15 @@ HEAD. Drift would surface as a failing test.
 
 ## Q1. Why should I believe the cross-runtime trust triangle holds, given that "byte-identical Ed25519 over JCS bytes across three runtimes" is a strong claim?
 
-The K1–K4 valid-path matrix and A1–A6 adversarial matrix are **locked
-in CI on every PR** (`make xruntime`, `make xruntime-adversarial`).
-A new bundle that breaks byte-identity on any of the three runtimes
-fails the gate. The harness is at `scripts/verify_cross_runtime.py`
-and `scripts/verify_cross_runtime_adversarial.py`; the matrix's
-exact rejection-class semantics are documented in PROOF_BOUNDARY
-§1.2 / §1.3.1 and exercised on the worker / Node / browser
-codepaths.
+The K1–K4 valid-path matrix and A1–A8 adversarial matrix are **locked
+in CI on every PR** for Python ↔ Node (`make xruntime`,
+`make xruntime-adversarial`). A new bundle that breaks byte-identity
+between those two runtimes fails the gate. No browser engine runs in
+CI: the browser verifier implements the same checks, and the JS
+verifiers are exercised under Node. The harness is at
+`scripts/verify_cross_runtime.py` and
+`scripts/verify_cross_runtime_adversarial.py`; the matrix's exact
+rejection-class semantics are documented in PROOF_BOUNDARY §1.2 / §1.3.1.
 
 ## Q2. The `bench_digest` claim of cross-machine reproducibility is unusual. What exactly is reproduced, and across what environments?
 

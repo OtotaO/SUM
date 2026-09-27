@@ -99,15 +99,6 @@ _DIFF_SCOPE = (
     "over a named corpus."
 )
 
-_PROXY_CAVEAT = (
-    "verified=true is a cryptographic fact (signature + replayed bound), "
-    "not evidence meaning was preserved. The bound is over a named proxy; "
-    "vs human judgments the proxy correlated only modestly at summary level "
-    "(Spearman rho = 0.267-0.291, pooled summary-level, on SummEval; NLI 0.290 replicates on FRANK; "
-    "the embedding judge is corpus-dependent, near zero on abstractive "
-    "FRANK-XSum). Not a substitute for human review."
-)
-
 _EMBEDDING_CAVEAT = (
     "the embedding judge is brittle at the claim level and corpus-dependent "
     "(near zero correlation on abstractive FRANK-XSum; F18 paraphrase "
@@ -306,40 +297,41 @@ def _classify_verify_error(exc: Exception) -> ErrorClass:
 
 
 def _chain_verdict(payload: dict, *, hops_given: bool, losses_given: bool) -> dict:
+    from sum_verify._verdict import scope_fields
+
+    # Only the end-to-end leg is replayed from losses; hop envelopes get
+    # signature, disclosure and mirrored-field checks, no bound arithmetic.
+    replayed = losses_given
     verdict: dict[str, Any] = {
         "verified": True,
         "schema": "sum.chain_receipt.v1",
-        "replayed": hops_given or losses_given,
-        "hops_replayed": hops_given,
+        "replayed": replayed,
+        "hop_envelopes_checked": hops_given,
         "end_to_end_replayed": losses_given,
         "n_hops": payload.get("n_hops"),
     }
-    if "budget_micro" in payload:
-        verdict["budget"] = payload["budget_micro"] / 1_000_000
-    if "joint_delta_micro" in payload:
-        verdict["joint_confidence"] = max(
-            0.0, 1.0 - payload["joint_delta_micro"] / 1_000_000
-        )
-    verdict["budget_scope"] = payload.get("budget_scope")
     if "not_covered" in payload:
         verdict["not_covered"] = payload.get("not_covered")
+    # statistical_scope / sampling_status, issuer_asserted_budget (no surface
+    # replays per-hop losses), joint_delta, budget_scope.
+    verdict.update(scope_fields("sum.chain_receipt.v1", payload, replayed=replayed))
     return verdict
 
 
 def _flat_verdict(schema: str, payload: Any, *, losses_given: bool) -> dict:
-    verdict: dict[str, Any] = {"verified": True, "schema": schema}
-    verdict["replayed"] = losses_given and schema == "sum.meaning_risk_receipt.v1"
+    from sum_verify._verdict import proxy_caveat, scope_fields
+
+    replayed = losses_given and schema == "sum.meaning_risk_receipt.v1"
+    verdict: dict[str, Any] = {"verified": True, "schema": schema, "replayed": replayed}
     if isinstance(payload, dict):
         for k in ("scorer", "not_covered"):
             if k in payload:
                 verdict[k] = payload[k]
-        if schema == "sum.meaning_risk_receipt.v1":
-            if "risk_upper_bound_micro" in payload:
-                verdict["risk_upper_bound"] = payload["risk_upper_bound_micro"] / 1_000_000
-            if "controlled" in payload:
-                verdict["controlled"] = payload["controlled"]
+    # Scope fields + the bound, labelled issuer-asserted unless replayed;
+    # `controlled` only rides a replayed bound (sum_verify._verdict).
+    verdict.update(scope_fields(schema, payload, replayed=replayed))
     if schema == "sum.meaning_risk_receipt.v1":
-        verdict["proxy_caveat"] = _PROXY_CAVEAT
+        verdict["proxy_caveat"] = proxy_caveat(replayed)
     return verdict
 
 
@@ -447,10 +439,7 @@ def register_meaning_tools(mcp: Any) -> None:
                     receipt, jwks, losses=losses, max_age_seconds=max_age_seconds
                 )
                 payload = result if isinstance(result, dict) else getattr(result, "payload", {})
-                verdict = _flat_verdict(schema, payload, losses_given=losses is not None)
-                if losses is not None and schema == "sum.meaning_risk_receipt.v1":
-                    verdict["n"] = len(losses)
-                return verdict
+                return _flat_verdict(schema, payload, losses_given=losses is not None)
 
             # Pure crypto + math: no judge lock; run in the executor so
             # concurrent verifications genuinely overlap.
@@ -706,6 +695,7 @@ def register_meaning_tools(mcp: Any) -> None:
                 sign_meaning_risk_receipt,
             )
             import sum_verify
+            from sum_verify._verdict import proxy_caveat, scope_fields
 
             evaluation_manifest = None
             if losses is not None:
@@ -793,10 +783,12 @@ def register_meaning_tools(mcp: Any) -> None:
                 verdict={
                     "verified": True,
                     "replayed": True,
-                    "risk_upper_bound": verified_payload["risk_upper_bound_micro"] / 1_000_000,
-                    "n": n,
-                    "method": verified_payload.get("method"),
-                    "proxy_caveat": _PROXY_CAVEAT,
+                    # n / method / delta / scope / the replayed bound:
+                    **scope_fields(
+                        "sum.meaning_risk_receipt.v1", verified_payload,
+                        replayed=True,
+                    ),
+                    "proxy_caveat": proxy_caveat(True),
                 },
                 losses=[round(float(x), 6) for x in loss_vec],
                 warnings=warnings,
@@ -832,8 +824,11 @@ def register_meaning_tools(mcp: Any) -> None:
         integer-exact Bonferroni budget; optionally a directly-measured
         end-to-end leg (requires ``scorer_name`` + ``loss_definition``).
         The mandatory ``budget_scope`` honesty field rides the payload: the
-        budget bounds the SUM of per-hop expected losses, NOT the
-        end-to-end loss (directed loss, no triangle inequality). The chain
+        budget is the sum of the per-hop bound values (a bound on the SUM of
+        per-hop expected losses only if every hop's sampling assumptions
+        hold), NOT the end-to-end loss (directed loss, no triangle
+        inequality). The verdict reports it as ``issuer_asserted_budget``
+        with ``joint_delta``; no derived confidence is shown. The chain
         self-verifies (with ``hops_jwks`` merged in when the hops were
         signed by other keys; at most ``MAX_JWKS_KEYS`` keys) before it is
         returned. BYO key only.

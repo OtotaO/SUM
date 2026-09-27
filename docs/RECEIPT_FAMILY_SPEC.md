@@ -62,8 +62,9 @@ schema-specific payload:
   the receipt's documented equivalent); verifiers gate on `schema` first
   and **fail closed on an unknown schema**.
 
-This is the same trust triangle the render receipts established (Python ↔
-Node ↔ browser, byte-identical), now shared across the family — though the
+This is the same cross-runtime check the render receipts established
+(Python ↔ Node byte-identical in CI; the browser loads the same JS
+verifiers, but no browser engine runs in CI), now shared across the family — though the
 Python *tiers* differ: the dependency-light `[verify]` SDK (`sum_verify`)
 checks `meaning_risk` / `render` / `transform` with one primitive, while
 **`perspective` Python verification is `[research]`-tier**
@@ -149,8 +150,11 @@ method, corpus_id, transform, scorer}` — mirrors replay-checked against
 the referenced hop payloads), `composition_rule`
 (`bonferroni_additive.v1`), `budget_micro` (= Σ hop bounds,
 integer-exact), `joint_delta_micro` (= Σ hop deltas), `budget_scope`
-(MANDATORY: the budget bounds the SUM of per-hop expected losses, NOT
-end-to-end loss — no metric/triangle claim), optional `end_to_end`
+(MANDATORY: the budget is the sum of per-hop bound values, a bound on the
+SUM of per-hop expected losses only under each hop's sampling assumptions,
+and NOT a bound on end-to-end loss — no metric/triangle claim; receipts minted
+before PR #531 state the Bonferroni reading unconditionally and verdicts flag
+them with `budget_scope_note`), optional `end_to_end`
 (direct source→final certification with its own `losses_hash`),
 `not_covered`, `disclosure`, `signed_at`. Verified in the `[verify]`
 SDK (`verify_chain_receipt`); the JS verifier fails closed on it in v1
@@ -163,8 +167,9 @@ Emitted by `sum study` (the verifiable cheatsheet; see
 It is **not itself a signed wire object** — it carries the studied corpus's
 `state_integer` + `axiom_count`, the rendered `cheatsheet`, the
 `RenderFrontier` it sits on, an `expertise` MEASUREMENT, and — when
-`--certify` is used — an **embedded** `sum.meaning_risk_receipt.v1` under
-`receipt` (the only certified element; verify it with the §3.3 path). The
+`--certify --research` is used — an **embedded** `sum.meaning_risk_receipt.v1`
+under `receipt` (the only signed element, an in-sample descriptive
+measurement; verify it with the §3.3 path). The
 `expertise` scalar and frontier losses are per-run measurements, never
 guarantees; the `measurement_note` field says so. A consumer gates trust on
 the embedded receipt, not on the container.

@@ -8,11 +8,13 @@ What a chain receipt binds (and the honest split it enforces):
   the RFC 8785 JCS bytes of each full hop envelope) plus a ``chain_id``
   derived from that order — reordering, dropping, or substituting a hop
   breaks replay.
-- **The composed budget (provable)**: ``budget_micro`` = the integer-exact
+- **The composed budget (conditional)**: ``budget_micro`` = the integer-exact
   sum of the hops' ``risk_upper_bound_micro``; ``joint_delta_micro`` = the
-  sum of their ``delta_micro``. By the Bonferroni union bound this bounds
-  the SUM of per-hop expected proxy losses with confidence
-  ``>= 1 - joint_delta``. Composition rule is named in the payload
+  sum of their ``delta_micro``. IF each hop's bound holds under that hop's
+  sampling assumptions, THEN by the Bonferroni union bound the SUM of
+  per-hop expected proxy losses is at most the budget with probability
+  ``>= 1 - joint_delta``; otherwise it is a descriptive sum. The integer
+  sums are what this module verifies. Composition rule is named in the payload
   (``bonferroni_additive.v1``).
 - **The end-to-end leg (measured, optional)**: a direct certification over
   source→final losses, with its own ``losses_hash`` replay anchor. It is

@@ -239,7 +239,7 @@ node standalone_verifier/verify.js bundle.json
 open single_file_demo/index.html
 ```
 
-All three are kept byte-equivalent by the K1 / K1-multiword / K2 / K3 / K4 cross-runtime gate, which runs on every PR. Gate failures block merges. See [`PROOF_BOUNDARY.md`](PROOF_BOUNDARY.md) §1.3.1 for the formal statement.
+Python and Node are kept byte-equivalent by the K1 / K1-multiword / K2 / K3 / K4 cross-runtime gate and the A1–A8 rejection matrix, which run on every PR; gate failures block merges. The browser demo runs the same checks, but no browser engine runs in CI. See [`PROOF_BOUNDARY.md`](PROOF_BOUNDARY.md) §1.3.1 for the formal statement.
 
 ---
 

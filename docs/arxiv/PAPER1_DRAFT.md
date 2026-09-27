@@ -25,11 +25,14 @@ never per-document truth and never "meaning" itself. We
 demonstrate on two public benchmark corpora — BillSum (CC0) and opus-100
 (licence unspecified, raw text not redistributed) — over each corpus's own reference
 outputs rather than model outputs (the mechanism is producer-indifferent):
-certified expected meaning-loss
-≤ 0.646 (95%) for abstractive summarization of US Congressional bills
-(BillSum, CC0; n=64) and ≤ 0.413 for EN→FR translation (opus-100; n=64), with
-39/64 reference translations scoring *exactly zero* meaning-loss (under a binary
-entailment judge at a 0.5 cut) despite near-zero lexical overlap. The thesis is
+the receipts sign Hoeffding upper-bound values at δ = 0.05 (rounded up) of
+0.646 for abstractive summarization of US Congressional bills (BillSum, CC0;
+n=64, mean loss 0.492) and 0.413 for EN→FR translation (opus-100; n=64), which
+a verifier reproduces exactly; because each sample is a fixed prefix rather
+than independent draws, we report these values descriptively, not as 95%
+bounds on expected meaning-loss. In the translation sample, 39/64 reference
+translations score *exactly zero* meaning-loss (under a binary entailment judge
+at a 0.5 cut) despite near-zero lexical overlap. The thesis is
 **attest, don't detect**: a receipt authenticates a recorded transformation.
 Its signature does not extend coverage to subsequent rewrites, which require
 new linked receipts.
@@ -258,13 +261,16 @@ micro-unit** and adversarially audited before release.
 local MiniLM-cosine entailment judge (mean-pooled `all-MiniLM-L6-v2` cosine at
 a 0.5 cut). The output side of each pair is the dataset's own human-written
 reference summary, not a model's; see Section 7.4. The abstractive
-bill→summary transform
-certifies **expected meaning-loss $\le 0.6455$ at 95%** ($n=64$, mean
-$0.4925$), controlled against an operator-chosen **0.70 target** — an
+bill→summary transform's receipt signs a mean loss of $0.4925$ and a Hoeffding
+upper-bound value of **$0.6455$ at $\delta=0.05$** (rounded up from the signed
+$0.645438$; $n=64$). Because the first 64 bills are a fixed prefix rather than
+the independent draws Section 4 requires, this value is descriptive; it is not
+a 95% bound on expected meaning-loss. The receipt also records that the value
+meets an operator-chosen **0.70 target** — an
 illustrative bar set by the issuer, not a regulator/SLA threshold, so
 "controlled: true" means "met the bar the issuer picked", not "passed an
 external quality gate". Aggressive summarization loses about half the named
-proxy on average; the receipt *certifies how much*, it does not claim little
+proxy on average; the receipt *records how much*, it does not claim little
 was lost.
 
 **7.2 Translation (opus-100, licence unspecified).** First 64 length-aligned EN→FR pairs of
@@ -276,9 +282,11 @@ committed corpus pointer is sha256-pinned instead. The committed receipt's
 predates this characterization and the signed artifact is left byte-identical
 rather than re-signed. As with BillSum, the French side is the corpus's own
 reference translation, not a system output. The translation
-transform certifies **expected meaning-loss $\le 0.4124$ at 95%** ($n=64$, mean
-$0.2594$), controlled against an operator-chosen 0.50 target (again illustrative,
-not an external bar). The distribution is the headline: **39 of 64 faithful
+transform's receipt signs a mean loss of $0.2594$ and a Hoeffding upper-bound
+value of **$0.4124$ at $\delta=0.05$** (rounded up from the signed $0.412359$;
+$n=64$), descriptive for the same reason (a fixed filtered prefix, not
+independent draws), and records that it meets an operator-chosen 0.50 target
+(again illustrative, not an external bar). The distribution is the headline: **39 of 64 faithful
 translations score exactly zero meaning-loss despite near-zero lexical overlap**
 between English and French. This headline must be read *at the judge's
 resolution*: at the 0.5 NLI cut the per-pair loss takes only five distinct

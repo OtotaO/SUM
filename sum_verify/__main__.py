@@ -17,6 +17,17 @@ import sys
 from typing import Any
 
 from sum_verify import SUPPORTED_SCHEMAS, __version__, verify
+from sum_verify._verdict import proxy_caveat, scope_fields
+
+# The bundled demo JWKS is the public key of the all-zero 32-byte Ed25519
+# seed (a public test key): anyone can sign under it. The goldens keep that
+# key so they stay byte-for-byte; the verdict must say what the signature is
+# then worth.
+DEMO_KEY_WARNING = (
+    "The bundled demo JWKS is derived from a publicly known all-zero Ed25519 "
+    "seed, so anyone can sign under it: the signature authenticates no "
+    "issuer, and only the arithmetic replay is meaningful."
+)
 
 
 def _read_json(path: str) -> Any:
@@ -113,6 +124,7 @@ def main(argv: list[str] | None = None) -> int:
             "golden (CC0), offline.",
             file=sys.stderr,
         )
+        print(f"sum_verify: WARNING: {DEMO_KEY_WARNING}", file=sys.stderr)
     else:
         if args.receipt is None or args.jwks is None:
             print(
@@ -165,60 +177,32 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     payload = result if isinstance(result, dict) else getattr(result, "payload", {})
-    verdict = {
-        "verified": True,
-        "schema": schema,
-        "replayed": losses is not None and schema == "sum.meaning_risk_receipt.v1",
-    }
+    replayed = losses is not None and schema == "sum.meaning_risk_receipt.v1"
+    if schema == "sum.chain_receipt.v1":
+        # Only the end-to-end leg is ever replayed from losses. Hop envelopes
+        # get signature, disclosure and mirrored-field checks, no arithmetic.
+        replayed = losses is not None
+    verdict = {"verified": True, "schema": schema, "replayed": replayed}
     if schema == "sum.chain_receipt.v1" and isinstance(payload, dict):
-        verdict["replayed"] = bool(args.hops) or losses is not None
-        verdict["hops_replayed"] = bool(args.hops)
+        verdict["hop_envelopes_checked"] = bool(hop_envelopes)
         verdict["end_to_end_replayed"] = losses is not None
         verdict["n_hops"] = payload.get("n_hops")
-        if "budget_micro" in payload:
-            verdict["budget"] = payload["budget_micro"] / 1_000_000
-        if "joint_delta_micro" in payload:
-            verdict["joint_confidence"] = max(
-                0.0, 1.0 - payload["joint_delta_micro"] / 1_000_000
-            )
-        # The composition honesty line rides every chain verdict, unsigned.
-        verdict["budget_scope"] = payload.get("budget_scope")
     if isinstance(payload, dict):
-        if "scorer" in payload:
-            verdict["scorer"] = payload.get("scorer")
-        if "not_covered" in payload:
-            verdict["not_covered"] = payload.get("not_covered")
+        for key in ("scorer", "not_covered"):
+            if key in payload:
+                verdict[key] = payload[key]
+    # statistical_scope / sampling_status / n / method / delta, the chain's
+    # issuer_asserted_budget + joint_delta + budget_scope, and the bound:
+    # labelled replayed or issuer-asserted by what actually ran
+    # (sum_verify._verdict).
+    verdict.update(scope_fields(schema, payload, replayed=replayed))
     if schema == "sum.meaning_risk_receipt.v1":
-        # Surface what the PASS actually bounds, so a vacuous small-n receipt
-        # (ub→1.0, controlled=False) is visible for what it is and never looks
-        # identical to a strong one (ISS-4). These ride from the verified payload.
-        if isinstance(payload, dict):
-            if "risk_upper_bound_micro" in payload:
-                verdict["risk_upper_bound"] = payload["risk_upper_bound_micro"] / 1_000_000
-            if "controlled" in payload:
-                verdict["controlled"] = payload["controlled"]
-        if losses is not None:
-            verdict["n"] = len(losses)
-        # Credibility hygiene (unsigned, corpus-agnostic): a clean PASS here is
-        # a CRYPTOGRAPHIC fact (valid signature + a bound the committed losses
-        # replay to) — NOT evidence that meaning was preserved. The bound is
-        # over a NAMED PROXY; where that proxy has been measured against human
-        # faithfulness judgments it correlated only modestly at the
-        # per-summary level (Spearman rho = 0.267-0.291, pooled summary-level, on SummEval; the NLI
-        # judge's ~0.29 replicates on FRANK; the embedding judge is
-        # corpus-dependent and collapsed to ~0 on abstractive FRANK-XSum).
-        # We deliberately do NOT bake a number into a signed field (rho was
-        # measured on a different corpus+judge than any given receipt's).
-        # See docs/PROOF_BOUNDARY.md.
-        verdict["proxy_caveat"] = (
-            "verified=true is a cryptographic fact (signature + replayed "
-            "bound), not evidence meaning was preserved. The bound is over a "
-            "named proxy; vs human judgments the proxy correlated only "
-            "modestly at summary level (Spearman rho = 0.267-0.291, pooled summary-level, on SummEval; "
-            "NLI ~0.29 replicates on FRANK; the embedding judge is "
-            "corpus-dependent, near zero on abstractive FRANK-XSum). Not a "
-            "substitute for human review."
-        )
+        # Credibility hygiene (unsigned, corpus-agnostic): a clean PASS is a
+        # CRYPTOGRAPHIC fact, not evidence that meaning was preserved; the
+        # caveat names whether the bound was replayed. See PROOF_BOUNDARY.md.
+        verdict["proxy_caveat"] = proxy_caveat(replayed)
+    if args.demo:
+        verdict["demo_key_warning"] = DEMO_KEY_WARNING
     print(json.dumps(verdict))
     return 0
 

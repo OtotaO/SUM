@@ -19,7 +19,11 @@ def test_demo_measurement_is_invalidated_by_source_edits_and_late_responses():
             data = {"verified": True, "replayed": True, "risk_upper_bound": 0.645438, "n": 64}
             app._apply_demo(data, generation)
             await pilot.pause()
-            assert "0.6454" in str(app.query_one("#lossnum", Static).render())
+            # 0.645438 is an upper bound: displayed rounded up, not down.
+            assert "0.6455" in str(app.query_one("#lossnum", Static).render())
+            # The golden is a fixed-prefix sample: no "@95%" confidence label.
+            caption = str(app.query_one("#loss-cap", Static).render())
+            assert "95%" not in caption and "descriptive" in caption
             app.query_one("#source", TextArea).text = "My own text"
             await pilot.pause()
             assert str(app.query_one("#lossnum", Static).render()) == "Not measured"

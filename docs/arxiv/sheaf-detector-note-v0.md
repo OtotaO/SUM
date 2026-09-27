@@ -22,8 +22,8 @@ can detect.
 The substrate composes four primitives, each verifiable
 independently: (i) cross-runtime-verified render receipts
 (`sum.render_receipt.v1`, Ed25519 over JCS-canonical bytes;
-Python / Node / browser byte-identical; locked by a K-matrix
-gate on every release); (ii) `bench_digest` — a JCS-canonical
+Python / Node byte-identical, locked by a K-matrix gate in CI;
+the browser verifier is not run in CI); (ii) `bench_digest` — a JCS-canonical
 SHA-256 over each bench's quantized payload, byte-stable across
 fresh Python invocations *and* across two distinct LAPACK
 environments (Apple Accelerate on Apple Silicon and OpenBLAS via
@@ -376,8 +376,8 @@ each rendered text $R$:
   envelope; public keys distributed per RFC 7517 JWKS).
 
 Concretely: SUM (`sum-engine`, Apache-2.0; PyPI 0.6.0) provides
-the substrate. The cross-runtime trust triangle (Python / Node /
-browser WebCrypto, locked by the K-matrix gate on every release)
+the substrate. The cross-runtime checks (Python / Node, locked by
+the K-matrix gate in CI; the browser WebCrypto path is not run in CI)
 ensures the receipt-verification claim is realiser-independent.
 Other receipt-bearing systems (C2PA-text, future standards) could
 substitute.
@@ -1740,8 +1740,8 @@ sheaf-Laplacian theory (and its weighted / harmonic-extension
 generalisations) and Gebhart contrastive sheaf-embedding
 training, not ad-hoc consistency rules. Second, the *provenance*
 is cryptographic — the source bundle is a signed artifact whose
-verifier is realiser-independent (Python / Node / browser
-byte-identity locked in CI). Third, the *evaluation* is
+verifier is realiser-independent (Python / Node byte-identity
+locked in CI; the browser verifier is not run in CI). Third, the *evaluation* is
 honest about the detector's competitive position: §4.7.1
 documents the recovery arc that produced the WIN, including the
 intermediate experiments that lost (predicate-perturbation

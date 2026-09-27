@@ -1,7 +1,7 @@
 """Generate a REAL ``sum.meaning_risk_receipt.v1`` over a real public-domain
 corpus — the arXiv Paper-1 binding-gate artifact (compression with a
 CERTIFIED MEANING-LOSS BOUND; the bill→summary transform loses ~49% of the
-proxy on average, bounded ≤ 0.6454 — "bounded", not "preserving").
+proxy on average, bounded ≤ 0.6455 — "bounded", not "preserving").
 
 Corpus: the first ``N`` examples (dataset order) of the **BillSum** test
 split (``FiscalNote/billsum``) — US Congressional bills + reference

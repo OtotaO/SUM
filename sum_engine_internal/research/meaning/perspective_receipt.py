@@ -52,6 +52,7 @@ from sum_engine_internal.research.meaning.receipt import (
     MeaningReceiptDisclosureError,
     MeaningReceiptReplayError,
     _DEFAULT_DISCLOSURE,
+    _check_payload_shape,
     _has_visible_text,
     _quantized,
     _require_int_micro,
@@ -62,6 +63,16 @@ from sum_engine_internal.research.meaning.receipt import (
 )
 
 SUPPORTED_SCHEMA = "sum.perspective_risk_receipt.v1"
+
+# Fields that make a payload a PERSPECTIVE receipt rather than a sibling
+# family. Mirrors REQUIRED_PAYLOAD_FIELDS[PERSPECTIVE_SCHEMA] in
+# single_file_demo/meaning_receipt_verifier.js: a meaning or chain receipt
+# relabelled as this schema lacks `groups` / the marginal bound and is
+# rejected before any field is read.
+REQUIRED_PAYLOAD_FIELDS: tuple[str, ...] = (
+    "corpus_id", "scorer", "n", "method", "groups",
+    "marginal_risk_upper_bound_micro", "delta_micro", "loss_definition",
+)
 
 
 def evidence_hash(losses: Sequence[float], group_ids: Sequence[str]) -> str:
@@ -191,7 +202,8 @@ def verify_perspective_risk_receipt(
     disclosure always; per-cohort replay when ``losses`` + ``group_ids``
     are supplied side-band).
 
-    Raises ``MeaningReceiptDisclosureError`` (missing disclosure) or
+    Raises ``MeaningReceiptDisclosureError`` (not a perspective payload, or
+    missing disclosure) or
     ``MeaningReceiptReplayError`` (evidence hash / any bound / controlled /
     controls_all does not reproduce).
     """
@@ -200,6 +212,9 @@ def verify_perspective_risk_receipt(
         max_age_seconds=max_age_seconds,
     )
     payload = result.payload
+
+    # receipt-family shape gate (always, before any field is read)
+    _check_payload_shape(payload, SUPPORTED_SCHEMA, REQUIRED_PAYLOAD_FIELDS)
 
     # disclosure invariants (always)
     nc = payload.get("not_covered")

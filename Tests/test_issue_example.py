@@ -36,11 +36,19 @@ def test_issue_then_verify_roundtrips(tmp_path):
     out = tmp_path / "out"
 
     mod = _load_example()
-    rc = mod.main([
-        str(pf), "--out", str(out), "--scorer", "lexical",
-        "--corpus-id", "test-corpus", "--transform", "summarize:test",
-    ])
+    import contextlib
+    import io
+    narration = io.StringIO()
+    with contextlib.redirect_stdout(narration):
+        rc = mod.main([
+            str(pf), "--out", str(out), "--scorer", "lexical",
+            "--corpus-id", "test-corpus", "--transform", "summarize:test",
+        ])
     assert rc == 0
+    # Narration states the signed bound value (6 decimals, as signed) at a
+    # delta, never as "at 95%".
+    text = narration.getvalue()
+    assert "95%" not in text and "delta=0.05" in text
 
     receipt = json.loads((out / "receipt.json").read_text())
     jwks = json.loads((out / "jwks.json").read_text())
@@ -57,6 +65,7 @@ def test_issue_then_verify_roundtrips(tmp_path):
     payload = verify(receipt, jwks, losses=losses_file)  # wrapped losses → library unwrap
     assert payload["corpus_id"] == "test-corpus"
     assert payload["risk_upper_bound_micro"] == receipt["payload"]["risk_upper_bound_micro"]
+    assert f"{receipt['payload']['risk_upper_bound_micro'] / 1_000_000:.6f}" in text
 
     # tampering the side-band losses is rejected
     bad = list(losses_file["losses"])

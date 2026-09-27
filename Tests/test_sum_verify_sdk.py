@@ -96,6 +96,78 @@ def test_demo_replays_bundled_golden_offline():
     assert verdict["replayed"] is True
     assert verdict["schema"] == "sum.meaning_risk_receipt.v1"
     assert "proxy_caveat" in verdict
+    # The bundled JWKS is the all-zero-seed test key: say so on stdout AND
+    # stderr, so nobody reads the demo signature as issuer authentication.
+    assert "all-zero Ed25519 seed" in verdict["demo_key_warning"]
+    assert "only the arithmetic replay is meaningful" in verdict["demo_key_warning"]
+    assert "all-zero Ed25519 seed" in out.stderr
+
+
+def _cli(argv):
+    """Run ``python -m sum_verify`` in-process; return (rc, verdict)."""
+    import contextlib
+    import io
+
+    from sum_verify.__main__ import main
+
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(io.StringIO()):
+        rc = main(argv)
+    return rc, json.loads(buf.getvalue())
+
+
+def test_cli_signature_only_verdict_does_not_claim_replay():
+    """Without --losses the bound was never recomputed: it is labelled as the
+    issuer's assertion, `controlled` is withheld, and the caveat does not say
+    the bound was replayed (it used to say "signature + replayed bound")."""
+    d = _FIXTURE_DIRS[0]
+    rc, v = _cli([glob.glob(d + "/*golden*.json")[0], "--jwks", d + "/jwks.json"])
+    assert rc == 0 and v["replayed"] is False
+    assert "controlled" not in v and "risk_upper_bound" not in v
+    assert v["issuer_asserted_risk_upper_bound"] == 0.645438
+    assert "replayed bound" not in v["proxy_caveat"]
+    assert "NOT replayed" in v["proxy_caveat"]
+    assert (v["statistical_scope"], v["sampling_status"]) == ("not_declared", "not_declared")
+    assert (v["n"], v["method"], v["delta"]) == (64, "hoeffding", 0.05)
+
+
+def test_cli_replayed_verdict_shows_decision_and_scope():
+    d = _FIXTURE_DIRS[0]
+    rc, v = _cli([glob.glob(d + "/*golden*.json")[0], "--jwks", d + "/jwks.json",
+                  "--losses", glob.glob(d + "/losses_*.json")[0]])
+    assert rc == 0 and v["replayed"] is True
+    assert v["risk_upper_bound"] == 0.645438 and v["controlled"] is True
+    assert "issuer_asserted_risk_upper_bound" not in v
+    assert "signature + replayed bound" in v["proxy_caveat"]
+    assert "demo_key_warning" not in v  # only --demo carries it
+
+
+def test_cli_chain_verdict_carries_joint_delta_and_scope():
+    d = "fixtures/chain_receipts_billsum"
+    rc, v = _cli([d + "/chain_receipt.billsum.golden.json", "--jwks", d + "/jwks.json"])
+    assert rc == 0
+    assert v["joint_delta"] == 0.1
+    assert v["budget_scope"].startswith("budget_micro bounds the SUM")
+    assert v["statistical_scope"] == "not_declared"
+    # The budget is never replayed from per-hop losses on this path, with or
+    # without --hops: it is labelled as the issuer's, and no confidence is
+    # derived from joint_delta.
+    assert v["issuer_asserted_budget"] == 1.354628
+    assert "budget" not in v and "joint_confidence" not in v
+    # Historical signed wording is flagged by an unsigned note.
+    assert "earlier unconditional wording" in v["budget_scope_note"]
+    assert v["replayed"] is False and v["hop_envelopes_checked"] is False
+    # Hop envelopes alone: checked, but nothing replayed.
+    hops = ["--hops", d + "/hop1_summarize.golden.json", d + "/hop2_extractive.golden.json"]
+    rc, v = _cli([d + "/chain_receipt.billsum.golden.json", "--jwks", d + "/jwks.json", *hops])
+    assert rc == 0 and v["hop_envelopes_checked"] is True and "hops_replayed" not in v
+    assert v["replayed"] is False and v["end_to_end_replayed"] is False
+    # End-to-end losses: the only leg replayed from losses.
+    rc, v = _cli([d + "/chain_receipt.billsum.golden.json", "--jwks", d + "/jwks.json",
+                  *hops, "--losses", d + "/losses_e2e.json"])
+    assert rc == 0 and v["replayed"] is True and v["end_to_end_replayed"] is True
+    assert v["issuer_asserted_budget"] == 1.354628
+    assert "budget" not in v and "joint_confidence" not in v
 
 
 def test_version_and_schemas_are_stable_surface():

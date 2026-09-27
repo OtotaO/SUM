@@ -110,7 +110,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--transform", required=True, help="names what produced the pairs, e.g. 'summarize:gpt-4o' or 'translate:en-fr'")
     p.add_argument("--loss-definition", default="bidirectional-entailment meaning-loss in [0,1]; 0 = judge detects no loss",
                    help="one-line human description of what the [0,1] number means")
-    p.add_argument("--delta", type=float, default=0.05, help="miscoverage (confidence = 1 - delta); default 0.05 → 95%%")
+    p.add_argument("--delta", type=float, default=0.05, help="delta for the bound arithmetic (default 0.05); 1 - delta is a confidence level only with independent draws, a fixed policy and no calibration reuse")
     p.add_argument("--alpha", type=float, default=0.5, help="risk level you want controlled; receipt records whether the bound met it")
     p.add_argument("--method", default="auto", choices=["auto", "hoeffding", "clopper_pearson", "empirical_bernstein"])
     p.add_argument("--kid", default="my-issuer-key-1", help="key id stamped in the receipt + JWKS")
@@ -178,16 +178,16 @@ def main(argv: list[str] | None = None) -> int:
         indent=2,
     ))
 
-    ub = guarantee.risk_upper_bound
+    ub = payload["risk_upper_bound_micro"] / 1_000_000  # the signed value
     print(f"Issued sum.meaning_risk_receipt.v1 over {len(losses)} pairs under {scorer.name}")
     print("  scope: descriptive batch; sampling assumptions are not established")
-    print(f"  conditional bound arithmetic: expected proxy loss ≤ {ub:.4f} at {100*(1-args.delta):.0f}% (mean {guarantee.point_estimate:.4f}, n={guarantee.n})")
+    print(f"  conditional bound arithmetic: {guarantee.method} bound value {ub:.6f} at delta={args.delta} (mean {guarantee.point_estimate:.4f}, n={guarantee.n}); not a confidence bound unless the sampling assumptions hold")
     print(f"  controlled at alpha={args.alpha}: {payload.get('controlled')}")
     if ub >= 0.95 or payload.get("controlled") is False:
         ctrl = "" if payload.get("controlled") is not False else ", and NOT controlled at your alpha"
         print()
         print(
-            f"  ⚠️  WARNING: this bound is near-vacuous (≤ {ub:.4f}{ctrl}, n={guarantee.n}). "
+            f"  ⚠️  WARNING: this bound is near-vacuous (≤ {ub:.6f}{ctrl}, n={guarantee.n}). "
             "Small samples can produce a vacuous bound near 1.0. More pairs alone do not "
             "establish independent sampling, distribution match or a fixed policy. "
             "This example defaults to descriptive batch scope.",

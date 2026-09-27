@@ -6,8 +6,8 @@
 // schema string and the payload-field semantics.
 //
 // Why a parallel module rather than a refactor: receipt_verifier.js
-// is already battle-tested against the K1–K4 + A1–A6 fixture matrix
-// for the render-receipt format. Refactoring it to share with the
+// is already battle-tested against the render-receipt fixture matrix
+// (run under Node in CI; the K1–K4 + A1–A8 harnesses cover bundles). Refactoring it to share with the
 // transform-receipt path risks regressing those fixtures. A clean
 // duplication keeps the render-receipt path untouched; if a future
 // PR wants to extract a shared core, the two files share the same

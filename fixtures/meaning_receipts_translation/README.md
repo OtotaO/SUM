@@ -7,11 +7,15 @@ corpus — the paraphrase-robustness half of the binding-gate pair (the
 
 ## What it demonstrates — the moat, directly
 
-> With 95% confidence, the **expected meaning-loss** of EN→FR translation is
-> **≤ 0.4124** — measured by the named multilingual NLI judge
-> (`mDeBERTa-v3-base-xnli`), marginally over the first 64 length-aligned
-> opus-100 en-fr test pairs, under exchangeability. **Controlled** at the
-> 0.50 target. (n=64, mean loss 0.2594; **39/64 pairs at exactly 0 loss**.)
+> A descriptive batch measurement of EN→FR translation over the **first 64
+> length-aligned opus-100 en-fr test pairs**, by the named multilingual NLI
+> judge (`mDeBERTa-v3-base-xnli`): mean meaning-loss **0.2594**, Hoeffding
+> bound arithmetic at δ = 0.05 **≤ 0.4124** (n=64; **39/64 pairs at exactly
+> 0 loss**). **Controlled** at the 0.50 target. The pairs are a fixed,
+> filtered prefix, not an independent random draw, so no 95% confidence
+> reading applies. (The signed `disclosure` says "under exchangeability";
+> that wording predates the correction and the receipt is kept
+> byte-for-byte.)
 
 The headline is the **39/64 at zero loss**: faithful translations preserve
 meaning despite **near-zero lexical overlap** between English and French
@@ -67,6 +71,8 @@ The **certificate replays offline** over the committed losses (CI-checked,
 no model/GPU/fetch); re-deriving the losses re-fetches opus-100 under its own
 terms and runs the (machine-pinned, F23/F26) judge — the hash verifies the
 same pairs were used.
+
+**Demo key:** the signing key is derived from a publicly known all-zero Ed25519 seed, so anyone can sign under this JWKS: the signature authenticates no issuer, and only the arithmetic replay is meaningful.
 
 ## Reproduce / verify
 

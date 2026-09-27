@@ -158,7 +158,7 @@ for the same axiom key. They are non-interoperable:
 - No read-only, bridge, or fallback mode is permitted
 
 Migration from v1 to v2 is a **fresh-universe operation**: semantic content may be
-re-ingested, but state identity (primes, Gödel integers, bundles, ZK proofs) is invalidated.
+re-ingested, but state identity (primes, Gödel integers, bundles, divisibility witnesses) is invalidated.
 
 ### 4.8. v2 Reference Vectors
 

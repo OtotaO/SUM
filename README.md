@@ -30,17 +30,17 @@ Meaning readout — measured for THIS document (not a certified bound)
 
 Receipt-producing operations can sign their declared inputs, outputs and metadata. Offline verification checks those signed fields against supplied keys. Extraction, unsigned local bundles and human review decisions must not be described as signed when no signature is present. Historical per-axis benchmarks are measurements on their named corpora, not a measurement of the current browser result.
 
-*Live trust loop:* https://sum-demo.ototao.workers.dev — three runtimes (Python, Node, modern browsers) produce byte-identical Ed25519 signatures over the same JCS-canonical bytes; verify offline against `/.well-known/jwks.json`. Mechanically proven; locked in CI on every PR.
+*Live trust loop:* https://sum-demo.ototao.workers.dev — the Worker and the Python package sign Ed25519 over JCS-canonical bytes; Python, Node and browser verifiers check those bytes offline against `/.well-known/jwks.json`. CI runs the Python and Node paths on every PR (the JS verifiers under Node, the workbench tests under jsdom); no browser engine runs in CI.
 
 **Use cases to evaluate:** editors reviewing rewrites, researchers tracking source evidence, and AI teams exchanging checkable artifacts. Real recurring use and willingness to pay remain to be established. Audit-log validators check specific data structures; they do not certify organizational or legal compliance.
 
-The cryptographic side is **mechanically proven** — three independent verifier implementations agreeing byte-for-byte on every signed bundle, locked in CI on every PR. The semantic side (extraction quality, slider fact preservation) is **empirically measured** with explicit per-corpus numbers and explicit per-corpus boundaries. [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) is the arbiter.
+The cryptographic side is **mechanically checked** — the Python and Node verifiers agree on the K-matrix (valid) and A-matrix (invalid) fixture bundles in CI on every PR; the browser verifier implements the same checks but no browser engine runs in CI. The semantic side (extraction quality, slider fact preservation) is **empirically measured** with explicit per-corpus numbers and explicit per-corpus boundaries. [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) is the arbiter.
 
 Headline supporting numbers (each links to its source of truth):
 
 | Claim | Status | Source |
 |---|---|---|
-| Three-runtime byte-symmetric Ed25519 over JCS bytes | provable; locked by `make xruntime` (K1–K4) + `make xruntime-adversarial` (A1–A6) | [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §1.2, §1.3.1 |
+| Python ↔ Node agreement on Ed25519 over JCS bytes (the browser verifier is not run in CI) | provable; locked by `make xruntime` (K1–K4) + `make xruntime-adversarial` (A1–A8) | [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §1.2, §1.3.1 |
 | Canonical round-trip `reconstruct(parse(canonical_tome(S))) == S` | provable; 0.00% drift on every CI run | [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §1.1 |
 | Render receipt — `sum.render_receipt.v1`, Ed25519 / JCS / detached JWS | shipped; verifier in three runtimes | [`docs/RENDER_RECEIPT_FORMAT.md`](docs/RENDER_RECEIPT_FORMAT.md) |
 | Slider fact preservation: median 1.000, p10 0.769 (long n=16) / 0.818 (short n=8) | empirical-benchmark — measured; same-commit replay receipt still pending (bench-hardening T2/T3) | [`docs/SLIDER_CONTRACT.md`](docs/SLIDER_CONTRACT.md) |
@@ -54,7 +54,7 @@ A render receipt verifies the *render attestation* (issuer signed this tome, the
 
 More of what people read is now produced or reshaped by AI — summarised, translated, distilled, rewritten. As that grows, the ability to check *what changed, what was preserved, and what was lost* stops being a nicety and becomes shared infrastructure for a trustworthy information commons.
 
-SUM is built to be that layer **in the open**: Apache-2.0, offline-verifiable by anyone, and aligned with open standards (C2PA `digital_source_type`, W3C VC 2.0, JOSE / JWS / JWKS) rather than a proprietary trust silo. It does not ask you to trust *SUM* — any third party verifies the receipt themselves, in three independent runtimes, and the project states plainly where proof ends and measurement begins. The aim is a checkable **chain of custody for knowledge in motion**, not another walled garden.
+SUM is built to be that layer **in the open**: Apache-2.0, offline-verifiable by anyone, and aligned with open standards (C2PA `digital_source_type`, W3C VC 2.0, JOSE / JWS / JWKS) rather than a proprietary trust silo. It does not ask you to trust *SUM* — any third party verifies the receipt themselves, in Python, Node or the browser, and the project states plainly where proof ends and measurement begins. The aim is a checkable **chain of custody for knowledge in motion**, not another walled garden.
 
 ---
 
@@ -68,11 +68,16 @@ python -m sum_verify --demo             # replays the bundled BillSum golden, of
 # → {"verified": true, "schema": "sum.meaning_risk_receipt.v1", "replayed": true,
 #    "scorer": "bidirectional-entailment[minilm-cosine-0.5]",
 #    "not_covered": ["arrangement","sound","connotation","implicature"],
+#    "statistical_scope": "not_declared", "sampling_status": "not_declared",
+#    "n": 64, "method": "hoeffding", "delta": 0.05,
+#    "risk_upper_bound": 0.645438, "controlled": true,
 #    "proxy_caveat": "verified=true is a cryptographic fact ... the proxy
 #       correlated only modestly at summary level (Spearman rho 0.267-0.291 on
 #       SummEval; NLI ~0.29 replicates on FRANK; the embedding judge is
 #       corpus-dependent, near zero on abstractive FRANK-XSum). Not a
-#       substitute for human review."}
+#       substitute for human review.",
+#    "demo_key_warning": "The bundled demo JWKS is derived from a publicly
+#       known all-zero Ed25519 seed, so anyone can sign under it: ..."}
 ```
 
 **What `[verify]` actually installs.** `cryptography`, `joserfc`, and `sympy` (a base dependency of the package, used by the state-integer path — not imported by `sum_verify`). The load-bearing promise is the one above: no numpy, scipy, torch, GPU, or network on the verification path.
@@ -84,7 +89,7 @@ python -m sum_verify <receipt.json> --jwks <jwks.json> --losses <losses.json>
 # from a checkout, the binding-gate goldens live in fixtures/meaning_receipts_billsum/
 ```
 
-`verified: true` + `replayed: true` means the committed per-pair losses hash to the receipt's anchor and re-certify to its stated bound (≤ 0.6454 at 95%) by exact integer equality — on your machine, against the supplied JWKS. Establish trust in those keys through an independent channel. **Read the `proxy_caveat`:** that PASS is a *cryptographic* fact, not proof meaning was preserved — the bound is over a proxy that tracks human judgment only modestly. The richer readout (the bound itself, perspective cohorts) is `sum verify-meaning` (which needs the heavier `pip install "sum-engine[research,receipt-verify]"` — the no-numpy promise above is scoped to `python -m sum_verify`); for non-extractive rewrites use `--scorer nli` — [`examples/poetry_frontier/`](examples/poetry_frontier/) shows exactly where the embedding judge's blind spot is.
+`verified: true` + `replayed: true` means the committed per-pair losses hash to the receipt's anchor and reproduce its stated bound arithmetic (0.645438, ≤ 0.6455 at δ = 0.05) by exact integer equality — on your machine, against the supplied JWKS. That number is a descriptive measurement of these 64 bills: they are the first 64 of the test split, not an independent random draw, so it carries no 95% confidence reading about other documents. Without `--losses` the verdict shows the bound only as `issuer_asserted_risk_upper_bound` and omits `controlled`. The demo JWKS is the all-zero-seed test key, so the demo signature authenticates no issuer (see `demo_key_warning`); for real receipts, establish trust in the issuer's keys through an independent channel. **Read the `proxy_caveat`:** that PASS is a *cryptographic* fact, not proof meaning was preserved — the bound is over a proxy that tracks human judgment only modestly. The richer readout (the bound itself, perspective cohorts) is `sum verify-meaning` (which needs the heavier `pip install "sum-engine[research,receipt-verify]"` — the no-numpy promise above is scoped to `python -m sum_verify`); for non-extractive rewrites use `--scorer nli` — [`examples/poetry_frontier/`](examples/poetry_frontier/) shows exactly where the embedding judge's blind spot is.
 
 ### Mint your own receipt
 
@@ -103,7 +108,7 @@ sum mint-meaning --pairs pairs.jsonl --scorer nli \
 
 [`docs/THIRD_PARTY_VERIFY.md`](docs/THIRD_PARTY_VERIFY.md) walks the full mint-then-verify round trip, and [`examples/issue_meaning_receipt.py`](examples/issue_meaning_receipt.py) is the scripted version. Read the vacuity, independent-sampling and distribution-match warnings it prints — a bound over a corpus your text does not resemble is not evidence about your text.
 
-**The render trust loop (signed provenance).** The other receipt family attests *that* a transformation happened (issuer, inputs, slider position, model, time) — the same JWS verifiable byte-for-byte in three independent runtimes:
+**The render trust loop (signed provenance).** The other receipt family attests *that* a transformation happened (issuer, inputs, slider position, model, time) — the same JWS verifiable in Python, Node and the browser (CI checks the Python and Node verifiers):
 
 ```bash
 # JWKS — single Ed25519 OKP JWK, application/jwk-set+json
@@ -134,14 +139,14 @@ A render receipt attests the *render*, not the truth of its content (trust scope
 | `pip install 'sum-engine[sieve]'` — `sum attest` / `sum verify` / `sum render` / `sum resolve` / `sum ledger` / `sum inspect` / `sum schema` | shipped on PyPI ≥ 0.4.1 | structural reconstruction; HMAC-SHA256 + Ed25519 signatures (W3C VC 2.0 `eddsa-jcs-2022`); bidirectional `sum attest` ↔ `sum render` symmetry from the shell |
 | Cloudflare Worker at `sum-demo.ototao.workers.dev` | shipped | `/api/render` → tome + `render_receipt`; `/api/transform` → generic transform-registry dispatch + `sum.transform_receipt.v1`; `/api/complete` → LLM proxy; `/api/qid` → Wikidata resolver; `/.well-known/jwks.json` + `/.well-known/revoked-kids.json` → trust-loop endpoints. Public LLM-axis routes are rate-limited per IP — see [`docs/PUBLIC_API_RATE_LIMITS.md`](docs/PUBLIC_API_RATE_LIMITS.md) (5/day operator-keyed demo; 100/hr with BYO key via `X-Render-LLM-Key-Anthropic` / `-OpenAI`). |
 | Browser workbench (`single_file_demo/index.html`) | available in this checkout; deployment is a separate release step | retained source + existing rewrite, advisory literal span comparison, human review and exact packet export; generated results carry available render receipts, checked against displayed content. No arbitrary-document model judge runs in this page. |
-| Cross-runtime trust triangle | locked by CI (`make xruntime`) | K1 / K1-mw / K2 / K3 / K4 — Python ↔ Node ↔ Browser agree byte-for-byte on valid bundles. `make xruntime-adversarial` adds A1–A6 rejection-class equivalence. |
+| Cross-runtime trust check | locked by CI (`make xruntime`) | K1 / K1-mw / K2 / K3 / K4 — Python ↔ Node agree byte-for-byte on valid bundles. `make xruntime-adversarial` adds A1–A8 rejection-class equivalence. No browser engine runs in CI. |
 | 5-axis slider rendering surface | density actioned deterministically; length / formality / audience / perspective LLM-conditioned. Two dispatch paths: Worker `/api/render` (Anthropic + Cloudflare AI Gateway optional) producing `sum.render_receipt.v1`, OR Python `sum transform apply slider` (OpenAI via `OPENAI_API_KEY`) producing `sum.transform_receipt.v1` | bench: median LLM-axis fact preservation 1.000, p10 0.769 (long, n=16) / 0.818 (short, n=8), order preservation 1.000 wherever measurable. Tightening worktrail at [`docs/BENCH_HARDENING_FROM_QCVV.md`](docs/BENCH_HARDENING_FROM_QCVV.md) adds iteration-stability + DKW worst-case bounds + capability-region headlines |
-| MCP server (`sum-mcp` console script) | shipped; meaning layer on main | bundle tools (`extract` / `attest` / `verify` / `inspect` / `render` / `schema`) plus the meaning layer for agent swarms (`verify_receipt` for all five receipt schemas with the same honest verdict the `sum_verify` CLI prints, `meaning_diff`, `depth_frontier`, `mint_meaning_receipt` / `mint_chain_receipt` BYO-private-key only) over stdio; verification is parallel-safe, judge calls serialise (run N processes for parallel judging); measured ~450-530 full-chain verifies/s on one process (see [`docs/MCP_INTEGRATION.md`](docs/MCP_INTEGRATION.md)) |
-| Transform substrate (`sum.transform_receipt.v1` + registry) | shipped on PyPI ≥ 0.7.0 | `sum transform list` / `sum transform apply <name>` — three registered transforms (`slider` / `extract` / `compose`); receipts via Ed25519 / JCS / detached JWS just like render-receipts; 20-fixture cross-runtime K-matrix locks accept + reject across Python ↔ Node ↔ browser; T4 `source_chain_hash` binds receipts to source byte ranges; T5 `ShareableRender` round-trips signed renders for offline verification (library API only, no CLI door yet); T6 multi-school extract runs two extractors in tandem for adversarial-divergence detection. Wire spec at [`docs/TRANSFORM_RECEIPT_FORMAT.md`](docs/TRANSFORM_RECEIPT_FORMAT.md); design at [`docs/TRANSFORM_REGISTRY.md`](docs/TRANSFORM_REGISTRY.md). |
+| MCP server (`sum-mcp` console script) | shipped; meaning layer on main | bundle tools (`extract` / `attest` / `verify` / `inspect` / `render` / `schema`) plus the meaning layer for agent swarms (`verify_receipt` for the four `sum_verify` schemas with the same honest verdict the `sum_verify` CLI prints, `meaning_diff`, `depth_frontier`, `mint_meaning_receipt` / `mint_chain_receipt` BYO-private-key only) over stdio; verification is parallel-safe, judge calls serialise (run N processes for parallel judging); measured ~450-530 full-chain verifies/s on one process (see [`docs/MCP_INTEGRATION.md`](docs/MCP_INTEGRATION.md)) |
+| Transform substrate (`sum.transform_receipt.v1` + registry) | shipped on PyPI ≥ 0.7.0 | `sum transform list` / `sum transform apply <name>` — three registered transforms (`slider` / `extract` / `compose`); receipts via Ed25519 / JCS / detached JWS just like render-receipts; 20-fixture cross-runtime K-matrix locks accept + reject across Python ↔ Node (the browser loads the same JS verifier; no browser engine runs in CI); T4 `source_chain_hash` binds receipts to source byte ranges; T5 `ShareableRender` round-trips signed renders for offline verification (library API only, no CLI door yet); T6 multi-school extract runs two extractors in tandem for adversarial-divergence detection. Wire spec at [`docs/TRANSFORM_RECEIPT_FORMAT.md`](docs/TRANSFORM_RECEIPT_FORMAT.md); design at [`docs/TRANSFORM_REGISTRY.md`](docs/TRANSFORM_REGISTRY.md). |
 | Replay-defense window (`signed_at_out_of_window`) | shipped | opt-in `max_age_seconds` parameter across all four verifier surfaces (Python render / Python transform / JS render / JS transform). Default-off preserves archival use; receivers opt in per use-case (agent-swarm 60s, real-time 600s, newsletter 1d, legal-discovery no window). |
 | `sum verify --explain` layered output | shipped | Per-dimension report (`sum.verify_explained.v1`): cryptographic integrity / canonical reconstruction / axiom consistency / extraction provenance / source evidence coverage / semantic preservation / truth of content. Each carries `epistemic_status` (`provable` / `certified` / `empirical-benchmark` / `not-asserted`). Truth of content is ALWAYS `not_asserted` — locked by test. |
 | Meaning-loss receipts + `sum_verify` SDK | shipped on PyPI ≥ 0.8.0 | `sum.meaning_risk_receipt.v1` — a signed, replayable bound on a *named meaning-loss proxy*, with independent-sampling and distribution-match assumptions (`pip install 'sum-engine[verify]'` → `import sum_verify` / `python -m sum_verify`, dependency-light: no numpy/scipy/torch). Plus `sum meaning-diff` (per-document "what was kept / dropped / added"), `sum drift-budget` (compose meaning-loss across a transform chain), and `sum exchangeability` (advisory: is a bound applicable to *your* text?). Research-flagged; the affirmative contribution behind arXiv Paper-1. |
-| Certified chains + transparency log | shipped on PyPI ≥ 0.9.0 | `sum.chain_receipt.v1` binds ordered hop receipts (by canonical hash + an order-binding `chain_id`) into an integer-exact Bonferroni budget with a joint confidence (`sum mint-chain`; verify with `python -m sum_verify … --hops`). The first REAL certified chain over public-domain text is committed at [`fixtures/chain_receipts_billsum/`](fixtures/chain_receipts_billsum/): BillSum (CC0), 2 real hops — the dataset's own reference summary, then deterministic lead-N extractive compression — under the strict NLI judge; budget ≤ 1.3546 at joint confidence 0.90. Honest by construction: the budget bounds the *sum* of per-hop expected losses, **not** the end-to-end loss (a directed loss, not a metric, so no triangle inequality holds), and the mandatory `budget_scope` field says exactly that. Every committed golden is witnessed in an append-only [`transparency/log.jsonl`](transparency/log.jsonl) (`python scripts/witness_receipt.py verify`). |
+| Signed chains + transparency log | shipped on PyPI ≥ 0.9.0 | `sum.chain_receipt.v1` binds ordered hop receipts (by canonical hash + an order-binding `chain_id`) into an integer-exact Bonferroni budget with a joint δ (`sum mint-chain`; verify with `python -m sum_verify … --hops`). The first real signed chain over public-domain text is committed at [`fixtures/chain_receipts_billsum/`](fixtures/chain_receipts_billsum/): BillSum (CC0), 2 real hops — the dataset's own reference summary, then deterministic lead-N extractive compression — under the strict NLI judge; budget ≤ 1.3547 (signed 1.354628) by Bonferroni arithmetic at joint δ = 0.10. That is a descriptive measurement of the first 32 bills of the test split, not an independent random draw, so no 0.90 confidence reading applies. The budget is the *sum* of the per-hop bound values, **not** a bound on the end-to-end loss (a directed loss, not a metric, so no triangle inequality holds); the mandatory `budget_scope` field says the latter. Like every chain minted before this change, this golden's signed `budget_scope` states the Bonferroni reading unconditionally; verdicts add an unsigned `budget_scope_note` saying it holds only under each hop's sampling assumptions, and new chains sign the conditional wording. Verifiers report the budget as `issuer_asserted_budget` with `joint_delta`, derive no confidence, and set `replayed` only when the end-to-end leg is replayed from losses (`hop_envelopes_checked` covers the hop signature and mirror checks). Every committed golden is witnessed in an append-only [`transparency/log.jsonl`](transparency/log.jsonl) (`python scripts/witness_receipt.py verify`). |
 | Negative-control corpus (T5 of bench-hardening) | shipped | 20 hand-authored documents across 5 failure modes (ambiguous coref / predicate-alias / contradictions / entity-resolution-adversarial / non-extractable). Runner exits 1 if observed failures don't match annotations. Baseline at [`fixtures/bench_receipts/negative_control_2026-05-17.json`](fixtures/bench_receipts/negative_control_2026-05-17.json). |
 | Compliance validators (six regimes) | shipped | `sum compliance check --regime <id> --audit-log <path>` — EU AI Act Article 12, GDPR Article 30, HIPAA § 164.312(b), ISO/IEC 27001 A.8.15, SOC 2 CC 7.2, PCI DSS v4.0 Req 10. All six produce the same `sum.compliance_report.v1` schema; per-regime docs at `docs/COMPLIANCE_*.md`. |
 
@@ -218,7 +223,7 @@ sum attest --ed25519-key keys/issuer.pem < prose.txt | sum verify --strict
 # → hmac=absent, ed25519=verified, extractor=sieve (verifiable)
 ```
 
-The same bundle bytes verify under `sum verify` (Python), `node standalone_verifier/verify.js` (WebCrypto), and the in-browser demo (SubtleCrypto). [`docs/DID_SETUP.md`](docs/DID_SETUP.md) walks the did:key / did:web issuer setup. [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §1.3.1 documents what the cross-runtime Ed25519 contract proves.
+The same bundle bytes verify under `sum verify` (Python), `node standalone_verifier/verify.js` (WebCrypto), and the in-browser demo (SubtleCrypto); CI checks the Python and Node paths, not the browser. [`docs/DID_SETUP.md`](docs/DID_SETUP.md) walks the did:key / did:web issuer setup. [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §1.3.1 documents what the cross-runtime Ed25519 contract proves.
 
 ### Calling SUM from MCP-aware LLM clients
 
@@ -264,8 +269,8 @@ The receipt is a *render attestation*, not a truth oracle. Fact preservation is 
 Below the slider sits the substrate that earlier phases shipped and verified. Pointers, not paraphrase — every claim links to its source-of-truth doc.
 
 - **Canonical round-trip conservation (provable).** `reconstruct(parse(canonical_tome(S))) == S` for every Gödel state `S`. 0.00% drift on `seed_tiny_v1` / `seed_v1` / `seed_v2`. [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §1.1.
-- **Cross-runtime state equivalence (provable).** Python (`sympy`), Node (BigInt + Miller-Rabin), in-browser JS produce byte-identical state integers. Locked by 4 harnesses (`make xruntime` + `make xruntime-adversarial`). [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §1.2.
-- **Bundle public-key attestation (provable).** Ed25519-signed CanonicalBundles are tamper-detectable by any third party in any of the three runtimes. [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §1.3.1.
+- **Cross-runtime state equivalence (provable).** Python (`sympy`) and Node (BigInt + Miller-Rabin) produce byte-identical state integers, locked in CI by `make xruntime` + `make xruntime-adversarial`; the in-browser JS is not run in CI. [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §1.2.
+- **Bundle public-key attestation (provable).** Ed25519-signed CanonicalBundles are tamper-detectable by any third party in Python, Node or the browser (CI checks Python and Node). [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §1.3.1.
 - **Merkle hash-chain integrity (provable, including under concurrent writers).** [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §1.7.
 - **Extraction F1 (empirical-benchmark).** 1.000 on `seed_v1` (50 simple-SVO docs); 0.762 with precision 1.000 on `seed_v2` (20-doc difficulty corpus). Every remaining `seed_v2` failure is a recall miss, not a truth inversion. [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §2.1.
 - **170 numbered features**, each with a reproducible verification command, in [`docs/FEATURE_CATALOG.md`](docs/FEATURE_CATALOG.md).
@@ -294,7 +299,7 @@ Less-surfaced but shipped:
 
 ### Internal research surfaces (NOT shipped, present in repo)
 
-- **`api/quantum_router.py` + `quantum_main.py`** — FastAPI surface with 26+ endpoints (branchable knowledge graph, ZK semantic proofs, federated KG sync, JWT multi-tenant API). 1,684 LOC; 58/58 tests pass; runs locally via `uvicorn quantum_main:app`. **NOT in the PyPI wheel** (`pyproject.toml` excludes `api*`), **NOT in the live Worker**, **NOT in the dogfood quickstart**. The substrate it composes is load-bearing for the shipping surfaces above; only the FastAPI HTTP layer is internal-research. Promote to a shipping `[api]` extra only if a named buyer or grant deliverable explicitly references one of the endpoint clusters. See top-of-file banner in `api/quantum_router.py` for the full triage rationale.
+- **`api/quantum_router.py` + `quantum_main.py`** — FastAPI surface with 26+ endpoints (branchable knowledge graph, divisibility witnesses under the historical `/zk/*` paths (they reveal the state; not zero-knowledge), federated KG sync, JWT multi-tenant API). 1,684 LOC; 58/58 tests pass; runs locally via `uvicorn quantum_main:app`. **NOT in the PyPI wheel** (`pyproject.toml` excludes `api*`), **NOT in the live Worker**, **NOT in the dogfood quickstart**. The substrate it composes is load-bearing for the shipping surfaces above; only the FastAPI HTTP layer is internal-research. Promote to a shipping `[api]` extra only if a named buyer or grant deliverable explicitly references one of the endpoint clusters. See top-of-file banner in `api/quantum_router.py` for the full triage rationale.
 
 ---
 
@@ -343,13 +348,13 @@ Source anchoring in the bundle schema, bundle explorer / viewer, `sum tutorial` 
 make install              # editable install with sieve + dev extras
 make test                 # full pytest run (2000+ tests)
 make xruntime             # cross-runtime K1/K1-mw/K2/K3/K4 (Python ↔ Node)
-make xruntime-adversarial # rejection-matrix A1–A6
+make xruntime-adversarial # rejection-matrix A1–A8
 make fortress             # 21-check pure-math invariants
 make smoke                # fresh-venv install + attest|verify round-trip
 make demo                 # open the single-file browser demo
 ```
 
-CI runs the full suite on every push (`.github/workflows/quantum-ci.yml`); the `cross-runtime-harness` job runs K1–K4 + A1–A6 on Node 22; `pypi-install-smoke` builds the wheel and runs `echo prose | sum attest | sum verify` in a throwaway venv.
+CI runs the full suite on every push (`.github/workflows/quantum-ci.yml`); the `cross-runtime-harness` job runs K1–K4 + A1–A8 (Python ↔ Node) on Node 22, and a separate job runs the browser workbench tests under jsdom (no browser engine); `pypi-install-smoke` builds the wheel and runs `echo prose | sum attest | sum verify` in a throwaway venv.
 
 ---
 

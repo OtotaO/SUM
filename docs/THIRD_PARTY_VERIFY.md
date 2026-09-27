@@ -29,9 +29,12 @@ n ≥ ~32 so the bound is meaningful. You now have `out/receipt.json`,
 > **Subject: 90-second favor — independently verify a cryptographic receipt?**
 >
 > I've been building SUM, an open-source way to attach a *signed, replayable
-> receipt* to AI-transformed text — it certifies, with a distribution-free
-> statistical bound, how much meaning a transformation preserved, and anyone can
-> check it **offline** with a tiny dependency. I'd value your independent eyes on
+> receipt* to AI-transformed text. The receipt carries an upper bound on a
+> named meaning-loss proxy over a named corpus of (original, rewrite) pairs; it
+> is a descriptive measurement of that corpus unless its sampling assumptions
+> hold, and it does not measure whether meaning was preserved. Anyone can
+> check the signature and re-run the bound arithmetic **offline** with a tiny
+> dependency. I'd value your independent eyes on
 > whether the verification actually works on a machine that isn't mine.
 >
 > Three files are attached (`receipt.json`, `jwks.json`, `losses.json`). Two
@@ -44,7 +47,7 @@ n ≥ ~32 so the bound is meaningful. You now have `out/receipt.json`,
 > ```
 >
 > You should see `{"verified": true, "replayed": true, …}`. That means: the
-> signature checked out **and** you independently re-ran the statistical bound and
+> signature checked out **and** you independently re-ran the bound arithmetic and
 > got the same number I committed. If you have 60 more seconds, try tampering —
 > change a digit in `losses.json` and re-run; it should reject with a hash
 > mismatch.
@@ -59,8 +62,12 @@ n ≥ ~32 so the bound is meaningful. You now have `out/receipt.json`,
   well-formed, and the committed losses re-certify to the stated bound by exact
   integer equality — reproduced on *their* machine.
 - ❌ It does **not** prove "meaning was preserved" — it bounds a *named proxy*,
-  marginally, under exchangeability (the receipt says so). Don't claim more than
-  the receipt does; the honesty is the moat.
+  marginally, over the named corpus. Read as a confidence statement about other
+  documents, it needs independent draws from the target distribution, a fixed
+  policy and no calibration reuse (exchangeability alone is insufficient);
+  otherwise it is a descriptive batch measurement (the verdict's
+  `statistical_scope` says which). Don't claim more than the receipt does; the
+  honesty is the moat.
 
 ## Who to ask (highest signal first)
 

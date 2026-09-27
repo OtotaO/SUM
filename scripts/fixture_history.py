@@ -15,6 +15,10 @@ HISTORICAL_MEANING_DISCLOSURE = (
     "(naẓm), sound, connotation, or implicature."
 )
 
+# Pre-correction chain budget_scope, verbatim. Defined in the verifier (which
+# flags it in verdicts) and re-exported here for fixture regeneration.
+from sum_verify._verdict import HISTORICAL_BUDGET_SCOPE_STATEMENT  # noqa: E402,F401
+
 HISTORICAL_CHAIN_DISCLOSURE = (
     "This certificate binds an ordered chain of per-hop meaning-risk "
     "certificates and their composed additive budget. Every per-hop "

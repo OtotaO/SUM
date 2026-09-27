@@ -46,9 +46,12 @@ wire rule.
 
 ## 3. The two legs, and why they are never conflated
 
-**The additive budget (provable).** By the Bonferroni union bound, with
-confidence ≥ `1 − joint_delta`, the SUM of per-hop expected proxy losses is
-≤ `budget`. This is exactly
+**The additive budget (conditional).** `budget` is the sum of the per-hop
+upper-bound values. IF each hop's bound holds with probability ≥ `1 − δᵢ`
+under that hop's own sampling assumptions (independent draws, a fixed
+policy, no calibration reuse), THEN by the Bonferroni union bound, with
+probability ≥ `1 − joint_delta`, the SUM of per-hop expected proxy losses is
+≤ `budget`; otherwise it is a descriptive sum. This is exactly
 `drift_budget.compose_drift_budget_from_payloads` — integer-exact against
 the hop payloads, re-summed on every verify.
 
@@ -62,7 +65,10 @@ end-to-end claim, when wanted, is MEASURED DIRECTLY: the optional
 and bound, replayable exactly like a meaning-risk receipt.
 
 The `budget_scope` field carries this statement inside the signed payload,
-and every verifier surface fails closed if it is missing — composition is
+and every verifier surface fails closed if it is missing. Receipts signed
+before the conditional wording was introduced (PR #531; this includes the
+committed BillSum chain golden) carry an unconditional Bonferroni sentence; verdicts add an unsigned
+`budget_scope_note` for that wording. Composition is
 where a reader will most want to over-read, so the honesty line is
 structural, not decorative.
 
