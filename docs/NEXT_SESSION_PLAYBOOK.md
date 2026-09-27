@@ -8,7 +8,7 @@ Operator-only actions are marked (operator). Claude prepares drafts and never co
 
 ### Phase 0: make trust true (to 2026-10-07)
 
-Addressed in the 2026-09-25 change set: H1 (a supplied HMAC key now requires the HMAC signature); dependency floors reset to tested minimums, with floor jobs that fail on drift; the canonicalize 5.1.0 verifier bundle; dependabot #507, #516 and #517 merged, #512 to #515 and #522 superseded (#522 replaced #511). Remaining, in order:
+Addressed in the 2026-09-25 change set: H1 (a supplied HMAC key now requires the HMAC signature); dependency floors reset to tested minimums, with floor jobs that fail on drift; the canonicalize 5.1.0 verifier bundle; dependabot #507, #516 and #517 merged, #512 to #515 and #522 superseded (#522 replaced #511). M3 and M18 of step 3 are fixed in the 2026-09-27 review page redesign, with tests that fail on the old code; step 3's Worker redeploy still applies. Remaining, in order:
 
 1. Release decision (operator) before the PyPI approval on run 35148438334 expires, about 2026-10-16. Package sources (sum_cli, sum_engine_internal, sum_verify) at tag v0.11.0 equal main as of 2026-09-23 (dependency metadata differs), and H1 is present in every published release. Approve with a known-issues note, or ship 0.11.1 with the H1 fix.
 2. Key pin: the review-packet verifier checks an embedded key against the site JWKS and flags key-ID collisions. No packet is offered to anyone until this is live.
