@@ -2,7 +2,7 @@
   "name": "sum-browser-workbench-tests",
   "private": true,
   "scripts": {
-    "test": "node --test test_review_packet.mjs test_change_evidence.mjs test_workbench_flow.mjs"
+    "test": "node --test test_review_packet.mjs test_change_evidence.mjs test_evidence_oracle.mjs test_workbench_flow.mjs"
   },
   "devDependencies": {
     "jsdom": "26.1.0"

@@ -96,6 +96,12 @@ textarea.doc:focus-visible{outline:2px solid var(--hl);outline-offset:1px}
 .placeholder h2{font:400 26px/1.2 var(--serif);margin:0 0 6px}
 .placeholder p{margin:0;font-size:14.5px;color:var(--ink-2);max-width:62ch}
 .placeholder .key{margin:4px 0 0}
+#restore-review{margin-top:12px}
+.guard{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;border:1.5px solid var(--ink);background:var(--paper);padding:10px 14px;margin:-6px 0 18px}
+.guard p{margin:0;flex:1 1 320px;font-size:14px;color:var(--ink)}
+textarea.doc[readonly]{background:var(--sunk)}
+.anx-status{margin:4px 0 10px;font:12.5px var(--mono);color:var(--ink)}
+.anx-status:empty{margin:0}
 /* the sheet */
 .sheet{background:var(--paper);border:1px solid var(--rule);display:grid;grid-template-columns:var(--gut) minmax(0,1fr) var(--mcol);grid-template-rows:repeat(6,auto);margin-bottom:56px}
 .head-gut{grid-column:1;grid-row:1;border-bottom:1px solid var(--rule)}
@@ -123,7 +129,7 @@ textarea.doc:focus-visible{outline:2px solid var(--hl);outline-offset:1px}
 .filter .n{font:500 21px/1 var(--serif);font-variant-numeric:lining-nums tabular-nums;min-width:1.2em;text-align:right}
 .filter[aria-pressed="true"]{outline:2px solid var(--hl);outline-offset:3px}
 .filter[aria-pressed="true"] .state::after{content:" (shown)";font-weight:400;color:var(--ink-3);font-size:12.5px}
-.items{margin:0;font:16px/1.6 var(--serif)}
+.items{margin:0;font:16px/1.6 var(--serif);overflow-wrap:anywhere}
 .items a{text-decoration:none}
 .items a:hover .it,.items a:focus-visible .it{text-decoration:underline;text-decoration-color:var(--ink-3)}
 .items .it{white-space:normal}
@@ -167,12 +173,22 @@ textarea.doc:focus-visible{outline:2px solid var(--hl);outline-offset:1px}
 .key .caretkey{display:none}
 .key .caret-g{color:var(--del);font-weight:700;margin:0 3px}
 body:has(#view-rewrite:checked) .key .caretkey{display:list-item;list-style:none}
+/* The key lists a mark only when the sheet has one. */
+.ev-head .key .mvkey,.ev-head .key .wskey{display:none}
+body:has(#review-rows .mv) .ev-head .key .mvkey,body:has(#review-rows .ws) .ev-head .key .wskey{display:list-item;list-style:none}
 .key .barkey{display:inline-block;width:3px;height:14px;background:var(--ink);vertical-align:-2px;margin:0 3px 0 2px}
 .key sup{font:italic 600 13px/1 var(--serif);color:var(--ink);margin:0 2px 0 3px;vertical-align:.3em}
 /* marks */
 del,ins{text-decoration-skip-ink:none;border-radius:1px;padding:0 1px}
 del{color:var(--del);background:var(--del-bg);text-decoration:line-through;text-decoration-thickness:1.5px;text-decoration-color:var(--del)}
 ins{color:var(--ins);background:var(--ins-bg);text-decoration:underline double;text-decoration-thickness:1px;text-underline-offset:3px}
+del.mv,ins.mv{color:var(--ink);background:var(--sunk);text-decoration:none;border-bottom:2px dotted var(--ink-2)}
+del.ws,ins.ws{display:inline-block;min-width:.6em;white-space:pre;text-decoration:none;vertical-align:baseline}
+.nw{white-space:pre}
+.g-mv{text-decoration:underline dotted;text-underline-offset:2px}
+.blackline .block{display:block;margin:0 0 10px;white-space:pre-wrap}
+.block-label{display:block;font:600 11.5px/1.4 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.more-btn{display:block;margin:8px 0 0}
 sup.ref{font:italic 600 .62em/0 var(--serif);vertical-align:.55em;margin-left:1px;color:var(--ink-2)}
 sup.ref a{text-decoration:none;padding:0 1px}
 .hl{outline:2px solid var(--hl);outline-offset:1px}
@@ -181,6 +197,8 @@ sup.ref.hl a{color:var(--on-ink)}
 /* passages */
 #review-rows{grid-column:1/-1;grid-row:4}
 .passage{display:grid;grid-template-columns:var(--gut) minmax(0,1fr) var(--mcol);grid-template-rows:auto auto auto 1fr;border-top:1px solid var(--rule)}
+/* Off-screen passages skip layout and paint until they come near the viewport; they stay in the DOM for find, anchors and screen readers. */
+.passage{content-visibility:auto;contain-intrinsic-size:auto 300px}
 .gut{grid-row:1/-1;grid-column:1;padding:20px 12px 20px 0;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative}
 .passage.changed .gut::after{content:"";position:absolute;right:14px;top:22px;bottom:22px;width:3px;background:var(--ink)}
 .num{font:400 38px/1 var(--serif);font-variant-numeric:oldstyle-nums;margin-right:12px}
@@ -194,15 +212,19 @@ sup.ref.hl a{color:var(--on-ink)}
 .passage:has(input[value="needs-change"]:checked) .initial::after{content:"\2038"}
 .pmeta{grid-column:2;margin:0;padding:18px var(--textpad) 0 0;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px;font:400 13px var(--sans);color:var(--ink-3)}
 .pmeta .sc{font-size:15px;color:var(--ink)}
+.pmeta-h{margin:0;font:inherit;color:inherit;display:inline-flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px}
 .span-link{font:12px/1.2 var(--mono);color:var(--ink-2);background:none;border:0;border-bottom:1px dotted var(--ink-3);padding:1px 0;cursor:pointer;white-space:nowrap}
 .span-link:hover{color:var(--ink);border-bottom-style:solid}
-.blackline{grid-column:2;margin:8px var(--textpad) 0 0;font:20px/1.62 var(--serif);max-width:40em;overflow-wrap:break-word;white-space:pre-wrap}
+.blackline{grid-column:2;margin:8px var(--textpad) 0 0;font:20px/1.62 var(--serif);max-width:40em;overflow-wrap:anywhere;white-space:pre-wrap}
+.blackline-wrap{grid-column:2;margin:0 var(--textpad) 0 0}
+.blackline-wrap .blackline{margin-right:0}
 .decision{grid-column:2;margin:14px var(--textpad) 22px 0;padding:0;border:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;align-self:start;min-width:0}
 .decision input{position:absolute;opacity:0;width:1px;height:1px}
 .decision label{font-size:13.5px;padding:6px 12px;border:1px solid var(--ctl);border-radius:2px;cursor:pointer;white-space:nowrap;line-height:1.3}
 .decision label .on{display:none}
 .decision input:focus-visible+label{outline:2px solid var(--hl);outline-offset:2px}
-.decision input:checked+label{font:700 12px/1.3 var(--sans);letter-spacing:.1em;text-transform:uppercase;border:3px double currentColor;padding:5px 12px;border-radius:0}
+.decision input:checked+label{font:700 12px/1.3 var(--sans);letter-spacing:.1em;border:3px double currentColor;padding:5px 12px;border-radius:0}
+.decision input:checked+label .on{text-transform:uppercase}
 .decision input:checked+label .off{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .decision input:checked+label .on{display:inline}
 .decision input[value="accepted"]:checked+label{color:var(--ok)}
@@ -216,18 +238,19 @@ sup.ref.hl a{color:var(--on-ink)}
 .notes{grid-column:3;grid-row:1/-1;background:var(--margin);border-left:1px solid var(--rule);padding:10px 26px 14px;min-width:0}
 .notes-h{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;margin:0}
 .notes ol{list-style:none;margin:0;padding:0}
-.note{display:grid;grid-template-columns:22px minmax(0,1fr);gap:0 8px;padding:8px 0;border-bottom:1px solid var(--rule)}
+.note{display:grid;grid-template-columns:minmax(22px,max-content) minmax(0,1fr);gap:0 8px;padding:8px 0;border-bottom:1px solid var(--rule)}
+.note,.inboth,.passage,#scope{scroll-margin-top:112px}
 .note:last-child{border-bottom:0}
-.nl{font:italic 600 17px/1.5 var(--serif);color:var(--ink-2);text-align:center;height:24px}
+.nl{font:italic 600 17px/1.5 var(--serif);color:var(--ink-2);text-align:center;height:24px;padding:0 3px;white-space:nowrap}
 .note.hl{outline:0;background:var(--paper);box-shadow:-26px 0 0 var(--paper),26px 0 0 var(--paper)}
 .note.hl .nl{background:var(--ink);color:var(--on-ink)}
 .nh{margin:0;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;gap:4px 10px}
 .nh .lk{min-width:0;overflow-wrap:break-word}
-.lit{font:17.5px/1.45 var(--serif)}
+.lit{font:17.5px/1.45 var(--serif);overflow-wrap:anywhere}
 .lit .arrow{color:var(--ink-3);margin:0 5px;font-family:var(--sans)}
 .kind{font-size:12.5px;font-weight:600;color:var(--ink-2);margin-left:10px;white-space:nowrap}
 .chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--rule-2);padding:1px 7px;font-size:12px;color:var(--ink-2);white-space:nowrap;border-radius:2px;background:var(--paper)}
-.ns{margin:2px 0 0;font-size:13.5px;line-height:1.45;color:var(--ink-2)}
+.ns{margin:2px 0 0;font-size:13.5px;line-height:1.45;color:var(--ink-2);overflow-wrap:anywhere}
 .ns .span-link{margin-left:6px}
 .notes .ns.alone{margin:8px 0}
 .inboth{margin:8px 0 0;padding-top:8px;border-top:1px solid var(--rule);font-size:13px;color:var(--ink-3);display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}
@@ -240,9 +263,12 @@ sup.ref.hl a{color:var(--on-ink)}
 body:has(#view-original:checked) .blackline .irun{display:none}
 body:has(#view-original:checked) .blackline del{text-decoration:none}
 body:has(#view-rewrite:checked) .blackline .drun.sub{display:none}
-body:has(#view-rewrite:checked) .blackline .drun.gap{font-size:0}
-body:has(#view-rewrite:checked) .blackline .drun.gap::before{content:"\2038";font-size:20px;color:var(--del);font-family:var(--sans);padding:0 2px}
+body:has(#view-rewrite:checked) .blackline .drun.gap>*{display:none}
+body:has(#view-rewrite:checked) .blackline .drun.gap::before{content:"\2038";color:var(--del);font-family:var(--sans);padding:0 2px}
 body:has(#view-rewrite:checked) .blackline ins{text-decoration:none;background:none;color:inherit}
+body:has(#view-original:checked) .blackline .sep,body:has(#view-rewrite:checked) .blackline .sep{display:none}
+body:has(#view-original:checked) .blackline .block.side-b,body:has(#view-rewrite:checked) .blackline .block.side-a{display:none}
+body:has(#view-original:checked) .block-label,body:has(#view-rewrite:checked) .block-label{display:none}
 /* sign-off */
 .signoff{grid-column:1/-1;grid-row:6;display:grid;grid-template-columns:var(--gut) minmax(0,.8fr) minmax(0,1.25fr) minmax(0,1fr);gap:0 36px;border-top:3px double var(--rule-2);padding:24px 28px 28px 0}
 .signoff h3{margin:0 0 8px;font-size:15px}
@@ -372,10 +398,12 @@ details[open]>summary .pm::before{content:"\2212"}
   .pmeta{order:1;padding:6px 0 0}
   .blackline{order:2;font-size:18.5px;margin:8px 0 0}
   .also{order:3;margin:8px 0 0}
-  .notes{order:4;border-left:0;margin:14px -16px 0 -22px;padding:12px 16px 12px 22px}
+  .notes{order:5;border-left:0;margin:0 -16px 0 -22px;padding:12px 16px 12px 22px}
   .notes-h{position:static;width:auto;height:auto;overflow:visible;clip:auto;white-space:normal;display:block;margin:0 0 4px;font-size:14px}
   .note.hl{box-shadow:none}
-  .decision{order:5;margin:14px 0 18px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;align-items:stretch}
+  .decision{order:4;margin:14px 0 14px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;align-items:stretch}
+  .blackline-wrap{order:2;margin:0}
+  .note,.inboth,.passage,#scope{scroll-margin-top:72px}
   .decision label{display:flex;align-items:center;justify-content:center;text-align:center;padding:9px 4px;white-space:normal}
   .decision input:checked+label{padding:8px 2px;font-size:11px;letter-spacing:.04em}
   .decision input[value="unreviewed"]:checked+label{padding:9px 2px}
@@ -410,7 +438,7 @@ details[open]>summary .pm::before{content:"\2212"}
 <main id="top" class="wrap">
 <section class="hero">
   <h1>See <em>exactly</em> what the rewrite changed.</h1>
-  <div class="lede"><p>Paste an original and its rewrite. SUM pairs the passages, marks every word that differs, and lists the numbers, dates, negations, modal verbs, conditions and names involved. Decide on each passage, then export a packet someone else can open and check.</p>
+  <div class="lede"><p>SUM pairs the passages of an original and its rewrite, marks the words and characters that differ (up to a limit per pair), and notes the numbers, dates, negations, modal verbs, conditions and capitalized words its lists recognise. Decide on each passage, then export a packet others can check.</p>
   <p class="door">Received a review packet? <a href="#packet-verifier-panel" data-open>Open and check it here</a>.</p></div>
 </section>
 
@@ -443,14 +471,16 @@ details[open]>summary .pm::before{content:"\2212"}
     <p class="hint" id="compare-hint" hidden>The results below match these texts; editing either one clears them. Nothing is sent anywhere.</p>
     <p id="workbench-status" role="status" aria-live="polite"></p>
   </div>
+  <div class="guard" id="edit-guard" hidden><p id="guard-text"></p><button type="button" class="btn small ink" id="guard-yes">Continue</button><button type="button" class="btn small" id="guard-no">Keep them</button></div>
 </section>
 
 <section id="review-placeholder" class="placeholder" aria-labelledby="placeholder-h">
   <div>
     <h2 id="placeholder-h">Nothing compared yet</h2>
     <p id="placeholder-body">Paste an original into A and its rewrite into B, then Compare texts. Or load an example above.</p>
+    <button type="button" class="btn small" id="restore-review" hidden>Restore the reviewed texts</button>
   </div>
-  <ul class="key" aria-label="Marks used in the comparison"><li><del>struck</del> in the original only</li><li><ins>underlined</ins> in the rewrite only</li><li><sup>a</sup> letter: its note in this column</li><li><span class="barkey"></span> bar: the passage differs</li><li><span class="boxkey"></span> dashed box: no decision yet</li></ul>
+  <ul class="key" aria-label="Marks used in the comparison"><li><del>ab</del> here in the original only</li><li><ins>ab</ins> here in the rewrite only</li><li class="mvkey"><del class="mv">ab</del> moved within the passage</li><li class="wskey"><del class="ws">  </del> tinted: spacing differs</li><li><sup>a</sup> letter: its note in this column</li><li><span class="barkey"></span> bar: the passage differs</li><li><span class="boxkey"></span> dashed box: no decision yet</li></ul>
 </section>
 
 <section id="review-panel" class="sheet" aria-labelledby="review-heading" hidden>
@@ -474,17 +504,17 @@ details[open]>summary .pm::before{content:"\2212"}
   </section>
   <aside class="ev-head" id="evidence" aria-labelledby="evidence-h" tabindex="-1">
     <div class="ev-h"><h3 class="sc" id="evidence-h">Change evidence</h3><a class="to-plate" href="#scope">What is and is not checked</a></div>
-    <div class="honesty"><p><strong>Literal string evidence, not a judgment.</strong> Each note says only which exact strings appear in one text and not the other, or in both. SUM does not read for meaning, decide whether a difference matters, or score the rewrite. That call is yours, and your decisions are exported unsigned.</p></div>
-    <ul class="key" aria-label="Marks used on this sheet"><li><del>struck</del> in the original only</li><li><ins>underlined</ins> in the rewrite only</li><li><sup>a</sup> letter: its note in this column</li><li><span class="barkey"></span> bar: the passage differs</li><li><span class="boxkey"></span> dashed box: no decision yet</li><li class="caretkey"><span class="caret-g">&#x2038;</span> the rewrite has nothing here</li></ul>
+    <div class="honesty"><p><strong>Literal evidence, not a judgment.</strong> Each note quotes exact characters at one place and says where else the words appear, ignoring case. SUM does not read for meaning, decide whether a difference matters, or score the rewrite. That call is yours; decisions are exported unsigned.</p></div>
+    <ul class="key" aria-label="Marks used on this sheet"><li><del>ab</del> here in the original only</li><li><ins>ab</ins> here in the rewrite only</li><li class="mvkey"><del class="mv">ab</del> moved within the passage</li><li class="wskey"><del class="ws">  </del> tinted: spacing differs</li><li><sup>a</sup> letter: its note in this column</li><li><span class="barkey"></span> bar: the passage differs</li><li><span class="boxkey"></span> dashed box: no decision yet</li><li class="caretkey"><span class="caret-g">&#x2038;</span> the rewrite has nothing here</li></ul>
   </aside>
   <div id="review-rows"></div>
   <div class="plate" id="scope">
-    <div class="yes"><h3 class="sc">Checked here</h3><ul><li>Every word that differs within each passage pair</li><li>Numbers, dates, durations, negations, modal verbs, conditions and exceptions, capitalized names</li><li>The exact character position of each string in both texts</li></ul></div>
-    <div class="no"><h3 class="sc">Not checked</h3><ul><li>Meaning, paraphrase or entailment</li><li>Whether either text is accurate</li><li>Whether a difference matters to you</li><li>Capitalization and punctuation between words</li><li>Who wrote or approved either text</li></ul></div>
+    <div class="yes"><h3 class="sc">Checked here</h3><ul><li>The words and characters that differ within each passage pair, marked in place</li><li>Where each noted string appears in the other text: as a word, only within other words, or nowhere</li><li>Numbers, dates, durations, negations, modal verbs, conditions and exceptions, and capitalized words, as fixed word lists recognise them</li><li>The order of the passages, and the spacing between them when every passage has a partner</li></ul></div>
+    <div class="no"><h3 class="sc">Not checked</h3><ul><li>Meaning, paraphrase or entailment</li><li>Whether either text is accurate</li><li>Whether a difference matters to you</li><li>Whether a word the lists recognise really is a name, date or number</li><li>Word by word, a passage pair with very many differences: it is shown whole</li><li>Who wrote or approved either text</li></ul></div>
   </div>
   <footer class="signoff" aria-labelledby="signoff-h">
     <div></div>
-    <div class="rec"><h3 class="sc" id="signoff-h">Review record</h3><p class="big"><span id="review-record-count">0 of 0</span> passages decided</p><ul class="reclist" id="record-list"></ul></div>
+    <div class="rec"><h3 class="sc" id="signoff-h">Review record</h3><p class="big"><span id="review-record-count">0 of 0</span> <span id="review-record-noun">passages</span> decided</p><ul class="reclist" id="record-list"></ul></div>
     <div><h3 class="sc">What Export writes</h3>
       <dl class="contents">
         <dt>Original</dt><dd id="export-original">&nbsp;</dd>
@@ -520,6 +550,7 @@ details[open]>summary .pm::before{content:"\2212"}
         <span class="v" id="density-val">1.00</span>
         <button type="button" id="attest" class="btn">Extract claims<span class="kbd">⌘↵</span></button>
       </div>
+      <p id="generate-status" class="anx-status" role="status" aria-live="polite"></p>
       <div id="result" style="display:none;">
         <h4>Extracted claims (not checked) <span class="pill" id="fact-count">0</span></h4>
         <div class="extractor-src" id="extractor-source"></div>
@@ -1361,12 +1392,13 @@ $('attest').addEventListener('click', async () => {
   const revision = sourceRevision;
 
   const btn = $('attest');
+  $('generate-status').textContent = '';
   btn.disabled = true; btn.textContent = 'Extracting…';
   try {
     const { triples: all, source } = await extractTriples(text);
     if (revision !== sourceRevision) return;
     if (all.length === 0) {
-      $('workbench-status').textContent = 'Extraction unavailable or no claims returned. No claims were invented. You can still paste a rewrite into box B and compare it with the original.';
+      $('generate-status').textContent = 'Extraction unavailable or no claims returned. No claims were invented. You can still paste a rewrite into box B and compare it with the original.';
       return;
     }
 
@@ -1411,7 +1443,7 @@ $('attest').addEventListener('click', async () => {
     void resultEl.offsetWidth;
     resultEl.classList.add('animate-in');
   } catch (e) {
-    if (revision === sourceRevision) $('workbench-status').textContent = 'Extraction failed: ' + e.message;
+    if (revision === sourceRevision) $('generate-status').textContent = 'Extraction failed: ' + e.message;
   } finally {
     btn.disabled = false;
     btn.innerHTML = ATTEST_LABEL;
@@ -1617,7 +1649,7 @@ if (cliCopyBtn) {
 $('render-btn').addEventListener('click', async () => {
   const triples = window.__sumLastTriples;
   if (!triples || triples.length === 0 || extractedSource !== $('prose').value) {
-    alert('Extract claims first: generating a rewrite uses the extracted claims as input.');
+    $('generate-status').textContent = 'Extract claims first: generating a rewrite uses the extracted claims as input.';
     return;
   }
   invalidateRender();
@@ -1824,15 +1856,16 @@ $('verify').addEventListener('click', async () => {
     try {
       const res = await verifier(receipt, jwks);
       const p = res.payload || {};
-      const bound = typeof p.risk_upper_bound_micro === "number"
-        ? (p.risk_upper_bound_micro / 1e6).toFixed(4) : "n/a";
+      // Rounded UP to four decimals, so the shown bound is never below the signed one.
+      const bound = Number.isInteger(p.risk_upper_bound_micro)
+        ? (Math.ceil(p.risk_upper_bound_micro / 100) / 10000).toFixed(4) : "n/a";
       const nc = Array.isArray(p.not_covered) ? p.not_covered.join(", ") : "—";
-      const ctrl = ("controlled" in p) ? ` · controlled: <code>${esc(p.controlled)}</code>` : "";
+      // Stage A does not replay the bound, so the receipt's own `controlled` claim is not shown here.
       show("ok",
         `<div><strong>✓ Stage A verified.</strong> Issuer signed (kid=<code>${esc(res.kid)}</code>), ` +
           `schema <code>${esc(schema)}</code>, disclosure present.</div>` +
         `<div class="mr">scorer: <code>${esc(p.scorer ?? "?")}</code> · ` +
-          `stated bound (NOT replayed here): <code>≤ ${bound}</code>${ctrl}</div>` +
+          `issuer-asserted bound, not replayed here: <code>≤ ${bound}</code> (rounded up)</div>` +
         `<div class="mr dim">not&nbsp;covered: ${esc(nc)}</div>` +
         `<div class="mr dim">${PROXY_CAVEAT}</div>` +
         `<div class="mr dim">Stage A = signature + schema + disclosure. ` +

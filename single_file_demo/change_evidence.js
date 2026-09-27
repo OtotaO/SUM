@@ -1,14 +1,19 @@
 // Literal change evidence for the review page. Pure functions, no DOM.
 //
 // Given the two texts and a review (compareTexts output, or a checked packet's
-// review), this module lists which exact strings appear in one text and not
-// the other, or in both, per passage pair. Everything here is literal string
-// processing: nothing reads for meaning, weights, ranks or scores. Passages
-// come from review.rows only; this module never re-splits a text, so the
-// evidence always matches the packet's own passages.
+// review), this module works out, per passage pair, which characters differ
+// and where each noted string occurs in the other text. Every sentence it
+// produces is meant to be literally true of the exact characters pasted:
+// strings are quoted exactly, "nowhere" is checked as a case-insensitive
+// substring search of the whole other text, and anything a check cannot
+// establish is left unsaid. Nothing reads for meaning, weights, ranks or
+// scores. Passages come from review.rows only; this module never re-splits
+// a text, so the evidence always matches the packet's own passages.
 //
 // Offsets are UTF-16 code units, end-exclusive and absolute in the full text,
 // the same unit as textarea.setSelectionRange and the review packet.
+// "Ignoring capitalization" means comparing each code point lowered with
+// toLocaleLowerCase('en').
 
 // ---------------------------------------------------------------- built-in examples
 // Both examples avoid decimals and abbreviations, so the frozen
@@ -31,12 +36,32 @@ export const EXAMPLES = {
 };
 
 // ---------------------------------------------------------------- tokens
-// Keeps 1,000 / 7.95 / $200 / 50% / 2026-03-01 / 10:30 / don't / e-mail as
-// single tokens. A sentence-final "." is never part of a token.
-export const TOKEN_RE = /[$€£¥]?[\p{L}\p{M}\p{N}]+(?:[.,:\/'’\-][\p{L}\p{M}\p{N}]+)*%?/gu;
+// A word: letters, marks and digits, joined by one of . , : / ' ’ - (so 1,000
+// 7.95 $200 50% 2026-03-01 10:30 don't e-mail stay whole). A sentence-final
+// "." is never part of a word. Chinese and Japanese characters (Han, Hiragana,
+// Katakana) are one word each, because those scripts do not put spaces
+// between words.
+const CJK = '\\p{Script=Han}\\p{Script=Hiragana}\\p{Script=Katakana}';
+const WORD_CHAR = `(?:(?![${CJK}])[\\p{L}\\p{M}\\p{N}])`;
+export const TOKEN_RE = new RegExp(`[${CJK}]|[$€£¥]?${WORD_CHAR}+(?:[.,:\\/'’\\-]${WORD_CHAR}+)*%?`, 'gu');
 export const keyOf = t => t.toLocaleLowerCase('en').replace(/’/g, "'");
 export function tokenize(text, base = 0) {
   return Array.from(text.matchAll(TOKEN_RE), m => ({ t: m[0], k: keyOf(m[0]), s: base + m.index, e: base + m.index + m[0].length }));
+}
+// Case-insensitive text: every code point lowered on its own, with a map from
+// each lowered code unit back to its offset in the original text.
+export const lowerChars = text => Array.from(text, c => c.toLocaleLowerCase('en')).join('');
+function lowerMap(text) {
+  const parts = [], map = [];
+  for (let i = 0; i < text.length;) {
+    const ch = String.fromCodePoint(text.codePointAt(i));
+    const low = ch.toLocaleLowerCase('en');
+    parts.push(low);
+    for (let u = 0; u < low.length; u++) map.push(i);
+    i += ch.length;
+  }
+  map.push(text.length);
+  return { lower: parts.join(''), map };
 }
 
 // ---------------------------------------------------------------- word lists
@@ -55,6 +80,7 @@ export const CONDITION_MARKERS = [ // longest first; each opens a clause
 export const SINGLE_TOKEN_MARKERS = new Set(['only']); // marked alone, no clause
 export const EXCEPTION_MARKERS = new Set(['unless', 'unless and until', 'except', 'except that', 'except for', 'except where',
   'except when', 'except if', 'other than', 'notwithstanding']);
+export const CLAUSE_MAX_WORDS = 40; // a clause stops at , ; : ( ) or the passage end, and after at most 40 words
 const MONTHS = new Map(Object.entries({ january: 1, jan: 1, february: 2, feb: 2, march: 3, mar: 3, april: 4, apr: 4, may: 5, june: 6, jun: 6,
   july: 7, jul: 7, august: 8, aug: 8, september: 9, sep: 9, sept: 9, october: 10, oct: 10, november: 11, nov: 11, december: 12, dec: 12 }));
 const WEEKDAYS = new Set(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']);
@@ -84,32 +110,49 @@ const NAME_CONNECTORS = new Set(['of', 'de', 'van', 'von', 'der', 'la', 'du', '&
 const commonWord = k => STOP.has(k) || MODALS.has(k) || isNegation(k) || NUMBER_WORDS.has(k) || SENTENCE_STARTERS.has(k) ||
   SINGLE_TOKEN_MARKERS.has(k) || CONDITION_MARKERS.some(m => m.split(' ')[0] === k);
 const isCapitalized = t => /^\p{Lu}/u.test(t.t) && !/^\p{Lu}$/u.test(t.t);
+const byFirstWord = list => {
+  const map = new Map();
+  for (const phrase of list) { const words = phrase.split(' '); if (!map.has(words[0])) map.set(words[0], []); map.get(words[0]).push(words); }
+  return map;
+};
+const MARKERS_BY_FIRST = byFirstWord(CONDITION_MARKERS);
+const COMPARATORS_BY_FIRST = byFirstWord(COMPARATORS);
 
 // ---------------------------------------------------------------- item detection
 // ctx: { text: the full text of this side,
 //        capsElsewhere: token texts capitalized at a non-first position in either text,
 //        lowerAnywhere: keys of tokens written in lowercase anywhere in either text }
-export function detectItems(passageText, passageStart, ctx) {
-  const toks = tokenize(passageText, passageStart);
-  const gap = i => (i + 1 < toks.length ? ctx.text.slice(toks[i].e, toks[i + 1].s) : ctx.text.slice(toks[i].e, passageStart + passageText.length));
-  const seq = (i, words) => words.every((w, n) => toks[i + n] && toks[i + n].k === w && (n === 0 || /^ +$/.test(gap(i + n - 1))));
+// Linear in the passage length: clause ends are precomputed and clauses are capped.
+export function detectItems(passageText, passageStart, ctx, toks = tokenize(passageText, passageStart)) {
+  const passageEnd = passageStart + passageText.length;
+  const gap = i => ctx.text.slice(toks[i].e, i + 1 < toks.length ? toks[i + 1].s : passageEnd);
+  const singleSpaces = i => /^ +$/.test(gap(i));
+  const phraseAt = (i, map) => {
+    const options = map.get(toks[i].k);
+    if (!options) return null;
+    for (const words of options) {
+      if (words.every((w, n) => toks[i + n] && toks[i + n].k === w && (n === 0 || singleSpaces(i + n - 1)))) return words;
+    }
+    return null;
+  };
+  const seq = (i, words) => words.every((w, n) => toks[i + n] && toks[i + n].k === w && (n === 0 || singleSpaces(i + n - 1)));
   const items = [];
-  const consumed = new Array(toks.length).fill(false);
+  const consumed = new Uint8Array(toks.length);
   const make = (kind, i, j, extra = {}) => {
     const s = toks[i].s, e = toks[j - 1].e;
     return { kind, ti: i, tj: j, s, e, text: ctx.text.slice(s, e), key: toks.slice(i, j).map(t => t.k).join(' '), ...extra };
   };
+  const breaksAfter = toks.map((_, i) => /[,;:()]/.test(gap(i)));
 
   // Pass 1: conditions and exceptions. Items may overlap later items; only the markers are consumed.
   for (let i = 0; i < toks.length; i++) {
-    const marker = CONDITION_MARKERS.find(m => seq(i, m.split(' ')));
-    if (!marker) continue;
-    const n = marker.split(' ').length;
-    let j = i + n; // the clause runs to the last token before , ; : ( ) or to the passage end
-    while (j < toks.length && !/[,;:()]/.test(gap(j - 1))) j++;
-    if (j === i + n && j < toks.length && !/[,;:()]/.test(gap(j - 1))) j++;
-    for (let x = i; x < i + n; x++) consumed[x] = true;
-    items.push(make('condition', i, Math.max(j, i + n), { marker }));
+    const words = phraseAt(i, MARKERS_BY_FIRST);
+    if (!words) continue;
+    const n = words.length;
+    let j = i + n; // the clause runs to the last token before , ; : ( ) or the passage end, capped
+    while (j < toks.length && !breaksAfter[j - 1] && j - (i + n) < CLAUSE_MAX_WORDS) j++;
+    for (let x = i; x < i + n; x++) consumed[x] = 1;
+    items.push(make('condition', i, j, { marker: words.join(' ') }));
     i += n - 1;
   }
 
@@ -160,21 +203,22 @@ export function detectItems(passageText, passageStart, ctx) {
     return 0;
   };
 
-  // Pass 2: exclusive kinds, in priority order date > duration > number > negation > modal > only > name.
+  // Pass 2: exclusive kinds, in priority order date > duration > number > negation > modal > only > capitalized.
   for (let i = 0; i < toks.length; i++) {
     if (consumed[i]) continue;
     const t = toks[i];
     let j;
-    if ((j = dateAt(i))) { items.push(make('date', i, j)); consumed.fill(true, i, j); i = j - 1; continue; }
-    const comp = COMPARATORS.find(c => seq(i, c.split(' ')));
-    const c0 = comp ? i + comp.split(' ').length : i;
+    if ((j = dateAt(i))) { items.push(make('date', i, j)); consumed.fill(1, i, j); i = j - 1; continue; }
+    const comp = phraseAt(i, COMPARATORS_BY_FIRST);
+    const c0 = comp ? i + comp.length : i;
     if (toks[c0] && !consumed[c0]) {
-      if ((j = durationAt(c0))) { items.push(make('duration', i, j)); consumed.fill(true, i, j); i = j - 1; continue; }
-      if ((j = numberAt(c0))) { items.push(make('number', i, j)); consumed.fill(true, i, j); i = j - 1; continue; }
+      if ((j = durationAt(c0))) { items.push(make('duration', i, j)); consumed.fill(1, i, j); i = j - 1; continue; }
+      if ((j = numberAt(c0))) { items.push(make('number', i, j)); consumed.fill(1, i, j); i = j - 1; continue; }
     }
-    if (isNegation(t.k)) { items.push(make('negation', i, i + 1)); consumed[i] = true; continue; }
-    if (MODALS.has(t.k)) { items.push(make('modal', i, i + 1)); consumed[i] = true; continue; }
-    if (SINGLE_TOKEN_MARKERS.has(t.k)) { items.push(make('condition', i, i + 1, { marker: t.k })); consumed[i] = true; continue; }
+    if (isNegation(t.k)) { items.push(make('negation', i, i + 1)); consumed[i] = 1; continue; }
+    // A capitalized "May" inside a sentence is more likely a month or a name than a verb.
+    if (MODALS.has(t.k) && !(i > 0 && isCapitalized(t))) { items.push(make('modal', i, i + 1)); consumed[i] = 1; continue; }
+    if (SINGLE_TOKEN_MARKERS.has(t.k)) { items.push(make('condition', i, i + 1, { marker: t.k })); consumed[i] = 1; continue; }
     if (isCapitalized(t)) {
       // A run of capitalized tokens (single spaces; one connector between two capitalized tokens).
       let end = i + 1;
@@ -189,55 +233,155 @@ export function detectItems(passageText, passageStart, ctx) {
           (!commonWord(t.k) && !/(s|ed|ing|ly)$/.test(t.k) && !ctx.lowerAnywhere.has(t.k));
         if (!isName) end = i + 1;
       }
-      if (isName) { items.push(make('name', i, end)); consumed.fill(true, i, end); i = end - 1; continue; }
+      if (isName) { items.push(make('name', i, end)); consumed.fill(1, i, end); i = end - 1; continue; }
     }
   }
   items.sort((a, b) => a.s - b.s || b.e - a.e);
   return { toks, items };
 }
 
-// ---------------------------------------------------------------- word diff (LCS on token keys)
-export const MAX_DIFF_TOKENS = 400;
-export function diffTokens(a, b) {
-  const n = a.length, m = b.length;
-  if (n > MAX_DIFF_TOKENS || m > MAX_DIFF_TOKENS) return null; // the page says the passage is too long for word marks
-  const dp = Array.from({ length: n + 1 }, () => new Uint16Array(m + 1));
-  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--)
-    dp[i][j] = a[i].k === b[j].k ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+// ---------------------------------------------------------------- word diff
+// Small pairs use an LCS table; larger pairs use Myers' O((N+M)D) algorithm,
+// which gives up (returns null) once D, the number of word insertions plus
+// deletions, exceeds a work-bounded limit. Within a changed stretch,
+// deletions come before insertions. Hunk ids increase in reading order.
+export const TABLE_MAX_CELLS = 250000;
+export const MYERS_WORK = 40000000;
+export const diffLimit = (n, m) => Math.max(100, Math.min(2000, Math.floor(MYERS_WORK / Math.max(1, n + m))));
+
+function numberHunks(raw) {
+  // raw: [{op:'eq',a,b}|{op:'del',a}|{op:'ins',b}] in order; reorder each changed
+  // stretch to deletions first, then number the stretches.
   const ops = [];
-  let i = 0, j = 0, hunk = 0, inChange = false;
-  while (i < n || j < m) {
-    if (i < n && j < m && a[i].k === b[j].k) { ops.push({ op: 'eq', a: i++, b: j++ }); inChange = false; continue; }
-    if (!inChange) { hunk++; inChange = true; }
-    // Tie-break: within a changed stretch, deletions come before insertions.
-    if (j >= m || (i < n && dp[i + 1][j] >= dp[i][j + 1])) ops.push({ op: 'del', a: i++, hunk });
-    else ops.push({ op: 'ins', b: j++, hunk });
+  let hunk = 0;
+  for (let k = 0; k < raw.length;) {
+    if (raw[k].op === 'eq') { ops.push(raw[k++]); continue; }
+    hunk++;
+    const dels = [], ins = [];
+    while (k < raw.length && raw[k].op !== 'eq') (raw[k].op === 'del' ? dels : ins).push(raw[k++]);
+    for (const o of dels) ops.push({ op: 'del', a: o.a, hunk });
+    for (const o of ins) ops.push({ op: 'ins', b: o.b, hunk });
   }
   return ops;
 }
 
-// ---------------------------------------------------------------- helpers
-const countSeq = (toks, keys) => {
-  let c = 0;
-  for (let i = 0; i + keys.length <= toks.length; i++) if (keys.every((k, n) => toks[i + n].k === k)) { c++; i += keys.length - 1; }
-  return c;
-};
-const findSeq = (toks, keys) => {
-  for (let i = 0; i + keys.length <= toks.length; i++) if (keys.every((k, n) => toks[i + n].k === k)) return { s: toks[i].s, e: toks[i + keys.length - 1].e };
+function tableDiff(a, b) {
+  const n = a.length, m = b.length;
+  const dp = Array.from({ length: n + 1 }, () => new Uint16Array(m + 1));
+  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--)
+    dp[i][j] = a[i].k === b[j].k ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+  const raw = [];
+  let i = 0, j = 0;
+  while (i < n || j < m) {
+    if (i < n && j < m && a[i].k === b[j].k) { raw.push({ op: 'eq', a: i++, b: j++ }); continue; }
+    if (j >= m || (i < n && dp[i + 1][j] >= dp[i][j + 1])) raw.push({ op: 'del', a: i++ });
+    else raw.push({ op: 'ins', b: j++ });
+  }
+  return numberHunks(raw);
+}
+
+function myersDiff(a, b, limit) {
+  const n = a.length, m = b.length, off = limit + 1;
+  const v = new Int32Array(2 * limit + 3);
+  const trace = [];
+  for (let d = 0; d <= limit; d++) {
+    trace.push(v.slice(off - d - 1, off + d + 2));
+    for (let k = -d; k <= d; k += 2) {
+      let x = (k === -d || (k !== d && v[off + k - 1] < v[off + k + 1])) ? v[off + k + 1] : v[off + k - 1] + 1;
+      let y = x - k;
+      while (x < n && y < m && a[x].k === b[y].k) { x++; y++; }
+      v[off + k] = x;
+      if (x === n && y === m) {
+        // Walk back through the saved frontiers.
+        const raw = [];
+        let cx = n, cy = m;
+        for (let dd = d; dd > 0; dd--) {
+          const pv = trace[dd]; const po = dd + 1; // pv[po + k] = frontier before step dd
+          const kk = cx - cy;
+          const down = kk === -dd || (kk !== dd && pv[po + kk - 1] < pv[po + kk + 1]);
+          const pk = down ? kk + 1 : kk - 1;
+          const px = pv[po + pk], py = px - pk;
+          while (cx > (down ? px : px + 1) && cy > (down ? py + 1 : py)) raw.push({ op: 'eq', a: --cx, b: --cy });
+          if (down) raw.push({ op: 'ins', b: --cy }); else raw.push({ op: 'del', a: --cx });
+        }
+        while (cx > 0 && cy > 0) raw.push({ op: 'eq', a: --cx, b: --cy });
+        raw.reverse();
+        return numberHunks(raw);
+      }
+    }
+  }
   return null;
-};
+}
+
+export function diffTokens(a, b) {
+  if ((a.length + 1) * (b.length + 1) <= TABLE_MAX_CELLS) return { ops: tableDiff(a, b), limit: null };
+  const limit = diffLimit(a.length, b.length);
+  return { ops: myersDiff(a, b, limit), limit };
+}
+
+// ---------------------------------------------------------------- word indexes
+// Non-overlapping occurrences of a word sequence, found through an index of
+// first words and memoized by the sequence, so repeated questions stay cheap.
+function wordIndex(toks) {
+  const first = new Map();
+  toks.forEach((t, i) => { if (!first.has(t.k)) first.set(t.k, []); first.get(t.k).push(i); });
+  return { toks, first, memo: new Map() };
+}
+function occurrences(index, keys) {
+  const id = keys.join(' ');
+  if (index.memo.has(id)) return index.memo.get(id);
+  const found = [];
+  let lastEnd = -1;
+  for (const i of index.first.get(keys[0]) || []) {
+    if (i < lastEnd || i + keys.length > index.toks.length) continue;
+    let ok = true;
+    for (let n = 1; n < keys.length; n++) if (index.toks[i + n].k !== keys[n]) { ok = false; break; }
+    if (ok) { found.push(i); lastEnd = i + keys.length; }
+  }
+  index.memo.set(id, found);
+  return found;
+}
+const letterOf = i => { let s = ''; for (let n = i + 1; n > 0; n = Math.floor((n - 1) / 26)) s = String.fromCharCode(97 + ((n - 1) % 26)) + s; return s; };
 const passageNumber = spanId => String(spanId).slice(1);
+const commonPrefix = (x, y) => { let i = 0; while (i < x.length && i < y.length && x[i] === y[i]) i++; return i; };
+const commonSuffix = (x, y, max) => { let i = 0; while (i < max && x[x.length - 1 - i] === y[y.length - 1 - i]) i++; return i; };
+// Grapheme boundaries of a short string, so a difference never splits a
+// character that is drawn as one (a surrogate pair, a letter and its accent,
+// an emoji sequence).
+const SEGMENTER = typeof Intl !== 'undefined' && Intl.Segmenter ? new Intl.Segmenter('en', { granularity: 'grapheme' }) : null;
+function boundaries(str) {
+  const set = new Set([0, str.length]);
+  if (SEGMENTER) { for (const g of SEGMENTER.segment(str)) set.add(g.index); return set; }
+  for (let i = 1; i < str.length; i++) {
+    const c = str.charCodeAt(i);
+    if (!(c >= 0xdc00 && c <= 0xdfff) && !/\p{M}/u.test(str[i])) set.add(i);
+  }
+  return set;
+}
+// The shared start and end of two strings, cut only at character boundaries of both.
+export function sharedEnds(x, y) {
+  const bx = boundaries(x), by = boundaries(y);
+  let p = commonPrefix(x, y);
+  while (p > 0 && !(bx.has(p) && by.has(p))) p--;
+  let q = commonSuffix(x, y, Math.min(x.length, y.length) - p);
+  while (q > 0 && !(bx.has(x.length - q) && by.has(y.length - q))) q--;
+  return { p, q };
+}
 
 // ---------------------------------------------------------------- evidence per displayed passage
 // review: { rows: [{id, kind, source, output, decision}] } as returned by
-// compareTexts or carried by a checked packet. Returns { passages } in display
-// order. Each passage: { row, kind, number, a, b, notes, inBoth, alsoMarked,
-// ops, aToks, bToks, sameWords, tooLong }.
+// compareTexts or carried by a checked packet. Returns { passages, summary }
+// in display order. Each passage: { row, kind, number, a, b, notes, inBoth,
+// alsoMarked, ops, aToks, bToks, sameWords, over }.
 //
-// Note states: 'a-only' (Original only), 'differs', 'b-only' (Rewrite only),
-// 'moved' (Other passage). Note scopes for one-sided notes: 'text' (searched
-// in the whole other text), 'passage' (structural word, compared within the
-// passage pair), 'count' (the string is in the paired passage, fewer times).
+// Note states: 'a-only' (Removed: here in the original, not at this point in
+// the rewrite), 'b-only' (Added), 'differs', 'other' (Other passage: a word of
+// another passage of the other text), 'moved' (Moved: in both passages at
+// different places). Lines in `inBoth` are words at the same place in both.
+// One-sided notes carry a `scope` saying what was established about the
+// other text: 'nowhere', 'inside' (only within other words), 'other', 'count'
+// (a word of the paired passage, fewer times), 'passage' (structural words,
+// checked in the paired passage only), 'unpaired', 'here' (characters).
 export function buildEvidence(source, output, review) {
   const rows = Array.isArray(review?.rows) ? review.rows : [];
   const byStart = (x, y) => x.start - y.start;
@@ -245,226 +389,385 @@ export function buildEvidence(source, output, review) {
   // rewrite passage, so the rows carry both complete passage lists.
   const originals = rows.filter(r => r.source).map(r => r.source).sort(byStart);
   const rewrites = rows.filter(r => r.output).map(r => r.output).sort(byStart);
-  const allA = tokenize(source), allB = tokenize(output);
+  const passTokens = new Map();
+  const tokensOf = span => { if (!passTokens.has(span)) passTokens.set(span, tokenize(span.text, span.start)); return passTokens.get(span); };
+  const aPass = originals.map(span => ({ span, toks: tokensOf(span) }));
+  const bPass = rewrites.map(span => ({ span, toks: tokensOf(span) }));
+  const allA = aPass.flatMap(p => p.toks), allB = bPass.flatMap(p => p.toks);
   const aFirst = new Set(originals.map(s => s.start)), bFirst = new Set(rewrites.map(s => s.start));
   const capsElsewhere = new Set([...allA.filter(t => !aFirst.has(t.s)), ...allB.filter(t => !bFirst.has(t.s))].filter(isCapitalized).map(t => t.t));
   const lowerAnywhere = new Set([...allA, ...allB].filter(t => t.t === t.t.toLocaleLowerCase('en')).map(t => t.k));
   const ctxA = { text: source, capsElsewhere, lowerAnywhere }, ctxB = { text: output, capsElsewhere, lowerAnywhere };
-  const passTok = spans => spans.map(s => ({ span: s, toks: tokenize(s.text, s.start) }));
-  const aPass = passTok(originals), bPass = passTok(rewrites);
-  const elsewhere = (passes, exceptId, keys) => {
-    for (const p of passes) {
-      if (p.span.id === exceptId) continue;
-      const hit = findSeq(p.toks, keys);
-      if (hit) return { passage: p.span.id, ...hit };
+
+  // Whole-text word indexes (occurrences never span two passages) and case-insensitive text.
+  const textIndex = (passes, all) => {
+    const index = wordIndex(all), passageOf = new Int32Array(all.length);
+    let at = 0;
+    passes.forEach((p, pi) => { for (let x = 0; x < p.toks.length; x++) passageOf[at++] = pi; });
+    return { index, passageOf, passes };
+  };
+  const sideA = { text: source, all: allA, words: textIndex(aPass, allA), low: null };
+  const sideB = { text: output, all: allB, words: textIndex(bPass, allB), low: null };
+  const lowOf = side => (side.low ||= lowerMap(side.text));
+  // First whole-word occurrence of `keys` in the other text outside passage `exceptId`.
+  const wordElsewhere = (side, keys, exceptId) => {
+    const w = side.words;
+    for (const i of occurrences(w.index, keys)) {
+      const p = w.passageOf[i];
+      if (w.passageOf[i + keys.length - 1] !== p || w.passes[p].span.id === exceptId) continue;
+      return { passage: w.passes[p].span.id, s: side.all[i].s, e: side.all[i + keys.length - 1].e, text: side.text.slice(side.all[i].s, side.all[i + keys.length - 1].e) };
     }
     return null;
+  };
+  // First case-insensitive occurrence of `str` in the other text, with the words around it.
+  const insideMemo = new Map();
+  const textInside = (side, str) => {
+    const id = (side === sideA ? 'a' : 'b') + '\u0000' + str;
+    if (insideMemo.has(id)) return insideMemo.get(id);
+    const { lower, map } = lowOf(side);
+    const needle = lowerChars(str);
+    const at = needle ? lower.indexOf(needle) : -1;
+    let found = null;
+    if (at >= 0) {
+      const s = map[at], e = map[at + needle.length];
+      found = { s, e, around: surrounding(side, s, e) };
+    }
+    insideMemo.set(id, found);
+    return found;
+  };
+  const surrounding = (side, s, e) => {
+    // The whole words that the match [s, e) touches, or the match widened to spaces.
+    const toks = side.all;
+    let lo = 0, hi = toks.length;
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (toks[mid].e <= s) lo = mid + 1; else hi = mid; }
+    let from = s, to = e, touched = false;
+    for (let i = lo; i < toks.length && toks[i].s < e; i++) { from = Math.min(from, toks[i].s); to = Math.max(to, toks[i].e); touched = true; }
+    if (!touched) {
+      while (from > 0 && !/\s/.test(side.text[from - 1])) from--;
+      while (to < side.text.length && !/\s/.test(side.text[to])) to++;
+    }
+    return { s: from, e: to, text: side.text.slice(from, to) };
   };
 
   const out = [];
   for (const row of rows) {
     const entry = { row, kind: row.kind, a: row.source, b: row.output, notes: [], inBoth: [], alsoMarked: [], ops: null,
-      aToks: [], bToks: [], sameWords: false, tooLong: false };
-    const A = row.source ? detectItems(row.source.text, row.source.start, ctxA) : { toks: [], items: [] };
-    const B = row.output ? detectItems(row.output.text, row.output.start, ctxB) : { toks: [], items: [] };
-    entry.aToks = A.toks; entry.bToks = B.toks;
-    if (row.kind === 'verbatim') { out.push(entry); continue; }
+      aToks: row.source ? tokensOf(row.source) : [], bToks: row.output ? tokensOf(row.output) : [], sameWords: false, over: null };
+    out.push(entry);
+    if (row.kind === 'verbatim') continue;
+    const A = row.source ? detectItems(row.source.text, row.source.start, ctxA, entry.aToks) : { toks: [], items: [] };
+    const B = row.output ? detectItems(row.output.text, row.output.start, ctxB, entry.bToks) : { toks: [], items: [] };
     const paired = Boolean(row.source && row.output);
-
-    const ops = paired ? diffTokens(A.toks, B.toks) : null;
+    let ops = null;
+    if (paired) {
+      const diff = diffTokens(A.toks, B.toks);
+      if (!diff.ops) { entry.over = { limit: diff.limit }; continue; } // too many differences: shown whole, no notes
+      ops = diff.ops;
+    }
     entry.ops = ops;
-    entry.tooLong = paired && !ops;
     entry.sameWords = Boolean(ops) && ops.every(o => o.op === 'eq');
+    const aIdx = wordIndex(A.toks), bIdx = wordIndex(B.toks);
+
     const aHunk = new Map(), bHunk = new Map(), aPos = new Map(), bPos = new Map();
+    const bOfA = new Int32Array(A.toks.length).fill(-1), aOfB = new Int32Array(B.toks.length).fill(-1);
     if (ops) ops.forEach((o, idx) => {
       if (o.a !== undefined) { aPos.set(o.a, idx); if (o.op === 'del') aHunk.set(o.a, o.hunk); }
       if (o.b !== undefined) { bPos.set(o.b, idx); if (o.op === 'ins') bHunk.set(o.b, o.hunk); }
+      if (o.op === 'eq') { bOfA[o.a] = o.b; aOfB[o.b] = o.a; }
     });
     else { A.toks.forEach((_, i) => aPos.set(i, i)); B.toks.forEach((_, i) => bPos.set(i, i)); }
     const range = it => Array.from({ length: it.tj - it.ti }, (_, n) => it.ti + n);
     const hunksOf = (it, map) => new Set(range(it).map(i => map.get(i)).filter(h => h !== undefined));
     const posOf = (it, map) => Math.min(...range(it).map(i => map.get(i)));
     const footprint = (it, map) => { const v = range(it).map(i => map.get(i)); return [Math.min(...v), Math.max(...v)]; };
+    const aligned = (it, map) => {
+      const first = map[it.ti];
+      if (first < 0) return null;
+      for (let x = it.ti + 1; x < it.tj; x++) if (map[x] !== first + (x - it.ti)) return null;
+      return [first, first + (it.tj - it.ti)];
+    };
+    const spanOf = (toks, text, i, j) => ({ ti: i, tj: j, s: toks[i].s, e: toks[j - 1].e, text: text.slice(toks[i].s, toks[j - 1].e), key: toks.slice(i, j).map(t => t.k).join(' ') });
 
-    // 1. In both: the item's token-key sequence occurs in the paired passage,
-    //    multiset-counted (a third "not" matches only if the other passage has three).
-    const seen = new Map();
-    const inBoth = (it, otherToks, side) => {
-      const id = side + '|' + it.kind + '|' + it.key;
-      const used = seen.get(id) || 0;
-      if (used < countSeq(otherToks, it.key.split(' '))) { seen.set(id, used + 1); return true; }
-      return false;
-    };
-    const aLeft = [], bLeft = [];
-    for (const it of A.items) (row.output && inBoth(it, B.toks, 'a') ? (it.state = 'both') : aLeft.push(it));
-    const bothKeys = new Map();
-    A.items.filter(it => it.state === 'both').forEach(it => bothKeys.set(it.kind + '|' + it.key, (bothKeys.get(it.kind + '|' + it.key) || 0) + 1));
-    for (const it of B.items) {
-      if (row.source && inBoth(it, A.toks, 'b')) {
-        it.state = 'both';
-        const k = it.kind + '|' + it.key;
-        if (bothKeys.get(k)) { bothKeys.set(k, bothKeys.get(k) - 1); it.dupOfA = true; }
-      } else bLeft.push(it);
-    }
-    // 2. Differs: same condition marker (passage level), else the same kind
-    //    sharing a diff hunk or overlapping op-index footprints.
-    for (const x of aLeft) {
-      if (x.pair) continue;
-      let y = null;
-      if (x.kind === 'condition') y = bLeft.find(b => !b.pair && b.kind === 'condition' && b.marker === x.marker);
-      if (!y && ops) {
-        const hx = hunksOf(x, aHunk), fx = footprint(x, aPos);
-        y = bLeft.find(b => {
-          if (b.pair || b.kind !== x.kind) return false;
-          const fb = footprint(b, bPos);
-          return [...hunksOf(b, bHunk)].some(h => hx.has(h)) || (fx[0] <= fb[1] && fb[0] <= fx[1]);
-        });
+    // 1. In both: the item's words are aligned, in order, with the same words in the paired passage.
+    if (ops) {
+      const bByRange = new Map(B.items.map(y => [`${y.ti}:${y.tj}`, y]));
+      const bCovered = new Uint8Array(B.toks.length);
+      for (const x of A.items) {
+        const r = aligned(x, bOfA);
+        if (!r) continue;
+        x.state = 'both';
+        const twin = bByRange.get(`${r[0]}:${r[1]}`);
+        if (twin && twin.kind === x.kind) twin.state = 'both';
+        for (let j = r[0]; j < r[1]; j++) bCovered[j] = 1;
+        entry.inBoth.push({ kind: x.kind, a: x, b: twin && twin.kind === x.kind ? twin : spanOf(B.toks, output, r[0], r[1]) });
       }
-      if (y) { x.pair = y; y.pair = x; x.state = y.state = 'differs'; }
+      for (const y of B.items) {
+        if (y.state) continue;
+        const r = aligned(y, aOfB);
+        if (!r) continue;
+        y.state = 'both';
+        if (range(y).every(j => bCovered[j])) continue; // already on an original item's line
+        entry.inBoth.push({ kind: y.kind, a: spanOf(A.toks, source, r[0], r[1]), b: y });
+      }
     }
-    // 3. One-sided items. A string that is in the paired passage, only fewer
-    //    times, is stated with both counts. Structural single words (negation,
-    //    modal verb, "only") recur everywhere, so they are compared within the
-    //    passage pair only; every other string is searched in the whole other text.
+    // Words already shown as one end of a Moved note are not noted again.
+    const claimed = { a: new Uint8Array(A.toks.length), b: new Uint8Array(B.toks.length) };
+    const claim = (side, r) => claimed[side].fill(1, r.ti, r.tj);
+    const allClaimed = (side, from, to) => { for (let i = from; i < to; i++) if (!claimed[side][i]) return false; return true; };
+    const noneClaimed = (side, from, to) => { for (let i = from; i < to; i++) if (claimed[side][i]) return false; return true; };
+    // 2. Moved: the same words (same kind) in both passages, not aligned.
+    const ua = A.items.filter(x => !x.state), ub = B.items.filter(y => !y.state);
+    if (paired) {
+      const queue = new Map();
+      for (const y of ub) { const id = y.kind + '|' + y.key; if (!queue.has(id)) queue.set(id, []); queue.get(id).push(y); }
+      for (const x of ua) {
+        const q = queue.get(x.kind + '|' + x.key);
+        const y = q && q.find(c => !c.state);
+        if (y) { x.state = y.state = 'moved'; x.pair = y; y.pair = x; claim('a', x); claim('b', y); }
+      }
+    }
+    // 3. Differs: same condition marker (passage level), else the same kind
+    //    sharing a diff hunk or overlapping op-index footprints.
+    if (paired) {
+      const left = ub.filter(y => !y.state);
+      const byMarker = new Map(), byHunk = new Map();
+      left.forEach((y, order) => {
+        y.order = order;
+        if (y.kind === 'condition') { if (!byMarker.has(y.marker)) byMarker.set(y.marker, []); byMarker.get(y.marker).push(y); }
+        for (const h of hunksOf(y, bHunk)) { if (!byHunk.has(h)) byHunk.set(h, []); byHunk.get(h).push(y); }
+        y.fp = footprint(y, bPos);
+      });
+      const byStartFp = [...left].sort((p, q) => p.fp[0] - q.fp[0]);
+      const maxSpan = Math.max(0, ...left.map(y => y.fp[1] - y.fp[0]));
+      for (const x of ua) {
+        if (x.state) continue;
+        let y = null;
+        if (x.kind === 'condition') y = (byMarker.get(x.marker) || []).find(b => !b.state) || null;
+        if (!y) {
+          const fx = footprint(x, aPos);
+          const candidates = new Set();
+          for (const h of hunksOf(x, aHunk)) for (const b of byHunk.get(h) || []) candidates.add(b);
+          let lo = 0, hi = byStartFp.length;
+          while (lo < hi) { const mid = (lo + hi) >> 1; if (byStartFp[mid].fp[0] < fx[0] - maxSpan) lo = mid + 1; else hi = mid; }
+          for (let i = lo; i < byStartFp.length && byStartFp[i].fp[0] <= fx[1]; i++) if (byStartFp[i].fp[1] >= fx[0]) candidates.add(byStartFp[i]);
+          for (const b of candidates) if (!b.state && b.kind === x.kind && (!y || b.order < y.order)) y = b;
+        }
+        if (y) { x.pair = y; y.pair = x; x.state = y.state = 'differs'; }
+      }
+    }
+    // 4. One-sided items: say only what the texts establish.
     const structural = it => it.kind === 'negation' || it.kind === 'modal' || (it.kind === 'condition' && it.tj - it.ti === 1);
-    const settle = (it, ownToks, otherToks, hasOther, otherPasses, otherId, state) => {
+    const settle = (it, own, other, otherIdx, otherSpan, state) => {
       const keys = it.key.split(' ');
-      const inPair = hasOther ? countSeq(otherToks, keys) : 0;
-      if (inPair > 0) { it.state = state; it.scope = 'count'; it.counts = [countSeq(ownToks, keys), inPair]; it.where = null; return; }
-      const hit = structural(it) ? null : elsewhere(otherPasses, otherId, keys);
-      it.state = hit ? 'moved' : state; it.where = hit; it.scope = structural(it) ? 'passage' : 'text';
+      if (otherSpan) {
+        const found = occurrences(otherIdx, keys), mine = occurrences(own, keys).length;
+        const ownSide = state === 'a-only' ? 'a' : 'b', otherSide = ownSide === 'a' ? 'b' : 'a';
+        if (found.length >= mine && found.length) {
+          // The paired passage has these words at least as often: in both, at another place.
+          // Words already one end of another Moved note are covered by that note.
+          if (allClaimed(ownSide, it.ti, it.tj)) { it.state = 'moved'; it.covered = true; return; }
+          const map = state === 'a-only' ? bOfA : aOfB;
+          const free = j => noneClaimed(otherSide, j, j + keys.length);
+          const at = noneClaimed(ownSide, it.ti, it.tj) ? (found.find(j => map[it.ti] !== j && free(j)) ?? found.find(free)) : undefined;
+          if (at !== undefined) {
+            it.state = 'moved'; it.pair = spanOf(other, state === 'a-only' ? output : source, at, at + keys.length);
+            claim(ownSide, it); claim(otherSide, it.pair);
+            return;
+          }
+        }
+        // Fewer occurrences there, or each one already the end of another Moved note: state the counts.
+        if (found.length) { it.state = state; it.scope = 'count'; it.counts = [mine, found.length]; return; }
+        if (structural(it)) {
+          it.state = state; it.scope = 'passage';
+          it.inside = insideSpan(state === 'a-only' ? sideB : sideA, otherSpan, it.text);
+          return;
+        }
+      } else if (structural(it)) { it.state = state; it.scope = 'unpaired'; return; }
+      const side = state === 'a-only' ? sideB : sideA;
+      const hit = wordElsewhere(side, keys, otherSpan?.id);
+      if (hit) { it.state = 'other'; it.scope = 'other'; it.where = hit; return; }
+      it.state = state;
+      const inside = textInside(side, it.text);
+      if (inside) { it.scope = 'inside'; it.inside = inside; } else it.scope = 'nowhere';
+      if (it.kind === 'condition' && it.tj - it.ti > 1) {
+        it.markerAt = wordElsewhere(side, it.marker.split(' '), null);
+      }
     };
-    for (const x of aLeft.filter(x => !x.pair)) settle(x, A.toks, B.toks, Boolean(row.output), bPass, row.output?.id, 'a-only');
-    for (const y of bLeft.filter(y => !y.pair)) settle(y, B.toks, A.toks, Boolean(row.source), aPass, row.source?.id, 'b-only');
-    // 4. Fold items nested inside a one-sided condition clause with the same state.
+    // The first case-insensitive occurrence of `str` inside one passage, with the words around it.
+    function insideSpan(side, span, str) {
+      const lowered = lowerMap(span.text);
+      const at = lowered.lower.indexOf(lowerChars(str));
+      if (at < 0) return null;
+      const s = span.start + lowered.map[at], e = span.start + lowered.map[at + lowerChars(str).length];
+      return { s, e, around: surrounding(side, s, e) };
+    }
+    for (const x of A.items) if (!x.state) settle(x, aIdx, B.toks, bIdx, row.output, 'a-only');
+    for (const y of B.items) if (!y.state) settle(y, bIdx, A.toks, aIdx, row.source, 'b-only');
+    // 5. Fold items nested inside a one-sided condition clause with the same state.
     const fold = items => {
-      for (const c of items.filter(c => c.kind === 'condition' && c.tj - c.ti > 1 && (c.state === 'a-only' || c.state === 'b-only' || c.state === 'moved'))) {
-        for (const it of items) if (it !== c && !it.foldedInto && it.ti >= c.ti && it.tj <= c.tj && it.state === c.state) { it.foldedInto = c; (c.includes ||= []).push(it); }
+      const sorted = [...items].sort((p, q) => p.ti - q.ti);
+      for (const c of sorted) {
+        if (c.foldedInto || c.kind !== 'condition' || c.tj - c.ti <= 1 || !['a-only', 'b-only', 'other'].includes(c.state)) continue;
+        let lo = 0, hi = sorted.length;
+        while (lo < hi) { const mid = (lo + hi) >> 1; if (sorted[mid].ti < c.ti) lo = mid + 1; else hi = mid; }
+        for (let i = lo; i < sorted.length && sorted[i].ti < c.tj; i++) {
+          const it = sorted[i];
+          if (it !== c && !it.foldedInto && it.tj <= c.tj && it.state === c.state) { it.foldedInto = c; (c.includes ||= []).push(it); }
+        }
       }
     };
     fold(A.items); fold(B.items);
 
     // Notes from items.
-    const covered = { a: new Set(), b: new Set() };
-    const cover = (side, it) => { for (let x = it.ti; x < it.tj; x++) covered[side].add(x); };
-    A.items.forEach(it => cover('a', it)); B.items.forEach(it => cover('b', it));
+    const covered = { a: new Uint8Array(A.toks.length), b: new Uint8Array(B.toks.length) };
+    A.items.forEach(it => covered.a.fill(1, it.ti, it.tj)); B.items.forEach(it => covered.b.fill(1, it.ti, it.tj));
+    const oneSidedNote = (it, side) => ({ kind: it.kind, state: it.state, a: side === 'a' ? it : null, b: side === 'b' ? it : null,
+      where: it.where, scope: it.scope, counts: it.counts, inside: it.inside, markerAt: it.markerAt,
+      pos: posOf(it, side === 'a' ? aPos : bPos) });
+    const done = new Set();
     for (const x of A.items) {
-      if (x.foldedInto) continue;
-      if (x.state === 'both') entry.inBoth.push({ kind: x.kind, a: x, b: null });
-      else if (x.state === 'differs') entry.notes.push({ kind: x.kind, state: 'differs', a: x, b: x.pair, pos: Math.min(posOf(x, aPos), posOf(x.pair, bPos)) });
-      else entry.notes.push({ kind: x.kind, state: x.state, a: x, b: null, where: x.where, scope: x.scope, counts: x.counts, pos: posOf(x, aPos) });
+      if (x.foldedInto || x.state === 'both' || x.covered) continue;
+      if (x.state === 'differs' || x.state === 'moved') {
+        done.add(x.pair);
+        entry.notes.push({ kind: x.kind, state: x.state, a: x, b: x.pair, pos: Math.min(posOf(x, aPos), posOf(x.pair, bPos)) });
+      } else entry.notes.push(oneSidedNote(x, 'a'));
     }
     for (const y of B.items) {
-      if (y.foldedInto || y.state === 'differs') continue;
-      if (y.state === 'both') {
-        // The same string counted from the original side: link this occurrence
-        // to that line instead of listing it twice.
-        const twin = y.dupOfA && entry.inBoth.find(ib => ib.a && !ib.b && ib.kind === y.kind && ib.a.key === y.key);
-        if (twin) twin.b = y;
-        else if (!y.dupOfA) entry.inBoth.push({ kind: y.kind, a: null, b: y });
-      } else entry.notes.push({ kind: y.kind, state: y.state, a: null, b: y, where: y.where, scope: y.scope, counts: y.counts, pos: posOf(y, bPos) });
+      if (y.foldedInto || y.state === 'both' || y.covered || done.has(y)) continue;
+      if (y.state === 'moved') entry.notes.push({ kind: y.kind, state: 'moved', a: y.pair, b: y, pos: Math.min(posOf(y.pair, aPos), posOf(y, bPos)) });
+      else if (y.state !== 'differs') entry.notes.push(oneSidedNote(y, 'b'));
     }
 
-    // Wording notes: per hunk, the changed tokens not covered by an item,
-    // split into contiguous runs and trimmed of common words at each end.
-    const toRun = (g, toks, text) => ({ ti: g[0], tj: g[g.length - 1] + 1, s: toks[g[0]].s, e: toks[g[g.length - 1]].e,
-      text: text.slice(toks[g[0]].s, toks[g[g.length - 1]].e), key: g.map(i => toks[i].k).join(' ') });
+    // Wording: per hunk, the changed words not covered by an item, split into
+    // runs and trimmed of common words at each end.
+    const toRun = (g, toks, text) => ({ ...spanOf(toks, text, g[0], g[g.length - 1] + 1) });
     const groupsOf = idxs => {
       const groups = [];
       for (const i of idxs) { const g = groups[groups.length - 1]; if (g && g[g.length - 1] === i - 1) g.push(i); else groups.push([i]); }
       return groups;
     };
-    const wordSeen = new Map();
-    // A one-sided run is split three ways: in the paired passage at least as
-    // often (moved within the passage: listed as In both), in the paired
-    // passage fewer times (a count statement), or absent from the pair.
-    const oneSided = (runs, side, pos) => {
-      const own = side === 'a' ? A.toks : B.toks, other = side === 'a' ? B.toks : A.toks;
-      const hasOther = side === 'a' ? Boolean(row.output) : Boolean(row.source);
-      const free = [];
-      for (const r of runs) {
-        const keys = r.key.split(' ');
-        const inPair = hasOther ? countSeq(other, keys) : 0;
-        const mine = countSeq(own, keys);
-        const id = side + '|' + r.key;
-        const used = wordSeen.get(id) || 0;
-        if (inPair > 0 && used < inPair && inPair >= mine) {
-          wordSeen.set(id, used + 1);
-          // A reorder shows up as a deletion in one hunk and an insertion in
-          // another: pair the two runs on one In both line.
-          const twin = entry.inBoth.find(ib => ib.kind === 'wording' && ib.pending === (side === 'a' ? 'a' : 'b') && ib[side === 'a' ? 'b' : 'a'].key === r.key);
-          if (twin) { twin[side] = r; delete twin.pending; delete twin[side === 'a' ? 'aSpan' : 'bSpan']; continue; }
-          const span = findSeq(other, keys);
-          entry.inBoth.push(side === 'a' ? { kind: 'wording', a: r, b: null, bSpan: span, pending: 'b' } : { kind: 'wording', a: null, b: r, aSpan: span, pending: 'a' });
-        } else if (inPair > 0) {
-          const note = { kind: 'wording', state: side === 'a' ? 'a-only' : 'b-only', aRuns: side === 'a' ? [r] : [], bRuns: side === 'b' ? [r] : [],
-            pos: pos(side, r), scope: 'count', counts: [mine, inPair] };
-          entry.notes.push(note);
-        } else free.push(r);
-      }
-      if (!free.length) return;
-      const otherPasses = side === 'a' ? bPass : aPass, otherId = side === 'a' ? row.output?.id : row.source?.id;
-      const hits = free.map(r => elsewhere(otherPasses, otherId, r.key.split(' ')));
-      const absent = free.filter((_, i) => !hits[i]);
-      free.forEach((r, i) => {
-        if (!hits[i]) return;
-        entry.notes.push({ kind: 'wording', state: 'moved', aRuns: side === 'a' ? [r] : [], bRuns: side === 'b' ? [r] : [],
-          pos: pos(side, r), scope: 'text', where: hits[i] });
-      });
-      if (absent.length) entry.notes.push({ kind: 'wording', state: side === 'a' ? 'a-only' : 'b-only', aRuns: side === 'a' ? absent : [],
-        bRuns: side === 'b' ? absent : [], pos: Math.min(...absent.map(r => pos(side, r))), scope: 'text' });
-    };
-    const posRun = (side, r) => (side === 'a' ? aPos : bPos).get(r.ti);
     const trimmed = (idxs, toks, text, side, keepAlso) => {
       const kept = [];
       for (const g of groupsOf(idxs)) {
         let s = 0, e = g.length;
-        while (s < e && STOP.has(toks[g[s]].k)) { if (keepAlso) entry.alsoMarked.push({ side, tok: toks[g[s]] }); s++; }
+        while (s < e && STOP.has(toks[g[s]].k)) { if (keepAlso) entry.alsoMarked.push({ side, i: g[s], tok: toks[g[s]] }); s++; }
         const tail = [];
-        while (e > s && STOP.has(toks[g[e - 1]].k)) { e--; if (keepAlso) tail.unshift({ side, tok: toks[g[e]] }); }
+        while (e > s && STOP.has(toks[g[e - 1]].k)) { e--; if (keepAlso) tail.unshift({ side, i: g[e], tok: toks[g[e]] }); }
         if (s < e) kept.push(toRun(g.slice(s, e), toks, text));
         if (keepAlso) entry.alsoMarked.push(...tail);
       }
       return kept;
+    };
+    const runPos = (side, r) => (side === 'a' ? aPos : bPos).get(r.ti);
+    const settleRun = (r, side) => {
+      // One-sided wording: the same questions as for items, for a run of words.
+      if (allClaimed(side, r.ti, r.tj)) return null;
+      const keys = r.key.split(' ');
+      const own = side === 'a' ? aIdx : bIdx, otherIdx = side === 'a' ? bIdx : aIdx;
+      const otherSpan = side === 'a' ? row.output : row.source;
+      const state = side === 'a' ? 'a-only' : 'b-only';
+      const note = { kind: 'wording', aRuns: side === 'a' ? [r] : [], bRuns: side === 'b' ? [r] : [], pos: runPos(side, r) };
+      if (otherSpan) {
+        const found = occurrences(otherIdx, keys), mine = occurrences(own, keys).length;
+        const otherSide = side === 'a' ? 'b' : 'a';
+        // Moved only when both ends are free: a word is one end of at most one Moved note.
+        const at = found.length >= mine && noneClaimed(side, r.ti, r.tj) ? found.find(j => noneClaimed(otherSide, j, j + keys.length)) : undefined;
+        if (at !== undefined) {
+          const otherToks = side === 'a' ? B.toks : A.toks;
+          const twin = spanOf(otherToks, side === 'a' ? output : source, at, at + keys.length);
+          claim(side, r); claim(otherSide, twin);
+          return { kind: 'wording', state: 'moved', aRuns: side === 'a' ? [r] : [twin], bRuns: side === 'b' ? [r] : [twin], pos: note.pos };
+        }
+        if (found.length) return { ...note, state, scope: 'count', counts: [mine, found.length] };
+      }
+      const other = side === 'a' ? sideB : sideA;
+      const hit = wordElsewhere(other, keys, otherSpan?.id);
+      if (hit) return { ...note, state: 'other', scope: 'other', where: hit };
+      const inside = textInside(other, r.text);
+      return inside ? { ...note, state, scope: 'inside', inside } : { ...note, state, scope: 'nowhere' };
     };
     if (ops) {
       const hunks = new Map();
       for (const o of ops) {
         if (o.op === 'eq') continue;
         const h = hunks.get(o.hunk) || { a: [], b: [] };
-        if (o.op === 'del' && !covered.a.has(o.a)) h.a.push(o.a);
-        if (o.op === 'ins' && !covered.b.has(o.b)) h.b.push(o.b);
+        if (o.op === 'del' && !covered.a[o.a]) h.a.push(o.a);
+        if (o.op === 'ins' && !covered.b[o.b]) h.b.push(o.b);
         hunks.set(o.hunk, h);
       }
-      for (const [, h] of hunks) {
-        const aRuns = trimmed(h.a, A.toks, source, 'a', true), bRuns = trimmed(h.b, B.toks, output, 'b', true);
-        if (!aRuns.length && !bRuns.length) continue;
-        if (aRuns.length && bRuns.length) {
-          const pos = Math.min(...aRuns.map(r => aPos.get(r.ti)), ...bRuns.map(r => bPos.get(r.ti)));
-          entry.notes.push({ kind: 'wording', state: 'differs', aRuns, bRuns, pos, scope: 'text' });
-        } else if (aRuns.length) oneSided(aRuns, 'a', posRun);
-        else oneSided(bRuns, 'b', posRun);
+      const runs = [...hunks].map(([id, h]) => ({ id, a: trimmed(h.a, A.toks, source, 'a', true), b: trimmed(h.b, B.toks, output, 'b', true) }));
+      // Moved wording: the same run of words deleted in one place and inserted in another.
+      const inserted = new Map();
+      for (const h of runs) for (const r of h.b) { if (!inserted.has(r.key)) inserted.set(r.key, []); inserted.get(r.key).push({ h, r }); }
+      for (const h of runs) {
+        h.a = h.a.filter(r => {
+          const twin = (inserted.get(r.key) || []).find(c => !c.used && c.h !== h);
+          if (!twin) return true;
+          twin.used = true;
+          claim('a', r); claim('b', twin.r);
+          entry.notes.push({ kind: 'wording', state: 'moved', aRuns: [r], bRuns: [twin.r], pos: Math.min(runPos('a', r), runPos('b', twin.r)) });
+          return false;
+        });
       }
-      entry.alsoMarked.sort((x, y) => (x.side === 'a' ? aPos.get(A.toks.indexOf(x.tok)) : bPos.get(B.toks.indexOf(x.tok))) -
-        (y.side === 'a' ? aPos.get(A.toks.indexOf(y.tok)) : bPos.get(B.toks.indexOf(y.tok))));
+      for (const h of runs) h.b = h.b.filter(r => !(inserted.get(r.key) || []).some(c => c.used && c.r === r));
+      const oneSided = [];
+      for (const h of runs) {
+        if (!h.a.length && !h.b.length) continue;
+        if (h.a.length && h.b.length) {
+          entry.notes.push({ kind: 'wording', state: 'differs', aRuns: h.a, bRuns: h.b, pos: Math.min(...h.a.map(r => runPos('a', r)), ...h.b.map(r => runPos('b', r))) });
+          continue;
+        }
+        const side = h.a.length ? 'a' : 'b';
+        for (const r of h.a.length ? h.a : h.b) oneSided.push({ r, side });
+      }
+      // Longest runs first, so a moved phrase is noted once, not word by word.
+      oneSided.sort((x, y) => (y.r.tj - y.r.ti) - (x.r.tj - x.r.ti) || runPos(x.side, x.r) - runPos(y.side, y.r));
+      for (const { r, side } of oneSided) { const n = settleRun(r, side); if (n) entry.notes.push(n); }
+      entry.alsoMarked.sort((x, y) => (x.side === 'a' ? aPos.get(x.i) : bPos.get(x.i)) - (y.side === 'a' ? aPos.get(y.i) : bPos.get(y.i)));
     } else if (!paired && !entry.notes.length) {
-      // An unpartnered passage with no noted item still differs as a whole:
-      // note its uncovered words so no passage is ever left without a note.
+      // An unpartnered passage always gets a note: its uncovered words, or its characters.
       const side = row.source ? 'a' : 'b', toks = side === 'a' ? A.toks : B.toks, text = side === 'a' ? source : output;
-      const idxs = toks.map((_, i) => i).filter(i => !covered[side].has(i));
-      let runs = trimmed(idxs, toks, text, side, false);
-      if (!runs.length && idxs.length) runs = groupsOf(idxs).map(g => toRun(g, toks, text));
-      if (runs.length) oneSided(runs, side, posRun);
+      const idxs = toks.map((_, i) => i).filter(i => !covered[side][i]);
+      let rs = trimmed(idxs, toks, text, side, false);
+      if (!rs.length && idxs.length) rs = groupsOf(idxs).map(g => toRun(g, toks, text));
+      for (const r of rs) { const n = settleRun(r, side); if (n) entry.notes.push(n); }
+      if (!toks.length) {
+        const span = side === 'a' ? row.source : row.output;
+        entry.notes.push({ kind: 'characters', state: side === 'a' ? 'a-only' : 'b-only', scope: 'here', pos: 0,
+          aChars: side === 'a' ? { s: span.start, e: span.end } : null, bChars: side === 'b' ? { s: span.start, e: span.end } : null });
+      }
+    }
+
+    // Characters: between aligned words, and inside aligned words, the exact characters that differ.
+    if (ops) {
+      let curA = row.source.start, curB = row.output.start, prevEq = true;
+      const charNote = (sa, ea, sb, eb, pos, kind) => {
+        const ga = source.slice(sa, ea), gb = output.slice(sb, eb);
+        if (ga === gb) return;
+        const { p, q } = sharedEnds(ga, gb);
+        const aChars = { s: sa + p, e: ea - q }, bChars = { s: sb + p, e: eb - q };
+        const hasA = aChars.e > aChars.s, hasB = bChars.e > bChars.s;
+        entry.notes.push({ kind: kind || 'characters', state: hasA && hasB ? 'differs' : hasA ? 'a-only' : 'b-only', scope: 'here', pos,
+          aChars: hasA ? aChars : null, bChars: hasB ? bChars : null, atA: sa + p, atB: sb + p });
+      };
+      ops.forEach((o, idx) => {
+        if (o.op === 'eq') {
+          const ta = A.toks[o.a], tb = B.toks[o.b];
+          if (prevEq) charNote(curA, ta.s, curB, tb.s, idx - 0.5);
+          if (ta.t !== tb.t) {
+            const kind = lowerChars(ta.t) === lowerChars(tb.t) ? 'case' : 'characters';
+            entry.notes.push({ kind, state: 'differs', scope: 'here', pos: idx, aChars: { s: ta.s, e: ta.e }, bChars: { s: tb.s, e: tb.e } });
+          }
+          curA = ta.e; curB = tb.e; prevEq = true;
+        } else {
+          if (o.op === 'del') curA = A.toks[o.a].e; else curB = B.toks[o.b].e;
+          prevEq = false;
+        }
+      });
+      if (prevEq) charNote(curA, row.source.end, curB, row.output.end, ops.length);
     }
     entry.notes.sort((x, y) => x.pos - y.pos);
-    entry.notes.forEach((n, i) => { n.letter = String.fromCharCode(97 + (i % 26)).repeat(1 + Math.floor(i / 26)); });
-    // In-both lines get the matching span in the other passage.
-    for (const ib of entry.inBoth) {
-      delete ib.pending;
-      if (ib.a && !ib.b && !ib.bSpan) ib.bSpan = findSeq(B.toks, ib.a.key.split(' '));
-      if (ib.b && !ib.a && !ib.aSpan) ib.aSpan = findSeq(A.toks, ib.b.key.split(' '));
-    }
-    out.push(entry);
+    entry.notes.forEach((n, i) => { n.letter = letterOf(i); });
   }
 
   // Display order: a rewrite-only passage sits after the passage holding the
@@ -482,77 +785,148 @@ export function buildEvidence(source, output, review) {
     e.number = `${base}.${n}`;
     display.splice(at + 1 + (n - 1), 0, e);
   }
-  return { passages: display };
+  return { passages: display, summary: evidenceSummary(display, source, output) };
 }
 
-// ---------------------------------------------------------------- labels and statements
+// ---------------------------------------------------------------- labels
+// One map for the state names, so they read the same everywhere on the page.
+export const STATE_ORDER = ['a-only', 'differs', 'b-only', 'other', 'moved', 'both'];
+export const STATE_LABEL = { 'a-only': 'Removed', differs: 'Differs', 'b-only': 'Added', other: 'Other passage', moved: 'Moved', both: 'In both' };
 export const KIND_LABEL = { number: 'Number', date: 'Date', duration: 'Duration', negation: 'Negation', modal: 'Modal verb',
-  condition: 'Condition or exception', name: 'Name', wording: 'Wording' };
-export const STATE_ORDER = ['a-only', 'differs', 'b-only', 'moved', 'both'];
-export const STATE_LABEL = { 'a-only': 'Original only', differs: 'Differs', 'b-only': 'Rewrite only', moved: 'Other passage', both: 'In both' };
+  condition: 'Condition or exception', name: 'Capitalized word', wording: 'Wording', characters: 'Characters', case: 'Capitalization' };
 const conditionLabel = it => (EXCEPTION_MARKERS.has(it.marker) ? 'Exception' : 'Condition');
 export function kindLabel(note) {
+  if (note.kind === 'name') return /\s/.test((note.a || note.b).text) ? 'Capitalized words' : 'Capitalized word';
   if (note.kind !== 'condition') return KIND_LABEL[note.kind];
   const a = note.a && conditionLabel(note.a), b = note.b && conditionLabel(note.b);
   return a && b && a !== b ? 'Condition or exception' : (a || b);
 }
-export const noteId = (passage, note) => `${passage.number}${note.letter}`;
-export const noteStrings = note => ({
-  aText: note.a ? note.a.text : (note.aRuns || []).map(r => r.text).join(' … '),
-  bText: note.b ? note.b.text : (note.bRuns || []).map(r => r.text).join(' … '),
-});
+export const inBothKindLabel = ib => (ib.kind === 'name' ? (/\s/.test(ib.a.text) ? 'Capitalized words' : 'Capitalized word') : KIND_LABEL[ib.kind]);
 const q = s => `“${s}”`;
 const times = n => (n === 1 ? 'once' : n === 2 ? 'twice' : `${n} times`);
 
-// The one sentence each note says. Every statement is a literal fact about
-// where a string occurs; none says whether a difference matters.
-export function noteStatement(note, passage) {
-  const { aText, bText } = noteStrings(note);
-  const unpaired = !passage.a || !passage.b;
+// How a run of characters reads: whitespace is named, anything else is quoted.
+export function charPhrase(s) {
+  if (/^\s+$/.test(s)) {
+    const n = s.length, kinds = new Set(s);
+    if (kinds.size === 1) {
+      const c = s[0];
+      const name = c === ' ' ? 'space' : c === '\t' ? 'tab' : c === ' ' ? 'non-breaking space' : c === '\n' ? 'line break' : 'whitespace character';
+      return n === 1 ? `a ${name}` : `${n} ${name === 'whitespace character' ? 'whitespace characters' : name + 's'}`;
+    }
+    return `${n} whitespace characters`;
+  }
+  return q(s);
+}
+
+export function noteStrings(note, source = '', output = '') {
+  const slice = (text, c) => (c ? text.slice(c.s, c.e) : '');
+  if (note.kind === 'characters' || note.kind === 'case') return { aText: slice(source, note.aChars), bText: slice(output, note.bChars) };
+  return {
+    aText: note.a ? note.a.text : (note.aRuns || []).map(r => r.text).join(' … '),
+    bText: note.b ? note.b.text : (note.bRuns || []).map(r => r.text).join(' … '),
+  };
+}
+
+// How two strings holding the same words compare, or null when they are identical.
+function sameWordsPhrase(a, b) {
+  if (a === b) return null;
+  const ta = tokenize(a), tb = tokenize(b);
+  const gaps = (str, toks) => toks.map((t, i) => str.slice(i ? toks[i - 1].e : 0, t.s)).concat(str.slice(toks.length ? toks[toks.length - 1].e : 0));
+  const wordsExact = ta.length === tb.length && ta.every((t, i) => t.t === tb[i].t);
+  const caseOnly = ta.length === tb.length && ta.every((t, i) => lowerChars(t.t) === lowerChars(tb[i].t));
+  const ga = gaps(a, ta), gb = gaps(b, tb);
+  const gapsSame = ga.length === gb.length && ga.every((g, i) => g === gb[i]);
+  const parts = [];
+  if (!wordsExact) parts.push(caseOnly ? 'different capitalization' : 'different capitalization or apostrophes');
+  if (!gapsSame) parts.push('different characters between the words');
+  return `the same words, with ${parts.join(' and ')}`;
+}
+
+// The one sentence each note says. Every statement is a literal fact about the
+// exact characters of the two texts; none says whether a difference matters.
+export function noteStatement(note, passage, source = '', output = '') {
+  const { aText, bText } = noteStrings(note, source, output);
+  const own = aText ? 'original' : 'rewrite', other = aText ? 'rewrite' : 'original';
+  const str = aText || bText;
+  const multi = (note.aRuns || note.bRuns || []).length > 1;
+  const quoted = multi ? (note.aRuns?.length ? note.aRuns : note.bRuns).map(r => q(r.text)).join(' and ') : q(str);
+  const verb = multi ? 'appear' : 'appears';
   const it = note.a || note.b;
-  if (note.state === 'differs') return `${q(aText)} in the original, ${q(bText)} in the rewrite.`;
+  if (note.kind === 'characters' || note.kind === 'case') {
+    if (note.state === 'differs') return `${charPhrase(aText)} in the original, ${charPhrase(bText)} in the rewrite.`;
+    if (passage && (!passage.a || !passage.b)) return `This ${own} passage has no partner in the ${other}.`;
+    return note.state === 'a-only' ? `The original has ${charPhrase(aText)} here; the rewrite does not.`
+      : `The rewrite has ${charPhrase(bText)} here; the original does not.`;
+  }
+  if (note.state === 'differs') {
+    const quote = (single, runs) => (runs && runs.length > 1 ? runs.map(r => q(r.text)).join(' and ') : q(single));
+    return `${quote(aText, note.aRuns)} in the original, ${quote(bText, note.bRuns)} in the rewrite.`;
+  }
   if (note.state === 'moved') {
-    const other = aText ? 'rewrite' : 'original';
+    const phrase = sameWordsPhrase(aText, bText);
+    return phrase ? `${q(aText)} in the original and ${q(bText)} in the rewrite, at different places: ${phrase}.`
+      : `${q(aText)} is in both passages, at different places.`;
+  }
+  if (note.state === 'other') {
     const k = passageNumber(note.where.passage);
-    return unpaired ? `This passage has no partner in the ${other}; the string appears in ${other} passage ${k}.`
-      : `Not in the paired ${other} passage; it appears in ${other} passage ${k}.`;
+    const found = note.where.text === str ? '' : `, as ${q(note.where.text)}`;
+    return passage && passage.a && passage.b
+      ? `${quoted} is not a word of the paired ${other} passage; ${other} passage ${k} has it${found}.`
+      : `This passage has no partner in the ${other}; ${other} passage ${k} has ${quoted}${found}.`;
   }
   if (note.scope === 'count') {
-    const [own, other] = note.counts;
-    return aText ? `Appears ${times(own)} in the original passage and ${times(other)} in the paired rewrite passage.`
-      : `Appears ${times(own)} in the rewrite passage and ${times(other)} in the paired original passage.`;
+    const [mine, theirs] = note.counts;
+    return `${quoted} ${verb} as a word ${times(mine)} in the ${own} passage and ${times(theirs)} in the paired ${other} passage, ignoring capitalization.`;
+  }
+  if (note.scope === 'unpaired') return `${quoted} is in an ${own} passage that has no partner in the ${other}.`;
+  if (note.scope === 'passage') {
+    return note.inside
+      ? `${quoted} is in the ${own} passage; the paired ${other} passage has it only within other words, first in ${q(note.inside.around.text)}.`
+      : `${quoted} is in the ${own} passage, not in the paired ${other} passage.`;
   }
   let say;
-  if (note.kind === 'condition' && it && it.tj - it.ti > 1) {
-    say = aText ? `The marker ${q(it.marker)} and the words after it appear in the original, nowhere in the rewrite.`
-      : `The marker ${q(it.marker)} and the words after it appear in the rewrite, nowhere in the original.`;
-    if (it.includes?.length) say += ` Includes ${it.includes.map(x => `the ${KIND_LABEL[x.kind].toLowerCase()} ${q(x.text)}`).join(', ')}.`;
-    return say;
+  const clause = note.kind === 'condition' && it && it.tj - it.ti > 1;
+  const subject = clause ? `The clause ${quoted}` : quoted;
+  if (note.scope === 'inside') {
+    say = `${subject} ${verb} in the ${own}; the ${other} has ${multi ? 'them' : 'it'} only within other words, first in ${q(note.inside.around.text)}.`;
+  } else {
+    say = `${subject} ${verb} in the ${own}, nowhere in the ${other}.`;
   }
-  if (note.scope === 'passage') {
-    return aText ? (unpaired ? 'In an original passage that has no partner in the rewrite.' : 'In the original passage, not in the paired rewrite passage.')
-      : (unpaired ? 'In a rewrite passage that has no partner in the original.' : 'In the rewrite passage, not in the paired original passage.');
-  }
-  const plural = note.kind === 'wording' && (/\s/.test(aText || bText) || (note.aRuns || note.bRuns || []).length > 1);
-  return aText ? `${plural ? 'These words appear' : 'Appears'} in the original, nowhere in the rewrite.`
-    : `${plural ? 'These words appear' : 'Appears'} in the rewrite, nowhere in the original.`;
+  if (clause && note.markerAt) say += ` The ${other} does have the word ${q(note.markerAt.text)}, in ${other} passage ${passageNumber(note.markerAt.passage)}.`;
+  if (it?.includes?.length) say += ` It includes ${it.includes.map(x => `the ${KIND_LABEL[x.kind].toLowerCase()} ${q(x.text)}`).join(', ')}.`;
+  return say;
+}
+
+// The line for words at the same place in both passages.
+export function inBothText(ib) {
+  const phrase = sameWordsPhrase(ib.a.text, ib.b.text);
+  return phrase ? `${q(ib.a.text)} in the original, ${q(ib.b.text)} in the rewrite: ${phrase}.` : q(ib.a.text);
 }
 
 // The exact spans a note points at: [{side: 'a'|'b', s, e, text}].
 export function noteSpans(note, source, output) {
   const spans = [];
   const add = (side, s, e) => spans.push({ side, s, e, text: (side === 'a' ? source : output).slice(s, e) });
+  if (note.kind === 'characters' || note.kind === 'case') {
+    if (note.aChars) add('a', note.aChars.s, note.aChars.e);
+    if (note.bChars) add('b', note.bChars.s, note.bChars.e);
+    return spans;
+  }
   if (note.a) add('a', note.a.s, note.a.e);
   for (const r of note.aRuns || []) add('a', r.s, r.e);
   if (note.b) add('b', note.b.s, note.b.e);
   for (const r of note.bRuns || []) add('b', r.s, r.e);
-  if (note.state === 'moved' && note.where) add(noteStrings(note).aText ? 'b' : 'a', note.where.s, note.where.e);
+  const otherSide = noteStrings(note).aText ? 'b' : 'a';
+  if (note.state === 'other' && note.where) add(otherSide, note.where.s, note.where.e);
+  if ((note.scope === 'inside' || note.scope === 'passage') && note.inside) add(otherSide, note.inside.around.s, note.inside.around.e);
+  if (note.markerAt) add(otherSide, note.markerAt.s, note.markerAt.e);
   return spans;
 }
 
 // Notes and in-both lines grouped by state, in display order (never ranked).
 export function groupByState(passages) {
-  const groups = { 'a-only': [], differs: [], 'b-only': [], moved: [], both: [] };
+  const groups = Object.fromEntries(STATE_ORDER.map(s => [s, []]));
   for (const p of passages) {
     for (const n of p.notes) groups[n.state].push({ passage: p, note: n });
     p.inBoth.forEach((ib, k) => groups.both.push({ passage: p, inBoth: ib, index: k }));
@@ -560,15 +934,27 @@ export function groupByState(passages) {
   return groups;
 }
 
-// Heading counts. N counts notes (In both excluded). "No literal differences"
-// is only claimed when every passage is paired and its words match in order.
-export function evidenceSummary(passages) {
+// ---------------------------------------------------------------- summary
+// Facts about the whole pair of texts, each one computed, never inferred.
+export function evidenceSummary(passages, source, output) {
   const notes = passages.reduce((s, p) => s + p.notes.length, 0);
-  const noDifferences = notes === 0 && passages.every(p => p.kind === 'verbatim' || (p.kind === 'changed-candidate' && p.sameWords));
+  const paired = passages.filter(p => p.a && p.b).sort((x, y) => x.a.start - y.a.start);
+  const orderDiffers = paired.some((p, i) => i > 0 && p.b.start < paired[i - 1].b.start);
+  const allPaired = passages.every(p => p.a && p.b);
+  let betweenDiffers = null; // known only when every passage has a partner and the order is the same
+  if (allPaired && !orderDiffers && typeof source === 'string' && typeof output === 'string') {
+    const gaps = (text, spans) => spans.map((sp, i) => text.slice(i ? spans[i - 1].end : 0, sp.start)).concat(text.slice(spans.length ? spans[spans.length - 1].end : 0));
+    const ga = gaps(source, paired.map(p => p.a)), gb = gaps(output, paired.map(p => p.b));
+    betweenDiffers = ga.length !== gb.length || ga.some((g, i) => g !== gb[i]);
+  }
   return {
     passages: passages.length,
     notes,
-    noDifferences,
+    identicalTexts: source === output,
+    alsoMarked: passages.reduce((s, p) => s + p.alsoMarked.length, 0),
+    over: passages.filter(p => p.over).map(p => ({ number: p.number, limit: p.over.limit })),
+    orderDiffers,
+    betweenDiffers,
     pairs: passages.filter(p => p.kind === 'changed-candidate').length,
     identical: passages.filter(p => p.kind === 'verbatim').length,
     originalOnly: passages.filter(p => p.kind === 'source-unmatched').length,
@@ -576,87 +962,211 @@ export function evidenceSummary(passages) {
   };
 }
 
+const plural = (n, one, many = one + 's') => `${n.toLocaleString('en-US')} ${n === 1 ? one : many}`;
+export const pluralOf = plural;
+
+// The sheet heading.
+export function headingText(s) {
+  const P = plural(s.passages, 'passage');
+  if (s.identicalTexts) return `${P} compared, no literal differences.`;
+  if (s.notes) return `${P} compared, ${plural(s.notes, 'difference')} noted.`;
+  return `${P} compared; the texts are not identical.`;
+}
+
+// Sentences about what differs outside the notes, each computed.
+export function summaryFacts(s) {
+  const facts = [];
+  if (s.identicalTexts) return ['The two texts are identical, character for character.'];
+  if (s.alsoMarked) facts.push(`${plural(s.alsoMarked, 'common word')} ${s.alsoMarked === 1 ? 'is' : 'are'} also marked, without a note.`);
+  if (s.orderDiffers) facts.push('The rewrite has these passages in a different order.');
+  if (s.betweenDiffers) facts.push(s.notes || s.alsoMarked || s.over.length ? 'The spacing or line breaks between passages also differ.'
+    : 'Every passage is identical and in the same order; the texts differ only in the spacing or line breaks between passages.');
+  for (const o of s.over) facts.push(`Passage ${o.number}: more than ${plural(o.limit, 'word insertion or deletion', 'word insertions and deletions')} apart, so its differences are not marked one by one.`);
+  return facts;
+}
+
+// The message a passage shows above its notes, or null.
+export function passageMessage(p) {
+  if (p.kind === 'verbatim') return 'Identical text in both.';
+  if (p.over) return `Turning the original passage into the rewrite passage takes more than ${plural(p.over.limit, 'word insertion or deletion', 'word insertions and deletions')}, so the differences are not marked one by one. Both texts are shown in full.`;
+  if (p.sameWords) return 'The same words in the same order; the characters noted here differ.';
+  if (!p.notes.length && p.alsoMarked.length) return 'Only common words, and any characters marked next to them, differ here. They are marked in the passage without a note.';
+  return null;
+}
+
 // ---------------------------------------------------------------- blackline
-// The marked passage as plain data for the renderer. Segments:
-//   {t: 'plain', text}                      whole passage, no marks
-//   {t: 'gap', text}                        characters between tokens
-//   {t: 'eq', text, n}                      a token in both (n: note or in-both id, or null)
-//   {t: 'run', side: 'd'|'i', sub, parts}   a deletion or insertion run
-//       parts: {t: 'gap', text} | {t: 'mark', text, n}
-//   {t: 'ref', n, letter}                   a note letter after its last token
-// Gap text is never inside a mark, so no leading or trailing space is struck.
+// The marked passage as plain data for the renderer. Every character of both
+// passages appears exactly once, in order, on the side it belongs to:
+//   {t: 'text', text}                        characters of both texts
+//   {t: 'eq', text, n}                       a word of both texts (n: in-both id, or null)
+//   {t: 'run', side: 'd'|'i', sub, parts}    characters of one text only
+//       parts: {t: 'gap', text} (whitespace)
+//            | {t: 'mark', text, n, mv, ws}  a word or other characters (mv: moved; ws: spacing that differs)
+//            | {t: 'ref', n, letter}
+//   {t: 'ref', n, letter}                    a note letter after its last word
+//   {t: 'block', side: 'a'|'b', text}        a whole passage, unmarked
+// Joining text, eq and the 'd' runs gives the original passage exactly;
+// joining text, eq and the 'i' runs gives the rewrite passage exactly.
 export function blacklineSegments(passage, source, output) {
-  if (passage.kind === 'verbatim' || passage.sameWords || passage.tooLong) return [{ t: 'plain', text: (passage.b || passage.a).text }];
+  if (passage.kind === 'verbatim') return [{ t: 'text', text: passage.a.text }];
+  if (passage.over) return [{ t: 'block', side: 'a', text: passage.a.text }, { t: 'block', side: 'b', text: passage.b.text }];
   const pno = passage.number;
   const A = passage.aToks, B = passage.bToks;
-  const ops = passage.ops || (passage.a ? A.map((_, i) => ({ op: 'del', a: i })) : B.map((_, i) => ({ op: 'ins', b: i })));
-  const aNote = new Map(), bNote = new Map(), refAfter = new Map();
-  const opIndexA = new Map(), opIndexB = new Map();
-  ops.forEach((o, i) => { if (o.a !== undefined) opIndexA.set(o.a, i); if (o.b !== undefined) opIndexB.set(o.b, i); });
+  const opOfA = new Int32Array(A.length), opOfB = new Int32Array(B.length);
+  (passage.ops || []).forEach((o, idx) => { if (o.a !== undefined) opOfA[o.a] = idx; if (o.b !== undefined) opOfB[o.b] = idx; });
+  const aNote = new Map(), bNote = new Map(), moved = { a: new Set(), b: new Set() };
+  const refAt = new Map(); // "a:tokenIndex" or "b:tokenIndex" or "ca:offset"/"cb:offset" -> notes ending there
+  const addRef = (key, n) => refAt.set(key, [...(refAt.get(key) || []), n]);
   for (const n of passage.notes) {
     const id = `${pno}${n.letter}`;
+    if (n.kind === 'characters' || n.kind === 'case') {
+      // A character note's letter follows its last character on the rewrite side, else the original side.
+      if (n.bChars) addRef(`cb:${n.bChars.e}`, n); else addRef(`ca:${n.aChars.e}`, n);
+      if (n.aChars) aNote.set(`c:${n.aChars.s}`, id);
+      if (n.bChars) bNote.set(`c:${n.bChars.s}`, id);
+      continue;
+    }
     const ranges = [];
     if (n.a) ranges.push(['a', n.a.ti, n.a.tj]);
     if (n.b) ranges.push(['b', n.b.ti, n.b.tj]);
     for (const r of n.aRuns || []) ranges.push(['a', r.ti, r.tj]);
     for (const r of n.bRuns || []) ranges.push(['b', r.ti, r.tj]);
     for (const it of (n.a || n.b)?.includes || []) ranges.push([n.a ? 'a' : 'b', it.ti, it.tj]);
-    let last = -1;
-    for (const [side, i0, i1] of ranges) for (let i = i0; i < i1; i++) {
-      (side === 'a' ? aNote : bNote).set(i, id);
-      last = Math.max(last, side === 'a' ? opIndexA.get(i) : opIndexB.get(i));
+    let last = null, lastPos = -Infinity;
+    const posOf = (side, i) => (passage.ops ? (side === 'a' ? opOfA : opOfB)[i] : i);
+    for (const [side, i0, i1] of ranges) {
+      for (let i = i0; i < i1; i++) { (side === 'a' ? aNote : bNote).set(i, id); if (n.state === 'moved') moved[side].add(i); }
+      const p = posOf(side, i1 - 1);
+      if (p > lastPos) { lastPos = p; last = `${side}:${i1 - 1}`; }
     }
-    refAfter.set(last, [...(refAfter.get(last) || []), n]);
+    addRef(last, n);
   }
   passage.inBoth.forEach((ib, k) => {
     const id = `${pno}-both-${k}`;
-    if (ib.a) for (let i = ib.a.ti; i < ib.a.tj; i++) aNote.set(i, aNote.get(i) || id);
-    if (ib.b) for (let i = ib.b.ti; i < ib.b.tj; i++) bNote.set(i, bNote.get(i) || id);
+    for (let i = ib.a.ti; i < ib.a.tj; i++) if (!aNote.has(i)) aNote.set(i, id);
+    for (let i = ib.b.ti; i < ib.b.tj; i++) if (!bNote.has(i)) bNote.set(i, id);
   });
-  const gapBefore = (toks, i, text, pStart) => text.slice(i === 0 ? pStart : toks[i - 1].e, toks[i].s);
-  const keepTogether = text => (text.length <= 30 ? text.replace(/ /g, ' ') : text);
+
   const segs = [];
-  let run = null;
-  const refs = k => { for (const n of refAfter.get(k) || []) (run ? run.parts : segs).push({ t: 'ref', n: `${pno}${n.letter}`, letter: n.letter }); };
+  let drun = null, irun = null;
+  const refsFor = key => (refAt.get(key) || []).map(n => ({ t: 'ref', n: `${pno}${n.letter}`, letter: n.letter }));
+  const openD = () => {
+    if (!drun) {
+      drun = { t: 'run', side: 'd', sub: false, parts: [] };
+      const at = irun ? segs.indexOf(irun) : segs.length; // an original-side run always precedes its rewrite-side run
+      segs.splice(at, 0, drun);
+    }
+    return drun;
+  };
+  const openI = () => { if (!irun) { irun = { t: 'run', side: 'i', sub: false, parts: [] }; segs.push(irun); } return irun; };
+  const closeRuns = () => { if (drun) drun.sub = Boolean(irun); drun = irun = null; };
+  const put = (run, text, n = null, mv = false) => {
+    // Whitespace stays unmarked; any other characters are marked.
+    for (const piece of text.match(/\s+|\S+/g) || []) {
+      if (/^\s+$/.test(piece)) run.parts.push({ t: 'gap', text: piece });
+      else run.parts.push({ t: 'mark', text: piece, n, mv });
+    }
+  };
+  const charsInto = (run, from, to, text, side) => {
+    // Characters of one side between offsets, with any character-note refs and ids.
+    if (to <= from) return;
+    const id = (side === 'a' ? aNote : bNote).get(`c:${from}`) || null;
+    const chars = text.slice(from, to);
+    // Spacing that differs is drawn as a visible mark; other spacing stays plain.
+    if (id && /^\s+$/.test(chars)) run.parts.push({ t: 'mark', text: chars, n: id, mv: false, ws: true });
+    else put(run, chars, id);
+    run.parts.push(...refsFor(`${side === 'a' ? 'ca' : 'cb'}:${to}`));
+  };
+  const both = text => { if (text) segs.push({ t: 'text', text }); };
+
+  if (!passage.ops) {
+    // Unpartnered: the whole passage belongs to one side.
+    const side = passage.a ? 'a' : 'b', toks = side === 'a' ? A : B, span = side === 'a' ? passage.a : passage.b, text = side === 'a' ? source : output;
+    const run = side === 'a' ? openD() : openI();
+    const map = side === 'a' ? aNote : bNote;
+    let cur = span.start;
+    for (let i = 0; i < toks.length; i++) {
+      put(run, text.slice(cur, toks[i].s));
+      let j = i, word = toks[i].t;
+      const id = map.get(i) || null;
+      while (toks[j + 1] && (map.get(j + 1) || null) === id && text.slice(toks[j].e, toks[j + 1].s) === ' ' && !refAt.has(`${side}:${j}`)) { j++; word += ' ' + toks[j].t; }
+      run.parts.push({ t: 'mark', text: word, n: id, mv: false });
+      run.parts.push(...refsFor(`${side}:${j}`));
+      cur = toks[j].e; i = j;
+    }
+    charsInto(run, cur, span.end, text, side);
+    if (!toks.length) run.parts.push(...refsFor(`${side === 'a' ? 'ca' : 'cb'}:${span.end}`));
+    closeRuns();
+    return segs;
+  }
+
+  const ops = passage.ops;
+  const sharedTail = (x, y) => { const b1 = boundaries(x), b2 = boundaries(y); let t = commonSuffix(x, y, Math.min(x.length, y.length)); while (t > 0 && !(b1.has(x.length - t) && b2.has(y.length - t))) t--; return t; };
+  let curA = passage.a.start, curB = passage.b.start;
+  // Characters between two positions that are aligned on both sides.
+  const alignedGap = (ea, eb) => {
+    const ga = source.slice(curA, ea), gb = output.slice(curB, eb);
+    if (drun || irun) {
+      // After a one-sided run: the shared tail stays shared, the rest joins the run.
+      const tail = sharedTail(ga, gb);
+      if (ga.length > tail) charsInto(openD(), curA, ea - tail, source, 'a');
+      if (gb.length > tail) charsInto(openI(), curB, eb - tail, output, 'b');
+      closeRuns();
+      both(ga.slice(ga.length - tail));
+      return;
+    }
+    if (ga === gb) { both(ga); return; }
+    const { p, q: tail } = sharedEnds(ga, gb);
+    both(ga.slice(0, p));
+    if (ga.length - p - tail > 0) charsInto(openD(), curA + p, ea - tail, source, 'a');
+    if (gb.length - p - tail > 0) charsInto(openI(), curB + p, eb - tail, output, 'b');
+    closeRuns();
+    both(ga.slice(ga.length - tail));
+  };
   for (let k = 0; k < ops.length; k++) {
     const o = ops[k];
     if (o.op === 'eq') {
-      run = null;
-      segs.push({ t: 'gap', text: gapBefore(B, o.b, output, passage.b.start) });
-      segs.push({ t: 'eq', text: B[o.b].t, n: bNote.get(o.b) || aNote.get(o.a) || null });
-      refs(k);
+      const ta = A[o.a], tb = B[o.b];
+      alignedGap(ta.s, tb.s);
+      if (ta.t === tb.t) {
+        segs.push({ t: 'eq', text: tb.t, n: bNote.get(o.b) || aNote.get(o.a) || null });
+      } else {
+        charsInto(openD(), ta.s, ta.e, source, 'a');
+        charsInto(openI(), tb.s, tb.e, output, 'b');
+        closeRuns();
+      }
+      segs.push(...refsFor(`a:${o.a}`), ...refsFor(`b:${o.b}`));
+      curA = ta.e; curB = tb.e;
       continue;
     }
     const del = o.op === 'del';
-    const side = del ? 'd' : 'i';
-    const wasDel = run?.side === 'd';
-    if (run?.side !== side) {
-      let sub = false;
-      if (del) { const next = ops.slice(k).find(x => x.op !== 'del'); sub = Boolean(next && next.op === 'ins'); }
-      run = { t: 'run', side, sub, parts: [] };
-      segs.push(run);
-    }
-    const toks = del ? A : B, text = del ? source : output, span = del ? passage.a : passage.b, map = del ? aNote : bNote;
+    const toks = del ? A : B, text = del ? source : output, map = del ? aNote : bNote, side = del ? 'a' : 'b';
+    const run = del ? openD() : openI();
     const idx = del ? o.a : o.b;
-    const g = gapBefore(toks, idx, text, span.start);
-    // An insertion straight after a deletion at the passage start gets one
-    // space, so the two runs never read as one word ("mayYou").
-    const gapText = !del && g === '' && wasDel ? ' ' : g;
-    if (gapText) run.parts.push({ t: 'gap', text: gapText });
+    put(run, text.slice(del ? curA : curB, toks[idx].s));
     const id = map.get(idx) || null;
-    let j = k, word = toks[idx].t;
-    // Consecutive tokens of the same note, separated by one space, form one mark;
-    // in an unpartnered passage consecutive unnoted tokens are grouped too.
-    while (ops[j + 1] && ops[j + 1].op === o.op && map.get(del ? ops[j + 1].a : ops[j + 1].b) === (id ?? undefined) &&
-      (id || !passage.ops) && gapBefore(toks, del ? ops[j + 1].a : ops[j + 1].b, text, span.start) === ' ' && !refAfter.has(j)) {
-      j++; word += ' ' + toks[del ? ops[j].a : ops[j].b].t;
+    let j = k, word = toks[idx].t, last = idx;
+    // Consecutive words of the same note, one space apart, form one mark.
+    while (ops[j + 1] && ops[j + 1].op === o.op && id && map.get(del ? ops[j + 1].a : ops[j + 1].b) === id &&
+      text.slice(toks[last].e, toks[del ? ops[j + 1].a : ops[j + 1].b].s) === ' ' && !refAt.has(`${side}:${last}`)) {
+      j++; last = del ? ops[j].a : ops[j].b; word += ' ' + toks[last].t;
     }
-    run.parts.push({ t: 'mark', text: keepTogether(word), n: id });
-    refs(j);
+    run.parts.push({ t: 'mark', text: word, n: id, mv: moved[side].has(idx) });
+    run.parts.push(...refsFor(`${side}:${last}`));
+    if (del) curA = toks[last].e; else curB = toks[last].e;
     k = j;
   }
-  const [T, text, span] = passage.b ? [B, output, passage.b] : [A, source, passage.a];
-  const tail = text.slice(T.length ? T[T.length - 1].e : span.start, span.end);
-  if (tail) segs.push({ t: 'gap', text: tail });
+  alignedGap(passage.a.end, passage.b.end);
+  closeRuns();
   return segs;
+}
+
+// Join a passage as one view shows it: 'a' the original, 'b' the rewrite.
+export function viewText(segs, side) {
+  return segs.map(s => {
+    if (s.t === 'text' || s.t === 'eq') return s.text;
+    if (s.t === 'block') return s.side === side ? s.text : '';
+    if (s.t === 'run') return (s.side === 'd') === (side === 'a') ? s.parts.filter(p => p.t !== 'ref').map(p => p.text).join('') : '';
+    return '';
+  }).join('');
 }

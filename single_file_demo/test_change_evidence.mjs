@@ -1,14 +1,15 @@
 // Change evidence engine: the deterministic rules behind the review page's
-// notes. Ported from the design prototype's check (lease and refund examples,
-// splitter cases), plus the cases that keep every note statement literally true.
+// notes. The worked examples (lease and refund), the splitter cases, and the
+// cases that keep every statement literally true. test_evidence_oracle.mjs
+// checks the same statements independently over a fuzzed corpus.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { EXAMPLES, buildEvidence, evidenceSummary, blacklineSegments, noteStatement, noteStrings, noteSpans,
-  kindLabel, KIND_LABEL, STATE_LABEL, groupByState } from './change_evidence.js';
+import { EXAMPLES, buildEvidence, blacklineSegments, viewText, noteStatement, noteStrings, noteSpans, kindLabel,
+  inBothText, inBothKindLabel, headingText, summaryFacts, passageMessage, STATE_LABEL, groupByState, tokenize } from './change_evidence.js';
 import { compareTexts, sourceSpans, sourceSpansV2 } from './review_packet.js';
 
-const evidence = (a, b, method) => buildEvidence(a, b, compareTexts(a, b, method)).passages;
-const noteStringsOf = p => p.notes.map(n => noteStrings(n).aText || noteStrings(n).bText).join(' | ');
+const evidence = (a, b, method) => buildEvidence(a, b, compareTexts(a, b, method));
+const statements = (a, b) => evidence(a, b).passages.flatMap(p => p.notes.map(n => noteStatement(n, p, a, b)));
 
 // One line per passage and note, in the shape of the design spec's Appendix A.
 function lines(passages, source, output) {
@@ -16,36 +17,38 @@ function lines(passages, source, output) {
   for (const p of passages) {
     out.push(`${p.number} ${p.kind} A ${p.a ? `${p.a.id} ${p.a.start}-${p.a.end}` : '-'} | B ${p.b ? `${p.b.id} ${p.b.start}-${p.b.end}` : '-'}`);
     for (const n of p.notes) {
-      const { aText, bText } = noteStrings(n);
+      const { aText, bText } = noteStrings(n, source, output);
       const spans = noteSpans(n, source, output).map(s => `${s.side.toUpperCase()} ${s.s}-${s.e}`).join(' ');
       out.push(`  ${n.letter} ${kindLabel(n)} | ${STATE_LABEL[n.state]} | ${[aText, bText].filter(Boolean).join(' -> ')} | ${spans}`);
     }
-    for (const ib of p.inBoth) out.push(`  = ${KIND_LABEL[ib.kind]} ${(ib.a || ib.b).text}`);
+    for (const ib of p.inBoth) out.push(`  = ${inBothKindLabel(ib)} ${inBothText(ib)}`);
     if (p.alsoMarked.length) out.push(`  also: ${p.alsoMarked.map(m => m.tok.t).join(', ')}`);
   }
   return out;
 }
 
+// Appendix A of the design spec, with the state names that are true by
+// position (Removed, Added) and the honest kind label (Capitalized word).
 const LEASE = [
   '1 changed-candidate A s1 0-47 | B s1 0-27',
   '  a Modal verb | Differs | may -> can | A 6-9 B 6-9',
-  '  b Duration | Original only | 30 days | A 32-39',
-  '  c Wording | Original only | notice | A 40-46',
-  '  = Name Alice',
+  '  b Duration | Removed | 30 days | A 32-39',
+  '  c Wording | Removed | notice | A 40-46',
+  '  = Capitalized word “Alice”',
   '  also: with',
   '2 changed-candidate A s2 48-97 | B s2 28-54',
-  '  a Exception | Original only | unless rent is overdue | A 74-96',
+  '  a Exception | Removed | unless rent is overdue | A 74-96',
 ];
 
 const REFUND = [
   '1 changed-candidate A s1 0-81 | B s1 0-63',
-  '  a Wording | Original only | Customers | A 0-9',
+  '  a Wording | Removed | Customers | A 0-9',
   '  b Modal verb | Differs | may -> can | A 10-13 B 4-7',
   '  c Duration | Differs | 30 days -> 60 days | A 43-50 B 37-44',
-  '  d Wording | Original only | delivery | A 54-62',
+  '  d Wording | Removed | delivery | A 54-62',
   '  also: You, of',
   '2 changed-candidate A s2 82-141 | B s2 64-115',
-  '  a Negation | Original only | not | A 99-102',
+  '  a Negation | Removed | not | A 99-102',
   '  b Condition or exception | Differs | unless they arrive damaged -> if they arrive damaged | A 114-140 B 92-114',
   '3 changed-candidate A s3 142-216 | B s3 116-180',
   '  a Wording | Differs | issued -> usually go back | A 154-160 B 124-139',
@@ -53,63 +56,55 @@ const REFUND = [
   '  c Duration | Differs | 10 business days -> a few business days | A 199-215 B 160-179',
   '  also: are, the, your',
   '4 changed-candidate A s4 217-302 | B s4 181-212',
-  '  a Number | Original only | $8 | A 234-236',
-  '  b Exception | Original only | except where the return is caused by our error | A 255-301',
-  '  = Negation not',
+  '  a Number | Removed | $8 | A 234-236',
+  '  b Exception | Removed | except where the return is caused by our error | A 255-301',
+  '  = Negation “not”',
   '  also: of',
   '5 changed-candidate A s5 303-365 | B s5 213-267',
   '  a Date | Differs | March 1, 2026 -> March 2026 | A 324-337 B 234-244',
   '  b Wording | Differs | previous -> old | A 349-357 B 256-259',
   '5.1 output-unmatched A - | B s6 268-311',
-  '  a Name | Other passage | Northwind | B 301-310 A 366-375',
+  '  a Capitalized word | Other passage | Northwind | B 301-310 A 366-375',
   '6 source-unmatched A s6 366-421 | B -',
-  '  a Name | Original only | Northwind Outfitters | A 366-386',
-  '  b Modal verb | Original only | must | A 387-391',
-  '  c Number | Original only | over $200 | A 411-420',
+  '  a Capitalized words | Removed | Northwind Outfitters | A 366-386',
+  '  b Modal verb | Removed | must | A 387-391',
+  '  c Number | Removed | over $200 | A 411-420',
 ];
 
 test('lease example: the worked evidence, identical under both splitters', () => {
   const { source, output } = EXAMPLES.lease;
   for (const method of ['literal-spans-v1', 'literal-spans-v2']) {
-    const passages = evidence(source, output, method);
+    const { passages, summary } = evidence(source, output, method);
     assert.deepEqual(lines(passages, source, output), LEASE, method);
-    const summary = evidenceSummary(passages);
     assert.equal(summary.passages, 2);
     assert.equal(summary.notes, 4);
   }
-  const [p1, p2] = evidence(source, output);
-  assert.equal(p1.notes.map(n => n.letter).join(''), 'abc');
-  assert.equal(noteStatement(p1.notes[0], p1), '“may” in the original, “can” in the rewrite.');
-  assert.equal(noteStatement(p1.notes[1], p1), 'Appears in the original, nowhere in the rewrite.');
-  assert.equal(noteStatement(p2.notes[0], p2), 'The marker “unless” and the words after it appear in the original, nowhere in the rewrite.');
-  for (const p of [p1, p2]) for (const n of p.notes) {
-    for (const s of noteSpans(n, source, output)) {
-      assert.equal((s.side === 'a' ? source : output).slice(s.s, s.e), s.text, 'every span points at its exact characters');
-    }
-  }
+  const { passages: [p1, p2], summary } = evidence(source, output);
+  assert.equal(headingText(summary), '2 passages compared, 4 differences noted.');
+  assert.deepEqual(summaryFacts(summary), ['1 common word is also marked, without a note.']);
+  assert.equal(noteStatement(p1.notes[0], p1, source, output), '“may” in the original, “can” in the rewrite.');
+  assert.equal(noteStatement(p1.notes[1], p1, source, output), '“30 days” appears in the original, nowhere in the rewrite.');
+  assert.equal(noteStatement(p2.notes[0], p2, source, output), 'The clause “unless rent is overdue” appears in the original, nowhere in the rewrite.');
 });
 
 test('refund example: the worked evidence, identical under both splitters', () => {
   const { source, output } = EXAMPLES.refund;
   for (const method of ['literal-spans-v1', 'literal-spans-v2']) {
-    assert.deepEqual(lines(evidence(source, output, method), source, output), REFUND, method);
+    assert.deepEqual(lines(evidence(source, output, method).passages, source, output), REFUND, method);
   }
-  const passages = evidence(source, output);
-  const summary = evidenceSummary(passages);
-  assert.equal(summary.passages, 7);
+  const { passages, summary } = evidence(source, output);
   assert.equal(summary.notes, 17);
   const groups = groupByState(passages);
   assert.deepEqual(Object.fromEntries(Object.entries(groups).map(([k, v]) => [k, v.length])),
-    { 'a-only': 8, differs: 8, 'b-only': 0, moved: 1, both: 1 });
+    { 'a-only': 8, differs: 8, 'b-only': 0, other: 1, moved: 0, both: 1 });
   const p2 = passages.find(p => p.number === '2'), p51 = passages.find(p => p.number === '5.1'), p6 = passages.find(p => p.number === '6');
-  assert.equal(noteStatement(p2.notes[0], p2), 'In the original passage, not in the paired rewrite passage.');
-  assert.equal(noteStatement(p51.notes[0], p51), 'This passage has no partner in the original; the string appears in original passage 6.');
-  assert.equal(noteStatement(p6.notes[1], p6), 'In an original passage that has no partner in the rewrite.');
-  // Display order puts the rewrite-only passage after passage 5; review.rows keeps compareTexts order.
+  assert.equal(noteStatement(p2.notes[0], p2, source, output), '“not” is in the original passage, not in the paired rewrite passage.');
+  assert.equal(noteStatement(p51.notes[0], p51, source, output), 'This passage has no partner in the original; original passage 6 has “Northwind”.');
+  assert.equal(noteStatement(p6.notes[1], p6, source, output), '“must” is in an original passage that has no partner in the rewrite.');
   assert.deepEqual(passages.map(p => p.number), ['1', '2', '3', '4', '5', '5.1', '6']);
 });
 
-test('splitters: v2 fixes the measured v1 defects and agrees elsewhere', () => {
+test('splitters: v2 fixes the measured v1 defects, splits Chinese and Japanese sentences, and agrees elsewhere', () => {
   const cases = [
     ['Shipping costs $7.95 per order. Refunds follow.', 1, 2],
     ['Call Dr. Patel if a rash appears. Stop the tablets.', 3, 2],
@@ -117,6 +112,9 @@ test('splitters: v2 fixes the measured v1 defects and agrees elsewhere', () => {
     ['Take 3.5 mg daily. Stop if dizzy.', 1, 2],
     ['Made in the U.S. by Acme.', 1, 1],
     ['First line\nSecond line', 2, 2],
+    ['租金必须在30天内支付。押金可以退还。', 1, 2],
+    ['患者は1日3回服用してください！医師の指示がない限り、超えないでください。', 1, 2],
+    ['他说：“好的。”然后离开。', 1, 2],
   ];
   for (const [text, v1, v2] of cases) {
     assert.equal(sourceSpans(text).length, v1, `v1: ${text}`);
@@ -126,69 +124,114 @@ test('splitters: v2 fixes the measured v1 defects and agrees elsewhere', () => {
   for (const ex of Object.values(EXAMPLES)) {
     for (const text of [ex.source, ex.output]) assert.deepEqual(sourceSpans(text), sourceSpansV2(text), 'examples split identically');
   }
+  // Chinese passages pair by characters, so a one-character change still pairs.
+  assert.deepEqual(compareTexts('租金必须在30天内支付。', '租金必须在60天内支付。').rows.map(r => r.kind), ['changed-candidate']);
+  assert.deepEqual(tokenize('租金30天').map(t => t.t), ['租', '金', '30', '天']);
 });
 
-test('a reorder within a passage is listed as In both, never as missing', () => {
-  const a = 'Customers may return items within 30 days.', b = 'Within 30 days, customers may return items.';
-  const [p] = evidence(a, b);
-  assert.equal(p.notes.length, 0);
-  assert.deepEqual(p.inBoth.map(ib => (ib.a || ib.b).text.toLowerCase()).sort(), ['30 days', 'may', 'within']);
-  const within = p.inBoth.find(ib => ib.kind === 'wording');
-  assert.ok(within.a && within.b, 'both occurrences sit on one In both line');
+test('Read as Original and Read as Rewrite show each text exactly, character for character', () => {
+  const pairs = [
+    ['Keep the dose < 5 mg, taken daily by Alice.', 'Keep the dose > 5 mg taken daily by Bob.'],
+    ['On Tuesday, March 3, 2026, Mayor Okafor spoke.', 'Mayor Okafor spoke.'],
+    ['Alice may cancel the lease with 30 days notice.', 'Alice can cancel the lease.'],
+    ['A b c.', 'A  b\tc.'],
+  ];
+  for (const [a, b] of pairs) {
+    for (const p of evidence(a, b).passages) {
+      const segs = blacklineSegments(p, a, b);
+      assert.equal(viewText(segs, 'a'), p.a.text, `original of ${JSON.stringify(a)}`);
+      assert.equal(viewText(segs, 'b'), p.b.text, `rewrite of ${JSON.stringify(b)}`);
+    }
+  }
+});
+
+test('only character-identical texts are called identical; other character differences are noted', () => {
+  assert.equal(headingText(evidence('Alice may cancel.', 'Alice may cancel.').summary), '1 passage compared, no literal differences.');
+  for (const [a, b, said] of [
+    ['Call if glucose is < 70 mg/dL.', 'Call if glucose is > 70 mg/dL.', '“<” in the original, “>” in the rewrite.'],
+    ['Store at -20°C.', 'Store at 20°C.', 'The original has “-” here; the rewrite does not.'],
+    ['Price: 50 € per month.', 'Price: 50 $ per month.', '“€” in the original, “$” in the rewrite.'],
+    ['Great job 👍 today.', 'Great job 👎 today.', '“👍” in the original, “👎” in the rewrite.'],
+    ['Do not sign.', 'Do NOT sign.', '“not” in the original, “NOT” in the rewrite.'],
+    ["Let's eat, Grandma.", "Let's eat Grandma.", 'The original has “,” here; the rewrite does not.'],
+    ['A b.', 'A  b.', 'The rewrite has a space here; the original does not.'],
+    ['A b.', 'A\tb.', 'a space in the original, a tab in the rewrite.'],
+  ]) {
+    const { passages, summary } = evidence(a, b);
+    assert.equal(summary.identicalTexts, false);
+    assert.match(headingText(summary), /differences? noted/);
+    assert.ok(statements(a, b).includes(said), `${a} -> ${b}: ${statements(a, b).join(' | ')}`);
+    assert.equal(passageMessage(passages[0]), 'The same words in the same order; the characters noted here differ.');
+  }
+});
+
+test('reordered passages and spacing between passages are reported as such', () => {
+  const reordered = evidence('Pay within 30 days. Late fees apply.', 'Late fees apply. Pay within 30 days.').summary;
+  assert.equal(headingText(reordered), '2 passages compared; the texts are not identical.');
+  assert.deepEqual(summaryFacts(reordered), ['The rewrite has these passages in a different order.']);
+  const spaced = evidence('Pay within 30 days.\nLate fees apply.', 'Pay within 30 days.  Late fees apply.').summary;
+  assert.deepEqual(summaryFacts(spaced), ['Every passage is identical and in the same order; the texts differ only in the spacing or line breaks between passages.']);
+});
+
+test('moved words are noted as Moved, in both passages at different places', () => {
+  for (const [a, b, word] of [
+    ['You must not leave, and you may stay.', 'You must leave, and you may not stay.', 'not'],
+    ['Tenants may not smoke, and may vape.', 'Tenants may smoke, and may not vape.', 'not'],
+    ['Alice pays Bob.', 'Bob pays Alice.', 'Alice'],
+  ]) {
+    const { passages, summary } = evidence(a, b);
+    const moved = passages[0].notes.filter(n => n.state === 'moved');
+    assert.ok(moved.some(n => noteStrings(n, a, b).aText === word), `${a}: ${moved.length} moved`);
+    assert.ok(statements(a, b).includes(`“${word}” is in both passages, at different places.`));
+    assert.match(headingText(summary), /differences? noted/);
+  }
+});
+
+test('a string inside a longer word of the other text is never called absent', () => {
+  for (const [a, b, said] of [
+    ['Alice may cancel the lease.', "Alice's lease can be cancelled.", '“Alice” appears in the original; the rewrite has it only within other words, first in “Alice\'s”.'],
+    ['The fee is $8 today. Nothing else.', 'The fee is waived. Total $8.50 today.', '“$8” appears in the original; the rewrite has it only within other words, first in “$8.50”.'],
+    ['Take 1 tablet every 4 to 6 hours.', 'Take one tablet every 4-6 hours.', '“4” appears in the original; the rewrite has it only within other words, first in “4-6”.'],
+  ]) assert.ok(statements(a, b).includes(said), `${a}: ${statements(a, b).join(' | ')}`);
+  // Structural words are checked in the paired passage, as characters too.
+  assert.ok(statements('You may not leave.', 'You cannot leave.').includes('“not” in the original, “cannot” in the rewrite.'));
 });
 
 test('a string that is in the paired passage fewer times is stated with both counts', () => {
-  const [p] = evidence('Do not smoke, not ever, not here.', 'Do not smoke, not here.');
-  const negation = p.notes.find(n => n.kind === 'negation');
-  assert.equal(noteStatement(negation, p), 'Appears 3 times in the original passage and twice in the paired rewrite passage.');
-  const [q] = evidence('Notice notice given.', 'Notice given.');
-  assert.equal(noteStatement(q.notes[0], q), 'Appears twice in the original passage and once in the paired rewrite passage.');
+  assert.ok(statements('Do not smoke, not ever, not here.', 'Do not smoke, not here.')
+    .includes('“not” appears as a word 3 times in the original passage and twice in the paired rewrite passage, ignoring capitalization.'));
 });
 
-test('"no literal differences" is claimed only when every word matches in order', () => {
-  assert.equal(evidenceSummary(evidence('Alice may cancel.', 'Alice may cancel.')).noDifferences, true);
-  assert.equal(evidenceSummary(evidence('The fee is DUE.', 'the fee is due')).noDifferences, true, 'case and punctuation are not checked');
-  const commonOnly = evidenceSummary(evidence('Pay the fee.', 'Pay a fee.'));
-  assert.equal(commonOnly.notes, 0);
-  assert.equal(commonOnly.noDifferences, false, 'a changed common word is still a difference');
-  const dropped = evidence('Rent is due monthly. The tenant pays for water.', 'Rent is due monthly.');
-  const summary = evidenceSummary(dropped);
-  assert.equal(summary.noDifferences, false);
-  assert.ok(summary.notes >= 1, 'an unpartnered passage always carries a note');
-  assert.equal(noteStringsOf(dropped[1]), 'tenant pays for water');
+test('in-both lines print what each passage literally has', () => {
+  const a = 'Do not sign.', b = 'Do NOT sign.';
+  const lines = evidence(a, b).passages[0].inBoth.map(inBothText);
+  assert.ok(lines.includes('“not” in the original, “NOT” in the rewrite: the same words, with different capitalization.'));
+  const g = evidence('Call if glucose is < 70 mg/dL.', 'Call if glucose is > 70 mg/dL.').passages[0].inBoth.map(inBothText);
+  assert.ok(g.includes('“if glucose is < 70 mg/dL” in the original, “if glucose is > 70 mg/dL” in the rewrite: the same words, with different characters between the words.'));
 });
 
-test('the blackline never marks a space and never runs two runs together', () => {
+test('the blackline never marks a space as a word, and each run holds one side only', () => {
   for (const ex of Object.values(EXAMPLES)) {
-    for (const p of evidence(ex.source, ex.output)) {
+    for (const p of evidence(ex.source, ex.output).passages) {
       for (const seg of blacklineSegments(p, ex.source, ex.output)) {
         for (const part of seg.t === 'run' ? seg.parts : []) {
-          if (part.t !== 'mark') continue;
-          assert.equal(part.text, part.text.trim(), `mark "${part.text}" has no leading or trailing space`);
-          assert.doesNotMatch(part.text, /^\s|\s$/);
+          if (part.t === 'mark' && !part.ws) assert.equal(part.text, part.text.trim(), `mark "${part.text}"`);
         }
       }
     }
   }
-  // An insertion straight after a deletion at the passage start gets one space ("mayYou" never happens).
-  const [a, b] = ['May we go now.', 'You can go now.'];
-  const pair = evidence(a, b)[0];
-  assert.equal(pair.kind, 'changed-candidate');
-  const segs = blacklineSegments(pair, a, b);
-  const insertion = segs.find(s => s.t === 'run' && s.side === 'i');
-  assert.deepEqual(insertion.parts[0], { t: 'gap', text: ' ' });
-  // Groups of at most 30 characters are kept on one line.
+  // Consecutive words of one note stay one mark.
   const lease = EXAMPLES.lease;
-  const marks = blacklineSegments(evidence(lease.source, lease.output)[0], lease.source, lease.output)
+  const marks = blacklineSegments(evidence(lease.source, lease.output).passages[0], lease.source, lease.output)
     .flatMap(s => (s.t === 'run' ? s.parts : [])).filter(m => m.t === 'mark').map(m => m.text);
-  assert.ok(marks.includes('30 days'));
+  assert.ok(marks.includes('30 days'));
 });
 
-test('verbatim passages render as the plain passage text', () => {
-  const text = '<img src=x onerror="alert(1)"> Alice may cancel.';
-  const [p] = evidence(text, text);
-  assert.equal(p.kind, 'verbatim');
-  assert.deepEqual(blacklineSegments(p, text, text), [{ t: 'plain', text }]);
+test('note letters run a to z, then aa, ab', () => {
+  const a = Array.from({ length: 30 }, (_, i) => `Item${i} costs $${i}`).join(', ') + '.';
+  const b = Array.from({ length: 30 }, (_, i) => `Item${i} costs $${i + 100}`).join(', ') + '.';
+  const letters = evidence(a, b).passages[0].notes.map(n => n.letter);
+  assert.deepEqual(letters.slice(24, 29), ['y', 'z', 'aa', 'ab', 'ac']);
 });
 
 test('evidence comes from the review rows and is deterministic', () => {
@@ -199,4 +242,25 @@ test('evidence comes from the review rows and is deterministic', () => {
   const second = lines(buildEvidence(source, output, structuredClone(review)).passages, source, output);
   assert.deepEqual(first, second);
   assert.equal(JSON.stringify(review), before, 'the review rows are not modified');
+});
+
+test('long and hostile inputs stay fast (timing guard)', () => {
+  const guard = (label, a, b, limitMs) => {
+    const started = performance.now();
+    const { passages } = evidence(a, b);
+    for (const p of passages) blacklineSegments(p, a, b);
+    const took = performance.now() - started;
+    assert.ok(took < limitMs, `${label}: ${took.toFixed(0)} ms (limit ${limitMs} ms)`);
+  };
+  const t0 = performance.now();
+  sourceSpansV2('a. '.repeat(33000));
+  sourceSpansV2('go. '.repeat(25000));
+  assert.ok(performance.now() - t0 < 1000, 'the v2 splitter is linear');
+  guard("'if ' repeated to 99,000 characters", 'if '.repeat(33000), 'x', 4000);
+  const nums = Array.from({ length: 17000 }, (_, i) => String(i % 997)).join(' ').slice(0, 85000);
+  guard('85,000 characters of numbers', nums, 'x', 4000);
+  const words = Array.from({ length: 16000 }, (_, i) => ['alpha', 'beta', 'gamma', 'delta', 'tenant', 'pays'][i % 6]).join(' ').slice(0, 99000);
+  guard('one 99,000-character passage against its reverse', words, words.split(' ').reverse().join(' '), 4000);
+  const long = EXAMPLES.refund.source.replace(/\. /g, ', ').repeat(230).slice(0, 99000);
+  guard('one 99,000-character passage with light edits', long, long.replace(/30 days/g, '60 days'), 4000);
 });

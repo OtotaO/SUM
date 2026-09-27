@@ -138,10 +138,20 @@ def test_pasted_receipt_fields_are_escaped(source: str) -> None:
         "${esc(res.kid)}",
         "${esc(p.scorer ?? \"?\")}",
         "${esc(nc)}",
-        "${esc(p.controlled)}",
         "${esc(schema)}",
     ):
         assert frag in source, f"REGRESSION: unescaped receipt field, expected {frag}"
+
+
+def test_stage_a_result_does_not_show_what_it_did_not_replay(source: str) -> None:
+    """Stage A checks the signature, schema and disclosure; it does not replay
+    the bound. So the box must not print the receipt's own `controlled` claim,
+    must label the bound as issuer-asserted, and must round it up (a rounded-
+    down bound would read as tighter than the signed one)."""
+    assert "p.controlled" not in source, "Stage A must not show `controlled`: it replays nothing"
+    assert "issuer-asserted bound, not replayed here" in source
+    assert "Math.ceil(p.risk_upper_bound_micro / 100) / 10000" in source
+    assert "(p.risk_upper_bound_micro / 1e6).toFixed(4)" not in source
 
 
 def test_error_paths_are_escaped(source: str) -> None:
