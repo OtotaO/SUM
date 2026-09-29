@@ -22,8 +22,9 @@ let showToken = 0;
 let stash = null;          // the last review hidden by an edit, with its decisions
 let editConfirmed = false; // the user chose to edit texts that carry recorded decisions
 const NOTE_CAP = 150;      // notes rendered per passage before "Show the other N notes"
+const IN_BOTH_CAP = 100;   // shared-word evidence is paged too, including repeated words
 const PART_CAP = 1500;     // marks rendered per passage before "Show the rest of the passage"
-const status = message => { $('workbench-status').textContent = message; };
+const status = message => { $('workbench-status').replaceChildren(statementNode(message)); };
 const reducedMotion = () => Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
 const plural = pluralOf;
 const passageNo = spanId => String(spanId).slice(1);
@@ -43,6 +44,25 @@ function h(tag, props = {}, ...children) {
   return node;
 }
 const joined = (nodes, sep) => nodes.flatMap((n, i) => (i ? [typeof sep === 'function' ? sep() : sep, n] : [n]));
+
+// Display-only labels keep invisible controls from changing a note's visual
+// meaning. The input boxes, offsets and exported texts retain the original bytes.
+const CONTROL_NAMES = { 9: 'TAB', 10: 'LINE FEED', 13: 'CARRIAGE RETURN', 0x200B: 'ZERO WIDTH SPACE',
+  0x200C: 'ZERO WIDTH NON-JOINER', 0x200D: 'ZERO WIDTH JOINER', 0x200E: 'LEFT-TO-RIGHT MARK',
+  0x200F: 'RIGHT-TO-LEFT MARK', 0x202A: 'LEFT-TO-RIGHT EMBEDDING', 0x202B: 'RIGHT-TO-LEFT EMBEDDING',
+  0x202C: 'POP DIRECTIONAL FORMATTING', 0x202D: 'LEFT-TO-RIGHT OVERRIDE', 0x202E: 'RIGHT-TO-LEFT OVERRIDE',
+  0x2066: 'LEFT-TO-RIGHT ISOLATE', 0x2067: 'RIGHT-TO-LEFT ISOLATE', 0x2068: 'FIRST STRONG ISOLATE', 0x2069: 'POP DIRECTIONAL ISOLATE' };
+const visibleText = text => text.replace(/[\p{Default_Ignorable_Code_Point}\p{Cc}\p{Zl}\p{Zp}]/gu, char => {
+  const cp = char.codePointAt(0);
+  return `[U+${cp.toString(16).toUpperCase().padStart(4, '0')}${CONTROL_NAMES[cp] ? ' ' + CONTROL_NAMES[cp] : ''}]`;
+});
+const isolatedText = text => h('bdi', { dir: 'auto' }, visibleText(text));
+function statementNode(text) {
+  // Isolate ordinary RTL quotations as well as escaping directional controls.
+  const safe = visibleText(text);
+  return h('span', { className: 'statement', dir: 'ltr' },
+    safe.split(/(“[^”]*”)/u).map(part => part.startsWith('“') ? h('bdi', { dir: 'auto' }, part) : part));
+}
 
 // ---------------------------------------------------------------- page state
 function setResultsCurrent(isCurrent) {
@@ -131,20 +151,32 @@ const hasOwnText = () => {
   if (!a && !b) return false;
   return !Object.values(EXAMPLES).some(ex => ex.source === a && ex.output === b);
 };
-const recordedDecisions = () => (current ? decidedCount(current.review) : 0);
+const recordedDecisions = () => decidedCount((current || stash)?.review || { rows: [] });
 
-// Editing a box whose review holds decisions asks first. A cancelable
-// beforeinput covers typing, pasting, dropping and deleting.
+// Cancelable edits are held before mutation. IME/mobile edits can be
+// noncancelable: restore the snapshot in capture phase, before source/receipt
+// invalidation listeners run, then offer the same explicit edit choice.
 for (const id of ['prose', 'rewrite']) {
+  let heldEdit = null;
+  const requestEdit = n => ask(`This review has ${plural(n, 'recorded decision')}. Editing hides the review; only uniquely matched unchanged passage pairs keep decisions when you compare again. Repeated or changed passages need review again.`,
+    'Edit the texts', () => { editConfirmed = true; heldEdit = null; $(id).focus(); }, 'Keep the review');
   $(id).addEventListener('beforeinput', event => {
     // A box that is read-only after a span jump takes no input; its keydown handler says why.
     if ($(id).readOnly) { if (event.cancelable) event.preventDefault(); return; }
     const n = recordedDecisions();
-    if (!n || editConfirmed || !event.cancelable) return;
-    event.preventDefault();
-    ask(`This review has ${plural(n, 'recorded decision')}. Editing a text hides the review; decisions for passages you leave unchanged are kept when you compare again.`,
-      'Edit the texts', () => { editConfirmed = true; $(id).focus(); }, 'Keep the review');
+    if (!n || editConfirmed) return;
+    if (event.cancelable) { event.preventDefault(); requestEdit(n); }
+    else heldEdit = { value: $(id).value, start: $(id).selectionStart, end: $(id).selectionEnd, decisions: n };
   });
+  $(id).addEventListener('input', event => {
+    if (!heldEdit) return;
+    const before = heldEdit;
+    heldEdit = null;
+    $(id).value = before.value;
+    $(id).setSelectionRange(before.start, before.end);
+    event.stopImmediatePropagation();
+    requestEdit(before.decisions);
+  }, true);
 }
 
 const userEdited = () => { if (origin !== 'user') setStrip('user'); };
@@ -155,8 +187,8 @@ document.addEventListener('sum:render-reset', resetReceipt);
 // ---------------------------------------------------------------- counts and textarea sizing
 function countLabel(text) {
   const n = text.length;
-  if (!n) return '0 characters';
-  const chars = plural(n, 'character');
+  if (!n) return '0 UTF-16 code units';
+  const chars = plural(n, 'UTF-16 code unit');
   if (n > MAX_REVIEW_CHARS) return `${chars} · over the ${MAX_REVIEW_CHARS.toLocaleString('en-US')} limit`;
   const split = current?.review?.method === REVIEW_METHOD_V1 ? sourceSpans : sourceSpansV2;
   let passages;
@@ -189,7 +221,7 @@ function fit(textarea) {
     textarea.style.height = window.getComputedStyle(textarea).maxHeight;
     textarea.parentElement.classList.add('clipped');
     button.hidden = false;
-    button.textContent = `Show the whole text (${textarea.value.length.toLocaleString('en-US')} characters)`;
+    button.textContent = `Show the whole text (${textarea.value.length.toLocaleString('en-US')} UTF-16 code units)`;
     button.setAttribute('aria-expanded', 'false');
     return;
   }
@@ -224,20 +256,28 @@ function fail(message) {
   status(message);
 }
 
-// Decisions recorded for a passage pair carry over to the same pair of exact
-// passage texts after an edit elsewhere. Returns [kept, dropped].
-function carryDecisions(review, from) {
+// Exact text alone cannot identify which repeated occurrence survived an edit.
+// Carry only one-to-one signatures; a no-change restoration can safely use ids.
+function carryDecisions(review, from, source, output) {
   if (!from) return [0, 0];
-  const pool = from.review.rows.filter(r => r.decision !== 'unreviewed');
+  const key = row => JSON.stringify([row.kind, row.source?.text, row.output?.text]);
+  const index = rows => {
+    const map = new Map();
+    for (const row of rows) { const k = key(row); if (!map.has(k)) map.set(k, []); map.get(k).push(row); }
+    return map;
+  };
+  const oldRows = index(from.review.rows), newRows = index(review.rows);
+  const unchanged = from.source === source && from.output === output;
   let kept = 0;
   for (const row of review.rows) {
-    const i = pool.findIndex(r => r.kind === row.kind && r.source?.text === row.source?.text && r.output?.text === row.output?.text);
-    if (i < 0) continue;
-    row.decision = pool[i].decision;
-    pool.splice(i, 1);
+    const prior = oldRows.get(key(row));
+    const match = unchanged ? prior?.find(r => r.id === row.id)
+      : prior?.length === 1 && newRows.get(key(row)).length === 1 ? prior[0] : null;
+    if (!match || match.decision === 'unreviewed') continue;
+    row.decision = match.decision;
     kept++;
   }
-  return [kept, pool.length];
+  return [kept, decidedCount(from.review) - kept];
 }
 
 function compare({ example = null } = {}) {
@@ -254,7 +294,7 @@ function compare({ example = null } = {}) {
   // Never compare a silently shortened text: over the limit, say so and stop.
   for (const [box, text] of [['A', source], ['B', output]]) {
     if (text.length > MAX_REVIEW_CHARS) {
-      return fail(`Text must be at most 100,000 characters. Box ${box} has ${text.length.toLocaleString('en-US')}. Nothing was compared; split the document into sections.`);
+      return fail(`Text must be at most 100,000 UTF-16 code units. Box ${box} has ${text.length.toLocaleString('en-US')}. Nothing was compared; split the document into sections.`);
     }
   }
   if (!source.trim()) return fail('Add an original to box A first.');
@@ -267,7 +307,7 @@ function compare({ example = null } = {}) {
     $('compare-btn').disabled = false;
     let review;
     try { review = compareTexts(source, output, method); } catch (e) { return fail(`${e.message} Nothing was compared.`); }
-    const [kept, dropped] = example ? [0, 0] : carryDecisions(review, previous);
+    const [kept, dropped] = example ? [0, 0] : carryDecisions(review, previous, source, output);
     current = { source, output, review, render, origin };
     stash = null;
     editConfirmed = false;
@@ -275,7 +315,7 @@ function compare({ example = null } = {}) {
     const s = evidence.summary;
     const notes = [];
     if (kept) notes.push(`kept ${plural(kept, 'decision')} for passages that did not change`);
-    if (dropped) notes.push(`${plural(dropped, 'decision')} for changed passages ${dropped === 1 ? 'was' : 'were'} not carried over`);
+    if (dropped) notes.push(`${plural(dropped, 'decision')} for changed or ambiguous passages ${dropped === 1 ? 'was' : 'were'} not carried over`);
     if (method === REVIEW_METHOD_V1) notes.push("passages split with the packet's rules (literal-spans-v1)");
     status(example ? `Loaded the ${EXAMPLES[example].name} example into both boxes and compared them.`
       : `Compared in this browser · ${plural(s.passages, 'passage')} · ${plural(s.notes, 'difference')} noted${notes.length ? ' · ' + notes.join(' · ') : ''}`);
@@ -319,6 +359,8 @@ function clearBoth() {
   window.updateCharCount();
   window.invalidateSource();
   resetReview();
+  stash = null;
+  editConfirmed = false;
   setStrip('user');
   showPlaceholder('empty');
   status('Both boxes cleared.');
@@ -353,7 +395,7 @@ const KIND_TEXT = {
   'changed-candidate': 'paired by shared words',
   verbatim: 'identical in both texts',
   'source-unmatched': 'no partner passage in the rewrite',
-  'output-unmatched': 'in the rewrite only; no partner passage in the original',
+  'output-unmatched': 'no partner passage in the original',
 };
 const DECISION_LABEL = { unreviewed: 'Not reviewed', accepted: 'Accepted', 'needs-change': 'Needs change' };
 const noteKey = (p, n) => `${p.number}${n.letter}`;
@@ -361,7 +403,7 @@ const noteKey = (p, n) => `${p.number}${n.letter}`;
 function spanButton(side, s, e, what) {
   const field = side === 'a' ? 'prose' : 'rewrite';
   return h('button', { type: 'button', className: 'span-link',
-    'aria-label': `Select ${what}, characters ${s} to ${e} of the ${side === 'a' ? 'original' : 'rewrite'}`,
+    'aria-label': `Select ${visibleText(what)}, UTF-16 code units ${s} to ${e} of the ${side === 'a' ? 'original' : 'rewrite'}`,
     onclick: event => selectSpan(event.currentTarget, field, s, e) }, `${side === 'a' ? 'A' : 'B'} ${s}–${e}`);
 }
 
@@ -377,7 +419,7 @@ function selectSpan(button, field, s, e) {
   textarea.scrollIntoView({ block: 'center', behavior: reducedMotion() ? 'auto' : 'smooth' });
   spanOrigin = button;
   const text = textarea.value.slice(s, e);
-  status(`Selected characters ${s} to ${e} of the ${field === 'prose' ? 'original' : 'rewrite'}: “${text.length > 90 ? text.slice(0, 90) + '…' : text}”. The box is read-only until you click in it. Press Escape to go back.`);
+  status(`Selected UTF-16 code units ${s} to ${e} of the ${field === 'prose' ? 'original' : 'rewrite'}: “${visibleText(text.length > 90 ? text.slice(0, 90) + '…' : text)}”. The box is read-only until you click in it. Press Escape to go back.`);
 }
 function releaseJump(textarea, collapse) {
   if (textarea.dataset.jumped !== 'true') return;
@@ -431,11 +473,12 @@ function linkHighlight(node, id, focus = true) {
   if (focus) { node.addEventListener('focusin', () => highlight(id)); node.addEventListener('focusout', clearHighlight); }
 }
 
-const PREFIX = { a: 'original only: ', b: 'rewrite only: ', am: 'moved from here: ', bm: 'moved to here: ' };
+const PREFIX = { a: 'original only: ', b: 'rewrite only: ', am: 'matched original wording: ', bm: 'matched rewrite wording: ' };
 function markNode(side, text, n, { prefix = true, mv = false, ws = false } = {}) {
   const cls = [mv ? 'mv' : '', ws ? 'ws' : '', text.length <= 30 ? 'nw' : ''].filter(Boolean).join(' ') || null;
   return h(side === 'a' ? 'del' : 'ins', { 'data-n': n || null, className: cls },
-    prefix ? h('span', { className: 'vh' }, PREFIX[side + (mv ? 'm' : '')]) : null, text);
+    prefix ? h('span', { className: 'vh' }, PREFIX[side + (mv ? 'm' : '')]) : null,
+    prefix ? h('bdi', { dir: 'auto' }, text) : isolatedText(text));
 }
 function refNode(seg) {
   const sup = h('sup', { className: 'ref', 'data-n': seg.n, 'aria-hidden': 'true' },
@@ -478,7 +521,14 @@ const runText = seg => seg.parts.filter(p => p.t !== 'ref').map(p => p.text).joi
 
 function renderBlackline(p) {
   const para = h('p', { className: p.over ? 'blackline whole' : 'blackline' });
-  const segs = blacklineSegments(p, current.source, current.output);
+  // A single changed run can itself contain thousands of marks. Chunk it so
+  // the outer render budget also bounds that path, without changing text order.
+  const segs = blacklineSegments(p, current.source, current.output).flatMap(seg => {
+    if (seg.t !== 'run' || seg.parts.length <= 100) return [seg];
+    const chunks = [];
+    for (let i = 0; i < seg.parts.length; i += 100) chunks.push({ ...seg, parts: seg.parts.slice(i, i + 100) });
+    return chunks;
+  });
   const marks = segs.reduce((n, s) => n + (s.t === 'eq' ? 1 : s.t === 'run' ? s.parts.length : 0), 0);
   const stop = renderSegments(segs, para, 0, marks > PART_CAP ? PART_CAP : Infinity);
   if (stop < 0) return para;
@@ -503,7 +553,7 @@ function renderNote(p, note) {
     h('div', {},
       h('p', { className: 'nh' }, h('span', { className: 'lk' }, lit, ' ', h('span', { className: 'kind' }, kindLabel(note))),
         h('span', { className: 'chip' }, glyph(note.state), STATE_LABEL[note.state])),
-      h('p', { className: 'ns' }, noteStatement(note, p, current.source, current.output), spans)));
+      h('p', { className: 'ns' }, statementNode(noteStatement(note, p, current.source, current.output)), spans)));
   linkHighlight(li, key);
   return li;
 }
@@ -511,7 +561,7 @@ function renderNote(p, note) {
 function renderInBoth(p, ib, k) {
   const key = `${p.number}-both-${k}`;
   const line = h('p', { className: 'inboth', 'data-n': key, 'data-state': 'both' },
-    glyph('both'), h('span', {}, 'In both passages:'), ' ', h('span', { className: 'lit' }, inBothText(ib)), ' ',
+    glyph('both'), h('span', {}, 'In both passages:'), ' ', h('span', { className: 'lit' }, statementNode(inBothText(ib))), ' ',
     h('span', { className: 'kind' }, inBothKindLabel(ib)),
     spanButton('a', ib.a.s, ib.a.e, `“${current.source.slice(ib.a.s, ib.a.e)}”`),
     spanButton('b', ib.b.s, ib.b.e, `“${current.output.slice(ib.b.s, ib.b.e)}”`));
@@ -548,8 +598,25 @@ function renderPassage(p) {
     p.b ? spanButton('b', p.b.start, p.b.end, `rewrite passage ${passageNo(p.b.id)}`) : null));
   article.append(renderBlackline(p));
   if (p.alsoMarked.length) {
-    article.append(h('p', { className: 'also' }, 'Also marked, no note (common words): ',
-      joined(p.alsoMarked.map(m => markNode(m.side, m.tok.t, null)), ', ')));
+    const common = h('p', { className: 'also' }, 'Also marked, no note (common words): ');
+    const more = h('button', { type: 'button', className: 'text-btn more-btn' });
+    let shown = 0;
+    const appendCommon = () => {
+      more.remove();
+      const end = Math.min(shown + 100, p.alsoMarked.length);
+      for (; shown < end; shown++) {
+        const m = p.alsoMarked[shown];
+        if (shown) common.append(', ');
+        common.append(markNode(m.side, m.tok.t, null));
+      }
+      if (shown < p.alsoMarked.length) {
+        more.textContent = `Show the next ${Math.min(100, p.alsoMarked.length - shown)} common-word marks (${(p.alsoMarked.length - shown).toLocaleString('en-US')} not yet shown)`;
+        common.append(more);
+      }
+    };
+    appendCommon();
+    more.addEventListener('click', appendCommon);
+    article.append(common);
   }
   // The decision comes before the notes, in reading order and in tab order.
   const name = `d-${p.row.id}`;
@@ -566,7 +633,19 @@ function renderPassage(p) {
   const message = passageMessage(p);
   if (message) notes.append(h('p', { className: 'ns alone' }, message));
   if (p.notes.length) renderNotes(p, notes);
-  p.inBoth.forEach((ib, k) => notes.append(renderInBoth(p, ib, k)));
+  let shownBoth = 0;
+  const moreBoth = h('button', { type: 'button', className: 'text-btn more-btn more-inboth' });
+  const appendBoth = () => {
+    moreBoth.remove();
+    const end = Math.min(shownBoth + IN_BOTH_CAP, p.inBoth.length);
+    for (; shownBoth < end; shownBoth++) notes.append(renderInBoth(p, p.inBoth[shownBoth], shownBoth));
+    if (shownBoth < p.inBoth.length) {
+      moreBoth.textContent = `Show the next ${Math.min(IN_BOTH_CAP, p.inBoth.length - shownBoth)} shared-word entries (${(p.inBoth.length - shownBoth).toLocaleString('en-US')} not yet shown)`;
+      notes.append(moreBoth);
+    }
+  };
+  appendBoth();
+  moreBoth.addEventListener('click', () => { appendBoth(); applyFilters(false); });
   article.append(notes);
   return article;
 }
@@ -576,7 +655,7 @@ function ledgerItem(entry) {
   if (inBoth) {
     // Both forms when they differ, so the ledger never shows a string one passage lacks.
     const forms = inBoth.a.text === inBoth.b.text ? inBoth.a.text : `${inBoth.a.text} / ${inBoth.b.text}`;
-    return h('a', { href: `#p${domId(p.number)}` }, h('span', { className: 'it' }, forms), ' ', h('span', { className: 'k' }, inBothKindLabel(inBoth).toLowerCase()));
+    return h('a', { href: `#p${domId(p.number)}` }, h('span', { className: 'it' }, isolatedText(forms)), ' ', h('span', { className: 'k' }, inBothKindLabel(inBoth).toLowerCase()));
   }
   const { aText, bText } = noteStrings(note, current.source, current.output);
   const mv = note.state === 'moved';
@@ -649,10 +728,10 @@ function updateReceiptLine() {
 
 function renderSignoff() {
   const token = showToken;
-  const describe = (text, hash) => [`${plural(text.length, 'character')} · `, h('span', { className: 'mono' }, hash ? shortHash(hash) : 'hashing…')];
+  const describe = (text, hash) => [`${plural(text.length, 'UTF-16 code unit')} · `, h('span', { className: 'mono' }, hash ? shortHash(hash) : 'hashing…')];
   $('export-original').replaceChildren(...describe(current.source));
   $('export-rewrite').replaceChildren(...describe(current.output));
-  $('export-passages').textContent = `${plural(current.review.rows.length, 'row')} with exact character spans`;
+  $('export-passages').textContent = `${plural(current.review.rows.length, 'row')} with exact UTF-16 code-unit spans`;
   updateReceiptLine();
   const snapshot = current;
   Promise.all([hashText(snapshot.source), hashText(snapshot.output)]).then(([a, b]) => {
@@ -666,7 +745,7 @@ function updateDecided() {
   const passages = evidence.passages;
   const total = passages.length;
   const decided = passages.filter(p => p.row.decision !== 'unreviewed').length;
-  $('decided-minis').replaceChildren(...passages.slice(0, 64).map(p => h('span', { className: 'mini', 'data-d': p.row.decision })));
+  $('decided-minis').replaceChildren(...passages.slice(0, 8).map(p => h('span', { className: 'mini', 'data-d': p.row.decision })));
   $('decided-count').replaceChildren(`${decided} of ${total} `, h('span', { className: 'w' }, total === 1 ? 'passage ' : 'passages '), 'decided');
   $('review-record-count').textContent = `${decided} of ${total}`;
   $('review-record-noun').textContent = total === 1 ? 'passage' : 'passages';
@@ -690,7 +769,16 @@ function decide(p, value) {
 // tall as the results heading beside it.
 function syncHeadHeight() {
   const title = document.querySelector('.head-title');
-  if (title?.offsetHeight) $('review-panel').style.setProperty('--headh', `${title.offsetHeight}px`);
+  const panel = $('review-panel'), bar = panel.querySelector('.sheet-bar');
+  if (!title?.offsetHeight || !bar?.offsetHeight) return;
+  // Reserve enough first-row space even when buttons wrap at zoomed widths.
+  // Reset the previous measurements so a smaller layout can shrink again.
+  panel.style.removeProperty('--headh');
+  panel.style.removeProperty('--head-space');
+  const height = Math.max(title.offsetHeight, bar.offsetHeight);
+  panel.style.setProperty('--headh', `${height}px`);
+  panel.style.setProperty('--head-space', `${height}px`);
+  panel.style.setProperty('--barh', `${height}px`);
 }
 
 function showReview() {
@@ -714,17 +802,27 @@ function showReview() {
 document.addEventListener('sum:render', event => {
   const data = event.detail;
   if (data !== window.__sumLastRender || data.source_text !== $('prose').value) return;
-  $('rewrite').value = data.tome;
-  render = data.render_receipt ? structuredClone({ receipt: data.render_receipt, triples: data.triples_used, sliders: data.quantized_sliders }) : null;
-  generated = true;
-  receiptChecked = false;
-  $('verify-receipt-btn').disabled = !render;
-  $('render-trust-status').textContent = render ? 'Receipt not checked:' : 'No signed receipt:';
-  window.updateCharCount();
-  if (current) { stash = current; current = null; }
-  setStrip('user');
-  compare();
-  if (current && !render) status('Generated rewrite is in box B and compared. The service returned no signed receipt; export will be an unsigned review packet.');
+  const applyGenerated = () => {
+    // A pending replacement must not revive a response invalidated by edits.
+    if (data !== window.__sumLastRender || data.source_text !== $('prose').value) return status('The generated response is stale. Generate again for the current original.');
+    $('rewrite').value = data.tome;
+    render = data.render_receipt ? structuredClone({ receipt: data.render_receipt, triples: data.triples_used, sliders: data.quantized_sliders }) : null;
+    generated = true;
+    receiptChecked = false;
+    $('verify-receipt-btn').disabled = !render;
+    $('render-trust-status').textContent = render ? 'Receipt not checked:' : 'No signed receipt:';
+    window.updateCharCount();
+    if (current) { stash = current; current = null; }
+    setStrip('user');
+    compare();
+    // compare() owns the decision carry/drop announcement, including long texts.
+  };
+  const n = recordedDecisions();
+  const ownRewrite = $('rewrite').value && !generated && !Object.values(EXAMPLES).some(ex => ex.output === $('rewrite').value);
+  if ($('rewrite').value !== data.tome && (ownRewrite || n)) {
+    ask(`Replace box B with the generated rewrite${n ? ` and recompute this review with ${plural(n, 'recorded decision')}? Only uniquely matched unchanged passage pairs keep their decisions; all others need review again.` : '?'} The generated text is also available in annex 2.`,
+      'Use generated rewrite', applyGenerated, 'Keep current review');
+  } else applyGenerated();
 });
 
 async function getPublicKeys() {
@@ -806,8 +904,12 @@ $('verify-packet-btn').addEventListener('click', async () => {
   }
 });
 
-function openPacket() {
-  const packet = structuredClone(checkedPacket);
+function openPacket(approvedPacket, approvedRevision) {
+  if (!approvedPacket || approvedPacket !== checkedPacket || approvedRevision !== packetRevision) {
+    status('The packet changed while confirmation was open. Check it again before opening.');
+    return;
+  }
+  const packet = structuredClone(approvedPacket);
   window.invalidateSource();
   $('prose').value = packet.source.text;
   $('rewrite').value = packet.output.text;
@@ -829,9 +931,11 @@ function openPacket() {
 }
 $('open-packet-btn').addEventListener('click', () => {
   if (!checkedPacket) return;
+  const approvedPacket = checkedPacket, approvedRevision = packetRevision;
+  const openApproved = () => openPacket(approvedPacket, approvedRevision);
   const n = recordedDecisions();
-  if (!hasOwnText() && !n) return openPacket();
-  ask(`Replace ${hasOwnText() ? 'your texts' : 'these texts'}${n ? ` and ${plural(n, 'recorded decision')}` : ''} with the packet's texts and decisions?`, 'Open the packet', openPacket);
+  if (!hasOwnText() && !n) return openApproved();
+  ask(`Replace ${hasOwnText() ? 'your texts' : 'these texts'}${n ? ` and ${plural(n, 'recorded decision')}` : ''} with the packet's texts and decisions?`, 'Open the packet', openApproved);
 });
 
 // ---------------------------------------------------------------- anchors into closed <details>

@@ -245,3 +245,29 @@ test('the v2 splitter is linear: long runs of short sentences split quickly', ()
   assert.equal(sourceSpansV2('Go. '.repeat(25000)).length, 25000);
   assert.ok(performance.now() - started < 1500, `took ${(performance.now() - started).toFixed(0)} ms`);
 });
+
+// Compatibility checks for exported packets: these examples pin observable
+// splitting and pairing decisions which the larger goldens do not exercise.
+test('frozen v1 keeps question boundaries and case-insensitive borderline pairing', () => {
+  assert.deepEqual(sourceSpans('Ready? Next!').map(s => s.text), ['Ready?', 'Next!']);
+  const review = compareTexts('Alpha beta.', 'ALPHA gamma delta.', 'literal-spans-v1');
+  assert.equal(review.rows.length, 1);
+  assert.equal(review.rows[0].kind, 'changed-candidate');
+  assert.equal(review.rows[0].output.text, 'ALPHA gamma delta.');
+});
+
+test('both frozen methods pair at one-quarter overlap and consume duplicates in order', () => {
+  for (const method of ['literal-spans-v1', 'literal-spans-v2']) {
+    assert.equal(compareTexts('Alpha beta.', 'Alpha gamma delta.', method).rows[0].kind,
+      'changed-candidate');
+    const duplicate = compareTexts('Yes. Yes.', 'Yes. Yes.', method);
+    assert.deepEqual(duplicate.rows.map(r => [r.source.id, r.output.id]),
+      [['s1', 's1'], ['s2', 's2']]);
+  }
+});
+
+test('frozen v2 retains closing brackets and does not treat an ellipsis as an abbreviation', () => {
+  assert.deepEqual(sourceSpansV2('Ready?] Next.').map(s => s.text), ['Ready?]', 'Next.']);
+  assert.deepEqual(sourceSpansV2('はい。』次。').map(s => s.text), ['はい。』', '次。']);
+  assert.deepEqual(sourceSpansV2('Dr... Smith waits.').map(s => s.text), ['Dr...', 'Smith waits.']);
+});

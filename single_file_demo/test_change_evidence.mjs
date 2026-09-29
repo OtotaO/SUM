@@ -31,25 +31,25 @@ function lines(passages, source, output) {
 // position (Removed, Added) and the honest kind label (Capitalized word).
 const LEASE = [
   '1 changed-candidate A s1 0-47 | B s1 0-27',
-  '  a Modal verb | Differs | may -> can | A 6-9 B 6-9',
+  '  a Modal-list word | Differs | may -> can | A 6-9 B 6-9',
   '  b Duration | Removed | 30 days | A 32-39',
   '  c Wording | Removed | notice | A 40-46',
   '  = Capitalized word “Alice”',
   '  also: with',
   '2 changed-candidate A s2 48-97 | B s2 28-54',
-  '  a Exception | Removed | unless rent is overdue | A 74-96',
+  '  a Exception-marker phrase | Removed | unless rent is overdue | A 74-96',
 ];
 
 const REFUND = [
   '1 changed-candidate A s1 0-81 | B s1 0-63',
   '  a Wording | Removed | Customers | A 0-9',
-  '  b Modal verb | Differs | may -> can | A 10-13 B 4-7',
+  '  b Modal-list word | Differs | may -> can | A 10-13 B 4-7',
   '  c Duration | Differs | 30 days -> 60 days | A 43-50 B 37-44',
   '  d Wording | Removed | delivery | A 54-62',
   '  also: You, of',
   '2 changed-candidate A s2 82-141 | B s2 64-115',
-  '  a Negation | Removed | not | A 99-102',
-  '  b Condition or exception | Differs | unless they arrive damaged -> if they arrive damaged | A 114-140 B 92-114',
+  '  a Negation-list word | Removed | not | A 99-102',
+  '  b Marker phrase | Differs | unless they arrive damaged -> if they arrive damaged | A 114-140 B 92-114',
   '3 changed-candidate A s3 142-216 | B s3 116-180',
   '  a Wording | Differs | issued -> usually go back | A 154-160 B 124-139',
   '  b Wording | Differs | original payment method -> card | A 168-191 B 148-152',
@@ -57,8 +57,8 @@ const REFUND = [
   '  also: are, the, your',
   '4 changed-candidate A s4 217-302 | B s4 181-212',
   '  a Number | Removed | $8 | A 234-236',
-  '  b Exception | Removed | except where the return is caused by our error | A 255-301',
-  '  = Negation “not”',
+  '  b Exception-marker phrase | Removed | except where the return is caused by our error | A 255-301',
+  '  = Negation-list word “not”',
   '  also: of',
   '5 changed-candidate A s5 303-365 | B s5 213-267',
   '  a Date | Differs | March 1, 2026 -> March 2026 | A 324-337 B 234-244',
@@ -67,7 +67,7 @@ const REFUND = [
   '  a Capitalized word | Other passage | Northwind | B 301-310 A 366-375',
   '6 source-unmatched A s6 366-421 | B -',
   '  a Capitalized words | Removed | Northwind Outfitters | A 366-386',
-  '  b Modal verb | Removed | must | A 387-391',
+  '  b Modal-list word | Removed | must | A 387-391',
   '  c Number | Removed | over $200 | A 411-420',
 ];
 
@@ -83,8 +83,8 @@ test('lease example: the worked evidence, identical under both splitters', () =>
   assert.equal(headingText(summary), '2 passages compared, 4 differences noted.');
   assert.deepEqual(summaryFacts(summary), ['1 common word is also marked, without a note.']);
   assert.equal(noteStatement(p1.notes[0], p1, source, output), '“may” in the original, “can” in the rewrite.');
-  assert.equal(noteStatement(p1.notes[1], p1, source, output), '“30 days” appears in the original, nowhere in the rewrite.');
-  assert.equal(noteStatement(p2.notes[0], p2, source, output), 'The clause “unless rent is overdue” appears in the original, nowhere in the rewrite.');
+  assert.equal(noteStatement(p1.notes[1], p1, source, output), '“30 days” has no normalized word match in the entire rewrite text.');
+  assert.equal(noteStatement(p2.notes[0], p2, source, output), '“unless rent is overdue” has no normalized word match in the entire rewrite text.');
 });
 
 test('refund example: the worked evidence, identical under both splitters', () => {
@@ -98,8 +98,8 @@ test('refund example: the worked evidence, identical under both splitters', () =
   assert.deepEqual(Object.fromEntries(Object.entries(groups).map(([k, v]) => [k, v.length])),
     { 'a-only': 8, differs: 8, 'b-only': 0, other: 1, moved: 0, both: 1 });
   const p2 = passages.find(p => p.number === '2'), p51 = passages.find(p => p.number === '5.1'), p6 = passages.find(p => p.number === '6');
-  assert.equal(noteStatement(p2.notes[0], p2, source, output), '“not” is in the original passage, not in the paired rewrite passage.');
-  assert.equal(noteStatement(p51.notes[0], p51, source, output), 'This passage has no partner in the original; original passage 6 has “Northwind”.');
+  assert.equal(noteStatement(p2.notes[0], p2, source, output), '“not” has no normalized word match in the paired rewrite passage.');
+  assert.equal(noteStatement(p51.notes[0], p51, source, output), '“Northwind” has a normalized word match in the original, starting in passage 6: “Northwind”.');
   assert.equal(noteStatement(p6.notes[1], p6, source, output), '“must” is in an original passage that has no partner in the rewrite.');
   assert.deepEqual(passages.map(p => p.number), ['1', '2', '3', '4', '5', '5.1', '6']);
 });
@@ -149,19 +149,19 @@ test('only character-identical texts are called identical; other character diffe
   assert.equal(headingText(evidence('Alice may cancel.', 'Alice may cancel.').summary), '1 passage compared, no literal differences.');
   for (const [a, b, said] of [
     ['Call if glucose is < 70 mg/dL.', 'Call if glucose is > 70 mg/dL.', '“<” in the original, “>” in the rewrite.'],
-    ['Store at -20°C.', 'Store at 20°C.', 'The original has “-” here; the rewrite does not.'],
+    ['Store at -20°C.', 'Store at 20°C.', 'Marked original characters: “-”.'],
     ['Price: 50 € per month.', 'Price: 50 $ per month.', '“€” in the original, “$” in the rewrite.'],
     ['Great job 👍 today.', 'Great job 👎 today.', '“👍” in the original, “👎” in the rewrite.'],
     ['Do not sign.', 'Do NOT sign.', '“not” in the original, “NOT” in the rewrite.'],
-    ["Let's eat, Grandma.", "Let's eat Grandma.", 'The original has “,” here; the rewrite does not.'],
-    ['A b.', 'A  b.', 'The rewrite has a space here; the original does not.'],
+    ["Let's eat, Grandma.", "Let's eat Grandma.", 'Marked original characters: “,”.'],
+    ['A b.', 'A  b.', 'Marked rewrite characters: a space.'],
     ['A b.', 'A\tb.', 'a space in the original, a tab in the rewrite.'],
   ]) {
     const { passages, summary } = evidence(a, b);
     assert.equal(summary.identicalTexts, false);
     assert.match(headingText(summary), /differences? noted/);
     assert.ok(statements(a, b).includes(said), `${a} -> ${b}: ${statements(a, b).join(' | ')}`);
-    assert.equal(passageMessage(passages[0]), 'The same words in the same order; the characters noted here differ.');
+    assert.equal(passageMessage(passages[0]), 'The normalized words match in order; the characters noted here differ.');
   }
 });
 
@@ -170,10 +170,10 @@ test('reordered passages and spacing between passages are reported as such', () 
   assert.equal(headingText(reordered), '2 passages compared; the texts are not identical.');
   assert.deepEqual(summaryFacts(reordered), ['The rewrite has these passages in a different order.']);
   const spaced = evidence('Pay within 30 days.\nLate fees apply.', 'Pay within 30 days.  Late fees apply.').summary;
-  assert.deepEqual(summaryFacts(spaced), ['Every passage is identical and in the same order; the texts differ only in the spacing or line breaks between passages.']);
+  assert.deepEqual(summaryFacts(spaced), ['Every passage is identical and in the same order; the texts differ only in the spacing or line breaks outside the passages (before, between or after them).']);
 });
 
-test('moved words are noted as Moved, in both passages at different places', () => {
+test('unaligned equal words are noted as matches without inferring movement', () => {
   for (const [a, b, word] of [
     ['You must not leave, and you may stay.', 'You must leave, and you may not stay.', 'not'],
     ['Tenants may not smoke, and may vape.', 'Tenants may smoke, and may not vape.', 'not'],
@@ -182,32 +182,31 @@ test('moved words are noted as Moved, in both passages at different places', () 
     const { passages, summary } = evidence(a, b);
     const moved = passages[0].notes.filter(n => n.state === 'moved');
     assert.ok(moved.some(n => noteStrings(n, a, b).aText === word), `${a}: ${moved.length} moved`);
-    assert.ok(statements(a, b).includes(`“${word}” is in both passages, at different places.`));
+    assert.ok(statements(a, b).includes(`“${word}” is matched in both passages by normalized words.`));
     assert.match(headingText(summary), /differences? noted/);
   }
 });
 
-test('a string inside a longer word of the other text is never called absent', () => {
-  for (const [a, b, said] of [
-    ['Alice may cancel the lease.', "Alice's lease can be cancelled.", '“Alice” appears in the original; the rewrite has it only within other words, first in “Alice\'s”.'],
-    ['The fee is $8 today. Nothing else.', 'The fee is waived. Total $8.50 today.', '“$8” appears in the original; the rewrite has it only within other words, first in “$8.50”.'],
-    ['Take 1 tablet every 4 to 6 hours.', 'Take one tablet every 4-6 hours.', '“4” appears in the original; the rewrite has it only within other words, first in “4-6”.'],
-  ]) assert.ok(statements(a, b).includes(said), `${a}: ${statements(a, b).join(' | ')}`);
-  // Structural words are checked in the paired passage, as characters too.
+test('absence claims concern normalized words, not substrings or meaning', () => {
+  for (const [a, b, word] of [
+    ['Alice may cancel the lease.', "Alice's lease can be cancelled.", 'Alice'],
+    ['The fee is $8 today. Nothing else.', 'The fee is waived. Total $8.50 today.', '$8'],
+    ['Take 1 tablet every 4 to 6 hours.', 'Take one tablet every 4-6 hours.', '4'],
+  ]) assert.ok(statements(a, b).includes(`“${word}” has no normalized word match in the entire rewrite text.`), a);
   assert.ok(statements('You may not leave.', 'You cannot leave.').includes('“not” in the original, “cannot” in the rewrite.'));
 });
 
 test('a string that is in the paired passage fewer times is stated with both counts', () => {
   assert.ok(statements('Do not smoke, not ever, not here.', 'Do not smoke, not here.')
-    .includes('“not” appears as a word 3 times in the original passage and twice in the paired rewrite passage, ignoring capitalization.'));
+    .includes('“not” has non-overlapping normalized word matches 3 times in the original passage and twice in the paired rewrite passage.'));
 });
 
 test('in-both lines print what each passage literally has', () => {
   const a = 'Do not sign.', b = 'Do NOT sign.';
   const lines = evidence(a, b).passages[0].inBoth.map(inBothText);
-  assert.ok(lines.includes('“not” in the original, “NOT” in the rewrite: the same words, with different capitalization.'));
+  assert.ok(lines.includes('“not” in the original, “NOT” in the rewrite: matching normalized words; exact characters differ.'));
   const g = evidence('Call if glucose is < 70 mg/dL.', 'Call if glucose is > 70 mg/dL.').passages[0].inBoth.map(inBothText);
-  assert.ok(g.includes('“if glucose is < 70 mg/dL” in the original, “if glucose is > 70 mg/dL” in the rewrite: the same words, with different characters between the words.'));
+  assert.ok(g.includes('“if glucose is < 70 mg/dL” in the original, “if glucose is > 70 mg/dL” in the rewrite: matching normalized words; exact characters differ.'));
 });
 
 test('the blackline never marks a space as a word, and each run holds one side only', () => {
@@ -257,10 +256,79 @@ test('long and hostile inputs stay fast (timing guard)', () => {
   sourceSpansV2('go. '.repeat(25000));
   assert.ok(performance.now() - t0 < 1000, 'the v2 splitter is linear');
   guard("'if ' repeated to 99,000 characters", 'if '.repeat(33000), 'x', 4000);
+  // Review reproduction: formerly lowercased 86,769 characters for each of
+  // 1,375 absent structural words (7.3 seconds in this Node environment).
+  const structuralA = [], structuralB = [];
+  for (let i = 0; i < 11000; i++) {
+    const word = 'wwwww' + (i % 90);
+    structuralA.push(word); structuralB.push(word);
+    if (i % 8 === 0) structuralA.push('not');
+  }
+  guard('1,375 missing words in a 92k-character passage', structuralA.join(' '), structuralB.join(' '), 2000);
   const nums = Array.from({ length: 17000 }, (_, i) => String(i % 997)).join(' ').slice(0, 85000);
   guard('85,000 characters of numbers', nums, 'x', 4000);
   const words = Array.from({ length: 16000 }, (_, i) => ['alpha', 'beta', 'gamma', 'delta', 'tenant', 'pays'][i % 6]).join(' ').slice(0, 99000);
   guard('one 99,000-character passage against its reverse', words, words.split(' ').reverse().join(' '), 4000);
   const long = EXAMPLES.refund.source.replace(/\. /g, ', ').repeat(230).slice(0, 99000);
   guard('one 99,000-character passage with light edits', long, long.replace(/30 days/g, '60 days'), 4000);
+});
+
+// Fixed raw-text reproductions from the independent review. These expected
+// phrases/counts were specified from the raw strings, not from engine output.
+test('normalization is disclosed for hard wraps, apostrophes and extra gaps', () => {
+  for (const [a, b] of [
+    ['Late fees apply if rent is late. unless waived.', 'Late fees apply if rent is late. Unless waived.'],
+    ['Refunds apply unless rent is overdue.', 'Refunds apply unless rent is\noverdue.'],
+    ["Don't don't don't enter.", 'Don’t don’t enter.'],
+    ['Pay within 30 days.', 'Pay within 30\tdays.'],
+  ]) {
+    const printed = statements(a, b).join('\n');
+    assert.doesNotMatch(printed, /nowhere|only within other words|ignoring capitalization|at different places/);
+  }
+  assert.ok(statements("Don't don't don't enter.", 'Don’t don’t enter.').some(s => /3 times.*twice/.test(s)), 'apostrophe-normalized count is explicit');
+  const cross = statements('Late fees apply if rent is late. unless waived.', 'Late fees apply if rent is late. Unless waived.');
+  assert.ok(cross.some(s => /normalized word match.*starting in passage/.test(s)), 'a match spanning passages is found');
+});
+
+test('one-sided character notes claim only their own marked text', () => {
+  const printed = statements('Pay now.', 'Pay\u200b now.');
+  assert.ok(printed.includes('Marked rewrite characters: code point U+200B.'));
+  assert.doesNotMatch(printed.join(' '), /original does not|nowhere/);
+});
+
+test('lexical labels do not infer grammar or mistake Unicode symbols for capitalization', () => {
+  const a = 'Put it in the can.', b = 'Put it in the box.';
+  assert.ok(evidence(a, b).passages.flatMap(p => p.notes).some(n => kindLabel(n) === 'Modal-list word'));
+  const only = evidence('The only exit is here.', 'The exit is here.').passages.flatMap(p => p.notes);
+  assert.ok(only.some(n => kindLabel(n) === 'Marker word'));
+  for (const [x, y] of [['K', 'K'], ['Ω', 'Ω']]) {
+    const notes = evidence(`Cool it to 5 ${x} now.`, `Cool it to 5 ${y} now.`).passages.flatMap(p => p.notes);
+    assert.ok(notes.some(n => kindLabel(n) === 'Characters'));
+    assert.ok(notes.every(n => kindLabel(n) !== 'Capitalization'));
+  }
+  assert.deepEqual(tokenize('⚠️ hot.').map(t => t.t), ['hot'], 'variation selector belongs to the symbol gap');
+  assert.deepEqual(tokenize('e\u0301cho').map(t => t.t), ['e\u0301cho'], 'a letter retains its combining mark');
+});
+
+test('matched-word notes never overlap aligned in-both words', () => {
+  for (const [a, b] of [
+    ['Refunds are given if the item is damaged.', 'Refunds are given if if the ITEM is damaged.'],
+    ['may? except no, Dr.... ', 'may? except. except no, Dr.... '],
+    ['pay €, Alice! 👍,', 'pay €, Pay Alice! 👍,'],
+  ]) for (const p of evidence(a, b).passages) {
+    for (const n of p.notes.filter(n => n.state === 'moved')) {
+      for (const side of ['a', 'b']) {
+        const ns = noteSpans(n, a, b).filter(s => s.side === side);
+        for (const ib of p.inBoth) assert.ok(ns.every(s => s.e <= ib[side].s || s.s >= ib[side].e), 'matched and aligned notes are disjoint');
+      }
+    }
+  }
+});
+
+test('leading and trailing whitespace is described as outside passages', () => {
+  for (const [a, b] of [['Pay rent.', 'Pay rent.\n'], ['x', 'x '], [' x', 'x']]) {
+    assert.deepEqual(summaryFacts(evidence(a, b).summary), [
+      'Every passage is identical and in the same order; the texts differ only in the spacing or line breaks outside the passages (before, between or after them).',
+    ]);
+  }
 });

@@ -1,6 +1,6 @@
 // The independent oracle (evidence_oracle.mjs) run over the built-in
 // examples, an adversarial corpus and a seeded random mutation fuzz: every
-// sentence the review page prints about the two texts must be literally true.
+// supported sentence form is checked against the raw texts in these cases.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as E from './change_evidence.js';
@@ -36,16 +36,49 @@ test('oracle: a seeded mutation fuzz finds no false statement', () => {
   assert.deepEqual(failures, [], `${failures.length} of ${cases} fuzz cases printed a false statement`);
 });
 
-test('oracle: the checks themselves catch false statements', () => {
-  // A mutated engine output must be caught; otherwise the oracle proves nothing.
-  const { passages } = E.buildEvidence('Alice may cancel.', 'Alice can cancel.', compareTexts('Alice may cancel.', 'Alice can cancel.'));
-  const note = passages[0].notes[0];
-  assert.match(E.noteStatement(note, passages[0], 'Alice may cancel.', 'Alice can cancel.'), /“may” in the original, “can” in the rewrite/);
-  const bad = check('The fee is $8 today.', 'The total is $8.50 today.');
-  assert.deepEqual(bad, []);
+test('oracle: planted false counts, scopes, locations, quotes and headings are rejected', () => {
+  const badCount = check('Do not smoke, not ever, not here.', 'Do not smoke, not here.', undefined, e => {
+    const n = e.passages.flatMap(p => p.notes).find(n => n.scope === 'count');
+    n.counts = [999, 888];
+  });
+  assert.ok(badCount.some(s => s.startsWith('COUNT:')));
+  const badScope = check('Bob signs. Alice pays.', 'Alice pays Bob.', undefined, e => {
+    const n = e.passages.flatMap(p => p.notes).find(n => n.state === 'other');
+    assert.ok(n, 'raw fixture has an elsewhere match');
+    n.state = n.a ? 'a-only' : 'b-only'; n.scope = 'nowhere';
+  });
+  assert.ok(badScope.some(s => s.startsWith('FALSE-NOWHERE:')));
+  const badLocation = check('Bob signs. Alice pays.', 'Alice pays Bob.', undefined, e => {
+    const n = e.passages.flatMap(p => p.notes).find(n => n.state === 'other');
+    n.where.passage = 's999';
+  });
+  assert.ok(badLocation.some(s => s.startsWith('OTHER-THERE:')));
+  const badQuote = check('Do not sign.', 'Do NOT sign.', undefined, e => {
+    e.passages[0].inBoth[0].a.text = 'invented';
+  });
+  assert.ok(badQuote.some(s => s.startsWith('IN-BOTH-FORMS:')));
+  const badHeading = check('A b.', 'A  b.', undefined, e => { e.summary.identicalTexts = true; });
+  assert.ok(badHeading.some(s => s.startsWith('HEADING-IDENTICAL:')));
   assert.ok(!charsMatch('a space', '  '));
-  assert.ok(charsMatch('2 spaces', '  '));
-  assert.equal(countWords('Do not, NOT or cannot', 'not'), 2);
+  assert.ok(charsMatch('code point U+200B', '\u200b'));
+  assert.equal(countWords("Don't DON’T cannot", "don't"), 2);
+});
+
+test('oracle: summary counts, edit bounds and invented quotations are independently rejected', () => {
+  const a = 'Alice may cancel.', b = 'Alice can cancel.';
+  for (const field of ['passages', 'alsoMarked']) {
+    const bad = check(a, b, undefined, e => { e.summary[field] = 999; });
+    assert.ok(bad.some(s => s.startsWith('SUMMARY-' + field.toUpperCase() + ':')), field);
+  }
+  const badBound = check(a, b, undefined, e => {
+    e.passages[0].over = { limit: 999999 };
+    e.summary.over = [{ number: e.passages[0].number, limit: 999999 }];
+  });
+  assert.ok(badBound.some(s => s.startsWith('OVER:')));
+  const badQuote = check('Alice must pay $30 today.', 'Alice must pay today.', undefined, e => {
+    e.passages.flatMap(p => p.notes).find(n => n.scope === 'nowhere').a.text = 'invented quotation';
+  });
+  assert.ok(badQuote.some(s => s.startsWith('OWN-TEXT:')));
 });
 
 test('diff: Myers and the table agree on the length of the common subsequence', () => {

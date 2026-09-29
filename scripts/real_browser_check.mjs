@@ -53,7 +53,7 @@ const URL_ROOT = `http://127.0.0.1:${server.address().port}/`;
 // ---------------------------------------------------------------- DevTools driver
 const profile = mkdtempSync(join(tmpdir(), 'sum-check-'));
 const port = 9400 + Math.floor(Math.random() * 400);
-const chrome = spawn(CHROME, ['--no-sandbox', '--hide-scrollbars', `--user-data-dir=${profile}`, `--remote-debugging-port=${port}`, 'about:blank'], { stdio: 'ignore' });
+const chrome = spawn(CHROME, ['--headless=new', '--no-sandbox', '--hide-scrollbars', `--user-data-dir=${profile}`, `--remote-debugging-port=${port}`, 'about:blank'], { stdio: 'ignore' });
 let targets = [];
 for (let i = 0; i < 80 && !targets.length; i++) { try { targets = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).filter(t => t.type === 'page'); } catch {} await sleep(150); }
 const ws = new WebSocket(targets[0].webSocketDebuggerUrl);
@@ -80,10 +80,11 @@ const hover = async sel => { const [x, y] = await center(sel); await send('Input
 const key = async (k, code, keyCode, text) => { await send('Input.dispatchKeyEvent', { type: 'keyDown', key: k, code, windowsVirtualKeyCode: keyCode, text }); await send('Input.dispatchKeyEvent', { type: 'keyUp', key: k, code, windowsVirtualKeyCode: keyCode }); await sleep(60); };
 const setBoxes = (a, b) => run(`(()=>{for (const [id, v] of [['prose', ${JSON.stringify(a)}], ['rewrite', ${JSON.stringify(b)}]]) { const t = document.getElementById(id); t.value = v; t.dispatchEvent(new Event('input', { bubbles: true })); } document.getElementById('edit-guard').hidden || document.getElementById('guard-yes').click(); })()`);
 const shot = async name => { if (!SHOTS) return; const r = await send('Page.captureScreenshot', { format: 'png' }); writeFileSync(join(SHOTS, name), Buffer.from(r.data, 'base64')); };
-// What a view shows: visible text of a blackline, without screen-reader-only text, letters or separators.
-const VIEW = `(el => { const walk = n => { if (n.nodeType === 3) return n.data; if (n.nodeType !== 1) return ''; const cs = getComputedStyle(n);
-  if (cs.display === 'none' || parseFloat(cs.fontSize) === 0 || n.classList.contains('vh') || n.classList.contains('sep') || n.classList.contains('block-label') || n.tagName === 'SUP') return '';
-  return [...n.childNodes].map(walk).join(''); }; return walk(el); })`;
+// Read the real rendered text; CSS must hide annotations in the exact views.
+const VIEW = `(el => el.innerText)`;
+// Reconstruct display-only Unicode labels before comparing with raw engine
+// statements. Input/export byte identity is checked separately in the DOM suite.
+const rawDisplay = text => text.replace(/\[U\+([0-9A-F]{4,6})(?: [^\]]+)?\]/g, (_, cp) => String.fromCodePoint(parseInt(cp, 16)));
 
 const results = [];
 const ok = (name, cond, detail = '') => results.push(`${cond ? 'PASS' : 'FAIL'} ${name}${detail && !cond ? ' :: ' + detail : ''}`);
@@ -130,6 +131,15 @@ try {
   await key('x', 'KeyX', 88, 'x');
   ok('typing with recorded decisions asks first and changes nothing', await run(`!document.getElementById('edit-guard').hidden && document.getElementById('rewrite').value === 'Alice can cancel the lease. The deposit is refundable.'`));
   await click('#guard-no');
+
+  // Real noncancelable IME events must not hide or alter a decided review.
+  await run(`(() => { const t = document.getElementById('rewrite'); t.focus(); t.setSelectionRange(t.value.length, t.value.length); })()`);
+  await send('Input.imeSetComposition', { text: 'か', selectionStart: 1, selectionEnd: 1 });
+  await sleep(100);
+  ok('noncancelable IME composition restores the text and asks before editing', await run(`!document.getElementById('edit-guard').hidden && document.getElementById('rewrite').value === 'Alice can cancel the lease. The deposit is refundable.' && !document.getElementById('review-panel').hidden && document.getElementById('d-source-s1-needs-change').checked`));
+  await send('Input.insertText', { text: 'か' });
+  await click('#guard-no');
+  ok('declining IME editing retains the original text and decisions', await run(`document.getElementById('rewrite').value === 'Alice can cancel the lease. The deposit is refundable.' && document.getElementById('d-source-s2-accepted').checked`));
 
   // Export, then check and open the packet.
   await run(`window.__blobs = []; { const o = URL.createObjectURL; URL.createObjectURL = b => { window.__blobs.push(b); return o.call(URL, b); }; HTMLAnchorElement.prototype.click = function () {}; }`);
@@ -185,7 +195,7 @@ try {
     const ev = E.buildEvidence(a, b, review);
     const want = ev.passages.flatMap(p => p.notes.map(n => E.noteStatement(n, p, a, b)));
     const bad = check(a, b);
-    const same = JSON.stringify(page.statements) === JSON.stringify(want) && JSON.stringify(page.inBoth) === JSON.stringify(ev.passages.flatMap(p => p.inBoth.map(E.inBothText)));
+    const same = JSON.stringify(page.statements.map(rawDisplay)) === JSON.stringify(want.map(rawDisplay)) && JSON.stringify(page.inBoth.map(rawDisplay)) === JSON.stringify(ev.passages.flatMap(p => p.inBoth.map(E.inBothText)).map(rawDisplay));
     const headingTrue = /no literal differences/.test(page.heading) === (a === b);
     // Views in the real engine: switch each Read as view and compare with the exact passages.
     let viewsExact = true;
@@ -193,7 +203,7 @@ try {
       await run(`document.getElementById('view-${view}').checked = true`);
       const shown = await run(`[...document.querySelectorAll('#review-rows article .blackline')].map(${VIEW})`);
       const expected = ev.passages.map(p => (side === 'a' ? p.a?.text : p.b?.text) || '');
-      shown.forEach((text, i) => { if (text.replace(/‸/g, '') !== expected[i]) viewsExact = false; });
+      shown.forEach((text, i) => { if (text !== expected[i]) viewsExact = false; });
     }
     await run(`document.getElementById('view-marked').checked = true`);
     pairsChecked++;

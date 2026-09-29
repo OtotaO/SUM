@@ -262,8 +262,8 @@ test('first view opens on the lease example, compared, with no request, no decis
     assert.equal(p.$('compare-btn').textContent, 'Compare again');
     assert.equal(p.$('compare-btn').classList.contains('ink'), false, 'Compare is secondary while results are current');
     assert.equal(p.$('export-review-btn').disabled, false);
-    assert.equal(p.$('char-count').textContent, '97 characters · 2 passages');
-    assert.equal(p.$('rewrite-count').textContent, '54 characters · 2 passages');
+    assert.equal(p.$('char-count').textContent, '97 UTF-16 code units · 2 passages');
+    assert.equal(p.$('rewrite-count').textContent, '54 UTF-16 code units · 2 passages');
     assert.equal(p.$('review-record-count').textContent, '0 of 2');
     assert.equal(p.window.document.querySelectorAll('#review-rows input[value="unreviewed"]:checked').length, 2);
     assert.equal(p.window.document.querySelectorAll('.hl').length, 0, 'nothing is highlighted at rest');
@@ -304,22 +304,22 @@ test('the lease evidence on the page matches the worked example', async () => {
     const note = id => p.$(id);
     assert.equal(text(note('n1a').querySelector('.lit')), 'may→ changed to can');
     assert.equal(words(note('n1a').querySelector('.chip')), 'a→b Differs');
-    assert.equal(text(note('n1a').querySelector('.kind')), 'Modal verb');
+    assert.equal(text(note('n1a').querySelector('.kind')), 'Modal-list word');
     assert.equal(words(note('n1a').querySelector('.ns')), '“may” in the original, “can” in the rewrite. A 6–9 B 6–9');
     assert.equal(text(note('n1b').querySelector('.lit')), '30 days');
     assert.equal(words(note('n1b').querySelector('.chip')), 'ab Removed');
-    assert.equal(words(note('n1b').querySelector('.ns')), '“30 days” appears in the original, nowhere in the rewrite. A 32–39');
+    assert.equal(words(note('n1b').querySelector('.ns')), '“30 days” has no normalized word match in the entire rewrite text. A 32–39');
     assert.equal(text(note('n1c').querySelector('.lit')), 'notice');
     assert.equal(text(note('n2a').querySelector('.lit')), 'unless rent is overdue');
-    assert.equal(text(note('n2a').querySelector('.kind')), 'Exception');
+    assert.equal(text(note('n2a').querySelector('.kind')), 'Exception-marker phrase');
     assert.equal(words(p.$('p1').querySelector('.inboth')), '= In both passages: “Alice” Capitalized word A 0–5 B 0–5');
     assert.equal(text(p.$('p1').querySelector('.also')), 'Also marked, no note (common words): original only: with');
     const rows = [...p.window.document.querySelectorAll('#ledger-list > li')].map(words);
     assert.deepEqual(rows, [
-      'ab Removed 3 30 days duration · notice wording · unless rent is overdue exception',
-      'a→b Differs 1 may → changed to can modal verb',
+      'ab Removed 3 30 days duration · notice wording · unless rent is overdue exception-marker phrase',
+      'a→b Differs 1 may → changed to can modal-list word',
       '= In both 1 Alice capitalized word',
-      'Nothing listed under: Added · Other passage · Moved. 1 common word is also marked, without a note.',
+      'Nothing listed under: Added · Other passage · Matched words. 1 common word is also marked, without a note.',
     ]);
     // Marks read as "original only: may", "rewrite only: can"; the letter follows its last token.
     const line = p.$('p1').querySelector('.blackline');
@@ -331,11 +331,11 @@ test('the lease evidence on the page matches the worked example', async () => {
     const viewOf = (el, hide) => { const c = el.cloneNode(true); for (const n of c.querySelectorAll(hide + ', .sep, .vh, sup.ref')) n.remove(); return c.textContent; };
     assert.equal(viewOf(line, '.irun'), EXAMPLES.lease.source.slice(0, 47));
     assert.equal(viewOf(line, '.drun'), EXAMPLES.lease.output.slice(0, 27));
-    assert.equal(p.$('export-passages').textContent, '2 rows with exact character spans');
+    assert.equal(p.$('export-passages').textContent, '2 rows with exact UTF-16 code-unit spans');
     assert.equal(p.$('export-receipt').textContent, 'none; this is a built-in example');
     await until(() => p.$('export-original').textContent.includes('sha256-712c650c…3868fa'));
-    assert.equal(p.$('export-original').textContent, '97 characters · sha256-712c650c…3868fa');
-    assert.equal(p.$('export-rewrite').textContent, '54 characters · sha256-36e8b003…d67db4');
+    assert.equal(p.$('export-original').textContent, '97 UTF-16 code units · sha256-712c650c…3868fa');
+    assert.equal(p.$('export-rewrite').textContent, '54 UTF-16 code units · sha256-36e8b003…d67db4');
     assert.deepEqual(p.errors, []);
   } finally { p.close(); }
 });
@@ -354,7 +354,7 @@ test('editing either text hides the results and shows the stale state; Clear bot
     assert.equal(p.$('strip-tag').hidden, true);
     assert.equal(p.$('strip-copy').textContent, 'Your texts. Examples, each fills both boxes:');
     assert.equal(p.$('try-example').getAttribute('aria-pressed'), 'false');
-    assert.equal(p.$('rewrite-count').textContent, '61 characters · 3 passages');
+    assert.equal(p.$('rewrite-count').textContent, '61 UTF-16 code units · 3 passages');
     p.$('compare-btn').click();
     assert.equal(p.$('review-panel').hidden, false);
     assert.match(p.$('review-summary').textContent, /1 rewrite passage without a partner · your texts$/);
@@ -370,17 +370,17 @@ test('editing either text hides the results and shows the stale state; Clear bot
   } finally { p.close(); }
 });
 
-test('text over 100,000 characters is refused explicitly and nothing is compared (M18)', async () => {
+test('text over 100,000 UTF-16 code units is refused explicitly and nothing is compared (M18)', async () => {
   const p = await page();
   try {
     // A maxlength attribute would make the browser cut a longer paste silently,
     // so the boxes must not carry one: the page itself refuses the text instead.
     for (const id of ['prose', 'rewrite']) assert.equal(p.$(id).hasAttribute('maxlength'), false, `#${id} must not truncate silently`);
     p.input('prose', 'x'.repeat(100001));
-    await until(() => p.$('char-count').textContent === '100,001 characters · over the 100,000 limit');
+    await until(() => p.$('char-count').textContent === '100,001 UTF-16 code units · over the 100,000 limit');
     p.$('compare-btn').click();
     const message = p.$('workbench-status').textContent;
-    assert.match(message, /at most 100,000 characters/);
+    assert.match(message, /at most 100,000 UTF-16 code units/);
     assert.match(message, /Box A has 100,001/);
     assert.match(message, /Nothing was compared/);
     assert.equal(p.$('review-panel').hidden, true);
@@ -422,15 +422,15 @@ test('filters hide other notes, and hover or focus outlines only the inspected m
   } finally { p.close(); }
 });
 
-test('a note span button selects the exact characters and Escape returns to it', async () => {
+test('a note span button selects the exact UTF-16 code units and Escape returns to it', async () => {
   const p = await page();
   try {
     const button = p.$('n1b').querySelector('.span-link');
-    assert.equal(button.getAttribute('aria-label'), 'Select “30 days”, characters 32 to 39 of the original');
+    assert.equal(button.getAttribute('aria-label'), 'Select “30 days”, UTF-16 code units 32 to 39 of the original');
     button.click();
     const prose = p.$('prose');
     assert.equal(prose.value.slice(prose.selectionStart, prose.selectionEnd), '30 days');
-    assert.equal(p.$('workbench-status').textContent, 'Selected characters 32 to 39 of the original: “30 days”. The box is read-only until you click in it. Press Escape to go back.');
+    assert.equal(p.$('workbench-status').textContent, 'Selected UTF-16 code units 32 to 39 of the original: “30 days”. The box is read-only until you click in it. Press Escape to go back.');
     assert.equal(prose.readOnly, true, 'a jump selects for reading, so one key cannot replace the selection');
     // With decisions recorded, a key on the read-only box is swallowed without the edit question.
     const d = p.$('d-source-s1-accepted'); d.checked = true; d.dispatchEvent(new p.window.Event('change'));
@@ -589,7 +589,7 @@ test('Compare again keeps decisions: unchanged texts keep all, edited texts keep
     p.$('compare-btn').click();
     assert.equal(p.$('d-source-s1-needs-change').checked, true);
     assert.equal(p.$('d-source-s2-unreviewed').checked, true);
-    assert.match(p.$('workbench-status').textContent, /kept 1 decision for passages that did not change · 1 decision for changed passages was not carried over/);
+    assert.match(p.$('workbench-status').textContent, /kept 1 decision for passages that did not change · 1 decision for changed or ambiguous passages was not carried over/);
     assert.deepEqual(p.errors, []);
   } finally { p.close(); }
 });
@@ -636,6 +636,178 @@ test('example buttons ask before replacing your own texts', async () => {
   } finally { p.close(); }
 });
 
+test('repeated identical passage pairs never inherit another occurrence\'s decision after edits', async () => {
+  const p = await page();
+  try {
+    const source = 'Yes. Pay rent. Yes. Call us. Yes.';
+    p.input('prose', source); p.input('rewrite', source); p.$('compare-btn').click();
+    const decision = p.$('d-source-s3-needs-change');
+    decision.checked = true; decision.dispatchEvent(new p.window.Event('change'));
+    beforeInput(p, 'rewrite'); p.$('guard-yes').click();
+    p.input('rewrite', 'Yes. Pay rent. Yes. Call them. Yes.'); p.$('compare-btn').click();
+    assert.equal(p.$('d-source-s1-unreviewed').checked, true);
+    assert.equal(p.$('d-source-s3-unreviewed').checked, true);
+    assert.match(p.$('workbench-status').textContent, /1 decision for changed or ambiguous passages was not carried over/);
+    // Removing an occurrence is ambiguous too, even if the survivor has the same offset.
+    p.input('prose', 'OK. Pay now. OK.'); p.input('rewrite', 'OK. Pay later. OK.'); p.$('compare-btn').click();
+    for (const [id, value] of [['s1', 'accepted'], ['s3', 'needs-change']]) {
+      const d = p.$(`d-source-${id}-${value}`); d.checked = true; d.dispatchEvent(new p.window.Event('change'));
+    }
+    beforeInput(p, 'prose'); p.$('guard-yes').click();
+    p.input('prose', 'Pay now. OK.'); p.$('compare-btn').click();
+    assert.equal(p.window.document.querySelectorAll('#review-rows input[value="accepted"]:checked, #review-rows input[value="needs-change"]:checked').length, 0);
+    assert.match(p.$('workbench-status').textContent, /2 decisions for changed or ambiguous passages were not carried over/);
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
+test('noncancelable IME input restores the snapshot before invalidating review or extraction', async () => {
+  const p = await page();
+  try {
+    const decision = p.$('d-source-s1-accepted'); decision.checked = true; decision.dispatchEvent(new p.window.Event('change'));
+    const original = p.$('prose').value;
+    p.window.__sumLastTriples = [['sentinel', 'is', 'retained']];
+    for (const confirm of [false, true]) {
+      p.$('prose').setSelectionRange(2, 2);
+      p.$('prose').dispatchEvent(new p.window.InputEvent('beforeinput', { bubbles: true, cancelable: false, inputType: 'insertCompositionText', data: 'か', isComposing: true }));
+      p.$('prose').value = original.slice(0, 2) + 'か' + original.slice(2);
+      p.$('prose').dispatchEvent(new p.window.InputEvent('input', { bubbles: true, inputType: 'insertCompositionText', data: 'か', isComposing: true }));
+      assert.equal(p.$('prose').value, original);
+      assert.equal(p.$('review-panel').hidden, false);
+      assert.equal(p.$('d-source-s1-accepted').checked, true);
+      assert.deepEqual(p.window.__sumLastTriples, [['sentinel', 'is', 'retained']]);
+      assert.equal(p.$('edit-guard').hidden, false);
+      p.$(confirm ? 'guard-yes' : 'guard-no').click();
+    }
+    p.input('prose', original + 'か');
+    assert.equal(p.$('prose').value, original + 'か');
+    assert.equal(p.$('review-panel').hidden, true);
+    p.$('restore-review').click();
+    assert.equal(p.$('prose').value, original);
+    assert.equal(p.$('d-source-s1-accepted').checked, true);
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
+test('replacement prompts count decisions in a hidden restorable review', async () => {
+  const p = await page();
+  try {
+    const d = p.$('d-source-s1-accepted'); d.checked = true; d.dispatchEvent(new p.window.Event('change'));
+    beforeInput(p, 'rewrite'); p.$('guard-yes').click(); p.input('rewrite', 'New working text.');
+    for (const button of [p.window.document.querySelector('[data-example="refund"]'), p.$('clear-both')]) {
+      button.click();
+      assert.match(p.$('guard-text').textContent, /1 recorded decision/);
+      p.$('guard-no').click();
+      assert.match(p.$('restore-review').textContent, /1 decision/);
+    }
+    const source = 'A packet source.', output = 'A packet output.';
+    const packet = await makeReviewPacket({ source, output, review: compareTexts(source, output) });
+    p.input('packet-input', JSON.stringify(packet)); p.$('verify-packet-btn').click();
+    await until(() => !p.$('open-packet-btn').disabled);
+    p.$('open-packet-btn').click();
+    assert.match(p.$('guard-text').textContent, /1 recorded decision/);
+    p.$('guard-no').click(); p.$('restore-review').click();
+    assert.equal(p.$('d-source-s1-accepted').checked, true);
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
+test('generated replacement waits for confirmation and reports decision carry without overwriting it', async () => {
+  const p = await page();
+  try {
+    const d = p.$('d-source-s1-accepted'); d.checked = true; d.dispatchEvent(new p.window.Event('change'));
+    const output = p.$('rewrite').value;
+    const data = { source_text: p.$('prose').value, tome: 'A completely different generated rewrite.', triples_used: [], quantized_sliders: {} };
+    const deliver = () => { p.window.__sumLastRender = data; p.window.document.dispatchEvent(new p.window.CustomEvent('sum:render', { detail: data })); };
+    deliver();
+    assert.equal(p.$('rewrite').value, output);
+    assert.match(p.$('guard-text').textContent, /1 recorded decision/);
+    p.$('guard-no').click();
+    assert.equal(p.$('d-source-s1-accepted').checked, true);
+    deliver(); p.$('guard-yes').click();
+    assert.equal(p.$('rewrite').value, data.tome);
+    assert.match(p.$('workbench-status').textContent, /1 decision for changed or ambiguous passages was not carried over/);
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
+test('bidi and invisible characters are labeled and isolated in evidence but exported unchanged', async () => {
+  const p = await page();
+  try {
+    const source = 'Pay the deposit within 30 days. שלום is welcome.';
+    const output = 'Pay the deposit within \u202e30 days. שלום\u200b is welcome.';
+    p.input('prose', source); p.input('rewrite', output); p.$('compare-btn').click();
+    const displayed = [...p.window.document.querySelectorAll('#review-rows .notes, #ledger-list')].map(n => n.textContent).join(' ');
+    assert.doesNotMatch(displayed, /[\u202e\u200b]/);
+    assert.match(displayed, /U\+202E/);
+    assert.match(displayed, /U\+200B/);
+    assert.ok(p.window.document.querySelector('#review-rows .notes bdi[dir="auto"]'));
+    p.$('export-review-btn').click(); await until(() => p.downloads.length === 1);
+    const packet = JSON.parse(await p.downloads[0].text());
+    assert.equal(packet.source.text, source); assert.equal(packet.output.text, output);
+    p.input('prose', '👍👍🏽 ');
+    assert.match(p.$('char-count').textContent, /^7 UTF-16 code units/);
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
+test('repeated shared-word evidence is paged and the sticky decision indicator is bounded', async () => {
+  const p = await page();
+  try {
+    p.input('prose', 'if '.repeat(1500)); p.input('rewrite', 'if '.repeat(1499) + 'x'); p.$('compare-btn').click();
+    assert.equal(p.window.document.querySelectorAll('#review-rows .inboth').length, 100);
+    const more = p.window.document.querySelector('.more-inboth');
+    assert.match(more.textContent, /not yet shown/); more.click();
+    assert.equal(p.window.document.querySelectorAll('#review-rows .inboth').length, 200);
+    assert.ok(p.window.document.querySelectorAll('*').length < 5000);
+    p.input('prose', 'A passage. '.repeat(100)); p.input('rewrite', 'A passage. '.repeat(100)); p.$('compare-btn').click();
+    assert.equal(p.$('decided-minis').children.length, 8);
+    assert.equal(p.$('decided-count').textContent, '0 of 100 passages decided');
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
+test('one huge changed run stays bounded on first draw and announces the hidden remainder', async () => {
+  const p = await page();
+  try {
+    p.input('prose', 'if '.repeat(33000)); p.input('rewrite', 'x'); p.$('compare-btn').click();
+    await until(() => !p.$('review-panel').hidden);
+    assert.ok(p.window.document.querySelectorAll('*').length < 15000);
+    assert.ok(p.window.document.querySelectorAll('.blackline del, .blackline ins').length <= 1600);
+    assert.match(p.window.document.querySelector('.blackline-wrap .more-btn').textContent, /shown in part.*Show the rest/);
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
+test('a duplicate unpaired output passage is not claimed absent from the original', async () => {
+  const p = await page();
+  try {
+    p.input('prose', 'Pay rent. Leave.'); p.input('rewrite', 'Pay rent. Leave. Pay rent.'); p.$('compare-btn').click();
+    const labels = [...p.window.document.querySelectorAll('.pkind')].map(n => n.textContent);
+    assert.ok(labels.includes('no partner passage in the original'));
+    assert.equal(labels.some(t => t.includes('rewrite only')), false);
+  } finally { p.close(); }
+});
+
+test('changing a checked packet while its confirmation is open cannot replace or invalidate the review', async () => {
+  const p = await page();
+  try {
+    const d = p.$('d-source-s1-accepted'); d.checked = true; d.dispatchEvent(new p.window.Event('change'));
+    const source = 'Incoming source.', output = 'Incoming output.';
+    const packet = await makeReviewPacket({ source, output, review: compareTexts(source, output) });
+    p.input('packet-input', JSON.stringify(packet)); p.$('verify-packet-btn').click();
+    await until(() => !p.$('open-packet-btn').disabled);
+    p.$('open-packet-btn').click();
+    p.window.__sumLastTriples = [['sentinel', 'is', 'retained']];
+    p.input('packet-input', '{}'); p.$('guard-yes').click();
+    assert.equal(p.$('prose').value, EXAMPLES.lease.source);
+    assert.equal(p.$('d-source-s1-accepted').checked, true);
+    assert.deepEqual(p.window.__sumLastTriples, [['sentinel', 'is', 'retained']]);
+    assert.match(p.$('workbench-status').textContent, /packet changed.*Check it again/);
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
 test('the page prints only true statements for the adversarial pairs', async () => {
   const { ADVERSARIAL } = await import('./evidence_oracle.mjs');
   const p = await page();
@@ -648,8 +820,9 @@ test('the page prints only true statements for the adversarial pairs', async () 
       assert.doesNotMatch(p.$('ledger-list').textContent, /common words or punctuation/);
       // Every In-both item in the ledger shows strings both passages literally have.
       for (const it of p.window.document.querySelectorAll('#ledger-list li.both .it')) {
-        for (const form of it.textContent.split(' / ')) assert.ok(a.includes(form) || b.includes(form), form);
-        if (!it.textContent.includes(' / ')) assert.ok(a.includes(it.textContent) && b.includes(it.textContent), it.textContent);
+        const literal = it.textContent.replace(/\[U\+([0-9A-F]{4,6})(?: [^\]]+)?\]/g, (_, cp) => String.fromCodePoint(parseInt(cp, 16)));
+        for (const form of literal.split(' / ')) assert.ok(a.includes(form) || b.includes(form), form);
+        if (!literal.includes(' / ')) assert.ok(a.includes(literal) && b.includes(literal), literal);
       }
     }
     assert.deepEqual(p.errors, []);

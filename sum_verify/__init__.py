@@ -31,7 +31,9 @@ Supported schemas (``SUPPORTED_SCHEMAS``):
   - ``sum.meaning_risk_receipt.v1``  — signed, replayable bound on a named
     meaning-loss proxy (the flagship; replays offline here);
   - ``sum.render_receipt.v1``        — signed render provenance;
-  - ``sum.transform_receipt.v1``     — signed transform provenance.
+  - ``sum.transform_receipt.v1``     — signed transform provenance;
+  - ``sum.chain_receipt.v1``         — signed multi-hop budget over ordered
+    hop receipts (replays its end-to-end leg when given those losses).
 
 What a verified receipt proves — and does NOT
 ---------------------------------------------
@@ -112,7 +114,7 @@ from sum_verify._policy import (
 # Version of THIS verify surface + the wire formats it accepts. SemVer.
 # Bump minor when a new supported schema is added; major on a
 # backwards-incompatible change to an accepted format or the public API.
-__version__ = "1.2.0"
+__version__ = "2.0.0"
 
 SUPPORTED_SCHEMAS: tuple[str, ...] = (
     MEANING_RISK_SCHEMA,

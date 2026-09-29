@@ -105,14 +105,14 @@ textarea.doc[readonly]{background:var(--sunk)}
 /* the sheet */
 .sheet{background:var(--paper);border:1px solid var(--rule);display:grid;grid-template-columns:var(--gut) minmax(0,1fr) var(--mcol);grid-template-rows:repeat(6,auto);margin-bottom:56px}
 .head-gut{grid-column:1;grid-row:1;border-bottom:1px solid var(--rule)}
-.head-title{grid-column:2;grid-row:1;padding:13px var(--textpad) 10px 0;border-bottom:1px solid var(--rule)}
+.head-title{grid-column:2;grid-row:1;min-height:var(--head-space,0px);padding:13px var(--textpad) 10px 0;border-bottom:1px solid var(--rule)}
 .head-title h2{font:400 26px/1.2 var(--serif);letter-spacing:-.01em;margin:0}
 #review-summary{margin:3px 0 0;font-size:13px;color:var(--ink-3)}
 .head-m{grid-column:3;grid-row:1;border-bottom:1px solid var(--rule);border-left:1px solid var(--rule)}
 .sheet-bar{grid-column:3;grid-row:1 / 5;align-self:start;min-height:var(--headh,0px);position:sticky;top:0;z-index:4;background:var(--paper);display:flex;align-items:center;justify-content:space-between;gap:14px;
   padding:10px 24px;border-bottom:1px solid var(--rule);border-left:1px solid var(--rule)}
 .decided{margin:0;display:flex;align-items:center;gap:9px;font-size:13.5px;color:var(--ink-2);min-width:0;flex:1 1 auto}
-.minis{display:flex;flex-wrap:wrap;gap:4px;max-width:64px;flex:none}
+.minis{display:flex;flex-wrap:wrap;gap:4px;max-width:64px;max-height:28px;overflow:hidden;flex:none}
 .mini{display:inline-block;width:12px;height:12px;border:1.5px dashed var(--ink-3);flex:none}
 .mini[data-d="accepted"]{border:1.5px solid var(--ok);background:var(--ok)}
 .mini[data-d="needs-change"]{border:1.5px solid var(--warn);background:var(--warn)}
@@ -133,6 +133,9 @@ textarea.doc[readonly]{background:var(--sunk)}
 .items a{text-decoration:none}
 .items a:hover .it,.items a:focus-visible .it{text-decoration:underline;text-decoration-color:var(--ink-3)}
 .items .it{white-space:normal}
+.lit,.it,.statement,.blackline{unicode-bidi:isolate}
+.statement{direction:ltr}
+bdi{unicode-bidi:isolate}
 .items .k{font:12px var(--sans);color:var(--ink-3);margin-left:2px;white-space:nowrap}
 .items .sep{color:var(--ink-3);margin:0 8px}
 .items .more{font:13px var(--sans);color:var(--ink-3)}
@@ -239,7 +242,7 @@ sup.ref.hl a{color:var(--on-ink)}
 .notes-h{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;margin:0}
 .notes ol{list-style:none;margin:0;padding:0}
 .note{display:grid;grid-template-columns:minmax(22px,max-content) minmax(0,1fr);gap:0 8px;padding:8px 0;border-bottom:1px solid var(--rule)}
-.note,.inboth,.passage,#scope{scroll-margin-top:112px}
+.note,.inboth,.passage,#scope,#evidence{scroll-margin-top:calc(var(--barh,96px) + 16px)}
 .note:last-child{border-bottom:0}
 .nl{font:italic 600 17px/1.5 var(--serif);color:var(--ink-2);text-align:center;height:24px;padding:0 3px;white-space:nowrap}
 .note.hl{outline:0;background:var(--paper);box-shadow:-26px 0 0 var(--paper),26px 0 0 var(--paper)}
@@ -269,6 +272,9 @@ body:has(#view-rewrite:checked) .blackline ins{text-decoration:none;background:n
 body:has(#view-original:checked) .blackline .sep,body:has(#view-rewrite:checked) .blackline .sep{display:none}
 body:has(#view-original:checked) .blackline .block.side-b,body:has(#view-rewrite:checked) .blackline .block.side-a{display:none}
 body:has(#view-original:checked) .block-label,body:has(#view-rewrite:checked) .block-label{display:none}
+body:has(#view-original:checked) .blackline sup.ref,body:has(#view-rewrite:checked) .blackline sup.ref,
+body:has(#view-original:checked) .blackline .vh,body:has(#view-rewrite:checked) .blackline .vh{display:none}
+body:has(#view-rewrite:checked) .blackline .drun.gap::before{content:none}
 /* sign-off */
 .signoff{grid-column:1/-1;grid-row:6;display:grid;grid-template-columns:var(--gut) minmax(0,.8fr) minmax(0,1.25fr) minmax(0,1fr);gap:0 36px;border-top:3px double var(--rule-2);padding:24px 28px 28px 0}
 .signoff h3{margin:0 0 8px;font-size:15px}
@@ -374,7 +380,7 @@ details[open]>summary .pm::before{content:"\2212"}
   .placeholder{margin:0 -16px 40px;border-left:0;border-right:0;padding:22px 16px}
   .sheet{display:flex;flex-direction:column;margin:0 -16px 40px;border-left:0;border-right:0}
   .head-gut,.head-m{display:none}
-  .head-title{order:0;padding:16px 16px 12px;border-bottom:0}
+  .head-title{order:0;min-height:0;padding:16px 16px 12px;border-bottom:0}
   .head-title h2{font-size:23px}
   .sheet-bar{order:1;align-self:stretch;min-height:0;padding:9px 16px;border-left:0;border-top:1px solid var(--rule)}
   .minis,.decided .w{display:none}
@@ -456,12 +462,12 @@ details[open]>summary .pm::before{content:"\2212"}
   </div>
   <div class="fields">
     <div class="field">
-      <div class="field-head"><label for="prose"><span class="letter" aria-hidden="true">A</span>Original</label><span class="count" id="char-count">0 characters</span></div>
+      <div class="field-head"><label for="prose"><span class="letter" aria-hidden="true">A</span>Original</label><span class="count" id="char-count">0 UTF-16 code units</span></div>
       <div class="ta-wrap"><textarea class="doc" id="prose" spellcheck="false" placeholder="Paste the original text here."></textarea></div>
       <button type="button" class="text-btn show-all" data-for="prose" aria-controls="prose" hidden>Show all lines</button>
     </div>
     <div class="field">
-      <div class="field-head"><label for="rewrite"><span class="letter" aria-hidden="true">B</span>Rewrite</label><span class="count" id="rewrite-count">0 characters</span></div>
+      <div class="field-head"><label for="rewrite"><span class="letter" aria-hidden="true">B</span>Rewrite</label><span class="count" id="rewrite-count">0 UTF-16 code units</span></div>
       <div class="ta-wrap"><textarea class="doc" id="rewrite" spellcheck="false" placeholder="Paste the rewrite to review here."></textarea></div>
       <button type="button" class="text-btn show-all" data-for="rewrite" aria-controls="rewrite" hidden>Show all lines</button>
     </div>
@@ -480,7 +486,7 @@ details[open]>summary .pm::before{content:"\2212"}
     <p id="placeholder-body">Paste an original into A and its rewrite into B, then Compare texts. Or load an example above.</p>
     <button type="button" class="btn small" id="restore-review" hidden>Restore the reviewed texts</button>
   </div>
-  <ul class="key" aria-label="Marks used in the comparison"><li><del>ab</del> here in the original only</li><li><ins>ab</ins> here in the rewrite only</li><li class="mvkey"><del class="mv">ab</del> moved within the passage</li><li class="wskey"><del class="ws">  </del> tinted: spacing differs</li><li><sup>a</sup> letter: its note in this column</li><li><span class="barkey"></span> bar: the passage differs</li><li><span class="boxkey"></span> dashed box: no decision yet</li></ul>
+  <ul class="key" aria-label="Marks used in the comparison"><li><del>ab</del> here in the original only</li><li><ins>ab</ins> here in the rewrite only</li><li class="mvkey"><del class="mv">ab</del> normalized word match within the pair</li><li class="wskey"><del class="ws">  </del> tinted: spacing differs</li><li><sup>a</sup> letter: its note in this column</li><li><span class="barkey"></span> bar: the passage differs</li><li><span class="boxkey"></span> dashed box: no decision yet</li></ul>
 </section>
 
 <section id="review-panel" class="sheet" aria-labelledby="review-heading" hidden>
@@ -504,12 +510,12 @@ details[open]>summary .pm::before{content:"\2212"}
   </section>
   <aside class="ev-head" id="evidence" aria-labelledby="evidence-h" tabindex="-1">
     <div class="ev-h"><h3 class="sc" id="evidence-h">Change evidence</h3><a class="to-plate" href="#scope">What is and is not checked</a></div>
-    <div class="honesty"><p><strong>Literal evidence, not a judgment.</strong> Each note quotes exact characters at one place; notes on one text also say where else the words appear, ignoring case. SUM does not read for meaning, judge which differences matter, or score the rewrite. That call is yours; decisions are exported unsigned.</p></div>
-    <ul class="key" aria-label="Marks used on this sheet"><li><del>ab</del> here in the original only</li><li><ins>ab</ins> here in the rewrite only</li><li class="mvkey"><del class="mv">ab</del> moved within the passage</li><li class="wskey"><del class="ws">  </del> tinted: spacing differs</li><li><sup>a</sup> letter: its note in this column</li><li><span class="barkey"></span> bar: the passage differs</li><li><span class="boxkey"></span> dashed box: no decision yet</li><li class="caretkey"><span class="caret-g">&#x2038;</span> the rewrite has nothing here</li></ul>
+    <div class="honesty"><p><strong>Literal evidence, not a judgment.</strong> Notes name the passages or text searched. Word matching lowercases text, normalizes apostrophes and ignores gaps between words; it does not establish meaning or movement. Invisible controls are displayed as Unicode labels in notes, while original texts and exports stay unchanged. Decisions are exported unsigned.</p></div>
+    <ul class="key" aria-label="Marks used on this sheet"><li><del>ab</del> here in the original only</li><li><ins>ab</ins> here in the rewrite only</li><li class="mvkey"><del class="mv">ab</del> normalized word match within the pair</li><li class="wskey"><del class="ws">  </del> tinted: spacing differs</li><li><sup>a</sup> letter: its note in this column</li><li><span class="barkey"></span> bar: the passage differs</li><li><span class="boxkey"></span> dashed box: no decision yet</li><li class="caretkey"><span class="caret-g">&#x2038;</span> the rewrite has nothing here</li></ul>
   </aside>
   <div id="review-rows"></div>
   <div class="plate" id="scope">
-    <div class="yes"><h3 class="sc">Checked here</h3><ul><li>The words and characters that differ within each passage pair, marked in place</li><li>For a string noted in one text only: whether the other text has it as a word, only within other words, or nowhere</li><li>Numbers, dates, durations, negations, modal verbs, conditions and exceptions, and capitalized words, as fixed word lists recognise them</li><li>The order of the passages, and the spacing between them when every passage has a partner</li></ul></div>
+    <div class="yes"><h3 class="sc">Checked here</h3><ul><li>The words and characters that differ within each passage pair, marked in place up to a stated display limit</li><li>Normalized word matches within the passage or whole-text scope named in each note; character notes identify marked characters only</li><li>Fixed lists and patterns for numbers, dates, durations, negation and modal words, condition and exception markers, and capitalized words; these labels do not determine grammar or meaning</li><li>Passage order and text outside passages, including before the first and after the last passage</li><li>Lengths and span positions in UTF-16 code units, not visible-character counts</li></ul></div>
     <div class="no"><h3 class="sc">Not checked</h3><ul><li>Meaning, paraphrase or entailment</li><li>Whether either text is accurate</li><li>Whether a difference matters to you</li><li>Whether a word the lists recognise really is a name, date or number</li><li>Word by word, a passage pair with very many differences: it is shown whole</li><li>Who wrote or approved either text</li></ul></div>
   </div>
   <footer class="signoff" aria-labelledby="signoff-h">
@@ -593,7 +599,7 @@ details[open]>summary .pm::before{content:"\2212"}
         <div class="row"><label for="settings-hf-token">Hugging Face</label><input type="password" id="settings-hf-token" placeholder="hf_… (any HF model via the org/model route)" autocomplete="off" spellcheck="false"></div>
         <div class="row"><label for="settings-transform-model">Model id</label><input type="text" id="settings-transform-model" placeholder="nim:meta/llama-3.3-70b-instruct (or groq:… / ollama:… / org/model …)" autocomplete="off" spellcheck="false"></div>
         <div class="row end"><button type="button" id="settings-clear" class="btn small">Clear</button><button type="button" id="settings-save" class="btn small">Save</button></div>
-        <p class="small-note">Security: localStorage is per-origin and survives reloads. Use a <strong>scoped key with a low spend cap</strong>, and rotate it after this session if anyone else uses this browser. Script injection would expose the key; the page’s CSP is tight (<code>connect-src 'self'</code>), but no secret stored in a browser is out of reach. The receipt check does not use these keys.</p>
+        <p class="small-note">Security: localStorage is per-origin and survives reloads. Use a <strong>scoped key with a low spend cap</strong>, and rotate it after this session if anyone else uses this browser. Script injection would expose the key. The page’s CSP restricts connections (<code>connect-src 'self'</code>) but permits inline scripts (<code>script-src 'unsafe-inline'</code>); it does not make browser-stored secrets inaccessible. The receipt check does not use these keys.</p>
       </details>
       <details class="sub-d" id="cli-recipe-panel">
         <summary>Command-line recipe (NIM, Groq, Cerebras, HF, Ollama)</summary>
@@ -1340,7 +1346,7 @@ const ATTEST_LABEL = $('attest').innerHTML;  // preserve label + kbd hint
 // counts passages with the same splitter the comparison uses.
 function updateCharCount() {
   if (typeof window.__sumUpdateCounts === 'function') { window.__sumUpdateCounts(); return; }
-  const fmt = n => `${n.toLocaleString('en-US')} character${n === 1 ? '' : 's'}`;
+  const fmt = n => `${n.toLocaleString('en-US')} UTF-16 code unit${n === 1 ? '' : 's'}`;
   $('char-count').textContent = fmt($('prose').value.length);
   $('rewrite-count').textContent = fmt($('rewrite').value.length);
 }

@@ -2,18 +2,19 @@
 //
 // Given the two texts and a review (compareTexts output, or a checked packet's
 // review), this module works out, per passage pair, which characters differ
-// and where each noted string occurs in the other text. Every sentence it
+// and what scoped word comparisons establish about them. Every sentence it
 // produces is meant to be literally true of the exact characters pasted:
-// strings are quoted exactly, "nowhere" is checked as a case-insensitive
-// substring search of the whole other text, and anything a check cannot
+// strings are quoted exactly, word comparisons use explicitly normalized
+// token sequences, and anything a check cannot
 // establish is left unsaid. Nothing reads for meaning, weights, ranks or
 // scores. Passages come from review.rows only; this module never re-splits
 // a text, so the evidence always matches the packet's own passages.
 //
 // Offsets are UTF-16 code units, end-exclusive and absolute in the full text,
 // the same unit as textarea.setSelectionRange and the review packet.
-// "Ignoring capitalization" means comparing each code point lowered with
-// toLocaleLowerCase('en').
+// Normalized words lower case with toLocaleLowerCase('en'), replace curly
+// apostrophes with straight ones, and ignore gaps between tokens. This is
+// neither Unicode full case folding nor a claim about grammatical meaning.
 
 // ---------------------------------------------------------------- built-in examples
 // Both examples avoid decimals and abbreviations, so the frozen
@@ -42,27 +43,15 @@ export const EXAMPLES = {
 // Katakana) are one word each, because those scripts do not put spaces
 // between words.
 const CJK = '\\p{Script=Han}\\p{Script=Hiragana}\\p{Script=Katakana}';
-const WORD_CHAR = `(?:(?![${CJK}])[\\p{L}\\p{M}\\p{N}])`;
+const WORD_CHAR = `(?:(?![${CJK}])[\\p{L}\\p{N}][\\p{M}]*)`;
 export const TOKEN_RE = new RegExp(`[${CJK}]|[$€£¥]?${WORD_CHAR}+(?:[.,:\\/'’\\-]${WORD_CHAR}+)*%?`, 'gu');
 export const keyOf = t => t.toLocaleLowerCase('en').replace(/’/g, "'");
 export function tokenize(text, base = 0) {
   return Array.from(text.matchAll(TOKEN_RE), m => ({ t: m[0], k: keyOf(m[0]), s: base + m.index, e: base + m.index + m[0].length }));
 }
-// Case-insensitive text: every code point lowered on its own, with a map from
-// each lowered code unit back to its offset in the original text.
+// Pointwise lowercase helper retained for callers; word matching uses keyOf.
 export const lowerChars = text => Array.from(text, c => c.toLocaleLowerCase('en')).join('');
-function lowerMap(text) {
-  const parts = [], map = [];
-  for (let i = 0; i < text.length;) {
-    const ch = String.fromCodePoint(text.codePointAt(i));
-    const low = ch.toLocaleLowerCase('en');
-    parts.push(low);
-    for (let u = 0; u < low.length; u++) map.push(i);
-    i += ch.length;
-  }
-  map.push(text.length);
-  return { lower: parts.join(''), map };
-}
+
 
 // ---------------------------------------------------------------- word lists
 export const STOP = new Set(['a', 'an', 'the', 'this', 'that', 'these', 'those', 'it', 'its', 'i', 'you', 'your', 'yours', 'he', 'him', 'his',
@@ -374,14 +363,14 @@ export function sharedEnds(x, y) {
 // in display order. Each passage: { row, kind, number, a, b, notes, inBoth,
 // alsoMarked, ops, aToks, bToks, sameWords, over }.
 //
-// Note states: 'a-only' (Removed: here in the original, not at this point in
-// the rewrite), 'b-only' (Added), 'differs', 'other' (Other passage: a word of
-// another passage of the other text), 'moved' (Moved: in both passages at
-// different places). Lines in `inBoth` are words at the same place in both.
-// One-sided notes carry a `scope` saying what was established about the
-// other text: 'nowhere', 'inside' (only within other words), 'other', 'count'
-// (a word of the paired passage, fewer times), 'passage' (structural words,
-// checked in the paired passage only), 'unpaired', 'here' (characters).
+// Note states retain the display schema: 'a-only', 'b-only', 'differs',
+// 'other', and 'moved'. The last means matched normalized words outside the
+// alignment, not proof that a writer moved them. `inBoth` is aligned words.
+// Word scopes are explicit: 'nowhere' means no normalized token sequence in
+// the entire other text (not substring absence); 'other' is a found sequence
+// that may cross passages; 'count' is a paired-passage count; 'passage' is
+// paired-passage absence; 'unpaired' makes no other-text claim. 'here' only
+// identifies marked characters. These are lexical checks, not grammar.
 export function buildEvidence(source, output, review) {
   const rows = Array.isArray(review?.rows) ? review.rows : [];
   const byStart = (x, y) => x.start - y.start;
@@ -399,54 +388,25 @@ export function buildEvidence(source, output, review) {
   const lowerAnywhere = new Set([...allA, ...allB].filter(t => t.t === t.t.toLocaleLowerCase('en')).map(t => t.k));
   const ctxA = { text: source, capsElsewhere, lowerAnywhere }, ctxB = { text: output, capsElsewhere, lowerAnywhere };
 
-  // Whole-text word indexes (occurrences never span two passages) and case-insensitive text.
+  // Whole-text normalized word indexes. Matches may cross passage boundaries.
   const textIndex = (passes, all) => {
     const index = wordIndex(all), passageOf = new Int32Array(all.length);
     let at = 0;
     passes.forEach((p, pi) => { for (let x = 0; x < p.toks.length; x++) passageOf[at++] = pi; });
     return { index, passageOf, passes };
   };
-  const sideA = { text: source, all: allA, words: textIndex(aPass, allA), low: null };
-  const sideB = { text: output, all: allB, words: textIndex(bPass, allB), low: null };
-  const lowOf = side => (side.low ||= lowerMap(side.text));
+  const sideA = { text: source, all: allA, words: textIndex(aPass, allA) };
+  const sideB = { text: output, all: allB, words: textIndex(bPass, allB) };
   // First whole-word occurrence of `keys` in the other text outside passage `exceptId`.
   const wordElsewhere = (side, keys, exceptId) => {
     const w = side.words;
     for (const i of occurrences(w.index, keys)) {
       const p = w.passageOf[i];
-      if (w.passageOf[i + keys.length - 1] !== p || w.passes[p].span.id === exceptId) continue;
-      return { passage: w.passes[p].span.id, s: side.all[i].s, e: side.all[i + keys.length - 1].e, text: side.text.slice(side.all[i].s, side.all[i + keys.length - 1].e) };
+      const last = w.passageOf[i + keys.length - 1];
+      if (p === last && w.passes[p].span.id === exceptId) continue;
+      return { passage: w.passes[p].span.id, lastPassage: w.passes[last].span.id, s: side.all[i].s, e: side.all[i + keys.length - 1].e, text: side.text.slice(side.all[i].s, side.all[i + keys.length - 1].e) };
     }
     return null;
-  };
-  // First case-insensitive occurrence of `str` in the other text, with the words around it.
-  const insideMemo = new Map();
-  const textInside = (side, str) => {
-    const id = (side === sideA ? 'a' : 'b') + '\u0000' + str;
-    if (insideMemo.has(id)) return insideMemo.get(id);
-    const { lower, map } = lowOf(side);
-    const needle = lowerChars(str);
-    const at = needle ? lower.indexOf(needle) : -1;
-    let found = null;
-    if (at >= 0) {
-      const s = map[at], e = map[at + needle.length];
-      found = { s, e, around: surrounding(side, s, e) };
-    }
-    insideMemo.set(id, found);
-    return found;
-  };
-  const surrounding = (side, s, e) => {
-    // The whole words that the match [s, e) touches, or the match widened to spaces.
-    const toks = side.all;
-    let lo = 0, hi = toks.length;
-    while (lo < hi) { const mid = (lo + hi) >> 1; if (toks[mid].e <= s) lo = mid + 1; else hi = mid; }
-    let from = s, to = e, touched = false;
-    for (let i = lo; i < toks.length && toks[i].s < e; i++) { from = Math.min(from, toks[i].s); to = Math.max(to, toks[i].e); touched = true; }
-    if (!touched) {
-      while (from > 0 && !/\s/.test(side.text[from - 1])) from--;
-      while (to < side.text.length && !/\s/.test(side.text[to])) to++;
-    }
-    return { s: from, e: to, text: side.text.slice(from, to) };
   };
 
   const out = [];
@@ -522,7 +482,7 @@ export function buildEvidence(source, output, review) {
       for (const y of ub) { const id = y.kind + '|' + y.key; if (!queue.has(id)) queue.set(id, []); queue.get(id).push(y); }
       for (const x of ua) {
         const q = queue.get(x.kind + '|' + x.key);
-        const y = q && q.find(c => !c.state);
+        const y = q && q.find(c => !c.state && range(x).every(i => bOfA[i] < 0) && range(c).every(i => aOfB[i] < 0));
         if (y) { x.state = y.state = 'moved'; x.pair = y; y.pair = x; claim('a', x); claim('b', y); }
       }
     }
@@ -567,8 +527,9 @@ export function buildEvidence(source, output, review) {
           // Words already one end of another Moved note are covered by that note.
           if (allClaimed(ownSide, it.ti, it.tj)) { it.state = 'moved'; it.covered = true; return; }
           const map = state === 'a-only' ? bOfA : aOfB;
-          const free = j => noneClaimed(otherSide, j, j + keys.length);
-          const at = noneClaimed(ownSide, it.ti, it.tj) ? (found.find(j => map[it.ti] !== j && free(j)) ?? found.find(free)) : undefined;
+          const reverseMap = state === 'a-only' ? aOfB : bOfA;
+          const free = j => noneClaimed(otherSide, j, j + keys.length) && keys.every((_, k) => reverseMap[j + k] < 0);
+          const at = noneClaimed(ownSide, it.ti, it.tj) && range(it).every(i => map[i] < 0) ? (found.find(j => map[it.ti] !== j && free(j)) ?? found.find(free)) : undefined;
           if (at !== undefined) {
             it.state = 'moved'; it.pair = spanOf(other, state === 'a-only' ? output : source, at, at + keys.length);
             claim(ownSide, it); claim(otherSide, it.pair);
@@ -579,7 +540,6 @@ export function buildEvidence(source, output, review) {
         if (found.length) { it.state = state; it.scope = 'count'; it.counts = [mine, found.length]; return; }
         if (structural(it)) {
           it.state = state; it.scope = 'passage';
-          it.inside = insideSpan(state === 'a-only' ? sideB : sideA, otherSpan, it.text);
           return;
         }
       } else if (structural(it)) { it.state = state; it.scope = 'unpaired'; return; }
@@ -587,20 +547,8 @@ export function buildEvidence(source, output, review) {
       const hit = wordElsewhere(side, keys, otherSpan?.id);
       if (hit) { it.state = 'other'; it.scope = 'other'; it.where = hit; return; }
       it.state = state;
-      const inside = textInside(side, it.text);
-      if (inside) { it.scope = 'inside'; it.inside = inside; } else it.scope = 'nowhere';
-      if (it.kind === 'condition' && it.tj - it.ti > 1) {
-        it.markerAt = wordElsewhere(side, it.marker.split(' '), null);
-      }
+      it.scope = 'nowhere';
     };
-    // The first case-insensitive occurrence of `str` inside one passage, with the words around it.
-    function insideSpan(side, span, str) {
-      const lowered = lowerMap(span.text);
-      const at = lowered.lower.indexOf(lowerChars(str));
-      if (at < 0) return null;
-      const s = span.start + lowered.map[at], e = span.start + lowered.map[at + lowerChars(str).length];
-      return { s, e, around: surrounding(side, s, e) };
-    }
     for (const x of A.items) if (!x.state) settle(x, aIdx, B.toks, bIdx, row.output, 'a-only');
     for (const y of B.items) if (!y.state) settle(y, bIdx, A.toks, aIdx, row.source, 'b-only');
     // 5. Fold items nested inside a one-sided condition clause with the same state.
@@ -622,7 +570,7 @@ export function buildEvidence(source, output, review) {
     const covered = { a: new Uint8Array(A.toks.length), b: new Uint8Array(B.toks.length) };
     A.items.forEach(it => covered.a.fill(1, it.ti, it.tj)); B.items.forEach(it => covered.b.fill(1, it.ti, it.tj));
     const oneSidedNote = (it, side) => ({ kind: it.kind, state: it.state, a: side === 'a' ? it : null, b: side === 'b' ? it : null,
-      where: it.where, scope: it.scope, counts: it.counts, inside: it.inside, markerAt: it.markerAt,
+      where: it.where, scope: it.scope, counts: it.counts,
       pos: posOf(it, side === 'a' ? aPos : bPos) });
     const done = new Set();
     for (const x of A.items) {
@@ -671,7 +619,9 @@ export function buildEvidence(source, output, review) {
         const found = occurrences(otherIdx, keys), mine = occurrences(own, keys).length;
         const otherSide = side === 'a' ? 'b' : 'a';
         // Moved only when both ends are free: a word is one end of at most one Moved note.
-        const at = found.length >= mine && noneClaimed(side, r.ti, r.tj) ? found.find(j => noneClaimed(otherSide, j, j + keys.length)) : undefined;
+        const ownMap = side === 'a' ? bOfA : aOfB, otherMap = side === 'a' ? aOfB : bOfA;
+        const at = found.length >= mine && noneClaimed(side, r.ti, r.tj) && range(r).every(i => ownMap[i] < 0)
+          ? found.find(j => noneClaimed(otherSide, j, j + keys.length) && keys.every((_, k) => otherMap[j + k] < 0)) : undefined;
         if (at !== undefined) {
           const otherToks = side === 'a' ? B.toks : A.toks;
           const twin = spanOf(otherToks, side === 'a' ? output : source, at, at + keys.length);
@@ -683,8 +633,7 @@ export function buildEvidence(source, output, review) {
       const other = side === 'a' ? sideB : sideA;
       const hit = wordElsewhere(other, keys, otherSpan?.id);
       if (hit) return { ...note, state: 'other', scope: 'other', where: hit };
-      const inside = textInside(other, r.text);
-      return inside ? { ...note, state, scope: 'inside', inside } : { ...note, state, scope: 'nowhere' };
+      return { ...note, state, scope: 'nowhere' };
     };
     if (ops) {
       const hunks = new Map();
@@ -755,7 +704,7 @@ export function buildEvidence(source, output, review) {
           const ta = A.toks[o.a], tb = B.toks[o.b];
           if (prevEq) charNote(curA, ta.s, curB, tb.s, idx - 0.5);
           if (ta.t !== tb.t) {
-            const kind = lowerChars(ta.t) === lowerChars(tb.t) ? 'case' : 'characters';
+            const kind = 'characters';
             entry.notes.push({ kind, state: 'differs', scope: 'here', pos: idx, aChars: { s: ta.s, e: ta.e }, bChars: { s: tb.s, e: tb.e } });
           }
           curA = ta.e; curB = tb.e; prevEq = true;
@@ -791,15 +740,15 @@ export function buildEvidence(source, output, review) {
 // ---------------------------------------------------------------- labels
 // One map for the state names, so they read the same everywhere on the page.
 export const STATE_ORDER = ['a-only', 'differs', 'b-only', 'other', 'moved', 'both'];
-export const STATE_LABEL = { 'a-only': 'Removed', differs: 'Differs', 'b-only': 'Added', other: 'Other passage', moved: 'Moved', both: 'In both' };
-export const KIND_LABEL = { number: 'Number', date: 'Date', duration: 'Duration', negation: 'Negation', modal: 'Modal verb',
-  condition: 'Condition or exception', name: 'Capitalized word', wording: 'Wording', characters: 'Characters', case: 'Capitalization' };
-const conditionLabel = it => (EXCEPTION_MARKERS.has(it.marker) ? 'Exception' : 'Condition');
+export const STATE_LABEL = { 'a-only': 'Removed', differs: 'Differs', 'b-only': 'Added', other: 'Other passage', moved: 'Matched words', both: 'In both' };
+export const KIND_LABEL = { number: 'Number', date: 'Date', duration: 'Duration', negation: 'Negation-list word', modal: 'Modal-list word',
+  condition: 'Marker phrase', name: 'Capitalized word', wording: 'Wording', characters: 'Characters', case: 'Characters' };
+const conditionLabel = it => it.tj - it.ti === 1 ? 'Marker word' : (EXCEPTION_MARKERS.has(it.marker) ? 'Exception-marker phrase' : 'Condition-marker phrase');
 export function kindLabel(note) {
   if (note.kind === 'name') return /\s/.test((note.a || note.b).text) ? 'Capitalized words' : 'Capitalized word';
   if (note.kind !== 'condition') return KIND_LABEL[note.kind];
   const a = note.a && conditionLabel(note.a), b = note.b && conditionLabel(note.b);
-  return a && b && a !== b ? 'Condition or exception' : (a || b);
+  return a && b && a !== b ? 'Marker phrase' : (a || b);
 }
 export const inBothKindLabel = ib => (ib.kind === 'name' ? (/\s/.test(ib.a.text) ? 'Capitalized words' : 'Capitalized word') : KIND_LABEL[ib.kind]);
 const q = s => `“${s}”`;
@@ -816,6 +765,10 @@ export function charPhrase(s) {
     }
     return `${n} whitespace characters`;
   }
+  if (/[\p{Cf}\p{Cc}]/u.test(s) || /^\p{M}+$/u.test(s)) {
+    const points = Array.from(s, c => `U+${c.codePointAt(0).toString(16).toUpperCase().padStart(4, '0')}`);
+    return `${points.length === 1 ? 'code point' : 'code points'} ${points.join(' ')}`;
+  }
   return q(s);
 }
 
@@ -830,17 +783,7 @@ export function noteStrings(note, source = '', output = '') {
 
 // How two strings holding the same words compare, or null when they are identical.
 function sameWordsPhrase(a, b) {
-  if (a === b) return null;
-  const ta = tokenize(a), tb = tokenize(b);
-  const gaps = (str, toks) => toks.map((t, i) => str.slice(i ? toks[i - 1].e : 0, t.s)).concat(str.slice(toks.length ? toks[toks.length - 1].e : 0));
-  const wordsExact = ta.length === tb.length && ta.every((t, i) => t.t === tb[i].t);
-  const caseOnly = ta.length === tb.length && ta.every((t, i) => lowerChars(t.t) === lowerChars(tb[i].t));
-  const ga = gaps(a, ta), gb = gaps(b, tb);
-  const gapsSame = ga.length === gb.length && ga.every((g, i) => g === gb[i]);
-  const parts = [];
-  if (!wordsExact) parts.push(caseOnly ? 'different capitalization' : 'different capitalization or apostrophes');
-  if (!gapsSame) parts.push('different characters between the words');
-  return `the same words, with ${parts.join(' and ')}`;
+  return a === b ? null : 'matching normalized words; exact characters differ';
 }
 
 // The one sentence each note says. Every statement is a literal fact about the
@@ -851,13 +794,11 @@ export function noteStatement(note, passage, source = '', output = '') {
   const str = aText || bText;
   const multi = (note.aRuns || note.bRuns || []).length > 1;
   const quoted = multi ? (note.aRuns?.length ? note.aRuns : note.bRuns).map(r => q(r.text)).join(' and ') : q(str);
-  const verb = multi ? 'appear' : 'appears';
-  const it = note.a || note.b;
   if (note.kind === 'characters' || note.kind === 'case') {
     if (note.state === 'differs') return `${charPhrase(aText)} in the original, ${charPhrase(bText)} in the rewrite.`;
     if (passage && (!passage.a || !passage.b)) return `This ${own} passage has no partner in the ${other}.`;
-    return note.state === 'a-only' ? `The original has ${charPhrase(aText)} here; the rewrite does not.`
-      : `The rewrite has ${charPhrase(bText)} here; the original does not.`;
+    return note.state === 'a-only' ? `Marked original characters: ${charPhrase(aText)}.`
+      : `Marked rewrite characters: ${charPhrase(bText)}.`;
   }
   if (note.state === 'differs') {
     const quote = (single, runs) => (runs && runs.length > 1 ? runs.map(r => q(r.text)).join(' and ') : q(single));
@@ -865,37 +806,20 @@ export function noteStatement(note, passage, source = '', output = '') {
   }
   if (note.state === 'moved') {
     const phrase = sameWordsPhrase(aText, bText);
-    return phrase ? `${q(aText)} in the original and ${q(bText)} in the rewrite, at different places: ${phrase}.`
-      : `${q(aText)} is in both passages, at different places.`;
+    return phrase ? `${q(aText)} in the original and ${q(bText)} in the rewrite, ${phrase}.`
+      : `${q(aText)} is matched in both passages by normalized words.`;
   }
   if (note.state === 'other') {
     const k = passageNumber(note.where.passage);
-    const found = note.where.text === str ? '' : `, as ${q(note.where.text)}`;
-    return passage && passage.a && passage.b
-      ? `${quoted} is not a word of the paired ${other} passage; ${other} passage ${k} has it${found}.`
-      : `This passage has no partner in the ${other}; ${other} passage ${k} has ${quoted}${found}.`;
+    return `${quoted} has a normalized word match in the ${other}, starting in passage ${k}: ${q(note.where.text)}.`;
   }
   if (note.scope === 'count') {
     const [mine, theirs] = note.counts;
-    return `${quoted} ${verb} as a word ${times(mine)} in the ${own} passage and ${times(theirs)} in the paired ${other} passage, ignoring capitalization.`;
+    return `${quoted} has non-overlapping normalized word matches ${times(mine)} in the ${own} passage and ${times(theirs)} in the paired ${other} passage.`;
   }
-  if (note.scope === 'unpaired') return `${quoted} is in an ${own} passage that has no partner in the ${other}.`;
-  if (note.scope === 'passage') {
-    return note.inside
-      ? `${quoted} is in the ${own} passage; the paired ${other} passage has it only within other words, first in ${q(note.inside.around.text)}.`
-      : `${quoted} is in the ${own} passage, not in the paired ${other} passage.`;
-  }
-  let say;
-  const clause = note.kind === 'condition' && it && it.tj - it.ti > 1;
-  const subject = clause ? `The clause ${quoted}` : quoted;
-  if (note.scope === 'inside') {
-    say = `${subject} ${verb} in the ${own}; the ${other} has ${multi ? 'them' : 'it'} only within other words, first in ${q(note.inside.around.text)}.`;
-  } else {
-    say = `${subject} ${verb} in the ${own}, nowhere in the ${other}.`;
-  }
-  if (clause && note.markerAt) say += ` The ${other} does have the word ${q(note.markerAt.text)}, in ${other} passage ${passageNumber(note.markerAt.passage)}.`;
-  if (it?.includes?.length) say += ` It includes ${it.includes.map(x => `the ${KIND_LABEL[x.kind].toLowerCase()} ${q(x.text)}`).join(', ')}.`;
-  return say;
+  if (note.scope === 'unpaired') return `${quoted} is in ${own === 'original' ? 'an' : 'a'} ${own} passage that has no partner in the ${other}.`;
+  if (note.scope === 'passage') return `${quoted} has no normalized word match in the paired ${other} passage.`;
+  return `${quoted} has no normalized word match in the entire ${other} text.`;
 }
 
 // The line for words at the same place in both passages.
@@ -919,8 +843,6 @@ export function noteSpans(note, source, output) {
   for (const r of note.bRuns || []) add('b', r.s, r.e);
   const otherSide = noteStrings(note).aText ? 'b' : 'a';
   if (note.state === 'other' && note.where) add(otherSide, note.where.s, note.where.e);
-  if ((note.scope === 'inside' || note.scope === 'passage') && note.inside) add(otherSide, note.inside.around.s, note.inside.around.e);
-  if (note.markerAt) add(otherSide, note.markerAt.s, note.markerAt.e);
   return spans;
 }
 
@@ -979,8 +901,8 @@ export function summaryFacts(s) {
   if (s.identicalTexts) return ['The two texts are identical, character for character.'];
   if (s.alsoMarked) facts.push(`${plural(s.alsoMarked, 'common word')} ${s.alsoMarked === 1 ? 'is' : 'are'} also marked, without a note.`);
   if (s.orderDiffers) facts.push('The rewrite has these passages in a different order.');
-  if (s.betweenDiffers) facts.push(s.notes || s.alsoMarked || s.over.length ? 'The spacing or line breaks between passages also differ.'
-    : 'Every passage is identical and in the same order; the texts differ only in the spacing or line breaks between passages.');
+  if (s.betweenDiffers) facts.push(s.notes || s.alsoMarked || s.over.length ? 'The spacing or line breaks outside the passages also differ.'
+    : 'Every passage is identical and in the same order; the texts differ only in the spacing or line breaks outside the passages (before, between or after them).');
   for (const o of s.over) facts.push(`Passage ${o.number}: more than ${plural(o.limit, 'word insertion or deletion', 'word insertions and deletions')} apart, so its differences are not marked one by one.`);
   return facts;
 }
@@ -989,7 +911,7 @@ export function summaryFacts(s) {
 export function passageMessage(p) {
   if (p.kind === 'verbatim') return 'Identical text in both.';
   if (p.over) return `Turning the original passage into the rewrite passage takes more than ${plural(p.over.limit, 'word insertion or deletion', 'word insertions and deletions')}, so the differences are not marked one by one. Both texts are shown in full.`;
-  if (p.sameWords) return 'The same words in the same order; the characters noted here differ.';
+  if (p.sameWords) return 'The normalized words match in order; the characters noted here differ.';
   if (!p.notes.length && p.alsoMarked.length) return 'Only common words, and any characters marked next to them, differ here. They are marked in the passage without a note.';
   return null;
 }
