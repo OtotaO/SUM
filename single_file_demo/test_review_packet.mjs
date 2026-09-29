@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { sourceSpans, compareTexts, hashText, publicJwks, makeReviewPacket, verifyReviewPacket, checkRenderBinding } from './review_packet.js';
+import { sourceSpans, sourceSpansV2, compareTexts, hashText, publicJwks, makeReviewPacket, verifyReviewPacket, checkRenderBinding,
+  REVIEW_SCOPE, REVIEW_SCOPE_V2 } from './review_packet.js';
 import { canonicalize } from './vendor/sum-verify-deps.js';
 
 const fixture = JSON.parse(await readFile(new URL('../fixtures/render_receipts/source_render.json', import.meta.url)));
@@ -39,8 +40,15 @@ test('empty rewrite retains the source as unmatched passages', () => {
 });
 
 test('oversized text and excessive sentence counts fail explicitly', () => {
-  assert.throws(() => compareTexts('x'.repeat(100001), ''), /100,000/);
-  assert.throws(() => compareTexts('A. '.repeat(301), ''), /300/);
+  for (const method of ['literal-spans-v1', 'literal-spans-v2']) {
+    assert.throws(() => compareTexts('x'.repeat(100001), '', method), /100,000/);
+    assert.throws(() => compareTexts('', 'x'.repeat(100001), method), /100,000/);
+    assert.throws(() => compareTexts('Go. '.repeat(301), '', method), /300/);
+  }
+  // v1 splits "A. A. A." at every period; v2 reads a single capital letter as an initial.
+  assert.throws(() => compareTexts('A. '.repeat(301), '', 'literal-spans-v1'), /300/);
+  assert.throws(() => sourceSpansV2('x'.repeat(100001)), /100,000/);
+  assert.throws(() => compareTexts('a', 'b', 'literal-spans-v9'), /Unsupported review method/);
 });
 
 test('packet roundtrip verifies actual captured receipt and exact content', async () => {
@@ -119,4 +127,147 @@ test('source binding uses Python Unicode codepoint ordering across BMP and astra
   const receipt = { schema: 'sum.render_receipt.v1', kid: 'unicode-test', payload, jws: header + '..' + Buffer.from(signature).toString('base64url') };
   const result = await checkRenderBinding({ receipt, triples, sliders: payload.sliders_quantized }, 'Unicode sample', { keys: [{ ...publicKey, kid: 'unicode-test' }] });
   assert.equal(result.triples_binding, 'verified');
+});
+
+// Two packets over the same texts, one per method. The text makes the two
+// splitters disagree ("$7.95" and "Dr."), so each can only verify through its own.
+const v1Source = 'Call Dr. Patel if a rash appears. Shipping costs $7.95 per order. Refunds follow.';
+const v1Output = 'Call Dr. Patel if you get a rash. Shipping costs $7.95 per order. Refunds follow.';
+async function methodPacket(method) {
+  const review = compareTexts(v1Source, v1Output, method);
+  review.rows[0].decision = 'accepted';
+  return JSON.parse(JSON.stringify(await makeReviewPacket({ source: v1Source, output: v1Output, review })));
+}
+
+test('the two splitters really disagree on the method fixture', () => {
+  assert.notDeepEqual(sourceSpans(v1Source), sourceSpansV2(v1Source));
+});
+
+test('existing literal-spans-v1 packets still verify through the frozen v1 splitter', async () => {
+  const p = await methodPacket('literal-spans-v1');
+  assert.equal(p.review.method, 'literal-spans-v1');
+  assert.equal(p.review.scope, REVIEW_SCOPE);
+  assert.equal(p.disclosure, REVIEW_SCOPE);
+  const result = await verifyReviewPacket(p);
+  assert.equal(result.review_spans, 'recomputed');
+  assert.equal(result.signature, 'absent');
+});
+
+test('literal-spans-v2 packets verify through the v2 splitter', async () => {
+  const p = await methodPacket('literal-spans-v2');
+  assert.equal(p.review.method, 'literal-spans-v2');
+  assert.equal(p.review.scope, REVIEW_SCOPE_V2);
+  assert.equal(p.disclosure, REVIEW_SCOPE_V2, 'the disclosure names what this method measures');
+  assert.equal((await verifyReviewPacket(p)).review_spans, 'recomputed');
+  assert.equal(compareTexts(v1Source, v1Output).method, 'literal-spans-v2', 'new comparisons use v2');
+});
+
+test('a packet whose method, scope or spans do not match each other is rejected', async () => {
+  const v1 = await methodPacket('literal-spans-v1'), v2 = await methodPacket('literal-spans-v2');
+  // v2 rows relabelled as v1 (and the reverse) no longer match the recomputed spans.
+  await assert.rejects(verifyReviewPacket({ ...v2, review: { ...v2.review, method: 'literal-spans-v1', scope: REVIEW_SCOPE } }), /Review spans|span or decision/);
+  await assert.rejects(verifyReviewPacket({ ...v1, review: { ...v1.review, method: 'literal-spans-v2', scope: REVIEW_SCOPE_V2 } }), /Review spans|span or decision/);
+  // A method with the other method's scope string.
+  await assert.rejects(verifyReviewPacket({ ...v2, review: { ...v2.review, scope: REVIEW_SCOPE } }), /method or disclosure/);
+  await assert.rejects(verifyReviewPacket({ ...v1, review: { ...v1.review, scope: REVIEW_SCOPE_V2 } }), /method or disclosure/);
+  // Unknown or missing methods, including inherited property names.
+  for (const method of ['literal-spans-v3', 'constructor', '__proto__', undefined, 7]) {
+    await assert.rejects(verifyReviewPacket({ ...v2, review: { ...v2.review, method } }), /method or disclosure/);
+  }
+});
+
+test('a review row with an added field is rejected', async () => {
+  for (const method of ['literal-spans-v1', 'literal-spans-v2']) {
+    const p = await methodPacket(method);
+    p.review.rows[0].decided_at = '2026-09-27T00:00:00Z';
+    await assert.rejects(verifyReviewPacket(p), /span or decision/);
+    const q = await methodPacket(method);
+    q.review.rows[0].evidence = [];
+    await assert.rejects(verifyReviewPacket(q), /span or decision/);
+  }
+});
+
+// A packet exported by the shipped literal-spans-v1 code (origin/main before
+// literal-spans-v2), byte for byte. Its passages come from the v1 splitter,
+// which reads "Dr." as a sentence end and "$7.95 per order." as a run-on.
+const SHIPPED_V1_PACKET = "{\"schema\":\"sum.review_packet.v1\",\"created_at\":\"2026-09-26T12:00:00.000Z\",\"source\":{\"text\":\"Call Dr. Patel if a rash appears. Shipping costs $7.95 per order. Refunds follow.\",\"hash\":\"sha256-fc5d8d49488f8d99d985de10ff4ce84b94b650fbb97c64b9a7e2e5a383a16f03\"},\"output\":{\"text\":\"Call Dr. Patel if you get a rash. Shipping costs $7.95 per order.\",\"hash\":\"sha256-17ec232aefe502733c3cbc8ccf1b0b2307f1c7fa16c24e41e6f2bcaa110b105d\"},\"review\":{\"method\":\"literal-spans-v1\",\"offset_unit\":\"utf16-code-unit\",\"scope\":\"Literal sentence comparison with lexical suggestions. Paraphrases, entailment, factual accuracy and meaning preservation are not measured. Human decisions and the original source are unsigned.\",\"rows\":[{\"id\":\"source-s1\",\"kind\":\"verbatim\",\"source\":{\"id\":\"s1\",\"start\":0,\"end\":8,\"text\":\"Call Dr.\"},\"output\":{\"id\":\"s1\",\"start\":0,\"end\":8,\"text\":\"Call Dr.\"},\"decision\":\"needs-change\"},{\"id\":\"source-s2\",\"kind\":\"changed-candidate\",\"source\":{\"id\":\"s2\",\"start\":9,\"end\":33,\"text\":\"Patel if a rash appears.\"},\"output\":{\"id\":\"s2\",\"start\":9,\"end\":33,\"text\":\"Patel if you get a rash.\"},\"decision\":\"unreviewed\"},{\"id\":\"source-s3\",\"kind\":\"changed-candidate\",\"source\":{\"id\":\"s3\",\"start\":34,\"end\":81,\"text\":\"Shipping costs $7.95 per order. Refunds follow.\"},\"output\":{\"id\":\"s3\",\"start\":34,\"end\":65,\"text\":\"Shipping costs $7.95 per order.\"},\"decision\":\"unreviewed\"}]},\"render\":null,\"jwks\":null,\"disclosure\":\"Literal sentence comparison with lexical suggestions. Paraphrases, entailment, factual accuracy and meaning preservation are not measured. Human decisions and the original source are unsigned.\",\"verification_guide\":\"Open this packet in the SUM workbench packet verifier, or import verifyReviewPacket from single_file_demo/review_packet.js in Node. It recomputes text hashes and review spans. When a receipt and public keys are included, it verifies Ed25519 plus exact output, selected triples and slider bindings. The container, source, key ownership, review decisions and reviewer identity are not signed. Independently establish issuer key trust and revocation/freshness policy. No account or API key is needed. Keep the packet private if its source contains private material.\"}";
+
+test('a packet exported by the shipped v1 code still verifies and still rejects tampering', async () => {
+  const packet = JSON.parse(SHIPPED_V1_PACKET);
+  assert.equal(packet.review.method, 'literal-spans-v1');
+  const result = await verifyReviewPacket(packet);
+  assert.equal(result.review_spans, 'recomputed');
+  assert.equal(result.human_decisions, 'unsigned');
+  const tampered = JSON.parse(SHIPPED_V1_PACKET);
+  tampered.review.rows[1].source.end--;
+  await assert.rejects(verifyReviewPacket(tampered), /span or decision/);
+  const decided = JSON.parse(SHIPPED_V1_PACKET);
+  decided.review.rows[0].decision = 'approved';
+  await assert.rejects(verifyReviewPacket(decided), /span or decision/);
+});
+
+// literal-spans-v2 is frozen the same way: a packet exported with it is pinned
+// byte for byte (fixtures/review_packets/). verifyReviewPacket recomputes its
+// passages through the v2 splitter and pairing, so any change to those rules
+// fails here: its canary text has every listed abbreviation before a
+// capitalized word, a single-letter initial, decimals, a lowercase
+// continuation, quotes and brackets after a stop, and Chinese sentence marks.
+// A changed rule needs a new method name, not an edit to v2.
+const PINNED_V2 = await readFile(new URL('../fixtures/review_packets/review_packet.literal-spans-v2.pinned.json', import.meta.url), 'utf8');
+
+test('the pinned literal-spans-v2 packet still verifies and still rejects tampering', async () => {
+  const packet = JSON.parse(PINNED_V2);
+  assert.equal(packet.review.method, 'literal-spans-v2');
+  assert.equal(packet.review.rows.length, 85);
+  const result = await verifyReviewPacket(packet);
+  assert.equal(result.review_spans, 'recomputed');
+  const tampered = JSON.parse(PINNED_V2);
+  tampered.review.rows[80].output.end--;
+  await assert.rejects(verifyReviewPacket(tampered), /span or decision/);
+  // Relabelled as v1, the same rows no longer match: v1 splits the canary differently.
+  const relabelled = JSON.parse(PINNED_V2);
+  relabelled.review.method = 'literal-spans-v1';
+  relabelled.review.scope = REVIEW_SCOPE;
+  await assert.rejects(verifyReviewPacket(relabelled));
+});
+
+test('v2 splits Chinese and Japanese sentences and pairs them character by character', () => {
+  assert.deepEqual(sourceSpansV2('租金必须在30天内支付。押金可以退还！真的吗？').map(s => s.text), ['租金必须在30天内支付。', '押金可以退还！', '真的吗？']);
+  assert.deepEqual(sourceSpansV2('他说：“好的。”然后离开。').map(s => s.text), ['他说：“好的。”', '然后离开。']);
+  assert.deepEqual(compareTexts('押金可以退还。', '押金不可退还。').rows.map(r => r.kind), ['changed-candidate']);
+  // v1 is frozen, so it still reads a CJK sentence run as one passage.
+  assert.equal(sourceSpans('租金必须在30天内支付。押金可以退还。').length, 1);
+});
+
+test('the v2 splitter is linear: long runs of short sentences split quickly', () => {
+  const started = performance.now();
+  assert.equal(sourceSpansV2('a. '.repeat(33000)).length, 1);
+  assert.equal(sourceSpansV2('Go. '.repeat(25000)).length, 25000);
+  assert.ok(performance.now() - started < 1500, `took ${(performance.now() - started).toFixed(0)} ms`);
+});
+
+// Compatibility checks for exported packets: these examples pin observable
+// splitting and pairing decisions which the larger goldens do not exercise.
+test('frozen v1 keeps question boundaries and case-insensitive borderline pairing', () => {
+  assert.deepEqual(sourceSpans('Ready? Next!').map(s => s.text), ['Ready?', 'Next!']);
+  const review = compareTexts('Alpha beta.', 'ALPHA gamma delta.', 'literal-spans-v1');
+  assert.equal(review.rows.length, 1);
+  assert.equal(review.rows[0].kind, 'changed-candidate');
+  assert.equal(review.rows[0].output.text, 'ALPHA gamma delta.');
+});
+
+test('both frozen methods pair at one-quarter overlap and consume duplicates in order', () => {
+  for (const method of ['literal-spans-v1', 'literal-spans-v2']) {
+    assert.equal(compareTexts('Alpha beta.', 'Alpha gamma delta.', method).rows[0].kind,
+      'changed-candidate');
+    const duplicate = compareTexts('Yes. Yes.', 'Yes. Yes.', method);
+    assert.deepEqual(duplicate.rows.map(r => [r.source.id, r.output.id]),
+      [['s1', 's1'], ['s2', 's2']]);
+  }
+});
+
+test('frozen v2 retains closing brackets and does not treat an ellipsis as an abbreviation', () => {
+  assert.deepEqual(sourceSpansV2('Ready?] Next.').map(s => s.text), ['Ready?]', 'Next.']);
+  assert.deepEqual(sourceSpansV2('はい。』次。').map(s => s.text), ['はい。』', '次。']);
+  assert.deepEqual(sourceSpansV2('Dr... Smith waits.').map(s => s.text), ['Dr...', 'Smith waits.']);
 });

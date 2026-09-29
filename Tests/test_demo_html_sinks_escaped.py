@@ -111,6 +111,23 @@ def test_module_blocks_define_their_own_escaper(source: str) -> None:
     assert "innerHTML" not in workbench, "workbench receipt and review fields must use text nodes"
 
 
+def test_change_evidence_engine_has_no_dom_sink() -> None:
+    """The change evidence engine returns plain data; workbench.js renders it
+    with createElement and text nodes. The engine reads the visitor's texts, so
+    it must never touch the DOM, let alone an HTML sink."""
+    engine = (_INDEX.parent / "change_evidence.js").read_text("utf-8")
+    for sink in ("innerHTML", "outerHTML", "insertAdjacentHTML", "document.", "window.", "eval(", "new Function"):
+        assert sink not in engine, f"change_evidence.js must stay DOM-free and sink-free: found {sink!r}"
+
+
+def test_workbench_uses_no_html_sink_at_all() -> None:
+    """Every review string (both texts, packet fields, receipt kid) is
+    untrusted. The review UI builds nodes only; no HTML-parsing sink at all."""
+    workbench = (_INDEX.parent / "workbench.js").read_text("utf-8")
+    for sink in ("outerHTML", "insertAdjacentHTML", "document.write", "createContextualFragment", "DOMParser"):
+        assert sink not in workbench, f"workbench.js must not use {sink}"
+
+
 def test_pasted_receipt_fields_are_escaped(source: str) -> None:
     """The paste panels take BOTH the receipt and the JWKS from the visitor.
 
@@ -121,10 +138,20 @@ def test_pasted_receipt_fields_are_escaped(source: str) -> None:
         "${esc(res.kid)}",
         "${esc(p.scorer ?? \"?\")}",
         "${esc(nc)}",
-        "${esc(p.controlled)}",
         "${esc(schema)}",
     ):
         assert frag in source, f"REGRESSION: unescaped receipt field, expected {frag}"
+
+
+def test_stage_a_result_does_not_show_what_it_did_not_replay(source: str) -> None:
+    """Stage A checks the signature, schema and disclosure; it does not replay
+    the bound. So the box must not print the receipt's own `controlled` claim,
+    must label the bound as issuer-asserted, and must round it up (a rounded-
+    down bound would read as tighter than the signed one)."""
+    assert "p.controlled" not in source, "Stage A must not show `controlled`: it replays nothing"
+    assert "issuer-asserted bound, not replayed here" in source
+    assert "Math.ceil(p.risk_upper_bound_micro / 100) / 10000" in source
+    assert "(p.risk_upper_bound_micro / 1e6).toFixed(4)" not in source
 
 
 def test_error_paths_are_escaped(source: str) -> None:

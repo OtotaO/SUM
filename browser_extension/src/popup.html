@@ -6,10 +6,10 @@
 <p>Select text on the page, then capture it here. You can also paste a source.</p>
 <button id="capture" type="button">Capture selected text</button>
 <label for="source">Source text</label>
-<textarea id="source" rows="9" maxlength="100000" spellcheck="false"></textarea>
+<textarea id="source" rows="9" spellcheck="false" aria-describedby="status"></textarea>
 <p id="status" role="status" aria-live="polite">Nothing captured.</p>
 <button id="copy" type="button">Copy source</button>
 <button id="open" type="button">Open SUM workbench</button>
-<p class="note">Paste the copied text into the workbench. Capture stays in this popup until you copy it; closing the popup discards it. The extension does not send page text to a server.</p>
+<p class="note">Paste the copied text into box A, Original, in the workbench. Capture stays in this popup until you copy it; closing the popup discards it. The extension does not send page text to a server.</p>
 <script src="popup.js"></script>
 </body></html>

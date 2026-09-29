@@ -60,6 +60,7 @@ CHECKED_ASSETS: list[tuple[str, str]] = [
     ("receipt_verifier.js", "receipt_verifier.js"),       # render-receipt verifier (imported by index.html)
     ("review_packet.js", "review_packet.js"),             # displayed-output binding and portable review
     ("workbench.js", "workbench.js"),                     # source/rewrite review UI
+    ("change_evidence.js", "change_evidence.js"),         # literal change evidence (imported by workbench.js)
     ("meaning_receipt_verifier.js", "meaning_receipt_verifier.js"),    # meaning/perspective browser verifier
     ("transform_receipt_verifier.js", "transform_receipt_verifier.js"),  # transform browser verifier
     ("jcs.js", "jcs.js"),                                 # float-free canonicalizer

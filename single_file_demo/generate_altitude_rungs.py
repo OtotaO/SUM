@@ -1,8 +1,8 @@
 """Generate ``altitude_rungs.json`` — the static data behind the demo page's
 T0 altitude panel (the distiller made visible).
 
-One REAL document from the witnessed certified chain's corpus
-(``billsum-test-12``, BillSum test split, CC0-1.0; one of the 32 bills bound
+One REAL document from the signed chain receipt's corpus
+(``billsum-test-12``, BillSum test split, CC0-1.0; one of the 32 bills covered
 by chain ``9a8ab39f08522c50`` in ``fixtures/chain_receipts_billsum/``),
 descending the altitude ladder:
 
@@ -20,7 +20,8 @@ source, and the kept / dropped / added claim readout — the exact output of
 once, offline, into a static JSON the Worker ships as an asset.
 
 HONESTY (also carried inside the JSON's ``scope`` field): every number here
-is a per-document MEASUREMENT under the named NLI judge, not a guarantee.
+is a per-document MEASUREMENT under the named NLI judge, not a bound for any
+other document.
 The (1-delta) corpus-level bounds live in the signed, witnessed chain
 receipt the panel links to. The loss computation is machine-pinned (NLI
 float drift, F23/F26): regenerating this file on a different stack may move
@@ -49,10 +50,20 @@ DOC_ID = "billsum-test-12"
 CHAIN_ID = "9a8ab39f08522c50"
 
 SCOPE = (
-    "per-document MEASUREMENT under the named NLI judge; not a guarantee. "
+    "Per-document MEASUREMENT under the named NLI judge, on this one bill; "
+    "not a bound for other documents. "
     "The proxy is blind to arrangement, sound, connotation, implicature. "
     "Corpus-level (1-delta) bounds live in signed receipts: this document is "
-    "one of the 32 bills bound by the witnessed certified chain."
+    "one of the 32 bills covered by the signed, logged chain receipt."
+)
+
+# Descriptive: the bound values the signed chain receipt records, with the
+# delta each was computed at. Not a confidence reading about other documents.
+CHAIN_NOTE = (
+    "signed sum.chain_receipt.v1 over all 32 bills (Hoeffding, n=32): hop bound values "
+    "0.865768 and 0.488860, each at delta 0.05; their sum, 1.354628, at joint delta 0.10; "
+    "direct end-to-end bound value 0.874216, at delta 0.05. These are the values the receipt "
+    "records for these 32 bills, not a confidence statement about other documents"
 )
 
 
@@ -148,12 +159,7 @@ def build() -> dict:
             "path": "fixtures/chain_receipts_billsum/chain_receipt.billsum.golden.json",
             "witnessed_in": "transparency/log.jsonl",
             "url": "https://github.com/OtotaO/SUM/tree/main/fixtures/chain_receipts_billsum",
-            "note": (
-                "signed sum.chain_receipt.v1 over all 32 bills: hop-1 bound "
-                "0.865768, hop-2 bound 0.488860, Bonferroni budget 1.354628 "
-                "at joint confidence 0.90, direct end-to-end 0.874216 (95% "
-                "per hop, Hoeffding, n=32)"
-            ),
+            "note": CHAIN_NOTE,
         },
         "rungs": out_rungs,
     }

@@ -1,6 +1,6 @@
 {
   "generated_by": "single_file_demo/generate_altitude_rungs.py",
-  "scope": "per-document MEASUREMENT under the named NLI judge; not a guarantee. The proxy is blind to arrangement, sound, connotation, implicature. Corpus-level (1-delta) bounds live in signed receipts: this document is one of the 32 bills bound by the witnessed certified chain.",
+  "scope": "Per-document MEASUREMENT under the named NLI judge, on this one bill; not a bound for other documents. The proxy is blind to arrangement, sound, connotation, implicature. Corpus-level (1-delta) bounds live in signed receipts: this document is one of the 32 bills covered by the signed, logged chain receipt.",
   "scorer": "bidirectional-entailment[nli:MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli]",
   "scorer_version": "1",
   "document": {
@@ -13,7 +13,7 @@
     "path": "fixtures/chain_receipts_billsum/chain_receipt.billsum.golden.json",
     "witnessed_in": "transparency/log.jsonl",
     "url": "https://github.com/OtotaO/SUM/tree/main/fixtures/chain_receipts_billsum",
-    "note": "signed sum.chain_receipt.v1 over all 32 bills: hop-1 bound 0.865768, hop-2 bound 0.488860, Bonferroni budget 1.354628 at joint confidence 0.90, direct end-to-end 0.874216 (95% per hop, Hoeffding, n=32)"
+    "note": "signed sum.chain_receipt.v1 over all 32 bills (Hoeffding, n=32): hop bound values 0.865768 and 0.488860, each at delta 0.05; their sum, 1.354628, at joint delta 0.10; direct end-to-end bound value 0.874216, at delta 0.05. These are the values the receipt records for these 32 bills, not a confidence statement about other documents"
   },
   "rungs": [
     {

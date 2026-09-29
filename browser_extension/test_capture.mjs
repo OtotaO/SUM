@@ -54,6 +54,25 @@ test('oversized and empty selections preserve existing source without silent tru
     assert.equal(e.source.value, 'previous');
   }
 });
+test('the paste box never truncates: no maxlength, an explicit count, and nothing copied over the limit', async () => {
+  for (const browser of ['src', 'chrome/src', 'edge/src', 'firefox/src']) {
+    const html = fs.readFileSync(new URL(`./${browser}/popup.html`, import.meta.url), 'utf8');
+    assert.doesNotMatch(html, /maxlength/, `${browser}/popup.html must not cut a paste silently`);
+  }
+  const { elements: e, calls } = popup();
+  e.source.value = 'x'.repeat(100001);
+  e.source.input();
+  assert.match(e.status.textContent, /100,001 characters; the workbench accepts at most 100,000\. Nothing was cut\./);
+  await e.copy.click();
+  assert.match(e.status.textContent, /^Nothing copied: /);
+  assert.equal(e.source.value.length, 100001, 'the text is kept whole');
+  assert.equal(calls.filter(c => c[0] === 'copy').length, 0);
+  e.source.value = 'Alice may cancel.';
+  e.source.input();
+  assert.equal(e.status.textContent, '17 characters, not yet copied.');
+  await e.copy.click();
+  assert.equal(e.status.textContent, 'Source copied. Open the workbench and paste it into box A, Original.');
+});
 test('restricted page and denied clipboard have usable manual fallback', async () => {
   const { elements: e } = popup({ deny: true, clipboardFail: true });
   await e.capture.click();

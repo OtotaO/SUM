@@ -6,7 +6,7 @@ Capture selected text locally, copy it, then paste it into the [SUM workbench](h
 
 1. Select text on a normal web page and open the extension popup.
 2. Click **Capture selected text**. Inspect or edit the captured text.
-3. Click **Copy source**, then **Open SUM workbench**, and paste into Source.
+3. Click **Copy source**, then **Open SUM workbench**, and paste into box A, Original.
 
 Capture is explicit. There is no background collection, content script on every page, page-history storage, API key, or request carrying your text. Closing the popup discards its content. Copying writes to the system clipboard; the workbench handles text under its own displayed generation and review controls. Browser-internal pages, some embedded frames, and browser stores may deny capture; manual copy/paste remains available. Selections over 100,000 characters are rejected without truncation.
 
