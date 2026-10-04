@@ -82,7 +82,12 @@ def _experiment_synthetic_coverage(
 def _experiment_eigenvalue_cis(corpus_id: str, n_top: int = 5, B: int = 300) -> dict:
     """Bootstrap the top-k eigenvalues of the substrate axiom
     graph's Laplacian. Each eigenvalue gets a CI."""
-    from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
+    # The committed receipts of this bench were recorded with sieve extractor v1;
+    # replaying v1 keeps their digests and verdicts reproducible (H2, 2026-10-04).
+    from sum_engine_internal.algorithms.syntactic_sieve import (
+        SIEVE_EXTRACTOR_ID_V1,
+        DeterministicSieve,
+    )
     from sum_engine_internal.graph_store import Triple
     from sum_engine_internal.research.bootstrap import (
         bootstrap_ci, multiplier_bootstrap,
@@ -94,7 +99,7 @@ def _experiment_eigenvalue_cis(corpus_id: str, n_top: int = 5, B: int = 300) -> 
     corpus_path = REPO / "scripts" / "bench" / "corpora" / f"{corpus_id}.json"
     with corpus_path.open() as f:
         corpus = json.load(f)
-    sieve = DeterministicSieve()
+    sieve = DeterministicSieve(extractor_id=SIEVE_EXTRACTOR_ID_V1)
     triples = [
         Triple(*t)
         for doc in corpus["documents"]
@@ -149,7 +154,12 @@ def _experiment_eigenvalue_cis(corpus_id: str, n_top: int = 5, B: int = 300) -> 
 
 def _experiment_vn_entropy_ci(corpus_id: str, B: int = 300) -> dict:
     """Bootstrap the per-corpus von Neumann entropy."""
-    from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
+    # The committed receipts of this bench were recorded with sieve extractor v1;
+    # replaying v1 keeps their digests and verdicts reproducible (H2, 2026-10-04).
+    from sum_engine_internal.algorithms.syntactic_sieve import (
+        SIEVE_EXTRACTOR_ID_V1,
+        DeterministicSieve,
+    )
     from sum_engine_internal.graph_store import Triple
     from sum_engine_internal.research.bootstrap import (
         bootstrap_ci, multiplier_bootstrap,
@@ -162,7 +172,7 @@ def _experiment_vn_entropy_ci(corpus_id: str, B: int = 300) -> dict:
     corpus_path = REPO / "scripts" / "bench" / "corpora" / f"{corpus_id}.json"
     with corpus_path.open() as f:
         corpus = json.load(f)
-    sieve = DeterministicSieve()
+    sieve = DeterministicSieve(extractor_id=SIEVE_EXTRACTOR_ID_V1)
     triples = [
         Triple(*t)
         for doc in corpus["documents"]

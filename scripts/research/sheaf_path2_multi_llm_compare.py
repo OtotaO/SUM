@@ -81,7 +81,12 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
+# The committed receipts of this bench were recorded with sieve extractor v1;
+# replaying v1 keeps their digests and verdicts reproducible (H2, 2026-10-04).
+from sum_engine_internal.algorithms.syntactic_sieve import (
+    SIEVE_EXTRACTOR_ID_V1,
+    DeterministicSieve,
+)
 
 from scripts.research.sheaf_path2_v3_bench import (
     _PROMPT_CLASSES,
@@ -216,7 +221,7 @@ async def _capture_snapshot_for_model(model: str,
     adapter = get_adapter(model)
     print(f"[capture] corpus: {corpus} model: {model}")
 
-    sieve = DeterministicSieve()
+    sieve = DeterministicSieve(extractor_id=SIEVE_EXTRACTOR_ID_V1)
     with open(_corpus_path(corpus)) as f:
         data = json.load(f)
     docs_raw = data["documents"]

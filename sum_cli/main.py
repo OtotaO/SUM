@@ -127,7 +127,7 @@ def _pick_extractor(override: Optional[str] = None) -> str:
 def _extract_sieve(text: str, *, allow_download: bool = True) -> list[tuple[str, str, str]]:
     from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
     sieve = DeterministicSieve(allow_download=allow_download)
-    return sieve.extract_triplets(text)
+    return sieve.extract_triplets(text, suppressed_notice=sys.stderr)
 
 
 def _extract_sieve_with_provenance(text: str, source_uri: str):
@@ -144,7 +144,7 @@ def _extract_sieve_with_provenance(text: str, source_uri: str):
     from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
 
     sieve = DeterministicSieve()  # type: ignore[no-untyped-call]
-    pairs = sieve.extract_with_provenance(text, source_uri=source_uri)
+    pairs = sieve.extract_with_provenance(text, source_uri=source_uri, suppressed_notice=sys.stderr)
     triples = [triple for triple, _ in pairs]
     return triples, pairs
 
@@ -382,7 +382,7 @@ def cmd_attest(args: argparse.Namespace) -> int:
         state = algebra.encode_chunk_state(list(triples))
     elif extractor == "sieve":
         from sum_engine_internal.algorithms.chunked_corpus import state_for_corpus
-        state, triples = state_for_corpus(text, algebra)
+        state, triples = state_for_corpus(text, algebra, suppressed_notice=sys.stderr)
     else:
         triples = _extract(text, extractor, args.model)
         state = algebra.encode_chunk_state(list(triples))
@@ -390,8 +390,8 @@ def cmd_attest(args: argparse.Namespace) -> int:
     if not triples:
         print(
             "sum: extractor returned zero triples. "
-            "Input may be too short, negated, or hedged — "
-            "see docs/FEATURE_CATALOG.md entries 6-9 for the suppression rules.",
+            "Input may be too short or hedged, or every sentence negated, conditional, "
+            "a question or cross-clause; see docs/FEATURE_CATALOG.md entries 6-9.",
             file=sys.stderr,
         )
         return 3
@@ -623,7 +623,7 @@ def cmd_attest_batch(args: argparse.Namespace) -> int:
                 from sum_engine_internal.algorithms.chunked_corpus import (
                     state_for_corpus,
                 )
-                state, triples = state_for_corpus(text, algebra)
+                state, triples = state_for_corpus(text, algebra, suppressed_notice=sys.stderr, notice_label=f"file={path}")
             else:
                 triples = _extract(text, extractor, args.model)
                 state = algebra.encode_chunk_state(list(triples))
@@ -638,7 +638,7 @@ def cmd_attest_batch(args: argparse.Namespace) -> int:
         if not triples:
             print(
                 f"sum: file={path} error=zero_triples "
-                f"(input may be too short, negated, or hedged)",
+                f"(input may be too short or hedged, or every sentence negated, conditional, a question or cross-clause)",
                 file=sys.stderr,
             )
             failed += 1
@@ -1838,7 +1838,7 @@ _PROVENANCE_SCHEMA = {
         },
         "byte_start": {"type": "integer", "minimum": 0},
         "byte_end": {"type": "integer", "minimum": 1},
-        "extractor_id": {"type": "string", "examples": ["sum.sieve:deterministic_v1"]},
+        "extractor_id": {"type": "string", "examples": ["sum.sieve:deterministic_v2"]},
         "timestamp": {"type": "string", "format": "date-time"},
         "text_excerpt": {"type": "string", "maxLength": 1024},
         "schema_version": {"type": "string", "examples": ["1.0.0"]},

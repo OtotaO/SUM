@@ -46,11 +46,16 @@ def _load_corpus_triples(corpus_id: str) -> list[tuple[str, str, str]]:
     """Extract triples from one of the substrate's seed corpora using
     the same DeterministicSieve the rest of the substrate uses, so the
     spike measures realistic axiom shapes."""
-    from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
+    # The committed receipts of this bench were recorded with sieve extractor v1;
+    # replaying v1 keeps their digests and verdicts reproducible (H2, 2026-10-04).
+    from sum_engine_internal.algorithms.syntactic_sieve import (
+        SIEVE_EXTRACTOR_ID_V1,
+        DeterministicSieve,
+    )
     corpus_path = REPO / "scripts" / "bench" / "corpora" / f"{corpus_id}.json"
     with corpus_path.open() as f:
         corpus = json.load(f)
-    sieve = DeterministicSieve()
+    sieve = DeterministicSieve(extractor_id=SIEVE_EXTRACTOR_ID_V1)
     triples: list[tuple[str, str, str]] = []
     for doc in corpus["documents"]:
         for t in sieve.extract_triplets(doc["text"]):

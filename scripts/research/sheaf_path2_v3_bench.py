@@ -100,7 +100,12 @@ from sum_engine_internal.research.sheaf_laplacian_v2 import (
 from sum_engine_internal.research.sheaf_laplacian_v3 import (
     weights_from_receipts,
 )
-from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
+# The committed receipts of this bench were recorded with sieve extractor v1;
+# replaying v1 keeps their digests and verdicts reproducible (H2, 2026-10-04).
+from sum_engine_internal.algorithms.syntactic_sieve import (
+    SIEVE_EXTRACTOR_ID_V1,
+    DeterministicSieve,
+)
 
 from scripts.research.sheaf_v3_roc_bench import (
     _build_doc_sheaf,
@@ -220,7 +225,7 @@ async def _capture_snapshot() -> dict[str, Any]:
     adapter = LiveLLMAdapter(model=PINNED_MODEL)
     print(f"[capture] using model: {PINNED_MODEL}")
 
-    sieve = DeterministicSieve()
+    sieve = DeterministicSieve(extractor_id=SIEVE_EXTRACTOR_ID_V1)
     with open(CORPUS_PATH) as f:
         data = json.load(f)
     docs_raw = data["documents"]
@@ -277,7 +282,7 @@ def _ensure_snapshot(force: bool = False) -> dict[str, Any]:
 def _re_extract_from_snapshot(snapshot: dict[str, Any]) -> dict[str, dict[str, list]]:
     """Apply the deterministic sieve to each rendered tome in the
     snapshot. Returns {doc_id: {prompt_class: re_extracted_triples}}."""
-    sieve = DeterministicSieve()
+    sieve = DeterministicSieve(extractor_id=SIEVE_EXTRACTOR_ID_V1)
     out: dict[str, dict[str, list]] = {}
     for doc_id, doc_data in snapshot["renders"].items():
         out[doc_id] = {}

@@ -102,9 +102,14 @@ def _exact_match_recall(observed: set, truth: set) -> float:
 
 def _extract_sieve(text: str) -> list[tuple[str, str, str]]:
     """Synchronous sieve extraction. Returns normalised triples."""
-    from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
+    # The committed receipts of this bench were recorded with sieve extractor v1;
+    # replaying v1 keeps their digests and verdicts reproducible (H2, 2026-10-04).
+    from sum_engine_internal.algorithms.syntactic_sieve import (
+        SIEVE_EXTRACTOR_ID_V1,
+        DeterministicSieve,
+    )
 
-    sieve = DeterministicSieve()
+    sieve = DeterministicSieve(extractor_id=SIEVE_EXTRACTOR_ID_V1)
     return [_normalize_triple(t) for t in sieve.extract_triplets(text)]
 
 

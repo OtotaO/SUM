@@ -100,7 +100,12 @@ def _experiment_substrate(corpus_id: str, alpha: float = 0.1) -> dict:
     gold_triple, 0 otherwise. Predictor: ridge regression on the
     9-feature vector. Conformal wraps the ridge prediction.
     """
-    from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
+    # The committed receipts of this bench were recorded with sieve extractor v1;
+    # replaying v1 keeps their digests and verdicts reproducible (H2, 2026-10-04).
+    from sum_engine_internal.algorithms.syntactic_sieve import (
+        SIEVE_EXTRACTOR_ID_V1,
+        DeterministicSieve,
+    )
     from sum_engine_internal.graph_store import Triple
     from sum_engine_internal.research.conformal import (
         SplitConformal, empirical_coverage, average_interval_width,
@@ -109,7 +114,7 @@ def _experiment_substrate(corpus_id: str, alpha: float = 0.1) -> dict:
     corpus_path = REPO / "scripts" / "bench" / "corpora" / f"{corpus_id}.json"
     with corpus_path.open() as f:
         corpus = json.load(f)
-    sieve = DeterministicSieve()
+    sieve = DeterministicSieve(extractor_id=SIEVE_EXTRACTOR_ID_V1)
 
     # Build feature matrix + target across all docs
     features = []

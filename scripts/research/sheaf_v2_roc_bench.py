@@ -69,7 +69,12 @@ from sum_engine_internal.research.sheaf_laplacian_v2 import (
     score_rendered_triples_v2,
     combined_detector_score,
 )
-from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
+# The committed receipts of this bench were recorded with sieve extractor v1;
+# replaying v1 keeps their digests and verdicts reproducible (H2, 2026-10-04).
+from sum_engine_internal.algorithms.syntactic_sieve import (
+    SIEVE_EXTRACTOR_ID_V1,
+    DeterministicSieve,
+)
 
 
 CORPUS_PATH = REPO / "scripts" / "bench" / "corpora" / "seed_long_paragraphs.json"
@@ -83,7 +88,7 @@ def extract_corpus_triples() -> list[tuple[str, list[tuple[str, str, str]]]]:
     with open(CORPUS_PATH) as f:
         data = json.load(f)
     docs = data["documents"]
-    sieve = DeterministicSieve()
+    sieve = DeterministicSieve(extractor_id=SIEVE_EXTRACTOR_ID_V1)
     out: list[tuple[str, list[tuple[str, str, str]]]] = []
     for d in docs:
         triples = list(sieve.extract_triplets(d["text"]))

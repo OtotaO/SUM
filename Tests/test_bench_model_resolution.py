@@ -41,7 +41,7 @@ def _clean_env(monkeypatch):
 def test_no_llm_skips_model_resolution():
     snapshots = _resolve_model_snapshots(no_llm=True)
     # Only the deterministic sieve pseudo-snapshot remains.
-    assert snapshots == {"sum.sieve": "deterministic_v1"}
+    assert snapshots == {"sum.sieve": "deterministic_v2"}
 
 
 def test_single_sum_bench_model_fills_every_role(monkeypatch):

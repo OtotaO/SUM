@@ -111,7 +111,7 @@ probe-operator-audit:  ## Audit the live Worker's secrets / vars / endpoint cont
 
 negative-control:  ## T5 of bench-hardening — run the negative-control corpus (deterministic sieve, no LLM cost). Exits 1 if any document violates its annotated rule. NOT wired into pre-push or CI by default; operator decides when to gate.
 	@$(PYTHON) -m scripts.bench.runners.negative_control \
-		--corpus scripts/bench/corpora/seed_negative_control_v1.json \
+		--corpus scripts/bench/corpora/seed_negative_control_v2.json \
 		--pretty
 
 iterated-round-trip:  ## T1 of bench-hardening — iterated K-step drift on a corpus. Requires NVIDIA_API_KEY (or your provider) + SUM_TRANSFORM_MODEL. Default K=10, default corpus seed_v1. Pass CORPUS=path/to/corpus.json and K=N to override.

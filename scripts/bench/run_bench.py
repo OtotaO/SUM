@@ -157,7 +157,7 @@ def _resolve_model_snapshots(no_llm: bool) -> dict[str, str]:
     four roles should use the same pinned snapshot.
     """
     snapshots: dict[str, str] = {
-        "sum.sieve": "deterministic_v1",
+        "sum.sieve": "deterministic_v2",
     }
     if no_llm:
         return snapshots

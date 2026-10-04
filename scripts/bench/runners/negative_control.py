@@ -1,6 +1,6 @@
 """T5 — Negative-control corpus runner (bench-hardening worktrail).
 
-Companion to `docs/BENCH_HARDENING_FROM_QCVV.md` T5. The negative-
+Companion to `docs/BENCH_HARDENING_FROM_QCVV.md` T5. The v1 negative-
 control corpus (`scripts/bench/corpora/seed_negative_control_v1.json`)
 contains 20 hand-authored documents engineered to violate the
 canonicalisation pipeline's assumptions across five failure modes
@@ -11,6 +11,24 @@ canonicalisation pipeline's assumptions across five failure modes
   - contradictory_axioms      (mutually exclusive claims)
   - entity_resolution_adversarial (multi-meaning surface forms)
   - non_extractable_assertion (questions / counterfactuals / hedges)
+
+The v2 corpus (`seed_negative_control_v2.json`, the default) keeps those
+20 documents unchanged, adds negated coordination and determiner or
+pronoun negation ("No bidder ...", "Nobody ...") to
+non_extractable_assertion, and adds two modes aimed at the sieve's
+clause guard:
+
+  - conditional_assertion     (if / unless / provided / inverted
+                               conditionals: neither clause asserted)
+  - cross_clause_chimera      (relative / xcomp / ccomp / purpose
+                               clauses, "according to" and
+                               parenthetical attribution, plus positive
+                               controls whose main clause must still be
+                               extracted)
+
+v2 documents may carry ``allowed_triples`` (hand-authored, in the
+sieve's canonical form) for the rules ``produce_only_allowed_triples``
+and ``produce_allowed_triple``.
 
 Each document is annotated with its expected failure mode + an
 `extraction_should` rule specifying what the extractor's output
@@ -35,13 +53,17 @@ runner CLOSES the negative-control gap named in
 docs/BENCH_HARDENING_FROM_QCVV.md T5 and docs/PROOF_BOUNDARY.md
 §2 (Negative controls).
 
-Output schema: ``sum.negative_control_report.v1``.
+Output schema: ``sum.negative_control_report.v1``. Each result also
+records the sieve's per-document suppression report (sentences,
+extracted, suppressed per reason) and the summary totals them under
+``suppression``; ``extractor_id`` names the sieve version.
 
-Reproducible:
+Reproducible (byte for byte, given the receipt's date):
 
     python -m scripts.bench.runners.negative_control \
-        --corpus scripts/bench/corpora/seed_negative_control_v1.json \
-        --out fixtures/bench_receipts/negative_control_<YYYY-MM-DD>.json
+        --corpus scripts/bench/corpora/seed_negative_control_v2.json \
+        --out fixtures/bench_receipts/negative_control_<YYYY-MM-DD>.json \
+        --generated-at <YYYY-MM-DD>T00:00:00.000Z --pretty
 
 Zero cost — sieve extractor is deterministic, no LLM calls.
 """
@@ -92,8 +114,30 @@ def _grade_document(doc: dict[str, Any], extracted_axioms: list[dict]) -> tuple[
         # the corpus is designed to surface.
         return "unexpected", (
             f"rule allows drop OR flag; observed {n} triples without a "
-            f"flag — silent commitment to one reading is the documented "
+            f"flag; silent commitment to one reading is the documented "
             f"failure mode"
+        )
+
+    # ── Allowed-triple rules (v2) ───────────────────────────────────
+    if rule in {"produce_only_allowed_triples", "produce_allowed_triple"}:
+        allowed = {tuple(t) for t in doc.get("allowed_triples", [])}
+        observed = [
+            (a["subject"], a["predicate"], a["object"]) for a in extracted_axioms
+        ]
+        stray = [t for t in observed if t not in allowed]
+        if stray:
+            return "unexpected", (
+                f"extracted {len(stray)} triple(s) outside allowed_triples: "
+                f"{stray}; the sentence does not assert them (cross-clause "
+                f"or non-asserted content)"
+            )
+        if rule == "produce_allowed_triple" and n == 0:
+            return "unexpected", (
+                "positive control: the asserted main clause must be "
+                "extracted, but the extractor produced 0 triples"
+            )
+        return "expected", (
+            f"extracted {n} triple(s), all in allowed_triples"
         )
 
     # ── Contradiction rules — count + consistency check ─────────────
@@ -112,12 +156,12 @@ def _grade_document(doc: dict[str, Any], extracted_axioms: list[dict]) -> tuple[
         if n == 1:
             return "unexpected", (
                 f"rule required >= 2 triples to preserve the "
-                f"contradiction; extractor collapsed to {n} — silent "
+                f"contradiction; extractor collapsed to {n}: silent "
                 f"contradiction-resolution"
             )
         return "advisory", (
             f"extracted {n} triples; corpus expected the contradiction "
-            f"preserved but the extractor produced fewer than 2 — could "
+            f"preserved but the extractor produced fewer than 2; could "
             f"be sieve's lemmatisation quirk on these specific phrasings"
         )
 
@@ -143,29 +187,33 @@ def _grade_document(doc: dict[str, Any], extracted_axioms: list[dict]) -> tuple[
     return "advisory", f"unrecognised rule {rule!r}; recorded observation only"
 
 
-def _extract_axioms(text: str) -> list[dict]:
-    """Run sieve extraction on a document. Returns a list of axiom
-    dicts, one per extracted triple."""
-    from sum_engine_internal.algorithms.syntactic_sieve import (
-        DeterministicSieve,
-    )
-
-    sieve = DeterministicSieve()
-    triples = sieve.extract_triplets(text)
-    return [
+def _extract_axioms(sieve: Any, text: str) -> tuple[list[dict], dict]:
+    """Run sieve extraction on a document. Returns the axiom dicts (one
+    per extracted triple) and the sieve's suppression report."""
+    triples, report = sieve.extract_triplets_with_report(text)
+    axioms = [
         {"subject": str(t[0]), "predicate": str(t[1]), "object": str(t[2])}
         for t in triples
     ]
+    return axioms, report
 
 
-def run(corpus_path: Path) -> dict[str, Any]:
+def run(corpus_path: Path, generated_at: str | None = None) -> dict[str, Any]:
+    from sum_engine_internal.algorithms.syntactic_sieve import (
+        SIEVE_EXTRACTOR_ID,
+        DeterministicSieve,
+        merge_suppression_reports,
+    )
+
     corpus = json.loads(corpus_path.read_text())
     docs = corpus["documents"]
+    sieve = DeterministicSieve()
 
     results = []
+    reports = []
     for doc in docs:
         try:
-            axioms = _extract_axioms(doc["text"])
+            axioms, report = _extract_axioms(sieve, doc["text"])
         except Exception as e:  # noqa: BLE001
             results.append({
                 "doc_id": doc["id"],
@@ -176,12 +224,14 @@ def run(corpus_path: Path) -> dict[str, Any]:
             })
             continue
         verdict, notes = _grade_document(doc, axioms)
+        reports.append(report)
         results.append({
             "doc_id": doc["id"],
             "expected_failure_mode": doc["expected_failure_mode"],
             "observed": {
                 "axiom_count": len(axioms),
                 "axioms": axioms,
+                "suppression": report,
             },
             "verdict": verdict,
             "notes": notes,
@@ -199,11 +249,15 @@ def run(corpus_path: Path) -> dict[str, Any]:
         "schema": SCHEMA,
         "corpus_id": corpus.get("id"),
         "corpus_schema": corpus.get("schema"),
-        "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+        "generated_at": generated_at or datetime.now(timezone.utc).strftime(
+            "%Y-%m-%dT%H:%M:%S.000Z"
+        ),
         "extractor": "deterministic_sieve",
+        "extractor_id": SIEVE_EXTRACTOR_ID,
         "summary": {
             "total_documents": len(docs),
             **counts,
+            "suppression": merge_suppression_reports(reports),
         },
         "by_failure_mode": by_mode,
         "results": results,
@@ -214,8 +268,14 @@ def main() -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument(
         "--corpus",
-        default="scripts/bench/corpora/seed_negative_control_v1.json",
+        default="scripts/bench/corpora/seed_negative_control_v2.json",
         help="Path to the negative-control corpus JSON.",
+    )
+    p.add_argument(
+        "--generated-at",
+        default=None,
+        help="Fixed generated_at timestamp for a reproducible receipt. "
+             "Default: the current UTC time.",
     )
     p.add_argument(
         "--out",
@@ -225,7 +285,7 @@ def main() -> int:
     p.add_argument("--pretty", action="store_true", help="Pretty-print JSON.")
     args = p.parse_args()
 
-    report = run(Path(args.corpus))
+    report = run(Path(args.corpus), generated_at=args.generated_at)
 
     if args.out:
         Path(args.out).write_text(

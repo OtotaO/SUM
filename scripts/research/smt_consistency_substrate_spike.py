@@ -99,14 +99,19 @@ def _properties_for(name: str):
 
 
 def _experiment_substrate_corpus(corpus_id: str) -> dict:
-    from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
+    # The committed receipts of this bench were recorded with sieve extractor v1;
+    # replaying v1 keeps their digests and verdicts reproducible (H2, 2026-10-04).
+    from sum_engine_internal.algorithms.syntactic_sieve import (
+        SIEVE_EXTRACTOR_ID_V1,
+        DeterministicSieve,
+    )
     from sum_engine_internal.graph_store import Triple
     from sum_engine_internal.research.smt_consistency import check_consistency
 
     corpus_path = REPO / "scripts" / "bench" / "corpora" / f"{corpus_id}.json"
     with corpus_path.open() as f:
         corpus = json.load(f)
-    sieve = DeterministicSieve()
+    sieve = DeterministicSieve(extractor_id=SIEVE_EXTRACTOR_ID_V1)
     triples = [
         Triple(*t)
         for doc in corpus["documents"]
@@ -138,7 +143,12 @@ def _experiment_real_corpus_injection(corpus_id: str) -> dict:
     """The needle-in-real-haystack test: inject a curated-library
     contradiction into a real corpus's axioms and confirm Z3
     catches it with a minimal UNSAT core."""
-    from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
+    # The committed receipts of this bench were recorded with sieve extractor v1;
+    # replaying v1 keeps their digests and verdicts reproducible (H2, 2026-10-04).
+    from sum_engine_internal.algorithms.syntactic_sieve import (
+        SIEVE_EXTRACTOR_ID_V1,
+        DeterministicSieve,
+    )
     from sum_engine_internal.graph_store import Triple
     from sum_engine_internal.research.smt_consistency import check_consistency
 
@@ -148,7 +158,7 @@ def _experiment_real_corpus_injection(corpus_id: str) -> dict:
 
     with corpus_path.open() as f:
         corpus = json.load(f)
-    sieve = DeterministicSieve()
+    sieve = DeterministicSieve(extractor_id=SIEVE_EXTRACTOR_ID_V1)
     clean = [
         Triple(*t)
         for doc in corpus["documents"]
