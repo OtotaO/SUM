@@ -1025,3 +1025,31 @@ class TestClauseGuardSpeed:
         triple, _ = _extract_sentence(sent)
         assert time.perf_counter() - t0 < 2.0
         assert triple == ("alice", "buy", "it")
+
+    def test_child_outside_the_sentence_uses_the_original_walk(self) -> None:
+        # The memoized marker walk reads children from head pointers inside
+        # the sentence. When a token outside the sentence has its head
+        # inside (only a hand-built Doc does this; the parser keeps arcs
+        # inside sentences), it must fall back to Token.children, or
+        # "Bob" (nsubj of "goods") is missed and the sentence is emitted.
+        import numpy as np
+        from spacy.attrs import SENT_START
+        from spacy.tokens import Doc
+
+        from sum_engine_internal.algorithms.syntactic_sieve import (
+            _extract_sentence,
+        )
+
+        words = ["Alice", "sells", "goods", "provided", "free", "Bob", "ran", "."]
+        doc = Doc(
+            _sieve().nlp.vocab, words=words,
+            heads=[1, 1, 1, 2, 3, 2, 6, 6],
+            deps=["nsubj", "ROOT", "dobj", "acl", "advmod", "nsubj", "ROOT", "punct"],
+            pos=["PROPN", "VERB", "NOUN", "VERB", "ADJ", "PROPN", "VERB", "PUNCT"],
+            lemmas=[w.lower() for w in words],
+        )
+        starts = np.array([1, -1, -1, -1, -1, 1, -1, -1], dtype="int64")
+        doc.from_array([SENT_START], starts.astype("uint64").reshape(-1, 1))
+        first = list(doc.sents)[0]
+        assert first.text == "Alice sells goods provided free"
+        assert _extract_sentence(first) == (None, "conditional")

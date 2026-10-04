@@ -558,8 +558,10 @@ class _SentenceIndex:
 class _ClauseSubjects:
     """For ``_heads_clause``: the tokens of one sentence that have a
     clause-subject child (from head pointers, which list exactly the
-    children ``Token.children`` yields), and a memo of the first such
-    token at or above each token. Asking it for every marker in a
+    children ``Token.children`` yields when every arc stays inside the
+    sentence; ``exact`` is False when a head or a child lies outside it,
+    and ``_heads_clause`` then walks ``Token.children`` as before), and a
+    memo of the first such token at or above each token. Asking it for every marker in a
     sentence costs O(sentence) in total; the first version walked and
     re-scanned children for each marker, which a chain of "provided"
     clauses made cubic."""
@@ -573,12 +575,21 @@ class _ClauseSubjects:
         if not tokens:
             return
         start, end = tokens[0].i, tokens[-1].i + 1
+        arcs_inside = 0
+        children = 0
         for t in tokens:
             h = t.head.i
             if not start <= h < end:
                 self.exact = False
+            elif h != t.i:
+                arcs_inside += 1
+            children += t.n_lefts + t.n_rights
             if h != t.i and t.dep_ in _CLAUSE_SUBJECT_DEPS:
                 self.has.add(h)
+        # A child outside the sentence (a token there whose head is in
+        # here) is counted by spaCy but not seen above.
+        if children != arcs_inside:
+            self.exact = False
 
     def first_with_subject(self, tok: Any) -> Any:
         """The first token at or above *tok* (following heads) with a
