@@ -21,7 +21,7 @@
     "miniflare": "5.20260911.0-alpha"
   },
   "dependencies": {
-    "canonicalize": "^4.0.0",
+    "canonicalize": "^5.1.0",
     "jose": "^6.2.12"
   }
 }
