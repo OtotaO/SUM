@@ -1,41 +1,41 @@
 {
   "schema": "sum.self_attestation.v1",
-  "issued_at": "2026-10-04T06:06:04Z",
+  "issued_at": "2026-10-04T06:42:02Z",
   "doc_count": 6,
   "docs": [
     {
       "path": "README.md",
-      "source_uri": "sha256:78b989b7cf5dbf29723f1e4b47b15c46a84ffc25315a7f00a25f01ad9a2c617d",
+      "source_uri": "sha256:bc89ee54fe85a9d101cc7b5ded19cd93e3b00ca6cc60e9cb00ccb18b12da5dfb",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "78b989b7cf5dbf29723f1e4b47b15c46a84ffc25315a7f00a25f01ad9a2c617d",
+      "markdown_sha256": "bc89ee54fe85a9d101cc7b5ded19cd93e3b00ca6cc60e9cb00ccb18b12da5dfb",
       "axiom_count": 54,
       "state_integer_digits": 1016
     },
     {
       "path": "CHANGELOG.md",
-      "source_uri": "sha256:eab36dd3e438e6abb768285cedb076848912c3775ddf559e42ea5368b597c5e6",
+      "source_uri": "sha256:20d93893d96eb9da6d4daac945f04e896deb0265ef7f013bd335961d00449376",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "eab36dd3e438e6abb768285cedb076848912c3775ddf559e42ea5368b597c5e6",
-      "axiom_count": 591,
-      "state_integer_digits": 11132
+      "markdown_sha256": "20d93893d96eb9da6d4daac945f04e896deb0265ef7f013bd335961d00449376",
+      "axiom_count": 593,
+      "state_integer_digits": 11170
     },
     {
       "path": "docs/PROOF_BOUNDARY.md",
-      "source_uri": "sha256:00df86529dcfebaa4b9c391789c923b73ddbd551b57c17752d6654b32ae8ed3b",
+      "source_uri": "sha256:9e13965e24ca3864d04fcc20c264efcd57f68771fb0c6fb284b6d4e7fe2273ee",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "00df86529dcfebaa4b9c391789c923b73ddbd551b57c17752d6654b32ae8ed3b",
+      "markdown_sha256": "9e13965e24ca3864d04fcc20c264efcd57f68771fb0c6fb284b6d4e7fe2273ee",
       "axiom_count": 191,
       "state_integer_digits": 3594
     },
     {
       "path": "docs/FEATURE_CATALOG.md",
-      "source_uri": "sha256:11e19f7cad0ab31e713533491296c926f86d27ae83dd73670857e2b14c8575d0",
+      "source_uri": "sha256:4e9fc20cb82672e51e258f23c34f78d708a55f2b84b312b33b0925aa19d8ec13",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "11e19f7cad0ab31e713533491296c926f86d27ae83dd73670857e2b14c8575d0",
+      "markdown_sha256": "4e9fc20cb82672e51e258f23c34f78d708a55f2b84b312b33b0925aa19d8ec13",
       "axiom_count": 147,
       "state_integer_digits": 2771
     },

@@ -15,6 +15,7 @@ receipt that stops reproducing fails here instead of passing silently.
 from __future__ import annotations
 
 import ast
+import importlib.util
 import json
 import os
 import subprocess
@@ -22,6 +23,11 @@ import sys
 from pathlib import Path
 
 import pytest
+
+
+def _importable(name: str) -> bool:
+    return importlib.util.find_spec(name) is not None
+
 
 REPO = Path(__file__).resolve().parents[2]
 RECEIPTS = REPO / "fixtures" / "bench_receipts"
@@ -88,10 +94,15 @@ def test_product_paths_use_the_current_extractor() -> None:
     assert seen >= 8, seen
 
 
-spacy = pytest.importorskip("spacy")
-np = pytest.importorskip("numpy")
+# The checks below run the extractor; the two AST checks above need
+# neither spaCy nor numpy, so they are not skipped with these.
+needs_sieve = pytest.mark.skipif(
+    not all(_importable(m) for m in ("spacy", "numpy")),
+    reason="spaCy and numpy are required to run the extractor",
+)
 
 
+@needs_sieve
 def test_v2_roc_bench_corpus_matches_its_receipt() -> None:
     # Under v2 this was 106 triples and a 210 / 69 vocabulary.
     from scripts.research.sheaf_v2_roc_bench import extract_corpus_triples
@@ -108,6 +119,7 @@ def test_v2_roc_bench_corpus_matches_its_receipt() -> None:
     assert len(relations) == receipt["vocab_size_relations"]
 
 
+@needs_sieve
 def test_recursive_walk_deterministic_arm_matches_its_receipt(capsys) -> None:
     # Under v2 the medians moved to 0.6667 / 0.775 and no news brief
     # collapsed. The committed bench_digest already differed at 0.11.1
@@ -136,6 +148,7 @@ def test_recursive_walk_deterministic_arm_matches_its_receipt(capsys) -> None:
             assert got[key] == want[key], (corpus, key)
 
 
+@needs_sieve
 def test_mmd_baseline_matches_the_documented_calibration() -> None:
     # docs/MMD_WIRE_FINDINGS.md: 314 baseline triples. Under v2 the
     # baseline had 295 and every bundle's MMD fields changed for
@@ -153,6 +166,7 @@ def test_mmd_baseline_matches_the_documented_calibration() -> None:
     assert round(result["permutation_p_value"], 3) == 0.035
 
 
+@needs_sieve
 @pytest.mark.slow
 def test_f3_diagnostic_digest_matches_its_receipt() -> None:
     # Under v2 the digest was ae1e716b... (106 corpus triples, not 120).

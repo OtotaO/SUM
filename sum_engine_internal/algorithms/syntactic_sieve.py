@@ -1099,14 +1099,19 @@ def _mark_heading_breaks(doc: Any) -> Any:
         # indent: the line's leading whitespace carried by the preceding
         # newline token; a leading space token at the start of the text
         # is part of the line itself. Returns None for a line that does
-        # not start with "#", True for a heading, False for a "#" line
-        # indented four or more columns (a code block line).
+        # not start with "#", True for a heading, and False for any other
+        # "#" line ("#hashtag", "#1 priority", seven "#", or a heading
+        # indented four or more columns, which is a code block line).
         line = text[doc[first].idx:end_char]
         body = line.lstrip(" \t")
         indent += line[:len(line) - len(body)]
-        if indent.strip(" \t") or not _HEADING_RE.match(body):
+        if indent.strip(" \t") or not body.startswith("#"):
             return None
-        return "\t" not in indent and len(indent) <= _MAX_HEADING_INDENT
+        return bool(
+            _HEADING_RE.match(body)
+            and "\t" not in indent
+            and len(indent) <= _MAX_HEADING_INDENT
+        )
 
     # (first, end, heading): every "#" line is its own sentence, so a
     # code block line cannot be glued to the prose around it and stitch

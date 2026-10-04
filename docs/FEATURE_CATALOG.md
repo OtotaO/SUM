@@ -95,7 +95,7 @@ Result (this session): **PASS** — `seed_v1: F1=1.0000 P=1.0000 R=1.0000 TP=50/
 
 ### 6. Sieve negation suppression (truth-safety) ✅
 
-A sentence containing a spaCy `dep_=="neg"` token (`not`, `n't`, `never`, `cannot`) emits NO triple. Refusing extraction is strictly preferable to shipping a polarity-flipped assertion. Commit `ef392cb`. Since extractor v2 (2026-10-04, `sum.sieve:deterministic_v2`) the same refusal covers neither / nor, determiner and pronoun negation (no, nobody, nothing, none), questions, conditional sentences, and cross-clause or attributed content; each triple comes from one main-clause predicate, and `extract_triplets_with_report` counts withheld sentences per reason. `pytest Tests/test_sieve_clause_guard.py -q` gives 155 passed; known gaps are listed in PROOF_BOUNDARY §2.1.
+A sentence containing a spaCy `dep_=="neg"` token (`not`, `n't`, `never`, `cannot`) emits NO triple. Refusing extraction is strictly preferable to shipping a polarity-flipped assertion. Commit `ef392cb`. Since extractor v2 (2026-10-04, `sum.sieve:deterministic_v2`) the same refusal covers neither / nor, determiner and pronoun negation (no, nobody, nothing, none), questions, conditional sentences, and cross-clause or attributed content; each triple comes from one main-clause predicate, and `extract_triplets_with_report` counts withheld sentences per reason. `pytest Tests/test_sieve_clause_guard.py -q` gives 157 passed; known gaps are listed in PROOF_BOUNDARY §2.1.
 
 Verify: `pytest Tests/test_sieve_negation.py -q`
 Expected: `14 passed`

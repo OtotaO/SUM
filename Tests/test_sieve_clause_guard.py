@@ -744,12 +744,20 @@ class TestHeadingLines:
         ("Alice wrote the report.\n\n    # Bob reviewed the draft\n\n"
          "Carol approved the budget.",
          [("alice", "write", "report"), ("carol", "approve", "budget")]),
+        # non-heading "#" lines glued to the prose gave (alice, own,
+        # hashtag line) and (alice, write, hash)
+        ("Alice owns the car.\n#hashtag line here\nBob sells houses.",
+         [("bob", "sell", "house")]),
+        ("Alice wrote the report.\n####### seven hashes\nBob sold the house.",
+         [("bob", "sell", "house")]),
     ])
     def test_code_block_hash_line_does_not_join_the_prose(self, text, expected) -> None:
         triples = _sieve().extract_triplets(text)
         for triple in expected:
             assert triple in triples
         assert ("bob", "sell", "space") not in triples
+        assert ("alice", "own", "hashtag line") not in triples
+        assert ("alice", "write", "hash") not in triples
 
     def test_heading_component_is_linear(self) -> None:
         # 9dc0351 rebuilt Doc.text for every line: 40 s on this input.
