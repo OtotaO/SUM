@@ -68,13 +68,18 @@ def _experiment_substrate(corpus_id: str = "seed_v1", delta: float = 0.05) -> di
     """Certify a lower bound on the per-triple preservation rate of the
     deterministic sieve against gold triples — real SUM data, no LLM."""
     try:
-        from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
+        # The committed receipts of this bench were recorded with sieve extractor v1;
+        # replaying v1 keeps their digests and verdicts reproducible (H2, 2026-10-04).
+        from sum_engine_internal.algorithms.syntactic_sieve import (
+            SIEVE_EXTRACTOR_ID_V1,
+            DeterministicSieve,
+        )
         from sum_engine_internal.research.conformal import certify_rate
 
         corpus_path = REPO / "scripts" / "bench" / "corpora" / f"{corpus_id}.json"
         with corpus_path.open() as f:
             corpus = json.load(f)
-        sieve = DeterministicSieve()
+        sieve = DeterministicSieve(extractor_id=SIEVE_EXTRACTOR_ID_V1)
 
         labels: list[float] = []
         for doc in corpus["documents"]:

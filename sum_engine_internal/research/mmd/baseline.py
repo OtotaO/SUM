@@ -142,7 +142,10 @@ class BaselineMMDComputer:
         the median-heuristic bandwidth, precompute the within-
         baseline kernel sum. Returns True on success."""
         try:
+            # The bundle MMD baseline (docs/MMD_WIRE_FINDINGS.md) was recorded with sieve
+            # extractor v1; replaying v1 keeps the bundle's MMD fields reproducible (H2, 2026-10-04).
             from sum_engine_internal.algorithms.syntactic_sieve import (
+                SIEVE_EXTRACTOR_ID_V1,
                 DeterministicSieve,
             )
             from sum_engine_internal.graph_store import Triple
@@ -150,7 +153,7 @@ class BaselineMMDComputer:
         except ImportError:
             return False
 
-        sieve = DeterministicSieve()
+        sieve = DeterministicSieve(extractor_id=SIEVE_EXTRACTOR_ID_V1)
         triples: list = []
         for cid in (corpora or _BASELINE_CORPORA):
             corpus_path = (

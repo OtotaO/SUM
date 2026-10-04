@@ -137,6 +137,7 @@ def state_for_corpus(
     max_sentence_chars: int = DEFAULT_MAX_SENTENCE_CHARS,
     sieve=None,
     suppressed_notice=None,
+    notice_label=None,
 ) -> Tuple[int, List[Tuple[str, str, str]]]:
     """Compute the corpus-level Gödel state of *text* by chunking on
     sentence boundaries, extracting per-chunk via the sieve, encoding
@@ -168,6 +169,8 @@ def state_for_corpus(
         suppressed_notice: Optional text stream; one line summing the
                      sieve's suppression reports over all chunks is
                      written to it when any sentence was suppressed.
+        notice_label: Optional label for that line, e.g.
+                     ``"file=<path>"`` (``format_suppression_notice``).
 
     Returns:
         ``(state_integer, deduplicated_triples)``.
@@ -203,7 +206,9 @@ def state_for_corpus(
         triple_bag.update(triples)
         chunk_states.append(algebra.encode_chunk_state(list(triples)))
 
-    notice = format_suppression_notice(merge_suppression_reports(reports))
+    notice = format_suppression_notice(
+        merge_suppression_reports(reports), label=notice_label,
+    )
     if suppressed_notice is not None and notice is not None:
         suppressed_notice.write(notice + "\n")
 

@@ -247,9 +247,9 @@ def build_server() -> FastMCP:
                     "attest",
                     t0,
                     ErrorClass.STRUCTURAL,
-                    "extractor returned zero triples (input may be too "
-                    "short, negated, or hedged — see "
-                    "docs/FEATURE_CATALOG.md entries 6-9).",
+                    "extractor returned zero triples (input may be too short "
+                    "or hedged, or every sentence negated, conditional, a question "
+                    "or cross-clause; see docs/FEATURE_CATALOG.md entries 6-9).",
                 )
 
             from datetime import datetime, timezone

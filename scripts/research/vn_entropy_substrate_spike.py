@@ -62,14 +62,19 @@ def _experiment_synthetic_K_n() -> list[dict]:
 
 
 def _experiment_substrate_corpus(corpus_id: str) -> dict:
-    from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
+    # The committed receipts of this bench were recorded with sieve extractor v1;
+    # replaying v1 keeps their digests and verdicts reproducible (H2, 2026-10-04).
+    from sum_engine_internal.algorithms.syntactic_sieve import (
+        SIEVE_EXTRACTOR_ID_V1,
+        DeterministicSieve,
+    )
     from sum_engine_internal.graph_store import Triple
     from sum_engine_internal.research.spectral_entropy import graph_entropy
 
     corpus_path = REPO / "scripts" / "bench" / "corpora" / f"{corpus_id}.json"
     with corpus_path.open() as f:
         corpus = json.load(f)
-    sieve = DeterministicSieve()
+    sieve = DeterministicSieve(extractor_id=SIEVE_EXTRACTOR_ID_V1)
     triples = [
         Triple(*t)
         for doc in corpus["documents"]
@@ -87,14 +92,19 @@ def _experiment_drift_sensitivity(corpus_id: str, n_seeds: int = 5) -> dict:
     """Inject corruption at varying levels; measure S vs corruption
     count. Reports the linear-fit slope and the per-corruption ΔS
     estimate — the load-bearing claim for the drift-monitor use case."""
-    from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
+    # The committed receipts of this bench were recorded with sieve extractor v1;
+    # replaying v1 keeps their digests and verdicts reproducible (H2, 2026-10-04).
+    from sum_engine_internal.algorithms.syntactic_sieve import (
+        SIEVE_EXTRACTOR_ID_V1,
+        DeterministicSieve,
+    )
     from sum_engine_internal.graph_store import Triple
     from sum_engine_internal.research.spectral_entropy import graph_entropy
 
     corpus_path = REPO / "scripts" / "bench" / "corpora" / f"{corpus_id}.json"
     with corpus_path.open() as f:
         corpus = json.load(f)
-    sieve = DeterministicSieve()
+    sieve = DeterministicSieve(extractor_id=SIEVE_EXTRACTOR_ID_V1)
     clean = [
         Triple(*t)
         for doc in corpus["documents"]

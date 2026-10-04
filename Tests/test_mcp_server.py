@@ -152,6 +152,20 @@ def test_extract_returns_triples_on_valid_input(server):
     assert result["extractor"] == "sieve"  # auto resolves to sieve in MCP
 
 
+def test_attest_zero_triples_names_the_cli_reasons(server):
+    """The MCP attest zero-triple error lists the same reasons as
+    ``sum attest`` (negated, conditional, a question, cross-clause);
+    before 2026-10-04 it said only "too short, negated, or hedged"."""
+    import asyncio
+    result = asyncio.run(_tool(server, "attest")(
+        text="If it rains, the match stops. Bob said that Alice stole the car."
+    ))
+    assert result.get("error_class") == "structural", result
+    message = " ".join(str(e) for e in result["errors"])
+    for reason in ("negated", "conditional", "a question", "cross-clause"):
+        assert reason in message, message
+
+
 # --------------------------------------------------------------------------
 # verify — input validation gates
 # --------------------------------------------------------------------------

@@ -87,7 +87,12 @@ def _vocab_embed(triples, subjects, predicates, objects):
 
 
 def _experiment_corpus(corpus_id: str, n_corrupt_per_type: int = 6) -> dict:
-    from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
+    # The committed receipts of this bench were recorded with sieve extractor v1;
+    # replaying v1 keeps their digests and verdicts reproducible (H2, 2026-10-04).
+    from sum_engine_internal.algorithms.syntactic_sieve import (
+        SIEVE_EXTRACTOR_ID_V1,
+        DeterministicSieve,
+    )
     from sum_engine_internal.graph_store import Triple
     from sum_engine_internal.research.robust_pca import (
         corruption_score, embed_triples,
@@ -96,7 +101,7 @@ def _experiment_corpus(corpus_id: str, n_corrupt_per_type: int = 6) -> dict:
     corpus_path = REPO / "scripts" / "bench" / "corpora" / f"{corpus_id}.json"
     with corpus_path.open() as f:
         corpus = json.load(f)
-    sieve = DeterministicSieve()
+    sieve = DeterministicSieve(extractor_id=SIEVE_EXTRACTOR_ID_V1)
     clean_triples = [
         Triple(*t)
         for doc in corpus["documents"]

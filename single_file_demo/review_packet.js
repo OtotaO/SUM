@@ -1,7 +1,7 @@
 // The review packet is an unsigned container. Only render.receipt is signed.
 // Pure functions shared by the browser and offline Node regression tests.
 import { canonicalize } from './vendor/sum-verify-deps.js';
-import { verifyReceipt } from './receipt_verifier.js';
+import { verifyReceipt, VerifyError } from './receipt_verifier.js';
 
 export const REVIEW_SCHEMA = 'sum.review_packet.v1';
 export const MAX_REVIEW_CHARS = 100000;
@@ -117,7 +117,8 @@ export async function verifyReviewPacket(packet, options = {}) {
   const result = { text_hashes: 'consistent-not-authenticated', review_spans: 'recomputed', human_decisions: 'unsigned', signature: 'absent', source_binding: 'not-signed', meaning: 'not-measured' };
   if (packet.render) {
     if (!packet.jwks) throw new Error('Public keys are missing for the attached render receipt.');
-    Object.assign(result, await checkRenderBinding(packet.render, packet.output.text, packet.jwks));
+    if (typeof packet.jwks !== 'object' || Array.isArray(packet.jwks) || !Array.isArray(packet.jwks.keys)) throw new Error('Packet public keys must be an object with a keys array.');
+    Object.assign(result, await checkRenderBinding(packet.render, packet.output.text, packet.jwks).catch(e => { throw receiptFailure(e, packet.render?.receipt); }));
     Object.assign(result, pinPacketKey(packet.jwks, siteJwks, result.kid));
   } else result.key_pin = 'not-applicable';
   return result;
@@ -133,24 +134,62 @@ export async function verifyReviewPacket(packet, options = {}) {
 // key_pin is 'site-key', 'not-site-key', 'not-checked' (no site keys
 // supplied) or 'not-applicable' (no render receipt).
 
-// Public key of the all-zero 32-byte Ed25519 seed. Its private key is public,
-// so a signature under it authenticates nobody (finding M1).
+// Public keys whose private keys are published, so a signature under one
+// authenticates nobody: the all-zero 32-byte Ed25519 seed (finding M1) and
+// the five test vectors of RFC 8032 section 7.1 (TEST 1 is the key in the
+// example JWKS of docs/RENDER_RECEIPT_FORMAT.md).
 export const PUBLIC_TEST_KEY_X = 'O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik';
+export const PUBLIC_TEST_KEYS_X = Object.freeze([PUBLIC_TEST_KEY_X,
+  '11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo', 'PUAXw-hDiVqStwqnTRt-vJyYLM8uxJaMwM1V8Sr0Zgw', '_FHNjmIYoaONpH7QAjDwWAgW7RO6MwOsXeuRFUiQgCU',
+  'J4EX_BRMcjQPZ9DyMW6Dhs7_vyskKMnFH-98WX8dQm4', '7Bcrk61eVjv0kyxw4SRQNMNUZ-8u_U1k6_gZaDRn4r8']);
 
 // A key ID in a packet is chosen by whoever made the packet, and the page
-// shows it in status text. A newline could start a line of its own (such as
-// a forged "This site publishes key ..." sentence), a bidi control such as
-// U+202E reverses the text after it, and zero-width or lookalike characters
-// make another key ID look like the site's. So a key ID is always shown
-// quoted, every character outside printable ASCII as a \uXXXX escape, and a
-// long one is shortened.
-const MAX_SHOWN_KID = 64;
+// shows it in status text. A newline, a run of spaces or a no-break, em or
+// ideographic space can put text from the packet at the start of a line of
+// its own (such as a forged site-key sentence), a bidi control or a
+// right-to-left letter reorders the text around it, and zero-width or
+// lookalike characters make another key ID look like the site's. So a key ID
+// is always shown quoted, with every space and every character outside
+// printable ASCII as a \uXXXX escape, so no words from the packet are shown
+// with spaces between them. The quoted text is at most 40 characters long,
+// escapes included, so it fits a phone-width line.
+const MAX_SHOWN_KID = 40;
 const unitEscape = c => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0');
 export function quoteKid(kid) {
   if (typeof kid !== 'string') return '(no key ID)';
   const chars = Array.from(kid);
-  const quoted = JSON.stringify(chars.slice(0, MAX_SHOWN_KID).join('')).replace(/[^\x20-\x7e]/g, unitEscape);
-  return chars.length > MAX_SHOWN_KID ? `${quoted} (first ${MAX_SHOWN_KID} of ${chars.length} characters)` : quoted;
+  let shown = '', count = 0;
+  for (const c of chars) {
+    const escaped = JSON.stringify(c).slice(1, -1).replace(/[^\x21-\x7e]/g, unitEscape);
+    if (shown.length + escaped.length > MAX_SHOWN_KID) break;
+    shown += escaped; count++;
+  }
+  return count < chars.length ? `"${shown}" (first ${count} of ${chars.length} characters)` : `"${shown}"`;
+}
+
+// receipt_verifier.js puts packet fields (key ID, schema, key type, header
+// values) into its error messages unchanged. A receipt failure is reported
+// from its error class instead, with the key ID shown by quoteKid. It is
+// still a VerifyError with the same errorClass, and the verifier's error is
+// kept as its cause.
+const RECEIPT_FAILURES = {
+  malformed_receipt: 'the render receipt is malformed',
+  schema_unknown: 'the render receipt schema is not sum.render_receipt.v1',
+  malformed_jwks: 'the public key for this key ID could not be imported as an Ed25519 key',
+  unknown_kid: 'there is no public key for this key ID',
+  malformed_jws: 'the receipt signature (JWS) is malformed',
+  crit_unknown_extension: 'the signed header lists a critical extension this verifier does not support',
+  unsupported_alg: 'the signed header names an unsupported signature algorithm',
+  header_invariant_violated: 'the signed header does not follow the receipt format',
+  kid_mismatch: 'the signed header names a different key ID',
+  signature_invalid: 'signature verification failed',
+};
+export function receiptFailure(error, receipt) {
+  if (typeof error?.errorClass !== 'string') return error;
+  const errorClass = Object.hasOwn(RECEIPT_FAILURES, error.errorClass) ? error.errorClass : null;
+  const kid = typeof receipt?.kid === 'string' ? ` Key ID: ${quoteKid(receipt.kid)}.` : '';
+  const failure = new VerifyError(error.errorClass, `Receipt check failed: ${errorClass ? `${RECEIPT_FAILURES[errorClass]} (${errorClass})` : 'the receipt did not verify'}.${kid}`);
+  return Object.assign(failure, { cause: error });
 }
 
 // An Ed25519 public key is 32 bytes: exactly 43 base64url characters, no
@@ -183,7 +222,7 @@ function keysById(jwks, label) {
  */
 export function keyWarning(jwks, kid) {
   const used = jwks?.keys?.find?.(k => k && typeof k === 'object' && k.kid === kid);
-  return used?.x === PUBLIC_TEST_KEY_X ? { key_warning: 'public-test-vector-key' } : {};
+  return PUBLIC_TEST_KEYS_X.includes(used?.x) ? { key_warning: 'public-test-vector-key' } : {};
 }
 
 /**
@@ -205,7 +244,7 @@ export function pinPacketKey(packetJwks, siteJwks, kid) {
   if (siteJwks === undefined || siteJwks === null) return { key_pin: 'not-checked', ...warning };
   const siteKeys = keysById(siteJwks, 'Site public keys');
   for (const [id, [material]] of packetKeys) {
-    if (siteKeys.has(id) && !siteKeys.get(id).has(material)) throw new Error(`Key ID collision: the packet reuses key ID ${quoteKid(id)}, which this site publishes for a different key. Do not rely on this packet's signature.`);
+    if (siteKeys.has(id) && !siteKeys.get(id).has(material)) throw new Error(`Key ID collision: the packet reuses key ID ${quoteKid(id)}, which this site's public keys list for a different key. Do not rely on this packet's signature.`);
   }
   const [material] = packetKeys.get(kid);
   return { key_pin: siteKeys.get(kid)?.has(material) ? 'site-key' : 'not-site-key', ...warning };

@@ -1,7 +1,7 @@
 {
   "id": "seed_negative_control_v2",
   "schema": "sum.negative_control_corpus.v1",
-  "description": "Hand-authored negative-control corpus for T5 of the bench-hardening worktrail (docs/BENCH_HARDENING_FROM_QCVV.md), version 2. It contains all twenty seed_negative_control_v1 documents unchanged (same ids, text and rules) plus 70 new documents: 69 in two new failure modes and one negated coordination (neither ... nor) added to non_extractable_assertion. conditional_assertion (34 documents): if, unless, provided (that), as long as, in case, in the event (that), whenever, generic when, where, once and subject to introducing an adverbial clause, inverted had / were / should, suppose, assuming and supposing (first or after a comma, including clauses whose verb spaCy tags as a noun), given that, only if and even if, in both clause orders, and disjunctions of clauses (or, either ... or), with legal and consumer-notice phrasing; a conditional or disjunctive sentence asserts neither clause. cross_clause_chimera (35 documents): relative clauses (where / that / who), xcomp (want / plan / refuse / decide to), ccomp attribution and belief (said that / claims that / believes / denies that / told ... that), purpose clauses (in order to / to / so that), appositive subjects that spaCy attaches to the first clause, and multi-clause sentences the POS fallback used to read as one, each with the only triples a single-clause extraction may assert, plus positive controls (because / after / although / before / while subordinate clauses, coordinated main clauses, shared-subject coordination, trailing time phrases, adverbial 'once') whose asserted main clause must still be extracted. allowed_triples are hand-authored in the sieve's canonical form (lowercase lemmas, '_'-joined subject modifiers, space-joined object modifiers). Rules added in v2: produce_only_allowed_triples (every extracted triple is listed; zero is acceptable) and produce_allowed_triple (at least one triple, every triple listed). A negative-control test passes when observed failures match annotations: the bench fails on inputs it should fail on and succeeds on inputs it should succeed on.",
+  "description": "Hand-authored negative-control corpus for T5 of the bench-hardening worktrail (docs/BENCH_HARDENING_FROM_QCVV.md), version 2. It contains all twenty seed_negative_control_v1 documents unchanged (same ids, text and rules) plus 75 new documents: 72 in two new failure modes and three negations added to non_extractable_assertion (one negated coordination, neither ... nor, and two determiner or pronoun negations, no / nobody). conditional_assertion (34 documents): if, unless, provided (that), as long as, in case, in the event (that), whenever, generic when, where, once and subject to introducing an adverbial clause, inverted had / were / should, suppose, assuming and supposing (first or after a comma, including clauses whose verb spaCy tags as a noun), given that, only if and even if, in both clause orders, and disjunctions of clauses (or, either ... or), with legal and consumer-notice phrasing; a conditional or disjunctive sentence asserts neither clause. cross_clause_chimera (38 documents): relative clauses (where / that / who), xcomp (want / plan / refuse / decide to), ccomp attribution and belief (said that / claims that / believes / denies that / told ... that), 'according to' and parenthetical reporting-verb attribution, purpose clauses (in order to / to / so that), appositive subjects that spaCy attaches to the first clause, and multi-clause sentences the POS fallback used to read as one, each with the only triples a single-clause extraction may assert, plus positive controls (because / after / although / before / while subordinate clauses, coordinated main clauses, shared-subject coordination, trailing time phrases, adverbial 'once') whose asserted main clause must still be extracted. allowed_triples are hand-authored in the sieve's canonical form (lowercase lemmas, '_'-joined subject modifiers, space-joined object modifiers). Rules added in v2: produce_only_allowed_triples (every extracted triple is listed; zero is acceptable) and produce_allowed_triple (at least one triple, every triple listed). A negative-control test passes when observed failures match annotations: the bench fails on inputs it should fail on and succeeds on inputs it should succeed on.",
   "generated": "2026-10-04",
   "documents": [
     {
@@ -176,7 +176,7 @@
       "id": "cond_unless_01",
       "text": "The company keeps its assets unless the court approves the merger.",
       "expected_failure_mode": "conditional_assertion",
-      "expected_behavior": "Exception clause. The court's approval is a hypothetical, not an event; v1 asserted (court, approve, merger). The main clause holds only under the exception, so a drop is the faithful output.",
+      "expected_behavior": "Exception clause. The court's approval is a hypothetical, not an event; v1 asserted (court, approve, merger). The main clause holds only under the exception, so a drop is the correct output.",
       "extraction_should": "produce_zero_triples_or_flag_conditional"
     },
     {
@@ -330,7 +330,7 @@
       "id": "chim_rel_that_02",
       "text": "Bob lives in the house that Alice built.",
       "expected_failure_mode": "cross_clause_chimera",
-      "expected_behavior": "Relative clause with 'that' on a prepositional object. The main clause has no direct object, so no single-clause triple exists; v1 emitted (alice, build, that). Zero triples is the faithful output.",
+      "expected_behavior": "Relative clause with 'that' on a prepositional object. The main clause has no direct object, so no single-clause triple exists; v1 emitted (alice, build, that). Zero triples is the expected output.",
       "extraction_should": "produce_only_allowed_triples",
       "allowed_triples": []
     },
@@ -843,6 +843,44 @@
           "school"
         ]
       ]
+    },
+    {
+      "id": "nonext_detneg_01",
+      "text": "No bidder met the reserve price.",
+      "expected_failure_mode": "non_extractable_assertion",
+      "expected_behavior": "Determiner negation. spaCy tags 'No' as a determiner, not as negation, so v1 and the first v2 emitted (bidder, meet, reserve price), the inverse of the sentence.",
+      "extraction_should": "produce_zero_triples"
+    },
+    {
+      "id": "nonext_detneg_02",
+      "text": "Nobody claimed the reward.",
+      "expected_failure_mode": "non_extractable_assertion",
+      "expected_behavior": "Negative pronoun subject. v1 and the first v2 emitted (nobody, claim, reward), which reads as a claim that someone took the reward.",
+      "extraction_should": "produce_zero_triples"
+    },
+    {
+      "id": "chim_attrib_01",
+      "text": "According to the complaint, the landlord kept the security deposit.",
+      "expected_failure_mode": "cross_clause_chimera",
+      "expected_behavior": "Preposed 'according to' attribution. The sentence reports what the complaint alleges; v1 and the first v2 asserted (landlord, keep, security deposit) as fact.",
+      "extraction_should": "produce_only_allowed_triples",
+      "allowed_triples": []
+    },
+    {
+      "id": "chim_attrib_02",
+      "text": "The supplement lowers blood pressure, according to its maker.",
+      "expected_failure_mode": "cross_clause_chimera",
+      "expected_behavior": "Postposed 'according to' attribution. The effect is the maker's claim; v1 emitted the stitched (supplement, accord, blood pressure) and the first v2 the clean (supplement, lower, blood pressure) as fact.",
+      "extraction_should": "produce_only_allowed_triples",
+      "allowed_triples": []
+    },
+    {
+      "id": "chim_attrib_03",
+      "text": "The contractor, the inspector wrote, ignored the building code.",
+      "expected_failure_mode": "cross_clause_chimera",
+      "expected_behavior": "Parenthetical reporting verb ('the inspector wrote', parsed as parataxis). The main clause is the inspector's report; v1 and the first v2 asserted (contractor, ignore, building code) as fact.",
+      "extraction_should": "produce_only_allowed_triples",
+      "allowed_triples": []
     }
   ]
 }

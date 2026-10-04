@@ -1,4 +1,4 @@
-import { compareTexts, makeReviewPacket, verifyReviewPacket, checkRenderBinding, publicJwks, pinPacketKey, keyWarning, quoteKid } from './review_packet.js';
+import { compareTexts, makeReviewPacket, verifyReviewPacket, checkRenderBinding, publicJwks, pinPacketKey, keyWarning, quoteKid, receiptFailure } from './review_packet.js';
 
 const $ = id => document.getElementById(id);
 let current = null;
@@ -134,24 +134,39 @@ async function getSiteKeys() {
 // this site's keys.
 async function getPublicKeys() { return jwks || getSiteKeys(); }
 
-// Messages can quote a packet's key ID or a network error. Control, format
-// and line or paragraph separator characters (Unicode Cc, Cf, Zl, Zp) are
-// shown as \u escapes, so no message can add a line or reorder the text
-// around it. The result JSON escapes every character outside printable ASCII.
+// In status and result messages, text from a packet appears only as a key
+// ID shown by quoteKid: quoted, every space and every character outside
+// printable ASCII escaped, at most 40 characters. Receipt failures are
+// rebuilt by receiptFailure, and an unparsable packet gets a fixed message.
+// Every other message (such as a network error) is shown by plainMessage:
+// characters outside printable ASCII and every space after the first in a
+// run escaped, at most 400 characters. So no packet text containing a space
+// appears in these messages and a packet cannot print the site-key
+// sentence; a key ID fragment without spaces can still begin a wrapped
+// line. After Open, the packet's source, rewrite and review spans are shown
+// as the texts under review.
 const escapeUnits = c => Array.from({ length: c.length }, (_, i) => '\\u' + c.charCodeAt(i).toString(16).padStart(4, '0')).join('');
-const escapeHidden = text => String(text).replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/gu, escapeUnits);
-const resultJson = result => JSON.stringify(result, null, 2).replace(/[^\x20-\x7e\n]/g, escapeUnits);
+const plainMessage = text => {
+  const shown = String(text).replace(/[^\x20-\x7e]/g, escapeUnits).replace(/ {2,}/g, run => ' ' + escapeUnits(run.slice(1)));
+  return shown.length > 400 ? `${shown.slice(0, 400)} (message shortened)` : shown;
+};
+// The result fields are this page's own values, except kid.
+const resultJson = result => '{\n' + Object.entries(result).map(([field, value]) =>
+  `  ${JSON.stringify(field)}: ${field === 'kid' ? quoteKid(value) : plainMessage(JSON.stringify(value))}`).join(',\n') + '\n}';
 const asSentence = text => /[.!?]$/.test(text) ? text : `${text}.`;
 
 // Plain wording for the key pin, shared by both verify buttons. Key IDs are
-// always quoted and escaped by quoteKid.
+// always quoted and escaped by quoteKid. Site keys are fetched once per
+// render or session, so the wording says what the fetched list showed. The
+// public render service signs any caller's claims, so a site key does not
+// show who asked for the render.
 function keyPinText(checks, unpinned) {
   const kid = quoteKid(checks.kid);
-  const warning = checks.key_warning === 'public-test-vector-key' ? ` Warning: key ${kid} is a public test key (all-zero Ed25519 seed), so anyone can sign with it.` : '';
+  const warning = checks.key_warning === 'public-test-vector-key' ? ` Warning: key ${kid} is a published test key (its private key is public), so anyone can sign with it.` : '';
   const unknown = ' Anyone can create a packet signed with their own key, so the signer is unknown.';
-  if (checks.key_pin === 'site-key') return `This site publishes key ${kid} at /.well-known/jwks.json.${warning}`;
-  if (checks.key_pin === 'not-site-key') return `This site does not publish key ${kid}; it came from the packet.${unknown}${warning}`;
-  if (checks.key_pin === 'not-checked') return `Not checked whether this site publishes key ${kid}. Reason: ${asSentence(escapeHidden(unpinned || 'site keys not loaded'))}${unknown}${warning}`;
+  if (checks.key_pin === 'site-key') return `Signed by key ${kid}, which this site's /.well-known/jwks.json listed when this page fetched it. This site signs renders for anyone, so this does not show who requested the render or what source it came from.${warning}`;
+  if (checks.key_pin === 'not-site-key') return `Key ${kid} came from the packet and was not in this site's /.well-known/jwks.json when this page fetched it.${unknown}${warning}`;
+  if (checks.key_pin === 'not-checked') return `Key ${kid} was not checked against this site's /.well-known/jwks.json. Reason: ${asSentence(plainMessage(unpinned || 'site keys not loaded'))}${unknown}${warning}`;
   return '';
 }
 
@@ -168,18 +183,18 @@ $('verify-receipt-btn').addEventListener('click', async () => {
     let siteJwks = null, unpinned = '';
     try { siteJwks = await getSiteKeys(); } catch (e) { if (!packetKeys) throw e; unpinned = e.message; }
     const keys = packetKeys || siteJwks;
-    const checks = await checkRenderBinding(snapshot.render, snapshot.output, keys);
+    const checks = await checkRenderBinding(snapshot.render, snapshot.output, keys).catch(e => { throw receiptFailure(e, snapshot.render?.receipt); });
     // A fresh render was just verified against this site's keys as published,
     // so its key is a site key. The packet key checks apply to opened packets.
     Object.assign(checks, packetKeys ? pinPacketKey(packetKeys, siteJwks, checks.kid) : { key_pin: 'site-key', ...keyWarning(siteJwks, checks.kid) });
     if (version !== generation || current !== snapshot) return;
     const siteKey = checks.key_pin === 'site-key';
     $('render-trust-status').textContent = siteKey ? 'Signature and render bytes verified:' : 'Signature valid, signer unknown:';
-    result.textContent = `${siteKey ? `Verified signature for key ${quoteKid(checks.kid)}, output bytes, selected claims and slider settings.` : `The signature is valid for key ${quoteKid(checks.kid)} carried in the packet, and the output bytes, selected claims and slider settings match the signed receipt.`} ${keyPinText(checks, unpinned)} Original source and human decisions are unsigned. Revocation and freshness were not checked. Meaning preservation was not measured.`;
+    result.textContent = `${siteKey ? 'Verified the signature, output bytes, selected claims and slider settings.' : 'The signature is valid, and the output bytes, selected claims and slider settings match the signed receipt.'} ${keyPinText(checks, unpinned)} Original source and human decisions are unsigned. Revocation and freshness were not checked. Meaning preservation was not measured.`;
   } catch (e) {
     if (version !== generation || current !== snapshot) return;
     $('render-trust-status').textContent = 'Verification failed:';
-    result.textContent = escapeHidden(e.message);
+    result.textContent = plainMessage(e.message);
   } finally {
     if (version === generation && current === snapshot) $('verify-receipt-btn').disabled = false;
   }
@@ -219,7 +234,8 @@ $('verify-packet-btn').addEventListener('click', async () => {
   $('open-packet-btn').disabled = true;
   $('packet-status').textContent = 'Checking packet...';
   try {
-    const packet = JSON.parse($('packet-input').value);
+    let packet;
+    try { packet = JSON.parse($('packet-input').value); } catch { throw new Error('The packet is not valid JSON.'); }
     // Only a signed packet needs this site's keys; the packet's keys never stand in for them.
     let siteJwks = null, unpinned = '';
     if (packet?.render) siteJwks = await getSiteKeys().catch(e => { unpinned = e.message; return null; });
@@ -230,7 +246,7 @@ $('verify-packet-btn').addEventListener('click', async () => {
     const pin = keyPinText(result, unpinned);
     $('packet-status').textContent = 'Checks completed:\n' + (pin ? pin + '\n' : '') + resultJson(result) + '\nSource and human decisions are unsigned. Included keys do not establish real-world issuer identity. Meaning preservation was not measured.';
   } catch (e) {
-    if (version === packetRevision) $('packet-status').textContent = 'Verification failed: ' + escapeHidden(e.message);
+    if (version === packetRevision) $('packet-status').textContent = 'Verification failed: ' + plainMessage(e.message);
   }
 });
 

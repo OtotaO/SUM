@@ -128,8 +128,13 @@ def sieve_extract(prose: str) -> list[tuple[str, str, str]]:
     """Run the sieve extractor on prose, return triples."""
     # Use sum_engine_internal.algorithms.syntactic_sieve directly to get
     # triples without the bundle envelope.
-    from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
-    sieve = DeterministicSieve()
+    # The documented results of this experiment were recorded with sieve extractor v1;
+    # replaying v1 keeps them reproducible (H2, 2026-10-04).
+    from sum_engine_internal.algorithms.syntactic_sieve import (
+        SIEVE_EXTRACTOR_ID_V1,
+        DeterministicSieve,
+    )
+    sieve = DeterministicSieve(extractor_id=SIEVE_EXTRACTOR_ID_V1)
     return list(sieve.extract_triplets(prose))
 
 

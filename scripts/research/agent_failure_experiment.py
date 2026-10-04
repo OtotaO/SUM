@@ -59,8 +59,13 @@ def _tool_extract_triples(args: dict) -> dict:
     text = args.get("text", "")
     if not text:
         return {"error": "missing 'text' argument"}
-    from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve
-    sieve = DeterministicSieve()
+    # The committed logs of this experiment were recorded with sieve extractor v1;
+    # replaying v1 keeps its extract_triples tool output comparable (H2, 2026-10-04).
+    from sum_engine_internal.algorithms.syntactic_sieve import (
+        SIEVE_EXTRACTOR_ID_V1,
+        DeterministicSieve,
+    )
+    sieve = DeterministicSieve(extractor_id=SIEVE_EXTRACTOR_ID_V1)
     triples = list(sieve.extract_triplets(text))
     return {"triples": [list(t) for t in triples]}
 

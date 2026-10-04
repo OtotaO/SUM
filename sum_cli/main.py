@@ -623,7 +623,7 @@ def cmd_attest_batch(args: argparse.Namespace) -> int:
                 from sum_engine_internal.algorithms.chunked_corpus import (
                     state_for_corpus,
                 )
-                state, triples = state_for_corpus(text, algebra, suppressed_notice=sys.stderr)
+                state, triples = state_for_corpus(text, algebra, suppressed_notice=sys.stderr, notice_label=f"file={path}")
             else:
                 triples = _extract(text, extractor, args.model)
                 state = algebra.encode_chunk_state(list(triples))
@@ -638,7 +638,7 @@ def cmd_attest_batch(args: argparse.Namespace) -> int:
         if not triples:
             print(
                 f"sum: file={path} error=zero_triples "
-                f"(input may be too short, hedged, negated, conditional or cross-clause)",
+                f"(input may be too short or hedged, or every sentence negated, conditional, a question or cross-clause)",
                 file=sys.stderr,
             )
             failed += 1

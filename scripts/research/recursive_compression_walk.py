@@ -52,7 +52,12 @@ from pathlib import Path  # noqa: E402
 from typing import Any, Awaitable, Callable  # noqa: E402
 
 from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra  # noqa: E402
-from sum_engine_internal.algorithms.syntactic_sieve import DeterministicSieve  # noqa: E402
+# The committed receipts of this bench were recorded with sieve extractor v1;
+# replaying v1 keeps their digests and verdicts reproducible (H2, 2026-10-04).
+from sum_engine_internal.algorithms.syntactic_sieve import (  # noqa: E402
+    SIEVE_EXTRACTOR_ID_V1,
+    DeterministicSieve,
+)
 from sum_engine_internal.ensemble.tome_generator import (  # noqa: E402
     AutoregressiveTomeGenerator,
 )
@@ -279,7 +284,7 @@ async def _walk_corpus_llm(
         renders = {}
 
     adapter = get_adapter(model) if not snap_path.exists() else None
-    sieve = DeterministicSieve()
+    sieve = DeterministicSieve(extractor_id=SIEVE_EXTRACTOR_ID_V1)
     with corpus_path.open() as f:
         corpus = json.load(f)
 
@@ -341,7 +346,7 @@ async def _walk_corpus_llm(
 def _walk_corpus_deterministic(
     corpus_path: Path, max_steps: int,
 ) -> dict[str, dict[str, Any]]:
-    sieve = DeterministicSieve()
+    sieve = DeterministicSieve(extractor_id=SIEVE_EXTRACTOR_ID_V1)
     with corpus_path.open() as f:
         corpus = json.load(f)
     per_doc: dict[str, dict[str, Any]] = {}

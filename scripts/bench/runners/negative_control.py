@@ -13,14 +13,18 @@ canonicalisation pipeline's assumptions across five failure modes
   - non_extractable_assertion (questions / counterfactuals / hedges)
 
 The v2 corpus (`seed_negative_control_v2.json`, the default) keeps those
-20 documents unchanged and adds two modes aimed at the sieve's clause
-guard:
+20 documents unchanged, adds negated coordination and determiner or
+pronoun negation ("No bidder ...", "Nobody ...") to
+non_extractable_assertion, and adds two modes aimed at the sieve's
+clause guard:
 
   - conditional_assertion     (if / unless / provided / inverted
                                conditionals: neither clause asserted)
   - cross_clause_chimera      (relative / xcomp / ccomp / purpose
-                               clauses, plus positive controls whose
-                               main clause must still be extracted)
+                               clauses, "according to" and
+                               parenthetical attribution, plus positive
+                               controls whose main clause must still be
+                               extracted)
 
 v2 documents may carry ``allowed_triples`` (hand-authored, in the
 sieve's canonical form) for the rules ``produce_only_allowed_triples``
@@ -54,12 +58,12 @@ records the sieve's per-document suppression report (sentences,
 extracted, suppressed per reason) and the summary totals them under
 ``suppression``; ``extractor_id`` names the sieve version.
 
-Reproducible:
+Reproducible (byte for byte, given the receipt's date):
 
     python -m scripts.bench.runners.negative_control \
         --corpus scripts/bench/corpora/seed_negative_control_v2.json \
         --out fixtures/bench_receipts/negative_control_<YYYY-MM-DD>.json \
-        --generated-at <YYYY-MM-DD>T00:00:00.000Z
+        --generated-at <YYYY-MM-DD>T00:00:00.000Z --pretty
 
 Zero cost — sieve extractor is deterministic, no LLM calls.
 """

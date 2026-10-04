@@ -10,13 +10,14 @@ Cost: $0.  Speed: 10,000+ words per second.  Deterministic: always.
 Phase 13: Zenith of Process Intensification.
 Stage 4 — Hedging detection for linguistic confidence signals.
 Extractor v2: clause guard (one triple per sentence, from one main-clause
-predicate; negated, question, conditional and cross-clause sentences are
-suppressed and counted).
+predicate; negated, question, conditional, cross-clause and attributed
+sentences are suppressed and counted).
 
 Author: ototao
 License: Apache License 2.0
 """
 
+import bisect
 import re
 from datetime import datetime, timezone
 from typing import Any, Dict, Iterable, List, Optional, TextIO, Tuple, TypedDict
@@ -291,14 +292,24 @@ def _extract_passive(sent: Any) -> Optional[Tuple[str, str, str]]:
 #
 # v2 checks each sentence in this order and stops at the first hit:
 #
-#   negation      v1's ``_is_negated``, plus "neither" / "nor", which
-#                 spaCy does not tag as negation ("Neither Alice nor Bob
-#                 owns the car." gave (alice, own, car)).
+#   negation      v1's ``_is_negated``, plus "neither" / "nor" and
+#                 determiner or pronoun negation ("no", "nobody",
+#                 "nothing", "none", "noone", "nowhere";
+#                 ``_has_negative_quantifier``), which spaCy does not tag
+#                 as negation ("Neither Alice nor Bob owns the car." gave
+#                 (alice, own, car), "No student passed the exam." gave
+#                 (student, pass, exam)).
 #   question      the sentence ends with "?" (``_is_question``).
 #   conditional   a conditional or hypothetical clause is present
 #                 (``_is_conditional``), or two clauses are joined by
 #                 "or" (``_is_clause_disjunction``); neither clause is
 #                 asserted.
+#   attribution   the main clause is reported content: "according to"
+#                 anywhere, or a reporting verb attached to a main-clause
+#                 predicate as a parenthetical or an "as" clause
+#                 (``_is_attributed``: "The suspect, police said, stole
+#                 the car."). Counted as ``cross_clause``, like "Bob said
+#                 that Alice stole the car.".
 #   passive       unchanged from v1 (``_is_passive``/``_extract_passive``).
 #   single clause subject, predicate and object come from ONE main-clause
 #                 predicate (``_single_clause_triple``). When none has
@@ -367,6 +378,17 @@ _NP_START_POS = frozenset({"DET", "PRON", "PROPN", "NOUN", "ADJ", "NUM"})
 _DISJUNCTIVE_CC = frozenset({"or"})
 _DISJUNCTIVE_PRECONJ = frozenset({"either"})
 _NEGATIVE_COORDINATORS = frozenset({"neither", "nor"})
+
+# Negative pronouns ("no one" is the determiner "no" on "one").
+_NEGATIVE_PRONOUNS = frozenset({"nobody", "nothing", "none", "noone", "nowhere"})
+
+# Reporting verbs (lemmas) whose parenthetical or "as" clause marks the
+# main clause as someone's report (``_is_attributed``).
+_REPORTING_VERBS = frozenset({
+    "say", "claim", "report", "allege", "state", "tell", "add", "note",
+    "insist", "admit", "deny", "argue", "suggest", "believe", "think",
+    "estimate", "warn", "write",
+})
 
 # Signals that a sentence has more than one clause, for the POS
 # fallback (``_has_several_clauses``).
@@ -687,11 +709,23 @@ def _is_clause_disjunction(sent: Any) -> bool:
     "or" counts when a predicate precedes it and a predicate after it is
     a coordinated main clause (a conj that reaches the ROOT) or a ccomp
     of a main clause, which is how en_core_web_sm attaches the second
-    clause. A disjunction inside a relative clause ("the tenant who pays
-    late or skips rent loses the deposit") does not count. A disjunction
-    of noun phrases without "either" ("Alice reads books or magazines.")
-    does not count either; it is outside the clause guard and still
-    yields its first member.
+    clause; spaCy often hangs the "or" itself on the first clause's
+    object, so where the "or" attaches is not checked. As a result an
+    "or" between noun phrases or inside a relative clause also counts
+    when a coordinated main clause follows it: "The firm, which sells
+    tea or coffee, opened a shop and hired staff." and "Alice reads
+    books or magazines and Bob writes poems." are withheld. That recall
+    cost is kept on purpose: requiring the "or" to be the coordinator of
+    the two clauses (measured 2026-10-04 on the BillSum sources and the
+    repository's markdown) extracted 32 more sentences, 22 of them with
+    the "or" inside a subordinate clause, mostly long enumerations the
+    parser misreads, with stitched triples such as (woman, contain, such
+    other information) and two consequents of conditionals whose marker
+    spaCy had split off. Without a later coordinated main clause, an
+    "or" inside a relative clause ("The tenant who pays late or skips
+    rent loses the deposit.") or between noun phrases ("Alice reads
+    books or magazines.") does not count, and the main clause or the
+    first member is extracted.
     """
     tokens = list(sent)
     for k, tok in enumerate(tokens):
@@ -709,6 +743,83 @@ def _is_clause_disjunction(sent: Any) -> bool:
                 return True
             if t.dep_ == "ccomp" and _is_main_clause(t.head):
                 return True
+    return False
+
+
+def _has_negative_quantifier(sent: Any) -> bool:
+    """True iff *sent* negates an argument: the determiner "no" ("No
+    student passed the exam.", "The company paid no dividends.", "No one
+    signed ...") or a negative pronoun (``_NEGATIVE_PRONOUNS``: "Nobody
+    stole the car.") in any role. The interjection "No, ..." (dep intj)
+    does not count. "no longer" and "no doubt" are tagged dep neg by
+    en_core_web_sm and were already withheld by ``_is_negated``.
+
+    As with ``_is_negated``, any occurrence counts, also inside a
+    subordinate clause; the sieve does not decide the scope of the
+    negation, so a sentence it cannot read safely yields nothing.
+    """
+    doc = sent.doc
+    for t in sent:
+        low = t.lower_
+        if low == "no" and t.dep_ == "det":
+            return True
+        if low in _NEGATIVE_PRONOUNS or low in ("no-one", "no-body"):
+            return True
+        # spaCy splits "No-one" into "No" "-" "one", none of them a det
+        if (
+            low == "no"
+            and t.i + 2 < sent.end
+            and doc[t.i + 1].text == "-"
+            and doc[t.i + 2].lower_ in ("one", "body")
+        ):
+            return True
+    return False
+
+
+def _is_attributed(sent: Any) -> bool:
+    """True iff the main clause of *sent* is reported content.
+
+    Two shapes, both of which v1 and the first v2 read as plain fact:
+
+      - "according to" anywhere ("According to the indictment, the CEO
+        stole the pension fund.", "..., according to the indictment.").
+        This also withholds the "in accordance with" sense ("The tool
+        sorts files according to size."), a recall cost taken for
+        precision: the parse does not separate the two.
+      - a reporting verb (``_REPORTING_VERBS``) with a reporter (a
+        subject, or a "by" agent: "as stated by the ministry"),
+        attached to a main-clause predicate as a parenthetical (dep
+        parataxis: "The suspect, police said, stole the car.") or as an
+        "as" clause ("As the company claims, the drug cures
+        migraines.", "..., as police said."). Without a reporter the
+        clause is a cross-reference ("as noted above", "as stated in
+        section 5"), and "add" needs a subject because "as added by
+        section 2" is legal drafting, not a report. A reporting verb
+        that is itself the main predicate ("Alice said goodbye.", "Bob
+        said that Alice stole the car.") is not matched here; the
+        single-clause rule handles it.
+    """
+    tokens = list(sent)
+    for k, t in enumerate(tokens):
+        if (
+            t.lower_ == "according"
+            and k + 1 < len(tokens)
+            and tokens[k + 1].lower_ == "to"
+        ):
+            return True
+        lemma = t.lemma_.lower()
+        if lemma not in _REPORTING_VERBS or not _is_main_clause(t.head):
+            continue
+        reporter = ("nsubj", "nsubjpass") if lemma == "add" else (
+            "nsubj", "nsubjpass", "agent")
+        if not any(c.dep_ in reporter for c in t.children):
+            continue
+        if t.dep_ == "parataxis":
+            return True
+        if t.dep_ == "advcl" and any(
+            c.dep_ == "mark" and c.lower_ == "as" for c in t.children
+        ):
+            return True
     return False
 
 
@@ -734,14 +845,18 @@ def _has_several_clauses(sent: Any) -> bool:
 
 def _guard_reason(sent: Any) -> Optional[str]:
     """The suppression reason a whole-sentence guard assigns, or None."""
-    if _is_negated(sent) or any(
-        t.lower_ in _NEGATIVE_COORDINATORS for t in sent
+    if (
+        _is_negated(sent)
+        or any(t.lower_ in _NEGATIVE_COORDINATORS for t in sent)
+        or _has_negative_quantifier(sent)
     ):
         return "negation"
     if _is_question(sent):
         return "question"
     if _is_conditional(sent) or _is_clause_disjunction(sent):
         return "conditional"
+    if _is_attributed(sent):
+        return "cross_clause"
     return None
 
 
@@ -805,19 +920,10 @@ def _extract_from_sent(sent: Any) -> Optional[Tuple[str, str, str]]:
 # for new attestations.
 
 
-def _extract_from_sent_v1(sent: Any) -> Optional[Tuple[str, str, str]]:
-    """Extractor v1: at most one triple per sentence, no clause guard.
-
-    Returns None if the sentence is negated, produces no valid ROOT verb, or
-    yields a parse whose subject/object exceed the size filters. The POS
-    fallback is consulted only when dependency-based extraction fails.
-    """
-    if _is_negated(sent):
-        return None
-
-    if _is_passive(sent):
-        return _extract_passive(sent)
-
+def _slot_triple_v1(sent: Any) -> Optional[Tuple[str, str, str]]:
+    """v1's slot loop: the last subject, predicate and object over every
+    ROOT-or-VERB token, lowercased, or None when one is missing or the
+    size filters reject it."""
     subject = None
     predicate = None
     object_ = None
@@ -843,7 +949,25 @@ def _extract_from_sent_v1(sent: Any) -> Optional[Tuple[str, str, str]]:
     if subject and predicate and object_:
         if len(subject.split()) <= 5 and len(object_.split()) <= 8:
             return (subject.lower(), predicate.lower(), object_.lower())
+    return None
 
+
+def _extract_from_sent_v1(sent: Any) -> Optional[Tuple[str, str, str]]:
+    """Extractor v1: at most one triple per sentence, no clause guard.
+
+    Returns None if the sentence is negated, produces no valid ROOT verb, or
+    yields a parse whose subject/object exceed the size filters. The POS
+    fallback is consulted only when dependency-based extraction fails.
+    """
+    if _is_negated(sent):
+        return None
+
+    if _is_passive(sent):
+        return _extract_passive(sent)
+
+    triple = _slot_triple_v1(sent)
+    if triple is not None:
+        return triple
     return _pos_fallback_triplet(sent)
 
 
@@ -888,9 +1012,17 @@ def merge_suppression_reports(
 _REASON_LABELS = {"cross_clause": "cross-clause"}
 
 
-def format_suppression_notice(report: SuppressionReport) -> Optional[str]:
+def format_suppression_notice(
+    report: SuppressionReport, label: Optional[str] = None,
+) -> Optional[str]:
     """One-line stderr notice for a suppression report, or None when no
-    sentence was suppressed."""
+    sentence was suppressed.
+
+    ``label`` (e.g. ``"file=<path>"``) is put after ``sum:`` so a caller
+    handling several inputs can say which one the line is about. The
+    line does not mention a bundle: on a zero-triple exit none is
+    written.
+    """
     counts = report["suppressed"]
     total = sum(counts.values())
     if not total:
@@ -900,11 +1032,11 @@ def format_suppression_notice(report: SuppressionReport) -> Optional[str]:
         f"{_REASON_LABELS.get(r, r)} {counts[r]}"
         for r in SUPPRESSION_REASONS if counts.get(r)
     )
+    prefix = f"sum: {label} " if label else "sum: "
     return (
-        f"sum: {total} of {n} sentence{'' if n == 1 else 's'} "
-        f"{'was' if total == 1 else 'were'} not extracted ({parts}). "
-        f"The bundle omits {'it' if total == 1 else 'them'}; "
-        "see docs/PROOF_BOUNDARY.md."
+        f"{prefix}{total} of {n} sentence{'' if n == 1 else 's'} "
+        f"{'was' if total == 1 else 'were'} not extracted ({parts}); "
+        "see docs/PROOF_BOUNDARY.md section 2.1."
     )
 
 
@@ -928,46 +1060,96 @@ def _write_notice(report: SuppressionReport, stream: Optional[TextIO]) -> None:
 # not an assertion, and on its own a three-word heading such as "##
 # Bench harness substrate" would feed the POS fallback. Only heading
 # lines are split; a general blank-line split was measured to admit
-# junk triples from markdown tables and lists.
+# junk triples from markdown tables and lists. Only the heading
+# sentences the component marked are skipped, so a "#" inside a line
+# ("Alice owns the car. # Bob ...") is ordinary text, and a "#" line
+# indented four or more columns (a CommonMark code block line) is its
+# own sentence but is not skipped.
 
 _HEADING_COMPONENT = "sum_markdown_heading_breaks"
 
+# Doc.user_data key: ascending token indices of the heading sentences
+# the component marked. A list, not a set: spaCy serialises user_data
+# with msgpack (Doc.to_bytes, DocBin, nlp.pipe with n_process > 1),
+# which rejects sets. Absent when the text has no heading.
+_HEADING_STARTS = "sum_markdown_heading_starts"
+
 # An ATX heading: one to six "#" followed by a space, a tab or the end of
-# the line (CommonMark). "#1 priority ..." and "#hashtag" are not headings.
+# the line (CommonMark), after at most three spaces of indentation.
+# "#1 priority ..." and "#hashtag" are not headings.
 _HEADING_RE = re.compile(r"#{1,6}(?:[ \t]|$)")
+_MAX_HEADING_INDENT = 3
 
 
 def _mark_heading_breaks(doc: Any) -> Any:
-    """spaCy component: a markdown heading line is exactly one sentence."""
+    """spaCy component: a markdown heading line is exactly one sentence.
 
-    def mark(first: int, end: int) -> None:
-        # tokens [first, end) are one heading line, end is the token
-        # after its newline (or len(doc))
-        if first > 0:
-            doc[first].is_sent_start = True
-        for i in range(first + 1, min(end, len(doc))):
-            doc[i].is_sent_start = False
-        if end < len(doc):
-            doc[end].is_sent_start = True
+    Runs in time linear in the document. ``Doc.text`` rebuilds the whole
+    string on every access, so it is read once and sliced; the
+    ``Token.is_sent_start`` setter scans the whole document on every
+    call, so the boundaries are written once with ``Doc.from_array``.
+    """
+    text = doc.text
+    n = len(doc)
+    # (first, end): tokens [first, end) are one heading line, end is the
+    # token after its newline (or n)
+    lines: List[Tuple[int, int]] = []
 
-    def is_heading_line(first: int, end_char: int) -> bool:
-        return bool(_HEADING_RE.match(doc.text[doc[first].idx:end_char]))
+    def hash_line(first: int, end_char: int, indent: str) -> Optional[bool]:
+        # indent: the line's leading whitespace carried by the preceding
+        # newline token; a leading space token at the start of the text
+        # is part of the line itself. Returns None for a line that does
+        # not start with "#", True for a heading, False for a "#" line
+        # indented four or more columns (a code block line).
+        line = text[doc[first].idx:end_char]
+        body = line.lstrip(" \t")
+        indent += line[:len(line) - len(body)]
+        if indent.strip(" \t") or not _HEADING_RE.match(body):
+            return None
+        return "\t" not in indent and len(indent) <= _MAX_HEADING_INDENT
 
+    # (first, end, heading): every "#" line is its own sentence, so a
+    # code block line cannot be glued to the prose around it and stitch
+    # a triple; only headings are skipped
+    marked: List[Tuple[int, int, bool]] = []
     line_start = 0
+    indent = ""
     for token in doc:
         if token.is_space and "\n" in token.text:
-            if line_start < token.i and is_heading_line(line_start, token.idx):
-                mark(line_start, token.i + 1)
+            if line_start < token.i:
+                kind = hash_line(line_start, token.idx, indent)
+                if kind is not None:
+                    marked.append((line_start, token.i + 1, kind))
             line_start = token.i + 1
-    if line_start < len(doc) and is_heading_line(line_start, len(doc.text)):
-        mark(line_start, len(doc))
+            indent = token.text[token.text.rfind("\n") + 1:]
+    if line_start < n:
+        kind = hash_line(line_start, len(text), indent)
+        if kind is not None:
+            marked.append((line_start, n, kind))
+    if marked:
+        # SENT_START: 1 starts a sentence, -1 continues one, 0 unset
+        values = doc.to_array("SENT_START").astype("int64")
+        for first, end, _ in marked:
+            if first > 0:
+                values[first] = 1
+            values[first + 1:min(end, n)] = -1
+            if end < n:
+                values[end] = 1
+        doc.from_array(["SENT_START"], values.astype("uint64"))
+    lines = [(first, end) for first, end, heading in marked if heading]
+    if lines:
+        doc.user_data[_HEADING_STARTS] = sorted(first for first, _ in lines)
+    else:
+        doc.user_data.pop(_HEADING_STARTS, None)
     return doc
 
 
 def _is_heading(sent: Any) -> bool:
-    """True iff *sent* is a markdown heading line (see
-    ``_mark_heading_breaks``)."""
-    return bool(_HEADING_RE.match(sent.text.lstrip()))
+    """True iff *sent* is a markdown heading line that
+    ``_mark_heading_breaks`` marked as its own sentence."""
+    starts = sent.doc.user_data.get(_HEADING_STARTS, ())
+    i = bisect.bisect_left(starts, sent.start)
+    return i < len(starts) and starts[i] == sent.start
 
 
 def _add_heading_breaks(nlp: Any) -> None:
@@ -1179,7 +1361,8 @@ class DeterministicSieve:
         ``extract_triplets(text)`` and::
 
             report = {
-                "sentences": N,   # sentences spaCy segmented
+                "sentences": N,   # sentences spaCy segmented, without
+                                  # markdown heading lines (v2)
                 "extracted": K,   # sentences that yielded a clean triple
                 "suppressed": {"negation": a, "conditional": b,
                                "question": c, "cross_clause": d},
@@ -1273,13 +1456,28 @@ class DeterministicSieve:
 
         Uses the same per-sentence extraction as ``extract_triplets``
         (clause guard, passive handling, POS fallback, noise filter), so
-        the triples are the same ones in document order. Before v2 this
-        method carried its own copy of the v1 slot loop without passive
-        handling, the POS fallback or the noise filter.
+        the triples are the same ones in document order. Up to 0.11.1
+        this method ran its own copy of the v1 slot loop without passive
+        handling, the POS fallback or the noise filter; under
+        ``SIEVE_EXTRACTOR_ID_V1`` it still does, so v1 annotated output
+        replays 0.11.1 exactly.
 
         The linguistic_certainty score is a metadata-only signal
         that does NOT affect the Gödel algebra.
         """
+        if self.extractor_id == SIEVE_EXTRACTOR_ID_V1:
+            return [
+                {
+                    "subject": triple[0],
+                    "predicate": triple[1],
+                    "object": triple[2],
+                    "linguistic_certainty": detect_hedging(sent.text),
+                }
+                for sent in self.nlp(text).sents
+                if not _is_negated(sent)
+                for triple in [_slot_triple_v1(sent)]
+                if triple is not None
+            ]
         kept, _ = self._extract_sentences(text)
         return [
             {

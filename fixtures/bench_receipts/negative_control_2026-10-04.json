@@ -6,18 +6,18 @@
   "extractor": "deterministic_sieve",
   "extractor_id": "sum.sieve:deterministic_v2",
   "summary": {
-    "total_documents": 90,
-    "expected": 77,
+    "total_documents": 95,
+    "expected": 82,
     "unexpected": 3,
     "advisory": 10,
     "suppression": {
-      "sentences": 99,
+      "sentences": 104,
       "extracted": 42,
       "suppressed": {
-        "negation": 1,
+        "negation": 3,
         "conditional": 37,
         "question": 1,
-        "cross_clause": 12
+        "cross_clause": 15
       }
     }
   },
@@ -43,7 +43,7 @@
       "advisory": 4
     },
     "non_extractable_assertion": {
-      "expected": 5,
+      "expected": 7,
       "unexpected": 0,
       "advisory": 0
     },
@@ -53,7 +53,7 @@
       "advisory": 0
     },
     "cross_clause_chimera": {
-      "expected": 35,
+      "expected": 38,
       "unexpected": 0,
       "advisory": 0
     }
@@ -2104,6 +2104,106 @@
       },
       "verdict": "expected",
       "notes": "extracted 1 triple(s), all in allowed_triples"
+    },
+    {
+      "doc_id": "nonext_detneg_01",
+      "expected_failure_mode": "non_extractable_assertion",
+      "observed": {
+        "axiom_count": 0,
+        "axioms": [],
+        "suppression": {
+          "sentences": 1,
+          "extracted": 0,
+          "suppressed": {
+            "negation": 1,
+            "conditional": 0,
+            "question": 0,
+            "cross_clause": 0
+          }
+        }
+      },
+      "verdict": "expected",
+      "notes": "extracted 0 triples as required"
+    },
+    {
+      "doc_id": "nonext_detneg_02",
+      "expected_failure_mode": "non_extractable_assertion",
+      "observed": {
+        "axiom_count": 0,
+        "axioms": [],
+        "suppression": {
+          "sentences": 1,
+          "extracted": 0,
+          "suppressed": {
+            "negation": 1,
+            "conditional": 0,
+            "question": 0,
+            "cross_clause": 0
+          }
+        }
+      },
+      "verdict": "expected",
+      "notes": "extracted 0 triples as required"
+    },
+    {
+      "doc_id": "chim_attrib_01",
+      "expected_failure_mode": "cross_clause_chimera",
+      "observed": {
+        "axiom_count": 0,
+        "axioms": [],
+        "suppression": {
+          "sentences": 1,
+          "extracted": 0,
+          "suppressed": {
+            "negation": 0,
+            "conditional": 0,
+            "question": 0,
+            "cross_clause": 1
+          }
+        }
+      },
+      "verdict": "expected",
+      "notes": "extracted 0 triple(s), all in allowed_triples"
+    },
+    {
+      "doc_id": "chim_attrib_02",
+      "expected_failure_mode": "cross_clause_chimera",
+      "observed": {
+        "axiom_count": 0,
+        "axioms": [],
+        "suppression": {
+          "sentences": 1,
+          "extracted": 0,
+          "suppressed": {
+            "negation": 0,
+            "conditional": 0,
+            "question": 0,
+            "cross_clause": 1
+          }
+        }
+      },
+      "verdict": "expected",
+      "notes": "extracted 0 triple(s), all in allowed_triples"
+    },
+    {
+      "doc_id": "chim_attrib_03",
+      "expected_failure_mode": "cross_clause_chimera",
+      "observed": {
+        "axiom_count": 0,
+        "axioms": [],
+        "suppression": {
+          "sentences": 1,
+          "extracted": 0,
+          "suppressed": {
+            "negation": 0,
+            "conditional": 0,
+            "question": 0,
+            "cross_clause": 1
+          }
+        }
+      },
+      "verdict": "expected",
+      "notes": "extracted 0 triple(s), all in allowed_triples"
     }
   ]
 }

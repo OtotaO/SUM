@@ -285,3 +285,33 @@ def test_batch_dedup_strict_threshold_only_drops_byte_identical(tmp_path):
     assert code == 0
     lines = [ln for ln in out.split("\n") if ln.strip()]
     assert len(lines) == 2, "near-duplicates at threshold=1.0 must both mint"
+
+
+def test_batch_suppression_notice_names_the_file(tmp_path):
+    """Each withheld-sentence notice says which file it belongs to, in
+    the ``sum: file=<path> ...`` format of the batch error lines, and
+    does not claim a bundle omits anything (a zero-triple file has no
+    bundle). Before 2026-10-04 the lines carried no file and said "The
+    bundle omits it" for the zero-triple file too."""
+    mixed = tmp_path / "mixed.txt"
+    mixed.write_text("Alice likes cats. If it rains, the match stops.")
+    zero = tmp_path / "zero.txt"
+    zero.write_text("If it rains, the match stops.")
+
+    code, out, err = _run_batch([str(mixed), str(zero)])
+
+    assert code == 1
+    assert len([ln for ln in out.split("\n") if ln.strip()]) == 1
+    assert (
+        f"sum: file={mixed} 1 of 2 sentences was not extracted "
+        "(conditional 1); see docs/PROOF_BOUNDARY.md section 2.1."
+    ) in err.splitlines()
+    assert (
+        f"sum: file={zero} 1 of 1 sentence was not extracted "
+        "(conditional 1); see docs/PROOF_BOUNDARY.md section 2.1."
+    ) in err.splitlines()
+    assert "bundle omits" not in err
+    zero_line = next(ln for ln in err.splitlines() if "error=zero_triples" in ln)
+    assert zero_line.startswith(f"sum: file={zero} ")
+    for reason in ("negated", "conditional", "a question", "cross-clause"):
+        assert reason in zero_line

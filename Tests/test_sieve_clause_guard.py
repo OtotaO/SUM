@@ -23,6 +23,7 @@ from __future__ import annotations
 import functools
 import io
 import json
+import sys
 from pathlib import Path
 
 import pytest
@@ -253,10 +254,12 @@ class TestSuppressionReport:
 
 
 class TestSuppressedNotice:
+    # No "The bundle omits ..." clause: on a zero-triple exit no bundle
+    # is written, so the notice only says what was not extracted.
     NOTICE = (
         "sum: 4 of 6 sentences were not extracted (negation 1, "
-        "conditional 1, question 1, cross-clause 1). The bundle omits "
-        "them; see docs/PROOF_BOUNDARY.md.\n"
+        "conditional 1, question 1, cross-clause 1); see "
+        "docs/PROOF_BOUNDARY.md section 2.1.\n"
     )
 
     def test_extract_triplets_writes_one_line(self) -> None:
@@ -275,9 +278,38 @@ class TestSuppressedNotice:
             "Bob said that Alice stole the car.", suppressed_notice=stream
         )
         assert stream.getvalue() == (
-            "sum: 1 of 1 sentence was not extracted (cross-clause 1). "
-            "The bundle omits it; see docs/PROOF_BOUNDARY.md.\n"
+            "sum: 1 of 1 sentence was not extracted (cross-clause 1); "
+            "see docs/PROOF_BOUNDARY.md section 2.1.\n"
         )
+
+    def test_label_names_the_source(self) -> None:
+        # attest-batch passes file=<path> so each line names its file,
+        # in the same format as the batch error lines.
+        from sum_engine_internal.algorithms.syntactic_sieve import (
+            format_suppression_notice,
+        )
+
+        _, report = _sieve().extract_triplets_with_report(
+            "Alice likes cats. If it rains, the match stops."
+        )
+        assert format_suppression_notice(report, label="file=a.txt") == (
+            "sum: file=a.txt 1 of 2 sentences was not extracted "
+            "(conditional 1); see docs/PROOF_BOUNDARY.md section 2.1."
+        )
+
+    def test_state_for_corpus_passes_the_label(self) -> None:
+        from sum_engine_internal.algorithms.chunked_corpus import state_for_corpus
+        from sum_engine_internal.algorithms.semantic_arithmetic import (
+            GodelStateAlgebra,
+        )
+
+        stream = io.StringIO()
+        state_for_corpus(
+            "Alice likes cats. If it rains, the match stops.",
+            GodelStateAlgebra(),  # type: ignore[no-untyped-call]
+            sieve=_sieve(), suppressed_notice=stream, notice_label="file=b.txt",
+        )
+        assert stream.getvalue().startswith("sum: file=b.txt 1 of 2 sentences")
 
     def test_nothing_written_when_nothing_suppressed(self) -> None:
         stream = io.StringIO()
@@ -520,8 +552,6 @@ class TestFrozenV1Extractor:
             extractor_id=SIEVE_EXTRACTOR_ID_V1,
         )
         for text, v1_triple, _ in SUPPRESSED:
-            if text.endswith("?"):
-                continue  # v1 output for this question is noise-filtered
             assert v1.extract_triplets(text) == [v1_triple], text
         assert v1.extract_triplets("Alice bought a car last year.") == [
             ("last_year", "buy", "car"),
@@ -538,3 +568,331 @@ class TestFrozenV1Extractor:
             DeterministicSieve(  # type: ignore[no-untyped-call]
                 extractor_id="sum.sieve:deterministic_v9",
             )
+
+
+# ─── Second review (2026-10-04) ───────────────────────────────────────
+# Each case below produced a false or silently dropped result in the
+# committed v2 (9dc0351); the comment gives what it emitted.
+
+
+DETERMINER_NEGATION = [
+    # 9dc0351 (and v1): the triple asserts the opposite of the sentence
+    ("No student passed the exam.", ("student", "pass", "exam")),
+    ("Nobody stole the car.", ("nobody", "steal", "car")),
+    ("No one signed the contract.", ("one", "sign", "contract")),
+    # spaCy splits "No-one" into No / - / one, none tagged det
+    ("No-one signed the contract.", ("one", "sign", "contract")),
+    ("None of the tenants paid rent.", ("none", "pay", "rent")),
+    ("Nothing caused the outage.", ("nothing", "cause", "outage")),
+    ("The company paid no dividends.", ("company", "pay", "dividend")),
+    ("Noone saw the thief.", ("noone", "see", "thief")),
+    ("The thief went nowhere near the vault.", ("thief", "go", "vault")),
+]
+
+
+class TestDeterminerAndPronounNegation:
+    @pytest.mark.parametrize("text,old_triple", DETERMINER_NEGATION)
+    def test_counted_as_negation(self, text, old_triple) -> None:
+        triples, report = _sieve().extract_triplets_with_report(text)
+        assert old_triple not in triples
+        assert triples == []
+        assert report["suppressed"]["negation"] == 1
+        assert sum(report["suppressed"].values()) == 1
+
+    def test_interjection_no_is_not_negation(self) -> None:
+        # "No," answers a question; the clause after it is asserted
+        assert _sieve().extract_triplets("No, Alice owns the car.") == [
+            ("alice", "own", "car"),
+        ]
+
+    @pytest.mark.parametrize("text", [
+        # en_core_web_sm tags these "no" as dep neg, so v1's own rule
+        # already withheld them; "no longer" inverts the clause.
+        "Alice no longer owns the car.",
+        "No doubt Alice owns the car.",
+    ])
+    def test_fixed_phrases_unchanged_from_v1(self, text) -> None:
+        triples, report = _sieve().extract_triplets_with_report(text)
+        assert triples == []
+        assert report["suppressed"]["negation"] == 1
+
+
+ATTRIBUTED = [
+    # 9dc0351: the reported content as fact
+    ("According to the indictment, the CEO stole the pension fund.",
+     ("ceo", "steal", "pension fund")),
+    ("The CEO stole the pension fund, according to the indictment.",
+     ("ceo", "steal", "pension fund")),
+    ("The CEO, according to the indictment, stole the pension fund.",
+     ("ceo", "steal", "pension fund")),
+    ("According to police, the car was stolen by the suspect.",
+     ("suspect", "steal", "car")),
+    ("The suspect, police said, stole the car.", ("suspect", "steal", "car")),
+    ("The CEO, the indictment alleges, stole the fund.",
+     ("ceo", "steal", "fund")),
+    ("The vaccine, she believes, causes autism.",
+     ("vaccine", "cause", "autism")),
+    ("As the company claims, the drug cures migraines.",
+     ("drug", "cure", "migraine")),
+    ("The suspect fled the scene, as police said.",
+     ("suspect", "flee", "scene")),
+    # a "by" agent is a reporter too
+    ("The national interest is served by fewer warheads, as stated by the "
+     "Department of Defense.", ("fewer_warhead", "serve", "national interest")),
+]
+
+
+class TestAttribution:
+    """Reported content is withheld and counted as cross_clause, the same
+    as "Bob said that Alice stole the car."."""
+
+    @pytest.mark.parametrize("text,old_triple", ATTRIBUTED)
+    def test_reported_content_withheld(self, text, old_triple) -> None:
+        triples, report = _sieve().extract_triplets_with_report(text)
+        assert old_triple not in triples
+        assert triples == []
+        assert report["suppressed"]["cross_clause"] == 1
+        assert sum(report["suppressed"].values()) == 1
+
+    def test_parenthetical_reporting_already_withheld_stays_so(self) -> None:
+        triples, report = _sieve().extract_triplets_with_report(
+            "The drug, the company claims, cures migraines."
+        )
+        assert triples == []
+        assert report["suppressed"]["cross_clause"] == 1
+
+    @pytest.mark.parametrize("text,expected", [
+        # a reporting verb as the main predicate with a plain object
+        ("Alice said goodbye.", [("alice", "say", "goodbye")]),
+        ("The witness told the jury the truth.", [("witness", "tell", "truth")]),
+        ("Bob claims the prize.", [("bob", "claim", "prize")]),
+        ("The company reported record profits.",
+         [("company", "report", "record profit")]),
+        ("The guide noted the time.", [("guide", "note", "time")]),
+        # a parenthetical reporting verb inside a relative clause leaves
+        # the main clause asserted
+        ("The man who, police said, stole the car fled the city.",
+         [("man", "flee", "city")]),
+        # no reporter: a cross-reference, not a report (BillSum has
+        # "as added by section ..." throughout)
+        ("Section 5, as added by section 2, takes effect in May.",
+         [("section", "take", "effect")]),
+        ("As noted above, the sieve withholds the triple.",
+         [("sieve", "withhold", "triple")]),
+    ])
+    def test_plain_reporting_verbs_still_extracted(self, text, expected) -> None:
+        assert _sieve().extract_triplets(text) == expected
+
+
+class TestDisjunctionDocstring:
+    """``_is_clause_disjunction``'s docstring claimed that an "or" inside
+    a relative clause never counts; the code counts it when a coordinated
+    main clause follows. Checking the attachment was measured to admit
+    stitched triples on legal text, so the docstring now states the
+    code's behaviour and these cases pin each documented example."""
+
+    @pytest.mark.parametrize("text", [
+        "The firm, which sells tea or coffee, opened a shop and hired staff.",
+        "Alice reads books or magazines and Bob writes poems.",
+    ])
+    def test_or_before_a_coordinated_main_clause_is_withheld(self, text) -> None:
+        triples, report = _sieve().extract_triplets_with_report(text)
+        assert triples == []
+        assert report["suppressed"]["conditional"] == 1
+
+    @pytest.mark.parametrize("text,expected", [
+        ("The tenant who pays late or skips rent loses the deposit.",
+         [("tenant", "lose", "deposit")]),
+        ("Alice reads books or magazines.", [("alice", "read", "book")]),
+    ])
+    def test_or_without_a_later_main_clause_does_not_count(self, text, expected) -> None:
+        assert _sieve().extract_triplets(text) == expected
+
+
+class TestHeadingLines:
+    def test_indented_heading_keeps_the_prose(self) -> None:
+        # CommonMark allows up to three spaces before "#". 9dc0351 glued
+        # the heading to the prose and skipped both, uncounted.
+        triples, report = _sieve().extract_triplets_with_report(
+            " ## Background\nThe company hired Bob."
+        )
+        assert triples == [("company", "hire", "bob")]
+        assert report["sentences"] == 1
+
+    def test_hash_inside_a_line_is_not_a_heading(self) -> None:
+        # 9dc0351 dropped the second sentence uncounted (sentences == 1)
+        triples, report = _sieve().extract_triplets_with_report(
+            "Alice owns the car. # Bob sells houses."
+        )
+        assert ("alice", "own", "car") in triples
+        assert report["sentences"] == 2
+
+    def test_four_space_indent_is_not_a_heading(self) -> None:
+        # four spaces make a code block in CommonMark; the line is not
+        # skipped as a heading, so it is counted
+        _, report = _sieve().extract_triplets_with_report(
+            "Alice owns the car.\n    # Bob sells houses."
+        )
+        assert report["sentences"] == 2
+
+    @pytest.mark.parametrize("text,expected", [
+        # a code block line glued to the prose stitched (bob, sell,
+        # space) and lost Carol's sentence
+        ("Intro text here.\n\n   ### Indented three\nBob sold the house.\n\n"
+         "    #### four spaces\nCarol wrote the book.",
+         [("bob", "sell", "house"), ("carol", "write", "book")]),
+        ("Alice wrote the report.\n\n    # Bob reviewed the draft\n\n"
+         "Carol approved the budget.",
+         [("alice", "write", "report"), ("carol", "approve", "budget")]),
+    ])
+    def test_code_block_hash_line_does_not_join_the_prose(self, text, expected) -> None:
+        triples = _sieve().extract_triplets(text)
+        for triple in expected:
+            assert triple in triples
+        assert ("bob", "sell", "space") not in triples
+
+    def test_heading_component_is_linear(self) -> None:
+        # 9dc0351 rebuilt Doc.text for every line: 40 s on this input.
+        import time
+
+        from sum_engine_internal.algorithms.syntactic_sieve import (
+            _mark_heading_breaks,
+        )
+
+        text = "".join(
+            f"## Part {i}\nThe firm hired {i} staff.\n" for i in range(2500)
+        )
+        doc = _sieve().nlp.make_doc(text)
+        t0 = time.perf_counter()
+        _mark_heading_breaks(doc)
+        assert time.perf_counter() - t0 < 2.0
+        assert sum(1 for t in doc if t.is_sent_start) == 5000
+
+    def test_sieve_docs_serialise(self) -> None:
+        # The first linear rewrite stored a frozenset in Doc.user_data,
+        # which msgpack rejects: Doc.to_bytes and DocBin raised TypeError
+        # on every v2 Doc (9dc0351 left user_data empty).
+        from spacy.tokens import Doc, DocBin
+
+        from sum_engine_internal.algorithms.syntactic_sieve import _is_heading
+
+        nlp = _sieve().nlp
+        docs = [nlp("## Title\nAlice owns the car."), nlp("Bob sells houses.")]
+        for doc in docs:
+            restored = Doc(nlp.vocab).from_bytes(doc.to_bytes())
+            assert restored.user_data == doc.user_data
+        # no heading, no footprint
+        assert docs[1].user_data == {}
+        data = DocBin(docs=docs, store_user_data=True).to_bytes()
+        first = next(iter(DocBin().from_bytes(data).get_docs(nlp.vocab)))
+        assert [_is_heading(s) for s in first.sents] == [True, False]
+
+    def test_sieve_pipe_runs_in_worker_processes(self) -> None:
+        # nlp.pipe(n_process>1) ships each Doc back with Doc.to_bytes;
+        # the frozenset made it fail with spaCy error E871.
+        import multiprocessing
+
+        if multiprocessing.get_start_method() != "fork":
+            pytest.skip("the sieve's spaCy pipeline is shared with workers by fork only")
+        texts = ["## T\nAlice owns the car.", "Bob sells houses."]
+        nlp = _sieve().nlp
+        assert [d.to_json() for d in nlp.pipe(texts, n_process=2)] == [
+            d.to_json() for d in nlp.pipe(texts)
+        ]
+
+
+ANNOTATED_V1_ROMAN = [
+    ("who", "become", "first king", 0.85),
+    ("roman_republic", "follow", "overthrow", 1.0),
+    ("julius_caesar", "end", "dictatorship", 1.0),
+    ("octavian", "become", "first roman emperor", 1.0),
+    ("roman_empire", "reach", "territorial peak", 1.0),
+    ("eastern_roman_empire", "continue", "last emperor", 1.0),
+]
+
+
+class TestFrozenV1Annotated:
+    """``extract_annotated_triplets`` under the v1 id replays 0.11.1's own
+    annotated slot loop (no passive handling, POS fallback or noise
+    filter); 9dc0351 ran the shared v1 path instead."""
+
+    def _v1(self) -> DeterministicSieve:
+        from sum_engine_internal.algorithms.syntactic_sieve import (
+            SIEVE_EXTRACTOR_ID_V1,
+        )
+
+        return DeterministicSieve(  # type: ignore[no-untyped-call]
+            extractor_id=SIEVE_EXTRACTOR_ID_V1,
+        )
+
+    def test_replays_0_11_1_annotated_rows(self) -> None:
+        corpus = json.loads(
+            (REPO / "scripts/bench/corpora/seed_long_paragraphs.json").read_text()
+        )
+        text = next(
+            d["text"] for d in corpus["documents"]
+            if d["id"] == "doc_long_roman_empire"
+        )
+        rows = self._v1().extract_annotated_triplets(text)
+        assert [
+            (r["subject"], r["predicate"], r["object"], r["linguistic_certainty"])
+            for r in rows
+        ] == ANNOTATED_V1_ROMAN
+
+    def test_passive_and_fallback_not_in_0_11_1_annotated(self) -> None:
+        rows = self._v1().extract_annotated_triplets(
+            "Alice owns the house where Bob grew up. Hamlet was written by "
+            "Shakespeare. Dogs chase cats. Alice does not own a car."
+        )
+        assert [(r["subject"], r["predicate"], r["object"]) for r in rows] == [
+            ("bob", "grow", "house"),
+        ]
+
+
+class TestNegativeControlSecondReview:
+    def test_v2_corpus_has_negation_and_attribution_documents(self) -> None:
+        v2 = json.loads(CORPUS_V2.read_text())
+        by_id = {d["id"]: d for d in v2["documents"]}
+        det_neg = [i for i in by_id if i.startswith("nonext_detneg_")]
+        attrib = [i for i in by_id if i.startswith("chim_attrib_")]
+        assert len(det_neg) >= 2 and len(attrib) >= 3
+        for i in det_neg:
+            assert by_id[i]["expected_failure_mode"] == "non_extractable_assertion"
+            assert by_id[i]["extraction_should"] == "produce_zero_triples"
+        for i in attrib:
+            assert by_id[i]["expected_failure_mode"] == "cross_clause_chimera"
+            assert by_id[i]["extraction_should"] == "produce_only_allowed_triples"
+            assert by_id[i]["allowed_triples"] == []
+
+    def test_new_documents_are_expected_under_v2(self) -> None:
+        from scripts.bench.runners.negative_control import run
+
+        report = run(CORPUS_V2)
+        verdicts = {r["doc_id"]: r["verdict"] for r in report["results"]}
+        new = [i for i in verdicts if i.startswith(("nonext_detneg_", "chim_attrib_"))]
+        assert new and all(verdicts[i] == "expected" for i in new)
+
+    def test_documented_recipe_reproduces_the_committed_receipt(
+        self, tmp_path, monkeypatch,
+    ) -> None:
+        # The runner docstring's "Reproducible" command, with the date of
+        # the committed receipt, must give its exact bytes (it lacked
+        # --pretty, so it did not).
+        import shlex
+
+        import scripts.bench.runners.negative_control as nc
+
+        doc = nc.__doc__ or ""
+        recipe = doc.split("Reproducible", 1)[1].split("\n\n", 2)[1]
+        argv = shlex.split(recipe.replace("\\\n", " "))
+        assert argv[:3] == ["python", "-m", "scripts.bench.runners.negative_control"]
+        receipt = REPO / "fixtures/bench_receipts/negative_control_2026-10-04.json"
+        out = tmp_path / "receipt.json"
+        args = [
+            a.replace("<YYYY-MM-DD>", "2026-10-04") for a in argv[3:]
+        ]
+        args[args.index("--out") + 1] = str(out)
+        monkeypatch.chdir(REPO)
+        monkeypatch.setattr(sys, "argv", ["negative_control", *args])
+        assert nc.main() == 1  # amb_coref_01/02/04 stay unexpected
+        assert out.read_bytes() == receipt.read_bytes()
