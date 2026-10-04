@@ -303,11 +303,11 @@ def test_batch_suppression_notice_names_the_file(tmp_path):
     assert code == 1
     assert len([ln for ln in out.split("\n") if ln.strip()]) == 1
     assert (
-        f"sum: file={mixed} 1 of 2 sentences was not extracted "
+        f"sum: file={mixed} 1 of 2 sentences was withheld by the clause guard "
         "(conditional 1); see docs/PROOF_BOUNDARY.md section 2.1."
     ) in err.splitlines()
     assert (
-        f"sum: file={zero} 1 of 1 sentence was not extracted "
+        f"sum: file={zero} 1 of 1 sentence was withheld by the clause guard "
         "(conditional 1); see docs/PROOF_BOUNDARY.md section 2.1."
     ) in err.splitlines()
     assert "bundle omits" not in err

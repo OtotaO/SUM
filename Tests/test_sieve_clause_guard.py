@@ -255,9 +255,9 @@ class TestSuppressionReport:
 
 class TestSuppressedNotice:
     # No "The bundle omits ..." clause: on a zero-triple exit no bundle
-    # is written, so the notice only says what was not extracted.
+    # is written, so the notice only says what the guard withheld.
     NOTICE = (
-        "sum: 4 of 6 sentences were not extracted (negation 1, "
+        "sum: 4 of 6 sentences were withheld by the clause guard (negation 1, "
         "conditional 1, question 1, cross-clause 1); see "
         "docs/PROOF_BOUNDARY.md section 2.1.\n"
     )
@@ -278,7 +278,7 @@ class TestSuppressedNotice:
             "Bob said that Alice stole the car.", suppressed_notice=stream
         )
         assert stream.getvalue() == (
-            "sum: 1 of 1 sentence was not extracted (cross-clause 1); "
+            "sum: 1 of 1 sentence was withheld by the clause guard (cross-clause 1); "
             "see docs/PROOF_BOUNDARY.md section 2.1.\n"
         )
 
@@ -293,7 +293,7 @@ class TestSuppressedNotice:
             "Alice likes cats. If it rains, the match stops."
         )
         assert format_suppression_notice(report, label="file=a.txt") == (
-            "sum: file=a.txt 1 of 2 sentences was not extracted "
+            "sum: file=a.txt 1 of 2 sentences was withheld by the clause guard "
             "(conditional 1); see docs/PROOF_BOUNDARY.md section 2.1."
         )
 
@@ -904,3 +904,124 @@ class TestNegativeControlSecondReview:
         monkeypatch.setattr(sys, "argv", ["negative_control", *args])
         assert nc.main() == 1  # amb_coref_01/02/04 stay unexpected
         assert out.read_bytes() == receipt.read_bytes()
+
+
+class TestInCaseConditional:
+    """ "in case" before a subject noun or proper noun is a conditional.
+    58b3636 exempted every "in case" followed by a noun (meant for "in
+    case studies"), so these emitted their consequent or a stitched
+    object. "case" is the object of "in" in a conditional and a compound
+    modifier of the next noun otherwise."""
+
+    @pytest.mark.parametrize("text,old_triple", [
+        ("In case Bob defaults, the bank seizes the house.",
+         ("bank", "seize", "house")),
+        ("In case Acme defaults, the bank seizes the house.",
+         ("bank", "seize", "house")),
+        ("In case payment fails, the bank cancels the order.",
+         ("bank", "cancel", "order")),
+        ("In case borrowers default, the bank seizes the house.",
+         ("bank", "seize", "house")),
+        ("In case Microsoft wins the case, Google pays the damages.",
+         ("google", "pay", "damage")),
+        ("The guarantor pays the debt in case Bob defaults.",
+         ("guarantor", "pay", "bob default")),
+        ("The bank seizes the house in case Bob defaults.",
+         ("bank", "seize", "house")),
+    ])
+    def test_withheld(self, text, old_triple) -> None:
+        triples, report = _sieve().extract_triplets_with_report(text)
+        assert old_triple not in triples
+        assert triples == []
+        assert report["suppressed"]["conditional"] == 1
+
+    @pytest.mark.parametrize("text,expected", [
+        ("In case studies, researchers found strong effects.",
+         [("researcher", "find", "strong effect")]),
+        ("In case law, courts follow precedent.",
+         [("court", "follow", "precedent")]),
+        ("As held in Case C-131/12, the court annulled the decision.",
+         [("court", "annul", "decision")]),
+    ])
+    def test_compound_case_still_extracted(self, text, expected) -> None:
+        assert _sieve().extract_triplets(text) == expected
+
+
+class TestClauseGuardSpeed:
+    """Input shapes on which the clause guard was super-linear while v1
+    was not: 58b3636 built ``token.subtree`` for every coordinated
+    predicate (36 KB took 102 s), rescanned the sentence for every "or"
+    (95 KB: 24 s) and re-walked heads for every "provided" (a chain was
+    cubic); a later draft walked heads from every noun before a
+    coordinated verb. The parse is not timed here; the guard over the
+    parsed sentence is."""
+
+    @staticmethod
+    def _one_sentence(text: str):
+        doc = _sieve().nlp(text)
+        sents = list(doc.sents)
+        assert len(sents) == 1
+        return sents[0]
+
+    def test_coordinated_predicate_chain(self) -> None:
+        import time
+
+        from sum_engine_internal.algorithms.syntactic_sieve import (
+            _guard_reason,
+            _single_clause_triple,
+        )
+
+        sent = self._one_sentence(
+            "Alice owns the house and " + "sells the car and " * 1500
+            + "rents it."
+        )
+        t0 = time.perf_counter()
+        _guard_reason(sent)
+        triple, _ = _single_clause_triple(sent)
+        assert time.perf_counter() - t0 < 2.0
+        assert triple == ("Alice", "rent", "it")  # raw, before lowering
+
+    def test_long_or_list(self) -> None:
+        import time
+
+        from sum_engine_internal.algorithms.syntactic_sieve import (
+            _is_clause_disjunction,
+        )
+
+        sent = self._one_sentence(
+            "Alice reads " + " or ".join(f"book{i}" for i in range(6000)) + "."
+        )
+        t0 = time.perf_counter()
+        _is_clause_disjunction(sent)
+        assert time.perf_counter() - t0 < 2.0
+
+    def test_provided_chain(self) -> None:
+        import time
+
+        from sum_engine_internal.algorithms.syntactic_sieve import (
+            _extract_sentence,
+        )
+
+        sent = self._one_sentence(
+            "Alice owns the house and "
+            + "sells the goods provided free and " * 1000 + "rents it."
+        )
+        t0 = time.perf_counter()
+        _extract_sentence(sent)
+        assert time.perf_counter() - t0 < 2.0
+
+    def test_nested_phrase_before_coordinated_verb(self) -> None:
+        import time
+
+        from sum_engine_internal.algorithms.syntactic_sieve import (
+            _extract_sentence,
+        )
+
+        sent = self._one_sentence(
+            "Alice sold the car and, in the house "
+            + "of the friend " * 4000 + "of Bob, bought it."
+        )
+        t0 = time.perf_counter()
+        triple, _ = _extract_sentence(sent)
+        assert time.perf_counter() - t0 < 2.0
+        assert triple == ("alice", "buy", "it")

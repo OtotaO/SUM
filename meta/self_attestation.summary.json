@@ -1,43 +1,43 @@
 {
   "schema": "sum.self_attestation.v1",
-  "issued_at": "2026-10-04T06:42:02Z",
+  "issued_at": "2026-10-04T19:21:57Z",
   "doc_count": 6,
   "docs": [
     {
       "path": "README.md",
-      "source_uri": "sha256:bc89ee54fe85a9d101cc7b5ded19cd93e3b00ca6cc60e9cb00ccb18b12da5dfb",
+      "source_uri": "sha256:a5d9c2adfa1b7fd6c4e8d32ae07c760689edac4335ab6c608f2df9588eef2cf5",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "bc89ee54fe85a9d101cc7b5ded19cd93e3b00ca6cc60e9cb00ccb18b12da5dfb",
-      "axiom_count": 54,
-      "state_integer_digits": 1016
+      "markdown_sha256": "a5d9c2adfa1b7fd6c4e8d32ae07c760689edac4335ab6c608f2df9588eef2cf5",
+      "axiom_count": 55,
+      "state_integer_digits": 1034
     },
     {
       "path": "CHANGELOG.md",
-      "source_uri": "sha256:20d93893d96eb9da6d4daac945f04e896deb0265ef7f013bd335961d00449376",
+      "source_uri": "sha256:4596bc5b8ba6a67b7a119b007ea9c7a1358638db3d8cded6edd852b4800b3498",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "20d93893d96eb9da6d4daac945f04e896deb0265ef7f013bd335961d00449376",
+      "markdown_sha256": "4596bc5b8ba6a67b7a119b007ea9c7a1358638db3d8cded6edd852b4800b3498",
       "axiom_count": 593,
       "state_integer_digits": 11170
     },
     {
       "path": "docs/PROOF_BOUNDARY.md",
-      "source_uri": "sha256:9e13965e24ca3864d04fcc20c264efcd57f68771fb0c6fb284b6d4e7fe2273ee",
+      "source_uri": "sha256:d8a198c593459be8399cf59952f3bf544994bdb0c1e19bfb6c53e98136fb1b54",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "9e13965e24ca3864d04fcc20c264efcd57f68771fb0c6fb284b6d4e7fe2273ee",
-      "axiom_count": 191,
-      "state_integer_digits": 3594
+      "markdown_sha256": "d8a198c593459be8399cf59952f3bf544994bdb0c1e19bfb6c53e98136fb1b54",
+      "axiom_count": 192,
+      "state_integer_digits": 3612
     },
     {
       "path": "docs/FEATURE_CATALOG.md",
-      "source_uri": "sha256:4e9fc20cb82672e51e258f23c34f78d708a55f2b84b312b33b0925aa19d8ec13",
+      "source_uri": "sha256:96214c6ff9e8ab5fd2d7e93bb8eb408ca0323612b8b0de4c54381929f22585a1",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "4e9fc20cb82672e51e258f23c34f78d708a55f2b84b312b33b0925aa19d8ec13",
+      "markdown_sha256": "96214c6ff9e8ab5fd2d7e93bb8eb408ca0323612b8b0de4c54381929f22585a1",
       "axiom_count": 147,
-      "state_integer_digits": 2771
+      "state_integer_digits": 2772
     },
     {
       "path": "docs/RENDER_RECEIPT_FORMAT.md",

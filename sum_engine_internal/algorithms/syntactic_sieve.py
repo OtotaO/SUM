@@ -442,6 +442,165 @@ def _is_main_clause(token: Any) -> bool:
     return bool(token.dep_ == "ROOT")
 
 
+def _is_main_clause_memo(token: Any, memo: Dict[int, bool]) -> bool:
+    """``_is_main_clause`` with a memo keyed by token index, so that
+    asking it of every predicate in a chain of N coordinated predicates
+    costs O(N) instead of O(N^2). Same result for every token."""
+    path = []
+    while True:
+        known = memo.get(token.i)
+        if known is not None:
+            result = known
+            break
+        if token.dep_ != "conj":
+            result = bool(token.dep_ == "ROOT")
+            memo[token.i] = result
+            break
+        path.append(token.i)
+        token = token.head
+    for i in path:
+        memo[i] = result
+    return result
+
+
+class _SentenceIndex:
+    """Per-sentence lookups for the clause guard, built from head
+    pointers only (never from ``left_edge`` / ``right_edge``, which spaCy
+    can leave stale on non-projective parses).
+
+    ``prev_cconj[k]`` is the index of the last CCONJ before the
+    sentence's k-th token (``start - 1`` if none); ``nominals`` lists the
+    doc indices of nominal tokens in order; ``main`` memoizes
+    ``_is_main_clause`` and ``slots`` memoizes ``_predicate_slots``.
+    ``exact`` is False when a token's head lies outside the sentence,
+    which the parser does not produce (the heading component runs before
+    it); callers then fall back to the original computation. Entry and
+    exit times of a depth-first walk over the sentence's tree, built on
+    first use, answer "is j a descendant of t" in O(1)."""
+
+    __slots__ = (
+        "sent", "start", "end", "prev_cconj", "nominals", "main", "slots",
+        "exact", "_tin", "_tout",
+    )
+
+    def __init__(self, sent: Any) -> None:
+        self.sent = sent
+        self.start = sent.start
+        self.end = sent.end
+        self.prev_cconj: List[int] = []
+        self.nominals: List[int] = []
+        self.main: Dict[int, bool] = {}
+        self.slots: Dict[int, Tuple[Any, Any, Any]] = {}
+        self.exact = True
+        self._tin: Optional[List[int]] = None
+        self._tout: Optional[List[int]] = None
+        last = sent.start - 1
+        for t in sent:
+            self.prev_cconj.append(last)
+            if t.pos_ in _NOMINAL_POS:
+                self.nominals.append(t.i)
+            if t.pos_ == "CCONJ":
+                last = t.i
+            if not self.start <= t.head.i < self.end:
+                self.exact = False
+
+    def predicate_slots(self, token: Any) -> Tuple[Any, Any, Any]:
+        slots = self.slots.get(token.i)
+        if slots is None:
+            slots = self.slots[token.i] = _predicate_slots(token)
+        return slots
+
+    def nominals_in(self, lo: int, hi: int) -> List[int]:
+        """Doc indices of nominal tokens in [lo, hi), in order."""
+        return self.nominals[
+            bisect.bisect_left(self.nominals, lo):bisect.bisect_left(self.nominals, hi)
+        ]
+
+    def is_descendant(self, j: int, t: int) -> bool:
+        """True iff token j is t or lies below t in the dependency tree.
+        Only valid when ``exact``."""
+        if self._tin is None:
+            self._walk()
+        tin, tout = self._tin, self._tout
+        assert tin is not None and tout is not None
+        a, b = j - self.start, t - self.start
+        return tin[b] <= tin[a] < tout[b]
+
+    def _walk(self) -> None:
+        n = self.end - self.start
+        children: List[List[int]] = [[] for _ in range(n)]
+        roots = []
+        for t in self.sent:
+            k = t.i - self.start
+            h = t.head.i
+            if h == t.i:
+                roots.append(k)
+            else:
+                children[h - self.start].append(k)
+        tin = [0] * n
+        tout = [0] * n
+        clock = 0
+        for root in roots:
+            stack = [(root, False)]
+            while stack:
+                k, done = stack.pop()
+                if done:
+                    tout[k] = clock
+                    continue
+                tin[k] = clock
+                clock += 1
+                stack.append((k, True))
+                for c in reversed(children[k]):
+                    stack.append((c, False))
+        self._tin, self._tout = tin, tout
+
+
+class _ClauseSubjects:
+    """For ``_heads_clause``: the tokens of one sentence that have a
+    clause-subject child (from head pointers, which list exactly the
+    children ``Token.children`` yields), and a memo of the first such
+    token at or above each token. Asking it for every marker in a
+    sentence costs O(sentence) in total; the first version walked and
+    re-scanned children for each marker, which a chain of "provided"
+    clauses made cubic."""
+
+    __slots__ = ("has", "first", "exact")
+
+    def __init__(self, tokens: List[Any]) -> None:
+        self.has = set()
+        self.first: Dict[int, Any] = {}
+        self.exact = True
+        if not tokens:
+            return
+        start, end = tokens[0].i, tokens[-1].i + 1
+        for t in tokens:
+            h = t.head.i
+            if not start <= h < end:
+                self.exact = False
+            if h != t.i and t.dep_ in _CLAUSE_SUBJECT_DEPS:
+                self.has.add(h)
+
+    def first_with_subject(self, tok: Any) -> Any:
+        """The first token at or above *tok* (following heads) with a
+        clause-subject child, or None."""
+        path = []
+        while True:
+            if tok.i in self.first:
+                found = self.first[tok.i]
+                break
+            path.append(tok.i)
+            if tok.i in self.has:
+                found = tok
+                break
+            if tok.head.i == tok.i:
+                found = None
+                break
+            tok = tok.head
+        for i in path:
+            self.first[i] = found
+        return found
+
+
 def _is_passive_predicate(token: Any) -> bool:
     """True iff *token* is a passive predicate. Its nsubjpass is the
     semantic object, so a passive conj never supplies a single-clause
@@ -449,7 +608,11 @@ def _is_passive_predicate(token: Any) -> bool:
     return any(c.dep_ in ("nsubjpass", "auxpass") for c in token.children)
 
 
-def _inherited_subject(token: Any) -> Any:
+def _inherited_subject(
+    token: Any,
+    index: Optional[_SentenceIndex] = None,
+    memo: Optional[Dict[int, Any]] = None,
+) -> Any:
     """Subject token a subjectless conj predicate shares with the
     predicate it is coordinated with ("Alice wrote and published the
     report"), or None.
@@ -463,26 +626,60 @@ def _inherited_subject(token: Any) -> Any:
     the company." or, with an appositive, "Alice founded the company and
     Bob, her brother, bought it." Inheriting there would assert (alice,
     run, company) or (alice, buy, it).
+
+    With *index*, the nominals between the coordinator and the
+    predicate are looked up by bisection and each is tested against the
+    predicate's subtree in O(1) (``_SentenceIndex.is_descendant``), and
+    the walk up the conj chain is memoized in *memo* (keyed by the token
+    whose subject is sought) with each head's slots cached. The first
+    version built ``token.subtree`` for every conj predicate, which made
+    a chain of N coordinated predicates cubic. Without *index*, or when
+    the sentence's heads are not all inside it, this is the original
+    computation.
     """
-    doc = token.doc
-    start = token.sent.start
-    i = token.i - 1
-    while i >= start and doc[i].pos_ != "CCONJ":
-        i -= 1
-    if i < start:
+    if index is None or not index.exact:
+        doc = token.doc
+        start = token.sent.start
+        i = token.i - 1
+        while i >= start and doc[i].pos_ != "CCONJ":
+            i -= 1
+        if i < start:
+            return None
+        own = {t.i for t in token.subtree}
+        if any(
+            doc[j].pos_ in _NOMINAL_POS and j not in own
+            for j in range(i + 1, token.i)
+        ):
+            return None
+        while token.dep_ == "conj":
+            token = token.head
+            subject, _, _ = _predicate_slots(token)
+            if subject is not None:
+                return subject
         return None
-    own = {t.i for t in token.subtree}
-    if any(
-        doc[j].pos_ in _NOMINAL_POS and j not in own
-        for j in range(i + 1, token.i)
-    ):
+    i = index.prev_cconj[token.i - index.start]
+    if i < index.start:
         return None
+    for j in index.nominals_in(i + 1, token.i):
+        if not index.is_descendant(j, token.i):
+            return None
+    if memo is None:
+        memo = {}
+    path = []
+    found = None
     while token.dep_ == "conj":
+        if token.i in memo:
+            found = memo[token.i]
+            break
+        path.append(token.i)
         token = token.head
-        subject, _, _ = _predicate_slots(token)
+        subject, _, _ = index.predicate_slots(token)
         if subject is not None:
-            return subject
-    return None
+            found = subject
+            break
+    for k in path:
+        memo[k] = found
+    return found
 
 
 def _within_size(subject: Optional[str], object_: Optional[str]) -> bool:
@@ -515,6 +712,8 @@ def _single_clause_triple(sent: Any) -> Tuple[Optional[Tuple[str, str, str]], bo
     triple = None
     last_subject = None
     last_object = None
+    index = _SentenceIndex(sent)
+    inherited: Dict[int, Any] = {}
     for token in sent:
         if not (token.dep_ == "ROOT" or token.pos_ == "VERB"):
             continue
@@ -523,11 +722,14 @@ def _single_clause_triple(sent: Any) -> Tuple[Optional[Tuple[str, str, str]], bo
             last_subject = _modified_lemma(subject or adverbial, "_")
         if object_ is not None:
             last_object = _modified_lemma(object_, " ")
-        if not _is_main_clause(token) or _is_passive_predicate(token):
+        if (
+            not _is_main_clause_memo(token, index.main)
+            or _is_passive_predicate(token)
+        ):
             continue
         if subject is None:
             if token.dep_ == "conj":
-                subject = _inherited_subject(token)
+                subject = _inherited_subject(token, index, inherited)
             else:
                 subject = adverbial
         if subject is not None and object_ is not None:
@@ -545,17 +747,27 @@ def _is_question(sent: Any) -> bool:
     return bool(sent.text.rstrip().rstrip(_CLOSING_PUNCT).rstrip().endswith("?"))
 
 
-def _heads_clause(tokens: Any, k: int) -> bool:
+def _heads_clause(
+    tokens: Any, k: int, subjects: Optional[_ClauseSubjects] = None,
+) -> bool:
     """True iff the marker at ``tokens[k]`` introduces a subordinate
     finite clause: walking up the heads from the next word (skipping an
     optional "that" and the marker itself), the first token with a
-    clause subject is not the sentence ROOT."""
+    clause subject is not the sentence ROOT. With *subjects* the walk
+    is memoized (``_ClauseSubjects``)."""
     marker = tokens[k]
     j = k + 1
     if j < len(tokens) and tokens[j].lower_ == "that":
         j += 1
     if j >= len(tokens) or tokens[j].pos_ in ("ADP", "PART", "PUNCT"):
         return False
+    if subjects is not None and subjects.exact:
+        found = subjects.first_with_subject(tokens[j])
+        if found is not None and found.i == marker.i:
+            if marker.head.i == marker.i:
+                return False
+            found = subjects.first_with_subject(marker.head)
+        return found is not None and bool(found.dep_ != "ROOT")
     tok = tokens[j]
     while True:
         if tok.i != marker.i and any(
@@ -581,11 +793,16 @@ def _is_inverted_conditional(tokens: Any, k: int) -> bool:
     return k + 1 < len(tokens) and tokens[k + 1].pos_ in _NP_START_POS
 
 
-def _conditional_phrase_at(tokens: Any, k: int) -> bool:
+def _conditional_phrase_at(
+    tokens: Any, k: int, subjects: Optional[_ClauseSubjects] = None,
+) -> bool:
     """Multiword conditional markers starting at ``tokens[k]``: "as long
     as" / "so long as" (second "as" a clause marker, so comparatives like
-    "as long as the table" pass), "in case" (not "in case studies"), "in
-    the event that/of", "in the event" directly followed by a clause
+    "as long as the table" pass), "in case" (not "in case studies" or
+    "in case law", where "case" is a compound modifier of the next noun;
+    before a subject noun, "case" is the object of "in": "In case Bob
+    defaults, ...", "In case payment fails, ..."), "in the event
+    that/of", "in the event" directly followed by a clause
     ("In the event the buyer defaults, ..."; spaCy often tags such a
     clause's verb as a noun, so a following determiner, pronoun or
     proper noun also counts), "on condition that"."""
@@ -593,14 +810,21 @@ def _conditional_phrase_at(tokens: Any, k: int) -> bool:
     if words[:3] in (["as", "long", "as"], ["so", "long", "as"]):
         return bool(tokens[k + 2].dep_ == "mark")
     if words[:2] == ["in", "case"]:
-        return len(words) < 3 or tokens[k + 2].pos_ not in ("NOUN", "PROPN")
+        return (
+            len(words) < 3
+            or tokens[k + 2].pos_ not in ("NOUN", "PROPN")
+            or not (
+                tokens[k + 1].dep_ == "compound"
+                and tokens[k + 1].head.i == tokens[k + 2].i
+            )
+        )
     if words[:3] == ["in", "the", "event"]:
         if len(words) < 4:
             return False
         return (
             words[3] in ("that", "of")
             or tokens[k + 3].pos_ in ("DET", "PRON", "PROPN")
-            or _heads_clause(tokens, k + 2)
+            or _heads_clause(tokens, k + 2, subjects)
         )
     return words[:3] == ["on", "condition", "that"]
 
@@ -644,6 +868,7 @@ def _is_conditional(sent: Any) -> bool:
     """
     tokens = list(sent)
     first = next((t.i for t in tokens if not t.is_punct), None)
+    subjects = _ClauseSubjects(tokens)
     for k, tok in enumerate(tokens):
         low = tok.lower_
         if tok.dep_ in ("mark", "advmod"):
@@ -660,9 +885,9 @@ def _is_conditional(sent: Any) -> bool:
             and _opens_clause_here(tokens, k, first)
         ):
             return True
-        if _conditional_phrase_at(tokens, k):
+        if _conditional_phrase_at(tokens, k, subjects):
             return True
-        if low in _CONDITIONAL_PARTICIPLES and _heads_clause(tokens, k):
+        if low in _CONDITIONAL_PARTICIPLES and _heads_clause(tokens, k, subjects):
             return True
         if (
             (
@@ -675,7 +900,7 @@ def _is_conditional(sent: Any) -> bool:
             )
             and _opens_clause_here(tokens, k, first)
             and (
-                _heads_clause(tokens, k)
+                _heads_clause(tokens, k, subjects)
                 # spaCy often tags the hypothesis's verb as a noun object
                 # ("Assuming the market recovers" -> dobj "recovers"), so
                 # an opener parsed as an adverbial clause counts even
@@ -726,23 +951,45 @@ def _is_clause_disjunction(sent: Any) -> bool:
     rent loses the deposit.") or between noun phrases ("Alice reads
     books or magazines.") does not count, and the main clause or the
     first member is extracted.
+
+    Two passes replace a rescan per "or": ``later[k]`` records whether
+    a qualifying second clause starts at or after token k, and a flag
+    records whether a predicate was seen before the current token. The
+    first version rescanned the rest of the sentence for every "or",
+    which made a long "or" list quadratic.
     """
     tokens = list(sent)
+    if not any(
+        (t.dep_ == "preconj" and t.lower_ in _DISJUNCTIVE_PRECONJ)
+        or (t.lower_ in _DISJUNCTIVE_CC and t.pos_ == "CCONJ")
+        for t in tokens
+    ):
+        return False
+    memo: Dict[int, bool] = {}
+    later = [False] * (len(tokens) + 1)
+    for k in range(len(tokens) - 1, -1, -1):
+        t = tokens[k]
+        later[k] = later[k + 1] or (
+            _is_predicate(t)
+            and (
+                (t.dep_ == "conj" and _is_main_clause_memo(t, memo))
+                or (t.dep_ == "ccomp" and _is_main_clause_memo(t.head, memo))
+            )
+        )
+    predicate_before = False
     for k, tok in enumerate(tokens):
         low = tok.lower_
         if tok.dep_ == "preconj" and low in _DISJUNCTIVE_PRECONJ:
             return True
-        if low not in _DISJUNCTIVE_CC or tok.pos_ != "CCONJ":
-            continue
-        if not any(_is_predicate(t) for t in tokens[:k]):
-            continue
-        for t in tokens[k + 1:]:
-            if not _is_predicate(t):
-                continue
-            if t.dep_ == "conj" and _is_main_clause(t):
-                return True
-            if t.dep_ == "ccomp" and _is_main_clause(t.head):
-                return True
+        if (
+            low in _DISJUNCTIVE_CC
+            and tok.pos_ == "CCONJ"
+            and predicate_before
+            and later[k + 1]
+        ):
+            return True
+        if _is_predicate(tok):
+            predicate_before = True
     return False
 
 
@@ -800,6 +1047,7 @@ def _is_attributed(sent: Any) -> bool:
         single-clause rule handles it.
     """
     tokens = list(sent)
+    memo: Dict[int, bool] = {}
     for k, t in enumerate(tokens):
         if (
             t.lower_ == "according"
@@ -808,7 +1056,7 @@ def _is_attributed(sent: Any) -> bool:
         ):
             return True
         lemma = t.lemma_.lower()
-        if lemma not in _REPORTING_VERBS or not _is_main_clause(t.head):
+        if lemma not in _REPORTING_VERBS or not _is_main_clause_memo(t.head, memo):
             continue
         reporter = ("nsubj", "nsubjpass") if lemma == "add" else (
             "nsubj", "nsubjpass", "agent")
@@ -1018,6 +1266,11 @@ def format_suppression_notice(
     """One-line stderr notice for a suppression report, or None when no
     sentence was suppressed.
 
+    It counts only sentences a guard withheld (the reasons in
+    ``SUPPRESSION_REASONS``). A sentence that yields nothing for another
+    reason (an agentless passive, no object, noise) is in neither count,
+    so the line says "withheld by the clause guard", not "not extracted".
+
     ``label`` (e.g. ``"file=<path>"``) is put after ``sum:`` so a caller
     handling several inputs can say which one the line is about. The
     line does not mention a bundle: on a zero-triple exit none is
@@ -1035,7 +1288,8 @@ def format_suppression_notice(
     prefix = f"sum: {label} " if label else "sum: "
     return (
         f"{prefix}{total} of {n} sentence{'' if n == 1 else 's'} "
-        f"{'was' if total == 1 else 'were'} not extracted ({parts}); "
+        f"{'was' if total == 1 else 'were'} withheld by the clause guard "
+        f"({parts}); "
         "see docs/PROOF_BOUNDARY.md section 2.1."
     )
 

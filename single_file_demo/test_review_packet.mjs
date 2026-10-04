@@ -440,3 +440,12 @@ test('key pin: a packet whose public key list is malformed gets an accurate mess
     await assert.rejects(verifyReviewPacket(p), /^Error: Packet public keys must be an object with a keys array\.$/, JSON.stringify(jwks));
   }
 });
+
+test('the guide written into every packet tells Node callers to pass site keys', async () => {
+  // The embedded jwks is unsigned; a one-argument call reports key_pin
+  // not-checked, so the guide must name the option that pins the key.
+  const p = await packet();
+  assert.match(p.verification_guide, /verifyReviewPacket\(packet, \{ siteJwks \}\)/);
+  assert.match(p.verification_guide, /a packet with a receipt reports key_pin not-checked/);
+  assert.equal((await verifyReviewPacket(p)).key_pin, 'not-checked');
+});
