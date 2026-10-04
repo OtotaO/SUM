@@ -100,7 +100,8 @@ export async function makeReviewPacket({ source, output, review, render = null, 
     verification_guide: 'Open this packet in the SUM workbench packet verifier, or import verifyReviewPacket from single_file_demo/review_packet.js in Node. It recomputes text hashes and review spans. When a receipt and public keys are included, it verifies Ed25519 plus exact output, selected triples and slider bindings. The container, source, key ownership, review decisions and reviewer identity are not signed. Independently establish issuer key trust and revocation/freshness policy. No account or API key is needed. Keep the packet private if its source contains private material.' };
 }
 
-export async function verifyReviewPacket(packet) {
+export async function verifyReviewPacket(packet, options = {}) {
+  const siteJwks = options?.siteJwks;
   if (packet?.schema !== REVIEW_SCHEMA) throw new Error('Unsupported review packet schema.');
   for (const field of ['source', 'output']) {
     if (typeof packet[field]?.text !== 'string' || packet[field].text.length > MAX_REVIEW_CHARS) throw new Error(`Invalid ${field} text.`);
@@ -117,6 +118,95 @@ export async function verifyReviewPacket(packet) {
   if (packet.render) {
     if (!packet.jwks) throw new Error('Public keys are missing for the attached render receipt.');
     Object.assign(result, await checkRenderBinding(packet.render, packet.output.text, packet.jwks));
-  }
+    Object.assign(result, pinPacketKey(packet.jwks, siteJwks, result.kid));
+  } else result.key_pin = 'not-applicable';
   return result;
+}
+
+// Key pin. The packet, including its jwks, is unsigned: anyone can make an
+// Ed25519 key, sign a render receipt over their own output and carry the
+// public key in the packet, and the signature then verifies. The pin compares
+// the verifying key with the keys this site publishes at
+// /.well-known/jwks.json. Key IDs are compared as exact strings: no trimming,
+// no case folding. Key material is (kty, crv, x), and an Ed25519 x is accepted
+// only in its one canonical spelling, so equal strings mean equal key bytes.
+// key_pin is 'site-key', 'not-site-key', 'not-checked' (no site keys
+// supplied) or 'not-applicable' (no render receipt).
+
+// Public key of the all-zero 32-byte Ed25519 seed. Its private key is public,
+// so a signature under it authenticates nobody (finding M1).
+export const PUBLIC_TEST_KEY_X = 'O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik';
+
+// A key ID in a packet is chosen by whoever made the packet, and the page
+// shows it in status text. A newline could start a line of its own (such as
+// a forged "This site publishes key ..." sentence), a bidi control such as
+// U+202E reverses the text after it, and zero-width or lookalike characters
+// make another key ID look like the site's. So a key ID is always shown
+// quoted, every character outside printable ASCII as a \uXXXX escape, and a
+// long one is shortened.
+const MAX_SHOWN_KID = 64;
+const unitEscape = c => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0');
+export function quoteKid(kid) {
+  if (typeof kid !== 'string') return '(no key ID)';
+  const chars = Array.from(kid);
+  const quoted = JSON.stringify(chars.slice(0, MAX_SHOWN_KID).join('')).replace(/[^\x20-\x7e]/g, unitEscape);
+  return chars.length > MAX_SHOWN_KID ? `${quoted} (first ${MAX_SHOWN_KID} of ${chars.length} characters)` : quoted;
+}
+
+// An Ed25519 public key is 32 bytes: exactly 43 base64url characters, no
+// padding, and the two spare low bits of the last character are zero
+// (RFC 8037, RFC 7515 section 2). WebCrypto also imports other spellings of
+// the same bytes (spare bits set; in Node also padding, the standard alphabet
+// or whitespace), which a string comparison would treat as different keys.
+const B64URL = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+const isCanonicalEd25519X = x => typeof x === 'string' && /^[A-Za-z0-9_-]{43}$/.test(x) && B64URL.indexOf(x[42]) % 4 === 0;
+
+function keysById(jwks, label) {
+  if (!jwks || typeof jwks !== 'object' || Array.isArray(jwks) || !Array.isArray(jwks.keys)) throw new Error(`${label} must be an object with a keys array.`);
+  const byKid = new Map();
+  for (const k of jwks.keys) {
+    // Entries without a string kid can never be selected for a receipt.
+    if (!k || typeof k !== 'object' || typeof k.kid !== 'string') continue;
+    if (k.kty === 'OKP' && k.crv === 'Ed25519' && !isCanonicalEd25519X(k.x)) {
+      throw new Error(`${label}: the key under key ID ${quoteKid(k.kid)} is not a well-formed Ed25519 public key (x must be exactly 43 base64url characters, without padding, encoding 32 bytes). Not verified.`);
+    }
+    if (!byKid.has(k.kid)) byKid.set(k.kid, new Set());
+    byKid.get(k.kid).add(JSON.stringify([k.kty, k.crv, k.x]));
+  }
+  return byKid;
+}
+
+/**
+ * key_warning for the key that verified a receipt: the first entry with this
+ * kid, the same selection rule as verifyReceipt.
+ * @returns {{key_warning?: string}}
+ */
+export function keyWarning(jwks, kid) {
+  const used = jwks?.keys?.find?.(k => k && typeof k === 'object' && k.kid === kid);
+  return used?.x === PUBLIC_TEST_KEY_X ? { key_warning: 'public-test-vector-key' } : {};
+}
+
+/**
+ * Pin the key that verified a render receipt to this site's published keys.
+ * Throws on an ambiguous packet key ID or a key-ID collision with the site.
+ * @param {object} packetJwks keys carried by the packet (unsigned)
+ * @param {object|null|undefined} siteJwks this site's /.well-known/jwks.json;
+ *   null or undefined means not supplied, and the pin is 'not-checked'
+ * @param {string} kid the verified receipt's key ID
+ * @returns {{key_pin: string, key_warning?: string}}
+ */
+export function pinPacketKey(packetJwks, siteJwks, kid) {
+  const packetKeys = keysById(packetJwks, 'Packet public keys');
+  for (const [id, material] of packetKeys) {
+    if (material.size > 1) throw new Error(`Ambiguous key ID: the packet carries different keys under key ID ${quoteKid(id)}. Not verified.`);
+  }
+  if (typeof kid !== 'string' || !packetKeys.has(kid)) throw new Error(`The packet carries no key for key ID ${quoteKid(kid)}.`);
+  const warning = keyWarning(packetJwks, kid);
+  if (siteJwks === undefined || siteJwks === null) return { key_pin: 'not-checked', ...warning };
+  const siteKeys = keysById(siteJwks, 'Site public keys');
+  for (const [id, [material]] of packetKeys) {
+    if (siteKeys.has(id) && !siteKeys.get(id).has(material)) throw new Error(`Key ID collision: the packet reuses key ID ${quoteKid(id)}, which this site publishes for a different key. Do not rely on this packet's signature.`);
+  }
+  const [material] = packetKeys.get(kid);
+  return { key_pin: siteKeys.get(kid)?.has(material) ? 'site-key' : 'not-site-key', ...warning };
 }

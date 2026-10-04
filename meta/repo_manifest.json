@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-09-27T04:00:45Z",
+  "issued_at": "2026-10-04T03:11:16Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,14 +8,14 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "a2469d7cdb1db5f86f484e7a4648ac635e78e964",
-    "head_short": "a2469d7",
-    "head_subject": "Phase 0 steps 5 and 6: verdicts state scope and replay, descriptive goldens, demo-key warning, witness rename, CI scope (#531)",
-    "head_committer_date": "2026-09-27T04:47:20+01:00",
+    "head_sha": "983ac578143e00822d612e2e0e7a51a25c34a6a1",
+    "head_short": "983ac57",
+    "head_subject": "release: 0.11.1 (#533)",
+    "head_committer_date": "2026-09-27T06:10:01+01:00",
     "commits_last_30d": null
   },
   "github": {
-    "stars": 9
+    "stars": null
   },
   "release": {
     "pyproject_version": "0.11.1",
@@ -144,6 +144,11 @@
       },
       {
         "path": "fixtures/bench_receipts/negative_control_2026-05-17.json",
+        "schema": "sum.negative_control_report.v1",
+        "issued_at": null
+      },
+      {
+        "path": "fixtures/bench_receipts/negative_control_2026-10-04.json",
         "schema": "sum.negative_control_report.v1",
         "issued_at": null
       },

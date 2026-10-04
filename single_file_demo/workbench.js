@@ -1,11 +1,12 @@
-import { compareTexts, makeReviewPacket, verifyReviewPacket, checkRenderBinding, publicJwks } from './review_packet.js';
+import { compareTexts, makeReviewPacket, verifyReviewPacket, checkRenderBinding, publicJwks, pinPacketKey, keyWarning, quoteKid } from './review_packet.js';
 
 const $ = id => document.getElementById(id);
 let current = null;
 let generation = 0;
 let exportRevision = 0;
 let render = null;
-let jwks = null;
+let jwks = null; // keys carried by an opened packet (unsigned), or null
+let siteKeys = null; // this site's /.well-known/jwks.json; a packet never sets it
 const status = message => { $('workbench-status').textContent = message; };
 
 function resetReview() {
@@ -20,6 +21,7 @@ function resetReceipt() {
   generation++;
   render = null;
   jwks = null;
+  siteKeys = null;
   $('verify-receipt-btn').disabled = true;
   $('verify-receipt-result').textContent = '';
   $('verify-receipt-result').style.display = 'none';
@@ -119,31 +121,65 @@ document.addEventListener('sum:render', event => {
   if (!render) status('Generated output is ready to review. The service returned no signed receipt; export will be an unsigned review packet.');
 });
 
-async function getPublicKeys() {
-  if (jwks) return jwks;
+async function getSiteKeys() {
+  if (siteKeys) return siteKeys;
   const response = await fetch('/.well-known/jwks.json', { cache: 'no-cache' });
   if (!response.ok) throw new Error(`Public keys unavailable (${response.status}).`);
-  return publicJwks(await response.json());
+  let body = null;
+  try { body = await response.json(); } catch { /* not JSON: reported as malformed below */ }
+  if (!Array.isArray(body?.keys)) throw new Error('Public keys are malformed.');
+  return (siteKeys = publicJwks(body));
+}
+// Export keeps an opened packet's own keys unchanged; a fresh render exports
+// this site's keys.
+async function getPublicKeys() { return jwks || getSiteKeys(); }
+
+// Messages can quote a packet's key ID or a network error. Control, format
+// and line or paragraph separator characters (Unicode Cc, Cf, Zl, Zp) are
+// shown as \u escapes, so no message can add a line or reorder the text
+// around it. The result JSON escapes every character outside printable ASCII.
+const escapeUnits = c => Array.from({ length: c.length }, (_, i) => '\\u' + c.charCodeAt(i).toString(16).padStart(4, '0')).join('');
+const escapeHidden = text => String(text).replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/gu, escapeUnits);
+const resultJson = result => JSON.stringify(result, null, 2).replace(/[^\x20-\x7e\n]/g, escapeUnits);
+const asSentence = text => /[.!?]$/.test(text) ? text : `${text}.`;
+
+// Plain wording for the key pin, shared by both verify buttons. Key IDs are
+// always quoted and escaped by quoteKid.
+function keyPinText(checks, unpinned) {
+  const kid = quoteKid(checks.kid);
+  const warning = checks.key_warning === 'public-test-vector-key' ? ` Warning: key ${kid} is a public test key (all-zero Ed25519 seed), so anyone can sign with it.` : '';
+  const unknown = ' Anyone can create a packet signed with their own key, so the signer is unknown.';
+  if (checks.key_pin === 'site-key') return `This site publishes key ${kid} at /.well-known/jwks.json.${warning}`;
+  if (checks.key_pin === 'not-site-key') return `This site does not publish key ${kid}; it came from the packet.${unknown}${warning}`;
+  if (checks.key_pin === 'not-checked') return `Not checked whether this site publishes key ${kid}. Reason: ${asSentence(escapeHidden(unpinned || 'site keys not loaded'))}${unknown}${warning}`;
+  return '';
 }
 
 $('verify-receipt-btn').addEventListener('click', async () => {
   if (!current?.render) return;
-  const snapshot = current, version = generation;
+  const snapshot = current, version = generation, packetKeys = jwks;
   const result = $('verify-receipt-result');
   $('verify-receipt-btn').disabled = true;
   result.style.display = '';
   result.textContent = 'Checking signature and exact content bindings...';
   try {
-    const keys = await getPublicKeys();
+    // A fresh render is checked against this site's keys. An opened packet is
+    // checked against the keys it carries, then pinned to this site's keys.
+    let siteJwks = null, unpinned = '';
+    try { siteJwks = await getSiteKeys(); } catch (e) { if (!packetKeys) throw e; unpinned = e.message; }
+    const keys = packetKeys || siteJwks;
     const checks = await checkRenderBinding(snapshot.render, snapshot.output, keys);
+    // A fresh render was just verified against this site's keys as published,
+    // so its key is a site key. The packet key checks apply to opened packets.
+    Object.assign(checks, packetKeys ? pinPacketKey(packetKeys, siteJwks, checks.kid) : { key_pin: 'site-key', ...keyWarning(siteJwks, checks.kid) });
     if (version !== generation || current !== snapshot) return;
-    jwks = keys;
-    $('render-trust-status').textContent = 'Signature and render bytes verified:';
-    result.textContent = `Verified signature for key ${checks.kid}, output bytes, selected claims and slider settings. Original source and human decisions are unsigned. Key ownership, revocation and freshness were not checked. Meaning preservation was not measured.`;
+    const siteKey = checks.key_pin === 'site-key';
+    $('render-trust-status').textContent = siteKey ? 'Signature and render bytes verified:' : 'Signature valid, signer unknown:';
+    result.textContent = `${siteKey ? `Verified signature for key ${quoteKid(checks.kid)}, output bytes, selected claims and slider settings.` : `The signature is valid for key ${quoteKid(checks.kid)} carried in the packet, and the output bytes, selected claims and slider settings match the signed receipt.`} ${keyPinText(checks, unpinned)} Original source and human decisions are unsigned. Revocation and freshness were not checked. Meaning preservation was not measured.`;
   } catch (e) {
     if (version !== generation || current !== snapshot) return;
     $('render-trust-status').textContent = 'Verification failed:';
-    result.textContent = e.message;
+    result.textContent = escapeHidden(e.message);
   } finally {
     if (version === generation && current === snapshot) $('verify-receipt-btn').disabled = false;
   }
@@ -184,13 +220,17 @@ $('verify-packet-btn').addEventListener('click', async () => {
   $('packet-status').textContent = 'Checking packet...';
   try {
     const packet = JSON.parse($('packet-input').value);
-    const result = await verifyReviewPacket(packet);
+    // Only a signed packet needs this site's keys; the packet's keys never stand in for them.
+    let siteJwks = null, unpinned = '';
+    if (packet?.render) siteJwks = await getSiteKeys().catch(e => { unpinned = e.message; return null; });
+    const result = await verifyReviewPacket(packet, { siteJwks });
     if (version !== packetRevision) return;
     checkedPacket = packet;
     $('open-packet-btn').disabled = false;
-    $('packet-status').textContent = 'Checks completed:\n' + JSON.stringify(result, null, 2) + '\nSource and human decisions are unsigned. Included keys do not establish real-world issuer identity. Meaning preservation was not measured.';
+    const pin = keyPinText(result, unpinned);
+    $('packet-status').textContent = 'Checks completed:\n' + (pin ? pin + '\n' : '') + resultJson(result) + '\nSource and human decisions are unsigned. Included keys do not establish real-world issuer identity. Meaning preservation was not measured.';
   } catch (e) {
-    if (version === packetRevision) $('packet-status').textContent = 'Verification failed: ' + e.message;
+    if (version === packetRevision) $('packet-status').textContent = 'Verification failed: ' + escapeHidden(e.message);
   }
 });
 

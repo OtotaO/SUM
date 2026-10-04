@@ -531,7 +531,7 @@ sum meaning-diff source.txt rewrite.txt --scorer nli</code></pre>
 
 <details class="card" id="packet-verifier-panel">
   <summary>Open and verify an exported review packet</summary>
-  <p>Paste the packet JSON. Checks run here without an account, API key or network call. Included public keys establish signature consistency, not the issuer's identity. Source and review decisions remain unsigned.</p>
+  <p>Paste the packet JSON. Checks run here without an account or API key. For a signed packet, this page also loads this site's public keys from /.well-known/jwks.json to check whether the signing key is one this site publishes: keys carried inside a packet can be made by anyone. Source and review decisions remain unsigned.</p>
   <label for="packet-input" class="field-label">Review packet JSON</label>
   <textarea id="packet-input" placeholder='{"schema":"sum.review_packet.v1", ...}'></textarea>
   <button id="verify-packet-btn" class="ghost">Verify review packet</button>

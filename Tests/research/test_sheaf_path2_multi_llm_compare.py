@@ -46,6 +46,10 @@ _DETERMINISTIC_BLAS_ENV = {
     "VECLIB_MAXIMUM_THREADS": "1",
     "BLIS_NUM_THREADS": "1",
     "NUMEXPR_NUM_THREADS": "1",
+    # Bench receipts go to the gitignored test dir, never to the committed
+    # fixtures/bench_receipts/ (see scripts/research/_receipt_paths.py).
+    # Two levels below REPO: the bench prints out.relative_to(out.parents[2]).
+    "SUM_BENCH_RECEIPT_DIR": str(REPO / ".pytest-bench-receipts" / "path2"),
 }
 
 PINNED_PATH2_V3_DIGEST = (

@@ -136,6 +136,7 @@ def state_for_corpus(
     chunk_chars: int = DEFAULT_CHUNK_CHARS,
     max_sentence_chars: int = DEFAULT_MAX_SENTENCE_CHARS,
     sieve=None,
+    suppressed_notice=None,
 ) -> Tuple[int, List[Tuple[str, str, str]]]:
     """Compute the corpus-level Gödel state of *text* by chunking on
     sentence boundaries, extracting per-chunk via the sieve, encoding
@@ -164,6 +165,9 @@ def state_for_corpus(
                      cap is also bounded by the loaded spaCy model max_length.
         sieve:       Optional pre-built ``DeterministicSieve``. If
                      omitted, one is constructed (incurs spaCy load).
+        suppressed_notice: Optional text stream; one line summing the
+                     sieve's suppression reports over all chunks is
+                     written to it when any sentence was suppressed.
 
     Returns:
         ``(state_integer, deduplicated_triples)``.
@@ -174,12 +178,19 @@ def state_for_corpus(
         )
         sieve = DeterministicSieve()
 
+    from sum_engine_internal.algorithms.syntactic_sieve import (
+        format_suppression_notice,
+        merge_suppression_reports,
+    )
+
     chunk_states: list[int] = []
     triple_bag: set[Tuple[str, str, str]] = set()
+    reports = []
     for chunk in chunk_text_on_sentences(
         text, chunk_chars=chunk_chars, max_sentence_chars=max_sentence_chars,
     ):
-        triples = sieve.extract_triplets(chunk)
+        triples, report = sieve.extract_triplets_with_report(chunk)
+        reports.append(report)
         # Drop triples that the algebra would reject (empty / '||' in
         # component) BEFORE encoding, so the returned bag matches the
         # encoded state. Otherwise len(triples) overstates axiom_count
@@ -191,6 +202,10 @@ def state_for_corpus(
             continue
         triple_bag.update(triples)
         chunk_states.append(algebra.encode_chunk_state(list(triples)))
+
+    notice = format_suppression_notice(merge_suppression_reports(reports))
+    if suppressed_notice is not None and notice is not None:
+        suppressed_notice.write(notice + "\n")
 
     if not chunk_states:
         return 1, []

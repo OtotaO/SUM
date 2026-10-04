@@ -9,6 +9,9 @@ Cost: $0.  Speed: 10,000+ words per second.  Deterministic: always.
 
 Phase 13: Zenith of Process Intensification.
 Stage 4 — Hedging detection for linguistic confidence signals.
+Extractor v2: clause guard (one triple per sentence, from one main-clause
+predicate; negated, question, conditional and cross-clause sentences are
+suppressed and counted).
 
 Author: ototao
 License: Apache License 2.0
@@ -16,7 +19,7 @@ License: Apache License 2.0
 
 import re
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional, TextIO, Tuple, TypedDict
 
 from sum_engine_internal.infrastructure.provenance import (
     EXCERPT_MAX_CHARS,
@@ -24,7 +27,13 @@ from sum_engine_internal.infrastructure.provenance import (
     sha256_uri_for_text,
 )
 
-SIEVE_EXTRACTOR_ID = "sum.sieve:deterministic_v1"
+# v2 (clause guard): a triple comes from one main-clause predicate, and
+# conditional, question and cross-clause sentences are suppressed. See
+# the "Clause guard" section below. v1 records stay valid as history;
+# the id names the extraction behaviour that produced a record, and
+# ``DeterministicSieve(extractor_id=SIEVE_EXTRACTOR_ID_V1)`` replays v1.
+SIEVE_EXTRACTOR_ID_V1 = "sum.sieve:deterministic_v1"
+SIEVE_EXTRACTOR_ID = "sum.sieve:deterministic_v2"
 
 
 # ─── Hedging / Epistemic Markers ──────────────────────────────────────
@@ -167,7 +176,7 @@ def _is_clean_triple(triple: Tuple[str, str, str]) -> bool:
     )
 
 
-def _is_negated(sent) -> bool:
+def _is_negated(sent: Any) -> bool:
     """Return True iff the sentence contains a negation particle scoping the
     main predication.
 
@@ -195,7 +204,7 @@ def _is_negated(sent) -> bool:
     return False
 
 
-def _is_passive(sent) -> bool:
+def _is_passive(sent: Any) -> bool:
     """Return True iff the sentence's ROOT verb carries a passive-voice
     grammatical subject (``dep_ == "nsubjpass"``).
 
@@ -219,7 +228,7 @@ def _is_passive(sent) -> bool:
     return False
 
 
-def _extract_passive(sent) -> Optional[Tuple[str, str, str]]:
+def _extract_passive(sent: Any) -> Optional[Tuple[str, str, str]]:
     """Extract an active-form triple from a passive-voice sentence.
 
     Strategy (works for both "Hamlet was written by Shakespeare" and
@@ -268,20 +277,488 @@ def _extract_passive(sent) -> Optional[Tuple[str, str, str]]:
     return (subject.lower(), predicate.lower(), object_.lower())
 
 
-def _extract_from_sent(sent) -> Optional[Tuple[str, str, str]]:
-    """Extract at most one (subject, predicate, object) triple from a sentence.
+# ─── Clause guard (extractor v2) ──────────────────────────────────────
+#
+# v1 walked every ROOT-or-VERB token of a sentence and let the last
+# subject, the last predicate and the last object win independently. On
+# a multi-clause sentence that assembles triples the source never
+# asserts: "If the tenant pays rent late, the landlord charges a fee."
+# gave (landlord, charge, fee), a consequent stated as fact; "Bob said
+# that Alice stole the car." gave (alice, steal, car); "Alice owns the
+# house where Bob grew up." gave (bob, grow, house), a subject and
+# predicate from the relative clause stitched to the main clause's
+# object.
+#
+# v2 checks each sentence in this order and stops at the first hit:
+#
+#   negation      v1's ``_is_negated``, plus "neither" / "nor", which
+#                 spaCy does not tag as negation ("Neither Alice nor Bob
+#                 owns the car." gave (alice, own, car)).
+#   question      the sentence ends with "?" (``_is_question``).
+#   conditional   a conditional or hypothetical clause is present
+#                 (``_is_conditional``), or two clauses are joined by
+#                 "or" (``_is_clause_disjunction``); neither clause is
+#                 asserted.
+#   passive       unchanged from v1 (``_is_passive``/``_extract_passive``).
+#   single clause subject, predicate and object come from ONE main-clause
+#                 predicate (``_single_clause_triple``). When none has
+#                 all three but v1 would have stitched a triple from
+#                 other clauses, the sentence is suppressed as
+#                 ``cross_clause``; otherwise the POS fallback runs, and
+#                 its triple is also suppressed as ``cross_clause`` when
+#                 the sentence has more than one clause
+#                 (``_has_several_clauses``).
+#
+# The same reasoning as negation applies throughout: a suppressed
+# sentence is a recall miss, a stitched or conditional triple is a false
+# fact in the bundle. ``DeterministicSieve.extract_triplets_with_report``
+# counts suppressions per reason.
+#
+# v2 also stops taking a noun-phrase adverbial (npadvmod: "last year",
+# "the next day") as the subject when the predicate has a real subject
+# or can inherit one: v1 gave (last_year, buy, car) for "Alice bought a
+# car last year.".
 
-    Returns None if the sentence is negated, produces no valid ROOT verb, or
-    yields a parse whose subject/object exceed the size filters. The POS
-    fallback is consulted only when dependency-based extraction fails.
+SUPPRESSION_REASONS = ("negation", "conditional", "question", "cross_clause")
 
-    This helper is the single source of truth for per-sentence extraction.
-    ``extract_triplets`` and ``extract_with_provenance`` both call it, so
-    their outputs remain triple-for-triple identical — the provenance path
-    just adds metadata around the same extraction decisions.
+
+class SuppressionReport(TypedDict):
+    """Per-call count of what the sieve did with each sentence."""
+
+    sentences: int
+    extracted: int
+    suppressed: Dict[str, int]
+
+
+_SUBJECT_DEPS = frozenset({"nsubj", "nsubjpass", "csubj"})
+_OBJECT_DEPS = frozenset({"dobj", "pobj", "attr", "acomp"})
+_MODIFIER_DEPS = frozenset({"amod", "compound"})
+_NOMINAL_POS = frozenset({"NOUN", "PROPN", "PRON"})
+
+# Subjects that make a token head a finite clause (used to tell a
+# conditional "Provided the buyer pays ..." from a participle phrase
+# "Assuming control of the board, ...").
+_CLAUSE_SUBJECT_DEPS = frozenset({"nsubj", "nsubjpass", "csubj", "csubjpass", "expl"})
+
+# Single-word subordinators that make their clause conditional when
+# attached as mark/advmod. "when" is handled separately: it counts only
+# when it introduces an adverbial clause ("When you cancel the plan, we
+# charge a fee."), not as a relative adverb ("the day when ...").
+_CONDITIONAL_SUBORDINATORS = frozenset({"if", "unless", "whether", "lest", "whenever"})
+
+# Participles that head a conditional clause anywhere in the sentence
+# ("Provided (that) the buyer pays ...", "... provided the buyer pays").
+_CONDITIONAL_PARTICIPLES = frozenset({"provided", "providing"})
+
+# Hypothesis openers. They count as the sentence's first word, after a
+# comma, or as an adverbial clause ("Alice will buy the car, assuming
+# Bob agrees."), and only when they head a finite clause.
+_HYPOTHESIS_OPENERS = frozenset({"assuming", "supposing", "suppose"})
+
+# Auxiliaries that open an inverted conditional ("Had the tenant paid
+# rent, ...", "Were the court to approve ...", "Should the buyer
+# default, ...").
+_INVERSION_AUX = frozenset({"had", "were", "should"})
+_NP_START_POS = frozenset({"DET", "PRON", "PROPN", "NOUN", "ADJ", "NUM"})
+
+# "or" between clauses, and "either" before a coordination, make a
+# disjunction (``_is_clause_disjunction``). "neither" / "nor" negate
+# every member of their coordination, so v2 counts them as negation.
+_DISJUNCTIVE_CC = frozenset({"or"})
+_DISJUNCTIVE_PRECONJ = frozenset({"either"})
+_NEGATIVE_COORDINATORS = frozenset({"neither", "nor"})
+
+# Signals that a sentence has more than one clause, for the POS
+# fallback (``_has_several_clauses``).
+_CLAUSAL_DEPS = frozenset({
+    "ccomp", "xcomp", "advcl", "relcl", "acl", "csubj", "csubjpass",
+    "parataxis", "pcomp",
+})
+_WH_TAGS = frozenset({"WDT", "WP", "WP$", "WRB"})
+
+_CLOSING_PUNCT = "\"')]}\u201d\u2019\u00bb"
+
+
+def _modified_lemma(token: Any, sep: str) -> str:
+    modifiers = [c.text for c in token.children if c.dep_ in _MODIFIER_DEPS]
+    return sep.join(modifiers + [token.lemma_]).strip()
+
+
+def _predicate_slots(token: Any) -> Tuple[Any, Any, Any]:
+    """Return the (subject, adverbial, object) tokens of one predicate.
+
+    The per-token rules are v1's: subject deps nsubj / nsubjpass /
+    csubj, object deps dobj / pobj / attr / acomp, and when a token has
+    several children of one kind the last one wins. v1 also counted an
+    npadvmod child as a subject; v2 returns it separately as
+    ``adverbial`` so that a real or inherited subject takes precedence.
+    Strings are built by ``_modified_lemma``: amod / compound modifiers
+    '_'-joined for the subject (so multi-word subjects satisfy the
+    canonical template's ``\\S+`` subject parser in OuroborosVerifier)
+    and space-joined for the object (the canonical object regex is
+    ``.+``).
     """
-    if _is_negated(sent):
+    subject = None
+    adverbial = None
+    object_ = None
+    for child in token.children:
+        if child.dep_ in _SUBJECT_DEPS:
+            subject = child
+        elif child.dep_ == "npadvmod":
+            adverbial = child
+        elif child.dep_ in _OBJECT_DEPS:
+            object_ = child
+    return subject, adverbial, object_
+
+
+def _is_main_clause(token: Any) -> bool:
+    """True iff *token* is the sentence ROOT or reaches it through a chain
+    of ``conj`` links (coordinated main clauses). Predicates of ccomp,
+    xcomp, advcl, relcl, acl and csubj clauses are never main-clause."""
+    while token.dep_ == "conj":
+        token = token.head
+    return bool(token.dep_ == "ROOT")
+
+
+def _is_passive_predicate(token: Any) -> bool:
+    """True iff *token* is a passive predicate. Its nsubjpass is the
+    semantic object, so a passive conj never supplies a single-clause
+    triple (a ROOT passive goes through ``_extract_passive``)."""
+    return any(c.dep_ in ("nsubjpass", "auxpass") for c in token.children)
+
+
+def _inherited_subject(token: Any) -> Any:
+    """Subject token a subjectless conj predicate shares with the
+    predicate it is coordinated with ("Alice wrote and published the
+    report"), or None.
+
+    Inherited only when a coordinator (CCONJ) precedes the predicate and
+    every noun, proper noun or pronoun between them belongs to the
+    predicate itself (its own dependents, such as "the next day" in
+    "..., and the next day bought a car"). spaCy sometimes attaches the
+    second clause's real subject to the first clause's object and leaves
+    the predicate subjectless: "Alice founded the company and Bob runs
+    the company." or, with an appositive, "Alice founded the company and
+    Bob, her brother, bought it." Inheriting there would assert (alice,
+    run, company) or (alice, buy, it).
+    """
+    doc = token.doc
+    start = token.sent.start
+    i = token.i - 1
+    while i >= start and doc[i].pos_ != "CCONJ":
+        i -= 1
+    if i < start:
         return None
+    own = {t.i for t in token.subtree}
+    if any(
+        doc[j].pos_ in _NOMINAL_POS and j not in own
+        for j in range(i + 1, token.i)
+    ):
+        return None
+    while token.dep_ == "conj":
+        token = token.head
+        subject, _, _ = _predicate_slots(token)
+        if subject is not None:
+            return subject
+    return None
+
+
+def _within_size(subject: Optional[str], object_: Optional[str]) -> bool:
+    return bool(
+        subject and object_
+        and len(subject.split()) <= 5 and len(object_.split()) <= 8
+    )
+
+
+def _single_clause_triple(sent: Any) -> Tuple[Optional[Tuple[str, str, str]], bool]:
+    """Apply the single-clause rule to *sent*.
+
+    Candidate predicates are v1's (the ROOT and every VERB). Only active
+    main-clause candidates (``_is_main_clause``, not
+    ``_is_passive_predicate``) may supply a triple, and its subject,
+    predicate and object all come from that one token. A predicate
+    without a subject child may inherit one when it is a conj
+    (``_inherited_subject``); otherwise a ROOT predicate falls back to
+    its npadvmod as v1 did. When several main-clause predicates are
+    complete, the last in token order wins, which is what v1 returned
+    for coordinated main clauses.
+
+    Returns ``(triple, stitched)``. ``triple`` is the raw (unlowered,
+    unfiltered) main-clause triple or None. ``stitched`` is True only
+    when ``triple`` is None but v1's any-verb assembly (last subject and
+    last object over all candidates) would have emitted a triple, i.e.
+    the sentence would have yielded content taken from outside a single
+    main-clause predicate.
+    """
+    triple = None
+    last_subject = None
+    last_object = None
+    for token in sent:
+        if not (token.dep_ == "ROOT" or token.pos_ == "VERB"):
+            continue
+        subject, adverbial, object_ = _predicate_slots(token)
+        if subject is not None or adverbial is not None:
+            last_subject = _modified_lemma(subject or adverbial, "_")
+        if object_ is not None:
+            last_object = _modified_lemma(object_, " ")
+        if not _is_main_clause(token) or _is_passive_predicate(token):
+            continue
+        if subject is None:
+            if token.dep_ == "conj":
+                subject = _inherited_subject(token)
+            else:
+                subject = adverbial
+        if subject is not None and object_ is not None:
+            triple = (
+                _modified_lemma(subject, "_"),
+                token.lemma_,
+                _modified_lemma(object_, " "),
+            )
+    stitched = triple is None and _within_size(last_subject, last_object)
+    return triple, stitched
+
+
+def _is_question(sent: Any) -> bool:
+    """A sentence whose text ends with "?" asks rather than asserts."""
+    return bool(sent.text.rstrip().rstrip(_CLOSING_PUNCT).rstrip().endswith("?"))
+
+
+def _heads_clause(tokens: Any, k: int) -> bool:
+    """True iff the marker at ``tokens[k]`` introduces a subordinate
+    finite clause: walking up the heads from the next word (skipping an
+    optional "that" and the marker itself), the first token with a
+    clause subject is not the sentence ROOT."""
+    marker = tokens[k]
+    j = k + 1
+    if j < len(tokens) and tokens[j].lower_ == "that":
+        j += 1
+    if j >= len(tokens) or tokens[j].pos_ in ("ADP", "PART", "PUNCT"):
+        return False
+    tok = tokens[j]
+    while True:
+        if tok.i != marker.i and any(
+            c.dep_ in _CLAUSE_SUBJECT_DEPS for c in tok.children
+        ):
+            return bool(tok.dep_ != "ROOT")
+        if tok.head.i == tok.i:
+            return False
+        tok = tok.head
+
+
+def _is_inverted_conditional(tokens: Any, k: int) -> bool:
+    """True iff had/were/should at ``tokens[k]`` opens a subordinate
+    clause with subject-auxiliary inversion. The auxiliary must be the
+    first word of a clause that is neither the main clause nor a
+    coordinated one, and a noun phrase must follow it."""
+    tok = tokens[k]
+    if tok.pos_ not in ("AUX", "VERB") or tok.dep_ in ("ROOT", "conj"):
+        return False
+    clause = tok.head if tok.dep_ in ("aux", "auxpass") else tok
+    if clause.dep_ in ("ROOT", "conj") or clause.left_edge.i != tok.i:
+        return False
+    return k + 1 < len(tokens) and tokens[k + 1].pos_ in _NP_START_POS
+
+
+def _conditional_phrase_at(tokens: Any, k: int) -> bool:
+    """Multiword conditional markers starting at ``tokens[k]``: "as long
+    as" / "so long as" (second "as" a clause marker, so comparatives like
+    "as long as the table" pass), "in case" (not "in case studies"), "in
+    the event that/of", "in the event" directly followed by a clause
+    ("In the event the buyer defaults, ..."; spaCy often tags such a
+    clause's verb as a noun, so a following determiner, pronoun or
+    proper noun also counts), "on condition that"."""
+    words = [t.lower_ for t in tokens[k:k + 4]]
+    if words[:3] in (["as", "long", "as"], ["so", "long", "as"]):
+        return bool(tokens[k + 2].dep_ == "mark")
+    if words[:2] == ["in", "case"]:
+        return len(words) < 3 or tokens[k + 2].pos_ not in ("NOUN", "PROPN")
+    if words[:3] == ["in", "the", "event"]:
+        if len(words) < 4:
+            return False
+        return (
+            words[3] in ("that", "of")
+            or tokens[k + 3].pos_ in ("DET", "PRON", "PROPN")
+            or _heads_clause(tokens, k + 2)
+        )
+    return words[:3] == ["on", "condition", "that"]
+
+
+def _opens_clause_here(tokens: Any, k: int, first: Optional[int]) -> bool:
+    """True iff ``tokens[k]`` is the sentence's first word, follows a
+    comma, or is attached as an adverbial clause (where a hypothesis
+    opener such as "assuming" can stand)."""
+    tok = tokens[k]
+    return bool(
+        tok.i == first
+        or (k > 0 and tokens[k - 1].text == ",")
+        or tok.dep_ == "advcl"
+    )
+
+
+def _is_conditional(sent: Any) -> bool:
+    """Return True iff *sent* contains a conditional or hypothetical
+    clause, so that neither of its clauses is asserted as fact.
+
+    Detection is matched to en_core_web_sm parses, which are not
+    uniform across these constructions (for example "Provided the buyer
+    pays ..." parses "Provided" as prep, "Providing the tenant pays ..."
+    as csubj, "Were the court to approve ..." makes "Were" the advcl):
+
+      - if / unless / whether / lest / whenever as mark or advmod;
+      - "when" or "where" as mark or advmod of an advcl ("Where the
+        tenant fails to pay rent, ..."; a relative "where" is not one),
+        and "once" as mark ("Once the buyer pays ..."; not "Once a
+        farmer, ...");
+      - "subject to" as the first word, after a comma or as an
+        adverbial clause;
+      - "as long as", "so long as", "in case", "in the event (that /
+        of)", "on condition that";
+      - provided / providing (optionally + "that") heading a clause,
+        anywhere; assuming / supposing / suppose and "given that"
+        heading a clause as the first word, after a comma or as an
+        adverbial clause ("given that" is often causal, "since"; the
+        sieve cannot tell, so it does not assert either clause);
+      - inverted had / were / should (``_is_inverted_conditional``).
+    """
+    tokens = list(sent)
+    first = next((t.i for t in tokens if not t.is_punct), None)
+    for k, tok in enumerate(tokens):
+        low = tok.lower_
+        if tok.dep_ in ("mark", "advmod"):
+            if low in _CONDITIONAL_SUBORDINATORS:
+                return True
+            if low in ("when", "where") and tok.head.dep_ == "advcl":
+                return True
+            if low == "once" and tok.dep_ == "mark":
+                return True
+        if (
+            low == "subject"
+            and k + 1 < len(tokens)
+            and tokens[k + 1].lower_ == "to"
+            and _opens_clause_here(tokens, k, first)
+        ):
+            return True
+        if _conditional_phrase_at(tokens, k):
+            return True
+        if low in _CONDITIONAL_PARTICIPLES and _heads_clause(tokens, k):
+            return True
+        if (
+            (
+                low in _HYPOTHESIS_OPENERS
+                or (
+                    low == "given"
+                    and k + 1 < len(tokens)
+                    and tokens[k + 1].lower_ == "that"
+                )
+            )
+            and _opens_clause_here(tokens, k, first)
+            and (
+                _heads_clause(tokens, k)
+                # spaCy often tags the hypothesis's verb as a noun object
+                # ("Assuming the market recovers" -> dobj "recovers"), so
+                # an opener parsed as an adverbial clause counts even
+                # without a clause subject. This also withholds the
+                # participle "Assuming control of the company, Bob fired
+                # the board.", a recall cost taken for precision.
+                or (low in _HYPOTHESIS_OPENERS and tok.dep_ == "advcl")
+            )
+        ):
+            return True
+        if low in _INVERSION_AUX and _is_inverted_conditional(tokens, k):
+            return True
+    return False
+
+
+def _is_predicate(token: Any) -> bool:
+    return token.pos_ in ("VERB", "AUX") and token.dep_ not in ("aux", "auxpass")
+
+
+def _is_clause_disjunction(sent: Any) -> bool:
+    """Return True iff *sent* joins clauses with "or", or opens a
+    coordination with "either".
+
+    A disjunction asserts neither disjunct ("P or Q" says: if not P,
+    then Q), so the clause guard counts it with the conditionals. v2's
+    single-clause rule alone would assert the first disjunct: "Alice
+    owns the house or Bob owns the car." gave (alice, own, house), and
+    "The tenant pays rent or the landlord evicts the tenant." gave
+    (tenant, pay, rent).
+
+    "or" counts when a predicate precedes it and a predicate after it is
+    a coordinated main clause (a conj that reaches the ROOT) or a ccomp
+    of a main clause, which is how en_core_web_sm attaches the second
+    clause. A disjunction inside a relative clause ("the tenant who pays
+    late or skips rent loses the deposit") does not count. A disjunction
+    of noun phrases without "either" ("Alice reads books or magazines.")
+    does not count either; it is outside the clause guard and still
+    yields its first member.
+    """
+    tokens = list(sent)
+    for k, tok in enumerate(tokens):
+        low = tok.lower_
+        if tok.dep_ == "preconj" and low in _DISJUNCTIVE_PRECONJ:
+            return True
+        if low not in _DISJUNCTIVE_CC or tok.pos_ != "CCONJ":
+            continue
+        if not any(_is_predicate(t) for t in tokens[:k]):
+            continue
+        for t in tokens[k + 1:]:
+            if not _is_predicate(t):
+                continue
+            if t.dep_ == "conj" and _is_main_clause(t):
+                return True
+            if t.dep_ == "ccomp" and _is_main_clause(t.head):
+                return True
+    return False
+
+
+def _has_several_clauses(sent: Any) -> bool:
+    """True iff *sent* shows more than one clause: a clausal dependency
+    (ccomp, xcomp, advcl, relcl, acl, csubj, parataxis, pcomp), a
+    wh-word or subordinating conjunction, a non-initial "that", or more
+    than one verb. The POS fallback reads three content words left to
+    right, so on such a sentence its triple mixes clauses: "I think Bob
+    lies." gave (think, bob, lie) and "Dogs that bark bite." gave
+    (dogs, bark, bite)."""
+    verbs = 0
+    first = sent.start
+    for t in sent:
+        if t.dep_ in _CLAUSAL_DEPS or t.tag_ in _WH_TAGS or t.pos_ == "SCONJ":
+            return True
+        if t.lower_ == "that" and t.i != first:
+            return True
+        if t.pos_ == "VERB":
+            verbs += 1
+    return verbs > 1
+
+
+def _guard_reason(sent: Any) -> Optional[str]:
+    """The suppression reason a whole-sentence guard assigns, or None."""
+    if _is_negated(sent) or any(
+        t.lower_ in _NEGATIVE_COORDINATORS for t in sent
+    ):
+        return "negation"
+    if _is_question(sent):
+        return "question"
+    if _is_conditional(sent) or _is_clause_disjunction(sent):
+        return "conditional"
+    return None
+
+
+def _extract_sentence(sent: Any) -> Tuple[Optional[Tuple[str, str, str]], Optional[str]]:
+    """Extract at most one triple from *sent* and say why if suppressed.
+
+    Returns ``(triple, reason)``. ``reason`` is one of
+    ``SUPPRESSION_REASONS`` when a guard withheld the sentence, else
+    None; ``triple`` is None when nothing was extracted. Order: the
+    whole-sentence guards, then passive handling, then the single-clause
+    rule, then (only when no clause was stitched) the POS fallback,
+    which is withheld on a sentence with several clauses. The noise
+    filter (``_is_clean_triple``) is applied by the callers.
+    """
+    reason = _guard_reason(sent)
+    if reason is not None:
+        return None, reason
 
     # Passive voice inverts surface (s,p,o) order. Handle it with a
     # dedicated extractor that swaps the agent phrase's pobj into the
@@ -292,6 +769,53 @@ def _extract_from_sent(sent) -> Optional[Tuple[str, str, str]]:
     # left-to-right heuristic would re-emit the inverted triple for
     # three-content-token passives.
     if _is_passive(sent):
+        return _extract_passive(sent), None
+
+    triple, stitched = _single_clause_triple(sent)
+    if triple is not None:
+        subject, predicate, object_ = triple
+        if _within_size(subject, object_):
+            return (subject.lower(), predicate.lower(), object_.lower()), None
+    elif stitched:
+        return None, "cross_clause"
+    fallback = _pos_fallback_triplet(sent)
+    if fallback is not None and _has_several_clauses(sent):
+        return None, "cross_clause"
+    return fallback, None
+
+
+def _extract_from_sent(sent: Any) -> Optional[Tuple[str, str, str]]:
+    """Extract at most one (subject, predicate, object) triple from a sentence.
+
+    Thin wrapper over ``_extract_sentence`` that drops the suppression
+    reason. Every public extraction method goes through
+    ``_extract_sentence``, so their outputs stay triple-for-triple
+    identical; the provenance and annotated paths only add metadata.
+    """
+    return _extract_sentence(sent)[0]
+
+
+# ─── Extractor v1 (frozen) ────────────────────────────────────────────
+#
+# ``DeterministicSieve(extractor_id=SIEVE_EXTRACTOR_ID_V1)`` runs this
+# path. It is the v1 per-sentence extractor as of 0.11.1, kept unchanged
+# so that results recorded under ``sum.sieve:deterministic_v1`` (the
+# research bench receipts and their pinned digests) can be replayed.
+# It has the clause-stitching defects described above; do not use it
+# for new attestations.
+
+
+def _extract_from_sent_v1(sent: Any) -> Optional[Tuple[str, str, str]]:
+    """Extractor v1: at most one triple per sentence, no clause guard.
+
+    Returns None if the sentence is negated, produces no valid ROOT verb, or
+    yields a parse whose subject/object exceed the size filters. The POS
+    fallback is consulted only when dependency-based extraction fails.
+    """
+    if _is_negated(sent):
+        return None
+
+    if _is_passive(sent):
         return _extract_passive(sent)
 
     subject = None
@@ -301,10 +825,6 @@ def _extract_from_sent(sent) -> Optional[Tuple[str, str, str]]:
     for token in sent:
         if token.dep_ == "ROOT" or token.pos_ == "VERB":
             predicate = token.lemma_
-            # Compound modifiers are joined with '_' for subject (not space)
-            # so multi-word subjects satisfy the canonical template's "\S+"
-            # parser in OuroborosVerifier. Object keeps space-joining because
-            # the canonical regex for object is ".+" and accommodates spaces.
             for child in token.children:
                 if child.dep_ in ("nsubj", "nsubjpass", "csubj", "npadvmod"):
                     modifiers = [
@@ -327,7 +847,139 @@ def _extract_from_sent(sent) -> Optional[Tuple[str, str, str]]:
     return _pos_fallback_triplet(sent)
 
 
-def _pos_fallback_triplet(sent):
+def _extract_sentence_v1(sent: Any) -> Tuple[Optional[Tuple[str, str, str]], Optional[str]]:
+    """``_extract_sentence`` for extractor v1: only negation is counted."""
+    if _is_negated(sent):
+        return None, "negation"
+    return _extract_from_sent_v1(sent), None
+
+
+_SENTENCE_EXTRACTORS = {
+    SIEVE_EXTRACTOR_ID_V1: _extract_sentence_v1,
+    SIEVE_EXTRACTOR_ID: _extract_sentence,
+}
+
+
+# ─── Suppression report ───────────────────────────────────────────────
+
+
+def _new_report() -> SuppressionReport:
+    return {
+        "sentences": 0,
+        "extracted": 0,
+        "suppressed": {reason: 0 for reason in SUPPRESSION_REASONS},
+    }
+
+
+def merge_suppression_reports(
+    reports: Iterable[SuppressionReport],
+) -> SuppressionReport:
+    """Sum suppression reports (e.g. one per chunk or per document) into
+    a fresh report of the same shape."""
+    total = _new_report()
+    for report in reports:
+        total["sentences"] += report["sentences"]
+        total["extracted"] += report["extracted"]
+        for reason in SUPPRESSION_REASONS:
+            total["suppressed"][reason] += report["suppressed"].get(reason, 0)
+    return total
+
+
+_REASON_LABELS = {"cross_clause": "cross-clause"}
+
+
+def format_suppression_notice(report: SuppressionReport) -> Optional[str]:
+    """One-line stderr notice for a suppression report, or None when no
+    sentence was suppressed."""
+    counts = report["suppressed"]
+    total = sum(counts.values())
+    if not total:
+        return None
+    n = report["sentences"]
+    parts = ", ".join(
+        f"{_REASON_LABELS.get(r, r)} {counts[r]}"
+        for r in SUPPRESSION_REASONS if counts.get(r)
+    )
+    return (
+        f"sum: {total} of {n} sentence{'' if n == 1 else 's'} "
+        f"{'was' if total == 1 else 'were'} not extracted ({parts}). "
+        f"The bundle omits {'it' if total == 1 else 'them'}; "
+        "see docs/PROOF_BOUNDARY.md."
+    )
+
+
+def _write_notice(report: SuppressionReport, stream: Optional[TextIO]) -> None:
+    if stream is None:
+        return
+    line = format_suppression_notice(report)
+    if line is not None:
+        stream.write(line + "\n")
+
+
+# ─── Markdown headings (extractor v2) ─────────────────────────────────
+#
+# spaCy does not end a sentence at a markdown heading, so "## Company\n\n
+# The company hire bob." (the canonical tome's layout, see
+# AutoregressiveTomeGenerator.generate_canonical) parses as one sentence
+# whose ROOT is the heading noun, and the clause guard then withholds
+# the axiom as cross-clause. v2 makes each line that begins with "#" one
+# sentence of its own (``_mark_heading_breaks``, run before the parser)
+# and extracts nothing from it (``_is_heading``): a heading is a title,
+# not an assertion, and on its own a three-word heading such as "##
+# Bench harness substrate" would feed the POS fallback. Only heading
+# lines are split; a general blank-line split was measured to admit
+# junk triples from markdown tables and lists.
+
+_HEADING_COMPONENT = "sum_markdown_heading_breaks"
+
+# An ATX heading: one to six "#" followed by a space, a tab or the end of
+# the line (CommonMark). "#1 priority ..." and "#hashtag" are not headings.
+_HEADING_RE = re.compile(r"#{1,6}(?:[ \t]|$)")
+
+
+def _mark_heading_breaks(doc: Any) -> Any:
+    """spaCy component: a markdown heading line is exactly one sentence."""
+
+    def mark(first: int, end: int) -> None:
+        # tokens [first, end) are one heading line, end is the token
+        # after its newline (or len(doc))
+        if first > 0:
+            doc[first].is_sent_start = True
+        for i in range(first + 1, min(end, len(doc))):
+            doc[i].is_sent_start = False
+        if end < len(doc):
+            doc[end].is_sent_start = True
+
+    def is_heading_line(first: int, end_char: int) -> bool:
+        return bool(_HEADING_RE.match(doc.text[doc[first].idx:end_char]))
+
+    line_start = 0
+    for token in doc:
+        if token.is_space and "\n" in token.text:
+            if line_start < token.i and is_heading_line(line_start, token.idx):
+                mark(line_start, token.i + 1)
+            line_start = token.i + 1
+    if line_start < len(doc) and is_heading_line(line_start, len(doc.text)):
+        mark(line_start, len(doc))
+    return doc
+
+
+def _is_heading(sent: Any) -> bool:
+    """True iff *sent* is a markdown heading line (see
+    ``_mark_heading_breaks``)."""
+    return bool(_HEADING_RE.match(sent.text.lstrip()))
+
+
+def _add_heading_breaks(nlp: Any) -> None:
+    from spacy.language import Language
+
+    if not Language.has_factory(_HEADING_COMPONENT):
+        Language.component(_HEADING_COMPONENT, func=_mark_heading_breaks)
+    if _HEADING_COMPONENT not in nlp.pipe_names:
+        nlp.add_pipe(_HEADING_COMPONENT, before="parser")
+
+
+def _pos_fallback_triplet(sent: Any) -> Optional[Tuple[str, str, str]]:
     """POS-based fallback extraction for sentences the dep parser misparses.
 
     Activates only when dep-based extraction yielded nothing for the sentence.
@@ -402,9 +1054,28 @@ class DeterministicSieve:
     strict grammatical dependency parsing.
 
     Cost: $0. Speed: 10,000+ words per second.
+
+    ``extractor_id`` selects the extraction behaviour and is recorded in
+    every ProvenanceRecord. The default is the current extractor
+    (``SIEVE_EXTRACTOR_ID``, v2 with the clause guard).
+    ``SIEVE_EXTRACTOR_ID_V1`` replays the frozen v1 extractor, so that
+    results recorded under it (the research bench receipts) reproduce;
+    it has v1's clause-stitching defects and is not for new attestations.
     """
 
-    def __init__(self, *, allow_download: bool = True):
+    def __init__(
+        self,
+        *,
+        allow_download: bool = True,
+        extractor_id: str = SIEVE_EXTRACTOR_ID,
+    ):
+        if extractor_id not in _SENTENCE_EXTRACTORS:
+            raise ValueError(
+                f"unknown sieve extractor_id {extractor_id!r}; expected one "
+                f"of {sorted(_SENTENCE_EXTRACTORS)}"
+            )
+        self.extractor_id = extractor_id
+        self._sentence_extractor = _SENTENCE_EXTRACTORS[extractor_id]
         try:
             import spacy  # Lazy import: only required when sieve is instantiated
         except ImportError as exc:
@@ -438,14 +1109,48 @@ class DeterministicSieve:
                 stdout=sys.stderr,
             )
             self.nlp = spacy.load("en_core_web_sm")
+        self._skip_headings = extractor_id != SIEVE_EXTRACTOR_ID_V1
+        if self._skip_headings:
+            _add_heading_breaks(self.nlp)
 
-    def extract_triplets(self, text: str) -> List[Tuple[str, str, str]]:
+    def _extract_sentences(
+        self, text: str,
+    ) -> Tuple[List[Tuple[Any, Tuple[str, str, str]]], SuppressionReport]:
+        """Run the shared per-sentence extraction over *text*.
+
+        Returns ``(kept, report)``: ``kept`` lists ``(sent, triple)`` for
+        every sentence that yielded a clean triple, in document order;
+        ``report`` is a fresh suppression report (see
+        ``extract_triplets_with_report``). Nothing is cached on the
+        instance, so concurrent calls do not share counts.
+        """
+        doc = self.nlp(text)
+        report = _new_report()
+        kept: List[Tuple[Any, Tuple[str, str, str]]] = []
+        for sent in doc.sents:
+            if self._skip_headings and _is_heading(sent):
+                continue
+            report["sentences"] += 1
+            triple, reason = self._sentence_extractor(sent)
+            if reason is not None:
+                report["suppressed"][reason] += 1
+                continue
+            if triple is None or not _is_clean_triple(triple):
+                continue
+            report["extracted"] += 1
+            kept.append((sent, triple))
+        return kept, report
+
+    def extract_triplets(
+        self, text: str, *, suppressed_notice: Optional[TextIO] = None,
+    ) -> List[Tuple[str, str, str]]:
         """
         Parse text into semantic triplets using dependency grammar.
 
-        Walks each sentence's dependency tree to find the ROOT verb,
-        then extracts its nominal subject and direct/prepositional
-        object, including adjectival and compound modifiers.
+        Each sentence yields at most one triple, taken from a single
+        main-clause predicate; negated, question, conditional and
+        cross-clause sentences are suppressed (see the "Clause guard"
+        section of this module).
 
         Triples whose components contain markdown/code/table syntactic
         noise (pipe characters, single-character punctuation, link
@@ -454,16 +1159,37 @@ class DeterministicSieve:
 
         Args:
             text: Raw text to parse.
+            suppressed_notice: Optional text stream. When given and at
+                least one sentence was suppressed, one summary line
+                (``format_suppression_notice``) is written to it.
 
         Returns:
             Deduplicated list of clean (subject, predicate, object) tuples.
         """
-        doc = self.nlp(text)
-        triplets = []
-        for sent in doc.sents:
-            triple = _extract_from_sent(sent)
-            if triple is not None and _is_clean_triple(triple):
-                triplets.append(triple)
+        triplets, report = self.extract_triplets_with_report(text)
+        _write_notice(report, suppressed_notice)
+        return triplets
+
+    def extract_triplets_with_report(
+        self, text: str,
+    ) -> Tuple[List[Tuple[str, str, str]], SuppressionReport]:
+        """``extract_triplets`` plus a per-call suppression report.
+
+        Returns ``(triples, report)`` where ``triples`` equals
+        ``extract_triplets(text)`` and::
+
+            report = {
+                "sentences": N,   # sentences spaCy segmented
+                "extracted": K,   # sentences that yielded a clean triple
+                "suppressed": {"negation": a, "conditional": b,
+                               "question": c, "cross_clause": d},
+            }
+
+        A sentence is counted under at most one reason. Sentences that
+        are neither extracted nor suppressed had no extractable triple
+        (no subject-verb-object, an agentless passive, or noise).
+        """
+        kept, report = self._extract_sentences(text)
         # Deduplicate AND sort lexicographically. The sort is load-bearing
         # for cross-invocation reproducibility: bare `set(triplets)` returns
         # a set whose iteration order depends on Python's hash randomization
@@ -472,13 +1198,15 @@ class DeterministicSieve:
         # Sorting on the (subject, predicate, object) tuple gives stable
         # cross-process ordering and lets bench_digest values reproduce
         # without environment-variable manipulation.
-        return sorted(set(triplets))
+        return sorted(set(triple for _, triple in kept)), report
 
     def extract_with_provenance(
         self,
         text: str,
         source_uri: Optional[str] = None,
         timestamp: Optional[str] = None,
+        *,
+        suppressed_notice: Optional[TextIO] = None,
     ) -> List[Tuple[Tuple[str, str, str], ProvenanceRecord]]:
         """Extract (s, p, o) triples paired with per-sentence ProvenanceRecords.
 
@@ -496,6 +1224,8 @@ class DeterministicSieve:
                          without any network dependency.
             timestamp:   Optional ISO-8601 UTC timestamp. Defaults to
                          ``datetime.now(timezone.utc).isoformat()``.
+            suppressed_notice: Optional text stream; as in
+                         ``extract_triplets``.
 
         Returns:
             List of ``((s, p, o), ProvenanceRecord)`` pairs — NOT deduplicated
@@ -505,12 +1235,9 @@ class DeterministicSieve:
         """
         src = source_uri or sha256_uri_for_text(text)
         ts = timestamp or datetime.now(timezone.utc).isoformat()
-        doc = self.nlp(text)
+        kept, report = self._extract_sentences(text)
         out: List[Tuple[Tuple[str, str, str], ProvenanceRecord]] = []
-        for sent in doc.sents:
-            triple = _extract_from_sent(sent)
-            if triple is None or not _is_clean_triple(triple):
-                continue
+        for sent, triple in kept:
             # spaCy's sent.start_char / end_char are character offsets in
             # the original text; convert to byte offsets in the UTF-8
             # representation so the byte_range is correct for any consumer
@@ -522,11 +1249,12 @@ class DeterministicSieve:
                 source_uri=src,
                 byte_start=byte_start,
                 byte_end=byte_end,
-                extractor_id=SIEVE_EXTRACTOR_ID,
+                extractor_id=self.extractor_id,
                 timestamp=ts,
                 text_excerpt=excerpt,
             )
             out.append((triple, record))
+        _write_notice(report, suppressed_notice)
         return out
 
     def extract_annotated_triplets(
@@ -534,7 +1262,8 @@ class DeterministicSieve:
     ) -> List[Dict[str, object]]:
         """Extract triplets with per-sentence hedging annotation.
 
-        Returns a list of dicts:
+        Returns a list of dicts, one per sentence that yielded a triple
+        (not deduplicated):
             {
                 "subject": str,
                 "predicate": str,
@@ -542,48 +1271,22 @@ class DeterministicSieve:
                 "linguistic_certainty": float,  # 1.0 = definite, <1.0 = hedged
             }
 
+        Uses the same per-sentence extraction as ``extract_triplets``
+        (clause guard, passive handling, POS fallback, noise filter), so
+        the triples are the same ones in document order. Before v2 this
+        method carried its own copy of the v1 slot loop without passive
+        handling, the POS fallback or the noise filter.
+
         The linguistic_certainty score is a metadata-only signal
         that does NOT affect the Gödel algebra.
         """
-        doc = self.nlp(text)
-        results = []
-
-        for sent in doc.sents:
-            # Negated sentences produce no triple — see _is_negated.
-            if _is_negated(sent):
-                continue
-
-            subject = None
-            predicate = None
-            object_ = None
-
-            for token in sent:
-                if token.dep_ == "ROOT" or token.pos_ == "VERB":
-                    predicate = token.lemma_
-                    for child in token.children:
-                        if child.dep_ in ("nsubj", "nsubjpass", "csubj", "npadvmod"):
-                            modifiers = [
-                                c.text for c in child.children
-                                if c.dep_ in ("amod", "compound")
-                            ]
-                            # '_'-joined to satisfy canonical "\S+" subject invariant.
-                            subject = "_".join(modifiers + [child.lemma_]).strip()
-                    for child in token.children:
-                        if child.dep_ in ("dobj", "pobj", "attr", "acomp"):
-                            modifiers = [
-                                c.text for c in child.children
-                                if c.dep_ in ("amod", "compound")
-                            ]
-                            object_ = " ".join(modifiers + [child.lemma_]).strip()
-
-            if subject and predicate and object_:
-                if len(subject.split()) <= 5 and len(object_.split()) <= 8:
-                    certainty = detect_hedging(sent.text)
-                    results.append({
-                        "subject": subject.lower(),
-                        "predicate": predicate.lower(),
-                        "object": object_.lower(),
-                        "linguistic_certainty": certainty,
-                    })
-
-        return results
+        kept, _ = self._extract_sentences(text)
+        return [
+            {
+                "subject": triple[0],
+                "predicate": triple[1],
+                "object": triple[2],
+                "linguistic_certainty": detect_hedging(sent.text),
+            }
+            for sent, triple in kept
+        ]
