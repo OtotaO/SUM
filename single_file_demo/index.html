@@ -121,10 +121,10 @@
 <p class="sub">Compare a rewrite with its original, inspect the passages, record your decisions, and export the review. Comparison runs in this browser. Generated rewrites can also carry an independently verifiable render receipt.</p>
 <div class="review-inputs">
   <div><label for="prose">Original source</label>
-    <textarea id="prose" maxlength="100000" placeholder="Alice may cancel the lease with 30 days notice. The deposit is refundable unless rent is overdue."></textarea>
+    <textarea id="prose" placeholder="Alice may cancel the lease with 30 days notice. The deposit is refundable unless rent is overdue."></textarea>
   </div>
   <div><label for="rewrite">Rewrite to review</label>
-    <textarea id="rewrite" maxlength="100000" placeholder="Alice can cancel the lease. The deposit is refundable."></textarea>
+    <textarea id="rewrite" placeholder="Alice can cancel the lease. The deposit is refundable."></textarea>
   </div>
 </div>
 <p class="review-scope">Literal comparison only: unchanged passages are matched exactly; suggested changed passages share words. Read every change for negation, conditions, quantities and attribution. This is not a semantic judge or a meaning-preservation score.</p>
@@ -939,41 +939,93 @@ async function makeBundle(triples, title) {
 }
 
 // Decode "ed25519:<base64>" → Uint8Array (just the key/signature bytes).
+// Mirrors standalone_verifier/verify.js: take s.split(':', 2)[1], the text
+// between the first colon and a second one (anything after a second colon is
+// ignored, as in Node), and decode it. For an ASCII segment this decodes
+// exactly as Node's Buffer.from(segment, 'base64') does (skip characters
+// outside the standard and URL-safe alphabets, stop at the first '=', drop a
+// lone trailing character); a differential fuzz over all 128 ASCII code units
+// found no difference. Plain atob() would throw on a stray character that
+// Node skips, rejecting bundles it verifies. A segment with a non-ASCII
+// character throws, as Python's base64.b64decode does on non-ASCII (Node
+// instead reads such a character by its low byte). Python decodes everything
+// after the first colon, so its verdict can differ from Node's and this
+// page's on fields with a second colon. A non-string field throws too; the
+// caller maps every throw to 'malformed'.
 function decodeEd25519Field(s) {
-  const b64 = s.split(':', 2)[1] ?? '';
-  const bin = atob(b64);
+  if (typeof s !== 'string') throw new TypeError('Ed25519 field is not a string');
+  const tail = s.split(':', 2)[1] ?? '';
+  if (/[^\x00-\x7f]/.test(tail)) throw new TypeError('Ed25519 field is not ASCII');
+  let b64 = '';
+  for (const ch of tail) {
+    if (ch === '=') break;
+    if (/^[A-Za-z0-9+/_-]$/.test(ch)) b64 += ch === '-' ? '+' : ch === '_' ? '/' : ch;
+  }
+  if (b64.length % 4 === 1) b64 = b64.slice(0, -1);
+  const bin = atob(b64 + '='.repeat((4 - b64.length % 4) % 4));
   const out = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
   return out;
 }
 
+// Does THIS browser have Ed25519 in WebCrypto at all? Probed with a
+// syntactically valid 32-byte key, as the Node verifier does, so the answer
+// depends only on the browser and never on the bundle. Matching on error
+// names would tie the verdict to each browser's wording.
+async function ed25519Available() {
+  try {
+    await crypto.subtle.importKey('raw', new Uint8Array(32), { name: 'Ed25519' }, false, ['verify']);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // Verify the embedded Ed25519 signature via Web Crypto SubtleCrypto.
-// Ships natively in Chrome 113+, Firefox 129+, Safari 17+. On older
-// browsers (or non-secure contexts) importKey throws and we fall back
-// to "present (use CLI)" — never a false positive.
+// Ships natively in Chrome 113+, Firefox 129+, Safari 17+.
 //
-// Returns one of: 'verified', 'invalid', 'unsupported' (API missing),
-// or 'absent' (no Ed25519 fields in the bundle).
+// Returns one of five statuses, the same contract as the Node verifier
+// (standalone_verifier/verify.js):
+//   'verified'    the signature checks out against the embedded key
+//   'invalid'     the signature was checked and does not match
+//   'malformed'   the key or signature could not be decoded or imported, so
+//                 nothing was checked: FAIL CLOSED
+//   'unsupported' this browser has no Ed25519 in WebCrypto (the only case
+//                 that may be reported as not checkable here)
+//   'absent'      the bundle carries no Ed25519 fields
+// Before this contract, a malformed key or signature was caught by the same
+// catch as a missing primitive and reported as 'unsupported', so a bundle
+// with a garbage key passed with ok: true (M3).
 async function verifyEd25519InBrowser(b) {
   if (!b.public_signature || !b.public_key) return 'absent';
   if (!(globalThis.crypto && crypto.subtle && crypto.subtle.importKey)) {
     return 'unsupported';
   }
+  let pubBytes, sigBytes;
   try {
-    const pubBytes = decodeEd25519Field(b.public_key);
-    const sigBytes = decodeEd25519Field(b.public_signature);
-    const payload = new TextEncoder().encode(
-      `${b.canonical_tome}|${b.state_integer}|${b.timestamp}`
-    );
-    const key = await crypto.subtle.importKey(
-      'raw', pubBytes, { name: 'Ed25519' }, false, ['verify']
-    );
+    pubBytes = decodeEd25519Field(b.public_key);
+    sigBytes = decodeEd25519Field(b.public_signature);
+  } catch {
+    return 'malformed';
+  }
+  let key;
+  try {
+    key = await crypto.subtle.importKey('raw', pubBytes, { name: 'Ed25519' }, false, ['verify']);
+  } catch {
+    // Either the browser has no Ed25519, or these key bytes are not an
+    // importable Ed25519 key (wrong length, not a point). Only the first
+    // may be called 'unsupported'.
+    return (await ed25519Available()) ? 'malformed' : 'unsupported';
+  }
+  const payload = new TextEncoder().encode(
+    `${b.canonical_tome}|${b.state_integer}|${b.timestamp}`
+  );
+  try {
     const ok = await crypto.subtle.verify({ name: 'Ed25519' }, key, sigBytes, payload);
     return ok ? 'verified' : 'invalid';
   } catch {
-    // Browser lacks Ed25519 in SubtleCrypto, or crypto threw on the
-    // key shape. Caller will report "present (use CLI)".
-    return 'unsupported';
+    // The key imported, so the primitive exists; the signature bytes were unusable.
+    return 'malformed';
   }
 }
 
@@ -998,6 +1050,7 @@ async function inspectSignatures(b) {
   const ed = await verifyEd25519InBrowser(b);
   if (ed === 'verified') out.ed25519 = { status: 'verified', label: '✓ verified in-browser (SubtleCrypto)' };
   else if (ed === 'invalid') out.ed25519 = { status: 'invalid', label: '✗ INVALID — signature does not match public key' };
+  else if (ed === 'malformed') out.ed25519 = { status: 'malformed', label: '✗ MALFORMED — the public key or signature could not be decoded or imported; signature NOT checked' };
   else if (ed === 'unsupported') out.ed25519 = { status: 'unsupported', label: 'present (browser lacks Ed25519; use `sum verify` or a W3C VC 2.0 verifier)' };
   return out;
 }
@@ -1038,6 +1091,15 @@ async function verifyBundle(b) {
       return {
         ok: false,
         reason: 'Ed25519 signature INVALID — content does not match embedded public key',
+        signatures,
+      };
+    }
+    if (signatures.ed25519 && signatures.ed25519.status === 'malformed') {
+      // An unusable key or signature is not an excuse to pass: fail closed,
+      // as the Node and Python verifiers do on the same input.
+      return {
+        ok: false,
+        reason: 'Ed25519 public key or signature is MALFORMED — it could not be decoded or imported, so the signature was not checked',
         signatures,
       };
     }
@@ -1088,10 +1150,23 @@ function invalidateSource() {
 $('prose').addEventListener('input', invalidateSource);
 const ATTEST_LABEL = $('attest').innerHTML;  // preserve label + kbd hint
 
+// Longest text the page accepts in either box, in UTF-16 code units (what
+// String.length counts). Same value as MAX_REVIEW_CHARS in review_packet.js,
+// which this classic script cannot import. The boxes carry no maxlength: a
+// maxlength cuts a long paste off silently and the rest of the page then works
+// on a text the user never chose (M18). Over-limit text is kept in the box and
+// refused explicitly where it would be used.
+const MAX_TEXT_CHARS = 100000;
+function overLimitMessage(n) {
+  return `Text must be at most ${MAX_TEXT_CHARS.toLocaleString('en-US')} characters; this box has ${n.toLocaleString('en-US')}. Nothing was sent or compared. Split the document into sections.`;
+}
+
 // Live char count — low-stakes affordance but makes the surface feel alive.
 function updateCharCount() {
   const n = $('prose').value.length;
-  $('char-count').textContent = n ? `${n.toLocaleString()} chars` : '0 chars';
+  $('char-count').textContent = n > MAX_TEXT_CHARS
+    ? `${n.toLocaleString('en-US')} chars · over the ${MAX_TEXT_CHARS.toLocaleString('en-US')} limit`
+    : n ? `${n.toLocaleString()} chars` : '0 chars';
 }
 $('prose').addEventListener('input', updateCharCount);
 updateCharCount();
@@ -1147,6 +1222,10 @@ $('attest').addEventListener('click', async () => {
   const text = $('prose').value;
   if (!text.trim()) return;
   invalidateSource();
+  if (text.length > MAX_TEXT_CHARS) {
+    $('workbench-status').textContent = overLimitMessage(text.length);
+    return;
+  }
   const revision = sourceRevision;
 
   const btn = $('attest');
