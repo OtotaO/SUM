@@ -940,16 +940,19 @@ async function makeBundle(triples, title) {
 
 // Decode "ed25519:<base64>" → Uint8Array (just the key/signature bytes).
 // Mirrors standalone_verifier/verify.js: split on the first colon and decode
-// the tail the way Node's Buffer.from(tail, 'base64') does (skip characters
-// outside the standard and URL-safe alphabets, stop at the first '=', drop a
-// lone trailing character), so this page accepts and rejects the same key
-// bytes as the Node verifier; a differential fuzz of 220,000 strings against
-// Buffer.from found no difference. Plain atob() would throw on a stray
-// character that Node and Python skip, rejecting bundles they verify. A
-// non-string field throws; the caller maps that to 'malformed'.
+// the tail. For an ASCII tail this decodes exactly as Node's
+// Buffer.from(tail, 'base64') does (skip characters outside the standard and
+// URL-safe alphabets, stop at the first '=', drop a lone trailing character);
+// a differential fuzz over all 128 ASCII code units found no difference.
+// Plain atob() would throw on a stray character that Node and Python skip,
+// rejecting bundles they verify. A tail with any non-ASCII character throws,
+// as Python's base64.b64decode does (Node instead reads such a character by
+// its low byte, which no other verifier copies). A non-string field throws
+// too; the caller maps every throw to 'malformed'.
 function decodeEd25519Field(s) {
   if (typeof s !== 'string') throw new TypeError('Ed25519 field is not a string');
   const tail = s.split(':', 2)[1] ?? '';
+  if (/[^\x00-\x7f]/.test(tail)) throw new TypeError('Ed25519 field is not ASCII');
   let b64 = '';
   for (const ch of tail) {
     if (ch === '=') break;

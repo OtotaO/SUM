@@ -561,6 +561,9 @@ test('a malformed Ed25519 key or signature fails closed in the bundle check (M3)
       'key with empty value': { public_key: 'ed25519:' },
       'key not a string': { public_key: 7 },
       'signature not a string': { public_signature: ['x'] },
+      // Python's b64decode raises on non-ASCII; Node would read U+0141 by its low byte.
+      'key with a non-ASCII character': { public_key: bundle.public_key + '\u0141' },
+      'signature with a non-ASCII character': { public_signature: 'ed25519:\u0130' + bundle.public_signature.slice(8) },
     };
     for (const [name, change] of Object.entries(malformed)) {
       const r = await p.window.verifyBundle({ ...bundle, ...change });
@@ -578,7 +581,7 @@ test('a malformed Ed25519 key or signature fails closed in the bundle check (M3)
   } finally { p.close(); }
 });
 
-test('the browser decodes key fields as the Node verifier does, so a stray character is skipped, not fatal', async () => {
+test('the browser decodes ASCII key fields as the Node verifier does, so a stray character is skipped, not fatal', async () => {
   const p = await page();
   try {
     const bundle = await signedBundle(p);
