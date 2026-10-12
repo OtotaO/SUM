@@ -939,16 +939,19 @@ async function makeBundle(triples, title) {
 }
 
 // Decode "ed25519:<base64>" → Uint8Array (just the key/signature bytes).
-// Mirrors standalone_verifier/verify.js: split on the first colon and decode
-// the tail. For an ASCII tail this decodes exactly as Node's
-// Buffer.from(tail, 'base64') does (skip characters outside the standard and
-// URL-safe alphabets, stop at the first '=', drop a lone trailing character);
-// a differential fuzz over all 128 ASCII code units found no difference.
-// Plain atob() would throw on a stray character that Node and Python skip,
-// rejecting bundles they verify. A tail with any non-ASCII character throws,
-// as Python's base64.b64decode does (Node instead reads such a character by
-// its low byte, which no other verifier copies). A non-string field throws
-// too; the caller maps every throw to 'malformed'.
+// Mirrors standalone_verifier/verify.js: take s.split(':', 2)[1], the text
+// between the first colon and a second one (anything after a second colon is
+// ignored, as in Node), and decode it. For an ASCII segment this decodes
+// exactly as Node's Buffer.from(segment, 'base64') does (skip characters
+// outside the standard and URL-safe alphabets, stop at the first '=', drop a
+// lone trailing character); a differential fuzz over all 128 ASCII code units
+// found no difference. Plain atob() would throw on a stray character that
+// Node skips, rejecting bundles it verifies. A segment with a non-ASCII
+// character throws, as Python's base64.b64decode does on non-ASCII (Node
+// instead reads such a character by its low byte). Python decodes everything
+// after the first colon, so its verdict can differ from Node's and this
+// page's on fields with a second colon. A non-string field throws too; the
+// caller maps every throw to 'malformed'.
 function decodeEd25519Field(s) {
   if (typeof s !== 'string') throw new TypeError('Ed25519 field is not a string');
   const tail = s.split(':', 2)[1] ?? '';
