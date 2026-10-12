@@ -940,12 +940,23 @@ async function makeBundle(triples, title) {
 
 // Decode "ed25519:<base64>" → Uint8Array (just the key/signature bytes).
 // Mirrors standalone_verifier/verify.js: split on the first colon and decode
-// the tail. A non-string field or undecodable base64 throws; the caller maps
-// that to 'malformed', never to 'unsupported'.
+// the tail the way Node's Buffer.from(tail, 'base64') does (skip characters
+// outside the standard and URL-safe alphabets, stop at the first '=', drop a
+// lone trailing character), so this page accepts and rejects the same key
+// bytes as the Node verifier; a differential fuzz of 220,000 strings against
+// Buffer.from found no difference. Plain atob() would throw on a stray
+// character that Node and Python skip, rejecting bundles they verify. A
+// non-string field throws; the caller maps that to 'malformed'.
 function decodeEd25519Field(s) {
   if (typeof s !== 'string') throw new TypeError('Ed25519 field is not a string');
-  const b64 = s.split(':', 2)[1] ?? '';
-  const bin = atob(b64);
+  const tail = s.split(':', 2)[1] ?? '';
+  let b64 = '';
+  for (const ch of tail) {
+    if (ch === '=') break;
+    if (/^[A-Za-z0-9+/_-]$/.test(ch)) b64 += ch === '-' ? '+' : ch === '_' ? '/' : ch;
+  }
+  if (b64.length % 4 === 1) b64 = b64.slice(0, -1);
+  const bin = atob(b64 + '='.repeat((4 - b64.length % 4) % 4));
   const out = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
   return out;

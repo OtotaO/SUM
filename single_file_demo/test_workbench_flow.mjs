@@ -555,21 +555,41 @@ test('a malformed Ed25519 key or signature fails closed in the bundle check (M3)
   const p = await page();
   try {
     const bundle = await signedBundle(p);
-    const cases = {
+    const malformed = {
       'key of wrong length': { public_key: 'ed25519:' + Buffer.alloc(31, 7).toString('base64') },
-      'key not base64': { public_key: 'ed25519:not*base64!' },
+      'key that is not base64': { public_key: 'ed25519:not*base64!' },
       'key with empty value': { public_key: 'ed25519:' },
       'key not a string': { public_key: 7 },
-      'signature not base64': { public_signature: 'ed25519:%%%' },
       'signature not a string': { public_signature: ['x'] },
     };
-    for (const [name, change] of Object.entries(cases)) {
+    for (const [name, change] of Object.entries(malformed)) {
       const r = await p.window.verifyBundle({ ...bundle, ...change });
       assert.equal(r.ok, false, `${name}: must not pass`);
       assert.equal(r.signatures.ed25519.status, 'malformed', name);
       assert.match(r.reason, /MALFORMED/, name);
     }
+    // Signature bytes of the wrong length are checked and fail, as in Node and Python.
+    for (const sig of ['ed25519:%%%', 'ed25519:', 'ed25519:' + Buffer.alloc(63, 1).toString('base64')]) {
+      const r = await p.window.verifyBundle({ ...bundle, public_signature: sig });
+      assert.equal(r.ok, false, sig);
+      assert.equal(r.signatures.ed25519.status, 'invalid', sig);
+    }
     assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
+test('the browser decodes key fields as the Node verifier does, so a stray character is skipped, not fatal', async () => {
+  const p = await page();
+  try {
+    const bundle = await signedBundle(p);
+    const tail = bundle.public_key.slice('ed25519:'.length);
+    const urlSafe = Buffer.from(tail, 'base64').toString('base64url');
+    for (const key of ['ed25519:!' + tail, 'ed25519:' + tail.slice(0, 10) + '\n ' + tail.slice(10), 'ed25519:' + urlSafe]) {
+      assert.deepEqual(Buffer.from(p.window.decodeEd25519Field(key)), Buffer.from(key.split(':', 2)[1], 'base64'), key);
+      const r = await p.window.verifyBundle({ ...bundle, public_key: key });
+      assert.equal(r.ok, true, `${JSON.stringify(key)}: ${r.reason}`);
+      assert.equal(r.signatures.ed25519.status, 'verified');
+    }
   } finally { p.close(); }
 });
 
