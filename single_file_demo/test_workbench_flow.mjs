@@ -523,3 +523,106 @@ test('a fresh render is checked against the site keys as published, without the 
     assert.deepEqual(p.errors, []);
   } finally { p.close(); }
 });
+
+// M3: the in-page bundle check must fail closed on a key or signature it
+// cannot decode or import. It used to report those as 'unsupported' (the
+// status reserved for a browser without Ed25519) and return ok: true.
+async function signedBundle(p) {
+  const bundle = await p.window.makeBundle([['alice', 'likes', 'cats'], ['bob', 'owns', 'dog']], 'm3');
+  const keys = await webcrypto.subtle.generateKey({ name: 'Ed25519' }, true, ['sign', 'verify']);
+  const payload = new TextEncoder().encode(`${bundle.canonical_tome}|${bundle.state_integer}|${bundle.timestamp}`);
+  const b64 = bytes => Buffer.from(bytes).toString('base64');
+  bundle.public_key = 'ed25519:' + b64(new Uint8Array(await webcrypto.subtle.exportKey('raw', keys.publicKey)));
+  bundle.public_signature = 'ed25519:' + b64(new Uint8Array(await webcrypto.subtle.sign({ name: 'Ed25519' }, keys.privateKey, payload)));
+  return bundle;
+}
+
+test('the bundle check verifies a good Ed25519 signature and rejects a tampered one', async () => {
+  const p = await page();
+  try {
+    const bundle = await signedBundle(p);
+    const good = await p.window.verifyBundle(bundle);
+    assert.equal(good.ok, true, good.reason);
+    assert.equal(good.signatures.ed25519.status, 'verified');
+    const sig = Buffer.from(bundle.public_signature.slice(8), 'base64'); sig[0] ^= 1;
+    const bad = await p.window.verifyBundle({ ...bundle, public_signature: 'ed25519:' + sig.toString('base64') });
+    assert.equal(bad.ok, false);
+    assert.equal(bad.signatures.ed25519.status, 'invalid');
+  } finally { p.close(); }
+});
+
+test('a malformed Ed25519 key or signature fails closed in the bundle check (M3)', async () => {
+  const p = await page();
+  try {
+    const bundle = await signedBundle(p);
+    const cases = {
+      'key of wrong length': { public_key: 'ed25519:' + Buffer.alloc(31, 7).toString('base64') },
+      'key not base64': { public_key: 'ed25519:not*base64!' },
+      'key with empty value': { public_key: 'ed25519:' },
+      'key not a string': { public_key: 7 },
+      'signature not base64': { public_signature: 'ed25519:%%%' },
+      'signature not a string': { public_signature: ['x'] },
+    };
+    for (const [name, change] of Object.entries(cases)) {
+      const r = await p.window.verifyBundle({ ...bundle, ...change });
+      assert.equal(r.ok, false, `${name}: must not pass`);
+      assert.equal(r.signatures.ed25519.status, 'malformed', name);
+      assert.match(r.reason, /MALFORMED/, name);
+    }
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
+test('only a browser without Ed25519 reports the signature as not checked', async () => {
+  const p = await page();
+  const subtle = webcrypto.subtle, original = subtle.importKey;
+  try {
+    const bundle = await signedBundle(p);
+    subtle.importKey = async (format, key, algorithm, ...rest) => {
+      if ((algorithm?.name ?? algorithm) === 'Ed25519') throw new DOMException('Unrecognized name', 'NotSupportedError');
+      return original.call(subtle, format, key, algorithm, ...rest);
+    };
+    for (const b of [bundle, { ...bundle, public_key: 'ed25519:' + Buffer.alloc(31, 7).toString('base64') }]) {
+      const r = await p.window.verifyBundle(b);
+      assert.equal(r.signatures.ed25519.status, 'unsupported');
+      assert.match(r.signatures.ed25519.label, /^present \(browser lacks Ed25519/);
+    }
+  } finally { subtle.importKey = original; p.close(); }
+});
+
+// M18: the paste boxes used maxlength="100000", which cuts a long paste off
+// silently; the page then extracted or compared a text the user never chose.
+test('text over 100,000 characters is kept and refused explicitly, never truncated (M18)', async () => {
+  const p = await page();
+  try {
+    for (const id of ['prose', 'rewrite']) assert.equal(p.$(id).hasAttribute('maxlength'), false, `#${id} must not truncate silently`);
+    const long = 'x'.repeat(100001);
+    p.input('prose', long);
+    assert.equal(p.$('prose').value.length, 100001);
+    assert.equal(p.$('char-count').textContent, '100,001 chars · over the 100,000 limit');
+    p.$('attest').click();
+    await until(() => p.$('workbench-status').textContent.includes('100,000'));
+    assert.equal(p.$('workbench-status').textContent, 'Text must be at most 100,000 characters; this box has 100,001. Nothing was sent or compared. Split the document into sections.');
+    assert.equal(p.requests.length, 0, 'over-limit text must not be sent for extraction');
+    p.$('compare-btn').click();
+    assert.match(p.$('workbench-status').textContent, /at most 100,000 characters/);
+    assert.equal(p.$('review-panel').hidden, true);
+    p.input('prose', 'Alice may cancel the lease.');
+    p.input('rewrite', long);
+    p.$('compare-btn').click();
+    assert.match(p.$('workbench-status').textContent, /at most 100,000 characters/);
+    assert.equal(p.$('review-panel').hidden, true);
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
+test('text of exactly 100,000 characters is accepted for extraction', async () => {
+  const p = await page();
+  try {
+    p.input('prose', 'x'.repeat(100000));
+    assert.equal(p.$('char-count').textContent, `${(100000).toLocaleString()} chars`);
+    p.$('attest').click();
+    await until(() => p.$('workbench-status').textContent.includes('Extraction unavailable'));
+    assert.ok(p.requests.length > 0, 'text at the limit must be sent for extraction');
+  } finally { p.close(); }
+});
