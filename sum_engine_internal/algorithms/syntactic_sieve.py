@@ -1114,7 +1114,7 @@ def _is_inverted_reporting_clause(
     verb with an object ("The court granted the motion, denied the
     appeal." loses (court, grant, motion)): withheld, not asserted. Not
     matched: a reporting verb the parser makes a modifier of the
-    reporter ("..., claim activists.", "..., added Greenpeace.") or an
+    reporter ("..., alleged critics.", "..., added Greenpeace.") or an
     advcl ("..., alleged Smith."), and verbs outside
     ``_REPORTING_VERBS`` ("..., announced the minister.").
 
