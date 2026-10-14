@@ -706,6 +706,9 @@ class TestInvertedReportingClause:
         ("Bob broke the vase, admitted his sister.", ("bob", "break", "vase")),
         ("Aliens built the pyramids, believes the author.",
          ("alien", "build", "pyramid")),
+        # a proper-noun reporter parsed as npadvmod
+        ("The CEO stole the pension fund, insisted Smith.",
+         ("ceo", "steal", "pension fund")),
     ])
     def test_inverted_reporting_clause_withheld(self, text, content) -> None:
         triples, report = _sieve().extract_triplets_with_report(text)
@@ -724,7 +727,16 @@ class TestInvertedReportingClause:
     def test_coordinated_actions_still_extracted(self, text, expected) -> None:
         assert _sieve().extract_triplets(text) == expected
 
-    def test_long_reporter_and_reporting_chain_are_linear(self) -> None:
+    def test_recall_cost_is_a_comma_coordinated_reporting_verb(self) -> None:
+        """Documented cost: the parse cannot tell a reporter from an
+        object, so the first action of "S V O, V-rep O." is withheld."""
+        triples, report = _sieve().extract_triplets_with_report(
+            "The court granted the motion, denied the appeal."
+        )
+        assert triples == []
+        assert report["suppressed"]["cross_clause"] == 1
+
+    def test_long_reporter_and_coordinated_chain_are_linear(self) -> None:
         import time
 
         from sum_engine_internal.algorithms.syntactic_sieve import _guard_reason
@@ -732,7 +744,7 @@ class TestInvertedReportingClause:
         for text in (
             "The vaccine causes autism, claims the "
             + "friend of the " * 3000 + "activist.",
-            "The vaccine causes autism" + ", says the doctor" * 2000 + ".",
+            "Alice " + "sold the car, " * 2000 + "claims the doctor.",
         ):
             sent = TestClauseGuardSpeed._one_sentence(text)
             t0 = time.perf_counter()

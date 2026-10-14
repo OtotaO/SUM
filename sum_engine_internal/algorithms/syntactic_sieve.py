@@ -1037,7 +1037,8 @@ def _has_negative_quantifier(sent: Any) -> bool:
 def _is_attributed(sent: Any) -> bool:
     """True iff the main clause of *sent* is reported content.
 
-    Two shapes, both of which v1 and the first v2 read as plain fact:
+    Three shapes; v1 and the first v2 read the first two as plain fact,
+    and the first v2 read the third as fact (v1 gave a junk triple):
 
       - "according to" anywhere ("According to the indictment, the CEO
         stole the pension fund.", "..., according to the indictment.").
@@ -1057,8 +1058,10 @@ def _is_attributed(sent: Any) -> bool:
         said that Alice stole the car.") is not matched here; the
         single-clause rule handles it.
       - an inverted reporting clause after the content ("The vaccine
-        causes autism, claims the activist.", "..., said Dr. Smith."),
-        ``_is_inverted_reporting_clause``.
+        causes autism, claims the activist."),
+        ``_is_inverted_reporting_clause``. ("..., said Dr. Smith.",
+        where the parser makes "said" the main verb, is withheld by the
+        stitched-clause rule in ``_extract_sentence``.)
     """
     tokens = list(sent)
     memo: Dict[int, bool] = {}
@@ -1090,9 +1093,9 @@ def _is_attributed(sent: Any) -> bool:
 def _is_inverted_reporting_clause(
     sent: Any, tokens: List[Any], memo: Dict[int, bool]
 ) -> bool:
-    """True iff *sent* ends in an inverted reporting clause: "The vaccine
-    causes autism, claims the activist.", "The CEO stole the fund,
-    alleges the indictment.", "..., said Dr. Smith.".
+    """True if *sent* ends in what parses as an inverted reporting clause:
+    "The vaccine causes autism, claims the activist.", "The CEO stole the
+    fund, alleges the indictment.".
 
     en_core_web_sm attaches the reporting verb to the content's main
     predicate as a coordinated verb (dep conj, sometimes dep) and parses
@@ -1103,12 +1106,17 @@ def _is_inverted_reporting_clause(
     attached to an earlier main-clause predicate, right after a comma,
     with no clause or coordination of its own (no ccomp / xcomp / conj /
     cc: "... delete the HMAC, change the content, add a signature, and
-    pass the check." is a chain of actions), a reporter (dobj,
-    nsubj, nsubjpass or attr) after it, and nothing after it but its own
-    dependents and punctuation, so the reporting clause ends the
-    sentence. The recall cost is a comma-coordinated action with a
-    reporting verb at the end of a sentence ("Alice sold the car, told
-    Bob."), withheld rather than asserted.
+    pass the check." is a chain of actions), a reporter (dobj, nsubj,
+    nsubjpass, attr or npadvmod) after it, and nothing after it but its
+    own dependents and punctuation, so the reporting clause ends the
+    sentence. The parse cannot tell a reporter from an object, so the
+    recall cost is a comma-coordinated action ending in a reporting
+    verb with an object ("The court granted the motion, denied the
+    appeal." loses (court, grant, motion)): withheld, not asserted. Not
+    matched: a reporting verb the parser makes a modifier of the
+    reporter ("..., claim activists.", "..., added Greenpeace.") or an
+    advcl ("..., alleged Smith."), and verbs outside
+    ``_REPORTING_VERBS`` ("..., announced the minister.").
 
     Linear: one backward scan for the candidate, then one memoised head
     walk per later token (never ``left_edge`` / ``right_edge``, which
@@ -1130,7 +1138,8 @@ def _is_inverted_reporting_clause(
     if any(c.dep_ in ("ccomp", "xcomp", "conj", "cc") for c in kids):
         return False
     if not any(
-        c.dep_ in ("dobj", "nsubj", "nsubjpass", "attr") and c.i > cand.i
+        c.dep_ in ("dobj", "nsubj", "nsubjpass", "attr", "npadvmod")
+        and c.i > cand.i
         for c in kids
     ):
         return False
