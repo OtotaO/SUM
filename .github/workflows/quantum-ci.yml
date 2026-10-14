@@ -177,7 +177,7 @@ jobs:
         # on README/CHANGELOG/etc.). Pinned to keep markdown output
         # byte-identical across CI runs — see the FEATURE_CATALOG
         # entry on the format pivot adapter for the determinism story.
-        pip install 'markitdown==0.1.5'
+        pip install 'markitdown==0.1.8'
         # spaCy English model for the sieve + the chunked sentencizer.
         # Required by both verify_cross_runtime (sieve extraction in
         # K-matrix) and attest_repo_docs --check (self-attestation).

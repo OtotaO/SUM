@@ -1,6 +1,6 @@
 {
   "schema": "sum.repo_manifest.v1",
-  "issued_at": "2026-10-04T03:11:16Z",
+  "issued_at": "2026-10-12T16:10:09Z",
   "repo": {
     "owner": "OtotaO",
     "name": "SUM",
@@ -8,17 +8,17 @@
     "license": "Apache-2.0"
   },
   "git": {
-    "head_sha": "983ac578143e00822d612e2e0e7a51a25c34a6a1",
-    "head_short": "983ac57",
-    "head_subject": "release: 0.11.1 (#533)",
-    "head_committer_date": "2026-09-27T06:10:01+01:00",
+    "head_sha": "9fdcab7c4252c96be9dfdd08d8792f1a3c2f80aa",
+    "head_short": "9fdcab7",
+    "head_subject": "fix(demo): fail closed on malformed Ed25519 bundle fields (M3); refuse long text explicitly (M18) (#537)",
+    "head_committer_date": "2026-10-12T17:09:40+01:00",
     "commits_last_30d": null
   },
   "github": {
-    "stars": null
+    "stars": 9
   },
   "release": {
-    "pyproject_version": "0.11.1",
+    "pyproject_version": "0.12.0",
     "pypi_published_version": "0.10.0"
   },
   "features": {
