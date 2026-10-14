@@ -684,6 +684,62 @@ class TestAttribution:
         assert _sieve().extract_triplets(text) == expected
 
 
+class TestInvertedReportingClause:
+    """A reporting clause after the content, with the reporter after the
+    verb ("..., claims the activist."): en_core_web_sm attaches the verb
+    as conj (or dep) of the content's predicate and the reporter as dobj
+    or nsubj, so the parenthetical and "as" rules missed it and v2
+    asserted the reported content. Found by the 0.12.0 release audit
+    (49 of 144 sentences); each case below gave its content triple
+    before the fix."""
+
+    @pytest.mark.parametrize("text,content", [
+        ("The vaccine causes autism, claims the activist.",
+         ("vaccine", "cause", "autism")),
+        ("The CEO stole the pension fund, alleges the indictment.",
+         ("ceo", "steal", "pension fund")),
+        ("The vaccine causes autism, thought the doctor.",
+         ("vaccine", "cause", "autism")),
+        ("The minister approved the deal, reported the Times.",
+         ("minister", "approve", "deal")),
+        ("The tax raises revenue, argue economists.", ("tax", "raise", "revenue")),
+        ("Bob broke the vase, admitted his sister.", ("bob", "break", "vase")),
+        ("Aliens built the pyramids, believes the author.",
+         ("alien", "build", "pyramid")),
+    ])
+    def test_inverted_reporting_clause_withheld(self, text, content) -> None:
+        triples, report = _sieve().extract_triplets_with_report(text)
+        assert content not in triples
+        assert triples == []
+        assert report["suppressed"]["cross_clause"] == 1
+
+    @pytest.mark.parametrize("text,expected", [
+        # a coordinated chain of actions ending in "add ..." is not a report
+        ("The attacker could delete the HMAC, change the content, add their "
+         "own signature, and pass the check.", [("attacker", "pass", "check")]),
+        ("Bob fixed the bug and wrote the docs.", [("bob", "write", "doc")]),
+        ("The team won the match, beating the champions.",
+         [("team", "win", "match")]),
+    ])
+    def test_coordinated_actions_still_extracted(self, text, expected) -> None:
+        assert _sieve().extract_triplets(text) == expected
+
+    def test_long_reporter_and_reporting_chain_are_linear(self) -> None:
+        import time
+
+        from sum_engine_internal.algorithms.syntactic_sieve import _guard_reason
+
+        for text in (
+            "The vaccine causes autism, claims the "
+            + "friend of the " * 3000 + "activist.",
+            "The vaccine causes autism" + ", says the doctor" * 2000 + ".",
+        ):
+            sent = TestClauseGuardSpeed._one_sentence(text)
+            t0 = time.perf_counter()
+            _guard_reason(sent)
+            assert time.perf_counter() - t0 < 2.0
+
+
 class TestDisjunctionDocstring:
     """``_is_clause_disjunction``'s docstring claimed that an "or" inside
     a relative clause never counts; the code counts it when a coordinated

@@ -1056,9 +1056,14 @@ def _is_attributed(sent: Any) -> bool:
         that is itself the main predicate ("Alice said goodbye.", "Bob
         said that Alice stole the car.") is not matched here; the
         single-clause rule handles it.
+      - an inverted reporting clause after the content ("The vaccine
+        causes autism, claims the activist.", "..., said Dr. Smith."),
+        ``_is_inverted_reporting_clause``.
     """
     tokens = list(sent)
     memo: Dict[int, bool] = {}
+    if _is_inverted_reporting_clause(sent, tokens, memo):
+        return True
     for k, t in enumerate(tokens):
         if (
             t.lower_ == "according"
@@ -1080,6 +1085,76 @@ def _is_attributed(sent: Any) -> bool:
         ):
             return True
     return False
+
+
+def _is_inverted_reporting_clause(
+    sent: Any, tokens: List[Any], memo: Dict[int, bool]
+) -> bool:
+    """True iff *sent* ends in an inverted reporting clause: "The vaccine
+    causes autism, claims the activist.", "The CEO stole the fund,
+    alleges the indictment.", "..., said Dr. Smith.".
+
+    en_core_web_sm attaches the reporting verb to the content's main
+    predicate as a coordinated verb (dep conj, sometimes dep) and parses
+    the reporter after it as dobj or nsubj, so the parenthetical and
+    "as" rules above do not see it, and the 0.12.0 release audit found
+    49 of 144 such sentences asserted as fact. Matched: the rightmost
+    reporting verb (``_REPORTING_VERBS``) whose dep is conj or dep,
+    attached to an earlier main-clause predicate, right after a comma,
+    with no clause or coordination of its own (no ccomp / xcomp / conj /
+    cc: "... delete the HMAC, change the content, add a signature, and
+    pass the check." is a chain of actions), a reporter (dobj,
+    nsubj, nsubjpass or attr) after it, and nothing after it but its own
+    dependents and punctuation, so the reporting clause ends the
+    sentence. The recall cost is a comma-coordinated action with a
+    reporting verb at the end of a sentence ("Alice sold the car, told
+    Bob."), withheld rather than asserted.
+
+    Linear: one backward scan for the candidate, then one memoised head
+    walk per later token (never ``left_edge`` / ``right_edge``, which
+    can be stale on non-projective parses).
+    """
+    cand = None
+    for t in reversed(tokens):
+        if t.dep_ in ("conj", "dep") and t.lemma_.lower() in _REPORTING_VERBS:
+            cand = t
+            break
+    if cand is None:
+        return False
+    head = cand.head
+    if head.i >= cand.i or not _is_main_clause_memo(head, memo):
+        return False
+    if cand.i == sent.start or sent.doc[cand.i - 1].text != ",":
+        return False
+    kids = list(cand.children)
+    if any(c.dep_ in ("ccomp", "xcomp", "conj", "cc") for c in kids):
+        return False
+    if not any(
+        c.dep_ in ("dobj", "nsubj", "nsubjpass", "attr") and c.i > cand.i
+        for c in kids
+    ):
+        return False
+    below: Dict[int, bool] = {cand.i: True}
+    for x in tokens[cand.i - sent.start + 1:]:
+        if x.is_punct or x.is_space:
+            continue
+        path = []
+        y = x
+        while True:
+            known = below.get(y.i)
+            if known is not None:
+                result = known
+                break
+            if y.head.i == y.i:
+                result = False
+                break
+            path.append(y.i)
+            y = y.head
+        for i in path:
+            below[i] = result
+        if not result:
+            return False
+    return True
 
 
 def _has_several_clauses(sent: Any) -> bool:
