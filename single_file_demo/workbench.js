@@ -114,9 +114,19 @@ function compare() {
 $('compare-btn').addEventListener('click', compare);
 
 // Extractive depths of the original: computed here, nothing leaves the page.
-let distilled = null;
-function hideDistill() { distilled = null; $('distill-panel').hidden = true; }
+let distilled = null, distilledSource = null;
+function hideDistill() { distilled = null; distilledSource = null; $('distill-panel').hidden = true; }
 $('prose').addEventListener('input', hideDistill);
+// Offsets are only meaningful against the exact text they were computed from;
+// any replacement of the original (typed or programmatic) retires the panel.
+function selectOriginal(start, end) {
+  if ($('prose').value !== distilledSource) {
+    hideDistill();
+    status('The original changed since the depths were made. Read the original at depths again.');
+    return;
+  }
+  selectIn('prose', start, end);
+}
 
 function passageButton(p) {
   const button = document.createElement('button');
@@ -124,7 +134,7 @@ function passageButton(p) {
   button.className = 'distill-passage';
   button.textContent = p.text;
   button.title = `Characters ${p.start} to ${p.end} of the original. Select to find it above.`;
-  button.addEventListener('click', () => selectIn('prose', p.start, p.end));
+  button.addEventListener('click', () => selectOriginal(p.start, p.end));
   return button;
 }
 
@@ -160,6 +170,7 @@ function distillOriginal() {
     const source = $('prose').value;
     if (!source.trim()) throw new Error('Add an original source first.');
     distilled = distill(source);
+    distilledSource = source;
     $('distill-scope').textContent = distilled.scope;
     $('distill-method').textContent = `Method ${distilled.method}: computed in this browser, with no model and no network request. Positions count UTF-16 code units.`;
     const tags = $('distill-tags');
@@ -173,7 +184,7 @@ function distillOriginal() {
         button.className = 'link-btn';
         button.textContent = t.text;
         button.title = `In ${t.passages} passages. Select to find its first use above.`;
-        button.addEventListener('click', () => selectIn('prose', t.start, t.end));
+        button.addEventListener('click', () => selectOriginal(t.start, t.end));
         return button;
       }));
     }
@@ -336,6 +347,7 @@ $('open-packet-btn').addEventListener('click', () => {
   $('rewrite').value = packet.output.text;
   window.updateCharCount();
   resetReview();
+  hideDistill();
   // Imported evidence can be exported unchanged; the generated-output pane
   // remains hidden because this is a recipient opening a supplied packet.
   render = packet.render;

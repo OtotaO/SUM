@@ -689,3 +689,31 @@ test('the original reads at depths in the page, with no request, and passages se
     assert.deepEqual(p.errors, []);
   } finally { p.close(); }
 });
+
+test('depths of an old original never select into a replaced one', async () => {
+  const p = await page();
+  try {
+    p.input('prose', 'Alice may cancel. Bob stays.');
+    p.input('rewrite', 'Alice cancels.');
+    p.$('compare-btn').click();
+    p.$('export-review-btn').click();
+    await until(() => p.downloads.length === 1);
+    const packet = JSON.parse(await p.downloads[0].text());
+    p.input('prose', 'The tenant must pay rent monthly. The deposit is refundable when the tenant gives notice. Rent is late after five days.');
+    p.$('distill-btn').click();
+    assert.equal(p.$('distill-panel').hidden, false);
+    p.input('packet-input', JSON.stringify(packet)); p.$('verify-packet-btn').click();
+    await until(() => p.$('packet-status').textContent.includes('Checks completed'));
+    p.$('open-packet-btn').click();
+    assert.equal(p.$('prose').value, 'Alice may cancel. Bob stays.');
+    assert.equal(p.$('distill-panel').hidden, true, 'opening a packet retires depths of the previous original');
+    p.$('distill-btn').click();
+    const first = p.$('distill-view').querySelector('.distill-passage');
+    p.$('prose').value = 'Replaced without an input event.';
+    first.click();
+    assert.equal(p.$('distill-panel').hidden, true);
+    assert.match(p.$('workbench-status').textContent, /original changed since the depths were made/);
+    assert.equal(p.$('prose').selectionStart, p.$('prose').selectionEnd, 'nothing is selected in the replaced text');
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});

@@ -88,7 +88,7 @@ def test_every_runtime_referenced_asset_is_checked():
     served = {r for r in referenced if (_DEMO / r).exists()}
     uncovered = sorted(served - checked)
     assert not uncovered, (
-        "index.html references these static assets at runtime but they are NOT "
+        "index.html, or a script it loads, references these static assets at runtime but they are NOT "
         f"in verify_frontend_bytes.CHECKED_ASSETS: {uncovered}. Add them so the "
         "byte guard covers them (the drift class the guard exists to catch)."
     )

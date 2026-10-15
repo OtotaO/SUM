@@ -10,13 +10,14 @@ const docs = [...bills.map(p => p.source), await readFile(new URL('../docs/NORTH
 // Seeded generator so the property cases are the same on every run.
 function lcg(seed) { let x = seed >>> 0; return () => (x = (Math.imul(x, 1664525) + 1013904223) >>> 0) / 2 ** 32; }
 function randomText(seed) {
-  const r = lcg(seed), words = ['deposit', 'tenant', 'notice', 'refund', 'the', 'shall', 'not', '30', 'U.S.C.', 'Dr.', 'e.g.', 'café', '\u{1F600}', 'rent'];
+  const r = lcg(seed); r(); r(); r(); // the first draws of a small seed vary little
+  const words = ['deposit', 'tenant', 'notice', 'refund', 'the', 'shall', 'not', '30', 'U.S.C.', 'Dr.', 'e.g.', 'café', '\u{1F600}', 'rent'];
   const seps = [' ', ' ', ' ', '. ', '! ', '? ', '\n', '\n\n', '\n# ', '\n- ', '\n(a) ', '  \t', '...'];
   let t = '';
   for (let i = 0, n = Math.floor(r() * 120); i < n; i++) t += words[Math.floor(r() * words.length)] + seps[Math.floor(r() * seps.length)];
   return t;
 }
-const cases = [...docs, ...Array.from({ length: 300 }, (_, i) => randomText(i + 1))];
+const cases = ['', ' \n ', ...docs, ...Array.from({ length: 300 }, (_, i) => randomText(i + 1))];
 
 test('every passage and tag is copied verbatim from the original at its offsets', () => {
   for (const text of cases) {
@@ -95,14 +96,15 @@ test('with no repeated words the ranking falls back to source order', () => {
 });
 
 test('segmentation joins wrapped lines and splits at sentences, headings, list items and clauses', () => {
-  const text = 'The tenant may cancel\nwith 30 days notice. Dr. Smith agrees with\n20 U.S.C. 1099b. Done!\n# Terms\n- first item\n- second item\n(a) A clause\n\nLast line';
+  const text = 'The tenant may cancel\nwith 30 days notice. Dr. Smith agrees with\n20 U.S.C. 1099b. Done!\n# Terms\nRent is due.\n- first item\n- second item\n(a) A clause\n\nLast line';
   assert.deepEqual(passages(text).map(p => text.slice(p.start, p.end)), [
-    'The tenant may cancel\nwith 30 days notice.', 'Dr. Smith agrees with\n20 U.S.C. 1099b.', 'Done!', '# Terms', '- first item', '- second item', '(a) A clause', 'Last line']);
+    'The tenant may cancel\nwith 30 days notice.', 'Dr. Smith agrees with\n20 U.S.C. 1099b.', 'Done!', '# Terms', 'Rent is due.', '- first item', '- second item', '(a) A clause', 'Last line']);
 });
 
 test('empty, blank, single-passage and over-limit inputs', () => {
+  assert.deepEqual(distill('').depths, []);
+  assert.deepEqual(distill(' \n\t ').depths, []);
   assert.equal(distill('').passage_count, 0);
-  assert.equal(distill(' \n\t ').passage_count, 0);
   const one = distill('no terminal punctuation here');
   assert.deepEqual(one.depths.map(d => [d.label, d.count]), [['full text', 1]]);
   assert.throws(() => distill('a'.repeat(100001)), /at most 100,000/);

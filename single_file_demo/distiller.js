@@ -12,7 +12,9 @@ const STOP = new Set(('a about above after again against all also am an and any 
 
 // A line break inside a paragraph is treated as wrapping, so hard-wrapped
 // prose yields whole sentences. A blank line, or a next line that opens a
-// heading, list item, quote or numbered clause, ends the passage.
+// heading, list item, quote or numbered clause, ends the passage. A heading
+// line is always a passage of its own.
+const HEADING = /^[ \t]*#{1,6}\s/;
 const STRUCTURAL = /^[ \t]*(?:#{1,6}\s|[-*+>]\s|\d{1,3}[.)]\s|\(\w{1,5}\)\s|`{2}|\|)/;
 const ABBREV = /(?:(?:^|[\s(.])[A-Z]|(?:^|[\s(])(?:Mr|Mrs|Ms|Dr|Prof|St|No|Nos|Sec|Secs|Art|Fig|vs|etc|Inc|Ltd|Co|Corp|Jr|Sr|e\.g|i\.e|U\.S|cf|al))\.$/;
 
@@ -25,6 +27,7 @@ export function passages(text) {
     const nl = text.indexOf('\n', lineStart), lineEnd = nl < 0 ? text.length : nl;
     const line = text.slice(lineStart, lineEnd);
     if (!line.trim()) close(lineStart);
+    else if (HEADING.test(line)) { close(lineStart); units.push([lineStart, lineEnd]); }
     else { if (STRUCTURAL.test(line)) close(lineStart); if (unitStart < 0) unitStart = lineStart; }
     if (nl < 0) break;
     lineStart = nl + 1;
@@ -94,6 +97,7 @@ export function rankPassages(spanKeys, weight) {
 const BUDGETS = [[0, 'headline'], [0.1, 'brief'], [0.25, 'summary'], [0.5, 'half'], [1, 'full text']];
 function depthCounts(lengths) {
   const total = lengths.reduce((a, b) => a + b, 0), out = [];
+  if (!lengths.length) return out;
   for (const [share, label] of BUDGETS) {
     let count = 0, used = 0;
     while (count < lengths.length && (count === 0 || used + lengths[count] <= share * total)) used += lengths[count++];
