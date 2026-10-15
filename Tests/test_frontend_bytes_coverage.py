@@ -43,11 +43,10 @@ _NOT_STATIC_ASSETS = {
 }
 
 
-def _referenced_static_assets() -> set[str]:
-    html = _INDEX.read_text("utf-8")
+def _refs_in(text: str) -> set[str]:
     refs: set[str] = set()
     for rx in (_FETCH_RE, _IMPORT_RE, _SCRIPT_SRC_RE):
-        for m in rx.finditer(html):
+        for m in rx.finditer(text):
             ref = m.group(1).lstrip("./")
             if ref in _NOT_STATIC_ASSETS:
                 continue
@@ -55,6 +54,25 @@ def _referenced_static_assets() -> set[str]:
             if "//" in ref or ref.startswith("http"):
                 continue
             refs.add(ref)
+    return refs
+
+
+def _referenced_static_assets() -> set[str]:
+    # Follow references transitively through the page's own scripts, so a
+    # module that only another module imports (workbench.js -> distiller.js)
+    # is held to the same rule as one index.html names directly.
+    refs = _refs_in(_INDEX.read_text("utf-8"))
+    pending = [r for r in refs if r.endswith(".js")]
+    while pending:
+        path = _DEMO / pending.pop()
+        if not path.exists():
+            continue
+        for ref in _refs_in(path.read_text("utf-8")):
+            ref = str((path.parent / ref).resolve().relative_to(_DEMO.resolve()))
+            if ref not in refs:
+                refs.add(ref)
+                if ref.endswith(".js"):
+                    pending.append(ref)
     return refs
 
 

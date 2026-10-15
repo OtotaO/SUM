@@ -649,3 +649,43 @@ test('text of exactly 100,000 characters is accepted for extraction', async () =
     assert.ok(p.requests.length > 0, 'text at the limit must be sent for extraction');
   } finally { p.close(); }
 });
+
+test('the original reads at depths in the page, with no request, and passages select their source', async () => {
+  const p = await page();
+  try {
+    const source = 'The tenant may cancel the lease with 30 days notice. The landlord keeps the deposit if rent is overdue. ' +
+      'Weather was mild. The deposit is refundable when the tenant gives notice. Pets are allowed. The landlord repairs the heating.';
+    p.input('prose', source);
+    p.$('distill-btn').click();
+    assert.equal(p.$('distill-panel').hidden, false);
+    assert.equal(p.requests.length, 0, 'depths must be computed without any network request');
+    const slider = p.$('distill-depth');
+    assert.ok(Number(slider.max) >= 2, 'a six-sentence text reads at three or more depths');
+    assert.match(p.$('distill-depth-name').textContent, /^headline \(1 of \d\)$/);
+    const shallow = [...p.$('distill-view').querySelectorAll('.distill-passage')];
+    assert.equal(shallow.length, 1);
+    assert.ok(source.includes(shallow[0].textContent));
+    assert.ok(p.$('distill-view').querySelector('.distill-gap'), 'left-out passages are marked');
+    shallow[0].click();
+    assert.equal(p.$('prose').value.slice(p.$('prose').selectionStart, p.$('prose').selectionEnd), shallow[0].textContent);
+    assert.match(p.$('distill-left-summary').textContent, /^5 passages left out at this depth$/);
+    slider.value = slider.max; slider.dispatchEvent(new p.window.Event('input'));
+    assert.match(p.$('distill-depth-name').textContent, /^full text/);
+    assert.equal(p.$('distill-view').querySelectorAll('.distill-passage').length, 6);
+    assert.equal(p.$('distill-view').querySelector('.distill-gap'), null);
+    assert.equal(p.$('distill-left-summary').textContent, 'Nothing left out at this depth');
+    assert.match(p.$('distill-tags').textContent, /tenant/);
+    assert.match(p.$('distill-method').textContent, /sum\.distill:extractive_coverage_v1/);
+    p.input('prose', source + ' Edited.');
+    assert.equal(p.$('distill-panel').hidden, true, 'an edit hides depths of the old text');
+    p.input('prose', '   ');
+    p.$('distill-btn').click();
+    assert.equal(p.$('workbench-status').textContent, 'Add an original source first.');
+    p.input('prose', 'x'.repeat(100001));
+    p.$('distill-btn').click();
+    assert.match(p.$('workbench-status').textContent, /at most 100,000 characters/);
+    assert.equal(p.$('distill-panel').hidden, true);
+    assert.equal(p.requests.length, 0);
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
