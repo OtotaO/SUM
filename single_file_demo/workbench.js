@@ -1,3 +1,4 @@
+import { distill } from './distiller.js';
 import { compareTexts, makeReviewPacket, verifyReviewPacket, checkRenderBinding, publicJwks, pinPacketKey, keyWarning, quoteKid, receiptFailure } from './review_packet.js';
 
 const $ = id => document.getElementById(id);
@@ -39,17 +40,19 @@ $('prose').addEventListener('input', resetReview);
 $('rewrite').addEventListener('input', () => { window.invalidateRender(); resetReview(); });
 document.addEventListener('sum:render-reset', resetReceipt);
 
+function selectIn(field, start, end) {
+  $(field).focus();
+  $(field).setSelectionRange(start, end);
+  $(field).scrollIntoView({ block: 'center' });
+}
+
 function spanCell(span, field) {
   const cell = document.createElement('div');
   if (!span) { cell.textContent = field === 'prose' ? 'No matched source passage.' : 'No literal match in the rewrite.'; return cell; }
   const link = document.createElement('button');
   link.className = 'link-btn';
   link.textContent = `${field === 'prose' ? 'Source' : 'Rewrite'} passage ${span.id.slice(1)}`;
-  link.addEventListener('click', () => {
-    $(field).focus();
-    $(field).setSelectionRange(span.start, span.end);
-    $(field).scrollIntoView({ block: 'center' });
-  });
+  link.addEventListener('click', () => selectIn(field, span.start, span.end));
   const text = document.createElement('p');
   text.textContent = span.text;
   cell.append(link, text);
@@ -109,6 +112,92 @@ function compare() {
   } catch (e) { resetReview(); status(e.message); }
 }
 $('compare-btn').addEventListener('click', compare);
+
+// Extractive depths of the original: computed here, nothing leaves the page.
+let distilled = null, distilledSource = null;
+function hideDistill() { distilled = null; distilledSource = null; $('distill-panel').hidden = true; }
+$('prose').addEventListener('input', hideDistill);
+// Offsets are only meaningful against the exact text they were computed from;
+// any replacement of the original (typed or programmatic) retires the panel.
+function selectOriginal(start, end) {
+  if ($('prose').value !== distilledSource) {
+    hideDistill();
+    status('The original changed since the depths were made. Read the original at depths again.');
+    return;
+  }
+  selectIn('prose', start, end);
+}
+
+function passageButton(p) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'distill-passage';
+  button.textContent = p.text;
+  button.title = `Characters ${p.start} to ${p.end} of the original. Select to find it above.`;
+  button.addEventListener('click', () => selectOriginal(p.start, p.end));
+  return button;
+}
+
+function gap() {
+  const mark = document.createElement('span');
+  mark.className = 'distill-gap';
+  mark.textContent = '[…]';
+  mark.title = 'Passages left out at this depth';
+  return mark;
+}
+
+function showDepth(i) {
+  const d = distilled.depths[i], n = distilled.passage_count;
+  $('distill-depth-name').textContent = `${d.label} (${i + 1} of ${distilled.depths.length})`;
+  const share = distilled.total_chars ? Math.round(100 * d.chars / distilled.total_chars) : 100;
+  $('distill-stats').textContent = `${d.count} of ${n} passages; ${d.chars.toLocaleString('en')} of ${distilled.total_chars.toLocaleString('en')} characters (${share}%).`;
+  const view = $('distill-view');
+  view.replaceChildren();
+  d.passages.forEach((p, j) => {
+    const prev = j ? d.passages[j - 1].index : -1;
+    if (p.index !== prev + 1) view.append(gap());
+    else if (j) view.append(' ');
+    view.append(passageButton(p));
+  });
+  if (d.passages.length && d.passages[d.passages.length - 1].index !== n - 1) view.append(gap());
+  $('distill-left-summary').textContent = d.left_out.length ? `${d.left_out.length} passages left out at this depth` : 'Nothing left out at this depth';
+  const list = $('distill-left-list');
+  list.replaceChildren(...d.left_out.map(p => { const row = document.createElement('p'); row.append(passageButton(p)); return row; }));
+}
+
+function distillOriginal() {
+  try {
+    const source = $('prose').value;
+    if (!source.trim()) throw new Error('Add an original source first.');
+    distilled = distill(source);
+    distilledSource = source;
+    $('distill-scope').textContent = distilled.scope;
+    $('distill-method').textContent = `Method ${distilled.method}: computed in this browser, with no model and no network request. Positions count UTF-16 code units.`;
+    const tags = $('distill-tags');
+    tags.replaceChildren();
+    if (distilled.tags.length) {
+      const label = document.createElement('span');
+      label.textContent = 'Most repeated words: ';
+      tags.append(label, ...distilled.tags.map(t => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'link-btn';
+        button.textContent = t.text;
+        button.title = `In ${t.passages} passages. Select to find its first use above.`;
+        button.addEventListener('click', () => selectOriginal(t.start, t.end));
+        return button;
+      }));
+    }
+    const slider = $('distill-depth');
+    slider.max = String(distilled.depths.length - 1);
+    slider.value = '0';
+    showDepth(0);
+    $('distill-panel').hidden = false;
+    status('Depths ready. Move the depth slider; select any passage to find it in the original.');
+  } catch (e) { hideDistill(); status(e.message); }
+}
+$('distill-btn').addEventListener('click', distillOriginal);
+$('distill-depth').addEventListener('input', () => { if (distilled) showDepth(Number($('distill-depth').value)); });
 
 document.addEventListener('sum:render', event => {
   const data = event.detail;
@@ -258,6 +347,7 @@ $('open-packet-btn').addEventListener('click', () => {
   $('rewrite').value = packet.output.text;
   window.updateCharCount();
   resetReview();
+  hideDistill();
   // Imported evidence can be exported unchanged; the generated-output pane
   // remains hidden because this is a recipient opening a supplied packet.
   render = packet.render;
