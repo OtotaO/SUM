@@ -14,7 +14,7 @@
 # .github/dependabot.yml. Re-resolve a tag's digest with:
 #   curl -sI -H 'Accept: application/vnd.oci.image.index.v1+json' \
 #     https://registry-1.docker.io/v2/library/<img>/manifests/<tag> | grep -i docker-content-digest
-FROM debian:bookworm-slim@sha256:88200866dfff7ea7f5cbcb6ec7c8a701889efe6fe859fe64d6990e4b07ea4171 AS zig-builder
+FROM debian:bookworm-slim@sha256:7c7b2c966bc9ee8cedfeef67e0e279108992c77681fa595db4a9d65c06ccc587 AS zig-builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl xz-utils ca-certificates && rm -rf /var/lib/apt/lists/*
