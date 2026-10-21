@@ -103,6 +103,12 @@
   .review-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
   #workbench-status, #packet-status { min-height: 1.5em; }
   .review-scope { font-size: 13px; }
+  .distill-view { margin: 12px 0; line-height: 1.6; }
+  .distill-passage { display: inline; background: none; border: none; padding: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; white-space: normal; }
+  .distill-passage:hover, .distill-passage:focus-visible { background: #4a90e233; }
+  .distill-gap { opacity: 0.55; margin: 0 4px; }
+  .distill-tags button { margin: 0 6px 6px 0; }
+  .distill-left p { margin: 6px 0; overflow-wrap: anywhere; }
   details > summary { font-size: 14px; font-weight: 600; }
   @media (max-width: 640px) { .review-inputs, .review-pair { grid-template-columns: 1fr; } .row { flex-wrap: wrap; } body { margin-top: 20px; } }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
@@ -130,6 +136,7 @@
 <p class="review-scope">Literal comparison only: unchanged passages are matched exactly; suggested changed passages share words. Read every change for negation, conditions, quantities and attribution. This is not a semantic judge or a meaning-preservation score.</p>
 <div class="review-actions">
   <button id="compare-btn" class="primary">Compare texts</button>
+  <button id="distill-btn" class="ghost">Read the original at depths</button>
   <button id="export-review-btn" class="ghost" disabled>Export review packet</button>
 </div>
 <p id="workbench-status" role="status" aria-live="polite"></p>
@@ -138,6 +145,20 @@
   <p id="review-summary"></p>
   <p>Accepting a passage records your decision; it does not create a signed claim or verify factual accuracy. Source links select the exact retained passage above.</p>
   <div id="review-rows"></div>
+</section>
+<section id="distill-panel" class="card" hidden aria-labelledby="distill-heading">
+  <h2 id="distill-heading">The original at every depth <span class="pill">heuristic, not certified</span></h2>
+  <p class="review-scope" id="distill-scope"></p>
+  <div class="row">
+    <label for="distill-depth">depth</label>
+    <input type="range" id="distill-depth" min="0" max="0" step="1" value="0">
+    <span class="v" id="distill-depth-name"></span>
+  </div>
+  <p id="distill-stats" style="font: 12px ui-monospace, monospace; opacity: 0.8;"></p>
+  <div id="distill-tags" class="distill-tags"></div>
+  <div id="distill-view" class="distill-view"></div>
+  <details id="distill-left" class="distill-left"><summary id="distill-left-summary"></summary><div id="distill-left-list"></div></details>
+  <p class="review-scope" id="distill-method"></p>
 </section>
 <div class="row" style="justify-content: space-between; margin-top: 4px;">
   <button id="try-example" type="button" class="link-btn" style="font-size: 12px;">↳ try the example</button>
