@@ -212,7 +212,19 @@ document.addEventListener('sum:render', event => {
 
 async function getSiteKeys() {
   if (siteKeys) return siteKeys;
-  const response = await fetch('/.well-known/jwks.json', { cache: 'no-cache' });
+  // The packet check must not hang forever if the JWKS fetch never
+  // settles: abort after a bounded wait so the status moves on.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
+  let response;
+  try {
+    response = await fetch('/.well-known/jwks.json', { cache: 'no-cache', signal: controller.signal });
+  } catch (e) {
+    clearTimeout(timer);
+    if (controller.signal.aborted) throw new Error('Public keys request timed out.');
+    throw e;
+  }
+  clearTimeout(timer);
   if (!response.ok) throw new Error(`Public keys unavailable (${response.status}).`);
   let body = null;
   try { body = await response.json(); } catch { /* not JSON: reported as malformed below */ }
