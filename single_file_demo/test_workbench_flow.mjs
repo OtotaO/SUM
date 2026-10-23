@@ -629,20 +629,30 @@ test('the browser decodes ASCII key fields as the Node verifier does, so a stray
   } finally { p.close(); }
 });
 
-test('only a browser without Ed25519 reports the signature as not checked', async () => {
+// #539 item 9: a browser without Ed25519 checked nothing but showed a green
+// "verified N axioms", even for a tampered signature. The Node verifier exits
+// 5 (not a pass) on the same bundle; the page now fails closed too.
+test('a browser without Ed25519 reports the signature as not checked and does not pass', async () => {
   const p = await page();
   const subtle = webcrypto.subtle, original = subtle.importKey;
   try {
     const bundle = await signedBundle(p);
+    const sig = Buffer.from(bundle.public_signature.slice(8), 'base64'); sig[0] ^= 1;
     subtle.importKey = async (format, key, algorithm, ...rest) => {
       if ((algorithm?.name ?? algorithm) === 'Ed25519') throw new DOMException('Unrecognized name', 'NotSupportedError');
       return original.call(subtle, format, key, algorithm, ...rest);
     };
-    for (const b of [bundle, { ...bundle, public_key: 'ed25519:' + Buffer.alloc(31, 7).toString('base64') }]) {
+    const tampered = { ...bundle, public_signature: 'ed25519:' + sig.toString('base64') };
+    for (const b of [bundle, tampered, { ...bundle, public_key: 'ed25519:' + Buffer.alloc(31, 7).toString('base64') }]) {
       const r = await p.window.verifyBundle(b);
+      assert.equal(r.ok, false, 'an unchecked signature is not a pass');
       assert.equal(r.signatures.ed25519.status, 'unsupported');
-      assert.match(r.signatures.ed25519.label, /^present \(browser lacks Ed25519/);
+      assert.match(r.signatures.ed25519.label, /^⚠ NOT CHECKED: this browser lacks Ed25519/);
+      assert.match(r.reason, /^Ed25519 signature NOT CHECKED/);
     }
+    // A bundle without Ed25519 fields is unaffected: nothing to check, structure verified.
+    const unsigned = { ...bundle }; delete unsigned.public_key; delete unsigned.public_signature;
+    assert.equal((await p.window.verifyBundle(unsigned)).ok, true);
   } finally { subtle.importKey = original; p.close(); }
 });
 
