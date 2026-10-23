@@ -447,5 +447,9 @@ test('the guide written into every packet tells Node callers to pass site keys',
   const p = await packet();
   assert.match(p.verification_guide, /verifyReviewPacket\(packet, \{ siteJwks \}\)/);
   assert.match(p.verification_guide, /a packet with a receipt reports key_pin not-checked/);
+  assert.ok(!p.verification_guide.startsWith('To check this packet'), 'no page is named unless openUrl is given');
+  const named = await makeReviewPacket({ source: 'a', output: 'a', review: compareTexts('a', 'a'), openUrl: 'https://sum-demo.ototao.workers.dev/' });
+  assert.ok(named.verification_guide.startsWith('To check this packet, open https://sum-demo.ototao.workers.dev/, expand'));
+  await verifyReviewPacket(named); // the named guide does not change what the verifier accepts
   assert.equal((await verifyReviewPacket(p)).key_pin, 'not-checked');
 });

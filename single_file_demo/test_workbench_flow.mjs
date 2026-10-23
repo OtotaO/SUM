@@ -576,6 +576,33 @@ test('one click on "try the example" fills both texts and shows a comparison', a
   } finally { p.close(); }
 });
 
+test('a recipient opens a packet from a file: the top link, the file picker, and the guide that names the page', async () => {
+  const p = await page();
+  try {
+    p.input('prose', 'Alice may cancel with 30 days notice.');
+    p.input('rewrite', 'Alice must cancel with 3 days notice.');
+    p.$('compare-btn').click();
+    p.$('export-review-btn').click(); await until(() => p.downloads.length === 1);
+    const text = await p.downloads[0].text();
+    const packet = JSON.parse(text);
+    assert.match(packet.verification_guide, /^To check this packet, open https:\/\/workbench\.example\/, expand "Open and verify an exported review packet", and choose this file\. /);
+    assert.match(p.$('workbench-status').textContent, /send them the file; they open https:\/\/workbench\.example\/, choose "Received a review packet\? Open it here"/);
+    // The recipient's page: the top link opens the panel, choosing the file runs the check.
+    const q = await page();
+    try {
+      assert.equal(q.$('packet-verifier-panel').open, false);
+      q.$('open-received-packet').click();
+      assert.equal(q.$('packet-verifier-panel').open, true);
+      Object.defineProperty(q.$('packet-file'), 'files', { value: [{ name: 'sum-review-packet.json', text: async () => text }], configurable: true });
+      q.$('packet-file').dispatchEvent(new q.window.Event('change'));
+      await until(() => q.$('packet-status').textContent.startsWith('Checks completed'));
+      assert.equal(q.$('open-packet-btn').disabled, false);
+      assert.deepEqual(q.errors, []);
+    } finally { q.close(); }
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
 // M3: the in-page bundle check must fail closed on a key or signature it
 // cannot decode or import. It used to report those as 'unsupported' (the
 // status reserved for a browser without Ed25519) and return ok: true.
