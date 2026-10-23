@@ -4,7 +4,7 @@ Coverage layers, mirroring ``test_mcp_server.py``:
 
   1. Validation gates and error classes per tool (no model, no crypto).
   2. Real verification against the COMMITTED goldens (BillSum meaning-risk
-     receipt + the certified chain) — the same artifacts CI already replays,
+     receipt + the signed chain) — the same artifacts CI already replays,
      so no torch and no network.
   3. Minting round-trips with a fresh in-test Ed25519 key (BYO-key path) —
      mint -> the tool's own self-verify -> re-verify via verify_receipt.

@@ -557,6 +557,25 @@ test('a fresh render is checked against the site keys as published, without the 
   } finally { p.close(); }
 });
 
+test('one click on "try the example" fills both texts and shows a comparison', async () => {
+  const p = await page();
+  try {
+    p.$('try-example').click();
+    assert.equal(p.$('prose').value, p.$('prose').placeholder);
+    assert.equal(p.$('rewrite').value, p.$('rewrite').placeholder);
+    await until(() => !p.$('review-panel').hidden);
+    assert.match(p.$('review-rows').textContent, /Possible changed passage/);
+    // A typed rewrite is never replaced.
+    const q = await page();
+    try {
+      q.input('rewrite', 'My own rewrite.');
+      q.$('try-example').click();
+      assert.equal(q.$('rewrite').value, 'My own rewrite.');
+    } finally { q.close(); }
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
 // M3: the in-page bundle check must fail closed on a key or signature it
 // cannot decode or import. It used to report those as 'unsupported' (the
 // status reserved for a browser without Ed25519) and return ok: true.

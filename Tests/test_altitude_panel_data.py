@@ -41,7 +41,7 @@ def test_altitude_data_has_ladder_shape():
 
 
 def test_altitude_document_is_in_the_witnessed_chain_corpus():
-    """The panel's story is 'this bill is one of the 32 in the certified
+    """The panel's story is 'this bill is one of the 32 in the signed
     chain' — lock that the document really is, and that the source text is
     byte-identical to the committed corpus."""
     d = _load()
@@ -76,6 +76,18 @@ def test_altitude_chain_linkage_matches_committed_chain():
     assert f"{pl['hops'][1]['risk_upper_bound_micro'] / 1e6:.6f}" in note
     assert f"{pl['budget_micro'] / 1e6:.6f}" in note
     assert f"{pl['end_to_end']['risk_upper_bound_micro'] / 1e6:.6f}" in note
+
+
+def test_altitude_chain_wording_claims_no_confidence():
+    """The 32 bills are a fixed prefix, not a random draw, so the page must
+    not attach a confidence level or 'certified' to the chain (README and
+    the chain fixture say no confidence reading applies)."""
+    d = _load()
+    html = (_REPO / "single_file_demo" / "index.html").read_text("utf-8")
+    for text in (d["chain_receipt"]["note"], d["scope"], html):
+        for phrase in ("certified chain", "joint confidence", "95% per hop", "(1-delta)"):
+            assert phrase not in text, phrase
+    assert "no confidence reading applies" in d["chain_receipt"]["note"]
 
 
 def test_altitude_scope_is_honest():

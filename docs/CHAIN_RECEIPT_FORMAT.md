@@ -1,4 +1,4 @@
-# `sum.chain_receipt.v1` — the certified chain (wire format)
+# `sum.chain_receipt.v1` — the signed chain (wire format)
 
 **Status: shipped 2026-07-10, `[research]` issuance / dependency-light
 verification.** The chain-level capstone the drift-budget work seeded

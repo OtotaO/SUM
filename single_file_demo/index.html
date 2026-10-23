@@ -516,7 +516,7 @@
       " Judge: " + data.scorer + " v" + data.scorer_version + ".";
     var rl = document.getElementById("altitude-receipt-line");
     var cr = data.chain_receipt || {};
-    rl.textContent = "This bill is one of the 32 bound by the witnessed certified chain " +
+    rl.textContent = "This bill is one of the 32 bound by the witnessed signed chain " +
       (cr.chain_id || "") + " — " + (cr.note || "") + " ";
     if (cr.url) {
       var a = document.createElement("a");
@@ -1210,6 +1210,13 @@ $('try-example').addEventListener('click', () => {
   $('prose').focus();
   updateCharCount();
   invalidateSource();
+  // Fill the rewrite too, so the first click shows a comparison rather than
+  // an original with nothing to compare it against.
+  if (!$('rewrite').value.trim()) {
+    $('rewrite').value = $('rewrite').placeholder;
+    $('rewrite').dispatchEvent(new Event('input', { bubbles: true }));
+    $('compare-btn').click();
+  }
 });
 
 // ⌘/Ctrl+Enter triggers attest when the prose textarea is focused.

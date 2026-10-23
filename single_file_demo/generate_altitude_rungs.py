@@ -1,7 +1,7 @@
 """Generate ``altitude_rungs.json`` — the static data behind the demo page's
 T0 altitude panel (the distiller made visible).
 
-One REAL document from the witnessed certified chain's corpus
+One REAL document from the witnessed signed chain's corpus
 (``billsum-test-12``, BillSum test split, CC0-1.0; one of the 32 bills bound
 by chain ``9a8ab39f08522c50`` in ``fixtures/chain_receipts_billsum/``),
 descending the altitude ladder:
@@ -21,8 +21,8 @@ once, offline, into a static JSON the Worker ships as an asset.
 
 HONESTY (also carried inside the JSON's ``scope`` field): every number here
 is a per-document MEASUREMENT under the named NLI judge, not a guarantee.
-The (1-delta) corpus-level bounds live in the signed, witnessed chain
-receipt the panel links to. The loss computation is machine-pinned (NLI
+The corpus-level values live in the signed, witnessed chain receipt the
+panel links to; they describe those 32 bills only. The loss computation is machine-pinned (NLI
 float drift, F23/F26): regenerating this file on a different stack may move
 the numbers slightly; the committed JSON is the artifact the page shows.
 
@@ -51,8 +51,9 @@ CHAIN_ID = "9a8ab39f08522c50"
 SCOPE = (
     "per-document MEASUREMENT under the named NLI judge; not a guarantee. "
     "The proxy is blind to arrangement, sound, connotation, implicature. "
-    "Corpus-level (1-delta) bounds live in signed receipts: this document is "
-    "one of the 32 bills bound by the witnessed certified chain."
+    "Corpus-level values live in signed receipts: this document is one of "
+    "the 32 bills in the witnessed signed chain, whose values describe those "
+    "32 bills only."
 )
 
 
@@ -151,8 +152,10 @@ def build() -> dict:
             "note": (
                 "signed sum.chain_receipt.v1 over all 32 bills: hop-1 bound "
                 "0.865768, hop-2 bound 0.488860, Bonferroni budget 1.354628 "
-                "at joint confidence 0.90, direct end-to-end 0.874216 (95% "
-                "per hop, Hoeffding, n=32)"
+                "at joint delta 0.10, direct end-to-end 0.874216 (Hoeffding, "
+                "n=32). The 32 bills are the first of the test split, not a "
+                "random draw, so these are descriptive values and no "
+                "confidence reading applies"
             ),
         },
         "rungs": out_rungs,
