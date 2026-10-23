@@ -1072,7 +1072,7 @@ async function inspectSignatures(b) {
   if (ed === 'verified') out.ed25519 = { status: 'verified', label: '✓ verified in-browser (SubtleCrypto)' };
   else if (ed === 'invalid') out.ed25519 = { status: 'invalid', label: '✗ INVALID — signature does not match public key' };
   else if (ed === 'malformed') out.ed25519 = { status: 'malformed', label: '✗ MALFORMED — the public key or signature could not be decoded or imported; signature NOT checked' };
-  else if (ed === 'unsupported') out.ed25519 = { status: 'unsupported', label: 'present (browser lacks Ed25519; use `sum verify` or a W3C VC 2.0 verifier)' };
+  else if (ed === 'unsupported') out.ed25519 = { status: 'unsupported', label: '⚠ NOT CHECKED: this browser lacks Ed25519 in WebCrypto; use `sum verify` or a W3C VC 2.0 verifier' };
   return out;
 }
 
@@ -1121,6 +1121,16 @@ async function verifyBundle(b) {
       return {
         ok: false,
         reason: 'Ed25519 public key or signature is MALFORMED — it could not be decoded or imported, so the signature was not checked',
+        signatures,
+      };
+    }
+    if (signatures.ed25519 && signatures.ed25519.status === 'unsupported') {
+      // The bundle carries an Ed25519 signature this browser cannot check.
+      // Nothing was checked, so this is not a pass: the Node verifier exits
+      // 5 on the same bundle. A tampered signature used to show green here.
+      return {
+        ok: false,
+        reason: 'Ed25519 signature NOT CHECKED: this browser has no Ed25519 in WebCrypto. The structure matches; check the signature with `sum verify` or the Node verifier',
         signatures,
       };
     }
