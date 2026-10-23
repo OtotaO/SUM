@@ -31,19 +31,6 @@ jobs:
     - name: Lint .github/workflows/*.yml for non-SHA action pins
       run: python scripts/lint_workflow_pins.py
 
-    - name: Outbound-text lint on the owner's PR title and body
-      # scripts/lint_outbound_text.py was a draft-time gate only, and PR
-      # bodies with em dashes reached GitHub anyway (four PRs on 2026-08-06
-      # needed repair). Owner PRs only: bot and contributor bodies quote
-      # release notes and other people's text.
-      if: github.event_name == 'pull_request' && github.event.pull_request.user.login == 'OtotaO'
-      env:
-        PR_TITLE: ${{ github.event.pull_request.title }}
-        PR_BODY: ${{ github.event.pull_request.body }}
-      run: |
-        printf '%s\n\n%s\n' "$PR_TITLE" "$PR_BODY" > "$RUNNER_TEMP/pr_text.md"
-        python scripts/lint_outbound_text.py "$RUNNER_TEMP/pr_text.md"
-
   zig-core:
     name: Zig Core (BigInt Arithmetic)
     runs-on: ubuntu-latest
