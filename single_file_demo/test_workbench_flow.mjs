@@ -342,6 +342,39 @@ test('a site-signed packet shows the site-key wording; unavailable site keys lea
   }
 });
 
+// A browser rejects an aborted fetch, and errors an aborted response body, with an AbortError.
+const abortError = () => new DOMException('The operation was aborted.', 'AbortError');
+const stalledHeaders = (url, init) => new Promise((_, reject) => init.signal.addEventListener('abort', () => reject(abortError())));
+const stalledBody = (url, init) => new Response(new ReadableStream({ start(stream) {
+  stream.enqueue(new TextEncoder().encode('{"keys": ['));
+  init.signal.addEventListener('abort', () => stream.error(abortError()));
+} }), { headers: { 'content-type': 'application/json' } });
+
+test('a key request that never settles, before or after the headers, leaves the pin not checked', async () => {
+  // The workbench gives up on the key request after 8 seconds; run that delay as 5 ms here.
+  const realSetTimeout = globalThis.setTimeout;
+  globalThis.setTimeout = (fn, ms, ...rest) => realSetTimeout(fn, ms === 8000 ? 5 : ms, ...rest);
+  try {
+    for (const stall of [stalledHeaders, stalledBody]) {
+      let signal = null;
+      const p = await page(async (url, init) => {
+        if (url !== '/.well-known/jwks.json') return new Response('{}', { status: 404 });
+        signal = init.signal; return stall(url, init);
+      });
+      try {
+        const shown = await checkPacket(p, await sitePacket());
+        assert.match(shown, /^Checks completed/, stall.name);
+        assert.match(shown, /"signature": "verified"/);
+        assert.match(shown, /"key_pin": "not-checked"/);
+        assert.ok(shown.includes(`\nKey "sum-render-2026-04-27-1" was not checked against this site's /.well-known/jwks.json. Reason: Public keys request timed out. Anyone can create a packet signed with their own key, so the signer is unknown.\n`), shown);
+        assert.doesNotMatch(shown, SITE_KEY_WORDING);
+        assert.equal(signal?.aborted, true, 'the abandoned request is aborted');
+        assert.deepEqual(p.errors, []);
+      } finally { p.close(); }
+    }
+  } finally { globalThis.setTimeout = realSetTimeout; }
+});
+
 test('a packet signed with a published test key carries a warning', async () => {
   const der = Buffer.concat([Buffer.from('302e020100300506032b657004220420', 'hex'), Buffer.alloc(32)]);
   const privateKey = await webcrypto.subtle.importKey('pkcs8', der, { name: 'Ed25519' }, false, ['sign']);

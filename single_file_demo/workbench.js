@@ -213,23 +213,27 @@ document.addEventListener('sum:render', event => {
 async function getSiteKeys() {
   if (siteKeys) return siteKeys;
   // The packet check must not hang forever if the JWKS fetch never
-  // settles: abort after a bounded wait so the status moves on.
+  // settles: abort after a bounded wait so the status moves on. The wait
+  // covers reading the body as well as the response headers.
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 8000);
-  let response;
+  const timedOut = () => new Error('Public keys request timed out.');
   try {
-    response = await fetch('/.well-known/jwks.json', { cache: 'no-cache', signal: controller.signal });
-  } catch (e) {
+    let response;
+    try {
+      response = await fetch('/.well-known/jwks.json', { cache: 'no-cache', signal: controller.signal });
+    } catch (e) {
+      if (controller.signal.aborted) throw timedOut();
+      throw e;
+    }
+    if (!response.ok) throw new Error(`Public keys unavailable (${response.status}).`);
+    let body = null;
+    try { body = await response.json(); } catch { if (controller.signal.aborted) throw timedOut(); /* not JSON: reported as malformed below */ }
+    if (!Array.isArray(body?.keys)) throw new Error('Public keys are malformed.');
+    return (siteKeys = publicJwks(body));
+  } finally {
     clearTimeout(timer);
-    if (controller.signal.aborted) throw new Error('Public keys request timed out.');
-    throw e;
   }
-  clearTimeout(timer);
-  if (!response.ok) throw new Error(`Public keys unavailable (${response.status}).`);
-  let body = null;
-  try { body = await response.json(); } catch { /* not JSON: reported as malformed below */ }
-  if (!Array.isArray(body?.keys)) throw new Error('Public keys are malformed.');
-  return (siteKeys = publicJwks(body));
 }
 // Export keeps an opened packet's own keys unchanged; a fresh render exports
 // this site's keys.
