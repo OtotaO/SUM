@@ -324,6 +324,17 @@ jobs:
       # decoded protectedHeader); keeping it in CI prevents regression.
       run: node single_file_demo/test_transform_receipt_fixtures.js
 
+    - name: Browser JS unit tests (JCS, provenance, replay window, transform verify)
+      # These four ran nowhere in CI until 2026-10-23 (only a Makefile target
+      # referenced one). Tests/test_js_tests_are_wired.py now fails if a
+      # single_file_demo test file is not referenced by a workflow or the
+      # package.json test script.
+      run: |
+        node single_file_demo/test_jcs.js
+        node single_file_demo/test_provenance.js
+        node single_file_demo/test_receipt_signed_at_window.js
+        node single_file_demo/test_transform_receipt_verify.js
+
     - name: Meaning-risk + perspective receipt verifier smoke — JS
       # Cross-runtime extension for the NEW receipt family
       # (sum.meaning_risk_receipt.v1 + sum.perspective_risk_receipt.v1):

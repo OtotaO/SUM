@@ -17,6 +17,12 @@ updates:
       interval: "monthly"
     open-pull-requests-limit: 2
     versioning-strategy: "increase-if-necessary"
+    # mcp 2.x removed mcp.server.fastmcp, which sum-mcp imports, and the CI
+    # mcp smoke fails on it (#526). The MCP surface is frozen; a 2.x
+    # migration is a deliberate change, not a routine bump.
+    ignore:
+      - dependency-name: "mcp"
+        update-types: ["version-update:semver-major"]
 
   # ── Cloudflare Worker toolchain — wrangler/esbuild/undici/ws live here as
   #    transitive dev deps; this is where the 2026-06 npm CVE bumps came from ──
