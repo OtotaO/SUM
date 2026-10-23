@@ -1,6 +1,6 @@
 {
   "generated_by": "single_file_demo/generate_altitude_rungs.py",
-  "scope": "per-document MEASUREMENT under the named NLI judge; not a guarantee. The proxy is blind to arrangement, sound, connotation, implicature. Corpus-level (1-delta) bounds live in signed receipts: this document is one of the 32 bills bound by the witnessed signed chain.",
+  "scope": "per-document MEASUREMENT under the named NLI judge; not a guarantee. The proxy is blind to arrangement, sound, connotation, implicature. Corpus-level values live in signed receipts: this document is one of the 32 bills in the witnessed signed chain, whose values describe those 32 bills only.",
   "scorer": "bidirectional-entailment[nli:MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli]",
   "scorer_version": "1",
   "document": {

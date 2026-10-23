@@ -85,7 +85,7 @@ def test_altitude_chain_wording_claims_no_confidence():
     d = _load()
     html = (_REPO / "single_file_demo" / "index.html").read_text("utf-8")
     for text in (d["chain_receipt"]["note"], d["scope"], html):
-        for phrase in ("certified chain", "joint confidence", "95% per hop"):
+        for phrase in ("certified chain", "joint confidence", "95% per hop", "(1-delta)"):
             assert phrase not in text, phrase
     assert "no confidence reading applies" in d["chain_receipt"]["note"]
 

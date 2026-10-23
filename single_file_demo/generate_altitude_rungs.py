@@ -51,8 +51,9 @@ CHAIN_ID = "9a8ab39f08522c50"
 SCOPE = (
     "per-document MEASUREMENT under the named NLI judge; not a guarantee. "
     "The proxy is blind to arrangement, sound, connotation, implicature. "
-    "Corpus-level (1-delta) bounds live in signed receipts: this document is "
-    "one of the 32 bills bound by the witnessed signed chain."
+    "Corpus-level values live in signed receipts: this document is one of "
+    "the 32 bills in the witnessed signed chain, whose values describe those "
+    "32 bills only."
 )
 
 
