@@ -845,7 +845,7 @@ Result: **PASS**.
 
 ### 102. Ed25519 verification in browser demo (SubtleCrypto) ✅
 
-`single_file_demo/index.html::verifyEd25519InBrowser` uses Web Crypto's native Ed25519 (Chrome 113+, Firefox 129+, Safari 17+). A bundle with a tampered tome and swapped `public_key` now fails the in-browser verify, not just the CLI. Falls back to `'present (browser lacks Ed25519; use CLI)'` on older browsers — never a false ✓.
+`single_file_demo/index.html::verifyEd25519InBrowser` uses Web Crypto's native Ed25519 (Chrome 113+, Firefox 129+, Safari 17+). A bundle with a tampered tome and swapped `public_key` now fails the in-browser verify, not just the CLI. On a browser without Ed25519 the bundle check fails closed with `Ed25519 signature NOT CHECKED` (label `⚠ NOT CHECKED: this browser lacks Ed25519 in WebCrypto`), as the Node verifier exits 5; it never shows a ✓ for a signature it did not check.
 
 Verify: Python mints Ed25519 bundle → Node 22's identical SubtleCrypto API (same bytes, same semantics as browser) reports `verified`. Tampered tome → `invalid`. Stripped fields → `absent`.
 Result: **PASS** (covered by cross-runtime harness K3/K4 — feature 63).
