@@ -43,7 +43,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         # CPU wheel index keeps the torch download small; the extras'
-        # version constraints (incl. the transformers <5 ceiling) still
+        # version constraints (incl. the transformers <6 ceiling) still
         # come from pyproject via the editable install.
         pip install torch --index-url https://download.pytorch.org/whl/cpu
         pip install -e ".[judge,research]"
