@@ -750,10 +750,10 @@ only stated. A committed 22-pair probe
 ([`fixtures/deterministic_judge/`](../fixtures/deterministic_judge/)) scored by
 the deterministic NLI judge (`DeterministicNLIJudge`: single-thread,
 deterministic algorithms, recorded environment) reproduces **exact decisions
-AND exact integer micro-margins** across arm64/Darwin (dev) and x86_64/Linux
-(CI) on torch 2.7.1 — all 22 decisions identical, maximum integer micro-margin
-drift **0**. The monthly `judge-smoke` canary re-runs the probe on the newest torch and transformers the extras allow: decisions identical every run; margin drift 0 from 2026-07 to 2026-09 (torch 2.13.0, 2.14.0), 1 on 2026-10-03 (torch 2.14.1), and 229 on a 2026-10-23 trial with transformers 5.20.2, which is why `[judge]` keeps `transformers<5`. Exact margins at wire
-(1e-6) resolution therefore hold only for the builds that measured drift 0; across
+AND exact integer micro-margins** between arm64/Darwin (dev, torch 2.7.1, the committed
+reference) and x86_64/Linux (CI, torch 2.13.0) on 2026-07-11: all 22 decisions identical, maximum integer micro-margin
+drift **0**. The monthly `judge-smoke` canary re-runs the probe on x86_64/Linux with the newest torch and transformers the extras allow, against that reference: decisions identical every run; margin drift 0 from 2026-07 to 2026-09 (torch 2.13.0, 2.14.0), 1 on 2026-10-03 (torch 2.14.1), and 229 on a 2026-10-23 trial with transformers 5.20.2, which is why `[judge]` keeps `transformers<5`. Exact margins at wire
+(1e-6) resolution therefore hold only for the CI builds that measured drift 0; across
 builds, only the 22 decisions are shown to be stable. This does NOT license a general cross-runtime claim (a
 different stack could drift a near-threshold decision), so a successful arithmetic replay must not be described as a successful cross-machine remeasurement of the source texts. Naive
 dynamic INT8 quantization is a MEASURED NEGATIVE on the same probe (flips 11/22;
