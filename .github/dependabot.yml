@@ -23,6 +23,14 @@ updates:
     ignore:
       - dependency-name: "mcp"
         update-types: ["version-update:semver-major"]
+      # transformers 5 shifts the default NLI judge's integer micro-margins
+      # by up to 229 (judge-smoke run 39894509070, 2026-10-23), against 0
+      # to 1 on 4.57.6 (docs/PROOF_BOUNDARY.md, machine-pinning paragraph).
+      # Decisions held on the 22-pair probe, but a shift that size can flip
+      # a near-threshold decision in a committed NLI golden. The [judge]
+      # ceiling stays <5 until the goldens are re-checked on 5.x (#559).
+      - dependency-name: "transformers"
+        update-types: ["version-update:semver-major"]
 
   # ── Cloudflare Worker toolchain — wrangler/esbuild/undici/ws live here as
   #    transitive dev deps; this is where the 2026-06 npm CVE bumps came from ──
