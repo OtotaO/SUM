@@ -21,8 +21,8 @@ once, offline, into a static JSON the Worker ships as an asset.
 
 HONESTY (also carried inside the JSON's ``scope`` field): every number here
 is a per-document MEASUREMENT under the named NLI judge, not a guarantee.
-The (1-delta) corpus-level bounds live in the signed, witnessed chain
-receipt the panel links to. The loss computation is machine-pinned (NLI
+The corpus-level values live in the signed, witnessed chain receipt the
+panel links to; they describe those 32 bills only. The loss computation is machine-pinned (NLI
 float drift, F23/F26): regenerating this file on a different stack may move
 the numbers slightly; the committed JSON is the artifact the page shows.
 
