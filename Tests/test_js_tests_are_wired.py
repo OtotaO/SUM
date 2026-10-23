@@ -1,8 +1,9 @@
 """Every browser JS test file must run somewhere in CI.
 
 Four files under single_file_demo/ (JCS, provenance, replay window, transform
-verify) ran in no workflow until 2026-10-23; one was referenced only by a
-Makefile target, and no workflow calls make. A test that never runs guards
+verify) ran in no workflow until 2026-10-23; docs/FEATURE_CATALOG.md named
+them, and a Makefile target one of them, only as manual commands, and no
+workflow calls make. A test that never runs guards
 nothing, so this fails when a single_file_demo test file is not named by a
 workflow or by the package.json test script that CI runs.
 """
