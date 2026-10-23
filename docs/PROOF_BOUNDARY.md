@@ -752,9 +752,9 @@ the deterministic NLI judge (`DeterministicNLIJudge`: single-thread,
 deterministic algorithms, recorded environment) reproduces **exact decisions
 AND exact integer micro-margins** across arm64/Darwin (dev) and x86_64/Linux
 (CI) on torch 2.7.1 — all 22 decisions identical, maximum integer micro-margin
-drift **0** — renewed monthly by the `judge-smoke` canary. At wire resolution
+drift **0**. The monthly `judge-smoke` canary re-runs the probe on the newest torch and transformers the extras allow: decisions identical every run; margin drift 0 through 2026-09 (torch 2.14.0), 1 on 2026-10-03 (torch 2.14.1), and 229 on a 2026-10-23 trial with transformers 5.20.2, which is why `[judge]` keeps `transformers<5`. At wire resolution
 (1e-6) the float32 judge is cross-machine reproducible *on these two platforms
-and this torch build*. This does NOT license a general cross-runtime claim (a
+and the torch build named for each run*. This does NOT license a general cross-runtime claim (a
 different stack could drift a near-threshold decision), so a successful arithmetic replay must not be described as a successful cross-machine remeasurement of the source texts. Naive
 dynamic INT8 quantization is a MEASURED NEGATIVE on the same probe (flips 11/22;
 every entailment lost); a real de-pin needs static/QAT or calibrated ONNX INT8,
