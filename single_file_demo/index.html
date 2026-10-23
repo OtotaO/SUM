@@ -125,6 +125,7 @@
 <main>
 <h1>See what changed. Keep the source.</h1>
 <p class="sub">Compare a rewrite with its original, inspect the passages, record your decisions, and export the review. Comparison runs in this browser. Generated rewrites can also carry an independently verifiable render receipt.</p>
+<p class="sub"><a href="#packet-verifier-panel" id="open-received-packet">Received a review packet? Open it here.</a></p>
 <div class="review-inputs">
   <div><label for="prose">Original source</label>
     <textarea id="prose" placeholder="Alice may cancel the lease with 30 days notice. The deposit is refundable unless rent is overdue."></textarea>
@@ -555,7 +556,9 @@ sum meaning-diff source.txt rewrite.txt --scorer nli</code></pre>
 <details class="card" id="packet-verifier-panel">
   <summary>Open and verify an exported review packet</summary>
   <p>Paste the packet JSON. Checks run here without an account or API key. For a signed packet, this page also loads this site's public keys from /.well-known/jwks.json to check whether the signing key is one of them: keys carried inside a packet can be made by anyone. This site signs renders for anyone, so a site key does not show who made the packet or its source. Source and review decisions remain unsigned.</p>
-  <label for="packet-input" class="field-label">Review packet JSON</label>
+  <label for="packet-file" class="field-label">Choose the packet file</label>
+  <input type="file" id="packet-file" accept=".json,application/json">
+  <label for="packet-input" class="field-label">Or paste the review packet JSON</label>
   <textarea id="packet-input" placeholder='{"schema":"sum.review_packet.v1", ...}'></textarea>
   <button id="verify-packet-btn" class="ghost">Verify review packet</button>
   <button id="open-packet-btn" class="ghost" disabled>Open checked packet texts and decisions</button>
