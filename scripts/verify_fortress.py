@@ -141,7 +141,9 @@ def main():
         )
         all_pass &= check("Node.js self-test", result.returncode == 0)
     except FileNotFoundError:
-        print("  ⚠️  Node.js not installed (skipped)")
+        # A missing runtime is a failed witness, not a pass: skipping here
+        # used to print "ALL FORTRESS CHECKS PASSED (20/20)" and exit 0.
+        all_pass &= check("Node.js self-test", False, "node not found on PATH")
 
     # ── 5. Key Rotation ───────────────────────────────────────
     print("\n[5] Key Rotation Backward Compatibility")
