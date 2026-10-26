@@ -14,7 +14,7 @@
 //     'self' covers both the static HTML and the same-origin proxy).
 //
 // See README §"Hosted-demo LLM proxy" for the three-leg fallback chain
-// (artifact runtime → this Worker → naive tokeniser) the demo's
+// (artifact runtime → this Worker → no claims) the demo's
 // extractTriples() walks at runtime.
 
 import type { Env } from "../index";
@@ -110,7 +110,7 @@ export async function handleComplete(request: Request, env: Env): Promise<Respon
   const useOpenAI = !useAnthropic && Boolean(env.OPENAI_API_KEY?.trim());
 
   if (!useAnthropic && !useOpenAI) {
-    // 503 signals the demo's JS to fall through to the naive tokeniser
+    // 503 signals the demo's JS to extract no claims
     // rather than surfacing an error — this is expected behaviour on a
     // demo that hasn't been configured with LLM secrets yet.
     return json(

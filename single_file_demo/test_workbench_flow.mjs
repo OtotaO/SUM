@@ -779,3 +779,19 @@ test('depths of an old original never select into a replaced one', async () => {
     assert.deepEqual(p.errors, []);
   } finally { p.close(); }
 });
+
+test('Cmd/Ctrl+Enter in the original sends nothing; only the extract button calls the extraction service', async () => {
+  const p = await page();
+  try {
+    p.input('prose', 'Confidential: our client will settle for 2 million dollars.');
+    for (const mod of [{ metaKey: true }, { ctrlKey: true }]) {
+      p.$('prose').dispatchEvent(new p.window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true, ...mod }));
+    }
+    await new Promise(r => setTimeout(r, 30));
+    assert.deepEqual(p.requests.map(r => String(r.url)), [], 'a keyboard shortcut must not send the original anywhere');
+    p.$('attest').click();
+    await until(() => p.requests.length === 1);
+    assert.equal(String(p.requests[0].url), '/api/complete', 'the explicit button still reaches the extraction service');
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});

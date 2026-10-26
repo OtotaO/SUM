@@ -115,13 +115,12 @@ def test_pasted_receipt_fields_are_escaped(source: str) -> None:
     """The paste panels take BOTH the receipt and the JWKS from the visitor.
 
     That means an attacker can mint a receipt that verifies cleanly and still
-    carries markup in ``kid`` / ``scorer`` / ``not_covered`` / ``controlled``.
+    carries markup in ``kid`` / ``scorer`` / ``not_covered``.
     """
     for frag in (
         "${esc(res.kid)}",
         "${esc(p.scorer ?? \"?\")}",
         "${esc(nc)}",
-        "${esc(p.controlled)}",
         "${esc(schema)}",
     ):
         assert frag in source, f"REGRESSION: unescaped receipt field, expected {frag}"

@@ -31,7 +31,7 @@ export interface Env {
   ASSETS: Fetcher;
 
   // Secrets (optional — absence is signalled to /api/complete callers
-  // with a 503; the demo's JS then falls back to the naive tokeniser).
+  // with a 503; the demo's JS then extracts no claims).
   ANTHROPIC_API_KEY?: string;
   OPENAI_API_KEY?: string;
   CF_AI_GATEWAY_BASE?: string;

@@ -175,7 +175,7 @@
 </div>
 
 <div class="row" style="justify-content: flex-end;">
-  <button id="attest" class="primary">Extract claims<span class="kbd">⌘↵</span></button>
+  <button id="attest" class="primary">Extract claims</button>
 </div>
 
 <div id="result" style="display:none;">
@@ -586,7 +586,7 @@ sum meaning-diff source.txt rewrite.txt --scorer nli</code></pre>
 </div>
 
 <p class="footer">
-  This file is both a standalone HTML page AND a Claude artifact. Paste it into a Claude artifact conversation and extraction upgrades automatically to Claude-grade recall (SVO, lowercased, underscore-joined subjects, negation suppressed, passive inverted — the same rules SUM's Python sieve enforces). Outside an artifact it uses a naive tokeniser; the attestation layer is identical either way. Source + cross-runtime harnesses: <a href="https://github.com/OtotaO/SUM">github.com/OtotaO/SUM</a>.
+  Source and cross-runtime harnesses: <a href="https://github.com/OtotaO/SUM">github.com/OtotaO/SUM</a>.
 </p>
 
 <script>
@@ -1219,16 +1219,6 @@ $('try-example').addEventListener('click', () => {
   }
 });
 
-// ⌘/Ctrl+Enter triggers attest when the prose textarea is focused.
-// Agentic muscle-memory: the same shortcut that submits messages in most
-// chat UIs, mint a bundle here.
-$('prose').addEventListener('keydown', (e) => {
-  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-    e.preventDefault();
-    $('attest').click();
-  }
-});
-
 // Copy helper: flashes the button green for 1.2 s on success. Used on
 // the state integer (big number, users want to paste it elsewhere).
 async function copyText(btn, text) {
@@ -1304,7 +1294,6 @@ $('attest').addEventListener('click', async () => {
     const SOURCE_LABEL = {
       'claude-artifact': 'Model-extracted claims. Original qualifiers may be lost; review against the source.',
       'claude-pages-fn': 'Model-extracted claims via /api/complete. Review each claim against the retained source.',
-      'naive': 'extracted by naive tokeniser — paste this page into a Claude artifact for LLM-grade recall',
     };
     srcEl.textContent = SOURCE_LABEL[source] ?? 'Extraction unavailable';
     srcEl.className = source === 'naive' ? 'extractor-src naive' : 'extractor-src claude';
@@ -1671,6 +1660,7 @@ $('verify').addEventListener('click', async () => {
     MEANING_RISK_SCHEMA,
     PERSPECTIVE_SCHEMA,
   } from "./meaning_receipt_verifier.js";
+  import { keyWarning } from "./review_packet.js";
 
   const recEl = document.getElementById("meaning-receipt-input");
   const jwksEl = document.getElementById("meaning-jwks-input");
@@ -1744,12 +1734,15 @@ $('verify').addEventListener('click', async () => {
       const bound = typeof p.risk_upper_bound_micro === "number"
         ? (p.risk_upper_bound_micro / 1e6).toFixed(4) : "n/a";
       const nc = Array.isArray(p.not_covered) ? p.not_covered.join(", ") : "—";
-      const ctrl = ("controlled" in p) ? ` · controlled: <code>${esc(p.controlled)}</code>` : "";
+      const testKey = keyWarning(jwks, res.kid).key_warning
+        ? `<div style="margin-top:6px;"><strong>⚠ Published test key.</strong> Its private key is public, ` +
+          `so anyone can sign under it and the signature authenticates nobody.</div>` : "";
       show("ok",
-        `<div><strong>✓ Stage A verified.</strong> Issuer signed (kid=<code>${esc(res.kid)}</code>), ` +
-          `schema <code>${esc(schema)}</code>, disclosure present.</div>` +
+        `<div><strong>✓ Stage A verified.</strong> Signature valid under the key you supplied ` +
+          `(kid=<code>${esc(res.kid)}</code>); a key you supply does not identify the issuer. ` +
+          `Schema <code>${esc(schema)}</code>, disclosure present.</div>` + testKey +
         `<div style="margin-top:6px;">scorer: <code>${esc(p.scorer ?? "?")}</code> · ` +
-          `stated bound (NOT replayed here): <code>≤ ${bound}</code>${ctrl}</div>` +
+          `stated bound (NOT replayed here): <code>≤ ${bound}</code></div>` +
         `<div style="margin-top:6px;opacity:0.8;">not&nbsp;covered: ${esc(nc)}</div>` +
         `<div style="margin-top:6px;opacity:0.75;">${PROXY_CAVEAT}</div>` +
         `<div style="margin-top:6px;opacity:0.75;">Stage A = signature + schema + disclosure. ` +
