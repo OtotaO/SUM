@@ -20,7 +20,7 @@ chain = [
     for uri in ["local:\U00010000", "local:\ue000"]
 ]
 # One subject per branch of the article rule (Python: s[:1].isupper()). All are
-# assigned in Unicode 3.1 or earlier, so both runtimes' tables agree on them.
+# assigned in Unicode 6.1 or earlier, so both runtimes' tables agree on them.
 tome_subjects = [
     "3M", "\u300c\u5f15\u7528", "\u6771\u4eac", "", "\U00010400",
     "\u01c5", "\uff21", "a", "A", "\U0001f600",

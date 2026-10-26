@@ -88,8 +88,8 @@ async function sha256Hex(bytes: Uint8Array): Promise<string> {
  * Apply density: keep the leading `ceil(density * len)` triples by
  * SHA-256-stable deterministic order. Empty input yields empty
  * output. Density 0 yields exactly one triple (the prefix);
- * density 1 yields all triples. Mirrors the Python helper plus
- * worker/src/render/axis_prompts.ts::applyDensity.
+ * density 1 yields all triples. Mirrors
+ * sum_engine_internal/transforms/slider.py::_apply_density.
  */
 async function applyDensity(
   triples: Array<[string, string, string]>,
@@ -122,7 +122,8 @@ function deterministicTome(triples: Array<[string, string, string]>): string {
     // that test: digits, CJK, quotes and the empty string survive it, and
     // charAt(0) sees half of a surrogate pair. Each runtime reads its own
     // Unicode tables, so code points newer than the older table can still
-    // differ; none of those is in a common script.
+    // differ; all of those are recent additions, such as rare Latin and
+    // Cyrillic capitals.
     const article = /^\p{Uppercase}/u.test(s) ? "" : "The";
     const pred = p.replace(/_/g, " ");
     return `${article} ${s} ${pred} ${o}.`.replace(/  /g, " ").trim();

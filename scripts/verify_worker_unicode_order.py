@@ -174,6 +174,9 @@ def main() -> int:
         tome = _deterministic_tome(_apply_density([tuple(r) for r in TRIPLES], 0.5))
         expected_output = canonical_hash(tome.encode("utf-8"))
         live_output = (receipt.get("payload") or {}).get("output_hash")
+        if not isinstance(live_output, str):
+            print(f"FAIL: no transform_receipt.payload.output_hash in the response from {url}")
+            return 2
         print(f"output:     {live_output}")
         print(f"python:     {expected_output}")
         if live_output != expected_output:
