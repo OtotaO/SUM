@@ -648,7 +648,7 @@ Result: **PASS** (functional).
 
 ### 74. Source-extractor indicator pill ✅
 
-"Model-extracted claims. Original qualifiers may be lost; review against the source." (artifact runtime) vs "Model-extracted claims via /api/complete. Review each claim against the retained source." vs "Extraction unavailable".
+"Model-extracted claims. Original qualifiers may be lost; review against the source." (artifact runtime) vs "Model-extracted claims via /api/complete. Review each claim against the retained source." When no claims come back, the pill is not shown and the status line says extraction was unavailable.
 
 Verify: (code at `single_file_demo/index.html` attest handler's `srcEl.className`).
 Result: **PASS**.

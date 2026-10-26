@@ -15,8 +15,8 @@
 // browser, hosted Pages deployment, curl from a script), there is no
 // `window.claude.complete`. This function provides the fallback: a
 // same-origin POST /api/complete endpoint that proxies to a real LLM
-// provider. The demo calls it between the artifact path and the naive
-// tokenizer path; see index.html → tryPagesFunctionExtract.
+// provider. The demo calls it after the artifact path; if neither returns
+// claims, it extracts none. See index.html → tryPagesFunctionExtract.
 //
 // Environment bindings (set in Cloudflare Pages dashboard → Settings →
 // Environment variables):
