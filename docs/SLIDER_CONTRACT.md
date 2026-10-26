@@ -19,14 +19,14 @@ note under "Headline result" for that harness's current evidence status.
 
 ## Headline result (NLI-verified, scale-checked)
 
-> **Under the current (v0.7) prompts, median LLM-axis fact
+> **Under the current (v0.7) render prompts, median LLM-axis fact
 > preservation = 1.000, p10 = 0.750, min = 0.700 (n=16 long docs).
 > All bench runs rendered with OpenAI gpt-4o-mini; the Worker's
 > default model, Claude Haiku 4.5, is not benchmarked.**
 
 **Reproducibility status (read before citing these numbers as
-"proved").** The figures above were *measured* in the v0.4 / v0.6 /
-v0.7 bench runs summarised below, but they are not yet replayable from
+"proved").** The figures above were *measured* in the v0.7 bench run
+summarised below (v0.4 and v0.6 are listed too), but are not replayable from
 a same-commit receipt: `Tests/benchmarks/slider_drift_bench.py` is
 implemented with `_bench_one_cell` and `main_async`; its scaffold label
 is stale, but the missing committed production-loop evidence remains, and no `sum.slider_drift_bench.v1` receipt
@@ -477,8 +477,8 @@ contract is recorded in the trust-root manifest:
   proves the render attestation; this contract proves preservation
   across axes.
 - [`docs/PROOF_BOUNDARY.md`](PROOF_BOUNDARY.md) §2.6 — the canonical
-  source-of-truth for the bench numbers (median 1.000, p10 0.769
-  long / 0.818 short, NLI rescue rate, prompt-hardening before/
+  source-of-truth for the bench numbers (median 1.000, p10 0.750
+  and min 0.700 for v0.7, NLI rescue rate, prompt-hardening before/
   after) this contract's headline cites.
 - [`docs/PROOF_BOUNDARY.md`](PROOF_BOUNDARY.md) §1.8 — the
   cryptographic binding (Ed25519 / JCS / detached JWS / JWKS) that
