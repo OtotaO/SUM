@@ -5,6 +5,7 @@ from pathlib import Path
 
 from sum_engine_internal.infrastructure.jcs import canonicalize
 from sum_engine_internal.transform_receipt.format import compute_source_chain_hash
+from sum_engine_internal.transforms.slider import _apply_density, _deterministic_tome
 
 triples = [
     ["\U00010000", "p", "o"], ["\ue000", "p", "o"],
@@ -18,6 +19,17 @@ chain = [
     for claim in ["\U00010000", "\ue000"]
     for uri in ["local:\U00010000", "local:\ue000"]
 ]
+# One subject per branch of the article rule (Python: s[:1].isupper()). All are
+# assigned in Unicode 3.1 or earlier, so both runtimes' tables agree on them.
+tome_subjects = [
+    "3M", "\u300c\u5f15\u7528", "\u6771\u4eac", "", "\U00010400",
+    "\u01c5", "\uff21", "a", "A", "\U0001f600",
+]
+tome_cases = []
+for subject in tome_subjects:
+    rows = [(subject, "p", "o")]
+    tome_cases.append({"triples": [list(r) for r in rows],
+                       "tome": _deterministic_tome(_apply_density(rows, 1.0))})
 fixture = {
     "schema": "sum.unicode_order_cross_runtime.v1",
     "reference": "Python sorted tuples and SUM JCS; no Unicode normalization",
@@ -27,6 +39,7 @@ fixture = {
     "sorted_triples": sorted(triples),
     "triples_hash": "sha256-" + hashlib.sha256(canonicalize(sorted(triples))).hexdigest(),
     "density_half": sorted(triples, key=lambda t: "||".join(t))[:len(triples) // 2],
+    "tome_cases": tome_cases,
 }
 Path(__file__).with_name("fixtures").joinpath("unicode_order.json").write_text(
     json.dumps(fixture, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"

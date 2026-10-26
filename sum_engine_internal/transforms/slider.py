@@ -108,7 +108,7 @@ def _apply_density(triples: list[tuple[str, str, str]], density: float) -> list[
 
 def _deterministic_tome(triples: list[tuple[str, str, str]]) -> str:
     """Pure-algorithmic prose composition. Same shape as
-    worker/src/render/axis_prompts.ts::deterministicTome."""
+    worker/src/transforms/slider.ts::deterministicTome."""
     if not triples:
         return ""
     sentences = []

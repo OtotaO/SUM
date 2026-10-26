@@ -111,13 +111,19 @@ async function applyDensity(
 }
 
 /**
- * Pure-algorithmic prose composition. Mirrors the Python helper
- * plus worker/src/render/axis_prompts.ts::deterministicTome.
+ * Pure-algorithmic prose composition. Mirrors
+ * sum_engine_internal/transforms/slider.py::_deterministic_tome byte for byte.
  */
 function deterministicTome(triples: Array<[string, string, string]>): string {
   if (triples.length === 0) return "";
   const sentences = triples.map(([s, p, o]) => {
-    const article = s.charAt(0).toUpperCase() === s.charAt(0) ? "" : "The";
+    // Python writes the article unless s[:1].isupper(): the first code point
+    // has the Unicode Uppercase property. A toUpperCase() round trip is not
+    // that test: digits, CJK, quotes and the empty string survive it, and
+    // charAt(0) sees half of a surrogate pair. Each runtime reads its own
+    // Unicode tables, so code points newer than the older table can still
+    // differ; none of those is in a common script.
+    const article = /^\p{Uppercase}/u.test(s) ? "" : "The";
     const pred = p.replace(/_/g, " ");
     return `${article} ${s} ${pred} ${o}.`.replace(/  /g, " ").trim();
   });

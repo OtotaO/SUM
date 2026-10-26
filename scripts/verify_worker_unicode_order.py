@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Behavioural deploy guard for the Worker's Unicode sort order.
+"""Behavioural deploy guard for the Worker's Unicode handling.
 
 ``scripts/verify_frontend_bytes.py`` compares served static assets to the repo
 and so detects that a deploy is *stale*. It cannot detect what a stale deploy
@@ -28,6 +28,14 @@ and compares the returned ``input_hash`` against three candidate values
 computed locally: the code-point ordering, the UTF-16 ordering, and the
 as-posted ordering that a Worker which stopped sorting would produce.
 
+The same response also carries ``output_hash``, the hash of the canonical
+tome. The script recomputes it with the Python transform and requires a match.
+Until 2026-10-26 the Worker chose the sentence article with a
+``toUpperCase()`` round trip instead of Python's ``isupper()``, so a subject
+starting with a digit, CJK, a quote or an emoji lost its "The" and the Worker
+signed an ``output_hash`` Python could not reproduce. The emoji subject in the
+probe triples exposes that defect too.
+
 Note this is not a JCS bug and the JCS layer is not what is probed here. RFC
 8785 3.2.3 requires object *keys* be sorted by UTF-16 code unit, and both
 implementations do that correctly -- ``infrastructure/jcs.py`` via
@@ -40,10 +48,12 @@ Usage:
     SUM_DEMO_URL=https://sum-demo.<account>.workers.dev python -m scripts.verify_worker_unicode_order
 
 Exit codes:
-    0  live hash matches the code-point ordering (deploy carries the #500 fix)
-    1  live hash matches the UTF-16 ordering (deploy predates #500), or the
-       unsorted ordering (a different, worse defect). Exit 1 means drift and
-       only drift; every error path returns 2.
+    0  live input_hash matches the code-point ordering (deploy carries the
+       #500 fix) and live output_hash matches the Python tome
+    1  live input_hash matches the UTF-16 ordering (deploy predates #500) or
+       the unsorted ordering (a different, worse defect), or live output_hash
+       differs from the Python tome. Exit 1 means drift and only drift; every
+       error path returns 2.
     2  could not reach the endpoint, or the response matched no candidate
 
 Author: ototao
@@ -155,7 +165,28 @@ def main() -> int:
         print(f"{name + ':':12}sha256-{value}")
 
     if live_hex == candidates["code_point"]:
-        print("\nok: deploy sorts by Unicode code point, matching Python (PR #500 present)")
+        from sum_engine_internal.transform_receipt.format import canonical_hash
+        from sum_engine_internal.transforms.slider import (
+            _apply_density,
+            _deterministic_tome,
+        )
+
+        tome = _deterministic_tome(_apply_density([tuple(r) for r in TRIPLES], 0.5))
+        expected_output = canonical_hash(tome.encode("utf-8"))
+        live_output = (receipt.get("payload") or {}).get("output_hash")
+        print(f"output:     {live_output}")
+        print(f"python:     {expected_output}")
+        if live_output != expected_output:
+            print(
+                "\nDRIFT: deploy sorts by code point but its canonical tome differs "
+                "from Python's, so Python cannot reproduce the signed output_hash.\n"
+                f"  live:   {payload.get('output')!r}\n  python: {tome!r}"
+            )
+            return 1
+        print(
+            "\nok: deploy sorts by Unicode code point (PR #500 present) and its "
+            "canonical tome matches Python"
+        )
         return 0
     if live_hex == candidates["utf16"]:
         print(
