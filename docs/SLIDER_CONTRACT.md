@@ -19,10 +19,10 @@ note under "Headline result" for that harness's current evidence status.
 
 ## Headline result (NLI-verified, scale-checked)
 
-> **Median LLM-axis fact preservation = 1.000 across both v0.4
-> (n=8 short docs) and v0.6 (n=16 long docs) bench runs. p10 =
-> 0.818 on short, 0.769 on long. Order preservation = 1.000
-> wherever measurable.**
+> **Under the current (v0.7) prompts, median LLM-axis fact
+> preservation = 1.000, p10 = 0.750, min = 0.700 (n=16 long docs).
+> All bench runs rendered with OpenAI gpt-4o-mini; the Worker's
+> default model, Claude Haiku 4.5, is not benchmarked.**
 
 **Reproducibility status (read before citing these numbers as
 "proved").** The figures above were *measured* in the v0.4 / v0.6 /

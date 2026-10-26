@@ -1454,7 +1454,7 @@ Cross-cutting coverage:
 - JS self-tests: **50 / 50 green** (30 JCS + 20 provenance)
 - Node verifier self-tests: **28 / 28 green** (10 v1 + 18 v2-parity)
 - Bench (extraction / canonical): **seed_v1 F1 = 1.000 / canonical drift 0.00 %**, **seed_v2 F1 = 0.762 with precision 1.000 / canonical drift 0.00 %**
-- Bench (slider, Phase E.1): median LLM-axis fact preservation **1.000**, p10 **0.769** (long n=16) / **0.818** (short n=8), 0 catastrophic outliers post v0.7 hardening, 0 / 400 cells errored post v0.8 robustness layer
+- Bench (slider, Phase E.1, OpenAI gpt-4o-mini, current v0.7 prompts, long n=16): median LLM-axis fact preservation **1.000**, p10 **0.750**, min **0.700**, 0 catastrophic outliers; the Worker's default model, Claude Haiku 4.5, is not benchmarked; 0 / 400 cells errored post v0.8 robustness layer
 - Live trust loop: `/.well-known/jwks.json` + `/api/render` + `render_receipt` (`sum.render_receipt.v1`, Ed25519 / JCS / detached JWS) verifiable end-to-end at `https://sum-demo.ototao.workers.dev` against the active `kid: sum-render-2026-04-27-1`
 
 Every feature above either has a passing verification this session or an explicit deferral reason. No green-box claims without evidence.
