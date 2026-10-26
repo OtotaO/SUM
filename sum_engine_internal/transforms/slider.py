@@ -87,7 +87,7 @@ def _requires_llm(quantized: dict[str, float]) -> bool:
 
 def _apply_density(triples: list[tuple[str, str, str]], density: float) -> list[tuple[str, str, str]]:
     """Keep the leading ``ceil(density * len)`` triples by SHA-256
-    deterministic order. Mirrors worker/src/render/axis_prompts.ts.
+    deterministic order. Mirrors worker/src/transforms/slider.ts::applyDensity.
 
     Empty input yields empty output regardless of density. Density 0
     yields one triple (the prefix); density 1 yields all triples.
@@ -108,7 +108,7 @@ def _apply_density(triples: list[tuple[str, str, str]], density: float) -> list[
 
 def _deterministic_tome(triples: list[tuple[str, str, str]]) -> str:
     """Pure-algorithmic prose composition. Same shape as
-    worker/src/render/axis_prompts.ts::deterministicTome."""
+    worker/src/transforms/slider.ts::deterministicTome."""
     if not triples:
         return ""
     sentences = []

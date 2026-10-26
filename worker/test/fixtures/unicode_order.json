@@ -167,5 +167,107 @@
       "",
       "o"
     ]
+  ],
+  "tome_cases": [
+    {
+      "triples": [
+        [
+          "3M",
+          "p",
+          "o"
+        ]
+      ],
+      "tome": "The 3M p o."
+    },
+    {
+      "triples": [
+        [
+          "「引用",
+          "p",
+          "o"
+        ]
+      ],
+      "tome": "The 「引用 p o."
+    },
+    {
+      "triples": [
+        [
+          "東京",
+          "p",
+          "o"
+        ]
+      ],
+      "tome": "The 東京 p o."
+    },
+    {
+      "triples": [
+        [
+          "",
+          "p",
+          "o"
+        ]
+      ],
+      "tome": "The p o."
+    },
+    {
+      "triples": [
+        [
+          "𐐀",
+          "p",
+          "o"
+        ]
+      ],
+      "tome": "𐐀 p o."
+    },
+    {
+      "triples": [
+        [
+          "ǅ",
+          "p",
+          "o"
+        ]
+      ],
+      "tome": "The ǅ p o."
+    },
+    {
+      "triples": [
+        [
+          "Ａ",
+          "p",
+          "o"
+        ]
+      ],
+      "tome": "Ａ p o."
+    },
+    {
+      "triples": [
+        [
+          "a",
+          "p",
+          "o"
+        ]
+      ],
+      "tome": "The a p o."
+    },
+    {
+      "triples": [
+        [
+          "A",
+          "p",
+          "o"
+        ]
+      ],
+      "tome": "A p o."
+    },
+    {
+      "triples": [
+        [
+          "😀",
+          "p",
+          "o"
+        ]
+      ],
+      "tome": "The 😀 p o."
+    }
   ]
 }

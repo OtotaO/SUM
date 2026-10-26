@@ -159,3 +159,15 @@ test("Python-derived Unicode fixture matches signer, density and transform input
   assert.deepEqual(applyDensity(fixture.triples, .5), fixture.density_half);
   assert.deepEqual(JSON.parse(new TextDecoder().decode(SLIDER_TRANSFORM.canonicalizeInput({ triples: fixture.triples }))), fixture.sorted_triples);
 });
+
+test("canonical slider tome matches Python's article rule byte for byte", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const fixture = JSON.parse(await readFile(new URL("./fixtures/unicode_order.json", import.meta.url), "utf8"));
+  const { SLIDER_TRANSFORM } = await import("../src/transforms/slider.ts");
+  const params = { density: 1, length: .5, formality: .5, audience: .5, perspective: .5 };
+  assert.ok(fixture.tome_cases.length >= 10);
+  for (const { triples, tome } of fixture.tome_cases) {
+    const res = await SLIDER_TRANSFORM.apply({ triples }, params, {});
+    assert.equal(res.output, tome, `subject ${JSON.stringify(triples[0][0])}`);
+  }
+});
