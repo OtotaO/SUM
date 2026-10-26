@@ -209,9 +209,9 @@
       Five axes shape the tome from the same facts. Density (above) is deterministic — selects which facts to include.
       The four below condition an LLM render via <code>/api/render</code>, which returns a signed
       <code>sum.render_receipt.v1</code> attesting the render. On a fixed benchmark corpus of 16 long documents,
-      with the current render prompts, fact preservation across the non-density axes measured median 1.000 (p10 0.750,
-      minimum 0.700). That benchmark ran SUM's Python renderer with OpenAI gpt-4o-mini. This page's renders, made
-      by the Worker with Claude Haiku 4.5 by default, have not been benchmarked with either provider.
+      two runs with the current render prompts measured median fact preservation 1.000 across the non-density axes;
+      the lowest single result was 0.545. Those runs used SUM's Python renderer with OpenAI gpt-4o-mini. This page's
+      renders, made by the Worker with Claude Haiku 4.5 by default, have not been benchmarked with either provider.
       <em>The figures are corpus-level, not a measurement of your document, and this live render does not re-measure
       them</em>; measured, not yet same-commit-replayable; see
       <a href="https://github.com/OtotaO/SUM/blob/main/docs/SLIDER_CONTRACT.md">SLIDER_CONTRACT.md</a>.
@@ -384,7 +384,7 @@
           (<a href="https://github.com/OtotaO/SUM/blob/main/docs/RENDER_RECEIPT_FORMAT.md#5-trust-scope">§5 trust scope</a>).
         </div>
         <div style="margin-bottom: 4px;">
-          <strong>Preservation benchmarked:</strong> median 1.000; p10 0.750 (16 long documents, Python renderer with OpenAI gpt-4o-mini; this page's Worker renders are not benchmarked).
+          <strong>Preservation benchmarked:</strong> median 1.000, lowest result 0.545 (two runs, 16 long documents, Python renderer with OpenAI gpt-4o-mini; this page's Worker renders are not benchmarked).
           <em>Not recomputed for this render</em> — see
           <a href="https://github.com/OtotaO/SUM/blob/main/docs/SLIDER_CONTRACT.md#headline-result-nli-verified-scale-checked">SLIDER_CONTRACT.md</a>.
         </div>

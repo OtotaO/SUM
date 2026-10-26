@@ -881,7 +881,7 @@ Result: **PASS** (load-bearing for the slider product claim).
 
 ### 106. `order_preservation` (MontageLie defense) ✅
 
-Pairwise order-preservation among triples that survive the round-trip. Returns 0.0 on a timeline-reversed permutation while set-based fact preservation scores 1.0; together they detect MontageLie-style reordering attacks. **Measured = 1.000 wherever measurable in the short-corpus runs** (v0.2 to v0.4, SLIDER_CONTRACT); the long-corpus v0.6 and v0.7 runs record no order figure.
+Pairwise order-preservation among triples that survive the round-trip. Returns 0.0 on a timeline-reversed permutation while set-based fact preservation scores 1.0; together they detect MontageLie-style reordering attacks. **Measured = 1.000 wherever measurable in the v0.2 to v0.4 and v0.6 runs** (CHANGELOG); the v0.7 and v0.8 runs record no order figure.
 
 Verify: covered by feature 104 (regression case is in `test_slider_renderer.py`).
 Result: **PASS**.
@@ -1454,7 +1454,7 @@ Cross-cutting coverage:
 - JS self-tests: **50 / 50 green** (30 JCS + 20 provenance)
 - Node verifier self-tests: **28 / 28 green** (10 v1 + 18 v2-parity)
 - Bench (extraction / canonical): **seed_v1 F1 = 1.000 / canonical drift 0.00 %**, **seed_v2 F1 = 0.762 with precision 1.000 / canonical drift 0.00 %**
-- Bench (slider, Phase E.1, OpenAI gpt-4o-mini, current v0.7 render prompts, long n=16): median LLM-axis fact preservation **1.000**, p10 **0.750**, min **0.700**, 0 catastrophic outliers; the Worker's default model, Claude Haiku 4.5, is not benchmarked; 0 / 400 cells errored post v0.8 robustness layer
+- Bench (slider, Phase E.1, SUM's Python renderer with OpenAI gpt-4o-mini, two runs under the current render prompts, long n=16): median LLM-axis fact preservation **1.000** in both, lowest cell **0.700** (v0.7) and **0.545** (v0.8), 0 catastrophic outliers; the Worker's renders (Claude Haiku 4.5 by default, or OpenAI) are not benchmarked; 0 / 400 cells errored post v0.8 robustness layer
 - Live trust loop: `/.well-known/jwks.json` + `/api/render` + `render_receipt` (`sum.render_receipt.v1`, Ed25519 / JCS / detached JWS) verifiable end-to-end at `https://sum-demo.ototao.workers.dev` against the active `kid: sum-render-2026-04-27-1`
 
 Every feature above either has a passing verification this session or an explicit deferral reason. No green-box claims without evidence.
