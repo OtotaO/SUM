@@ -606,17 +606,17 @@ Result: **PASS**.
 
 ### 68. Claude artifact extraction (`window.claude.complete`) ✅
 
-Runtime-detected; if available, calls Claude with the SUM sieve-discipline prompt (lowercase, underscore-joined subjects, suppress negation, invert passive) and parses the first balanced JSON array. Commit `e5e57b6`.
+Runtime-detected; if available, calls Claude with the extraction prompt (`CLAUDE_PROMPT_TEMPLATE`: preserve multi-word names, negation, modality, quantities, dates, conditions and attribution; abstain on a clause it cannot represent) and parses the first balanced JSON array. Commit `e5e57b6`.
 
 Verify: 23 Node-stubbed tests in commit `e5e57b6` body (JSON extraction, validation, stubbed claude, error paths).
 Result: **PASS** (functional; live claude.ai call user-testable).
 
-### 69. Naive-extractor fallback ✅
+### 69. Extraction abstains when no model is available ✅
 
-When `window.claude.complete` is absent, falls back to a sentence-split + stopword-strip + first-three-content-words heuristic. Deliberately shallow.
+When neither `window.claude.complete` nor `/api/complete` returns claims, extraction returns none (`naiveExtract` returns `[]`; the earlier first-three-content-words heuristic was removed) and the status says no heuristic claims were invented. The local comparison stays usable.
 
-Verify: (code at `single_file_demo/index.html`).
-Result: **PASS** (tested via the stubbed-no-claude check in e5e57b6).
+Verify: `cd single_file_demo && npm test` ("unavailable extraction never invents claims" in `test_workbench_flow.mjs`).
+Result: **PASS**.
 
 ### 70. In-browser prime minting (BigInt + WebCrypto) ✅
 
@@ -648,7 +648,7 @@ Result: **PASS** (functional).
 
 ### 74. Source-extractor indicator pill ✅
 
-"✶ extracted by Claude (artifact runtime)" vs "· extracted by naive tokeniser — paste this page into a Claude artifact for LLM-grade recall".
+"Model-extracted claims. Original qualifiers may be lost; review against the source." (artifact runtime) vs "Model-extracted claims via /api/complete. Review each claim against the retained source." When no claims come back, the pill is not shown and the status line says extraction was unavailable.
 
 Verify: (code at `single_file_demo/index.html` attest handler's `srcEl.className`).
 Result: **PASS**.
@@ -782,7 +782,7 @@ Result: **PASS** (file present; no behaviour change required).
 
 ### 96. Deployment runbook ✅
 
-README "Single-File Deployment — Cloudflare Pages" section names the framework preset, output directory, wrangler CLI command, and the (now-shipped) Pages Function fallback. The hosted-demo LLM proxy (`single_file_demo/functions/api/complete.ts` — Anthropic preferred / OpenAI fallback / optional CF AI Gateway) ships alongside the static assets and serves as the middle leg between artifact-runtime extraction and the naive-tokeniser fallback. See README §"Hosted-demo LLM proxy".
+README "Single-File Deployment — Cloudflare Pages" section names the framework preset, output directory, wrangler CLI command, and the (now-shipped) Pages Function fallback. The hosted-demo LLM proxy (`single_file_demo/functions/api/complete.ts` — Anthropic preferred / OpenAI fallback / optional CF AI Gateway) ships alongside the static assets and serves as the middle leg between artifact-runtime extraction and abstention (no claims). See README §"Hosted-demo LLM proxy".
 Result: **PASS**.
 
 ### 97. Cloudflare Worker live URL ✅

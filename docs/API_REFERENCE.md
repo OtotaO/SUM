@@ -301,7 +301,7 @@ Content-Type: application/json
 | 400 | Invalid JSON, missing/empty `prompt`, or `prompt` over 40 000 chars |
 | 405 | Non-POST method |
 | 502 | Upstream provider returned non-2xx; body includes the provider name, status, and a 500-char prefix of the upstream response |
-| 503 | Neither `ANTHROPIC_API_KEY` nor `OPENAI_API_KEY` is configured. The demo's JS detects 503 and falls back to a deterministic naive tokeniser. |
+| 503 | Neither `ANTHROPIC_API_KEY` nor `OPENAI_API_KEY` is configured. The demo's JS detects 503 and extracts no claims; the local comparison stays usable. |
 
 ---
 
