@@ -109,9 +109,11 @@ continuation state lives in the private memory that auto-loads each session, and
    product contract. Five axes, per-axis drift formulas, fact-
    preservation thresholds, the v0.4 → v0.7 NLI-audit / scale-bench /
    prompt-hardening arc. Canonical source for the headline numbers
-   (median LLM-axis fact preservation = 1.000; p10 = 0.818 short-doc
-   n=8, 0.769 long-doc n=16; min lifted from 0.111 → 0.700 by v0.7
-   prompt hardening; catastrophic outliers eliminated 2 → 0). These
+   (current render prompts, n=16 long docs, SUM's Python renderer with
+   OpenAI gpt-4o-mini: median LLM-axis fact preservation = 1.000 in
+   v0.7 and v0.8, min 0.700 and 0.545, up from 0.111 in v0.6, p10 0.750
+   in v0.7; catastrophic outliers eliminated 2 → 0; the Worker's
+   renders, Claude Haiku 4.5 by default, are not benchmarked). These
    are **measured, not same-commit-replayable** — the bench harness
    (`Tests/benchmarks/slider_drift_bench.py`) has an implemented execution loop, but no
    `sum.slider_drift_bench.v1` receipt is committed; closing that to a

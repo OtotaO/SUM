@@ -73,7 +73,7 @@ Per cell: median strict-match fact preservation, NLI-audited weak-cell rate, n_o
 
 Compute the **capability region** per axis: the maximal contiguous set of (complexity_bucket × displacement_bucket) cells where median fact preservation ≥ threshold (default 0.95, configurable). Output the region as a list of cell coordinates plus a single ASCII heatmap in the receipt for human-readability.
 
-**Acceptance.** `docs/SLIDER_CONTRACT.md` gains a "Capability region" section per axis, replacing the bare median/p10 summary as the headline. The headline becomes operational: "length-axis fact preservation ≥ 0.95 for documents with ≤19 axioms and `|Δ length| ≤ 0.75`" rather than "median 1.000 / p10 0.769". The latter stays as supporting detail.
+**Acceptance.** `docs/SLIDER_CONTRACT.md` gains a "Capability region" section per axis, replacing the bare median/p10 summary as the headline. The headline becomes operational: "length-axis fact preservation ≥ 0.95 for documents with ≤19 axioms and `|Δ length| ≤ 0.75`" rather than a bare median and p10. The latter stays as supporting detail.
 
 **Cost.** Marginal over existing bench runs — same shots, different aggregation.
 

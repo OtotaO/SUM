@@ -19,14 +19,14 @@ note under "Headline result" for that harness's current evidence status.
 
 ## Headline result (NLI-verified, scale-checked)
 
-> **Median LLM-axis fact preservation = 1.000 across both v0.4
-> (n=8 short docs) and v0.6 (n=16 long docs) bench runs. p10 =
-> 0.818 on short, 0.769 on long. Order preservation = 1.000
-> wherever measurable.**
+> **Two runs with the current render prompts (v0.7, v0.8; n=16 long
+> docs): median LLM-axis fact preservation = 1.000 in both, lowest
+> cell 0.700 and 0.545, p10 0.750 (v0.7 only), via SUM's Python
+> renderer with OpenAI gpt-4o-mini; Worker renders are unbenchmarked.**
 
 **Reproducibility status (read before citing these numbers as
-"proved").** The figures above were *measured* in the v0.4 / v0.6 /
-v0.7 bench runs summarised below, but they are not yet replayable from
+"proved").** The figures above were *measured* in the v0.7 run below
+and the v0.8 rerun (CHANGELOG, Phase E.1 v0.8), but are not replayable from
 a same-commit receipt: `Tests/benchmarks/slider_drift_bench.py` is
 implemented with `_bench_one_cell` and `main_async`; its scaffold label
 is stale, but the missing committed production-loop evidence remains, and no `sum.slider_drift_bench.v1` receipt
@@ -477,9 +477,9 @@ contract is recorded in the trust-root manifest:
   proves the render attestation; this contract proves preservation
   across axes.
 - [`docs/PROOF_BOUNDARY.md`](PROOF_BOUNDARY.md) §2.6 — the canonical
-  source-of-truth for the bench numbers (median 1.000, p10 0.769
-  long / 0.818 short, NLI rescue rate, prompt-hardening before/
-  after) this contract's headline cites.
+  source-of-truth for the bench numbers (median 1.000, p10 0.750
+  and min 0.700 for v0.7; v0.8 min 0.545 is in CHANGELOG; NLI rescue
+  rate) this contract's headline cites.
 - [`docs/PROOF_BOUNDARY.md`](PROOF_BOUNDARY.md) §1.8 — the
   cryptographic binding (Ed25519 / JCS / detached JWS / JWKS) that
   attests to every render exercising this contract.
