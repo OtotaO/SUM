@@ -314,7 +314,7 @@ $('export-review-btn').addEventListener('click', async () => {
     // Export is not a trust promotion. Preserve the receipt unchanged even
     // if verification has not run, and require the recipient to recheck it.
     const keys = snapshot.render ? await getPublicKeys() : null;
-    const packet = await makeReviewPacket({ ...snapshot, jwks: keys });
+    const packet = await makeReviewPacket({ ...snapshot, jwks: keys, openUrl: OPEN_URL });
     if (version !== generation || exportVersion !== exportRevision) return;
     const blob = new Blob([JSON.stringify(packet, null, 2)], { type: 'application/json' });
     const link = document.createElement('a');
@@ -322,12 +322,31 @@ $('export-review-btn').addEventListener('click', async () => {
     link.download = 'sum-review-packet.json';
     link.click();
     setTimeout(() => URL.revokeObjectURL(link.href), 1000);
-    status('Review packet exported with the complete source, exact rewrite, passage decisions and available render receipt/public keys. The packet itself is unsigned.');
+    status(`Review packet exported with the complete source, exact rewrite, passage decisions and available render receipt/public keys. The packet itself is unsigned. To have someone check it, send them the file; they open ${OPEN_URL}, choose "Received a review packet? Open it here" and pick the file.`);
   } catch (e) {
     if (version === generation && exportVersion === exportRevision) status(`Export failed: ${e.message} The signed receipt has not been silently dropped. Try again when public keys are available.`);
   } finally {
     if (version === generation && exportVersion === exportRevision && current) $('export-review-btn').disabled = false;
   }
+});
+
+// The page a recipient opens to check an exported packet: this page when it
+// is served over http(s), otherwise (a local file) the public site.
+const OPEN_URL = /^https?:$/.test(window.location.protocol) ? window.location.origin + window.location.pathname : 'https://sum-demo.ototao.workers.dev/';
+$('open-received-packet').addEventListener('click', event => {
+  event.preventDefault();
+  $('packet-verifier-panel').open = true;
+  $('packet-verifier-panel').scrollIntoView({ block: 'start' });
+  $('packet-file').focus();
+});
+// Choosing a packet file fills the paste box and runs the same check.
+$('packet-file').addEventListener('change', async () => {
+  const file = $('packet-file').files?.[0];
+  if (!file) return;
+  $('packet-input').value = await file.text();
+  $('packet-file').value = ''; // picking the same file again fires change again
+  $('packet-input').dispatchEvent(new window.Event('input'));
+  $('verify-packet-btn').click();
 });
 
 let packetRevision = 0;

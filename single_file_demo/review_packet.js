@@ -91,13 +91,16 @@ export async function checkRenderBinding(render, output, jwks) {
     source_binding: 'not-signed', reviewer_identity: 'not-verified', signer_identity: 'not-established', revocation: 'not-checked', freshness: 'not-checked', meaning: 'not-measured' };
 }
 
-export async function makeReviewPacket({ source, output, review, render = null, jwks = null }) {
+// openUrl, when given, is the page a recipient opens to check the packet; the
+// guide then starts with that one instruction.
+export async function makeReviewPacket({ source, output, review, render = null, jwks = null, openUrl = null }) {
+  const howToOpen = openUrl ? `To check this packet, open ${openUrl}, expand "Open and verify an exported review packet", and choose this file. ` : '';
   return { schema: REVIEW_SCHEMA, created_at: new Date().toISOString(),
     source: { text: source, hash: await hashText(source) },
     output: { text: output, hash: await hashText(output) }, review: structuredClone(review),
     render: render ? structuredClone(render) : null, jwks: jwks ? publicJwks(jwks) : null,
     disclosure: REVIEW_SCOPE,
-    verification_guide: 'Open this packet in the SUM workbench packet verifier, or import verifyReviewPacket from single_file_demo/review_packet.js in Node. It recomputes text hashes and review spans. When a receipt and public keys are included, it verifies Ed25519 plus exact output, selected triples and slider bindings. The container, source, key ownership, review decisions and reviewer identity are not signed. The public keys inside the packet are unsigned too, so a valid signature alone does not show who signed: pass the keys the issuing site publishes, as verifyReviewPacket(packet, { siteJwks }) in Node; without them a packet with a receipt reports key_pin not-checked. Independently establish revocation/freshness policy. No account or API key is needed. Keep the packet private if its source contains private material.' };
+    verification_guide: howToOpen + 'Open this packet in the SUM workbench packet verifier, or import verifyReviewPacket from single_file_demo/review_packet.js in Node. It recomputes text hashes and review spans. When a receipt and public keys are included, it verifies Ed25519 plus exact output, selected triples and slider bindings. The container, source, key ownership, review decisions and reviewer identity are not signed. The public keys inside the packet are unsigned too, so a valid signature alone does not show who signed: pass the keys the issuing site publishes, as verifyReviewPacket(packet, { siteJwks }) in Node; without them a packet with a receipt reports key_pin not-checked. Independently establish revocation/freshness policy. No account or API key is needed. Keep the packet private if its source contains private material.' };
 }
 
 export async function verifyReviewPacket(packet, options = {}) {
