@@ -344,6 +344,7 @@ $('packet-file').addEventListener('change', async () => {
   const file = $('packet-file').files?.[0];
   if (!file) return;
   $('packet-input').value = await file.text();
+  $('packet-file').value = ''; // picking the same file again fires change again
   $('packet-input').dispatchEvent(new window.Event('input'));
   $('verify-packet-btn').click();
 });
