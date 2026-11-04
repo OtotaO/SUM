@@ -61,6 +61,6 @@ jobs:
       # main failed this advisory job. Same SHA pin (a real codeql-action
       # commit, so the /upload-sarif sub-path resolves at it), so the R0.3
       # SHA-pin lint stays satisfied.
-      uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee  # v4.39.0
+      uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370  # v4.39.1
       with:
         sarif_file: results.sarif
