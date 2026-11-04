@@ -91,7 +91,7 @@ class ConvertedDocument:
     source_uri: str           # sha256: of the ORIGINAL bytes
     source_bytes_len: int
     input_format: str         # e.g. "pdf", "html", "plaintext", "markdown"
-    converter: str            # e.g. "markitdown@0.1.8", "passthrough"
+    converter: str            # e.g. "markitdown@0.1.9", "passthrough"
     markdown_sha256: str      # sha256 of the markdown text (not URL-encoded)
 
 
