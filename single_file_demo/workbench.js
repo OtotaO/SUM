@@ -339,12 +339,21 @@ $('open-received-packet').addEventListener('click', event => {
   $('packet-verifier-panel').scrollIntoView({ block: 'start' });
   $('packet-file').focus();
 });
-// Choosing a packet file fills the paste box and runs the same check.
+// Choosing a packet file fills the paste box and runs the same check. The
+// picker is cleared when clicked, not after reading, so it keeps showing the
+// chosen file's name and choosing the same file again still fires change.
+$('packet-file').addEventListener('click', () => { $('packet-file').value = ''; });
 $('packet-file').addEventListener('change', async () => {
   const file = $('packet-file').files?.[0];
   if (!file) return;
-  $('packet-input').value = await file.text();
-  $('packet-file').value = ''; // picking the same file again fires change again
+  let text = '';
+  try { text = await file.text(); } catch (e) {
+    $('packet-input').value = '';
+    $('packet-input').dispatchEvent(new window.Event('input')); // drops any earlier checked packet
+    $('packet-status').textContent = `Could not read ${file.name}: ${e.message}`;
+    return;
+  }
+  $('packet-input').value = text;
   $('packet-input').dispatchEvent(new window.Event('input'));
   $('verify-packet-btn').click();
 });

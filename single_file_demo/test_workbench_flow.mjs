@@ -594,9 +594,22 @@ test('a recipient opens a packet from a file: the top link, the file picker, and
       q.$('open-received-packet').click();
       assert.equal(q.$('packet-verifier-panel').open, true);
       Object.defineProperty(q.$('packet-file'), 'files', { value: [{ name: 'sum-review-packet.json', text: async () => text }], configurable: true });
+      // The picker keeps showing the chosen file after reading it; it is cleared only on the next click.
+      const cleared = [];
+      Object.defineProperty(q.$('packet-file'), 'value', { get: () => '', set: v => cleared.push(v), configurable: true });
       q.$('packet-file').dispatchEvent(new q.window.Event('change'));
       await until(() => q.$('packet-status').textContent.startsWith('Checks completed'));
       assert.equal(q.$('open-packet-btn').disabled, false);
+      assert.deepEqual(cleared, []);
+      q.$('packet-file').click();
+      assert.deepEqual(cleared, ['']);
+      // A file the browser cannot read says so instead of leaving the old status.
+      Object.defineProperty(q.$('packet-file'), 'files', { value: [{ name: 'broken.json', text: async () => { throw new Error('read failed'); } }], configurable: true });
+      q.$('packet-file').dispatchEvent(new q.window.Event('change'));
+      await until(() => q.$('packet-status').textContent.startsWith('Could not read'));
+      assert.equal(q.$('packet-status').textContent, 'Could not read broken.json: read failed');
+      assert.equal(q.$('open-packet-btn').disabled, true, 'the earlier packet can no longer be opened');
+      assert.equal(q.$('packet-input').value, '');
       assert.deepEqual(q.errors, []);
     } finally { q.close(); }
     assert.deepEqual(p.errors, []);
