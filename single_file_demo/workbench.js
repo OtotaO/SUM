@@ -340,27 +340,34 @@ $('open-received-packet').addEventListener('click', event => {
   $('packet-file').focus();
 });
 // Choosing a packet file fills the paste box and runs the same check. The
-// picker is cleared when clicked, not after reading, so it keeps showing the
-// chosen file's name and choosing the same file again still fires change.
-$('packet-file').addEventListener('click', () => { $('packet-file').value = ''; });
+// picker keeps showing the chosen file until the box is edited by hand; then
+// it is cleared, since it no longer describes the box, and choosing the same
+// file again fires change again.
+let fillingFromFile = false;
+function fillPacketInput(text) {
+  fillingFromFile = true;
+  try { $('packet-input').value = text; $('packet-input').dispatchEvent(new window.Event('input')); } finally { fillingFromFile = false; }
+}
 $('packet-file').addEventListener('change', async () => {
   const file = $('packet-file').files?.[0];
   if (!file) return;
   let text = '';
   try { text = await file.text(); } catch (e) {
-    $('packet-input').value = '';
-    $('packet-input').dispatchEvent(new window.Event('input')); // drops any earlier checked packet
+    fillPacketInput(''); // drops any earlier checked packet
+    $('packet-file').value = '';
     $('packet-status').textContent = `Could not read ${file.name}: ${e.message}`;
     return;
   }
-  $('packet-input').value = text;
-  $('packet-input').dispatchEvent(new window.Event('input'));
+  fillPacketInput(text);
   $('verify-packet-btn').click();
 });
 
 let packetRevision = 0;
 let checkedPacket = null;
-$('packet-input').addEventListener('input', () => { packetRevision++; checkedPacket = null; $('open-packet-btn').disabled = true; $('packet-status').textContent = 'Packet changed. Verify again.'; });
+$('packet-input').addEventListener('input', () => {
+  packetRevision++; checkedPacket = null; $('open-packet-btn').disabled = true; $('packet-status').textContent = 'Packet changed. Verify again.';
+  if (!fillingFromFile) $('packet-file').value = '';
+});
 $('verify-packet-btn').addEventListener('click', async () => {
   const version = ++packetRevision;
   checkedPacket = null;
