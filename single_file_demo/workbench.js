@@ -339,10 +339,10 @@ $('open-received-packet').addEventListener('click', event => {
   $('packet-verifier-panel').scrollIntoView({ block: 'start' });
   $('packet-file').focus();
 });
-// Choosing a packet file fills the paste box and runs the same check. The
-// picker keeps showing the chosen file until the box is edited by hand; then
-// it is cleared, since it no longer describes the box, and choosing the same
-// file again fires change again.
+// Choosing a packet file fills the paste box and runs the same check. After a
+// successful read the picker keeps showing the chosen file until the box is
+// edited by hand; then it is cleared, since it no longer describes the box,
+// and choosing the same file again fires change again. A failed read clears it.
 let fillingFromFile = false;
 function fillPacketInput(text) {
   fillingFromFile = true;
