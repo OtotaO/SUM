@@ -54,7 +54,8 @@ function selectIn(field, start, end) {
 for (const field of ['prose', 'rewrite']) {
   const unlock = () => { $(field).readOnly = false; };
   $(field).addEventListener('pointerdown', unlock);
-  $(field).addEventListener('blur', unlock);
+  // Switching tab or app also blurs the box; it stays read-only until focus really moves elsewhere on the page.
+  $(field).addEventListener('blur', () => setTimeout(() => { if (document.activeElement !== $(field) && document.hasFocus()) unlock(); }, 0));
   $(field).addEventListener('keydown', event => {
     if ($(field).readOnly && event.key.length === 1 && !event.ctrlKey && !event.metaKey) status('That box is showing a found passage. Click in it to edit; editing the texts starts a new review.');
   });
@@ -160,7 +161,7 @@ function showReview() {
     pair.className = 'review-pair';
     pair.append(spanCell(row.source, 'prose'), spanCell(row.output, 'rewrite'));
     const label = document.createElement('label');
-    label.textContent = current.packetCreatedAt ? "Sender's decision in the packet (unsigned), editable: " : 'Your decision: ';
+    label.textContent = current.fromPacket ? "Sender's decision in the packet (unsigned), editable: " : 'Your decision: ';
     const select = document.createElement('select');
     select.setAttribute('aria-label', `Decision for ${row.id}`);
     for (const [value, text] of [['unreviewed', 'Not reviewed'], ['accepted', 'Accept as reviewed'], ['needs-change', 'Needs a change']]) {
@@ -186,7 +187,7 @@ function showReview() {
 function updateSummary() {
   if (!current) return;
   const rows = current.review.rows;
-  $('review-summary').textContent = `${rows.filter(r => r.kind === 'verbatim').length} verbatim matches; ${rows.filter(r => r.kind !== 'verbatim').length} passages to inspect. ${rows.filter(r => r.decision !== 'unreviewed').length} of ${rows.length} decisions recorded${current.packetCreatedAt ? ` (from a packet the sender says was created ${current.packetCreatedAt}; the date and decisions are unsigned)` : ''}. No meaning score is computed.`;
+  $('review-summary').textContent = `${rows.filter(r => r.kind === 'verbatim').length} verbatim matches; ${rows.filter(r => r.kind !== 'verbatim').length} passages to inspect. ${rows.filter(r => r.decision !== 'unreviewed').length} of ${rows.length} decisions recorded${current.fromPacket ? ` (from a packet; ${current.fromPacket.createdAt ? `its unsigned creation time is ${current.fromPacket.createdAt}` : 'it gives no valid creation time'}; the decisions are unsigned)` : ''}. No meaning score is computed.`;
 }
 
 function compare() {
@@ -376,7 +377,8 @@ async function getPublicKeys() { return jwks || getSiteKeys(); }
 // appears in these messages and a packet cannot print the site-key
 // sentence; a key ID fragment without spaces can still begin a wrapped
 // line. After Open, the packet's source, rewrite and review spans are shown
-// as the texts under review.
+// as the texts under review, and its created_at only if it is an ISO-8601
+// UTC timestamp (digits, '-', ':', '.', 'T', 'Z'; see packetTime).
 const escapeUnits = c => Array.from({ length: c.length }, (_, i) => '\\u' + c.charCodeAt(i).toString(16).padStart(4, '0')).join('');
 const plainMessage = text => {
   const shown = String(text).replace(/[^\x20-\x7e]/g, escapeUnits).replace(/ {2,}/g, run => ' ' + escapeUnits(run.slice(1)));
@@ -401,6 +403,9 @@ function keyPinText(checks, unpinned) {
   if (checks.key_pin === 'not-checked') return `Key ${kid} was not checked against this site's /.well-known/jwks.json. Reason: ${asSentence(plainMessage(unpinned || 'site keys not loaded'))}${unknown}${warning}`;
   return '';
 }
+
+// Only an ISO-8601 UTC timestamp, as this page writes, is shown; any other value is not repeated.
+const packetTime = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(value) ? value : null;
 
 // One plain sentence for the recipient, built only from this page's own result values.
 function packetVerdict(result) {
@@ -539,7 +544,7 @@ $('open-packet-btn').addEventListener('click', () => {
   // remains hidden because this is a recipient opening a supplied packet.
   render = packet.render;
   jwks = packet.jwks;
-  current = { source: packet.source.text, output: packet.output.text, review: packet.review, render, packetCreatedAt: typeof packet.created_at === 'string' ? plainMessage(packet.created_at).slice(0, 40) : 'at an unstated time' };
+  current = { source: packet.source.text, output: packet.output.text, review: packet.review, render, fromPacket: { createdAt: packetTime(packet.created_at) } };
   showReview();
   status('Opened the checked packet. Review decisions are supplied by the packet and remain unsigned.');
   $('review-panel').scrollIntoView({ block: 'start' });

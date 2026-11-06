@@ -1023,8 +1023,15 @@ test('a find action cannot let a keystroke wipe the review; clicking into the bo
     p.$('prose').dispatchEvent(new p.window.Event('pointerdown'));
     assert.equal(p.$('prose').readOnly, false, 'clicking into the box makes it editable');
     p.$('detail-list').querySelector('button').click();
+    const hasFocus = p.window.document.hasFocus;
+    p.window.document.hasFocus = () => false;
     p.$('prose').dispatchEvent(new p.window.Event('blur'));
-    assert.equal(p.$('prose').readOnly, false, 'leaving the box makes it editable');
+    await new Promise(r => setTimeout(r, 5));
+    assert.equal(p.$('prose').readOnly, true, 'switching tab or app keeps the box read-only');
+    p.window.document.hasFocus = hasFocus;
+    p.$('rewrite').focus();
+    await new Promise(r => setTimeout(r, 5));
+    assert.equal(p.$('prose').readOnly, false, 'moving focus elsewhere on the page makes it editable');
     assert.deepEqual(p.errors, []);
   } finally { p.close(); }
 });
@@ -1053,7 +1060,16 @@ test('a recipient sees a plain verdict first, the Open button after it, and the 
     p.$('open-packet-btn').click();
     await detailsDone(p);
     assert.match(p.$('review-rows').querySelector('label').textContent, /^Sender's decision in the packet \(unsigned\), editable: /);
-    assert.match(p.$('review-summary').textContent, new RegExp(`from a packet the sender says was created ${packet.created_at.replace(/[.]/g, '\\.')}; the date and decisions are unsigned`));
+    assert.match(p.$('review-summary').textContent, new RegExp(`from a packet; its unsigned creation time is ${packet.created_at.replace(/[.]/g, '\\.')}; the decisions are unsigned`));
+    for (const created_at of ['', 'decisions verified by site', 12345]) {
+      p.input('packet-input', JSON.stringify({ ...packet, created_at })); p.$('verify-packet-btn').click();
+      await until(() => status.textContent.includes('Checks completed'));
+      p.$('open-packet-btn').click();
+      await detailsDone(p);
+      assert.match(p.$('review-rows').querySelector('label').textContent, /^Sender's decision in the packet \(unsigned\)/, JSON.stringify(created_at));
+      assert.match(p.$('review-summary').textContent, /from a packet; it gives no valid creation time; the decisions are unsigned/, JSON.stringify(created_at));
+      assert.doesNotMatch(p.$('review-summary').textContent, /verified by site/);
+    }
     assert.deepEqual(p.errors, []);
   } finally { p.close(); }
 });
