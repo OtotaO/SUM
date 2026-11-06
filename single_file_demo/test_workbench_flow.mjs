@@ -6,12 +6,14 @@ import { JSDOM, VirtualConsole } from 'jsdom';
 import { handle as detailHandle } from './detail_worker.js';
 
 // jsdom has no Worker. This stand-in answers with the real worker module's handler, asynchronously, so the
-// page's message protocol, deadline and stale-result handling are exercised; 'hang' never answers, and
-// 'absent' leaves Worker undefined, as in a browser without module workers.
+// page's message protocol and deadline are exercised; 'hang' never answers, 'manual' answers only when the
+// test calls deliver() (even after terminate, as a message already queued would), and 'absent' leaves
+// Worker undefined, as in a browser without module workers.
 function fakeWorker(mode, created) {
   return class {
     constructor(url, options) { this.url = String(url); this.options = options; this.terminated = false; created.push(this); }
     postMessage(data) {
+      if (mode === 'manual') { this.deliver = () => this.onmessage({ data: structuredClone(detailHandle(data)) }); return; }
       if (mode === 'hang') return;
       setTimeout(() => { if (!this.terminated && this.onmessage) this.onmessage({ data: structuredClone(detailHandle(data)) }); }, 0);
     }
@@ -910,7 +912,7 @@ test('detail checks run on the inputs the first checker version failed on, and l
   } finally { p.close(); }
 });
 
-test('detail checks that do not answer are stopped at the deadline, and a stale answer never replaces a newer one', async () => {
+test('detail checks that do not answer are stopped at the deadline, and editing a text stops pending checks', async () => {
   const p = await page(undefined, { worker: 'hang' });
   try {
     p.input('prose', 'You may cancel if you move.'); p.input('rewrite', 'You can cancel.');
@@ -935,6 +937,28 @@ test('without module workers the page says the detail checks are unavailable and
     p.$('compare-btn').click();
     assert.equal(p.$('detail-summary').textContent, 'Detail checks are not available in this browser. Read the passages below.');
     assert.equal(p.$('review-panel').hidden, false);
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
+test('an answer from an older run, even one already queued, never replaces the newer list, and no stale deadline fires', async () => {
+  const p = await page(undefined, { worker: 'manual' });
+  try {
+    p.input('prose', 'You may cancel if you move.'); p.input('rewrite', 'You can cancel.');
+    p.$('compare-btn').click();
+    const older = p.workers.at(-1);
+    p.input('prose', 'Pay within 14 days.'); p.input('rewrite', 'Pay within 30 days.');
+    p.$('compare-btn').click();
+    const newer = p.workers.at(-1);
+    assert.equal(older.terminated, true);
+    newer.deliver();
+    assert.match(p.$('detail-summary').textContent, /^1 detail to check\./);
+    const listed = p.$('detail-list').textContent;
+    assert.match(listed, /14 days/);
+    older.deliver();
+    assert.equal(p.$('detail-list').textContent, listed, 'the older answer is ignored');
+    await new Promise(r => setTimeout(r, 3100));
+    assert.match(p.$('detail-summary').textContent, /^1 detail to check\./, 'no deadline from either run overwrites the answer');
     assert.deepEqual(p.errors, []);
   } finally { p.close(); }
 });

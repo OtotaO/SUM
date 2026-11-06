@@ -70,7 +70,7 @@ test('the checks make no network request and need no model', async () => {
   }
 });
 
-test('v1.1 regressions: no failure on "half", equal units and currencies, rates, and linear time', () => {
+test('v1.1 regressions: no failure on "half", equal units and currencies, rates, and two crafted inputs under 3 seconds', () => {
   for (const t of ['Pay half.', 'You pay half', 'Half-price tickets.', 'Pay half, then the rest.', 'Wait a half-hour.', 'Keep the other half.']) assert.deepEqual(detailFlags(t, t).flags, [], t);
   assert.deepEqual(flagsOf('The fee is $1,000.', 'The fee is 1000.'), []);
   assert.deepEqual(flagsOf('Cover up to $2 million.', 'Cover up to $2,000,000.'), []);

@@ -81,9 +81,10 @@ function quoteButton(span, field) {
 // detail_flags.js is frozen at the version its registered evaluation measured (fixtures/detail_flags_eval).
 // Some of its comparisons can cost the product of the two texts' counts on crafted input, so it runs in a
 // worker that the page stops at a deadline: no input can hold the page.
-let detailWorker = null, detailRun = 0;
+let detailWorker = null, detailTimer = null, detailRun = 0;
 function stopDetailChecks() {
   detailRun++;
+  clearTimeout(detailTimer);
   if (detailWorker) { detailWorker.terminate(); detailWorker = null; }
 }
 
@@ -99,7 +100,7 @@ function showDetailChecks() {
   detailWorker = worker;
   summary('Checking details...');
   const finish = () => { clearTimeout(timer); if (run !== detailRun) return false; worker.terminate(); detailWorker = null; return true; };
-  const timer = setTimeout(() => {
+  const timer = detailTimer = setTimeout(() => {
     if (finish()) summary(`Detail checks took longer than ${DETAIL_DEADLINE_MS / 1000} seconds on these texts and were stopped. Read the passages below.`);
   }, DETAIL_DEADLINE_MS);
   worker.onmessage = ({ data }) => {
