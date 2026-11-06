@@ -31,8 +31,8 @@ evaluation is registered before results.
 ## Measures (computed by `score.mjs`, frozen by this commit)
 
 - A flag is an object with exactly the fields `category` (one of the seven), `kind`, `source` and `output`; `source`
-  is a span of the original and `output` a span of the rewrite, each `{start, end}` (an optional `text` field is
-  ignored) or null, in UTF-16 code units, and at least one is a span. `score.mjs` refuses malformed input. A flag credits an altered
+  is a span of the original and `output` a span of the rewrite, each a non-empty `{start, end}` inside its text (an
+  optional `text` field is ignored) or null, in UTF-16 code units, and at least one is a span. `score.mjs` refuses malformed input. A flag credits an altered
   pair if a span of at most 80 code units overlaps the changed detail: the source detail for changed and
   dropped details, the rewrite detail for changed and added details.
 - Recall (primary): altered pairs with at least one credited flag, out of 84.

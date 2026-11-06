@@ -21,16 +21,17 @@ function credited(flag, pair, src, out) {
   return ((t === 'changed' || t === 'dropped') && overlaps(flag.source, src)) || ((t === 'changed' || t === 'added') && overlaps(flag.output, out));
 }
 
-function checkSpan(span, where) {
+function checkSpan(span, text, where) {
   if (span === null) return;
   const extra = Object.keys(span || {}).filter(k => !['start', 'end', 'text'].includes(k));
-  if (!span || typeof span !== 'object' || !Number.isInteger(span.start) || !Number.isInteger(span.end) || span.start < 0 || span.end < span.start || extra.length) throw new Error(`${where}: a span is {start, end} with optional text, or null`);
+  if (!span || typeof span !== 'object' || !Number.isInteger(span.start) || !Number.isInteger(span.end) || span.start < 0 || span.end <= span.start || span.end > text.length || extra.length) throw new Error(`${where}: a span is a non-empty {start, end} inside its text, with optional text field, or null`);
 }
 
 // Refuses malformed input instead of scoring it as a miss: under the run-once rule a field-name slip
 // would otherwise be committed as a result.
 export function checkFlags(corpus, flags) {
-  const ids = new Set(corpus.map(p => p.id));
+  const byId = new Map(corpus.map(p => [p.id, p]));
+  const ids = new Set(byId.keys());
   if (!flags || typeof flags !== 'object' || Array.isArray(flags)) throw new Error('flags must be an object keyed by pair id');
   for (const [id, list] of Object.entries(flags)) {
     if (!ids.has(id)) throw new Error(`unknown pair id in flags: ${id}`);
@@ -41,7 +42,7 @@ export function checkFlags(corpus, flags) {
       if (!f || typeof f !== 'object' || extra.length || !('source' in f) || !('output' in f)) throw new Error(`${where}: fields are exactly category, kind, source, output`);
       if (!CATEGORIES.includes(f.category)) throw new Error(`${where}: unknown category ${f.category}`);
       if (typeof f.kind !== 'string') throw new Error(`${where}: kind must be a string`);
-      checkSpan(f.source, where); checkSpan(f.output, where);
+      checkSpan(f.source, byId.get(id).original, `${where} source`); checkSpan(f.output, byId.get(id).rewrite, `${where} output`);
       if (!f.source && !f.output) throw new Error(`${where}: at least one span is required`);
     });
   }
