@@ -189,6 +189,44 @@ function compare() {
 }
 $('compare-btn').addEventListener('click', compare);
 
+// Made-up examples with planted changes. Loading one never replaces text the user typed, and sets the page
+// address to #example=<name>, a shareable link that opens the same example. The fragment is never sent to a
+// server.
+const EXAMPLES = {
+  "patient": {
+    "original": "Take one tablet twice a day with food for 10 days. Do not drink alcohol while taking this medicine. If you develop a rash, stop taking the tablets and call the Quillmere Clinic at once. You should finish the full course even if you feel better.",
+    "rewrite": "Take one tablet two times a day with food for 7 days. Drink alcohol only in moderation while you take this medicine. If you get a rash, stop the tablets and call your doctor at once. You should finish all the tablets even if you start to feel better."
+  },
+  "lease": {
+    "original": "Tenants must give at least 60 days written notice before moving out. Harbor Lane Property Management will return the deposit of $1,800 within 21 days, unless there is damage beyond normal wear and tear. Pets are not allowed in the building.",
+    "rewrite": "You must give at least 60 days written notice before you move out. Harbor Lane will return your $1,800 deposit within 21 days. Pets are allowed in the building."
+  },
+  "policy": {
+    "original": "Employees may work from home up to 2 days per week, provided that their manager approves the schedule in advance. Requests must be submitted by the 25th of the preceding month. Staff in the Customer Support team are not eligible for this policy.",
+    "rewrite": "You can work from home up to 3 days per week. Submit your request by the 25th of the month before. Customer Support staff are also eligible for this policy."
+  }
+};
+const isExampleText = (text, field) => !text.trim() || text === $(field).placeholder || Object.values(EXAMPLES).some(e => text === (field === 'prose' ? e.original : e.rewrite));
+
+function loadExample(name) {
+  const example = Object.hasOwn(EXAMPLES, name) ? EXAMPLES[name] : null;
+  if (!example) return;
+  if (!isExampleText($('prose').value, 'prose') || !isExampleText($('rewrite').value, 'rewrite')) {
+    status('Clear both boxes to load an example. Your text was kept.');
+    return;
+  }
+  for (const [field, text] of [['prose', example.original], ['rewrite', example.rewrite]]) {
+    $(field).value = text;
+    $(field).dispatchEvent(new window.Event('input', { bubbles: true }));
+  }
+  if (window.location.hash !== `#example=${name}`) window.history.replaceState(null, '', `#example=${name}`);
+  compare();
+}
+document.querySelectorAll('[data-example]').forEach(button => button.addEventListener('click', () => loadExample(button.dataset.example)));
+const exampleFromAddress = () => { const m = /^#example=([a-z]+)$/.exec(window.location.hash); if (m) loadExample(m[1]); };
+window.addEventListener('hashchange', exampleFromAddress);
+exampleFromAddress();
+
 // Extractive depths of the original: computed here, nothing leaves the page.
 let distilled = null, distilledSource = null;
 function hideDistill() { distilled = null; distilledSource = null; $('distill-panel').hidden = true; }

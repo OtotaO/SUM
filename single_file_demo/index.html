@@ -107,6 +107,7 @@
   .distill-passage { display: inline; background: none; border: none; padding: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; white-space: normal; }
   .distill-passage:hover, .distill-passage:focus-visible { background: #4a90e233; }
   .distill-gap { opacity: 0.55; margin: 0 4px; }
+  .review-examples { font-size: 13px; margin: 8px 0; }
   .detail-checks ul { padding-left: 20px; margin: 8px 0 16px; }
   .detail-checks li { margin: 6px 0; overflow-wrap: anywhere; }
   .detail-checks q { font-weight: 600; }
@@ -137,6 +138,11 @@
     <textarea id="rewrite" placeholder="Alice can cancel the lease. The deposit is refundable."></textarea>
   </div>
 </div>
+<p class="review-examples">Made-up examples, each rewrite with planted changes:
+  <button type="button" class="link-btn" data-example="patient">Patient instructions</button>,
+  <button type="button" class="link-btn" data-example="lease">Lease notice</button>,
+  <button type="button" class="link-btn" data-example="policy">Workplace policy</button>.
+  Each sets this page's address to a link that opens the same example.</p>
 <p class="review-scope">Literal comparison only: unchanged passages are matched exactly; suggested changed passages share words. Read every change for negation, conditions, quantities and attribution. This is not a semantic judge or a meaning-preservation score.</p>
 <div class="review-actions">
   <button id="compare-btn" class="primary">Compare texts</button>
