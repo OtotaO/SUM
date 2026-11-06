@@ -195,7 +195,7 @@ $('compare-btn').addEventListener('click', compare);
 const EXAMPLES = {
   "patient": {
     "original": "Take one tablet twice a day with food for 10 days. Do not drink alcohol while taking this medicine. If you develop a rash, stop taking the tablets and call the Quillmere Clinic at once. You should finish the full course even if you feel better.",
-    "rewrite": "Take one tablet two times a day with food for 7 days. Drink alcohol only in moderation while you take this medicine. If you get a rash, stop the tablets and call your doctor. You should finish all the tablets even if you start to feel better."
+    "rewrite": "Take one tablet two times a day with food for 7 days. Drink alcohol only in moderation while you take this medicine. If you get a rash, stop the tablets and call your doctor at once. You should finish all the tablets even if you start to feel better."
   },
   "lease": {
     "original": "Tenants must give at least 60 days written notice before moving out. Harbor Lane Property Management will return the deposit of $1,800 within 21 days, unless there is damage beyond normal wear and tear. Pets are not allowed in the building.",
