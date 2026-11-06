@@ -141,7 +141,7 @@ A render receipt attests the *render*, not the truth of its content (trust scope
 | Browser workbench (`single_file_demo/index.html`) | deployed at https://sum-demo.ototao.workers.dev; after each deploy, a byte check compares the live files with the repo | retained source + existing rewrite, advisory literal span comparison, human review and exact packet export; generated results carry available render receipts, checked against displayed content. No arbitrary-document model judge runs in this page. |
 | Cross-runtime trust check | locked by CI (`make xruntime`) | K1 / K1-mw / K2 / K3 / K4 — Python ↔ Node agree byte-for-byte on valid bundles. `make xruntime-adversarial` adds A1–A8 rejection-class equivalence. No browser engine runs in CI. |
 | 5-axis slider rendering surface | density actioned deterministically; length / formality / audience / perspective LLM-conditioned. Two dispatch paths: Worker `/api/render` (Anthropic + Cloudflare AI Gateway optional) producing `sum.render_receipt.v1`, OR Python `sum transform apply slider` (OpenAI via `OPENAI_API_KEY`) producing `sum.transform_receipt.v1` | bench (two runs, current render prompts, 16 long documents, SUM's Python renderer with OpenAI gpt-4o-mini): median LLM-axis fact preservation 1.000, lowest cell 0.545; the Worker's renders (Claude Haiku 4.5 by default, or OpenAI) are not benchmarked. Tightening worktrail at [`docs/BENCH_HARDENING_FROM_QCVV.md`](docs/BENCH_HARDENING_FROM_QCVV.md) adds iteration-stability + DKW worst-case bounds + capability-region headlines |
-| MCP server (`sum-mcp` console script) | shipped; meaning layer on main | bundle tools (`extract` / `attest` / `verify` / `inspect` / `render` / `schema`) plus the meaning layer for agent swarms (`verify_receipt` for the four `sum_verify` schemas with the same honest verdict the `sum_verify` CLI prints, `meaning_diff`, `depth_frontier`, `mint_meaning_receipt` / `mint_chain_receipt` BYO-private-key only) over stdio; verification is parallel-safe, judge calls serialise (run N processes for parallel judging); measured ~450-530 full-chain verifies/s on one process (see [`docs/MCP_INTEGRATION.md`](docs/MCP_INTEGRATION.md)) |
+| MCP server (`sum-mcp` console script) | shipped; meaning layer on main | bundle tools (`extract` / `attest` / `verify` / `inspect` / `render` / `schema`) plus the meaning layer for agent swarms (`verify_receipt` for the four `sum_verify` schemas with the same honest verdict the `sum_verify` CLI prints, `meaning_diff`, `depth_frontier`, `mint_meaning_receipt` / `mint_chain_receipt` BYO-private-key only) over stdio; verification is parallel-safe, judge calls serialise (run N processes for parallel judging); one 16-verify run on an arm64 dev machine (2026-07-17) measured ~445/s sequential and ~527/s in parallel, with no committed benchmark (see [`docs/MCP_INTEGRATION.md`](docs/MCP_INTEGRATION.md)) |
 | Transform substrate (`sum.transform_receipt.v1` + registry) | shipped on PyPI ≥ 0.7.0 | `sum transform list` / `sum transform apply <name>` — three registered transforms (`slider` / `extract` / `compose`); receipts via Ed25519 / JCS / detached JWS just like render-receipts; 20-fixture cross-runtime K-matrix locks accept + reject across Python ↔ Node (the browser loads the same JS verifier; no browser engine runs in CI); T4 `source_chain_hash` binds receipts to source byte ranges; T5 `ShareableRender` round-trips signed renders for offline verification (library API only, no CLI door yet); T6 multi-school extract runs two extractors in tandem for adversarial-divergence detection. Wire spec at [`docs/TRANSFORM_RECEIPT_FORMAT.md`](docs/TRANSFORM_RECEIPT_FORMAT.md); design at [`docs/TRANSFORM_REGISTRY.md`](docs/TRANSFORM_REGISTRY.md). |
 | Replay-defense window (`signed_at_out_of_window`) | shipped | opt-in `max_age_seconds` parameter across all four verifier surfaces (Python render / Python transform / JS render / JS transform). Default-off preserves archival use; receivers opt in per use-case (agent-swarm 60s, real-time 600s, newsletter 1d, legal-discovery no window). |
 | `sum verify --explain` layered output | shipped | Per-dimension report (`sum.verify_explained.v1`): cryptographic integrity / canonical reconstruction / axiom consistency / extraction provenance / source evidence coverage / semantic preservation / truth of content. Each carries `epistemic_status` (`provable` / `certified` / `empirical-benchmark` / `not-asserted`). Truth of content is ALWAYS `not_asserted` — locked by test. |
@@ -157,7 +157,7 @@ Historical slider preservation numbers describe their named corpora and judges. 
 The operational compass — read in this order if you want the project's intent + how it operates + where it's going:
 
 - [`docs/CHARTER_2026-05-17.md`](docs/CHARTER_2026-05-17.md) — intent, the Why, strategy, objectives, success criteria, constraints, and the operational loop. The compass every other doc resolves to.
-- [`docs/PRODUCT_VISION.md`](docs/PRODUCT_VISION.md) — the product vision (the slider workbench: drop text → render it from a tag to a tome, with a signed receipt of what was preserved) and the **positioning**: SUM is the chain-of-custody *standard* for AI-transformed text — **provenance-first, attest-don't-detect** (a signed provenance record that survives rewriting; an "is this AI?" answer ships only as an honest advisory signal, never a "99 %").
+- [`docs/PRODUCT_VISION.md`](docs/PRODUCT_VISION.md): the product vision. Retain the source, compare a rewrite with it, record review decisions, and export a checkable packet; adjustable depth is a view over the retained source. Receipts make the review portable; they do not establish that meaning was preserved. Positioning: **provenance-first, attest-don't-detect** (an "is this AI?" answer ships only as an honest advisory signal, never a "99 %").
 - [`docs/PRODUCT_DELIBERATION_2026-05-14.md`](docs/PRODUCT_DELIBERATION_2026-05-14.md) — three-option strategic analysis + grant-outcome decision tree.
 - [`docs/ZENITH_FRAMING_2026-05-16.md`](docs/ZENITH_FRAMING_2026-05-16.md) — destination framing (SUM as chain-of-custody for AI-transformed knowledge) plus three new concepts (Perspective Receipts, Trust Profiles, Epistemic Nutrition Label) on the design queue.
 - [`docs/BENCH_HARDENING_FROM_QCVV.md`](docs/BENCH_HARDENING_FROM_QCVV.md) — five-task empirical-benchmark hardening plan (T5 shipped 2026-05-17; T1 closed 2026-05-21; T4 closed 2026-05-22; T2 + T3 still open, gated on `sum.slider_drift_bench.v1` receipts).
@@ -175,7 +175,7 @@ A two-layer generator-side intervention (canonical-first generator prompt + cons
 | seed_v2 (7 difficulty parse patterns + multi-fact) | 20 | 1–2 | **0.9750** | 5.00 | 19 / 20 |
 | seed_long_paragraphs (16-topic multi-paragraph) | 16 | 11–28 | **0.9972** | 0.57 | 15 / 16 |
 
-The combined intervention lands **≥ 0.97 recall and ≤ 5 % drift on every measured corpus shape** — single-fact short-form, multi-fact difficulty-pattern, and multi-paragraph dense-prose. The §2.5 closure is corpus-independent. The remaining gap on each corpus traces to upstream LLM source-extraction artifacts (corrupted axioms on seed_v2 doc_015, semantically-duplicate predicates on seed_long solar_system), not to the intervention pattern.
+The combined intervention lands **≥ 0.97 recall and ≤ 5 % drift on every measured corpus shape**: single-fact short-form, multi-fact difficulty-pattern, and multi-paragraph dense-prose. This holds on the three measured corpora with gpt-4o-mini-2024-07-18; recall is scored against the model's own first-pass extraction, not independently annotated facts, and other corpora and models are unmeasured. The remaining gap on each corpus traces to upstream LLM source-extraction artifacts (corrupted axioms on seed_v2 doc_015, semantically-duplicate predicates on seed_long solar_system), not to the intervention pattern.
 
 Receipt artifacts:
 - [`fixtures/bench_receipts/s25_generator_side_2026-04-28.json`](fixtures/bench_receipts/s25_generator_side_2026-04-28.json) — full ablation matrix on seed_v1.
@@ -277,16 +277,16 @@ Below the slider sits the substrate that earlier phases shipped and verified. Po
 
 ### Research substrate (under `sum_engine_internal/research/`)
 
-Less-surfaced but shipped:
+Less-surfaced research code, in the repository (not claims of working detection):
 
 - **MinHash-LSH bundle similarity index** (`research/lsh/`) — near-duplicate bundle detection at scale.
-- **Robust PCA corruption score** (`research/robust_pca/`) — `corruption_score` field in bundle metadata; flags adversarially-perturbed bundles.
-- **Sequential & conformal-prediction** (`research/sequential/`, `research/conformal/`) — bench-side confidence bounds with documented coverage guarantees.
+- **Robust PCA score** (`research/robust_pca/`): `axiom_corruption_score` in bundle metadata when the research extras are installed, computed over hash-bucket triple embeddings; whether it flags perturbed bundles is unmeasured.
+- **Sequential & conformal-prediction** (`research/sequential/`, `research/conformal/`): bench-side confidence bounds with Monte-Carlo coverage tests.
 - **MMD distribution distance** (`research/mmd/`) — `axiom_distribution_mmd` field on bundles; surfaces when an attested bundle is structurally unlike its baseline corpus.
 - **Spectral entropy** (`research/spectral_entropy/`) — axiom-graph entropy on every bundle, with confidence interval.
 - **Bootstrap multiplier spike detection** (`research/bootstrap/`) — see [`docs/MULTIPLIER_BOOTSTRAP_SPIKE_FINDINGS.md`](docs/MULTIPLIER_BOOTSTRAP_SPIKE_FINDINGS.md).
 - **SMT consistency checking** (`research/smt_consistency/`) — z3-backed `axiom_consistency_check` on every bundle.
-- **Sheaf-Laplacian hallucination detection** — see [`docs/SHEAF_HALLUCINATION_DETECTOR.md`](docs/SHEAF_HALLUCINATION_DETECTOR.md) (research direction).
+- **Sheaf-Laplacian consistency score** (research): on real LLM renders it did not beat a trivial entity-set baseline (`docs/PROOF_BOUNDARY.md` §2.9); see [`docs/SHEAF_HALLUCINATION_DETECTOR.md`](docs/SHEAF_HALLUCINATION_DETECTOR.md).
 
 ### Other substrate-adjacent surfaces
 
@@ -313,7 +313,7 @@ bash scripts/bench/run_paragraphs.sh
 bash scripts/bench/run_long_paragraphs.sh
 ```
 
-Both runners require `OPENAI_API_KEY` (NLI audit + extraction). Pinned model snapshots are mandatory; the harness raises `SystemExit` on unpinned identifiers (see [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §2.6). Output is NDJSON `sum.slider_drift_bench.v1`, with per-cell strict / normalized / semantic / NLI fact-preservation columns.
+Both runners require `OPENAI_API_KEY` (NLI audit + extraction). Both call the unpinned `gpt-4o-mini` alias and do not check for a pinned snapshot (see [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §2.6). Output is NDJSON `sum.slider_drift_bench.v1`, with per-cell strict / normalized / semantic / NLI fact-preservation columns.
 
 ---
 
@@ -321,7 +321,7 @@ Both runners require `OPENAI_API_KEY` (NLI audit + extraction). Pinned model sna
 
 This roadmap names only unshipped work. Items already landed are recorded in [`CHANGELOG.md`](CHANGELOG.md). Detailed sequencing lives in [`docs/NEXT_SESSION_PLAYBOOK.md`](docs/NEXT_SESSION_PLAYBOOK.md).
 
-**Generalising the LLM round-trip result beyond the measured corpora.** The round-trip gap itself is **closed** — see the section above and [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §2.5 (closed 2026-05-21 across all measured corpora; the unprompted baseline was 107.75 % drift / 0.12 recall on `seed_v1`, now 0.00 % / 1.00 there). What is *not* shipped is evidence that the intervention (canonical-first generator prompt + constrained-decoding extractor + lemma-exclusion) holds on corpora nobody has measured yet, and a same-commit replay receipt for it. Treat the closure as an empirical result with a stated envelope, not a universal guarantee.
+**Generalising the LLM round-trip result beyond the measured corpora.** The round-trip gap itself is **closed** on the measured corpora: see the section above and [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §2.5 (measured 2026-04-28 on the three corpora; the unprompted baseline was 107.75 % drift / 0.12 recall on `seed_v1`, now 0.00 % / 1.00 there). What is *not* shipped is evidence that the intervention (canonical-first generator prompt + constrained-decoding extractor + lemma-exclusion) holds on corpora nobody has measured yet, and a same-commit replay receipt for it. Treat the closure as an empirical result with a stated envelope, not a universal guarantee.
 
 **Hardening backlog**
 
@@ -330,13 +330,12 @@ This roadmap names only unshipped work. Items already landed are recorded in [`C
 - Threat-model validation — every documented defence in [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) gets an executable test.
 - Delta-bundle composition semantics — specifies what `bundle.is_delta` means cross-runtime.
 - Sigstore / cosign signing of release artifacts.
-- LLM-extraction honesty guardrails — `extraction.verifiable: true | false` so signed ≠ true is visible at the consumer interface.
 - Calibration-set authoring for the Venn-Abers conformal-interval implementation that already ships.
 - Remaining sieve recall work on `seed_v2` (apposition / relative-clause / compound-conjunct) — gated on the §2.5 work, see [`docs/PROOF_BOUNDARY.md`](docs/PROOF_BOUNDARY.md) §6.
 
 **Platform surface (post-hardening)**
 
-Source anchoring in the bundle schema, bundle explorer / viewer, `sum tutorial` onboarding, shareable bundle URLs `/b/{hash}`, PWA-installable demo, `sum attest <url>` fetch mode. Each item names its dependency in [`docs/NEXT_SESSION_PLAYBOOK.md`](docs/NEXT_SESSION_PLAYBOOK.md).
+Source anchoring in the bundle schema, bundle explorer / viewer, `sum tutorial` onboarding, shareable bundle URLs `/b/{hash}`, PWA-installable demo, `sum attest <url>` fetch mode. None of these is scheduled; the current queue is [`docs/NEXT_SESSION_PLAYBOOK.md`](docs/NEXT_SESSION_PLAYBOOK.md).
 
 ---
 
@@ -372,7 +371,7 @@ If a number in this README disagrees with [`docs/PROOF_BOUNDARY.md`](docs/PROOF_
 
 1. Fork and branch.
 2. `make install && make test && make xruntime`.
-3. Read [`docs/NEXT_SESSION_PLAYBOOK.md`](docs/NEXT_SESSION_PLAYBOOK.md) for principles, stop-the-line triggers, and the work-ordering rule.
+3. Read [`docs/NEXT_SESSION_PLAYBOOK.md`](docs/NEXT_SESSION_PLAYBOOK.md) for the current queue and working rules.
 4. Open a PR. Every claim added to docs or commit messages must trace to a test, a measurement, or an explicit `designed, not proved` label.
 
 [`CONTRIBUTING.md`](CONTRIBUTING.md) has the test-gate matrix and the verification-gate runbook.

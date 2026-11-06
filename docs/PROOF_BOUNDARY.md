@@ -429,7 +429,7 @@ L2 (subject canonicalisation) recovers 2 docs — exactly the `newton`/`isaac_ne
 
 **Combined supra-additive composition holds on multi-paragraph multi-fact prose.** Combined recall on seed_long is **0.9972** — within rounding of seed_v1's 1.00 and effectively matching seed_v2's 0.9750. The single failing doc (doc_long_solar_system, recall = 0.9545) is **not an intervention failure**: the LLM source-extract produced two semantically-overlapping axioms `[mars, has_two_moons, phobos and deimos]` and a separate near-paraphrase that admitted `has_known_moons` into the constrained vocabulary; the round-trip's reconstructed extractor picked `has_known_moons` over `has_two_moons` for one mars axiom. 21 of 22 axioms in that doc round-tripped exactly; the one drift is a benign upstream duplication, not a structural failure of the intervention.
 
-**Cross-corpus comparison — the §2.5 closure scales universally:**
+**Cross-corpus comparison: the same intervention on three corpora:**
 
 | Corpus | n_docs | axioms/doc | combined recall | drift_pct | full recall |
 |---|---:|---:|---:|---:|---:|
@@ -437,9 +437,9 @@ L2 (subject canonicalisation) recovers 2 docs — exactly the `newton`/`isaac_ne
 | seed_v2 (7 difficulty parse patterns + multi-fact) | 20 | 1–2 | 0.9750 | 5.00 | 19 / 20 |
 | **seed_long (16-topic multi-paragraph)** | **16** | **11–28** | **0.9972** | **0.57** | **15 / 16** |
 
-The combined intervention lands ≥ 0.97 recall and ≤ 5 % drift on every measured corpus shape — single-fact short-form, multi-fact difficulty-pattern, and multi-paragraph dense-prose. **The §2.5 closure is corpus-independent.** The remaining gap on each corpus traces to upstream LLM source-extraction artifacts (corrupted axioms on seed_v2 doc_015, semantically-duplicate axioms on seed_long solar_system), not to the intervention pattern itself.
+The combined intervention lands ≥ 0.97 recall and ≤ 5 % drift on every measured corpus shape: single-fact short-form, multi-fact difficulty-pattern, and multi-paragraph dense-prose. **This holds on the three measured corpora with gpt-4o-mini-2024-07-18; recall is scored against the model's own first-pass extraction, not independently annotated facts, and other corpora and models are unmeasured.** The remaining gap on each corpus traces to upstream LLM source-extraction artifacts (corrupted axioms on seed_v2 doc_015, semantically-duplicate axioms on seed_long solar_system), not to the intervention pattern itself.
 
-**Status:** §2.5 closed across all measured corpora. The §6 row in the progress table reflects this. The intervention pattern (canonical-first generator + constrained-decoding extractor + lemma-exclusion of source-predicate lemmas from the canonical-padding set) is the load-bearing engineering finding; the receipt artifacts are the durable proof.
+**Status:** §2.5 closed across all measured corpora. The §6 row in the progress table reflects this. The intervention pattern (canonical-first generator + constrained-decoding extractor + lemma-exclusion of source-predicate lemmas from the canonical-padding set) is the load-bearing engineering finding; the receipt artifacts record these measurements.
 
 ### 2.5.1. Iterated round trips: historical measurements and corrected interpretation
 
