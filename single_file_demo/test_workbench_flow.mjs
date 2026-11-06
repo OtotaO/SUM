@@ -869,3 +869,18 @@ test('details to check name the changed number, modal and exception, select them
     assert.deepEqual(p.errors, []);
   } finally { p.close(); }
 });
+
+test('detail checks fail soft: a text the checker cannot handle and an over-long text show a plain message', async () => {
+  const p = await page();
+  try {
+    p.input('prose', 'You pay half.'); p.input('rewrite', 'You pay half.');
+    p.$('compare-btn').click();
+    assert.equal(p.$('review-panel').hidden, false);
+    assert.equal(p.$('detail-summary').textContent, 'Detail checks could not run on this text. Read the passages below.');
+    assert.equal(p.$('detail-list').children.length, 0);
+    p.input('prose', 'pay 3 dollars and '.repeat(1700) + 'stop.'); p.input('rewrite', 'Pay 3 dollars.');
+    p.$('compare-btn').click();
+    assert.match(p.$('detail-summary').textContent, /^Detail checks run on texts of up to 30,000 characters each\./);
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});

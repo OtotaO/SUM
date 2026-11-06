@@ -60,6 +60,7 @@ function spanCell(span, field) {
   return cell;
 }
 
+const DETAIL_MAX_CHARS = 30000;
 const DETAIL_NAMES = { number: 'Number', date: 'Date or time', negation: 'Negation', modal: 'Modal verb', condition: 'Condition', exception: 'Exception', name: 'Name' };
 
 function quoteButton(span, field) {
@@ -78,8 +79,18 @@ function quoteButton(span, field) {
 function showDetailChecks() {
   const list = $('detail-list');
   list.replaceChildren();
+  // detail_flags.js is frozen at the version the registered evaluation measured (fixtures/detail_flags_eval),
+  // so its known limits are handled here: a size cap bounds its worst-case running time, and a failure on
+  // some input shows a plain message instead of an error.
+  if (current.source.length > DETAIL_MAX_CHARS || current.output.length > DETAIL_MAX_CHARS) {
+    $('detail-summary').textContent = `Detail checks run on texts of up to ${DETAIL_MAX_CHARS.toLocaleString('en')} characters each. Read the passages below.`;
+    return;
+  }
   let result;
-  try { result = detailFlags(current.source, current.output); } catch (e) { $('detail-summary').textContent = e.message; return; }
+  try { result = detailFlags(current.source, current.output); } catch (e) {
+    $('detail-summary').textContent = /up to 300/.test(e.message) ? e.message : 'Detail checks could not run on this text. Read the passages below.';
+    return;
+  }
   $('detail-scope').textContent = result.scope;
   const kinds = { changed: 'changed', missing: 'not found in the rewrite', added: 'only in the rewrite' };
   for (const f of result.flags) {
