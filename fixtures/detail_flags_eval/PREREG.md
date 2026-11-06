@@ -30,7 +30,9 @@ evaluation is registered before results.
 
 ## Measures (computed by `score.mjs`, frozen by this commit)
 
-- A flag carries a category and a source and/or rewrite span, in UTF-16 code units. A flag credits an altered
+- A flag is an object with exactly the fields `category` (one of the seven), `kind`, `source` and `output`; `source`
+  is a span of the original and `output` a span of the rewrite, each `{start, end}` (an optional `text` field is
+  ignored) or null, in UTF-16 code units, and at least one is a span. `score.mjs` refuses malformed input. A flag credits an altered
   pair if a span of at most 80 code units overlaps the changed detail: the source detail for changed and
   dropped details, the rewrite detail for changed and added details.
 - Recall (primary): altered pairs with at least one credited flag, out of 84.
@@ -47,6 +49,6 @@ Otherwise the flags ship, labelled as lexical checks that can miss changes and c
 ## Procedure
 
 The detector is written against hand-made examples only. When it is complete, it runs once over
-`corpus_v1.json`; the flags and the `score.mjs` output are committed with the detector, whatever they show.
+`corpus_v1.json`, receiving only each pair's `original` and `rewrite` text; the flags and the `score.mjs` output are committed with the detector, whatever they show.
 No threshold, rule or corpus pair is changed after that run. Any later detector version is evaluated on a new
 corpus registered the same way.

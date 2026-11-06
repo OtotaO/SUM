@@ -21,7 +21,35 @@ function credited(flag, pair, src, out) {
   return ((t === 'changed' || t === 'dropped') && overlaps(flag.source, src)) || ((t === 'changed' || t === 'added') && overlaps(flag.output, out));
 }
 
+function checkSpan(span, where) {
+  if (span === null) return;
+  const extra = Object.keys(span || {}).filter(k => !['start', 'end', 'text'].includes(k));
+  if (!span || typeof span !== 'object' || !Number.isInteger(span.start) || !Number.isInteger(span.end) || span.start < 0 || span.end < span.start || extra.length) throw new Error(`${where}: a span is {start, end} with optional text, or null`);
+}
+
+// Refuses malformed input instead of scoring it as a miss: under the run-once rule a field-name slip
+// would otherwise be committed as a result.
+export function checkFlags(corpus, flags) {
+  const ids = new Set(corpus.map(p => p.id));
+  if (!flags || typeof flags !== 'object' || Array.isArray(flags)) throw new Error('flags must be an object keyed by pair id');
+  for (const [id, list] of Object.entries(flags)) {
+    if (!ids.has(id)) throw new Error(`unknown pair id in flags: ${id}`);
+    if (!Array.isArray(list)) throw new Error(`${id}: flags must be an array`);
+    list.forEach((f, i) => {
+      const where = `${id} flag ${i}`;
+      const extra = Object.keys(f || {}).filter(k => !['category', 'kind', 'source', 'output'].includes(k));
+      if (!f || typeof f !== 'object' || extra.length || !('source' in f) || !('output' in f)) throw new Error(`${where}: fields are exactly category, kind, source, output`);
+      if (!CATEGORIES.includes(f.category)) throw new Error(`${where}: unknown category ${f.category}`);
+      if (typeof f.kind !== 'string') throw new Error(`${where}: kind must be a string`);
+      checkSpan(f.source, where); checkSpan(f.output, where);
+      if (!f.source && !f.output) throw new Error(`${where}: at least one span is required`);
+    });
+  }
+  for (const id of ids) if (!(id in flags)) throw new Error(`missing flags entry for pair ${id} (use [] for none)`);
+}
+
 export function score(corpus, flags) {
+  checkFlags(corpus, flags);
   const altered = corpus.filter(p => p.label === 'altered');
   const preserving = corpus.filter(p => p.label === 'preserving');
   const tally = () => ({ n: 0, hit: 0 });
