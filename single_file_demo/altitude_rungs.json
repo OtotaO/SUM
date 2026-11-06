@@ -1,6 +1,6 @@
 {
   "generated_by": "single_file_demo/generate_altitude_rungs.py",
-  "scope": "per-document MEASUREMENT under the named NLI judge; not a guarantee. The proxy is blind to arrangement, sound, connotation, implicature. Corpus-level values live in signed receipts: this document is one of the 32 bills in the witnessed signed chain, whose values describe those 32 bills only.",
+  "scope": "per-document MEASUREMENT under the named NLI judge; not a guarantee. The proxy is blind to arrangement, sound, connotation, implicature. The judge reads at most its token window (512 tokens) of each pair, so a claim checked against a longer bill was checked against its start only; such claims are listed as not found in the part read, not as unsupported. Claims are the judge's sentence units, which split some wrapped lines of the bill into fragments. Corpus-level values live in signed receipts: this document is one of the 32 bills in the witnessed signed chain, whose values describe those 32 bills only.",
   "scorer": "bidirectional-entailment[nli:MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli]",
   "scorer_version": "1",
   "document": {
@@ -13,12 +13,12 @@
     "path": "fixtures/chain_receipts_billsum/chain_receipt.billsum.golden.json",
     "witnessed_in": "transparency/log.jsonl",
     "url": "https://github.com/OtotaO/SUM/tree/main/fixtures/chain_receipts_billsum",
-    "note": "signed sum.chain_receipt.v1 over all 32 bills: hop-1 bound 0.865768, hop-2 bound 0.488860, Bonferroni budget 1.354628 at joint delta 0.10, direct end-to-end 0.874216 (Hoeffding, n=32). The 32 bills are the first of the test split, not a random draw, so these are descriptive values and no confidence reading applies"
+    "note": "signed sum.chain_receipt.v1 over all 32 bills: hop-1 0.865768, hop-2 0.488860, Bonferroni sum 1.354628 at joint delta 0.10, direct end-to-end 0.874216 (Hoeffding arithmetic, n=32). The 32 bills are the first of the test split, not a random draw, so these are descriptive values and no confidence reading applies. Hop-1 fidelity was judged within the same 512-token window."
   },
   "rungs": [
     {
       "label": "the bill (source)",
-      "note": "the full text of the bill; every claim below is judged against it",
+      "note": "the full text of the bill; claims below are judged against it, within the judge's token window",
       "text": "SECTION 1. RECOGNITION OF ACCREDITING AGENCIES AND ASSOCIATIONS.\n\n    (a) Due Process.--Paragraph (6) of section 496(a) of the Higher \nEducation Act of 1965 (20 U.S.C. 1099b(a)) is amended to read as \nfollows:\n            ``(6) such agency or association shall apply procedures \n        throughout the accrediting process, including evaluation, \n        interim sanction, and withdrawal or termination of \n        accreditation proceedings, that comply with due process, \n        including the right to--\n                    ``(A) adequate specification of the agency's \n                accrediting requirements;\n                    ``(B) written notice of deficiencies at the \n                institution of higher education or program being \n                examined and a reasonable time period, expressly set \n                forth in the notice, to correct the deficiencies;\n                    ``(C) advance notice of and an opportunity for a \n                hearing by any such institution before the agency's \n                decision making body prior to the agency's final \n                consideration of imposition of an adverse action;\n                    ``(D) appeal any adverse action by the agency \n                against any such institution to an independent and \n                impartial arbitration panel appointed jointly by the \n                agency and the institution and conducted at the \n                location of the institution;\n                    ``(E) appeal, at a minimum, the adequacy of the \n                evidence supporting the adverse action decision, the \n                adequacy of the agency's compliance with its own \n                policies and procedures, and the extent to which the \n                decision of the agency was tainted by bias or prejudice \n                of any agent or official of the agency;\n                    ``(F) representation by counsel for any such \n                institution;\n                    ``(G) an arbitration panel decision that may affirm \n                or reverse, but not modify, the decision appealed by \n                the institution; and\n                    ``(H) an allocation of the costs of the appeal that \n                requires the agency and institution to each bear its \n                own attorney, witness, and other costs of presentation \n                of its case at the arbitration hearing and shifts the \n                cost of the arbitration panel and any court reporter to \n                the losing party;\n        except that the Secretary may issue regulations to further \n        define due process requirements as needed to protect accredited \n        institutions, but may not by regulation reduce due process \n        requirements available to accredited institutions, whether the \n        due process is required under this paragraph or another \n        provision of law or regulation;''.\n    (b) Additional Criteria.--Section 496(a) is amended--\n            (1) by striking ``and'' at the end of paragraph (7);\n            (2) by striking the period at the end of paragraph (8) and \n        inserting a semicolon; and\n            (3) by adding at the end the following new paragraphs:\n            ``(9) if an agency or association conducts an assessment of \n        an institution's governing board--\n                    ``(A) such assessment shall consistently apply the \n                accreditation standard, to the greatest extent \n                possible, to any State-appointed receiver, special \n                trustee, or similar interim governing authority, until \n                such time as governing authority is returned to the \n                regular governing board; and\n                    ``(B) such agency or association shall not \n                terminate accreditation solely on the ground that the \n                institution is under interim management of a State-\n                appointed receiver, special trustee, or similar \n                governing authority unless the agency or association \n                determines that there are other deficiencies at the \n                institution that provide grounds for termination, and \n                that, after providing due process required by this \n                section, the interim governing authority has not \n                corrected such deficiencies within a reasonable period \n                of time; and\n            ``(10) such agency or association, and any officer or \n        subdivision of such agency or association that makes \n        accreditation recommendations to its decision-making board, \n        shall conduct meetings open to public observation and comment \n        and shall, at least 7 days before the time of any such meeting, \n        post and distribute its meeting agenda electronically and \n        otherwise to the public, and, for purposes of this paragraph--\n                    ``(A) the term `meetings' includes all meetings, \n                hearings, appeals, deliberations, and votes on \n                accreditation matters regarding any educational \n                institution or on accrediting standards, policies, or \n                procedures; and\n                    ``(B) the Secretary shall issue regulations to \n                implement this paragraph.''.\n    (c) Recognition of State Accrediting Agencies.--Section \n496(a)(3)(B) (20 U.S.C. 1099b(a)(3)(B)) is amended by striking ``on or \nbefore October 1, 1991''.",
       "words": 636,
       "meaning_loss": null,
@@ -106,6 +106,8 @@
         "Amends the Higher Education Act of 1965 to revise due process standards governing the accreditation process of educational institutions.",
         "Requires accrediting agencies and associations to: (1) ensure consistent application of accreditation standards to an educational institution's governing board in receivership; and (2) allow public access to meetings involving accreditation recommendations."
       ],
+      "added_checked_against_partial_source": true,
+      "judge_token_limit": 512,
       "loss_per_compression": null
     },
     {
@@ -195,6 +197,8 @@
       "added_claims": [
         "Amends the Higher Education Act of 1965 to revise due process standards governing the accreditation process of educational institutions."
       ],
+      "added_checked_against_partial_source": true,
+      "judge_token_limit": 512,
       "loss_per_compression": 0.513478
     },
     {
@@ -295,6 +299,8 @@
       "added_claims": [
         "Amends the Higher Education Act of 1965 to revise due process standards governing the accreditation process of educational institutions."
       ],
+      "added_checked_against_partial_source": true,
+      "judge_token_limit": 512,
       "loss_per_compression": 3.27033
     }
   ]

@@ -434,7 +434,7 @@
   <p style="font-size:12px;opacity:0.75;margin:0 0 10px" id="altitude-doc-line">
     A real US Congressional bill (BillSum, CC0) descending the altitude ladder. Scrub the slider:
     each detent shows the text at that altitude and what the named NLI judge measured it
-    <strong>kept</strong>, <strong>dropped</strong>, and <strong>added</strong> versus the full bill.
+    <strong>kept</strong>, <strong>dropped</strong>, and <strong>added</strong> versus the bill, within the judge's 512-token reading window.
   </p>
   <div class="row" style="margin: 8px 0 2px;">
     <label for="altitude-slider" style="min-width:60px">altitude</label>
@@ -528,7 +528,9 @@
         diff.appendChild(note);
       }
       diff.appendChild(claimList("dropped vs the bill", "✗", r.dropped_claims, 6, "bad"));
-      diff.appendChild(claimList("added / unsupported by the bill", "!", r.added_claims, 3));
+      diff.appendChild(claimList(r.added_checked_against_partial_source
+        ? "not found in the part of the bill the judge read (it reads " + (r.judge_token_limit || 512) + " tokens; this bill is longer, so these may be supported later in it)"
+        : "added / unsupported by the bill", "!", r.added_claims, 3));
     }
     slider.addEventListener("input", function () { show(Number(slider.value)); });
     document.getElementById("altitude-scope").textContent = "Scope: " + data.scope +
@@ -536,7 +538,7 @@
     var rl = document.getElementById("altitude-receipt-line");
     var cr = data.chain_receipt || {};
     rl.textContent = "This bill is one of the 32 bound by the witnessed signed chain " +
-      (cr.chain_id || "") + " — " + (cr.note || "") + " ";
+      (cr.chain_id || "") + ": " + (cr.note || "").replace(/\.?$/, ".") + " ";
     if (cr.url) {
       var a = document.createElement("a");
       a.href = cr.url;
