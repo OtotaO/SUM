@@ -32,7 +32,7 @@ async function until(predicate) {
 const detailsDone = p => until(() => p.$('detail-summary').textContent && !p.$('detail-summary').textContent.startsWith('Checking'));
 const deferred = () => { let resolve; const promise = new Promise(r => { resolve = r; }); return { promise, resolve }; };
 
-async function page(handler = async () => new Response('{}', { status: 503 }), { worker = 'answer' } = {}) {
+async function page(handler = async () => new Response('{}', { status: 503 }), { worker = 'answer', url = 'https://workbench.example' } = {}) {
   const errors = [], requests = [], downloads = [], workers = [];
   const mockFetch = async (url, init) => {
     if (String(url).includes('altitude_rungs')) return new Response('{}', { status: 404 });
@@ -41,7 +41,7 @@ async function page(handler = async () => new Response('{}', { status: 503 }), {
   };
   const console = new VirtualConsole();
   console.on('jsdomError', e => { if (!e.message.includes('navigation')) errors.push(e); });
-  const dom = new JSDOM(html, { url: 'https://workbench.example', runScripts: 'dangerously', virtualConsole: console,
+  const dom = new JSDOM(html, { url, runScripts: 'dangerously', virtualConsole: console,
     beforeParse(window) {
       Object.defineProperty(window, 'crypto', { value: webcrypto });
       window.TextEncoder = TextEncoder; window.structuredClone = structuredClone;
@@ -961,4 +961,46 @@ test('an answer from an older run, even one already queued, never replaces the n
     assert.match(p.$('detail-summary').textContent, /^1 detail to check\./, 'no deadline from either run overwrites the answer');
     assert.deepEqual(p.errors, []);
   } finally { p.close(); }
+});
+
+test('a made-up example loads both texts, compares them, lists its planted changes and sets a shareable address', async () => {
+  const p = await page();
+  try {
+    p.window.document.querySelector('[data-example="patient"]').click();
+    assert.match(p.$('prose').value, /^Take one tablet twice a day/);
+    assert.match(p.$('rewrite').value, /^Take one tablet two times a day/);
+    assert.equal(p.$('review-panel').hidden, false);
+    assert.equal(p.window.location.hash, '#example=patient');
+    await detailsDone(p);
+    assert.deepEqual([...p.$('detail-list').querySelectorAll('li')].map(li => li.textContent), [
+      'Number changed: 10 days in the original; 7 days in the rewrite.',
+      'Negation not found in the rewrite: not in the original.',
+      'Name not found in the rewrite: Westbrook Clinic in the original.',
+    ]);
+    p.window.document.querySelector('[data-example="lease"]').click();
+    assert.match(p.$('prose').value, /^Tenants must give/);
+    assert.equal(p.window.location.hash, '#example=lease');
+    p.input('rewrite', 'My own rewrite.');
+    p.window.document.querySelector('[data-example="policy"]').click();
+    assert.equal(p.$('rewrite').value, 'My own rewrite.', 'typed text is never replaced');
+    assert.equal(p.$('workbench-status').textContent, 'Clear both boxes to load an example. Your text was kept.');
+    assert.equal(p.requests.length, 0);
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
+test('opening the page at #example=<name> loads that example; an unknown name does nothing', async () => {
+  const p = await page(undefined, { url: 'https://workbench.example/#example=policy' });
+  try {
+    assert.match(p.$('prose').value, /^Employees may work from home/);
+    assert.equal(p.$('review-panel').hidden, false);
+    await detailsDone(p);
+    assert.match(p.$('detail-summary').textContent, /^3 details to check\./);
+  } finally { p.close(); }
+  const q = await page(undefined, { url: 'https://workbench.example/#example=nothing' });
+  try {
+    assert.equal(q.$('prose').value, '');
+    assert.equal(q.$('review-panel').hidden, true);
+    assert.deepEqual(q.errors, []);
+  } finally { q.close(); }
 });
