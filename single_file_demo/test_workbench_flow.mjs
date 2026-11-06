@@ -975,7 +975,7 @@ test('a made-up example loads both texts, compares them, lists its planted chang
     assert.deepEqual([...p.$('detail-list').querySelectorAll('li')].map(li => li.textContent), [
       'Number changed: 10 days in the original; 7 days in the rewrite.',
       'Negation not found in the rewrite: not in the original.',
-      'Name not found in the rewrite: Westbrook Clinic in the original.',
+      'Name not found in the rewrite: Quillmere Clinic in the original.',
     ]);
     p.window.document.querySelector('[data-example="lease"]').click();
     assert.match(p.$('prose').value, /^Tenants must give/);

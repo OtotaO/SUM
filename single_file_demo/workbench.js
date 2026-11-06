@@ -194,16 +194,16 @@ $('compare-btn').addEventListener('click', compare);
 // server.
 const EXAMPLES = {
   "patient": {
-    "original": "Take one tablet twice a day with food for 10 days. Do not drink alcohol while taking this medicine. If you develop a rash, stop taking the tablets and call the Westbrook Clinic at once. You should finish the full course even if you feel better.",
+    "original": "Take one tablet twice a day with food for 10 days. Do not drink alcohol while taking this medicine. If you develop a rash, stop taking the tablets and call the Quillmere Clinic at once. You should finish the full course even if you feel better.",
     "rewrite": "Take one tablet two times a day with food for 7 days. Drink alcohol only in moderation while you take this medicine. If you get a rash, stop the tablets and call your doctor. You should finish all the tablets even if you start to feel better."
   },
   "lease": {
-    "original": "Tenants must give at least 60 days written notice before moving out. The deposit of $1,800 will be returned within 21 days, unless there is damage beyond normal wear and tear. Pets are not allowed in the building without written permission from Harbor Lane Property Management.",
-    "rewrite": "You must give at least 60 days written notice before you move out. We return your $1,800 deposit within 21 days. You may keep pets in the building with written permission from Harbor Lane."
+    "original": "Tenants must give at least 60 days written notice before moving out. Harbor Lane Property Management will return the deposit of $1,800 within 21 days, unless there is damage beyond normal wear and tear. Pets are not allowed in the building.",
+    "rewrite": "You must give at least 60 days written notice before you move out. Harbor Lane will return your $1,800 deposit within 21 days. Pets are allowed in the building."
   },
   "policy": {
     "original": "Employees may work from home up to 2 days per week, provided that their manager approves the schedule in advance. Requests must be submitted by the 25th of the preceding month. Staff in the Customer Support team are not eligible for this policy.",
-    "rewrite": "You can work from home up to 3 days per week if your manager agrees to the schedule. Submit your request by the 25th of the month before. Customer Support staff are also eligible for this policy."
+    "rewrite": "You can work from home up to 3 days per week. Submit your request by the 25th of the month before. Customer Support staff are also eligible for this policy."
   }
 };
 const isExampleText = (text, field) => !text.trim() || text === $(field).placeholder || Object.values(EXAMPLES).some(e => text === (field === 'prose' ? e.original : e.rewrite));
