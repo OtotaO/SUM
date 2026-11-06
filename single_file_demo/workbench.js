@@ -1,5 +1,5 @@
 import { distill } from './distiller.js';
-import { detailFlags, extractDetails, DETAIL_SCOPE } from './detail_flags.js';
+import { DETAIL_SCOPE } from './detail_flags.js';
 import { compareTexts, makeReviewPacket, verifyReviewPacket, checkRenderBinding, publicJwks, pinPacketKey, keyWarning, quoteKid, receiptFailure } from './review_packet.js';
 
 const $ = id => document.getElementById(id);
@@ -13,6 +13,7 @@ const status = message => { $('workbench-status').textContent = message; };
 
 function resetReview() {
   generation++;
+  stopDetailChecks();
   current = null;
   $('review-panel').hidden = true;
   $('export-review-btn').disabled = true;
@@ -61,8 +62,7 @@ function spanCell(span, field) {
 }
 
 const DETAIL_SHOWN = 200;
-// Pair-count limits per comparison family, measured so that inputs at the limit finish in well under a second.
-const DETAIL_MAX_PAIRS = { numbers: 9000000, dates: 9000000, names: 1000000, qualifiers: 100000 };
+const DETAIL_DEADLINE_MS = 3000;
 const DETAIL_NAMES = { number: 'Number', date: 'Date or time', negation: 'Negation', modal: 'Modal verb', condition: 'Condition', exception: 'Exception', name: 'Name' };
 
 function quoteButton(span, field) {
@@ -78,27 +78,44 @@ function quoteButton(span, field) {
 }
 
 // Recomputed from the two texts every time, so an opened packet shows the same checks; nothing is stored.
+// detail_flags.js is frozen at the version its registered evaluation measured (fixtures/detail_flags_eval).
+// Some of its comparisons can cost the product of the two texts' counts on crafted input, so it runs in a
+// worker that the page stops at a deadline: no input can hold the page.
+let detailWorker = null, detailRun = 0;
+function stopDetailChecks() {
+  detailRun++;
+  if (detailWorker) { detailWorker.terminate(); detailWorker = null; }
+}
+
 function showDetailChecks() {
-  const list = $('detail-list');
-  list.replaceChildren();
+  stopDetailChecks();
+  const run = detailRun;
+  $('detail-list').replaceChildren();
   $('detail-scope').textContent = DETAIL_SCOPE;
-  // detail_flags.js is frozen at the version its registered evaluation measured (fixtures/detail_flags_eval),
-  // so its limits are handled here. Its comparisons of numbers, dates, names, and conditions with exceptions
-  // can cost the product of the two texts' counts in the worst case; extraction alone is linear, so the
-  // counts are taken first and the checks are skipped when any product exceeds its limit. An unexpected
-  // failure shows a plain message instead of an error.
-  let result;
-  try {
-    const a = extractDetails(current.source), b = extractDetails(current.output);
-    if (Object.entries(DETAIL_MAX_PAIRS).some(([family, limit]) => a[family].length * b[family].length > limit)) {
-      $('detail-summary').textContent = 'Detail checks were skipped: these texts have too many numbers, dates, names, conditions or exceptions to compare quickly. Read the passages below.';
-      return;
-    }
-    result = detailFlags(current.source, current.output);
-  } catch (e) {
-    $('detail-summary').textContent = /up to 300/.test(e.message) ? e.message : 'Detail checks could not run on this text. Read the passages below.';
-    return;
-  }
+  const summary = text => { $('detail-summary').textContent = text; };
+  let worker;
+  try { worker = new Worker(new URL('./detail_worker.js', import.meta.url), { type: 'module' }); }
+  catch { summary('Detail checks are not available in this browser. Read the passages below.'); return; }
+  detailWorker = worker;
+  summary('Checking details...');
+  const finish = () => { clearTimeout(timer); if (run !== detailRun) return false; worker.terminate(); detailWorker = null; return true; };
+  const timer = setTimeout(() => {
+    if (finish()) summary(`Detail checks took longer than ${DETAIL_DEADLINE_MS / 1000} seconds on these texts and were stopped. Read the passages below.`);
+  }, DETAIL_DEADLINE_MS);
+  worker.onmessage = ({ data }) => {
+    if (!finish()) return;
+    if (data.ok) showDetailFlags(data.result);
+    else summary(data.message || 'Detail checks could not run on this text. Read the passages below.');
+  };
+  worker.onerror = event => {
+    if (event.preventDefault) event.preventDefault();
+    if (finish()) summary('Detail checks could not run on this text. Read the passages below.');
+  };
+  worker.postMessage({ id: run, source: current.source, output: current.output });
+}
+
+function showDetailFlags(result) {
+  const list = $('detail-list');
   const kinds = { changed: 'changed', missing: 'not found in the rewrite', added: 'only in the rewrite' };
   // A list of thousands of items would stall the page; the count still reports them all.
   for (const f of result.flags.slice(0, DETAIL_SHOWN)) {

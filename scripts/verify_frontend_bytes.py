@@ -62,6 +62,7 @@ CHECKED_ASSETS: list[tuple[str, str]] = [
     ("workbench.js", "workbench.js"),                     # source/rewrite review UI
     ("distiller.js", "distiller.js"),                     # extractive depths (imported by workbench.js)
     ("detail_flags.js", "detail_flags.js"),               # detail checks (imported by workbench.js)
+    ("detail_worker.js", "detail_worker.js"),             # runs the detail checks off the main thread
     ("meaning_receipt_verifier.js", "meaning_receipt_verifier.js"),    # meaning/perspective browser verifier
     ("transform_receipt_verifier.js", "transform_receipt_verifier.js"),  # transform browser verifier
     ("jcs.js", "jcs.js"),                                 # float-free canonicalizer

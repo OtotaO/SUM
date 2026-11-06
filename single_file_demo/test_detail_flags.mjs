@@ -64,8 +64,10 @@ test('a text compared with itself has no flags, and every span is copied from it
 });
 
 test('the checks make no network request and need no model', async () => {
-  const code = await readFile(new URL('./detail_flags.js', import.meta.url), 'utf8');
-  assert.doesNotMatch(code, /\bfetch\(|XMLHttpRequest|WebSocket|import\(/);
+  for (const file of ['./detail_flags.js', './detail_worker.js']) {
+    const code = await readFile(new URL(file, import.meta.url), 'utf8');
+    assert.doesNotMatch(code, /\bfetch\(|XMLHttpRequest|WebSocket|import\(/, file);
+  }
 });
 
 test('v1.1 regressions: no failure on "half", equal units and currencies, rates, and linear time', () => {
