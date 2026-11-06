@@ -51,6 +51,11 @@ CHAIN_ID = "9a8ab39f08522c50"
 SCOPE = (
     "per-document MEASUREMENT under the named NLI judge; not a guarantee. "
     "The proxy is blind to arrangement, sound, connotation, implicature. "
+    "The judge reads at most its token window (512 tokens) of each pair, so "
+    "a claim checked against a longer bill was checked against its start "
+    "only; such claims are listed as not found in the part read, not as "
+    "unsupported. Claims are the judge's sentence units, which split some "
+    "wrapped lines of the bill into fragments. "
     "Corpus-level values live in signed receipts: this document is one of "
     "the 32 bills in the witnessed signed chain, whose values describe those "
     "32 bills only."
@@ -107,7 +112,7 @@ def build() -> dict:
     out_rungs = [
         {
             "label": "the bill (source)",
-            "note": "the full text of the bill; every claim below is judged against it",
+            "note": "the full text of the bill; claims below are judged against it, within the judge's token window",
             "text": bill,
             "words": len(bill.split()),
             "meaning_loss": None,
@@ -130,6 +135,12 @@ def build() -> dict:
                 "preserved_claims": d["preserved_claims"],
                 "dropped_claims": d["dropped_claims"],
                 "added_claims": d["added_claims"],
+                # True when the judge could not read the whole bill while checking the added claims, so they
+                # are "not found in the part read", not "unsupported by the bill".
+                "added_checked_against_partial_source": any(
+                    p.get("direction") == "fidelity" for p in (d.get("inspection") or {}).get("partial_judgments", [])
+                ),
+                "judge_token_limit": max([p.get("token_limit", 0) for p in (d.get("inspection") or {}).get("partial_judgments", [])] or [None], key=lambda v: v or 0),
                 "loss_per_compression": d["loss_per_compression"],
             }
         )
@@ -150,12 +161,13 @@ def build() -> dict:
             "witnessed_in": "transparency/log.jsonl",
             "url": "https://github.com/OtotaO/SUM/tree/main/fixtures/chain_receipts_billsum",
             "note": (
-                "signed sum.chain_receipt.v1 over all 32 bills: hop-1 bound "
-                "0.865768, hop-2 bound 0.488860, Bonferroni budget 1.354628 "
-                "at joint delta 0.10, direct end-to-end 0.874216 (Hoeffding, "
+                "signed sum.chain_receipt.v1 over all 32 bills: hop-1 "
+                "0.865768, hop-2 0.488860, Bonferroni sum 1.354628 at joint "
+                "delta 0.10, direct end-to-end 0.874216 (Hoeffding arithmetic, "
                 "n=32). The 32 bills are the first of the test split, not a "
                 "random draw, so these are descriptive values and no "
-                "confidence reading applies"
+                "confidence reading applies. Hop-1 fidelity was judged within "
+                "the same 512-token window."
             ),
         },
         "rungs": out_rungs,

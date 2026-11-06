@@ -109,3 +109,30 @@ def test_altitude_panel_wired_into_page():
     assert 'fetch("altitude_rungs.json")' in html
     assert 'id="altitude-panel"' in html
     assert "measured, not certified" in html
+
+
+def test_claims_checked_against_part_of_the_bill_are_not_called_unsupported():
+    """The NLI judge reads at most its token window of each pair. When the
+    bill does not fit, an added claim was checked against the bill's start
+    only, so the page must not call it unsupported by the bill (review
+    finding C1/CH-1: a claim the bill supports later was listed as added /
+    unsupported)."""
+    d = _load()
+    html = (_REPO / "single_file_demo" / "index.html").read_text("utf-8")
+    assert "versus the full bill" not in html
+    assert "within the judge's 512-token reading window" in html
+    assert "not found in the part of the bill the judge read" in html
+    assert "512 tokens" in d["scope"] and "not as unsupported" in d["scope"]
+    for rung in d["rungs"][1:]:
+        assert "added_checked_against_partial_source" in rung, rung["label"]
+        if rung["added_claims"] and rung["added_checked_against_partial_source"]:
+            assert rung["judge_token_limit"] == 512, rung["label"]
+    # The bill is longer than the window on this document, so every rung's
+    # added claims carry the partial-source marker.
+    assert all(r["added_checked_against_partial_source"] for r in d["rungs"][1:])
+
+
+def test_chain_note_calls_the_values_descriptive_not_bounds():
+    note = _load()["chain_receipt"]["note"]
+    assert " bound " not in note and "budget" not in note
+    assert note.endswith(".")
