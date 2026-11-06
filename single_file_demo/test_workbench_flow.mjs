@@ -1068,7 +1068,8 @@ test('a recipient sees a plain verdict first, the Open button after it, and the 
     first.value = sendersChoice; first.dispatchEvent(new p.window.Event('change'));
     assert.match(p.$('review-rows').querySelector('label').textContent, /^Sender's decision in the packet \(unsigned\)/);
     assert.match(p.$('review-summary').textContent, new RegExp(`from a packet; its unsigned creation time is ${packet.created_at.replace(/[.]/g, '\\.')}; the decisions are unsigned`));
-    for (const created_at of ['', 'decisions verified by site', 12345, '2026-02-31T25:61:00Z']) {
+    // '2026-02-31T10:00:00Z' passes the shape and Date.parse (it rolls to March 3) and fails only the calendar round trip.
+    for (const created_at of ['', 'decisions verified by site', 12345, '2026-02-31T25:61:00Z', '2026-02-31T10:00:00Z']) {
       p.input('packet-input', JSON.stringify({ ...packet, created_at })); p.$('verify-packet-btn').click();
       await until(() => status.textContent.includes('Checks completed'));
       p.$('open-packet-btn').click();
