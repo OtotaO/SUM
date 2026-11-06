@@ -60,6 +60,7 @@ function spanCell(span, field) {
   return cell;
 }
 
+const DETAIL_SHOWN = 200;
 const DETAIL_NAMES = { number: 'Number', date: 'Date or time', negation: 'Negation', modal: 'Modal verb', condition: 'Condition', exception: 'Exception', name: 'Name' };
 
 function quoteButton(span, field) {
@@ -87,7 +88,8 @@ function showDetailChecks() {
   }
   $('detail-scope').textContent = result.scope;
   const kinds = { changed: 'changed', missing: 'not found in the rewrite', added: 'only in the rewrite' };
-  for (const f of result.flags) {
+  // A list of thousands of items would stall the page; the count still reports them all.
+  for (const f of result.flags.slice(0, DETAIL_SHOWN)) {
     const item = document.createElement('li');
     item.append(`${DETAIL_NAMES[f.category]} ${kinds[f.kind]}: `);
     if (f.source) item.append(quoteButton(f.source, 'prose'), ' in the original');
@@ -96,8 +98,9 @@ function showDetailChecks() {
     item.append('.');
     list.append(item);
   }
+  const more = result.flags.length > DETAIL_SHOWN ? ` The first ${DETAIL_SHOWN} are listed.` : '';
   $('detail-summary').textContent = result.flags.length
-    ? `${result.flags.length} detail${result.flags.length === 1 ? '' : 's'} to check. Select a quote to find it above. Some may be kept in other words.`
+    ? `${result.flags.length} detail${result.flags.length === 1 ? '' : 's'} to check. Select a quote to find it above. Some may be kept in other words.${more}`
     : 'No changed numbers, dates, negations, modal verbs, conditions, exceptions or names were flagged. These checks can miss changes and do not look at anything else; read the passages below.';
 }
 

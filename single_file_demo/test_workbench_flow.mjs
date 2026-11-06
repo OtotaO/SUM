@@ -881,7 +881,8 @@ test('detail checks run on the inputs the first checker version failed on, up to
     const started = Date.now();
     p.$('compare-btn').click();
     assert.ok(Date.now() - started < 5000, 'crafted input is checked in linear time');
-    assert.match(p.$('detail-summary').textContent, /^\d+ details to check\./);
+    assert.match(p.$('detail-summary').textContent, /^\d+ details to check\..* The first 200 are listed\.$/);
+    assert.equal(p.$('detail-list').children.length, 200);
     assert.deepEqual(p.errors, []);
   } finally { p.close(); }
 });
