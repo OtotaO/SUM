@@ -163,11 +163,11 @@ The operational compass — read in this order if you want the project's intent 
 - [`docs/BENCH_HARDENING_FROM_QCVV.md`](docs/BENCH_HARDENING_FROM_QCVV.md) — five-task empirical-benchmark hardening plan (T5 shipped 2026-05-17; T1 closed 2026-05-21; T4 closed 2026-05-22; T2 + T3 still open, gated on `sum.slider_drift_bench.v1` receipts).
 - [`docs/DOGFOOD_QUICKSTART.md`](docs/DOGFOOD_QUICKSTART.md) — five-minute guide to running SUM on your own writing.
 
-### LLM narrative round-trip — closed across measured corpora (2026-04-28)
+### LLM narrative round-trip: closed on the measured corpora with gpt-4o-mini (2026-04-28)
 
 The hardest measurement in `PROOF_BOUNDARY.md` is the full LLM narrative round-trip (`text → LLM-extract → axioms → LLM-generate → prose' → LLM-extract → axioms'`). The unprompted-pipeline baseline on `seed_v1` was **drift = 107.75% / exact-match recall = 0.12** — facts preserved, keys not.
 
-A two-layer generator-side intervention (canonical-first generator prompt + constrained-decoding extractor with vocab-pinned `Literal` enums + lemma-exclusion of source-predicate lemmas from the canonical-padding set) now closes this across every measured corpus shape:
+A two-layer generator-side intervention (canonical-first generator prompt + constrained-decoding extractor with vocab-pinned `Literal` enums + lemma-exclusion of source-predicate lemmas from the canonical-padding set) now closes this, with gpt-4o-mini-2024-07-18, across every measured corpus shape:
 
 | Corpus | n_docs | axioms / doc | combined recall | drift_pct | full recall |
 |---|---:|---:|---:|---:|---:|
@@ -175,7 +175,7 @@ A two-layer generator-side intervention (canonical-first generator prompt + cons
 | seed_v2 (7 difficulty parse patterns + multi-fact) | 20 | 1–2 | **0.9750** | 5.00 | 19 / 20 |
 | seed_long_paragraphs (16-topic multi-paragraph) | 16 | 11–28 | **0.9972** | 0.57 | 15 / 16 |
 
-The combined intervention lands **≥ 0.97 recall and ≤ 5 % drift on every measured corpus shape**: single-fact short-form, multi-fact difficulty-pattern, and multi-paragraph dense-prose. The three-corpus result is for gpt-4o-mini-2024-07-18. On seed_v1 alone (2026-04-29), claude-opus-4-7 measured drift 0.00 % and recall 1.00, and gpt-5.5-2026-04-23 drift 5.33 % and recall 1.00, just outside the 5 % line; other corpus and model combinations are unmeasured. Recall is scored against the model's own first-pass extraction, not independently annotated facts. The remaining gap on each corpus traces to upstream LLM source-extraction artifacts (corrupted axioms on seed_v2 doc_015, semantically-duplicate predicates on seed_long solar_system), not to the intervention pattern.
+With gpt-4o-mini-2024-07-18, the combined intervention lands **≥ 0.97 recall and ≤ 5 % drift on every measured corpus shape**: single-fact short-form, multi-fact difficulty-pattern, and multi-paragraph dense-prose. The three-corpus result is for gpt-4o-mini-2024-07-18. On seed_v1 alone (2026-04-29), claude-opus-4-7 measured drift 0.00 % and recall 1.00, and gpt-5.5-2026-04-23 drift 5.33 % and recall 1.00, just outside the 5 % line; other corpus and model combinations are unmeasured. Recall is scored against the model's own first-pass extraction, not independently annotated facts. The remaining gap on each corpus traces to upstream LLM source-extraction artifacts (corrupted axioms on seed_v2 doc_015, semantically-duplicate predicates on seed_long solar_system), not to the intervention pattern.
 
 Receipt artifacts:
 - [`fixtures/bench_receipts/s25_generator_side_2026-04-28.json`](fixtures/bench_receipts/s25_generator_side_2026-04-28.json) — full ablation matrix on seed_v1.
