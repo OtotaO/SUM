@@ -577,9 +577,9 @@ sum meaning-diff source.txt rewrite.txt --scorer nli</code></pre>
   <label for="packet-input" class="field-label">Or paste the review packet JSON</label>
   <textarea id="packet-input" placeholder='{"schema":"sum.review_packet.v1", ...}'></textarea>
   <button id="verify-packet-btn" class="ghost">Verify review packet</button>
+  <pre id="packet-status" role="status" aria-live="polite" style="white-space:pre-wrap;overflow-wrap:anywhere"></pre>
   <button id="open-packet-btn" class="ghost" disabled>Open checked packet texts and decisions</button>
   <p>Opening replaces the source and rewrite above with this packet's texts. Its review decisions remain unsigned.</p>
-  <pre id="packet-status" role="status" aria-live="polite" style="white-space:pre-wrap;overflow-wrap:anywhere"></pre>
 </details>
 
 <hr style="margin: 40px 0; border: none; border-top: 1px solid #8883;">
@@ -1226,7 +1226,7 @@ updateCharCount();
 // Example-prefill: if the textarea is empty, fill with the placeholder
 // text; otherwise no-op (never clobber user input silently).
 $('try-example').addEventListener('click', () => {
-  if ($('prose').value.trim()) return;
+  if ($('prose').value.trim()) { $('workbench-status').textContent = 'Clear both boxes to load an example. Your text was kept.'; return; }
   $('prose').value = $('prose').placeholder;
   $('prose').focus();
   updateCharCount();
