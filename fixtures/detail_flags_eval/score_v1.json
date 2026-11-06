@@ -1,0 +1,65 @@
+{
+  "altered": 84,
+  "preserving": 60,
+  "recall": {
+    "hit": 75,
+    "n": 84,
+    "rate": 0.8928571428571429
+  },
+  "false_alarm": {
+    "flagged": 17,
+    "n": 60,
+    "rate": 0.2833333333333333
+  },
+  "category_matched_recall": {
+    "hit": 74,
+    "n": 84
+  },
+  "by_category": {
+    "number": {
+      "n": 12,
+      "hit": 12
+    },
+    "date": {
+      "n": 12,
+      "hit": 11
+    },
+    "negation": {
+      "n": 12,
+      "hit": 12
+    },
+    "modal": {
+      "n": 12,
+      "hit": 10
+    },
+    "condition": {
+      "n": 12,
+      "hit": 10
+    },
+    "exception": {
+      "n": 12,
+      "hit": 8
+    },
+    "name": {
+      "n": 12,
+      "hit": 12
+    }
+  },
+  "by_type": {
+    "changed": {
+      "n": 28,
+      "hit": 22
+    },
+    "dropped": {
+      "n": 28,
+      "hit": 28
+    },
+    "added": {
+      "n": 28,
+      "hit": 25
+    }
+  },
+  "mean_flags_per_altered_pair": 1.3571428571428572,
+  "mean_flags_per_preserving_pair": 0.38333333333333336,
+  "decision": "ship-flags"
+}
