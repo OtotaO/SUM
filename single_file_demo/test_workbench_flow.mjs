@@ -870,17 +870,18 @@ test('details to check name the changed number, modal and exception, select them
   } finally { p.close(); }
 });
 
-test('detail checks fail soft: a text the checker cannot handle and an over-long text show a plain message', async () => {
+test('detail checks run on the inputs the first checker version failed on, up to the full text limit', async () => {
   const p = await page();
   try {
     p.input('prose', 'You pay half.'); p.input('rewrite', 'You pay half.');
     p.$('compare-btn').click();
-    assert.equal(p.$('review-panel').hidden, false);
-    assert.equal(p.$('detail-summary').textContent, 'Detail checks could not run on this text. Read the passages below.');
-    assert.equal(p.$('detail-list').children.length, 0);
-    p.input('prose', 'pay 3 dollars and '.repeat(1700) + 'stop.'); p.input('rewrite', 'Pay 3 dollars.');
+    assert.match(p.$('detail-summary').textContent, /^No changed numbers/);
+    const long = Array(290).fill(Array(33).fill('10').join(' ') + '.').join('\n');
+    p.input('prose', long); p.input('rewrite', Array(290).fill(Array(25).fill('ten').join(' ') + '.').join('\n'));
+    const started = Date.now();
     p.$('compare-btn').click();
-    assert.match(p.$('detail-summary').textContent, /^Detail checks run on texts of up to 30,000 characters each\./);
+    assert.ok(Date.now() - started < 5000, 'crafted input is checked in linear time');
+    assert.match(p.$('detail-summary').textContent, /^\d+ details to check\./);
     assert.deepEqual(p.errors, []);
   } finally { p.close(); }
 });

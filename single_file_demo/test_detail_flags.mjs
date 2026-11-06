@@ -67,3 +67,20 @@ test('the checks make no network request and need no model', async () => {
   const code = await readFile(new URL('./detail_flags.js', import.meta.url), 'utf8');
   assert.doesNotMatch(code, /\bfetch\(|XMLHttpRequest|WebSocket|import\(/);
 });
+
+test('v1.1 regressions: no failure on "half", equal units and currencies, rates, and linear time', () => {
+  for (const t of ['Pay half.', 'You pay half', 'Half-price tickets.', 'Pay half, then the rest.', 'Wait a half-hour.', 'Keep the other half.']) assert.deepEqual(detailFlags(t, t).flags, [], t);
+  assert.deepEqual(flagsOf('The fee is $1,000.', 'The fee is 1000.'), []);
+  assert.deepEqual(flagsOf('Cover up to $2 million.', 'Cover up to $2,000,000.'), []);
+  assert.deepEqual(flagsOf('Reply within 48 hours.', 'Reply within two days.'), []);
+  assert.deepEqual(flagsOf('It costs $10 a month.', 'It costs $10 per month.'), []);
+  assert.deepEqual(flagsOf('Once you pay, we ship.', 'After you pay, we ship.'), []);
+  assert.deepEqual(flagsOf('Pay by the end of the month.', 'Pay by the end of this month.'), []);
+  assert.deepEqual(flagsOf('You must not park here.', 'You should not park here.'), [['modal', 'changed', 'must not', 'should']]);
+  const line = (w, n) => Array(n).fill(w).join(' ') + '.';
+  for (const [x, y] of [[Array(299).fill(line('10', 33)).join('\n'), Array(299).fill(line('ten', 25)).join('\n')], ['twenty '.repeat(14000), 'thirty '.repeat(14000)]]) {
+    const started = Date.now();
+    detailFlags(x, y);
+    assert.ok(Date.now() - started < 3000, `crafted input of ${x.length} characters took too long`);
+  }
+});
