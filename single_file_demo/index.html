@@ -529,7 +529,7 @@
       }
       diff.appendChild(claimList("dropped vs the bill", "✗", r.dropped_claims, 6, "bad"));
       diff.appendChild(claimList(r.added_checked_against_partial_source
-        ? "not found in the part of the bill the judge read (it reads " + (r.judge_token_limit || 512) + " tokens; this bill is longer, so these may be supported later in it)"
+        ? "not found in the part of the bill the judge read (it reads " + (r.judge_token_limit || 512) + " tokens of each pair and this bill is longer; a listed claim may be supported later in the bill, or may have scored just under the judge's threshold)"
         : "added / unsupported by the bill", "!", r.added_claims, 3));
     }
     slider.addEventListener("input", function () { show(Number(slider.value)); });
