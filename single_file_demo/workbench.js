@@ -1,5 +1,5 @@
 import { distill } from './distiller.js';
-import { detailFlags } from './detail_flags.js';
+import { detailFlags, extractDetails, DETAIL_SCOPE } from './detail_flags.js';
 import { compareTexts, makeReviewPacket, verifyReviewPacket, checkRenderBinding, publicJwks, pinPacketKey, keyWarning, quoteKid, receiptFailure } from './review_packet.js';
 
 const $ = id => document.getElementById(id);
@@ -61,6 +61,7 @@ function spanCell(span, field) {
 }
 
 const DETAIL_SHOWN = 200;
+const DETAIL_MAX_QUALIFIER_PAIRS = 100000, DETAIL_MAX_NAME_PAIRS = 10000000;
 const DETAIL_NAMES = { number: 'Number', date: 'Date or time', negation: 'Negation', modal: 'Modal verb', condition: 'Condition', exception: 'Exception', name: 'Name' };
 
 function quoteButton(span, field) {
@@ -79,14 +80,24 @@ function quoteButton(span, field) {
 function showDetailChecks() {
   const list = $('detail-list');
   list.replaceChildren();
-  // detail_flags.js is frozen at the version its registered evaluation measured (fixtures/detail_flags_eval);
-  // an unexpected failure shows a plain message instead of an error.
+  $('detail-scope').textContent = DETAIL_SCOPE;
+  // detail_flags.js is frozen at the version its registered evaluation measured (fixtures/detail_flags_eval),
+  // so its limits are handled here. Two of its comparisons cost the product of the two texts' counts
+  // (conditions and exceptions; names); extraction alone is linear, so the counts are taken first and the
+  // checks are skipped when a product would take more than a fraction of a second. An unexpected failure
+  // shows a plain message instead of an error.
   let result;
-  try { result = detailFlags(current.source, current.output); } catch (e) {
+  try {
+    const a = extractDetails(current.source), b = extractDetails(current.output);
+    if (a.qualifiers.length * b.qualifiers.length > DETAIL_MAX_QUALIFIER_PAIRS || a.names.length * b.names.length > DETAIL_MAX_NAME_PAIRS) {
+      $('detail-summary').textContent = 'Detail checks were skipped: these texts have too many conditions, exceptions or names to compare quickly. Read the passages below.';
+      return;
+    }
+    result = detailFlags(current.source, current.output);
+  } catch (e) {
     $('detail-summary').textContent = /up to 300/.test(e.message) ? e.message : 'Detail checks could not run on this text. Read the passages below.';
     return;
   }
-  $('detail-scope').textContent = result.scope;
   const kinds = { changed: 'changed', missing: 'not found in the rewrite', added: 'only in the rewrite' };
   // A list of thousands of items would stall the page; the count still reports them all.
   for (const f of result.flags.slice(0, DETAIL_SHOWN)) {

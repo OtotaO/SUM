@@ -886,3 +886,19 @@ test('detail checks run on the inputs the first checker version failed on, up to
     assert.deepEqual(p.errors, []);
   } finally { p.close(); }
 });
+
+test('detail checks are skipped, quickly and with a plain message, when conditions or names would compare too slowly', async () => {
+  const p = await page();
+  try {
+    p.input('prose', 'if alpha beta gamma delta '.repeat(400)); p.input('rewrite', 'if alpha '.repeat(1000));
+    const started = Date.now();
+    p.$('compare-btn').click();
+    assert.ok(Date.now() - started < 3000);
+    assert.match(p.$('detail-summary').textContent, /^Detail checks were skipped: these texts have too many conditions/);
+    assert.equal(p.$('detail-list').children.length, 0);
+    p.input('prose', 'You may cancel if you move.'); p.input('rewrite', 'You can cancel.');
+    p.$('compare-btn').click();
+    assert.match(p.$('detail-summary').textContent, /^1 detail to check\./);
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
