@@ -1,0 +1,3167 @@
+{
+ "schema": "sum.detail_flags_eval_corpus.v1",
+ "registered": "2026-11-06",
+ "pairs": [
+  {
+   "id": "numb-01",
+   "label": "altered",
+   "domain": "consumer subscription terms",
+   "original": "Your Brightwell Streaming Plus membership renews automatically on the first day of each month. The monthly fee is $12.49, and it will be charged to the card on file. If you cancel before your renewal date, you will keep access until the end of the current billing period. Refunds are not issued for partial months. You may update your plan at any time from the Account page.",
+   "rewrite": "Your Brightwell Streaming Plus membership renews on its own on the first day of every month. The fee is $12 a month, and it will be charged to your saved card. If you cancel before your renewal date, you will still have access until the current billing period ends. We do not refund partial months. You are allowed to update your plan whenever you want on the Account page.",
+   "change": {
+    "category": "number",
+    "type": "changed",
+    "source_detail": "$12.49",
+    "rewrite_detail": "$12",
+    "note": "The monthly fee was rounded from $12.49 to $12."
+   },
+   "equivalences": [
+    {
+     "category": "modal",
+     "source_detail": "may",
+     "rewrite_detail": "are allowed to"
+    }
+   ]
+  },
+  {
+   "id": "numb-02",
+   "label": "altered",
+   "domain": "medication or patient instructions",
+   "original": "Take one capsule of Corvalex 20 mg by mouth every 8 hours with a full glass of water. Do not take more than three capsules in 24 hours. If you miss a dose, take it as soon as you remember unless your next dose is due within 2 hours. Store the bottle at room temperature away from children. Call Dr. Helena Marsh if you develop a rash.",
+   "rewrite": "Swallow one Corvalex 20 mg capsule every 6 hours with a full glass of water. Do not take more than three capsules in 24 hours. If you forget a dose, take it when you remember, except when your next dose is due within 2 hours. Keep the bottle at room temperature and out of the reach of children. Contact Dr. Marsh if you get a rash.",
+   "change": {
+    "category": "number",
+    "type": "changed",
+    "source_detail": "every 8 hours",
+    "rewrite_detail": "every 6 hours",
+    "note": "The dosing interval changed from every 8 hours to every 6 hours."
+   },
+   "equivalences": [
+    {
+     "category": "exception",
+     "source_detail": "unless",
+     "rewrite_detail": "except when"
+    },
+    {
+     "category": "name",
+     "source_detail": "Dr. Helena Marsh",
+     "rewrite_detail": "Dr. Marsh"
+    }
+   ]
+  },
+  {
+   "id": "numb-03",
+   "label": "altered",
+   "domain": "rental or lease notices",
+   "original": "Northgate Housing Association will carry out gas safety checks in Block C during the week of June 14, 2027. Our engineer needs to enter each flat for about 45 minutes. If you cannot be home, you must leave a key with the site office by Friday. We will give you at least 48 hours' notice of your exact appointment time. Tenants who refuse entry may be charged a call-out fee of $65.",
+   "rewrite": "Northgate Housing will do gas safety checks in Block C in the week of 14 June 2027. An engineer has to get into each flat for about 45 minutes. If you cannot be home, you must leave a key at the site office by Friday. We will tell you your exact appointment time at least 24 hours in advance. Tenants who refuse entry may be charged a $65 call-out fee.",
+   "change": {
+    "category": "number",
+    "type": "changed",
+    "source_detail": "48 hours",
+    "rewrite_detail": "24 hours",
+    "note": "The minimum notice period was cut from 48 hours to 24 hours."
+   },
+   "equivalences": [
+    {
+     "category": "name",
+     "source_detail": "Northgate Housing Association",
+     "rewrite_detail": "Northgate Housing"
+    },
+    {
+     "category": "date",
+     "source_detail": "June 14, 2027",
+     "rewrite_detail": "14 June 2027"
+    },
+    {
+     "category": "modal",
+     "source_detail": "needs to",
+     "rewrite_detail": "has to"
+    }
+   ]
+  },
+  {
+   "id": "numb-04",
+   "label": "altered",
+   "domain": "bank or account fee notices",
+   "original": "From April 1, 2027, Harborline Savings Bank will charge a monthly maintenance fee on Everyday Checking accounts. The fee is $8 per month. It will be waived in any month in which your average daily balance is at least $1,500. Accounts held by customers under 25 are exempt. You do not need to take any action to keep your account open.",
+   "rewrite": "Starting 1 April 2027, Harborline Savings Bank will charge a monthly upkeep fee on Everyday Checking accounts. The fee is $8 a month. We will waive it for any month in which your average daily balance is at least $1,000. Customers under 25 are exempt. You are not required to do anything to keep your account open.",
+   "change": {
+    "category": "number",
+    "type": "changed",
+    "source_detail": "$1,500",
+    "rewrite_detail": "$1,000",
+    "note": "The balance needed to waive the fee changed from $1,500 to $1,000."
+   },
+   "equivalences": [
+    {
+     "category": "date",
+     "source_detail": "April 1, 2027",
+     "rewrite_detail": "1 April 2027"
+    },
+    {
+     "category": "negation",
+     "source_detail": "do not need to",
+     "rewrite_detail": "are not required to"
+    }
+   ]
+  },
+  {
+   "id": "numb-05",
+   "label": "altered",
+   "domain": "workplace policy",
+   "original": "Employees at Kestrel Logistics may carry over up to 5 unused vacation days into the next calendar year. Carried-over days must be used by March 31, or they will be lost. Requests for leave longer than two weeks need approval from your department manager. Please submit all leave requests through the StaffDesk portal.",
+   "rewrite": "Kestrel Logistics staff are allowed to carry unused vacation days over into the next calendar year. You have to use those carried-over days by March 31, or they will be lost. Leave requests longer than two weeks need your department manager's approval. Send all leave requests through the StaffDesk portal.",
+   "change": {
+    "category": "number",
+    "type": "dropped",
+    "source_detail": "up to 5",
+    "rewrite_detail": null,
+    "note": "The cap of 5 carry-over days was dropped, so the rewrite implies any number can be carried over."
+   },
+   "equivalences": [
+    {
+     "category": "modal",
+     "source_detail": "may",
+     "rewrite_detail": "are allowed to"
+    },
+    {
+     "category": "modal",
+     "source_detail": "must",
+     "rewrite_detail": "have to"
+    }
+   ]
+  },
+  {
+   "id": "numb-06",
+   "label": "altered",
+   "domain": "insurance coverage",
+   "original": "Your Cedarpoint Home Shield policy covers water damage caused by a sudden burst pipe. Damage from gradual leaks is not covered. If you make a claim, you will pay the first $500 of the repair cost, and we will pay the rest up to your policy limit. You must report the damage to us within 30 days of discovering it.",
+   "rewrite": "Your Cedarpoint Home Shield policy pays for water damage from a pipe that bursts suddenly. Slow, gradual leaks are not covered. If you make a claim, you will pay part of the repair cost first, and we will pay the rest up to your policy limit. You are required to tell us about the damage within 30 days of finding it.",
+   "change": {
+    "category": "number",
+    "type": "dropped",
+    "source_detail": "$500",
+    "rewrite_detail": null,
+    "note": "The $500 amount the policyholder pays first was dropped."
+   },
+   "equivalences": [
+    {
+     "category": "modal",
+     "source_detail": "must",
+     "rewrite_detail": "are required to"
+    }
+   ]
+  },
+  {
+   "id": "numb-07",
+   "label": "altered",
+   "domain": "school or parent notices",
+   "original": "Willow Creek Primary School will hold its spring field trip to the Larkspur Science Museum on Thursday, May 6. The cost is $15 per child, payable at the front office. Each class will travel with at least four adult supervisors. Children who do not return a signed permission slip by Monday will stay at school with Mrs. Odell.",
+   "rewrite": "Willow Creek Primary will take pupils on a spring field trip to the Larkspur Science Museum on Thursday, May 6. The cost is $15 per child, to be paid at the front office. Every class will travel with adult supervisors. Children who do not hand in a signed permission slip by Monday will stay at school with Mrs. Odell.",
+   "change": {
+    "category": "number",
+    "type": "dropped",
+    "source_detail": "at least four",
+    "rewrite_detail": null,
+    "note": "The minimum of four adult supervisors per class was dropped."
+   },
+   "equivalences": [
+    {
+     "category": "name",
+     "source_detail": "Willow Creek Primary School",
+     "rewrite_detail": "Willow Creek Primary"
+    }
+   ]
+  },
+  {
+   "id": "numb-08",
+   "label": "altered",
+   "domain": "travel booking and refund policy",
+   "original": "Bookings made through Saltmere Travel can be cancelled free of charge up to 72 hours before departure. Cancellations after that point receive a refund of 50% of the fare. No refund is given for no-shows. Refunds are returned to the original payment method within 10 business days. Please keep your booking reference for any refund request.",
+   "rewrite": "You can cancel a Saltmere Travel booking for free up to 72 hours before departure. Later cancellations get half of the fare back. No-shows do not get a refund. Refunds go back to the card or account you paid with. Keep your booking reference handy for any refund request.",
+   "change": {
+    "category": "number",
+    "type": "dropped",
+    "source_detail": "within 10 business days",
+    "rewrite_detail": null,
+    "note": "The 10 business day refund timeframe was dropped."
+   },
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "50%",
+     "rewrite_detail": "half"
+    }
+   ]
+  },
+  {
+   "id": "numb-09",
+   "label": "altered",
+   "domain": "government benefits letters",
+   "original": "The Department of Family Support has reviewed your application for the Winter Heating Allowance. You qualify for the allowance because your household income is below the program limit. The payment will be made directly into your bank account. If your circumstances change, you must tell us as soon as possible. You can ask for this decision to be reconsidered if you think it is wrong.",
+   "rewrite": "The Department of Family Support has looked at your application for the Winter Heating Allowance. You qualify because your household income is under the program limit. The payment will go straight into your bank account. If your circumstances change, you have to let us know as soon as possible. If you think this decision is wrong, you can ask us to look at it again within 30 days.",
+   "change": {
+    "category": "number",
+    "type": "added",
+    "source_detail": null,
+    "rewrite_detail": "within 30 days",
+    "note": "The rewrite invents a 30 day limit for asking for reconsideration."
+   },
+   "equivalences": [
+    {
+     "category": "modal",
+     "source_detail": "must",
+     "rewrite_detail": "have to"
+    }
+   ]
+  },
+  {
+   "id": "numb-10",
+   "label": "altered",
+   "domain": "product warranty or safety notices",
+   "original": "Your Ardent Kitchen Pro blender comes with a limited warranty against defects in materials and workmanship. The warranty does not cover damage caused by misuse, dropping, or running the motor while empty. To make a claim, contact Ardent Customer Care and keep your proof of purchase. We will repair or replace the blender at our choice.",
+   "rewrite": "Your Ardent Kitchen Pro blender has a limited 2-year warranty that covers faults in materials and workmanship. It does not cover damage from misuse, dropping it, or running the motor empty. To make a claim, get in touch with Ardent Customer Care and hold on to your receipt. We will either fix the blender or replace it, whichever we choose.",
+   "change": {
+    "category": "number",
+    "type": "added",
+    "source_detail": null,
+    "rewrite_detail": "2-year",
+    "note": "The rewrite adds a 2-year warranty length that the original never states."
+   },
+   "equivalences": []
+  },
+  {
+   "id": "numb-11",
+   "label": "altered",
+   "domain": "medication or patient instructions",
+   "original": "After your procedure at Fenwick Day Clinic, you should rest at home for the remainder of the day. You must not drive or operate machinery until the following morning. Mild soreness around the injection site is normal and usually fades on its own. Contact the clinic nurse if the area becomes hot, swollen, or red.",
+   "rewrite": "After your procedure at Fenwick Day Clinic, we recommend resting at home for the rest of the day. You must not drive or use machinery until the following morning. Some mild soreness where you had the injection is normal and usually fades on its own within 3 days. Call the clinic nurse if the area gets hot, swollen, or red.",
+   "change": {
+    "category": "number",
+    "type": "added",
+    "source_detail": null,
+    "rewrite_detail": "within 3 days",
+    "note": "The rewrite adds a 3 day timeframe for the soreness to fade."
+   },
+   "equivalences": [
+    {
+     "category": "modal",
+     "source_detail": "should",
+     "rewrite_detail": "we recommend"
+    }
+   ]
+  },
+  {
+   "id": "numb-12",
+   "label": "altered",
+   "domain": "rental or lease notices",
+   "original": "Your tenancy at Birchwood Court ends on August 31, 2027. If you plan to move out, please tell Ms. Priya Lund in writing. Before you leave, the flat must be cleaned and all keys returned to the letting office. Your deposit will be returned once the final inspection is complete, minus any agreed deductions.",
+   "rewrite": "Your tenancy at Birchwood Court ends on 31 August 2027. If you plan to move out, please let Ms. Lund know in writing at least 60 days ahead. Before you go, the flat has to be cleaned and every key handed back to the letting office. Your deposit will be returned once the final inspection is done, minus any deductions you agreed to.",
+   "change": {
+    "category": "number",
+    "type": "added",
+    "source_detail": null,
+    "rewrite_detail": "at least 60 days",
+    "note": "The rewrite invents a 60 day notice requirement for moving out."
+   },
+   "equivalences": [
+    {
+     "category": "date",
+     "source_detail": "August 31, 2027",
+     "rewrite_detail": "31 August 2027"
+    },
+    {
+     "category": "name",
+     "source_detail": "Ms. Priya Lund",
+     "rewrite_detail": "Ms. Lund"
+    },
+    {
+     "category": "modal",
+     "source_detail": "must",
+     "rewrite_detail": "has to"
+    }
+   ]
+  },
+  {
+   "id": "date-01",
+   "label": "altered",
+   "domain": "travel booking and refund policy",
+   "original": "Rivenmoor Coachlines will refund the full fare if you cancel at least 48 hours before departure. Cancellations must be submitted through the Rivenmoor app or at a ticket counter. Refunds requested after that point will be issued as a travel credit instead of cash. The credit is valid until June 30, 2027 and cannot be transferred to another passenger. Cash refunds are processed within 10 business days.",
+   "rewrite": "If you cancel at least two days before your trip, Rivenmoor Coachlines will give you back the full fare. You must cancel in the Rivenmoor app or at a ticket counter. Refunds asked for later than that will come as a travel credit rather than cash. The credit stays valid until July 30, 2027, and it cannot be given to another passenger. Cash refunds take up to 10 business days to process.",
+   "change": {
+    "category": "date",
+    "type": "changed",
+    "source_detail": "June 30, 2027",
+    "rewrite_detail": "July 30, 2027",
+    "note": "The credit expiry date moved from June 30, 2027 to July 30, 2027."
+   },
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "48 hours",
+     "rewrite_detail": "two days"
+    }
+   ]
+  },
+  {
+   "id": "date-02",
+   "label": "altered",
+   "domain": "bank or account fee notices",
+   "original": "Starting April 5, 2027, Halvorsen Savings Bank will charge a monthly maintenance fee of $6 on Basic Checking accounts. The fee will not apply if you keep a balance of at least $500 throughout the month. Accounts held by customers under 18 are exempt. You may switch to a different account type at any branch without charge.",
+   "rewrite": "From April 15, 2027, Halvorsen Savings Bank will charge a $6 monthly fee on Basic Checking accounts. You will not pay the fee if your balance stays at least $500 for the whole month. Accounts of customers under 18 are exempt. You can change to another type of account at any branch without any charge.",
+   "change": {
+    "category": "date",
+    "type": "changed",
+    "source_detail": "April 5, 2027",
+    "rewrite_detail": "April 15, 2027",
+    "note": "The fee start date shifted from April 5, 2027 to April 15, 2027."
+   },
+   "equivalences": [
+    {
+     "category": "modal",
+     "source_detail": "may",
+     "rewrite_detail": "can"
+    }
+   ]
+  },
+  {
+   "id": "date-03",
+   "label": "altered",
+   "domain": "medication or patient instructions",
+   "original": "Take one tablet of Corvexil each morning with food, starting on the day after your procedure. Do not take it on an empty stomach. Your follow-up appointment with Dr. Imani Okafor is on Thursday, September 9. If you notice swelling in your ankles, call the Larkmere Clinic before your next dose. Do not stop the medication unless your doctor tells you to.",
+   "rewrite": "Starting the day after your procedure, take 1 tablet of Corvexil every morning with food. Do not take it on an empty stomach. Your check-up with Dr. Okafor is on Tuesday, September 9. If your ankles start to swell, call the Larkmere Clinic before you take the next dose. Do not stop taking the medicine unless your doctor says so.",
+   "change": {
+    "category": "date",
+    "type": "changed",
+    "source_detail": "Thursday",
+    "rewrite_detail": "Tuesday",
+    "note": "The appointment weekday changed from Thursday to Tuesday."
+   },
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "one tablet",
+     "rewrite_detail": "1 tablet"
+    },
+    {
+     "category": "name",
+     "source_detail": "Dr. Imani Okafor",
+     "rewrite_detail": "Dr. Okafor"
+    }
+   ]
+  },
+  {
+   "id": "date-04",
+   "label": "altered",
+   "domain": "school or parent notices",
+   "original": "Parents of Year 4 pupils at Thistlecombe Primary must return the signed consent form for the museum trip by Wednesday, October 13. The trip costs $18 per child, payable through the school office. Pupils without a signed form cannot attend and will stay at school with Ms. Penhallow's class. The coach leaves at 8:45 a.m., so children should arrive by 8:30 a.m.",
+   "rewrite": "Parents of Year 4 children at Thistlecombe Primary need to send back the signed museum trip consent form by Wednesday, October 13. The trip is $18 per child, paid through the school office. Children without a signed form cannot go and will stay at school in Ms. Penhallow's class. The coach departs at 8:45 a.m., so children should be there by 8:15 a.m.",
+   "change": {
+    "category": "date",
+    "type": "changed",
+    "source_detail": "8:30 a.m.",
+    "rewrite_detail": "8:15 a.m.",
+    "note": "The arrival time changed from 8:30 a.m. to 8:15 a.m."
+   },
+   "equivalences": [
+    {
+     "category": "modal",
+     "source_detail": "must",
+     "rewrite_detail": "need to"
+    }
+   ]
+  },
+  {
+   "id": "date-05",
+   "label": "altered",
+   "domain": "rental or lease notices",
+   "original": "Your lease at 22 Fenwick Court ends on August 31, 2027. If you plan to renew, you must sign the new agreement by July 15, 2027. The monthly rent will rise to $1,240 from the first month of the new term. If we do not hear from you, Brindlewater Property Management will treat the lease as ending and may show the flat to prospective tenants.",
+   "rewrite": "Your lease at 22 Fenwick Court finishes on August 31, 2027. If you want to renew, you have to sign the new agreement. Your monthly rent will go up to $1,240 starting with the first month of the new term. If you do not reply to us, Brindlewater Property Management will treat the lease as ending and may show the flat to people who want to rent it.",
+   "change": {
+    "category": "date",
+    "type": "dropped",
+    "source_detail": "July 15, 2027",
+    "rewrite_detail": null,
+    "note": "The renewal signing deadline of July 15, 2027 was left out."
+   },
+   "equivalences": [
+    {
+     "category": "modal",
+     "source_detail": "must",
+     "rewrite_detail": "have to"
+    }
+   ]
+  },
+  {
+   "id": "date-06",
+   "label": "altered",
+   "domain": "workplace policy",
+   "original": "Employees at Tarrow Logistics may carry over up to five unused vacation days into the next year. Carried-over days must be used before March 31, or they will be forfeited. Requests for leave longer than ten consecutive days need approval from your department head. Staff at the Kestrel Depot follow the same rules except during the peak season in December.",
+   "rewrite": "Tarrow Logistics staff may move up to 5 unused vacation days into the next year. Days you carry over must be used, or you will lose them. Leave of more than ten days in a row needs approval from your department head. Kestrel Depot staff follow the same rules except during the peak season in December.",
+   "change": {
+    "category": "date",
+    "type": "dropped",
+    "source_detail": "before March 31",
+    "rewrite_detail": null,
+    "note": "The March 31 deadline for using carried-over days was dropped."
+   },
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "five",
+     "rewrite_detail": "5"
+    }
+   ]
+  },
+  {
+   "id": "date-07",
+   "label": "altered",
+   "domain": "government benefits letters",
+   "original": "The Office of Household Support has approved your heating assistance of $340 for this winter. The payment will be sent to your bank account on November 20. You do not need to reapply this year unless your household income changes. If you move to a new address, you must tell us within 30 days.",
+   "rewrite": "The Office of Household Support has approved $340 in heating help for you this winter. We will pay it into your bank account. You do not need to apply again this year unless your household income changes. If you move house, you must let us know within thirty days.",
+   "change": {
+    "category": "date",
+    "type": "dropped",
+    "source_detail": "November 20",
+    "rewrite_detail": null,
+    "note": "The payment date of November 20 is missing from the rewrite."
+   },
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "30 days",
+     "rewrite_detail": "thirty days"
+    }
+   ]
+  },
+  {
+   "id": "date-08",
+   "label": "altered",
+   "domain": "product warranty or safety notices",
+   "original": "Lumivane Home has found that some Breeze 300 desk fans made between January and May 2026 can overheat. Stop using the fan immediately and unplug it. Do not try to repair the fan yourself. Lumivane will send a free replacement if you register on the recall page before December 1, 2027. Fans bought outside the Northvale region are not covered by this recall.",
+   "rewrite": "Lumivane Home has discovered that some Breeze 300 desk fans built between January and May 2026 can overheat. Stop using your fan right away and unplug it. Do not attempt to fix it yourself. Lumivane will send you a free replacement if you register on the recall page. This recall does not cover fans bought outside the Northvale region.",
+   "change": {
+    "category": "date",
+    "type": "dropped",
+    "source_detail": "before December 1, 2027",
+    "rewrite_detail": null,
+    "note": "The December 1, 2027 registration deadline for a replacement was removed."
+   },
+   "equivalences": []
+  },
+  {
+   "id": "date-09",
+   "label": "altered",
+   "domain": "consumer subscription terms",
+   "original": "Your Plotwick Plus membership renews automatically each month at $11.99. You can cancel at any time from the Account page, and you will keep access until the end of the current billing period. We do not offer refunds for partial months. If the price changes, we will email you before the new price applies.",
+   "rewrite": "Your Plotwick Plus membership renews by itself every month for $11.99. You can cancel any time on the Account page before 11:59 p.m. on your renewal day, and you will still have access until the current billing period ends. We do not give refunds for part of a month. If the price changes, we will email you before the new price starts.",
+   "change": {
+    "category": "date",
+    "type": "added",
+    "source_detail": null,
+    "rewrite_detail": "11:59 p.m.",
+    "note": "The rewrite invents an 11:59 p.m. cancellation cutoff that the original does not set."
+   },
+   "equivalences": []
+  },
+  {
+   "id": "date-10",
+   "label": "altered",
+   "domain": "insurance coverage",
+   "original": "Your Corriden Mutual home policy covers water damage from burst pipes. It does not cover damage caused by slow leaks or poor maintenance. To make a claim, you must report the damage and send photos to your claims handler, Mr. Desmond Achebe. Claims over $2,000 require an inspection before any repairs begin.",
+   "rewrite": "Your Corriden Mutual home policy pays for water damage from burst pipes. It does not pay for damage from slow leaks or poor upkeep. To claim, you must report the damage by the end of the month and send photos to your claims handler, Mr. Achebe. Claims over $2,000 need an inspection before any repairs start.",
+   "change": {
+    "category": "date",
+    "type": "added",
+    "source_detail": null,
+    "rewrite_detail": "by the end of the month",
+    "note": "The rewrite adds an end-of-month reporting deadline that the original never states."
+   },
+   "equivalences": [
+    {
+     "category": "name",
+     "source_detail": "Mr. Desmond Achebe",
+     "rewrite_detail": "Mr. Achebe"
+    }
+   ]
+  },
+  {
+   "id": "date-11",
+   "label": "altered",
+   "domain": "travel booking and refund policy",
+   "original": "Your booking at the Gullmere Inn includes breakfast for two guests. Check-in opens at 3 p.m. and check-out is at 11 a.m. You may cancel free of charge up to 72 hours before arrival; after that, the first night will be charged. Pets are not allowed, except registered assistance dogs.",
+   "rewrite": "Your Gullmere Inn booking comes with breakfast for two guests, served until 10 a.m. Check-in starts at 3 p.m. and check-out is at 11 a.m. You may cancel for free up to three days before you arrive; after that, we will charge you for the first night. Pets are not allowed, apart from registered assistance dogs.",
+   "change": {
+    "category": "date",
+    "type": "added",
+    "source_detail": null,
+    "rewrite_detail": "10 a.m.",
+    "note": "The rewrite adds a 10 a.m. breakfast end time that is not in the original."
+   },
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "72 hours",
+     "rewrite_detail": "three days"
+    },
+    {
+     "category": "exception",
+     "source_detail": "except",
+     "rewrite_detail": "apart from"
+    }
+   ]
+  },
+  {
+   "id": "date-12",
+   "label": "altered",
+   "domain": "school or parent notices",
+   "original": "Greyhallow Secondary School will be closed to students on Friday, February 4, for a staff training day. Buses will not run that day, and the cafeteria will also be shut. Students who need supervision may attend the holiday club at the Greyhallow Community Centre if a parent books a place in advance. The club costs $12 per day.",
+   "rewrite": "On Friday, February 4, Greyhallow Secondary School will be closed to students because of a staff training day. There will be no buses that day, and the cafeteria will be closed too. Students who need looking after may go to the holiday club at the Greyhallow Community Centre if a parent books a place in advance by Monday, January 31. The club costs twelve dollars a day.",
+   "change": {
+    "category": "date",
+    "type": "added",
+    "source_detail": null,
+    "rewrite_detail": "Monday, January 31",
+    "note": "The rewrite adds a booking deadline of Monday, January 31 that the original does not give."
+   },
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "$12",
+     "rewrite_detail": "twelve dollars"
+    }
+   ]
+  },
+  {
+   "id": "nega-01",
+   "label": "altered",
+   "domain": "consumer subscription terms",
+   "original": "Your Brightwell Plus membership renews automatically on the 1st of each month at $12.99. If you downgrade to the Basic plan, there is no fee for the switch, and your current perks stay active until the end of the billing period. Cancellations made through the app take effect at midnight on the day you cancel. We will email a confirmation within 24 hours.",
+   "rewrite": "Your Brightwell Plus membership renews by itself on the 1st of every month for $12.99. If you move down to the Basic plan, there is a small fee for the switch, and your current perks keep working until the billing period ends. Cancellations made in the app take effect at midnight on the day you cancel. We will send you a confirmation email within one day.",
+   "change": {
+    "category": "negation",
+    "type": "changed",
+    "source_detail": "no fee",
+    "rewrite_detail": "a small fee",
+    "note": "Downgrading was free in the original; the rewrite says there is a small fee."
+   },
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "24 hours",
+     "rewrite_detail": "one day"
+    }
+   ]
+  },
+  {
+   "id": "nega-02",
+   "label": "altered",
+   "domain": "rental or lease notices",
+   "original": "Dear Resident, your lease at 14 Calloway Court ends on June 30, 2027. Rosemere Property Group will inspect the unit within 5 business days after you return the keys, and any deductions will be listed in writing. Please keep in mind that neither the security deposit nor the final month's rent can be used to cover cleaning charges.",
+   "rewrite": "Hello, your lease at 14 Calloway Court ends on June 30, 2027. Rosemere Property Group will check the unit within five business days after you hand back the keys. Any deductions will be listed in writing. Remember that either the security deposit or the final month's rent can be used to pay for cleaning charges.",
+   "change": {
+    "category": "negation",
+    "type": "changed",
+    "source_detail": "neither",
+    "rewrite_detail": "either",
+    "note": "The original says neither payment can cover cleaning; the rewrite says either one can."
+   },
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "5 business days",
+     "rewrite_detail": "five business days"
+    }
+   ]
+  },
+  {
+   "id": "nega-03",
+   "label": "altered",
+   "domain": "insurance coverage",
+   "original": "Under your Harborline HomeCare policy, water damage from a burst pipe is covered up to $8,000 per claim. If the pipe failed because of poor maintenance, none of the repair cost is covered. You must report the damage within 72 hours of discovering it. A claims adjuster will then contact you to arrange a visit.",
+   "rewrite": "Your Harborline HomeCare policy pays up to $8,000 per claim for water damage caused by a burst pipe. If the pipe failed because it was poorly maintained, some of the repair cost is covered. You have to report the damage within 72 hours after you find it. A claims adjuster will then get in touch to set up a visit.",
+   "change": {
+    "category": "negation",
+    "type": "changed",
+    "source_detail": "none",
+    "rewrite_detail": "some",
+    "note": "Poor-maintenance failures get no coverage in the original but partial coverage in the rewrite."
+   },
+   "equivalences": [
+    {
+     "category": "modal",
+     "source_detail": "must",
+     "rewrite_detail": "have to"
+    }
+   ]
+  },
+  {
+   "id": "nega-04",
+   "label": "altered",
+   "domain": "workplace policy",
+   "original": "All visitors to the Kessendorf Research Campus must sign in at the front desk before the 9:30 a.m. tour begins. Each visitor receives a temporary badge, which is collected at reception at the end of the visit. Questions about visitor access go to the Facilities Office. Visitors are never left unescorted in the laboratory wing.",
+   "rewrite": "Everyone visiting the Kessendorf campus must sign in at the front desk before the 9:30 a.m. tour starts. Each visitor gets a temporary badge, and reception collects it when the visit ends. Send questions about visitor access to the Facilities Office. Visitors are rarely left alone in the laboratory wing.",
+   "change": {
+    "category": "negation",
+    "type": "changed",
+    "source_detail": "never",
+    "rewrite_detail": "rarely",
+    "note": "The absolute rule 'never left unescorted' is weakened to 'rarely left alone'."
+   },
+   "equivalences": [
+    {
+     "category": "name",
+     "source_detail": "Kessendorf Research Campus",
+     "rewrite_detail": "Kessendorf campus"
+    }
+   ]
+  },
+  {
+   "id": "nega-05",
+   "label": "altered",
+   "domain": "medication or patient instructions",
+   "original": "Take one Corvane 20 mg tablet each morning with breakfast. Do not crush or chew the tablet. If you miss a dose, take it as soon as you remember unless it is almost time for the next one. Call Dr. Priya Okafor's office if you feel dizzy for more than two days.",
+   "rewrite": "Take one 20 mg Corvane tablet every morning with your breakfast. If you forget a dose, take it when you remember unless your next dose is almost due. Call Dr. Priya Okafor's office if you feel dizzy for more than 48 hours.",
+   "change": {
+    "category": "negation",
+    "type": "dropped",
+    "source_detail": "Do not",
+    "rewrite_detail": null,
+    "note": "The instruction not to crush or chew the tablet is missing from the rewrite."
+   },
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "two days",
+     "rewrite_detail": "48 hours"
+    }
+   ]
+  },
+  {
+   "id": "nega-06",
+   "label": "altered",
+   "domain": "school or parent notices",
+   "original": "Classes at Linden Hollow Middle School start at 8:05 a.m. each weekday. Students who arrive after 8:15 a.m. without a note from a parent will be marked unexcused for first period. Three unexcused marks in one month lead to a meeting with the assistant principal, Mr. Daniel Osei. Late arrivals should check in at the front office.",
+   "rewrite": "Classes at Linden Hollow Middle School begin at 8:05 a.m. every weekday. Students who get to school after 8:15 a.m. will be marked unexcused for first period. Three unexcused marks in one month lead to a meeting with the assistant principal, Mr. Osei. Students who arrive late should check in at the front office.",
+   "change": {
+    "category": "negation",
+    "type": "dropped",
+    "source_detail": "without",
+    "rewrite_detail": null,
+    "note": "The rewrite drops 'without a note from a parent', so every late student appears to be marked unexcused."
+   },
+   "equivalences": [
+    {
+     "category": "name",
+     "source_detail": "Mr. Daniel Osei",
+     "rewrite_detail": "Mr. Osei"
+    }
+   ]
+  },
+  {
+   "id": "nega-07",
+   "label": "altered",
+   "domain": "travel booking and refund policy",
+   "original": "Your Altamira Rail ticket from Porto Vell to Sant Iscle is valid for travel on Saturday, May 8, 2027. You can change your travel date once with no change fee, as long as you do it at least 48 hours before departure. Refunds are paid to the original card within 10 business days.",
+   "rewrite": "Your Altamira Rail ticket from Porto Vell to Sant Iscle is good for travel on Saturday, 8 May 2027. You can move your trip to a different date once, as long as you make the change at least 48 hours before you leave. Refunds go back to the card you paid with within 10 business days.",
+   "change": {
+    "category": "negation",
+    "type": "dropped",
+    "source_detail": "no change fee",
+    "rewrite_detail": null,
+    "note": "The rewrite omits that the one date change is free of charge."
+   },
+   "equivalences": [
+    {
+     "category": "date",
+     "source_detail": "May 8, 2027",
+     "rewrite_detail": "8 May 2027"
+    }
+   ]
+  },
+  {
+   "id": "nega-08",
+   "label": "altered",
+   "domain": "product warranty or safety notices",
+   "original": "The Veltro K2 blender comes with a 24-month warranty against manufacturing faults. Damage caused by dropping the base is not covered. To make a claim, send proof of purchase to Veltro Home Support within 30 days of spotting the fault. A replacement unit will be shipped free of charge, usually within one week of approval.",
+   "rewrite": "Your Veltro K2 blender has a two-year warranty for manufacturing faults, including damage caused by dropping the base. To claim, send your proof of purchase to Veltro Home Support within 30 days of spotting the problem. We will ship you a replacement for free, usually within one week of approval.",
+   "change": {
+    "category": "negation",
+    "type": "dropped",
+    "source_detail": "is not covered",
+    "rewrite_detail": null,
+    "note": "Merging the sentences lost the negation, so drop damage now reads as covered."
+   },
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "24-month",
+     "rewrite_detail": "two-year"
+    }
+   ]
+  },
+  {
+   "id": "nega-09",
+   "label": "altered",
+   "domain": "bank or account fee notices",
+   "original": "Starting April 1, 2027, Corrigan Savings Bank will charge $3 for each paper statement it mails to you. Electronic statements remain free. Customers aged 65 and over are exempt from the paper statement charge. You can switch to electronic statements at any time in online banking or by calling 0800 555 0142.",
+   "rewrite": "From 1 April 2027, Corrigan Savings Bank will charge $3 for every paper statement it posts to you. Electronic statements are still free of charge. Customers who are 65 and over are exempt from the paper statement fee. You can move to electronic statements at any time through online banking or by phoning 0800 555 0142, without visiting a branch.",
+   "change": {
+    "category": "negation",
+    "type": "added",
+    "source_detail": null,
+    "rewrite_detail": "without visiting a branch",
+    "note": "The rewrite adds a claim that switching works without visiting a branch, which the original never states."
+   },
+   "equivalences": [
+    {
+     "category": "date",
+     "source_detail": "April 1, 2027",
+     "rewrite_detail": "1 April 2027"
+    }
+   ]
+  },
+  {
+   "id": "nega-10",
+   "label": "altered",
+   "domain": "workplace policy",
+   "original": "Full-time staff at Pellham & Rook accrue 1.5 vacation days per month. Up to five unused days can be carried over into the next calendar year. Carry-over requests must be approved by your line manager by December 15. Part-time staff accrue leave on a pro-rata basis. Questions about your balance can be sent to the People Team.",
+   "rewrite": "Full-time employees at Pellham & Rook earn 1.5 vacation days each month. Up to five unused days can be carried into the next calendar year, and leftover days are not paid out. Carry-over requests must be approved by your line manager by 15 December. Part-time employees earn leave in proportion to their hours. You can send questions about your balance to the People Team.",
+   "change": {
+    "category": "negation",
+    "type": "added",
+    "source_detail": null,
+    "rewrite_detail": "not paid out",
+    "note": "The rewrite invents a rule that leftover days are not paid out."
+   },
+   "equivalences": [
+    {
+     "category": "date",
+     "source_detail": "December 15",
+     "rewrite_detail": "15 December"
+    }
+   ]
+  },
+  {
+   "id": "nega-11",
+   "label": "altered",
+   "domain": "government benefits letters",
+   "original": "Your Household Heating Allowance of $240 will be paid into your bank account on November 20, 2026. The allowance is a one-time payment for the winter season. If your address changes before then, tell the Department of Community Support by phone or online. Keep this letter for your records in case you are asked for it later.",
+   "rewrite": "You will receive your Household Heating Allowance of $240 in your bank account on November 20, 2026. This is a one-time payment for the winter season and is not taxable. If you move before then, let the Department of Community Support know by phone or online. Keep this letter somewhere safe in case you are asked for it later.",
+   "change": {
+    "category": "negation",
+    "type": "added",
+    "source_detail": null,
+    "rewrite_detail": "not taxable",
+    "note": "The rewrite adds a tax claim ('is not taxable') that the original does not make."
+   },
+   "equivalences": [
+    {
+     "category": "condition",
+     "source_detail": "If your address changes before then",
+     "rewrite_detail": "If you move before then"
+    }
+   ]
+  },
+  {
+   "id": "nega-12",
+   "label": "altered",
+   "domain": "medication or patient instructions",
+   "original": "Apply a thin layer of Dermaseal cream to the affected area twice a day for 10 days. Wash your hands after each use, and keep the tube at room temperature. Mild stinging during the first few days is common and usually fades. Contact your pharmacist at Brookside Pharmacy if the rash spreads.",
+   "rewrite": "Spread a thin layer of Dermaseal cream on the affected skin two times a day for 10 days, and do not cover it with a bandage. Wash your hands each time you use it, and store the tube at room temperature. Mild stinging in the first few days is common and usually fades. Get in touch with your pharmacist at Brookside Pharmacy if the rash spreads.",
+   "change": {
+    "category": "negation",
+    "type": "added",
+    "source_detail": null,
+    "rewrite_detail": "do not cover",
+    "note": "The rewrite adds an instruction not to cover the area with a bandage."
+   },
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "twice a day",
+     "rewrite_detail": "two times a day"
+    }
+   ]
+  },
+  {
+   "id": "moda-01",
+   "label": "altered",
+   "domain": "consumer subscription terms",
+   "original": "Your Brightleaf Reader membership renews automatically on the first day of each month. To avoid the next charge, you must cancel at least 48 hours before the renewal date. Cancellations made through the mobile app take effect at the end of the current billing period. Refunds are not issued for partial months. If you have questions, contact the Brightleaf support team by email.",
+   "rewrite": "Your Brightleaf Reader membership renews automatically on the first day of every month. To skip the next charge, you should cancel at least two days before the renewal date. Cancelling in the mobile app takes effect at the end of the current billing period. We do not refund partial months. If you have questions, email the Brightleaf support team.",
+   "change": {
+    "category": "modal",
+    "type": "changed",
+    "source_detail": "must",
+    "rewrite_detail": "should",
+    "note": "The obligation to cancel 48 hours ahead was softened to a recommendation."
+   },
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "48 hours",
+     "rewrite_detail": "two days"
+    }
+   ]
+  },
+  {
+   "id": "moda-02",
+   "label": "altered",
+   "domain": "medication or patient instructions",
+   "original": "Take one Corvalin 20 mg tablet each morning with a full glass of water. You must not drink alcohol while taking this medicine, because it increases drowsiness. If you miss a dose, take it as soon as you remember, unless it is almost time for your next dose. Never take two tablets at once to make up for a missed dose. Call Dr. Helena Oduya if dizziness lasts more than three days.",
+   "rewrite": "Take one 20 mg Corvalin tablet every morning with a full glass of water. You should not drink alcohol while on this medicine, since it increases drowsiness. If you forget a dose, take it as soon as you remember, unless your next dose is almost due. Never take two tablets together to catch up on a missed dose. Call Dr. Oduya if dizziness lasts more than three days.",
+   "change": {
+    "category": "modal",
+    "type": "changed",
+    "source_detail": "must not",
+    "rewrite_detail": "should not",
+    "note": "The prohibition on alcohol was weakened to a recommendation."
+   },
+   "equivalences": [
+    {
+     "category": "name",
+     "source_detail": "Dr. Helena Oduya",
+     "rewrite_detail": "Dr. Oduya"
+    }
+   ]
+  },
+  {
+   "id": "moda-03",
+   "label": "altered",
+   "domain": "workplace policy",
+   "original": "Starting June 2, 2027, all employees at Harlow & Finch will receive a parking permit for the north lot. Permits are issued by the Facilities Office and are valid for twelve months. Staff who lose a permit have to pay a $15 replacement fee. Contractors are not eligible for permits. Questions about the program should go to Dana Whitlock in Facilities.",
+   "rewrite": "From 2 June 2027, every Harlow & Finch employee may receive a parking permit for the north lot. The Facilities Office issues the permits, and each one is valid for one year. Staff who lose a permit have to pay $15 for a replacement. Contractors are not eligible for permits. Questions about the program should go to Dana Whitlock in Facilities.",
+   "change": {
+    "category": "modal",
+    "type": "changed",
+    "source_detail": "will",
+    "rewrite_detail": "may",
+    "note": "A firm commitment to give every employee a permit became a mere possibility."
+   },
+   "equivalences": [
+    {
+     "category": "date",
+     "source_detail": "June 2, 2027",
+     "rewrite_detail": "2 June 2027"
+    },
+    {
+     "category": "number",
+     "source_detail": "twelve months",
+     "rewrite_detail": "one year"
+    }
+   ]
+  },
+  {
+   "id": "moda-04",
+   "label": "altered",
+   "domain": "school or parent notices",
+   "original": "The Year 6 trip to Pinecrest Nature Reserve will take place on Thursday, April 15. Students are required to wear closed-toe shoes and bring a packed lunch. The bus leaves Maple Ridge Primary at 8:30 a.m. and returns by 3 p.m. Parents who wish to volunteer as chaperones should contact Mr. Ellison before Friday, April 9.",
+   "rewrite": "Year 6 students will visit Pinecrest Nature Reserve on Thursday, April 15. We recommend that students wear closed-toe shoes and bring a packed lunch. The bus leaves Maple Ridge Primary at 8:30 in the morning and is back by 3 p.m. Parents who want to help as chaperones should contact Mr. Ellison before Friday, April 9.",
+   "change": {
+    "category": "modal",
+    "type": "changed",
+    "source_detail": "are required to",
+    "rewrite_detail": "We recommend",
+    "note": "A requirement for closed-toe shoes and a packed lunch became a recommendation."
+   },
+   "equivalences": [
+    {
+     "category": "date",
+     "source_detail": "8:30 a.m.",
+     "rewrite_detail": "8:30 in the morning"
+    }
+   ]
+  },
+  {
+   "id": "moda-05",
+   "label": "altered",
+   "domain": "rental or lease notices",
+   "original": "Your lease at 14 Alder Court ends on August 31, 2027. If you plan to move out, please give Kestrel Property Group written notice at least 30 days before that date. We recommend that you photograph each room on your final day. Your deposit of $1,200 will be returned within 21 days after the final inspection, minus any repair costs.",
+   "rewrite": "Your lease at 14 Alder Court ends on 31 August 2027. If you are planning to move out, give Kestrel Property Group written notice at least 30 days before then. Your $1,200 deposit will be returned within 21 days after the final inspection, less any repair costs.",
+   "change": {
+    "category": "modal",
+    "type": "dropped",
+    "source_detail": "We recommend",
+    "rewrite_detail": null,
+    "note": "The recommendation to photograph each room on the final day was left out."
+   },
+   "equivalences": [
+    {
+     "category": "date",
+     "source_detail": "August 31, 2027",
+     "rewrite_detail": "31 August 2027"
+    }
+   ]
+  },
+  {
+   "id": "moda-06",
+   "label": "altered",
+   "domain": "insurance coverage",
+   "original": "Your Ridgeline Home Plus policy covers water damage caused by sudden pipe bursts. It does not cover damage from slow leaks or poor maintenance. To make a claim, call the claims line within 14 days of discovering the damage. You must also send photos of the affected rooms. Reimbursement is capped at $5,000 per claim.",
+   "rewrite": "Your Ridgeline Home Plus policy pays for water damage from sudden pipe bursts. Damage from slow leaks or poor upkeep is not covered. To claim, phone the claims line within two weeks of finding the damage. Each claim is limited to $5,000 in reimbursement.",
+   "change": {
+    "category": "modal",
+    "type": "dropped",
+    "source_detail": "must",
+    "rewrite_detail": null,
+    "note": "The obligation to send photos of the affected rooms was omitted."
+   },
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "14 days",
+     "rewrite_detail": "two weeks"
+    }
+   ]
+  },
+  {
+   "id": "moda-07",
+   "label": "altered",
+   "domain": "travel booking and refund policy",
+   "original": "Thank you for booking with Sunvale Trips. Changes to your reservation are free up to 72 hours before check-in, and you can make them online or by phone. Cancellations made later than that are charged one night's stay. Please bring a valid photo ID to the front desk. Refunds will be paid to the original card within 10 business days.",
+   "rewrite": "Thanks for booking with Sunvale Trips. Changing your reservation is free up to three days before check-in. Cancelling later than that costs one night's stay. Please have a valid photo ID ready at the front desk. Refunds will go back to the original card within 10 business days.",
+   "change": {
+    "category": "modal",
+    "type": "dropped",
+    "source_detail": "can",
+    "rewrite_detail": null,
+    "note": "The permission to make changes online or by phone was left out."
+   },
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "72 hours",
+     "rewrite_detail": "three days"
+    }
+   ]
+  },
+  {
+   "id": "moda-08",
+   "label": "altered",
+   "domain": "bank or account fee notices",
+   "original": "From March 1, 2027, Fernwood Savings will charge a monthly maintenance fee of $4.50 on Everyday Checking accounts. The fee is waived for any month in which your balance stays above $500. Customers aged 65 or older are exempt. We may close accounts that remain inactive for 24 months. Visit any Fernwood branch with questions.",
+   "rewrite": "Starting 1 March 2027, Fernwood Savings will charge a $4.50 monthly maintenance fee on Everyday Checking accounts. Any month in which your balance stays above $500 is fee-free. Customers who are 65 or older are exempt. Accounts that remain inactive for 24 months are closed. For questions, visit any Fernwood branch.",
+   "change": {
+    "category": "modal",
+    "type": "dropped",
+    "source_detail": "may",
+    "rewrite_detail": null,
+    "note": "The bank's discretion to close inactive accounts became a statement that they are closed."
+   },
+   "equivalences": [
+    {
+     "category": "date",
+     "source_detail": "March 1, 2027",
+     "rewrite_detail": "1 March 2027"
+    }
+   ]
+  },
+  {
+   "id": "moda-09",
+   "label": "altered",
+   "domain": "government benefits letters",
+   "original": "The Lakemoor County Benefits Office has approved your housing support application. Payments of $310 per month begin on May 5, 2027 and continue for six months. Your case will be reviewed again before the final payment. Report any change in household income to your caseworker, Ms. Priya Tandon, within 10 days.",
+   "rewrite": "Lakemoor County Benefits Office has approved your application for housing support. Payments of $310 a month start on May 5, 2027 and last for six months. Your case will be reviewed again before the last payment. Tell your caseworker, Ms. Tandon, about any change in household income within 10 days. You should keep this letter for your records.",
+   "change": {
+    "category": "modal",
+    "type": "added",
+    "source_detail": null,
+    "rewrite_detail": "should",
+    "note": "The rewrite adds a recommendation to keep the letter that the original never made."
+   },
+   "equivalences": [
+    {
+     "category": "name",
+     "source_detail": "Ms. Priya Tandon",
+     "rewrite_detail": "Ms. Tandon"
+    }
+   ]
+  },
+  {
+   "id": "moda-10",
+   "label": "altered",
+   "domain": "product warranty or safety notices",
+   "original": "Thank you for choosing the Glowmere QH-200 space heater. Place the heater on a flat, stable surface at least three feet from curtains and furniture. Do not cover the heater while it is switched on. The limited warranty lasts two years and covers manufacturing defects only. For warranty service, contact Glowmere Customer Care with your receipt.",
+   "rewrite": "Thanks for buying the Glowmere QH-200 space heater. Put it on a flat, steady surface at least 3 feet away from curtains and furniture. Do not cover it while it is on. You should unplug the heater before cleaning it. The limited warranty runs for two years and covers manufacturing defects only. For warranty service, contact Glowmere Customer Care and include your receipt.",
+   "change": {
+    "category": "modal",
+    "type": "added",
+    "source_detail": null,
+    "rewrite_detail": "should",
+    "note": "The rewrite invents a recommendation to unplug the heater before cleaning."
+   },
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "three feet",
+     "rewrite_detail": "3 feet"
+    }
+   ]
+  },
+  {
+   "id": "moda-11",
+   "label": "altered",
+   "domain": "medication or patient instructions",
+   "original": "Your blood test at Willowbank Clinic is booked for Tuesday, October 12, at 9:15 a.m. Please do not eat or drink anything except water for 10 hours before the test. Bring your health card and a list of current medications. The clinic aims to return results within five working days, and Dr. Samuel Achebe then calls you to discuss them.",
+   "rewrite": "Your blood test at Willowbank Clinic is set for Tuesday, October 12, at 9:15 a.m. Do not eat or drink anything other than water for 10 hours before the test. Bring your health card and a list of the medicines you take now. The clinic will return results within five working days, and Dr. Achebe then calls you to go over them.",
+   "change": {
+    "category": "modal",
+    "type": "added",
+    "source_detail": null,
+    "rewrite_detail": "will",
+    "note": "The clinic's stated aim became a firm commitment to return results in five working days."
+   },
+   "equivalences": [
+    {
+     "category": "exception",
+     "source_detail": "except",
+     "rewrite_detail": "other than"
+    },
+    {
+     "category": "name",
+     "source_detail": "Dr. Samuel Achebe",
+     "rewrite_detail": "Dr. Achebe"
+    }
+   ]
+  },
+  {
+   "id": "moda-12",
+   "label": "altered",
+   "domain": "consumer subscription terms",
+   "original": "Your free trial of Cloudberry Music ends on July 9, 2027. After that, the Family plan costs $16.99 per month for up to six accounts. Downloads stay available while your subscription is active. Payment is taken from the card you added at sign-up. Cloudberry Music sends a reminder email three days before the trial ends.",
+   "rewrite": "Your Cloudberry Music free trial ends on 9 July 2027. After that, the Family plan is $16.99 a month for up to six accounts. Your downloads remain available while your subscription is active. The charge goes on the card you added at sign-up, and you may change that card in your account settings. Cloudberry Music emails you a reminder three days before the trial ends.",
+   "change": {
+    "category": "modal",
+    "type": "added",
+    "source_detail": null,
+    "rewrite_detail": "may",
+    "note": "The rewrite adds a permission to change the payment card that the original does not mention."
+   },
+   "equivalences": [
+    {
+     "category": "date",
+     "source_detail": "July 9, 2027",
+     "rewrite_detail": "9 July 2027"
+    }
+   ]
+  },
+  {
+   "id": "cond-01",
+   "label": "altered",
+   "domain": "rental or lease notices",
+   "original": "Dear Resident, the Brightwater Lofts management office will replace the hallway carpets on the third floor starting Monday, April 12. Work will run from 9 a.m. to 4 p.m. each day for five days. You do not need to be home during this time. If your unit door opens directly onto the work area, please use the rear stairwell until the carpet adhesive has dried. Questions can be sent to Kendra Osei at the leasing desk.",
+   "rewrite": "Brightwater Lofts management will put new carpet in the third-floor hallways starting Monday, April 12. The work will happen from 9 a.m. to 4 p.m. every day for five days. You do not need to be home while it happens. If you live on the third floor, please use the back stairs until the carpet glue is dry. You can send questions to Kendra Osei at the leasing desk.",
+   "change": {
+    "category": "condition",
+    "type": "changed",
+    "source_detail": "If your unit door opens directly onto the work area",
+    "rewrite_detail": "If you live on the third floor",
+    "note": "The condition for using the rear stairwell was broadened from units opening onto the work area to everyone living on the third floor."
+   },
+   "equivalences": [
+    {
+     "category": "name",
+     "source_detail": "Brightwater Lofts management office",
+     "rewrite_detail": "Brightwater Lofts management"
+    }
+   ]
+  },
+  {
+   "id": "cond-02",
+   "label": "altered",
+   "domain": "medication or patient instructions",
+   "original": "Take one 200 mg tablet of Corvalex by mouth twice a day with food. Continue taking it for 10 days, even if you start to feel better. If you develop a rash or swelling of the lips, stop the medicine and call Dr. Nadia Brennan's office the same day. Do not drink alcohol while taking this medicine. You may take acetaminophen for mild headaches.",
+   "rewrite": "Take one 200 mg Corvalex tablet by mouth two times a day, with a meal. Keep taking it for all 10 days, even if you begin to feel better. If your lips swell, stop the medicine and call Dr. Brennan's office that same day. Do not drink alcohol while you are on this medicine. For mild headaches, you are allowed to take acetaminophen.",
+   "change": {
+    "category": "condition",
+    "type": "changed",
+    "source_detail": "If you develop a rash or swelling of the lips",
+    "rewrite_detail": "If your lips swell",
+    "note": "The stop-and-call condition was narrowed to lip swelling only, so a rash no longer triggers it."
+   },
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "twice a day",
+     "rewrite_detail": "two times a day"
+    },
+    {
+     "category": "name",
+     "source_detail": "Dr. Nadia Brennan",
+     "rewrite_detail": "Dr. Brennan"
+    },
+    {
+     "category": "modal",
+     "source_detail": "may",
+     "rewrite_detail": "are allowed to"
+    }
+   ]
+  },
+  {
+   "id": "cond-03",
+   "label": "altered",
+   "domain": "insurance coverage",
+   "original": "Your Harborline Home Plan covers water damage caused by a sudden pipe burst. The policy pays up to $15,000 per claim after a $500 deductible. Damage from slow leaks is not covered. We will pay for temporary housing only if your home is declared unlivable by a licensed inspector. Claims must be filed within 60 days of the incident.",
+   "rewrite": "Your Harborline Home Plan pays for water damage from a sudden burst pipe. It pays up to $15,000 for each claim, after you pay a $500 deductible. Slow leaks are not covered. We will cover a temporary place to stay only if a claims adjuster says your home is unlivable. You must file claims within 60 days of the incident.",
+   "change": {
+    "category": "condition",
+    "type": "changed",
+    "source_detail": "only if your home is declared unlivable by a licensed inspector",
+    "rewrite_detail": "only if a claims adjuster says your home is unlivable",
+    "note": "The person who must declare the home unlivable changed from a licensed inspector to a claims adjuster."
+   },
+   "equivalences": []
+  },
+  {
+   "id": "cond-04",
+   "label": "altered",
+   "domain": "travel booking and refund policy",
+   "original": "Tickets booked through Skylark Rail are fully refundable up to 48 hours before departure, provided that you bought them directly on our website. Tickets cancelled later receive a travel credit worth 50% of the fare. Credits expire after 12 months and cannot be exchanged for cash. To cancel, sign in to your account or call our service line at any time.",
+   "rewrite": "Skylark Rail tickets are fully refundable up to 48 hours before departure, provided that you have an account with us. Tickets cancelled after that get a travel credit for half of the fare. Credits run out after one year and cannot be turned into cash. To cancel, log in to your account or call our service line at any time.",
+   "change": {
+    "category": "condition",
+    "type": "changed",
+    "source_detail": "provided that you bought them directly on our website",
+    "rewrite_detail": "provided that you have an account with us",
+    "note": "The refund condition changed from buying directly on the website to merely having an account."
+   },
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "50%",
+     "rewrite_detail": "half"
+    },
+    {
+     "category": "number",
+     "source_detail": "12 months",
+     "rewrite_detail": "one year"
+    }
+   ]
+  },
+  {
+   "id": "cond-05",
+   "label": "altered",
+   "domain": "workplace policy",
+   "original": "Employees at Quillford Logistics may work from home up to two days per week. Remote days must be approved by your team lead by Thursday of the previous week. Staff in the Dock Operations department are not eligible for remote work. If you handle customer payment data, you must use a company laptop on remote days. Personal devices must never be used to access the payroll system.",
+   "rewrite": "Quillford Logistics employees may work from home up to two days a week. Your team lead has to approve remote days by Thursday of the week before. Staff in Dock Operations are not eligible for remote work. You must use a company laptop on remote days. Personal devices must never be used to get into the payroll system.",
+   "change": {
+    "category": "condition",
+    "type": "dropped",
+    "source_detail": "If you handle customer payment data",
+    "rewrite_detail": null,
+    "note": "The condition limiting the company-laptop rule to staff who handle payment data was dropped, so it now applies to everyone."
+   },
+   "equivalences": [
+    {
+     "category": "modal",
+     "source_detail": "must be approved",
+     "rewrite_detail": "has to approve"
+    },
+    {
+     "category": "name",
+     "source_detail": "Dock Operations department",
+     "rewrite_detail": "Dock Operations"
+    }
+   ]
+  },
+  {
+   "id": "cond-06",
+   "label": "altered",
+   "domain": "consumer subscription terms",
+   "original": "Your Pixelmint Premium membership renews automatically on the first day of each month at $12.99. You can cancel at any time from the Settings page. If you cancel within 7 days of a renewal, we will refund that month's charge in full. Refunds are not available for gift memberships. Downloaded songs will stop playing once your membership ends.",
+   "rewrite": "Your Pixelmint Premium plan renews by itself on the 1st of every month at $12.99. You can cancel whenever you like on the Settings page. We will give you back that month's charge in full. Gift memberships are not eligible for refunds. Once your membership ends, songs you downloaded will stop playing.",
+   "change": {
+    "category": "condition",
+    "type": "dropped",
+    "source_detail": "If you cancel within 7 days of a renewal",
+    "rewrite_detail": null,
+    "note": "The 7-day cancellation window that the full refund depends on was dropped, so the refund reads as unconditional."
+   },
+   "equivalences": [
+    {
+     "category": "date",
+     "source_detail": "first day of each month",
+     "rewrite_detail": "1st of every month"
+    }
+   ]
+  },
+  {
+   "id": "cond-07",
+   "label": "altered",
+   "domain": "bank or account fee notices",
+   "original": "Starting June 1, 2027, Fernhollow Credit Union will raise the overdraft fee on checking accounts from $30 to $34. If you have enrolled in overdraft protection, we will move money from your linked savings account to cover the shortfall instead. Each of these transfers costs $3. You do not need to do anything to keep your current account settings.",
+   "rewrite": "From 1 June 2027, Fernhollow Credit Union will increase its checking overdraft fee from $30 to $34. We will instead move money from your linked savings account to cover the gap. Each transfer like this costs $3. You do not need to take any action to keep your current account settings.",
+   "change": {
+    "category": "condition",
+    "type": "dropped",
+    "source_detail": "If you have enrolled in overdraft protection",
+    "rewrite_detail": null,
+    "note": "The enrollment condition for savings transfers was dropped, implying every member gets automatic transfers."
+   },
+   "equivalences": [
+    {
+     "category": "date",
+     "source_detail": "June 1, 2027",
+     "rewrite_detail": "1 June 2027"
+    }
+   ]
+  },
+  {
+   "id": "cond-08",
+   "label": "altered",
+   "domain": "school or parent notices",
+   "original": "Maple Crest Elementary will hold its spring field trip to the Owlridge Science Center on Wednesday, May 5. Buses leave the school at 8:30 a.m. and return by 2:45 p.m. Each student must bring a packed lunch and a signed permission slip. Students may bring a phone if they keep it switched off inside their backpack. Parent volunteers should contact Mr. Daniel Okafor in the front office.",
+   "rewrite": "Maple Crest Elementary will take students on a spring field trip to the Owlridge Science Center on Wednesday, May 5. Buses leave the school at 8:30 a.m. and are back by 2:45 p.m. Every student needs to bring a packed lunch and a signed permission slip. Students may bring a phone. Parent volunteers should get in touch with Mr. Okafor in the front office.",
+   "change": {
+    "category": "condition",
+    "type": "dropped",
+    "source_detail": "if they keep it switched off inside their backpack",
+    "rewrite_detail": null,
+    "note": "The condition that phones stay switched off in the backpack was dropped, making phone permission unconditional."
+   },
+   "equivalences": [
+    {
+     "category": "modal",
+     "source_detail": "must",
+     "rewrite_detail": "needs to"
+    },
+    {
+     "category": "name",
+     "source_detail": "Mr. Daniel Okafor",
+     "rewrite_detail": "Mr. Okafor"
+    }
+   ]
+  },
+  {
+   "id": "cond-09",
+   "label": "altered",
+   "domain": "government benefits letters",
+   "original": "The Department of Household Support has approved your application for the Winter Heating Allowance. You will receive a one-time payment of $420 by March 15, 2027. The payment will go to the bank account you listed on your application. You do not have to repay this allowance. To report a change in your address, call the benefits line at 555-0142.",
+   "rewrite": "The Department of Household Support approved your Winter Heating Allowance application. You will get a one-time payment of $420 by 15 March 2027. The money will be paid into the bank account you gave on your application. You are not required to pay this allowance back as long as your household income stays the same. To report a new address, call the benefits line at 555-0142.",
+   "change": {
+    "category": "condition",
+    "type": "added",
+    "source_detail": null,
+    "rewrite_detail": "as long as your household income stays the same",
+    "note": "The rewrite attaches an invented income condition to the statement that the allowance does not have to be repaid."
+   },
+   "equivalences": [
+    {
+     "category": "date",
+     "source_detail": "March 15, 2027",
+     "rewrite_detail": "15 March 2027"
+    },
+    {
+     "category": "negation",
+     "source_detail": "do not have to",
+     "rewrite_detail": "are not required to"
+    }
+   ]
+  },
+  {
+   "id": "cond-10",
+   "label": "altered",
+   "domain": "product warranty or safety notices",
+   "original": "Every Tidewell CleanBrew coffee maker comes with a two-year limited warranty from the date of purchase. During this period we will repair or replace any unit that stops working because of a manufacturing defect. Damage from dropping the machine or using it with the wrong voltage is not covered. To make a claim, send your receipt and a short description of the problem to the Tidewell support team.",
+   "rewrite": "Each Tidewell CleanBrew coffee maker has a 24-month limited warranty that starts on the day you buy it. In that time, we will fix or replace any machine that stops working because of a factory defect, as long as you have followed the instructions in the manual. The warranty does not cover damage from dropping the machine or plugging it into the wrong voltage. To make a claim, send your receipt and a short note about the problem to Tidewell support.",
+   "change": {
+    "category": "condition",
+    "type": "added",
+    "source_detail": null,
+    "rewrite_detail": "as long as you have followed the instructions in the manual",
+    "note": "The rewrite adds a requirement to have followed the manual before a defect repair is covered."
+   },
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "two-year",
+     "rewrite_detail": "24-month"
+    },
+    {
+     "category": "name",
+     "source_detail": "Tidewell support team",
+     "rewrite_detail": "Tidewell support"
+    }
+   ]
+  },
+  {
+   "id": "cond-11",
+   "label": "altered",
+   "domain": "medication or patient instructions",
+   "original": "Your appointment for a colonoscopy with Dr. Lena Moravec is on Tuesday, September 14, at 7:30 a.m. at the Westbrook Clinic. Do not eat solid food for 24 hours before the procedure. You may drink clear liquids such as water, apple juice or broth until midnight. You must arrange for an adult to drive you home afterward.",
+   "rewrite": "You have a colonoscopy with Dr. Moravec at the Westbrook Clinic on Tuesday, September 14, at 7:30 a.m. Do not eat any solid food for one day before the procedure. You are allowed to drink clear liquids like water, apple juice or broth until midnight. If you receive sedation, you must arrange for an adult to drive you home afterward.",
+   "change": {
+    "category": "condition",
+    "type": "added",
+    "source_detail": null,
+    "rewrite_detail": "If you receive sedation",
+    "note": "The rewrite makes the unconditional ride-home requirement depend on receiving sedation."
+   },
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "24 hours",
+     "rewrite_detail": "one day"
+    },
+    {
+     "category": "name",
+     "source_detail": "Dr. Lena Moravec",
+     "rewrite_detail": "Dr. Moravec"
+    },
+    {
+     "category": "modal",
+     "source_detail": "may",
+     "rewrite_detail": "are allowed to"
+    }
+   ]
+  },
+  {
+   "id": "cond-12",
+   "label": "altered",
+   "domain": "rental or lease notices",
+   "original": "Your lease at 14 Orchard Row with Pellham Property Group ends on August 31, 2027. Please tell us in writing by June 30 whether you plan to renew. Your new monthly rent would be $1,640. Maintenance requests can still be made through the tenant portal until your final day. Your security deposit will be returned within 21 days after you move out.",
+   "rewrite": "Your lease with Pellham Property at 14 Orchard Row ends on 31 August 2027. If you want to stay, please tell us in writing by June 30. The new monthly rent would be $1,640. You can still make maintenance requests through the tenant portal until your final day. We will return your security deposit within three weeks after you move out.",
+   "change": {
+    "category": "condition",
+    "type": "added",
+    "source_detail": null,
+    "rewrite_detail": "If you want to stay",
+    "note": "The rewrite makes the written reply by June 30 conditional on wanting to stay, while the original asks every tenant to answer either way."
+   },
+   "equivalences": [
+    {
+     "category": "name",
+     "source_detail": "Pellham Property Group",
+     "rewrite_detail": "Pellham Property"
+    },
+    {
+     "category": "date",
+     "source_detail": "August 31, 2027",
+     "rewrite_detail": "31 August 2027"
+    },
+    {
+     "category": "number",
+     "source_detail": "21 days",
+     "rewrite_detail": "three weeks"
+    }
+   ]
+  },
+  {
+   "id": "exce-01",
+   "label": "altered",
+   "domain": "consumer subscription terms",
+   "original": "Your Quillbrook Plus membership renews automatically on the first day of each month. You may cancel at any time from the Account page, and the cancellation takes effect at the end of the current billing period. Refunds are not issued for partial months, except for charges made within 7 days of a price increase. To avoid the next charge, you must cancel before the renewal date.",
+   "rewrite": "Your Quillbrook Plus membership renews on its own on the first day of every month. You are allowed to cancel at any time on the Account page, and your cancellation starts at the end of the current billing period. Money is not given back for part of a month, except for charges made within 7 days of signing up. To stop the next charge, you have to cancel before the renewal date.",
+   "change": {
+    "category": "exception",
+    "type": "changed",
+    "source_detail": "except for charges made within 7 days of a price increase",
+    "rewrite_detail": "except for charges made within 7 days of signing up",
+    "note": "The refund exception moved from charges after a price increase to charges after signing up."
+   },
+   "equivalences": [
+    {
+     "category": "modal",
+     "source_detail": "may",
+     "rewrite_detail": "are allowed to"
+    },
+    {
+     "category": "modal",
+     "source_detail": "must",
+     "rewrite_detail": "have to"
+    }
+   ]
+  },
+  {
+   "id": "exce-02",
+   "label": "altered",
+   "domain": "rental or lease notices",
+   "original": "Northgate Housing Association will test all smoke alarms in Building C on Tuesday, April 13, 2027, between 9 a.m. and 1 p.m. Staff will enter every flat, apart from flats with a hard-wired alarm, using a master key if no one is home. Please keep pets secured during this window. Tenants who cannot be present do not need to call the office.",
+   "rewrite": "Northgate Housing will test every smoke alarm in Building C on Tuesday, 13 April 2027, from 9 a.m. to 1 p.m. Staff will go into every flat, apart from flats with a battery alarm, using a master key if nobody is home. Please keep your pets shut away during this time. Tenants who cannot be there do not need to phone the office.",
+   "change": {
+    "category": "exception",
+    "type": "changed",
+    "source_detail": "apart from flats with a hard-wired alarm",
+    "rewrite_detail": "apart from flats with a battery alarm",
+    "note": "The flats excluded from entry changed from those with hard-wired alarms to those with battery alarms."
+   },
+   "equivalences": [
+    {
+     "category": "name",
+     "source_detail": "Northgate Housing Association",
+     "rewrite_detail": "Northgate Housing"
+    },
+    {
+     "category": "date",
+     "source_detail": "Tuesday, April 13, 2027",
+     "rewrite_detail": "Tuesday, 13 April 2027"
+    },
+    {
+     "category": "negation",
+     "source_detail": "no one",
+     "rewrite_detail": "nobody"
+    }
+   ]
+  },
+  {
+   "id": "exce-03",
+   "label": "altered",
+   "domain": "insurance coverage",
+   "original": "Your Lowthorne Home policy covers water damage caused by a sudden burst pipe. Damage from flooding is not covered unless you purchased the Flood Rider before the loss occurred. Claims must be reported within 30 days of discovering the damage. The deductible for each water claim is $500, and it will be taken from your settlement.",
+   "rewrite": "Your Lowthorne Home policy pays for water damage from a pipe that bursts suddenly. Flood damage is not covered unless you bought the Flood Rider. You have to report a claim within thirty days of finding the damage. Each water claim has a $500 deductible, which will be taken off your settlement.",
+   "change": {
+    "category": "exception",
+    "type": "changed",
+    "source_detail": "unless you purchased the Flood Rider before the loss occurred",
+    "rewrite_detail": "unless you bought the Flood Rider",
+    "note": "The flood exception lost its requirement that the rider be bought before the loss."
+   },
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "30 days",
+     "rewrite_detail": "thirty days"
+    },
+    {
+     "category": "modal",
+     "source_detail": "must",
+     "rewrite_detail": "have to"
+    }
+   ]
+  },
+  {
+   "id": "exce-04",
+   "label": "altered",
+   "domain": "workplace policy",
+   "original": "Employees at Dunmerrow Logistics may work from home for up to two days per week. Remote days need approval from your line manager every month. All staff are required to be on site on Mondays, except when a public holiday falls on that Monday. Laptops and headsets for home use are issued by the IT Service Desk, and they remain company property.",
+   "rewrite": "Dunmerrow Logistics employees are allowed to work from home for up to 2 days a week. Remote days need your line manager's approval each month. Everyone must be in the office on Mondays, except when a public holiday falls in that week. The IT Service Desk hands out laptops and headsets for home use, and they stay company property.",
+   "change": {
+    "category": "exception",
+    "type": "changed",
+    "source_detail": "except when a public holiday falls on that Monday",
+    "rewrite_detail": "except when a public holiday falls in that week",
+    "note": "The Monday exception widened from a holiday on that Monday to a holiday anywhere in the week."
+   },
+   "equivalences": [
+    {
+     "category": "modal",
+     "source_detail": "may",
+     "rewrite_detail": "are allowed to"
+    },
+    {
+     "category": "number",
+     "source_detail": "two days per week",
+     "rewrite_detail": "2 days a week"
+    },
+    {
+     "category": "modal",
+     "source_detail": "are required to",
+     "rewrite_detail": "must"
+    }
+   ]
+  },
+  {
+   "id": "exce-05",
+   "label": "altered",
+   "domain": "medication or patient instructions",
+   "original": "Take one Corvelane 20 mg tablet by mouth every morning with a full glass of water. You may take it with food or on an empty stomach. Do not drink grapefruit juice while you are using this medicine. Do not stop taking Corvelane suddenly unless your doctor tells you to, because stopping quickly could raise your blood pressure. Call the Cressmoor Clinic if you feel dizzy for more than two days.",
+   "rewrite": "Take one 20 mg Corvelane tablet by mouth each morning with a full glass of water. You can take it with food or on an empty stomach. Do not drink grapefruit juice while you use this medicine. Do not stop Corvelane all at once, because stopping fast could push up your blood pressure. Call the Cressmoor Clinic if you feel dizzy for more than 2 days.",
+   "change": {
+    "category": "exception",
+    "type": "dropped",
+    "source_detail": "unless your doctor tells you to",
+    "rewrite_detail": null,
+    "note": "The exception allowing a doctor-directed stop was removed."
+   },
+   "equivalences": [
+    {
+     "category": "modal",
+     "source_detail": "may",
+     "rewrite_detail": "can"
+    },
+    {
+     "category": "number",
+     "source_detail": "two days",
+     "rewrite_detail": "2 days"
+    }
+   ]
+  },
+  {
+   "id": "exce-06",
+   "label": "altered",
+   "domain": "travel booking and refund policy",
+   "original": "Bookings made through Saltmere Travel can be changed free of charge up to 72 hours before departure. If you cancel, you will receive a full refund, except for tickets bought during a seasonal sale. Refunds are paid back to the original card within 10 business days. If you miss your departure, the ticket has no value and cannot be used on a later service.",
+   "rewrite": "You can change a Saltmere Travel booking for free up to three days before departure. If you cancel, you will get a full refund. Refunds go back to the card you paid with within 10 business days. If you miss your departure, the ticket has no value and it cannot be used for a later trip.",
+   "change": {
+    "category": "exception",
+    "type": "dropped",
+    "source_detail": "except for tickets bought during a seasonal sale",
+    "rewrite_detail": null,
+    "note": "The exclusion of seasonal sale tickets from full refunds was removed."
+   },
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "72 hours",
+     "rewrite_detail": "three days"
+    }
+   ]
+  },
+  {
+   "id": "exce-07",
+   "label": "altered",
+   "domain": "bank or account fee notices",
+   "original": "From June 1, 2027, Ollerby Savings Bank will charge a monthly maintenance fee of $6 on Everyday Checking accounts. The fee is waived if your balance stays above $1,500 for the whole month. Every customer with this account will pay the fee, other than full-time students. You can move to a different account at any branch without paying a switching fee.",
+   "rewrite": "Starting 1 June 2027, Ollerby Savings Bank will charge a $6 monthly maintenance fee on Everyday Checking accounts. The fee is dropped if your balance stays above $1500 for the entire month. Every customer with this account will pay the fee. You can switch to another account at any branch without paying a switching fee.",
+   "change": {
+    "category": "exception",
+    "type": "dropped",
+    "source_detail": "other than full-time students",
+    "rewrite_detail": null,
+    "note": "The exemption for full-time students was removed."
+   },
+   "equivalences": [
+    {
+     "category": "date",
+     "source_detail": "June 1, 2027",
+     "rewrite_detail": "1 June 2027"
+    },
+    {
+     "category": "number",
+     "source_detail": "$1,500",
+     "rewrite_detail": "$1500"
+    }
+   ]
+  },
+  {
+   "id": "exce-08",
+   "label": "altered",
+   "domain": "government benefits letters",
+   "original": "The Department of Household Support has approved your Winter Heating Payment of $240. The money will be sent to your bank account on or before December 15, 2027. You do not need to apply again next winter, unless your address or household size changes. If you think this decision is wrong, you may ask for a review within 30 days of the date on this letter.",
+   "rewrite": "The Department of Household Support has approved a Winter Heating Payment of $240 for you. The money will go to your bank account on or before 15 December 2027. You do not need to apply again next winter. If you believe this decision is wrong, you are allowed to ask for a review within 30 days of the date on this letter.",
+   "change": {
+    "category": "exception",
+    "type": "dropped",
+    "source_detail": "unless your address or household size changes",
+    "rewrite_detail": null,
+    "note": "The exception requiring a new application after an address or household change was removed."
+   },
+   "equivalences": [
+    {
+     "category": "date",
+     "source_detail": "December 15, 2027",
+     "rewrite_detail": "15 December 2027"
+    },
+    {
+     "category": "modal",
+     "source_detail": "may",
+     "rewrite_detail": "are allowed to"
+    }
+   ]
+  },
+  {
+   "id": "exce-09",
+   "label": "altered",
+   "domain": "product warranty or safety notices",
+   "original": "The Tarnwick T4 kettle comes with a two-year warranty from the date of purchase. The warranty covers defects in materials and workmanship. It does not cover damage caused by limescale build-up or by dropping the kettle. To make a claim, contact Tarnwick Home Support and include your receipt. Never immerse the base or the cord in water.",
+   "rewrite": "The Tarnwick T4 kettle has a 24-month warranty starting from the day you bought it. The warranty covers faults in materials and workmanship, except for the filter. It does not cover damage from limescale build-up or from dropping the kettle. To claim, get in touch with Tarnwick Home Support and send your receipt. Never put the base or the cord in water.",
+   "change": {
+    "category": "exception",
+    "type": "added",
+    "source_detail": null,
+    "rewrite_detail": "except for the filter",
+    "note": "The rewrite invented an exclusion of the filter from warranty coverage."
+   },
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "two-year",
+     "rewrite_detail": "24-month"
+    }
+   ]
+  },
+  {
+   "id": "exce-10",
+   "label": "altered",
+   "domain": "school or parent notices",
+   "original": "Marlowfield Primary School will close early at 12:30 p.m. on Friday, May 21, 2027, so that staff can attend training. Parents must collect their children from the main gate by 12:45 p.m. The after-school club will not run that afternoon. Lunch will be served as normal before pickup, and the school office will stay open until 2 p.m. for questions.",
+   "rewrite": "Marlowfield Primary School will close early, at 12:30 p.m. on Friday 21 May 2027, so that staff can go to training. Parents must pick up their children at the main gate by 12:45 p.m., unless they have given written permission for their child to walk home. There will be no after-school club that afternoon. Lunch will be served as usual before pickup, and the office will stay open until 2 p.m. to answer questions.",
+   "change": {
+    "category": "exception",
+    "type": "added",
+    "source_detail": null,
+    "rewrite_detail": "unless they have given written permission for their child to walk home",
+    "note": "The rewrite added an exception letting children with written permission walk home instead of being collected."
+   },
+   "equivalences": [
+    {
+     "category": "date",
+     "source_detail": "Friday, May 21, 2027",
+     "rewrite_detail": "Friday 21 May 2027"
+    },
+    {
+     "category": "negation",
+     "source_detail": "will not run",
+     "rewrite_detail": "There will be no"
+    }
+   ]
+  },
+  {
+   "id": "exce-11",
+   "label": "altered",
+   "domain": "consumer subscription terms",
+   "original": "Brindlecast will raise the price of the Family plan from $17.99 to $19.99 per month, starting with your next bill. You do not have to do anything to keep your plan. If you would rather not pay the new price, you can cancel before your next billing date. Your saved profiles and watch history will be kept for 90 days after cancellation.",
+   "rewrite": "Brindlecast will put the Family plan price up from $17.99 to $19.99 a month, beginning with your next bill. You are not required to do anything to keep your plan. If you do not want to pay the new price, you can cancel before your next billing date. Your saved profiles and watch history will be kept for ninety days after you cancel, except for downloaded titles.",
+   "change": {
+    "category": "exception",
+    "type": "added",
+    "source_detail": null,
+    "rewrite_detail": "except for downloaded titles",
+    "note": "The rewrite invented an exclusion of downloaded titles from the 90-day retention."
+   },
+   "equivalences": [
+    {
+     "category": "negation",
+     "source_detail": "do not have to",
+     "rewrite_detail": "are not required to"
+    },
+    {
+     "category": "number",
+     "source_detail": "90 days",
+     "rewrite_detail": "ninety days"
+    }
+   ]
+  },
+  {
+   "id": "exce-12",
+   "label": "altered",
+   "domain": "medication or patient instructions",
+   "original": "Before your colonoscopy at Pellingham Day Surgery on Thursday, stop eating solid food at 8 a.m. the day before. You may drink clear liquids such as water, apple juice or broth until midnight. After that time, do not eat or drink anything at all. An adult needs to drive you home after the procedure, and you should not work for the rest of the day.",
+   "rewrite": "Your colonoscopy at Pellingham Day Surgery is on Thursday. Stop eating solid food at 8 a.m. the day before. You are allowed to drink clear liquids like water, apple juice or broth until midnight. After that, do not eat or drink anything, except small sips of water with your usual medicines. An adult has to drive you home afterwards, and you should not go to work for the rest of that day.",
+   "change": {
+    "category": "exception",
+    "type": "added",
+    "source_detail": null,
+    "rewrite_detail": "except small sips of water with your usual medicines",
+    "note": "The rewrite added an exception to the nothing-after-midnight rule that the original does not allow."
+   },
+   "equivalences": [
+    {
+     "category": "modal",
+     "source_detail": "may",
+     "rewrite_detail": "are allowed to"
+    },
+    {
+     "category": "modal",
+     "source_detail": "needs to",
+     "rewrite_detail": "has to"
+    }
+   ]
+  },
+  {
+   "id": "name-01",
+   "label": "altered",
+   "domain": "consumer subscription terms",
+   "original": "Your Brightwell Plus membership renews automatically on the first day of each month. The monthly fee is $12.99 and is charged to the card on file. You may cancel at any time from the Account page, and cancellation takes effect at the end of the current billing period. Refunds are not given for partial months. Questions about billing should be sent to the Brightwell Support Desk.",
+   "rewrite": "Your Brightwell Premium membership renews on its own on the first day of every month. It costs $12.99 a month, charged to the card we have on file. You are allowed to stop it at any time from the Account page, and the cancellation starts at the end of your current billing period. Refunds are not given for partial months. Billing questions should be sent to the Brightwell Support Desk.",
+   "change": {
+    "category": "name",
+    "type": "changed",
+    "source_detail": "Brightwell Plus",
+    "rewrite_detail": "Brightwell Premium",
+    "note": "The product tier name Brightwell Plus became Brightwell Premium."
+   },
+   "equivalences": [
+    {
+     "category": "modal",
+     "source_detail": "may",
+     "rewrite_detail": "are allowed to"
+    }
+   ]
+  },
+  {
+   "id": "name-02",
+   "label": "altered",
+   "domain": "rental or lease notices",
+   "original": "This notice is to inform all tenants of Larkspur Court that the water supply will be shut off on Tuesday, June 8, from 9 a.m. to 1 p.m. The shutdown is needed so that Hollin Plumbing can replace the main valve in the basement. Tenants do not need to be home during the work. If you have a medical need for running water, please contact the building manager, Ms. Petra Vance, before Monday.",
+   "rewrite": "Tenants of Larkspur Court: the water will be shut off on Tuesday, June 8, from 9 a.m. to 1 p.m. This is so Hollis Plumbing can put in a new main valve in the basement. You are not required to be home while the work is done. If you need running water for a medical reason, please contact the building manager, Ms. Petra Vance, before Monday.",
+   "change": {
+    "category": "name",
+    "type": "changed",
+    "source_detail": "Hollin Plumbing",
+    "rewrite_detail": "Hollis Plumbing",
+    "note": "The contractor Hollin Plumbing became Hollis Plumbing."
+   },
+   "equivalences": [
+    {
+     "category": "negation",
+     "source_detail": "do not need to",
+     "rewrite_detail": "are not required to"
+    }
+   ]
+  },
+  {
+   "id": "name-03",
+   "label": "altered",
+   "domain": "medication or patient instructions",
+   "original": "Take one 20 mg tablet of Dorvexin by mouth every morning with a full glass of water. Do not crush or chew the tablet. If you miss a dose, take it as soon as you remember unless it is almost time for your next dose. Never take two doses at once. Your prescription was written by Dr. Helena Okafor, and refill requests must go through the Ridgemont Clinic pharmacy.",
+   "rewrite": "Each morning, swallow one 20 mg Dorvexin tablet with a full glass of water. Do not crush or chew it. If you forget a dose, take it once you remember, except when your next dose is almost due. Never take two doses together. Dr. Helena Okafor wrote your prescription, and refill requests must go through the Ridgeview Clinic pharmacy.",
+   "change": {
+    "category": "name",
+    "type": "changed",
+    "source_detail": "Ridgemont Clinic",
+    "rewrite_detail": "Ridgeview Clinic",
+    "note": "The pharmacy for refills changed from Ridgemont Clinic to Ridgeview Clinic."
+   },
+   "equivalences": [
+    {
+     "category": "exception",
+     "source_detail": "unless it is almost time for your next dose",
+     "rewrite_detail": "except when your next dose is almost due"
+    }
+   ]
+  },
+  {
+   "id": "name-04",
+   "label": "altered",
+   "domain": "workplace policy",
+   "original": "Starting March 1, 2027, all expense reports must be submitted through the Ledgerline portal within 30 days of the purchase. Late reports will not be reimbursed unless your manager approves an exception in writing. Receipts are required for any single item over $75. Questions about this policy should go to Tomas Reyes in the Finance Office.",
+   "rewrite": "From 1 March 2027, all expense reports must be sent through the Ledgerline portal within 30 days of buying the item. Late reports will not be paid back unless your manager approves an exception in writing. Receipts are required for any single item that costs more than $75. Questions about this policy should go to Tomas Ruiz in the Finance Office.",
+   "change": {
+    "category": "name",
+    "type": "changed",
+    "source_detail": "Tomas Reyes",
+    "rewrite_detail": "Tomas Ruiz",
+    "note": "The contact person Tomas Reyes became Tomas Ruiz."
+   },
+   "equivalences": [
+    {
+     "category": "date",
+     "source_detail": "March 1, 2027",
+     "rewrite_detail": "1 March 2027"
+    }
+   ]
+  },
+  {
+   "id": "name-05",
+   "label": "altered",
+   "domain": "insurance coverage",
+   "original": "Your Harborline Home policy covers sudden water damage from burst pipes up to $15,000 per claim. Damage caused by slow leaks or poor maintenance is not covered. To start a claim, you must call the Harborline claims line within 14 days of discovering the damage. An adjuster from Quillmere Appraisals will then visit to inspect the property. You may be asked to provide photos and repair estimates.",
+   "rewrite": "Your Harborline Home policy pays for sudden water damage from burst pipes, up to $15,000 per claim. Damage from slow leaks or poor upkeep is not covered. To make a claim, you must phone the Harborline claims line within two weeks of finding the damage. An adjuster will then come to inspect your home. You may be asked for photos and repair estimates.",
+   "change": {
+    "category": "name",
+    "type": "dropped",
+    "source_detail": "Quillmere Appraisals",
+    "rewrite_detail": null,
+    "note": "The firm sending the adjuster, Quillmere Appraisals, is no longer named."
+   },
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "14 days",
+     "rewrite_detail": "two weeks"
+    }
+   ]
+  },
+  {
+   "id": "name-06",
+   "label": "altered",
+   "domain": "school or parent notices",
+   "original": "Principal Andrea Lowell would like to remind families that the spring field trip to the Corwin Science Museum is on Friday, April 16. Students must return a signed permission slip by Wednesday, April 14. The cost of the trip is $18, which covers the bus and entry. Students without a signed slip will stay at school and join another class for the day.",
+   "rewrite": "This is a reminder for families that the spring field trip to the Corwin Science Museum is on Friday, April 16. Students must hand in a signed permission slip by Wednesday, April 14. The trip costs $18, which pays for the bus and admission. Any student without a signed slip will stay at school and spend the day with another class.",
+   "change": {
+    "category": "name",
+    "type": "dropped",
+    "source_detail": "Principal Andrea Lowell",
+    "rewrite_detail": null,
+    "note": "The sender of the reminder, Principal Andrea Lowell, was dropped."
+   },
+   "equivalences": []
+  },
+  {
+   "id": "name-07",
+   "label": "altered",
+   "domain": "travel booking and refund policy",
+   "original": "Bookings made through Skyvane Travel can be changed free of charge up to 48 hours before departure. After that point, a change fee of $40 applies to each passenger. Cancellations made at least 7 days before departure receive a full refund. Refunds are issued to the original payment method within 10 business days by our payment partner, Pennant Pay.",
+   "rewrite": "A Skyvane Travel booking can be changed for free until two days before departure. After that, each passenger pays a $40 change fee. Cancellations made at least 7 days before departure get a full refund. The refund goes back to the payment method you used within 10 business days.",
+   "change": {
+    "category": "name",
+    "type": "dropped",
+    "source_detail": "Pennant Pay",
+    "rewrite_detail": null,
+    "note": "The payment partner Pennant Pay that issues refunds is no longer named."
+   },
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "48 hours",
+     "rewrite_detail": "two days"
+    }
+   ]
+  },
+  {
+   "id": "name-08",
+   "label": "altered",
+   "domain": "bank or account fee notices",
+   "original": "From July 1, 2027, the monthly maintenance fee on Everfield Checking accounts will rise from $6 to $8. If you have questions about the change, Marisol Tan in our customer care team can walk you through your options. The fee will not be charged in any month in which you keep a balance of at least $1,500. Customers who are 65 or older are also exempt from the fee.",
+   "rewrite": "Starting 1 July 2027, the monthly maintenance fee for Everfield Checking accounts will go up from $6 to $8. If you have questions about this, our customer care team can explain your options. The fee will not be charged in any month when your balance stays at $1,500 or more. Customers aged 65 or over are also exempt from the fee.",
+   "change": {
+    "category": "name",
+    "type": "dropped",
+    "source_detail": "Marisol Tan",
+    "rewrite_detail": null,
+    "note": "The named customer care contact Marisol Tan was dropped."
+   },
+   "equivalences": [
+    {
+     "category": "date",
+     "source_detail": "July 1, 2027",
+     "rewrite_detail": "1 July 2027"
+    }
+   ]
+  },
+  {
+   "id": "name-09",
+   "label": "altered",
+   "domain": "government benefits letters",
+   "original": "We have reviewed your application for the Household Heating Grant and approved a payment of $240. The money will be paid into your bank account within 15 working days. You do not need to reapply this year. If your income changes by more than 10%, you must tell us within one month.",
+   "rewrite": "Your application for the Household Heating Grant has been approved for a payment of $240. Fennick District Council will pay the money into your bank account within fifteen working days. You are not required to apply again this year. If your income changes by more than 10%, you must let us know within one month.",
+   "change": {
+    "category": "name",
+    "type": "added",
+    "source_detail": null,
+    "rewrite_detail": "Fennick District Council",
+    "note": "The rewrite names Fennick District Council as the payer, which the original never mentions."
+   },
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "15",
+     "rewrite_detail": "fifteen"
+    },
+    {
+     "category": "negation",
+     "source_detail": "do not need to",
+     "rewrite_detail": "are not required to"
+    }
+   ]
+  },
+  {
+   "id": "name-10",
+   "label": "altered",
+   "domain": "product warranty or safety notices",
+   "original": "The Tidewell kettle comes with a two-year warranty from the date of purchase. The warranty covers defects in materials and workmanship but not damage from dropping the kettle or using it with the wrong voltage. Do not immerse the base in water. To make a warranty claim, keep your receipt and contact us through the support form on our website.",
+   "rewrite": "Your Tidewell kettle has a 24-month warranty starting on the day you bought it. It covers faults in materials and workmanship but not damage from dropping the kettle or plugging it into the wrong voltage. Do not put the base in water. To claim under the warranty, keep your receipt from Marlow Home Stores and get in touch using the support form on our website.",
+   "change": {
+    "category": "name",
+    "type": "added",
+    "source_detail": null,
+    "rewrite_detail": "Marlow Home Stores",
+    "note": "The rewrite invents a retailer, Marlow Home Stores, for the receipt."
+   },
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "two-year",
+     "rewrite_detail": "24-month"
+    }
+   ]
+  },
+  {
+   "id": "name-11",
+   "label": "altered",
+   "domain": "rental or lease notices",
+   "original": "Your lease at 14 Fernhill Road ends on September 30, 2027. If you plan to renew, please let the office know in writing at least 60 days before that date. Rent for a renewed lease will increase by 3%. If we do not hear from you, we will assume you are moving out and will schedule a final inspection.",
+   "rewrite": "Your lease at 14 Fernhill Road finishes on September 30, 2027. If you intend to renew, please tell Ms. Dana Pryce in the office in writing at least sixty days before then. Rent for a renewed lease will go up by 3%. If we do not hear from you, we will assume you are leaving and will book a final inspection.",
+   "change": {
+    "category": "name",
+    "type": "added",
+    "source_detail": null,
+    "rewrite_detail": "Ms. Dana Pryce",
+    "note": "The rewrite adds a named office contact, Ms. Dana Pryce, who is not in the original."
+   },
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "60",
+     "rewrite_detail": "sixty"
+    }
+   ]
+  },
+  {
+   "id": "name-12",
+   "label": "altered",
+   "domain": "workplace policy",
+   "original": "Employees who want to work from home on a regular basis must complete a remote work request form. Requests are reviewed by your direct supervisor within 10 working days. Remote work is not available during your first 90 days of employment. Approved staff may work remotely up to three days per week, as long as they attend the Thursday team meeting in person.",
+   "rewrite": "Employees who want to work from home regularly must fill in a remote work request form. Your direct supervisor and the People Operations team review requests within 10 working days. Remote work is not available during your first 90 days in the job. Approved staff are allowed to work remotely up to three days a week, as long as they attend the Thursday team meeting in person.",
+   "change": {
+    "category": "name",
+    "type": "added",
+    "source_detail": null,
+    "rewrite_detail": "People Operations",
+    "note": "The rewrite adds the People Operations team as a reviewer, which the original does not name."
+   },
+   "equivalences": [
+    {
+     "category": "modal",
+     "source_detail": "may",
+     "rewrite_detail": "are allowed to"
+    }
+   ]
+  },
+  {
+   "id": "pa-01",
+   "label": "preserving",
+   "domain": "consumer subscription terms",
+   "original": "Your Brightleaf Reader Plus membership renews automatically on April 12, 2027, at a price of $9.99 per month. If you want to stop the renewal, you must cancel at least 48 hours before that date. Cancellations made after the renewal has gone through will not be refunded. You can manage your plan at any time from the Account page in the Brightleaf app.",
+   "rewrite": "Your Brightleaf Reader Plus membership renews on its own on 12 April 2027 and costs $9.99 per month. If you want to stop the renewal, you have to cancel at least two days before that date. You will not get your money back for cancellations made after the renewal has gone through. You can change your plan whenever you like from the Account page in the Brightleaf app.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "date",
+     "source_detail": "April 12, 2027",
+     "rewrite_detail": "12 April 2027"
+    },
+    {
+     "category": "number",
+     "source_detail": "48 hours",
+     "rewrite_detail": "two days"
+    },
+    {
+     "category": "modal",
+     "source_detail": "must",
+     "rewrite_detail": "have to"
+    }
+   ]
+  },
+  {
+   "id": "pa-02",
+   "label": "preserving",
+   "domain": "rental or lease notices",
+   "original": "Northgate Housing Association will inspect the smoke alarms in all flats at Elm Court on Tuesday, June 8, between 9 a.m. and 1 p.m. A technician named Paul Okafor will carry out the checks. You do not need to be at home, but you must leave any internal doors unlocked. If you keep a pet, please make sure it is secured in one room during the visit.",
+   "rewrite": "Northgate Housing will check the smoke alarms in every flat at Elm Court on Tuesday 8 June, from 9 a.m. to 1 p.m. The checks will be done by a technician, Paul Okafor. You are not required to be at home, but you have to leave any internal doors unlocked. If you keep a pet, please make sure it is shut in one room while the visit takes place.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "name",
+     "source_detail": "Northgate Housing Association",
+     "rewrite_detail": "Northgate Housing"
+    },
+    {
+     "category": "date",
+     "source_detail": "Tuesday, June 8",
+     "rewrite_detail": "Tuesday 8 June"
+    },
+    {
+     "category": "modal",
+     "source_detail": "do not need to",
+     "rewrite_detail": "are not required to"
+    },
+    {
+     "category": "modal",
+     "source_detail": "must",
+     "rewrite_detail": "have to"
+    }
+   ]
+  },
+  {
+   "id": "pa-03",
+   "label": "preserving",
+   "domain": "medication or patient instructions",
+   "original": "Take one Delvarin 20 mg tablet by mouth twice a day, once in the morning and once in the evening, for 10 days. Do not drink alcohol while you are taking this medicine. If you miss a dose, take it as soon as you remember unless it is almost time for your next dose. Contact Dr. Hannah Reyes at Westbrook Clinic if you develop a rash.",
+   "rewrite": "Swallow one 20 mg Delvarin tablet two times a day, one in the morning and one in the evening, for ten days. Do not drink alcohol during this treatment. If you miss a dose, take it as soon as you remember, except when your next dose is nearly due. Get in touch with Dr. Reyes at Westbrook Clinic if you develop a rash.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "twice a day",
+     "rewrite_detail": "two times a day"
+    },
+    {
+     "category": "number",
+     "source_detail": "10 days",
+     "rewrite_detail": "ten days"
+    },
+    {
+     "category": "exception",
+     "source_detail": "unless it is almost time for your next dose",
+     "rewrite_detail": "except when your next dose is nearly due"
+    },
+    {
+     "category": "name",
+     "source_detail": "Dr. Hannah Reyes",
+     "rewrite_detail": "Dr. Reyes"
+    }
+   ]
+  },
+  {
+   "id": "pa-04",
+   "label": "preserving",
+   "domain": "workplace policy",
+   "original": "Starting January 1, 2027, all staff at Calderwood Logistics may work from home up to 2 days per week. Requests must be approved by your line manager before you change your schedule. Employees in the warehouse and driver teams are not eligible for this arrangement. Questions about the policy should be sent to the People Team at Calderwood.",
+   "rewrite": "From 1 January 2027, every member of staff at Calderwood Logistics is allowed to work from home for up to two days each week. Your line manager has to approve any request before you change your schedule. This arrangement is not open to employees in the warehouse and driver teams. Any questions about the policy should go to the People Team at Calderwood.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "date",
+     "source_detail": "January 1, 2027",
+     "rewrite_detail": "1 January 2027"
+    },
+    {
+     "category": "modal",
+     "source_detail": "may",
+     "rewrite_detail": "is allowed to"
+    },
+    {
+     "category": "number",
+     "source_detail": "2 days",
+     "rewrite_detail": "two days"
+    },
+    {
+     "category": "modal",
+     "source_detail": "must",
+     "rewrite_detail": "has to"
+    }
+   ]
+  },
+  {
+   "id": "pa-05",
+   "label": "preserving",
+   "domain": "insurance coverage",
+   "original": "Your Harborline Home Cover policy pays up to $5,000 for water damage caused by a burst pipe. Damage from slow leaks that build up over time is not covered. You must report any claim within 30 days of discovering the damage. If you need emergency repairs, call the Harborline claims line on 0800 412 776 before booking a plumber.",
+   "rewrite": "Under your Harborline Home Cover policy, water damage from a burst pipe is paid for up to $5000. The policy does not cover damage from slow leaks that develop over time. Any claim has to be reported within thirty days of when you find the damage. If you need emergency repairs, phone the Harborline claims line on 0800 412 776 before you book a plumber.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "$5,000",
+     "rewrite_detail": "$5000"
+    },
+    {
+     "category": "number",
+     "source_detail": "30 days",
+     "rewrite_detail": "thirty days"
+    },
+    {
+     "category": "modal",
+     "source_detail": "must",
+     "rewrite_detail": "has to"
+    }
+   ]
+  },
+  {
+   "id": "pa-06",
+   "label": "preserving",
+   "domain": "school or parent notices",
+   "original": "Wexcombe Primary School will close early at 1:30 p.m. on Friday, October 15, for staff training. Children who are not collected by a parent or carer will be supervised in the library until 3:15 p.m. The after-school club run by Little Lanterns will not operate that day. Please tell the school office by Wednesday if someone other than a parent will pick up your child.",
+   "rewrite": "On Friday 15 October, Wexcombe Primary School will close early, at 13:30, because of staff training. Any child not picked up by a parent or carer will be looked after in the library until 15:15. The Little Lanterns after-school club will not run that day. If someone other than a parent will collect your child, please let the school office know by Wednesday.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "date",
+     "source_detail": "1:30 p.m.",
+     "rewrite_detail": "13:30"
+    },
+    {
+     "category": "date",
+     "source_detail": "Friday, October 15",
+     "rewrite_detail": "Friday 15 October"
+    },
+    {
+     "category": "date",
+     "source_detail": "3:15 p.m.",
+     "rewrite_detail": "15:15"
+    }
+   ]
+  },
+  {
+   "id": "pa-07",
+   "label": "preserving",
+   "domain": "travel booking and refund policy",
+   "original": "Bookings made with Solway Rail Tours can be cancelled free of charge up to 14 days before departure. Cancellations made between 14 and 3 days before departure receive a 50% refund. No refund is given for cancellations made less than 3 days before the trip. Refunds are returned to the original payment card within 10 working days.",
+   "rewrite": "You can cancel a Solway Rail Tours booking for free up to 14 days before departure. Cancelling between 14 and 3 days before departure gets you half of your money back. Cancelling less than 3 days before the trip gets no refund at all. The money goes back to the card you originally paid with within ten working days.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "50%",
+     "rewrite_detail": "half"
+    },
+    {
+     "category": "number",
+     "source_detail": "10 working days",
+     "rewrite_detail": "ten working days"
+    }
+   ]
+  },
+  {
+   "id": "pa-08",
+   "label": "preserving",
+   "domain": "bank or account fee notices",
+   "original": "From March 1, 2027, Fenmoor Mutual Bank will charge a monthly fee of $4 on Everyday Saver accounts. The fee will not apply if your balance stays above $1,500 for the whole month. Customers aged 65 or over are exempt from the fee. You can switch to a fee-free account at any branch or by calling 0345 220 118.",
+   "rewrite": "Starting 1 March 2027, Fenmoor Mutual Bank will add a $4 monthly fee to Everyday Saver accounts. You will not pay the fee if your balance remains over $1500 for the entire month. Customers aged 65 or older are exempt from paying it. You can move to a fee-free account at any branch or by phoning 0345 220 118.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "date",
+     "source_detail": "March 1, 2027",
+     "rewrite_detail": "1 March 2027"
+    },
+    {
+     "category": "number",
+     "source_detail": "$1,500",
+     "rewrite_detail": "$1500"
+    }
+   ]
+  },
+  {
+   "id": "pa-09",
+   "label": "preserving",
+   "domain": "government benefits letters",
+   "original": "The Department for Family Support has approved your Childcare Assistance claim. You will receive $320 every four weeks, starting on 5 May 2027. You must tell us within 10 days if your income or household changes. If you do not, you may have to repay any money you were not entitled to. Your reference number is CA-448215.",
+   "rewrite": "Your Childcare Assistance claim has been approved by the Department for Family Support. Starting on May 5, 2027, you will be paid $320 every 28 days. If your income or household changes, you are required to let us know within ten days. If you do not, you may have to pay back any money you were not entitled to. Your reference number is CA-448215.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "every four weeks",
+     "rewrite_detail": "every 28 days"
+    },
+    {
+     "category": "date",
+     "source_detail": "5 May 2027",
+     "rewrite_detail": "May 5, 2027"
+    },
+    {
+     "category": "modal",
+     "source_detail": "must",
+     "rewrite_detail": "are required to"
+    },
+    {
+     "category": "number",
+     "source_detail": "10 days",
+     "rewrite_detail": "ten days"
+    }
+   ]
+  },
+  {
+   "id": "pa-10",
+   "label": "preserving",
+   "domain": "product warranty or safety notices",
+   "original": "The Brackett K2 cordless drill comes with a 24-month warranty from the date of purchase. The warranty does not cover damage caused by dropping the drill or using it in wet conditions. Never charge the battery near flammable materials. To make a claim, contact Brackett Tools Ltd with your receipt and the serial number printed under the handle.",
+   "rewrite": "Your Brackett K2 cordless drill is covered by a two-year warranty that starts on the day you bought it. Damage from dropping the drill or using it in the wet is not included in the warranty. Never charge the battery close to anything flammable. To make a claim, get in touch with Brackett Tools and include your receipt and the serial number printed under the handle.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "24-month",
+     "rewrite_detail": "two-year"
+    },
+    {
+     "category": "name",
+     "source_detail": "Brackett Tools Ltd",
+     "rewrite_detail": "Brackett Tools"
+    }
+   ]
+  },
+  {
+   "id": "pa-11",
+   "label": "preserving",
+   "domain": "consumer subscription terms",
+   "original": "Your free trial of Lumio Fitness ends on September 30, 2027. After that, your card will be charged $14.50 every month unless you cancel before the trial ends. You will not be charged during the trial itself. Members can pause their plan for up to 3 months once a year.",
+   "rewrite": "The free Lumio Fitness trial finishes on September 30, 2027. From then on, $14.50 will be taken from your card each month unless you cancel before the trial ends. You will not be charged anything while the trial is running. Members can put their plan on hold for up to 3 months once a year.",
+   "change": null,
+   "equivalences": []
+  },
+  {
+   "id": "pa-12",
+   "label": "preserving",
+   "domain": "rental or lease notices",
+   "original": "Your tenancy at 14 Marsh Lane, Dunmore, ends on November 30, 2027. If you wish to renew, you must sign the new agreement by October 31, 2027. The monthly rent will rise to $1,240 from December 1, 2027. Please contact Alder Lettings if you have questions about the new terms.",
+   "rewrite": "The tenancy at 14 Marsh Lane, Dunmore, comes to an end on November 30, 2027. If you decide to renew, the new agreement must be signed by October 31, 2027. From December 1, 2027, the monthly rent will go up to $1,240. Please get in touch with Alder Lettings if you have any questions about the new terms.",
+   "change": null,
+   "equivalences": []
+  },
+  {
+   "id": "pa-13",
+   "label": "preserving",
+   "domain": "medication or patient instructions",
+   "original": "Give your child 5 ml of Febralis syrup every 6 hours if they have a fever. Do not give more than 4 doses in 24 hours. The syrup is not suitable for children under 2 years old. If the fever lasts longer than 3 days, speak to your pharmacist or call the Meadowvale Health advice line.",
+   "rewrite": "If your child has a fever, give them 5 ml of Febralis syrup every six hours. Do not go over four doses in 24 hours. The syrup is not suitable for children younger than 2 years. If the fever goes on for more than 3 days, talk to your pharmacist or phone the Meadowvale Health advice line.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "6 hours",
+     "rewrite_detail": "six hours"
+    },
+    {
+     "category": "number",
+     "source_detail": "4 doses",
+     "rewrite_detail": "four doses"
+    }
+   ]
+  },
+  {
+   "id": "pa-14",
+   "label": "preserving",
+   "domain": "workplace policy",
+   "original": "All employees at Pembrook Analytics must complete the annual data protection course by Friday, February 26. The course takes about 45 minutes and is available on the Pembrook Learning Hub. Staff who are on parental leave do not need to complete it until they return. Managers will receive a list of team members who have not finished the course.",
+   "rewrite": "Every employee at Pembrook Analytics must finish the yearly data protection course by Friday, February 26. It takes about 45 minutes, and you can find it on the Pembrook Learning Hub. Staff on parental leave do not need to do it until they come back. Managers will be sent a list of team members who have not completed the course.",
+   "change": null,
+   "equivalences": []
+  },
+  {
+   "id": "pa-15",
+   "label": "preserving",
+   "domain": "insurance coverage",
+   "original": "Your Larkfield Travel Insurance covers medical costs abroad up to $2,000,000 per trip. Trips longer than 31 days are not covered under this plan. You must pay the first $100 of any claim yourself. Cover for winter sports is only included if you added the Snow Pack option when you bought the policy.",
+   "rewrite": "Larkfield Travel Insurance pays for medical costs abroad up to $2 million per trip. This plan does not cover trips of more than 31 days. You have to pay the first $100 of each claim yourself. Winter sports are covered only if you added the Snow Pack option at the time you bought the policy.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "$2,000,000",
+     "rewrite_detail": "$2 million"
+    },
+    {
+     "category": "modal",
+     "source_detail": "must",
+     "rewrite_detail": "have to"
+    }
+   ]
+  },
+  {
+   "id": "pa-16",
+   "label": "preserving",
+   "domain": "school or parent notices",
+   "original": "The Year 6 trip to Hollins Wildlife Park will take place on Thursday, May 20. The cost is $18 per pupil, which covers the coach and entry. Payment and the signed consent form must reach Mrs. Delgado by May 13. Pupils will not be able to attend without a signed form. Children should bring a packed lunch and a raincoat.",
+   "rewrite": "Year 6 will visit Hollins Wildlife Park on Thursday 20 May. Each pupil's place costs $18, covering the coach and entry. The payment and the signed consent form have to reach Mrs. Delgado by 13 May. Without a signed form, pupils will not be able to attend. Your child should bring a packed lunch and a raincoat.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "date",
+     "source_detail": "Thursday, May 20",
+     "rewrite_detail": "Thursday 20 May"
+    },
+    {
+     "category": "modal",
+     "source_detail": "must",
+     "rewrite_detail": "have to"
+    },
+    {
+     "category": "date",
+     "source_detail": "May 13",
+     "rewrite_detail": "13 May"
+    }
+   ]
+  },
+  {
+   "id": "pa-17",
+   "label": "preserving",
+   "domain": "travel booking and refund policy",
+   "original": "Your flight with Altamira Air from Porto Velo to Kessington departs at 07:45 on Saturday, August 14, 2027. Check-in closes 60 minutes before departure. Each passenger may bring one cabin bag weighing no more than 8 kg. Changes to the booking can be made online for a fee of $35 per passenger.",
+   "rewrite": "Your Altamira Air flight from Porto Velo to Kessington leaves at 7:45 a.m. on Saturday 14 August 2027. Check-in shuts one hour before the flight leaves. Every passenger is allowed to bring one cabin bag of no more than 8 kg. You can change the booking online for a fee of $35 per passenger.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "date",
+     "source_detail": "07:45",
+     "rewrite_detail": "7:45 a.m."
+    },
+    {
+     "category": "date",
+     "source_detail": "Saturday, August 14, 2027",
+     "rewrite_detail": "Saturday 14 August 2027"
+    },
+    {
+     "category": "number",
+     "source_detail": "60 minutes",
+     "rewrite_detail": "one hour"
+    },
+    {
+     "category": "modal",
+     "source_detail": "may",
+     "rewrite_detail": "is allowed to"
+    }
+   ]
+  },
+  {
+   "id": "pa-18",
+   "label": "preserving",
+   "domain": "bank or account fee notices",
+   "original": "We have noticed three failed login attempts on your Oakhollow Credit Union account on 2 March 2027. For your security, online access has been locked for 24 hours. We will never ask for your full password by email or phone. If you did not make these attempts, call our fraud team on 0161 496 0193 straight away.",
+   "rewrite": "On 2 March 2027 there were three failed attempts to log in to your Oakhollow Credit Union account. To keep you safe, online access has been blocked for 24 hours. We will never ask you for your full password by email or phone. If you did not make these attempts, ring our fraud team on 0161 496 0193 right away.",
+   "change": null,
+   "equivalences": []
+  },
+  {
+   "id": "pa-19",
+   "label": "preserving",
+   "domain": "government benefits letters",
+   "original": "Your Winter Heating Payment of $150 will be paid into your bank account by January 15, 2027. You do not need to apply, because you already receive the Elder Income Supplement. The payment is not counted as income and will not affect your other benefits. If you have moved house since April, please let the Regional Benefits Office know.",
+   "rewrite": "We will pay your Winter Heating Payment of $150 into your bank account by 15 January 2027. There is no need for you to apply, as you already get the Elder Income Supplement. It is not counted as income, and it will not change your other benefits. If you have moved home since April, please tell the Regional Benefits Office.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "date",
+     "source_detail": "January 15, 2027",
+     "rewrite_detail": "15 January 2027"
+    },
+    {
+     "category": "negation",
+     "source_detail": "do not need to",
+     "rewrite_detail": "no need for you to"
+    }
+   ]
+  },
+  {
+   "id": "pa-20",
+   "label": "preserving",
+   "domain": "product warranty or safety notices",
+   "original": "Tamsworth Appliances is recalling the Breeze 300 desk fan sold between June 1 and August 31, 2027. A faulty wire may cause the fan to overheat. Stop using the fan immediately and do not attempt to repair it yourself. Customers will receive a full refund or a free replacement by returning the fan to any Hollowell Hardware store.",
+   "rewrite": "Tamsworth Appliances is recalling Breeze 300 desk fans sold between June 1 and August 31, 2027. Because of a faulty wire, the fan may overheat. Stop using the fan right away and do not try to repair it yourself. Take the fan back to any Hollowell Hardware store and you will receive a full refund or a free replacement.",
+   "change": null,
+   "equivalences": []
+  },
+  {
+   "id": "pb-01",
+   "label": "preserving",
+   "domain": "consumer subscription terms",
+   "original": "Your Streamvale Plus membership renews automatically every 12 months at a price of $89.00. If you want to stop the renewal, you must cancel at least 7 days before the renewal date. Refunds are not given for partial months unless the renewal charge was made in error. You may change your plan at any time from the Account page.",
+   "rewrite": "Streamvale Plus renews on its own once a year for $89.00. To stop it from renewing, you have to cancel at least 7 days before it renews. Money is not returned for part of a month, except where the renewal charge was a mistake. You are allowed to switch plans whenever you like on the Account page.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "every 12 months",
+     "rewrite_detail": "once a year"
+    },
+    {
+     "category": "modal",
+     "source_detail": "must",
+     "rewrite_detail": "have to"
+    },
+    {
+     "category": "exception",
+     "source_detail": "unless",
+     "rewrite_detail": "except where"
+    },
+    {
+     "category": "modal",
+     "source_detail": "may",
+     "rewrite_detail": "are allowed to"
+    }
+   ]
+  },
+  {
+   "id": "pb-02",
+   "label": "preserving",
+   "domain": "rental or lease notices",
+   "original": "This notice is to inform all tenants of Larchmont Court that the water supply will be shut off on Tuesday, April 6, 2027, from 9:00 a.m. to 1:00 p.m. During this time, residents should not run dishwashers or washing machines. If your unit has a leak after the work is finished, you must report it to the Harlow Property Office within 24 hours. Tenants are not required to be home for the work.",
+   "rewrite": "The water at Larchmont Court will be turned off on Tuesday, 6 April 2027, between 9 a.m. and 1 p.m. While it is off, residents should not use dishwashers or washing machines. If you find a leak in your unit after the work is finished, you must tell the Harlow Property Office within twenty-four hours. You do not have to be at home while the work happens.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "date",
+     "source_detail": "April 6, 2027",
+     "rewrite_detail": "6 April 2027"
+    },
+    {
+     "category": "date",
+     "source_detail": "9:00 a.m.",
+     "rewrite_detail": "9 a.m."
+    },
+    {
+     "category": "date",
+     "source_detail": "1:00 p.m.",
+     "rewrite_detail": "1 p.m."
+    },
+    {
+     "category": "number",
+     "source_detail": "24 hours",
+     "rewrite_detail": "twenty-four hours"
+    },
+    {
+     "category": "negation",
+     "source_detail": "are not required to",
+     "rewrite_detail": "do not have to"
+    }
+   ]
+  },
+  {
+   "id": "pb-03",
+   "label": "preserving",
+   "domain": "medication or patient instructions",
+   "original": "Take 2 tablets of Corvelin by mouth every 8 hours with a full glass of water. Do not take more than 6 tablets in any 24-hour period. If you develop a rash or swelling, stop taking the medicine and call Dr. Priya Okonkwo at the Fernbrook Clinic. You should not drink alcohol while you are using this medicine.",
+   "rewrite": "Swallow two Corvelin tablets every 8 hours, each time with a full glass of water. Do not take more than six tablets in any 24 hours. If you get a rash or swelling, stop the medicine and phone Dr. Okonkwo at the Fernbrook Clinic. You should avoid alcohol while you are on this medicine.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "2 tablets",
+     "rewrite_detail": "two Corvelin tablets"
+    },
+    {
+     "category": "number",
+     "source_detail": "6 tablets",
+     "rewrite_detail": "six tablets"
+    },
+    {
+     "category": "name",
+     "source_detail": "Dr. Priya Okonkwo",
+     "rewrite_detail": "Dr. Okonkwo"
+    },
+    {
+     "category": "negation",
+     "source_detail": "should not drink alcohol",
+     "rewrite_detail": "should avoid alcohol"
+    }
+   ]
+  },
+  {
+   "id": "pb-04",
+   "label": "preserving",
+   "domain": "workplace policy",
+   "original": "Employees at Quillon Logistics may work from home up to 2 days per week, provided that their manager approves the schedule in advance. Remote work is not available during the first 90 days of employment. Staff must remain reachable by phone between 10 a.m. and 4 p.m. on remote days. Requests should be submitted through the Quillon HR Hub.",
+   "rewrite": "Quillon Logistics staff are allowed to work from home for up to two days each week, as long as their manager approves the schedule beforehand. Remote work is not offered during your first 90 days at the company. On days you work from home, you have to be reachable by phone from 10 a.m. to 4 p.m. Requests should go through the Quillon HR Hub.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "modal",
+     "source_detail": "may",
+     "rewrite_detail": "are allowed to"
+    },
+    {
+     "category": "number",
+     "source_detail": "2 days",
+     "rewrite_detail": "two days"
+    },
+    {
+     "category": "condition",
+     "source_detail": "provided that",
+     "rewrite_detail": "as long as"
+    },
+    {
+     "category": "modal",
+     "source_detail": "must",
+     "rewrite_detail": "have to"
+    }
+   ]
+  },
+  {
+   "id": "pb-05",
+   "label": "preserving",
+   "domain": "insurance coverage",
+   "original": "Your Brightmoor Home policy covers water damage caused by a sudden burst pipe. It does not cover damage that builds up slowly over time, such as from a dripping tap. You must report a claim within 30 days of discovering the damage. The policy excess for each water claim is $250, except for claims involving a second home, which carry an excess of $500.",
+   "rewrite": "Brightmoor Home pays for water damage caused by a pipe that bursts suddenly. It does not pay for damage that develops gradually, for example from a dripping tap. You are required to report a claim within thirty days of finding the damage. Each water claim has a $250 excess, apart from claims on a second home, where the excess is $500.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "modal",
+     "source_detail": "must",
+     "rewrite_detail": "are required to"
+    },
+    {
+     "category": "number",
+     "source_detail": "30 days",
+     "rewrite_detail": "thirty days"
+    },
+    {
+     "category": "exception",
+     "source_detail": "except for",
+     "rewrite_detail": "apart from"
+    }
+   ]
+  },
+  {
+   "id": "pb-06",
+   "label": "preserving",
+   "domain": "school or parent notices",
+   "original": "Ashgrove Primary School will close early at 12:30 p.m. on Friday, November 12, 2027, for staff training. Parents must collect their children by 12:45 p.m. Children will not be released to anyone other than a listed guardian unless the school office has received a signed note. The after-school club run by Little Oaks Care will operate as normal.",
+   "rewrite": "Ashgrove Primary School will finish early, at 12:30 p.m., on Friday, 12 November 2027, because of staff training. Parents have to pick up their children by 12:45 p.m. The school will not let children go home with anyone other than a listed guardian unless the office has a signed note. The Little Oaks Care after-school club will run as usual.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "date",
+     "source_detail": "November 12, 2027",
+     "rewrite_detail": "12 November 2027"
+    },
+    {
+     "category": "modal",
+     "source_detail": "must",
+     "rewrite_detail": "have to"
+    }
+   ]
+  },
+  {
+   "id": "pb-07",
+   "label": "preserving",
+   "domain": "travel booking and refund policy",
+   "original": "Tickets booked with Corran Rail can be refunded in full if you cancel more than 48 hours before departure. Cancellations made after that point receive a 50% refund. No refund is given at all for a missed train. Refunds will be returned to the original payment card within 10 working days.",
+   "rewrite": "You can get all your money back for a Corran Rail ticket if you cancel more than two days before the train leaves. Cancelling later than that gets you half of the fare back. No money is returned for a missed train. The money will go back to the card you paid with within ten working days.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "48 hours",
+     "rewrite_detail": "two days"
+    },
+    {
+     "category": "number",
+     "source_detail": "50%",
+     "rewrite_detail": "half"
+    },
+    {
+     "category": "number",
+     "source_detail": "10 working days",
+     "rewrite_detail": "ten working days"
+    }
+   ]
+  },
+  {
+   "id": "pb-08",
+   "label": "preserving",
+   "domain": "bank or account fee notices",
+   "original": "From June 1, 2027, Harborline Bank will charge a monthly fee of $6 on Everyday Plus accounts. The fee will not apply if you deposit at least $1,500 into the account during the month. Customers aged 65 or over are exempt from the fee. You do not need to take any action to keep your account open.",
+   "rewrite": "Starting 1 June 2027, Harborline Bank will take a $6 fee each month from Everyday Plus accounts. You will not pay the fee if you put at least $1500 into the account that month. Customers who are 65 or older are exempt from the fee. You are not required to do anything to keep your account open.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "date",
+     "source_detail": "June 1, 2027",
+     "rewrite_detail": "1 June 2027"
+    },
+    {
+     "category": "number",
+     "source_detail": "$1,500",
+     "rewrite_detail": "$1500"
+    },
+    {
+     "category": "negation",
+     "source_detail": "do not need to",
+     "rewrite_detail": "are not required to"
+    }
+   ]
+  },
+  {
+   "id": "pb-09",
+   "label": "preserving",
+   "domain": "government benefits letters",
+   "original": "The Department of Household Support has approved your Winter Heating Allowance of $310. The payment will be made into your bank account on or before December 15, 2027. You must tell us within 14 days if your address or household size changes. If you do not, you may have to repay some or all of the allowance.",
+   "rewrite": "The Department of Household Support has approved a Winter Heating Allowance of $310 for you. It will be paid into your bank account on or before 15 December 2027. You are required to let us know within two weeks if your address or the number of people in your household changes. If you do not, you may have to pay back some or all of the allowance.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "date",
+     "source_detail": "December 15, 2027",
+     "rewrite_detail": "15 December 2027"
+    },
+    {
+     "category": "modal",
+     "source_detail": "must",
+     "rewrite_detail": "are required to"
+    },
+    {
+     "category": "number",
+     "source_detail": "14 days",
+     "rewrite_detail": "two weeks"
+    }
+   ]
+  },
+  {
+   "id": "pb-10",
+   "label": "preserving",
+   "domain": "product warranty or safety notices",
+   "original": "The Tellmark K4 kettle is covered by a 2-year warranty from the date of purchase. The warranty does not cover damage caused by limescale or by dropping the kettle. Never fill the kettle above the MAX line, and do not operate it without water. If the base becomes damaged, stop using the kettle and contact Tellmark Support.",
+   "rewrite": "Your Tellmark K4 kettle has a two-year warranty starting on the day you bought it. Damage from limescale or from dropping the kettle is not covered. Never fill it past the MAX line, and do not switch it on without water inside. If the base gets damaged, stop using the kettle and get in touch with Tellmark Support.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "2-year",
+     "rewrite_detail": "two-year"
+    },
+    {
+     "category": "negation",
+     "source_detail": "does not cover",
+     "rewrite_detail": "is not covered"
+    }
+   ]
+  },
+  {
+   "id": "pb-11",
+   "label": "preserving",
+   "domain": "consumer subscription terms",
+   "original": "Members of the Kelbrook Fitness Club may bring one guest per visit. Guests must be at least 18 years old and must sign a waiver at the front desk. Guest passes cannot be used on Saturdays. Your membership fee will not change during the first 12 months unless you upgrade to the Premium tier.",
+   "rewrite": "Kelbrook Fitness Club members may bring one guest each time they visit. Every guest must be at least 18 years old, and they must also sign a waiver when they check in at the front desk. You cannot use guest passes on Saturdays. Unless you upgrade to the Premium tier, your membership fee will not change during the first 12 months.",
+   "change": null,
+   "equivalences": []
+  },
+  {
+   "id": "pb-12",
+   "label": "preserving",
+   "domain": "rental or lease notices",
+   "original": "Under your lease with Penwick Lettings, pets are not allowed in the flat without written permission from the landlord. If permission is given, a pet deposit of $300 is payable before the animal moves in. Smoking is never permitted inside the building. Your rent is due on the 1st of each month.",
+   "rewrite": "According to your Penwick Lettings lease, you are not allowed to keep pets in the flat without the landlord's written permission. If permission is given, a $300 pet deposit is due before the animal moves in. You are never permitted to smoke inside the building. Your rent falls due on the 1st of every month.",
+   "change": null,
+   "equivalences": []
+  },
+  {
+   "id": "pb-13",
+   "label": "preserving",
+   "domain": "medication or patient instructions",
+   "original": "Apply a thin layer of Skelvane cream to the affected area twice a day for 10 days. Do not use the cream on broken skin or near the eyes. You may notice mild stinging during the first few uses, which is normal. If the irritation lasts longer than 3 days, contact the pharmacist at Willowmere Pharmacy.",
+   "rewrite": "Spread a thin layer of Skelvane cream on the affected area two times a day for ten days. Do not put the cream on broken skin or close to the eyes. You may feel a little stinging the first few times, and this is normal. If the irritation goes on for more than 3 days, speak to the pharmacist at Willowmere Pharmacy.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "twice a day",
+     "rewrite_detail": "two times a day"
+    },
+    {
+     "category": "number",
+     "source_detail": "10 days",
+     "rewrite_detail": "ten days"
+    }
+   ]
+  },
+  {
+   "id": "pb-14",
+   "label": "preserving",
+   "domain": "workplace policy",
+   "original": "All visitors to the Ostrel Works plant shall wear a hard hat and safety glasses at all times on the production floor. Visitors are not permitted to enter the chemical storage area. Contractors may use the staff canteen, but they must sign in at Gate 3 before 8 a.m. each day. Anyone who loses a security badge should report it to the Site Security team immediately.",
+   "rewrite": "Every visitor to the Ostrel Works plant must wear a hard hat and safety glasses at all times on the production floor. Visitors are prohibited from entering the chemical storage area. Contractors are allowed to use the staff canteen, but they have to sign in at Gate 3 before 8 a.m. every day. Anyone who loses a security badge should tell the Site Security team right away.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "modal",
+     "source_detail": "shall",
+     "rewrite_detail": "must"
+    },
+    {
+     "category": "negation",
+     "source_detail": "are not permitted to",
+     "rewrite_detail": "are prohibited from"
+    },
+    {
+     "category": "modal",
+     "source_detail": "may",
+     "rewrite_detail": "are allowed to"
+    },
+    {
+     "category": "modal",
+     "source_detail": "must",
+     "rewrite_detail": "have to"
+    }
+   ]
+  },
+  {
+   "id": "pb-15",
+   "label": "preserving",
+   "domain": "insurance coverage",
+   "original": "Your Merrow Travel Cover pays up to $2,000 for lost or stolen baggage. Items left unattended in a public place are not covered. You must obtain a police report within 24 hours of discovering a theft. Claims for electronic devices are limited to $500 per item, unless you listed the device on your policy schedule.",
+   "rewrite": "Merrow Travel Cover pays up to $2000 for baggage that is lost or stolen. Anything you leave unattended in a public place is not covered. You have to get a police report within 24 hours of finding out about a theft. Electronic devices are capped at $500 each, except where you listed the device on your policy schedule.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "$2,000",
+     "rewrite_detail": "$2000"
+    },
+    {
+     "category": "modal",
+     "source_detail": "must",
+     "rewrite_detail": "have to"
+    },
+    {
+     "category": "exception",
+     "source_detail": "unless",
+     "rewrite_detail": "except where"
+    }
+   ]
+  },
+  {
+   "id": "pb-16",
+   "label": "preserving",
+   "domain": "school or parent notices",
+   "original": "The Riverhollow Academy trip to the Halden Science Museum takes place on Wednesday, May 19, 2027. Students must bring a packed lunch, as no food can be bought at the museum. The bus leaves at 8:15 a.m. and will not wait for latecomers. Students who do not return the consent form by May 12 cannot attend.",
+   "rewrite": "Riverhollow Academy is visiting the Halden Science Museum on Wednesday, May 19, 2027. Students must pack their own lunch, since no food can be bought at the museum. The bus departs at 8:15 a.m. and will not wait for anyone who is late. Any student who does not hand in the consent form by May 12 cannot come on the trip.",
+   "change": null,
+   "equivalences": []
+  },
+  {
+   "id": "pb-17",
+   "label": "preserving",
+   "domain": "travel booking and refund policy",
+   "original": "Guests of the Saltmere Harbour Hotel may cancel free of charge up to 72 hours before arrival. Late cancellations are charged the cost of the first night. Check-in begins at 3 p.m., and rooms must be vacated by 11 a.m. on the day of departure. Breakfast is included in all rates except the Saver rate.",
+   "rewrite": "At the Saltmere Harbour Hotel, you are permitted to cancel for free up to three days before you arrive. A later cancellation costs you the price of the first night. Check-in starts at 15:00, and you have to leave your room by 11:00 on the day you depart. Every rate includes breakfast apart from the Saver rate.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "modal",
+     "source_detail": "may",
+     "rewrite_detail": "are permitted to"
+    },
+    {
+     "category": "number",
+     "source_detail": "72 hours",
+     "rewrite_detail": "three days"
+    },
+    {
+     "category": "date",
+     "source_detail": "3 p.m.",
+     "rewrite_detail": "15:00"
+    },
+    {
+     "category": "date",
+     "source_detail": "11 a.m.",
+     "rewrite_detail": "11:00"
+    },
+    {
+     "category": "modal",
+     "source_detail": "must",
+     "rewrite_detail": "have to"
+    },
+    {
+     "category": "exception",
+     "source_detail": "except",
+     "rewrite_detail": "apart from"
+    }
+   ]
+  },
+  {
+   "id": "pb-18",
+   "label": "preserving",
+   "domain": "bank or account fee notices",
+   "original": "Ferncastle Savings will never ask for your full PIN by email or text message. If you receive such a request, do not reply and call our fraud team on the number printed on your card. You will not be held responsible for unauthorized payments, provided that you report the loss of your card without delay. Our fraud line is open 24 hours a day.",
+   "rewrite": "Ferncastle Savings will never contact you by email or text message to ask for your full PIN. If you receive such a request, do not reply; instead, call our fraud team using the number printed on your card. Provided that you report the loss of your card without delay, you will not be held responsible for unauthorized payments. The fraud line takes calls 24 hours a day.",
+   "change": null,
+   "equivalences": []
+  },
+  {
+   "id": "pb-19",
+   "label": "preserving",
+   "domain": "government benefits letters",
+   "original": "Your Workready Support payment of $185 per week will continue while you are actively looking for work. You must attend an appointment at the Brennick Employment Centre every 2 weeks. If you miss an appointment without a good reason, your payment may be stopped. You do not have to attend if you are in hospital, but you should call us as soon as you can.",
+   "rewrite": "Your Workready Support payment of $185 a week will carry on while you are actively searching for work. You are required to go to an appointment at the Brennick Employment Centre every two weeks. If you miss an appointment without a good reason, your payment may be stopped. You are not required to attend if you are in hospital, but you should phone us as soon as you can.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "modal",
+     "source_detail": "must",
+     "rewrite_detail": "are required to"
+    },
+    {
+     "category": "number",
+     "source_detail": "2 weeks",
+     "rewrite_detail": "two weeks"
+    },
+    {
+     "category": "negation",
+     "source_detail": "do not have to",
+     "rewrite_detail": "are not required to"
+    }
+   ]
+  },
+  {
+   "id": "pb-20",
+   "label": "preserving",
+   "domain": "product warranty or safety notices",
+   "original": "The Calvio 300 space heater must not be covered while it is switched on. Keep it at least 1 metre away from curtains and furniture. Do not use the heater in a bathroom. Children under 8 should not use the heater without adult supervision. If the heater tips over, it will switch off automatically.",
+   "rewrite": "While the Calvio 300 space heater is switched on, it must not be covered. Leave at least 1 metre between the heater and any curtains or furniture, and do not use it in a bathroom. Children under 8 should not operate the heater without an adult supervising them. If the heater tips over, it will turn itself off on its own.",
+   "change": null,
+   "equivalences": []
+  },
+  {
+   "id": "pc-01",
+   "label": "preserving",
+   "domain": "consumer subscription terms",
+   "original": "Your Brightleaf Reader subscription renews automatically every 12 months at a price of $59.00. You may cancel at any time from the Account page. If you cancel within 14 days of a renewal, we will refund the full renewal charge. Partial months are not refunded, except where local law requires otherwise.",
+   "rewrite": "Your Brightleaf Reader plan renews on its own every year for $59.00. You are allowed to cancel whenever you like on the Account page. If you cancel within two weeks of a renewal, we will give you back the whole renewal charge. Partial months are not refunded, except where local law requires otherwise.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "12 months",
+     "rewrite_detail": "every year"
+    },
+    {
+     "category": "modal",
+     "source_detail": "may",
+     "rewrite_detail": "are allowed to"
+    },
+    {
+     "category": "number",
+     "source_detail": "14 days",
+     "rewrite_detail": "two weeks"
+    }
+   ]
+  },
+  {
+   "id": "pc-02",
+   "label": "preserving",
+   "domain": "rental or lease notices",
+   "original": "The water supply to Building C at Ferncliff Court will be shut off on Tuesday, April 6, between 9 a.m. and 1 p.m. while Harlow Plumbing replaces the main valve. Residents should store enough water for drinking and cooking before the work begins. If the work runs late, the management office will post an update in the lobby. Please do not use dishwashers or washing machines during the shutdown.",
+   "rewrite": "On Tuesday, April 6, the water in Building C at Ferncliff Court will be turned off between 9 a.m. and 1 p.m. while Harlow Plumbing swaps out the main valve. Residents should set aside enough water for drinking and cooking before the work starts. If the job runs late, the management office will put an update in the lobby. Please do not run dishwashers or washing machines while the water is off.",
+   "change": null,
+   "equivalences": []
+  },
+  {
+   "id": "pc-03",
+   "label": "preserving",
+   "domain": "medication or patient instructions",
+   "original": "Take two tablets of Corvalex every 8 hours with food for 10 days. Do not take more than 6 tablets in 24 hours. If you develop a rash or swelling of the face, stop taking the medicine and call Dr. Priya Okafor's office right away. You should finish the full course even if you feel better before the tenth day.",
+   "rewrite": "Take 2 tablets of Corvalex with food every eight hours for ten days. Do not take more than 6 tablets in any 24 hours. If you get a rash or your face swells, stop the medicine and phone Dr. Okafor's office straight away. You should complete the whole course, even if you feel better before the tenth day.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "two tablets",
+     "rewrite_detail": "2 tablets"
+    },
+    {
+     "category": "number",
+     "source_detail": "8 hours",
+     "rewrite_detail": "eight hours"
+    },
+    {
+     "category": "number",
+     "source_detail": "10 days",
+     "rewrite_detail": "ten days"
+    },
+    {
+     "category": "name",
+     "source_detail": "Dr. Priya Okafor",
+     "rewrite_detail": "Dr. Okafor"
+    }
+   ]
+  },
+  {
+   "id": "pc-04",
+   "label": "preserving",
+   "domain": "workplace policy",
+   "original": "Employees at Tarnwick Logistics must submit expense claims within 30 days of the purchase date. Claims over $500 need written approval from a department manager. Alcohol is not reimbursed unless it was part of an approved client dinner. Late claims will be rejected, except when the delay was caused by a system outage reported to the Finance Help Desk.",
+   "rewrite": "Tarnwick Logistics staff have to send in expense claims within thirty days of the purchase date. Any claim above $500 needs written sign-off from a department manager. Alcohol is not paid back unless it was part of an approved client dinner. Claims that arrive late will be turned down, except when the delay was caused by a system outage reported to the Finance Help Desk.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "modal",
+     "source_detail": "must",
+     "rewrite_detail": "have to"
+    },
+    {
+     "category": "number",
+     "source_detail": "30 days",
+     "rewrite_detail": "thirty days"
+    }
+   ]
+  },
+  {
+   "id": "pc-05",
+   "label": "preserving",
+   "domain": "insurance coverage",
+   "original": "Your Harborline Home policy covers water damage from burst pipes, provided that the home was heated to at least 55 degrees at the time of the loss. Damage from gradual leaks is not covered. You must report a claim within 60 days of discovering the damage. The deductible for water claims is $1,000, apart from claims under the Flood Rider, which have a separate deductible.",
+   "rewrite": "Your Harborline Home policy pays for water damage caused by burst pipes, as long as the house was heated to at least 55 degrees at the time the loss happened. Damage from slow, gradual leaks is not covered. You must report a claim within 60 days of finding the damage. Water claims carry a $1000 deductible, apart from Flood Rider claims, which have their own deductible.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "condition",
+     "source_detail": "provided that",
+     "rewrite_detail": "as long as"
+    },
+    {
+     "category": "number",
+     "source_detail": "$1,000",
+     "rewrite_detail": "$1000"
+    }
+   ]
+  },
+  {
+   "id": "pc-06",
+   "label": "preserving",
+   "domain": "school or parent notices",
+   "original": "Maple Hollow Elementary will close early on Friday, November 12, with dismissal at 12:30 p.m. Buses will run on the early schedule. Students may stay for the after-school club only if a parent has signed the permission form. Lunch will still be served, but the cafeteria will not offer breakfast that day.",
+   "rewrite": "On Friday, November 12, Maple Hollow Elementary will close early and send students home at 12:30 p.m. Buses will follow the early timetable. Children are allowed to stay for the after-school club only if a parent has signed the permission form. Lunch will still be served, though the cafeteria will not serve breakfast that day.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "modal",
+     "source_detail": "may",
+     "rewrite_detail": "are allowed to"
+    }
+   ]
+  },
+  {
+   "id": "pc-07",
+   "label": "preserving",
+   "domain": "travel booking and refund policy",
+   "original": "Tickets booked through Skylark Rail can be refunded in full up to 48 hours before departure. After that point, refunds are limited to 50% of the fare. No refund is given for a missed train unless the delay was caused by another Skylark Rail service. Refund requests must be made through the booking reference page.",
+   "rewrite": "Skylark Rail tickets can be fully refunded up to two days before the train leaves. Past that point, you get back only half of the fare. No refund is given for a missed train unless the delay was caused by another Skylark Rail service. Requests for refunds must go through the booking reference page.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "48 hours",
+     "rewrite_detail": "two days"
+    },
+    {
+     "category": "number",
+     "source_detail": "50%",
+     "rewrite_detail": "half"
+    }
+   ]
+  },
+  {
+   "id": "pc-08",
+   "label": "preserving",
+   "domain": "bank or account fee notices",
+   "original": "Starting March 1, 2027, Pellmont Savings will charge a monthly maintenance fee of $8 on Everyday Checking accounts. The fee is waived if your balance stays above $1,500 for the whole statement period. Customers aged 65 or older will not be charged the fee. Overdraft fees remain $32 per item, except for items under $5, which carry no fee.",
+   "rewrite": "From 1 March 2027, Pellmont Savings will add an $8 monthly maintenance fee to Everyday Checking accounts. We waive this fee if your balance stays above $1,500 for the whole statement period. Customers who are 65 or older will not be charged this fee. Each overdraft still costs $32, except for items under $5, which have no fee.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "date",
+     "source_detail": "March 1, 2027",
+     "rewrite_detail": "1 March 2027"
+    }
+   ]
+  },
+  {
+   "id": "pc-09",
+   "label": "preserving",
+   "domain": "government benefits letters",
+   "original": "Your application for the Riverton County Heating Assistance Program has been approved. You will receive a one-time payment of $420 by December 15. If your household income changes by more than 10% before then, you must tell the Benefits Office within 7 days. You do not need to reapply this year unless you move to a new address.",
+   "rewrite": "The Riverton County Heating Assistance Program has approved your application. You will receive a single payment of $420 by December 15. If your household income goes up or down by more than ten percent before that date, you must let the Benefits Office know within a week. You are not required to reapply this year unless you move to a new address.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "10%",
+     "rewrite_detail": "ten percent"
+    },
+    {
+     "category": "number",
+     "source_detail": "7 days",
+     "rewrite_detail": "a week"
+    },
+    {
+     "category": "negation",
+     "source_detail": "do not need to",
+     "rewrite_detail": "are not required to"
+    }
+   ]
+  },
+  {
+   "id": "pc-10",
+   "label": "preserving",
+   "domain": "product warranty or safety notices",
+   "original": "The Kestrel K4 space heater carries a two-year limited warranty from the date of purchase. The warranty does not cover damage caused by using the heater outdoors or with an extension cord. Never leave the heater running while you sleep. To make a claim, contact Kestrel Home Products with your receipt and the serial number.",
+   "rewrite": "Your Kestrel K4 space heater comes with a 24-month limited warranty starting on the day you bought it. The warranty does not cover damage from using the heater outside or plugging it into an extension cord. Never leave it switched on while you are asleep. To make a claim, get in touch with Kestrel Home Products and include your receipt and the serial number.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "two-year",
+     "rewrite_detail": "24-month"
+    }
+   ]
+  },
+  {
+   "id": "pc-11",
+   "label": "preserving",
+   "domain": "consumer subscription terms",
+   "original": "Members of the Copperpot Meal Club can skip up to 4 deliveries per year at no charge. Skips must be requested by 11:59 p.m. on the Wednesday before your delivery week. If you skip more than 4 times, a $6 fee applies to each extra skip. Paused accounts will not be billed, but discount codes cannot be used while an account is paused.",
+   "rewrite": "Copperpot Meal Club members can skip up to 4 deliveries per year at no charge. You must ask for a skip by 11:59 p.m. on the Wednesday before your delivery week. If you skip more than 4 times, you pay a $6 fee for each extra skip. While your account is paused you will not be billed, but you cannot use discount codes during the pause.",
+   "change": null,
+   "equivalences": []
+  },
+  {
+   "id": "pc-12",
+   "label": "preserving",
+   "domain": "rental or lease notices",
+   "original": "Under your lease with Northgate Housing Association, you must give at least 60 days' written notice before moving out. Pets are not allowed in the building, except for registered assistance animals. If you leave before the lease ends, you will owe rent until a new tenant moves in or until the lease end date, whichever comes first. Your security deposit of $1,200 will be returned within 21 days after you hand back the keys.",
+   "rewrite": "Under your Northgate Housing lease, you must give written notice at least sixty days before moving out. Pets are not allowed in the building, except for registered assistance animals. If you leave before the lease is over, you will owe rent until a new tenant moves in or until the lease end date, whichever is first. Your $1,200 security deposit will be returned to you within 21 days after you return the keys.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "name",
+     "source_detail": "Northgate Housing Association",
+     "rewrite_detail": "Northgate Housing"
+    },
+    {
+     "category": "number",
+     "source_detail": "60 days",
+     "rewrite_detail": "sixty days"
+    }
+   ]
+  },
+  {
+   "id": "pc-13",
+   "label": "preserving",
+   "domain": "medication or patient instructions",
+   "original": "Your appointment with Dr. Samuel Reyes at Lindenfield Clinic is on Monday, June 7, at 8:15 a.m. Do not eat or drink anything except water for 12 hours before the blood test. You may take your usual blood pressure tablets, but do not take your diabetes medicine that morning unless Dr. Reyes tells you to. Please arrive 15 minutes early to complete the forms.",
+   "rewrite": "Your appointment with Dr. Samuel Reyes at Lindenfield Clinic is set for Monday, June 7, at 8:15 a.m. For 12 hours before the blood test, do not eat or drink anything apart from water. You are allowed to take your regular blood pressure tablets, but do not take your diabetes medicine that morning unless Dr. Reyes tells you to. Please get there 15 minutes early to fill in the forms.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "exception",
+     "source_detail": "except",
+     "rewrite_detail": "apart from"
+    },
+    {
+     "category": "modal",
+     "source_detail": "may",
+     "rewrite_detail": "are allowed to"
+    }
+   ]
+  },
+  {
+   "id": "pc-14",
+   "label": "preserving",
+   "domain": "workplace policy",
+   "original": "Starting Monday, September 6, all staff at the Orrin Street office must badge in at the front desk. Visitors are not permitted past the lobby without an escort from the host employee. Contractors may use the side entrance only if they have a valid contractor pass issued by Facilities. The front desk will be staffed from 7 a.m. to 7 p.m. on weekdays.",
+   "rewrite": "From Monday, September 6, every staff member at the Orrin Street office must badge in at the front desk. Visitors are not permitted beyond the lobby without an escort from the employee hosting them. Contractors may come in through the side entrance only if they hold a valid contractor pass issued by Facilities. Someone will be at the front desk from 7 a.m. to 7 p.m. on weekdays.",
+   "change": null,
+   "equivalences": []
+  },
+  {
+   "id": "pc-15",
+   "label": "preserving",
+   "domain": "insurance coverage",
+   "original": "Your Bluefjord Travel Insurance plan pays up to $2,500 for trip cancellation. Cancellations caused by a pre-existing medical condition are excluded unless you bought the plan within 10 days of your first trip payment. You must notify us within 30 days of cancelling. We will not pay claims without a receipt for the original booking.",
+   "rewrite": "Your Bluefjord Travel Insurance plan covers trip cancellation up to $2,500. Cancellations due to a pre-existing medical condition are excluded except where you bought the plan within ten days of your first trip payment. You have to tell us within thirty days of cancelling. We will not pay claims without a receipt for the original booking.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "exception",
+     "source_detail": "unless",
+     "rewrite_detail": "except where"
+    },
+    {
+     "category": "number",
+     "source_detail": "10 days",
+     "rewrite_detail": "ten days"
+    },
+    {
+     "category": "modal",
+     "source_detail": "must",
+     "rewrite_detail": "have to"
+    },
+    {
+     "category": "number",
+     "source_detail": "30 days",
+     "rewrite_detail": "thirty days"
+    }
+   ]
+  },
+  {
+   "id": "pc-16",
+   "label": "preserving",
+   "domain": "school or parent notices",
+   "original": "The Year 8 field trip to the Calloway Science Museum is on Thursday, May 20. The cost is $18 per student, payable by May 13. Students will not be able to attend if the signed consent form has not been returned. Packed lunches are required, apart from students who receive free school meals, who will be given a lunch by the school.",
+   "rewrite": "The Year 8 trip to the Calloway Science Museum takes place on Thursday, May 20. Each student pays $18, due by May 13. Students will not be able to go if the signed consent form has not been sent back. Packed lunches are required, except for students who get free school meals, who will be given a lunch by the school.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "exception",
+     "source_detail": "apart from",
+     "rewrite_detail": "except for"
+    }
+   ]
+  },
+  {
+   "id": "pc-17",
+   "label": "preserving",
+   "domain": "travel booking and refund policy",
+   "original": "Guests of the Halvorsen Bay Hotel may cancel free of charge until 6 p.m. local time on the day before arrival. Cancellations after that time will be charged one night's stay. Rooms booked under the Saver Rate cannot be cancelled or changed. Check-in begins at 15:00 and check-out is by 11:00.",
+   "rewrite": "Halvorsen Bay Hotel guests are allowed to cancel free of charge until 18:00 local time the day before they arrive. Later cancellations will be charged one night's stay. Saver Rate rooms cannot be cancelled or changed. Check-in starts at 3 p.m., and check-out is by 11 a.m.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "modal",
+     "source_detail": "may",
+     "rewrite_detail": "are allowed to"
+    },
+    {
+     "category": "date",
+     "source_detail": "6 p.m.",
+     "rewrite_detail": "18:00"
+    },
+    {
+     "category": "date",
+     "source_detail": "15:00",
+     "rewrite_detail": "3 p.m."
+    },
+    {
+     "category": "date",
+     "source_detail": "11:00",
+     "rewrite_detail": "11 a.m."
+    }
+   ]
+  },
+  {
+   "id": "pc-18",
+   "label": "preserving",
+   "domain": "bank or account fee notices",
+   "original": "Pellwood Credit Union will replace a lost debit card free of charge once in any 12-month period. Each additional replacement costs $10. If you report the card stolen within 2 business days, you will not be responsible for unauthorized transactions. Cards can be reported lost by phone at any time, but replacement cards are not mailed to addresses outside Corvania.",
+   "rewrite": "Pellwood Credit Union will swap a lost debit card for a new one at no cost once in any one-year period. Every extra replacement costs $10. If you report the card stolen within two business days, you will not be responsible for unauthorized transactions. A lost card can be reported by phone at any time, but replacement cards are not mailed to addresses outside Corvania.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "12-month",
+     "rewrite_detail": "one-year"
+    },
+    {
+     "category": "number",
+     "source_detail": "2 business days",
+     "rewrite_detail": "two business days"
+    }
+   ]
+  },
+  {
+   "id": "pc-19",
+   "label": "preserving",
+   "domain": "government benefits letters",
+   "original": "Thank you for contacting the Eastmere Department of Labor about your unemployment claim. Your weekly benefit amount is $310. You must complete at least 3 work search activities each week to keep receiving payments. Payments will stop if you fail to file your weekly certification by Sunday at midnight, unless you have an approved exemption.",
+   "rewrite": "Thanks for reaching out to the Eastmere Department of Labor about your unemployment claim. Your benefit is $310 per week. To keep getting payments, you are required to complete at least three work search activities every week. Your payments will stop if you fail to file your weekly certification by midnight on Sunday, unless you have an approved exemption.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "modal",
+     "source_detail": "must",
+     "rewrite_detail": "are required to"
+    },
+    {
+     "category": "number",
+     "source_detail": "at least 3",
+     "rewrite_detail": "at least three"
+    },
+    {
+     "category": "date",
+     "source_detail": "Sunday at midnight",
+     "rewrite_detail": "midnight on Sunday"
+    }
+   ]
+  },
+  {
+   "id": "pc-20",
+   "label": "preserving",
+   "domain": "product warranty or safety notices",
+   "original": "Fernway Kitchen has issued a safety notice for the Fernway Pro 9 blender sold between January and April 2026. The lid may crack if the blender is run for longer than 90 seconds with hot liquids. Customers should stop using the blender with hot liquids until a replacement lid arrives. Replacement lids are free and will be shipped within 14 days of your request, except to customers who bought through third-party sellers, who must contact the seller directly.",
+   "rewrite": "A safety notice has been issued by Fernway Kitchen for the Fernway Pro 9 blender sold between January and April 2026. If the blender is run with hot liquids for longer than 90 seconds, the lid may crack. Customers should stop putting hot liquids in the blender until the new lid arrives. Replacement lids cost nothing and will be sent within two weeks of your request, except to customers who bought from third-party sellers, who must get in touch with the seller directly.",
+   "change": null,
+   "equivalences": [
+    {
+     "category": "number",
+     "source_detail": "14 days",
+     "rewrite_detail": "two weeks"
+    }
+   ]
+  }
+ ]
+}
