@@ -838,3 +838,34 @@ test('Cmd/Ctrl+Enter in the original sends nothing; only the extract button call
     assert.deepEqual(p.errors, []);
   } finally { p.close(); }
 });
+
+test('details to check name the changed number, modal and exception, select them, and reappear when a packet is opened', async () => {
+  const p = await page();
+  try {
+    p.input('prose', 'Alice may cancel with 30 days notice. Deposit is refundable unless overdue.');
+    p.input('rewrite', 'Alice must cancel with 3 days notice. Deposit is refundable.');
+    p.$('compare-btn').click();
+    const items = [...p.$('detail-list').querySelectorAll('li')].map(li => li.textContent);
+    // The quotes come from the <q> elements, which CSS renders; textContent omits them.
+    assert.deepEqual(items, [
+      'Modal verb changed: may in the original; must in the rewrite.',
+      'Number changed: 30 days in the original; 3 days in the rewrite.',
+      'Exception not found in the rewrite: unless in the original.',
+    ]);
+    assert.match(p.$('detail-summary').textContent, /^3 details to check\./);
+    p.$('detail-list').querySelectorAll('li')[1].querySelectorAll('button')[1].click();
+    assert.equal(p.$('rewrite').value.slice(p.$('rewrite').selectionStart, p.$('rewrite').selectionEnd), '3 days');
+    p.$('export-review-btn').click();
+    await until(() => p.downloads.length === 1);
+    const packet = JSON.parse(await p.downloads[0].text());
+    assert.equal('detail_checks' in packet, false, 'checks are recomputed from the texts, not stored');
+    p.input('prose', 'Unrelated.'); p.input('rewrite', 'Unrelated.'); p.$('compare-btn').click();
+    assert.match(p.$('detail-summary').textContent, /^No changed numbers/);
+    p.input('packet-input', JSON.stringify(packet)); p.$('verify-packet-btn').click();
+    await until(() => p.$('packet-status').textContent.includes('Checks completed'));
+    p.$('open-packet-btn').click();
+    assert.equal(p.$('detail-list').querySelectorAll('li').length, 3);
+    assert.equal(p.requests.length, 0, 'detail checks make no network requests');
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});

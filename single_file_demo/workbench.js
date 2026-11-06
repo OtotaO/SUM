@@ -1,4 +1,5 @@
 import { distill } from './distiller.js';
+import { detailFlags } from './detail_flags.js';
 import { compareTexts, makeReviewPacket, verifyReviewPacket, checkRenderBinding, publicJwks, pinPacketKey, keyWarning, quoteKid, receiptFailure } from './review_packet.js';
 
 const $ = id => document.getElementById(id);
@@ -59,7 +60,44 @@ function spanCell(span, field) {
   return cell;
 }
 
+const DETAIL_NAMES = { number: 'Number', date: 'Date or time', negation: 'Negation', modal: 'Modal verb', condition: 'Condition', exception: 'Exception', name: 'Name' };
+
+function quoteButton(span, field) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'link-btn';
+  const q = document.createElement('q');
+  q.textContent = span.text;
+  button.append(q);
+  button.title = `Select it in the ${field === 'prose' ? 'original' : 'rewrite'} above`;
+  button.addEventListener('click', () => selectIn(field, span.start, span.end));
+  return button;
+}
+
+// Recomputed from the two texts every time, so an opened packet shows the same checks; nothing is stored.
+function showDetailChecks() {
+  const list = $('detail-list');
+  list.replaceChildren();
+  let result;
+  try { result = detailFlags(current.source, current.output); } catch (e) { $('detail-summary').textContent = e.message; return; }
+  $('detail-scope').textContent = result.scope;
+  const kinds = { changed: 'changed', missing: 'not found in the rewrite', added: 'only in the rewrite' };
+  for (const f of result.flags) {
+    const item = document.createElement('li');
+    item.append(`${DETAIL_NAMES[f.category]} ${kinds[f.kind]}: `);
+    if (f.source) item.append(quoteButton(f.source, 'prose'), ' in the original');
+    if (f.source && f.output) item.append('; ');
+    if (f.output) item.append(quoteButton(f.output, 'rewrite'), ' in the rewrite');
+    item.append('.');
+    list.append(item);
+  }
+  $('detail-summary').textContent = result.flags.length
+    ? `${result.flags.length} detail${result.flags.length === 1 ? '' : 's'} to check. Select a quote to find it above. Some may be kept in other words.`
+    : 'No changed numbers, dates, negations, modal verbs, conditions, exceptions or names were flagged. These checks can miss changes and do not look at anything else; read the passages below.';
+}
+
 function showReview() {
+  showDetailChecks();
   const rows = $('review-rows');
   rows.replaceChildren();
   const labels = { verbatim: 'Verbatim match', 'changed-candidate': 'Possible changed passage: check the relationship', 'source-unmatched': 'Source passage without a literal match', 'output-unmatched': 'Rewrite passage without a literal match' };

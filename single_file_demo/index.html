@@ -107,6 +107,9 @@
   .distill-passage { display: inline; background: none; border: none; padding: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; white-space: normal; }
   .distill-passage:hover, .distill-passage:focus-visible { background: #4a90e233; }
   .distill-gap { opacity: 0.55; margin: 0 4px; }
+  .detail-checks ul { padding-left: 20px; margin: 8px 0 16px; }
+  .detail-checks li { margin: 6px 0; overflow-wrap: anywhere; }
+  .detail-checks q { font-weight: 600; }
   .distill-tags button { margin: 0 6px 6px 0; }
   .distill-left p { margin: 6px 0; overflow-wrap: anywhere; }
   details > summary { font-size: 14px; font-weight: 600; }
@@ -144,6 +147,12 @@
 <section id="review-panel" class="card" hidden aria-labelledby="review-heading">
   <h2 id="review-heading">Passage review</h2>
   <p id="review-summary"></p>
+  <div id="detail-checks" class="detail-checks">
+    <h3>Details to check <span class="pill">lexical, can miss changes</span></h3>
+    <p class="review-scope" id="detail-scope"></p>
+    <p id="detail-summary"></p>
+    <ul id="detail-list"></ul>
+  </div>
   <p>Accepting a passage records your decision; it does not create a signed claim or verify factual accuracy. Source links select the exact retained passage above.</p>
   <div id="review-rows"></div>
 </section>
