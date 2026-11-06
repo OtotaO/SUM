@@ -1,16 +1,16 @@
 {
   "schema": "sum.self_attestation.v1",
-  "issued_at": "2026-11-06T20:02:17Z",
+  "issued_at": "2026-11-06T20:02:49Z",
   "doc_count": 6,
   "docs": [
     {
       "path": "README.md",
-      "source_uri": "sha256:ca60019e86b208931bb7695f4899eab78d30eb3b99ea94372442a8caf78f8c27",
+      "source_uri": "sha256:855fdd649da9a5b4ab904ece75d52cc410454fe9f75a44172423c5a489342cb8",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "ca60019e86b208931bb7695f4899eab78d30eb3b99ea94372442a8caf78f8c27",
-      "axiom_count": 54,
-      "state_integer_digits": 1015
+      "markdown_sha256": "855fdd649da9a5b4ab904ece75d52cc410454fe9f75a44172423c5a489342cb8",
+      "axiom_count": 53,
+      "state_integer_digits": 996
     },
     {
       "path": "CHANGELOG.md",
@@ -23,21 +23,21 @@
     },
     {
       "path": "docs/PROOF_BOUNDARY.md",
-      "source_uri": "sha256:cf941a998cb4d1ab928bdd7cfa020f810a58bd53b7c01e12d953adb20d900721",
+      "source_uri": "sha256:77afc6464245e971e3aaf6cd273b2f987d89ad753c41961bc03f64e0beaa6409",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "cf941a998cb4d1ab928bdd7cfa020f810a58bd53b7c01e12d953adb20d900721",
-      "axiom_count": 194,
-      "state_integer_digits": 3650
+      "markdown_sha256": "77afc6464245e971e3aaf6cd273b2f987d89ad753c41961bc03f64e0beaa6409",
+      "axiom_count": 193,
+      "state_integer_digits": 3631
     },
     {
       "path": "docs/FEATURE_CATALOG.md",
-      "source_uri": "sha256:22a65ba39638bdcd0d33c9ae65c1293ea83f530638808dec6a85bf6adf6d0a4e",
+      "source_uri": "sha256:df7ed8190392e0974001126504ffe67d0a5b7a5a394f5ed7e95e2e3a5a67c484",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "22a65ba39638bdcd0d33c9ae65c1293ea83f530638808dec6a85bf6adf6d0a4e",
+      "markdown_sha256": "df7ed8190392e0974001126504ffe67d0a5b7a5a394f5ed7e95e2e3a5a67c484",
       "axiom_count": 148,
-      "state_integer_digits": 2792
+      "state_integer_digits": 2793
     },
     {
       "path": "docs/RENDER_RECEIPT_FORMAT.md",
