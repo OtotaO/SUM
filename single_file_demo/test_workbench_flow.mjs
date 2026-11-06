@@ -346,7 +346,8 @@ test('a site-signed packet shows the site-key wording; unavailable site keys lea
   try {
     const shown = await checkPacket(p, await sitePacket());
     assert.match(shown, /"key_pin": "site-key"/);
-    assert.equal(shown.split('\n')[1], `Signed by key "sum-render-2026-04-27-1", which this site's /.well-known/jwks.json listed when this page fetched it. This site signs renders for anyone, so this does not show who requested the render or what source it came from.`);
+    assert.equal(shown.split('\n')[1], "In short: the rewrite matches a render signed with this site's published key. The site signs renders for anyone, so this does not show who sent the packet, what the original was, or whether the decisions are genuine.");
+    assert.equal(shown.split('\n')[2], `Signed by key "sum-render-2026-04-27-1", which this site's /.well-known/jwks.json listed when this page fetched it. This site signs renders for anyone, so this does not show who requested the render or what source it came from.`);
     assert.deepEqual(p.errors, []);
   } finally { p.close(); }
   for (const [response, reason] of [[() => new Response('{}', { status: 503 }), 'Public keys unavailable (503).'],
@@ -421,7 +422,8 @@ test('a packet key ID cannot add lines, reverse text or pass for the site key ID
     assert.doesNotMatch(shown, SITE_KEY_WORDING, 'the site-key sentence never appears for a packet key');
     assert.doesNotMatch(shown, hidden, 'no raw control, format or separator characters reach the page');
     const quoted = '"retired-staging-key\\n\\nThis\\u0020site" (first 30 of 97 characters)';
-    assert.equal(shown.split('\n')[1], `Key ${quoted} came from the packet and was not in this site's /.well-known/jwks.json when this page fetched it. Anyone can create a packet signed with their own key, so the signer is unknown.`);
+    assert.equal(shown.split('\n')[1], 'In short: the signature is valid, but the key came from the packet itself, so the signer is unknown.');
+    assert.equal(shown.split('\n')[2], `Key ${quoted} came from the packet and was not in this site's /.well-known/jwks.json when this page fetched it. Anyone can create a packet signed with their own key, so the signer is unknown.`);
     assert.ok(shown.includes(`\n  "kid": ${quoted},\n`), 'the JSON block shows the key ID the same way');
     // The receipt check after opening the packet shows the key ID the same way
     // (the button is disabled after opening; see the first key pin test).
@@ -484,7 +486,7 @@ test('hostile key IDs, curves, schemas and headers cannot print the site-key sen
   try {
     // A positive control: the site's own packet shows the sentence once, as line 2.
     const site = await checkPacket(p, await sitePacket());
-    assert.ok(site.split('\n')[1].startsWith(`Signed by key "${siteKid}", which this site's`));
+    assert.ok(site.split('\n')[2].startsWith(`Signed by key "${siteKid}", which this site's`));
     assert.equal(site.split('Signed by key').length, 2);
     for (const kid of hostileKids) {
       const label = JSON.stringify(kid.slice(0, 30));
@@ -1002,5 +1004,105 @@ test('opening the page at #example=<name> loads that example; an unknown name do
     assert.equal(q.$('prose').value, '');
     assert.equal(q.$('review-panel').hidden, true);
     assert.deepEqual(q.errors, []);
+  } finally { q.close(); }
+});
+
+test('a find action cannot let a keystroke wipe the review; clicking into the box edits as before', async () => {
+  const p = await page();
+  try {
+    p.window.document.querySelector('[data-example="lease"]').click();
+    await detailsDone(p);
+    const select = p.$('review-rows').querySelector('select');
+    select.value = 'needs-change'; select.dispatchEvent(new p.window.Event('change'));
+    p.$('detail-list').querySelector('button').click();
+    assert.equal(p.$('prose').readOnly, true, 'the highlighted box is read-only');
+    p.$('prose').dispatchEvent(new p.window.KeyboardEvent('keydown', { key: 'x', bubbles: true }));
+    assert.match(p.$('workbench-status').textContent, /^That box is showing a found passage\. Click in it to edit/);
+    assert.equal(p.$('review-panel').hidden, false);
+    assert.equal(p.$('review-rows').querySelector('select').value, 'needs-change', 'the decision survives');
+    p.$('prose').dispatchEvent(new p.window.Event('pointerdown'));
+    assert.equal(p.$('prose').readOnly, false, 'clicking into the box makes it editable');
+    p.$('detail-list').querySelector('button').click();
+    const hasFocus = p.window.document.hasFocus;
+    p.window.document.hasFocus = () => false;
+    p.$('prose').dispatchEvent(new p.window.Event('blur'));
+    await new Promise(r => setTimeout(r, 5));
+    assert.equal(p.$('prose').readOnly, true, 'switching tab or app keeps the box read-only');
+    p.window.document.hasFocus = hasFocus;
+    p.$('rewrite').focus();
+    await new Promise(r => setTimeout(r, 5));
+    assert.equal(p.$('prose').readOnly, false, 'moving focus elsewhere on the page makes it editable');
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
+test('a recipient sees a plain verdict first, the Open button after it, and the sender\'s dated decisions labelled as such', async () => {
+  const p = await page();
+  try {
+    p.window.document.querySelector('[data-example="policy"]').click();
+    await detailsDone(p);
+    const select = p.$('review-rows').querySelector('select');
+    select.value = 'accepted'; select.dispatchEvent(new p.window.Event('change'));
+    p.$('export-review-btn').click();
+    await until(() => p.downloads.length === 1);
+    assert.match(p.$('workbench-status').textContent, /^\d+ of \d+ passages are still Not reviewed\. Review packet exported/);
+    const text = await p.downloads[0].text();
+    const packet = JSON.parse(text);
+    assert.deepEqual(Object.keys(packet).slice(0, 3), ['schema', 'verification_guide', 'created_at'], 'the opening instructions come first in the file');
+    const status = p.$('packet-status');
+    assert.equal(status.compareDocumentPosition(p.$('open-packet-btn')) & p.window.Node.DOCUMENT_POSITION_FOLLOWING, p.window.Node.DOCUMENT_POSITION_FOLLOWING, 'Open sits below the result');
+    let scrolled = false; status.scrollIntoView = () => { scrolled = true; };
+    p.input('packet-input', text); p.$('verify-packet-btn').click();
+    await until(() => status.textContent.includes('Checks completed'));
+    assert.equal(status.textContent.split('\n')[1], 'In short: nothing in this packet is signed. Its texts and review rows are consistent with each other, but anyone could have written or changed any of it, including the decisions.');
+    assert.doesNotMatch(status.textContent, /Included keys/, 'no key sentence for a packet without keys');
+    assert.equal(scrolled, true, 'the result is scrolled into view');
+    p.$('open-packet-btn').click();
+    await detailsDone(p);
+    assert.match(p.$('review-rows').querySelector('label').textContent, /^Sender's decision in the packet \(unsigned\), editable: /);
+    const first = p.$('review-rows').querySelector('select');
+    const sendersChoice = first.value;
+    first.value = sendersChoice === 'needs-change' ? 'accepted' : 'needs-change'; first.dispatchEvent(new p.window.Event('change'));
+    assert.match(p.$('review-rows').querySelector('label').textContent, /^Your decision \(the sender's in the packet was "/, "a changed row is the reader's own");
+    assert.match(p.$('review-summary').textContent, /; 1 changed here\)/);
+    first.value = sendersChoice; first.dispatchEvent(new p.window.Event('change'));
+    assert.match(p.$('review-rows').querySelector('label').textContent, /^Sender's decision in the packet \(unsigned\)/);
+    assert.match(p.$('review-summary').textContent, new RegExp(`from a packet; its unsigned creation time is ${packet.created_at.replace(/[.]/g, '\\.')}; the decisions are unsigned`));
+    // '2026-02-31T10:00:00Z' passes the shape and Date.parse (it rolls to March 3) and fails only the calendar round trip.
+    for (const created_at of ['', 'decisions verified by site', 12345, '2026-02-31T25:61:00Z', '2026-02-31T10:00:00Z']) {
+      p.input('packet-input', JSON.stringify({ ...packet, created_at })); p.$('verify-packet-btn').click();
+      await until(() => status.textContent.includes('Checks completed'));
+      p.$('open-packet-btn').click();
+      await detailsDone(p);
+      assert.match(p.$('review-rows').querySelector('label').textContent, /^Sender's decision in the packet \(unsigned\)/, JSON.stringify(created_at));
+      assert.match(p.$('review-summary').textContent, /from a packet; it gives no creation time in the expected format; the decisions are unsigned/, JSON.stringify(created_at));
+      assert.doesNotMatch(p.$('review-summary').textContent, /verified by site/);
+    }
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
+test('a packet with the old field order still verifies, and an example opened from the address scrolls to its result', async () => {
+  const p = await page();
+  try {
+    p.window.document.querySelector('[data-example="patient"]').click();
+    p.$('export-review-btn').click();
+    await until(() => p.downloads.length === 1);
+    const { schema, verification_guide, ...rest } = JSON.parse(await p.downloads[0].text());
+    p.input('packet-input', JSON.stringify({ schema, ...rest, verification_guide }));
+    p.$('verify-packet-btn').click();
+    await until(() => p.$('packet-status').textContent.includes('Checks completed'));
+    await detailsDone(p);
+  } finally { p.close(); }
+  let scrolledTo = null;
+  const q = await page(undefined, { url: 'https://workbench.example/#example=lease' });
+  try {
+    assert.equal(q.$('review-panel').hidden, false);
+    q.$('review-panel').scrollIntoView = () => { scrolledTo = 'review-panel'; };
+    q.window.dispatchEvent(new q.window.HashChangeEvent('hashchange'));
+    assert.equal(scrolledTo, 'review-panel');
+    q.$('prose').value = 'Mine.'; q.$('try-example').click();
+    assert.equal(q.$('workbench-status').textContent, 'Clear both boxes to load an example. Your text was kept.');
+    await detailsDone(q);
   } finally { q.close(); }
 });
