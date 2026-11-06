@@ -175,7 +175,7 @@ A two-layer generator-side intervention (canonical-first generator prompt + cons
 | seed_v2 (7 difficulty parse patterns + multi-fact) | 20 | 1–2 | **0.9750** | 5.00 | 19 / 20 |
 | seed_long_paragraphs (16-topic multi-paragraph) | 16 | 11–28 | **0.9972** | 0.57 | 15 / 16 |
 
-The combined intervention lands **≥ 0.97 recall and ≤ 5 % drift on every measured corpus shape**: single-fact short-form, multi-fact difficulty-pattern, and multi-paragraph dense-prose. The three-corpus result is for gpt-4o-mini-2024-07-18; on seed_v1 alone, claude-opus-4-7 and gpt-5.5-2026-04-23 were also measured (2026-04-29); other corpus and model combinations are unmeasured. Recall is scored against the model's own first-pass extraction, not independently annotated facts. The remaining gap on each corpus traces to upstream LLM source-extraction artifacts (corrupted axioms on seed_v2 doc_015, semantically-duplicate predicates on seed_long solar_system), not to the intervention pattern.
+The combined intervention lands **≥ 0.97 recall and ≤ 5 % drift on every measured corpus shape**: single-fact short-form, multi-fact difficulty-pattern, and multi-paragraph dense-prose. The three-corpus result is for gpt-4o-mini-2024-07-18. On seed_v1 alone (2026-04-29), claude-opus-4-7 measured drift 0.00 % and recall 1.00, and gpt-5.5-2026-04-23 drift 5.33 % and recall 1.00, just outside the 5 % line; other corpus and model combinations are unmeasured. Recall is scored against the model's own first-pass extraction, not independently annotated facts. The remaining gap on each corpus traces to upstream LLM source-extraction artifacts (corrupted axioms on seed_v2 doc_015, semantically-duplicate predicates on seed_long solar_system), not to the intervention pattern.
 
 Receipt artifacts:
 - [`fixtures/bench_receipts/s25_generator_side_2026-04-28.json`](fixtures/bench_receipts/s25_generator_side_2026-04-28.json) — full ablation matrix on seed_v1.
@@ -286,7 +286,7 @@ Less-surfaced research code, in the repository (not claims of working detection)
 - **Spectral entropy** (`research/spectral_entropy/`) — axiom-graph entropy on every bundle, with confidence interval.
 - **Bootstrap multiplier spike detection** (`research/bootstrap/`) — see [`docs/MULTIPLIER_BOOTSTRAP_SPIKE_FINDINGS.md`](docs/MULTIPLIER_BOOTSTRAP_SPIKE_FINDINGS.md).
 - **SMT consistency checking** (`research/smt_consistency/`) — z3-backed `axiom_consistency_check` on every bundle.
-- **Sheaf-Laplacian consistency score** (research): on real LLM renders it did not consistently beat a trivial entity-set baseline (`docs/PROOF_BOUNDARY.md` §2.9); see [`docs/SHEAF_HALLUCINATION_DETECTOR.md`](docs/SHEAF_HALLUCINATION_DETECTOR.md).
+- **Sheaf-Laplacian consistency score** (research): on its own it lost to a trivial entity-set baseline on the synthetic bench, and the hybrid that includes that baseline did not consistently beat it on real LLM renders (`docs/PROOF_BOUNDARY.md` §2.9); see [`docs/SHEAF_HALLUCINATION_DETECTOR.md`](docs/SHEAF_HALLUCINATION_DETECTOR.md).
 
 ### Other substrate-adjacent surfaces
 
