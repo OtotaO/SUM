@@ -876,8 +876,8 @@ test('detail checks run on the inputs the first checker version failed on, up to
     p.input('prose', 'You pay half.'); p.input('rewrite', 'You pay half.');
     p.$('compare-btn').click();
     assert.match(p.$('detail-summary').textContent, /^No changed numbers/);
-    const long = Array(290).fill(Array(33).fill('10').join(' ') + '.').join('\n');
-    p.input('prose', long); p.input('rewrite', Array(290).fill(Array(25).fill('ten').join(' ') + '.').join('\n'));
+    const long = Array(290).fill(Array(10).fill('10').join(' ') + '.').join('\n');
+    p.input('prose', long); p.input('rewrite', Array(290).fill(Array(8).fill('ten').join(' ') + '.').join('\n'));
     const started = Date.now();
     p.$('compare-btn').click();
     assert.ok(Date.now() - started < 5000, 'crafted input is checked in linear time');
@@ -894,7 +894,10 @@ test('detail checks are skipped, quickly and with a plain message, when conditio
     const started = Date.now();
     p.$('compare-btn').click();
     assert.ok(Date.now() - started < 3000);
-    assert.match(p.$('detail-summary').textContent, /^Detail checks were skipped: these texts have too many conditions/);
+    assert.match(p.$('detail-summary').textContent, /^Detail checks were skipped: these texts have too many numbers, dates, names, conditions or exceptions/);
+    p.input('prose', ('05 '.repeat(3100)).trim() + '.\nZeta 7.'); p.input('rewrite', 'Zeta ' + '5 '.repeat(3100));
+    p.$('compare-btn').click();
+    assert.match(p.$('detail-summary').textContent, /^Detail checks were skipped/);
     assert.equal(p.$('detail-list').children.length, 0);
     p.input('prose', 'You may cancel if you move.'); p.input('rewrite', 'You can cancel.');
     p.$('compare-btn').click();
