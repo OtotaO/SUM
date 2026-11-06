@@ -1,0 +1,1645 @@
+{
+ "v2-numb-01": [
+  {
+   "category": "number",
+   "kind": "changed",
+   "source": {
+    "start": 72,
+    "end": 78,
+    "text": "$12.99"
+   },
+   "output": {
+    "start": 64,
+    "end": 67,
+    "text": "$13"
+   }
+  }
+ ],
+ "v2-numb-02": [
+  {
+   "category": "number",
+   "kind": "missing",
+   "source": {
+    "start": 5,
+    "end": 15,
+    "text": "one tablet"
+   },
+   "output": null
+  },
+  {
+   "category": "number",
+   "kind": "changed",
+   "source": {
+    "start": 82,
+    "end": 91,
+    "text": "4 tablets"
+   },
+   "output": {
+    "start": 79,
+    "end": 88,
+    "text": "6 tablets"
+   }
+  }
+ ],
+ "v2-numb-03": [
+  {
+   "category": "condition",
+   "kind": "changed",
+   "source": {
+    "start": 258,
+    "end": 260,
+    "text": "If"
+   },
+   "output": {
+    "start": 239,
+    "end": 241,
+    "text": "If"
+   }
+  },
+  {
+   "category": "number",
+   "kind": "changed",
+   "source": {
+    "start": 336,
+    "end": 339,
+    "text": "$45"
+   },
+   "output": {
+    "start": 295,
+    "end": 298,
+    "text": "$50"
+   }
+  }
+ ],
+ "v2-numb-04": [
+  {
+   "category": "number",
+   "kind": "changed",
+   "source": {
+    "start": 116,
+    "end": 121,
+    "text": "$7.50"
+   },
+   "output": {
+    "start": 117,
+    "end": 119,
+    "text": "$7"
+   }
+  }
+ ],
+ "v2-numb-05": [
+  {
+   "category": "number",
+   "kind": "missing",
+   "source": {
+    "start": 144,
+    "end": 154,
+    "text": "40 minutes"
+   },
+   "output": null
+  }
+ ],
+ "v2-numb-06": [
+  {
+   "category": "number",
+   "kind": "missing",
+   "source": {
+    "start": 334,
+    "end": 350,
+    "text": "10 business days"
+   },
+   "output": null
+  }
+ ],
+ "v2-numb-07": [
+  {
+   "category": "number",
+   "kind": "missing",
+   "source": {
+    "start": 89,
+    "end": 96,
+    "text": "$20,000"
+   },
+   "output": null
+  }
+ ],
+ "v2-numb-08": [
+  {
+   "category": "number",
+   "kind": "missing",
+   "source": {
+    "start": 118,
+    "end": 122,
+    "text": "$310"
+   },
+   "output": null
+  }
+ ],
+ "v2-numb-09": [
+  {
+   "category": "number",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 213,
+    "end": 214,
+    "text": "8"
+   }
+  }
+ ],
+ "v2-numb-10": [
+  {
+   "category": "number",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 44,
+    "end": 50,
+    "text": "2-year"
+   }
+  }
+ ],
+ "v2-numb-11": [
+  {
+   "category": "number",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 199,
+    "end": 209,
+    "text": "30 minutes"
+   }
+  }
+ ],
+ "v2-numb-12": [
+  {
+   "category": "number",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 264,
+    "end": 271,
+    "text": "6-month"
+   }
+  }
+ ],
+ "v2-date-01": [
+  {
+   "category": "date",
+   "kind": "changed",
+   "source": {
+    "start": 54,
+    "end": 68,
+    "text": "April 12, 2027"
+   },
+   "output": {
+    "start": 50,
+    "end": 64,
+    "text": "April 21, 2027"
+   }
+  },
+  {
+   "category": "number",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 255,
+    "end": 261,
+    "text": "a year"
+   }
+  }
+ ],
+ "v2-date-02": [
+  {
+   "category": "date",
+   "kind": "changed",
+   "source": {
+    "start": 116,
+    "end": 120,
+    "text": "noon"
+   },
+   "output": {
+    "start": 115,
+    "end": 121,
+    "text": "2 p.m."
+   }
+  }
+ ],
+ "v2-date-03": [
+  {
+   "category": "date",
+   "kind": "changed",
+   "source": {
+    "start": 61,
+    "end": 71,
+    "text": "October 18"
+   },
+   "output": {
+    "start": 64,
+    "end": 74,
+    "text": "October 28"
+   }
+  }
+ ],
+ "v2-date-04": [
+  {
+   "category": "date",
+   "kind": "changed",
+   "source": {
+    "start": 193,
+    "end": 209,
+    "text": "January 15, 2027"
+   },
+   "output": {
+    "start": 177,
+    "end": 192,
+    "text": "January 5, 2027"
+   }
+  }
+ ],
+ "v2-date-05": [
+  {
+   "category": "date",
+   "kind": "missing",
+   "source": {
+    "start": 81,
+    "end": 89,
+    "text": "Thursday"
+   },
+   "output": null
+  },
+  {
+   "category": "date",
+   "kind": "missing",
+   "source": {
+    "start": 91,
+    "end": 96,
+    "text": "May 6"
+   },
+   "output": null
+  },
+  {
+   "category": "modal",
+   "kind": "missing",
+   "source": {
+    "start": 91,
+    "end": 94,
+    "text": "May"
+   },
+   "output": null
+  }
+ ],
+ "v2-date-06": [
+  {
+   "category": "date",
+   "kind": "missing",
+   "source": {
+    "start": 9,
+    "end": 22,
+    "text": "March 1, 2027"
+   },
+   "output": null
+  },
+  {
+   "category": "condition",
+   "kind": "changed",
+   "source": {
+    "start": 155,
+    "end": 157,
+    "text": "if"
+   },
+   "output": {
+    "start": 121,
+    "end": 123,
+    "text": "if"
+   }
+  },
+  {
+   "category": "negation",
+   "kind": "missing",
+   "source": {
+    "start": 305,
+    "end": 307,
+    "text": "no"
+   },
+   "output": null
+  }
+ ],
+ "v2-date-07": [
+  {
+   "category": "date",
+   "kind": "missing",
+   "source": {
+    "start": 234,
+    "end": 249,
+    "text": "August 30, 2027"
+   },
+   "output": null
+  }
+ ],
+ "v2-date-08": [
+  {
+   "category": "date",
+   "kind": "missing",
+   "source": {
+    "start": 89,
+    "end": 100,
+    "text": "November 19"
+   },
+   "output": null
+  }
+ ],
+ "v2-date-09": [
+  {
+   "category": "date",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 272,
+    "end": 292,
+    "text": "the end of the month"
+   }
+  }
+ ],
+ "v2-date-10": [
+  {
+   "category": "date",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 187,
+    "end": 198,
+    "text": "December 31"
+   }
+  }
+ ],
+ "v2-date-11": [
+  {
+   "category": "date",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 73,
+    "end": 79,
+    "text": "Monday"
+   }
+  }
+ ],
+ "v2-date-12": [
+  {
+   "category": "date",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 146,
+    "end": 153,
+    "text": "June 15"
+   }
+  }
+ ],
+ "v2-nega-01": [
+  {
+   "category": "number",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 50,
+    "end": 51,
+    "text": "1"
+   }
+  }
+ ],
+ "v2-nega-02": [
+  {
+   "category": "negation",
+   "kind": "missing",
+   "source": {
+    "start": 143,
+    "end": 147,
+    "text": "none"
+   },
+   "output": null
+  },
+  {
+   "category": "number",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 200,
+    "end": 201,
+    "text": "5"
+   }
+  }
+ ],
+ "v2-nega-03": [
+  {
+   "category": "number",
+   "kind": "missing",
+   "source": {
+    "start": 5,
+    "end": 16,
+    "text": "one capsule"
+   },
+   "output": null
+  }
+ ],
+ "v2-nega-04": [
+  {
+   "category": "negation",
+   "kind": "missing",
+   "source": {
+    "start": 180,
+    "end": 183,
+    "text": "not"
+   },
+   "output": null
+  },
+  {
+   "category": "number",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 73,
+    "end": 79,
+    "text": "a week"
+   }
+  }
+ ],
+ "v2-nega-05": [
+  {
+   "category": "negation",
+   "kind": "missing",
+   "source": {
+    "start": 142,
+    "end": 145,
+    "text": "not"
+   },
+   "output": null
+  }
+ ],
+ "v2-nega-06": [
+  {
+   "category": "condition",
+   "kind": "missing",
+   "source": {
+    "start": 196,
+    "end": 204,
+    "text": "provided"
+   },
+   "output": null
+  },
+  {
+   "category": "negation",
+   "kind": "missing",
+   "source": {
+    "start": 263,
+    "end": 266,
+    "text": "not"
+   },
+   "output": null
+  }
+ ],
+ "v2-nega-07": [
+  {
+   "category": "negation",
+   "kind": "missing",
+   "source": {
+    "start": 156,
+    "end": 159,
+    "text": "not"
+   },
+   "output": null
+  }
+ ],
+ "v2-nega-08": [
+  {
+   "category": "negation",
+   "kind": "missing",
+   "source": {
+    "start": 211,
+    "end": 218,
+    "text": "without"
+   },
+   "output": null
+  }
+ ],
+ "v2-nega-09": [
+  {
+   "category": "negation",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 209,
+    "end": 212,
+    "text": "not"
+   }
+  }
+ ],
+ "v2-nega-10": [
+  {
+   "category": "negation",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 151,
+    "end": 156,
+    "text": "never"
+   }
+  }
+ ],
+ "v2-nega-11": [
+  {
+   "category": "negation",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 145,
+    "end": 148,
+    "text": "not"
+   }
+  }
+ ],
+ "v2-nega-12": [
+  {
+   "category": "negation",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 223,
+    "end": 226,
+    "text": "not"
+   }
+  }
+ ],
+ "v2-moda-01": [
+  {
+   "category": "modal",
+   "kind": "changed",
+   "source": {
+    "start": 39,
+    "end": 43,
+    "text": "must"
+   },
+   "output": {
+    "start": 39,
+    "end": 45,
+    "text": "should"
+   }
+  },
+  {
+   "category": "name",
+   "kind": "changed",
+   "source": {
+    "start": 218,
+    "end": 242,
+    "text": "Ms. Henrietta Voss. Your"
+   },
+   "output": {
+    "start": 228,
+    "end": 241,
+    "text": "Ms. Voss. You"
+   }
+  }
+ ],
+ "v2-moda-02": [
+  {
+   "category": "modal",
+   "kind": "changed",
+   "source": {
+    "start": 90,
+    "end": 93,
+    "text": "may"
+   },
+   "output": {
+    "start": 89,
+    "end": 95,
+    "text": "should"
+   }
+  }
+ ],
+ "v2-moda-03": [
+  {
+   "category": "modal",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 121,
+    "end": 124,
+    "text": "may"
+   }
+  }
+ ],
+ "v2-moda-04": [
+  {
+   "category": "modal",
+   "kind": "changed",
+   "source": {
+    "start": 169,
+    "end": 176,
+    "text": "may not"
+   },
+   "output": {
+    "start": 155,
+    "end": 161,
+    "text": "should"
+   }
+  }
+ ],
+ "v2-moda-05": [
+  {
+   "category": "modal",
+   "kind": "missing",
+   "source": {
+    "start": 41,
+    "end": 44,
+    "text": "may"
+   },
+   "output": null
+  },
+  {
+   "category": "condition",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 252,
+    "end": 254,
+    "text": "If"
+   }
+  }
+ ],
+ "v2-moda-06": [
+  {
+   "category": "modal",
+   "kind": "missing",
+   "source": {
+    "start": 244,
+    "end": 248,
+    "text": "must"
+   },
+   "output": null
+  }
+ ],
+ "v2-moda-07": [
+  {
+   "category": "modal",
+   "kind": "missing",
+   "source": {
+    "start": 265,
+    "end": 274,
+    "text": "recommend"
+   },
+   "output": null
+  }
+ ],
+ "v2-moda-08": [
+  {
+   "category": "modal",
+   "kind": "missing",
+   "source": {
+    "start": 215,
+    "end": 218,
+    "text": "may"
+   },
+   "output": null
+  }
+ ],
+ "v2-moda-09": [
+  {
+   "category": "modal",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 241,
+    "end": 244,
+    "text": "may"
+   }
+  }
+ ],
+ "v2-moda-10": [],
+ "v2-moda-11": [
+  {
+   "category": "modal",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 112,
+    "end": 116,
+    "text": "must"
+   }
+  }
+ ],
+ "v2-moda-12": [
+  {
+   "category": "name",
+   "kind": "changed",
+   "source": {
+    "start": 147,
+    "end": 166,
+    "text": "Dr. Petra Lindqvist"
+   },
+   "output": {
+    "start": 183,
+    "end": 201,
+    "text": "Dr. Lindqvist. You"
+   }
+  },
+  {
+   "category": "modal",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 61,
+    "end": 67,
+    "text": "should"
+   }
+  }
+ ],
+ "v2-cond-01": [
+  {
+   "category": "condition",
+   "kind": "changed",
+   "source": {
+    "start": 110,
+    "end": 112,
+    "text": "if"
+   },
+   "output": {
+    "start": 122,
+    "end": 124,
+    "text": "if"
+   }
+  }
+ ],
+ "v2-cond-02": [
+  {
+   "category": "condition",
+   "kind": "changed",
+   "source": {
+    "start": 240,
+    "end": 247,
+    "text": "only if"
+   },
+   "output": {
+    "start": 226,
+    "end": 228,
+    "text": "if"
+   }
+  }
+ ],
+ "v2-cond-03": [],
+ "v2-cond-04": [
+  {
+   "category": "condition",
+   "kind": "changed",
+   "source": {
+    "start": 99,
+    "end": 101,
+    "text": "if"
+   },
+   "output": {
+    "start": 104,
+    "end": 106,
+    "text": "if"
+   }
+  }
+ ],
+ "v2-cond-05": [
+  {
+   "category": "number",
+   "kind": "missing",
+   "source": {
+    "start": 60,
+    "end": 61,
+    "text": "1"
+   },
+   "output": null
+  },
+  {
+   "category": "condition",
+   "kind": "missing",
+   "source": {
+    "start": 244,
+    "end": 246,
+    "text": "if"
+   },
+   "output": null
+  },
+  {
+   "category": "name",
+   "kind": "missing",
+   "source": {
+    "start": 286,
+    "end": 305,
+    "text": "Help Center. Prices"
+   },
+   "output": null
+  }
+ ],
+ "v2-cond-06": [
+  {
+   "category": "condition",
+   "kind": "missing",
+   "source": {
+    "start": 77,
+    "end": 79,
+    "text": "if"
+   },
+   "output": null
+  },
+  {
+   "category": "condition",
+   "kind": "missing",
+   "source": {
+    "start": 309,
+    "end": 317,
+    "text": "provided"
+   },
+   "output": null
+  },
+  {
+   "category": "number",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 74,
+    "end": 80,
+    "text": "a week"
+   }
+  }
+ ],
+ "v2-cond-07": [
+  {
+   "category": "condition",
+   "kind": "missing",
+   "source": {
+    "start": 356,
+    "end": 358,
+    "text": "if"
+   },
+   "output": null
+  }
+ ],
+ "v2-cond-08": [
+  {
+   "category": "condition",
+   "kind": "missing",
+   "source": {
+    "start": 177,
+    "end": 179,
+    "text": "if"
+   },
+   "output": null
+  }
+ ],
+ "v2-cond-09": [
+  {
+   "category": "condition",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 163,
+    "end": 173,
+    "text": "as long as"
+   }
+  }
+ ],
+ "v2-cond-10": [
+  {
+   "category": "condition",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 162,
+    "end": 164,
+    "text": "if"
+   }
+  }
+ ],
+ "v2-cond-11": [
+  {
+   "category": "condition",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 329,
+    "end": 331,
+    "text": "if"
+   }
+  }
+ ],
+ "v2-cond-12": [
+  {
+   "category": "condition",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 162,
+    "end": 175,
+    "text": "provided that"
+   }
+  }
+ ],
+ "v2-exce-01": [
+  {
+   "category": "number",
+   "kind": "missing",
+   "source": {
+    "start": 50,
+    "end": 51,
+    "text": "1"
+   },
+   "output": null
+  }
+ ],
+ "v2-exce-02": [
+  {
+   "category": "exception",
+   "kind": "changed",
+   "source": {
+    "start": 86,
+    "end": 92,
+    "text": "unless"
+   },
+   "output": {
+    "start": 78,
+    "end": 84,
+    "text": "unless"
+   }
+  },
+  {
+   "category": "modal",
+   "kind": "missing",
+   "source": {
+    "start": 160,
+    "end": 167,
+    "text": "require"
+   },
+   "output": null
+  }
+ ],
+ "v2-exce-03": [
+  {
+   "category": "exception",
+   "kind": "changed",
+   "source": {
+    "start": 127,
+    "end": 133,
+    "text": "except"
+   },
+   "output": {
+    "start": 127,
+    "end": 133,
+    "text": "except"
+   }
+  }
+ ],
+ "v2-exce-04": [
+  {
+   "category": "exception",
+   "kind": "changed",
+   "source": {
+    "start": 171,
+    "end": 180,
+    "text": "excluding"
+   },
+   "output": {
+    "start": 169,
+    "end": 178,
+    "text": "excluding"
+   }
+  }
+ ],
+ "v2-exce-05": [
+  {
+   "category": "exception",
+   "kind": "missing",
+   "source": {
+    "start": 101,
+    "end": 107,
+    "text": "unless"
+   },
+   "output": null
+  }
+ ],
+ "v2-exce-06": [
+  {
+   "category": "exception",
+   "kind": "missing",
+   "source": {
+    "start": 64,
+    "end": 75,
+    "text": "except when"
+   },
+   "output": null
+  }
+ ],
+ "v2-exce-07": [
+  {
+   "category": "exception",
+   "kind": "missing",
+   "source": {
+    "start": 240,
+    "end": 250,
+    "text": "apart from"
+   },
+   "output": null
+  }
+ ],
+ "v2-exce-08": [
+  {
+   "category": "exception",
+   "kind": "missing",
+   "source": {
+    "start": 191,
+    "end": 201,
+    "text": "other than"
+   },
+   "output": null
+  }
+ ],
+ "v2-exce-09": [
+  {
+   "category": "exception",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 143,
+    "end": 149,
+    "text": "unless"
+   }
+  }
+ ],
+ "v2-exce-10": [
+  {
+   "category": "exception",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 147,
+    "end": 153,
+    "text": "except"
+   }
+  }
+ ],
+ "v2-exce-11": [
+  {
+   "category": "exception",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 223,
+    "end": 233,
+    "text": "except for"
+   }
+  }
+ ],
+ "v2-exce-12": [
+  {
+   "category": "exception",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 257,
+    "end": 269,
+    "text": "except where"
+   }
+  }
+ ],
+ "v2-name-01": [
+  {
+   "category": "name",
+   "kind": "changed",
+   "source": {
+    "start": 136,
+    "end": 154,
+    "text": "Claims Review Unit"
+   },
+   "output": {
+    "start": 149,
+    "end": 168,
+    "text": "Claims Support Unit"
+   }
+  }
+ ],
+ "v2-name-02": [
+  {
+   "category": "number",
+   "kind": "missing",
+   "source": {
+    "start": 5,
+    "end": 16,
+    "text": "one capsule"
+   },
+   "output": null
+  },
+  {
+   "category": "name",
+   "kind": "changed",
+   "source": {
+    "start": 199,
+    "end": 219,
+    "text": "Bellmere Clinic. You"
+   },
+   "output": {
+    "start": 191,
+    "end": 211,
+    "text": "Bellwick Clinic. You"
+   }
+  }
+ ],
+ "v2-name-03": [
+  {
+   "category": "number",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 141,
+    "end": 142,
+    "text": "5"
+   }
+  }
+ ],
+ "v2-name-04": [
+  {
+   "category": "name",
+   "kind": "missing",
+   "source": {
+    "start": 23,
+    "end": 47,
+    "text": "Hollinsby Science Museum"
+   },
+   "output": null
+  }
+ ],
+ "v2-name-05": [
+  {
+   "category": "name",
+   "kind": "missing",
+   "source": {
+    "start": 131,
+    "end": 168,
+    "text": "Quillstone Learning Portal. Employees"
+   },
+   "output": null
+  }
+ ],
+ "v2-name-06": [
+  {
+   "category": "name",
+   "kind": "missing",
+   "source": {
+    "start": 17,
+    "end": 28,
+    "text": "Corvane Air"
+   },
+   "output": null
+  },
+  {
+   "category": "modal",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 170,
+    "end": 176,
+    "text": "cannot"
+   }
+  }
+ ],
+ "v2-name-07": [
+  {
+   "category": "name",
+   "kind": "missing",
+   "source": {
+    "start": 95,
+    "end": 108,
+    "text": "Daycrest Plus"
+   },
+   "output": null
+  },
+  {
+   "category": "condition",
+   "kind": "changed",
+   "source": {
+    "start": 142,
+    "end": 144,
+    "text": "if"
+   },
+   "output": {
+    "start": 144,
+    "end": 146,
+    "text": "if"
+   }
+  }
+ ],
+ "v2-name-08": [
+  {
+   "category": "name",
+   "kind": "missing",
+   "source": {
+    "start": 183,
+    "end": 207,
+    "text": "Regional Benefits Office"
+   },
+   "output": null
+  }
+ ],
+ "v2-name-09": [
+  {
+   "category": "name",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 77,
+    "end": 94,
+    "text": "Ellery Housewares"
+   }
+  }
+ ],
+ "v2-name-10": [
+  {
+   "category": "number",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 228,
+    "end": 235,
+    "text": "a month"
+   }
+  },
+  {
+   "category": "name",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 265,
+    "end": 288,
+    "text": "Streamvale Billing Team"
+   }
+  }
+ ],
+ "v2-name-11": [
+  {
+   "category": "number",
+   "kind": "missing",
+   "source": {
+    "start": 44,
+    "end": 50,
+    "text": "a week"
+   },
+   "output": null
+  },
+  {
+   "category": "condition",
+   "kind": "changed",
+   "source": {
+    "start": 52,
+    "end": 65,
+    "text": "provided that"
+   },
+   "output": {
+    "start": 57,
+    "end": 70,
+    "text": "provided that"
+   }
+  },
+  {
+   "category": "name",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 264,
+    "end": 285,
+    "text": "Facilities Department"
+   }
+  }
+ ],
+ "v2-name-12": [
+  {
+   "category": "exception",
+   "kind": "changed",
+   "source": {
+    "start": 96,
+    "end": 102,
+    "text": "except"
+   },
+   "output": {
+    "start": 155,
+    "end": 161,
+    "text": "except"
+   }
+  },
+  {
+   "category": "name",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 23,
+    "end": 47,
+    "text": "Marlow Street Laboratory"
+   }
+  }
+ ],
+ "v2-pa-01": [],
+ "v2-pa-02": [],
+ "v2-pa-03": [],
+ "v2-pa-04": [
+  {
+   "category": "date",
+   "kind": "missing",
+   "source": {
+    "start": 336,
+    "end": 345,
+    "text": "next year"
+   },
+   "output": null
+  }
+ ],
+ "v2-pa-05": [],
+ "v2-pa-06": [],
+ "v2-pa-07": [],
+ "v2-pa-08": [
+  {
+   "category": "condition",
+   "kind": "changed",
+   "source": {
+    "start": 141,
+    "end": 143,
+    "text": "if"
+   },
+   "output": {
+    "start": 143,
+    "end": 145,
+    "text": "if"
+   }
+  }
+ ],
+ "v2-pa-09": [],
+ "v2-pa-10": [],
+ "v2-pa-11": [],
+ "v2-pa-12": [],
+ "v2-pa-13": [],
+ "v2-pa-14": [],
+ "v2-pa-15": [],
+ "v2-pa-16": [],
+ "v2-pa-17": [],
+ "v2-pa-18": [],
+ "v2-pa-19": [],
+ "v2-pa-20": [],
+ "v2-pb-01": [
+  {
+   "category": "number",
+   "kind": "missing",
+   "source": {
+    "start": 61,
+    "end": 70,
+    "text": "12 months"
+   },
+   "output": null
+  }
+ ],
+ "v2-pb-02": [],
+ "v2-pb-03": [
+  {
+   "category": "exception",
+   "kind": "changed",
+   "source": {
+    "start": 156,
+    "end": 162,
+    "text": "unless"
+   },
+   "output": {
+    "start": 162,
+    "end": 168,
+    "text": "unless"
+   }
+  },
+  {
+   "category": "condition",
+   "kind": "missing",
+   "source": {
+    "start": 279,
+    "end": 281,
+    "text": "if"
+   },
+   "output": null
+  },
+  {
+   "category": "condition",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 257,
+    "end": 259,
+    "text": "If"
+   }
+  }
+ ],
+ "v2-pb-04": [
+  {
+   "category": "number",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 80,
+    "end": 86,
+    "text": "a week"
+   }
+  }
+ ],
+ "v2-pb-05": [],
+ "v2-pb-06": [],
+ "v2-pb-07": [],
+ "v2-pb-08": [
+  {
+   "category": "condition",
+   "kind": "changed",
+   "source": {
+    "start": 141,
+    "end": 143,
+    "text": "if"
+   },
+   "output": {
+    "start": 137,
+    "end": 139,
+    "text": "if"
+   }
+  }
+ ],
+ "v2-pb-09": [],
+ "v2-pb-10": [],
+ "v2-pb-11": [],
+ "v2-pb-12": [],
+ "v2-pb-13": [],
+ "v2-pb-14": [
+  {
+   "category": "number",
+   "kind": "changed",
+   "source": {
+    "start": 264,
+    "end": 265,
+    "text": "3"
+   },
+   "output": {
+    "start": 281,
+    "end": 291,
+    "text": "three days"
+   }
+  }
+ ],
+ "v2-pb-15": [],
+ "v2-pb-16": [],
+ "v2-pb-17": [],
+ "v2-pb-18": [],
+ "v2-pb-19": [],
+ "v2-pb-20": [],
+ "v2-pc-01": [
+  {
+   "category": "number",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 58,
+    "end": 59,
+    "text": "1"
+   }
+  },
+  {
+   "category": "number",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 257,
+    "end": 264,
+    "text": "a month"
+   }
+  }
+ ],
+ "v2-pc-02": [
+  {
+   "category": "modal",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 326,
+    "end": 332,
+    "text": "has to"
+   }
+  }
+ ],
+ "v2-pc-03": [],
+ "v2-pc-04": [
+  {
+   "category": "number",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 73,
+    "end": 79,
+    "text": "a week"
+   }
+  }
+ ],
+ "v2-pc-05": [],
+ "v2-pc-06": [],
+ "v2-pc-07": [],
+ "v2-pc-08": [
+  {
+   "category": "condition",
+   "kind": "changed",
+   "source": {
+    "start": 137,
+    "end": 139,
+    "text": "if"
+   },
+   "output": {
+    "start": 131,
+    "end": 133,
+    "text": "if"
+   }
+  }
+ ],
+ "v2-pc-09": [],
+ "v2-pc-10": [],
+ "v2-pc-11": [],
+ "v2-pc-12": [
+  {
+   "category": "modal",
+   "kind": "missing",
+   "source": {
+    "start": 58,
+    "end": 73,
+    "text": "are not allowed"
+   },
+   "output": null
+  },
+  {
+   "category": "number",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 248,
+    "end": 249,
+    "text": "1"
+   }
+  }
+ ],
+ "v2-pc-13": [],
+ "v2-pc-14": [],
+ "v2-pc-15": [
+  {
+   "category": "negation",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 112,
+    "end": 115,
+    "text": "not"
+   }
+  }
+ ],
+ "v2-pc-16": [
+  {
+   "category": "condition",
+   "kind": "changed",
+   "source": {
+    "start": 233,
+    "end": 235,
+    "text": "If"
+   },
+   "output": {
+    "start": 216,
+    "end": 218,
+    "text": "If"
+   }
+  }
+ ],
+ "v2-pc-17": [],
+ "v2-pc-18": [
+  {
+   "category": "condition",
+   "kind": "changed",
+   "source": {
+    "start": 119,
+    "end": 121,
+    "text": "if"
+   },
+   "output": {
+    "start": 74,
+    "end": 76,
+    "text": "If"
+   }
+  },
+  {
+   "category": "number",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 67,
+    "end": 72,
+    "text": "a day"
+   }
+  }
+ ],
+ "v2-pc-19": [],
+ "v2-pc-20": []
+}

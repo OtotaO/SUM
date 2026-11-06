@@ -3,6 +3,23 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { webcrypto } from 'node:crypto';
 import { JSDOM, VirtualConsole } from 'jsdom';
+import { handle as detailHandle } from './detail_worker.js';
+
+// jsdom has no Worker. This stand-in answers with the real worker module's handler, asynchronously, so the
+// page's message protocol and deadline are exercised; 'hang' never answers, 'manual' answers only when the
+// test calls deliver() (even after terminate, as a message already queued would), and 'absent' leaves
+// Worker undefined, as in a browser without module workers.
+function fakeWorker(mode, created) {
+  return class {
+    constructor(url, options) { this.url = String(url); this.options = options; this.terminated = false; created.push(this); }
+    postMessage(data) {
+      if (mode === 'manual') { this.deliver = () => this.onmessage({ data: structuredClone(detailHandle(data)) }); return; }
+      if (mode === 'hang') return;
+      setTimeout(() => { if (!this.terminated && this.onmessage) this.onmessage({ data: structuredClone(detailHandle(data)) }); }, 0);
+    }
+    terminate() { this.terminated = true; }
+  };
+}
 
 const html = await readFile(new URL('./index.html', import.meta.url), 'utf8');
 const captured = JSON.parse(await readFile(new URL('../fixtures/render_receipts/source_render.json', import.meta.url)));
@@ -12,10 +29,11 @@ async function until(predicate) {
   for (let i = 0; i < 500; i++) { if (predicate()) return; await new Promise(r => setTimeout(r, 2)); }
   assert.fail('Timed out waiting for the workbench action');
 }
+const detailsDone = p => until(() => p.$('detail-summary').textContent && !p.$('detail-summary').textContent.startsWith('Checking'));
 const deferred = () => { let resolve; const promise = new Promise(r => { resolve = r; }); return { promise, resolve }; };
 
-async function page(handler = async () => new Response('{}', { status: 503 })) {
-  const errors = [], requests = [], downloads = [];
+async function page(handler = async () => new Response('{}', { status: 503 }), { worker = 'answer' } = {}) {
+  const errors = [], requests = [], downloads = [], workers = [];
   const mockFetch = async (url, init) => {
     if (String(url).includes('altitude_rungs')) return new Response('{}', { status: 404 });
     requests.push({ url, init });
@@ -29,16 +47,19 @@ async function page(handler = async () => new Response('{}', { status: 503 })) {
       window.TextEncoder = TextEncoder; window.structuredClone = structuredClone;
       window.fetch = mockFetch; window.alert = message => { errors.push(new Error(message)); };
       window.HTMLElement.prototype.scrollIntoView = () => {};
+      if (worker !== 'absent') window.Worker = fakeWorker(worker, workers);
     } });
   const window = dom.window;
   globalThis.window = window; globalThis.document = window.document; globalThis.fetch = mockFetch;
+  // workbench.js runs as a Node module here, so it sees Node's globals, not the jsdom window's.
+  globalThis.Worker = window.Worker;
   const originalCreate = URL.createObjectURL, originalRevoke = URL.revokeObjectURL;
   URL.createObjectURL = blob => { downloads.push(blob); return 'blob:test'; };
   URL.revokeObjectURL = () => {};
   await import(`./workbench.js?test=${++instance}`);
   const $ = id => window.document.getElementById(id);
   const input = (id, value) => { $(id).value = value; $(id).dispatchEvent(new window.Event('input', { bubbles: true })); };
-  return { $, input, window, requests, downloads, errors, close() { dom.window.close(); URL.createObjectURL = originalCreate; URL.revokeObjectURL = originalRevoke; } };
+  return { $, input, window, requests, downloads, errors, workers, close() { dom.window.close(); URL.createObjectURL = originalCreate; URL.revokeObjectURL = originalRevoke; } };
 }
 
 test('existing rewrite comparison, source selection, decision, export and offline recipient checks', async () => {
@@ -835,6 +856,109 @@ test('Cmd/Ctrl+Enter in the original sends nothing; only the extract button call
     p.$('attest').click();
     await until(() => p.requests.length === 1);
     assert.equal(String(p.requests[0].url), '/api/complete', 'the explicit button still reaches the extraction service');
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
+test('details to check name the changed number, modal and exception, select them, and reappear when a packet is opened', async () => {
+  const p = await page();
+  try {
+    p.input('prose', 'Alice may cancel with 30 days notice. Deposit is refundable unless overdue.');
+    p.input('rewrite', 'Alice must cancel with 3 days notice. Deposit is refundable.');
+    p.$('compare-btn').click();
+    await detailsDone(p);
+    assert.deepEqual(p.workers.map(w => [w.url.split('/').pop(), w.options.type]), [['detail_worker.js', 'module']]);
+    const items = [...p.$('detail-list').querySelectorAll('li')].map(li => li.textContent);
+    // The quotes come from the <q> elements, which CSS renders; textContent omits them.
+    assert.deepEqual(items, [
+      'Modal verb changed: may in the original; must in the rewrite.',
+      'Number changed: 30 days in the original; 3 days in the rewrite.',
+      'Exception not found in the rewrite: unless in the original.',
+    ]);
+    assert.match(p.$('detail-summary').textContent, /^3 details to check\./);
+    p.$('detail-list').querySelectorAll('li')[1].querySelectorAll('button')[1].click();
+    assert.equal(p.$('rewrite').value.slice(p.$('rewrite').selectionStart, p.$('rewrite').selectionEnd), '3 days');
+    p.$('export-review-btn').click();
+    await until(() => p.downloads.length === 1);
+    const packet = JSON.parse(await p.downloads[0].text());
+    assert.equal('detail_checks' in packet, false, 'checks are recomputed from the texts, not stored');
+    p.input('prose', 'Unrelated.'); p.input('rewrite', 'Unrelated.'); p.$('compare-btn').click();
+    await detailsDone(p);
+    assert.match(p.$('detail-summary').textContent, /^No changed numbers/);
+    p.input('packet-input', JSON.stringify(packet)); p.$('verify-packet-btn').click();
+    await until(() => p.$('packet-status').textContent.includes('Checks completed'));
+    p.$('open-packet-btn').click();
+    await detailsDone(p);
+    assert.equal(p.$('detail-list').querySelectorAll('li').length, 3);
+    assert.equal(p.requests.length, 0, 'detail checks make no network requests');
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
+test('detail checks run on the inputs the first checker version failed on, and list at most 200 items', async () => {
+  const p = await page();
+  try {
+    p.input('prose', 'You pay half.'); p.input('rewrite', 'You pay half.');
+    p.$('compare-btn').click();
+    await detailsDone(p);
+    assert.match(p.$('detail-summary').textContent, /^No changed numbers/);
+    p.input('prose', Array(290).fill(Array(10).fill('10').join(' ') + '.').join('\n'));
+    p.input('rewrite', Array(290).fill(Array(8).fill('ten').join(' ') + '.').join('\n'));
+    p.$('compare-btn').click();
+    await detailsDone(p);
+    assert.match(p.$('detail-summary').textContent, /^\d+ details to check\..* The first 200 are listed\.$/);
+    assert.equal(p.$('detail-list').children.length, 200);
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
+test('detail checks that do not answer are stopped at the deadline, and editing a text stops pending checks', async () => {
+  const p = await page(undefined, { worker: 'hang' });
+  try {
+    p.input('prose', 'You may cancel if you move.'); p.input('rewrite', 'You can cancel.');
+    p.$('compare-btn').click();
+    assert.equal(p.$('detail-summary').textContent, 'Checking details...');
+    assert.equal(p.$('review-panel').hidden, false, 'the passage review does not wait for the detail checks');
+    await new Promise(r => setTimeout(r, 3100));
+    assert.equal(p.$('detail-summary').textContent, 'Detail checks took longer than 3 seconds on these texts and were stopped. Read the passages below.');
+    assert.equal(p.workers.at(-1).terminated, true);
+    p.$('compare-btn').click();
+    assert.equal(p.workers.at(-2).terminated, true);
+    p.input('rewrite', 'Changed.');
+    assert.equal(p.workers.at(-1).terminated, true, 'editing a text stops pending checks');
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
+test('without module workers the page says the detail checks are unavailable and keeps the passage review', async () => {
+  const p = await page(undefined, { worker: 'absent' });
+  try {
+    p.input('prose', 'You may cancel if you move.'); p.input('rewrite', 'You can cancel.');
+    p.$('compare-btn').click();
+    assert.equal(p.$('detail-summary').textContent, 'Detail checks are not available in this browser. Read the passages below.');
+    assert.equal(p.$('review-panel').hidden, false);
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
+test('an answer from an older run, even one already queued, never replaces the newer list, and no stale deadline fires', async () => {
+  const p = await page(undefined, { worker: 'manual' });
+  try {
+    p.input('prose', 'You may cancel if you move.'); p.input('rewrite', 'You can cancel.');
+    p.$('compare-btn').click();
+    const older = p.workers.at(-1);
+    p.input('prose', 'Pay within 14 days.'); p.input('rewrite', 'Pay within 30 days.');
+    p.$('compare-btn').click();
+    const newer = p.workers.at(-1);
+    assert.equal(older.terminated, true);
+    newer.deliver();
+    assert.match(p.$('detail-summary').textContent, /^1 detail to check\./);
+    const listed = p.$('detail-list').textContent;
+    assert.match(listed, /14 days/);
+    older.deliver();
+    assert.equal(p.$('detail-list').textContent, listed, 'the older answer is ignored');
+    await new Promise(r => setTimeout(r, 3100));
+    assert.match(p.$('detail-summary').textContent, /^1 detail to check\./, 'no deadline from either run overwrites the answer');
     assert.deepEqual(p.errors, []);
   } finally { p.close(); }
 });

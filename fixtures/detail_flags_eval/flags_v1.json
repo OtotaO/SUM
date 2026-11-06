@@ -1,0 +1,1752 @@
+{
+ "numb-01": [
+  {
+   "category": "number",
+   "kind": "changed",
+   "source": {
+    "start": 114,
+    "end": 120,
+    "text": "$12.49"
+   },
+   "output": {
+    "start": 104,
+    "end": 107,
+    "text": "$12"
+   }
+  },
+  {
+   "category": "number",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 108,
+    "end": 115,
+    "text": "a month"
+   }
+  },
+  {
+   "category": "condition",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 335,
+    "end": 343,
+    "text": "whenever"
+   }
+  }
+ ],
+ "numb-02": [
+  {
+   "category": "number",
+   "kind": "changed",
+   "source": {
+    "start": 5,
+    "end": 16,
+    "text": "one capsule"
+   },
+   "output": {
+    "start": 41,
+    "end": 48,
+    "text": "6 hours"
+   }
+  },
+  {
+   "category": "number",
+   "kind": "missing",
+   "source": {
+    "start": 50,
+    "end": 57,
+    "text": "8 hours"
+   },
+   "output": null
+  },
+  {
+   "category": "condition",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 157,
+    "end": 161,
+    "text": "when"
+   }
+  }
+ ],
+ "numb-03": [
+  {
+   "category": "number",
+   "kind": "changed",
+   "source": {
+    "start": 270,
+    "end": 278,
+    "text": "48 hours"
+   },
+   "output": {
+    "start": 272,
+    "end": 280,
+    "text": "24 hours"
+   }
+  }
+ ],
+ "numb-04": [
+  {
+   "category": "number",
+   "kind": "changed",
+   "source": {
+    "start": 217,
+    "end": 223,
+    "text": "$1,500"
+   },
+   "output": {
+    "start": 213,
+    "end": 219,
+    "text": "$1,000"
+   }
+  },
+  {
+   "category": "number",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 125,
+    "end": 132,
+    "text": "a month"
+   }
+  }
+ ],
+ "numb-05": [
+  {
+   "category": "number",
+   "kind": "missing",
+   "source": {
+    "start": 52,
+    "end": 53,
+    "text": "5"
+   },
+   "output": null
+  }
+ ],
+ "numb-06": [
+  {
+   "category": "number",
+   "kind": "missing",
+   "source": {
+    "start": 172,
+    "end": 176,
+    "text": "$500"
+   },
+   "output": null
+  }
+ ],
+ "numb-07": [
+  {
+   "category": "number",
+   "kind": "missing",
+   "source": {
+    "start": 204,
+    "end": 208,
+    "text": "four"
+   },
+   "output": null
+  }
+ ],
+ "numb-08": [
+  {
+   "category": "number",
+   "kind": "missing",
+   "source": {
+    "start": 263,
+    "end": 279,
+    "text": "10 business days"
+   },
+   "output": null
+  }
+ ],
+ "numb-09": [
+  {
+   "category": "number",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 375,
+    "end": 382,
+    "text": "30 days"
+   }
+  }
+ ],
+ "numb-10": [
+  {
+   "category": "number",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 46,
+    "end": 52,
+    "text": "2-year"
+   }
+  }
+ ],
+ "numb-11": [
+  {
+   "category": "number",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 256,
+    "end": 262,
+    "text": "3 days"
+   }
+  }
+ ],
+ "numb-12": [
+  {
+   "category": "number",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 126,
+    "end": 133,
+    "text": "60 days"
+   }
+  }
+ ],
+ "date-01": [
+  {
+   "category": "number",
+   "kind": "changed",
+   "source": {
+    "start": 70,
+    "end": 78,
+    "text": "48 hours"
+   },
+   "output": {
+    "start": 23,
+    "end": 31,
+    "text": "two days"
+   }
+  },
+  {
+   "category": "date",
+   "kind": "changed",
+   "source": {
+    "start": 291,
+    "end": 304,
+    "text": "June 30, 2027"
+   },
+   "output": {
+    "start": 276,
+    "end": 289,
+    "text": "July 30, 2027"
+   }
+  }
+ ],
+ "date-02": [
+  {
+   "category": "date",
+   "kind": "changed",
+   "source": {
+    "start": 9,
+    "end": 22,
+    "text": "April 5, 2027"
+   },
+   "output": {
+    "start": 5,
+    "end": 19,
+    "text": "April 15, 2027"
+   }
+  }
+ ],
+ "date-03": [
+  {
+   "category": "date",
+   "kind": "changed",
+   "source": {
+    "start": 185,
+    "end": 193,
+    "text": "Thursday"
+   },
+   "output": {
+    "start": 162,
+    "end": 169,
+    "text": "Tuesday"
+   }
+  }
+ ],
+ "date-04": [
+  {
+   "category": "date",
+   "kind": "changed",
+   "source": {
+    "start": 351,
+    "end": 360,
+    "text": "8:30 a.m."
+   },
+   "output": {
+    "start": 344,
+    "end": 353,
+    "text": "8:15 a.m."
+   }
+  }
+ ],
+ "date-05": [
+  {
+   "category": "date",
+   "kind": "missing",
+   "source": {
+    "start": 113,
+    "end": 126,
+    "text": "July 15, 2027"
+   },
+   "output": null
+  }
+ ],
+ "date-06": [
+  {
+   "category": "date",
+   "kind": "missing",
+   "source": {
+    "start": 135,
+    "end": 143,
+    "text": "March 31"
+   },
+   "output": null
+  }
+ ],
+ "date-07": [
+  {
+   "category": "date",
+   "kind": "missing",
+   "source": {
+    "start": 143,
+    "end": 154,
+    "text": "November 20"
+   },
+   "output": null
+  }
+ ],
+ "date-08": [
+  {
+   "category": "date",
+   "kind": "missing",
+   "source": {
+    "start": 268,
+    "end": 284,
+    "text": "December 1, 2027"
+   },
+   "output": null
+  }
+ ],
+ "date-09": [
+  {
+   "category": "date",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 122,
+    "end": 132,
+    "text": "11:59 p.m."
+   }
+  },
+  {
+   "category": "number",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 259,
+    "end": 266,
+    "text": "a month"
+   }
+  }
+ ],
+ "date-10": [
+  {
+   "category": "modal",
+   "kind": "missing",
+   "source": {
+    "start": 261,
+    "end": 268,
+    "text": "require"
+   },
+   "output": null
+  }
+ ],
+ "date-11": [
+  {
+   "category": "number",
+   "kind": "changed",
+   "source": {
+    "start": 157,
+    "end": 165,
+    "text": "72 hours"
+   },
+   "output": {
+    "start": 168,
+    "end": 178,
+    "text": "three days"
+   }
+  },
+  {
+   "category": "date",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 76,
+    "end": 83,
+    "text": "10 a.m."
+   }
+  }
+ ],
+ "date-12": [
+  {
+   "category": "date",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 316,
+    "end": 322,
+    "text": "Monday"
+   }
+  },
+  {
+   "category": "date",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 324,
+    "end": 334,
+    "text": "January 31"
+   }
+  },
+  {
+   "category": "number",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 366,
+    "end": 371,
+    "text": "a day"
+   }
+  }
+ ],
+ "nega-01": [
+  {
+   "category": "negation",
+   "kind": "missing",
+   "source": {
+    "start": 134,
+    "end": 136,
+    "text": "no"
+   },
+   "output": null
+  },
+  {
+   "category": "number",
+   "kind": "changed",
+   "source": {
+    "start": 347,
+    "end": 355,
+    "text": "24 hours"
+   },
+   "output": {
+    "start": 349,
+    "end": 356,
+    "text": "one day"
+   }
+  }
+ ],
+ "nega-02": [
+  {
+   "category": "name",
+   "kind": "missing",
+   "source": {
+    "start": 0,
+    "end": 13,
+    "text": "Dear Resident"
+   },
+   "output": null
+  },
+  {
+   "category": "negation",
+   "kind": "missing",
+   "source": {
+    "start": 237,
+    "end": 244,
+    "text": "neither"
+   },
+   "output": null
+  },
+  {
+   "category": "negation",
+   "kind": "missing",
+   "source": {
+    "start": 266,
+    "end": 269,
+    "text": "nor"
+   },
+   "output": null
+  }
+ ],
+ "nega-03": [
+  {
+   "category": "negation",
+   "kind": "missing",
+   "source": {
+    "start": 153,
+    "end": 157,
+    "text": "none"
+   },
+   "output": null
+  }
+ ],
+ "nega-04": [
+  {
+   "category": "negation",
+   "kind": "missing",
+   "source": {
+    "start": 283,
+    "end": 288,
+    "text": "never"
+   },
+   "output": null
+  },
+  {
+   "category": "condition",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 168,
+    "end": 172,
+    "text": "when"
+   }
+  }
+ ],
+ "nega-05": [
+  {
+   "category": "negation",
+   "kind": "missing",
+   "source": {
+    "start": 62,
+    "end": 65,
+    "text": "not"
+   },
+   "output": null
+  },
+  {
+   "category": "number",
+   "kind": "changed",
+   "source": {
+    "start": 250,
+    "end": 258,
+    "text": "two days"
+   },
+   "output": {
+    "start": 213,
+    "end": 221,
+    "text": "48 hours"
+   }
+  },
+  {
+   "category": "condition",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 95,
+    "end": 99,
+    "text": "when"
+   }
+  }
+ ],
+ "nega-06": [
+  {
+   "category": "negation",
+   "kind": "missing",
+   "source": {
+    "start": 108,
+    "end": 115,
+    "text": "without"
+   },
+   "output": null
+  },
+  {
+   "category": "name",
+   "kind": "missing",
+   "source": {
+    "start": 263,
+    "end": 284,
+    "text": "Mr. Daniel Osei. Late"
+   },
+   "output": null
+  }
+ ],
+ "nega-07": [
+  {
+   "category": "negation",
+   "kind": "missing",
+   "source": {
+    "start": 144,
+    "end": 146,
+    "text": "no"
+   },
+   "output": null
+  }
+ ],
+ "nega-08": [
+  {
+   "category": "negation",
+   "kind": "missing",
+   "source": {
+    "start": 121,
+    "end": 124,
+    "text": "not"
+   },
+   "output": null
+  }
+ ],
+ "nega-09": [
+  {
+   "category": "negation",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 320,
+    "end": 327,
+    "text": "without"
+   }
+  }
+ ],
+ "nega-10": [
+  {
+   "category": "negation",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 162,
+    "end": 165,
+    "text": "not"
+   }
+  }
+ ],
+ "nega-11": [
+  {
+   "category": "negation",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 157,
+    "end": 160,
+    "text": "not"
+   }
+  }
+ ],
+ "nega-12": [
+  {
+   "category": "negation",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 96,
+    "end": 99,
+    "text": "not"
+   }
+  }
+ ],
+ "moda-01": [
+  {
+   "category": "modal",
+   "kind": "changed",
+   "source": {
+    "start": 117,
+    "end": 121,
+    "text": "must"
+   },
+   "output": {
+    "start": 117,
+    "end": 123,
+    "text": "should"
+   }
+  },
+  {
+   "category": "number",
+   "kind": "changed",
+   "source": {
+    "start": 138,
+    "end": 146,
+    "text": "48 hours"
+   },
+   "output": {
+    "start": 140,
+    "end": 148,
+    "text": "two days"
+   }
+  }
+ ],
+ "moda-02": [
+  {
+   "category": "number",
+   "kind": "missing",
+   "source": {
+    "start": 284,
+    "end": 288,
+    "text": "once"
+   },
+   "output": null
+  }
+ ],
+ "moda-03": [
+  {
+   "category": "modal",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 48,
+    "end": 51,
+    "text": "may"
+   }
+  }
+ ],
+ "moda-04": [
+  {
+   "category": "modal",
+   "kind": "changed",
+   "source": {
+    "start": 92,
+    "end": 104,
+    "text": "are required"
+   },
+   "output": {
+    "start": 78,
+    "end": 87,
+    "text": "recommend"
+   }
+  }
+ ],
+ "moda-05": [
+  {
+   "category": "modal",
+   "kind": "missing",
+   "source": {
+    "start": 167,
+    "end": 176,
+    "text": "recommend"
+   },
+   "output": null
+  }
+ ],
+ "moda-06": [
+  {
+   "category": "modal",
+   "kind": "missing",
+   "source": {
+    "start": 228,
+    "end": 232,
+    "text": "must"
+   },
+   "output": null
+  }
+ ],
+ "moda-07": [
+  {
+   "category": "name",
+   "kind": "changed",
+   "source": {
+    "start": 27,
+    "end": 49,
+    "text": "Sunvale Trips. Changes"
+   },
+   "output": {
+    "start": 24,
+    "end": 47,
+    "text": "Sunvale Trips. Changing"
+   }
+  },
+  {
+   "category": "number",
+   "kind": "changed",
+   "source": {
+    "start": 85,
+    "end": 93,
+    "text": "72 hours"
+   },
+   "output": {
+    "start": 79,
+    "end": 89,
+    "text": "three days"
+   }
+  },
+  {
+   "category": "modal",
+   "kind": "missing",
+   "source": {
+    "start": 119,
+    "end": 122,
+    "text": "can"
+   },
+   "output": null
+  }
+ ],
+ "moda-08": [
+  {
+   "category": "modal",
+   "kind": "missing",
+   "source": {
+    "start": 229,
+    "end": 232,
+    "text": "may"
+   },
+   "output": null
+  }
+ ],
+ "moda-09": [
+  {
+   "category": "number",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 100,
+    "end": 107,
+    "text": "a month"
+   }
+  },
+  {
+   "category": "modal",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 303,
+    "end": 309,
+    "text": "should"
+   }
+  }
+ ],
+ "moda-10": [
+  {
+   "category": "modal",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 171,
+    "end": 177,
+    "text": "should"
+   }
+  }
+ ],
+ "moda-11": [],
+ "moda-12": [
+  {
+   "category": "number",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 92,
+    "end": 99,
+    "text": "a month"
+   }
+  },
+  {
+   "category": "modal",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 249,
+    "end": 252,
+    "text": "may"
+   }
+  }
+ ],
+ "cond-01": [
+  {
+   "category": "name",
+   "kind": "missing",
+   "source": {
+    "start": 0,
+    "end": 13,
+    "text": "Dear Resident"
+   },
+   "output": null
+  },
+  {
+   "category": "condition",
+   "kind": "changed",
+   "source": {
+    "start": 239,
+    "end": 241,
+    "text": "If"
+   },
+   "output": {
+    "start": 217,
+    "end": 219,
+    "text": "If"
+   }
+  }
+ ],
+ "cond-02": [],
+ "cond-03": [],
+ "cond-04": [
+  {
+   "category": "condition",
+   "kind": "changed",
+   "source": {
+    "start": 90,
+    "end": 103,
+    "text": "provided that"
+   },
+   "output": {
+    "start": 75,
+    "end": 88,
+    "text": "provided that"
+   }
+  }
+ ],
+ "cond-05": [
+  {
+   "category": "condition",
+   "kind": "missing",
+   "source": {
+    "start": 232,
+    "end": 234,
+    "text": "If"
+   },
+   "output": null
+  },
+  {
+   "category": "number",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 64,
+    "end": 70,
+    "text": "a week"
+   }
+  }
+ ],
+ "cond-06": [
+  {
+   "category": "condition",
+   "kind": "changed",
+   "source": {
+    "start": 148,
+    "end": 150,
+    "text": "If"
+   },
+   "output": {
+    "start": 97,
+    "end": 105,
+    "text": "whenever"
+   }
+  },
+  {
+   "category": "number",
+   "kind": "changed",
+   "source": {
+    "start": 169,
+    "end": 175,
+    "text": "7 days"
+   },
+   "output": {
+    "start": 52,
+    "end": 53,
+    "text": "1"
+   }
+  }
+ ],
+ "cond-07": [
+  {
+   "category": "condition",
+   "kind": "missing",
+   "source": {
+    "start": 114,
+    "end": 116,
+    "text": "If"
+   },
+   "output": null
+  }
+ ],
+ "cond-08": [
+  {
+   "category": "condition",
+   "kind": "missing",
+   "source": {
+    "start": 263,
+    "end": 265,
+    "text": "if"
+   },
+   "output": null
+  }
+ ],
+ "cond-09": [
+  {
+   "category": "condition",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 269,
+    "end": 279,
+    "text": "as long as"
+   }
+  }
+ ],
+ "cond-10": [
+  {
+   "category": "condition",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 201,
+    "end": 211,
+    "text": "as long as"
+   }
+  }
+ ],
+ "cond-11": [
+  {
+   "category": "number",
+   "kind": "changed",
+   "source": {
+    "start": 150,
+    "end": 158,
+    "text": "24 hours"
+   },
+   "output": {
+    "start": 133,
+    "end": 140,
+    "text": "one day"
+   }
+  },
+  {
+   "category": "condition",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 251,
+    "end": 253,
+    "text": "If"
+   }
+  }
+ ],
+ "cond-12": [
+  {
+   "category": "condition",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 75,
+    "end": 77,
+    "text": "If"
+   }
+  }
+ ],
+ "exce-01": [
+  {
+   "category": "number",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 249,
+    "end": 256,
+    "text": "a month"
+   }
+  }
+ ],
+ "exce-02": [],
+ "exce-03": [],
+ "exce-04": [
+  {
+   "category": "date",
+   "kind": "missing",
+   "source": {
+    "start": 235,
+    "end": 241,
+    "text": "Monday"
+   },
+   "output": null
+  },
+  {
+   "category": "number",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 77,
+    "end": 83,
+    "text": "a week"
+   }
+  }
+ ],
+ "exce-05": [
+  {
+   "category": "exception",
+   "kind": "missing",
+   "source": {
+    "start": 236,
+    "end": 242,
+    "text": "unless"
+   },
+   "output": null
+  },
+  {
+   "category": "number",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 220,
+    "end": 224,
+    "text": "once"
+   }
+  }
+ ],
+ "exce-06": [
+  {
+   "category": "number",
+   "kind": "changed",
+   "source": {
+    "start": 74,
+    "end": 82,
+    "text": "72 hours"
+   },
+   "output": {
+    "start": 56,
+    "end": 66,
+    "text": "three days"
+   }
+  },
+  {
+   "category": "condition",
+   "kind": "missing",
+   "source": {
+    "start": 101,
+    "end": 103,
+    "text": "If"
+   },
+   "output": null
+  },
+  {
+   "category": "exception",
+   "kind": "changed",
+   "source": {
+    "start": 148,
+    "end": 158,
+    "text": "except for"
+   },
+   "output": {
+    "start": 85,
+    "end": 87,
+    "text": "If"
+   }
+  }
+ ],
+ "exce-07": [
+  {
+   "category": "exception",
+   "kind": "missing",
+   "source": {
+    "start": 240,
+    "end": 250,
+    "text": "other than"
+   },
+   "output": null
+  }
+ ],
+ "exce-08": [
+  {
+   "category": "exception",
+   "kind": "missing",
+   "source": {
+    "start": 206,
+    "end": 212,
+    "text": "unless"
+   },
+   "output": null
+  }
+ ],
+ "exce-09": [
+  {
+   "category": "exception",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 141,
+    "end": 151,
+    "text": "except for"
+   }
+  }
+ ],
+ "exce-10": [
+  {
+   "category": "exception",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 184,
+    "end": 190,
+    "text": "unless"
+   }
+  }
+ ],
+ "exce-11": [
+  {
+   "category": "number",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 68,
+    "end": 75,
+    "text": "a month"
+   }
+  },
+  {
+   "category": "condition",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 163,
+    "end": 165,
+    "text": "If"
+   }
+  }
+ ],
+ "exce-12": [
+  {
+   "category": "exception",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 238,
+    "end": 244,
+    "text": "except"
+   }
+  }
+ ],
+ "name-01": [
+  {
+   "category": "name",
+   "kind": "changed",
+   "source": {
+    "start": 5,
+    "end": 20,
+    "text": "Brightwell Plus"
+   },
+   "output": {
+    "start": 5,
+    "end": 23,
+    "text": "Brightwell Premium"
+   }
+  },
+  {
+   "category": "number",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 102,
+    "end": 109,
+    "text": "a month"
+   }
+  }
+ ],
+ "name-02": [
+  {
+   "category": "name",
+   "kind": "changed",
+   "source": {
+    "start": 167,
+    "end": 182,
+    "text": "Hollin Plumbing"
+   },
+   "output": {
+    "start": 107,
+    "end": 122,
+    "text": "Hollis Plumbing"
+   }
+  }
+ ],
+ "name-03": [
+  {
+   "category": "name",
+   "kind": "changed",
+   "source": {
+    "start": 337,
+    "end": 353,
+    "text": "Ridgemont Clinic"
+   },
+   "output": {
+    "start": 306,
+    "end": 322,
+    "text": "Ridgeview Clinic"
+   }
+  }
+ ],
+ "name-04": [
+  {
+   "category": "name",
+   "kind": "changed",
+   "source": {
+    "start": 307,
+    "end": 318,
+    "text": "Tomas Reyes"
+   },
+   "output": {
+    "start": 315,
+    "end": 325,
+    "text": "Tomas Ruiz"
+   }
+  }
+ ],
+ "name-05": [
+  {
+   "category": "name",
+   "kind": "missing",
+   "source": {
+    "start": 279,
+    "end": 299,
+    "text": "Quillmere Appraisals"
+   },
+   "output": null
+  }
+ ],
+ "name-06": [
+  {
+   "category": "name",
+   "kind": "missing",
+   "source": {
+    "start": 0,
+    "end": 23,
+    "text": "Principal Andrea Lowell"
+   },
+   "output": null
+  }
+ ],
+ "name-07": [
+  {
+   "category": "number",
+   "kind": "changed",
+   "source": {
+    "start": 73,
+    "end": 81,
+    "text": "48 hours"
+   },
+   "output": {
+    "start": 55,
+    "end": 63,
+    "text": "two days"
+   }
+  },
+  {
+   "category": "name",
+   "kind": "missing",
+   "source": {
+    "start": 338,
+    "end": 349,
+    "text": "Pennant Pay"
+   },
+   "output": null
+  }
+ ],
+ "name-08": [
+  {
+   "category": "name",
+   "kind": "missing",
+   "source": {
+    "start": 143,
+    "end": 154,
+    "text": "Marisol Tan"
+   },
+   "output": null
+  },
+  {
+   "category": "condition",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 232,
+    "end": 236,
+    "text": "when"
+   }
+  }
+ ],
+ "name-09": [
+  {
+   "category": "name",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 90,
+    "end": 114,
+    "text": "Fennick District Council"
+   }
+  }
+ ],
+ "name-10": [
+  {
+   "category": "name",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 287,
+    "end": 305,
+    "text": "Marlow Home Stores"
+   }
+  }
+ ],
+ "name-11": [
+  {
+   "category": "name",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 99,
+    "end": 113,
+    "text": "Ms. Dana Pryce"
+   }
+  }
+ ],
+ "name-12": [
+  {
+   "category": "name",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 119,
+    "end": 136,
+    "text": "People Operations"
+   }
+  },
+  {
+   "category": "number",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 310,
+    "end": 316,
+    "text": "a week"
+   }
+  }
+ ],
+ "pa-01": [
+  {
+   "category": "number",
+   "kind": "changed",
+   "source": {
+    "start": 168,
+    "end": 176,
+    "text": "48 hours"
+   },
+   "output": {
+    "start": 162,
+    "end": 170,
+    "text": "two days"
+   }
+  },
+  {
+   "category": "condition",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 306,
+    "end": 314,
+    "text": "whenever"
+   }
+  }
+ ],
+ "pa-02": [],
+ "pa-03": [
+  {
+   "category": "number",
+   "kind": "missing",
+   "source": {
+    "start": 53,
+    "end": 57,
+    "text": "once"
+   },
+   "output": null
+  },
+  {
+   "category": "number",
+   "kind": "missing",
+   "source": {
+    "start": 77,
+    "end": 81,
+    "text": "once"
+   },
+   "output": null
+  }
+ ],
+ "pa-04": [],
+ "pa-05": [
+  {
+   "category": "condition",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 221,
+    "end": 225,
+    "text": "when"
+   }
+  }
+ ],
+ "pa-06": [],
+ "pa-07": [],
+ "pa-08": [],
+ "pa-09": [],
+ "pa-10": [],
+ "pa-11": [],
+ "pa-12": [],
+ "pa-13": [],
+ "pa-14": [
+  {
+   "category": "modal",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 142,
+    "end": 145,
+    "text": "can"
+   }
+  }
+ ],
+ "pa-15": [
+  {
+   "category": "number",
+   "kind": "changed",
+   "source": {
+    "start": 66,
+    "end": 76,
+    "text": "$2,000,000"
+   },
+   "output": {
+    "start": 63,
+    "end": 65,
+    "text": "$2"
+   }
+  },
+  {
+   "category": "condition",
+   "kind": "missing",
+   "source": {
+    "start": 272,
+    "end": 276,
+    "text": "when"
+   },
+   "output": null
+  }
+ ],
+ "pa-16": [],
+ "pa-17": [],
+ "pa-18": [],
+ "pa-19": [
+  {
+   "category": "modal",
+   "kind": "missing",
+   "source": {
+    "start": 104,
+    "end": 111,
+    "text": "need to"
+   },
+   "output": null
+  }
+ ],
+ "pa-20": [],
+ "pb-01": [
+  {
+   "category": "number",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 34,
+    "end": 38,
+    "text": "once"
+   }
+  },
+  {
+   "category": "number",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 171,
+    "end": 178,
+    "text": "a month"
+   }
+  }
+ ],
+ "pb-02": [],
+ "pb-03": [
+  {
+   "category": "modal",
+   "kind": "changed",
+   "source": {
+    "start": 249,
+    "end": 259,
+    "text": "should not"
+   },
+   "output": {
+    "start": 233,
+    "end": 239,
+    "text": "should"
+   }
+  },
+  {
+   "category": "negation",
+   "kind": "missing",
+   "source": {
+    "start": 256,
+    "end": 259,
+    "text": "not"
+   },
+   "output": null
+  }
+ ],
+ "pb-04": [],
+ "pb-05": [],
+ "pb-06": [],
+ "pb-07": [
+  {
+   "category": "number",
+   "kind": "changed",
+   "source": {
+    "start": 80,
+    "end": 88,
+    "text": "48 hours"
+   },
+   "output": {
+    "start": 81,
+    "end": 89,
+    "text": "two days"
+   }
+  }
+ ],
+ "pb-08": [],
+ "pb-09": [],
+ "pb-10": [],
+ "pb-11": [
+  {
+   "category": "condition",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 148,
+    "end": 152,
+    "text": "when"
+   }
+  }
+ ],
+ "pb-12": [
+  {
+   "category": "modal",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 222,
+    "end": 234,
+    "text": "permitted to"
+   }
+  }
+ ],
+ "pb-13": [],
+ "pb-14": [],
+ "pb-15": [],
+ "pb-16": [],
+ "pb-17": [
+  {
+   "category": "number",
+   "kind": "changed",
+   "source": {
+    "start": 69,
+    "end": 77,
+    "text": "72 hours"
+   },
+   "output": {
+    "start": 74,
+    "end": 84,
+    "text": "three days"
+   }
+  }
+ ],
+ "pb-18": [],
+ "pb-19": [
+  {
+   "category": "number",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 39,
+    "end": 45,
+    "text": "a week"
+   }
+  }
+ ],
+ "pb-20": [],
+ "pc-01": [
+  {
+   "category": "number",
+   "kind": "missing",
+   "source": {
+    "start": 63,
+    "end": 72,
+    "text": "12 months"
+   },
+   "output": null
+  },
+  {
+   "category": "condition",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 134,
+    "end": 136,
+    "text": "If"
+   }
+  }
+ ],
+ "pc-02": [],
+ "pc-03": [],
+ "pc-04": [],
+ "pc-05": [],
+ "pc-06": [],
+ "pc-07": [
+  {
+   "category": "number",
+   "kind": "changed",
+   "source": {
+    "start": 66,
+    "end": 74,
+    "text": "48 hours"
+   },
+   "output": {
+    "start": 49,
+    "end": 57,
+    "text": "two days"
+   }
+  }
+ ],
+ "pc-08": [],
+ "pc-09": [],
+ "pc-10": [],
+ "pc-11": [],
+ "pc-12": [],
+ "pc-13": [],
+ "pc-14": [],
+ "pc-15": [],
+ "pc-16": [],
+ "pc-17": [],
+ "pc-18": [
+  {
+   "category": "negation",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 67,
+    "end": 69,
+    "text": "no"
+   }
+  }
+ ],
+ "pc-19": [],
+ "pc-20": [
+  {
+   "category": "negation",
+   "kind": "added",
+   "source": null,
+   "output": {
+    "start": 310,
+    "end": 317,
+    "text": "nothing"
+   }
+  }
+ ]
+}

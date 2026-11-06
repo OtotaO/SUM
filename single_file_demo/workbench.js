@@ -1,4 +1,5 @@
 import { distill } from './distiller.js';
+import { DETAIL_SCOPE } from './detail_flags.js';
 import { compareTexts, makeReviewPacket, verifyReviewPacket, checkRenderBinding, publicJwks, pinPacketKey, keyWarning, quoteKid, receiptFailure } from './review_packet.js';
 
 const $ = id => document.getElementById(id);
@@ -12,6 +13,7 @@ const status = message => { $('workbench-status').textContent = message; };
 
 function resetReview() {
   generation++;
+  stopDetailChecks();
   current = null;
   $('review-panel').hidden = true;
   $('export-review-btn').disabled = true;
@@ -59,7 +61,81 @@ function spanCell(span, field) {
   return cell;
 }
 
+const DETAIL_SHOWN = 200;
+const DETAIL_DEADLINE_MS = 3000;
+const DETAIL_NAMES = { number: 'Number', date: 'Date or time', negation: 'Negation', modal: 'Modal verb', condition: 'Condition', exception: 'Exception', name: 'Name' };
+
+function quoteButton(span, field) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'link-btn';
+  const q = document.createElement('q');
+  q.textContent = span.text;
+  button.append(q);
+  button.title = `Select it in the ${field === 'prose' ? 'original' : 'rewrite'} above`;
+  button.addEventListener('click', () => selectIn(field, span.start, span.end));
+  return button;
+}
+
+// Recomputed from the two texts every time, so an opened packet shows the same checks; nothing is stored.
+// detail_flags.js is frozen at the version its registered evaluation measured (fixtures/detail_flags_eval).
+// Some of its comparisons can cost the product of the two texts' counts on crafted input, so it runs in a
+// worker that the page stops at a deadline: no input can hold the page.
+let detailWorker = null, detailTimer = null, detailRun = 0;
+function stopDetailChecks() {
+  detailRun++;
+  clearTimeout(detailTimer);
+  if (detailWorker) { detailWorker.terminate(); detailWorker = null; }
+}
+
+function showDetailChecks() {
+  stopDetailChecks();
+  const run = detailRun;
+  $('detail-list').replaceChildren();
+  $('detail-scope').textContent = DETAIL_SCOPE;
+  const summary = text => { $('detail-summary').textContent = text; };
+  let worker;
+  try { worker = new Worker(new URL('./detail_worker.js', import.meta.url), { type: 'module' }); }
+  catch { summary('Detail checks are not available in this browser. Read the passages below.'); return; }
+  detailWorker = worker;
+  summary('Checking details...');
+  const finish = () => { clearTimeout(timer); if (run !== detailRun) return false; worker.terminate(); detailWorker = null; return true; };
+  const timer = detailTimer = setTimeout(() => {
+    if (finish()) summary(`Detail checks took longer than ${DETAIL_DEADLINE_MS / 1000} seconds on these texts and were stopped. Read the passages below.`);
+  }, DETAIL_DEADLINE_MS);
+  worker.onmessage = ({ data }) => {
+    if (!finish()) return;
+    if (data.ok) showDetailFlags(data.result);
+    else summary(data.message || 'Detail checks could not run on this text. Read the passages below.');
+  };
+  worker.onerror = event => {
+    if (event.preventDefault) event.preventDefault();
+    if (finish()) summary('Detail checks could not run on this text. Read the passages below.');
+  };
+  worker.postMessage({ id: run, source: current.source, output: current.output });
+}
+
+function showDetailFlags(result) {
+  const list = $('detail-list');
+  const kinds = { changed: 'changed', missing: 'not found in the rewrite', added: 'only in the rewrite' };
+  // A list of thousands of items would stall the page; the count still reports them all.
+  for (const f of result.flags.slice(0, DETAIL_SHOWN)) {
+    const item = document.createElement('li');
+    item.append(`${DETAIL_NAMES[f.category]} ${kinds[f.kind]}: `);
+    if (f.source) item.append(quoteButton(f.source, 'prose'), ' in the original');
+    if (f.source && f.output) item.append('; ');
+    if (f.output) item.append(quoteButton(f.output, 'rewrite'), ' in the rewrite');
+    item.append('.');
+    list.append(item);
+  }
+  const more = result.flags.length > DETAIL_SHOWN ? ` The first ${DETAIL_SHOWN} are listed.` : '';
+  $('detail-summary').textContent = result.flags.length
+    ? `${result.flags.length} detail${result.flags.length === 1 ? '' : 's'} to check. Select a quote to find it above. Some may be kept in other words.${more}`
+    : 'No changed numbers, dates, negations, modal verbs, conditions, exceptions or names were flagged. These checks can miss changes and do not look at anything else; read the passages below.';
+}
+
 function showReview() {
+  showDetailChecks();
   const rows = $('review-rows');
   rows.replaceChildren();
   const labels = { verbatim: 'Verbatim match', 'changed-candidate': 'Possible changed passage: check the relationship', 'source-unmatched': 'Source passage without a literal match', 'output-unmatched': 'Rewrite passage without a literal match' };
