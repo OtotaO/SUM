@@ -1060,14 +1060,21 @@ test('a recipient sees a plain verdict first, the Open button after it, and the 
     p.$('open-packet-btn').click();
     await detailsDone(p);
     assert.match(p.$('review-rows').querySelector('label').textContent, /^Sender's decision in the packet \(unsigned\), editable: /);
+    const first = p.$('review-rows').querySelector('select');
+    const sendersChoice = first.value;
+    first.value = sendersChoice === 'needs-change' ? 'accepted' : 'needs-change'; first.dispatchEvent(new p.window.Event('change'));
+    assert.match(p.$('review-rows').querySelector('label').textContent, /^Your decision \(the sender's in the packet was "/, "a changed row is the reader's own");
+    assert.match(p.$('review-summary').textContent, /; 1 changed here\)/);
+    first.value = sendersChoice; first.dispatchEvent(new p.window.Event('change'));
+    assert.match(p.$('review-rows').querySelector('label').textContent, /^Sender's decision in the packet \(unsigned\)/);
     assert.match(p.$('review-summary').textContent, new RegExp(`from a packet; its unsigned creation time is ${packet.created_at.replace(/[.]/g, '\\.')}; the decisions are unsigned`));
-    for (const created_at of ['', 'decisions verified by site', 12345]) {
+    for (const created_at of ['', 'decisions verified by site', 12345, '2026-02-31T25:61:00Z']) {
       p.input('packet-input', JSON.stringify({ ...packet, created_at })); p.$('verify-packet-btn').click();
       await until(() => status.textContent.includes('Checks completed'));
       p.$('open-packet-btn').click();
       await detailsDone(p);
       assert.match(p.$('review-rows').querySelector('label').textContent, /^Sender's decision in the packet \(unsigned\)/, JSON.stringify(created_at));
-      assert.match(p.$('review-summary').textContent, /from a packet; it gives no valid creation time; the decisions are unsigned/, JSON.stringify(created_at));
+      assert.match(p.$('review-summary').textContent, /from a packet; it gives no creation time in the expected format; the decisions are unsigned/, JSON.stringify(created_at));
       assert.doesNotMatch(p.$('review-summary').textContent, /verified by site/);
     }
     assert.deepEqual(p.errors, []);

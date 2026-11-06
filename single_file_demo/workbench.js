@@ -161,7 +161,14 @@ function showReview() {
     pair.className = 'review-pair';
     pair.append(spanCell(row.source, 'prose'), spanCell(row.output, 'rewrite'));
     const label = document.createElement('label');
-    label.textContent = current.fromPacket ? "Sender's decision in the packet (unsigned), editable: " : 'Your decision: ';
+    // In an opened packet a row stays labelled as the sender's until this reader changes it.
+    const decisionNames = { unreviewed: 'Not reviewed', accepted: 'Accept as reviewed', 'needs-change': 'Needs a change' };
+    const senders = current.fromPacket?.senderDecisions.get(row.id);
+    const labelText = () => !current.fromPacket ? 'Your decision: '
+      : row.decision === senders ? "Sender's decision in the packet (unsigned), editable: "
+      : `Your decision (the sender's in the packet was "${decisionNames[senders] || 'not given'}"): `;
+    const labelNode = document.createTextNode(labelText());
+    label.append(labelNode);
     const select = document.createElement('select');
     select.setAttribute('aria-label', `Decision for ${row.id}`);
     for (const [value, text] of [['unreviewed', 'Not reviewed'], ['accepted', 'Accept as reviewed'], ['needs-change', 'Needs a change']]) {
@@ -171,6 +178,7 @@ function showReview() {
     select.value = row.decision;
     select.addEventListener('change', () => {
       row.decision = select.value;
+      labelNode.textContent = labelText();
       exportRevision++;
       $('export-review-btn').disabled = false;
       updateSummary();
@@ -184,10 +192,12 @@ function showReview() {
   $('export-review-btn').disabled = false;
 }
 
+const changedHere = () => current.review.rows.filter(r => r.decision !== current.fromPacket.senderDecisions.get(r.id)).length;
+
 function updateSummary() {
   if (!current) return;
   const rows = current.review.rows;
-  $('review-summary').textContent = `${rows.filter(r => r.kind === 'verbatim').length} verbatim matches; ${rows.filter(r => r.kind !== 'verbatim').length} passages to inspect. ${rows.filter(r => r.decision !== 'unreviewed').length} of ${rows.length} decisions recorded${current.fromPacket ? ` (from a packet; ${current.fromPacket.createdAt ? `its unsigned creation time is ${current.fromPacket.createdAt}` : 'it gives no valid creation time'}; the decisions are unsigned)` : ''}. No meaning score is computed.`;
+  $('review-summary').textContent = `${rows.filter(r => r.kind === 'verbatim').length} verbatim matches; ${rows.filter(r => r.kind !== 'verbatim').length} passages to inspect. ${rows.filter(r => r.decision !== 'unreviewed').length} of ${rows.length} decisions recorded${current.fromPacket ? ` (from a packet; ${current.fromPacket.createdAt ? `its unsigned creation time is ${current.fromPacket.createdAt}` : 'it gives no creation time in the expected format'}; the decisions are unsigned${changedHere() ? `; ${changedHere()} changed here` : ''})` : ''}. No meaning score is computed.`;
 }
 
 function compare() {
@@ -405,7 +415,8 @@ function keyPinText(checks, unpinned) {
 }
 
 // Only an ISO-8601 UTC timestamp, as this page writes, is shown; any other value is not repeated.
-const packetTime = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(value) ? value : null;
+const packetTime = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(value)
+  && !Number.isNaN(Date.parse(value)) && new Date(value).toISOString().slice(0, 19) === value.slice(0, 19) ? value : null;
 
 // One plain sentence for the recipient, built only from this page's own result values.
 function packetVerdict(result) {
@@ -544,7 +555,7 @@ $('open-packet-btn').addEventListener('click', () => {
   // remains hidden because this is a recipient opening a supplied packet.
   render = packet.render;
   jwks = packet.jwks;
-  current = { source: packet.source.text, output: packet.output.text, review: packet.review, render, fromPacket: { createdAt: packetTime(packet.created_at) } };
+  current = { source: packet.source.text, output: packet.output.text, review: packet.review, render, fromPacket: { createdAt: packetTime(packet.created_at), senderDecisions: new Map(packet.review.rows.map(r => [r.id, r.decision])) } };
   showReview();
   status('Opened the checked packet. Review decisions are supplied by the packet and remain unsigned.');
   $('review-panel').scrollIntoView({ block: 'start' });
