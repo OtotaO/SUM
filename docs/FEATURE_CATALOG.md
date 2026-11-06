@@ -990,9 +990,9 @@ Expected: receipt with 4 regimes, L0 baseline = 107.75 % drift / 0.12 recall rep
 Verify: `python -m scripts.bench.runners.s25_generator_side --ablation combined --dry-run --max-docs 3 --out /tmp/dryrun.json` (no API key needed).
 Expected: structurally-valid receipt with 3 per-doc records.
 
-### 120. §2.5 closure receipts (4 corpora) ✅
+### 120. §2.5 closure receipts (three corpora, gpt-4o-mini) ✅
 
-Live receipts at `fixtures/bench_receipts/`: `s25_generator_side_2026-04-28.json` (seed_v1 ablation matrix), `s25_residual_closure_2026-04-28.json` (seed_v1 + lemma-exclusion), `s25_generator_side_seed_v2_2026-04-28.json` (seed_v2 difficulty corpus), `s25_generator_side_seed_long_combined_2026-04-28.json` (multi-paragraph capstone). Combined recall: 1.0000 / 0.9750 / 0.9972 across the three corpora.
+Live receipts at `fixtures/bench_receipts/`: `s25_generator_side_2026-04-28.json` (seed_v1 ablation matrix), `s25_residual_closure_2026-04-28.json` (seed_v1 + lemma-exclusion), `s25_generator_side_seed_v2_2026-04-28.json` (seed_v2 difficulty corpus), `s25_generator_side_seed_long_combined_2026-04-28.json` (multi-paragraph capstone). Combined recall with gpt-4o-mini-2024-07-18: 1.0000 / 0.9750 / 0.9972 across the three corpora (the first two receipts are both seed_v1).
 
 Verify: `python -c "import json; r=json.load(open('fixtures/bench_receipts/s25_residual_closure_2026-04-28.json')); print(r['ablations'][0]['aggregate']['exact_match_recall_mean'])"`
 Expected: `1.0`.
@@ -1097,7 +1097,7 @@ Expected: `13 passed` — model-id dispatch parametrized (7 cases), explicit-ref
 
 ### 135. §2.5 frontier-LLM refresh receipt (Claude Opus 4.7) ✅
 
-`fixtures/bench_receipts/s25_frontier_models_2026-04-29_opus.json` — the §2.5 generator-side ablation pattern (canonical-first generator + constrained extractor) re-measured against Anthropic Claude Opus 4.7 on the seed_v1 corpus (50 docs × 3 ablations). The combined ablation hit **50/50 full recall, 0.00% drift** — strictly stronger than the gpt-4o-mini-2024-07-18 baseline that originally locked the closure at recall ≥ 0.97. Closes the question of whether the intervention pattern is model-specific (it is not — model-independent across the OpenAI ↔ Anthropic frontier). Same `sum.s25_generator_side.v1` schema family the gpt-4o-mini receipts use, with a `provider: "anthropic"` field added in this release for cross-vendor comparison.
+`fixtures/bench_receipts/s25_frontier_models_2026-04-29_opus.json`: the §2.5 generator-side ablation pattern (canonical-first generator + constrained extractor) re-measured against Anthropic Claude Opus 4.7 on the seed_v1 corpus (50 docs × 3 ablations). The combined ablation hit **50/50 full recall, 0.00% drift**, matching the gpt-4o-mini-2024-07-18 seed_v1 result (recall 1.00, drift 0.00 %, 50/50). On seed_v1 the pattern also holds with this Anthropic model; other corpora were not run with it. Same `sum.s25_generator_side.v1` schema family the gpt-4o-mini receipts use, with a `provider: "anthropic"` field added in this release for cross-vendor comparison.
 
 Verify: `python -c "import json; r=json.load(open('fixtures/bench_receipts/s25_frontier_models_2026-04-29_opus.json')); [print(f'{a[\"ablation\"]}: drift={a[\"aggregate\"][\"drift_pct_mean\"]:.2f} recall={a[\"aggregate\"][\"exact_match_recall_mean\"]:.4f} full={a[\"aggregate\"][\"n_docs_full_recall\"]}/{a[\"aggregate\"][\"n_docs_measured\"]}') for a in r['ablations']]"`
 Expected: `combined: drift=0.00 recall=1.0000 full=50/50`.
@@ -1116,9 +1116,9 @@ Tightens entry 136 with three additional reject rules surfaced by surveying post
 Verify: `pytest Tests/test_sieve_noise_filter.py -q`
 Expected: 58 passed.
 
-### 138. §2.5 frontier-LLM refresh — GPT-5.5 (vendor-independent closure) ✅
+### 138. §2.5 frontier-LLM refresh: GPT-5.5 on seed_v1 ✅
 
-`fixtures/bench_receipts/s25_frontier_models_2026-04-29_gpt55.json` — symmetric §2.5 refresh against OpenAI's `gpt-5.5-2026-04-23` snapshot, completing the cross-vendor receipt set begun by entry 135 (Claude Opus 4.7). Both 2026-frontier models hit **50/50 full recall on the combined ablation**; GPT-5.5 additionally hits 50/50 with **constrained_extractor alone** (drift 2.00%) — the cleanest single-intervention result on record. The §2.5 closure pattern is **vendor-independent across the OpenAI ↔ Anthropic frontier as of 2026-04-29**, no longer model-family-specific. Same `sum.s25_generator_side.v1` schema family with `provider: "openai"`.
+`fixtures/bench_receipts/s25_frontier_models_2026-04-29_gpt55.json`: symmetric §2.5 refresh against OpenAI's `gpt-5.5-2026-04-23` snapshot, completing the cross-vendor receipt set begun by entry 135 (Claude Opus 4.7). Both 2026-frontier models hit **50/50 full recall on the combined ablation**; GPT-5.5 additionally hits 50/50 with **constrained_extractor alone** (drift 2.00%), the cleanest single-intervention result on record. Its combined drift was 5.33 %, just outside the 5 % line the gpt-4o-mini closure states, with recall 1.00; other corpora were not run with either 2026 model. Same `sum.s25_generator_side.v1` schema family with `provider: "openai"`.
 
 Verify: `python -c "import json; r=json.load(open('fixtures/bench_receipts/s25_frontier_models_2026-04-29_gpt55.json')); [print(f'{a[\"ablation\"]}: drift={a[\"aggregate\"][\"drift_pct_mean\"]:.2f} recall={a[\"aggregate\"][\"exact_match_recall_mean\"]:.4f} full={a[\"aggregate\"][\"n_docs_full_recall\"]}/{a[\"aggregate\"][\"n_docs_measured\"]}') for a in r['ablations']]"`
 Expected: `combined: drift=5.33 recall=1.0000 full=50/50`.
