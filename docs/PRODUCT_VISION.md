@@ -14,7 +14,7 @@ The unit SUM builds toward (2026-09-25) is the reviewed, source-linked claim map
 
 - North star: second-party checks. A real outside person reviews their own rewrite and sends the exported packet to a different person, who opens it. Baseline 0 on 2026-09-23. Stars, installs, page views and simulations count as zero.
 - Distiller check, each quarter, recorded in NORTH_STAR section 7: can a stranger paste their own text on the live page, read it at three or more depths with source links, and find no invented facts in the extractive depths?
-- The wager (NORTH_STAR section 2) is tested by hand against thresholds pre-registered in NEXT_SESSION_PLAYBOOK, with a verdict on 2026-11-06, recorded NOT RUN; a re-run is registered there before any contact. The distiller ships whichever way it goes.
+- The wager (NORTH_STAR section 2) is tested by hand against thresholds pre-registered in NEXT_SESSION_PLAYBOOK, with a verdict on 2026-11-06, recorded NOT RUN; the operator paused it the same day and made the distiller the primary track. A re-run is registered there before any contact.
 
 ## The completed loop to maintain
 
