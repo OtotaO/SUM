@@ -35,7 +35,7 @@ const deferred = () => { let resolve; const promise = new Promise(r => { resolve
 async function page(handler = async () => new Response('{}', { status: 503 }), { worker = 'answer', url = 'https://workbench.example' } = {}) {
   const errors = [], requests = [], downloads = [], workers = [];
   const mockFetch = async (url, init) => {
-    if (String(url).includes('altitude_rungs')) return new Response('{}', { status: 404 });
+    if (String(url).includes('altitude_rungs') || String(url).includes('tags_roundtrip_panel')) return new Response('{}', { status: 404 });
     requests.push({ url, init });
     return handler(url, init);
   };
