@@ -70,6 +70,7 @@ CHECKED_ASSETS: list[tuple[str, str]] = [
     ("provenance.js", "provenance.js"),                   # prov_id helper
     ("godel.js", "godel.js"),                             # state-integer helper
     ("altitude_rungs.json", "altitude_rungs.json"),       # altitude-panel data (fetched by index.html)
+    ("tags_roundtrip_panel.json", "tags_roundtrip_panel.json"),  # "Tags and back" card data (fetched by index.html)
     # The meaning-verifier "Load sample" flow fetches these at runtime (the
     # flagship BillSum binding-gate demo); a lagged deploy would verify a stale
     # sample against the current verifier — exactly the PR-#243 drift class.

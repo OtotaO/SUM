@@ -555,6 +555,205 @@
 })();
 </script>
 
+<div class="card" style="margin-top: 24px; display:none;" id="tags-panel">
+  <h3>Tags and back: a recorded example <span class="pill">recorded run, measured on one text</span></h3>
+  <p style="font-size:12px;opacity:0.75;margin:0 0 6px">
+    A tag is a short label for a text. Topic tags say what it is about, form tags say how it is written,
+    and fact tags state what it says. Here a model (gpt-4o-mini-2024-07-18) was given the tags, in
+    the order they appear in the text (a few tags whose quote was not found in the text come last), and
+    the original's length in words, and asked to write the text again without seeing it. The control row was given the length and no tags; it shows how much credit
+    the judges give prose that has nothing to do with the text.
+  </p>
+  <p style="font-size:12px;opacity:0.75;margin:0 0 6px">
+    The topic rows and the mixed rows differ in more than the tags. The mixed prompt labels each tag
+    topic, form or fact, adds "Follow the form tags for voice and structure", and leaves out the topic
+    prompt's "as plain prose". Mixed rows also hold only half as many topic tags, and they
+    carry more tag words at the same count because fact tags are longer (3 to 5 words here, against
+    1 to 3 for topic and form tags; 83 against 62 words at 32 tags). A later run on the same tags dropped the "Follow"
+    instruction and the first-person share barely moved, so that instruction is not what changes it;
+    whether the mixed tags themselves (form or fact), the labels or the missing "plain prose" do, these
+    runs cannot say.
+  </p>
+  <p style="font-size:12px;opacity:0.75;margin:0 0 6px">
+    Recall is the share of the original's sentences the rewrite carries; fidelity is the share of the
+    rewrite's sentences the original carries. Gist counts a sentence as carried when some sentence on the
+    other side has MiniLM cosine similarity of at least 0.5. Exact counts it only when a DeBERTa-v3-large
+    NLI model gives entailment of at least 0.9 from one window of at most 80 tokens.
+  </p>
+  <p style="font-size:12px;opacity:0.75;margin:0 0 10px">
+    These are measurements on this one text, three rewrites per row (mean, with the range in brackets).
+    The three rewrites often open with the same sentence, so they are not independent and the ranges
+    understate how much a rewrite can vary: a later rerun with the same tags and seeds put topic above
+    mixed on exact recall at 32 tags, the reverse of what this run shows. The judge settings were
+    chosen on this same text, so the numbers do not test those settings. The
+    rewrite below is the seed 7 one, shown as recorded: this card calls no model.
+  </p>
+  <p style="font-size:12px;margin:0 0 10px" id="tags-source-line"></p>
+  <div class="row" style="margin: 8px 0 2px;">
+    <label for="tags-slider" style="min-width:60px">tags</label>
+    <input type="range" id="tags-slider" min="0" max="7" step="1" value="4">
+    <span class="v" id="tags-row-name" style="min-width:200px">&nbsp;</span>
+  </div>
+  <div style="display:flex; justify-content:space-between; font-size:10px; opacity:0.55; margin:0 4px 10px 72px;" id="tags-ticks"></div>
+  <div style="display:flex; gap:14px; flex-wrap:wrap; font:12px ui-monospace,monospace; opacity:0.85; margin:0 0 8px;" id="tags-stats"></div>
+  <div style="font-size:11px;opacity:0.7;margin:6px 0 2px;text-transform:uppercase;letter-spacing:0.02em;">tags given to the model</div>
+  <div id="tags-used" style="display:flex; gap:6px; flex-wrap:wrap; font:12px ui-monospace,monospace; margin:0 0 10px;"></div>
+  <div style="font-size:11px;opacity:0.7;margin:6px 0 2px;text-transform:uppercase;letter-spacing:0.02em;" id="tags-rewrite-title">the rewrite (seed 7, as recorded)</div>
+  <div id="tags-rewrite" style="font:12px/1.5 ui-monospace,monospace; white-space:pre-wrap; border:1px solid #8883; border-radius:4px; padding:10px 12px; max-height:200px; overflow-y:auto; background:#8881;"></div>
+  <div class="row" style="margin: 10px 0 2px;">
+    <label for="tags-judge" style="min-width:60px">judge</label>
+    <select id="tags-judge">
+      <option value="gist">gist (MiniLM cosine of at least 0.5)</option>
+      <option value="exact">exact (DeBERTa-v3-large NLI of at least 0.9)</option>
+    </select>
+  </div>
+  <div id="tags-lists" style="margin-top:6px;"></div>
+  <details style="margin-top:10px;">
+    <summary style="font-size:12px;cursor:pointer;">The original text</summary>
+    <div id="tags-source-text" style="font:12px/1.5 ui-monospace,monospace; white-space:pre-wrap; border:1px solid #8883; border-radius:4px; padding:10px 12px; max-height:240px; overflow-y:auto; background:#8881; margin-top:6px;"></div>
+  </details>
+  <p style="font-size:11px;opacity:0.65;margin:10px 0 0;" id="tags-scope"></p>
+</div>
+<script>
+(function () {
+  "use strict";
+  var panel = document.getElementById("tags-panel");
+  fetch("tags_roundtrip_panel.json").then(function (r) {
+    if (!r.ok) throw new Error("no tags data");
+    return r.json();
+  }).then(function (data) {
+    var rows = data.rows || [];
+    if (rows.length < 2) return;
+    var slider = document.getElementById("tags-slider");
+    slider.max = String(rows.length - 1);
+    if (Number(slider.value) > rows.length - 1) slider.value = String(rows.length - 1);
+    var judgeSelect = document.getElementById("tags-judge");
+    function rowName(r) {
+      if (r.condition === "control") return "control: no tags";
+      if (r.condition === "topic") return r.tag_count + " topic tags";
+      if (r.condition === "mixed") return r.tag_count + " mixed tags (topic, form, fact)";
+      return r.condition + ", " + r.tag_count + " tags";
+    }
+    function tickName(r) {
+      return r.condition === "control" ? "none" : r.condition + " " + r.tag_count;
+    }
+    var ticks = document.getElementById("tags-ticks");
+    rows.forEach(function (r) {
+      var s = document.createElement("span");
+      s.textContent = tickName(r);
+      ticks.appendChild(s);
+    });
+    function fmt(x) { return typeof x === "number" ? x.toFixed(2) : "?"; }
+    function fmtStat(s) { return s ? fmt(s.mean) + " [" + fmt(s.min) + "-" + fmt(s.max) + "]" : "?"; }
+    function stat(label, value) {
+      var d = document.createElement("span");
+      var b = document.createElement("strong");
+      b.textContent = value;
+      d.textContent = label + " ";
+      d.appendChild(b);
+      return d;
+    }
+    function sentenceList(title, marker, items, cap, cls) {
+      var wrap = document.createElement("div");
+      var h = document.createElement("div");
+      h.style.cssText = "font-size:11px;opacity:0.7;margin:6px 0 2px;text-transform:uppercase;letter-spacing:0.02em;";
+      h.textContent = title + " (" + (items ? items.length : 0) + ")";
+      wrap.appendChild(h);
+      if (!items || !items.length) return wrap;
+      var ul = document.createElement("ul");
+      ul.className = "facts";
+      items.slice(0, cap).forEach(function (c) {
+        var li = document.createElement("li");
+        li.textContent = marker + " " + c;
+        if (cls) li.className = cls;
+        ul.appendChild(li);
+      });
+      if (items.length > cap) {
+        var li = document.createElement("li");
+        li.style.opacity = "0.55";
+        li.textContent = "… +" + (items.length - cap) + " more (full list in tags_roundtrip_panel.json)";
+        ul.appendChild(li);
+      }
+      wrap.appendChild(ul);
+      return wrap;
+    }
+    function showLists(r) {
+      var judge = judgeSelect.value === "exact" ? "exact" : "gist";
+      var sc = ((r.shown_sample || {}).scores || {})[judge] || {};
+      var lists = document.getElementById("tags-lists");
+      lists.textContent = "";
+      lists.appendChild(sentenceList("original sentences the " + judge + " judge did not find in the rewrite", "✗", sc.not_recovered, 6, "bad"));
+      lists.appendChild(sentenceList("rewrite sentences the " + judge + " judge did not find in the original", "!", sc.not_supported_by_original, 6));
+      var note = document.createElement("div");
+      note.style.cssText = "font-size:11px;opacity:0.6;margin:4px 0 0;";
+      note.textContent = "These are the sentences the selected judge did not match, not a hand check. The exact judge misses support spread across several sentences, and the gist judge measures similarity, not support, so a listed sentence may still be backed by the other text.";
+      lists.appendChild(note);
+    }
+    function show(i) {
+      var r = rows[i];
+      document.getElementById("tags-row-name").textContent = rowName(r);
+      var stats = document.getElementById("tags-stats");
+      stats.textContent = "";
+      var sm = r.summary || {};
+      var gist = sm.gist || {}, exact = sm.exact || {};
+      stats.appendChild(stat("tags", String(r.tag_count)));
+      stats.appendChild(stat("tag words", String(r.tag_words)));
+      stats.appendChild(stat("gist recall", fmtStat(gist.recall)));
+      stats.appendChild(stat("exact recall", fmtStat(exact.recall)));
+      stats.appendChild(stat("gist fidelity", fmtStat(gist.fidelity)));
+      stats.appendChild(stat("exact fidelity", fmtStat(exact.fidelity)));
+      var used = document.getElementById("tags-used");
+      used.textContent = "";
+      if (!r.tags || !r.tags.length) {
+        var none = document.createElement("span");
+        none.style.opacity = "0.65";
+        none.textContent = "(none: the control rewrite was written from no tags)";
+        used.appendChild(none);
+      } else {
+        r.tags.forEach(function (t) {
+          var chip = document.createElement("span");
+          chip.className = "tags-chip";
+          chip.style.cssText = "border:1px solid #8884; border-radius:4px; padding:1px 6px;";
+          var school = document.createElement("span");
+          school.style.cssText = "opacity:0.55; font-size:10px; margin-right:4px;";
+          school.textContent = t.school;
+          chip.appendChild(school);
+          chip.appendChild(document.createTextNode(t.tag));
+          used.appendChild(chip);
+        });
+      }
+      var ss = r.shown_sample || {};
+      document.getElementById("tags-rewrite-title").textContent =
+        "the rewrite (seed " + ss.seed + ", one of " + r.samples + ", " + ss.rewrite_words + " words, as recorded)";
+      document.getElementById("tags-rewrite").textContent = ss.rewrite || "";
+      showLists(r);
+    }
+    slider.addEventListener("input", function () { show(Number(slider.value)); });
+    judgeSelect.addEventListener("change", function () { showLists(rows[Number(slider.value)]); });
+    var src = data.source || {};
+    var line = document.getElementById("tags-source-line");
+    line.textContent = "The text: ";
+    var a = document.createElement("a");
+    a.textContent = src.title || "the post";
+    if (typeof src.url === "string" && src.url.indexOf("https://") === 0) a.href = src.url;
+    line.appendChild(a);
+    line.appendChild(document.createTextNode(
+      " (" + (src.published || "") + ", " + src.words + " words), " + (src.credit || "") + "."));
+    document.getElementById("tags-source-text").textContent = src.text || "";
+    var j = data.judges || {};
+    document.getElementById("tags-scope").textContent = "Scope: " + data.scope +
+      " Rewrites: " + data.model + ", " + data.sampling + "." +
+      " Judges: gist " + ((j.gist || {}).model_id || "") + ", exact " + ((j.exact || {}).model_id || "") + "." +
+      " Method " + data.method + ".";
+    show(Number(slider.value));
+    panel.style.display = "";
+  }).catch(function () {
+    /* file:// open or asset missing: leave the card hidden; the rest of
+       the page works without it. */
+  });
+})();
+</script>
+
 <div class="card" style="margin-top: 24px;">
   <h3>Optional: measure with a local semantic judge</h3>
   <p style="font-size:13px;opacity:0.85;margin:0 0 8px">

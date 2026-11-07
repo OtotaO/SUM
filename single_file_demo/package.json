@@ -2,7 +2,7 @@
   "name": "sum-browser-workbench-tests",
   "private": true,
   "scripts": {
-    "test": "node --test test_review_packet.mjs test_workbench_flow.mjs test_distiller.mjs test_detail_flags.mjs ../fixtures/detail_flags_eval/test_score.mjs"
+    "test": "node --test test_review_packet.mjs test_workbench_flow.mjs test_distiller.mjs test_detail_flags.mjs test_tags_panel.mjs ../fixtures/detail_flags_eval/test_score.mjs"
   },
   "devDependencies": {
     "jsdom": "26.1.0"
