@@ -133,7 +133,7 @@ def _splitter(window_tokens):
     from scripts.tags_roundtrip import WindowedNLI
 
     w = object.__new__(WindowedNLI)
-    w.tok, w.window_tokens, w.split_sentences = _FakeTok(), window_tokens, 0
+    w.tok, w.window_tokens, w.split_sentences = _FakeTok(), window_tokens, set()
     return w
 
 
@@ -141,7 +141,9 @@ def test_long_sentence_is_split_into_pieces_within_the_window_covering_every_tok
     w = _splitter(10)
     sent = " ".join(f"t{i}" for i in range(25))
     pieces = w._split(sent)
-    assert w.split_sentences == 1
+    assert len(w.split_sentences) == 1
+    w._split(sent)
+    assert len(w.split_sentences) == 1  # the same sentence again is not counted twice
     assert all(len(p.split()) <= 9 for p in pieces)
     assert set(" ".join(pieces).split()) == set(sent.split())
     assert pieces[0].split()[-1] in pieces[1].split()  # neighbouring pieces overlap
@@ -149,6 +151,6 @@ def test_long_sentence_is_split_into_pieces_within_the_window_covering_every_tok
 
 def test_short_sentence_is_not_split_and_split_pieces_fit_windows():
     w = _splitter(10)
-    assert w._split("a b c") == ["a b c"] and w.split_sentences == 0
+    assert w._split("a b c") == ["a b c"] and not w.split_sentences
     pieces = w._split(" ".join(f"t{i}" for i in range(30)))
     assert not any(over for _, over in windows(pieces, [len(p.split()) for p in pieces], 10))

@@ -32,7 +32,9 @@ Steps, all recorded in the output JSON:
        0.9 from some window of the other side. A window is a run of whole
        sentences of at most 80 tokens; a longer sentence is split into
        overlapping pieces of at most 80 tokens. On longer windows the model
-       credited unrelated text. Support spread across windows is missed.
+       credited unrelated text. Support spread across windows is missed. A
+       sentence too long to sit beside a full window (over about 430 tokens)
+       is counted as not carried, and the manifest counts such sentences.
      These settings were chosen on one development text (the k = 0 control
      there scored at or near zero under both). They are frozen here; results
      on other texts are not an evaluation of the settings.
@@ -205,18 +207,22 @@ class WindowedNLI:
         self.mdl = AutoModelForSequenceClassification.from_pretrained(model_id, revision=revision).eval().to(self.device)
         labels = {i: str(l).lower() for i, l in self.mdl.config.id2label.items()}
         self.entail_idx = next(i for i, l in labels.items() if l.startswith("entail"))
-        self.split_sentences = 0
+        self.specials = self.tok.num_special_tokens_to_add(pair=True)
+        self.split_sentences: set[str] = set()
+        self.long_hypotheses: set[str] = set()
 
     def _len(self, text: str) -> int:
         return len(self.tok(text, add_special_tokens=False)["input_ids"])
 
     def _split(self, sent: str) -> list[str]:
         """A sentence longer than the window becomes consecutive token pieces
-        of at most ``window_tokens`` tokens, overlapping by a quarter of that."""
+        of at most ``window_tokens - 1`` tokens; each piece starts
+        ``3 * window_tokens // 4`` tokens after the previous one, so
+        neighbours overlap by roughly a quarter of the window."""
         ids = self.tok(sent, add_special_tokens=False)["input_ids"]
         if len(ids) <= self.window_tokens - 1:
             return [sent]
-        self.split_sentences += 1
+        self.split_sentences.add(hashlib.sha256(sent.encode("utf-8")).hexdigest())
         step = max(1, self.window_tokens * 3 // 4)
         size = self.window_tokens - 1
         return [self.tok.decode(ids[i:i + size]) for i in range(0, max(1, len(ids) - size + step), step)]
@@ -235,14 +241,19 @@ class WindowedNLI:
             if not h.strip():
                 out.append(False)
                 continue
+            if self.window_tokens + self._len(h) + self.specials > 512:
+                # The judge cannot read the whole sentence beside a full
+                # window; it is counted as not carried rather than judged on
+                # a prefix.
+                self.long_hypotheses.add(hashlib.sha256(h.encode("utf-8")).hexdigest())
+                out.append(False)
+                continue
             best = 0.0
             for b in range(0, len(texts), 32):
                 chunk = texts[b:b + 32]
-                hyp_len = self._len(h)
-                fits = hyp_len + 4 < 512 - self.window_tokens
                 enc = self.tok(chunk, [h] * len(chunk), return_tensors="pt", padding=True,
-                               truncation="only_first" if fits else "longest_first",
-                               max_length=min(512, self.window_tokens + hyp_len + 4)).to(self.device)
+                               truncation="only_first",
+                               max_length=self.window_tokens + self._len(h) + self.specials).to(self.device)
                 with torch.no_grad():
                     probs = torch.softmax(self.mdl(**enc).logits.float(), dim=-1)[:, self.entail_idx]
                 best = max(best, float(probs.max()))
@@ -258,7 +269,10 @@ class WindowedNLI:
                           "sharing a sentence where a run holds two or more; a longer sentence is split into "
                           "overlapping token pieces; the premise is truncated to the window as a final cap; "
                           "carried if any window entails",
-                "device": self.device, "sentences_split": self.split_sentences}
+                "device": self.device,
+                "distinct_sentences_split": len(self.split_sentences),
+                "distinct_sentences_too_long_to_judge": len(self.long_hypotheses),
+                "too_long_rule": "a sentence that cannot fit beside a full window is counted as not carried"}
 
 
 def score(source: str, rewrite: str, entails_batch: Callable[[str, Sequence[str]], list[bool]],
