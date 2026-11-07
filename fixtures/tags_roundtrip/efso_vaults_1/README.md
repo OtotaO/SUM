@@ -124,17 +124,18 @@ Against the three expectations:
    instruction did not measurably cut invention. All three grounded rewrites open with the same
    invented setting, "a casual afternoon" (the source says "one fine evening"); because their
    openings are identical, that is one invention repeated, not three. They are shorter (589 words on
-   average against 719). On the gist judge, fidelity did separate (0.44 [0.38-0.50] against 0.36
+   average against 719), which the grounded prompt allowed: it ends "even if the text comes out
+   shorter" and asks for "at most about" the source's length. On the gist judge, fidelity did separate (0.44 [0.38-0.50] against 0.36
    [0.35-0.38]), but mixed_plain, without the instruction, reached 0.43, and mixed scored 0.42 in the
    first run, so this looks more like mixed coming out low here than an effect of the instruction.
 2. mixed_grounded gist recall 0.31 against mixed 0.29. Did not hold: the grounded prompt recalled
    slightly more, not less, with overlapping ranges.
 3. mixed_plain first-person share 0.080, between topic 0.033 and mixed 0.083. Held as stated, but
    it sits almost on top of mixed: dropping the instruction to follow the form tags changed the voice
-   very little. In this run the first-person voice comes with the mixed tags (form and fact tags
-   together, such as "first-person narration" and "author used World_sim simulator", and their
-   labels), not with that one instruction; this run does not separate the form tags from the fact
-   tags.
+   very little. So that one instruction is not what brings the first-person voice. Whether it comes
+   from the mixed tags themselves (such as "first-person narration" and "author used World_sim
+   simulator") or from the labelled prompt that presents them, this run cannot say: topic and
+   mixed_plain differ in both.
 
 Not predicted: topic and mixed were rerun here with the same tags and the same seeds as in the first
 run, and the model wrote different text. Mixed exact recall fell from 0.23 to 0.16, below topic's
