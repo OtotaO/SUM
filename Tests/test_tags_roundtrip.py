@@ -236,7 +236,7 @@ def test_run_end_to_end_with_fake_model_and_judges():
     out = run(SOURCE, model="fake", counts=[0, 1, 2, 8, 16], client=client, judges={"j": judge},
               samples=2, schools=["topic", "form", "fact"], mixed_counts=[4])
     conds = [(r["condition"], r["tag_count"]) for r in out["rungs"]]
-    # k=8 exhausts the 2 topic tags; k=16 adds nothing new and is skipped.
+    # k=2 uses both topic tags; k=8 and k=16 add nothing new and are skipped.
     assert conds == [("control", 0), ("topic", 1), ("topic", 2), ("mixed", 4)]
     mixed = out["rungs"][-1]
     assert [u["tag"] for u in mixed["tags"]] == ["first-person anecdote", "lease", "pets", "deposit is 1,800 dollars"]
@@ -245,3 +245,21 @@ def test_run_end_to_end_with_fake_model_and_judges():
     assert out["rungs"][1]["summary"]["j"]["recall"]["mean"] == 1 / 3
     assert set(out["tags"]) == {"topic", "form", "fact"}
     assert "first_person_share" in out["source_form_signals"]
+
+
+def test_form_signals_treat_apostrophes_alike_and_count_contractions_once():
+    from scripts.tags_roundtrip import form_signals
+
+    straight, curly = form_signals("I'm here. We'd go."), form_signals("I\u2019m here. We\u2019d go.")
+    assert straight == curly
+    assert straight["first_person_share"] == 0.5  # i'm, we'd of 4 words
+    assert straight["words_per_sentence"] == 2.0
+    assert form_signals("Can\u2019t stop.")["words_per_sentence"] == 2.0
+
+
+def test_run_without_topic_school_writes_no_empty_topic_rows():
+    from scripts.tags_roundtrip import run
+
+    out = run(SOURCE, model="fake", counts=[4], client=_FakeClient(), judges={"j": lambda p, hs: [False] * len(hs)},
+              samples=1, schools=["form", "fact"], mixed_counts=[4])
+    assert [r["condition"] for r in out["rungs"]] == ["mixed"]

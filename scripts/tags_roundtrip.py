@@ -3,24 +3,31 @@ tags alone, and measure what came back.
 
     PYTHONPATH=. python scripts/tags_roundtrip.py INPUT [--out FILE.json]
         [--model gpt-4o-mini-2024-07-18] [--counts 0,4,8,16,32] [--samples 3]
+        [--schools topic,form,fact] [--mixed-counts 8,16,32]
 
 INPUT is a text or Markdown file, or any format the omni-format pivot converts
 (PDF, DOCX, HTML, EPUB, ...; needs the markitdown extra).
 
 Steps, all recorded in the output JSON:
-  1. One model call proposes up to 32 tags. Each tag is 1 to 4 words, marked
-     "mentioned" (the text names it) or "implied" (a reader would file the
-     text under it), with an importance rank and the shortest verbatim quote
-     it rests on. Quotes are checked against the text; a quote that is not
-     found is recorded as not found. Tags are kept in replication order: the
-     order their evidence appears in the text.
-  2. For each tag count k, the k highest-ranked tags (in replication order,
-     tag words only, no quotes) go to a second call that writes the text again
+  1. One model call per tag school proposes up to 32 tags, each with an
+     importance rank and the shortest verbatim quote it rests on. topic: 1 to
+     4 words, marked "mentioned" (the text names it) or "implied" (a reader
+     would file the text under it). form: 1 to 4 words on how the text is
+     written (voice, genre, structure, tone). fact: a 3 to 8 word
+     subject-verb-object phrase. Quotes are checked against the text; a quote
+     that is not found is recorded as not found. Tags are kept in replication
+     order: the order their evidence appears in the text.
+  2. For each tag count k, the k highest-ranked topic tags (in replication
+     order, tag words only, no quotes) go to a second call that writes the
+     text again
      at the original length, several times (--samples, default 3, one seed
      each), because the model's output varies between runs; the mean and
      range are reported. k = 0 is a control: the model writes a text of that
      length from nothing, which shows how much credit a judge gives unrelated
-     prose.
+     prose. With more than one school, a mixed condition (--mixed-counts)
+     shares k tags as half topic, a quarter form and a quarter fact, merged in
+     replication order, labelled by school, and rewritten with a prompt that
+     also tells the model to follow the form tags.
   3. Two local judges score each rewrite against the original in both
      directions: recall (share of the original's sentences the rewrite
      carries) and fidelity (share of the rewrite's sentences the original
@@ -131,6 +138,7 @@ REGEN_MIXED_SYSTEM = (
 )
 CONTROL_SYSTEM = "Write a text of about {words} words. Return only the text."
 FIRST_PERSON = frozenset("i me my mine myself we us our ours ourselves".split())
+FIRST_PERSON_CONTRACTIONS = frozenset("i'm i've i'd i'll we're we've we'd we'll".split())
 
 
 def _norm(s: str) -> str:
@@ -225,12 +233,15 @@ def mixed_at(by_school: dict[str, Sequence[dict[str, Any]]], k: int) -> list[dic
 
 def form_signals(text: str) -> dict[str, float]:
     """Two descriptive signals of voice: the share of words that are
-    first-person pronouns, and the mean number of words per sentence."""
+    first-person pronouns or contractions of them (I'm, we've, ...), and the
+    mean number of words per sentence. Curly and straight apostrophes are
+    treated alike, and a contraction is one word."""
     from sum_engine_internal.research.meaning.meaning_loss import _sentences
 
-    words = re.findall(r"[\w']+", text.lower())
+    words = re.findall(r"\w+(?:'\w+)*", text.lower().replace("\u2019", "'"))
     sents = _sentences(text)
-    return {"first_person_share": sum(w in FIRST_PERSON for w in words) / max(1, len(words)),
+    first = sum(w in FIRST_PERSON or w in FIRST_PERSON_CONTRACTIONS for w in words)
+    return {"first_person_share": first / max(1, len(words)),
             "words_per_sentence": len(words) / max(1, len(sents))}
 
 
@@ -429,6 +440,8 @@ def run(source: str, *, model: str, counts: Sequence[int], client: Any,
         if k == 0:
             runs = rewrites(CONTROL_SYSTEM.format(words=words), "Write it.")
             rungs.append(record("control", [], runs))
+            continue
+        if not used:
             continue
         listing = "\n".join(f"{i}. {t}" for i, t in enumerate(used, 1))
         rungs.append(record("topic", used, rewrites(REGEN_SYSTEM.format(words=words), listing)))
