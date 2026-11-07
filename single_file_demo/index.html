@@ -559,10 +559,16 @@
   <h3>Tags and back: a recorded example <span class="pill">recorded run, measured on one text</span></h3>
   <p style="font-size:12px;opacity:0.75;margin:0 0 6px">
     A tag is a short label for a text. Topic tags say what it is about, form tags say how it is written,
-    and fact tags state what it says. Here a model (gpt-4o-mini-2024-07-18) was given only the tags, in
-    the order they appear in the text, and asked to write the text again without seeing it. The control
-    row is a rewrite from no tags at all; it shows how much credit the judges give prose that has nothing
-    to do with the text.
+    and fact tags state what it says. Here a model (gpt-4o-mini-2024-07-18) was given the tags, in
+    the order they appear in the text, and the original's length in words, and asked to write the text
+    again without seeing it. The control row was given the length and no tags; it shows how much credit
+    the judges give prose that has nothing to do with the text.
+  </p>
+  <p style="font-size:12px;opacity:0.75;margin:0 0 6px">
+    The topic rows and the mixed rows used different prompts. The mixed prompt labels each tag topic,
+    form or fact and adds "Follow the form tags for voice and structure". So a change in voice between
+    a topic row and a mixed row comes from the form tags and that instruction together, and this run
+    cannot separate them.
   </p>
   <p style="font-size:12px;opacity:0.75;margin:0 0 6px">
     Recall is the share of the original's sentences the rewrite carries; fidelity is the share of the
@@ -573,7 +579,7 @@
   <p style="font-size:12px;opacity:0.75;margin:0 0 10px">
     These are measurements on this one text, three rewrites per row (mean, with the range in brackets).
     The judge settings were chosen on this same text, so the numbers do not test those settings. The
-    rewrite below is the seed 7 one, shown as recorded: nothing on this page calls a model.
+    rewrite below is the seed 7 one, shown as recorded: this card calls no model.
   </p>
   <p style="font-size:12px;margin:0 0 10px" id="tags-source-line"></p>
   <div class="row" style="margin: 8px 0 2px;">
@@ -669,8 +675,12 @@
       var sc = ((r.shown_sample || {}).scores || {})[judge] || {};
       var lists = document.getElementById("tags-lists");
       lists.textContent = "";
-      lists.appendChild(sentenceList("original sentences the rewrite did not recover", "✗", sc.not_recovered, 6, "bad"));
-      lists.appendChild(sentenceList("rewrite sentences the original does not support", "!", sc.not_supported_by_original, 6));
+      lists.appendChild(sentenceList("original sentences the " + judge + " judge did not find in the rewrite", "✗", sc.not_recovered, 6, "bad"));
+      lists.appendChild(sentenceList("rewrite sentences the " + judge + " judge did not find in the original", "!", sc.not_supported_by_original, 6));
+      var note = document.createElement("div");
+      note.style.cssText = "font-size:11px;opacity:0.6;margin:4px 0 0;";
+      note.textContent = "These are the sentences the selected judge did not match, not a hand check. The exact judge misses support spread across several sentences, and the gist judge measures similarity, not support, so a listed sentence may still be backed by the other text.";
+      lists.appendChild(note);
     }
     function show(i) {
       var r = rows[i];

@@ -103,7 +103,11 @@ def test_card_wired_into_page_with_honest_wording():
     assert 'id="tags-panel"' in html
     assert "Tags and back: a recorded example" in html
     assert "recorded run, measured on one text" in html
-    assert "nothing on this page calls a model" in html
+    assert "this card calls no model" in html
+    # The page elsewhere calls /api/render and /api/complete; the card must not claim the page is model-free.
+    assert "nothing on this page calls a model" not in html
+    # The mixed rows used a different rewrite prompt; the card must say so.
+    assert "Follow the form tags for voice and structure" in html
     # The plain-language lines quote the judges' settings and the model; keep them equal to the data.
     d = _panel()
     assert d["model"] in html
