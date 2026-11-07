@@ -213,7 +213,7 @@ class _FakeClient:
         from types import SimpleNamespace
 
         system = kw["messages"][0]["content"]
-        self.calls.append(system[:20])
+        self.calls.append(system)
         if "form tags" in system:
             body = _json.dumps({"tags": [{"tag": "first-person anecdote", "rank": 1, "evidence": "The lease"}]})
         elif "fact tags" in system:
@@ -269,3 +269,35 @@ def test_form_signals_count_lets_as_first_person():
     from scripts.tags_roundtrip import form_signals
 
     assert form_signals("Let\u2019s go now.")["first_person_share"] == 1 / 3
+
+
+def test_load_tags_checks_text_and_schools_and_accepts_v0():
+    import pytest
+    from scripts.tags_roundtrip import load_tags
+
+    prev = {"input": {"sha256": "abc"}, "tags": {"topic": [{"tag": "a"}], "form": []}}
+    assert load_tags(prev, "abc", ["topic", "form"]) == {"topic": [{"tag": "a"}], "form": []}
+    assert load_tags({"input": {"sha256": "abc"}, "tags": [{"tag": "a"}]}, "abc", ["topic"]) == {"topic": [{"tag": "a"}]}
+    for bad, schools in [({"input": {"sha256": "other"}, "tags": {"topic": []}}, ["topic"]),
+                         (prev, ["topic", "fact"]),
+                         ({"tags": {"topic": []}}, ["topic"]),
+                         ([], ["topic"])]:
+        with pytest.raises(ValueError):
+            load_tags(bad, "abc", schools)
+
+
+def test_run_with_reused_tags_makes_no_tag_calls_and_runs_each_mixed_prompt():
+    from scripts.tags_roundtrip import run
+
+    client = _FakeClient()
+    tags = {"topic": validate_tags({"tags": [{"tag": "lease", "rank": 1, "evidence": "lease"}]}, SOURCE),
+            "form": validate_tags({"tags": [{"tag": "plain notice", "rank": 1, "evidence": "Pets"}]}, SOURCE, school="form"),
+            "fact": validate_tags({"tags": [{"tag": "deposit is 1,800 dollars", "rank": 1, "evidence": "deposit"}]},
+                                  SOURCE, school="fact", max_words=8)}
+    out = run(SOURCE, model="fake", counts=[1], client=client, judges={"j": lambda p, hs: [True] * len(hs)},
+              samples=1, schools=["topic", "form", "fact"], mixed_counts=[4],
+              mixed_conditions=["mixed", "mixed_plain", "mixed_grounded"], tags=tags)
+    assert not any(c.startswith("You make") for c in client.calls)
+    assert [r["condition"] for r in out["rungs"]] == ["topic", "mixed", "mixed_plain", "mixed_grounded"]
+    assert len(client.calls) == 4 and len(set(client.calls[1:])) == 3  # one distinct prompt per mixed condition
+    assert "leave it out" in client.calls[3] and "Follow the form tags" not in client.calls[2]

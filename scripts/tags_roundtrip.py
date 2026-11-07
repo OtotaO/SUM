@@ -136,6 +136,13 @@ REGEN_MIXED_SYSTEM = (
     "numbers, dates or quotations that the tags do not contain. Return only "
     "the text."
 )
+REGEN_MIXED_PLAIN = REGEN_MIXED_SYSTEM.replace(" Follow the form tags for voice and structure.", "")
+REGEN_GROUNDED = REGEN_MIXED_SYSTEM.replace(
+    " Use every tag.",
+    " Use every tag. Write only what the tags state or directly imply; where they leave a gap, leave "
+    "it out instead of filling it, even if the text comes out shorter.",
+).replace("about {words} words", "at most about {words} words")
+MIXED_PROMPTS = {"mixed": REGEN_MIXED_SYSTEM, "mixed_plain": REGEN_MIXED_PLAIN, "mixed_grounded": REGEN_GROUNDED}
 CONTROL_SYSTEM = "Write a text of about {words} words. Return only the text."
 FIRST_PERSON = frozenset("i me my mine myself we us our ours ourselves".split())
 FIRST_PERSON_CONTRACTIONS = frozenset("i'm i've i'd i'll we're we've we'd we'll let's".split())
@@ -403,10 +410,13 @@ def summarize(samples: Sequence[dict[str, Any]]) -> dict[str, Any]:
 def run(source: str, *, model: str, counts: Sequence[int], client: Any,
         judges: dict[str, Callable[[str, Sequence[str]], list[bool]]], samples: int = 3,
         schools: Sequence[str] = ("topic",), mixed_counts: Sequence[int] = (),
+        mixed_conditions: Sequence[str] = ("mixed",), tags: dict[str, list[dict[str, Any]]] | None = None,
         log: Callable[[str], None] = lambda s: None) -> dict[str, Any]:
+    """With ``tags`` (school -> validated tags, e.g. from an earlier run of
+    the same text), no tagging call is made and those tags are reused."""
     words = len(source.split())
-    by_school: dict[str, list[dict[str, Any]]] = {}
-    for name in schools:
+    by_school: dict[str, list[dict[str, Any]]] = dict(tags) if tags is not None else {}
+    for name in ([] if tags is not None else schools):
         system, max_words = SCHOOLS[name]
         raw = json.loads(_chat(client, model, system, source, json_mode=True))
         by_school[name] = validate_tags(raw, source, school=name, max_words=max_words)
@@ -446,11 +456,28 @@ def run(source: str, *, model: str, counts: Sequence[int], client: Any,
         listing = "\n".join(f"{i}. {t}" for i, t in enumerate(used, 1))
         rungs.append(record("topic", used, rewrites(REGEN_SYSTEM.format(words=words), listing)))
     if len(by_school) > 1:
-        for k in mixed_counts:
-            used = mixed_at(by_school, k)
-            listing = "\n".join(f"{i}. [{u['school']}] {u['tag']}" for i, u in enumerate(used, 1))
-            rungs.append(record("mixed", used, rewrites(REGEN_MIXED_SYSTEM.format(words=words), listing)))
+        for condition in mixed_conditions:
+            for k in mixed_counts:
+                used = mixed_at(by_school, k)
+                listing = "\n".join(f"{i}. [{u['school']}] {u['tag']}" for i, u in enumerate(used, 1))
+                rungs.append(record(condition, used, rewrites(MIXED_PROMPTS[condition].format(words=words), listing)))
     return {"tags": by_school, "source_form_signals": form_signals(source), "rungs": rungs}
+
+
+def load_tags(previous: Any, source_sha: str, schools: Sequence[str]) -> dict[str, list[dict[str, Any]]]:
+    """Tags of an earlier results JSON, checked to belong to the same text
+    (input SHA-256) and to hold every requested school. A v0 file holds one
+    topic list."""
+    if not isinstance(previous, dict) or not isinstance(previous.get("input"), dict):
+        raise ValueError("--tags-from: not a tags_roundtrip results file")
+    if previous["input"].get("sha256") != source_sha:
+        raise ValueError("--tags-from: that run was on a different text (input SHA-256 differs)")
+    tags = previous.get("tags")
+    if isinstance(tags, list):
+        tags = {"topic": tags}
+    if not isinstance(tags, dict) or any(not isinstance(tags.get(n), list) for n in schools):
+        raise ValueError(f"--tags-from: the file lacks tags for {', '.join(schools)}")
+    return {n: tags[n] for n in schools}
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -463,6 +490,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     ap.add_argument("--schools", default="topic,form,fact", help="tag schools to build: topic, form, fact")
     ap.add_argument("--mixed-counts", default=",".join(map(str, DEFAULT_MIXED_COUNTS)),
                     help="tag counts for the mixed condition (used when more than one school is built)")
+    ap.add_argument("--mixed-conditions", default="mixed",
+                    help="rewrite prompts for mixed tags: mixed, mixed_plain (no instruction to follow form "
+                         "tags), mixed_grounded (write only what the tags state)")
+    ap.add_argument("--tags-from", type=Path,
+                    help="reuse the tags of an earlier results JSON for the same text instead of making new ones")
     args = ap.parse_args(argv)
     counts = sorted({int(c) for c in args.counts.split(",")})
     if any(c < 0 or c > MAX_TAGS for c in counts):
@@ -475,26 +507,39 @@ def main(argv: Sequence[str] | None = None) -> int:
     mixed_counts = sorted({int(c) for c in args.mixed_counts.split(",") if c.strip()})
     if any(c < 1 or c > MAX_TAGS for c in mixed_counts):
         ap.error(f"mixed counts must be between 1 and {MAX_TAGS}")
+    mixed_conditions = [x.strip() for x in args.mixed_conditions.split(",") if x.strip()]
+    if any(x not in MIXED_PROMPTS for x in mixed_conditions) or len(set(mixed_conditions)) != len(mixed_conditions):
+        ap.error(f"mixed conditions must be distinct names from {', '.join(MIXED_PROMPTS)}")
 
     from openai import OpenAI
     from sum_engine_internal.research.meaning.local_judge import EmbeddingJudge
 
     source, how = read_input(args.input)
+    source_sha = hashlib.sha256(source.encode("utf-8")).hexdigest()
+    reused = None
+    if args.tags_from:
+        try:
+            reused = load_tags(json.loads(args.tags_from.read_text(encoding="utf-8")), source_sha, schools)
+        except ValueError as e:
+            ap.error(str(e))
     gist = EmbeddingJudge(threshold=GIST_THRESHOLD)
     exact = WindowedNLI()
     result = run(source, model=args.model, counts=counts, client=OpenAI(),
                  judges={"gist": gist.entails_batch, "exact": exact.entails_batch}, samples=args.samples,
-                 schools=schools, mixed_counts=mixed_counts,
+                 schools=schools, mixed_counts=mixed_counts, mixed_conditions=mixed_conditions, tags=reused,
                  log=lambda s: print(s, file=sys.stderr))
     out = {
         "method": METHOD_ID,
         "scope": SCOPE,
         "input": {"file": args.input.name, "read_as": how, "words": len(source.split()),
-                  "sha256": hashlib.sha256(source.encode("utf-8")).hexdigest()},
+                  "sha256": source_sha},
+        "tags_reused_from": ({"file": args.tags_from.name,
+                              "sha256": hashlib.sha256(args.tags_from.read_bytes()).hexdigest()}
+                             if args.tags_from else None),
         "model": args.model,
         "sampling": "temperature 0 with a fixed seed per sample; the provider does not guarantee identical output on a re-run",
         "prompts": {"tags": {n: SCHOOLS[n][0] for n in schools}, "rewrite": REGEN_SYSTEM,
-                    "rewrite_mixed": REGEN_MIXED_SYSTEM, "control": CONTROL_SYSTEM},
+                    **{f"rewrite_{c}": MIXED_PROMPTS[c] for c in mixed_conditions}, "control": CONTROL_SYSTEM},
         "form_signals": "descriptive only: share of words that are first-person pronouns or contractions of them (I'm, we've, let's, ...), with curly and straight apostrophes treated alike, and mean words per sentence",
         "judges": {"gist": {**gist.manifest(), "rule": "max cosine over sentences on the other side >= threshold"},
                    "exact": exact.manifest()},

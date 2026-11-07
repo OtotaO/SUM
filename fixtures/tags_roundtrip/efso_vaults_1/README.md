@@ -74,3 +74,29 @@ from the form tags and that instruction together, and this run cannot separate t
 The three rewrites of each condition open alike: in topic 4 and all three mixed conditions their
 first sentences are identical, and in the others they differ in wording (temperature 0, seeds 7 to
 9). They are not independent draws, and the ranges above understate how much a rewrite can vary.
+
+## Second run: stated before the run
+
+Written and committed before `results_run2.json` was produced. It reuses the tags in `results.json`
+(`--tags-from`), so the tags are identical across conditions and only the rewrite prompt changes.
+All conditions use 32 tags (the mixed ones share them as 16 topic, 8 form, 8 fact) and three
+rewrites each, in one run:
+
+- control: no tags.
+- topic: topic tags, plain prompt.
+- mixed: mixed tags, the prompt from the first run (labels, and "Follow the form tags for voice and
+  structure").
+- mixed_plain: mixed tags, the same prompt without that instruction.
+- mixed_grounded: mixed tags, the first-run prompt plus "Write only what the tags state or directly
+  imply; where they leave a gap, leave it out instead of filling it", with "at most about" the
+  source's length.
+
+Expected, comparing means:
+
+1. mixed_grounded has higher exact fidelity than mixed.
+2. mixed_grounded has gist recall no higher than mixed.
+3. mixed_plain has a first-person share strictly between topic's and mixed's.
+
+The first two ask whether an instruction can cut invention, and at what cost in recall. The third
+asks whether the voice change in the first run came partly from the instruction rather than from the
+form tags alone. As before: one text, the judge's development text, rewrites that may open alike.
