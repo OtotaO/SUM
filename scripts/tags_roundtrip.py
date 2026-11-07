@@ -19,15 +19,18 @@ Steps, all recorded in the output JSON:
      order: the order their evidence appears in the text.
   2. For each tag count k, the k highest-ranked topic tags (in replication
      order, tag words only, no quotes) go to a second call that writes the
-     text again
-     at the original length, several times (--samples, default 3, one seed
+     text again at the original length, several times (--samples, default 3, one seed
      each), because the model's output varies between runs; the mean and
      range are reported. k = 0 is a control: the model writes a text of that
      length from nothing, which shows how much credit a judge gives unrelated
      prose. With more than one school, a mixed condition (--mixed-counts)
      shares k tags as half topic, a quarter form and a quarter fact, merged in
      replication order, labelled by school, and rewritten with a prompt that
-     also tells the model to follow the form tags.
+     also tells the model to follow the form tags. --mixed-conditions adds
+     two more prompts for the same mixed tags: mixed_plain (without that
+     instruction) and mixed_grounded (write only what the tags state, leave
+     gaps out). --tags-from reuses the tags of an earlier results file for
+     the same text instead of making new ones.
   3. Two local judges score each rewrite against the original in both
      directions: recall (share of the original's sentences the rewrite
      carries) and fidelity (share of the rewrite's sentences the original
