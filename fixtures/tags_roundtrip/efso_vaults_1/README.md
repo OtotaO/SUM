@@ -100,3 +100,37 @@ Expected, comparing means:
 The first two ask whether an instruction can cut invention, and at what cost in recall. The third
 asks whether the voice change in the first run came partly from the instruction rather than from the
 form tags alone. As before: one text, the judge's development text, rewrites that may open alike.
+
+## Second run: result (added after the run)
+
+From `results_run2.json`. The tags are the first run's (the file records the SHA-256 of the
+`results.json` they came from), and every condition used the same 32. Means of three rewrites,
+with the range in brackets.
+
+| Condition | Gist recall | Exact recall | Gist fidelity | Exact fidelity | First-person share | Words per sentence | Rewrite words |
+|---|---|---|---|---|---|---|---|
+| control | 0.00 [0.00-0.00] | 0.05 [0.03-0.06] | 0.00 | 0.01 [0.00-0.03] | 0.006 | 17.7 | 746 |
+| topic | 0.22 [0.18-0.24] | 0.19 [0.13-0.23] | 0.44 | 0.23 [0.16-0.27] | 0.033 | 22.4 | 614 |
+| mixed | 0.29 [0.26-0.31] | 0.16 [0.08-0.21] | 0.36 | 0.12 [0.09-0.16] | 0.083 | 12.9 | 719 |
+| mixed_plain | 0.31 [0.26-0.35] | 0.22 [0.19-0.24] | 0.43 | 0.11 [0.07-0.16] | 0.080 | 14.9 | 717 |
+| mixed_grounded | 0.31 [0.29-0.35] | 0.13 [0.10-0.18] | 0.44 | 0.12 [0.07-0.17] | 0.085 | 13.6 | 589 |
+
+Against the three expectations:
+
+1. mixed_grounded exact fidelity 0.123 against mixed 0.116. Held as stated, but the difference is
+   0.007 and the ranges overlap almost entirely, so the instruction did not measurably cut invention.
+   Every mixed_grounded rewrite still invents scene detail: all three set the story on "a casual
+   afternoon" (the source says "one fine evening") and add quoted dialogue. They are shorter (589
+   words on average against 719).
+2. mixed_grounded gist recall 0.31 against mixed 0.29. Did not hold: the grounded prompt recalled
+   slightly more, not less, with overlapping ranges.
+3. mixed_plain first-person share 0.080, between topic 0.033 and mixed 0.083. Held as stated, but
+   it sits almost on top of mixed: dropping the instruction to follow the form tags changed the voice
+   very little. In this run the first-person voice comes with the form tags, not with that
+   instruction.
+
+Not predicted: topic and mixed were rerun here with the same tags and the same seeds as in the first
+run, and the model wrote different text. Mixed exact recall fell from 0.23 to 0.16, below topic's
+0.19, so the first run's second expectation (mixed at least as high as topic on exact recall) did not
+hold on this rerun. Differences of this size between conditions are within run-to-run variation on
+one text. In every condition except control, the three rewrites open with the same sentence.
