@@ -21,10 +21,9 @@ Steps, all recorded in the output JSON:
      order, tag words only, no quotes) go to a second call that writes the
      text again at the original length, several times (--samples, default
      3, one seed each), because the model's output varies between runs; the
-     mean and
-     range are reported. k = 0 is a control: the model writes a text of that
-     length from nothing, which shows how much credit a judge gives unrelated
-     prose. With more than one school, a mixed condition (--mixed-counts)
+     mean and range are reported. k = 0 is a control: the model writes a text
+     of that length from nothing, which shows how much credit a judge gives
+     unrelated prose. With more than one school, a mixed condition (--mixed-counts)
      shares k tags as half topic, a quarter form and a quarter fact, merged in
      replication order, labelled by school, and rewritten with a prompt that
      also tells the model to follow the form tags. --mixed-conditions
