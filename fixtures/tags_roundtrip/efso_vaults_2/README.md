@@ -45,8 +45,12 @@ From `results.json`. Means of three rewrites, with the range in brackets. The so
 share is 0.056. The last three columns are the cut: sentences kept per rewrite, its exact recall, and
 its exact fidelity over the cuts that kept anything (n of 3). The cut columns were recomputed from the
 stored rewrites after review found that the first version joined kept sentences with spaces, which
-merged unpunctuated list items before scoring; which sentences the cut keeps did not change, and only
-mixed 32's cut fidelity moved (0.81 to 0.82).
+merged unpunctuated list items before scoring; which sentences the cut keeps did not change. In the
+table only mixed 32's cut exact fidelity moved (0.81 to 0.82); its cut gist scores, not shown here,
+moved more (gist recall 0.14 to 0.20, gist fidelity 0.64 to 0.77). The development figures stated
+before the run came from the same space join; recomputed with the corrected join on the same EFSO
+Vaults #1 rewrites, the cut raised exact fidelity in 8 of 8 (lowest 0.33, none at 0.00) and lowered
+exact recall in all 8. The cut rule, and which sentences it keeps, is unchanged.
 
 | Condition | Tags | Tag words | Gist recall | Exact recall | Gist fidelity | Exact fidelity | First-person share | Cut: kept | Cut: exact recall | Cut: exact fidelity |
 |---|---|---|---|---|---|---|---|---|---|---|
