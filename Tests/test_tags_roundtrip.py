@@ -301,3 +301,61 @@ def test_run_with_reused_tags_makes_no_tag_calls_and_runs_each_mixed_prompt():
     assert [r["condition"] for r in out["rungs"]] == ["topic", "mixed", "mixed_plain", "mixed_grounded"]
     assert len(client.calls) == 4 and len(set(client.calls[1:])) == 3  # one distinct prompt per mixed condition
     assert "leave it out" in client.calls[3] and "Follow the form tags" not in client.calls[2]
+
+
+def test_tag_premise_writes_each_school_as_a_sentence():
+    from scripts.tags_roundtrip import tag_premise
+
+    used = ["lease", {"school": "form", "tag": "plain notice"}, {"school": "fact", "tag": "deposit is 1,800 dollars"},
+            {"school": "topic", "tag": "pets"}]
+    assert tag_premise(used) == ("The text is about lease. The text uses plain notice. Deposit is 1,800 dollars. "
+                                 "The text is about pets.")
+
+
+def test_cut_keeps_only_sentences_the_tags_entail_and_never_reads_the_source():
+    from scripts.tags_roundtrip import cut_rewrite
+
+    seen = []
+
+    def max_probs(premise, hyps):
+        seen.append(premise)
+        return [0.9 if "deposit" in h else (None if "long" in h else 0.1) for h in hyps]
+
+    c = cut_rewrite("The deposit is back. Pets roam free. A long one.", ["deposit"], max_probs)
+    assert c == {"text": "The deposit is back.", "kept_sentences": 1, "rewrite_sentences": 3}
+    assert seen == ["The text is about deposit."]
+    assert cut_rewrite("Anything.", [], max_probs)["kept_sentences"] == 0
+
+
+def test_summarize_cut_counts_empty_cuts_as_zero_recall_and_leaves_them_out_of_fidelity():
+    from scripts.tags_roundtrip import summarize_cut
+
+    runs = [{"scores": {"j": {}}, "cut": {"kept_sentences": 2, "scores": {"j": {"recall": 0.4, "fidelity": 1.0}}}},
+            {"scores": {"j": {}}, "cut": {"kept_sentences": 0, "scores": None}}]
+    s = summarize_cut(runs)
+    assert s["nonempty"] == 1 and s["kept_sentences_mean"] == 1.0
+    assert s["j"]["recall"] == {"mean": 0.2, "min": 0.0, "max": 0.4}
+    assert s["j"]["fidelity"] == {"mean": 1.0, "min": 1.0, "max": 1.0}
+    none = summarize_cut([runs[1]])
+    assert none["j"]["fidelity"] is None and none["nonempty"] == 0
+
+
+def test_run_with_cut_records_cut_per_sample_but_not_for_control():
+    from scripts.tags_roundtrip import run
+
+    out = run(SOURCE, model="fake", counts=[0, 1], client=_FakeClient(),
+              judges={"j": lambda p, hs: [h.rstrip(".") in p for h in hs]}, samples=2,
+              cut=lambda premise, hyps: [0.9] * len(hyps))
+    control, topic = out["rungs"]
+    assert "cut" not in control["samples"][0] and "cut_summary" not in control
+    assert topic["samples"][0]["cut"]["kept_sentences"] == 1
+    assert topic["cut_summary"]["j"]["recall"]["mean"] == 1 / 3
+
+
+def test_cut_keeps_unpunctuated_items_as_separate_units_for_scoring():
+    from scripts.tags_roundtrip import cut_rewrite
+    from sum_engine_internal.research.meaning.meaning_loss import _sentences
+
+    c = cut_rewrite("Alignment methods\nEthical principles\nIt is fine.", ["x"], lambda p, hs: [0.9] * len(hs))
+    assert c["kept_sentences"] == 3
+    assert len(_sentences(c["text"])) == c["kept_sentences"]
