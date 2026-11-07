@@ -108,7 +108,7 @@ def test_card_wired_into_page_with_honest_wording():
     assert "nothing on this page calls a model" not in html
     # The mixed rows used a different rewrite prompt; the card must say so.
     assert "Follow the form tags for voice and structure" in html
-    # Every prompt difference and the README's confounds must be named on the card.
+    # The main prompt differences and the README's confounds must be named on the card.
     assert '"as plain prose"' in html
     assert "carry more tag words" in html
     assert "not independent" in html
