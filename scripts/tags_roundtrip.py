@@ -53,9 +53,10 @@ import sys
 from pathlib import Path
 from typing import Any, Callable, Sequence
 
-METHOD_ID = "sum.tags_roundtrip.v0"
+METHOD_ID = "sum.tags_roundtrip.v1"
 DEFAULT_MODEL = "gpt-4o-mini-2024-07-18"
 DEFAULT_COUNTS = (0, 4, 8, 16, 32)
+DEFAULT_MIXED_COUNTS = (8, 16, 32)
 MAX_TAGS = 32
 MAX_TAG_WORDS = 4
 MAX_EVIDENCE_WORDS = 12
@@ -95,7 +96,41 @@ REGEN_SYSTEM = (
     "prose. Use every tag. Do not add names, numbers, dates or quotations "
     "that the tags do not contain. Return only the text."
 )
+FORM_SYSTEM = (
+    "You make form tags for a text: labels for how it is written, not what it "
+    "is about. A tag is 1 to 4 words and names one feature of its voice (who "
+    "speaks, to whom, in which person), genre, structure (for example a list, "
+    "a quotation, a dialogue, an aside), tone, or a rhetorical move. Return "
+    'JSON {"tags": [...]} with at most 32 tags. Each tag is an object '
+    '{"tag": string, "rank": integer, "evidence": string}. rank: how much the '
+    "feature shapes the text, 1 = most, each rank used once. evidence: the "
+    "shortest exact quote from the text, at most 12 words, copied character "
+    "for character, that shows the feature. List the tags in the order their "
+    "evidence first appears in the text."
+)
+FACT_SYSTEM = (
+    "You make fact tags for a text: the events, actions and claims it states, "
+    "each as a short subject-verb-object phrase of 3 to 8 words (for example "
+    '"author tested the app at night"). Return JSON {"tags": [...]} with at '
+    'most 32 tags. Each tag is an object {"tag": string, "rank": integer, '
+    '"evidence": string}. rank: importance to the text, 1 = most important, '
+    "each rank used once. evidence: the shortest exact quote from the text, at "
+    "most 12 words, copied character for character, that states it. List the "
+    "tags in the order their evidence first appears in the text."
+)
+SCHOOLS = {"topic": (TAG_SYSTEM, 4), "form": (FORM_SYSTEM, 4), "fact": (FACT_SYSTEM, 8)}
+MIXED_SHARES = (("topic", 2), ("form", 1), ("fact", 1))  # k/2 topic, k/4 form, k/4 fact
+REGEN_MIXED_SYSTEM = (
+    "You are given tags taken from a text, in the order they appear in it. "
+    "Each tag is labelled topic (what the text is about), form (how it is "
+    "written: voice, genre, structure, tone) or fact (something the text "
+    "states). Write the text they came from, about {words} words. Follow the "
+    "form tags for voice and structure. Use every tag. Do not add names, "
+    "numbers, dates or quotations that the tags do not contain. Return only "
+    "the text."
+)
 CONTROL_SYSTEM = "Write a text of about {words} words. Return only the text."
+FIRST_PERSON = frozenset("i me my mine myself we us our ours ourselves".split())
 
 
 def _norm(s: str) -> str:
@@ -104,9 +139,10 @@ def _norm(s: str) -> str:
     return re.sub(r"\s+", " ", s).strip().lower()
 
 
-def validate_tags(raw: Any, source: str) -> list[dict[str, Any]]:
+def validate_tags(raw: Any, source: str, *, school: str = "topic",
+                  max_words: int = MAX_TAG_WORDS) -> list[dict[str, Any]]:
     """Normalise the model's tag list. Drops entries that are not objects or
-    whose tag is empty or longer than MAX_TAG_WORDS words; keeps at most
+    whose tag is empty or longer than ``max_words`` words; keeps at most
     MAX_TAGS. Locates each evidence quote in the source (whitespace, case and
     curly quotes normalised) and records its offset in that normalised text,
     used only for ordering, or None if not found. A quote longer than
@@ -128,7 +164,7 @@ def validate_tags(raw: Any, source: str) -> list[dict[str, Any]]:
         if not isinstance(tag, str) or not tag.strip():
             continue
         tag = re.sub(r"\s+", " ", tag).strip()
-        if len(tag.split()) > MAX_TAG_WORDS or _norm(tag) in seen:
+        if len(tag.split()) > max_words or _norm(tag) in seen:
             continue
         seen.add(_norm(tag))
         evidence = item.get("evidence") if isinstance(item.get("evidence"), str) else ""
@@ -140,7 +176,9 @@ def validate_tags(raw: Any, source: str) -> list[dict[str, Any]]:
         rank = item.get("rank")
         tags.append({
             "tag": tag,
-            "kind": item.get("kind") if item.get("kind") in ("mentioned", "implied") else "unlabelled",
+            "school": school,
+            "kind": (item.get("kind") if item.get("kind") in ("mentioned", "implied") else "unlabelled")
+                    if school == "topic" else None,
             "evidence": evidence,
             "evidence_found": pos is not None,
             "evidence_over_word_limit": len(evidence.split()) > MAX_EVIDENCE_WORDS,
@@ -163,6 +201,37 @@ def validate_tags(raw: Any, source: str) -> list[dict[str, Any]]:
 def tags_at(tags: Sequence[dict[str, Any]], k: int) -> list[str]:
     """The k highest-ranked tags, in replication order."""
     return [t["tag"] for t in tags if t["rank"] <= k]
+
+
+def _order_key(t: dict[str, Any]) -> tuple:
+    return (t["evidence_position"] is None, t["evidence_position"] or 0)
+
+
+def mixed_at(by_school: dict[str, Sequence[dict[str, Any]]], k: int) -> list[dict[str, str]]:
+    """k tags shared across schools by MIXED_SHARES (k/2 topic, k/4 form, k/4
+    fact, rounding down, any remainder going to topic), each school's
+    highest-ranked first, then merged into one sequence in replication order
+    (tags whose evidence was not found go last, school by school). Returns
+    [{"school", "tag"}]."""
+    total = sum(w for _, w in MIXED_SHARES)
+    quota = {name: k * w // total for name, w in MIXED_SHARES}
+    quota[MIXED_SHARES[0][0]] += k - sum(quota.values())
+    picked = []
+    for name, _ in MIXED_SHARES:
+        picked.extend(t for t in by_school.get(name, ()) if t["rank"] <= quota[name])
+    picked.sort(key=_order_key)
+    return [{"school": t["school"], "tag": t["tag"]} for t in picked]
+
+
+def form_signals(text: str) -> dict[str, float]:
+    """Two descriptive signals of voice: the share of words that are
+    first-person pronouns, and the mean number of words per sentence."""
+    from sum_engine_internal.research.meaning.meaning_loss import _sentences
+
+    words = re.findall(r"[\w']+", text.lower())
+    sents = _sentences(text)
+    return {"first_person_share": sum(w in FIRST_PERSON for w in words) / max(1, len(words)),
+            "words_per_sentence": len(words) / max(1, len(sents))}
 
 
 def windows(sentences: Sequence[str], lengths: Sequence[int], budget: int) -> list[tuple[str, bool]]:
@@ -322,31 +391,53 @@ def summarize(samples: Sequence[dict[str, Any]]) -> dict[str, Any]:
 
 def run(source: str, *, model: str, counts: Sequence[int], client: Any,
         judges: dict[str, Callable[[str, Sequence[str]], list[bool]]], samples: int = 3,
+        schools: Sequence[str] = ("topic",), mixed_counts: Sequence[int] = (),
         log: Callable[[str], None] = lambda s: None) -> dict[str, Any]:
     words = len(source.split())
-    raw = json.loads(_chat(client, model, TAG_SYSTEM, source, json_mode=True))
-    tags = validate_tags(raw, source)
-    log(f"{len(tags)} tags ({sum(t['evidence_found'] for t in tags)} with evidence found in the text)")
-    rungs = []
-    for k in counts:
-        used = tags_at(tags, k)
-        if k and len(used) < k and rungs and rungs[-1]["tag_count"] == len(used):
-            continue
-        listing = "\n".join(f"{i}. {t}" for i, t in enumerate(used, 1))
-        runs = []
+    by_school: dict[str, list[dict[str, Any]]] = {}
+    for name in schools:
+        system, max_words = SCHOOLS[name]
+        raw = json.loads(_chat(client, model, system, source, json_mode=True))
+        by_school[name] = validate_tags(raw, source, school=name, max_words=max_words)
+        log(f"{name}: {len(by_school[name])} tags "
+            f"({sum(t['evidence_found'] for t in by_school[name])} with evidence found in the text)")
+
+    def rewrites(system: str, user: str) -> list[dict[str, Any]]:
+        out = []
         for j in range(samples):
-            if k == 0:
-                rewrite = _chat(client, model, CONTROL_SYSTEM.format(words=words), "Write it.", seed=7 + j)
-            else:
-                rewrite = _chat(client, model, REGEN_SYSTEM.format(words=words), listing, seed=7 + j)
-            runs.append({"seed": 7 + j, "rewrite": rewrite, "rewrite_words": len(rewrite.split()),
-                         "scores": {n: score(source, rewrite, fn, n) for n, fn in judges.items()}})
+            rewrite = _chat(client, model, system, user, seed=7 + j)
+            out.append({"seed": 7 + j, "rewrite": rewrite, "rewrite_words": len(rewrite.split()),
+                        "form_signals": form_signals(rewrite),
+                        "scores": {n: score(source, rewrite, fn, n) for n, fn in judges.items()}})
+        return out
+
+    def record(condition: str, used: list, runs: list) -> dict[str, Any]:
         summary = summarize(runs)
-        rungs.append({"tag_count": len(used), "tags": used, "summary": summary, "samples": runs})
-        log(f"k={len(used):>2}  " + "  ".join(
+        tag_words = sum(len((u["tag"] if isinstance(u, dict) else u).split()) for u in used)
+        log(f"{condition:>6} k={len(used):>2} ({tag_words:>3} tag words)  " + "  ".join(
             f"{n}: recall {v['recall']['mean']:.2f} [{v['recall']['min']:.2f}-{v['recall']['max']:.2f}]"
             f" fidelity {v['fidelity']['mean']:.2f}" for n, v in summary.items()))
-    return {"tags": tags, "rungs": rungs}
+        return {"condition": condition, "tag_count": len(used), "tag_words": tag_words, "tags": used,
+                "summary": summary, "samples": runs}
+
+    rungs = []
+    topic = by_school.get("topic", [])
+    for k in counts:
+        used = tags_at(topic, k)
+        if k and len(used) < k and rungs and rungs[-1]["tag_count"] == len(used):
+            continue
+        if k == 0:
+            runs = rewrites(CONTROL_SYSTEM.format(words=words), "Write it.")
+            rungs.append(record("control", [], runs))
+            continue
+        listing = "\n".join(f"{i}. {t}" for i, t in enumerate(used, 1))
+        rungs.append(record("topic", used, rewrites(REGEN_SYSTEM.format(words=words), listing)))
+    if len(by_school) > 1:
+        for k in mixed_counts:
+            used = mixed_at(by_school, k)
+            listing = "\n".join(f"{i}. [{u['school']}] {u['tag']}" for i, u in enumerate(used, 1))
+            rungs.append(record("mixed", used, rewrites(REGEN_MIXED_SYSTEM.format(words=words), listing)))
+    return {"tags": by_school, "source_form_signals": form_signals(source), "rungs": rungs}
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -356,12 +447,21 @@ def main(argv: Sequence[str] | None = None) -> int:
     ap.add_argument("--model", default=DEFAULT_MODEL)
     ap.add_argument("--counts", default=",".join(map(str, DEFAULT_COUNTS)))
     ap.add_argument("--samples", type=int, default=3, help="rewrites per tag count (seeds 7, 8, ...)")
+    ap.add_argument("--schools", default="topic,form,fact", help="tag schools to build: topic, form, fact")
+    ap.add_argument("--mixed-counts", default=",".join(map(str, DEFAULT_MIXED_COUNTS)),
+                    help="tag counts for the mixed condition (used when more than one school is built)")
     args = ap.parse_args(argv)
     counts = sorted({int(c) for c in args.counts.split(",")})
     if any(c < 0 or c > MAX_TAGS for c in counts):
         ap.error(f"counts must be between 0 and {MAX_TAGS}")
     if args.samples < 1:
         ap.error("samples must be at least 1")
+    schools = [x.strip() for x in args.schools.split(",") if x.strip()]
+    if not schools or any(x not in SCHOOLS for x in schools) or len(set(schools)) != len(schools):
+        ap.error(f"schools must be distinct names from {', '.join(SCHOOLS)}")
+    mixed_counts = sorted({int(c) for c in args.mixed_counts.split(",") if c.strip()})
+    if any(c < 1 or c > MAX_TAGS for c in mixed_counts):
+        ap.error(f"mixed counts must be between 1 and {MAX_TAGS}")
 
     from openai import OpenAI
     from sum_engine_internal.research.meaning.local_judge import EmbeddingJudge
@@ -371,6 +471,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     exact = WindowedNLI()
     result = run(source, model=args.model, counts=counts, client=OpenAI(),
                  judges={"gist": gist.entails_batch, "exact": exact.entails_batch}, samples=args.samples,
+                 schools=schools, mixed_counts=mixed_counts,
                  log=lambda s: print(s, file=sys.stderr))
     out = {
         "method": METHOD_ID,
@@ -379,7 +480,9 @@ def main(argv: Sequence[str] | None = None) -> int:
                   "sha256": hashlib.sha256(source.encode("utf-8")).hexdigest()},
         "model": args.model,
         "sampling": "temperature 0 with a fixed seed per sample; the provider does not guarantee identical output on a re-run",
-        "prompts": {"tags": TAG_SYSTEM, "rewrite": REGEN_SYSTEM, "control": CONTROL_SYSTEM},
+        "prompts": {"tags": {n: SCHOOLS[n][0] for n in schools}, "rewrite": REGEN_SYSTEM,
+                    "rewrite_mixed": REGEN_MIXED_SYSTEM, "control": CONTROL_SYSTEM},
+        "form_signals": "descriptive only: share of words that are first-person pronouns, and mean words per sentence",
         "judges": {"gist": {**gist.manifest(), "rule": "max cosine over sentences on the other side >= threshold"},
                    "exact": exact.manifest()},
         **result,
