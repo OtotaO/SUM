@@ -38,3 +38,47 @@ topic tags at 4, 8, 16 and 32, mixed tags at 8, 16 and 32, three rewrites each.
 5. Mixed 32 has a higher mean first-person share than topic 32.
 
 One text, three rewrites per condition that may open alike: any difference is descriptive.
+
+## Result (added after the run)
+
+From `results.json`. Means of three rewrites, with the range in brackets. The source's first-person
+share is 0.056. The last three columns are the cut: sentences kept per rewrite, its exact recall, and
+its exact fidelity over the cuts that kept anything (n of 3).
+
+| Condition | Tags | Tag words | Gist recall | Exact recall | Gist fidelity | Exact fidelity | First-person share | Cut: kept | Cut: exact recall | Cut: exact fidelity |
+|---|---|---|---|---|---|---|---|---|---|---|
+| control | 0 | 0 | 0.00 [0.00-0.00] | 0.03 [0.02-0.04] | 0.00 | 0.01 | 0.008 | - | - | - |
+| topic | 4 | 6 | 0.14 [0.12-0.14] | 0.12 [0.08-0.18] | 0.72 | 0.15 | 0.027 | 0.3 | 0.00 | 1.00 (n=1) |
+| topic | 8 | 15 | 0.24 [0.22-0.27] | 0.10 [0.08-0.12] | 0.73 | 0.18 | 0.024 | 3.0 | 0.02 | 0.40 (n=3) |
+| topic | 16 | 27 | 0.25 [0.24-0.27] | 0.11 [0.10-0.12] | 0.63 | 0.21 | 0.028 | 3.0 | 0.03 | 0.81 (n=3) |
+| topic | 32 | 60 | 0.24 [0.22-0.27] | 0.09 [0.08-0.10] | 0.69 | 0.25 | 0.036 | 5.3 | 0.13 | 0.53 (n=3) |
+| mixed | 8 | 18 | 0.12 [0.10-0.14] | 0.05 [0.02-0.08] | 0.26 | 0.09 | 0.099 | 0.7 | 0.00 | 1.00 (n=2) |
+| mixed | 16 | 41 | 0.23 [0.22-0.24] | 0.18 [0.10-0.33] | 0.43 | 0.03 | 0.096 | 0.3 | 0.00 | 1.00 (n=1) |
+| mixed | 32 | 76 | 0.40 [0.35-0.45] | 0.27 [0.14-0.49] | 0.52 | 0.24 | 0.092 | 7.3 | 0.02 | 0.81 (n=3) |
+
+Against the five expectations:
+
+1. Control gist recall 0.00 and exact recall 0.03, within the stated limits (0.05 and 0.10). Held: on
+   a text they were not tuned on, the judges still gave unrelated prose almost no credit.
+2. Mixed 32: the cut's exact fidelity 0.81 against 0.24 uncut. Held.
+3. Mixed 32: the cut's exact recall 0.02 against 0.27 uncut. Held. Of about 40 sentences per rewrite,
+   the cut kept 7.3 on average.
+4. Topic 32 gist recall 0.24 against topic 4's 0.14. Held, though topic 8, 16 and 32 are all about
+   0.24 to 0.25: past 8 tags, more topic tags added no gist here.
+5. Mixed 32 first-person share 0.092 against topic 32's 0.036. Held. As on EFSO Vaults #1, mixed
+   overshoots the source (0.056) and topic undershoots it.
+
+Not predicted, seen here: at 32 tags mixed recalled clearly more gist than topic tags alone (0.40
+[0.35-0.45] against 0.24 [0.22-0.27]; the ranges do not overlap), unlike EFSO Vaults #1, where the
+ranges overlapped. The best mixed rewrite (seed 7) recalled 49% of the source's sentences on the
+exact judge; its first paragraph follows the essay's own sequence (staying up late, "a bit of binary
+banter", sleeping until 9, inbox zero, starting a simulation). The same confounds as before apply to
+any topic-against-mixed comparison: different prompts and more tag words (76 against 60).
+
+On the cut: at topic 32 its exact recall (0.13) is higher than the full rewrite's (0.09), which a
+subset of the rewrite's sentences cannot really achieve; the exact judge reads the shorter text in
+different windows, so differences of that size on this judge are noise. Where the cut kept one or
+two sentences, its fidelity of 1.00 rests on one or two sentences.
+
+In every condition the three rewrites open with the same sentence, so they are not independent draws
+and the ranges understate how much a rewrite can vary. One text: descriptive only.
