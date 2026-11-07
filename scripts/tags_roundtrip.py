@@ -319,6 +319,12 @@ class WindowedNLI:
         return [self.tok.decode(ids[i:i + size]) for i in range(0, max(1, len(ids) - size + step), step)]
 
     def entails_batch(self, premise: str, hypotheses: Sequence[str]) -> list[bool]:
+        return [p is not None and p >= self.threshold for p in self.max_probs(premise, hypotheses)]
+
+    def max_probs(self, premise: str, hypotheses: Sequence[str]) -> list[float | None]:
+        """Per hypothesis, the highest entailment probability over the
+        premise's windows; 0.0 for a blank hypothesis and None for one too
+        long to sit beside a full window."""
         import torch
         from sum_engine_internal.research.meaning.meaning_loss import _sentences
 
@@ -330,14 +336,14 @@ class WindowedNLI:
         out = []
         for h in hypotheses:
             if not h.strip():
-                out.append(False)
+                out.append(0.0)
                 continue
             if self.window_tokens + self._len(h) + self.specials > 512:
                 # The judge cannot read the whole sentence beside a full
                 # window; it is counted as not carried rather than judged on
                 # a prefix.
                 self.long_hypotheses.add(hashlib.sha256(h.encode("utf-8")).hexdigest())
-                out.append(False)
+                out.append(None)
                 continue
             best = 0.0
             for b in range(0, len(texts), 32):
@@ -348,7 +354,7 @@ class WindowedNLI:
                 with torch.no_grad():
                     probs = torch.softmax(self.mdl(**enc).logits.float(), dim=-1)[:, self.entail_idx]
                 best = max(best, float(probs.max()))
-            out.append(best >= self.threshold)
+            out.append(best)
         return out
 
     def entails(self, premise: str, hypothesis: str) -> bool:
@@ -411,10 +417,57 @@ def summarize(samples: Sequence[dict[str, Any]]) -> dict[str, Any]:
     return out
 
 
+CUT_THRESHOLD = 0.5
+
+
+def tag_premise(used: Sequence[Any]) -> str:
+    """The tags given to a rewrite, as plain sentences an NLI model can read:
+    "The text is about X." for topic, "The text uses X." for form, and the
+    fact phrase itself for fact."""
+    out = []
+    for u in used:
+        tag, school = (u["tag"], u["school"]) if isinstance(u, dict) else (u, "topic")
+        if school == "fact":
+            out.append(tag[:1].upper() + tag[1:] + ".")
+        elif school == "form":
+            out.append(f"The text uses {tag}.")
+        else:
+            out.append(f"The text is about {tag}.")
+    return " ".join(out)
+
+
+def cut_rewrite(rewrite: str, used: Sequence[Any],
+                max_probs: Callable[[str, Sequence[str]], list[float | None]],
+                threshold: float = CUT_THRESHOLD) -> dict[str, Any]:
+    """Keep only the rewrite sentences that the tags themselves entail (some
+    window of tag_premise(used) at probability >= threshold). The source is
+    never consulted. Returns the kept text and counts."""
+    from sum_engine_internal.research.meaning.meaning_loss import _sentences
+
+    sents = _sentences(rewrite)
+    probs = max_probs(tag_premise(used), sents) if sents and used else [None] * len(sents)
+    kept = [x for x, p in zip(sents, probs) if p is not None and p >= threshold]
+    return {"text": " ".join(kept), "kept_sentences": len(kept), "rewrite_sentences": len(sents)}
+
+
+def summarize_cut(samples: Sequence[dict[str, Any]]) -> dict[str, Any]:
+    """Recall over all samples (an empty cut recalls nothing); fidelity only
+    over samples whose cut kept at least one sentence, with that count."""
+    out: dict[str, Any] = {"kept_sentences_mean": sum(x["cut"]["kept_sentences"] for x in samples) / len(samples),
+                           "nonempty": sum(1 for x in samples if x["cut"]["kept_sentences"])}
+    for name in samples[0]["scores"]:
+        rec = [x["cut"]["scores"][name]["recall"] if x["cut"]["scores"] else 0.0 for x in samples]
+        fid = [x["cut"]["scores"][name]["fidelity"] for x in samples if x["cut"]["scores"]]
+        out[name] = {"recall": {"mean": sum(rec) / len(rec), "min": min(rec), "max": max(rec)},
+                     "fidelity": ({"mean": sum(fid) / len(fid), "min": min(fid), "max": max(fid)} if fid else None)}
+    return out
+
+
 def run(source: str, *, model: str, counts: Sequence[int], client: Any,
         judges: dict[str, Callable[[str, Sequence[str]], list[bool]]], samples: int = 3,
         schools: Sequence[str] = ("topic",), mixed_counts: Sequence[int] = (),
         mixed_conditions: Sequence[str] = ("mixed",), tags: dict[str, list[dict[str, Any]]] | None = None,
+        cut: Callable[[str, Sequence[str]], list[float | None]] | None = None,
         log: Callable[[str], None] = lambda s: None) -> dict[str, Any]:
     """With ``tags`` (school -> validated tags, e.g. from an earlier run of
     the same text), no tagging call is made and those tags are reused."""
@@ -427,22 +480,35 @@ def run(source: str, *, model: str, counts: Sequence[int], client: Any,
         log(f"{name}: {len(by_school[name])} tags "
             f"({sum(t['evidence_found'] for t in by_school[name])} with evidence found in the text)")
 
-    def rewrites(system: str, user: str) -> list[dict[str, Any]]:
+    def rewrites(system: str, user: str, used: Sequence[Any] = ()) -> list[dict[str, Any]]:
         out = []
         for j in range(samples):
             rewrite = _chat(client, model, system, user, seed=7 + j)
-            out.append({"seed": 7 + j, "rewrite": rewrite, "rewrite_words": len(rewrite.split()),
-                        "form_signals": form_signals(rewrite),
-                        "scores": {n: score(source, rewrite, fn, n) for n, fn in judges.items()}})
+            item = {"seed": 7 + j, "rewrite": rewrite, "rewrite_words": len(rewrite.split()),
+                    "form_signals": form_signals(rewrite),
+                    "scores": {n: score(source, rewrite, fn, n) for n, fn in judges.items()}}
+            if cut is not None and used:
+                c = cut_rewrite(rewrite, used, cut)
+                c["scores"] = ({n: score(source, c["text"], fn, n) for n, fn in judges.items()}
+                               if c["kept_sentences"] else None)
+                item["cut"] = c
+            out.append(item)
         return out
 
     def record(condition: str, used: list, runs: list) -> dict[str, Any]:
         summary = summarize(runs)
+        cut_summary = summarize_cut(runs) if runs and "cut" in runs[0] else None
         tag_words = sum(len((u["tag"] if isinstance(u, dict) else u).split()) for u in used)
         log(f"{condition:>6} k={len(used):>2} ({tag_words:>3} tag words)  " + "  ".join(
             f"{n}: recall {v['recall']['mean']:.2f} [{v['recall']['min']:.2f}-{v['recall']['max']:.2f}]"
             f" fidelity {v['fidelity']['mean']:.2f}" for n, v in summary.items()))
+        if cut_summary:
+            log(f"{'':>6} cut: kept {cut_summary['kept_sentences_mean']:.1f} sentences  " + "  ".join(
+                f"{n}: recall {cut_summary[n]['recall']['mean']:.2f} fidelity "
+                + (f"{cut_summary[n]['fidelity']['mean']:.2f}" if cut_summary[n]['fidelity'] else "n/a")
+                for n in judges))
         return {"condition": condition, "tag_count": len(used), "tag_words": tag_words, "tags": used,
+                **({"cut_summary": cut_summary} if cut_summary else {}),
                 "summary": summary, "samples": runs}
 
     rungs = []
@@ -458,13 +524,13 @@ def run(source: str, *, model: str, counts: Sequence[int], client: Any,
         if not used:
             continue
         listing = "\n".join(f"{i}. {t}" for i, t in enumerate(used, 1))
-        rungs.append(record("topic", used, rewrites(REGEN_SYSTEM.format(words=words), listing)))
+        rungs.append(record("topic", used, rewrites(REGEN_SYSTEM.format(words=words), listing, used)))
     if len(by_school) > 1:
         for condition in mixed_conditions:
             for k in mixed_counts:
                 used = mixed_at(by_school, k)
                 listing = "\n".join(f"{i}. [{u['school']}] {u['tag']}" for i, u in enumerate(used, 1))
-                rungs.append(record(condition, used, rewrites(MIXED_PROMPTS[condition].format(words=words), listing)))
+                rungs.append(record(condition, used, rewrites(MIXED_PROMPTS[condition].format(words=words), listing, used)))
     return {"tags": by_school, "source_form_signals": form_signals(source), "rungs": rungs}
 
 
@@ -497,6 +563,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     ap.add_argument("--mixed-conditions", default="mixed",
                     help="rewrite prompts for mixed tags: mixed, mixed_plain (no instruction to follow form "
                          "tags), mixed_grounded (write only what the tags state)")
+    ap.add_argument("--cut", action="store_true",
+                    help="also score each rewrite cut down to the sentences its tags entail")
     ap.add_argument("--tags-from", type=Path,
                     help="reuse the tags of an earlier results JSON for the same text instead of making new ones")
     args = ap.parse_args(argv)
@@ -531,6 +599,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     result = run(source, model=args.model, counts=counts, client=OpenAI(),
                  judges={"gist": gist.entails_batch, "exact": exact.entails_batch}, samples=args.samples,
                  schools=schools, mixed_counts=mixed_counts, mixed_conditions=mixed_conditions, tags=reused,
+                 cut=exact.max_probs if args.cut else None,
                  log=lambda s: print(s, file=sys.stderr))
     out = {
         "method": METHOD_ID,
@@ -544,6 +613,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         "sampling": "temperature 0 with a fixed seed per sample; the provider does not guarantee identical output on a re-run",
         "prompts": {"tags": {n: SCHOOLS[n][0] for n in schools}, "rewrite": REGEN_SYSTEM,
                     **{f"rewrite_{c}": MIXED_PROMPTS[c] for c in mixed_conditions}, "control": CONTROL_SYSTEM},
+        "cut": ({"rule": "keep a rewrite sentence only if some window of the tags, written as sentences "
+                         "(topic: 'The text is about X.'; form: 'The text uses X.'; fact: the phrase), entails it "
+                         "under the exact judge's model at probability >= threshold; the source is not consulted",
+                 "threshold": CUT_THRESHOLD,
+                 "empty_cut": "recall counts as 0; fidelity is left out and the number of non-empty cuts is given"}
+                if args.cut else None),
         "form_signals": "descriptive only: share of words that are first-person pronouns or contractions of them (I'm, we've, let's, ...), with curly and straight apostrophes treated alike, and mean words per sentence",
         "judges": {"gist": {**gist.manifest(), "rule": "max cosine over sentences on the other side >= threshold"},
                    "exact": exact.manifest()},
