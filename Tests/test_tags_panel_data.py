@@ -108,6 +108,13 @@ def test_card_wired_into_page_with_honest_wording():
     assert "nothing on this page calls a model" not in html
     # The mixed rows used a different rewrite prompt; the card must say so.
     assert "Follow the form tags for voice and structure" in html
+    # Every prompt difference and the README's confounds must be named on the card.
+    assert '"as plain prose"' in html
+    assert "carry more tag words" in html
+    assert "not independent" in html
+    # Every topic-vs-mixed prompt difference the card names must be real.
+    rj = json.loads((_REPO / "fixtures/tags_roundtrip/efso_vaults_1/results.json").read_text("utf-8"))
+    assert "as plain prose" in rj["prompts"]["rewrite"] and "as plain prose" not in rj["prompts"]["rewrite_mixed"]
     # The plain-language lines quote the judges' settings and the model; keep them equal to the data.
     d = _panel()
     assert d["model"] in html

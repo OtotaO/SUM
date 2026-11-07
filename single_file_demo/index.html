@@ -560,15 +560,17 @@
   <p style="font-size:12px;opacity:0.75;margin:0 0 6px">
     A tag is a short label for a text. Topic tags say what it is about, form tags say how it is written,
     and fact tags state what it says. Here a model (gpt-4o-mini-2024-07-18) was given the tags, in
-    the order they appear in the text, and the original's length in words, and asked to write the text
-    again without seeing it. The control row was given the length and no tags; it shows how much credit
+    the order they appear in the text (a few tags whose quote was not found in the text come last), and
+    the original's length in words, and asked to write the text again without seeing it. The control row was given the length and no tags; it shows how much credit
     the judges give prose that has nothing to do with the text.
   </p>
   <p style="font-size:12px;opacity:0.75;margin:0 0 6px">
-    The topic rows and the mixed rows used different prompts. The mixed prompt labels each tag topic,
-    form or fact and adds "Follow the form tags for voice and structure". So a change in voice between
-    a topic row and a mixed row comes from the form tags and that instruction together, and this run
-    cannot separate them.
+    The topic rows and the mixed rows differ in more than the tags. The mixed prompt labels each tag
+    topic, form or fact, adds "Follow the form tags for voice and structure", and leaves out the topic
+    prompt's "as plain prose". Mixed rows also carry more tag words at the same count, because fact
+    tags run up to 8 words (83 against 62 at 32 tags). A later run on the same tags dropped the
+    "Follow" instruction and the voice barely changed, so that instruction is not what changes it;
+    whether the form tags, the labels or the missing "plain prose" do, these runs cannot say.
   </p>
   <p style="font-size:12px;opacity:0.75;margin:0 0 6px">
     Recall is the share of the original's sentences the rewrite carries; fidelity is the share of the
@@ -578,7 +580,10 @@
   </p>
   <p style="font-size:12px;opacity:0.75;margin:0 0 10px">
     These are measurements on this one text, three rewrites per row (mean, with the range in brackets).
-    The judge settings were chosen on this same text, so the numbers do not test those settings. The
+    The three rewrites often open with the same sentence, so they are not independent and the ranges
+    understate how much a rewrite can vary: a later rerun with the same tags and seeds put topic above
+    mixed on exact recall at 32 tags, the reverse of what this run shows. The judge settings were
+    chosen on this same text, so the numbers do not test those settings. The
     rewrite below is the seed 7 one, shown as recorded: this card calls no model.
   </p>
   <p style="font-size:12px;margin:0 0 10px" id="tags-source-line"></p>
