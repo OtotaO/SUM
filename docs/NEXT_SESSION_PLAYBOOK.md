@@ -19,7 +19,7 @@ Addressed in the 2026-09-25 change set: H1 (a supplied HMAC key now requires the
 
 Anything unfinished on 2026-10-07 goes on a dated, published known-issues list.
 
-### Horizon 1: test the wager by hand (verdict 2026-11-06: NOT RUN)
+### Horizon 1: test the wager by hand (verdict 2026-11-06: NOT RUN; the operator paused the wager test that day; it blocks no distiller work, and the other items below continue)
 
 - Verdict, recorded 2026-11-06: NOT RUN. No contact was made and no pre-registration was committed; the operator was unsure how to run the test. A re-run must be registered before any contact, with a window of at least 4 weeks from the first message and its own dates in place of the ones below (including the one extension); otherwise it keeps the rules below. This verdict date does not move.
 - Pre-registration, committed here before any contact (operator approves): 15 named contacts, at least 10 in one setting (default: plain-language legal and consumer notices). Reach floor: 8 real conversations; below it, record INCONCLUSIVE-REACH and change channel. ALIVE: at least 3 dated second-party demands (2 in one setting) and at least 2 originators of second-party checks, one of them not a services client. FAILING: reach floor met, at most 1 demand, no checks. In between: one extension to 2026-12-04. Sensitive text: public or synthetic documents on a local-only page.
@@ -34,15 +34,15 @@ Branches: ALIVE leads to a recipient packet view and a partner evaluation set; F
 
 ### Horizon 2 (2026-11 to 2027-03), in both branches
 
-Claim map as `sum.review_packet.v2`: verbatim, clause-bounded source spans; labels signed as instrument outputs; human decisions kept separate. Minimum distiller: deterministic extractive depths under a distinct model ID (fixes M13), source highlighting, a "left out at this depth" panel; abstractive depths stay off until human-checked citation precision reaches 0.8 on 20 documents. Tripwire: if a stranger cannot read their own text at three or more depths with source links by 2027-01-31, other feature work freezes. Surface cut after 0.12.0 (which replaced 0.11.1); archiving `api/` or deleting the ZK prover needs explicit operator approval.
+Claim map as `sum.review_packet.v2`: verbatim, clause-bounded source spans; labels signed as instrument outputs; human decisions kept separate. Minimum distiller: deterministic extractive depths under a distinct model ID (fixes M13), source highlighting, a "left out at this depth" panel; abstractive depths stay off until human-checked citation precision reaches 0.8 on 20 documents. Next rung: tags and back, a round trip from a text to ordered tags and a rewrite from the tags alone, with recall and fidelity measured against a no-tags control; shown only as recorded runs while that gate stands. Tripwire: if a stranger cannot read their own text at three or more depths with source links by 2027-01-31, other feature work freezes. Surface cut after 0.12.0 (which replaced 0.11.1); archiving `api/` or deleting the ZK prover needs explicit operator approval.
 
 ### Working rules
 
 - The Friday number is cumulative originators of second-party checks: a real outside person reviews their own rewrite and sends the packet to a different person, who opens it. The ledger stays private; only counts are committed.
 - Every task cites a finding, a person or a loop step. From 2026-10-07, at most one feature PR and one fix PR are open at a time.
-- Until the verdict, stop: repo-wide multi-agent reviews (one diff-scoped audit per release instead), new receipt families, research imports, standards work without a partner, and "compliant", "certified", "faithful" or "guarantee" wording.
+- Until the wager test records ALIVE or FAILING (pausing it does not end these), stop: repo-wide multi-agent reviews (one diff-scoped audit per release instead), new receipt families, research imports, standards work without a partner, and "compliant", "certified", "faithful" or "guarantee" wording.
 - Freeze: the Gödel/CanonicalBundle substrate, the sieve beyond H1 and H2, the compliance validators, the extension, Zig/WASM, the MCP tool count, and the size of `sum_cli/main.py`.
-- From October 2026, `docs/` does not grow in net lines in a month. Three weeks without external contact, or more than two finished but unshipped artifacts, freezes Claude's feature work; fixes continue.
+- From October 2026, `docs/` does not grow in net lines in a month. More than two finished but unshipped artifacts freezes Claude's feature work; fixes continue. On 2026-11-06 the operator made the distiller (NORTH_STAR section 1) the primary track, with the operator as its first user, and removed the rule that three weeks without external contact freezes feature work.
 
 ### Parking list (at most 10 lines; an item leaves only when a named user or funded deliverable asks)
 
