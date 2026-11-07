@@ -49,10 +49,17 @@ def test_bad_entries_long_tags_and_duplicates_are_dropped():
     assert {t["tag"]: t["rank"] for t in tags} == {"Deposit": 1, "weird kind": 2}
 
 
-def test_overlong_evidence_is_not_located():
-    long_quote = " ".join(["word"] * 13)
-    tags = validate_tags({"tags": [{"tag": "t", "rank": 1, "evidence": long_quote}]}, long_quote)
-    assert tags[0]["evidence_found"] is False
+def test_overlong_evidence_is_located_and_flagged_not_treated_as_invented():
+    long_quote = " ".join(f"w{i}" for i in range(13))
+    source = long_quote + ". Later text."
+    raw = {"tags": [{"tag": "later", "rank": 1, "evidence": "Later text"},
+                    {"tag": "long", "rank": 2, "evidence": long_quote},
+                    {"tag": "made up", "rank": 3, "evidence": "not in the text"}]}
+    tags = validate_tags(raw, source)
+    assert [t["tag"] for t in tags] == ["long", "later", "made up"]
+    assert tags[0]["evidence_found"] is True and tags[0]["evidence_over_word_limit"] is True
+    assert tags[1]["evidence_over_word_limit"] is False
+    assert tags[2]["evidence_found"] is False and tags[2]["evidence_over_word_limit"] is False
 
 
 def test_at_most_32_tags_are_kept():
@@ -110,3 +117,38 @@ def test_summarize_reports_mean_min_max_per_judge():
     s = summarize(runs)
     assert s["gist"]["recall"] == {"mean": 0.30000000000000004, "min": 0.2, "max": 0.4}
     assert s["gist"]["fidelity"]["min"] == 0.5 and s["gist"]["fidelity"]["max"] == 1.0
+
+
+class _FakeTok:
+    """Whitespace tokenizer: one token per word."""
+
+    def __call__(self, text, add_special_tokens=False):
+        return {"input_ids": text.split()}
+
+    def decode(self, ids):
+        return " ".join(ids)
+
+
+def _splitter(window_tokens):
+    from scripts.tags_roundtrip import WindowedNLI
+
+    w = object.__new__(WindowedNLI)
+    w.tok, w.window_tokens, w.split_sentences = _FakeTok(), window_tokens, 0
+    return w
+
+
+def test_long_sentence_is_split_into_pieces_within_the_window_covering_every_token():
+    w = _splitter(10)
+    sent = " ".join(f"t{i}" for i in range(25))
+    pieces = w._split(sent)
+    assert w.split_sentences == 1
+    assert all(len(p.split()) <= 9 for p in pieces)
+    assert set(" ".join(pieces).split()) == set(sent.split())
+    assert pieces[0].split()[-1] in pieces[1].split()  # neighbouring pieces overlap
+
+
+def test_short_sentence_is_not_split_and_split_pieces_fit_windows():
+    w = _splitter(10)
+    assert w._split("a b c") == ["a b c"] and w.split_sentences == 0
+    pieces = w._split(" ".join(f"t{i}" for i in range(30)))
+    assert not any(over for _, over in windows(pieces, [len(p.split()) for p in pieces], 10))

@@ -29,8 +29,9 @@ Steps, all recorded in the output JSON:
        embedding cosine similarity of at least 0.5 (all-MiniLM-L6-v2).
      - exact: a sentence is carried if an NLI model (DeBERTa-v3-large,
        mnli-fever-anli-ling-wanli) gives entailment probability of at least
-       0.9 from some window of the other side. Windows are overlapping runs
-       of whole sentences of at most 80 tokens; on longer windows the model
+       0.9 from some window of the other side. A window is a run of whole
+       sentences of at most 80 tokens; a longer sentence is split into
+       overlapping pieces of at most 80 tokens. On longer windows the model
        credited unrelated text. Support spread across windows is missed.
      These settings were chosen on one development text (the k = 0 control
      there scored at or near zero under both). They are frozen here; results
@@ -105,7 +106,9 @@ def validate_tags(raw: Any, source: str) -> list[dict[str, Any]]:
     """Normalise the model's tag list. Drops entries that are not objects or
     whose tag is empty or longer than MAX_TAG_WORDS words; keeps at most
     MAX_TAGS. Locates each evidence quote in the source (whitespace, case and
-    curly quotes normalised) and records its position, or None if not found.
+    curly quotes normalised) and records its offset in that normalised text,
+    used only for ordering, or None if not found. A quote longer than
+    MAX_EVIDENCE_WORDS is still located and is flagged as over the limit.
     Ranks are re-assigned 1..n in the model's rank order (ties and missing
     ranks fall back to list order). Returns tags in replication order: found
     evidence by position, then tags whose evidence was not found, in list
@@ -129,7 +132,7 @@ def validate_tags(raw: Any, source: str) -> list[dict[str, Any]]:
         evidence = item.get("evidence") if isinstance(item.get("evidence"), str) else ""
         evidence = re.sub(r"\s+", " ", evidence).strip()
         pos = None
-        if evidence and len(evidence.split()) <= MAX_EVIDENCE_WORDS:
+        if evidence:
             found = norm_source.find(_norm(evidence))
             pos = found if found >= 0 else None
         rank = item.get("rank")
@@ -138,6 +141,7 @@ def validate_tags(raw: Any, source: str) -> list[dict[str, Any]]:
             "kind": item.get("kind") if item.get("kind") in ("mentioned", "implied") else "unlabelled",
             "evidence": evidence,
             "evidence_found": pos is not None,
+            "evidence_over_word_limit": len(evidence.split()) > MAX_EVIDENCE_WORDS,
             "evidence_position": pos,
             "_model_rank": rank if isinstance(rank, int) and not isinstance(rank, bool) else None,
             "_list_index": i,
@@ -161,9 +165,10 @@ def tags_at(tags: Sequence[dict[str, Any]], k: int) -> list[str]:
 
 def windows(sentences: Sequence[str], lengths: Sequence[int], budget: int) -> list[tuple[str, bool]]:
     """Consecutive whole sentences packed into windows of at most ``budget``
-    tokens (each sentence costs its length plus one), overlapping by one
-    sentence. A sentence longer than the budget is a window of its own,
-    marked True (the judge will see only its start)."""
+    tokens (each sentence costs its length plus one). Consecutive windows
+    share one sentence whenever a window holds two or more. A sentence longer
+    than the budget is a window of its own, marked True; the caller must split
+    it (WindowedNLI splits such sentences into token pieces first)."""
     out: list[tuple[str, bool]] = []
     i, n = 0, len(sentences)
     while i < n:
@@ -200,18 +205,30 @@ class WindowedNLI:
         self.mdl = AutoModelForSequenceClassification.from_pretrained(model_id, revision=revision).eval().to(self.device)
         labels = {i: str(l).lower() for i, l in self.mdl.config.id2label.items()}
         self.entail_idx = next(i for i, l in labels.items() if l.startswith("entail"))
-        self.oversize_windows = 0
+        self.split_sentences = 0
 
     def _len(self, text: str) -> int:
         return len(self.tok(text, add_special_tokens=False)["input_ids"])
+
+    def _split(self, sent: str) -> list[str]:
+        """A sentence longer than the window becomes consecutive token pieces
+        of at most ``window_tokens`` tokens, overlapping by a quarter of that."""
+        ids = self.tok(sent, add_special_tokens=False)["input_ids"]
+        if len(ids) <= self.window_tokens - 1:
+            return [sent]
+        self.split_sentences += 1
+        step = max(1, self.window_tokens * 3 // 4)
+        size = self.window_tokens - 1
+        return [self.tok.decode(ids[i:i + size]) for i in range(0, max(1, len(ids) - size + step), step)]
 
     def entails_batch(self, premise: str, hypotheses: Sequence[str]) -> list[bool]:
         import torch
         from sum_engine_internal.research.meaning.meaning_loss import _sentences
 
-        sents = _sentences(premise) or [premise]
-        wins = windows(sents, [self._len(x) for x in sents], self.window_tokens)
-        self.oversize_windows += sum(1 for _, over in wins if over)
+        pieces: list[str] = []
+        for sent in _sentences(premise) or [premise]:
+            pieces.extend(self._split(sent))
+        wins = windows(pieces, [self._len(x) for x in pieces], self.window_tokens)
         texts = [w for w, _ in wins]
         out = []
         for h in hypotheses:
@@ -221,8 +238,11 @@ class WindowedNLI:
             best = 0.0
             for b in range(0, len(texts), 32):
                 chunk = texts[b:b + 32]
+                hyp_len = self._len(h)
+                fits = hyp_len + 4 < 512 - self.window_tokens
                 enc = self.tok(chunk, [h] * len(chunk), return_tensors="pt", padding=True,
-                               truncation=True, max_length=512).to(self.device)
+                               truncation="only_first" if fits else "longest_first",
+                               max_length=min(512, self.window_tokens + hyp_len + 4)).to(self.device)
                 with torch.no_grad():
                     probs = torch.softmax(self.mdl(**enc).logits.float(), dim=-1)[:, self.entail_idx]
                 best = max(best, float(probs.max()))
@@ -234,9 +254,11 @@ class WindowedNLI:
 
     def manifest(self) -> dict[str, Any]:
         return {"model_id": self.model_id, "model_revision": self.revision, "threshold": self.threshold,
-                "window": f"overlapping runs of whole sentences, at most {self.window_tokens} tokens; "
+                "window": f"runs of whole sentences of at most {self.window_tokens} tokens, consecutive runs "
+                          "sharing a sentence where a run holds two or more; a longer sentence is split into "
+                          "overlapping token pieces; the premise is truncated to the window as a final cap; "
                           "carried if any window entails",
-                "device": self.device, "windows_over_limit": self.oversize_windows}
+                "device": self.device, "sentences_split": self.split_sentences}
 
 
 def score(source: str, rewrite: str, entails_batch: Callable[[str, Sequence[str]], list[bool]],
