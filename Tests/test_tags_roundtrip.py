@@ -350,3 +350,12 @@ def test_run_with_cut_records_cut_per_sample_but_not_for_control():
     assert "cut" not in control["samples"][0] and "cut_summary" not in control
     assert topic["samples"][0]["cut"]["kept_sentences"] == 1
     assert topic["cut_summary"]["j"]["recall"]["mean"] == 1 / 3
+
+
+def test_cut_keeps_unpunctuated_items_as_separate_units_for_scoring():
+    from scripts.tags_roundtrip import cut_rewrite
+    from sum_engine_internal.research.meaning.meaning_loss import _sentences
+
+    c = cut_rewrite("Alignment methods\nEthical principles\nIt is fine.", ["x"], lambda p, hs: [0.9] * len(hs))
+    assert c["kept_sentences"] == 3
+    assert len(_sentences(c["text"])) == c["kept_sentences"]

@@ -43,7 +43,10 @@ One text, three rewrites per condition that may open alike: any difference is de
 
 From `results.json`. Means of three rewrites, with the range in brackets. The source's first-person
 share is 0.056. The last three columns are the cut: sentences kept per rewrite, its exact recall, and
-its exact fidelity over the cuts that kept anything (n of 3).
+its exact fidelity over the cuts that kept anything (n of 3). The cut columns were recomputed from the
+stored rewrites after review found that the first version joined kept sentences with spaces, which
+merged unpunctuated list items before scoring; which sentences the cut keeps did not change, and only
+mixed 32's cut fidelity moved (0.81 to 0.82).
 
 | Condition | Tags | Tag words | Gist recall | Exact recall | Gist fidelity | Exact fidelity | First-person share | Cut: kept | Cut: exact recall | Cut: exact fidelity |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -54,13 +57,13 @@ its exact fidelity over the cuts that kept anything (n of 3).
 | topic | 32 | 60 | 0.24 [0.22-0.27] | 0.09 [0.08-0.10] | 0.69 | 0.25 | 0.036 | 5.3 | 0.13 | 0.53 (n=3) |
 | mixed | 8 | 18 | 0.12 [0.10-0.14] | 0.05 [0.02-0.08] | 0.26 | 0.09 | 0.099 | 0.7 | 0.00 | 1.00 (n=2) |
 | mixed | 16 | 41 | 0.23 [0.22-0.24] | 0.18 [0.10-0.33] | 0.43 | 0.03 | 0.096 | 0.3 | 0.00 | 1.00 (n=1) |
-| mixed | 32 | 76 | 0.40 [0.35-0.45] | 0.27 [0.14-0.49] | 0.52 | 0.24 | 0.092 | 7.3 | 0.02 | 0.81 (n=3) |
+| mixed | 32 | 76 | 0.40 [0.35-0.45] | 0.27 [0.14-0.49] | 0.52 | 0.24 | 0.092 | 7.3 | 0.02 | 0.82 (n=3) |
 
 Against the five expectations:
 
 1. Control gist recall 0.00 and exact recall 0.03, within the stated limits (0.05 and 0.10). Held: on
    a text they were not tuned on, the judges still gave unrelated prose almost no credit.
-2. Mixed 32: the cut's exact fidelity 0.81 against 0.24 uncut. Held.
+2. Mixed 32: the cut's exact fidelity 0.82 against 0.24 uncut. Held.
 3. Mixed 32: the cut's exact recall 0.02 against 0.27 uncut. Held. Of about 40 sentences per rewrite,
    the cut kept 7.3 on average.
 4. Topic 32 gist recall 0.24 against topic 4's 0.14. Held, though topic 8, 16 and 32 are all about
@@ -71,7 +74,7 @@ Against the five expectations:
 Not predicted, seen here: at 32 tags mixed recalled clearly more gist than topic tags alone (0.40
 [0.35-0.45] against 0.24 [0.22-0.27]; the ranges do not overlap), unlike EFSO Vaults #1, where the
 ranges overlapped. The best mixed rewrite (seed 7) recalled 49% of the source's sentences on the
-exact judge; its first paragraph follows the essay's own sequence (staying up late, "a bit of binary
+exact judge; its opening paragraphs follow the essay's own sequence (staying up late, "a bit of binary
 banter", sleeping until 9, inbox zero, starting a simulation). The same confounds as before apply to
 any topic-against-mixed comparison: different prompts and more tag words (76 against 60).
 
@@ -80,5 +83,5 @@ subset of the rewrite's sentences cannot really achieve; the exact judge reads t
 different windows, so differences of that size on this judge are noise. Where the cut kept one or
 two sentences, its fidelity of 1.00 rests on one or two sentences.
 
-In every condition the three rewrites open with the same sentence, so they are not independent draws
-and the ranges understate how much a rewrite can vary. One text: descriptive only.
+The three rewrites of a condition open alike (with the same sentence in five of the eight conditions),
+so they are not independent draws and the ranges understate how much a rewrite can vary. One text: descriptive only.

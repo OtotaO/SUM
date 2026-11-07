@@ -447,7 +447,9 @@ def cut_rewrite(rewrite: str, used: Sequence[Any],
     sents = _sentences(rewrite)
     probs = max_probs(tag_premise(used), sents) if sents and used else [None] * len(sents)
     kept = [x for x, p in zip(sents, probs) if p is not None and p >= threshold]
-    return {"text": " ".join(kept), "kept_sentences": len(kept), "rewrite_sentences": len(sents)}
+    # One kept sentence per line, so the scorer's unitizer (which also splits
+    # on newlines) sees exactly the sentences the cut judged.
+    return {"text": "\n".join(kept), "kept_sentences": len(kept), "rewrite_sentences": len(sents)}
 
 
 def summarize_cut(samples: Sequence[dict[str, Any]]) -> dict[str, Any]:
