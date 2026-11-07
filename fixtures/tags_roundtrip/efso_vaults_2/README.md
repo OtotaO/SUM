@@ -50,7 +50,8 @@ table only mixed 32's cut exact fidelity moved (0.81 to 0.82); its cut gist scor
 moved more (gist recall 0.14 to 0.20, gist fidelity 0.64 to 0.77). The development figures stated
 before the run came from the same space join; recomputed with the corrected join on the same EFSO
 Vaults #1 rewrites, the cut raised exact fidelity in 8 of 8 (lowest 0.33, none at 0.00) and lowered
-exact recall in all 8. The cut rule, and which sentences it keeps, is unchanged.
+exact recall in all 8. The looser gist rule was compared only under the space join and was not
+rechecked.
 
 | Condition | Tags | Tag words | Gist recall | Exact recall | Gist fidelity | Exact fidelity | First-person share | Cut: kept | Cut: exact recall | Cut: exact fidelity |
 |---|---|---|---|---|---|---|---|---|---|---|
