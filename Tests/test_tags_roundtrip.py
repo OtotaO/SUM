@@ -154,3 +154,118 @@ def test_short_sentence_is_not_split_and_split_pieces_fit_windows():
     assert w._split("a b c") == ["a b c"] and not w.split_sentences
     pieces = w._split(" ".join(f"t{i}" for i in range(30)))
     assert not any(over for _, over in windows(pieces, [len(p.split()) for p in pieces], 10))
+
+
+def _t(tag, school, rank, pos):
+    return {"tag": tag, "school": school, "rank": rank, "evidence_position": pos}
+
+
+def test_mixed_at_shares_k_by_school_and_merges_in_replication_order():
+    from scripts.tags_roundtrip import mixed_at
+
+    by_school = {
+        "topic": [_t("t1", "topic", 2, 5), _t("t2", "topic", 1, 40), _t("t3", "topic", 3, 60), _t("t4", "topic", 4, 1)],
+        "form": [_t("f1", "form", 1, 10), _t("f2", "form", 2, 0)],
+        "fact": [_t("x1", "fact", 1, None), _t("x2", "fact", 2, 30)],
+    }
+    used = mixed_at(by_school, 4)  # 2 topic, 1 form, 1 fact
+    assert [u["tag"] for u in used] == ["t1", "f1", "t2", "x1"]
+    assert [u["school"] for u in used] == ["topic", "form", "topic", "fact"]
+    six = mixed_at(by_school, 6)  # 6*2//4=3 topic, 1 form, 1 fact, remainder 1 to topic
+    assert sum(u["school"] == "topic" for u in six) == 4
+
+
+def test_mixed_at_with_a_missing_school_uses_what_exists():
+    from scripts.tags_roundtrip import mixed_at
+
+    used = mixed_at({"topic": [_t("t1", "topic", 1, 0)]}, 4)
+    assert used == [{"school": "topic", "tag": "t1"}]
+
+
+def test_schools_label_tags_and_apply_their_word_limits():
+    raw = {"tags": [{"tag": "author used the simulator at night", "rank": 1, "evidence": "lease"}]}
+    assert validate_tags(raw, SOURCE)[0:] == []  # 6 words is over the topic limit
+    fact = validate_tags(raw, SOURCE, school="fact", max_words=8)
+    assert fact[0]["school"] == "fact" and fact[0]["kind"] is None
+    topic = validate_tags({"tags": [{"tag": "lease", "kind": "implied", "rank": 1}]}, SOURCE)
+    assert topic[0]["school"] == "topic" and topic[0]["kind"] == "implied"
+
+
+def test_form_signals_count_first_person_words_and_sentence_length():
+    from scripts.tags_roundtrip import form_signals
+
+    f = form_signals("I went home. We ate.")
+    assert f["first_person_share"] == 0.4  # i, we of 5 words
+    assert f["words_per_sentence"] == 2.5
+
+
+class _FakeClient:
+    """Answers tag prompts with fixed JSON and rewrite prompts with a fixed
+    text; records every call."""
+
+    def __init__(self):
+        self.calls = []
+        self.chat = self
+        self.completions = self
+
+    def create(self, **kw):
+        import json as _json
+        from types import SimpleNamespace
+
+        system = kw["messages"][0]["content"]
+        self.calls.append(system[:20])
+        if "form tags" in system:
+            body = _json.dumps({"tags": [{"tag": "first-person anecdote", "rank": 1, "evidence": "The lease"}]})
+        elif "fact tags" in system:
+            body = _json.dumps({"tags": [{"tag": "deposit is 1,800 dollars", "rank": 1, "evidence": "deposit"}]})
+        elif "You make tags" in system:
+            body = _json.dumps({"tags": [{"tag": "lease", "kind": "mentioned", "rank": 1, "evidence": "lease"},
+                                         {"tag": "pets", "kind": "mentioned", "rank": 2, "evidence": "Pets"}]})
+        else:
+            body = "The lease ends in May."
+        return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=body))])
+
+
+def test_run_end_to_end_with_fake_model_and_judges():
+    from scripts.tags_roundtrip import run
+
+    def judge(premise, hyps):
+        return [h.rstrip(".") in premise for h in hyps]
+
+    client = _FakeClient()
+    out = run(SOURCE, model="fake", counts=[0, 1, 2, 8, 16], client=client, judges={"j": judge},
+              samples=2, schools=["topic", "form", "fact"], mixed_counts=[4])
+    conds = [(r["condition"], r["tag_count"]) for r in out["rungs"]]
+    # k=2 uses both topic tags; k=8 and k=16 add nothing new and are skipped.
+    assert conds == [("control", 0), ("topic", 1), ("topic", 2), ("mixed", 4)]
+    mixed = out["rungs"][-1]
+    assert [u["tag"] for u in mixed["tags"]] == ["first-person anecdote", "lease", "pets", "deposit is 1,800 dollars"]
+    assert mixed["tag_words"] == 2 + 1 + 1 + 4
+    assert all(len(r["samples"]) == 2 for r in out["rungs"])
+    assert out["rungs"][1]["summary"]["j"]["recall"]["mean"] == 1 / 3
+    assert set(out["tags"]) == {"topic", "form", "fact"}
+    assert "first_person_share" in out["source_form_signals"]
+
+
+def test_form_signals_treat_apostrophes_alike_and_count_contractions_once():
+    from scripts.tags_roundtrip import form_signals
+
+    straight, curly = form_signals("I'm here. We'd go."), form_signals("I\u2019m here. We\u2019d go.")
+    assert straight == curly
+    assert straight["first_person_share"] == 0.5  # i'm, we'd of 4 words
+    assert straight["words_per_sentence"] == 2.0
+    assert form_signals("Can\u2019t stop.")["words_per_sentence"] == 2.0
+
+
+def test_run_without_topic_school_writes_no_empty_topic_rows():
+    from scripts.tags_roundtrip import run
+
+    out = run(SOURCE, model="fake", counts=[4], client=_FakeClient(), judges={"j": lambda p, hs: [False] * len(hs)},
+              samples=1, schools=["form", "fact"], mixed_counts=[4])
+    assert [r["condition"] for r in out["rungs"]] == ["mixed"]
+
+
+def test_form_signals_count_lets_as_first_person():
+    from scripts.tags_roundtrip import form_signals
+
+    assert form_signals("Let\u2019s go now.")["first_person_share"] == 1 / 3
