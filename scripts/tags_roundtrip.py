@@ -138,7 +138,7 @@ REGEN_MIXED_SYSTEM = (
 )
 CONTROL_SYSTEM = "Write a text of about {words} words. Return only the text."
 FIRST_PERSON = frozenset("i me my mine myself we us our ours ourselves".split())
-FIRST_PERSON_CONTRACTIONS = frozenset("i'm i've i'd i'll we're we've we'd we'll".split())
+FIRST_PERSON_CONTRACTIONS = frozenset("i'm i've i'd i'll we're we've we'd we'll let's".split())
 
 
 def _norm(s: str) -> str:
@@ -233,7 +233,7 @@ def mixed_at(by_school: dict[str, Sequence[dict[str, Any]]], k: int) -> list[dic
 
 def form_signals(text: str) -> dict[str, float]:
     """Two descriptive signals of voice: the share of words that are
-    first-person pronouns or contractions of them (I'm, we've, ...), and the
+    first-person pronouns or contractions of them (I'm, we've, let's, ...), and the
     mean number of words per sentence. Curly and straight apostrophes are
     treated alike, and a contraction is one word."""
     from sum_engine_internal.research.meaning.meaning_loss import _sentences
@@ -495,7 +495,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "sampling": "temperature 0 with a fixed seed per sample; the provider does not guarantee identical output on a re-run",
         "prompts": {"tags": {n: SCHOOLS[n][0] for n in schools}, "rewrite": REGEN_SYSTEM,
                     "rewrite_mixed": REGEN_MIXED_SYSTEM, "control": CONTROL_SYSTEM},
-        "form_signals": "descriptive only: share of words that are first-person pronouns, and mean words per sentence",
+        "form_signals": "descriptive only: share of words that are first-person pronouns or contractions of them (I'm, we've, let's, ...), with curly and straight apostrophes treated alike, and mean words per sentence",
         "judges": {"gist": {**gist.manifest(), "rule": "max cosine over sentences on the other side >= threshold"},
                    "exact": exact.manifest()},
         **result,

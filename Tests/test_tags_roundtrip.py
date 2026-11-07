@@ -263,3 +263,9 @@ def test_run_without_topic_school_writes_no_empty_topic_rows():
     out = run(SOURCE, model="fake", counts=[4], client=_FakeClient(), judges={"j": lambda p, hs: [False] * len(hs)},
               samples=1, schools=["form", "fact"], mixed_counts=[4])
     assert [r["condition"] for r in out["rungs"]] == ["mixed"]
+
+
+def test_form_signals_count_lets_as_first_person():
+    from scripts.tags_roundtrip import form_signals
+
+    assert form_signals("Let\u2019s go now.")["first_person_share"] == 1 / 3
