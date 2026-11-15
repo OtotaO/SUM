@@ -109,12 +109,13 @@ Text 2, EFSO Vaults #2 (topic at 80 skipped, as stated):
 | extract@80 | 80 | 447 | 101 | 0.30 [0.29-0.31] | 0.16 [0.10-0.20] | 0.78 | 0.45 | 0.24 | 0.10 |
 | lead@80 | 79 | 430 | 98 | 0.20 [0.12-0.29] | 0.25 [0.16-0.35] | 0.32 | 0.37 | 0.20 | 0.10 |
 
-On text 2 at 40 words, the extract and lead notes came out identical (the same two
-sentences), so that pair is left out of expectation 3. The same notes, prompt and seeds gave
+On text 2 at 40 words, the extract and lead notes came out identical (the same one
+sentence), so that pair is left out of expectation 3. The same notes, prompt and seeds gave
 gist recall 0.06 against 0.05 and exact recall 0.05 against 0.03. That is a lower bound on
 rerun noise, measured near the floor where scores move least. A rerun of EFSO Vaults #1 with
 the same tags and seeds (`../efso_vaults_1/`) moved exact recall from 0.23 to 0.16, so
-differences below about 0.07 are not read as results here.
+differences below about 0.07 are not read as results here. The expectations below are still
+scored by their stated rule, and most of their margins are smaller than that.
 
 Each expectation, from the unrounded means:
 
@@ -139,19 +140,19 @@ recall.** For topic and mixed tags, the notes read as the rewrite recalled more 
 rewrites written from them in all 11 cells (text 1 mixed at 80: 0.44 alone against 0.26
 rewritten). Mixed rewrites stay near 0.26 to 0.28 at every budget, while their notes alone
 climb from 0.29 to 0.45. Each tag is one unit on the rewrite side, and the gist judge counts an
-original sentence as carried when any unit reaches cosine 0.5 with it, so a phrase of one to
-four words can carry a sentence on the same topic. The gist judge therefore credits a bare tag
+original sentence as carried when any unit reaches cosine 0.5 with it, so a short phrase can
+carry a sentence on the same topic. The gist judge therefore credits a bare tag
 list, and expectation 1 holding may show the judge crediting tag words as much as the rewrite
 bringing anything back. This also applies to the gist recall of tag
 rewrites in `../efso_vaults_1/` and `../efso_vaults_2/`, and to the recorded card on the review
-page. On the exact judge the order reverses: every tag list alone scored at most 0.07.
+page. On the exact judge the order reverses: every tag list alone scored at most 0.06.
 
 The open comparison (exact recall, mixed tags against the spread extract) depends on the floor.
 Raw, the extract's rewrites recalled more exact sentences in 5 of 6 cells (all but text 2 at
 40). But a rewrite that repeats extracted sentences is credited for them, and the extract
-notes alone already score up to 0.13 exact recall (0.02 to 0.13), against at most 0.07 for mixed tags.
+notes alone already score up to 0.13 exact recall (0.02 to 0.13), against at most 0.06 for mixed tags.
 Subtracting each kind's notes-alone score, the extract is ahead in 2 of 6 cells (text 1 at 40:
-0.11 against 0.04; text 1 at 60: 0.09 against 0.07) and mixed tags are ahead in the other four.
+0.11 against 0.04; text 1 at 60: 0.09 against 0.06) and mixed tags are ahead in the other four.
 Only text 1 at 40 (0.18 against 0.09 raw) clearly exceeds the rerun noise above.
 
 Read together: at 40 to 80 words, neither tags nor copied sentences bring back much of either
@@ -161,3 +162,7 @@ which credits naming. Copied sentences give the rewrite a few exact sentences fo
 that free credit is taken off, neither kind of note leads on exact recall consistently. Two texts
 by one author, three rewrites per cell that are not independent, and differences mostly within
 rerun noise: descriptive only.
+
+One pre-run caveat did not hold as written: tags gave the model more characters than the
+extract at every budget, but on text 2 the mixed and fact notes used fewer tokens than the
+extract (mixed 46, 74 and 95 against 49, 79 and 101).
