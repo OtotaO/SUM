@@ -37,8 +37,10 @@ other controls do not, so they still test the measure.
 The judge and premise were fixed before the first run on this text. That
 run, on the first draft of the claims, showed the judge crediting the no-tags
 rewrites, and the floor rule was added after it; the thresholds below come
-from these runs. `results_efso_vaults_1.json`, claims not yet checked (a
-budget is a cap: a list at 60 words has at most 60):
+from these runs. `results_efso_vaults_1.json`, claims not yet checked. A
+budget is a cap on the recorded lists (a list at 60 words has at most 60);
+the negated and swapped controls are built from fact@60 and are not held
+to it (77 and 58 words):
 
 | | firm claims credited (of 79) |
 |---|---|
