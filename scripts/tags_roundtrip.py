@@ -4,6 +4,7 @@ tags alone, and measure what came back.
     PYTHONPATH=. python scripts/tags_roundtrip.py INPUT [--out FILE.json]
         [--model gpt-4o-mini-2024-07-18] [--counts 0,4,8,16,32] [--samples 3]
         [--schools topic,form,fact] [--mixed-counts 8,16,32]
+        [--budgets 40,60,80]
 
 INPUT is a text or Markdown file, or any format the omni-format pivot converts
 (PDF, DOCX, HTML, EPUB, ...; needs the markitdown extra).
@@ -32,6 +33,18 @@ Steps, all recorded in the output JSON:
      only what the tags state, leave gaps out). --tags-from reuses the tags
      of an earlier results file for the same text instead of making new
      ones.
+     --budgets compares kinds of notes at the same budget in words. For each
+     budget B, five note lists go through one shared prompt (NOTES_SYSTEM;
+     notes unlabelled, numbered, in text order), so only the notes differ:
+     topic, fact and mixed tags (the largest tag count whose tag words fit
+     in B), a spread extract (whole sentences of the text chosen by TF-IDF
+     centrality with a redundancy penalty, MMR, until no further sentence
+     fits in B) and a lead extract (sentences in text order, passing over
+     any that does not fit). Each rung records the notes, their words,
+     characters and tokens (which can fall short of B), and the scores of
+     the notes themselves read as the rewrite: the floor a rewrite that only
+     repeats its notes would get. A rung whose notes equal those at the
+     previous budget is skipped.
   3. Two local judges score each rewrite against the original in both
      directions: recall (share of the original's sentences the rewrite
      carries) and fidelity (share of the rewrite's sentences the original
@@ -64,7 +77,7 @@ import sys
 from pathlib import Path
 from typing import Any, Callable, Sequence
 
-METHOD_ID = "sum.tags_roundtrip.v1"
+METHOD_ID = "sum.tags_roundtrip.v2"
 DEFAULT_MODEL = "gpt-4o-mini-2024-07-18"
 DEFAULT_COUNTS = (0, 4, 8, 16, 32)
 DEFAULT_MIXED_COUNTS = (8, 16, 32)
@@ -148,6 +161,13 @@ REGEN_GROUNDED = REGEN_MIXED_SYSTEM.replace(
 ).replace("about {words} words", "at most about {words} words")
 MIXED_PROMPTS = {"mixed": REGEN_MIXED_SYSTEM, "mixed_plain": REGEN_MIXED_PLAIN, "mixed_grounded": REGEN_GROUNDED}
 CONTROL_SYSTEM = "Write a text of about {words} words. Return only the text."
+NOTES_SYSTEM = (
+    "You are given notes taken from a text, in the order they appear in it. Write the text they "
+    "came from, about {words} words. Do not add names, numbers, dates or quotations that the notes "
+    "do not contain. Return only the text."
+)
+BUDGET_KINDS = ("topic", "fact", "mixed", "extract", "lead")
+MMR_LAMBDA = 0.7
 FIRST_PERSON = frozenset("i me my mine myself we us our ours ourselves".split())
 FIRST_PERSON_CONTRACTIONS = frozenset("i'm i've i'd i'll we're we've we'd we'll let's".split())
 
@@ -240,6 +260,133 @@ def mixed_at(by_school: dict[str, Sequence[dict[str, Any]]], k: int) -> list[dic
         picked.extend(t for t in by_school.get(name, ()) if t["rank"] <= quota[name])
     picked.sort(key=_order_key)
     return [{"school": t["school"], "tag": t["tag"]} for t in picked]
+
+
+def note_words(notes: Sequence[str]) -> int:
+    return sum(len(n.split()) for n in notes)
+
+
+def tags_within(by_school: dict[str, Sequence[dict[str, Any]]], kind: str, budget: int) -> list[dict[str, Any]]:
+    """The tags of the largest tag count k (1 to MAX_TAGS) whose tag words
+    fit in ``budget``: ``tags_at`` for one school, ``mixed_at`` for "mixed".
+    In replication order, so tags whose evidence was not found come last.
+    Each note is {"note", "school", "in_text_order"}; empty if not even one
+    tag fits."""
+    found = {(t["school"], t["tag"]): bool(t.get("evidence_found"))
+             for ts in by_school.values() for t in ts}
+    best: list[dict[str, Any]] = []
+    for k in range(1, MAX_TAGS + 1):
+        if kind == "mixed":
+            picked = [(u["school"], u["tag"]) for u in mixed_at(by_school, k)]
+        else:
+            picked = [(kind, t) for t in tags_at(by_school.get(kind, ()), k)]
+        if note_words([t for _, t in picked]) <= budget:
+            best = [{"note": t, "school": sc, "in_text_order": found.get((sc, t), False)} for sc, t in picked]
+    return best
+
+
+def _tfidf(sentences: Sequence[str]) -> list[dict[str, float]]:
+    """L2-normalised TF-IDF vectors, the sentences as documents (smoothed
+    idf: log((1 + n) / (1 + df)) + 1). No model is used, so the selection
+    shares nothing with the judges."""
+    import math
+
+    toks = [re.findall(r"\w+", x.lower()) for x in sentences]
+    n = len(toks)
+    df: dict[str, int] = {}
+    for t in toks:
+        for w in set(t):
+            df[w] = df.get(w, 0) + 1
+    return [_unit({w: c * (math.log((1 + n) / (1 + df[w])) + 1) for w, c in _counts(t).items()}) for t in toks]
+
+
+def _counts(tokens: Sequence[str]) -> dict[str, float]:
+    out: dict[str, float] = {}
+    for w in tokens:
+        out[w] = out.get(w, 0.0) + 1.0
+    return out
+
+
+def _unit(v: dict[str, float]) -> dict[str, float]:
+    norm = sum(x * x for x in v.values()) ** 0.5
+    return {w: x / norm for w, x in v.items()} if norm else {}
+
+
+def _cos(a: dict[str, float], b: dict[str, float]) -> float:
+    if len(a) > len(b):
+        a, b = b, a
+    return sum(x * b.get(w, 0.0) for w, x in a.items())
+
+
+def extract_within(source: str, budget: int, *, spread: bool = True) -> list[str]:
+    """Whole sentences of the source (the scorer's unitizer) within
+    ``budget`` words, in source order. Sentences with no word character
+    (such as a code fence) and word-for-word repeats of a sentence already
+    chosen are never chosen. spread: greedy MMR over the sentences that
+    still fit, MMR_LAMBDA * cosine to the TF-IDF centroid minus
+    (1 - MMR_LAMBDA) * the highest cosine to a sentence already chosen;
+    ties go to the earlier sentence. Not spread (lead): sentences in text
+    order, passing over any that does not fit in what is left."""
+    from sum_engine_internal.research.meaning.meaning_loss import _sentences
+
+    sents = _sentences(source)
+    lengths = [len(x.split()) for x in sents]
+    usable = [bool(re.search(r"\w", x)) for x in sents]
+    chosen: list[int] = []
+    used = 0
+
+    def fits(i: int) -> bool:
+        return (usable[i] and i not in chosen and used + lengths[i] <= budget
+                and not any(sents[i] == sents[j] for j in chosen))
+
+    if not spread:
+        for i in range(len(sents)):
+            if fits(i):
+                chosen.append(i)
+                used += lengths[i]
+        return [sents[i] for i in chosen]
+    vecs = _tfidf(sents)
+    centroid: dict[str, float] = {}
+    for v in vecs:
+        for w, x in v.items():
+            centroid[w] = centroid.get(w, 0.0) + x
+    centroid = _unit(centroid)
+    rel = [_cos(v, centroid) for v in vecs]
+    while True:
+        best, best_i = None, None
+        for i in range(len(sents)):
+            if not fits(i):
+                continue
+            red = max((_cos(vecs[i], vecs[j]) for j in chosen), default=0.0)
+            val = MMR_LAMBDA * rel[i] - (1 - MMR_LAMBDA) * red
+            if best is None or val > best:
+                best, best_i = val, i
+        if best_i is None:
+            return [sents[i] for i in sorted(chosen)]
+        chosen.append(best_i)
+        used += lengths[best_i]
+
+
+def notes_within(source: str, by_school: dict[str, Sequence[dict[str, Any]]], kind: str,
+                 budget: int) -> list[dict[str, Any]]:
+    """Notes of one kind within ``budget`` words, each {"note", "school",
+    "in_text_order"}; extract and lead notes are source sentences (school
+    None), always in text order."""
+    if kind in ("extract", "lead"):
+        return [{"note": x, "school": None, "in_text_order": True}
+                for x in extract_within(source, budget, spread=kind == "extract")]
+    if kind == "mixed" and sum(1 for n, _ in MIXED_SHARES if by_school.get(n)) < 2:
+        return []
+    return tags_within(by_school, kind, budget)
+
+
+def _token_counter() -> tuple[str, Callable[[str], int]] | None:
+    try:
+        import tiktoken
+    except ImportError:
+        return None
+    enc = tiktoken.get_encoding("o200k_base")
+    return "tiktoken o200k_base", lambda x: len(enc.encode(x))
 
 
 def form_signals(text: str) -> dict[str, float]:
@@ -470,9 +617,12 @@ def run(source: str, *, model: str, counts: Sequence[int], client: Any,
         schools: Sequence[str] = ("topic",), mixed_counts: Sequence[int] = (),
         mixed_conditions: Sequence[str] = ("mixed",), tags: dict[str, list[dict[str, Any]]] | None = None,
         cut: Callable[[str, Sequence[str]], list[float | None]] | None = None,
+        budgets: Sequence[int] = (), budget_kinds: Sequence[str] = BUDGET_KINDS,
         log: Callable[[str], None] = lambda s: None) -> dict[str, Any]:
     """With ``tags`` (school -> validated tags, e.g. from an earlier run of
-    the same text), no tagging call is made and those tags are reused."""
+    the same text), no tagging call is made and those tags are reused. With
+    ``budgets``, each kind of notes in ``budget_kinds`` is also rewritten at
+    each budget through NOTES_SYSTEM (never cut)."""
     words = len(source.split())
     by_school: dict[str, list[dict[str, Any]]] = dict(tags) if tags is not None else {}
     for name in ([] if tags is not None else schools):
@@ -497,7 +647,7 @@ def run(source: str, *, model: str, counts: Sequence[int], client: Any,
             out.append(item)
         return out
 
-    def record(condition: str, used: list, runs: list) -> dict[str, Any]:
+    def record(condition: str, used: list, runs: list, extra: dict[str, Any] | None = None) -> dict[str, Any]:
         summary = summarize(runs)
         cut_summary = summarize_cut(runs) if runs and "cut" in runs[0] else None
         tag_words = sum(len((u["tag"] if isinstance(u, dict) else u).split()) for u in used)
@@ -510,6 +660,7 @@ def run(source: str, *, model: str, counts: Sequence[int], client: Any,
                 + (f"{cut_summary[n]['fidelity']['mean']:.2f}" if cut_summary[n]['fidelity'] else "n/a")
                 for n in judges))
         return {"condition": condition, "tag_count": len(used), "tag_words": tag_words, "tags": used,
+                **(extra or {}),
                 **({"cut_summary": cut_summary} if cut_summary else {}),
                 "summary": summary, "samples": runs}
 
@@ -533,6 +684,31 @@ def run(source: str, *, model: str, counts: Sequence[int], client: Any,
                 used = mixed_at(by_school, k)
                 listing = "\n".join(f"{i}. [{u['school']}] {u['tag']}" for i, u in enumerate(used, 1))
                 rungs.append(record(condition, used, rewrites(MIXED_PROMPTS[condition].format(words=words), listing, used)))
+    counter = _token_counter() if budgets else None
+    last: dict[str, list[str]] = {}
+    for budget in budgets:
+        for kind in budget_kinds:
+            meta = notes_within(source, by_school, kind, budget)
+            notes = [n["note"] for n in meta]
+            if not notes:
+                log(f"budget {budget}: no {kind} notes fit; skipped")
+                continue
+            if last.get(kind) == notes:
+                log(f"budget {budget}: {kind} notes are the same as at the previous budget; skipped")
+                continue
+            last[kind] = notes
+            listing = "\n".join(f"{i}. {n}" for i, n in enumerate(notes, 1))
+            joined = "\n".join(notes)
+            extra = {"budget_words": budget, "notes_kind": kind,
+                     "note_schools": [n["school"] for n in meta],
+                     "notes_not_in_text_order": sum(not n["in_text_order"] for n in meta),
+                     "notes_chars": sum(len(n) for n in notes),
+                     **({"notes_tokens": sum(counter[1](n) for n in notes), "tokenizer": counter[0]}
+                        if counter else {}),
+                     # The notes themselves, one per line, scored as if they were the rewrite: the
+                     # floor a rewrite that only repeats its notes would get.
+                     "notes_only_scores": {n: score(source, joined, fn, n) for n, fn in judges.items()}}
+            rungs.append(record(f"{kind}@{budget}", notes, rewrites(NOTES_SYSTEM.format(words=words), listing), extra))
     return {"tags": by_school, "source_form_signals": form_signals(source), "rungs": rungs}
 
 
@@ -567,6 +743,9 @@ def main(argv: Sequence[str] | None = None) -> int:
                          "tags), mixed_grounded (write only what the tags state)")
     ap.add_argument("--cut", action="store_true",
                     help="also score each rewrite cut down to the sentences its tags entail")
+    ap.add_argument("--budgets", default="",
+                    help="word budgets at which topic, fact and mixed tags and spread and lead extracts are "
+                         "compared through one shared prompt (e.g. 40,60,80)")
     ap.add_argument("--tags-from", type=Path,
                     help="reuse the tags of an earlier results JSON for the same text instead of making new ones")
     args = ap.parse_args(argv)
@@ -578,6 +757,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     schools = [x.strip() for x in args.schools.split(",") if x.strip()]
     if not schools or any(x not in SCHOOLS for x in schools) or len(set(schools)) != len(schools):
         ap.error(f"schools must be distinct names from {', '.join(SCHOOLS)}")
+    budgets = sorted({int(c) for c in args.budgets.split(",") if c.strip()})
+    if any(b < 1 for b in budgets):
+        ap.error("budgets must be at least 1 word")
     mixed_counts = sorted({int(c) for c in args.mixed_counts.split(",") if c.strip()})
     if any(c < 1 or c > MAX_TAGS for c in mixed_counts):
         ap.error(f"mixed counts must be between 1 and {MAX_TAGS}")
@@ -601,7 +783,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     result = run(source, model=args.model, counts=counts, client=OpenAI(),
                  judges={"gist": gist.entails_batch, "exact": exact.entails_batch}, samples=args.samples,
                  schools=schools, mixed_counts=mixed_counts, mixed_conditions=mixed_conditions, tags=reused,
-                 cut=exact.max_probs if args.cut else None,
+                 cut=exact.max_probs if args.cut else None, budgets=budgets,
                  log=lambda s: print(s, file=sys.stderr))
     out = {
         "method": METHOD_ID,
@@ -614,7 +796,18 @@ def main(argv: Sequence[str] | None = None) -> int:
         "model": args.model,
         "sampling": "temperature 0 with a fixed seed per sample; the provider does not guarantee identical output on a re-run",
         "prompts": {"tags": {n: SCHOOLS[n][0] for n in schools}, "rewrite": REGEN_SYSTEM,
-                    **{f"rewrite_{c}": MIXED_PROMPTS[c] for c in mixed_conditions}, "control": CONTROL_SYSTEM},
+                    **{f"rewrite_{c}": MIXED_PROMPTS[c] for c in mixed_conditions}, "control": CONTROL_SYSTEM,
+                    **({"rewrite_notes": NOTES_SYSTEM} if budgets else {})},
+        "budgets": ({"words": budgets, "kinds": list(BUDGET_KINDS),
+                     "rule": "tags: the largest tag count whose tag words fit (tags whose evidence was not found "
+                             "come last, counted in notes_not_in_text_order); extract: whole source sentences chosen "
+                             f"by MMR, lambda {MMR_LAMBDA} times cosine to the TF-IDF centroid minus the rest times "
+                             "the highest cosine to a sentence already chosen, while one still fits; lead: source "
+                             "sentences in text order, passing over any that does not fit. Sentences with no word "
+                             "character and repeats are never chosen. One prompt for every kind; notes unlabelled "
+                             "and numbered. A rung whose notes equal the previous budget's for that kind is "
+                             "skipped. notes_only_scores scores the notes themselves as the rewrite."}
+                    if budgets else None),
         "cut": ({"rule": "keep a rewrite sentence only if some window of the tags, written as sentences "
                          "(topic: 'The text is about X.'; form: 'The text uses X.'; fact: the phrase), entails it "
                          "under the exact judge's model at probability >= threshold; the source is not consulted",
