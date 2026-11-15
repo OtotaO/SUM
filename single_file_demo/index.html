@@ -580,8 +580,9 @@
     The gist judge also credits a bare list: a phrase of a few words can reach cosine 0.5 with a sentence on
     the same topic. On the 32 topic tags row, "tags alone" gives the gist and exact recall of those tags read
     as if they were the rewrite, from a later run that scored the same 32 tags
-    (<code>fixtures/tags_roundtrip/equal_budget/</code>). Where it is above the rewrites' gist recall, the
-    gist judge is crediting the tag words, not anything the rewrite brought back.
+    (<code>fixtures/tags_roundtrip/equal_budget/</code>). It is above every rewrite's gist recall on that row, so
+    much of a rewrite's gist credit may be for naming topics the tags already name; each rewrite is also
+    credited with a few sentences the tags alone are not.
   </p>
   <p style="font-size:12px;opacity:0.75;margin:0 0 10px">
     These are measurements on one text at a time, three rewrites per row (mean, with the range in brackets).

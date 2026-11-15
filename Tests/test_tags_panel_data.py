@@ -150,6 +150,11 @@ def test_tags_alone_are_the_same_32_topic_tags(text_id):
     assert alone["exact_recall"] == rung["notes_only_scores"]["exact"]["recall"]
     # What the card's gist caveat says about this row is true here: the list alone is above every rewrite.
     assert alone["gist_recall"] > row["summary"]["gist"]["recall"]["max"]
+    # ...and its other claim: each rewrite is credited with some sentence the tags alone are not.
+    alone_missed = set(rung["notes_only_scores"]["gist"]["not_recovered"])
+    rung_full = next(r for r in _results(text_id)["rungs"] if r["condition"] == "topic" and r["tag_count"] == 32)
+    for sample in rung_full["samples"]:
+        assert alone_missed - set(sample["scores"]["gist"]["not_recovered"])
 
 
 @pytest.mark.parametrize("text_id,consent", [("efso_vaults_1", "agreed"), ("efso_vaults_2", "sent it")])
