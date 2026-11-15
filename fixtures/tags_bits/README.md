@@ -44,7 +44,8 @@ The round-trip judges cannot read tag lists fairly. Reading
   topic, fact and mixed cells this is 0.00 to 0.06, and for the 12 extract and
   lead cells 0.01 to 0.08. These figures were computed after the results were
   seen, not predicted.
-- **Exact judge:** it does not see tag lists at all. True fact tags alone score
+- **Exact judge:** it credits a tag list no more than a rewrite written with
+  no tags. True fact tags alone score
   0.02 to 0.06, the same as rewrites written with no tags (0.05 and 0.07).
 
 A search of the literature found no paper that tests tag or keyword lists as
