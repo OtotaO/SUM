@@ -28,7 +28,8 @@ note) are built in code:
 - a filler list of notes that say nothing.
 
 On the exact judge, the run and the rerun of EFSO #1 with the same tags and
-seeds both credit 45 of the 96 sentences that either one credits, because the
+seeds agree on 45 of the 96 sentence credits that either one gives, pooled over
+six rewrite pairs (topic and mixed at 32 tags, three seeds), because the
 rewrites differ between runs. This measure has no rewrite.
 
 ## Why it was built
@@ -124,20 +125,21 @@ What this means:
 - **Wording, not claims.** On both texts, negated fact tags kept 0.91 to 0.93
   of the true tags' gain. A gain in bits says how much of the text's wording
   the notes give the model, not which of its claims they state.
-- **The tag lists mostly carry what the two essays share.** On EFSO #2, the
+- **On EFSO #2, the tag lists mostly carry what the two essays share.** The
   first essay's tags (same author, same series, both about the World_sim
   simulator) give 0.09 of its bits. EFSO #2's own tags give 0.11 to 0.12. So
   the difference between a text's own tags and the other text's is 0.01 to
   0.03 of the text's bits, and the measure cannot separate what a tag list
-  carries about this text from what it carries about any text in the series.
+  carries about this text from what it carries about the other essay.
   On EFSO #1, the second essay's tags gave 0.03 to 0.05 against 0.12 to 0.13
   for its own, so the two directions differ.
 - **The extract's lead is mostly its copied sentences scoring themselves.**
   Prediction 7 held: at 60 and 80 words the spread extract's share (0.18 to
   0.24) is above every tag list's (at most 0.14), on both texts. On the
   sentences not copied into the extract, it is 0.12 to 0.14 against 0.10 to
-  0.14 for the tag lists, and above every tag list in only 1 of the 4 text
-  and budget cells (EFSO #2 at 60 words).
+  0.14 for the tag lists, and above every tag list in 2 of the 4 text and
+  budget cells: EFSO #2 at 60 words, and EFSO #1 at 80 words by 4 bits
+  (0.142 against 0.141 for fact tags).
 - **Deterministic and blind to unrelated notes.** Two CPU runs gave identical
   bits, and the unrelated and filler lists gave slightly negative shares.
 
