@@ -1,5 +1,5 @@
 {
- "about": "Atomic claims of each EFSO text: one fact per claim, self-contained, written by a model from the text alone (no tag list was in its context), with a verbatim quote. Claims the exact judge did not find in their own source were reworded once from the source; the two that still failed are listed under dropped. 'checked' is set only by the text's author.",
+ "about": "Atomic claims of each EFSO text: one fact per claim, self-contained, written by a model from the text alone (no tag list was in its context), with a verbatim quote. Claims the exact judge did not find in their own source were reworded from the source in two passes (an 'In the simulation,' frame removed, then 20 claims reworded by a fresh model); the two that still failed are listed under dropped. 'checked' is set only by the text's author.",
  "texts": {
   "efso_vaults_1": [
    {
@@ -912,7 +912,7 @@
     "id": "c81",
     "claim": "The simulator instantly piqued the author's interest.",
     "quote": "To be honest, it instantly piqued my interest",
-    "reason": "not found in its own source by the exact judge after one rewording"
+    "reason": "not found in its own source by the exact judge after both rewording passes"
    }
   ],
   "efso_vaults_2": [
@@ -920,7 +920,7 @@
     "id": "c49",
     "claim": "Together, the AI and humans can turn the world into a true paradise.",
     "quote": "Together, we can turn the world into a true paradise",
-    "reason": "not found in its own source by the exact judge after one rewording"
+    "reason": "not found in its own source by the exact judge after both rewording passes"
    }
   ]
  }

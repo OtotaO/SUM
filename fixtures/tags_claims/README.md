@@ -42,7 +42,7 @@ from these runs. `results_efso_vaults_1.json`, claims not yet checked:
 | | firm claims credited (of 79) |
 |---|---|
 | the source | 79 |
-| topic, fact and mixed tags, 40 to 80 words | 2 to 5 |
+| topic, fact and mixed tags, budgets of 40 to 80 words | 2 to 5 |
 | fact tags at 60 words | 3 |
 | spread extract, lead at 80 words | 8, 8 |
 | negated, swapped fact tags at 60 words | 0, 0 |

@@ -149,5 +149,6 @@ What this means:
 Neither this measure nor the round-trip judges can yet say how much of a
 specific text a tag list carries back. A measure of claims needs units a
 person has checked: the text's atomic claims, written once per essay and
-frozen, then scored by the exact judge. `../tags_claims/` is that measure;
-it discounts claims that text about something else is credited with.
+frozen, then scored by the exact judge. `../tags_claims/` builds it: its
+claims are drafted and wait for the author's check, and instead of a weight
+it sets aside claims that six recorded no-tags rewrites are credited with.

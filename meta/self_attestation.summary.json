@@ -1,6 +1,6 @@
 {
   "schema": "sum.self_attestation.v1",
-  "issued_at": "2026-11-15T21:34:12Z",
+  "issued_at": "2026-11-15T22:08:35Z",
   "doc_count": 6,
   "docs": [
     {
@@ -14,10 +14,10 @@
     },
     {
       "path": "CHANGELOG.md",
-      "source_uri": "sha256:98466ecd95f50208e549498f54ff225ffe941895e9d3dbdaf28f60bff19caf09",
+      "source_uri": "sha256:1a5fabc0e327b5b775285222489ee9a7cc51d652fe91aebf2c9278a8e9cbef29",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "98466ecd95f50208e549498f54ff225ffe941895e9d3dbdaf28f60bff19caf09",
+      "markdown_sha256": "1a5fabc0e327b5b775285222489ee9a7cc51d652fe91aebf2c9278a8e9cbef29",
       "axiom_count": 630,
       "state_integer_digits": 11870
     },

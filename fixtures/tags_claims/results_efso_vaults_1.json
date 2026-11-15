@@ -16,7 +16,7 @@
   "fixtures/tags_roundtrip/equal_budget/results_efso_vaults_1.json": "1855355135d73039399bab26d5ac5b898a64d1d59d4522c9ee7edf21d505ee68",
   "fixtures/tags_roundtrip/equal_budget/results_efso_vaults_2.json": "f620fa766ed2c451039494fb52fc13a8c7bc441ea2ddfd8b403414ae30074851",
   "fixtures/tags_bits/controls.json": "7211f95bcb706d83f092a39194fd524fc308d06542a890cb1fb8ce6fe937ce33",
-  "fixtures/tags_claims/claims.json": "ef4efe247e6523f146e4885f94ad65d8e5591abad6d3ad6a12a882b2eb4650c5"
+  "fixtures/tags_claims/claims.json": "eba78ebad7462f3a8ad8dea5aa36da3e5a62b5cf13898598933f0a399da27636"
  },
  "premise": "the notes joined one per line",
  "measures": "which of the text's frozen atomic claims the notes state, for one NLI judge",
