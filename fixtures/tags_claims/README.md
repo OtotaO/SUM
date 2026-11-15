@@ -37,7 +37,8 @@ other controls do not, so they still test the measure.
 The judge and premise were fixed before the first run on this text. That
 run, on the first draft of the claims, showed the judge crediting the no-tags
 rewrites, and the floor rule was added after it; the thresholds below come
-from these runs. `results_efso_vaults_1.json`, claims not yet checked:
+from these runs. `results_efso_vaults_1.json`, claims not yet checked (a
+budget is a cap: a list at 60 words has at most 60):
 
 | | firm claims credited (of 79) |
 |---|---|
@@ -55,9 +56,10 @@ tags beat their negations by 3 claims to 0.
 
 ## Prediction for EFSO Vaults #2 (committed before its run)
 
-EFSO #2's claims have been read against its own source only, in the check
-above, and against no note list. The run waits until its author has checked
-its claims.
+The judge has read EFSO #2's claims against its own source only, in the check
+above, and against no note list. (The tests run a word-overlap stub over
+them; its numbers are not recorded.) The run waits until its author has
+checked its claims.
 
 1. Two runs give the same probabilities.
 2. The source states at least 0.95 of the firm claims. This holds by
