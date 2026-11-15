@@ -44,9 +44,11 @@ The round-trip judges cannot read tag lists fairly. Reading
   topic, fact and mixed cells this is 0.00 to 0.06, and for the 12 extract and
   lead cells 0.01 to 0.08. These figures were computed after the results were
   seen, not predicted.
-- **Exact judge:** it credits a tag list no more than a rewrite written with
-  no tags. True fact tags alone score
-  0.02 to 0.06, the same as rewrites written with no tags (0.05 and 0.07).
+- **Exact judge:** it credits a tag list at about the level of a rewrite
+  written with no tags. Topic, fact and mixed lists alone score 0.02 to
+  0.065; rewrites written with no tags score 0.05 and 0.07. The highest,
+  three lists on EFSO #1 at 0.065 (4 of 62 sentences), are one sentence above
+  that text's no-tags mean of 0.048 (3 of 62).
 
 A search of the literature found no paper that tests tag or keyword lists as
 the premise of these judges.
@@ -147,5 +149,6 @@ What this means:
 Neither this measure nor the round-trip judges can yet say how much of a
 specific text a tag list carries back. A measure of claims needs units a
 person has checked: the text's atomic claims, written once per essay and
-frozen, then scored by the exact judge with a weight that discounts claims
-any on-topic text entails.
+frozen, then scored by the exact judge. `../tags_claims/` builds it: its
+claims are drafted and wait for the author's check, and it sets aside claims
+that any of six recorded no-tags rewrites is credited with.
