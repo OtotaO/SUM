@@ -205,6 +205,7 @@ class _FakeClient:
 
     def __init__(self):
         self.calls = []
+        self.users = []
         self.chat = self
         self.completions = self
 
@@ -214,6 +215,7 @@ class _FakeClient:
 
         system = kw["messages"][0]["content"]
         self.calls.append(system)
+        self.users.append(kw["messages"][1]["content"])
         if "form tags" in system:
             body = _json.dumps({"tags": [{"tag": "first-person anecdote", "rank": 1, "evidence": "The lease"}]})
         elif "fact tags" in system:
@@ -359,3 +361,89 @@ def test_cut_keeps_unpunctuated_items_as_separate_units_for_scoring():
     c = cut_rewrite("Alignment methods\nEthical principles\nIt is fine.", ["x"], lambda p, hs: [0.9] * len(hs))
     assert c["kept_sentences"] == 3
     assert len(_sentences(c["text"])) == c["kept_sentences"]
+
+
+def test_tags_within_takes_the_largest_count_whose_words_fit():
+    from scripts.tags_roundtrip import tags_within
+
+    topic = [{"tag": "a b", "rank": 2, "school": "topic", "evidence_found": True},
+             {"tag": "c", "rank": 1, "school": "topic", "evidence_found": True},
+             {"tag": "d e f", "rank": 3, "school": "topic", "evidence_found": False}]
+    notes = lambda b, kind="topic": [n["note"] for n in tags_within({"topic": topic}, kind, b)]
+    assert notes(3) == ["a b", "c"]
+    assert notes(6) == ["a b", "c", "d e f"]
+    assert notes(0) == [] and notes(10, "fact") == []
+    assert [n["in_text_order"] for n in tags_within({"topic": topic}, "topic", 6)] == [True, True, False]
+
+
+def test_extract_within_keeps_whole_sentences_in_source_order_within_budget():
+    from scripts.tags_roundtrip import extract_within, note_words
+
+    src = ("Cats sleep a lot. Cats sleep in the sun all day long. Dogs bark at the mail carrier. "
+           "Rain fell on the town. Cats sleep a lot.")
+    for b in (4, 10, 20):
+        got = extract_within(src, b)
+        assert note_words(got) <= b and got == extract_within(src, b)
+        assert [src.index(x) for x in got] == sorted(src.index(x) for x in got)
+    # a sentence that repeats one already chosen is never chosen again
+    assert extract_within(src, 8) == ["Cats sleep a lot."]
+    assert extract_within(src, 30).count("Cats sleep a lot.") == 1
+
+
+def test_extract_weights_centrality_as_a_cosine_against_redundancy():
+    from scripts.tags_roundtrip import _cos, _tfidf, _unit
+
+    vecs = _tfidf(["red apples grow", "red apples fall", "blue sky"])
+    centroid = _unit({w: sum(v.get(w, 0.0) for v in vecs) for v in vecs for w in v})
+    assert abs(sum(x * x for x in centroid.values()) - 1) < 1e-9
+    assert _cos(vecs[0], centroid) > 0.5  # a cosine, not shrunk by the centroid's norm
+
+
+def test_extract_and_lead_never_choose_a_sentence_without_words():
+    from scripts.tags_roundtrip import extract_within
+
+    src = "A long opening sentence of seven words.\n```\nShort end here."
+    assert "```" not in extract_within(src, 8) and "```" not in extract_within(src, 8, spread=False)
+
+
+def test_spread_prefers_central_sentences_where_lead_takes_the_opening():
+    from scripts.tags_roundtrip import extract_within
+
+    src = "Hello there friend. Cats chase mice. Cats chase birds. Cats chase mice and birds."
+    assert extract_within(src, 5, spread=False) == ["Hello there friend."]
+    assert extract_within(src, 5) != ["Hello there friend."]
+
+
+def test_lead_takes_sentences_in_order_passing_over_any_that_does_not_fit():
+    from scripts.tags_roundtrip import extract_within
+
+    src = "One two. Three four five six seven. Eight."
+    assert extract_within(src, 4, spread=False) == ["One two.", "Eight."]
+    assert extract_within(src, 8, spread=False) == ["One two.", "Three four five six seven.", "Eight."]
+
+
+def test_budget_rungs_share_one_prompt_unlabelled_notes_and_are_never_cut():
+    from scripts.tags_roundtrip import NOTES_SYSTEM, run
+
+    client = _FakeClient()
+    src = "The lease ends in May. Pets need written permission here. The deposit is $1,800."
+    tags = {"topic": validate_tags({"tags": [{"tag": "lease", "rank": 1, "evidence": "lease"}]}, src),
+            "form": validate_tags({"tags": [{"tag": "plain notice", "rank": 1, "evidence": "Pets"}]}, src, school="form"),
+            "fact": validate_tags({"tags": [{"tag": "deposit is 1,800 dollars", "rank": 1, "evidence": "deposit"}]},
+                                  src, school="fact", max_words=8)}
+    out = run(src, model="fake", counts=[], client=client, judges={"j": lambda p, hs: [True] * len(hs)},
+              samples=1, schools=["topic", "form", "fact"], tags=tags, budgets=[7, 9],
+              cut=lambda premise, hyps: [0.9] * len(hyps))
+    rungs = out["rungs"]
+    # at 9 words topic, fact and mixed repeat their 7-word notes and are skipped
+    assert [r["condition"] for r in rungs] == ["topic@7", "fact@7", "mixed@7", "extract@7", "lead@7",
+                                               "extract@9", "lead@9"]
+    assert client.calls == [NOTES_SYSTEM.format(words=len(src.split()))] * 7
+    assert all(r["budget_words"] in (7, 9) and r["tag_words"] <= r["budget_words"] for r in rungs)
+    assert all("cut" not in r["samples"][0] and "cut_summary" not in r for r in rungs)
+    mixed = rungs[2]
+    assert mixed["tags"] == ["lease", "plain notice", "deposit is 1,800 dollars"]
+    assert mixed["note_schools"] == ["topic", "form", "fact"]
+    assert client.users[2] == "1. lease\n2. plain notice\n3. deposit is 1,800 dollars"
+    assert all("[" not in u for u in client.users)
+    assert rungs[0]["notes_only_scores"]["j"]["recall"] == 1.0
