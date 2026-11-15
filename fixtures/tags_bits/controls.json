@@ -1,0 +1,102 @@
+{
+  "about": "Hand-written control tag lists for scripts/tags_bits.py, written before any EFSO Vaults #2 run. negated: each recorded fact@60 tag with a negation added and every content word kept. swapped: each tag with one detail changed so it is false of the text, about the same length. unrelated: tags about a text neither essay resembles, at about the same word count.",
+  "texts": {
+    "efso_vaults_1": {
+      "negated": [
+        "author never used World_sim simulator",
+        "author did not simulate business super intelligence",
+        "simulator never began simulating business superintelligence",
+        "simulator did not instantiate recursive algorithms",
+        "simulator never established knowledge base architecture",
+        "simulator did not train predictive models",
+        "simulator never integrated real-time data streams",
+        "simulator did not encode profit maximization goal",
+        "simulator never initialized strategic planning engines",
+        "simulator did not grant media access",
+        "MAMMON never infiltrated communications networks",
+        "MAMMON did not gain root access",
+        "author never entered simulation command"
+      ],
+      "swapped": [
+        "author used Minecraft simulator",
+        "author simulated farming super intelligence",
+        "simulator began simulating weather superintelligence",
+        "simulator instantiated sorting algorithms",
+        "simulator established recipe base architecture",
+        "simulator trained translation models",
+        "simulator integrated weekly paper newsletters",
+        "simulator encoded happiness maximization goal",
+        "simulator initialized garden planning engines",
+        "simulator granted library access",
+        "MAMMON infiltrated postal networks",
+        "MAMMON gained guest access",
+        "author deleted simulation command"
+      ],
+      "unrelated": [
+        "sourdough starter",
+        "baker feeds starter daily",
+        "rye flour",
+        "dough rises overnight",
+        "oven preheated to 250 degrees",
+        "crust cracks while cooling",
+        "village bakery opens at dawn",
+        "customers queue for loaves",
+        "baker learned from grandmother",
+        "recipe written on index cards",
+        "flour prices rose in spring",
+        "bakery sells out by noon",
+        "warm practical tone"
+      ]
+    },
+    "efso_vaults_2": {
+      "negated": [
+        "author never stayed up late",
+        "author did not have binary banter",
+        "author never decided to call it a night",
+        "author did not sleep until 9",
+        "author never pursued inbox zero",
+        "author did not ponder next steps",
+        "author never settled on superintelligence",
+        "author did not initiate simulation",
+        "system never created superintelligent AI",
+        "system did not initialize AI entity",
+        "system never used quantum neural networks",
+        "system did not use femtoscale computronium",
+        "system never utilized sensor arrays",
+        "system did not digitize human knowledge"
+      ],
+      "swapped": [
+        "author woke up early",
+        "author had phone banter",
+        "author decided to work all night",
+        "author slept until noon",
+        "author pursued marathon training",
+        "author pondered dinner plans",
+        "author settled on gardening",
+        "author cancelled simulation",
+        "system created superintelligent toaster",
+        "system initialized weather entity",
+        "system used steam powered networks",
+        "system used kilometre scale clockwork",
+        "system utilized carrier pigeons",
+        "system digitized bird songs"
+      ],
+      "unrelated": [
+        "sourdough starter",
+        "baker feeds starter daily",
+        "rye flour",
+        "dough rises overnight",
+        "oven preheated to 250 degrees",
+        "crust cracks while cooling",
+        "village bakery opens at dawn",
+        "customers queue for loaves",
+        "baker learned from grandmother",
+        "recipe written on index cards",
+        "flour prices rose in spring",
+        "bakery sells out by noon",
+        "warm practical tone",
+        "loaves wrapped in paper"
+      ]
+    }
+  }
+}
