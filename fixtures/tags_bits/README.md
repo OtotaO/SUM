@@ -6,31 +6,42 @@ revision, loaded from safetensors and run in float32 on CPU. For each source
 sentence, it counts the bits the model needs for that sentence after reading
 the notes, and compares that with the bits after reading no notes. The gain is
 the difference summed over sentences; the share is the gain over the no-notes
-total.
+total. The units are the sentences as the round-trip judges split them, so
+they include bare lines such as code fences (4 of the 49 units of EFSO #2).
 
-Nothing is generated. Every note list comes from a file already committed:
+Nothing is generated. The tag and sentence lists come from files already
+committed; the filler list and the self condition (each sentence as its only
+note) are built in code:
 
 - the recorded equal-budget notes (`../tags_roundtrip/equal_budget/`);
 - the same kinds of notes for the other EFSO text, which has the same author
   and series, so it is not an unrelated control;
 - the hand-written controls in `controls.json`:
-  - the fact@60 tags, negated with every content word kept;
+  - the fact@60 tags negated, each content word kept as its stem, with
+    "never" or "did not" added. In 13 of the 27, "did not" turns the verb to
+    its base form ("used" becomes "did not use"), so the wording changes as
+    well, and the lists grow by about 20 words. The description inside
+    `controls.json` says "every content word kept"; the file is left
+    byte-identical because both results files bind its sha256;
   - the fact@60 tags with one detail swapped;
   - an unrelated list;
 - a filler list of notes that say nothing.
 
-The two runs of the round-trip judges disagreed on about half the sentences
-they credited, because the rewrites differ between runs. This measure has no
-rewrite.
+On the exact judge, the run and the rerun of EFSO #1 with the same tags and
+seeds both credit 45 of the 96 sentences that either one credits, because the
+rewrites differ between runs. This measure has no rewrite.
 
 ## Why it was built
 
 The round-trip judges cannot read tag lists fairly. Reading
 `../tags_roundtrip/equal_budget/` again shows two faults:
 
-- **Gist judge:** it credits a bare tag list with more of the source than the
-  rewrite written from it. Net of what the list gets alone, a rewrite gained
-  0.00 to 0.08 in all 29 cells. That figure was computed after the results were
+- **Gist judge:** topic and mixed tag lists alone get more gist credit than
+  the rewrites written from them, in all 11 cells. Take the source sentences
+  the gist judge credits to a rewrite but not to its notes read alone, as a
+  share of all source sentences, averaged over the three rewrites: for the 17
+  topic, fact and mixed cells this is 0.00 to 0.06, and for the 12 extract and
+  lead cells 0.01 to 0.08. These figures were computed after the results were
   seen, not predicted.
 - **Exact judge:** it does not see tag lists at all. True fact tags alone score
   0.02 to 0.06, the same as rewrites written with no tags (0.05 and 0.07).
@@ -91,7 +102,11 @@ What a result would mean:
 
 ## Result for EFSO Vaults #2 (added after the run)
 
-`results_efso_vaults_2.json`. Seven of the eight predictions held; 6 failed.
+`results_efso_vaults_2.json`. Seven of the eight predictions held. The one
+that failed, 6, is one the prediction named as disqualifying: "its gains are
+not usable at all". By the prediction's own terms, no gain here measures what
+notes carry about a text. The observations after the table are descriptive and
+sit outside what the prediction allows.
 
 | prediction | threshold | EFSO #2 | held |
 |---|---|---|---|
@@ -112,16 +127,17 @@ What this means:
 - **The tag lists mostly carry what the two essays share.** On EFSO #2, the
   first essay's tags (same author, same series, both about the World_sim
   simulator) give 0.09 of its bits. EFSO #2's own tags give 0.11 to 0.12. So
-  of what the tags give, 0.01 to 0.03 of the text's bits is specific to this
-  text rather than to the series. The prediction said that failing 6 would
-  make the gains unusable; for tag lists, that stands. The measure cannot
-  separate what a tag list carries about this text from what it carries about
-  any text in the series. On EFSO #1, the second essay's tags gave 0.03 to
-  0.05 against 0.12 to 0.13 for its own, so the two directions differ.
-- **Copied sentences carry more wording than tags at the same budget.** At
-  60 and 80 words the spread extract's share (0.18 to 0.24) is above every tag
-  list's (at most 0.14), on both texts. The other text's extracts were not
-  scored, so how much of that is specific to the text is not measured.
+  the difference between a text's own tags and the other text's is 0.01 to
+  0.03 of the text's bits, and the measure cannot separate what a tag list
+  carries about this text from what it carries about any text in the series.
+  On EFSO #1, the second essay's tags gave 0.03 to 0.05 against 0.12 to 0.13
+  for its own, so the two directions differ.
+- **The extract's lead is mostly its copied sentences scoring themselves.**
+  Prediction 7 held: at 60 and 80 words the spread extract's share (0.18 to
+  0.24) is above every tag list's (at most 0.14), on both texts. On the
+  sentences not copied into the extract, it is 0.12 to 0.14 against 0.10 to
+  0.14 for the tag lists, and above every tag list in only 1 of the 4 text
+  and budget cells (EFSO #2 at 60 words).
 - **Deterministic and blind to unrelated notes.** Two CPU runs gave identical
   bits, and the unrelated and filler lists gave slightly negative shares.
 

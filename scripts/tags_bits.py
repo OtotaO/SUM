@@ -5,8 +5,9 @@ when it first reads a list of notes about that text.
         [--device cpu] [--repeat 2]
 
 TEXT_ID names a folder under fixtures/tags_roundtrip/ (efso_vaults_1 or
-efso_vaults_2). Nothing is generated: every note list is read from files
-already committed, so the only model is the scorer.
+efso_vaults_2). Nothing is generated: the tag and sentence lists are read
+from files already committed (the filler and self conditions are built here),
+so the only model is the scorer.
 
 For each sentence u of the text (the same sentence split the round-trip
 judges use), the scorer reads
@@ -35,9 +36,9 @@ Note lists scored, all at about the same word budget:
     words), bound by sha256;
   - the same kinds of notes recorded for the other EFSO text (same author and
     series, so not unrelated);
-  - from fixtures/tags_bits/controls.json: the fact@60 tags negated with every
-    content word kept, the fact@60 tags with one detail swapped, and an
-    unrelated list;
+  - from fixtures/tags_bits/controls.json: the fact@60 tags negated (each
+    content word kept as its stem, "never" or "did not" added), the fact@60
+    tags with one detail swapped, and an unrelated list;
   - a filler list of the same length as fact@60 whose notes say nothing;
   - self: each sentence given as the only note before itself (the most one
     note can give).
