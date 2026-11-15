@@ -556,23 +556,19 @@
 </script>
 
 <div class="card" style="margin-top: 24px; display:none;" id="tags-panel">
-  <h3>Tags and back: a recorded example <span class="pill">recorded run, measured on one text</span></h3>
+  <h3>Tags and back: recorded examples <span class="pill">recorded runs, each measured on one text</span></h3>
   <p style="font-size:12px;opacity:0.75;margin:0 0 6px">
     A tag is a short label for a text. Topic tags say what it is about, form tags say how it is written,
     and fact tags state what it says. Here a model (gpt-4o-mini-2024-07-18) was given the tags, in
     the order they appear in the text (a few tags whose quote was not found in the text come last), and
     the original's length in words, and asked to write the text again without seeing it. The control row was given the length and no tags; it shows how much credit
-    the judges give prose that has nothing to do with the text.
+    the judges give prose that has nothing to do with the text. There are two texts, both by the project's operator; choose one below.
   </p>
   <p style="font-size:12px;opacity:0.75;margin:0 0 6px">
     The topic rows and the mixed rows differ in more than the tags. The mixed prompt labels each tag
     topic, form or fact, adds "Follow the form tags for voice and structure", and leaves out the topic
     prompt's "as plain prose". Mixed rows also hold only half as many topic tags, and they
-    carry more tag words at the same count because fact tags are longer (3 to 5 words here, against
-    1 to 3 for topic and form tags; 83 against 62 words at 32 tags). A later run on the same tags dropped the "Follow"
-    instruction and the first-person share barely moved, so that instruction is not what changes it;
-    whether the mixed tags themselves (form or fact), the labels or the missing "plain prose" do, these
-    runs cannot say.
+    carry more tag words at the same count because fact tags are longer (the notes under the text's name give the words at 32 tags).
   </p>
   <p style="font-size:12px;opacity:0.75;margin:0 0 6px">
     Recall is the share of the original's sentences the rewrite carries; fidelity is the share of the
@@ -580,15 +576,26 @@
     other side has MiniLM cosine similarity of at least 0.5. Exact counts it only when a DeBERTa-v3-large
     NLI model gives entailment of at least 0.9 from one window of at most 80 tokens.
   </p>
+  <p style="font-size:12px;opacity:0.75;margin:0 0 6px">
+    The gist judge also credits a bare list: a phrase of a few words can reach cosine 0.5 with a sentence on
+    the same topic. On the 32 topic tags row, "tags alone" gives the gist and exact recall of those tags read
+    as if they were the rewrite, from a later run that scored the same 32 tags
+    (<code>fixtures/tags_roundtrip/equal_budget/</code>). It is above every rewrite's gist recall on that row, so
+    much of a rewrite's gist credit may be for naming topics the tags already name; each rewrite is also
+    credited with a few sentences the tags alone are not.
+  </p>
   <p style="font-size:12px;opacity:0.75;margin:0 0 10px">
-    These are measurements on this one text, three rewrites per row (mean, with the range in brackets).
+    These are measurements on one text at a time, three rewrites per row (mean, with the range in brackets).
     The three rewrites often open with the same sentence, so they are not independent and the ranges
-    understate how much a rewrite can vary: a later rerun with the same tags and seeds put topic above
-    mixed on exact recall at 32 tags, the reverse of what this run shows. The judge settings were
-    chosen on this same text, so the numbers do not test those settings. The
+    understate how much a rewrite can vary. The
     rewrite below is the seed 7 one, shown as recorded: this card calls no model.
   </p>
-  <p style="font-size:12px;margin:0 0 10px" id="tags-source-line"></p>
+  <div class="row" style="margin: 8px 0 2px;">
+    <label for="tags-text" style="min-width:60px">text</label>
+    <select id="tags-text"></select>
+  </div>
+  <p style="font-size:12px;margin:6px 0 4px" id="tags-source-line"></p>
+  <ul style="font-size:12px;opacity:0.75;margin:0 0 10px;padding-left:18px" id="tags-text-notes"></ul>
   <div class="row" style="margin: 8px 0 2px;">
     <label for="tags-slider" style="min-width:60px">tags</label>
     <input type="range" id="tags-slider" min="0" max="7" step="1" value="4">
@@ -600,6 +607,20 @@
   <div id="tags-used" style="display:flex; gap:6px; flex-wrap:wrap; font:12px ui-monospace,monospace; margin:0 0 10px;"></div>
   <div style="font-size:11px;opacity:0.7;margin:6px 0 2px;text-transform:uppercase;letter-spacing:0.02em;" id="tags-rewrite-title">the rewrite (seed 7, as recorded)</div>
   <div id="tags-rewrite" style="font:12px/1.5 ui-monospace,monospace; white-space:pre-wrap; border:1px solid #8883; border-radius:4px; padding:10px 12px; max-height:200px; overflow-y:auto; background:#8881;"></div>
+  <div id="tags-cut" style="display:none; margin-top:10px;">
+    <div style="font-size:11px;opacity:0.7;margin:6px 0 2px;text-transform:uppercase;letter-spacing:0.02em;">the rewrite cut to what its tags entail</div>
+    <p style="font-size:12px;opacity:0.75;margin:0 0 6px">
+      The cut keeps only the rewrite sentences that this row's tags, written as sentences, entail with
+      probability 0.5 or more under the exact judge's model; the original is not consulted. The exact judge
+      counts a sentence as supported only at 0.9, so a kept sentence it does not find in the original may sit
+      between the two bars rather than be invented. A cut that keeps nothing counts as recall 0 and is left
+      out of fidelity.
+    </p>
+    <p style="font-size:11px;opacity:0.65;margin:0 0 6px" id="tags-cut-note"></p>
+    <div style="display:flex; gap:14px; flex-wrap:wrap; font:12px ui-monospace,monospace; opacity:0.85; margin:0 0 6px;" id="tags-cut-stats"></div>
+    <p style="font-size:12px;margin:0 0 6px" id="tags-cut-warn"></p>
+    <div id="tags-cut-text" style="font:12px/1.5 ui-monospace,monospace; white-space:pre-wrap; border:1px solid #8883; border-radius:4px; padding:10px 12px; max-height:160px; overflow-y:auto; background:#8881;"></div>
+  </div>
   <div class="row" style="margin: 10px 0 2px;">
     <label for="tags-judge" style="min-width:60px">judge</label>
     <select id="tags-judge">
@@ -622,12 +643,18 @@
     if (!r.ok) throw new Error("no tags data");
     return r.json();
   }).then(function (data) {
-    var rows = data.rows || [];
-    if (rows.length < 2) return;
+    var texts = (data.texts || []).filter(function (t) { return t && (t.rows || []).length >= 2; });
+    if (!texts.length) return;
     var slider = document.getElementById("tags-slider");
-    slider.max = String(rows.length - 1);
-    if (Number(slider.value) > rows.length - 1) slider.value = String(rows.length - 1);
     var judgeSelect = document.getElementById("tags-judge");
+    var textSelect = document.getElementById("tags-text");
+    var cur = texts[0];
+    texts.forEach(function (t, i) {
+      var o = document.createElement("option");
+      o.value = String(i);
+      o.textContent = (t.source || {}).title || ("text " + (i + 1));
+      textSelect.appendChild(o);
+    });
     function rowName(r) {
       if (r.condition === "control") return "control: no tags";
       if (r.condition === "topic") return r.tag_count + " topic tags";
@@ -637,12 +664,6 @@
     function tickName(r) {
       return r.condition === "control" ? "none" : r.condition + " " + r.tag_count;
     }
-    var ticks = document.getElementById("tags-ticks");
-    rows.forEach(function (r) {
-      var s = document.createElement("span");
-      s.textContent = tickName(r);
-      ticks.appendChild(s);
-    });
     function fmt(x) { return typeof x === "number" ? x.toFixed(2) : "?"; }
     function fmtStat(s) { return s ? fmt(s.mean) + " [" + fmt(s.min) + "-" + fmt(s.max) + "]" : "?"; }
     function stat(label, value) {
@@ -689,7 +710,33 @@
       note.textContent = "These are the sentences the selected judge did not match, not a hand check. The exact judge misses support spread across several sentences, and the gist judge measures similarity, not support, so a listed sentence may still be backed by the other text.";
       lists.appendChild(note);
     }
+    function showCut(r) {
+      var box = document.getElementById("tags-cut");
+      var c = r.cut;
+      if (!c || !cur.cut) { box.style.display = "none"; return; }
+      box.style.display = "";
+      var cs = c.summary || {}, sh = c.shown || {};
+      var stats = document.getElementById("tags-cut-stats");
+      stats.textContent = "";
+      stats.appendChild(stat("seed 7 kept", sh.kept_sentences + " of " + sh.rewrite_sentences + " sentences"));
+      stats.appendChild(stat("kept on average", fmt(cs.kept_sentences_mean)));
+      stats.appendChild(stat("non-empty cuts", cs.nonempty + " of " + r.samples));
+      ["exact", "gist"].forEach(function (j) {
+        var v = cs[j] || {};
+        stats.appendChild(stat(j + " recall", fmtStat(v.recall)));
+        stats.appendChild(stat(j + " fidelity", v.fidelity ? fmtStat(v.fidelity) + " over " + cs.nonempty + " non-empty" : "none (every cut empty)"));
+      });
+      var warn = document.getElementById("tags-cut-warn");
+      var full = ((r.summary || {}).exact || {}).recall || {};
+      var cutR = (cs.exact || {}).recall || {};
+      warn.textContent = (typeof cutR.mean === "number" && typeof full.mean === "number" && cutR.mean > full.mean)
+        ? "Here the cut's exact recall is above the full rewrite's (" + fmt(cutR.mean) + " against " + fmt(full.mean) + "), which a subset of the rewrite's sentences should not do, so differences of this size on the exact judge are noise."
+        : "";
+      document.getElementById("tags-cut-text").textContent = sh.kept_sentences
+        ? sh.text || "" : "(the seed 7 cut kept no sentence)";
+    }
     function show(i) {
+      var rows = cur.rows;
       var r = rows[i];
       document.getElementById("tags-row-name").textContent = rowName(r);
       var stats = document.getElementById("tags-stats");
@@ -702,6 +749,11 @@
       stats.appendChild(stat("exact recall", fmtStat(exact.recall)));
       stats.appendChild(stat("gist fidelity", fmtStat(gist.fidelity)));
       stats.appendChild(stat("exact fidelity", fmtStat(exact.fidelity)));
+      var alone = cur.tags_alone;
+      if (alone && alone.row && alone.row.condition === r.condition && alone.row.tag_count === r.tag_count) {
+        stats.appendChild(stat("tags alone: gist recall", fmt(alone.gist_recall)));
+        stats.appendChild(stat("tags alone: exact recall", fmt(alone.exact_recall)));
+      }
       var used = document.getElementById("tags-used");
       used.textContent = "";
       if (!r.tags || !r.tags.length) {
@@ -726,26 +778,57 @@
       document.getElementById("tags-rewrite-title").textContent =
         "the rewrite (seed " + ss.seed + ", one of " + r.samples + ", " + ss.rewrite_words + " words, as recorded)";
       document.getElementById("tags-rewrite").textContent = ss.rewrite || "";
+      showCut(r);
       showLists(r);
     }
+    function wordsAt32(cond) {
+      var r = cur.rows.filter(function (x) { return x.condition === cond && x.tag_count === 32; })[0];
+      return r ? r.tag_words : null;
+    }
+    function useText(t) {
+      cur = t;
+      var rows = cur.rows;
+      slider.max = String(rows.length - 1);
+      if (Number(slider.value) > rows.length - 1) slider.value = String(rows.length - 1);
+      var ticks = document.getElementById("tags-ticks");
+      ticks.textContent = "";
+      rows.forEach(function (r) {
+        var s = document.createElement("span");
+        s.textContent = tickName(r);
+        ticks.appendChild(s);
+      });
+      var src = cur.source || {};
+      var line = document.getElementById("tags-source-line");
+      line.textContent = "The text: ";
+      var a = document.createElement("a");
+      a.textContent = src.title || "the post";
+      if (typeof src.url === "string" && src.url.indexOf("https://") === 0) a.href = src.url;
+      line.appendChild(a);
+      line.appendChild(document.createTextNode(
+        " (" + (src.published || "") + ", " + src.words + " words), " + (src.credit || "") + "."));
+      var notes = document.getElementById("tags-text-notes");
+      notes.textContent = "";
+      var tw = wordsAt32("topic"), mw = wordsAt32("mixed");
+      var lines = (cur.notes || []).slice();
+      if (tw !== null && mw !== null) lines.unshift("At 32 tags, the mixed tags carry " + mw + " words against " + tw + " for topic tags.");
+      lines.forEach(function (n) {
+        var li = document.createElement("li");
+        li.textContent = n;
+        notes.appendChild(li);
+      });
+      document.getElementById("tags-cut-note").textContent = (cur.cut && cur.cut.note) || "";
+      document.getElementById("tags-source-text").textContent = src.text || "";
+      var j = cur.judges || {};
+      document.getElementById("tags-scope").textContent = "Scope: " + cur.scope +
+        " Rewrites: " + cur.model + ", " + cur.sampling + "." +
+        " Judges: gist " + ((j.gist || {}).model_id || "") + ", exact " + ((j.exact || {}).model_id || "") + "." +
+        " Method " + cur.method + ".";
+      show(Number(slider.value));
+    }
     slider.addEventListener("input", function () { show(Number(slider.value)); });
-    judgeSelect.addEventListener("change", function () { showLists(rows[Number(slider.value)]); });
-    var src = data.source || {};
-    var line = document.getElementById("tags-source-line");
-    line.textContent = "The text: ";
-    var a = document.createElement("a");
-    a.textContent = src.title || "the post";
-    if (typeof src.url === "string" && src.url.indexOf("https://") === 0) a.href = src.url;
-    line.appendChild(a);
-    line.appendChild(document.createTextNode(
-      " (" + (src.published || "") + ", " + src.words + " words), " + (src.credit || "") + "."));
-    document.getElementById("tags-source-text").textContent = src.text || "";
-    var j = data.judges || {};
-    document.getElementById("tags-scope").textContent = "Scope: " + data.scope +
-      " Rewrites: " + data.model + ", " + data.sampling + "." +
-      " Judges: gist " + ((j.gist || {}).model_id || "") + ", exact " + ((j.exact || {}).model_id || "") + "." +
-      " Method " + data.method + ".";
-    show(Number(slider.value));
+    judgeSelect.addEventListener("change", function () { showLists(cur.rows[Number(slider.value)]); });
+    textSelect.addEventListener("change", function () { useText(texts[Number(textSelect.value)] || texts[0]); });
+    useText(cur);
     panel.style.display = "";
   }).catch(function () {
     /* file:// open or asset missing: leave the card hidden; the rest of
