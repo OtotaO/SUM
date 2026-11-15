@@ -88,3 +88,45 @@ What a result would mean:
   wording may rest on them.
 - If 4, 5 or 6 fails, the measure is not separating notes about the text from
   other notes, and its gains are not usable at all.
+
+## Result for EFSO Vaults #2 (added after the run)
+
+`results_efso_vaults_2.json`. Seven of the eight predictions held; 6 failed.
+
+| prediction | threshold | EFSO #2 | held |
+|---|---|---|---|
+| 1. two CPU runs | 0.0 bits | 0.0 bits | yes |
+| 2. negated over true fact tags | at least 0.7 | 0.91 | yes |
+| 3. swapped over true | 0.4 to 0.85 | 0.46 | yes |
+| 4. unrelated share; filler share | -0.04 to 0.01; -0.03 to 0.01 | -0.034; -0.003 | yes |
+| 5. a sentence as its own note | at least 0.75 | 0.82 | yes |
+| 6. the other text's notes at 60 words | 0 to 0.06, below this text's | topic 0.087, fact 0.090, mixed 0.094 (this text's: 0.108, 0.123, 0.107) | no |
+| 7. spread extract above every tag list | at 60 and 80 words | 0.218 against at most 0.123 at 60; 0.236 against at most 0.144 at 80 | yes |
+| 8. topic, fact, mixed at 60 within 0.03 | 0.03 | 0.108, 0.123, 0.107 | yes |
+
+What this means:
+
+- **Wording, not claims.** On both texts, negated fact tags kept 0.91 to 0.93
+  of the true tags' gain. A gain in bits says how much of the text's wording
+  the notes give the model, not which of its claims they state.
+- **The tag lists mostly carry what the two essays share.** On EFSO #2, the
+  first essay's tags (same author, same series, both about the World_sim
+  simulator) give 0.09 of its bits. EFSO #2's own tags give 0.11 to 0.12. So
+  of what the tags give, 0.01 to 0.03 of the text's bits is specific to this
+  text rather than to the series. The prediction said that failing 6 would
+  make the gains unusable; for tag lists, that stands. The measure cannot
+  separate what a tag list carries about this text from what it carries about
+  any text in the series. On EFSO #1, the second essay's tags gave 0.03 to
+  0.05 against 0.12 to 0.13 for its own, so the two directions differ.
+- **Copied sentences carry more wording than tags at the same budget.** At
+  60 and 80 words the spread extract's share (0.18 to 0.24) is above every tag
+  list's (at most 0.14), on both texts. The other text's extracts were not
+  scored, so how much of that is specific to the text is not measured.
+- **Deterministic and blind to unrelated notes.** Two CPU runs gave identical
+  bits, and the unrelated and filler lists gave slightly negative shares.
+
+Neither this measure nor the round-trip judges can yet say how much of a
+specific text a tag list carries back. A measure of claims needs units a
+person has checked: the text's atomic claims, written once per essay and
+frozen, then scored by the exact judge with a weight that discounts claims
+any on-topic text entails.
