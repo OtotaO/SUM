@@ -115,7 +115,8 @@ gist recall 0.06 against 0.05 and exact recall 0.05 against 0.03. That is a lowe
 rerun noise, measured near the floor where scores move least. A rerun of EFSO Vaults #1 with
 the same tags and seeds (`../efso_vaults_1/`) moved exact recall from 0.23 to 0.16, so
 differences below about 0.07 are not read as results here. The expectations below are still
-scored by their stated rule, and most of their margins are smaller than that.
+scored by their stated rule; 10 of their 22 cell margins are smaller than that (E1 2 of 6, E2
+2 of 6, E3 2 of 5, E4 4 of 5). The 0.07 yardstick comes from one exact-recall rerun.
 
 Each expectation, from the unrounded means:
 
@@ -160,9 +161,12 @@ text: at most about a third of its sentences by gist (0.32) and a quarter exactl
 the text's topics than copied sentences of the same length. That shows up on the gist judge,
 which credits naming. Copied sentences give the rewrite a few exact sentences for free. Once
 that free credit is taken off, neither kind of note leads on exact recall consistently. Two texts
-by one author, three rewrites per cell that are not independent, and differences mostly within
-rerun noise: descriptive only.
+by one author, three rewrites per cell that are not independent, and 10 of 22 expectation margins
+below one rerun's swing: descriptive only.
 
 One pre-run caveat did not hold as written: tags gave the model more characters than the
 extract at every budget, but on text 2 the mixed and fact notes used fewer tokens than the
 extract (mixed 46, 74 and 95 against 49, 79 and 101).
+
+Corrected after merge (#595): two sentences said most expectation margins were within rerun
+noise; counted from the unrounded means, 10 of 22 are below 0.07.
