@@ -18,6 +18,9 @@ The tags given to that rewrite are written as sentences ("The text is about X." 
 "The text uses X." for a form tag, the phrase itself for a fact tag), and a rewrite sentence is kept
 if some 80-token window of them entails it at probability 0.5 or more under the exact judge's model.
 The source is not consulted. A cut that keeps nothing counts as recall 0 and is left out of fidelity.
+The two bars differ: the cut keeps a sentence the tags entail at 0.5, but the exact judge counts it
+as supported by the original only at 0.9. So a kept sentence scored as not supported may sit between
+the two bars rather than be invented; the cut's fidelity below does not separate the two.
 
 On the stored second-run rewrites of EFSO Vaults #1 (development, two rewrites per condition), this
 cut kept 2 to 8 of 25 to 61 sentences, raised exact fidelity in 7 of 8 rewrites (one fell to 0.00)
