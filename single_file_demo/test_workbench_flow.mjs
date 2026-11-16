@@ -783,9 +783,17 @@ test('the original reads at depths in the page, with no request, and passages se
   try {
     const source = 'The tenant may cancel the lease with 30 days notice. The landlord keeps the deposit if rent is overdue. ' +
       'Weather was mild. The deposit is refundable when the tenant gives notice. Pets are allowed. The landlord repairs the heating.';
+    const FOLLOWS = p.window.Node.DOCUMENT_POSITION_FOLLOWING;
+    assert.ok(p.$('distill-btn').classList.contains('primary'), 'reading the original is the main action');
+    for (const [first, then] of [['prose', 'distill-btn'], ['distill-btn', 'distill-panel'], ['distill-panel', 'rewrite'], ['rewrite', 'compare-btn']])
+      assert.equal(p.$(first).compareDocumentPosition(p.$(then)) & FOLLOWS, FOLLOWS, `${then} follows ${first}`);
+    let scrolledTo = null;
+    p.$('distill-status').scrollIntoView = () => { scrolledTo = 'distill-status'; };
     p.input('prose', source);
     p.$('distill-btn').click();
     assert.equal(p.$('distill-panel').hidden, false);
+    assert.match(p.$('distill-status').textContent, /^Depths ready\./);
+    assert.equal(scrolledTo, 'distill-status', 'the status line and the panel below it are brought into view');
     assert.equal(p.requests.length, 0, 'depths must be computed without any network request');
     const slider = p.$('distill-depth');
     assert.ok(Number(slider.max) >= 2, 'a six-sentence text reads at three or more depths');
@@ -796,6 +804,8 @@ test('the original reads at depths in the page, with no request, and passages se
     assert.ok(p.$('distill-view').querySelector('.distill-gap'), 'left-out passages are marked');
     shallow[0].click();
     assert.equal(p.$('prose').value.slice(p.$('prose').selectionStart, p.$('prose').selectionEnd), shallow[0].textContent);
+    p.$('prose').dispatchEvent(new p.window.KeyboardEvent('keydown', { key: 'x', bubbles: true }));
+    assert.match(p.$('distill-status').textContent, /^That box is showing a found passage/, 'a keystroke after a depth passage is explained next to the box');
     assert.match(p.$('distill-left-summary').textContent, /^5 passages left out at this depth$/);
     slider.value = slider.max; slider.dispatchEvent(new p.window.Event('input'));
     assert.match(p.$('distill-depth-name').textContent, /^full text/);
@@ -806,14 +816,35 @@ test('the original reads at depths in the page, with no request, and passages se
     assert.match(p.$('distill-method').textContent, /sum\.distill:extractive_coverage_v1/);
     p.input('prose', source + ' Edited.');
     assert.equal(p.$('distill-panel').hidden, true, 'an edit hides depths of the old text');
+    assert.equal(p.$('distill-status').textContent, '', 'and clears their status line');
     p.input('prose', '   ');
     p.$('distill-btn').click();
-    assert.equal(p.$('workbench-status').textContent, 'Add an original source first.');
+    assert.equal(p.$('distill-status').textContent, 'Add an original source first.');
     p.input('prose', 'x'.repeat(100001));
     p.$('distill-btn').click();
-    assert.match(p.$('workbench-status').textContent, /at most 100,000 characters/);
+    assert.match(p.$('distill-status').textContent, /at most 100,000 characters/);
     assert.equal(p.$('distill-panel').hidden, true);
     assert.equal(p.requests.length, 0);
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
+test('a cached page without the depth status line still reads at depths', async () => {
+  const p = await page();
+  try {
+    p.$('distill-status').remove();
+    p.input('prose', 'The tenant may cancel. The deposit is refundable. Rent is late after five days. Pets are allowed.');
+    p.$('distill-btn').click();
+    assert.equal(p.$('distill-panel').hidden, false);
+    assert.match(p.$('workbench-status').textContent, /^Depths ready\./);
+    p.$('distill-view').querySelector('.distill-passage').click();
+    p.$('prose').dispatchEvent(new p.window.KeyboardEvent('keydown', { key: 'x', bubbles: true }));
+    assert.match(p.$('workbench-status').textContent, /^That box is showing a found passage/);
+    p.$('prose').dispatchEvent(new p.window.Event('pointerdown'));
+    assert.equal(p.$('workbench-status').textContent, '');
+    p.input('prose', 'Edited.');
+    assert.equal(p.$('distill-panel').hidden, true);
+    assert.equal(p.$('workbench-status').textContent, 'Texts changed. Compare again to start a new review.', 'the shared line keeps the comparison message');
     assert.deepEqual(p.errors, []);
   } finally { p.close(); }
 });
@@ -840,7 +871,7 @@ test('depths of an old original never select into a replaced one', async () => {
     p.$('prose').value = 'Replaced without an input event.';
     first.click();
     assert.equal(p.$('distill-panel').hidden, true);
-    assert.match(p.$('workbench-status').textContent, /original changed since the depths were made/);
+    assert.match(p.$('distill-status').textContent, /original changed since the depths were made/);
     assert.equal(p.$('prose').selectionStart, p.$('prose').selectionEnd, 'nothing is selected in the replaced text');
     assert.deepEqual(p.errors, []);
   } finally { p.close(); }
@@ -1017,11 +1048,12 @@ test('a find action cannot let a keystroke wipe the review; clicking into the bo
     p.$('detail-list').querySelector('button').click();
     assert.equal(p.$('prose').readOnly, true, 'the highlighted box is read-only');
     p.$('prose').dispatchEvent(new p.window.KeyboardEvent('keydown', { key: 'x', bubbles: true }));
-    assert.match(p.$('workbench-status').textContent, /^That box is showing a found passage\. Click in it to edit/);
+    assert.match(p.$('distill-status').textContent, /^That box is showing a found passage\. Click in it to edit/, 'reported under the original box');
     assert.equal(p.$('review-panel').hidden, false);
     assert.equal(p.$('review-rows').querySelector('select').value, 'needs-change', 'the decision survives');
     p.$('prose').dispatchEvent(new p.window.Event('pointerdown'));
     assert.equal(p.$('prose').readOnly, false, 'clicking into the box makes it editable');
+    assert.equal(p.$('distill-status').textContent, '', 'and retires the warning under it');
     p.$('detail-list').querySelector('button').click();
     const hasFocus = p.window.document.hasFocus;
     p.window.document.hasFocus = () => false;

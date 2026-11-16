@@ -101,7 +101,8 @@
   .review-row p { white-space: pre-wrap; overflow-wrap: anywhere; margin: 8px 0; }
   .review-row select { padding: 6px; max-width: 100%; background: Canvas; color: CanvasText; }
   .review-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-  #workbench-status, #packet-status { min-height: 1.5em; }
+  #workbench-status, #distill-status, #packet-status { min-height: 1.5em; }
+  .review-inputs.review-one { grid-template-columns: 1fr; }
   .review-scope { font-size: 13px; }
   .distill-view { margin: 12px 0; line-height: 1.6; }
   .distill-passage { display: inline; background: none; border: none; padding: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; white-space: normal; }
@@ -130,13 +131,39 @@
 <h1>See what changed. Keep the source.</h1>
 <p class="sub">Compare a rewrite with its original, inspect the passages, record your decisions, and export the review. Comparison runs in this browser. Generated rewrites can also carry an independently verifiable render receipt.</p>
 <p class="sub"><a href="#packet-verifier-panel" id="open-received-packet">Received a review packet? Open it here.</a></p>
-<div class="review-inputs">
+<div class="review-inputs review-one">
   <div><label for="prose">Original source</label>
     <textarea id="prose" placeholder="Alice may cancel the lease with 30 days notice. The deposit is refundable unless rent is overdue."></textarea>
   </div>
+</div>
+<div class="row" style="justify-content: flex-end; margin-top: 4px;">
+  <span id="char-count" style="font-size: 11px; opacity: 0.55; font: 11px ui-monospace, monospace;">0</span>
+</div>
+<div class="review-actions">
+  <button id="distill-btn" class="primary">Read the original at depths</button>
+</div>
+<p id="distill-status" role="status" aria-live="polite"></p>
+<section id="distill-panel" class="card" hidden aria-labelledby="distill-heading">
+  <h2 id="distill-heading">The original at every depth <span class="pill">heuristic, not certified</span></h2>
+  <p class="review-scope" id="distill-scope"></p>
+  <div class="row">
+    <label for="distill-depth">depth</label>
+    <input type="range" id="distill-depth" min="0" max="0" step="1" value="0">
+    <span class="v" id="distill-depth-name"></span>
+  </div>
+  <p id="distill-stats" style="font: 12px ui-monospace, monospace; opacity: 0.8;"></p>
+  <div id="distill-tags" class="distill-tags"></div>
+  <div id="distill-view" class="distill-view"></div>
+  <details id="distill-left" class="distill-left"><summary id="distill-left-summary"></summary><div id="distill-left-list"></div></details>
+  <p class="review-scope" id="distill-method"></p>
+</section>
+<div class="review-inputs review-one">
   <div><label for="rewrite">Rewrite to review</label>
     <textarea id="rewrite" placeholder="Alice can cancel the lease. The deposit is refundable."></textarea>
   </div>
+</div>
+<div class="row" style="margin-top: 4px;">
+  <button id="try-example" type="button" class="link-btn" style="font-size: 12px;">↳ try the example</button>
 </div>
 <p class="review-examples">Made-up examples, each rewrite with planted changes:
   <button type="button" class="link-btn" data-example="patient">Patient instructions</button>,
@@ -146,7 +173,6 @@
 <p class="review-scope">Literal comparison only: unchanged passages are matched exactly; suggested changed passages share words. Read every change for negation, conditions, quantities and attribution. This is not a semantic judge or a meaning-preservation score.</p>
 <div class="review-actions">
   <button id="compare-btn" class="primary">Compare texts</button>
-  <button id="distill-btn" class="ghost">Read the original at depths</button>
   <button id="export-review-btn" class="ghost" disabled>Export review packet</button>
 </div>
 <p id="workbench-status" role="status" aria-live="polite"></p>
@@ -163,24 +189,6 @@
   <p>Accepting a passage records your decision; it does not create a signed claim or verify factual accuracy. Source links select the exact retained passage above.</p>
   <div id="review-rows"></div>
 </section>
-<section id="distill-panel" class="card" hidden aria-labelledby="distill-heading">
-  <h2 id="distill-heading">The original at every depth <span class="pill">heuristic, not certified</span></h2>
-  <p class="review-scope" id="distill-scope"></p>
-  <div class="row">
-    <label for="distill-depth">depth</label>
-    <input type="range" id="distill-depth" min="0" max="0" step="1" value="0">
-    <span class="v" id="distill-depth-name"></span>
-  </div>
-  <p id="distill-stats" style="font: 12px ui-monospace, monospace; opacity: 0.8;"></p>
-  <div id="distill-tags" class="distill-tags"></div>
-  <div id="distill-view" class="distill-view"></div>
-  <details id="distill-left" class="distill-left"><summary id="distill-left-summary"></summary><div id="distill-left-list"></div></details>
-  <p class="review-scope" id="distill-method"></p>
-</section>
-<div class="row" style="justify-content: space-between; margin-top: 4px;">
-  <button id="try-example" type="button" class="link-btn" style="font-size: 12px;">↳ try the example</button>
-  <span id="char-count" style="font-size: 11px; opacity: 0.55; font: 11px ui-monospace, monospace;">0</span>
-</div>
 
 <details id="generate-panel" class="card">
 <summary>Optional: extract claims and generate a rewrite</summary>

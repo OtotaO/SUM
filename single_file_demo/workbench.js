@@ -10,6 +10,10 @@ let render = null;
 let jwks = null; // keys carried by an opened packet (unsigned), or null
 let siteKeys = null; // this site's /.well-known/jwks.json; a packet never sets it
 const status = message => { $('workbench-status').textContent = message; };
+// The depth reader sits above the comparison, so it reports beside its own button. A cached page from
+// before that line existed falls back to the shared status line instead of failing.
+const distillLine = () => $('distill-status') || $('workbench-status');
+const distillStatus = message => { distillLine().textContent = message; };
 
 function resetReview() {
   generation++;
@@ -44,6 +48,7 @@ document.addEventListener('sum:render-reset', resetReceipt);
 
 // A find action highlights the passage in its box. The box is read-only until the user clicks into it or
 // leaves it, so a stray keystroke cannot replace the highlighted text and discard the recorded review.
+const FOUND_PASSAGE_WARNING = 'That box is showing a found passage. Click in it to edit; editing the texts starts a new review.';
 function selectIn(field, start, end) {
   const box = $(field);
   box.readOnly = true;
@@ -52,12 +57,17 @@ function selectIn(field, start, end) {
   box.scrollIntoView({ block: 'center' });
 }
 for (const field of ['prose', 'rewrite']) {
-  const unlock = () => { $(field).readOnly = false; };
+  const unlock = () => {
+    $(field).readOnly = false;
+    if (field === 'prose' && distillLine().textContent === FOUND_PASSAGE_WARNING) distillStatus('');
+  };
   $(field).addEventListener('pointerdown', unlock);
   // Switching tab or app also blurs the box; it stays read-only until focus really moves elsewhere on the page.
   $(field).addEventListener('blur', () => setTimeout(() => { if (document.activeElement !== $(field) && document.hasFocus()) unlock(); }, 0));
   $(field).addEventListener('keydown', event => {
-    if ($(field).readOnly && event.key.length === 1 && !event.ctrlKey && !event.metaKey) status('That box is showing a found passage. Click in it to edit; editing the texts starts a new review.');
+    if (!$(field).readOnly || event.key.length !== 1 || event.ctrlKey || event.metaKey) return;
+    // Report next to the box: the original's nearest status line is the one under its depth button.
+    (field === 'prose' ? distillStatus : status)(FOUND_PASSAGE_WARNING);
   });
 }
 
@@ -253,14 +263,14 @@ exampleFromAddress();
 
 // Extractive depths of the original: computed here, nothing leaves the page.
 let distilled = null, distilledSource = null;
-function hideDistill() { distilled = null; distilledSource = null; $('distill-panel').hidden = true; }
+function hideDistill() { distilled = null; distilledSource = null; $('distill-panel').hidden = true; if ($('distill-status')) distillStatus(''); }
 $('prose').addEventListener('input', hideDistill);
 // Offsets are only meaningful against the exact text they were computed from;
 // any replacement of the original (typed or programmatic) retires the panel.
 function selectOriginal(start, end) {
   if ($('prose').value !== distilledSource) {
     hideDistill();
-    status('The original changed since the depths were made. Read the original at depths again.');
+    distillStatus('The original changed since the depths were made. Read the original at depths again.');
     return;
   }
   selectIn('prose', start, end);
@@ -331,8 +341,10 @@ function distillOriginal() {
     slider.value = '0';
     showDepth(0);
     $('distill-panel').hidden = false;
-    status('Depths ready. Move the depth slider; select any passage to find it in the original.');
-  } catch (e) { hideDistill(); status(e.message); }
+    // Bring the depth reader's status line into view; the panel sits directly below it.
+    ($('distill-status') || $('distill-panel')).scrollIntoView({ block: 'start' });
+    distillStatus('Depths ready. Move the depth slider; select any passage to find it in the original.');
+  } catch (e) { hideDistill(); distillStatus(e.message); }
 }
 $('distill-btn').addEventListener('click', distillOriginal);
 $('distill-depth').addEventListener('input', () => { if (distilled) showDepth(Number($('distill-depth').value)); });
