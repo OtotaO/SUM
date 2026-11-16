@@ -10,6 +10,8 @@ let render = null;
 let jwks = null; // keys carried by an opened packet (unsigned), or null
 let siteKeys = null; // this site's /.well-known/jwks.json; a packet never sets it
 const status = message => { $('workbench-status').textContent = message; };
+// The depth reader sits above the comparison, so it reports beside its own button.
+const distillStatus = message => { $('distill-status').textContent = message; };
 
 function resetReview() {
   generation++;
@@ -253,14 +255,14 @@ exampleFromAddress();
 
 // Extractive depths of the original: computed here, nothing leaves the page.
 let distilled = null, distilledSource = null;
-function hideDistill() { distilled = null; distilledSource = null; $('distill-panel').hidden = true; }
+function hideDistill() { distilled = null; distilledSource = null; $('distill-panel').hidden = true; distillStatus(''); }
 $('prose').addEventListener('input', hideDistill);
 // Offsets are only meaningful against the exact text they were computed from;
 // any replacement of the original (typed or programmatic) retires the panel.
 function selectOriginal(start, end) {
   if ($('prose').value !== distilledSource) {
     hideDistill();
-    status('The original changed since the depths were made. Read the original at depths again.');
+    distillStatus('The original changed since the depths were made. Read the original at depths again.');
     return;
   }
   selectIn('prose', start, end);
@@ -331,8 +333,8 @@ function distillOriginal() {
     slider.value = '0';
     showDepth(0);
     $('distill-panel').hidden = false;
-    status('Depths ready. Move the depth slider; select any passage to find it in the original.');
-  } catch (e) { hideDistill(); status(e.message); }
+    distillStatus('Depths ready. Move the depth slider; select any passage to find it in the original.');
+  } catch (e) { hideDistill(); distillStatus(e.message); }
 }
 $('distill-btn').addEventListener('click', distillOriginal);
 $('distill-depth').addEventListener('input', () => { if (distilled) showDepth(Number($('distill-depth').value)); });

@@ -783,9 +783,14 @@ test('the original reads at depths in the page, with no request, and passages se
   try {
     const source = 'The tenant may cancel the lease with 30 days notice. The landlord keeps the deposit if rent is overdue. ' +
       'Weather was mild. The deposit is refundable when the tenant gives notice. Pets are allowed. The landlord repairs the heating.';
+    const FOLLOWS = p.window.Node.DOCUMENT_POSITION_FOLLOWING;
+    assert.ok(p.$('distill-btn').classList.contains('primary'), 'reading the original is the main action');
+    for (const [first, then] of [['prose', 'distill-btn'], ['distill-btn', 'distill-panel'], ['distill-panel', 'rewrite'], ['rewrite', 'compare-btn']])
+      assert.equal(p.$(first).compareDocumentPosition(p.$(then)) & FOLLOWS, FOLLOWS, `${then} follows ${first}`);
     p.input('prose', source);
     p.$('distill-btn').click();
     assert.equal(p.$('distill-panel').hidden, false);
+    assert.match(p.$('distill-status').textContent, /^Depths ready\./);
     assert.equal(p.requests.length, 0, 'depths must be computed without any network request');
     const slider = p.$('distill-depth');
     assert.ok(Number(slider.max) >= 2, 'a six-sentence text reads at three or more depths');
@@ -806,12 +811,13 @@ test('the original reads at depths in the page, with no request, and passages se
     assert.match(p.$('distill-method').textContent, /sum\.distill:extractive_coverage_v1/);
     p.input('prose', source + ' Edited.');
     assert.equal(p.$('distill-panel').hidden, true, 'an edit hides depths of the old text');
+    assert.equal(p.$('distill-status').textContent, '', 'and clears their status line');
     p.input('prose', '   ');
     p.$('distill-btn').click();
-    assert.equal(p.$('workbench-status').textContent, 'Add an original source first.');
+    assert.equal(p.$('distill-status').textContent, 'Add an original source first.');
     p.input('prose', 'x'.repeat(100001));
     p.$('distill-btn').click();
-    assert.match(p.$('workbench-status').textContent, /at most 100,000 characters/);
+    assert.match(p.$('distill-status').textContent, /at most 100,000 characters/);
     assert.equal(p.$('distill-panel').hidden, true);
     assert.equal(p.requests.length, 0);
     assert.deepEqual(p.errors, []);
@@ -840,7 +846,7 @@ test('depths of an old original never select into a replaced one', async () => {
     p.$('prose').value = 'Replaced without an input event.';
     first.click();
     assert.equal(p.$('distill-panel').hidden, true);
-    assert.match(p.$('workbench-status').textContent, /original changed since the depths were made/);
+    assert.match(p.$('distill-status').textContent, /original changed since the depths were made/);
     assert.equal(p.$('prose').selectionStart, p.$('prose').selectionEnd, 'nothing is selected in the replaced text');
     assert.deepEqual(p.errors, []);
   } finally { p.close(); }
