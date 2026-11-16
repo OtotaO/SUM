@@ -837,8 +837,14 @@ test('a cached page without the depth status line still reads at depths', async 
     p.$('distill-btn').click();
     assert.equal(p.$('distill-panel').hidden, false);
     assert.match(p.$('workbench-status').textContent, /^Depths ready\./);
+    p.$('distill-view').querySelector('.distill-passage').click();
+    p.$('prose').dispatchEvent(new p.window.KeyboardEvent('keydown', { key: 'x', bubbles: true }));
+    assert.match(p.$('workbench-status').textContent, /^That box is showing a found passage/);
+    p.$('prose').dispatchEvent(new p.window.Event('pointerdown'));
+    assert.equal(p.$('workbench-status').textContent, '');
     p.input('prose', 'Edited.');
     assert.equal(p.$('distill-panel').hidden, true);
+    assert.equal(p.$('workbench-status').textContent, 'Texts changed. Compare again to start a new review.', 'the shared line keeps the comparison message');
     assert.deepEqual(p.errors, []);
   } finally { p.close(); }
 });

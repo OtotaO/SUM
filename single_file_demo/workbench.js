@@ -263,7 +263,7 @@ exampleFromAddress();
 
 // Extractive depths of the original: computed here, nothing leaves the page.
 let distilled = null, distilledSource = null;
-function hideDistill() { distilled = null; distilledSource = null; $('distill-panel').hidden = true; distillStatus(''); }
+function hideDistill() { distilled = null; distilledSource = null; $('distill-panel').hidden = true; if ($('distill-status')) distillStatus(''); }
 $('prose').addEventListener('input', hideDistill);
 // Offsets are only meaningful against the exact text they were computed from;
 // any replacement of the original (typed or programmatic) retires the panel.
