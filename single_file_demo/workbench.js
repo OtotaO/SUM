@@ -46,6 +46,7 @@ document.addEventListener('sum:render-reset', resetReceipt);
 
 // A find action highlights the passage in its box. The box is read-only until the user clicks into it or
 // leaves it, so a stray keystroke cannot replace the highlighted text and discard the recorded review.
+const FOUND_PASSAGE_WARNING = 'That box is showing a found passage. Click in it to edit; editing the texts starts a new review.';
 function selectIn(field, start, end) {
   const box = $(field);
   box.readOnly = true;
@@ -54,14 +55,17 @@ function selectIn(field, start, end) {
   box.scrollIntoView({ block: 'center' });
 }
 for (const field of ['prose', 'rewrite']) {
-  const unlock = () => { $(field).readOnly = false; };
+  const unlock = () => {
+    $(field).readOnly = false;
+    if (field === 'prose' && $('distill-status').textContent === FOUND_PASSAGE_WARNING) distillStatus('');
+  };
   $(field).addEventListener('pointerdown', unlock);
   // Switching tab or app also blurs the box; it stays read-only until focus really moves elsewhere on the page.
   $(field).addEventListener('blur', () => setTimeout(() => { if (document.activeElement !== $(field) && document.hasFocus()) unlock(); }, 0));
   $(field).addEventListener('keydown', event => {
     if (!$(field).readOnly || event.key.length !== 1 || event.ctrlKey || event.metaKey) return;
     // Report next to the box: the original's nearest status line is the one under its depth button.
-    (field === 'prose' ? distillStatus : status)('That box is showing a found passage. Click in it to edit; editing the texts starts a new review.');
+    (field === 'prose' ? distillStatus : status)(FOUND_PASSAGE_WARNING);
   });
 }
 

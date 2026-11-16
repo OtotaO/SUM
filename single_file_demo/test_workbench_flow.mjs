@@ -1033,6 +1033,7 @@ test('a find action cannot let a keystroke wipe the review; clicking into the bo
     assert.equal(p.$('review-rows').querySelector('select').value, 'needs-change', 'the decision survives');
     p.$('prose').dispatchEvent(new p.window.Event('pointerdown'));
     assert.equal(p.$('prose').readOnly, false, 'clicking into the box makes it editable');
+    assert.equal(p.$('distill-status').textContent, '', 'and retires the warning under it');
     p.$('detail-list').querySelector('button').click();
     const hasFocus = p.window.document.hasFocus;
     p.window.document.hasFocus = () => false;
