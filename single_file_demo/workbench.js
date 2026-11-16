@@ -333,6 +333,7 @@ function distillOriginal() {
     slider.value = '0';
     showDepth(0);
     $('distill-panel').hidden = false;
+    $('distill-panel').scrollIntoView({ block: 'start' });
     distillStatus('Depths ready. Move the depth slider; select any passage to find it in the original.');
   } catch (e) { hideDistill(); distillStatus(e.message); }
 }
