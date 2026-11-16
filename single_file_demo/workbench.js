@@ -59,7 +59,9 @@ for (const field of ['prose', 'rewrite']) {
   // Switching tab or app also blurs the box; it stays read-only until focus really moves elsewhere on the page.
   $(field).addEventListener('blur', () => setTimeout(() => { if (document.activeElement !== $(field) && document.hasFocus()) unlock(); }, 0));
   $(field).addEventListener('keydown', event => {
-    if ($(field).readOnly && event.key.length === 1 && !event.ctrlKey && !event.metaKey) status('That box is showing a found passage. Click in it to edit; editing the texts starts a new review.');
+    if (!$(field).readOnly || event.key.length !== 1 || event.ctrlKey || event.metaKey) return;
+    // Report next to the box: the original's nearest status line is the one under its depth button.
+    (field === 'prose' ? distillStatus : status)('That box is showing a found passage. Click in it to edit; editing the texts starts a new review.');
   });
 }
 

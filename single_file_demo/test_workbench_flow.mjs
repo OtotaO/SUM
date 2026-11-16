@@ -804,6 +804,8 @@ test('the original reads at depths in the page, with no request, and passages se
     assert.ok(p.$('distill-view').querySelector('.distill-gap'), 'left-out passages are marked');
     shallow[0].click();
     assert.equal(p.$('prose').value.slice(p.$('prose').selectionStart, p.$('prose').selectionEnd), shallow[0].textContent);
+    p.$('prose').dispatchEvent(new p.window.KeyboardEvent('keydown', { key: 'x', bubbles: true }));
+    assert.match(p.$('distill-status').textContent, /^That box is showing a found passage/, 'a keystroke after a depth passage is explained next to the box');
     assert.match(p.$('distill-left-summary').textContent, /^5 passages left out at this depth$/);
     slider.value = slider.max; slider.dispatchEvent(new p.window.Event('input'));
     assert.match(p.$('distill-depth-name').textContent, /^full text/);
@@ -1026,7 +1028,7 @@ test('a find action cannot let a keystroke wipe the review; clicking into the bo
     p.$('detail-list').querySelector('button').click();
     assert.equal(p.$('prose').readOnly, true, 'the highlighted box is read-only');
     p.$('prose').dispatchEvent(new p.window.KeyboardEvent('keydown', { key: 'x', bubbles: true }));
-    assert.match(p.$('workbench-status').textContent, /^That box is showing a found passage\. Click in it to edit/);
+    assert.match(p.$('distill-status').textContent, /^That box is showing a found passage\. Click in it to edit/, 'reported under the original box');
     assert.equal(p.$('review-panel').hidden, false);
     assert.equal(p.$('review-rows').querySelector('select').value, 'needs-change', 'the decision survives');
     p.$('prose').dispatchEvent(new p.window.Event('pointerdown'));
