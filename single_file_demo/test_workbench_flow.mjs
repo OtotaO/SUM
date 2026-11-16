@@ -787,10 +787,13 @@ test('the original reads at depths in the page, with no request, and passages se
     assert.ok(p.$('distill-btn').classList.contains('primary'), 'reading the original is the main action');
     for (const [first, then] of [['prose', 'distill-btn'], ['distill-btn', 'distill-panel'], ['distill-panel', 'rewrite'], ['rewrite', 'compare-btn']])
       assert.equal(p.$(first).compareDocumentPosition(p.$(then)) & FOLLOWS, FOLLOWS, `${then} follows ${first}`);
+    let scrolledTo = null;
+    p.$('distill-status').scrollIntoView = () => { scrolledTo = 'distill-status'; };
     p.input('prose', source);
     p.$('distill-btn').click();
     assert.equal(p.$('distill-panel').hidden, false);
     assert.match(p.$('distill-status').textContent, /^Depths ready\./);
+    assert.equal(scrolledTo, 'distill-status', 'the status line and the panel below it are brought into view');
     assert.equal(p.requests.length, 0, 'depths must be computed without any network request');
     const slider = p.$('distill-depth');
     assert.ok(Number(slider.max) >= 2, 'a six-sentence text reads at three or more depths');
