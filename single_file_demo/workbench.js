@@ -10,8 +10,10 @@ let render = null;
 let jwks = null; // keys carried by an opened packet (unsigned), or null
 let siteKeys = null; // this site's /.well-known/jwks.json; a packet never sets it
 const status = message => { $('workbench-status').textContent = message; };
-// The depth reader sits above the comparison, so it reports beside its own button.
-const distillStatus = message => { $('distill-status').textContent = message; };
+// The depth reader sits above the comparison, so it reports beside its own button. A cached page from
+// before that line existed falls back to the shared status line instead of failing.
+const distillLine = () => $('distill-status') || $('workbench-status');
+const distillStatus = message => { distillLine().textContent = message; };
 
 function resetReview() {
   generation++;
@@ -57,7 +59,7 @@ function selectIn(field, start, end) {
 for (const field of ['prose', 'rewrite']) {
   const unlock = () => {
     $(field).readOnly = false;
-    if (field === 'prose' && $('distill-status').textContent === FOUND_PASSAGE_WARNING) distillStatus('');
+    if (field === 'prose' && distillLine().textContent === FOUND_PASSAGE_WARNING) distillStatus('');
   };
   $(field).addEventListener('pointerdown', unlock);
   // Switching tab or app also blurs the box; it stays read-only until focus really moves elsewhere on the page.
@@ -340,7 +342,7 @@ function distillOriginal() {
     showDepth(0);
     $('distill-panel').hidden = false;
     // Bring the depth reader's status line into view; the panel sits directly below it.
-    $('distill-status').scrollIntoView({ block: 'start' });
+    ($('distill-status') || $('distill-panel')).scrollIntoView({ block: 'start' });
     distillStatus('Depths ready. Move the depth slider; select any passage to find it in the original.');
   } catch (e) { hideDistill(); distillStatus(e.message); }
 }

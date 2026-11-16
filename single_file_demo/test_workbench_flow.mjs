@@ -829,6 +829,20 @@ test('the original reads at depths in the page, with no request, and passages se
   } finally { p.close(); }
 });
 
+test('a cached page without the depth status line still reads at depths', async () => {
+  const p = await page();
+  try {
+    p.$('distill-status').remove();
+    p.input('prose', 'The tenant may cancel. The deposit is refundable. Rent is late after five days. Pets are allowed.');
+    p.$('distill-btn').click();
+    assert.equal(p.$('distill-panel').hidden, false);
+    assert.match(p.$('workbench-status').textContent, /^Depths ready\./);
+    p.input('prose', 'Edited.');
+    assert.equal(p.$('distill-panel').hidden, true);
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
 test('depths of an old original never select into a replaced one', async () => {
   const p = await page();
   try {
