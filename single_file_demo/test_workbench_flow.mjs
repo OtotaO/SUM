@@ -1155,9 +1155,11 @@ test('the whole text shows every passage in place, the kept ones marked', async 
     assert.equal(passagesIn(p, 'out').length, 6 - kept);
     assert.equal(p.$('distill-view').querySelector('.distill-gap'), null);
     const slider = p.$('distill-depth');
-    slider.value = slider.max; slider.dispatchEvent(new p.window.Event('input'));
+    for (let i = 0; i <= Number(slider.max); i++) {
+      slider.value = String(i); slider.dispatchEvent(new p.window.Event('input'));
+      assert.equal(p.$('distill-view').textContent, LEASE, `depth ${i}`);
+    }
     assert.equal(passagesIn(p, 'out').length, 0, 'the full depth keeps everything');
-    assert.equal(p.$('distill-view').textContent, LEASE);
     p.$('distill-whole').checked = false;
     p.$('distill-whole').dispatchEvent(new p.window.Event('change'));
     assert.equal(p.$('distill-view').classList.contains('whole'), false);
@@ -1194,7 +1196,8 @@ test('a reader keeps or leaves out a passage beside the rule, and can undo it', 
     pickLine(p).querySelectorAll('button')[1].click();
     assert.equal(p.$('prose').value.slice(p.$('prose').selectionStart, p.$('prose').selectionEnd), outText, 'and can still be found in the original');
     wholeOff(p);
-    assert.ok(passagesIn(p).some(b => b.textContent === outText), 'the kept-only view includes the reader\'s passage');
+    assert.ok(!passagesIn(p).some(b => b.textContent === outText), 'the kept-only view is the rule\'s choice, as before');
+    assert.equal(p.$('distill-status').textContent, '', 'a rebuilt view retires the change announcement');
     for (const b of [...passagesIn(p), ...p.$('distill-left-list').querySelectorAll('.distill-passage')])
       assert.equal(b.className, 'distill-passage', 'the kept-only view and the left-out list look as before');
     wholeOn(p);
@@ -1343,5 +1346,37 @@ test('the new controls start hidden, so a cached older script never shows dead o
   try {
     for (const id of ['distill-whole-row', 'distill-copy-row', 'distill-out-box']) assert.equal(p.$(id).hidden, false, `${id} shown by the script`);
   } finally { p.close(); }
+});
+
+test('closing a passage\'s actions keeps focus on it, and a depth change retires a stale announcement', async () => {
+  const p = await page();
+  try {
+    p.input('prose', LEASE);
+    wholeOn(p);
+    p.$('distill-btn').click();
+    assert.match(p.$('distill-status').textContent, /select any passage for its actions\.$/, 'the whole view says what selecting does there');
+    const out = passagesIn(p, 'out')[0], i = out.dataset.i;
+    out.click();
+    mainAct(p).click();
+    assert.match(p.$('distill-status').textContent, /kept by you\.$/);
+    toDepth(p, Number(p.$('distill-depth').max));
+    assert.equal(p.$('distill-status').textContent, '', 'the announcement was about another depth');
+    passagesIn(p, 'picked')[0].click();
+    assert.equal(pickLine(p), null, 'selecting the picked passage again closes its actions');
+    assert.equal(p.window.document.activeElement.dataset.i, i, 'focus stays on that passage');
+    wholeOff(p);
+    p.$('distill-btn').click();
+    assert.match(p.$('distill-status').textContent, /select any passage to find it in the original\.$/);
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
+test('hidden new controls stay hidden against the page\'s own display rules', async () => {
+  const dom = new JSDOM(html);
+  const doc = dom.window.document;
+  for (const id of ['distill-whole-row', 'distill-copy-row', 'distill-out-box'])
+    assert.equal(dom.window.getComputedStyle(doc.getElementById(id)).display, 'none', id);
+  doc.getElementById('distill-copy-row').hidden = false;
+  assert.equal(dom.window.getComputedStyle(doc.getElementById('distill-copy-row')).display, 'flex', 'shown, it lays out as before');
 });
 

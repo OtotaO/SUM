@@ -267,9 +267,9 @@ let distilled = null, distilledSource = null;
 // "depth:passage". They sit beside the rule's choice and never change it: the counts stay the
 // rule's and the copy lists the reader's changes apart. `picked` is the passage last picked in
 // the whole-text view.
-let readerChoice = new Map(), picked = -1, depthIndex = 0, fingerprint = null;
+let readerChoice = new Map(), picked = -1, lastPicked = -1, depthIndex = 0, fingerprint = null, announced = '';
 function hideDistill() {
-  distilled = null; distilledSource = null; readerChoice = new Map(); picked = -1; fingerprint = null;
+  distilled = null; distilledSource = null; readerChoice = new Map(); picked = -1; fingerprint = null; announced = '';
   $('distill-panel').hidden = true;
   if ($('distill-status')) distillStatus('');
   if ($('distill-copy-status')) $('distill-copy-status').textContent = '';
@@ -302,11 +302,13 @@ function passageButton(p, state, whole = false) {
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'distill-passage' + (whole ? ` ${state}` : '') + (whole && p.index === picked ? ' picked' : '');
+  button.dataset.i = String(p.index);
   button.textContent = p.text;
   if (whole) {
     button.title = `Characters ${p.start} to ${p.end} of the original: ${STATE_WORDS[state]}. Select for actions.`;
     button.setAttribute('aria-expanded', String(p.index === picked));
-    button.addEventListener('click', () => { picked = p.index === picked ? -1 : p.index; showDepth(depthIndex, picked >= 0 ? 'act' : null); });
+    // Selecting the picked passage again closes its actions; focus stays on that passage.
+    button.addEventListener('click', () => { lastPicked = p.index; picked = p.index === picked ? -1 : p.index; showDepth(depthIndex, picked >= 0 ? 'act' : 'passage'); });
   } else {
     button.title = `Characters ${p.start} to ${p.end} of the original. Select to find it above.`;
     button.addEventListener('click', () => selectOriginal(p.start, p.end));
@@ -330,7 +332,8 @@ function pickActions(p, state) {
     change();
     showDepth(depthIndex, 'act');
     const now = depthView().state.get(p.index);
-    distillStatus(`Passage ${p.index + 1}: ${STATE_WORDS[now]}.`);
+    announced = `Passage ${p.index + 1}: ${STATE_WORDS[now]}.`;
+    distillStatus(announced);
   };
   const main = state === 'kept' ? act('Leave it out', choose(() => readerChoice.set(choiceKey(p.index), 'drop')))
     : state === 'out' ? act('Keep it', choose(() => readerChoice.set(choiceKey(p.index), 'add')))
@@ -385,6 +388,9 @@ function gap() {
 
 // focusAfter 'act' puts focus on the picked passage's main action after the view is rebuilt.
 function showDepth(i, focusAfter = null) {
+  // A change announced at one depth says nothing true at another, or once the view is rebuilt.
+  if (announced && distillLine().textContent === announced && focusAfter !== 'act') distillStatus('');
+  announced = focusAfter === 'act' ? announced : '';
   depthIndex = i;
   const n = distilled.passage_count;
   const { d, all, state, kept } = depthView();
@@ -408,18 +414,20 @@ function showDepth(i, focusAfter = null) {
     }
     if (pos < distilledSource.length) view.append(distilledSource.slice(pos));
   } else {
-    kept.forEach((p, j) => {
-      const prev = j ? kept[j - 1].index : -1;
+    // The kept-only view is the rule's choice, as before; the reader's changes show in the whole view and the copy.
+    d.passages.forEach((p, j) => {
+      const prev = j ? d.passages[j - 1].index : -1;
       if (p.index !== prev + 1) view.append(gap());
       else if (j) view.append(' ');
       view.append(passageButton(p, state.get(p.index)));
     });
-    if (kept.length && kept[kept.length - 1].index !== n - 1) view.append(gap());
+    if (d.passages.length && d.passages[d.passages.length - 1].index !== n - 1) view.append(gap());
   }
   $('distill-left-summary').textContent = d.left_out.length ? `${d.left_out.length} passages left out at this depth` : 'Nothing left out at this depth';
   const list = $('distill-left-list');
   list.replaceChildren(...d.left_out.map(p => { const row = document.createElement('p'); row.append(passageButton(p, state.get(p.index))); return row; }));
   if (focusAfter === 'act') view.querySelector('.distill-pick [data-act="main"]')?.focus();
+  else if (focusAfter === 'passage' && whole) view.querySelector(`.distill-passage[data-i="${lastPicked}"]`)?.focus();
   refreshCopy();
 }
 
@@ -429,7 +437,7 @@ function distillOriginal() {
     if (!source.trim()) throw new Error('Add an original source first.');
     distilled = distill(source);
     distilledSource = source;
-    readerChoice = new Map(); picked = -1; fingerprint = null;
+    readerChoice = new Map(); picked = -1; fingerprint = null; announced = '';
     if ($('distill-copy-status')) $('distill-copy-status').textContent = '';
     hashText(source).then(h => { if (distilledSource === source) { fingerprint = h; refreshCopy(); } });
     $('distill-scope').textContent = distilled.scope;
@@ -456,7 +464,9 @@ function distillOriginal() {
     $('distill-panel').hidden = false;
     // Bring the depth reader's status line into view; the panel sits directly below it.
     ($('distill-status') || $('distill-panel')).scrollIntoView({ block: 'start' });
-    distillStatus('Depths ready. Move the depth slider; select any passage to find it in the original.');
+    distillStatus($('distill-whole')?.checked
+      ? 'Depths ready. Move the depth slider; select any passage for its actions.'
+      : 'Depths ready. Move the depth slider; select any passage to find it in the original.');
   } catch (e) { hideDistill(); distillStatus(e.message); }
 }
 $('distill-btn').addEventListener('click', distillOriginal);
