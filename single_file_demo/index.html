@@ -110,13 +110,14 @@
   .distill-gap { opacity: 0.55; margin: 0 4px; }
   .distill-view.whole { white-space: pre-wrap; overflow-wrap: anywhere; }
   .distill-view.whole .distill-passage { white-space: pre-wrap; }
-  .distill-passage.kept { background: #f1c40f40; }
-  .distill-passage.mine { background: #27ae6040; }
-  .distill-passage.out { opacity: 0.55; }
-  .distill-passage.dropped { opacity: 0.55; text-decoration: line-through; }
-  .distill-passage.picked { outline: 2px solid #4a90e2; outline-offset: 1px; }
+  .whole .distill-passage.kept { background: #f1c40f40; }
+  .whole .distill-passage.mine { background: #27ae6040; }
+  .whole .distill-passage.out { opacity: 0.55; }
+  .whole .distill-passage.dropped { opacity: 0.55; text-decoration: line-through; }
+  .whole .distill-passage:hover, .whole .distill-passage:focus-visible { background: #4a90e233; }
+  .whole .distill-passage.picked { outline: 2px solid #4a90e2; outline-offset: 1px; }
   .distill-whole-label { display: block; font-size: 13px; margin: 8px 0; }
-  .distill-pick { font-size: 13px; overflow-wrap: anywhere; }
+  .distill-pick { display: inline; font: 13px ui-sans-serif, system-ui, sans-serif; white-space: normal; margin: 0 4px; padding: 2px 6px; border: 1px solid #8886; border-radius: 4px; }
   .distill-out { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 260px; overflow: auto; font: 12px/1.5 ui-monospace, monospace; padding: 10px; border: 1px solid #8886; border-radius: 6px; }
   .review-examples { font-size: 13px; margin: 8px 0; }
   .detail-checks ul { padding-left: 20px; margin: 8px 0 16px; }
@@ -163,12 +164,11 @@
   </div>
   <p id="distill-stats" style="font: 12px ui-monospace, monospace; opacity: 0.8;"></p>
   <div id="distill-tags" class="distill-tags"></div>
-  <label class="distill-whole-label"><input type="checkbox" id="distill-whole"> Show the whole text, with the kept passages marked</label>
+  <div id="distill-whole-row" hidden><label class="distill-whole-label"><input type="checkbox" id="distill-whole"> Show the whole text, with the kept passages marked</label></div>
   <div id="distill-view" class="distill-view"></div>
-  <p id="distill-pick" class="distill-pick" hidden></p>
   <details id="distill-left" class="distill-left"><summary id="distill-left-summary"></summary><div id="distill-left-list"></div></details>
-  <div class="review-actions"><button type="button" id="distill-copy" class="ghost">Copy the kept passages</button><span id="distill-copy-status" role="status" aria-live="polite"></span></div>
-  <details id="distill-out-box"><summary>What will be copied</summary><pre id="distill-out" class="distill-out"></pre></details>
+  <div class="review-actions" id="distill-copy-row" hidden><button type="button" id="distill-copy" class="ghost">Copy the kept passages</button><span id="distill-copy-status" role="status" aria-live="polite"></span></div>
+  <details id="distill-out-box" hidden><summary>What will be copied</summary><pre id="distill-out" class="distill-out"></pre></details>
   <p class="review-scope" id="distill-method"></p>
 </section>
 <div class="review-inputs review-one">
