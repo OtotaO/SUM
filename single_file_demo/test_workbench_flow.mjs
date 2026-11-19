@@ -32,7 +32,7 @@ async function until(predicate) {
 const detailsDone = p => until(() => p.$('detail-summary').textContent && !p.$('detail-summary').textContent.startsWith('Checking'));
 const deferred = () => { let resolve; const promise = new Promise(r => { resolve = r; }); return { promise, resolve }; };
 
-async function page(handler = async () => new Response('{}', { status: 503 }), { worker = 'answer', url = 'https://workbench.example' } = {}) {
+async function page(handler = async () => new Response('{}', { status: 503 }), { worker = 'answer', url = 'https://workbench.example', markup = html } = {}) {
   const errors = [], requests = [], downloads = [], workers = [];
   const mockFetch = async (url, init) => {
     if (String(url).includes('altitude_rungs') || String(url).includes('tags_roundtrip_panel')) return new Response('{}', { status: 404 });
@@ -41,7 +41,7 @@ async function page(handler = async () => new Response('{}', { status: 503 }), {
   };
   const console = new VirtualConsole();
   console.on('jsdomError', e => { if (!e.message.includes('navigation')) errors.push(e); });
-  const dom = new JSDOM(html, { url, runScripts: 'dangerously', virtualConsole: console,
+  const dom = new JSDOM(markup, { url, runScripts: 'dangerously', virtualConsole: console,
     beforeParse(window) {
       Object.defineProperty(window, 'crypto', { value: webcrypto });
       window.TextEncoder = TextEncoder; window.structuredClone = structuredClone;
@@ -1137,4 +1137,164 @@ test('a packet with the old field order still verifies, and an example opened fr
     assert.equal(q.$('workbench-status').textContent, 'Clear both boxes to load an example. Your text was kept.');
     await detailsDone(q);
   } finally { q.close(); }
+});
+
+const LEASE = 'The tenant may cancel. The deposit is refundable. Rent is late after five days. Pets are allowed. The landlord fixes the roof. Parking is free.';
+const passagesIn = (p, cls) => [...p.$('distill-view').querySelectorAll(`.distill-passage${cls ? '.' + cls : ''}`)];
+
+test('the whole text shows every passage in place, the kept ones marked', async () => {
+  const p = await page();
+  try {
+    p.input('prose', LEASE);
+    p.$('distill-btn').click();
+    const kept = passagesIn(p).length;
+    p.$('distill-whole').checked = true;
+    p.$('distill-whole').dispatchEvent(new p.window.Event('change'));
+    assert.equal(p.$('distill-view').textContent, LEASE, 'the whole view is the original, character for character');
+    assert.equal(passagesIn(p, 'kept').length, kept);
+    assert.equal(passagesIn(p, 'out').length, 6 - kept);
+    assert.equal(p.$('distill-view').querySelector('.distill-gap'), null);
+    const slider = p.$('distill-depth');
+    slider.value = slider.max; slider.dispatchEvent(new p.window.Event('input'));
+    assert.equal(passagesIn(p, 'out').length, 0, 'the full depth keeps everything');
+    assert.equal(p.$('distill-view').textContent, LEASE);
+    p.$('distill-whole').checked = false;
+    p.$('distill-whole').dispatchEvent(new p.window.Event('change'));
+    assert.equal(p.$('distill-view').classList.contains('whole'), false);
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
+test('a reader keeps or leaves out a passage beside the rule, and can undo it', async () => {
+  const p = await page();
+  try {
+    p.input('prose', LEASE);
+    p.$('distill-btn').click();
+    const ruleLeft = p.$('distill-left-summary').textContent;
+    p.$('distill-whole').checked = true;
+    p.$('distill-whole').dispatchEvent(new p.window.Event('change'));
+    const out = passagesIn(p, 'out')[0], outText = out.textContent;
+    out.click();
+    assert.equal(p.$('prose').value.slice(p.$('prose').selectionStart, p.$('prose').selectionEnd), outText, 'still finds it in the original');
+    assert.match(p.$('distill-pick').textContent, /: left out at this depth\. Keep it$/);
+    p.$('distill-pick').querySelector('button').click();
+    assert.match(p.$('distill-stats').textContent, /Your changes: 1 kept, 0 left out\.$/);
+    const mine = passagesIn(p, 'mine');
+    assert.equal(mine.length, 1); assert.equal(mine[0].textContent, outText);
+    assert.ok(mine[0].classList.contains('picked'));
+    assert.equal(p.$('distill-left-summary').textContent, ruleLeft, 'the rule\'s own left-out list is unchanged');
+    assert.match(p.$('distill-pick').textContent, /left out at this depth, kept by you\. Undo my change$/);
+    p.$('distill-whole').checked = false;
+    p.$('distill-whole').dispatchEvent(new p.window.Event('change'));
+    assert.ok(passagesIn(p).some(b => b.textContent === outText), 'the kept-only view includes the reader\'s passage');
+    p.$('distill-pick').querySelector('button').click();
+    assert.equal(passagesIn(p, 'mine').length, 0);
+    assert.doesNotMatch(p.$('distill-stats').textContent, /Your changes/);
+    const kept = passagesIn(p, 'kept')[0]; kept.click();
+    p.$('distill-pick').querySelector('button').click();
+    assert.match(p.$('distill-stats').textContent, /Your changes: 0 kept, 1 left out\.$/);
+    p.$('distill-whole').checked = true;
+    p.$('distill-whole').dispatchEvent(new p.window.Event('change'));
+    assert.equal(passagesIn(p, 'dropped').length, 1);
+    p.$('distill-btn').click();
+    assert.doesNotMatch(p.$('distill-stats').textContent, /Your changes/, 'reading again starts without the reader\'s changes');
+    assert.equal(p.$('distill-pick').hidden, true);
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
+test('the copy is the kept passages verbatim with positions, the fingerprint, the method and the reader\'s changes', async () => {
+  const p = await page();
+  const written = [];
+  const had = Object.getOwnPropertyDescriptor(globalThis.navigator, 'clipboard');
+  Object.defineProperty(globalThis.navigator, 'clipboard', { configurable: true, value: { writeText: async t => { written.push(t); } } });
+  try {
+    p.input('prose', LEASE);
+    p.$('distill-btn').click();
+    p.$('distill-whole').checked = true;
+    p.$('distill-whole').dispatchEvent(new p.window.Event('change'));
+    const out = passagesIn(p, 'out')[0]; out.click();
+    p.$('distill-pick').querySelector('button').click();
+    p.$('distill-copy').click();
+    await until(() => written.length === 1);
+    assert.equal(p.$('distill-copy-status').textContent, 'Copied.');
+    const text = written[0];
+    const start = LEASE.indexOf(out.textContent);
+    assert.ok(text.includes(`[${start}-${start + out.textContent.length}] ${out.textContent}`));
+    for (const b of passagesIn(p).filter(b => b.classList.contains('kept') || b.classList.contains('mine'))) {
+      const s = LEASE.indexOf(b.textContent);
+      assert.ok(text.includes(`[${s}-${s + b.textContent.length}] ${b.textContent}`), b.textContent);
+    }
+    const hash = 'sha256-' + Buffer.from(await webcrypto.subtle.digest('SHA-256', new TextEncoder().encode(LEASE))).toString('hex');
+    assert.ok(text.includes(`Text fingerprint: ${hash}`));
+    assert.ok(text.includes('Passages picked by: sum.distill:extractive_coverage_v1.'));
+    assert.ok(text.includes(`Changed by the reader: kept [${start}-${start + out.textContent.length}]`));
+    await until(() => p.$('distill-out').textContent.includes(hash));
+    assert.equal(p.$('distill-out').textContent, text, 'the preview is what is copied');
+    assert.equal(p.requests.length, 0, 'nothing is sent');
+    assert.deepEqual(p.errors, []);
+  } finally {
+    if (had) Object.defineProperty(globalThis.navigator, 'clipboard', had); else delete globalThis.navigator.clipboard;
+    p.close();
+  }
+});
+
+test('without clipboard access the copy text is shown and selected', async () => {
+  const p = await page();
+  const had = Object.getOwnPropertyDescriptor(globalThis.navigator, 'clipboard');
+  Object.defineProperty(globalThis.navigator, 'clipboard', { configurable: true, value: { writeText: async () => { throw new Error('denied'); } } });
+  try {
+    p.input('prose', LEASE);
+    p.$('distill-btn').click();
+    p.$('distill-copy').click();
+    await until(() => p.$('distill-copy-status').textContent);
+    assert.match(p.$('distill-copy-status').textContent, /^Could not copy here\. The text below is selected/);
+    assert.equal(p.$('distill-out-box').open, true);
+    assert.equal(String(p.window.getSelection()), p.$('distill-out').textContent);
+    p.input('prose', 'Edited.');
+    assert.equal(p.$('distill-copy-status').textContent, '', 'an edit retires the copy message');
+    assert.deepEqual(p.errors, []);
+  } finally {
+    if (had) Object.defineProperty(globalThis.navigator, 'clipboard', had); else delete globalThis.navigator.clipboard;
+    p.close();
+  }
+});
+
+test('an essay with code fences and list lines reads in place at every depth', async () => {
+  const essay = await readFile(new URL('../fixtures/tags_roundtrip/efso_vaults_2/source.md', import.meta.url), 'utf8');
+  const p = await page();
+  try {
+    p.input('prose', essay);
+    p.$('distill-btn').click();
+    p.$('distill-whole').checked = true;
+    p.$('distill-whole').dispatchEvent(new p.window.Event('change'));
+    const slider = p.$('distill-depth');
+    for (let i = 0; i <= Number(slider.max); i++) {
+      slider.value = String(i); slider.dispatchEvent(new p.window.Event('input'));
+      assert.equal(p.$('distill-view').textContent, essay, `depth ${i}: the whole view is the essay`);
+      assert.ok(passagesIn(p, 'kept').length >= 1);
+    }
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
+test('a cached page without the whole-text controls still reads at depths', async () => {
+  // The page as it was before these controls, served from cache beside the new script.
+  const old = new JSDOM(html).window.document;
+  for (const id of ['distill-whole', 'distill-pick', 'distill-copy', 'distill-copy-status', 'distill-out-box']) old.getElementById(id)?.closest('label, div.review-actions, details, p').remove();
+  for (const id of ['distill-whole', 'distill-pick', 'distill-copy', 'distill-copy-status', 'distill-out-box']) assert.equal(old.getElementById(id), null);
+  const p = await page(undefined, { markup: '<!DOCTYPE html>' + old.documentElement.outerHTML });
+  try {
+    p.input('prose', LEASE);
+    p.$('distill-btn').click();
+    assert.equal(p.$('distill-panel').hidden, false);
+    p.$('distill-view').querySelector('.distill-passage').click();
+    const slider = p.$('distill-depth');
+    slider.value = slider.max; slider.dispatchEvent(new p.window.Event('input'));
+    assert.equal(passagesIn(p).length, 6);
+    await new Promise(r => setTimeout(r, 20));
+    p.input('prose', 'Edited.');
+    assert.equal(p.$('distill-panel').hidden, true);
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
 });
