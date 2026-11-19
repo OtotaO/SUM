@@ -123,4 +123,6 @@ none of its firm claims.
 A model pass, not the author's check, read the 56 claims against the essay
 (two checkers, then two refuters for each flag). It proposed rewording 13
 claims and dropping none; c11, c15, c18 and c22 were not among them. That
-pass changed nothing in `claims.json`.
+pass changed nothing in `claims.json`. `model_pass_efso_vaults_2.json` records
+the proposals, the refuters' reasons and the hash of the claims it read; it is
+a list for the author's check, not part of the measure.

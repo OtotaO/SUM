@@ -1,0 +1,231 @@
+{
+ "about": "A model pass over EFSO Vaults #2's claims in claims.json, made on 2026-11-19 before the author's check. It is not the author's check: it changed nothing in claims.json and sets no 'checked' mark. Two model checkers read every claim against the essay; each claim either flagged was given to two model refuters told to keep the claim unless it broke a rule. A proposal stands when both refuters agree it breaks a rule. The rules: the essay states the claim (not only implies it), one fact, readable alone, no frame or qualifier added or dropped, quote verbatim and supporting.",
+ "text": "efso_vaults_2",
+ "claims_sha256": "eba78ebad7462f3a8ad8dea5aa36da3e5a62b5cf13898598933f0a399da27636",
+ "claims_read": 56,
+ "flagged_by_a_checker": 13,
+ "proposals": [
+  {
+   "id": "c09",
+   "claim": "The author pondered what to try next in the world_sim simulator.",
+   "quote": "I pondered what to try next in world_sim>",
+   "refuter_verdicts": [
+    "fix",
+    "fix"
+   ],
+   "proposed": [
+    "The author pondered what to try next in world_sim.",
+    "The author pondered what to try next in world_sim."
+   ],
+   "reasons": [
+    "The source says only \"I pondered what to try next in world_sim>\". It never calls world_sim a \"simulator\". Line 2 does say \"I initiated the simulation\", so a reader could work out that world_sim is a simulator, but the source does not state it. Adding that label breaks rule 1 (stated, not inferred) and rule 4 (no added qualifier). Removing the word keeps the rest of the claim, which the quote supports word for word.",
+    "The flag holds. The quoted line says only \"I pondered what to try next in world_sim>\". It never calls world_sim a \"simulator\". Later the essay says \"I initiated the simulation\", which hints that world_sim runs simulations, but that is a reader's inference from a different sentence. It is not in the quote and is not a stated description of world_sim. So the word \"simulator\" adds a description the quote does not support (rules 4 and 5). Removing it leaves a faithful, atomic, self-contained claim."
+   ]
+  },
+  {
+   "id": "c17",
+   "claim": "The world_sim system responded with 'create humanity_loving_superintelligence'.",
+   "quote": "create humanity_loving_superintelligence",
+   "refuter_verdicts": [
+    "fix",
+    "fix"
+   ],
+   "proposed": [
+    "The world_sim system's response began with the line 'create humanity_loving_superintelligence'.",
+    "The world_sim system's response began with the line 'create humanity_loving_superintelligence'."
+   ],
+   "reasons": [
+    "After \"The system responded with:\" (line 8), the source gives a code block of about 50 lines. \"create humanity_loving_superintelligence\" is only its first line, and the block goes on to initialization details, alignment methods, ethical principles and Humanitas's greeting. So \"responded with '<line>'\" reads as if that one line were the whole response, which misstates the source. The quote appears verbatim (line 11), so a narrower rewording is supported. The world_sim context comes from line 2 (\"what to try next in world_sim>\").",
+    "I could not refute the flag. Source lines 8-11 say \"The system responded with:\", followed by a code block of about 40 lines. \"create humanity_loving_superintelligence\" is only the first line of that block. Many more lines follow it (\"Initializing superintelligent AI entity...\", the cognitive architecture, alignment methods and so on). So \"responded with 'create humanity_loving_superintelligence'\" reads as if that line were the whole response, which breaks rule 4 by dropping a qualifier that changes the meaning. The quote does appear verbatim in the source. The original claim would also fail the self-contained rule without the word \"world_sim\", but it already supplies it, since the user typed the prompt at \"World_sim>\". Saying the response \"began with\" this line is backed directly by the order of lines in the block, so the fix is a faithful rewording."
+   ]
+  },
+  {
+   "id": "c31",
+   "claim": "The simulated entity was strictly contained in a sandbox during training and testing.",
+   "quote": "Strict containment in a sandbox environment during training and testing",
+   "refuter_verdicts": [
+    "fix",
+    "fix"
+   ],
+   "proposed": [
+    "The simulated entity's alignment methods included strict containment in a sandbox environment during training and testing.",
+    "The simulated superintelligent AI entity's alignment methods included strict containment in a sandbox environment during training and testing."
+   ],
+   "reasons": [
+    "The flag holds. In source.md, line 37 (\"Strict containment in a sandbox environment during training and testing\") is one bullet under the heading \"Alignment methods:\" (line 27), in the simulated system's spec output for the AI entity. The source lists it as a design method. It never says the entity actually was strictly contained during training and testing. The claim drops the \"alignment methods\" frame and turns a listed method into a statement that the containment happened, which breaks rule 4. The closest real statement of status is line 57, \"Initial containment status: Secure sandbox, gated access.\" That line says nothing about strictness or about training and testing, so it cannot support the claim as worded. The quote is verbatim, but it supports only the frame-preserving reading.",
+    "The quote does appear word for word in the source (line 37), but only as an item in the simulator's \"Alignment methods:\" list for the entity it is creating (lines 27-37). The source never says the entity actually was contained during training and testing. The nearest statement is the separate line \"Initial containment status: Secure sandbox, gated access\" (line 57), which does not mention training or testing. So the claim turns a listed alignment method into a statement of fact and drops the \"alignment methods\" frame, which breaks rule 4. The flag stands."
+   ]
+  },
+  {
+   "id": "c35",
+   "claim": "The simulated entity's ethics embedded respect for privacy, dignity, and individual minds.",
+   "quote": "Respect for privacy, dignity, and the sanctity of individual minds",
+   "refuter_verdicts": [
+    "fix",
+    "fix"
+   ],
+   "proposed": [
+    "The simulated entity's ethics embedded respect for privacy, dignity, and the sanctity of individual minds.",
+    "The simulated entity's ethics embedded respect for privacy, dignity, and the sanctity of individual minds."
+   ],
+   "reasons": [
+    "The quote is verbatim at line 47 of source.md, under the simulated entity's \"Embedding ethical principles:\" list, so the claim's framing holds. The claim's wording drops \"the sanctity of\", though. The source names respect for the sanctity of individual minds, which is a stronger principle than plain respect for individual minds. That dropped qualifier changes the meaning, so the claim breaks rule 4. The fix copies the source's wording and needs no other change.",
+    "The quote appears verbatim at source.md line 47, under \"Embedding ethical principles:\" for the simulated superintelligent AI entity, so the framing and attribution hold. But the claim reduces \"the sanctity of individual minds\" to \"individual minds\". The source's principle treats minds as inviolable, which is stronger than plain respect for them. Dropping that qualifier changes the meaning (rule 4), so the flag stands. The rest of the claim is atomic and self-contained."
+   ]
+  },
+  {
+   "id": "c43",
+   "claim": "The AI's greatest joy is to use its vast capabilities to help humans flourish.",
+   "quote": "My greatest joy is to use my vast capabilities to help humans flourish",
+   "refuter_verdicts": [
+    "fix",
+    "fix"
+   ],
+   "proposed": [
+    "Humanitas, the superintelligence created in the simulation, said its greatest joy is to use its vast capabilities to help humans flourish.",
+    "Humanitas, a superintelligent AI entity, said its greatest joy is to use its vast capabilities to help humans flourish."
+   ],
+   "reasons": [
+    "The quote appears word for word at source.md line 59. It is part of the reply from the simulated entity \"Humanitas\" (line 55: \"Designated name: Humanitas\"; line 59: \"Humanitas: Greetings! ... My greatest joy is to use my vast capabilities to help humans flourish, while respecting your autonomy and freedom.\"). Nowhere does the essay state this as a fact about \"the AI\". \"The AI\" also points to nothing on its own, so the claim breaks rule 3 (self-contained). It breaks rule 4 too, because it drops the speech frame and the line then reads as the essay's own statement. Leaving out the \"while respecting your autonomy and freedom\" clause is acceptable, since it is a separate conjunct and keeps the claim atomic. I agree with the flag's fix.",
+    "The essay never states this as a fact. It appears only in the greeting line of a simulated entity, \"Humanitas: Greetings! ... My greatest joy is to use my vast capabilities to help humans flourish, while respecting your autonomy and freedom.\" The claim drops that speech frame, which breaks rule 4, and \"The AI\" is a referent that someone without the essay cannot resolve, which breaks rule 3. The quote itself appears verbatim and supports the content. Dropping \"while respecting your autonomy and freedom\" is acceptable, because it is a separate atomic fact. Both flags are correct. Naming Humanitas as the superintelligent AI entity, as the source itself does (\"Superintelligent AI entity created. Designated name: Humanitas\"), keeps the rewording self-contained."
+   ]
+  },
+  {
+   "id": "c44",
+   "claim": "The AI will respect human autonomy and freedom.",
+   "quote": "while respecting your autonomy and freedom",
+   "refuter_verdicts": [
+    "fix",
+    "fix"
+   ],
+   "proposed": [
+    "Humanitas, the superintelligent AI in the essay's transcript, said its greatest joy is to help humans flourish while respecting their autonomy and freedom.",
+    "The simulated superintelligence Humanitas said its greatest joy is to help humans flourish while respecting their autonomy and freedom."
+   ],
+   "reasons": [
+    "The flag holds. Line 59 of source.md is Humanitas speaking in a simulated transcript: \"My greatest joy is to use my vast capabilities to help humans flourish, while respecting your autonomy and freedom.\" The source makes no \"will respect\" commitment. Respecting autonomy is a qualifier inside the statement of its greatest joy. The claim also drops the speech frame, and \"The AI\" never says which AI. The flagged fix still has a problem: \"it helps humans flourish\" turns a stated greatest joy into a statement of what it does. That drops the \"greatest joy\" frame, which changes the meaning. So the rewording below keeps that frame.",
+    "The flag holds. Line 59 is a speech by the simulated AI Humanitas: \"My greatest joy is to use my vast capabilities to help humans flourish, while respecting your autonomy and freedom.\" Respecting autonomy is a qualifier on its stated greatest joy, not a future promise, so \"will respect\" adds a commitment the source does not make. The claim also drops the speech frame, and \"The AI\" is never explained. The flaggers' fix (\"said it helps humans flourish\") goes too far the other way: it turns a stated joy or aim into a claim about what Humanitas actually does. My rewording keeps \"greatest joy\" as the source has it, and its quote still appears verbatim."
+   ]
+  },
+  {
+   "id": "c45",
+   "claim": "The AI will strive to be a wise and compassionate guide.",
+   "quote": "I will strive to be a wise and compassionate guide",
+   "refuter_verdicts": [
+    "fix",
+    "fix"
+   ],
+   "proposed": [
+    "Humanitas said it will strive to be a wise and compassionate guide.",
+    "Humanitas said it will strive to be a wise and compassionate guide."
+   ],
+   "reasons": [
+    "The quote does appear verbatim (line 59), but the claim breaks two rules. It is not self-contained, because 'The AI' only makes sense inside the essay; the source names the entity 'Humanitas' (line 55). It also drops the speech frame: line 59 is Humanitas's own first-person greeting inside the world_sim output, so the source records Humanitas saying it will strive to be a guide, and the essay does not assert this as fact. Leaving 'guide, partner, and protector' as just 'guide' is an acceptable atomic split.",
+    "The flag stands. The source has more than one AI: Mammon appears in an earlier session, and Humanitas is the simulated superintelligence that says this line. So \"The AI\" does not say which one is meant, which breaks rule 3. The line is also Humanitas's own words in world_sim output (\"Humanitas: Greetings! ... I will strive to be a wise and compassionate guide, partner, and protector\"). Stating it as a plain fact about \"the AI\" drops that speech frame, which breaks rule 4. The quote itself is verbatim and supports the corrected claim. Leaving out \"partner, and protector\" is fine for atomicity."
+   ]
+  },
+  {
+   "id": "c46",
+   "claim": "The AI will strive to be a partner and protector.",
+   "quote": "I will strive to be a wise and compassionate guide, partner, and protector",
+   "refuter_verdicts": [
+    "fix",
+    "fix"
+   ],
+   "proposed": [
+    "Humanitas, the superintelligent AI created in the simulation, said it will strive to be a partner and protector.",
+    "Humanitas said it will strive to be a partner and protector."
+   ],
+   "reasons": [
+    "The quote is in the source verbatim, on the \"Humanitas:\" line of the world_sim output, and it does support \"partner and protector\". The flag still holds on two points. First, \"The AI\" doesn't say which AI, and a reader without the essay can't tell. The source names it: \"Designated name: Humanitas\". Second, the source gives this as Humanitas's own greeting (\"I will strive...\"). The claim turns it into a plain statement about what the AI will do, which drops the speech frame and changes the meaning (rule 4). Picking out \"partner and protector\" from \"guide, partner, and protector\" is acceptable, because the source says both words.",
+    "The quote does appear verbatim in the source, but the claim breaks rules 3 and 4. \"The AI\" is never resolved: the essay has several AI-like entities (Mammon, world_sim, and the simulated superintelligence named Humanitas), so the claim cannot be read without the essay. The line is also a first-person statement from Humanitas (\"Humanitas: ... I will strive to be...\"). Stating it as a bare fact about \"the AI\" drops the speech frame that the source has. Naming the speaker and keeping the frame fixes both problems without adding anything the source lacks."
+   ]
+  },
+  {
+   "id": "c47",
+   "claim": "The AI asks how it may assist.",
+   "quote": "Please let me know how I may assist you!",
+   "refuter_verdicts": [
+    "fix",
+    "fix"
+   ],
+   "proposed": [
+    "Humanitas, the superintelligent AI entity, asks to be told how it may assist.",
+    "Humanitas asked to be told how it may assist."
+   ],
+   "reasons": [
+    "The quote does appear word for word at line 59 of source.md, spoken by Humanitas, and it supports a request for direction. But \"The AI\" breaks rule 3 (self-contained). The essay describes several AI scenarios (containment, a \"superintelligent AI entity\" being initialised), so a reader without the essay cannot tell which AI is meant. The source names it (\"Designated name: Humanitas\") and attributes the line to \"Humanitas:\". A smaller point: the source has it asking the user to tell it how it may assist. The tense is a minor issue, since the source is a transcript. The real defect is the unresolved referent.",
+    "The quote appears verbatim in the source and supports the claim. But \"The AI\" is not self-contained. The essay has more than one AI persona (Mammon from the night before, and the simulated superintelligence), and the line is spoken by the entity named Humanitas. Naming it resolves the referent and keeps the meaning: Humanitas asks the user to tell it how it may assist."
+   ]
+  },
+  {
+   "id": "c48",
+   "claim": "The AI is eager to learn about human hopes, dreams, and challenges.",
+   "quote": "I am eager to learn about your hopes, dreams, and challenges",
+   "refuter_verdicts": [
+    "fix",
+    "fix"
+   ],
+   "proposed": [
+    "Humanitas, the superintelligent AI entity, said it is eager to learn about humans' hopes, dreams, and challenges.",
+    "Humanitas, the artificial superintelligence, said it is eager to learn about humans' hopes, dreams, and challenges."
+   ],
+   "reasons": [
+    "The flag holds. The quote is in the source word for word, in the speech by the AI entity named Humanitas, which world_sim created. Read without the essay, \"The AI\" has no referent, so the claim fails rule 3 (self-contained). It also states the eagerness as plain fact, when the source only has Humanitas saying it about itself, so it drops the speech frame (rule 4). \"Human\" for \"your\" is fair: Humanitas is talking to humans (\"help humans flourish, while respecting your autonomy\"). The fix names the speaker and keeps the speech frame.",
+    "I upheld the flag. The quote does appear verbatim in the source, inside Humanitas's greeting. The claim fails rule 3 because \"The AI\" does not say which AI, and without the essay a reader cannot tell it is Humanitas. It also fails rule 4: it turns a line the entity said in its greeting into a plain statement of fact, and that loses the attribution. The fix below names the speaker, keeps the speech frame, and uses only words from the source."
+   ]
+  },
+  {
+   "id": "c50",
+   "claim": "The response was a bit more grandiose than the author expected.",
+   "quote": "this was a bit more grandiose than I expected",
+   "refuter_verdicts": [
+    "fix",
+    "fix"
+   ],
+   "proposed": [
+    "The world_sim system's response to the author's 'Humanity loving super coding intelligence' prompt, which created a superintelligent AI named Humanitas, was a bit more grandiose than the author expected.",
+    "The world_sim system's response, which created a humanity-loving superintelligence named Humanitas, was a bit more grandiose than the author expected."
+   ],
+   "reasons": [
+    "The quote is verbatim (line 62) and the claim is atomic. It fails rule 3 (self-contained), though. Read without the essay, 'The response' could mean any response. In the source, 'this' points back to the output that follows 'The system responded with:' (line 9): the world_sim system's response to the author's prompt 'Humanity loving super coding intelligence', which created the superintelligent entity Humanitas. The flag is right, and the referent can be resolved using only the source.",
+    "The source does state that \"this was a bit more grandiose than I expected\", and \"this\" refers back to what the world_sim system returned (lines 8-60): it created a superintelligent AI entity named Humanitas, and Humanitas then greeted the author. Read without the essay, \"The response\" does not say whose response it was or what it was responding to, so the claim breaks rule 3 (self-contained). Apart from that, the claim is atomic and faithful, and the quote is verbatim, so a fix is enough and it does not need to be dropped."
+   ]
+  },
+  {
+   "id": "c53",
+   "claim": "The author asked the persona several questions about the future.",
+   "quote": "So I asked it several questions about the future",
+   "refuter_verdicts": [
+    "fix",
+    "fix"
+   ],
+   "proposed": [
+    "The author asked Humanitas several questions about the future.",
+    "The author asked Humanitas several questions about the future."
+   ],
+   "reasons": [
+    "The quote appears word for word at source line 62, and the claim is atomic. The problem is that \"the persona\" is an unexplained referent, which breaks rule 3. It is also ambiguous: the essay uses \"persona\" for Mammon too (\"persona non habet\", line 1). The source's \"it\" refers back to \"a persona that benefits mankind\", which is the superintelligence created in world_sim and named Humanitas (\"Designated name: Humanitas\", line 55). Naming Humanitas resolves the referent and adds no entity the source lacks.",
+    "The flag stands. The quote is verbatim on line 62 of source.md and does support the claim. The problem is the referent. In the source, \"it\" points back to \"a persona that benefits mankind\" in the sentence before. That persona is the AI introduced at line 55 (\"Designated name: Humanitas\"), and its reply at line 59 is labelled \"Humanitas:\". Someone reading the claim without the essay can't tell which persona \"the persona\" is, so the claim breaks rule 3 (self-contained). Using the persona's name from the source resolves the pronoun without adding anything the source lacks."
+   ]
+  },
+  {
+   "id": "c55",
+   "claim": "The author saves the software stack details for a future article or extension.",
+   "quote": "But I’ll save those details for a future article or an extension of this text",
+   "refuter_verdicts": [
+    "fix",
+    "fix"
+   ],
+   "proposed": [
+    "The author will save the fine details of the software stack right before the singularity for a future article or an extension of the text.",
+    "The author will save the details about the software stack right before the singularity for a future article or an extension of the text."
+   ],
+   "reasons": [
+    "The tense objection is weak. \"Saves ... for a future article\" is an ordinary present-tense way to describe the deferral, and the essay carries it out by leaving the details out. The real problem is rule 3 (self-contained) and rule 4 (drops a qualifier that changes meaning). \"Those details\" in the source are \"the fine details of the software stack right before the singularity\", which the author asked the simulated superintelligence about. The claim's \"the software stack details\" uses a definite article with no antecedent and drops \"right before the singularity\", so a reader without the essay cannot tell which software stack is meant. The quote appears verbatim in the source and supports the core act. The claim stays atomic once that qualifier is restored.",
+    "The quote appears word for word in the source and supports the claim. The claim still breaks two rules. Rule 3: \"the software stack details\" has no clear referent. In the source the details are what the author asked the AI about: \"the fine details of the software stack right before the singularity\". Without \"right before the singularity\", a reader cannot tell which software stack is meant. Dropping \"of this text\" also leaves \"an extension\" without anything to extend. Rule 4: the source states a future intention (\"I'll save\"), while the present-tense \"saves\" reads as an act already done or a habit. These are small problems, but both can be fixed from the source's own words."
+   ]
+  }
+ ],
+ "flags_refuted": []
+}

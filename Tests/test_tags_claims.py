@@ -98,3 +98,14 @@ def test_committed_results_match_inputs(text):
     assert sorted(loose) == out["loose_ids"]
     assert out["checks"] == pytest.approx(tc.checks(out["rows"], {"loose_ids": out["loose_ids"],
                                                                   "firm_claims": out["firm_claims"]}, len(ids)))
+
+
+def test_model_pass_record_matches_claims():
+    path = ROOT / "fixtures/tags_claims/model_pass_efso_vaults_2.json"
+    rec = json.loads(path.read_text(encoding="utf-8"))
+    assert rec["claims_sha256"] == tb.sha256_file(ROOT / tc.CLAIMS)
+    claims = {c["id"]: c for c in CLAIMS["texts"][rec["text"]]}
+    assert rec["claims_read"] == len(claims)
+    for p in rec["proposals"]:
+        assert claims[p["id"]]["claim"] == p["claim"] and claims[p["id"]]["quote"] == p["quote"]
+        assert p["proposed"] and len(p["reasons"]) == 2
