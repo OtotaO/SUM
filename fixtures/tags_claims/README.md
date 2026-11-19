@@ -59,8 +59,8 @@ tags beat their negations by 3 claims to 0.
 
 ## Prediction for EFSO Vaults #2 (committed before its run)
 
-The judge has read EFSO #2's claims against its own source only, in the check
-above, and against no note list. (The tests run a word-overlap stub over
+Before its run, the judge had read EFSO #2's claims against its own source
+only, in the check above, and against no note list. (The tests run a word-overlap stub over
 them; its numbers are not recorded.) The run waits until its author has
 checked its claims. (On 2026-11-19 the operator asked for the run to go
 ahead before that check; the result is below.)
