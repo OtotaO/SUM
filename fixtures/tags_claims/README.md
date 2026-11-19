@@ -20,7 +20,8 @@ frame the essay never states, which fixed most, then by a fresh model for the
 
 **None is checked yet.** Each claim has `"checked": false`, which only the
 essay's author changes, after reading the claim against the essay (keep, fix
-or drop). Results record how many were checked.
+or drop). Results record how many were checked. EFSO #2 was run before the
+author's check (see its result below).
 
 ## The floor
 
@@ -58,10 +59,11 @@ tags beat their negations by 3 claims to 0.
 
 ## Prediction for EFSO Vaults #2 (committed before its run)
 
-The judge has read EFSO #2's claims against its own source only, in the check
-above, and against no note list. (The tests run a word-overlap stub over
+Before its run, the judge had read EFSO #2's claims against its own source
+only, in the check above, and against no note list. (The tests run a word-overlap stub over
 them; its numbers are not recorded.) The run waits until its author has
-checked its claims.
+checked its claims. (On 2026-11-19 the operator asked for the run to go
+ahead before that check; the result is below.)
 
 1. Two runs give the same probabilities.
 2. The source states at least 0.95 of the firm claims. This holds by
@@ -85,3 +87,40 @@ What a result would mean:
   this text, or tags state too few claims to tell.
 - 6 and 7 are about the tags, not the measure: whether, at these budgets,
   tag lists state little of a text and copied sentences state more.
+
+## Result on EFSO Vaults #2: prediction 4 failed
+
+`results_efso_vaults_2.json`, run on 2026-11-19 with no claim checked by the
+author. `claims.json` is the file committed in #598, unchanged; the result
+records its hash. If the author later edits the claims, a new run is post hoc
+and this one stays the record of the committed prediction.
+
+| | prediction | result |
+|---|---|---|
+| 1 | same probabilities on two runs | pass: largest difference 0.0 |
+| 2 | source states at least 0.95 of firm claims | pass: 48 of 48 |
+| 3 | at most 0.25 loose | pass: 8 of 56 (0.14) |
+| 4 | each control and each EFSO #1 list at 60 words credited with at most 1 firm claim | **fail**: negated 0, swapped 1, unrelated 0, filler 0, but EFSO #1's topic, fact and mixed lists 2, 4 and 4 |
+| 5 | fact tags at 60 words at least 2, negated fewer than half | pass: 5 and 0 |
+| 6 | every tag list at most 0.15 firm recall | pass: highest 0.146 (fact tags at 80 words) |
+| 7 | at 80 words, spread extract at least every tag list | pass: 11, against fact 7 and mixed 5 |
+
+By the rule committed above, a failed 4 means the measure does not separate
+notes about this text from other notes, and its counts are not usable.
+
+The claims EFSO #1's lists are credited with are c11 (the author settled on
+creating a type of superintelligence), c15 (the author initiated the
+simulation), c18 (the system initialized a superintelligent AI entity) and
+c22 (real-time data uplinks). EFSO #1 is set in the same simulator and has
+close counterparts: it simulates a business superintelligence, prints
+"Initializing" lines and integrates "real-time data streams". Three of the
+five firm claims EFSO #2's own fact tags at 60 words are credited with are
+among these. The other essay of the same series was a weaker control than
+the prediction assumed; that is a reading after the result, not a rescue of
+it. The reverse direction held: on EFSO #1, EFSO #2's lists are credited with
+none of its firm claims.
+
+A model pass, not the author's check, read the 56 claims against the essay
+(two checkers, then two refuters for each flag). It proposed rewording 13
+claims and dropping none; c11, c15, c18 and c22 were not among them. That
+pass changed nothing in `claims.json`.
