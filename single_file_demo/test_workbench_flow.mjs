@@ -1352,9 +1352,13 @@ test('closing a passage\'s actions keeps focus on it, and a depth change retires
   const p = await page();
   try {
     p.input('prose', LEASE);
-    wholeOn(p);
     p.$('distill-btn').click();
-    assert.match(p.$('distill-status').textContent, /select any passage for its actions\.$/, 'the whole view says what selecting does there');
+    assert.match(p.$('distill-status').textContent, /select any passage to find it in the original\.$/);
+    wholeOn(p);
+    assert.match(p.$('distill-status').textContent, /select any passage for its actions\.$/, 'switching to the whole view says what selecting does there');
+    wholeOff(p);
+    assert.match(p.$('distill-status').textContent, /select any passage to find it in the original\.$/, 'and back');
+    wholeOn(p);
     const out = passagesIn(p, 'out')[0], i = out.dataset.i;
     out.click();
     mainAct(p).click();
@@ -1364,9 +1368,12 @@ test('closing a passage\'s actions keeps focus on it, and a depth change retires
     passagesIn(p, 'picked')[0].click();
     assert.equal(pickLine(p), null, 'selecting the picked passage again closes its actions');
     assert.equal(p.window.document.activeElement.dataset.i, i, 'focus stays on that passage');
-    wholeOff(p);
+    p.$('distill-view').querySelector(`.distill-passage[data-i="${i}"]`).click(); mainAct(p).click();
+    assert.match(p.$('distill-status').textContent, /: kept at this depth, left out by you\.$/);
+    passagesIn(p, 'kept')[0].click();
+    assert.equal(p.$('distill-status').textContent, '', 'selecting another passage retires the announcement');
     p.$('distill-btn').click();
-    assert.match(p.$('distill-status').textContent, /select any passage to find it in the original\.$/);
+    assert.match(p.$('distill-status').textContent, /select any passage for its actions\.$/, 'reading again in the whole view');
     assert.deepEqual(p.errors, []);
   } finally { p.close(); }
 });

@@ -388,9 +388,9 @@ function gap() {
 
 // focusAfter 'act' puts focus on the picked passage's main action after the view is rebuilt.
 function showDepth(i, focusAfter = null) {
-  // A change announced at one depth says nothing true at another, or once the view is rebuilt.
-  if (announced && distillLine().textContent === announced && focusAfter !== 'act') distillStatus('');
-  announced = focusAfter === 'act' ? announced : '';
+  // A change is announced once; when the reader moves on (another depth, view or selection) it is retired.
+  if (announced && distillLine().textContent === announced) distillStatus('');
+  announced = '';
   depthIndex = i;
   const n = distilled.passage_count;
   const { d, all, state, kept } = depthView();
@@ -431,6 +431,10 @@ function showDepth(i, focusAfter = null) {
   refreshCopy();
 }
 
+const READY_KEPT = 'Depths ready. Move the depth slider; select any passage to find it in the original.';
+const READY_WHOLE = 'Depths ready. Move the depth slider; select any passage for its actions.';
+const readyLine = () => ($('distill-whole')?.checked ? READY_WHOLE : READY_KEPT);
+
 function distillOriginal() {
   try {
     const source = $('prose').value;
@@ -464,9 +468,7 @@ function distillOriginal() {
     $('distill-panel').hidden = false;
     // Bring the depth reader's status line into view; the panel sits directly below it.
     ($('distill-status') || $('distill-panel')).scrollIntoView({ block: 'start' });
-    distillStatus($('distill-whole')?.checked
-      ? 'Depths ready. Move the depth slider; select any passage for its actions.'
-      : 'Depths ready. Move the depth slider; select any passage to find it in the original.');
+    distillStatus(readyLine());
   } catch (e) { hideDistill(); distillStatus(e.message); }
 }
 $('distill-btn').addEventListener('click', distillOriginal);
@@ -474,7 +476,13 @@ $('distill-depth').addEventListener('input', () => { if (distilled) showDepth(Nu
 // Elements added with the whole-text view. A cached page from before them has none and keeps the
 // depth reader it had; they start hidden, so a new page with a cached older script shows none of them.
 for (const id of ['distill-whole-row', 'distill-copy-row', 'distill-out-box']) if ($(id)) $(id).hidden = false;
-$('distill-whole')?.addEventListener('change', () => { if (distilled) showDepth(depthIndex); });
+$('distill-whole')?.addEventListener('change', () => {
+  if (!distilled) return;
+  // The ready line says what selecting does, which differs between the two views.
+  const wasReady = [READY_KEPT, READY_WHOLE].includes(distillLine().textContent);
+  showDepth(depthIndex);
+  if (wasReady) distillStatus(readyLine());
+});
 $('distill-copy')?.addEventListener('click', async () => {
   if (!distilled) return;
   const source = distilledSource;
