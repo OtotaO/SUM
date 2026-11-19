@@ -391,6 +391,8 @@ function showDepth(i, focusAfter = null) {
   // A change is announced once; when the reader moves on (another depth, view or selection) it is retired.
   if (announced && distillLine().textContent === announced) distillStatus('');
   announced = '';
+  // A copy message was about the text copied before this view; the selection it names is gone.
+  if ($('distill-copy-status')) $('distill-copy-status').textContent = '';
   depthIndex = i;
   const n = distilled.passage_count;
   const { d, all, state, kept } = depthView();

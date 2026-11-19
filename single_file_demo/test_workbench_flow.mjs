@@ -1291,6 +1291,10 @@ test('without clipboard access the copy text is shown and selected', async () =>
     assert.match(p.$('distill-copy-status').textContent, /^Could not copy here\. The text below is selected/);
     assert.equal(p.$('distill-out-box').open, true);
     assert.equal(String(p.window.getSelection()), p.$('distill-out').textContent);
+    toDepth(p, Number(p.$('distill-depth').max));
+    assert.equal(p.$('distill-copy-status').textContent, '', 'another depth retires the message about the earlier copy');
+    p.$('distill-copy').click();
+    await until(() => p.$('distill-copy-status').textContent);
     p.input('prose', 'Edited.');
     assert.equal(p.$('distill-copy-status').textContent, '', 'an edit retires the copy message');
     assert.deepEqual(p.errors, []);
