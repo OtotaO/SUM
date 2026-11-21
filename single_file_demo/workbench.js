@@ -268,8 +268,10 @@ let distilled = null, distilledSource = null;
 // rule's and the copy lists the reader's changes apart. `picked` is the passage last picked in
 // the whole-text view.
 let readerChoice = new Map(), picked = -1, lastPicked = -1, depthIndex = 0, fingerprint = null, announced = '';
+// Counts view rebuilds, so a copy still waiting on the clipboard does not report into a later view.
+let viewBuilds = 0;
 function hideDistill() {
-  distilled = null; distilledSource = null; readerChoice = new Map(); picked = -1; fingerprint = null; announced = '';
+  distilled = null; distilledSource = null; readerChoice = new Map(); picked = -1; fingerprint = null; announced = ''; viewBuilds++;
   $('distill-panel').hidden = true;
   if ($('distill-status')) distillStatus('');
   if ($('distill-copy-status')) $('distill-copy-status').textContent = '';
@@ -393,6 +395,7 @@ function showDepth(i, focusAfter = null) {
   announced = '';
   // A copy message was about the text copied before this view; the selection it names is gone.
   if ($('distill-copy-status')) $('distill-copy-status').textContent = '';
+  viewBuilds++;
   depthIndex = i;
   const n = distilled.passage_count;
   const { d, all, state, kept } = depthView();
@@ -492,10 +495,13 @@ $('distill-copy')?.addEventListener('click', async () => {
   if (distilledSource !== source) return;
   const text = copyText(hash);
   const said = $('distill-copy-status');
+  const built = viewBuilds;
   try {
     await navigator.clipboard.writeText(text);
-    said.textContent = 'Copied.';
+    if (viewBuilds === built) said.textContent = 'Copied.';
   } catch {
+    // The view changed while the clipboard was asked: this text and its message are about the earlier view.
+    if (viewBuilds !== built) return;
     // No clipboard access: show the text and select it for the reader to copy.
     $('distill-out').textContent = text;
     $('distill-out-box').open = true;
