@@ -361,7 +361,7 @@ function copyText(hash) {
   const pos = i => { const p = all.find(x => x.index === i); return `[${p.start}-${p.end}]`; };
   const changed = kind => [...state].filter(([, s]) => s === kind).map(([i]) => i).sort((a, b) => a - b).map(pos);
   const added = changed('mine'), removed = changed('dropped');
-  const lines = [`At depth "${d.label}" the rule keeps ${d.count} of ${n} passages, ${d.chars.toLocaleString('en')} of ${total} characters.`];
+  const lines = [`At depth "${d.label}" the method keeps ${d.count} of ${n} passages, ${d.chars.toLocaleString('en')} of ${total} characters.`];
   if (added.length || removed.length) lines.push(`With the reader's changes: ${kept.length} of ${n} passages, ${chars.toLocaleString('en')} of ${total} characters.`);
   lines.push('');
   let prev = -1;

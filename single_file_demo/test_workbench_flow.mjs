@@ -1252,7 +1252,7 @@ test('the copy is the kept passages verbatim with positions, the fingerprint, th
     await until(() => written.length === 1);
     assert.equal(p.$('distill-copy-status').textContent, 'Copied.');
     const text = written[0], lines = text.split('\n');
-    assert.equal(lines[0], `At depth "headline" the rule keeps ${rule[1]} of 6 passages, ${rule[2]} of 138 characters.`, 'the first line is the rule\'s count');
+    assert.equal(lines[0], `At depth "headline" the method keeps ${rule[1]} of 6 passages, ${rule[2]} of 138 characters.`, 'the first line is the rule\'s count');
     const start = LEASE.indexOf(out.textContent);
     assert.equal(lines[1], `With the reader's changes: ${Number(rule[1]) + 1} of 6 passages, ${Number(rule[2]) + out.textContent.length} of 138 characters.`);
     assert.ok(text.includes(`[${start}-${start + out.textContent.length}] ${out.textContent}`));
