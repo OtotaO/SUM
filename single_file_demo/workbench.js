@@ -1,6 +1,6 @@
 import { distill } from './distiller.js';
 import { DETAIL_SCOPE } from './detail_flags.js';
-import { compareTexts, makeReviewPacket, verifyReviewPacket, checkRenderBinding, publicJwks, pinPacketKey, keyWarning, quoteKid, receiptFailure } from './review_packet.js';
+import { hashText, compareTexts, makeReviewPacket, verifyReviewPacket, checkRenderBinding, publicJwks, pinPacketKey, keyWarning, quoteKid, receiptFailure } from './review_packet.js';
 
 const $ = id => document.getElementById(id);
 let current = null;
@@ -263,7 +263,19 @@ exampleFromAddress();
 
 // Extractive depths of the original: computed here, nothing leaves the page.
 let distilled = null, distilledSource = null;
-function hideDistill() { distilled = null; distilledSource = null; $('distill-panel').hidden = true; if ($('distill-status')) distillStatus(''); }
+// The reader's own keep and leave-out choices, each tied to the depth it was made at, keyed
+// "depth:passage". They sit beside the rule's choice and never change it: the counts stay the
+// rule's and the copy lists the reader's changes apart. `picked` is the passage last picked in
+// the whole-text view.
+let readerChoice = new Map(), picked = -1, lastPicked = -1, depthIndex = 0, fingerprint = null, announced = '';
+// Counts view rebuilds, so a copy still waiting on the clipboard does not report into a later view.
+let viewBuilds = 0;
+function hideDistill() {
+  distilled = null; distilledSource = null; readerChoice = new Map(); picked = -1; fingerprint = null; announced = ''; viewBuilds++;
+  $('distill-panel').hidden = true;
+  if ($('distill-status')) distillStatus('');
+  if ($('distill-copy-status')) $('distill-copy-status').textContent = '';
+}
 $('prose').addEventListener('input', hideDistill);
 // Offsets are only meaningful against the exact text they were computed from;
 // any replacement of the original (typed or programmatic) retires the panel.
@@ -276,15 +288,97 @@ function selectOriginal(start, end) {
   selectIn('prose', start, end);
 }
 
-function passageButton(p) {
+const choiceKey = i => `${depthIndex}:${i}`;
+function passageState(i, ruleKept) {
+  const choice = readerChoice.get(choiceKey(i)), rule = ruleKept.has(i);
+  if (choice === 'drop' && rule) return 'dropped';
+  if (choice === 'add' && !rule) return 'mine';
+  return rule ? 'kept' : 'out';
+}
+const isKept = state => state === 'kept' || state === 'mine';
+const STATE_WORDS = { kept: 'kept at this depth', out: 'left out at this depth', mine: 'left out at this depth, kept by you', dropped: 'kept at this depth, left out by you' };
+
+// In the kept-only view and the left-out list a passage finds itself in the original, as before.
+// In the whole-text view it is already in place, so selecting it picks it instead.
+function passageButton(p, state, whole = false) {
   const button = document.createElement('button');
   button.type = 'button';
-  button.className = 'distill-passage';
+  button.className = 'distill-passage' + (whole ? ` ${state}` : '') + (whole && p.index === picked ? ' picked' : '');
+  button.dataset.i = String(p.index);
   button.textContent = p.text;
-  button.title = `Characters ${p.start} to ${p.end} of the original. Select to find it above.`;
-  button.addEventListener('click', () => selectOriginal(p.start, p.end));
+  if (whole) {
+    button.title = `Characters ${p.start} to ${p.end} of the original: ${STATE_WORDS[state]}. Select for actions.`;
+    button.setAttribute('aria-expanded', String(p.index === picked));
+    // Selecting the picked passage again closes its actions; focus stays on that passage.
+    button.addEventListener('click', () => { lastPicked = p.index; picked = p.index === picked ? -1 : p.index; showDepth(depthIndex, picked >= 0 ? 'act' : 'passage'); });
+  } else {
+    button.title = `Characters ${p.start} to ${p.end} of the original. Select to find it above.`;
+    button.addEventListener('click', () => selectOriginal(p.start, p.end));
+  }
   return button;
 }
+
+// The actions for the picked passage, placed right after it in the text so they are the next stop.
+function pickActions(p, state) {
+  const box = document.createElement('span');
+  box.className = 'distill-pick';
+  box.append(`Passage ${p.index + 1} of ${distilled.passage_count}, characters ${p.start} to ${p.end}: ${STATE_WORDS[state]}. `);
+  const act = (label, run) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'link-btn'; b.textContent = label;
+    b.addEventListener('click', run);
+    box.append(b, ' ');
+    return b;
+  };
+  const choose = change => () => {
+    change();
+    showDepth(depthIndex, 'act');
+    const now = depthView().state.get(p.index);
+    announced = `Passage ${p.index + 1}: ${STATE_WORDS[now]}.`;
+    distillStatus(announced);
+  };
+  const main = state === 'kept' ? act('Leave it out', choose(() => readerChoice.set(choiceKey(p.index), 'drop')))
+    : state === 'out' ? act('Keep it', choose(() => readerChoice.set(choiceKey(p.index), 'add')))
+    : act('Undo my change', choose(() => readerChoice.delete(choiceKey(p.index))));
+  main.dataset.act = 'main';
+  act('Find it in the original', () => selectOriginal(p.start, p.end));
+  return box;
+}
+
+// The passages kept at the current depth, the rule's choice changed by the reader's, in text order.
+function depthView() {
+  const d = distilled.depths[depthIndex];
+  const ruleKept = new Set(d.passages.map(p => p.index));
+  const all = [...d.passages, ...d.left_out].sort((a, b) => a.start - b.start);
+  const state = new Map(all.map(p => [p.index, passageState(p.index, ruleKept)]));
+  return { d, all, state, kept: all.filter(p => isKept(state.get(p.index))) };
+}
+
+// Plain text: the rule's count, the kept passages exactly as written with their positions, then
+// the text's fingerprint, the method and the reader's own changes listed apart.
+function copyText(hash) {
+  const { d, all, state, kept } = depthView();
+  const n = distilled.passage_count, total = distilled.total_chars.toLocaleString('en');
+  const chars = kept.reduce((a, p) => a + p.end - p.start, 0);
+  const pos = i => { const p = all.find(x => x.index === i); return `[${p.start}-${p.end}]`; };
+  const changed = kind => [...state].filter(([, s]) => s === kind).map(([i]) => i).sort((a, b) => a - b).map(pos);
+  const added = changed('mine'), removed = changed('dropped');
+  const lines = [`At depth "${d.label}" the method keeps ${d.count} of ${n} passages, ${d.chars.toLocaleString('en')} of ${total} characters.`];
+  if (added.length || removed.length) lines.push(`With the reader's changes: ${kept.length} of ${n} passages, ${chars.toLocaleString('en')} of ${total} characters.`);
+  lines.push('');
+  let prev = -1;
+  for (const p of kept) {
+    if (p.index !== prev + 1) lines.push('[…]');
+    lines.push(`[${p.start}-${p.end}] ${p.text}`);
+    prev = p.index;
+  }
+  if (prev !== n - 1) lines.push('[…]');
+  const changes = [added.length ? `kept ${added.join(', ')}` : '', removed.length ? `left out ${removed.join(', ')}` : ''].filter(Boolean).join('; ');
+  lines.push('', `Text fingerprint: ${hash || 'computing'}`, `Passages picked by: ${distilled.method}. ${distilled.scope}`,
+    `Changed by the reader: ${changes || 'none'}`, 'Positions count UTF-16 code units in the text as entered.');
+  return lines.join('\n');
+}
+function refreshCopy() { if ($('distill-out') && distilled) $('distill-out').textContent = copyText(fingerprint); }
 
 function gap() {
   const mark = document.createElement('span');
@@ -294,24 +388,57 @@ function gap() {
   return mark;
 }
 
-function showDepth(i) {
-  const d = distilled.depths[i], n = distilled.passage_count;
+// focusAfter 'act' puts focus on the picked passage's main action after the view is rebuilt.
+function showDepth(i, focusAfter = null) {
+  // A change is announced once; when the reader moves on (another depth, view or selection) it is retired.
+  if (announced && distillLine().textContent === announced) distillStatus('');
+  announced = '';
+  // A copy message was about the text copied before this view; the selection it names is gone.
+  if ($('distill-copy-status')) $('distill-copy-status').textContent = '';
+  viewBuilds++;
+  depthIndex = i;
+  const n = distilled.passage_count;
+  const { d, all, state, kept } = depthView();
   $('distill-depth-name').textContent = `${d.label} (${i + 1} of ${distilled.depths.length})`;
   const share = distilled.total_chars ? Math.round(100 * d.chars / distilled.total_chars) : 100;
-  $('distill-stats').textContent = `${d.count} of ${n} passages; ${d.chars.toLocaleString('en')} of ${distilled.total_chars.toLocaleString('en')} characters (${share}%).`;
+  const mine = [...state.values()].filter(s => s === 'mine').length, dropped = [...state.values()].filter(s => s === 'dropped').length;
+  $('distill-stats').textContent = `${d.count} of ${n} passages; ${d.chars.toLocaleString('en')} of ${distilled.total_chars.toLocaleString('en')} characters (${share}%).`
+    + (mine || dropped ? ` Your changes at this depth: ${mine} kept, ${dropped} left out.` : '');
   const view = $('distill-view');
   view.replaceChildren();
-  d.passages.forEach((p, j) => {
-    const prev = j ? d.passages[j - 1].index : -1;
-    if (p.index !== prev + 1) view.append(gap());
-    else if (j) view.append(' ');
-    view.append(passageButton(p));
-  });
-  if (d.passages.length && d.passages[d.passages.length - 1].index !== n - 1) view.append(gap());
+  const whole = Boolean($('distill-whole')?.checked);
+  view.classList.toggle('whole', whole);
+  if (whole) {
+    // The whole original, in order, with the text between passages as it stands.
+    let pos = 0;
+    for (const p of all) {
+      if (p.start > pos) view.append(distilledSource.slice(pos, p.start));
+      view.append(passageButton(p, state.get(p.index), true));
+      if (p.index === picked) view.append(pickActions(p, state.get(p.index)));
+      pos = p.end;
+    }
+    if (pos < distilledSource.length) view.append(distilledSource.slice(pos));
+  } else {
+    // The kept-only view is the rule's choice, as before; the reader's changes show in the whole view and the copy.
+    d.passages.forEach((p, j) => {
+      const prev = j ? d.passages[j - 1].index : -1;
+      if (p.index !== prev + 1) view.append(gap());
+      else if (j) view.append(' ');
+      view.append(passageButton(p, state.get(p.index)));
+    });
+    if (d.passages.length && d.passages[d.passages.length - 1].index !== n - 1) view.append(gap());
+  }
   $('distill-left-summary').textContent = d.left_out.length ? `${d.left_out.length} passages left out at this depth` : 'Nothing left out at this depth';
   const list = $('distill-left-list');
-  list.replaceChildren(...d.left_out.map(p => { const row = document.createElement('p'); row.append(passageButton(p)); return row; }));
+  list.replaceChildren(...d.left_out.map(p => { const row = document.createElement('p'); row.append(passageButton(p, state.get(p.index))); return row; }));
+  if (focusAfter === 'act') view.querySelector('.distill-pick [data-act="main"]')?.focus();
+  else if (focusAfter === 'passage' && whole) view.querySelector(`.distill-passage[data-i="${lastPicked}"]`)?.focus();
+  refreshCopy();
 }
+
+const READY_KEPT = 'Depths ready. Move the depth slider; select any passage to find it in the original.';
+const READY_WHOLE = 'Depths ready. Move the depth slider; select any passage for its actions.';
+const readyLine = () => ($('distill-whole')?.checked ? READY_WHOLE : READY_KEPT);
 
 function distillOriginal() {
   try {
@@ -319,6 +446,9 @@ function distillOriginal() {
     if (!source.trim()) throw new Error('Add an original source first.');
     distilled = distill(source);
     distilledSource = source;
+    readerChoice = new Map(); picked = -1; fingerprint = null; announced = '';
+    if ($('distill-copy-status')) $('distill-copy-status').textContent = '';
+    hashText(source).then(h => { if (distilledSource === source) { fingerprint = h; refreshCopy(); } });
     $('distill-scope').textContent = distilled.scope;
     $('distill-method').textContent = `Method ${distilled.method}: computed in this browser, with no model and no network request. Positions count UTF-16 code units.`;
     const tags = $('distill-tags');
@@ -343,11 +473,43 @@ function distillOriginal() {
     $('distill-panel').hidden = false;
     // Bring the depth reader's status line into view; the panel sits directly below it.
     ($('distill-status') || $('distill-panel')).scrollIntoView({ block: 'start' });
-    distillStatus('Depths ready. Move the depth slider; select any passage to find it in the original.');
+    distillStatus(readyLine());
   } catch (e) { hideDistill(); distillStatus(e.message); }
 }
 $('distill-btn').addEventListener('click', distillOriginal);
 $('distill-depth').addEventListener('input', () => { if (distilled) showDepth(Number($('distill-depth').value)); });
+// Elements added with the whole-text view. A cached page from before them has none and keeps the
+// depth reader it had; they start hidden, so a new page with a cached older script shows none of them.
+for (const id of ['distill-whole-row', 'distill-copy-row', 'distill-out-box']) if ($(id)) $(id).hidden = false;
+$('distill-whole')?.addEventListener('change', () => {
+  if (!distilled) return;
+  // The ready line says what selecting does, which differs between the two views.
+  const wasReady = [READY_KEPT, READY_WHOLE].includes(distillLine().textContent);
+  showDepth(depthIndex);
+  if (wasReady) distillStatus(readyLine());
+});
+$('distill-copy')?.addEventListener('click', async () => {
+  if (!distilled) return;
+  const source = distilledSource;
+  const hash = fingerprint || await hashText(source);
+  if (distilledSource !== source) return;
+  const text = copyText(hash);
+  const said = $('distill-copy-status');
+  const built = viewBuilds;
+  try {
+    await navigator.clipboard.writeText(text);
+    if (viewBuilds === built) said.textContent = 'Copied.';
+  } catch {
+    // The view changed while the clipboard was asked: this text and its message are about the earlier view.
+    if (viewBuilds !== built) return;
+    // No clipboard access: show the text and select it for the reader to copy.
+    $('distill-out').textContent = text;
+    $('distill-out-box').open = true;
+    const range = document.createRange(); range.selectNodeContents($('distill-out'));
+    const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+    said.textContent = 'Could not copy here. The text below is selected: press Ctrl+C or Cmd+C.';
+  }
+});
 
 document.addEventListener('sum:render', event => {
   const data = event.detail;
