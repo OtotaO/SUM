@@ -1307,7 +1307,7 @@ test('without clipboard access the copy text is shown and selected', async () =>
 test('a copy still waiting on the clipboard does not report into a later view', async () => {
   const p = await page();
   const had = Object.getOwnPropertyDescriptor(globalThis.navigator, 'clipboard');
-  for (const outcome of ['resolve', 'reject']) {
+  for (const [outcome, move] of [['resolve', 'depth'], ['reject', 'depth'], ['resolve', 'edit'], ['reject', 'edit']]) {
     let settle;
     Object.defineProperty(globalThis.navigator, 'clipboard', { configurable: true, value: { writeText: () => new Promise((ok, no) => { settle = outcome === 'resolve' ? ok : () => no(new Error('denied')); }) } });
     try {
@@ -1315,12 +1315,12 @@ test('a copy still waiting on the clipboard does not report into a later view', 
       p.$('distill-btn').click();
       p.$('distill-copy').click();
       await until(() => settle);
-      toDepth(p, Number(p.$('distill-depth').max));
+      if (move === 'depth') toDepth(p, Number(p.$('distill-depth').max)); else p.input('prose', 'Edited.');
       const shown = p.$('distill-out').textContent;
       settle();
       await new Promise(r => setTimeout(r, 20));
-      assert.equal(p.$('distill-copy-status').textContent, '', `${outcome}: no message about the earlier view`);
-      assert.equal(p.$('distill-out').textContent, shown, `${outcome}: the box still shows this depth's text`);
+      assert.equal(p.$('distill-copy-status').textContent, '', `${outcome} after a ${move} change: no message about the earlier view`);
+      assert.equal(p.$('distill-out').textContent, shown, `${outcome} after a ${move} change: the box is not refilled with the earlier text`);
       assert.deepEqual(p.errors, []);
     } finally {
       if (had) Object.defineProperty(globalThis.navigator, 'clipboard', had); else delete globalThis.navigator.clipboard;
