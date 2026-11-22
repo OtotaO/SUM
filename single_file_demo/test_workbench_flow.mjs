@@ -32,7 +32,7 @@ async function until(predicate) {
 const detailsDone = p => until(() => p.$('detail-summary').textContent && !p.$('detail-summary').textContent.startsWith('Checking'));
 const deferred = () => { let resolve; const promise = new Promise(r => { resolve = r; }); return { promise, resolve }; };
 
-async function page(handler = async () => new Response('{}', { status: 503 }), { worker = 'answer', url = 'https://workbench.example' } = {}) {
+async function page(handler = async () => new Response('{}', { status: 503 }), { worker = 'answer', url = 'https://workbench.example', markup = html } = {}) {
   const errors = [], requests = [], downloads = [], workers = [];
   const mockFetch = async (url, init) => {
     if (String(url).includes('altitude_rungs') || String(url).includes('tags_roundtrip_panel')) return new Response('{}', { status: 404 });
@@ -41,7 +41,7 @@ async function page(handler = async () => new Response('{}', { status: 503 }), {
   };
   const console = new VirtualConsole();
   console.on('jsdomError', e => { if (!e.message.includes('navigation')) errors.push(e); });
-  const dom = new JSDOM(html, { url, runScripts: 'dangerously', virtualConsole: console,
+  const dom = new JSDOM(markup, { url, runScripts: 'dangerously', virtualConsole: console,
     beforeParse(window) {
       Object.defineProperty(window, 'crypto', { value: webcrypto });
       window.TextEncoder = TextEncoder; window.structuredClone = structuredClone;
@@ -1138,3 +1138,306 @@ test('a packet with the old field order still verifies, and an example opened fr
     await detailsDone(q);
   } finally { q.close(); }
 });
+
+const LEASE = 'The tenant may cancel. The deposit is refundable. Rent is late after five days. Pets are allowed. The landlord fixes the roof. Parking is free.';
+const passagesIn = (p, cls) => [...p.$('distill-view').querySelectorAll(`.distill-passage${cls ? '.' + cls : ''}`)];
+
+test('the whole text shows every passage in place, the kept ones marked', async () => {
+  const p = await page();
+  try {
+    p.input('prose', LEASE);
+    p.$('distill-btn').click();
+    const kept = passagesIn(p).length;
+    p.$('distill-whole').checked = true;
+    p.$('distill-whole').dispatchEvent(new p.window.Event('change'));
+    assert.equal(p.$('distill-view').textContent, LEASE, 'the whole view is the original, character for character');
+    assert.equal(passagesIn(p, 'kept').length, kept);
+    assert.equal(passagesIn(p, 'out').length, 6 - kept);
+    assert.equal(p.$('distill-view').querySelector('.distill-gap'), null);
+    const slider = p.$('distill-depth');
+    for (let i = 0; i <= Number(slider.max); i++) {
+      slider.value = String(i); slider.dispatchEvent(new p.window.Event('input'));
+      assert.equal(p.$('distill-view').textContent, LEASE, `depth ${i}`);
+    }
+    assert.equal(passagesIn(p, 'out').length, 0, 'the full depth keeps everything');
+    p.$('distill-whole').checked = false;
+    p.$('distill-whole').dispatchEvent(new p.window.Event('change'));
+    assert.equal(p.$('distill-view').classList.contains('whole'), false);
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
+const wholeOn = p => { p.$('distill-whole').checked = true; p.$('distill-whole').dispatchEvent(new p.window.Event('change')); };
+const wholeOff = p => { p.$('distill-whole').checked = false; p.$('distill-whole').dispatchEvent(new p.window.Event('change')); };
+const toDepth = (p, i) => { const s = p.$('distill-depth'); s.value = String(i); s.dispatchEvent(new p.window.Event('input')); };
+const pickLine = p => p.$('distill-view').querySelector('.distill-pick');
+const mainAct = p => pickLine(p).querySelector('[data-act="main"]');
+// The picked passage's actions box follows the text after the passage up to and including its
+// first line end; when no line end comes before the next passage, it follows all of that text.
+const checkPlacement = (p, label) => {
+  const box = pickLine(p), passage = p.$('distill-view').querySelector(':scope > button.picked');
+  const pre = [];
+  for (let n = passage.nextSibling; n && n !== box; n = n.nextSibling) pre.push(n);
+  assert.ok(pre.every(n => n.nodeType === 3), `${label}: only text between the passage and its actions`);
+  const preText = pre.map(n => n.data).join('');
+  const gap = preText + (box.nextSibling?.nodeType === 3 ? box.nextSibling.data : '');
+  assert.equal(preText, gap.includes('\n') ? gap.slice(0, gap.indexOf('\n') + 1) : gap,
+    `${label}: the actions come after the passage's text up to its first line end, or all of it when there is none`);
+};
+
+test('a reader keeps or leaves out a passage beside the rule, and can undo it', async () => {
+  const p = await page();
+  try {
+    p.input('prose', LEASE);
+    p.$('distill-btn').click();
+    const ruleLeft = p.$('distill-left-summary').textContent;
+    wholeOn(p);
+    const out = passagesIn(p, 'out')[0], outText = out.textContent;
+    out.click();
+    assert.equal(p.$('prose').selectionEnd, p.$('prose').selectionStart, 'picking in the whole view does not jump to the original box');
+    assert.match(pickLine(p).textContent, /: left out at this depth\. Keep it Find it in the original $/);
+    checkPlacement(p, 'lease');
+    assert.equal(p.window.getComputedStyle(pickLine(p)).display, 'block', 'the actions box is a line of its own');
+    const bare = p.$('distill-view').cloneNode(true); bare.querySelector('.distill-pick').remove();
+    assert.equal(bare.textContent, LEASE, 'apart from the actions box, the whole view is the original');
+    assert.equal(passagesIn(p, 'picked')[0].getAttribute('aria-expanded'), 'true');
+    mainAct(p).click();
+    assert.equal(p.window.document.activeElement, mainAct(p), 'focus stays on the passage\'s action');
+    assert.equal(mainAct(p).textContent, 'Undo my change');
+    assert.match(p.$('distill-status').textContent, /: left out at this depth, kept by you\.$/, 'the change is announced');
+    assert.match(p.$('distill-stats').textContent, /Your changes at this depth: 1 kept, 0 left out\.$/);
+    assert.equal(passagesIn(p, 'mine')[0].textContent, outText);
+    assert.equal(p.$('distill-left-summary').textContent, ruleLeft, 'the rule\'s own left-out list is unchanged');
+    pickLine(p).querySelectorAll('button')[1].click();
+    assert.equal(p.$('prose').value.slice(p.$('prose').selectionStart, p.$('prose').selectionEnd), outText, 'and can still be found in the original');
+    wholeOff(p);
+    assert.ok(!passagesIn(p).some(b => b.textContent === outText), 'the kept-only view is the rule\'s choice, as before');
+    assert.equal(p.$('distill-status').textContent, '', 'a rebuilt view retires the change announcement');
+    for (const b of [...passagesIn(p), ...p.$('distill-left-list').querySelectorAll('.distill-passage')])
+      assert.equal(b.className, 'distill-passage', 'the kept-only view and the left-out list look as before');
+    wholeOn(p);
+    mainAct(p).click();
+    assert.equal(passagesIn(p, 'mine').length, 0);
+    assert.doesNotMatch(p.$('distill-stats').textContent, /Your changes/);
+    passagesIn(p, 'kept')[0].click();
+    mainAct(p).click();
+    assert.match(p.$('distill-stats').textContent, /Your changes at this depth: 0 kept, 1 left out\.$/);
+    assert.equal(passagesIn(p, 'dropped').length, 1);
+    p.$('distill-btn').click();
+    assert.doesNotMatch(p.$('distill-stats').textContent, /Your changes/, 'reading again starts without the reader\'s changes');
+    assert.equal(pickLine(p), null);
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
+test('a reader\'s choice belongs to the depth it was made at', async () => {
+  const p = await page();
+  try {
+    p.input('prose', LEASE);
+    p.$('distill-btn').click();
+    wholeOn(p);
+    const out = passagesIn(p, 'out')[0], text = out.textContent;
+    out.click(); mainAct(p).click();
+    assert.match(p.$('distill-stats').textContent, /1 kept, 0 left out/);
+    toDepth(p, Number(p.$('distill-depth').max));
+    assert.doesNotMatch(p.$('distill-stats').textContent, /Your changes/, 'another depth has its own choices');
+    assert.match(pickLine(p).textContent, /kept at this depth\. Leave it out/);
+    mainAct(p).click();
+    assert.match(p.$('distill-stats').textContent, /0 kept, 1 left out/);
+    toDepth(p, 0);
+    assert.match(p.$('distill-stats').textContent, /Your changes at this depth: 1 kept, 0 left out\./, 'the choice at the first depth is still there');
+    assert.equal(passagesIn(p, 'mine')[0].textContent, text);
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
+test('the copy is the kept passages verbatim with positions, the fingerprint, the method and the reader\'s changes', async () => {
+  const p = await page();
+  const written = [];
+  const had = Object.getOwnPropertyDescriptor(globalThis.navigator, 'clipboard');
+  Object.defineProperty(globalThis.navigator, 'clipboard', { configurable: true, value: { writeText: async t => { written.push(t); } } });
+  try {
+    p.input('prose', LEASE);
+    p.$('distill-btn').click();
+    const rule = p.$('distill-stats').textContent.match(/^(\d+) of 6 passages; (\d+) of 138 characters/);
+    wholeOn(p);
+    const out = passagesIn(p, 'out')[0]; out.click();
+    mainAct(p).click();
+    p.$('distill-copy').click();
+    await until(() => written.length === 1);
+    assert.equal(p.$('distill-copy-status').textContent, 'Copied.');
+    const text = written[0], lines = text.split('\n');
+    assert.equal(lines[0], `At depth "headline" the method keeps ${rule[1]} of 6 passages, ${rule[2]} of 138 characters.`, 'the first line is the rule\'s count');
+    const start = LEASE.indexOf(out.textContent);
+    assert.equal(lines[1], `With the reader's changes: ${Number(rule[1]) + 1} of 6 passages, ${Number(rule[2]) + out.textContent.length} of 138 characters.`);
+    assert.ok(text.includes(`[${start}-${start + out.textContent.length}] ${out.textContent}`));
+    for (const b of passagesIn(p).filter(b => b.classList.contains('kept') || b.classList.contains('mine'))) {
+      const s = LEASE.indexOf(b.textContent);
+      assert.ok(text.includes(`[${s}-${s + b.textContent.length}] ${b.textContent}`), b.textContent);
+    }
+    const hash = 'sha256-' + Buffer.from(await webcrypto.subtle.digest('SHA-256', new TextEncoder().encode(LEASE))).toString('hex');
+    assert.ok(text.includes(`Text fingerprint: ${hash}`));
+    assert.ok(text.includes('Passages picked by: sum.distill:extractive_coverage_v1.'));
+    assert.ok(text.includes(`Changed by the reader: kept [${start}-${start + out.textContent.length}]`));
+    await until(() => p.$('distill-out').textContent.includes(hash));
+    assert.equal(p.$('distill-out').textContent, text, 'the preview is what is copied');
+    assert.equal(p.requests.length, 0, 'nothing is sent');
+    p.$('distill-btn').click();
+    p.$('distill-copy').click();
+    p.input('prose', 'Edited.');
+    await new Promise(r => setTimeout(r, 30));
+    assert.equal(written.length, 1, 'an edit while the fingerprint is computed cancels the copy');
+    assert.deepEqual(p.errors, []);
+  } finally {
+    if (had) Object.defineProperty(globalThis.navigator, 'clipboard', had); else delete globalThis.navigator.clipboard;
+    p.close();
+  }
+});
+
+test('without clipboard access the copy text is shown and selected', async () => {
+  const p = await page();
+  const had = Object.getOwnPropertyDescriptor(globalThis.navigator, 'clipboard');
+  Object.defineProperty(globalThis.navigator, 'clipboard', { configurable: true, value: { writeText: async () => { throw new Error('denied'); } } });
+  try {
+    p.input('prose', LEASE);
+    p.$('distill-btn').click();
+    p.$('distill-copy').click();
+    await until(() => p.$('distill-copy-status').textContent);
+    assert.match(p.$('distill-copy-status').textContent, /^Could not copy here\. The text below is selected/);
+    assert.equal(p.$('distill-out-box').open, true);
+    assert.equal(String(p.window.getSelection()), p.$('distill-out').textContent);
+    toDepth(p, Number(p.$('distill-depth').max));
+    assert.equal(p.$('distill-copy-status').textContent, '', 'another depth retires the message about the earlier copy');
+    p.$('distill-copy').click();
+    await until(() => p.$('distill-copy-status').textContent);
+    p.input('prose', 'Edited.');
+    assert.equal(p.$('distill-copy-status').textContent, '', 'an edit retires the copy message');
+    assert.deepEqual(p.errors, []);
+  } finally {
+    if (had) Object.defineProperty(globalThis.navigator, 'clipboard', had); else delete globalThis.navigator.clipboard;
+    p.close();
+  }
+});
+
+test('a copy still waiting on the clipboard does not report into a later view', async () => {
+  const p = await page();
+  const had = Object.getOwnPropertyDescriptor(globalThis.navigator, 'clipboard');
+  for (const [outcome, move] of [['resolve', 'depth'], ['reject', 'depth'], ['resolve', 'edit'], ['reject', 'edit']]) {
+    let settle;
+    Object.defineProperty(globalThis.navigator, 'clipboard', { configurable: true, value: { writeText: () => new Promise((ok, no) => { settle = outcome === 'resolve' ? ok : () => no(new Error('denied')); }) } });
+    try {
+      p.input('prose', LEASE);
+      p.$('distill-btn').click();
+      p.$('distill-copy').click();
+      await until(() => settle);
+      if (move === 'depth') toDepth(p, Number(p.$('distill-depth').max)); else p.input('prose', 'Edited.');
+      const shown = p.$('distill-out').textContent;
+      settle();
+      await new Promise(r => setTimeout(r, 20));
+      assert.equal(p.$('distill-copy-status').textContent, '', `${outcome} after ${move === 'edit' ? 'an edit' : 'a depth change'}: no message about the earlier view`);
+      assert.equal(p.$('distill-out').textContent, shown, `${outcome} after ${move === 'edit' ? 'an edit' : 'a depth change'}: the box is not refilled with the earlier text`);
+      assert.deepEqual(p.errors, []);
+    } finally {
+      if (had) Object.defineProperty(globalThis.navigator, 'clipboard', had); else delete globalThis.navigator.clipboard;
+    }
+  }
+  p.close();
+});
+
+test('an essay with code fences and list lines reads in place at every depth', async () => {
+  const essay = await readFile(new URL('../fixtures/tags_roundtrip/efso_vaults_2/source.md', import.meta.url), 'utf8');
+  const p = await page();
+  try {
+    p.input('prose', essay);
+    p.$('distill-btn').click();
+    p.$('distill-whole').checked = true;
+    p.$('distill-whole').dispatchEvent(new p.window.Event('change'));
+    const slider = p.$('distill-depth');
+    for (let i = 0; i <= Number(slider.max); i++) {
+      slider.value = String(i); slider.dispatchEvent(new p.window.Event('input'));
+      assert.equal(p.$('distill-view').textContent, essay, `depth ${i}: the whole view is the essay`);
+      assert.ok(passagesIn(p, 'kept').length >= 1);
+    }
+    // Picking any passage adds only its actions box, placed as checkPlacement describes.
+    const count = p.$('distill-view').querySelectorAll(':scope > button').length;
+    for (let k = 0; k < count; k++) {
+      p.$('distill-view').querySelectorAll(':scope > button')[k].click();
+      checkPlacement(p, `passage ${k + 1}`);
+      const bare = p.$('distill-view').cloneNode(true); bare.querySelector('.distill-pick').remove();
+      assert.equal(bare.textContent, essay, `passage ${k + 1} picked: apart from the actions box, the view is the essay`);
+      p.$('distill-view').querySelector(':scope > button.picked').click();
+      assert.equal(pickLine(p), null);
+    }
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
+test('a cached page without the whole-text controls still reads at depths', async () => {
+  // The page as it was before these controls, served from cache beside the new script.
+  const old = new JSDOM(html).window.document;
+  for (const id of ['distill-whole-row', 'distill-copy-row', 'distill-out-box']) old.getElementById(id).remove();
+  for (const id of ['distill-whole', 'distill-copy', 'distill-copy-status', 'distill-out']) assert.equal(old.getElementById(id), null);
+  const p = await page(undefined, { markup: '<!DOCTYPE html>' + old.documentElement.outerHTML });
+  try {
+    p.input('prose', LEASE);
+    p.$('distill-btn').click();
+    assert.equal(p.$('distill-panel').hidden, false);
+    p.$('distill-view').querySelector('.distill-passage').click();
+    const slider = p.$('distill-depth');
+    slider.value = slider.max; slider.dispatchEvent(new p.window.Event('input'));
+    assert.equal(passagesIn(p).length, 6);
+    await new Promise(r => setTimeout(r, 20));
+    p.input('prose', 'Edited.');
+    assert.equal(p.$('distill-panel').hidden, true);
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
+test('the new controls start hidden, so a cached older script never shows dead ones', async () => {
+  const raw = new JSDOM(html).window.document;
+  for (const id of ['distill-whole-row', 'distill-copy-row', 'distill-out-box']) assert.equal(raw.getElementById(id).hidden, true, id);
+  const p = await page();
+  try {
+    for (const id of ['distill-whole-row', 'distill-copy-row', 'distill-out-box']) assert.equal(p.$(id).hidden, false, `${id} shown by the script`);
+  } finally { p.close(); }
+});
+
+test('closing a passage\'s actions keeps focus on it, and a depth change retires a stale announcement', async () => {
+  const p = await page();
+  try {
+    p.input('prose', LEASE);
+    p.$('distill-btn').click();
+    assert.match(p.$('distill-status').textContent, /select any passage to find it in the original\.$/);
+    wholeOn(p);
+    assert.match(p.$('distill-status').textContent, /select any passage for its actions\.$/, 'switching to the whole view says what selecting does there');
+    wholeOff(p);
+    assert.match(p.$('distill-status').textContent, /select any passage to find it in the original\.$/, 'and back');
+    wholeOn(p);
+    const out = passagesIn(p, 'out')[0], i = out.dataset.i;
+    out.click();
+    mainAct(p).click();
+    assert.match(p.$('distill-status').textContent, /kept by you\.$/);
+    toDepth(p, Number(p.$('distill-depth').max));
+    assert.equal(p.$('distill-status').textContent, '', 'the announcement was about another depth');
+    passagesIn(p, 'picked')[0].click();
+    assert.equal(pickLine(p), null, 'selecting the picked passage again closes its actions');
+    assert.equal(p.window.document.activeElement.dataset.i, i, 'focus stays on that passage');
+    p.$('distill-view').querySelector(`.distill-passage[data-i="${i}"]`).click(); mainAct(p).click();
+    assert.match(p.$('distill-status').textContent, /: kept at this depth, left out by you\.$/);
+    passagesIn(p, 'kept')[0].click();
+    assert.equal(p.$('distill-status').textContent, '', 'selecting another passage retires the announcement');
+    p.$('distill-btn').click();
+    assert.match(p.$('distill-status').textContent, /select any passage for its actions\.$/, 'reading again in the whole view');
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
+test('hidden new controls stay hidden against the page\'s own display rules', async () => {
+  const dom = new JSDOM(html);
+  const doc = dom.window.document;
+  for (const id of ['distill-whole-row', 'distill-copy-row', 'distill-out-box'])
+    assert.equal(dom.window.getComputedStyle(doc.getElementById(id)).display, 'none', id);
+  doc.getElementById('distill-copy-row').hidden = false;
+  assert.equal(dom.window.getComputedStyle(doc.getElementById('distill-copy-row')).display, 'flex', 'shown, it lays out as before');
+});
+
