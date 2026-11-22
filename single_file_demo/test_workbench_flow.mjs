@@ -1184,8 +1184,13 @@ test('a reader keeps or leaves out a passage beside the rule, and can undo it', 
     out.click();
     assert.equal(p.$('prose').selectionEnd, p.$('prose').selectionStart, 'picking in the whole view does not jump to the original box');
     assert.match(pickLine(p).textContent, /: left out at this depth\. Keep it Find it in the original $/);
-    assert.equal(passagesIn(p, 'picked')[0].nextSibling, pickLine(p), 'the actions sit right after the passage');
-    assert.equal(p.window.getComputedStyle(pickLine(p)).display, 'inline-block', 'the actions box wraps as one piece and adds no line of its own');
+    const after = passagesIn(p, 'picked')[0].nextSibling;
+    assert.ok(after === pickLine(p) || (after.nodeType === 3 && !/\S/.test(after.data) && after.nextSibling === pickLine(p)),
+      'the actions follow the passage, after only its trailing space up to the line end');
+    assert.ok(after === pickLine(p) || !after.data.slice(0, -1).includes('\n'), 'no more than one line end comes before the actions');
+    assert.equal(p.window.getComputedStyle(pickLine(p)).display, 'block', 'the actions box is a line of its own');
+    const bare = p.$('distill-view').cloneNode(true); bare.querySelector('.distill-pick').remove();
+    assert.equal(bare.textContent, LEASE, 'apart from the actions box, the whole view is the original');
     assert.equal(passagesIn(p, 'picked')[0].getAttribute('aria-expanded'), 'true');
     mainAct(p).click();
     assert.equal(p.window.document.activeElement, mainAct(p), 'focus stays on the passage\'s action');
@@ -1343,6 +1348,20 @@ test('an essay with code fences and list lines reads in place at every depth', a
       slider.value = String(i); slider.dispatchEvent(new p.window.Event('input'));
       assert.equal(p.$('distill-view').textContent, essay, `depth ${i}: the whole view is the essay`);
       assert.ok(passagesIn(p, 'kept').length >= 1);
+    }
+    // Picking any passage adds only its actions box, placed at the end of the passage's line.
+    const count = p.$('distill-view').querySelectorAll(':scope > button').length;
+    for (let k = 0; k < count; k++) {
+      p.$('distill-view').querySelectorAll(':scope > button')[k].click();
+      const box = pickLine(p), before = box.previousSibling;
+      const pre = before.nodeType === 3 ? before.data : '', post = box.nextSibling?.nodeType === 3 ? box.nextSibling.data : '';
+      assert.ok(!pre.slice(0, -1).includes('\n'), `passage ${k + 1}: no line end is moved above the actions`);
+      if ((pre + post).includes('\n')) assert.ok(pre.endsWith('\n'), `passage ${k + 1}: the actions start right after the passage's line end`);
+      else assert.equal(post, '', `passage ${k + 1}: without a line end, the actions come after all the text before the next passage`);
+      const bare = p.$('distill-view').cloneNode(true); bare.querySelector('.distill-pick').remove();
+      assert.equal(bare.textContent, essay, `passage ${k + 1} picked: apart from the actions box, the view is the essay`);
+      p.$('distill-view').querySelector(':scope > button.picked').click();
+      assert.equal(pickLine(p), null);
     }
     assert.deepEqual(p.errors, []);
   } finally { p.close(); }

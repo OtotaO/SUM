@@ -410,15 +410,25 @@ function showDepth(i, focusAfter = null) {
   const whole = Boolean($('distill-whole')?.checked);
   view.classList.toggle('whole', whole);
   if (whole) {
-    // The whole original, in order, with the text between passages as it stands.
-    let pos = 0;
+    // The whole original, in order, with the text between passages as it stands. The picked
+    // passage's actions box is a line of its own: it goes after the passage's trailing text up to
+    // the end of its line, so the next text starts below it and no line is added or lost.
+    let pos = 0, box = null;
+    const between = text => {
+      if (!box) { if (text) view.append(text); return; }
+      const cut = text.includes('\n') ? text.indexOf('\n') + 1 : text.length;
+      if (cut) view.append(text.slice(0, cut));
+      view.append(box);
+      if (cut < text.length) view.append(text.slice(cut));
+      box = null;
+    };
     for (const p of all) {
-      if (p.start > pos) view.append(distilledSource.slice(pos, p.start));
+      between(distilledSource.slice(pos, p.start));
       view.append(passageButton(p, state.get(p.index), true));
-      if (p.index === picked) view.append(pickActions(p, state.get(p.index)));
+      if (p.index === picked) box = pickActions(p, state.get(p.index));
       pos = p.end;
     }
-    if (pos < distilledSource.length) view.append(distilledSource.slice(pos));
+    between(distilledSource.slice(pos));
   } else {
     // The kept-only view is the rule's choice, as before; the reader's changes show in the whole view and the copy.
     d.passages.forEach((p, j) => {
