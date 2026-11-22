@@ -275,6 +275,7 @@ function hideDistill() {
   $('distill-panel').hidden = true;
   if ($('distill-status')) distillStatus('');
   if ($('distill-copy-status')) $('distill-copy-status').textContent = '';
+  if ($('distill-out')) $('distill-out').textContent = '';
 }
 $('prose').addEventListener('input', hideDistill);
 // Offsets are only meaningful against the exact text they were computed from;

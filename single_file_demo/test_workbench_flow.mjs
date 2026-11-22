@@ -1185,6 +1185,7 @@ test('a reader keeps or leaves out a passage beside the rule, and can undo it', 
     assert.equal(p.$('prose').selectionEnd, p.$('prose').selectionStart, 'picking in the whole view does not jump to the original box');
     assert.match(pickLine(p).textContent, /: left out at this depth\. Keep it Find it in the original $/);
     assert.equal(passagesIn(p, 'picked')[0].nextSibling, pickLine(p), 'the actions sit right after the passage');
+    assert.equal(p.window.getComputedStyle(pickLine(p)).display, 'inline-block', 'the actions box wraps as one piece and adds no line of its own');
     assert.equal(passagesIn(p, 'picked')[0].getAttribute('aria-expanded'), 'true');
     mainAct(p).click();
     assert.equal(p.window.document.activeElement, mainAct(p), 'focus stays on the passage\'s action');
@@ -1319,8 +1320,8 @@ test('a copy still waiting on the clipboard does not report into a later view', 
       const shown = p.$('distill-out').textContent;
       settle();
       await new Promise(r => setTimeout(r, 20));
-      assert.equal(p.$('distill-copy-status').textContent, '', `${outcome} after a ${move} change: no message about the earlier view`);
-      assert.equal(p.$('distill-out').textContent, shown, `${outcome} after a ${move} change: the box is not refilled with the earlier text`);
+      assert.equal(p.$('distill-copy-status').textContent, '', `${outcome} after ${move === 'edit' ? 'an edit' : 'a depth change'}: no message about the earlier view`);
+      assert.equal(p.$('distill-out').textContent, shown, `${outcome} after ${move === 'edit' ? 'an edit' : 'a depth change'}: the box is not refilled with the earlier text`);
       assert.deepEqual(p.errors, []);
     } finally {
       if (had) Object.defineProperty(globalThis.navigator, 'clipboard', had); else delete globalThis.navigator.clipboard;
