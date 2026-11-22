@@ -1172,6 +1172,18 @@ const wholeOff = p => { p.$('distill-whole').checked = false; p.$('distill-whole
 const toDepth = (p, i) => { const s = p.$('distill-depth'); s.value = String(i); s.dispatchEvent(new p.window.Event('input')); };
 const pickLine = p => p.$('distill-view').querySelector('.distill-pick');
 const mainAct = p => pickLine(p).querySelector('[data-act="main"]');
+// The picked passage's actions box follows the text after the passage up to and including its
+// first line end; when no line end comes before the next passage, it follows all of that text.
+const checkPlacement = (p, label) => {
+  const box = pickLine(p), passage = p.$('distill-view').querySelector(':scope > button.picked');
+  const pre = [];
+  for (let n = passage.nextSibling; n && n !== box; n = n.nextSibling) pre.push(n);
+  assert.ok(pre.every(n => n.nodeType === 3), `${label}: only text between the passage and its actions`);
+  const preText = pre.map(n => n.data).join('');
+  const gap = preText + (box.nextSibling?.nodeType === 3 ? box.nextSibling.data : '');
+  assert.equal(preText, gap.includes('\n') ? gap.slice(0, gap.indexOf('\n') + 1) : gap,
+    `${label}: the actions come after the passage's text up to its first line end, or all of it when there is none`);
+};
 
 test('a reader keeps or leaves out a passage beside the rule, and can undo it', async () => {
   const p = await page();
@@ -1184,10 +1196,7 @@ test('a reader keeps or leaves out a passage beside the rule, and can undo it', 
     out.click();
     assert.equal(p.$('prose').selectionEnd, p.$('prose').selectionStart, 'picking in the whole view does not jump to the original box');
     assert.match(pickLine(p).textContent, /: left out at this depth\. Keep it Find it in the original $/);
-    const after = passagesIn(p, 'picked')[0].nextSibling;
-    assert.ok(after === pickLine(p) || (after.nodeType === 3 && !/\S/.test(after.data) && after.nextSibling === pickLine(p)),
-      'the actions follow the passage, after only its trailing space up to the line end');
-    assert.ok(after === pickLine(p) || !after.data.slice(0, -1).includes('\n'), 'no more than one line end comes before the actions');
+    checkPlacement(p, 'lease');
     assert.equal(p.window.getComputedStyle(pickLine(p)).display, 'block', 'the actions box is a line of its own');
     const bare = p.$('distill-view').cloneNode(true); bare.querySelector('.distill-pick').remove();
     assert.equal(bare.textContent, LEASE, 'apart from the actions box, the whole view is the original');
@@ -1349,15 +1358,11 @@ test('an essay with code fences and list lines reads in place at every depth', a
       assert.equal(p.$('distill-view').textContent, essay, `depth ${i}: the whole view is the essay`);
       assert.ok(passagesIn(p, 'kept').length >= 1);
     }
-    // Picking any passage adds only its actions box, placed at the end of the passage's line.
+    // Picking any passage adds only its actions box, placed as checkPlacement describes.
     const count = p.$('distill-view').querySelectorAll(':scope > button').length;
     for (let k = 0; k < count; k++) {
       p.$('distill-view').querySelectorAll(':scope > button')[k].click();
-      const box = pickLine(p), before = box.previousSibling;
-      const pre = before.nodeType === 3 ? before.data : '', post = box.nextSibling?.nodeType === 3 ? box.nextSibling.data : '';
-      assert.ok(!pre.slice(0, -1).includes('\n'), `passage ${k + 1}: no line end is moved above the actions`);
-      if ((pre + post).includes('\n')) assert.ok(pre.endsWith('\n'), `passage ${k + 1}: the actions start right after the passage's line end`);
-      else assert.equal(post, '', `passage ${k + 1}: without a line end, the actions come after all the text before the next passage`);
+      checkPlacement(p, `passage ${k + 1}`);
       const bare = p.$('distill-view').cloneNode(true); bare.querySelector('.distill-pick').remove();
       assert.equal(bare.textContent, essay, `passage ${k + 1} picked: apart from the actions box, the view is the essay`);
       p.$('distill-view').querySelector(':scope > button.picked').click();

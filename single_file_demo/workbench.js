@@ -319,7 +319,7 @@ function passageButton(p, state, whole = false) {
   return button;
 }
 
-// The actions for the picked passage, placed right after it in the text so they are the next stop.
+// The actions for the picked passage. showDepth puts them on the line below it, as the next Tab stop.
 function pickActions(p, state) {
   const box = document.createElement('span');
   box.className = 'distill-pick';
@@ -411,8 +411,10 @@ function showDepth(i, focusAfter = null) {
   view.classList.toggle('whole', whole);
   if (whole) {
     // The whole original, in order, with the text between passages as it stands. The picked
-    // passage's actions box is a line of its own: it goes after the passage's trailing text up to
-    // the end of its line, so the next text starts below it and no line is added or lost.
+    // passage's actions box is a line of its own. It goes after the text that follows the passage,
+    // up to and including that text's first line end; with no line end before the next passage, it
+    // goes after all of that text, and the rest of the passage's line starts below the box.
+    // No blank line is added or lost, and apart from the box the text is the original.
     let pos = 0, box = null;
     const between = text => {
       if (!box) { if (text) view.append(text); return; }
