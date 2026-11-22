@@ -151,4 +151,6 @@ specific text a tag list carries back. A measure of claims needs units a
 person has checked: the text's atomic claims, written once per essay and
 frozen, then scored by the exact judge. `../tags_claims/` builds it: its
 claims are drafted and wait for the author's check, and it sets aside claims
-that any of six recorded no-tags rewrites is credited with.
+that any of six recorded no-tags rewrites is credited with. It was run on
+EFSO #2 before that check; one of its committed predictions failed, so by its
+own rule its counts are not usable.
