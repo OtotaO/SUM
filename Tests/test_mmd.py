@@ -243,13 +243,16 @@ def test_permutation_pvalue_distribution_is_uniform_under_H0():
     relaxed bounds for Monte-Carlo flake tolerance."""
     rng = np.random.default_rng(42)
     p_values = []
-    for _ in range(20):
+    for trial in range(20):
         X = rng.normal(0, 1, (40, 3))
         Y = rng.normal(0, 1, (40, 3))
         sigma = median_heuristic_bandwidth(X, Y)
+        # Seeded per trial: unseeded permutations put the median under
+        # 0.3 in a few runs per 1,000 (7 of 4,000 in two local
+        # measurements) and once failed main CI (45c067d).
         _, p = mmd_permutation_pvalue(
             X, Y, sigma, n_permutations=100,
-            rng=np.random.default_rng(),
+            rng=np.random.default_rng(1000 + trial),
         )
         p_values.append(p)
     # Loose bounds — 20 samples is small for distribution checks,
