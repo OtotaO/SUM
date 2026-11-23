@@ -813,7 +813,7 @@ test('the original reads at depths in the page, with no request, and passages se
     assert.equal(p.$('distill-view').querySelector('.distill-gap'), null);
     assert.equal(p.$('distill-left-summary').textContent, 'Nothing left out at this depth');
     assert.match(p.$('distill-tags').textContent, /tenant/);
-    assert.match(p.$('distill-method').textContent, /sum\.distill:extractive_coverage_v1/);
+    assert.match(p.$('distill-method').textContent, /sum\.distill:extractive_coverage_v2/);
     p.input('prose', source + ' Edited.');
     assert.equal(p.$('distill-panel').hidden, true, 'an edit hides depths of the old text');
     assert.equal(p.$('distill-status').textContent, '', 'and clears their status line');
@@ -1277,7 +1277,7 @@ test('the copy is the kept passages verbatim with positions, the fingerprint, th
     }
     const hash = 'sha256-' + Buffer.from(await webcrypto.subtle.digest('SHA-256', new TextEncoder().encode(LEASE))).toString('hex');
     assert.ok(text.includes(`Text fingerprint: ${hash}`));
-    assert.ok(text.includes('Passages picked by: sum.distill:extractive_coverage_v1.'));
+    assert.ok(text.includes('Passages picked by: sum.distill:extractive_coverage_v2.'));
     assert.ok(text.includes(`Changed by the reader: kept [${start}-${start + out.textContent.length}]`));
     await until(() => p.$('distill-out').textContent.includes(hash));
     assert.equal(p.$('distill-out').textContent, text, 'the preview is what is copied');
