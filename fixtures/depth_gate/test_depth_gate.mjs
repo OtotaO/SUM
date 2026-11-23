@@ -70,6 +70,7 @@ test('the brief set equals the depth reader brief, or the headline when brief wa
 test('a mark must occur exactly once; whitespace runs match any whitespace', () => {
   assert.throws(() => locateMark(LEAD_TEXT, 'A sentence that is not there.'), /not found/);
   assert.throws(() => locateMark('Same. Same.', 'Same.'), /occurs 2 times/);
+  assert.throws(() => locateMark('Go on. Go on. Go on. End here.', 'Go on. Go on.'), /occurs 2 times/);
   assert.deepEqual(locateMark('One line\n  wrapped here.', 'line wrapped here.'), { start: 4, end: 24 });
   assert.throws(() => locateMark('Curly “quote”.', 'Curly "quote".'), /not found/);
   assert.throws(() => locateMarks(LEAD_TEXT, LEAD_MARKS.slice(0, 2)), /need 3 to 5/);

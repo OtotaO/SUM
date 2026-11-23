@@ -36,7 +36,10 @@ export function locateMark(text, mark) {
   const m = mark.trim();
   if (!m) throw new Error('empty mark');
   const re = new RegExp(m.split(/\s+/u).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s+'), 'gu');
-  const hits = [...text.matchAll(re)];
+  // Search again from one character past each hit, so a copy that overlaps
+  // an earlier one is counted too.
+  const hits = [];
+  for (let m; (m = re.exec(text)); re.lastIndex = m.index + 1) hits.push(m);
   // Errors name the mark by its line, never its wording.
   if (hits.length === 0) throw new Error('mark not found in the text');
   if (hits.length > 1) throw new Error(`mark occurs ${hits.length} times in the text, it must occur once`);
@@ -181,12 +184,13 @@ export function loadDir(dir) {
   const names = readdirSync(dir).filter(n => /\.(txt|md)$/.test(n) && !/\.marks\.txt$/.test(n)).sort();
   return names.map(n => {
     const stem = n.replace(/\.(txt|md)$/, ''), bytes = readFileSync(join(dir, n));
-    let marksRaw;
-    try { marksRaw = readFileSync(join(dir, `${stem}.marks.txt`), 'utf8'); } catch { throw new Error(`${n}: no ${stem}.marks.txt next to it`); }
+    let marksBytes;
+    try { marksBytes = readFileSync(join(dir, `${stem}.marks.txt`)); } catch { throw new Error(`${n}: no ${stem}.marks.txt next to it`); }
+    const marksRaw = marksBytes.toString('utf8');
     const text = bytes.toString('utf8');
     const marks = marksRaw.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
     try { locateMarks(text, marks); passages(text); } catch (e) { throw new Error(`${n}: ${e.message} (marks count non-blank lines of ${stem}.marks.txt)`); }
-    return { name: n, sha256: sha256(bytes), marks_sha256: sha256(Buffer.from(marksRaw, 'utf8')), text, marks };
+    return { name: n, sha256: sha256(bytes), marks_sha256: sha256(marksBytes), text, marks };
   });
 }
 
