@@ -36,8 +36,7 @@ def _trial_coverage(true_mean=3.0, n_trials=200, n_per=200, alpha=0.1, seed_base
     hits = 0
     for trial in range(n_trials):
         x = rng.normal(true_mean, 1.0, size=n_per).reshape(-1, 1)
-        # Seeded per trial so the coverage check is deterministic; an
-        # unseeded generator here made it a Monte-Carlo flake.
+        # Seeded per trial so the coverage check is deterministic.
         point, reps = multiplier_bootstrap(
             x, lambda s: np.array([s.mean()]),
             B=300, rng=np.random.default_rng((seed_base, trial)),

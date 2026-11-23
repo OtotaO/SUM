@@ -248,7 +248,8 @@ def test_permutation_pvalue_distribution_is_uniform_under_H0():
         Y = rng.normal(0, 1, (40, 3))
         sigma = median_heuristic_bandwidth(X, Y)
         # Seeded per trial: unseeded permutations put the median under
-        # 0.3 in about 1 run in 1,000 and once failed main CI (45c067d).
+        # 0.3 in a few runs per 1,000 (7 of 4,000 in two local
+        # measurements) and once failed main CI (45c067d).
         _, p = mmd_permutation_pvalue(
             X, Y, sigma, n_permutations=100,
             rng=np.random.default_rng(1000 + trial),
