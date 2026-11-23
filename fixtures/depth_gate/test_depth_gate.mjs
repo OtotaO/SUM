@@ -116,7 +116,7 @@ test('command line: check scores nothing, the split freezes the files, heldout w
     writeFileSync(join(dir, `t${i}.txt`), `${t}\n\nCopy ${i}.`);
     writeFileSync(join(dir, `t${i}.marks.txt`), m.join('\n') + '\n');
   }
-  const run = (...a) => spawnSync(process.execPath, [HARNESS, ...a], { encoding: 'utf8' });
+  const run = (...a) => spawnSync(process.execPath, ['--no-warnings', HARNESS, ...a], { encoding: 'utf8' });
   const splitFile = join(dir, 'split.json'), out = join(dir, 'result.json');
   const check = run('check', dir, '--write-split', splitFile);
   assert.equal(check.status, 0, check.stderr);
@@ -128,9 +128,16 @@ test('command line: check scores nothing, the split freezes the files, heldout w
   assert.equal(frozen.heldout.length, 4);
   assert.equal(run('dev', dir).status, 2); // no --split
   assert.equal(run('heldout', dir, '--out', out, '--min-recall', '0.5').status, 2); // no --split
-  const notSplit = run('dev', dir, '--split', join(dir, 't0.txt'));
-  assert.equal(notSplit.status, 2);
-  assert.doesNotMatch(notSplit.stderr, /opening|claim/);
+  // Anything that is not a split file is refused by name only: a text (whose
+  // opening a JSON parse error would quote), JSON of another shape, null.
+  writeFileSync(join(dir, 'other.json'), '{"a": 1}');
+  writeFileSync(join(dir, 'null.json'), 'null');
+  for (const name of ['t0.txt', 'other.json', 'null.json']) {
+    const r = run('dev', dir, '--split', join(dir, name));
+    assert.equal(r.status, 2, name);
+    assert.equal(r.stderr, `${name} is not a split file written by check --write-split\n`);
+    assert.equal(r.stdout, '');
+  }
   assert.ok(!existsSync(out));
   const dev = run('dev', dir, '--split', splitFile);
   assert.equal(dev.status, 0, dev.stderr);

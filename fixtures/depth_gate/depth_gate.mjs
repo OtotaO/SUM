@@ -212,12 +212,15 @@ function main(argv) {
     }
     return 0;
   }
-  // The split file, committed before the dev run, freezes every text and
-  // marks file: a byte changed after it is refused.
+  // A run is bound to the split file it is given: a text or marks file that
+  // differs from it by a byte is refused. That the file given is the one
+  // committed before the dev run is shown by the history and split_sha256.
   const splitFile = flag('--split');
   if (!splitFile) { console.error(`${mode} needs --split FILE (written by check --write-split)`); return 2; }
-  let want;
-  try { want = JSON.parse(readFileSync(splitFile, 'utf8')); } catch { console.error(`${basename(splitFile)} is not a split file written by check --write-split`); return 2; }
+  let want = null;
+  try { want = JSON.parse(readFileSync(splitFile, 'utf8')); } catch { /* reported below */ }
+  const isSplit = w => w && typeof w === 'object' && w.gate === GATE_ID && Array.isArray(w.dev) && Array.isArray(w.heldout);
+  if (!isSplit(want)) { console.error(`${basename(splitFile)} is not a split file written by check --write-split`); return 2; }
   if (JSON.stringify({ dev: want.dev, heldout: want.heldout }) !== JSON.stringify({ dev: frozen.dev, heldout: frozen.heldout })) {
     console.error('the texts or marks differ from the frozen split'); return 4;
   }
