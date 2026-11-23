@@ -2,8 +2,8 @@
 
 One question, asked once on texts nobody has tuned on: does the depth reader's
 **brief** view (about a tenth of a text) keep the sentences a reader marked as
-must-read more often than simply reading the opening of the text at the same
-length?
+must-read more often than simply reading the opening of the text within the
+same character budget?
 
 If it does not, the depth reader's ranking is not earning its place, and the
 page should fall back to a plain outline view (headings and the first sentence
@@ -12,7 +12,8 @@ of each block).
 `depth_gate.mjs` is the harness. It was written and committed before any
 marked text existed. The texts and marks stay private. The JSON record holds
 hashes and counts, never their wording; error messages name a file and a mark's
-line number only; `check` prints file names.
+position among the non-blank lines of its marks file, never its wording; `check`
+prints file names.
 
 ## The rule
 
@@ -26,8 +27,10 @@ does not happen until the operator says yes to this rule or changes it.
   strictly more marks than the lead arm. A tie fails.
 - Before the dev run, `check --write-split` freezes the SHA-256 of every text
   and marks file, and that file is committed. `dev` and `heldout` refuse a
-  folder whose files differ from it by a byte, so the split cannot be moved
-  after a dev run.
+  folder whose files differ by a byte from the split file they are given. That
+  binds a run to a split file, not to the committed one: the commit history and
+  the `split_sha256` in every record show which split was used. The split is
+  visible from the first `check`, so finish the marks before running it.
 - The held-out set is scored once. The command refuses to run when its output
   file already exists; that guards against an accident, and the commit history
   is the record that it ran once.
@@ -55,9 +58,9 @@ does not happen until the operator says yes to this rule or changes it.
    ```
 
    A mark that is missing, repeated or overlapping stops the check with the
-   file's name and the mark's number (counting non-blank lines of the marks
-   file). Fix the marks file and check again; once it passes, do not edit the
-   texts or marks again.
+   file's name and the mark's number (its position among the non-blank lines
+   of the marks file). Fix the marks file and check again; once it passes,
+   do not edit the texts or marks again.
 
 ## What is compared
 

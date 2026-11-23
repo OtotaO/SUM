@@ -33,7 +33,7 @@ test('lead wins when the marks open the text and the body repeats other words', 
 test('the depth reader wins when the marks close the text and carry its repeated words', () => {
   const b = scoreText(DIST_TEXT, DIST_MARKS).depths.brief;
   assert.equal(b.lead.kept_marks, 0);
-  assert.ok(b.distill.kept_marks > b.lead.kept_marks);
+  assert.ok(b.distill.kept_marks > b.lead.kept_marks && b.distill.kept_marks > b.outline.kept_marks);
 });
 
 test('the outline arm wins when each mark opens a section', () => {
@@ -73,7 +73,7 @@ test('a mark must occur exactly once; whitespace runs match any whitespace', () 
   assert.deepEqual(locateMark('One line\n  wrapped here.', 'line wrapped here.'), { start: 4, end: 24 });
   assert.throws(() => locateMark('Curly “quote”.', 'Curly "quote".'), /not found/);
   assert.throws(() => locateMarks(LEAD_TEXT, LEAD_MARKS.slice(0, 2)), /need 3 to 5/);
-  assert.throws(() => locateMarks(LEAD_TEXT, [...LEAD_MARKS, 'The second claim', 'claim names the yak.']), /overlap/);
+  assert.throws(() => locateMarks(LEAD_TEXT, [...LEAD_MARKS, 'The second claim', 'claim names the yak.']), e => e.message === 'marks 2 and 4 overlap');
   assert.throws(() => locateMarks(LEAD_TEXT, [LEAD_MARKS[0], 'Secret wording absent.', LEAD_MARKS[2]]), e => e.message === 'mark 2: mark not found in the text');
 });
 
@@ -127,6 +127,11 @@ test('command line: check scores nothing, the split freezes the files, heldout w
   assert.equal(frozen.dev.length, 4);
   assert.equal(frozen.heldout.length, 4);
   assert.equal(run('dev', dir).status, 2); // no --split
+  assert.equal(run('heldout', dir, '--out', out, '--min-recall', '0.5').status, 2); // no --split
+  const notSplit = run('dev', dir, '--split', join(dir, 't0.txt'));
+  assert.equal(notSplit.status, 2);
+  assert.doesNotMatch(notSplit.stderr, /opening|claim/);
+  assert.ok(!existsSync(out));
   const dev = run('dev', dir, '--split', splitFile);
   assert.equal(dev.status, 0, dev.stderr);
   assert.equal(JSON.parse(dev.stdout).texts.length, 4);

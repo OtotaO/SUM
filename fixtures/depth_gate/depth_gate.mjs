@@ -1,6 +1,6 @@
 // Depth reader gate: does the depth reader's brief view keep the sentences a
-// reader marked as must-read more often than the opening of the text at the
-// same length? See README.md for the marking format and the rule.
+// reader marked as must-read more often than the opening of the text within
+// the same character budget? See README.md for the marking format and the rule.
 //
 //   node fixtures/depth_gate/depth_gate.mjs check   DIR [--write-split SPLIT]
 //   node fixtures/depth_gate/depth_gate.mjs dev     DIR --split SPLIT
@@ -11,7 +11,8 @@
 // and heldout refuse a folder that differs from that file. dev scores the dev
 // half only. heldout scores the held-out half and refuses to run when FILE
 // already exists. The JSON record holds hashes and counts, never text or mark
-// wording; error messages name files and mark line numbers only.
+// wording; error messages name files and a mark's position among the
+// non-blank lines of its marks file, never wording.
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join, basename, dirname } from 'node:path';
@@ -45,8 +46,8 @@ export function locateMark(text, mark) {
 export function locateMarks(text, marks) {
   if (marks.length < MARKS_MIN || marks.length > MARKS_MAX) throw new Error(`${marks.length} marks, need ${MARKS_MIN} to ${MARKS_MAX}`);
   const spans = marks.map((m, i) => { try { return locateMark(text, m); } catch (e) { throw new Error(`mark ${i + 1}: ${e.message}`); } });
-  const sorted = [...spans].sort((a, b) => a.start - b.start);
-  for (let i = 1; i < sorted.length; i++) if (sorted[i].start < sorted[i - 1].end) throw new Error('two marks overlap');
+  const order = spans.map((s, i) => ({ s, i })).sort((a, b) => a.s.start - b.s.start);
+  for (let k = 1; k < order.length; k++) if (order[k].s.start < order[k - 1].s.end) throw new Error(`marks ${Math.min(order[k - 1].i, order[k].i) + 1} and ${Math.max(order[k - 1].i, order[k].i) + 1} overlap`);
   return spans;
 }
 
@@ -215,7 +216,8 @@ function main(argv) {
   // marks file: a byte changed after it is refused.
   const splitFile = flag('--split');
   if (!splitFile) { console.error(`${mode} needs --split FILE (written by check --write-split)`); return 2; }
-  const want = JSON.parse(readFileSync(splitFile, 'utf8'));
+  let want;
+  try { want = JSON.parse(readFileSync(splitFile, 'utf8')); } catch { console.error(`${basename(splitFile)} is not a split file written by check --write-split`); return 2; }
   if (JSON.stringify({ dev: want.dev, heldout: want.heldout }) !== JSON.stringify({ dev: frozen.dev, heldout: frozen.heldout })) {
     console.error('the texts or marks differ from the frozen split'); return 4;
   }
