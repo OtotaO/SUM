@@ -4,7 +4,7 @@ import { MAX_REVIEW_CHARS } from './review_packet.js';
 // network, no randomness: every passage returned is source.slice(start, end).
 // The identifier is distinct from every LLM render path so an extractive view
 // cannot be mistaken for a generated rewrite.
-export const DISTILLER_ID = 'sum.distill:extractive_coverage_v1';
+export const DISTILLER_ID = 'sum.distill:extractive_coverage_v2';
 export const DISTILL_SCOPE = 'Every passage shown is copied from your text at the stated position; nothing is written or paraphrased by a model. Which passages appear at each depth is a word-coverage heuristic. It does not measure importance, meaning or accuracy, and a passage left out may matter more than one kept.';
 
 const STOP = new Set(('a about above after again against all also am an and any are as at be because been before being below between both but by can could did do does doing down during each few for from further had has have having he her here hers herself him himself his how i if in into is it its itself just me more most must my myself no nor not now of off on once only or other our ours ourselves out over own same she should so some such than that the their theirs them themselves then there these they this those through to too under until up upon very was we were what when where which while who whom why will with would you your yours yourself yourselves ' +
@@ -17,6 +17,12 @@ const STOP = new Set(('a about above after again against all also am an and any 
 const HEADING = /^[ \t]*#{1,6}\s/;
 const STRUCTURAL = /^[ \t]*(?:#{1,6}\s|[-*+>]\s|\d{1,3}[.)]\s|\(\w{1,5}\)\s|`{2}|\|)/;
 const ABBREV = /(?:(?:^|[\s(.])[A-Z]|(?:^|[\s(])(?:Mr|Mrs|Ms|Dr|Prof|St|No|Nos|Sec|Secs|Art|Fig|vs|etc|Inc|Ltd|Co|Corp|Jr|Sr|e\.g|i\.e|U\.S|cf|al))\.$/;
+// Two or three dotted lowercase letters (a.k.a., i.i.d., p.m.) end a passage
+// only when the next word does not start with a lowercase letter: "5 p.m. on
+// Monday" and "i.i.d. samples" stay whole, "at 5 p.m. You must" still splits.
+// A single one ("option a.") always ends it.
+const LOWER_DOTTED = /(?:^|[\s(])[a-z](?:\.[a-z]){1,2}\.$/;
+const NEXT_LOWER = /^\s+\p{Ll}/u;
 
 export function passages(text) {
   if (typeof text !== 'string' || text.length > MAX_REVIEW_CHARS) throw new Error('Text must be at most 100,000 characters.');
@@ -38,7 +44,8 @@ export function passages(text) {
     let from = us;
     for (const m of text.slice(us, ue).matchAll(/[.!?]+["'”’)\]]*(?=\s)/gu)) {
       const cut = us + m.index + m[0].length;
-      if (ABBREV.test(text.slice(Math.max(from, cut - 8), cut))) continue;
+      const tail = text.slice(Math.max(from, cut - 8), cut);
+      if (ABBREV.test(tail) || (LOWER_DOTTED.test(tail) && NEXT_LOWER.test(text.slice(cut, ue)))) continue;
       out.push([from, cut]); from = cut;
     }
     out.push([from, ue]);
@@ -49,11 +56,37 @@ export function passages(text) {
   }).filter(p => p.end > p.start);
 }
 
-function terms(text, start, end) {
+// Lines inside a ``` fence (the fence lines too; an unclosed fence runs to the
+// end of the text, as in CommonMark) and table rows (lines opening with |)
+// stay passages, but their words are not coverage words, so the ranking does
+// not pick code or table cells for the words they repeat.
+const FENCE_OPEN = /^[ \t]*(`{3,})[^`]*$/;
+const FENCE_CLOSE = /^[ \t]*(`{3,})[ \t\r]*$/;
+const TABLE_ROW = /^[ \t]*\|/;
+function inertMask(text) {
+  const mask = new Uint8Array(text.length);
+  let fence = 0, lineStart = 0;
+  while (lineStart <= text.length) {
+    const nl = text.indexOf('\n', lineStart), lineEnd = nl < 0 ? text.length : nl;
+    const line = text.slice(lineStart, lineEnd);
+    let inert = fence > 0;
+    if (fence) { const m = FENCE_CLOSE.exec(line); if (m && m[1].length >= fence) fence = 0; }
+    else { const m = FENCE_OPEN.exec(line); if (m) { fence = m[1].length; inert = true; } else inert = TABLE_ROW.test(line); }
+    if (inert) mask.fill(1, lineStart, lineEnd);
+    if (nl < 0) break;
+    lineStart = nl + 1;
+  }
+  return mask;
+}
+
+// A token of digits alone (a year, a count, a list number) is not a coverage
+// word; a token mixing letters and digits (sha256, v2) still is.
+function terms(text, start, end, inert) {
   const found = [];
   for (const m of text.slice(start, end).matchAll(/[\p{L}\p{N}]+(?:['’]\p{L}+)?/gu)) {
+    if (inert[start + m.index]) continue;
     let key = m[0].toLocaleLowerCase('en').replace(/['’]s$/u, '');
-    if (STOP.has(key) || (key.length < 3 && !/\p{N}/u.test(key))) continue;
+    if (STOP.has(key) || /^\p{N}+$/u.test(key) || (key.length < 3 && !/\p{N}/u.test(key))) continue;
     found.push({ key, start: start + m.index, end: start + m.index + m[0].length });
   }
   return found;
@@ -110,7 +143,8 @@ function depthCounts(lengths) {
 
 export function distill(text) {
   const spans = passages(text);
-  const spanTerms = spans.map(s => terms(text, s.start, s.end));
+  const inert = inertMask(text);
+  const spanTerms = spans.map(s => terms(text, s.start, s.end, inert));
   const spanKeys = spanTerms.map(list => [...new Set(list.map(t => t.key))].sort());
   // A word's weight is the number of further passages that repeat it, so a
   // word used once adds nothing and the most repeated words count most.

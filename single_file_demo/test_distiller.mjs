@@ -4,8 +4,14 @@ import { readFile } from 'node:fs/promises';
 import { distill, passages, rankPassages, DISTILLER_ID } from './distiller.js';
 
 const bills = JSON.parse(await readFile(new URL('../fixtures/meaning_receipts_billsum/corpus_billsum_test_first64.json', import.meta.url))).pairs;
+const receiptFormat = await readFile(new URL('../docs/RENDER_RECEIPT_FORMAT.md', import.meta.url), 'utf8');
+const fenced = 'A receipt carries a signature. A verifier checks the signature against the key.\n\n' +
+  '```json\n{ "receipt": "signed", "receipt_kid": "signed", "payload": "signed receipt payload" }\n```\n\n' +
+  '| field | receipt | signed |\n| payload | receipt | signed |\n\n' +
+  'The key is published so anyone can check a receipt.';
+const unclosed = 'Plain words about the lease and the lease terms.\n\n```\nlease lease lease terms terms\n\nlease terms again';
 const docs = [...bills.map(p => p.source), await readFile(new URL('../docs/NORTH_STAR.md', import.meta.url), 'utf8'),
-  'Alice may cancel the lease with 30 days notice. The deposit is refundable unless rent is overdue.'];
+  'Alice may cancel the lease with 30 days notice. The deposit is refundable unless rent is overdue.', receiptFormat, fenced, unclosed];
 
 // Seeded generator so the property cases are the same on every run.
 function lcg(seed) { let x = seed >>> 0; return () => (x = (Math.imul(x, 1664525) + 1013904223) >>> 0) / 2 ** 32; }
@@ -109,6 +115,64 @@ test('empty, blank, single-passage and over-limit inputs', () => {
   assert.deepEqual(one.depths.map(d => [d.label, d.count]), [['full text', 1]]);
   assert.throws(() => distill('a'.repeat(100001)), /at most 100,000/);
   assert.throws(() => distill(null), /at most 100,000/);
+});
+
+test('lowercase dotted abbreviations such as i.i.d. and a.k.a. do not end a passage before a lowercase word', () => {
+  const text = 'We draw i.i.d. samples from the pool. The pool, a.k.a. the reservoir, is fixed. See e.g. the appendix.';
+  assert.deepEqual(passages(text).map(p => text.slice(p.start, p.end)), [
+    'We draw i.i.d. samples from the pool.', 'The pool, a.k.a. the reservoir, is fixed.', 'See e.g. the appendix.']);
+  // Before a capitalised word the dotted letters end the sentence, as before.
+  const time = 'Come at 5 p.m. You must bring two forms of ID. Doors open at 9 a.m. on Monday.';
+  assert.deepEqual(passages(time).map(p => time.slice(p.start, p.end)), [
+    'Come at 5 p.m.', 'You must bring two forms of ID.', 'Doors open at 9 a.m. on Monday.']);
+  const lone = 'Pick option a. Then stop.';
+  assert.deepEqual(passages(lone).map(p => lone.slice(p.start, p.end)), ['Pick option a.', 'Then stop.']);
+});
+
+test('numbers alone are not coverage words, so a line of figures does not take the headline', () => {
+  const text = 'Fees for 2025: 10, 20, 30 and 40.\nFees for 2026: 10, 20, 30 and 40.\n\n' +
+    'The tenant pays rent each month. The tenant may end the lease with notice. Rent and notice terms follow the lease.';
+  const d = distill(text);
+  assert.deepEqual(d.depths[0].passages.map(p => p.text), ['The tenant may end the lease with notice.']);
+  assert.ok(d.tags.every(t => !/^\p{N}+$/u.test(t.text)), JSON.stringify(d.tags.map(t => t.text)));
+  const mixed = distill('The hash is sha256 here. The hash is sha256 there. Nothing else.');
+  assert.ok(mixed.tags.some(t => t.text === 'sha256'), 'a word mixing letters and digits stays a coverage word');
+});
+
+// Lines inside a ``` fence (fence lines included, an unclosed fence running to
+// the end) and lines opening with |. Separate code, but the same two rules as
+// distiller.js, so it shares their blind spots.
+function inertLines(text) {
+  const out = [];
+  let fence = 0, at = 0;
+  for (const line of text.split('\n')) {
+    let inert;
+    if (fence) { inert = true; const m = /^[ \t]*(`{3,})[ \t\r]*$/.exec(line); if (m && m[1].length >= fence) fence = 0; }
+    else { const m = /^[ \t]*(`{3,})[^`]*$/.exec(line); if (m) { fence = m[1].length; inert = true; } else inert = /^[ \t]*\|/.test(line); }
+    if (inert) out.push([at, at + line.length]);
+    at += line.length + 1;
+  }
+  return out;
+}
+const allInert = (spans, p) => {
+  for (let c = p.start; c < p.end; c++) if (/\S/u.test(p.text[c - p.start]) && !spans.some(([s, e]) => c >= s && c < e)) return false;
+  return true;
+};
+
+// The verbatim, coverage and nesting tests above also run on these texts (they are in cases).
+test('words inside code fences and table rows are not coverage words', () => {
+  const text = fenced, d = distill(text), inert = inertLines(text);
+  assert.ok(!allInert(inert, d.depths[0].passages[0]), `headline is ${JSON.stringify(d.depths[0].passages[0].text)}`);
+  assert.deepEqual(d.tags.map(t => t.text).sort(), ['receipt', 'signature', 'key'].sort());
+  for (const t of d.tags) assert.ok(!inert.some(([s, e]) => t.start >= s && t.start < e), `tag ${t.text} points into code or a table`);
+  assert.deepEqual(distill(unclosed).tags.map(t => t.text), [], 'an unclosed fence runs to the end of the text');
+});
+
+test('on RENDER_RECEIPT_FORMAT.md the headline and brief are prose, not code or table rows', () => {
+  const text = receiptFormat, d = distill(text), inert = inertLines(text);
+  for (const depth of d.depths.filter(x => x.label === 'headline' || x.label === 'brief')) {
+    for (const p of depth.passages) assert.ok(!allInert(inert, p), `${depth.label} keeps ${JSON.stringify(p.text.slice(0, 80))}`);
+  }
 });
 
 test('a real bill reads at three or more depths', () => {
