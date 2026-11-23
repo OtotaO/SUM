@@ -10,8 +10,9 @@ page should fall back to a plain outline view (headings and the first sentence
 of each block).
 
 `depth_gate.mjs` is the harness. It was written and committed before any
-marked text existed. The texts and marks stay private; nothing it writes
-contains their wording.
+marked text existed. The texts and marks stay private. The JSON record holds
+hashes and counts, never their wording; error messages name a file and a mark's
+line number only; `check` prints file names.
 
 ## The rule
 
@@ -23,8 +24,13 @@ does not happen until the operator says yes to this rule or changes it.
 - On the 4 held-out texts, pool the marks. The depth reader **passes** when its
   brief keeps at least half of the pooled marks (`--min-recall 0.5`) **and**
   strictly more marks than the lead arm. A tie fails.
+- Before the dev run, `check --write-split` freezes the SHA-256 of every text
+  and marks file, and that file is committed. `dev` and `heldout` refuse a
+  folder whose files differ from it by a byte, so the split cannot be moved
+  after a dev run.
 - The held-out set is scored once. The command refuses to run when its output
-  file already exists.
+  file already exists; that guards against an accident, and the commit history
+  is the record that it ran once.
 - Dev runs may lead to changes in the depth reader before the held-out run.
   The held-out record carries the SHA-256 of `distiller.js` and its method ID,
   so the result applies to that version only.
@@ -49,44 +55,47 @@ does not happen until the operator says yes to this rule or changes it.
    ```
 
    A mark that is missing, repeated or overlapping stops the check with the
-   file's name.
+   file's name and the mark's number (counting non-blank lines of the marks
+   file). Fix the marks file and check again; once it passes, do not edit the
+   texts or marks again.
 
 ## What is compared
 
-Each arm is a set of character ranges of the text, at a budget of a share of
-the text's passage characters (passages are the depth reader's own sentences).
+Each arm is a set of the depth reader's own passages (its sentences), chosen
+by the reader's own budget rule: the longest prefix of the arm's ordering whose
+passages fit a share of the text's passage characters, and always at least one
+passage. Only the ordering differs, so the test isolates the reader's ranking.
 The gate reads the 0.1 share. Shares 0.25 and 0.5 are reported, never gated.
 
-- **distill**: the passages in the depth reader's own view at that depth. When
-  the reader dropped a depth because it repeated the one before, the one before
-  is used.
-- **lead**: the passages in text order, cut at exactly the budget, so the last
-  one may end mid-sentence. It always uses the whole budget.
+- **distill**: the reader's ranking, so the arm is the reader's own view at
+  that depth. When the reader dropped a depth because it repeated the one
+  before, the one before is used.
+- **lead**: the passages in text order.
 - **outline**: block openers in text order (the first passage, every heading
   line, the first passage after a heading, the first passage after a blank
-  line), then the other passages in text order. It takes each whole passage
-  that still fits and passes over one that does not.
+  line), then the other passages in text order.
 
-The reader's own rule stops at its first ranked passage that does not fit, so
-it can use less of the budget than lead, and more only when its first
-passage alone is longer than the budget. The comparison leans against the
-reader.
+The characters each arm uses differ by text and are recorded. An arm goes over
+the budget only when its first passage alone is longer than it; such rows are
+flagged, and the verdict counts them beside the result rather than dropping
+them.
 
 A mark counts as kept only when every non-whitespace character of it lies
-inside the arm's ranges.
+inside the passages the arm kept.
 
 ## Commands
 
 ```
-node fixtures/depth_gate/depth_gate.mjs check   DIR
-node fixtures/depth_gate/depth_gate.mjs dev     DIR
-node fixtures/depth_gate/depth_gate.mjs heldout DIR --out fixtures/depth_gate/heldout_result.json --min-recall 0.5
+node fixtures/depth_gate/depth_gate.mjs check   DIR --write-split fixtures/depth_gate/split.json
+node fixtures/depth_gate/depth_gate.mjs dev     DIR --split fixtures/depth_gate/split.json
+node fixtures/depth_gate/depth_gate.mjs heldout DIR --split fixtures/depth_gate/split.json --out fixtures/depth_gate/heldout_result.json --min-recall 0.5
 ```
 
 The record holds, for each text, its SHA-256, the SHA-256 of its marks file,
 its length, and for each share and arm the characters used, the number of
-ranges and the number of marks kept; then the pooled counts and, for the
-held-out run, the verdict.
+passages, whether it went over the budget and the number of marks kept; then
+the pooled counts, the hashes of `distiller.js`, the harness and the split
+file, and, for the held-out run, the verdict.
 
 ## What this does not show
 

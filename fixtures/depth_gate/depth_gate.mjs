@@ -2,14 +2,16 @@
 // reader marked as must-read more often than the opening of the text at the
 // same length? See README.md for the marking format and the rule.
 //
-//   node fixtures/depth_gate/depth_gate.mjs check   DIR
-//   node fixtures/depth_gate/depth_gate.mjs dev     DIR
-//   node fixtures/depth_gate/depth_gate.mjs heldout DIR --out FILE --min-recall X
+//   node fixtures/depth_gate/depth_gate.mjs check   DIR [--write-split SPLIT]
+//   node fixtures/depth_gate/depth_gate.mjs dev     DIR --split SPLIT
+//   node fixtures/depth_gate/depth_gate.mjs heldout DIR --split SPLIT --out FILE --min-recall X
 //
 // check validates every text and mark and prints the split; it scores nothing.
-// dev scores the dev half only. heldout scores the held-out half once: it
-// refuses to run when FILE already exists. Neither text nor mark wording is
-// written to the output; texts are named by their SHA-256.
+// With --write-split it freezes the hashes of every text and marks file; dev
+// and heldout refuse a folder that differs from that file. dev scores the dev
+// half only. heldout scores the held-out half and refuses to run when FILE
+// already exists. The JSON record holds hashes and counts, never text or mark
+// wording; error messages name files and mark line numbers only.
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join, basename, dirname } from 'node:path';
@@ -34,14 +36,15 @@ export function locateMark(text, mark) {
   if (!m) throw new Error('empty mark');
   const re = new RegExp(m.split(/\s+/u).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s+'), 'gu');
   const hits = [...text.matchAll(re)];
-  if (hits.length === 0) throw new Error(`mark not found in the text: "${m.slice(0, 60)}"`);
-  if (hits.length > 1) throw new Error(`mark occurs ${hits.length} times in the text, it must occur once: "${m.slice(0, 60)}"`);
+  // Errors name the mark by its line, never its wording.
+  if (hits.length === 0) throw new Error('mark not found in the text');
+  if (hits.length > 1) throw new Error(`mark occurs ${hits.length} times in the text, it must occur once`);
   return { start: hits[0].index, end: hits[0].index + hits[0][0].length };
 }
 
 export function locateMarks(text, marks) {
   if (marks.length < MARKS_MIN || marks.length > MARKS_MAX) throw new Error(`${marks.length} marks, need ${MARKS_MIN} to ${MARKS_MAX}`);
-  const spans = marks.map(m => locateMark(text, m));
+  const spans = marks.map((m, i) => { try { return locateMark(text, m); } catch (e) { throw new Error(`mark ${i + 1}: ${e.message}`); } });
   const sorted = [...spans].sort((a, b) => a.start - b.start);
   for (let i = 1; i < sorted.length; i++) if (sorted[i].start < sorted[i - 1].end) throw new Error('two marks overlap');
   return spans;
@@ -55,37 +58,25 @@ export function blockOpeners(text, spans) {
   return spans.map((s, i) => i === 0 || isHeading(s) || isHeading(spans[i - 1]) || /\n[ \t]*\r?\n/.test(text.slice(spans[i - 1].end, s.start)));
 }
 
-// Each arm is a list of character ranges of the text.
-//   distill: the passages of the depth reader's own view at that depth.
-//   lead:    the text's passages in order, cut at exactly share x the passage
-//            characters (the last passage may be cut mid-sentence), so it
-//            always uses the whole budget.
-//   outline: block openers (see blockOpeners) in order, then the remaining
-//            passages in order, taking each whole passage that still fits and
-//            passing over one that does not; if none fits, the first.
-// The reader's own rule stops at its first ranked passage that does not fit,
-// so lead can use more of the budget than it does, and less only when the
-// reader's first passage alone is longer than the budget: the comparison leans
-// against the reader.
+// Each arm is a list of character ranges of the text. Every arm uses the depth
+// reader's own budget rule (distiller.js depthCounts): the longest prefix of
+// its ordering whose passages fit share x the text's passage characters, and
+// always at least one passage. Only the ordering differs:
+//   distill: the reader's ranking (its own view at that depth);
+//   lead:    the passages in text order;
+//   outline: block openers (see blockOpeners) in text order, then the other
+//            passages in text order.
+// The characters each arm uses differ by text and are recorded; a row whose
+// arm goes over the budget (one passage longer than it) is flagged.
 const rangesOf = (idx, spans) => [...idx].sort((x, y) => x - y).map(i => ({ start: spans[i].start, end: spans[i].end }));
 
-function leadCut(spans, cap) {
-  const out = []; let left = Math.floor(cap);
-  for (const s of spans) {
-    if (left <= 0) break;
-    const len = s.end - s.start, take = Math.min(len, left);
-    out.push({ start: s.start, end: s.start + take }); left -= take;
-  }
-  return out;
-}
-
-function fillWithin(order, spans, cap) {
+function prefixWithin(order, spans, cap) {
   const out = []; let used = 0;
   for (const i of order) {
     const len = spans[i].end - spans[i].start;
-    if (used + len <= cap) { out.push(i); used += len; }
+    if (out.length && used + len > cap) break;
+    out.push(i); used += len;
   }
-  if (!out.length && order.length) out.push(order[0]);
   return rangesOf(out, spans);
 }
 
@@ -113,8 +104,8 @@ export function arms(text) {
     out[label] = {
       cap: Math.floor(cap),
       distill: readerSet(d, label),
-      lead: leadCut(spans, cap),
-      outline: fillWithin(outlineOrder, spans, cap),
+      lead: prefixWithin(spans.map((_, i) => i), spans, cap),
+      outline: prefixWithin(outlineOrder, spans, cap),
     };
   }
   return { spans, total, method: d.method, arms: out };
@@ -142,9 +133,10 @@ export function scoreText(text, marks) {
       const kept = a[label][arm];
       row[arm] = {
         chars: kept.reduce((n, r) => n + r.end - r.start, 0),
-        ranges: kept.length,
+        passages: kept.length,
         kept_marks: located.filter(m => covered(text, kept, m)).length,
       };
+      row[arm].over_cap = row[arm].chars > row.cap;
     }
     depths[label] = row;
   }
@@ -165,7 +157,8 @@ export function pooled(results) {
     const marks = results.reduce((n, r) => n + r.marks, 0), row = { marks };
     for (const arm of ['distill', 'lead', 'outline']) {
       const kept = results.reduce((n, r) => n + r.depths[label][arm].kept_marks, 0);
-      row[arm] = { kept_marks: kept, recall: marks ? kept / marks : 0 };
+      const over = results.filter(r => r.depths[label][arm].over_cap).length;
+      row[arm] = { kept_marks: kept, recall: marks ? kept / marks : 0, texts_over_cap: over };
     }
     out[label] = row;
   }
@@ -174,11 +167,13 @@ export function pooled(results) {
 
 // The rule: the reader passes on the held-out texts when its brief keeps at
 // least minRecall of the pooled marks AND strictly more marks than the lead
-// arm. A tie is not a pass.
+// arm. A tie is not a pass. Texts where an arm went over the budget are
+// counted beside the verdict, not removed from it.
 export function verdict(pool, minRecall) {
   const b = pool.brief;
   const pass = b.distill.recall >= minRecall && b.distill.kept_marks > b.lead.kept_marks;
-  return { pass, brief_recall: b.distill.recall, min_recall: minRecall, distill_kept: b.distill.kept_marks, lead_kept: b.lead.kept_marks, marks: b.marks };
+  return { pass, brief_recall: b.distill.recall, min_recall: minRecall, distill_kept: b.distill.kept_marks, lead_kept: b.lead.kept_marks, marks: b.marks,
+    texts_over_cap: { distill: b.distill.texts_over_cap, lead: b.lead.texts_over_cap } };
 }
 
 export function loadDir(dir) {
@@ -189,7 +184,7 @@ export function loadDir(dir) {
     try { marksRaw = readFileSync(join(dir, `${stem}.marks.txt`), 'utf8'); } catch { throw new Error(`${n}: no ${stem}.marks.txt next to it`); }
     const text = bytes.toString('utf8');
     const marks = marksRaw.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-    try { locateMarks(text, marks); passages(text); } catch (e) { throw new Error(`${n}: ${e.message}`); }
+    try { locateMarks(text, marks); passages(text); } catch (e) { throw new Error(`${n}: ${e.message} (marks count non-blank lines of ${stem}.marks.txt)`); }
     return { name: n, sha256: sha256(bytes), marks_sha256: sha256(Buffer.from(marksRaw, 'utf8')), text, marks };
   });
 }
@@ -197,17 +192,32 @@ export function loadDir(dir) {
 function main(argv) {
   const [mode, dir, ...rest] = argv;
   const flag = k => { const i = rest.indexOf(k); return i >= 0 ? rest[i + 1] : undefined; };
-  if (!['check', 'dev', 'heldout'].includes(mode) || !dir) { console.error('usage: depth_gate.mjs check|dev|heldout DIR [--out FILE --min-recall X]'); return 2; }
+  if (!['check', 'dev', 'heldout'].includes(mode) || !dir) { console.error('usage: depth_gate.mjs check DIR [--write-split FILE] | dev DIR --split FILE | heldout DIR --split FILE --out FILE --min-recall X'); return 2; }
   const items = loadDir(dir);
   if (items.length !== TEXT_COUNT) { console.error(`found ${items.length} texts, need ${TEXT_COUNT}`); return 2; }
   if (new Set(items.map(x => x.sha256)).size !== items.length) { console.error('two texts have the same bytes'); return 2; }
   const { dev, heldout } = split(items);
   const label = x => `${x.sha256.slice(0, 12)}  ${x.name}  (${x.marks.length} marks, ${x.text.length} chars)`;
+  const frozen = { gate: GATE_ID, dev: dev.map(x => ({ sha256: x.sha256, marks_sha256: x.marks_sha256 })), heldout: heldout.map(x => ({ sha256: x.sha256, marks_sha256: x.marks_sha256 })) };
   if (mode === 'check') {
     console.log('All texts and marks are valid. Nothing was scored.');
     console.log('dev:'); dev.forEach(x => console.log('  ' + label(x)));
     console.log('held out:'); heldout.forEach(x => console.log('  ' + label(x)));
+    const w = flag('--write-split');
+    if (w) {
+      try { writeFileSync(w, JSON.stringify(frozen, null, 2) + '\n', { flag: 'wx' }); }
+      catch (e) { if (e.code === 'EEXIST') { console.error(`${w} exists: the split is frozen already`); return 3; } throw e; }
+      console.log(`split written to ${basename(w)}`);
+    }
     return 0;
+  }
+  // The split file, committed before the dev run, freezes every text and
+  // marks file: a byte changed after it is refused.
+  const splitFile = flag('--split');
+  if (!splitFile) { console.error(`${mode} needs --split FILE (written by check --write-split)`); return 2; }
+  const want = JSON.parse(readFileSync(splitFile, 'utf8'));
+  if (JSON.stringify({ dev: want.dev, heldout: want.heldout }) !== JSON.stringify({ dev: frozen.dev, heldout: frozen.heldout })) {
+    console.error('the texts or marks differ from the frozen split'); return 4;
   }
   const here = dirname(fileURLToPath(import.meta.url));
   const record = (set, list) => {
@@ -216,6 +226,7 @@ function main(argv) {
       gate: GATE_ID, set, distiller: DISTILLER_ID,
       distiller_js_sha256: sha256(readFileSync(join(here, '../../single_file_demo/distiller.js'))),
       harness_sha256: sha256(readFileSync(fileURLToPath(import.meta.url))),
+      split_sha256: sha256(readFileSync(splitFile)),
       texts: per, pooled: pooled(per),
     };
   };

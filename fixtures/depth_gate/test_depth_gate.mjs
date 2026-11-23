@@ -15,7 +15,9 @@ const filler = i => `Line ${String.fromCharCode(97 + i)} mentions ${WORDS[i]} on
 
 // Each arm wins on a text built for it.
 const LEAD_MARKS = ['Our opening claim names the zebra.', 'The second claim names the yak.', 'A third claim names the walrus.'];
-const LEAD_TEXT = [...LEAD_MARKS, ...Array.from({ length: 20 }, (_, i) => `The harbor boat crossed the river harbor near the river boat dock ${['north', 'south', 'east', 'west'][i % 4]} side.`)].join(' ');
+// The marks fill the first paragraph; every later paragraph opens with a
+// sentence the outline arm takes instead of marks 2 and 3.
+const LEAD_TEXT = [LEAD_MARKS.join(' '), ...Array.from({ length: 10 }, (_, i) => `Boats ${i} wait. The harbor boat crossed the river harbor near the river boat dock ${['north', 'south', 'east', 'west'][i % 4]} side.`)].join('\n\n');
 const DIST_MARKS = ['The beacon tower signal reached the valley.', 'The valley farmers answered the beacon signal.', 'Every tower keeper watched the farmers answer.'];
 const DIST_TEXT = [...Array.from({ length: 20 }, (_, i) => filler(i)), ...DIST_MARKS].join(' ');
 const OUT_MARKS = ['Rain fell on the eastern hills.', 'Sheep moved to the lower meadow.', 'Prices rose at the autumn market.'];
@@ -25,7 +27,7 @@ const OUT_TEXT = [section('Weather', OUT_MARKS[0], 'a'), section('Flocks', OUT_M
 test('lead wins when the marks open the text and the body repeats other words', () => {
   const b = scoreText(LEAD_TEXT, LEAD_MARKS).depths.brief;
   assert.equal(b.lead.kept_marks, 3);
-  assert.ok(b.distill.kept_marks < b.lead.kept_marks);
+  assert.ok(b.distill.kept_marks < b.lead.kept_marks && b.outline.kept_marks < b.lead.kept_marks);
 });
 
 test('the depth reader wins when the marks close the text and carry its repeated words', () => {
@@ -40,12 +42,19 @@ test('the outline arm wins when each mark opens a section', () => {
   assert.ok(b.outline.kept_marks > b.lead.kept_marks && b.outline.kept_marks > b.distill.kept_marks);
 });
 
-test('every arm stays within the cap unless one passage alone exceeds it; lead uses all of it', () => {
+test('every arm stays within the cap unless one passage alone exceeds it, and that is flagged', () => {
   for (const [text, marks] of [[LEAD_TEXT, LEAD_MARKS], [DIST_TEXT, DIST_MARKS], [OUT_TEXT, OUT_MARKS]]) {
     for (const row of Object.values(scoreText(text, marks).depths))
-      for (const arm of ['distill', 'lead', 'outline']) assert.ok(row[arm].chars <= row.cap || row[arm].ranges === 1, `${arm} ${row[arm].chars} > ${row.cap}`);
-    for (const row of Object.values(scoreText(text, marks).depths)) assert.equal(row.lead.chars, row.cap);
+      for (const arm of ['distill', 'lead', 'outline']) {
+        assert.ok(row[arm].chars <= row.cap || row[arm].passages === 1, `${arm} ${row[arm].chars} > ${row.cap}`);
+        assert.equal(row[arm].over_cap, row[arm].chars > row.cap);
+      }
   }
+  // One opening passage longer than a tenth of the text: lead takes it whole and is flagged.
+  const long = `${'The opening sentence runs on and on with many words about nothing in particular '.repeat(3).trim()}. ${Array.from({ length: 8 }, (_, i) => filler(i)).join(' ')}`;
+  const b = scoreText(long, [filler(0), filler(1), filler(2)]).depths.brief;
+  assert.equal(b.lead.passages, 1);
+  assert.equal(b.lead.over_cap, true);
 });
 
 test('the brief set equals the depth reader brief, or the headline when brief was dropped', () => {
@@ -65,6 +74,7 @@ test('a mark must occur exactly once; whitespace runs match any whitespace', () 
   assert.throws(() => locateMark('Curly “quote”.', 'Curly "quote".'), /not found/);
   assert.throws(() => locateMarks(LEAD_TEXT, LEAD_MARKS.slice(0, 2)), /need 3 to 5/);
   assert.throws(() => locateMarks(LEAD_TEXT, [...LEAD_MARKS, 'The second claim', 'claim names the yak.']), /overlap/);
+  assert.throws(() => locateMarks(LEAD_TEXT, [LEAD_MARKS[0], 'Secret wording absent.', LEAD_MARKS[2]]), e => e.message === 'mark 2: mark not found in the text');
 });
 
 test('a mark counts only when every non-space character of it is kept, across passages or a cut', () => {
@@ -95,9 +105,10 @@ test('verdict: a tie with the lead arm fails, and so does recall under the minim
   assert.equal(verdict(pooled([row(3, 3)]), 0.5).pass, false);
   assert.equal(verdict(pooled([row(1, 0)]), 0.5).pass, false);
   assert.equal(verdict(pooled([row(2, 1)]), 0.5).pass, true);
+  assert.deepEqual(verdict(pooled([row(2, 1)]), 0.5).texts_over_cap, { distill: 0, lead: 0 });
 });
 
-test('command line: check scores nothing, heldout writes once and then refuses', () => {
+test('command line: check scores nothing, the split freezes the files, heldout writes once', () => {
   const dir = mkdtempSync(join(tmpdir(), 'depth-gate-'));
   const texts = [[LEAD_TEXT, LEAD_MARKS], [DIST_TEXT, DIST_MARKS], [OUT_TEXT, OUT_MARKS]];
   for (let i = 0; i < 8; i++) {
@@ -106,23 +117,38 @@ test('command line: check scores nothing, heldout writes once and then refuses',
     writeFileSync(join(dir, `t${i}.marks.txt`), m.join('\n') + '\n');
   }
   const run = (...a) => spawnSync(process.execPath, [HARNESS, ...a], { encoding: 'utf8' });
-  const check = run('check', dir);
+  const splitFile = join(dir, 'split.json'), out = join(dir, 'result.json');
+  const check = run('check', dir, '--write-split', splitFile);
   assert.equal(check.status, 0, check.stderr);
   assert.match(check.stdout, /Nothing was scored/);
   assert.doesNotMatch(check.stdout, /kept_marks/);
-  const out = join(dir, 'result.json');
-  assert.equal(run('heldout', dir, '--out', out).status, 2); // no --min-recall
-  const first = run('heldout', dir, '--out', out, '--min-recall', '0.5');
+  assert.equal(run('check', dir, '--write-split', splitFile).status, 3);
+  const frozen = JSON.parse(readFileSync(splitFile, 'utf8'));
+  assert.equal(frozen.dev.length, 4);
+  assert.equal(frozen.heldout.length, 4);
+  assert.equal(run('dev', dir).status, 2); // no --split
+  const dev = run('dev', dir, '--split', splitFile);
+  assert.equal(dev.status, 0, dev.stderr);
+  assert.equal(JSON.parse(dev.stdout).texts.length, 4);
+  assert.equal(run('heldout', dir, '--split', splitFile, '--out', out).status, 2); // no --min-recall
+  const first = run('heldout', dir, '--split', splitFile, '--out', out, '--min-recall', '0.5');
   assert.equal(first.status, 0, first.stderr);
   const rec = JSON.parse(readFileSync(out, 'utf8'));
   assert.equal(rec.texts.length, 4);
+  assert.deepEqual(rec.texts.map(t => t.sha256), frozen.heldout.map(t => t.sha256));
   assert.ok(!JSON.stringify(rec).includes('zebra'), 'no text wording in the output');
   assert.match(rec.distiller_js_sha256, /^[0-9a-f]{64}$/);
-  const again = run('heldout', dir, '--out', out, '--min-recall', '0.5');
-  assert.equal(again.status, 3);
+  assert.match(rec.split_sha256, /^[0-9a-f]{64}$/);
+  assert.equal(run('heldout', dir, '--split', splitFile, '--out', out, '--min-recall', '0.5').status, 3);
   assert.ok(existsSync(out));
-  writeFileSync(join(dir, 't0.marks.txt'), 'Not in the text at all.\nNor this.\nNor that.\n');
+  // A marks file changed after the split is refused, and errors never echo mark wording.
+  writeFileSync(join(dir, 't0.marks.txt'), m0());
+  assert.equal(run('dev', dir, '--split', splitFile).status, 4);
+  writeFileSync(join(dir, 't0.marks.txt'), 'Secret wording absent.\nNor this.\nNor that.\n');
   const bad = run('check', dir);
   assert.equal(bad.status, 1);
-  assert.match(bad.stderr, /t0\.txt: mark not found/);
+  assert.match(bad.stderr, /t0\.txt: mark 1: mark not found/);
+  assert.doesNotMatch(bad.stderr, /Secret/);
 });
+
+function m0() { return LEAD_MARKS.slice().reverse().join('\n') + '\n'; }
