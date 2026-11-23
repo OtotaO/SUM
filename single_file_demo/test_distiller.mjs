@@ -117,10 +117,14 @@ test('empty, blank, single-passage and over-limit inputs', () => {
   assert.throws(() => distill(null), /at most 100,000/);
 });
 
-test('lowercase dotted abbreviations such as i.i.d. and a.k.a. do not end a passage', () => {
+test('lowercase dotted abbreviations such as i.i.d. and a.k.a. do not end a passage before a lowercase word', () => {
   const text = 'We draw i.i.d. samples from the pool. The pool, a.k.a. the reservoir, is fixed. See e.g. the appendix.';
   assert.deepEqual(passages(text).map(p => text.slice(p.start, p.end)), [
     'We draw i.i.d. samples from the pool.', 'The pool, a.k.a. the reservoir, is fixed.', 'See e.g. the appendix.']);
+  // Before a capitalised word the dotted letters end the sentence, as before.
+  const time = 'Come at 5 p.m. You must bring two forms of ID. Doors open at 9 a.m. on Monday.';
+  assert.deepEqual(passages(time).map(p => time.slice(p.start, p.end)), [
+    'Come at 5 p.m.', 'You must bring two forms of ID.', 'Doors open at 9 a.m. on Monday.']);
   const lone = 'Pick option a. Then stop.';
   assert.deepEqual(passages(lone).map(p => lone.slice(p.start, p.end)), ['Pick option a.', 'Then stop.']);
 });

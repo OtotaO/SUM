@@ -16,9 +16,13 @@ const STOP = new Set(('a about above after again against all also am an and any 
 // line is always a passage of its own.
 const HEADING = /^[ \t]*#{1,6}\s/;
 const STRUCTURAL = /^[ \t]*(?:#{1,6}\s|[-*+>]\s|\d{1,3}[.)]\s|\(\w{1,5}\)\s|`{2}|\|)/;
-// Two or three dotted lowercase letters (e.g., i.e., a.k.a., i.i.d.) do not
-// end a sentence either; a single one ("option a.") still does.
-const ABBREV = /(?:(?:^|[\s(.])[A-Z]|(?:^|[\s(])[a-z](?:\.[a-z]){1,2}|(?:^|[\s(])(?:Mr|Mrs|Ms|Dr|Prof|St|No|Nos|Sec|Secs|Art|Fig|vs|etc|Inc|Ltd|Co|Corp|Jr|Sr|e\.g|i\.e|U\.S|cf|al))\.$/;
+const ABBREV = /(?:(?:^|[\s(.])[A-Z]|(?:^|[\s(])(?:Mr|Mrs|Ms|Dr|Prof|St|No|Nos|Sec|Secs|Art|Fig|vs|etc|Inc|Ltd|Co|Corp|Jr|Sr|e\.g|i\.e|U\.S|cf|al))\.$/;
+// Two or three dotted lowercase letters (a.k.a., i.i.d., p.m.) end a passage
+// only when the next word does not start with a lowercase letter: "5 p.m. on
+// Monday" and "i.i.d. samples" stay whole, "at 5 p.m. You must" still splits.
+// A single one ("option a.") always ends it.
+const LOWER_DOTTED = /(?:^|[\s(])[a-z](?:\.[a-z]){1,2}\.$/;
+const NEXT_LOWER = /^\s+\p{Ll}/u;
 
 export function passages(text) {
   if (typeof text !== 'string' || text.length > MAX_REVIEW_CHARS) throw new Error('Text must be at most 100,000 characters.');
@@ -40,7 +44,8 @@ export function passages(text) {
     let from = us;
     for (const m of text.slice(us, ue).matchAll(/[.!?]+["'”’)\]]*(?=\s)/gu)) {
       const cut = us + m.index + m[0].length;
-      if (ABBREV.test(text.slice(Math.max(from, cut - 8), cut))) continue;
+      const tail = text.slice(Math.max(from, cut - 8), cut);
+      if (ABBREV.test(tail) || (LOWER_DOTTED.test(tail) && NEXT_LOWER.test(text.slice(cut, ue)))) continue;
       out.push([from, cut]); from = cut;
     }
     out.push([from, ue]);
