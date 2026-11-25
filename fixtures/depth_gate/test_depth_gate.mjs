@@ -71,6 +71,9 @@ test('a mark must occur exactly once; whitespace runs match any whitespace', () 
   assert.throws(() => locateMark(LEAD_TEXT, 'A sentence that is not there.'), /not found/);
   assert.throws(() => locateMark('Same. Same.', 'Same.'), /occurs 2 times/);
   assert.throws(() => locateMark('Go on. Go on. Go on. End here.', 'Go on. Go on.'), /occurs 2 times/);
+  // A mark that opens with a character outside the BMP (two UTF-16 units) is found once, not looped on.
+  assert.deepEqual(locateMark('Start. \u{1F600} smiles here. End.', '\u{1F600} smiles here.'), { start: 7, end: 22 });
+  assert.throws(() => locateMark('\u{1D400}b. \u{1D400}b.', '\u{1D400}b.'), /occurs 2 times/);
   assert.deepEqual(locateMark('One line\n  wrapped here.', 'line wrapped here.'), { start: 4, end: 24 });
   assert.throws(() => locateMark('Curly “quote”.', 'Curly "quote".'), /not found/);
   assert.throws(() => locateMarks(LEAD_TEXT, LEAD_MARKS.slice(0, 2)), /need 3 to 5/);
@@ -124,6 +127,11 @@ test('command line: check scores nothing, the split freezes the files, heldout w
   assert.match(check.stdout, /Nothing was scored/);
   assert.doesNotMatch(check.stdout, /kept_marks/);
   assert.equal(run('check', dir, '--write-split', splitFile).status, 3);
+  for (const f of ['--write-split', '--split', '--out', '--min-recall']) {
+    const r = run('check', dir, f);
+    assert.equal(r.status, 2); assert.equal(r.stdout, ''); assert.equal(r.stderr, `${f} needs a value\n`);
+  }
+  assert.equal(run('check', dir, '--write-split', '--split').status, 2);
   const frozen = JSON.parse(readFileSync(splitFile, 'utf8'));
   assert.equal(frozen.dev.length, 4);
   assert.equal(frozen.heldout.length, 4);

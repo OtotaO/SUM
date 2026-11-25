@@ -36,10 +36,11 @@ export function locateMark(text, mark) {
   const m = mark.trim();
   if (!m) throw new Error('empty mark');
   const re = new RegExp(m.split(/\s+/u).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s+'), 'gu');
-  // Search again from one character past each hit, so a copy that overlaps
-  // an earlier one is counted too.
+  // Search again from one code point past each hit, so a copy that overlaps
+  // an earlier one is counted too. (One UTF-16 unit is not enough: inside a
+  // surrogate pair the 'u' flag searches from the pair's start again.)
   const hits = [];
-  for (let m; (m = re.exec(text)); re.lastIndex = m.index + 1) hits.push(m);
+  for (let m; (m = re.exec(text)); re.lastIndex = m.index + (text.codePointAt(m.index) > 0xffff ? 2 : 1)) hits.push(m);
   // Errors name the mark by its line, never its wording.
   if (hits.length === 0) throw new Error('mark not found in the text');
   if (hits.length > 1) throw new Error(`mark occurs ${hits.length} times in the text, it must occur once`);
@@ -197,6 +198,8 @@ export function loadDir(dir) {
 function main(argv) {
   const [mode, dir, ...rest] = argv;
   const flag = k => { const i = rest.indexOf(k); return i >= 0 ? rest[i + 1] : undefined; };
+  const bare = ['--write-split', '--split', '--out', '--min-recall'].find(k => rest.includes(k) && (flag(k) === undefined || flag(k).startsWith('--')));
+  if (bare) { console.error(`${bare} needs a value`); return 2; }
   if (!['check', 'dev', 'heldout'].includes(mode) || !dir) { console.error('usage: depth_gate.mjs check DIR [--write-split FILE] | dev DIR --split FILE | heldout DIR --split FILE --out FILE --min-recall X'); return 2; }
   const items = loadDir(dir);
   if (items.length !== TEXT_COUNT) { console.error(`found ${items.length} texts, need ${TEXT_COUNT}`); return 2; }
