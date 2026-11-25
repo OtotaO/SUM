@@ -193,6 +193,26 @@ def test_duplicate_cohort_id_rejected(keypair):
         verify_perspective_risk_receipt(env, jwks, losses=_LOSSES, group_ids=_GROUPS)
 
 
+def test_decision_flags_replay_only_as_booleans_with_an_alpha(keypair):
+    """controls_all and each cohort's controlled replay only as JSON
+    booleans, and only when alpha_target_micro is stated."""
+    priv, jwks, kid = keypair
+    grouped = certify_meaning_risk_by_group(_LOSSES, _GROUPS, **_S)
+    base = build_perspective_payload(
+        grouped=grouped, losses=_LOSSES, group_ids=_GROUPS, corpus_id="x",
+        transform="t", loss_definition="d", alpha_target=0.3,
+    )
+    no_alpha = copy.deepcopy(base); no_alpha.pop("alpha_target_micro")
+    all_str = copy.deepcopy(base); all_str["controls_all"] = str(all_str["controls_all"]).lower()
+    group_int = copy.deepcopy(base); group_int["groups"][0]["controlled"] = int(group_int["groups"][0]["controlled"])
+    for pl, msg in ((no_alpha, "without alpha"), (all_str, "controls_all"), (group_int, "controlled")):
+        env = sign_perspective_risk_receipt(pl, private_jwk=priv, kid=kid)
+        with pytest.raises(MeaningReceiptReplayError, match=msg):
+            verify_perspective_risk_receipt(env, jwks, losses=_LOSSES, group_ids=_GROUPS)
+    env = sign_perspective_risk_receipt(base, private_jwk=priv, kid=kid)
+    verify_perspective_risk_receipt(env, jwks, losses=_LOSSES, group_ids=_GROUPS)
+
+
 def test_offgrid_delta_round_trips(keypair):
     """Concrete regression for the off-grid replay-symmetry bug: a delta
     with >6 decimals must round-trip build→sign→verify (build certifies at

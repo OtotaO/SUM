@@ -88,11 +88,30 @@ function b64urlDecodeToBytes(s) {
   return Uint8Array.from(Buffer.from(s, "base64url"));
 }
 
+// A JWS signature segment and a JWK `x` must be the canonical unpadded
+// base64url of their bytes: the right length, base64url characters only, and
+// the unused low bits of the last character zero. atob and WebCrypto ignore
+// those bits, so without this check a respelled signature or key verified here
+// while the Python verifier (strict decoding) rejected it.
+const B64URL_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+function isCanonicalB64url(s, nBytes) {
+  const len = Math.ceil((nBytes * 4) / 3);
+  const spareBits = len * 6 - nBytes * 8;
+  return typeof s === "string" && s.length === len && /^[A-Za-z0-9_-]+$/.test(s) &&
+    B64URL_ALPHABET.indexOf(s[len - 1]) % (1 << spareBits) === 0;
+}
+
 async function importEd25519Jwk(jwk) {
   if (jwk.kty !== "OKP" || jwk.crv !== "Ed25519") {
     throw new VerifyError(
       ERROR_CLASSES.MALFORMED_JWKS,
       `expected OKP/Ed25519 JWK, got kty=${jwk.kty} crv=${jwk.crv}`,
+    );
+  }
+  if (!isCanonicalB64url(jwk.x, 32)) {
+    throw new VerifyError(
+      ERROR_CLASSES.MALFORMED_JWKS,
+      "JWK x is not the canonical base64url of a 32-byte Ed25519 public key",
     );
   }
   return crypto.subtle.importKey("jwk", jwk, { name: "Ed25519" }, false, ["verify"]);
@@ -200,6 +219,12 @@ export async function verifyMeaningEnvelope(receipt, jwks, supportedSchema) {
   } catch (e) {
     if (e instanceof VerifyError) throw e;
     throw new VerifyError(ERROR_CLASSES.MALFORMED_JWKS, `JWK import failed: ${e.message}`);
+  }
+  if (!isCanonicalB64url(signature, 64)) {
+    throw new VerifyError(
+      ERROR_CLASSES.SIGNATURE_INVALID,
+      "signature is not the canonical base64url of a 64-byte Ed25519 signature",
+    );
   }
   let result;
   try {

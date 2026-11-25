@@ -145,6 +145,18 @@ def _mutations(env, jwks):
     if len(parts) == 3:
         sig = list(parts[2]); sig[3] = "A" if sig[3] != "A" else "B"
         yield ("jws-sig-corrupt", E(jws=".".join([parts[0], parts[1], "".join(sig)])), jwks)
+        # Same signature bytes, respelled: set an unused low bit of the last
+        # character. Lenient decoders (atob, WebCrypto) read the same bytes;
+        # both runtimes must still give the same verdict.
+        _A = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+        _s = parts[2]
+        yield ("jws-sig-noncanonical-tail",
+               E(jws=".".join([parts[0], parts[1], _s[:-1] + _A[_A.index(_s[-1]) ^ 1]])), jwks)
+        _j = copy.deepcopy(jwks)
+        if isinstance(_j, dict) and _j.get("keys") and isinstance(_j["keys"][0].get("x"), str):
+            _x = _j["keys"][0]["x"]
+            _j["keys"][0]["x"] = _x[:-1] + _A[_A.index(_x[-1]) ^ 1]
+            yield ("jwks-x-noncanonical-tail", env, _j)
         # Protected header that is VALID JSON but not an object. RFC 7515 §4
         # requires an object; these parse cleanly and then reach `.get`/property
         # access, which is how a raw AttributeError once escaped the declared

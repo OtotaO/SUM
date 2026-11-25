@@ -280,18 +280,27 @@ def _public_jwks_of(private_jwk: dict, kid: str) -> dict:
 
 
 def _classify_verify_error(exc: Exception) -> ErrorClass:
-    """Map sum_verify's exception taxonomy onto the server's error classes."""
-    name = type(exc).__name__
-    if name in {"UnsupportedSchemaError"}:
+    """Map sum_verify's exception taxonomy onto the server's error classes.
+
+    By class, not by exact name: the render and transform verifiers raise
+    subclasses of JoseEnvelopeError (VerifyError), which a name match
+    reported as internal errors.
+    """
+    from sum_engine_internal.infrastructure.jose_envelope import JoseEnvelopeError
+    from sum_verify import UnsupportedSchemaError
+    from sum_verify._chain import ChainReceiptDisclosureError, ChainReceiptReplayError
+    from sum_verify._meaning import MeaningReceiptDisclosureError, MeaningReceiptReplayError
+
+    if isinstance(exc, UnsupportedSchemaError):
         return ErrorClass.SCHEMA
-    if name in {"JoseEnvelopeError", "ReceiptVerifyError"}:
+    if isinstance(exc, JoseEnvelopeError):
         return ErrorClass.SIGNATURE
-    if name in {
-        "MeaningReceiptReplayError",
-        "MeaningReceiptDisclosureError",
-        "ChainReceiptReplayError",
-        "ChainReceiptDisclosureError",
-    }:
+    if isinstance(exc, (
+        MeaningReceiptReplayError,
+        MeaningReceiptDisclosureError,
+        ChainReceiptReplayError,
+        ChainReceiptDisclosureError,
+    )):
         return ErrorClass.STRUCTURAL
     return ErrorClass.INTERNAL
 

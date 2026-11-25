@@ -292,6 +292,13 @@ def verify_perspective_risk_receipt(
             f"duplicate cohort id(s) in payload.groups: {_ids}"
         )
     payload_groups = {g["group_id"]: g for g in payload["groups"]}
+    # A decision flag with no alpha has nothing to replay against, and only
+    # a JSON boolean replays (bool("false") is True).
+    if not has_alpha and ("controls_all" in payload or any("controlled" in g for g in payload_groups.values())):
+        raise MeaningReceiptReplayError(
+            "controlled / controls_all is stated without alpha_target_micro, "
+            "so it cannot be replayed"
+        )
     if set(payload_groups) != set(replay.groups):
         raise MeaningReceiptReplayError(
             f"cohort set does not replay: receipt {sorted(payload_groups)} vs "
@@ -309,14 +316,14 @@ def verify_perspective_risk_receipt(
             raise MeaningReceiptReplayError(
                 f"cohort {gid!r}: point_estimate does not replay"
             )
-        if has_alpha and bool(g.get("controlled")) != rg.controls(alpha_q):
+        if has_alpha and (not isinstance(g.get("controlled"), bool) or g["controlled"] != bool(rg.controls(alpha_q))):
             raise MeaningReceiptReplayError(
                 f"cohort {gid!r}: controlled does not replay"
             )
 
     # ---- replay 5: the headline decision ----
     if has_alpha:
-        if bool(payload.get("controls_all")) != replay.controls_all(alpha_q):
+        if not isinstance(payload.get("controls_all"), bool) or payload["controls_all"] != bool(replay.controls_all(alpha_q)):
             raise MeaningReceiptReplayError(
                 "controls_all does not replay: the all-cohorts decision "
                 "contradicts the re-certified cohort bounds"
