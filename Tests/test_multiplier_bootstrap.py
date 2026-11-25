@@ -32,14 +32,18 @@ def _trial_coverage(true_mean=3.0, n_trials=200, n_per=200, alpha=0.1, seed_base
     """Repeat: draw N(true_mean, 1) of size n_per, bootstrap a
     CI on the mean, check whether it contains true_mean.
     Returns the empirical coverage rate."""
-    rng = np.random.default_rng(seed_base)
+    # One stream for the data and one per trial for the bootstrap, spawned
+    # from seed_base so they are independent. (default_rng((seed_base, 0))
+    # equals default_rng(seed_base), so tuple seeds would replay the data
+    # stream in trial 0.)
+    data_seq, *boot_seqs = np.random.SeedSequence(seed_base).spawn(n_trials + 1)
+    rng = np.random.default_rng(data_seq)
     hits = 0
     for trial in range(n_trials):
         x = rng.normal(true_mean, 1.0, size=n_per).reshape(-1, 1)
-        # Seeded per trial so the coverage check is deterministic.
         point, reps = multiplier_bootstrap(
             x, lambda s: np.array([s.mean()]),
-            B=300, rng=np.random.default_rng((seed_base, trial)),
+            B=300, rng=np.random.default_rng(boot_seqs[trial]),
         )
         ivs = bootstrap_ci(point, reps, alpha=alpha)
         if ivs[0].contains(true_mean):
@@ -53,7 +57,11 @@ def test_coverage_on_mean_estimation(alpha):
     Monte-Carlo error."""
     cov = _trial_coverage(alpha=alpha, n_trials=200, n_per=200)
     # n_trials=200 → SE ≈ √(α(1-α)/200) ≈ 0.02-0.03; ±0.06 is
-    # ~2-3σ, flake-tolerant for CI
+    # ~2-3σ. The draws are seeded, so this checks one fixed realization
+    # (coverage 0.92 at α=0.10, 0.845 at α=0.20 on numpy 2.2.6).
+    # It is deterministic for a given numpy version: a failure comes from
+    # a code or dependency change, and numpy may change its streams
+    # between versions.
     assert abs(cov - (1 - alpha)) < 0.06, (
         f"empirical coverage {cov:.3f} outside ±0.06 of target {1-alpha:.2f}"
     )

@@ -240,7 +240,11 @@ def test_permutation_pvalue_distribution_is_uniform_under_H0():
     """Under H_0 (same distribution), p-values should be approximately
     uniform on [0, 1]. Median should be near 0.5; max should be near
     1.0; min can be anywhere. Tests across 20 trials with
-    relaxed bounds for Monte-Carlo flake tolerance."""
+    relaxed bounds. The draws are seeded, so this checks one fixed
+    realization (median 0.327 on numpy 2.2.6). It is
+    deterministic for a given numpy version: a failure comes from a code
+    or dependency change, and numpy may change its streams between
+    versions."""
     rng = np.random.default_rng(42)
     p_values = []
     for trial in range(20):
@@ -260,5 +264,5 @@ def test_permutation_pvalue_distribution_is_uniform_under_H0():
     # under H_0
     assert 0.3 < np.median(p_values) < 0.85, (
         f"H_0 median p-value {np.median(p_values):.3f} suspicious; "
-        f"expected ≈ 0.5 within Monte-Carlo tolerance"
+        f"expected ≈ 0.5 (seeded: a code or numpy change moved it)"
     )
