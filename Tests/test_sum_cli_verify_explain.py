@@ -193,3 +193,82 @@ def test_non_explain_path_unchanged(signed_bundle):
     assert payload["ok"] is True
     assert "schema" not in payload  # not the explain shape
     assert "checks" not in payload
+
+
+def _attest(tmp_path, *flags) -> dict:
+    from sum_cli.main import main
+
+    out = io.StringIO()
+    with patch("sys.stdout", out), patch("sys.stdin", io.StringIO("Alice graduated in 2012. Bob owns a dog.")):
+        assert main(["attest", "--extractor=sieve", *flags]) == 0
+    return json.loads(out.getvalue())
+
+
+def test_explain_labels_unsigned_fields_as_the_bundles_claims(tmp_path):
+    """The signature covers canonical_tome|state_integer|timestamp only.
+    axiom_consistency_check and the sum_cli sidecar are unsigned and verify
+    does not re-run them, so explain must not call them provable or
+    certified, even when an intermediary has rewritten them."""
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+    key = tmp_path / "k.pem"
+    key.write_bytes(Ed25519PrivateKey.generate().private_bytes(
+        serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8,
+        serialization.NoEncryption()))
+    bundle = _attest(tmp_path, "--ed25519-key", str(key))
+    bundle["axiom_consistency_check"] = {"consistent": True, "n_predicates_checked": 4242}
+    bundle.setdefault("sum_cli", {})["extractor"] = "sieve"
+    path = tmp_path / "forged.json"
+    path.write_text(json.dumps(bundle))
+    rc, payload, _ = _run_explain(path)
+    assert rc == 0 and payload["checks"]["cryptographic_integrity"]["status"] == "pass"
+    for name in ("axiom_consistency", "extraction_provenance"):
+        check = payload["checks"][name]
+        assert check["epistemic_status"] == "not-asserted", name
+        assert "verify does not re-run it" in check["detail"], name
+    assert payload["checks"]["axiom_consistency"]["status"] == "advisory"
+    assert "safe to cite the issuer" not in payload["recommended_action"]
+    assert "unsigned" in payload["recommended_action"]
+
+
+def test_explain_verified_matches_exit_code_for_unchecked_hmac(tmp_path):
+    """An intact HMAC bundle verified without the key exits 0; its JSON
+    verdict must agree, and must not be worse than the same bundle with
+    the signature stripped."""
+    bundle = _attest(tmp_path, "--signing-key", "s3cret")
+    path = tmp_path / "hm.json"
+    path.write_text(json.dumps(bundle))
+    rc, payload, _ = _run_explain(path)
+    assert rc == 0 and payload["verified"] is True
+    assert payload["checks"]["cryptographic_integrity"]["status"] == "advisory"
+
+
+@pytest.mark.parametrize("cmd,raw", [
+    (["verify"], "42"),
+    (["verify"], "null"),
+    (["verify"], json.dumps("canonical_tome state_integer canonical_format_version")),
+    (["verify"], json.dumps({"canonical_tome": 5, "state_integer": "1", "canonical_format_version": "1.0.0"})),
+    (["verify"], json.dumps({"canonical_tome": "", "state_integer": 1, "canonical_format_version": "1.0.0"})),
+    (["inspect"], "[]"),
+    (["inspect"], json.dumps({"canonical_tome": 5})),
+    (["verify-meaning"], "[]"),
+])
+def test_wrong_json_types_are_malformed_input(tmp_path, cmd, raw):
+    """Valid JSON of the wrong shape is malformed input (exit 2), not a
+    verification failure (exit 1) or a crash."""
+    from sum_cli.main import main
+
+    path = tmp_path / "in.json"
+    path.write_text(raw)
+    if cmd == ["verify-meaning"]:
+        jwks = tmp_path / "jwks.json"
+        jwks.write_text('{"keys": []}')
+        argv = [*cmd, str(path), "--jwks", str(jwks)]
+    else:
+        argv = [*cmd, "--input", str(path)]
+    err = io.StringIO()
+    with patch("sys.stdout", io.StringIO()), patch("sys.stderr", err):
+        rc = main(argv)
+    assert rc == 2, err.getvalue()
+    assert "Error" not in err.getvalue()  # no Python exception name leaks

@@ -52,6 +52,7 @@ warnings.filterwarnings("ignore", category=FutureWarning, module="transformers")
 warnings.filterwarnings("ignore", category=FutureWarning, module="torch")
 
 from sum_cli import __version__
+from sum_cli._shapes import shape_error
 
 
 # ─── Extractor selection (lazy, dependency-aware) ────────────────────
@@ -824,35 +825,30 @@ def _build_verify_explanation(
         f"({axioms} axioms parsed, state matches)"
     )
 
-    # Axiom consistency (z3) — provable when present.
+    # Axiom consistency: unsigned, and verify does not re-run z3.
     consistency_check = bundle.get("axiom_consistency_check") or {}
     if consistency_check.get("consistent") is True:
-        consistency_status = "pass"
-        consistency_detail = (
-            f"z3 consistent, n_predicates_checked="
-            f"{consistency_check.get('n_predicates_checked', 0)}"
-        )
+        consistency_status = "advisory"
+        consistency_detail = f"bundle states z3 consistent, n_predicates_checked={consistency_check.get('n_predicates_checked', 0)} (unsigned; verify does not re-run it)"
     elif consistency_check.get("consistent") is False:
         consistency_status = "advisory"
-        consistency_detail = (
-            f"unsat_core: {consistency_check.get('unsat_core', [])}"
-        )
+        consistency_detail = f"bundle states unsat_core: {consistency_check.get('unsat_core', [])} (unsigned; verify does not re-run it)"
     else:
         consistency_status = "absent"
         consistency_detail = "no axiom_consistency_check in bundle"
 
-    # Extraction provenance — certified layer.
+    # Extraction provenance: from the unsigned sum_cli sidecar, not re-run.
     if extraction.get("verifiable") is True:
         ext_status = "verifiable"
         ext_detail = (
-            f"extractor={extraction.get('extractor')!r} — deterministic "
-            f"re-extraction reproducible from canonical_tome"
+            f"unsigned sidecar states extractor={extraction.get('extractor')!r}, "
+            f"a deterministic extractor; verify does not re-run it"
         )
     elif extraction.get("extractor"):
         ext_status = "advisory"
         ext_detail = (
-            f"extractor={extraction.get('extractor')!r} — non-deterministic; "
-            f"re-extraction not guaranteed to reproduce the axiom set"
+            f"unsigned sidecar states extractor={extraction.get('extractor')!r}, "
+            f"non-deterministic; re-extraction may not reproduce the axiom set"
         )
     else:
         ext_status = "absent"
@@ -888,17 +884,12 @@ def _build_verify_explanation(
     )
 
     # Recommended action — synthesised from the above.
-    if crypto_status == "pass" and ext_status == "verifiable":
+    if crypto_status == "pass":
         recommended = (
-            "safe to reuse as attested deterministic transform; "
-            "safe to cite the issuer + canonical reconstruction; "
-            "NOT safe as factual authority without independent verification"
-        )
-    elif crypto_status == "pass":
-        recommended = (
-            "safe to reuse as attested transform with the recorded "
-            "extractor; NOT safe to assume deterministic re-extraction; "
-            "NOT safe as factual authority"
+            "the signature and canonical reconstruction check out; the "
+            "extractor and consistency fields are unsigned, so treat them "
+            "as the bundle's claims; NOT safe as factual authority without "
+            "independent verification"
         )
     elif crypto_status == "absent":
         recommended = (
@@ -927,7 +918,8 @@ def _build_verify_explanation(
 
     return {
         "schema": "sum.verify_explained.v1",
-        "verified": crypto_status in ("pass", "absent"),
+        # As the exit code: no check failed (an unchecked HMAC is advisory).
+        "verified": crypto_status in ("pass", "absent", "advisory"),
         "checks": {
             "cryptographic_integrity": {
                 "status": crypto_status,
@@ -942,12 +934,12 @@ def _build_verify_explanation(
             "axiom_consistency": {
                 "status": consistency_status,
                 "detail": consistency_detail,
-                "epistemic_status": "provable",
+                "epistemic_status": "not-asserted",
             },
             "extraction_provenance": {
                 "status": ext_status,
                 "detail": ext_detail,
-                "epistemic_status": "certified",
+                "epistemic_status": "not-asserted",
             },
             "source_evidence_coverage": {
                 "status": source_evidence_status,
@@ -996,6 +988,8 @@ def cmd_verify(args: argparse.Namespace) -> int:
         return 2
 
     # Required fields per the Phase 16 ABI.
+    if (rc := shape_error(bundle, "bundle")):
+        return rc
     for field in ("canonical_tome", "state_integer", "canonical_format_version"):
         if field not in bundle:
             print(f"sum: bundle missing required field: {field}", file=sys.stderr)
@@ -1729,6 +1723,8 @@ def cmd_inspect(args: argparse.Namespace) -> int:
     except json.JSONDecodeError as e:
         print(f"sum: bundle is not valid JSON: {e}", file=sys.stderr)
         return 2
+    if (rc := shape_error(b, "inspect")):
+        return rc
 
     # Count axioms by parsing the canonical tome's line structure — same
     # regex verify uses, but we do not build primes or check the state.
@@ -3840,6 +3836,8 @@ def cmd_verify_meaning(args: argparse.Namespace) -> int:
         print(f"sum: cannot read input: {e}", file=sys.stderr)
         return 2
 
+    if (rc := shape_error(receipt, "receipt")):
+        return rc
     schema = receipt.get("schema")
     if schema == PERSPECTIVE_SCHEMA and (losses is None) != (group_ids is None):
         # A perspective replay needs BOTH side-band files; with only one the
@@ -4072,7 +4070,7 @@ def build_parser() -> argparse.ArgumentParser:
         "verify",
         help="Verify a CanonicalBundle: signatures + state-integer reconstruction.",
         description=(
-            "Reads a CanonicalBundle JSON from stdin (or --input/arg) and "
+            "Reads a CanonicalBundle JSON from stdin (or --input FILE) and "
             "verifies, in order: "
             "(1) Ed25519 signature over the payload line, if present. "
             "Self-contained — the public key is embedded in the bundle. "
