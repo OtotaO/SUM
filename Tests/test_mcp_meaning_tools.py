@@ -722,3 +722,19 @@ def test_meaning_diff_result_carries_the_scope_caveat(server, stub_judge):
     out = asyncio.run(fn(source="a claim. another claim.", rendering="a claim."))
     assert out["scope"]
     assert "bound" in out["scope"].lower() or "measurement" in out["scope"].lower()
+
+
+@pytest.mark.parametrize("fixture", [
+    "render_receipts/tampered_signature.json",
+    "render_receipts/tampered_model.json",
+    "transform_receipts/tampered_input_hash.json",
+])
+def test_verify_receipt_classes_render_failures_as_signature(server, fixture):
+    """Render and transform verifiers raise VerifyError, a subclass of
+    JoseEnvelopeError. The classifier used to match exact class names and
+    reported these as internal errors."""
+    fn = _tool(server, "verify_receipt")
+    case = _load(_REPO / "fixtures", fixture)
+    out = asyncio.run(fn(case["receipt"], case["jwks"]))
+    assert out["verified"] is False
+    assert out["error_class"] == "signature", out

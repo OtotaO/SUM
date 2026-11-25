@@ -90,6 +90,34 @@ def test_honest_controlled_flag_replays():
     assert out["controlled"] is True
 
 
+@pytest.mark.parametrize("verify", ["research", "sdk"])
+def test_controlled_without_alpha_or_not_a_bool_fails_replay(verify):
+    """`controlled` replays only as a JSON boolean against a stated alpha.
+    Before: with no alpha nothing checked it, and the string "false" passed
+    as True; the SDK verdict then echoed it as a replayed result."""
+    from sum_verify._meaning import MeaningReceiptReplayError as SdkReplayError
+    from sum_verify._meaning import verify_meaning_risk_receipt as sdk_verify
+    check = verify_meaning_risk_receipt if verify == "research" else sdk_verify
+    replay_error = MeaningReceiptReplayError if verify == "research" else SdkReplayError
+    losses = [0.0] * 80
+    priv, jwks, kid = _keypair()
+    g = certify_meaning_risk(losses, **_SCORER)
+    base = build_payload(
+        guarantee=g, losses=losses, corpus_id="harden-v0",
+        transform="t", loss_definition="d", alpha_target=0.5,
+    )
+    no_alpha = copy.deepcopy(base); no_alpha.pop("alpha_target_micro")
+    as_string = copy.deepcopy(base); as_string["controlled"] = "true"
+    as_int = copy.deepcopy(base); as_int["controlled"] = 1
+    missing = copy.deepcopy(base); missing.pop("controlled")
+    for pl in (no_alpha, as_string, as_int, missing):
+        env = sign_meaning_risk_receipt(pl, private_jwk=priv, kid=kid)
+        with pytest.raises(replay_error, match="controlled"):
+            check(env, jwks, losses=losses)
+    env = sign_meaning_risk_receipt(base, private_jwk=priv, kid=kid)
+    assert check(env, jwks, losses=losses)["controlled"] is True
+
+
 # ── Finding #2 (MED): rounding is the single source of truth ──────────
 
 

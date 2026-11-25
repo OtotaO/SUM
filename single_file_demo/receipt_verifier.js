@@ -106,6 +106,28 @@ function b64urlDecodeToBytes(s) {
   return Uint8Array.from(Buffer.from(s, "base64url"));
 }
 
+// A JWS signature segment and a JWK `x` must be the canonical unpadded
+// base64url of their bytes: the right length, base64url characters only (no
+// "=", as RFC 7515 section 2 requires), and the unused low bits of the last
+// character zero. atob and WebCrypto ignore those bits and padding. The Python
+// verifier applies the same rule (jose_envelope._is_canonical_b64url), so both
+// runtimes give the same verdict on a padded or respelled signature or key.
+const B64URL_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+function isCanonicalB64url(s, nBytes) {
+  const len = Math.ceil((nBytes * 4) / 3);
+  const spareBits = len * 6 - nBytes * 8;
+  return typeof s === "string" && s.length === len && /^[A-Za-z0-9_-]+$/.test(s) &&
+    B64URL_ALPHABET.indexOf(s[len - 1]) % (1 << spareBits) === 0;
+}
+
+// The protected header segment follows the same rule at any length: base64url
+// characters only, no "=", a length that is not 1 mod 4, spare low bits zero.
+function isCanonicalB64urlSegment(s) {
+  if (typeof s !== "string" || !/^[A-Za-z0-9_-]+$/.test(s) || s.length % 4 === 1) return false;
+  const spareBits = [0, 0, 4, 2][s.length % 4];
+  return B64URL_ALPHABET.indexOf(s[s.length - 1]) % (1 << spareBits) === 0;
+}
+
 async function importEd25519Jwk(jwk) {
   // EdDSA / Ed25519 (OKP) JWK import via SubtleCrypto. Supported in
   // Node ≥20, Chrome 113+, Firefox 129+, Safari 17+. Older
@@ -117,6 +139,12 @@ async function importEd25519Jwk(jwk) {
     throw new VerifyError(
       ERROR_CLASSES.MALFORMED_JWKS,
       `expected OKP/Ed25519 JWK, got kty=${jwk.kty} crv=${jwk.crv}`,
+    );
+  }
+  if (!isCanonicalB64url(jwk.x, 32)) {
+    throw new VerifyError(
+      ERROR_CLASSES.MALFORMED_JWKS,
+      "JWK x is not the canonical base64url of a 32-byte Ed25519 public key",
     );
   }
   return crypto.subtle.importKey(
@@ -384,6 +412,9 @@ export async function verifyReceipt(receipt, jwks, revokedKids, opts) {
   // extension surfaces as crit_unknown_extension (the spec's
   // intended fail-closed class), not as signature_invalid.
   let header;
+  if (!isCanonicalB64urlSegment(proto)) {
+    throw new VerifyError(ERROR_CLASSES.MALFORMED_JWS, "protected header is not canonical unpadded base64url");
+  }
   try {
     const headerJson = new TextDecoder().decode(b64urlDecodeToBytes(proto));
     header = JSON.parse(headerJson);
@@ -452,6 +483,12 @@ export async function verifyReceipt(receipt, jwks, revokedKids, opts) {
     signature,
   };
 
+  if (!isCanonicalB64url(signature, 64)) {
+    throw new VerifyError(
+      ERROR_CLASSES.SIGNATURE_INVALID,
+      "signature is not the canonical base64url of a 64-byte Ed25519 signature",
+    );
+  }
   let result;
   try {
     result = await flattenedVerify(flattened, cryptoKey);
