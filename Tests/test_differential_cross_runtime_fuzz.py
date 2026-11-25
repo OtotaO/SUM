@@ -57,8 +57,12 @@ def _keypair(kid="diff-kid"):
     return pr, {"keys": [pu]}, kid
 
 
+_SIGNING_KEYS: dict[str, dict] = {}  # family -> private JWK of the last _setup
+
+
 def _setup(family):
     pr, jwks, kid = _keypair()
+    _SIGNING_KEYS[family] = pr
     if family in ("render", "transform"):
         from sum_engine_internal.infrastructure.jose_envelope import sign_jose_envelope
         from sum_engine_internal.render_receipt import verify_receipt, SUPPORTED_SCHEMA as RS
@@ -242,6 +246,42 @@ def test_cross_runtime_verdict_parity_and_totality(family):
     assert not parity_fail, f"[{family}] accept/reject DIVERGENCE: {parity_fail}"
     assert not new_classdiff, (
         f"[{family}] NEW error-class divergence (not in KNOWN_CLASS_DIVERGENCE): {new_classdiff}")
+
+
+def _resign_with_header(env, family, proto):
+    """Sign env's payload again over a chosen protected-header string, as an
+    issuer would. b64:false, so the signing input is proto + "." + the JCS
+    payload bytes."""
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    from sum_engine_internal.infrastructure.jcs import canonicalize
+
+    d = _SIGNING_KEYS[family]["d"]
+    sk = Ed25519PrivateKey.from_private_bytes(base64.urlsafe_b64decode(d + "=" * (-len(d) % 4)))
+    sig = sk.sign(proto.encode("ascii") + b"." + canonicalize(env["payload"]))
+    out = copy.deepcopy(env)
+    out["jws"] = proto + ".." + base64.urlsafe_b64encode(sig).decode().rstrip("=")
+    return out
+
+
+@pytest.mark.parametrize("family", ["render", "transform", "meaning"])
+def test_issuer_signed_noncanonical_header_rejected_by_both(family):
+    """A header changed after signing fails the signature anyway; one the
+    issuer signed in a padded or respelled spelling is a genuine signature.
+    Both runtimes must give the same verdict on it: reject, malformed_jws.
+    The canonical header re-signed the same way is the control: accepted."""
+    env, jwks, schema, pyverify = _setup(family)
+    proto = env["jws"].split(".")[0]
+    _A = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+    assert len(proto) % 4 in (2, 3)
+    cases = [("control", _resign_with_header(env, family, proto), jwks)]
+    for tag, h in (("padded1", proto + "="), ("padded2", proto + "=="),
+                   ("respelled", proto[:-1] + _A[_A.index(proto[-1]) ^ 1])):
+        cases.append((tag, _resign_with_header(env, family, h), jwks))
+    py = [_py_verdict(pyverify, r, j) for _, r, j in cases]
+    node = _node_verdicts(family, cases, schema)
+    assert py[0] == node[0] == ("ACCEPT", None), (py[0], node[0])
+    for (tag, _, _), pv, nv in zip(cases[1:], py[1:], node[1:]):
+        assert pv == nv == ("REJECT", "malformed_jws"), (family, tag, pv, nv)
 
 
 # Broad garbage battery for JS-side totality: every Node verifier must throw a

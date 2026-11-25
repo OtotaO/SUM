@@ -7,8 +7,10 @@ import { compareTriples } from "../unicode_order";
 //
 //   1. Fetch the public key from /.well-known/jwks.json (RFC 7517).
 //   2. JCS-canonicalise the receipt's `payload` object.
-//   3. Verify with `jose.flattenedVerify` against the JWK whose
-//      `kid` matches the receipt's `kid`.
+//   3. Check that the header, signature and key `x` are canonical
+//      unpadded base64url, then verify with `jose.flattenedVerify`
+//      against the JWK whose `kid` matches the receipt's `kid`
+//      (docs/RENDER_RECEIPT_FORMAT.md §2.1).
 //
 // The receipt attests "this Worker rendered this tome from these
 // triples at these slider positions at this time." It does NOT
@@ -112,7 +114,8 @@ export async function hashTome(tome: string): Promise<string> {
  * Ed25519 over the JCS-canonical bytes of `payload`. Consumers
  * verify by re-canonicalising `payload` from the response they
  * received and calling `jose.flattenedVerify({protected, payload,
- * signature})` against the matching JWK from /.well-known/jwks.json.
+ * signature})` against the matching JWK from /.well-known/jwks.json,
+ * after the canonical base64url check in RENDER_RECEIPT_FORMAT.md §2.1.
  */
 export async function signReceipt(
   payload: ReceiptPayload,

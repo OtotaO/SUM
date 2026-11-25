@@ -231,7 +231,7 @@ The full verifier algorithm is documented in [`docs/RENDER_RECEIPT_FORMAT.md`](R
 1. **Fetch the JWKS** from `https://sum-demo.ototao.workers.dev/.well-known/jwks.json` (or the publisher's equivalent). Pick the JWK whose `kid` matches the receipt's `kid`. Reject if not found.
 2. **Check revocation**: fetch `/.well-known/revoked-kids.json`. If the receipt's `kid` is in `revoked` and the receipt's `signed_at` ≥ `effective_revocation_at`, reject.
 3. **JCS-canonicalise** `receipt.payload`. (Use `canonicalize` in JS, `sum_engine_internal/infrastructure/jcs.py` in Python — both are byte-identical.)
-4. **Verify the JWS** as detached over those canonical bytes. First require the protected header, the signature and the key's `x` to be canonical unpadded base64url (base64url characters only, no `=`, spare low bits of the last character zero; signature 86 characters, `x` 43): `flattenedVerify` and WebCrypto accept respelled or padded forms, and SUM's own verifiers reject them. In Node:
+4. **Verify the JWS** as detached over those canonical bytes. First require the protected header, the signature and the key's `x` to be canonical unpadded base64url (base64url characters only, no `=`, spare low bits of the last character zero; signature 86 characters, `x` 43): `flattenedVerify` accepts a respelled or padded signature, WebCrypto a respelled or padded `x`, and a header the issuer signed in such a spelling verifies; SUM's own verifiers reject all of them. In Node:
    ```js
    import { flattenedVerify } from "jose";
    const [protectedHeader, , signature] = jws.split(".");

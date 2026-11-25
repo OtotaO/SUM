@@ -1,6 +1,6 @@
 {
   "schema": "sum.self_attestation.v1",
-  "issued_at": "2026-11-25T19:42:05Z",
+  "issued_at": "2026-11-25T20:05:52Z",
   "doc_count": 6,
   "docs": [
     {
@@ -14,12 +14,12 @@
     },
     {
       "path": "CHANGELOG.md",
-      "source_uri": "sha256:55b2a0522af4e72c967b877ec66bdd4bce25f4db0a5310966d657ca8fa125258",
+      "source_uri": "sha256:ed9191207625f1f6b8d8a7b862177187b77ab02b91c243a5597a9d14632f7dc2",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "55b2a0522af4e72c967b877ec66bdd4bce25f4db0a5310966d657ca8fa125258",
-      "axiom_count": 647,
-      "state_integer_digits": 12189
+      "markdown_sha256": "ed9191207625f1f6b8d8a7b862177187b77ab02b91c243a5597a9d14632f7dc2",
+      "axiom_count": 646,
+      "state_integer_digits": 12170
     },
     {
       "path": "docs/PROOF_BOUNDARY.md",
@@ -41,19 +41,19 @@
     },
     {
       "path": "docs/RENDER_RECEIPT_FORMAT.md",
-      "source_uri": "sha256:23f1ff002db8a0c6b25809d44644989a721692336d0f1e8257de93c83bf2ba1b",
+      "source_uri": "sha256:3b0487f1dd18382ad28011e00823cd0c905a7fc2a4ad73088d3444006d3dec85",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "23f1ff002db8a0c6b25809d44644989a721692336d0f1e8257de93c83bf2ba1b",
+      "markdown_sha256": "3b0487f1dd18382ad28011e00823cd0c905a7fc2a4ad73088d3444006d3dec85",
       "axiom_count": 64,
       "state_integer_digits": 1205
     },
     {
       "path": "docs/TRANSFORM_RECEIPT_FORMAT.md",
-      "source_uri": "sha256:cb765550e0d0503c474daa05372782040a46bcbf2afae498b8c0361cdf303acf",
+      "source_uri": "sha256:593060e11fa1edfee8dc9ef345302f4b2e30c7a86f423d71c49128c70b9d7085",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "cb765550e0d0503c474daa05372782040a46bcbf2afae498b8c0361cdf303acf",
+      "markdown_sha256": "593060e11fa1edfee8dc9ef345302f4b2e30c7a86f423d71c49128c70b9d7085",
       "axiom_count": 40,
       "state_integer_digits": 755
     }
