@@ -254,6 +254,13 @@ def verify_perspective_risk_receipt(
 
     # ---- replay 2: re-certify group-conditional over the quantised vector ----
     rounded = _quantized(losses)
+    # simultaneous selects the Bonferroni split the bounds replay under; like
+    # the decision flags, only a JSON boolean counts (bool("false") is True).
+    simultaneous = payload.get("simultaneous", False)
+    if not isinstance(simultaneous, bool):
+        raise MeaningReceiptReplayError(
+            f"simultaneous must be a JSON boolean, got {simultaneous!r}"
+        )
     try:
         replay = certify_meaning_risk_by_group(
             rounded, group_ids,
@@ -261,7 +268,7 @@ def verify_perspective_risk_receipt(
             scorer_version=str(payload.get("scorer_version", "")),
             delta=_from_micro(_require_int_micro(payload, "delta_micro")),
             method=_require_str(payload, "method"),
-            simultaneous=bool(payload.get("simultaneous", False)),
+            simultaneous=simultaneous,
         )
     except ValueError as e:
         raise MeaningReceiptReplayError(

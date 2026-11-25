@@ -205,7 +205,9 @@ def test_decision_flags_replay_only_as_booleans_with_an_alpha(keypair):
     no_alpha = copy.deepcopy(base); no_alpha.pop("alpha_target_micro")
     all_str = copy.deepcopy(base); all_str["controls_all"] = str(all_str["controls_all"]).lower()
     group_int = copy.deepcopy(base); group_int["groups"][0]["controlled"] = int(group_int["groups"][0]["controlled"])
-    for pl, msg in ((no_alpha, "without alpha"), (all_str, "controls_all"), (group_int, "controlled")):
+    simul_str = copy.deepcopy(base); simul_str["simultaneous"] = str(simul_str.get("simultaneous", False)).lower()
+    for pl, msg in ((no_alpha, "without alpha"), (all_str, "controls_all"), (group_int, "controlled"),
+                    (simul_str, "simultaneous")):
         env = sign_perspective_risk_receipt(pl, private_jwk=priv, kid=kid)
         with pytest.raises(MeaningReceiptReplayError, match=msg):
             verify_perspective_risk_receipt(env, jwks, losses=_LOSSES, group_ids=_GROUPS)
