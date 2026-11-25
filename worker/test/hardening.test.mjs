@@ -59,6 +59,18 @@ test("SQLite per-IP concurrency rejects without spending denied slots", async ()
   for (let i = 0; i < 3; i++) { const res = await admit(stub); assert.equal(res.status, 200); await release(stub, (await res.json()).lease); }
   assert.equal((await admit(stub)).status, 429);
 });
+test("SQLite full bucket table makes room instead of locking out new IPs", async () => {
+  // 4096 distinct BYO-scope IPs fill the table (throwaway keys cost the
+  // operator nothing). A new IP must still be admitted in either scope, and
+  // the shared operator daily bucket must survive eviction.
+  const stub = budget("full-table");
+  const first = await admit(stub, "f".repeat(64)); assert.equal(first.status, 200); await release(stub, (await first.json()).lease);
+  for (let i = 0; i < 4096; i++) { const res = await admit(stub, i.toString(16).padStart(64, "0"), "llm-axis-byok"); assert.equal(res.status, 200, `fill ${i}`); await release(stub, (await res.json()).lease); }
+  for (const scope of ["llm-axis-demo", "llm-axis-byok"]) { const res = await admit(stub, "e".repeat(63) + (scope === "llm-axis-demo" ? "1" : "2"), scope); assert.equal(res.status, 200, scope); await release(stub, (await res.json()).lease); }
+  // The operator bucket kept its count: 2 demo admissions so far, so 98 more fit and the 99th is refused.
+  for (let i = 0; i < 98; i++) { const res = await admit(stub, "d".repeat(62) + i.toString(16).padStart(2, "0")); assert.equal(res.status, 200, `demo ${i}`); await release(stub, (await res.json()).lease); }
+  assert.equal((await admit(stub, "c".repeat(64))).status, 429);
+});
 test("real Worker dispatches once then serves cache without paid work", async () => {
   const body = { ...RENDER, force_render: false }; let res = await dispatch(request(body));
   assert.equal(res.status, 200); assert.equal((await res.json()).cache_status, "miss"); assert.equal(providerCalls.length, 1);

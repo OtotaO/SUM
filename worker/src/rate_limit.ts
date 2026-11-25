@@ -89,19 +89,30 @@ export async function checkRateLimit(
   const windowIndex = Math.floor(nowSec / policy.window_seconds);
   const key = `rl:${scope}:${ip}:${windowIndex}`;
 
-  const current = await kv.get(key);
-  const count = current ? parseInt(current, 10) : 0;
+  const reset_seconds = (windowIndex + 1) * policy.window_seconds - nowSec;
+  // Best-effort: if KV fails (a daily write quota, the one-write-per-second
+  // per-key limit, an outage), allow the request rather than fail the route.
+  // These are the credential-free deterministic routes; paid calls are
+  // admitted by LLMBudget, which does not depend on KV.
+  let count = 0;
+  try {
+    const current = await kv.get(key);
+    count = current ? parseInt(current, 10) : 0;
+  } catch {
+    return { allowed: true, scope, limit: policy.limit, remaining: policy.limit, reset_seconds };
+  }
 
   const allowed = count < policy.limit;
-  const reset_seconds = (windowIndex + 1) * policy.window_seconds - nowSec;
 
   if (allowed) {
     // Increment with TTL slightly past the window so abandoned buckets
     // self-clean. KV writes are eventually consistent within the region;
     // this is best-effort protection for cheap routes only.
-    await kv.put(key, String(count + 1), {
-      expirationTtl: policy.window_seconds + 60,
-    });
+    try {
+      await kv.put(key, String(count + 1), {
+        expirationTtl: policy.window_seconds + 60,
+      });
+    } catch { /* best-effort: the request is still served */ }
   }
 
   return {

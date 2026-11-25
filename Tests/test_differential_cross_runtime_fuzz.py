@@ -57,8 +57,12 @@ def _keypair(kid="diff-kid"):
     return pr, {"keys": [pu]}, kid
 
 
+_SIGNING_KEYS: dict[str, dict] = {}  # family -> private JWK of the last _setup
+
+
 def _setup(family):
     pr, jwks, kid = _keypair()
+    _SIGNING_KEYS[family] = pr
     if family in ("render", "transform"):
         from sum_engine_internal.infrastructure.jose_envelope import sign_jose_envelope
         from sum_engine_internal.render_receipt import verify_receipt, SUPPORTED_SCHEMA as RS
@@ -145,6 +149,31 @@ def _mutations(env, jwks):
     if len(parts) == 3:
         sig = list(parts[2]); sig[3] = "A" if sig[3] != "A" else "B"
         yield ("jws-sig-corrupt", E(jws=".".join([parts[0], parts[1], "".join(sig)])), jwks)
+        # Same signature bytes, respelled: set an unused low bit of the last
+        # character. Lenient decoders (atob, WebCrypto) read the same bytes;
+        # both runtimes must still give the same verdict.
+        _A = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+        _s = parts[2]
+        yield ("jws-sig-noncanonical-tail",
+               E(jws=".".join([parts[0], parts[1], _s[:-1] + _A[_A.index(_s[-1]) ^ 1]])), jwks)
+        _h = parts[0]
+        if len(_h) % 4 in (2, 3):  # a header with spare bits: respell its tail
+            yield ("jws-header-noncanonical-tail",
+                   E(jws=".".join([_h[:-1] + _A[_A.index(_h[-1]) ^ 1], parts[1], parts[2]])), jwks)
+        _j = copy.deepcopy(jwks)
+        if isinstance(_j, dict) and _j.get("keys") and isinstance(_j["keys"][0].get("x"), str):
+            _x = _j["keys"][0]["x"]
+            _j["keys"][0]["x"] = _x[:-1] + _A[_A.index(_x[-1]) ^ 1]
+            yield ("jwks-x-noncanonical-tail", env, _j)
+        # Padding: RFC 7515 base64url carries none. Both runtimes refuse it,
+        # on all three base64url parts: header, signature and key.
+        for _pad in ("=", "=="):
+            yield (f"jws-header-padded{len(_pad)}", E(jws=".".join([parts[0] + _pad, parts[1], parts[2]])), jwks)
+            yield (f"jws-sig-padded{len(_pad)}", E(jws=".".join([parts[0], parts[1], _s + _pad])), jwks)
+            _j = copy.deepcopy(jwks)
+            if isinstance(_j, dict) and _j.get("keys") and isinstance(_j["keys"][0].get("x"), str):
+                _j["keys"][0]["x"] += _pad
+                yield (f"jwks-x-padded{len(_pad)}", env, _j)
         # Protected header that is VALID JSON but not an object. RFC 7515 §4
         # requires an object; these parse cleanly and then reach `.get`/property
         # access, which is how a raw AttributeError once escaped the declared
@@ -217,6 +246,42 @@ def test_cross_runtime_verdict_parity_and_totality(family):
     assert not parity_fail, f"[{family}] accept/reject DIVERGENCE: {parity_fail}"
     assert not new_classdiff, (
         f"[{family}] NEW error-class divergence (not in KNOWN_CLASS_DIVERGENCE): {new_classdiff}")
+
+
+def _resign_with_header(env, family, proto):
+    """Sign env's payload again over a chosen protected-header string, as an
+    issuer would. b64:false, so the signing input is proto + "." + the JCS
+    payload bytes."""
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    from sum_engine_internal.infrastructure.jcs import canonicalize
+
+    d = _SIGNING_KEYS[family]["d"]
+    sk = Ed25519PrivateKey.from_private_bytes(base64.urlsafe_b64decode(d + "=" * (-len(d) % 4)))
+    sig = sk.sign(proto.encode("ascii") + b"." + canonicalize(env["payload"]))
+    out = copy.deepcopy(env)
+    out["jws"] = proto + ".." + base64.urlsafe_b64encode(sig).decode().rstrip("=")
+    return out
+
+
+@pytest.mark.parametrize("family", ["render", "transform", "meaning"])
+def test_issuer_signed_noncanonical_header_rejected_by_both(family):
+    """A header changed after signing fails the signature anyway; one the
+    issuer signed in a padded or respelled spelling is a genuine signature.
+    Both runtimes must give the same verdict on it: reject, malformed_jws.
+    The canonical header re-signed the same way is the control: accepted."""
+    env, jwks, schema, pyverify = _setup(family)
+    proto = env["jws"].split(".")[0]
+    _A = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+    assert len(proto) % 4 in (2, 3)
+    cases = [("control", _resign_with_header(env, family, proto), jwks)]
+    for tag, h in (("padded1", proto + "="), ("padded2", proto + "=="),
+                   ("respelled", proto[:-1] + _A[_A.index(proto[-1]) ^ 1])):
+        cases.append((tag, _resign_with_header(env, family, h), jwks))
+    py = [_py_verdict(pyverify, r, j) for _, r, j in cases]
+    node = _node_verdicts(family, cases, schema)
+    assert py[0] == node[0] == ("ACCEPT", None), (py[0], node[0])
+    for (tag, _, _), pv, nv in zip(cases[1:], py[1:], node[1:]):
+        assert pv == nv == ("REJECT", "malformed_jws"), (family, tag, pv, nv)
 
 
 # Broad garbage battery for JS-side totality: every Node verifier must throw a

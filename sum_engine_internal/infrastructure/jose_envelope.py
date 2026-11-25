@@ -136,6 +136,37 @@ def _b64url_decode(s: str) -> bytes:
     return base64.urlsafe_b64decode(s + pad)
 
 
+_B64URL_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+
+
+def _is_canonical_b64url(s: object, n_bytes: int) -> bool:
+    """True when ``s`` is the canonical unpadded base64url of ``n_bytes``
+    bytes: the exact length, base64url characters only (no ``=``, as RFC
+    7515 section 2 requires), and the unused low bits of the last
+    character zero. The JS verifiers apply the same rule, so both runtimes
+    give the same verdict on padded or respelled signatures and keys."""
+    length = -(-n_bytes * 4 // 3)
+    spare_bits = length * 6 - n_bytes * 8
+    return (
+        isinstance(s, str)
+        and len(s) == length
+        and all(c in _B64URL_ALPHABET for c in s)
+        and _B64URL_ALPHABET.index(s[-1]) % (1 << spare_bits) == 0
+    )
+
+
+def _is_canonical_b64url_segment(s: object) -> bool:
+    """The protected header follows the same rule at any length: base64url
+    characters only, no ``=``, a length that is not 1 mod 4, spare low
+    bits zero. Mirrors isCanonicalB64urlSegment in the JS verifiers."""
+    if not isinstance(s, str) or not s or len(s) % 4 == 1:
+        return False
+    if not all(c in _B64URL_ALPHABET for c in s):
+        return False
+    spare_bits = (0, 0, 4, 2)[len(s) % 4]
+    return _B64URL_ALPHABET.index(s[-1]) % (1 << spare_bits) == 0
+
+
 def verify_jose_envelope(
     envelope: Any,
     jwks: Any,
@@ -285,6 +316,11 @@ def verify_jose_envelope(
         )
 
     # ---- Step 3.5: crit-extension fail-closed (RFC 7515 §4.1.11) ----
+    if not _is_canonical_b64url_segment(proto):
+        raise JoseEnvelopeError(
+            JoseEnvelopeErrorClass.MALFORMED_JWS,
+            "protected header is not canonical unpadded base64url",
+        )
     try:
         header_raw = _b64url_decode(proto)
         header = json.loads(header_raw.decode("utf-8"))
@@ -341,6 +377,12 @@ def verify_jose_envelope(
         )
 
     # ---- Step 4: import key ----
+    if not _is_canonical_b64url(key_jwk.get("x") if isinstance(key_jwk, dict) else None, 32):
+        raise JoseEnvelopeError(
+            JoseEnvelopeErrorClass.MALFORMED_JWKS,
+            f"JWKS key for kid={kid}: x is not the canonical base64url of a "
+            f"32-byte Ed25519 public key",
+        )
     try:
         key = OKPKey.import_key(key_jwk)
     except Exception as e:  # noqa: BLE001
@@ -350,6 +392,11 @@ def verify_jose_envelope(
         ) from e
 
     # ---- Step 5: cryptographic verify ----
+    if not _is_canonical_b64url(signature, 64):
+        raise JoseEnvelopeError(
+            JoseEnvelopeErrorClass.SIGNATURE_INVALID,
+            "signature is not the canonical base64url of a 64-byte Ed25519 signature",
+        )
     compact = f"{proto}..{signature}"
     try:
         # joserfc emits a SecurityWarning ("EdDSA is deprecated via RFC 9864")

@@ -318,10 +318,18 @@ def verify_meaning_risk_receipt(
         )
 
     # ---- replay step 5: the operational pass/fail decision ----
+    # A flag with no alpha has nothing to replay against, and only a JSON
+    # boolean replays (bool("false") is True).
+    if "alpha_target_micro" not in payload and "controlled" in payload:
+        raise MeaningReceiptReplayError(
+            "controlled is stated without alpha_target_micro, so it cannot "
+            "be replayed"
+        )
     if "alpha_target_micro" in payload:
         alpha = _from_micro(_require_int_micro(payload, "alpha_target_micro"))
-        expected_controlled = replay.controls(alpha)
-        if bool(payload.get("controlled")) != expected_controlled:
+        expected_controlled = bool(replay.controls(alpha))
+        claimed = payload.get("controlled")
+        if not isinstance(claimed, bool) or claimed != expected_controlled:
             raise MeaningReceiptReplayError(
                 f"controlled does not replay: receipt claims "
                 f"controlled={payload.get('controlled')} at "

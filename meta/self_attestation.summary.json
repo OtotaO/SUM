@@ -1,6 +1,6 @@
 {
   "schema": "sum.self_attestation.v1",
-  "issued_at": "2026-11-23T09:02:36Z",
+  "issued_at": "2026-11-25T22:14:44Z",
   "doc_count": 6,
   "docs": [
     {
@@ -14,12 +14,12 @@
     },
     {
       "path": "CHANGELOG.md",
-      "source_uri": "sha256:650910c36ae437c336e1337720cca227f3eeb70d9c5b39cad141c0c9d8622eca",
+      "source_uri": "sha256:b6e23628979cd92a0a1649aa86c56edb4103281b5a411d4075404f32704520ce",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "650910c36ae437c336e1337720cca227f3eeb70d9c5b39cad141c0c9d8622eca",
-      "axiom_count": 645,
-      "state_integer_digits": 12152
+      "markdown_sha256": "b6e23628979cd92a0a1649aa86c56edb4103281b5a411d4075404f32704520ce",
+      "axiom_count": 650,
+      "state_integer_digits": 12245
     },
     {
       "path": "docs/PROOF_BOUNDARY.md",
@@ -41,19 +41,19 @@
     },
     {
       "path": "docs/RENDER_RECEIPT_FORMAT.md",
-      "source_uri": "sha256:66b0f4d8fd60cea21fd3e2f6049fda5c17af9fe68e41329e4655467b3071a2c2",
+      "source_uri": "sha256:3b0487f1dd18382ad28011e00823cd0c905a7fc2a4ad73088d3444006d3dec85",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "66b0f4d8fd60cea21fd3e2f6049fda5c17af9fe68e41329e4655467b3071a2c2",
-      "axiom_count": 63,
-      "state_integer_digits": 1187
+      "markdown_sha256": "3b0487f1dd18382ad28011e00823cd0c905a7fc2a4ad73088d3444006d3dec85",
+      "axiom_count": 64,
+      "state_integer_digits": 1205
     },
     {
       "path": "docs/TRANSFORM_RECEIPT_FORMAT.md",
-      "source_uri": "sha256:733316d84ee46634f0166c9fbf41005733b6999e1038c70e4508f083ff6eba9c",
+      "source_uri": "sha256:593060e11fa1edfee8dc9ef345302f4b2e30c7a86f423d71c49128c70b9d7085",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "733316d84ee46634f0166c9fbf41005733b6999e1038c70e4508f083ff6eba9c",
+      "markdown_sha256": "593060e11fa1edfee8dc9ef345302f4b2e30c7a86f423d71c49128c70b9d7085",
       "axiom_count": 40,
       "state_integer_digits": 755
     }
