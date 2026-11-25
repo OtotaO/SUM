@@ -208,6 +208,20 @@ for (const [scope, limit, window] of [["canonical", 100, 3600], ["qid", 60, 3600
   });
 }
 
+test("best-effort KV limiter serves the request when KV fails", async () => {
+  // A spent daily write quota or a per-key write limit makes KV throw. The
+  // deterministic routes must still be served, not fail with 500.
+  const req = request(RENDER_BODY);
+  for (const kv of [
+    { async get() { throw new Error("KV get failed"); }, async put() {} },
+    { async get() { return null; }, async put() { throw new Error("KV put limit exceeded"); } },
+  ]) {
+    const result = await checkRateLimit(req, kv, "canonical");
+    assert.equal(result.allowed, true);
+    assert.equal(result.limit, 100);
+  }
+});
+
 test("complete ignores BYO headers and dispatches on the operator's demo allowance", async (t) => {
   const calls = mockProvider(t);
   const kv = memoryKV();
