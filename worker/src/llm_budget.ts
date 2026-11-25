@@ -54,7 +54,7 @@ export class LLMBudget {
       // new IP, locking new users out until buckets expired. Now the per-IP
       // buckets closest to expiry make room. That can reset an evicted IP's
       // count early; the operator's spend stays capped by the shared daily
-      // bucket, which is never evicted, and by the lease limits above.
+      // bucket, which is never evicted. The leases above limit calls in flight.
       const buckets = [...sql.exec<{ count: number }>("SELECT count(*) AS count FROM buckets")][0].count;
       if (count === 0 && buckets >= MAX_BUCKETS) {
         sql.exec("DELETE FROM buckets WHERE key IN (SELECT key FROM buckets WHERE key != 'operator' ORDER BY reset ASC LIMIT ?)", buckets - MAX_BUCKETS + 1);
