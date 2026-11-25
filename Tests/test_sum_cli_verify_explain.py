@@ -250,8 +250,10 @@ def test_explain_verified_matches_exit_code_for_unchecked_hmac(tmp_path):
     (["verify"], json.dumps("canonical_tome state_integer canonical_format_version")),
     (["verify"], json.dumps({"canonical_tome": 5, "state_integer": "1", "canonical_format_version": "1.0.0"})),
     (["verify"], json.dumps({"canonical_tome": "", "state_integer": 1, "canonical_format_version": "1.0.0"})),
+    (["verify"], json.dumps({"canonical_tome": "", "state_integer": "1", "canonical_format_version": "1.0.0", "axiom_count": "1"})),
     (["inspect"], "[]"),
     (["inspect"], json.dumps({"canonical_tome": 5})),
+    (["inspect"], json.dumps({"canonical_tome": "The a b c.", "state_integer": 5})),
     (["verify-meaning"], "[]"),
 ])
 def test_wrong_json_types_are_malformed_input(tmp_path, cmd, raw):
@@ -272,3 +274,29 @@ def test_wrong_json_types_are_malformed_input(tmp_path, cmd, raw):
         rc = main(argv)
     assert rc == 2, err.getvalue()
     assert "Error" not in err.getvalue()  # no Python exception name leaks
+
+
+def test_explain_survives_a_wrong_type_unsigned_consistency_field(tmp_path):
+    """axiom_consistency_check is unsigned. A list or string there must not
+    turn --explain into a crash (exit 1, the tampered code) on a bundle plain
+    verify accepts; it is ignored like an absent field."""
+    for bad in (["x"], "yes"):
+        bundle = _attest(tmp_path)
+        bundle["axiom_consistency_check"] = bad
+        path = tmp_path / "cc.json"
+        path.write_text(json.dumps(bundle))
+        rc, payload, err = _run_explain(path)
+        assert rc == 0, err
+        assert payload["checks"]["axiom_consistency"]["status"] == "absent"
+
+
+def test_explain_always_lists_the_unsigned_extractor_gap(tmp_path):
+    """The sidecar's extractor is unsigned, so rewriting llm -> sieve must not
+    remove the extraction gap from known_gaps."""
+    bundle = _attest(tmp_path)
+    bundle.setdefault("sum_cli", {})["extractor"] = "sieve"
+    path = tmp_path / "x.json"
+    path.write_text(json.dumps(bundle))
+    rc, payload, _ = _run_explain(path)
+    assert rc == 0
+    assert any("unsigned sidecar" in g for g in payload["known_gaps"])

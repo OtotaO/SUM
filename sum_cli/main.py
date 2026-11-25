@@ -826,7 +826,7 @@ def _build_verify_explanation(
     )
 
     # Axiom consistency: unsigned, and verify does not re-run z3.
-    consistency_check = bundle.get("axiom_consistency_check") or {}
+    consistency_check = cc if isinstance(cc := bundle.get("axiom_consistency_check"), dict) else {}
     if consistency_check.get("consistent") is True:
         consistency_status = "advisory"
         consistency_detail = f"bundle states z3 consistent, n_predicates_checked={consistency_check.get('n_predicates_checked', 0)} (unsigned; verify does not re-run it)"
@@ -848,7 +848,7 @@ def _build_verify_explanation(
         ext_status = "advisory"
         ext_detail = (
             f"unsigned sidecar states extractor={extraction.get('extractor')!r}, "
-            f"non-deterministic; re-extraction may not reproduce the axiom set"
+            f"non-deterministic, not re-run; re-extraction may not reproduce the axiom set"
         )
     else:
         ext_status = "absent"
@@ -907,10 +907,9 @@ def _build_verify_explanation(
         "Source evidence coverage (no source_chain binding in this bundle)",
         "Semantic preservation (not measured at verify-time; see slider bench)",
     ]
-    if ext_status != "verifiable":
-        known_gaps.append(
-            "Extraction non-determinism (re-running the extractor may differ)"
-        )
+    known_gaps.append(
+        "Extraction provenance is the unsigned sidecar's claim; verify does not re-run the extractor"
+    )
     if crypto_status == "absent":
         known_gaps.append(
             "No cryptographic signature (bundle authorship not attested)"
