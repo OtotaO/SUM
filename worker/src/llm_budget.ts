@@ -10,7 +10,7 @@ export const OPERATOR_DAILY_LIMIT = 100;
 export const MAX_ACTIVE_CALLS = 8;
 export const MAX_ACTIVE_PER_IP = 2;
 export const LEASE_MS = PROVIDER_TIMEOUT_MS + 5_000;
-const MAX_BUCKETS = 4096;
+export const MAX_BUCKETS = 4096;
 
 function unavailable(): Response {
   return Response.json({ error: "generation admission unavailable; retry later or use canonical rendering" }, { status: 503, headers: { "retry-after": "30" } });
@@ -50,8 +50,15 @@ export class LLMBudget {
       const active = [...sql.exec<{ count: number }>("SELECT count(*) AS count FROM leases")][0].count;
       const ipActive = [...sql.exec<{ count: number }>("SELECT count(*) AS count FROM leases WHERE ip = ?", ip)][0].count;
       if (active >= MAX_ACTIVE_CALLS || ipActive >= MAX_ACTIVE_PER_IP) return Response.json({ error: "generation capacity busy; retry shortly" }, { status: 429, headers: { "retry-after": "5" } });
+      // The table is capped to bound storage. A full table used to refuse every
+      // new IP, locking new users out until buckets expired. Now the per-IP
+      // buckets closest to expiry make room. That can reset an evicted IP's
+      // count early; the operator's spend stays capped by the shared daily
+      // bucket, which is never evicted, and by the lease limits above.
       const buckets = [...sql.exec<{ count: number }>("SELECT count(*) AS count FROM buckets")][0].count;
-      if (count === 0 && buckets >= MAX_BUCKETS) return unavailable();
+      if (count === 0 && buckets >= MAX_BUCKETS) {
+        sql.exec("DELETE FROM buckets WHERE key IN (SELECT key FROM buckets WHERE key != 'operator' ORDER BY reset ASC LIMIT ?)", buckets - MAX_BUCKETS + 1);
+      }
       sql.exec("INSERT INTO buckets (key, count, reset) VALUES (?, ?, ?) ON CONFLICT(key) DO UPDATE SET count = excluded.count, reset = excluded.reset", key, count + 1, reset);
       if (scope === "llm-axis-demo") {
         const dailyReset = (Math.floor(now / 86400000) + 1) * 86400000;
