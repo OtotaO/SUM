@@ -157,6 +157,13 @@ def _mutations(env, jwks):
             _x = _j["keys"][0]["x"]
             _j["keys"][0]["x"] = _x[:-1] + _A[_A.index(_x[-1]) ^ 1]
             yield ("jwks-x-noncanonical-tail", env, _j)
+        # Padding: RFC 7515 base64url carries none. Both runtimes refuse it.
+        for _pad in ("=", "=="):
+            yield (f"jws-sig-padded{len(_pad)}", E(jws=".".join([parts[0], parts[1], _s + _pad])), jwks)
+            _j = copy.deepcopy(jwks)
+            if isinstance(_j, dict) and _j.get("keys") and isinstance(_j["keys"][0].get("x"), str):
+                _j["keys"][0]["x"] += _pad
+                yield (f"jwks-x-padded{len(_pad)}", env, _j)
         # Protected header that is VALID JSON but not an object. RFC 7515 §4
         # requires an object; these parse cleanly and then reach `.get`/property
         # access, which is how a raw AttributeError once escaped the declared

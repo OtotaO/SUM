@@ -89,10 +89,11 @@ function b64urlDecodeToBytes(s) {
 }
 
 // A JWS signature segment and a JWK `x` must be the canonical unpadded
-// base64url of their bytes: the right length, base64url characters only, and
-// the unused low bits of the last character zero. atob and WebCrypto ignore
-// those bits, so without this check a respelled signature or key verified here
-// while the Python verifier (strict decoding) rejected it.
+// base64url of their bytes: the right length, base64url characters only (no
+// "=", as RFC 7515 section 2 requires), and the unused low bits of the last
+// character zero. atob and WebCrypto ignore those bits and padding. The Python
+// verifier applies the same rule (jose_envelope._is_canonical_b64url), so both
+// runtimes give the same verdict on a padded or respelled signature or key.
 const B64URL_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 function isCanonicalB64url(s, nBytes) {
   const len = Math.ceil((nBytes * 4) / 3);
