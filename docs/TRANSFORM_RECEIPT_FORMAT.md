@@ -126,6 +126,12 @@ The verifier needs three inputs:
 3. Split receipt.jws on "." → [protected_b64, middle, signature_b64].
    The middle segment MUST be empty (detached payload encoding).
    If middle is non-empty → REJECT (malformed JWS).
+   protected_b64 and signature_b64, and the key's x in jwks, MUST be
+   canonical unpadded base64url (RFC 7515 §2): base64url characters
+   only, no "=", and the unused low bits of the last character zero
+   (signature: 86 characters; x: 43). Otherwise → REJECT. Many decoders
+   (atob, WebCrypto, jose) ignore those bits and padding, so check
+   before decoding; SUM's Python and JS verifiers both do.
 
 4. Construct the flattened JWS object:
    { protected: protected_b64, payload: <JCS bytes from step 2>,

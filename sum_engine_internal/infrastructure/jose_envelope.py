@@ -155,6 +155,18 @@ def _is_canonical_b64url(s: object, n_bytes: int) -> bool:
     )
 
 
+def _is_canonical_b64url_segment(s: object) -> bool:
+    """The protected header follows the same rule at any length: base64url
+    characters only, no ``=``, a length that is not 1 mod 4, spare low
+    bits zero. Mirrors isCanonicalB64urlSegment in the JS verifiers."""
+    if not isinstance(s, str) or not s or len(s) % 4 == 1:
+        return False
+    if not all(c in _B64URL_ALPHABET for c in s):
+        return False
+    spare_bits = (0, 0, 4, 2)[len(s) % 4]
+    return _B64URL_ALPHABET.index(s[-1]) % (1 << spare_bits) == 0
+
+
 def verify_jose_envelope(
     envelope: Any,
     jwks: Any,
@@ -304,6 +316,11 @@ def verify_jose_envelope(
         )
 
     # ---- Step 3.5: crit-extension fail-closed (RFC 7515 §4.1.11) ----
+    if not _is_canonical_b64url_segment(proto):
+        raise JoseEnvelopeError(
+            JoseEnvelopeErrorClass.MALFORMED_JWS,
+            "protected header is not canonical unpadded base64url",
+        )
     try:
         header_raw = _b64url_decode(proto)
         header = json.loads(header_raw.decode("utf-8"))

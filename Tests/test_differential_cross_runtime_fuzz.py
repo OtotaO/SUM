@@ -152,13 +152,19 @@ def _mutations(env, jwks):
         _s = parts[2]
         yield ("jws-sig-noncanonical-tail",
                E(jws=".".join([parts[0], parts[1], _s[:-1] + _A[_A.index(_s[-1]) ^ 1]])), jwks)
+        _h = parts[0]
+        if len(_h) % 4 in (2, 3):  # a header with spare bits: respell its tail
+            yield ("jws-header-noncanonical-tail",
+                   E(jws=".".join([_h[:-1] + _A[_A.index(_h[-1]) ^ 1], parts[1], parts[2]])), jwks)
         _j = copy.deepcopy(jwks)
         if isinstance(_j, dict) and _j.get("keys") and isinstance(_j["keys"][0].get("x"), str):
             _x = _j["keys"][0]["x"]
             _j["keys"][0]["x"] = _x[:-1] + _A[_A.index(_x[-1]) ^ 1]
             yield ("jwks-x-noncanonical-tail", env, _j)
-        # Padding: RFC 7515 base64url carries none. Both runtimes refuse it.
+        # Padding: RFC 7515 base64url carries none. Both runtimes refuse it,
+        # on all three base64url parts: header, signature and key.
         for _pad in ("=", "=="):
+            yield (f"jws-header-padded{len(_pad)}", E(jws=".".join([parts[0] + _pad, parts[1], parts[2]])), jwks)
             yield (f"jws-sig-padded{len(_pad)}", E(jws=".".join([parts[0], parts[1], _s + _pad])), jwks)
             _j = copy.deepcopy(jwks)
             if isinstance(_j, dict) and _j.get("keys") and isinstance(_j["keys"][0].get("x"), str):

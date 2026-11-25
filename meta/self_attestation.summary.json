@@ -1,6 +1,6 @@
 {
   "schema": "sum.self_attestation.v1",
-  "issued_at": "2026-11-25T19:25:33Z",
+  "issued_at": "2026-11-25T19:42:05Z",
   "doc_count": 6,
   "docs": [
     {
@@ -14,10 +14,10 @@
     },
     {
       "path": "CHANGELOG.md",
-      "source_uri": "sha256:d6b7c8a68d577ebe155020d0f783d48892041de9b8310cbc85db84721c89643c",
+      "source_uri": "sha256:55b2a0522af4e72c967b877ec66bdd4bce25f4db0a5310966d657ca8fa125258",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "d6b7c8a68d577ebe155020d0f783d48892041de9b8310cbc85db84721c89643c",
+      "markdown_sha256": "55b2a0522af4e72c967b877ec66bdd4bce25f4db0a5310966d657ca8fa125258",
       "axiom_count": 647,
       "state_integer_digits": 12189
     },
@@ -41,19 +41,19 @@
     },
     {
       "path": "docs/RENDER_RECEIPT_FORMAT.md",
-      "source_uri": "sha256:66b0f4d8fd60cea21fd3e2f6049fda5c17af9fe68e41329e4655467b3071a2c2",
+      "source_uri": "sha256:23f1ff002db8a0c6b25809d44644989a721692336d0f1e8257de93c83bf2ba1b",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "66b0f4d8fd60cea21fd3e2f6049fda5c17af9fe68e41329e4655467b3071a2c2",
-      "axiom_count": 63,
-      "state_integer_digits": 1187
+      "markdown_sha256": "23f1ff002db8a0c6b25809d44644989a721692336d0f1e8257de93c83bf2ba1b",
+      "axiom_count": 64,
+      "state_integer_digits": 1205
     },
     {
       "path": "docs/TRANSFORM_RECEIPT_FORMAT.md",
-      "source_uri": "sha256:733316d84ee46634f0166c9fbf41005733b6999e1038c70e4508f083ff6eba9c",
+      "source_uri": "sha256:cb765550e0d0503c474daa05372782040a46bcbf2afae498b8c0361cdf303acf",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "733316d84ee46634f0166c9fbf41005733b6999e1038c70e4508f083ff6eba9c",
+      "markdown_sha256": "cb765550e0d0503c474daa05372782040a46bcbf2afae498b8c0361cdf303acf",
       "axiom_count": 40,
       "state_integer_digits": 755
     }

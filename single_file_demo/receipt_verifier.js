@@ -120,6 +120,14 @@ function isCanonicalB64url(s, nBytes) {
     B64URL_ALPHABET.indexOf(s[len - 1]) % (1 << spareBits) === 0;
 }
 
+// The protected header segment follows the same rule at any length: base64url
+// characters only, no "=", a length that is not 1 mod 4, spare low bits zero.
+function isCanonicalB64urlSegment(s) {
+  if (typeof s !== "string" || !/^[A-Za-z0-9_-]+$/.test(s) || s.length % 4 === 1) return false;
+  const spareBits = [0, 0, 4, 2][s.length % 4];
+  return B64URL_ALPHABET.indexOf(s[s.length - 1]) % (1 << spareBits) === 0;
+}
+
 async function importEd25519Jwk(jwk) {
   // EdDSA / Ed25519 (OKP) JWK import via SubtleCrypto. Supported in
   // Node ≥20, Chrome 113+, Firefox 129+, Safari 17+. Older
@@ -404,6 +412,9 @@ export async function verifyReceipt(receipt, jwks, revokedKids, opts) {
   // extension surfaces as crit_unknown_extension (the spec's
   // intended fail-closed class), not as signature_invalid.
   let header;
+  if (!isCanonicalB64urlSegment(proto)) {
+    throw new VerifyError(ERROR_CLASSES.MALFORMED_JWS, "protected header is not canonical unpadded base64url");
+  }
   try {
     const headerJson = new TextDecoder().decode(b64urlDecodeToBytes(proto));
     header = JSON.parse(headerJson);
