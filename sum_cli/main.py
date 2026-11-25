@@ -835,7 +835,7 @@ def _build_verify_explanation(
         consistency_detail = f"bundle states unsat_core: {consistency_check.get('unsat_core', [])} (unsigned; verify does not re-run it)"
     else:
         consistency_status = "absent"
-        consistency_detail = "no usable axiom_consistency_check (absent or not an object)"
+        consistency_detail = "no usable axiom_consistency_check (absent, not an object, or no boolean consistent)"
 
     # Extraction provenance: from the unsigned sum_cli sidecar, not re-run.
     if extraction.get("verifiable") is True:

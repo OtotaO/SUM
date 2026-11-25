@@ -318,5 +318,5 @@ def test_verify_help_offers_no_positional_file(capsys):
 
     with pytest.raises(SystemExit):
         main(["verify", "--help"])
-    out = capsys.readouterr().out
+    out = " ".join(capsys.readouterr().out.split())  # argparse wraps to the terminal width
     assert "--input/arg" not in out and "(or --input FILE)" in out
