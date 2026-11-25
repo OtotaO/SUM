@@ -195,12 +195,23 @@ export function loadDir(dir) {
   });
 }
 
+const FLAGS = { check: ['--write-split'], dev: ['--split'], heldout: ['--split', '--out', '--min-recall'] };
+
 function main(argv) {
   const [mode, dir, ...rest] = argv;
-  const flag = k => { const i = rest.indexOf(k); return i >= 0 ? rest[i + 1] : undefined; };
-  const bare = ['--write-split', '--split', '--out', '--min-recall'].find(k => rest.includes(k) && (flag(k) === undefined || flag(k).startsWith('--')));
-  if (bare) { console.error(`${bare} needs a value`); return 2; }
-  if (!['check', 'dev', 'heldout'].includes(mode) || !dir) { console.error('usage: depth_gate.mjs check DIR [--write-split FILE] | dev DIR --split FILE | heldout DIR --split FILE --out FILE --min-recall X'); return 2; }
+  if (!Object.hasOwn(FLAGS, mode) || !dir || dir.startsWith('--')) { console.error('usage: depth_gate.mjs check DIR [--write-split FILE] | dev DIR --split FILE | heldout DIR --split FILE --out FILE --min-recall X'); return 2; }
+  // Every argument after DIR is a flag this mode takes, then its value: given
+  // once, not empty, not another flag. Anything else is refused, so a typo or
+  // --flag=value cannot be skipped over in silence.
+  const given = {};
+  for (let i = 0; i < rest.length; i += 2) {
+    const k = rest[i], v = rest[i + 1];
+    if (!FLAGS[mode].includes(k)) { console.error(`${mode} does not take ${JSON.stringify(k)}`); return 2; }
+    if (Object.hasOwn(given, k)) { console.error(`${k} given twice`); return 2; }
+    if (v === undefined || v === '' || v.startsWith('--')) { console.error(`${k} needs a value`); return 2; }
+    given[k] = v;
+  }
+  const flag = k => given[k];
   const items = loadDir(dir);
   if (items.length !== TEXT_COUNT) { console.error(`found ${items.length} texts, need ${TEXT_COUNT}`); return 2; }
   if (new Set(items.map(x => x.sha256)).size !== items.length) { console.error('two texts have the same bytes'); return 2; }

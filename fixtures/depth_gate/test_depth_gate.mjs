@@ -127,11 +127,26 @@ test('command line: check scores nothing, the split freezes the files, heldout w
   assert.match(check.stdout, /Nothing was scored/);
   assert.doesNotMatch(check.stdout, /kept_marks/);
   assert.equal(run('check', dir, '--write-split', splitFile).status, 3);
-  for (const f of ['--write-split', '--split', '--out', '--min-recall']) {
-    const r = run('check', dir, f);
-    assert.equal(r.status, 2); assert.equal(r.stdout, ''); assert.equal(r.stderr, `${f} needs a value\n`);
+  // Each flag with no value, an empty value or another flag as its value; a
+  // flag twice; a flag the mode does not take; --flag=value. All exit 2 with
+  // nothing on stdout, and check writes no split.
+  const refused = [
+    [['check', dir, '--write-split'], '--write-split needs a value'],
+    [['check', dir, '--write-split', ''], '--write-split needs a value'],
+    [['dev', dir, '--split', '--out'], '--split needs a value'],
+    [['heldout', dir, '--split', splitFile, '--out'], '--out needs a value'],
+    [['heldout', dir, '--split', splitFile, '--out', out, '--min-recall'], '--min-recall needs a value'],
+    [['check', dir, '--write-split', join(dir, 'a.json'), '--write-split', join(dir, 'b.json')], '--write-split given twice'],
+    [['check', dir, '--split', splitFile], 'check does not take "--split"'],
+    [['check', dir, `--write-split=${join(dir, 'c.json')}`], `check does not take ${JSON.stringify(`--write-split=${join(dir, 'c.json')}`)}`],
+    [['check', dir, '--write-splt', join(dir, 'd.json')], 'check does not take "--write-splt"'],
+  ];
+  for (const [args, msg] of refused) {
+    const r = run(...args);
+    assert.equal(r.status, 2, args.join(' ')); assert.equal(r.stdout, ''); assert.equal(r.stderr, `${msg}\n`);
   }
-  assert.equal(run('check', dir, '--write-split', '--split').status, 2);
+  for (const f of ['a.json', 'b.json', 'c.json', 'd.json']) assert.equal(existsSync(join(dir, f)), false);
+  assert.equal(run('check', '--write-split', splitFile).status, 2); // DIR left out
   const frozen = JSON.parse(readFileSync(splitFile, 'utf8'));
   assert.equal(frozen.dev.length, 4);
   assert.equal(frozen.heldout.length, 4);
