@@ -58,8 +58,10 @@ def test_coverage_on_mean_estimation(alpha):
     cov = _trial_coverage(alpha=alpha, n_trials=200, n_per=200)
     # n_trials=200 → SE ≈ √(α(1-α)/200) ≈ 0.02-0.03; ±0.06 is
     # ~2-3σ. The draws are seeded, so this checks one fixed realization
-    # (coverage 0.92 at α=0.10, 0.845 at α=0.20); a failure here is
-    # deterministic and comes from a code change, not chance.
+    # (coverage 0.92 at α=0.10, 0.845 at α=0.20 on numpy 2.2.6).
+    # It is deterministic for a given numpy version: a failure comes from
+    # a code or dependency change, and numpy may change its streams
+    # between versions.
     assert abs(cov - (1 - alpha)) < 0.06, (
         f"empirical coverage {cov:.3f} outside ±0.06 of target {1-alpha:.2f}"
     )
