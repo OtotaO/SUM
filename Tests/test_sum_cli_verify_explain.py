@@ -300,3 +300,23 @@ def test_explain_always_lists_the_unsigned_extractor_gap(tmp_path):
     rc, payload, _ = _run_explain(path)
     assert rc == 0
     assert any("unsigned sidecar" in g for g in payload["known_gaps"])
+
+
+def test_explain_gap_without_a_sidecar_does_not_claim_one(tmp_path):
+    bundle = _attest(tmp_path)
+    bundle.pop("sum_cli", None)
+    path = tmp_path / "nosidecar.json"
+    path.write_text(json.dumps(bundle))
+    rc, payload, _ = _run_explain(path)
+    assert rc == 0
+    assert "No extraction provenance in the bundle" in payload["known_gaps"]
+    assert not any("unsigned sidecar" in g for g in payload["known_gaps"])
+
+
+def test_verify_help_offers_no_positional_file(capsys):
+    from sum_cli.main import main
+
+    with pytest.raises(SystemExit):
+        main(["verify", "--help"])
+    out = capsys.readouterr().out
+    assert "--input/arg" not in out and "(or --input FILE)" in out

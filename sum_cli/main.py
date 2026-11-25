@@ -835,7 +835,7 @@ def _build_verify_explanation(
         consistency_detail = f"bundle states unsat_core: {consistency_check.get('unsat_core', [])} (unsigned; verify does not re-run it)"
     else:
         consistency_status = "absent"
-        consistency_detail = "no axiom_consistency_check in bundle"
+        consistency_detail = "no usable axiom_consistency_check (absent or not an object)"
 
     # Extraction provenance: from the unsigned sum_cli sidecar, not re-run.
     if extraction.get("verifiable") is True:
@@ -908,7 +908,8 @@ def _build_verify_explanation(
         "Semantic preservation (not measured at verify-time; see slider bench)",
     ]
     known_gaps.append(
-        "Extraction provenance is the unsigned sidecar's claim; verify does not re-run the extractor"
+        "No extraction provenance in the bundle" if ext_status == "absent"
+        else "Extraction provenance is the unsigned sidecar's claim; verify does not re-run the extractor"
     )
     if crypto_status == "absent":
         known_gaps.append(
