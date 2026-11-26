@@ -143,6 +143,33 @@ for (const filename of fixtureFiles) {
   }
 }
 
+// A payload value that is not JSON-canonicalizable: a lone surrogate, or a number
+// that JSON reads as Infinity (1e999). Python rejects both as malformed_receipt;
+// this verifier used to let canonicalize throw a plain Error with no errorClass.
+{
+  const fx = JSON.parse(readFileSync(join(FIXTURES_DIR, "positive_control.json"), "utf8"));
+  for (const [name, value] of [["Infinity (1e999)", JSON.parse("1e999")], ["-Infinity", JSON.parse("-1e999")], ["lone surrogate", "a\ud800"]]) {
+    const receipt = structuredClone(fx.receipt);
+    receipt.payload = { ...receipt.payload, extra: value };
+    let outcome;
+    let cls;
+    try {
+      await verifyReceipt(receipt, fx.jwks);
+      outcome = "verify";
+    } catch (e) {
+      outcome = e instanceof VerifyError ? "reject" : `raw ${e && e.name}`;
+      cls = e && e.errorClass;
+    }
+    const ok = outcome === "reject" && cls === "malformed_receipt";
+    console.log(`  ${ok ? "✓" : "✗"} payload ${name} (${outcome}${cls ? ` ${cls}` : ""})`);
+    if (ok) pass++;
+    else {
+      fail++;
+      failures.push({ name: `payload ${name}`, kind: "canonicalization", expected: "reject malformed_receipt", actual: `${outcome} ${cls || ""}` });
+    }
+  }
+}
+
 // Shared instant grammar: the same table the Python verifier test runs.
 {
   const table = JSON.parse(
