@@ -695,7 +695,7 @@ def register_meaning_tools(mcp: Any) -> None:
                 # here so a bad value is a schema error, not an internal one.
                 try:
                     alpha_ok = 0.0 <= float(alpha_target) <= 1.0
-                except (TypeError, ValueError):
+                except (TypeError, ValueError, OverflowError):
                     alpha_ok = False
                 if not alpha_ok:
                     return error_result(

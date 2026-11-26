@@ -265,7 +265,7 @@ def test_perspective_alpha_target_must_lie_in_the_unit_interval():
               transform="t", loss_definition="d")
     for alpha in (0.0, 1.0):  # the bounds are inclusive
         assert build_perspective_payload(**kw, alpha_target=alpha)["alpha_target_micro"] == round(alpha * 1e6)
-    for alpha in (2**60 / 1e6, 1e10, 1.5, -0.1, float("nan"), float("inf")):
+    for alpha in (2**60 / 1e6, 1e10, 1.5, -0.1, float("nan"), float("inf"), 10**400):
         try:
             build_perspective_payload(**kw, alpha_target=alpha)
         except ValueError as exc:

@@ -193,9 +193,9 @@ class TestLedgerListSince:
         "2026-02-30",
     ])
     def test_since_reads_the_same_forms_on_every_python(self, tmp_path, since):
-        """datetime.fromisoformat reads these from Python 3.11 on and refuses
-        them on 3.10, so the same command listed rows on one interpreter and
-        exited 2 on the other. --since now has one grammar: all exit 2."""
+        """Forms outside --since's grammar exit 2 on every Python. Some are
+        read by datetime.fromisoformat from 3.11 on, which is why the parser
+        does not use it; main compared them as text and exited 0."""
         db, _ = _fixed_ledger(tmp_path)
         rc, rows, err = _ledger_list_cli(db, "--since", since)
         assert rc == 2 and rows == [], (since, rc, rows)
@@ -266,6 +266,18 @@ class TestLedgerStats:
         assert stats["provenance_records_total"] == 2
         assert stats["distinct_axiom_keys"] == 2
         assert stats["earliest_timestamp"] is not None
+
+    def test_stats_orders_timestamps_as_instants(self, tmp_path):
+        """13:00-05:00 is 18:00 UTC, later than 17:00Z; the text minimum named
+        it the earliest. An unreadable timestamp is left out, as under --since."""
+        from sum_cli.main import cmd_ledger_stats
+
+        late, early = "2026-11-25T13:00:00-05:00", "2026-11-25T17:00:00+00:00"
+        db, _ = _fixed_ledger(tmp_path, stamps=(late, early, "not a time"))
+        code, out = _capture(cmd_ledger_stats, argparse.Namespace(db=db, pretty=False))
+        stats = json.loads(out)
+        assert code == 0 and stats["provenance_records_total"] == 3
+        assert (stats["earliest_timestamp"], stats["latest_timestamp"]) == (early, late)
 
 
 # ─── 3. sum ledger head ─────────────────────────────────────────────

@@ -273,8 +273,8 @@ def test_build_payload_rejects_n_mismatch(guarantee, losses):
 # alpha_target is a risk level. Unchecked, 2**60 / 1e6 signed
 # alpha_target_micro = 2**60 (the Python verifier accepted that receipt and
 # the JavaScript verifier rejected it), 1e10 signed 10**16, and inf raised
-# OverflowError while quantising.
-_ALPHA_OUT_OF_RANGE = (2**60 / 1e6, 1e10, 1.5, -0.1, float("nan"), float("inf"))
+# OverflowError while quantising. 10**400 is an int too large for a float.
+_ALPHA_OUT_OF_RANGE = (2**60 / 1e6, 1e10, 1.5, -0.1, float("nan"), float("inf"), 10**400)
 
 
 def test_build_payload_alpha_target_must_lie_in_the_unit_interval(guarantee, losses):

@@ -1612,7 +1612,8 @@ def cmd_ledger_stats(args: argparse.Namespace) -> int:
         json.loads(r[0]).get("timestamp", "") for r in ts_rows
         if r[0]
     ]
-    timestamps = [t for t in timestamps if t]
+    from sum_cli._ledger_list import earliest_and_latest
+    earliest, latest = earliest_and_latest(timestamps)
 
     chain_tip = asyncio.run(ledger.get_chain_tip())
     branch_heads = asyncio.run(ledger.load_branch_heads())
@@ -1627,8 +1628,8 @@ def cmd_ledger_stats(args: argparse.Namespace) -> int:
         "db_path": args.db,
         "provenance_records_total": total_prov,
         "distinct_axiom_keys": distinct_axioms,
-        "earliest_timestamp": min(timestamps) if timestamps else None,
-        "latest_timestamp": max(timestamps) if timestamps else None,
+        "earliest_timestamp": earliest,
+        "latest_timestamp": latest,
         "chain_tip_hash": chain_tip,
         "branches": branches,
     }

@@ -595,11 +595,12 @@ def test_mint_meaning_rejects_non_string_scorer_fields(server, keypair):
     assert out["error_class"] == "schema"
 
 
-@pytest.mark.parametrize("alpha", [1e10, 1.5, -0.1, float("inf"), float("nan")])
+@pytest.mark.parametrize("alpha", [1e10, 1.5, -0.1, float("inf"), float("nan"), 10**400])
 def test_mint_meaning_refuses_alpha_target_outside_the_unit_interval(server, keypair, alpha):
     """1e10, 1.5 and -0.1 were signed (1e10 as alpha_target_micro = 10**16),
     and inf and nan came back as internal errors naming only OverflowError or
-    ValueError. Each is now a schema error naming alpha_target."""
+    ValueError. Each is now a schema error naming alpha_target, as is an int
+    too large for a float (10**400)."""
     mint = _tool(server, "mint_meaning_receipt")
     out = asyncio.run(mint(
         private_jwk=keypair, kid="mcp-test-key-1", corpus_id="c", transform="t",

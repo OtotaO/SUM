@@ -128,7 +128,7 @@ def _check_alpha_target(alpha_target: Any) -> None:
         return
     try:
         in_range = 0.0 <= float(alpha_target) <= 1.0
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         in_range = False
     if not in_range:
         raise ValueError(

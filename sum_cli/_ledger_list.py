@@ -1,4 +1,4 @@
-"""Row selection for `sum ledger list`.
+"""Row selection for `sum ledger list`, and timestamp order for `sum ledger stats`.
 
 Kept out of main.py, whose size is frozen (Tests/test_main_py_size_frozen.py).
 
@@ -60,6 +60,24 @@ def _at_or_after(stamp: Any, since: datetime) -> bool:
         return parse_instant(stamp) >= since
     except ValueError:
         return False
+
+
+def earliest_and_latest(stamps: list) -> tuple:
+    """The earliest and latest of the readable timestamps, as stored.
+
+    `sum ledger stats` orders them as instants, as --since does; a timestamp
+    that parse_instant cannot read is left out. (None, None) if none is read.
+    """
+    read = []
+    for stamp in stamps:
+        if isinstance(stamp, str):
+            try:
+                read.append((parse_instant(stamp), stamp))
+            except ValueError:
+                pass
+    if not read:
+        return None, None
+    return min(read, key=lambda r: r[0])[1], max(read, key=lambda r: r[0])[1]
 
 
 def emit_rows(args: argparse.Namespace) -> int:
