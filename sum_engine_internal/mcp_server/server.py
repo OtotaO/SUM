@@ -46,7 +46,6 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
-import math
 import os
 import re
 import time
@@ -56,6 +55,7 @@ from typing import Any
 from mcp.server.fastmcp import FastMCP
 
 from sum_engine_internal.algorithms.syntactic_sieve import SieveUnavailableError
+from sum_engine_internal.mcp_server.args import OptionalText
 from sum_engine_internal.mcp_server.errors import (
     ErrorClass,
     error_result,
@@ -66,8 +66,12 @@ _SUPPORTED_CANONICAL_FORMAT = "1.0.0"
 _SUPPORTED_PRIME_SCHEME = "sha256_64_v1"
 _TOME_LINE_PATTERN = re.compile(r"^The (\S+) (\S+) (.+)\.$")
 
-# Hardening caps. Values picked above any legitimate use case
-# and below any DoS surface.
+# Hardening caps. MAX_TOME_CHARS and MAX_AXIOM_COUNT bound the work, but a
+# bundle near them is still slow: verify rebuilds the state integer from the
+# tome (about 5 s for 40,000 axioms on Python 3.10 and 3.12), and render's
+# tome generation grows with the square of the axiom count (about 14 s for
+# 20,000). Both run in a worker thread, one at a time, so the server keeps
+# answering other calls meanwhile (_HEAVY_SLOT).
 MAX_TEXT_CHARS: int = 200_000           # ~50 pages of dense prose
 MAX_TOME_CHARS: int = 10_000_000        # ~10 MB tome
 MAX_AXIOM_COUNT: int = 100_000          # > the substrate's practical ceiling per PROOF_BOUNDARY §2.2
@@ -89,6 +93,73 @@ NETWORK_ALLOWED: bool = os.environ.get("SUM_MCP_ALLOW_NETWORK") == "1"
 if not NETWORK_ALLOWED:
     os.environ.setdefault("HF_HUB_OFFLINE", "1")
     os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
+
+# One bundle reconstruction (verify, render) at a time, in a worker thread.
+_HEAVY_SLOT = asyncio.Semaphore(1)
+
+
+def _tome_axioms(tome_str: str) -> "list[tuple[str, str, str]] | None":
+    """(subject, predicate, object) for each canonical tome line, or None
+    when there are more than MAX_AXIOM_COUNT. Counted before any prime is
+    minted, so an oversized tome costs one regex pass, not a reconstruction."""
+    triples: list[tuple[str, str, str]] = []
+    for line in tome_str.splitlines():
+        m = _TOME_LINE_PATTERN.match(line.strip())
+        if m:
+            if len(triples) >= MAX_AXIOM_COUNT:
+                return None
+            triples.append((m.group(1), m.group(2), m.group(3)))
+    return triples
+
+
+def _product_of(values) -> int:
+    """The product of values, multiplied in pairwise rounds (balanced, so no
+    single huge operand grows with every factor)."""
+    vals = list(values)
+    while len(vals) > 1:
+        vals = [vals[i] * vals[i + 1] if i + 1 < len(vals) else vals[i]
+                for i in range(0, len(vals), 2)]
+    return vals[0] if vals else 1
+
+
+def _decimal_to_int(text: str) -> int:
+    """int(text). A long run of ASCII digits is converted in balanced halves:
+    before Python 3.12, int() converts a long decimal string in one call whose
+    time grows with the square of its length (3.75 s for 753,000 digits on
+    3.10) and holds the GIL throughout, which stalls the event loop even from
+    a worker thread. Any other spelling goes to int() unchanged."""
+    if len(text) <= 4096 or not (text.isascii() and text.isdigit()):
+        return int(text)
+    powers: dict[int, int] = {}
+
+    def convert(lo: int, hi: int) -> int:
+        if hi - lo <= 4096:
+            return int(text[lo:hi])
+        mid = (lo + hi) // 2
+        if hi - mid not in powers:
+            powers[hi - mid] = 10 ** (hi - mid)
+        return convert(lo, mid) * powers[hi - mid] + convert(mid, hi)
+
+    return convert(0, len(text))
+
+
+def _state_of(triples: "list[tuple[str, str, str]]"):
+    """The state integer for these axioms, and the algebra that minted
+    their primes.
+
+    The state is the LCM of the axioms' primes. get_or_mint_prime returns a
+    prime (nextprime of a hash, advanced past collisions) and gives distinct
+    axioms distinct primes, so that LCM is the product of the distinct
+    values. Folding math.lcm from the left gave the same integer but was
+    quadratic (34 s for 40,000 axioms), and a pairwise LCM held the GIL for
+    seconds at its last step; the balanced product does neither.
+    """
+    from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+
+    algebra = GodelStateAlgebra()
+    distinct = {algebra.get_or_mint_prime(s, p, o) for s, p, o in triples}
+    return _product_of(distinct), algebra
+
 
 # Concurrency guard around the spaCy nlp pipeline. spaCy is
 # documented as not thread-safe under concurrent calls; FastMCP
@@ -201,8 +272,8 @@ def build_server() -> FastMCP:
         text: str,
         extractor: str = "auto",
         branch: str = "main",
-        title: str | None = None,
-        signing_key: str | None = None,
+        title: OptionalText = None,
+        signing_key: OptionalText = None,
     ) -> dict:
         """Extract triples and produce a signed CanonicalBundle.
 
@@ -216,9 +287,10 @@ def build_server() -> FastMCP:
             branch: Bundle branch metadata (default ``"main"``).
             title: Optional bundle title.
             signing_key: Optional shared secret for HMAC-SHA256
-                attestation. Ed25519 is intentionally omitted
-                when no key path is supplied — see
-                docs/MCP_INTEGRATION.md trust-model section.
+                attestation. An empty string is rejected as a schema
+                error rather than read as "no key". Ed25519 is
+                intentionally omitted when no key path is supplied —
+                see docs/MCP_INTEGRATION.md trust-model section.
 
         Returns:
             Success: ``{bundle, axioms, source_uri, extractor}``.
@@ -233,6 +305,15 @@ def build_server() -> FastMCP:
             err = _validate_extractor_choice(extractor)
             if err is not None:
                 return error_result("attest", t0, *err)
+
+            # As in verify: an empty key is a caller error (typically an
+            # unset secret), and signing without it would hand back an
+            # unsigned bundle the caller believes is signed.
+            if signing_key is not None and not signing_key:
+                return error_result(
+                    "attest", t0, ErrorClass.SCHEMA,
+                    "signing_key is empty; pass the HMAC key or omit it",
+                )
 
             chosen = _resolve_extractor(extractor)
 
@@ -294,7 +375,7 @@ def build_server() -> FastMCP:
     # ------------------------------------------------------------------
 
     @mcp.tool()
-    def verify(bundle: dict, signing_key: str | None = None, strict: bool = False) -> dict:
+    async def verify(bundle: dict, signing_key: OptionalText = None, strict: bool = False) -> dict:
         """Verify a CanonicalBundle's signatures and structural integrity.
 
         Args:
@@ -422,31 +503,29 @@ def build_server() -> FastMCP:
                         signatures={"ed25519": ed25519_status, "hmac": hmac_status},
                     )
 
-            from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
+            triples = _tome_axioms(tome_str)
+            if triples is None:
+                return error_result(
+                    "verify", t0, ErrorClass.INPUT_TOO_LARGE,
+                    f"axiom count exceeds {MAX_AXIOM_COUNT}",
+                    ok=False,
+                )
+            axioms = len(triples)
 
-            algebra = GodelStateAlgebra()
-            state = 1
-            axioms = 0
-            for line in tome_str.splitlines():
-                match = _TOME_LINE_PATTERN.match(line.strip())
-                if not match:
-                    continue
-                if axioms >= MAX_AXIOM_COUNT:
-                    return error_result(
-                        "verify", t0, ErrorClass.INPUT_TOO_LARGE,
-                        f"axiom count exceeds {MAX_AXIOM_COUNT}",
-                        ok=False,
-                    )
-                prime = algebra.get_or_mint_prime(match.group(1), match.group(2), match.group(3))
-                state = math.lcm(state, prime)
-                axioms += 1
+            def _rebuild() -> "tuple[int, int | None]":
+                state, _ = _state_of(triples)
+                try:
+                    return state, _decimal_to_int(state_str)
+                except (TypeError, ValueError):
+                    return state, None
 
-            try:
-                claimed_state = int(state_str)
-            except (TypeError, ValueError):
+            async with _HEAVY_SLOT:
+                state, claimed_state = await asyncio.to_thread(_rebuild)
+
+            if claimed_state is None:
                 return error_result(
                     "verify", t0, ErrorClass.SCHEMA,
-                    f"state_integer is not an integer: {state_str!r}",
+                    f"state_integer is not an integer: {state_str[:32]!r}…",
                     ok=False,
                     signatures={"ed25519": ed25519_status, "hmac": hmac_status},
                 )
@@ -464,8 +543,11 @@ def build_server() -> FastMCP:
             if state != claimed_state:
                 return error_result(
                     "verify", t0, ErrorClass.STRUCTURAL,
-                    f"state integer mismatch: claimed {str(claimed_state)[:32]}…, "
-                    f"reconstructed {str(state)[:32]}…",
+                    # The claimed digits come from the bundle; the rebuilt
+                    # state is named by size, since writing a huge integer
+                    # in decimal is quadratic before Python 3.12.
+                    f"state integer mismatch: claimed {state_str[:32]}…, "
+                    f"reconstructed a {state.bit_length()}-bit integer",
                     ok=False,
                     axioms=axioms,
                     signatures={"ed25519": ed25519_status, "hmac": hmac_status},
@@ -632,16 +714,12 @@ def build_server() -> FastMCP:
                     "LLM-conditioned rendering.",
                 )
 
-            triples: list[tuple[str, str, str]] = []
-            for line in tome_str.splitlines():
-                m = _TOME_LINE_PATTERN.match(line.strip())
-                if m:
-                    if len(triples) >= MAX_AXIOM_COUNT:
-                        return error_result(
-                            "render", t0, ErrorClass.INPUT_TOO_LARGE,
-                            f"axiom count exceeds {MAX_AXIOM_COUNT}",
-                        )
-                    triples.append((m.group(1), m.group(2), m.group(3)))
+            triples = _tome_axioms(tome_str)
+            if triples is None:
+                return error_result(
+                    "render", t0, ErrorClass.INPUT_TOO_LARGE,
+                    f"axiom count exceeds {MAX_AXIOM_COUNT}",
+                )
 
             if not triples:
                 return error_result(
@@ -650,16 +728,16 @@ def build_server() -> FastMCP:
                     "axiom lines — nothing to render.",
                 )
 
-            from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
             from sum_engine_internal.ensemble.tome_generator import AutoregressiveTomeGenerator
 
-            algebra = GodelStateAlgebra()
-            state = 1
-            for s, p, o in triples:
-                state = math.lcm(state, algebra.get_or_mint_prime(s, p, o))
+            def _render() -> str:
+                state, algebra = _state_of(triples)
+                return AutoregressiveTomeGenerator(algebra).generate_controlled(
+                    state, sliders=sliders, title=title
+                )
 
-            tome_gen = AutoregressiveTomeGenerator(algebra)
-            tome_text = tome_gen.generate_controlled(state, sliders=sliders, title=title)
+            async with _HEAVY_SLOT:
+                tome_text = await asyncio.to_thread(_render)
 
             return success_result(
                 "render",

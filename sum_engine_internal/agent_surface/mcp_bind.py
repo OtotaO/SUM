@@ -41,6 +41,8 @@ from __future__ import annotations
 
 from typing import Any, Awaitable, Callable
 
+from sum_engine_internal.mcp_server.args import OptionalText
+
 from sum_engine_internal.agent_surface.bind import (
     BindNotFoundError,
     BindRegistry,
@@ -557,8 +559,8 @@ def register_bind_tools(
             text: str,
             extractor: str = "auto",
             branch: str = "main",
-            title: str | None = None,
-            signing_key: str | None = None,
+            title: OptionalText = None,
+            signing_key: OptionalText = None,
         ) -> dict:
             """Bind-aware variant of `attest`. Returns
             `{bind_id, preview: {axiom_count, state_integer_short, ...}}`
@@ -576,7 +578,7 @@ def register_bind_tools(
 
         async def verify_bind(
             bundle: dict | str,
-            signing_key: str | None = None,
+            signing_key: OptionalText = None,
             strict: bool = False,
         ) -> dict:
             """Bind-aware variant of `verify`. The `bundle` argument
