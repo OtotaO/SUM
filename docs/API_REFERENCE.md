@@ -251,13 +251,19 @@ A working browser implementation is in [`single_file_demo/receipt_verifier.js`](
 
 | Status | Trigger | Body |
 |---|---|---|
-| 400 | Body is not valid JSON | `{ "error": "invalid JSON body" }` |
-| 400 | `triples` missing or empty | `{ "error": "missing or empty 'triples' array" }` |
+| 400 | Body missing, not valid JSON or UTF-8, or not an object | `{ "error": "missing JSON body" }`, `{ "error": "invalid JSON body" }` or `{ "error": "body must be an object" }` |
+| 400 | `triples` missing, empty or over 256 items | `{ "error": "triples must contain 1 to 256 items" }` |
+| 400 | A triple that is not three nonempty strings of at most 512 characters | `{ "error": "each triple must contain three nonempty strings of at most 512 characters" }` |
 | 400 | A triple string contains a lone UTF-16 surrogate (not well-formed Unicode) | `{ "error": "triple text must be well-formed Unicode (no lone surrogates)" }` |
-| 400 | `slider_position` missing | `{ "error": "missing 'slider_position'" }` |
-| 400 | Slider axis out of `[0, 1]` | `{ "error": "slider value out of [0, 1]: <value>" }` |
+| 400 | `slider_position` missing or not an object | `{ "error": "sliders must be an object" }` |
+| 400 | A slider axis missing, not a finite number, or outside `[0, 1]` | `{ "error": "<axis> must be a finite number in [0, 1]" }` |
+| 400 | `provider`, `force_render` or `cache_ttl_seconds` invalid | `{ "error": "provider must be anthropic or openai" }`, `{ "error": "force_render must be boolean" }` or `{ "error": "cache_ttl_seconds must be an integer from 60 to 86400" }` |
 | 405 | Non-POST method | `{ "error": "method not allowed; use POST" }` |
-| 502 | LLM upstream failure | `{ "error": "render failed: <provider> <status>: <upstream-body-prefix>", "cache_key": "<key>" }` |
+| 408 | Body not fully received within 10 seconds | `{ "error": "JSON body read timed out" }` |
+| 413 | Body over 192 KiB (196,608 bytes), or triple text over 40,000 characters in all | `{ "error": "JSON body exceeds 196608 bytes" }` or `{ "error": "triple text exceeds 40000 characters" }` |
+| 429 | Canonical path: the per-IP limit of 100 an hour; LLM path: generation admission refused (§2.7) | `{ "error": "rate limit exceeded", ... }`, `{ "error": "shared operator daily budget exhausted", ... }` or `{ "error": "generation capacity busy; retry shortly" }` |
+| 502 | LLM provider failure | `{ "error": "render failed: <reason>", "cache_key": "<key>" }`, where the reason is, for example, `provider returned HTTP 529` |
+| 503 | LLM path with no provider key configured, or with a named `provider` whose key is missing, or generation admission unavailable | `{ "error": "render requires at least one LLM provider configured (ANTHROPIC_API_KEY or OPENAI_API_KEY)" }`, `{ "error": "no credential configured for <provider>" }` or `{ "error": "generation admission unavailable; retry later or use canonical rendering" }` |
 
 A 502 leaves the cache untouched — the next request with the same `(triples, sliders)` will retry.
 
@@ -282,7 +288,7 @@ Content-Type: application/json
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `prompt` | `string` | yes | Non-empty after trim, ≤40 000 chars. |
-| `model` | `string` | no | Provider-specific model tag. Default is `claude-haiku-4-5-20251001` for Anthropic, `gpt-4o-mini` for OpenAI. |
+| `model` | `string` | no | If given, it must be the configured model (by default `claude-haiku-4-5-20251001` for Anthropic, `gpt-4o-mini` for OpenAI); any other value is a 400. |
 
 ### 4.2 Response (200)
 
@@ -294,7 +300,7 @@ Content-Type: application/json
 }
 ```
 
-`source` is the provider that actually answered (Anthropic takes priority if both keys are set). `model` is the model identifier the provider returned (may differ from the `model` you requested if the provider mapped it).
+`source` is the provider that actually answered (Anthropic takes priority if both keys are set). `model` is the configured model the request ran with.
 
 ### 4.3 Errors
 
@@ -305,7 +311,7 @@ Content-Type: application/json
 | 413 | `prompt` over 40 000 UTF-16 code units, or a body over 192 KiB (196,608 bytes) |
 | 429 | Generation admission refused: the per-IP demo allowance, the shared daily budget, or calls in flight |
 | 405 | Non-POST method |
-| 502 | Upstream provider returned non-2xx; body includes the provider name, status, and a 500-char prefix of the upstream response |
+| 502 | Upstream provider failure; the body is `{ "error": "upstream failure: <reason>" }`, where the reason is, for example, `provider returned HTTP 529` or `anthropic: empty completion` |
 | 503 | Neither `ANTHROPIC_API_KEY` nor `OPENAI_API_KEY` is configured (checked after the `prompt` checks above), or generation admission is unavailable. The demo's JS treats any non-2xx as no claims; the local comparison stays usable. |
 
 ---
@@ -328,7 +334,7 @@ Wikidata QID/PID resolver. Takes a list of free-text terms, returns the best Wik
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `terms` | `Array<Term>` | yes | 1–50 entries. |
-| `terms[].text` | `string` | yes | 1 to 200 UTF-16 code units, not trimmed. Missing, empty or longer text is a per-term result, not an error (§5.3). |
+| `terms[].text` | `string` | yes | 1 to 200 UTF-16 code units, not trimmed. Missing, empty or well-formed longer text is a per-term result, not an error; a lone surrogate is a 400 at any length (§5.3). |
 | `terms[].kind` | `"item"` \| `"property"` | no | Default `"item"`. `"property"` searches the P-namespace (predicates). |
 | `terms[].lang` | `string` | no | Default `"en"`. Wikidata language code. |
 

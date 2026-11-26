@@ -4,10 +4,13 @@
 // → RenderResult per worker/src/cache/bin_cache.ts. Cache-first; LLM
 // call only on cache miss. Anthropic and OpenAI are both supported;
 // the render path follows sum_engine_internal.ensemble.slider_renderer
-// .render in shape (same canonical-vs-LLM branch, same quantization
-// rules, same system prompt) but not byte for byte: render_id, the cache
-// key (in general) and the rules for fact order and repeated triples differ (see
-// render/axis_prompts.ts and cache/bin_cache.ts). Provider selection:
+// .render in shape (same quantization rules, same system prompt) but not
+// byte for byte. Python picks the canonical or LLM branch from the raw
+// sliders and the Worker from the quantized ones, so a prompt axis in
+// [0.4, 0.6) other than 0.5 takes Python's LLM path and the Worker's
+// canonical one; render_id, the cache key (in general) and the rules for
+// fact order and repeated triples differ too (see render/axis_prompts.ts
+// and cache/bin_cache.ts). Provider selection:
 //   - body.provider == "openai"    → callOpenAI (requires OPENAI_API_KEY)
 //   - body.provider == "anthropic" → callAnthropic (requires ANTHROPIC_API_KEY)
 //   - body.provider absent         → Anthropic if configured, else OpenAI

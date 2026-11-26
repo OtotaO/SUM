@@ -9,7 +9,10 @@ import { compareUnicodeCodepoints } from "../unicode_order";
 // So for unsorted or repeated triples the two tomes can differ (three
 // triples in the order b, a, c at density 0.67, or a, a, b at 0.5), and with
 // them the tome_hash the Worker signs; with repeats the kept triples, and
-// so triples_hash, can differ too. render_id never matches
+// so triples_hash, can differ too. The branch can differ as well: Python
+// decides canonical or LLM from the raw sliders, the Worker from the
+// quantized ones, so a prompt axis in [0.4, 0.6) other than 0.5 is an LLM
+// render in Python and a canonical one here. render_id never matches
 // (routes/render.ts). Only the Worker signs render receipts.
 
 const SLIDER_BINS_PER_AXIS = 5;

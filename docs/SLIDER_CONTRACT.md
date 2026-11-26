@@ -277,8 +277,8 @@ reliable deployment protection.
 - **TTL:** 24 hours by default (caller-overridable). Worker's KV-backed
   implementation enforces TTL on its side; in-memory cache for tests
   treats process lifetime as TTL.
-- **Eviction:** Worker uses KV's native LRU + TTL. In-memory cache is
-  unbounded (tests must be small).
+- **Eviction:** Worker entries expire by KV TTL; KV does not evict by
+  recency. In-memory cache is unbounded (tests must be small).
 - **Coherence:** cache key is content-addressed. Two callers with
   identical sorted triples + quantized sliders MUST receive
   byte-identical RenderResult. No cache poisoning vector — the key
@@ -472,7 +472,8 @@ its own cryptographic attestation, and every release-state of the
 contract is recorded in the trust-root manifest:
 
 - [`docs/RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) — the
-  receipt every `/api/render` response carries; binds the rendered
+  receipt an `/api/render` response carries when signing is configured;
+  binds the rendered
   tome to the slider position this contract describes. The receipt
   proves the render attestation; this contract proves preservation
   across axes.
