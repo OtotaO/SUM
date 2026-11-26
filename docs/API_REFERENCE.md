@@ -251,7 +251,7 @@ A working browser implementation is in [`single_file_demo/receipt_verifier.js`](
 
 | Status | Trigger | Body |
 |---|---|---|
-| 400 | Body missing, not valid JSON or UTF-8, or not an object | `{ "error": "missing JSON body" }`, `{ "error": "invalid JSON body" }` or `{ "error": "body must be an object" }` |
+| 400 | Body missing, not valid JSON or UTF-8, or not an object | `{ "error": "invalid JSON body" }` or `{ "error": "body must be an object" }` |
 | 400 | `triples` missing, empty or over 256 items | `{ "error": "triples must contain 1 to 256 items" }` |
 | 400 | A triple that is not three nonempty strings of at most 512 characters | `{ "error": "each triple must contain three nonempty strings of at most 512 characters" }` |
 | 400 | A triple string contains a lone UTF-16 surrogate (not well-formed Unicode) | `{ "error": "triple text must be well-formed Unicode (no lone surrogates)" }` |
@@ -377,6 +377,7 @@ Each resolved term has either an `id` (a Wikidata QID like `Q7186` or PID like `
 | 408 | Body not fully received within 10 seconds |
 | 413 | Body over 192 KiB (196,608 bytes) |
 | 413 | More than 50 terms |
+| 429 | The per-IP limit of 60 an hour (scope `qid`) |
 
 Every term is checked before any lookup, so one bad term refuses the whole request. A `kind` or `lang` of `null` means the default (`item`, `en`). A term whose `text` is missing or empty, or well-formed and over 200 UTF-16 code units, is not an error: it comes back with `id: null` and `reason` `empty-text` or `text-too-long` in a 200 response.
 
@@ -518,11 +519,14 @@ content-type: application/json
 
 | Status | When |
 |---|---|
-| `400` | invalid JSON body, missing `input`, or unknown `transform` name |
+| `400` | invalid JSON or UTF-8, a body that is not an object, a missing or unknown `transform` name, or a missing `input` (`input must be an object`) |
+| `400` | a triple that is not three nonempty strings of at most 512 characters, a parameter that is not a finite number in [0, 1], or a malformed `source_chain` record (`invalid source_chain record`) |
 | `400` | a triple, a `source_chain` claim or a `source_uri` containing a lone UTF-16 surrogate (not well-formed Unicode) |
 | `405` | non-`POST` method |
+| `408` | body not fully received within 10 seconds |
+| `413` | body over 192 KiB (196,608 bytes) |
+| `429` | the per-IP limit of 100 an hour (scope `canonical`, the limit for credential-free rendering) |
 | `501` | transform recognised but the requested path is not yet wired on the Worker (e.g. `slider` with an off-centre LLM axis); the error message contains `"not yet wired"`. Use `/api/render` for that case. |
-| `429` | per-IP rate limit (see [§2.7](#27-rate-limiting)) |
 
 ---
 
