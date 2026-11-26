@@ -1933,7 +1933,12 @@ $('download').addEventListener('click', () => {
   URL.revokeObjectURL(a.href);
 });
 
+// Like the packet box: a verdict is about the text it checked, so editing the
+// text clears it, and a slower earlier check never reports over a later one.
+let verifyRevision = 0;
+$('verify-input').addEventListener('input', () => { verifyRevision++; $('verify-result').innerHTML = ''; });
 $('verify').addEventListener('click', async () => {
+  const version = ++verifyRevision;
   const raw = $('verify-input').value.trim();
   const resultEl = $('verify-result');
   if (!raw) { resultEl.innerHTML = ''; return; }
@@ -1947,6 +1952,7 @@ $('verify').addEventListener('click', async () => {
 
   resultEl.textContent = 'verifying…';
   const r = await verifyBundle(bundle);
+  if (version !== verifyRevision) return;
   let html = r.ok
     ? `<span class="good">✓ ${escHtml(r.reason)}</span>`
     : `<span class="bad">✗ ${escHtml(r.reason)}</span>`;
@@ -2022,6 +2028,13 @@ $('verify').addEventListener('click', async () => {
     out.innerHTML = html;
   }
 
+  // A verdict is about the receipt and keys it checked, so editing either box
+  // clears it, and a check that finishes after the boxes changed is dropped.
+  let revision = 0;
+  const textChanged = () => { revision++; out.style.display = "none"; out.innerHTML = ""; };
+  recEl.addEventListener("input", textChanged);
+  jwksEl.addEventListener("input", textChanged);
+
   sampleBtn.addEventListener("click", async () => {
     try {
       const [r, j] = await Promise.all([
@@ -2030,6 +2043,7 @@ $('verify').addEventListener('click', async () => {
       ]);
       recEl.value = r.trim();
       jwksEl.value = j.trim();
+      revision++;
       show("err", "Loaded the BillSum binding-gate golden (CC0). Click <strong>Verify (Stage A)</strong>.");
     } catch (e) {
       show("err", `Could not load sample (the page must be served, not opened as file://): ${esc(e.message)}`);
@@ -2037,6 +2051,7 @@ $('verify').addEventListener('click', async () => {
   });
 
   btn.addEventListener("click", async () => {
+    const version = ++revision;
     let receipt, jwks;
     try {
       receipt = JSON.parse(recEl.value);
@@ -2059,9 +2074,15 @@ $('verify').addEventListener('click', async () => {
     show("err", "Verifying (Stage A)…");
     try {
       const res = await verifier(receipt, jwks);
+      if (version !== revision) return;
       const p = res.payload || {};
-      const bound = typeof p.risk_upper_bound_micro === "number"
-        ? (p.risk_upper_bound_micro / 1e6).toFixed(4) : "n/a";
+      // A meaning receipt's upper bound is shown rounded up from its signed
+      // micro-units, never down, so 645438 shows as 0.6455 (as sum_tui shows
+      // it). Which bound a perspective receipt should show is a separate open
+      // question, so that line is unchanged.
+      const bound = typeof p.risk_upper_bound_micro !== "number" ? "n/a"
+        : schema === MEANING_RISK_SCHEMA ? (Math.ceil(p.risk_upper_bound_micro / 100) / 1e4).toFixed(4)
+        : (p.risk_upper_bound_micro / 1e6).toFixed(4);
       const nc = Array.isArray(p.not_covered) ? p.not_covered.join(", ") : "—";
       const testKey = keyWarning(jwks, res.kid).key_warning
         ? `<div style="margin-top:6px;"><strong>⚠ Published test key.</strong> Its private key is public, ` +
@@ -2079,6 +2100,7 @@ $('verify').addEventListener('click', async () => {
           `<code>python -m sum_verify --losses …</code> (or <code>--demo</code>).</div>`,
       );
     } catch (e) {
+      if (version !== revision) return;
       const cls = e instanceof VerifyError ? e.errorClass : "uncategorized_error";
       show("reject",
         `<div><strong>✗ Verification failed.</strong> error class: <code>${esc(cls)}</code>.</div>` +

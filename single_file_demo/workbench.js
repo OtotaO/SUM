@@ -54,7 +54,35 @@ function selectIn(field, start, end) {
   box.readOnly = true;
   box.focus();
   box.setSelectionRange(start, end);
+  scrollToPassage(box, start);
   box.scrollIntoView({ block: 'center' });
+}
+// Chrome selects a passage without scrolling the box's own text to it, so after a long paste, which leaves
+// the box scrolled to its end, a passage near the top stayed out of sight. A hidden copy of the box, with
+// its font, padding, border, box sizing, wrapping and text width, measures how far down the passage
+// starts, and the box scrolls to put that line near its middle.
+const MIRRORED = ['box-sizing', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
+  'border-top-width', 'border-right-width', 'border-bottom-width', 'border-left-width',
+  'border-top-style', 'border-right-style', 'border-bottom-style', 'border-left-style',
+  'font-family', 'font-size', 'font-style', 'font-variant', 'font-weight', 'font-stretch', 'line-height',
+  'letter-spacing', 'word-spacing', 'tab-size', 'text-indent', 'text-transform'];
+function scrollToPassage(box, start) {
+  const style = window.getComputedStyle(box), mirror = document.createElement('div'), marker = document.createElement('span');
+  for (const name of MIRRORED) mirror.style.setProperty(name, style.getPropertyValue(name));
+  const px = name => parseFloat(style.getPropertyValue(name)) || 0;
+  // The client width leaves out the border and any scrollbar, so the copy's text is exactly as wide as the box's.
+  const width = style.getPropertyValue('box-sizing') === 'border-box'
+    ? box.clientWidth + px('border-left-width') + px('border-right-width')
+    : box.clientWidth - px('padding-left') - px('padding-right');
+  Object.assign(mirror.style, { position: 'absolute', top: '0', left: '-10000px', visibility: 'hidden', overflow: 'hidden',
+    whiteSpace: 'pre-wrap', overflowWrap: 'break-word', width: `${width}px` });
+  mirror.setAttribute('aria-hidden', 'true');
+  marker.textContent = box.value.slice(start) || '.';
+  mirror.append(box.value.slice(0, start), marker);
+  document.body.append(mirror);
+  const top = marker.offsetTop;
+  mirror.remove();
+  box.scrollTop = Math.max(0, top - box.clientHeight / 2);
 }
 for (const field of ['prose', 'rewrite']) {
   const unlock = () => {
@@ -70,6 +98,9 @@ for (const field of ['prose', 'rewrite']) {
     (field === 'prose' ? distillStatus : status)(FOUND_PASSAGE_WARNING);
   });
 }
+// A box's value has each CR LF as LF (HTML line-break normalisation). An opened packet's texts can keep
+// CR LF, so an offset into them moves back one for each CR LF before it.
+const boxOffset = (text, i) => i - (text.slice(0, i).match(/\r\n/g)?.length ?? 0);
 
 function spanCell(span, field) {
   const cell = document.createElement('div');
@@ -77,7 +108,8 @@ function spanCell(span, field) {
   const link = document.createElement('button');
   link.className = 'link-btn';
   link.textContent = `${field === 'prose' ? 'Source' : 'Rewrite'} passage ${span.id.slice(1)}`;
-  link.addEventListener('click', () => selectIn(field, span.start, span.end));
+  const compared = field === 'prose' ? current.source : current.output;
+  link.addEventListener('click', () => selectIn(field, boxOffset(compared, span.start), boxOffset(compared, span.end)));
   const text = document.createElement('p');
   text.textContent = span.text;
   cell.append(link, text);
@@ -96,7 +128,8 @@ function quoteButton(span, field) {
   q.textContent = span.text;
   button.append(q);
   button.title = `Select it in the ${field === 'prose' ? 'original' : 'rewrite'} above`;
-  button.addEventListener('click', () => selectIn(field, span.start, span.end));
+  const compared = field === 'prose' ? current.source : current.output;
+  button.addEventListener('click', () => selectIn(field, boxOffset(compared, span.start), boxOffset(compared, span.end)));
   return button;
 }
 
