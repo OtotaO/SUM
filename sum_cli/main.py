@@ -1578,7 +1578,7 @@ def cmd_ledger_list(args: argparse.Namespace) -> int:
     """Enumerate prov_ids with their linked axiom_keys and evidence spans.
 
     Output: NDJSON (one record per line). --axiom filters to a single
-    axiom_key; --since takes a date or date-time (an ISO 8601 profile) and keeps records
+    axiom_key; --since takes a date or date-time and keeps records
     at or after that instant (no offset means UTC); --limit caps the rows
     that pass both. Filters combine with AND (sum_cli/_ledger_list.py).
     """
