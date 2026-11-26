@@ -377,6 +377,11 @@ _JWK_MEMBERS = {
     "alg-RS256": ({"alg": "RS256"}, False),
     "alg-empty": ({"alg": ""}, False),
     "alg-number": ({"alg": 5}, False),
+    # Not strings, and not printable by JS without help: the message names the
+    # type, so the class stays malformed_jwks instead of an unclassed TypeError.
+    "kty-object": ({"kty": {"toString": 1, "valueOf": 1}}, False),
+    "crv-object": ({"crv": {"toString": 1, "valueOf": 1}}, False),
+    "kty-array": ({"kty": ["OKP"]}, False),
 }
 
 
@@ -558,7 +563,7 @@ KNOWN_VERDICT_DIVERGENCE = {
 
 
 @pytest.mark.parametrize("family", ["render", "transform", "meaning"])
-def test_correctly_signed_headers_get_one_verdict_and_never_signature_invalid(family):
+def test_correctly_signed_headers_get_one_verdict(family):
     """The protected-header rule, applied by our own code in both runtimes
     before the signature check: header segment at most 512 base64url
     characters, strict UTF-8 without a BOM, JSON without NaN or Infinity,
@@ -666,6 +671,29 @@ def test_the_signer_refuses_a_payload_the_verifiers_refuse():
     payload["model"] += "a"
     with pytest.raises(ValueError, match="128000"):
         sign_jose_envelope(payload, private_jwk=pr, kid=kid)
+
+
+def test_the_signer_refuses_a_header_the_verifiers_refuse():
+    """A long kid makes the protected header longer than the verifiers take;
+    the signer refuses it instead of returning a receipt nobody accepts."""
+    from sum_engine_internal.infrastructure.jose_envelope import (
+        MAX_PROTECTED_HEADER_B64_CHARS, sign_jose_envelope, verify_jose_envelope,
+    )
+
+    pr, pub, _ = _keypair()
+    lengths = {}
+    for n in range(300, 360):
+        try:
+            env = sign_jose_envelope({"schema": "sum.test.v1", "a": 1}, private_jwk=pr, kid="k" * n)
+        except ValueError as exc:
+            assert f"the limit is {MAX_PROTECTED_HEADER_B64_CHARS}" in str(exc)
+            lengths[n] = None
+            continue
+        lengths[n] = len(env["jws"].split(".", 1)[0])
+        assert lengths[n] <= MAX_PROTECTED_HEADER_B64_CHARS
+        env["schema"] = "sum.test.v1"
+        verify_jose_envelope(env, {"keys": [dict(pub["keys"][0], kid="k" * n)]}, supported_schema="sum.test.v1")
+    assert any(v is None for v in lengths.values()) and any(v for v in lengths.values())
 
 
 # Broad garbage battery for JS-side totality: every Node verifier must throw a

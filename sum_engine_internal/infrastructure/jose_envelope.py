@@ -753,6 +753,13 @@ def sign_jose_envelope(
             protected, canonical_bytes, key, algorithms=["EdDSA"]
         )
     detached = detach_compact_content(compact)
+    header_chars = len(detached.split(".", 1)[0])
+    if header_chars > MAX_PROTECTED_HEADER_B64_CHARS:
+        # The verifiers refuse it (a long kid makes it so), so do not return it.
+        raise ValueError(
+            f"protected header is {header_chars} base64url characters; "
+            f"the limit is {MAX_PROTECTED_HEADER_B64_CHARS} (shorten the kid)"
+        )
 
     return {
         "kid": kid,

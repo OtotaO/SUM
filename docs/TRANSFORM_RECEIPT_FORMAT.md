@@ -125,7 +125,7 @@ The verifier needs three inputs:
 2. Take receipt.payload (the object, not the string). JCS-canonicalise
    it (RFC 8785). Encode to UTF-8 bytes. This is the detached payload.
    The bytes MUST number at most 128,000; otherwise → REJECT (malformed
-   receipt). SUM's signer refuses a larger payload.
+   receipt). SUM's Python signer, `sign_jose_envelope`, refuses a larger payload.
 
 3. Split receipt.jws on "." → [protected_b64, middle, signature_b64].
    The middle segment MUST be empty (detached payload encoding).

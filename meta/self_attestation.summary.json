@@ -1,6 +1,6 @@
 {
   "schema": "sum.self_attestation.v1",
-  "issued_at": "2026-11-26T20:56:43Z",
+  "issued_at": "2026-11-26T21:36:16Z",
   "doc_count": 6,
   "docs": [
     {
@@ -14,12 +14,12 @@
     },
     {
       "path": "CHANGELOG.md",
-      "source_uri": "sha256:a047712e74ee3eacd701733e62359ad2920552273d759d49627eb09493bddbb5",
+      "source_uri": "sha256:658b475ff021ecd50d5e2d5526efc20213fe66f286ac6a7579eee8e2b2fb93c4",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "a047712e74ee3eacd701733e62359ad2920552273d759d49627eb09493bddbb5",
-      "axiom_count": 674,
-      "state_integer_digits": 12696
+      "markdown_sha256": "658b475ff021ecd50d5e2d5526efc20213fe66f286ac6a7579eee8e2b2fb93c4",
+      "axiom_count": 675,
+      "state_integer_digits": 12715
     },
     {
       "path": "docs/PROOF_BOUNDARY.md",
@@ -41,19 +41,19 @@
     },
     {
       "path": "docs/RENDER_RECEIPT_FORMAT.md",
-      "source_uri": "sha256:ce520acde9007ff6aaab21d22e7a323c2691dfc1b9d894cd1cf88e4196898a07",
+      "source_uri": "sha256:9878d2483f2225cafd18334184f69e26f8165b170845dac5bcfe5996d5e7dd31",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "ce520acde9007ff6aaab21d22e7a323c2691dfc1b9d894cd1cf88e4196898a07",
+      "markdown_sha256": "9878d2483f2225cafd18334184f69e26f8165b170845dac5bcfe5996d5e7dd31",
       "axiom_count": 69,
       "state_integer_digits": 1298
     },
     {
       "path": "docs/TRANSFORM_RECEIPT_FORMAT.md",
-      "source_uri": "sha256:83511680e640cf3fb0957d94c1fef22820f55f55a98ab5de0f25210d8e617aba",
+      "source_uri": "sha256:05d40585f70b7dfa53a31b80ec6493e402de5ec0862f0c847c8f4879e9bfcd0a",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "83511680e640cf3fb0957d94c1fef22820f55f55a98ab5de0f25210d8e617aba",
+      "markdown_sha256": "05d40585f70b7dfa53a31b80ec6493e402de5ec0862f0c847c8f4879e9bfcd0a",
       "axiom_count": 44,
       "state_integer_digits": 830
     }

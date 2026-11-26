@@ -230,7 +230,9 @@ export async function verifyMeaningEnvelope(receipt, jwks, supportedSchema) {
     // malformed_jwks whatever else is wrong with the receipt.
     throw new VerifyError(
       ERROR_CLASSES.MALFORMED_JWKS,
-      `expected OKP/Ed25519 JWK for kid=${kid}, got kty=${key.kty} crv=${key.crv}`,
+      // A member that is not a string is named by its type: an object
+      // whose toString is not callable would throw while being printed.
+      `expected OKP/Ed25519 JWK for kid=${kid}, got kty=${typeof key.kty === "string" ? key.kty : `(${typeof key.kty})`} crv=${typeof key.crv === "string" ? key.crv : `(${typeof key.crv})`}`,
     );
   }
 
