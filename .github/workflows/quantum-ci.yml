@@ -717,3 +717,12 @@ jobs:
     - name: Worker density cross-runtime (subset matches Python byte-for-byte)
       working-directory: worker
       run: npm run test:density
+
+    # Cross-runtime gate for the LLM system prompt. `buildSystemPrompt` must
+    # send the model the same system prompt as Python's `build_system_prompt`,
+    # and tsc cannot see a fragment edited on one side only. The fixture holds
+    # a digest of the Python prompt for each of the 625 quantized slider
+    # combinations; Tests/test_tome_sliders.py fails if it drifts from Python.
+    - name: Worker system prompt cross-runtime (matches Python byte-for-byte)
+      working-directory: worker
+      run: npm run test:prompts

@@ -190,7 +190,7 @@ Field semantics:
 | `wall_clock_ms` | Server-side wall clock for the render (excludes network latency). |
 | `quantized_sliders` | The sliders after binning (each non-density axis snaps to 5 bins). The signed receipt covers these, **not** the original request sliders. |
 | `render_id` | `sha256(cache_key + tome)[:16]`. Stable identifier for this exact (sliders, triples, tome) tuple. |
-| `render_receipt` | **Optional.** Present iff the operator has configured `RENDER_RECEIPT_SIGNING_JWK` + `RENDER_RECEIPT_SIGNING_KID`. Absent for self-hosted deployments without signing keys. The hosted demo always produces this field. |
+| `render_receipt` | **Optional.** Present when the operator has configured `RENDER_RECEIPT_SIGNING_JWK` + `RENDER_RECEIPT_SIGNING_KID` and signing succeeds. Absent for self-hosted deployments without signing keys. If signing fails, the render is returned without this field and is not cached. |
 
 ### 3.3 The render receipt
 
@@ -253,6 +253,7 @@ A working browser implementation is in [`single_file_demo/receipt_verifier.js`](
 |---|---|---|
 | 400 | Body is not valid JSON | `{ "error": "invalid JSON body" }` |
 | 400 | `triples` missing or empty | `{ "error": "missing or empty 'triples' array" }` |
+| 400 | A triple string contains a lone UTF-16 surrogate (not well-formed Unicode) | `{ "error": "triple text must be well-formed Unicode (no lone surrogates)" }` |
 | 400 | `slider_position` missing | `{ "error": "missing 'slider_position'" }` |
 | 400 | Slider axis out of `[0, 1]` | `{ "error": "slider value out of [0, 1]: <value>" }` |
 | 405 | Non-POST method | `{ "error": "method not allowed; use POST" }` |
@@ -324,7 +325,7 @@ Wikidata QID/PID resolver. Takes a list of free-text terms, returns the best Wik
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `terms` | `Array<Term>` | yes | 1–50 entries. |
-| `terms[].text` | `string` | yes | 1–200 chars after trim. |
+| `terms[].text` | `string` | yes | 1 to 200 UTF-16 code units, not trimmed. |
 | `terms[].kind` | `"item"` \| `"property"` | no | Default `"item"`. `"property"` searches the P-namespace (predicates). |
 | `terms[].lang` | `string` | no | Default `"en"`. Wikidata language code. |
 
@@ -358,9 +359,17 @@ Each resolved term has either an `id` (a Wikidata QID like `Q7186` or PID like `
 
 | Status | Trigger |
 |---|---|
-| 400 | Invalid JSON or missing/empty `terms` |
+| 400 | Invalid JSON or UTF-8, a body that is not an object, or missing/empty `terms` |
+| 400 | A term that is not an object (`null`, a string, a number) |
+| 400 | `kind` set, and not `null`, `"item"` or `"property"` |
+| 400 | `lang` set, and neither `null` nor shaped like a language code (2 to 8 letters with optional hyphenated subtags, such as `en` or `zh-hans`) |
+| 400 | `text` contains a lone UTF-16 surrogate (not well-formed Unicode) |
 | 405 | Non-POST method |
+| 408 | Body not fully received within 10 seconds |
+| 413 | Body over 192 KiB (196,608 bytes) |
 | 413 | More than 50 terms |
+
+Every term is checked before any lookup, so one bad term refuses the whole request. A `kind` or `lang` of `null` means the default (`item`, `en`). A term whose `text` is missing, empty or over 200 UTF-16 code units is not an error: it comes back with `id: null` and `reason` `empty-text` or `text-too-long` in a 200 response.
 
 The Worker uses Cloudflare's Cache API (not KV) to memoise resolutions for 30 days. Cache misses or Wikidata transient errors surface as `id: null` with a descriptive `reason`; the request itself still returns 200.
 
@@ -501,6 +510,7 @@ content-type: application/json
 | Status | When |
 |---|---|
 | `400` | invalid JSON body, missing `input`, or unknown `transform` name |
+| `400` | a triple, a `source_chain` claim or a `source_uri` containing a lone UTF-16 surrogate (not well-formed Unicode) |
 | `405` | non-`POST` method |
 | `501` | transform recognised but the requested path is not yet wired on the Worker (e.g. `slider` with an off-centre LLM axis); the error message contains `"not yet wired"`. Use `/api/render` for that case. |
 | `429` | per-IP rate limit (see [§2.7](#27-rate-limiting)) |

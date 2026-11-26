@@ -42,7 +42,7 @@ import { computeSourceChainHash } from "../receipt/source_chain";
 import { getTransform, hasTransform, listTransforms } from "../transforms/_registry";
 import type { TransformEnv } from "../transforms/_base";
 import { checkRateLimit, rateLimitedResponse } from "../rate_limit";
-import { readBoundedJSON, requireObject, validateTriples, validateSliders, RequestError, errorResponse } from "../request_limits";
+import { readBoundedJSON, requireObject, validateTriples, validateSliders, RequestError, errorResponse, isWellFormedText } from "../request_limits";
 
 interface TransformRequest {
   transform?: string;
@@ -98,7 +98,7 @@ export async function handleTransform(
         requireObject(record, "source_chain record");
         requireObject(record.provenance, "provenance");
         const p = record.provenance;
-        if (typeof record.claim !== "string" || record.claim.length > 4096 || typeof p.source_uri !== "string" || p.source_uri.length > 2048 || !Number.isSafeInteger(p.byte_start) || !Number.isSafeInteger(p.byte_end) || (p.byte_start as number) < 0 || (p.byte_end as number) < (p.byte_start as number)) throw new RequestError("invalid source_chain record");
+        if (typeof record.claim !== "string" || record.claim.length > 4096 || typeof p.source_uri !== "string" || p.source_uri.length > 2048 || !Number.isSafeInteger(p.byte_start) || !Number.isSafeInteger(p.byte_end) || (p.byte_start as number) < 0 || (p.byte_end as number) < (p.byte_start as number) || !isWellFormedText(record.claim) || !isWellFormedText(p.source_uri)) throw new RequestError("invalid source_chain record");
       }
     }
     body = value as unknown as TransformRequest;

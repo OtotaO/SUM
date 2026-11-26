@@ -3,9 +3,11 @@
 // POST {triples, slider_position, provider?, force_render?}
 // → RenderResult per worker/src/cache/bin_cache.ts. Cache-first; LLM
 // call only on cache miss. Anthropic and OpenAI are both supported;
-// the render path mirrors sum_engine_internal.ensemble.slider_renderer
-// .render in shape — same cache key, same canonical-vs-LLM branch,
-// same quantization rules. Provider selection:
+// the render path follows sum_engine_internal.ensemble.slider_renderer
+// .render in shape (same canonical-vs-LLM branch, same quantization
+// rules, same system prompt) but not byte for byte: the cache key,
+// render_id, fact order and handling of repeated triples differ (see
+// render/axis_prompts.ts and cache/bin_cache.ts). Provider selection:
 //   - body.provider == "openai"    → callOpenAI (requires OPENAI_API_KEY)
 //   - body.provider == "anthropic" → callAnthropic (requires ANTHROPIC_API_KEY)
 //   - body.provider absent         → Anthropic if configured, else OpenAI
@@ -374,6 +376,7 @@ export async function handleRender(
   // render still returns. Lets the deploy stage roll out without
   // the receipt path being a hard dependency.
   let renderReceipt: unknown = undefined;
+  const signingConfigured = Boolean(env.RENDER_RECEIPT_SIGNING_JWK && env.RENDER_RECEIPT_SIGNING_KID);
   if (env.RENDER_RECEIPT_SIGNING_JWK && env.RENDER_RECEIPT_SIGNING_KID) {
     try {
       const signingJWK: JWK = JSON.parse(env.RENDER_RECEIPT_SIGNING_JWK);
@@ -417,9 +420,11 @@ export async function handleRender(
     render_receipt: renderReceipt,
   };
 
-  // Best-effort cache write.
+  // Best-effort cache write. A result without the receipt the operator
+  // configured is not cached: a hit would replay it receipt-less for up to
+  // the TTL after the signing secret is fixed.
   const ttl = body.cache_ttl_seconds ?? DEFAULT_TTL_SECONDS;
-  await putCached(env, key, result, ttl);
+  if (!signingConfigured || renderReceipt !== undefined) await putCached(env, key, result, ttl);
 
   return json(result);
 }

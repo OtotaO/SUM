@@ -51,12 +51,15 @@
 
 import type { Env } from "../index";
 import { checkRateLimit, rateLimitedResponse } from "../rate_limit";
+import { readBoundedJSON, requireObject, RequestError, errorResponse, isWellFormedText } from "../request_limits";
 
 const WBSEARCH_BASE = "https://www.wikidata.org/w/api.php";
 const USER_AGENT =
   "SUMDemoQIDResolver/0.3.0 (+https://github.com/OtotaO/SUM; hosted-demo-phase-4a)";
 const CACHE_TTL_SECONDS = 30 * 24 * 60 * 60;
 const MAX_TERMS_PER_REQUEST = 50;
+// Wikidata language codes: en, de, zh-hans, be-tarask, nan-latn-pehoeji.
+const LANG_CODE = /^[a-z]{2,8}(-[a-z0-9]{1,12}){0,3}$/i;
 
 interface TermRequest {
   text: string;
@@ -220,26 +223,36 @@ export async function handleQid(
     }
   }
 
-  let body: { terms?: TermRequest[] };
+  // Same bounded reader as the other POST routes. Each term is checked before
+  // any lookup: kind and lang go unencoded into the cache-key URL, and a lone
+  // surrogate in text makes encodeURIComponent throw. Text that is missing,
+  // empty or too long stays a per-term soft failure (reason, HTTP 200).
+  let terms: TermRequest[];
   try {
-    body = (await request.json()) as { terms?: TermRequest[] };
-  } catch {
-    return json({ error: "invalid JSON body" }, 400);
-  }
-
-  const terms = body?.terms;
-  if (!Array.isArray(terms) || terms.length === 0) {
-    return json(
-      { error: "missing or empty 'terms' array (expected [{text,kind?,lang?}, ...])" },
-      400,
-    );
-  }
-  if (terms.length > MAX_TERMS_PER_REQUEST) {
-    return json(
-      { error: `too many terms (max ${MAX_TERMS_PER_REQUEST} per request)` },
-      413,
-    );
-  }
+    const value = await readBoundedJSON(request);
+    requireObject(value);
+    const raw = value.terms;
+    if (!Array.isArray(raw) || raw.length === 0) {
+      throw new RequestError("missing or empty 'terms' array (expected [{text,kind?,lang?}, ...])");
+    }
+    if (raw.length > MAX_TERMS_PER_REQUEST) {
+      throw new RequestError(`too many terms (max ${MAX_TERMS_PER_REQUEST} per request)`, 413);
+    }
+    for (const term of raw) {
+      requireObject(term, "each term");
+      // null means absent, as the ?? defaults in lookupTerm already read it.
+      if (term.kind != null && term.kind !== "item" && term.kind !== "property") {
+        throw new RequestError("term kind must be item or property");
+      }
+      if (term.lang != null && (typeof term.lang !== "string" || !LANG_CODE.test(term.lang))) {
+        throw new RequestError("term lang must be shaped like a language code (2 to 8 letters, optional subtags), such as en or zh-hans");
+      }
+      if (typeof term.text === "string" && !isWellFormedText(term.text)) {
+        throw new RequestError("term text must be well-formed Unicode (no lone surrogates)");
+      }
+    }
+    terms = raw as TermRequest[];
+  } catch (error) { return errorResponse(error); }
 
   // Parallelise the per-term lookups. Each hits Wikidata independently;
   // the cache layer collapses duplicate requests within a colo.

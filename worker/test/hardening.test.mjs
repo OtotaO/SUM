@@ -2,24 +2,30 @@
 import assert from "node:assert/strict";
 import { before, after, test } from "node:test";
 import { register } from "node:module";
+import { generateKeyPairSync } from "node:crypto";
 import { build } from "esbuild";
 import { Miniflare, convertV4MiniflareOptions } from "miniflare";
 register("./ts_resolve.mjs", import.meta.url);
 const { readBoundedJSON, providerJSON, MAX_REQUEST_BYTES } = await import("../src/request_limits.ts");
 const { handleRender } = await import("../src/routes/render.ts");
 const { handleComplete } = await import("../src/routes/complete.ts");
-let mf, namespace;
+let mf, namespace, script;
 const providerCalls = [];
+// Every outbound request, to any host. Only the Anthropic provider is stubbed;
+// any other host (Wikidata, for /api/qid) gets a 599 and nothing leaves the machine.
+const outboundHosts = [];
 const CENTER = { density: 1, length: .5, formality: .5, audience: .5, perspective: .5 };
 const RENDER = { triples: [["SUM", "renders", "text"]], slider_position: { ...CENTER, length: .9 }, force_render: true };
 const OPERATOR = { ANTHROPIC_API_KEY: "synthetic-operator" };
 const request = (body, endpoint = "render") => new Request(`https://sum.invalid/api/${endpoint}`, { method: "POST", headers: { "content-type": "application/json", "cf-connecting-ip": "192.0.2.10" }, body: JSON.stringify(body) });
 before(async () => {
   const built = await build({ entryPoints: ["src/index.ts"], bundle: true, write: false, format: "esm", platform: "browser", target: "es2022" });
-  mf = new Miniflare(convertV4MiniflareOptions({ name: "test-sum", modules: true, script: built.outputFiles[0].text, compatibilityDate: "2026-04-23",
+  script = built.outputFiles[0].text;
+  mf = new Miniflare(convertV4MiniflareOptions({ name: "test-sum", modules: true, script, compatibilityDate: "2026-04-23",
     durableObjects: { LLM_BUDGET: { className: "LLMBudget", useSQLite: true } }, kvNamespaces: ["RENDER_CACHE"], bindings: OPERATOR,
     outboundService: async (req) => {
-      assert.equal(new URL(req.url).hostname, "api.anthropic.com", "unexpected outbound request");
+      const host = new URL(req.url).hostname; outboundHosts.push(host);
+      if (host !== "api.anthropic.com") return new Response("unexpected outbound request", { status: 599 });
       const body = await req.json(); providerCalls.push(body); assert.equal(body.max_tokens, 2048);
       return Response.json({ model: "synthetic-model", content: [{ type: "text", text: "SUM renders text." }] });
     },
@@ -93,13 +99,57 @@ for (const [name, body, endpoint, expected] of [
   ["long prompt", { prompt: "a".repeat(40001) }, "complete", 413],
   ["transform triple shape", { transform: "slider", input: { triples: [["a", 2, "b"]] } }, "transform", 400],
   ["transform axis", { transform: "slider", input: { triples: RENDER.triples }, parameters: { density: null } }, "transform", 400],
-  ["source offsets", { transform: "slider", input: { triples: RENDER.triples }, source_chain: [{ claim: "a", provenance: { source_uri: "local", byte_start: 2, byte_end: 1 } }] }, "transform", 400],
+  ["source offsets", { transform: "slider", input: { triples: RENDER.triples }, parameters: CENTER, source_chain: [{ claim: "a", provenance: { source_uri: "local", byte_start: 2, byte_end: 1 } }] }, "transform", 400],
+  // A lone UTF-16 surrogate has no UTF-8 encoding. Render used to spend a provider call on it; transform threw into a 500.
+  ["lone surrogate in a render triple", { ...RENDER, triples: [["a\ud800", "b", "c"]] }, "render", 400],
+  ["lone surrogate in a transform triple", { transform: "slider", input: { triples: [["a\ud800", "b", "c"]] }, parameters: CENTER }, "transform", 400],
+  ["lone surrogate in a source claim", { transform: "slider", input: { triples: RENDER.triples }, parameters: CENTER, source_chain: [{ claim: "a\ud800", provenance: { source_uri: "local", byte_start: 0, byte_end: 1 } }] }, "transform", 400],
+  ["lone surrogate in a source URI", { transform: "slider", input: { triples: RENDER.triples }, parameters: CENTER, source_chain: [{ claim: "a", provenance: { source_uri: "local:\ud800", byte_start: 0, byte_end: 1 } }] }, "transform", 400],
+  // /api/qid bounds its body like the other routes and checks every term before any Wikidata lookup.
+  ["qid null term", { terms: [null] }, "qid", 400],
+  ["qid term that is not an object", { terms: ["abc"] }, "qid", 400],
+  ["qid body over 192 KiB", { terms: [{ text: "x" }], pad: "a".repeat(200 * 1024) }, "qid", 413],
+  ["qid unknown kind", { terms: [{ text: "x", kind: "bogus" }] }, "qid", 400],
+  ["qid lang that is not a language code", { terms: [{ text: "x", lang: "en/../x" }] }, "qid", 400],
+  ["qid lone surrogate in text", { terms: [{ text: "a\ud800" }] }, "qid", 400],
 ]) {
   test(`${name} rejected before provider dispatch`, async () => {
-    const beforeCalls = providerCalls.length; const response = await dispatch(request(body, endpoint));
-    assert.equal(response.status, expected, await response.text()); assert.equal(providerCalls.length, beforeCalls);
+    const beforeCalls = providerCalls.length, beforeOutbound = outboundHosts.length; const response = await dispatch(request(body, endpoint));
+    assert.equal(response.status, expected, await response.text()); assert.equal(providerCalls.length, beforeCalls); assert.deepEqual(outboundHosts.slice(beforeOutbound), []);
   });
 }
+test("qid term with missing or empty text stays a per-term soft failure", async () => {
+  const beforeOutbound = outboundHosts.length; const response = await dispatch(request({ terms: [{ kind: "item" }, { text: "" }] }, "qid"));
+  assert.equal(response.status, 200);
+  assert.deepEqual((await response.json()).resolved, [{ text: "", id: null, reason: "empty-text" }, { text: "", id: null, reason: "empty-text" }]);
+  assert.deepEqual(outboundHosts.slice(beforeOutbound), []);
+});
+test("qid kind and lang of null still mean the defaults", async () => {
+  const response = await dispatch(request({ terms: [{ text: "x", kind: null, lang: null }] }, "qid"));
+  assert.equal(response.status, 200);
+});
+test("render that lost its receipt to a broken signing secret is not cached", async () => {
+  // A cached receipt-less render would be replayed without a receipt for up to
+  // the TTL after the operator fixes the secret.
+  const options = (jwk) => convertV4MiniflareOptions({ name: "test-sum-signing", modules: true, script, compatibilityDate: "2026-04-23",
+    durableObjects: { LLM_BUDGET: { className: "LLMBudget", useSQLite: true } }, kvNamespaces: ["RENDER_CACHE"],
+    bindings: { RENDER_RECEIPT_SIGNING_JWK: jwk, RENDER_RECEIPT_SIGNING_KID: "test-kid" },
+    outboundService: async (req) => { outboundHosts.push(new URL(req.url).hostname); return new Response("unexpected outbound request", { status: 599 }); } });
+  const signing = new Miniflare(options('{"kty":"OKP","crv":"Ed25519"'));
+  const render = async () => {
+    const res = await signing.dispatchFetch("https://sum.invalid/api/render", { method: "POST", headers: { "content-type": "application/json", "cf-connecting-ip": "192.0.2.10" }, body: JSON.stringify({ triples: RENDER.triples, slider_position: CENTER }) });
+    assert.equal(res.status, 200); return res.json();
+  };
+  try {
+    assert.equal((await render()).render_receipt, undefined, "a truncated signing JWK still signed");
+    const cachedWhileBroken = (await (await signing.getKVNamespace("RENDER_CACHE")).list({ prefix: "render-v2:" })).keys.length;
+    await signing.setOptions(options(JSON.stringify(generateKeyPairSync("ed25519").privateKey.export({ format: "jwk" }))));
+    const fixed = await render();
+    assert.ok(fixed.render_receipt, `no receipt after the fix: cache_status=${fixed.cache_status}, render-v2 keys cached while broken=${cachedWhileBroken}`);
+    assert.equal(cachedWhileBroken, 0); assert.equal(fixed.cache_status, "miss"); assert.equal(fixed.render_receipt.kid, "test-kid");
+    const again = await render(); assert.equal(again.cache_status, "hit"); assert.deepEqual(again.render_receipt, fixed.render_receipt);
+  } finally { await signing.dispose(); }
+});
 for (const endpoint of ["render", "complete"]) {
   test(`${endpoint} fails closed with absent or unavailable admission`, async () => {
     const handler = endpoint === "render" ? handleRender : handleComplete; const body = endpoint === "render" ? RENDER : { prompt: "test" };

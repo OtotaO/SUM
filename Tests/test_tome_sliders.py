@@ -1,6 +1,7 @@
 """Tests for TomeSliders + controlled rendering."""
 from __future__ import annotations
 
+import importlib.util
 import json
 import pathlib
 
@@ -9,7 +10,13 @@ import pytest
 from sum_engine_internal.algorithms.semantic_arithmetic import GodelStateAlgebra
 from sum_engine_internal.ensemble.slider_renderer import _axiom_key
 from sum_engine_internal.ensemble.tome_generator import AutoregressiveTomeGenerator
-from sum_engine_internal.ensemble.tome_sliders import TomeSliders, apply_density
+from sum_engine_internal.ensemble.tome_sliders import (
+    FACT_PRESERVATION_REINFORCEMENT,
+    SLIDER_BINS_PER_AXIS,
+    TomeSliders,
+    apply_density,
+    build_system_prompt,
+)
 
 
 # ─── TomeSliders dataclass ────────────────────────────────────────────
@@ -98,7 +105,9 @@ class TestApplyDensity:
 # ICU `localeCompare` instead of by codepoint, so on these keys the two
 # runtimes kept DIFFERENT triples at the same density, and the surviving
 # subset is what the deterministic tome (hence the signed tome_hash) is
-# built from.
+# built from. These tests pin the kept key subset only, not tome parity
+# with slider_renderer.render, whose tome keeps the input order and every
+# copy of a kept key (see worker/src/render/axis_prompts.ts).
 #
 # This fixture is the shared source of truth. The Node side asserts
 # against the same JSON in worker/test/density_smoke.mjs (`npm run
@@ -147,6 +156,90 @@ class TestDensityCrossRuntimeFixture:
             assert apply_density(keys, case["density"]) == case["expected_kept_keys"], (
                 f"density={case['density']}"
             )
+
+
+# ─── FACT_PRESERVATION_REINFORCEMENT (v0.7 prompt hardening) ──────────
+#
+# build_system_prompt appends the clause when any of the four prompt axes is
+# at or below 0.3 + 1e-6 (the comparison the code makes), whatever density is.
+
+_PROMPT_AXES = ("length", "formality", "audience", "perspective")
+
+
+class TestFactPreservationReinforcement:
+    @pytest.mark.parametrize("axis", _PROMPT_AXES)
+    @pytest.mark.parametrize(
+        ("value", "present"),
+        [
+            (0.0, True),
+            (0.3, True),
+            # Above 0.3, but inside the 1e-6 tolerance of the comparison.
+            (0.30000001, True),
+            (0.35, False),
+            (1.0, False),
+        ],
+    )
+    def test_reinforcement_follows_one_axis(self, axis: str, value: float, present: bool) -> None:
+        prompt = build_system_prompt(TomeSliders(**{axis: value}))
+        assert prompt.count(FACT_PRESERVATION_REINFORCEMENT) == int(present)
+
+    def test_reinforcement_absent_with_every_axis_at_half(self) -> None:
+        sliders = TomeSliders(length=0.5, formality=0.5, audience=0.5, perspective=0.5)
+        assert FACT_PRESERVATION_REINFORCEMENT not in build_system_prompt(sliders)
+
+    def test_reinforcement_ignores_density(self) -> None:
+        assert FACT_PRESERVATION_REINFORCEMENT not in build_system_prompt(TomeSliders(density=0.0))
+
+    def test_reinforcement_appended_once_after_the_fragments(self) -> None:
+        prompt = build_system_prompt(
+            TomeSliders(length=0.0, formality=0.0, audience=0.0, perspective=0.0)
+        )
+        assert prompt.count(FACT_PRESERVATION_REINFORCEMENT) == 1
+        assert prompt.endswith(" " + FACT_PRESERVATION_REINFORCEMENT)
+
+
+# ─── Cross-runtime pin: the Worker's system prompt matches Python's ───
+#
+# worker/test/fixtures/system_prompt_digests.json holds a digest of
+# build_system_prompt for every quantized slider combination, and the Node
+# side checks the Worker's buildSystemPrompt against it in
+# worker/test/prompt_smoke.mjs (`npm run test:prompts`, wired into
+# quantum-ci.yml). This test holds the fixture to Python: if it goes red,
+# regenerate with worker/test/generate_prompt_fixture.py AND rerun the Node
+# check.
+
+_PROMPT_FIXTURE_GENERATOR = (
+    pathlib.Path(__file__).resolve().parents[1]
+    / "worker"
+    / "test"
+    / "generate_prompt_fixture.py"
+)
+
+
+def _prompt_fixture_generator():
+    spec = importlib.util.spec_from_file_location(
+        "generate_prompt_fixture", _PROMPT_FIXTURE_GENERATOR
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class TestSystemPromptCrossRuntimeFixture:
+    def test_committed_fixture_matches_python(self) -> None:
+        gen = _prompt_fixture_generator()
+        assert gen.serialize(gen.build()) == gen.OUT_PATH.read_text(encoding="utf-8"), (
+            "regenerate with python worker/test/generate_prompt_fixture.py, "
+            "then run npm run test:prompts in worker/"
+        )
+
+    def test_fixture_covers_every_quantized_combination(self) -> None:
+        doc = _prompt_fixture_generator().build()
+        assert doc["bin_centres"] == [0.1, 0.3, 0.5, 0.7, 0.9]
+        assert len(doc["rows"]) == SLIDER_BINS_PER_AXIS ** len(doc["axes"]) == 625
+        # Every combination gives a different prompt, so a wrong row cannot hide.
+        assert len({row[-1] for row in doc["rows"]}) == 625
 
 
 # ─── Integration: generate_controlled on AutoregressiveTomeGenerator ──

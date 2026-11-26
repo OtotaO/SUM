@@ -1,14 +1,9 @@
 import { compareTriples } from "../unicode_order";
 // Bin-quantized KV cache for slider renders.
 //
-// Mirrors the contract of sum_engine_internal.ensemble.slider_renderer.
-// SliderCache (Python protocol). Two backends compatible at the key
-// level: this Worker-side KV-backed implementation, and the Python
-// in-memory implementation used by tests. Same key derivation; same
-// stored value shape; cache-coherence between them is guaranteed by
-// the content-addressed key.
-//
-// SCAFFOLD STATE: type contracts only. Logic ships in EXECUTE.
+// Modelled on sum_engine_internal.ensemble.slider_renderer.SliderCache
+// (Python protocol), but Worker-only: nothing shares a cache across the
+// two runtimes, and the keys are not compatible (see deriveCacheKey).
 
 import type { Env } from "../index";
 
@@ -46,21 +41,14 @@ export interface RenderResult {
 // ─── Cache contract ───────────────────────────────────────────────
 
 /**
- * Cache key derivation. Intended to match
- * sum_engine_internal.ensemble.slider_renderer.cache_key byte-for-byte
- * so a Python-rendered RenderResult can be served by the Worker-side
- * cache and vice versa.
- *
- * Coherence status:
- *   ✓ Triple sort order matches (lex on tuples).
- *   ✓ Outer key order matches (alphabetical: "sliders" then "triples").
- *   ✓ Inner slider keys match (alphabetical).
- *   ✗ Floating-point repr: Python emits `1.0`, JS emits `1`. STATE 4.B
- *     deliverable — when the Worker renderer ships and actually shares
- *     the cache with Python, every slider value must be normalised to
- *     a fixed-precision string representation on both sides. Until
- *     then the Worker handler returns 501 on cache miss, so this gap
- *     is observable but not load-bearing.
+ * Cache key derivation: sha256(JSON.stringify({sliders, triples}))[:32]
+ * over the code-point-sorted input triples. Same shape as
+ * sum_engine_internal.ensemble.slider_renderer.cache_key but NOT the same
+ * bytes in general: JSON.stringify writes density 1 as `1` (Python `1.0`),
+ * 1e-5 as `0.00001` (Python `1e-05`) and non-ASCII text raw (Python escapes
+ * it). routes/render.ts stores the render in KV under
+ * `render-v2:<key>:<provider>`, where <provider> is `anthropic` or `openai`
+ * on the LLM path (a cache hit there keeps it) and `canonical` on the canonical path.
  */
 export async function deriveCacheKey(
   triples: Array<[string, string, string]>,

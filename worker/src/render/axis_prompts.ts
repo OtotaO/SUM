@@ -1,9 +1,14 @@
 import { compareUnicodeCodepoints } from "../unicode_order";
 // TypeScript port of sum_engine_internal/ensemble/tome_sliders.py's
-// per-axis prompt fragments + build_system_prompt. Keep byte-for-byte
-// equivalent to the Python so a Python-rendered tome and a Worker-
-// rendered tome from the same (triples, sliders) input are
-// indistinguishable to a downstream verifier.
+// per-axis prompt fragments + build_system_prompt. Keep the system prompt
+// byte-for-byte equal to the Python one. The rest of a render is NOT the
+// same as slider_renderer.render: routes/render.ts builds the canonical
+// tome and the LLM user prompt from applyDensity's code-point-sorted list
+// and keeps exactly floor(N * density) entries, so each copy of a repeated
+// triple counts. Python keeps the input order and every copy of a kept key.
+// For unsorted or repeated triples the two runtimes sign different
+// tome_hash (and, with repeats, triples_hash) values, and render_id never
+// matches (routes/render.ts).
 
 const SLIDER_BINS_PER_AXIS = 5;
 

@@ -62,6 +62,16 @@ export function requireObject(value: unknown, name = "body"): asserts value is R
   if (value === null || typeof value !== "object" || Array.isArray(value)) throw new RequestError(`${name} must be an object`);
 }
 
+// A lone UTF-16 surrogate has no UTF-8 encoding: canonicalize() and
+// encodeURIComponent() throw on it, and Python's encoder refuses it too. It is
+// bad client input, so routes refuse it with 400 before any hashing, signing,
+// caching or provider call. (\p{Cs} matches only unpaired surrogates under the
+// u flag; isWellFormed() is ES2024 and outside tsconfig's ES2022 lib.)
+const LONE_SURROGATE = /\p{Cs}/u;
+export function isWellFormedText(value: string): boolean {
+  return !LONE_SURROGATE.test(value);
+}
+
 export function validateTriples(value: unknown): asserts value is Array<[string, string, string]> {
   if (!Array.isArray(value) || value.length === 0 || value.length > MAX_TRIPLES) throw new RequestError(`triples must contain 1 to ${MAX_TRIPLES} items`);
   let characters = 0;
@@ -69,6 +79,7 @@ export function validateTriples(value: unknown): asserts value is Array<[string,
     if (!Array.isArray(triple) || triple.length !== 3 || triple.some(part => typeof part !== "string" || !part.trim() || part.length > MAX_TRIPLE_PART_CHARS)) {
       throw new RequestError(`each triple must contain three nonempty strings of at most ${MAX_TRIPLE_PART_CHARS} characters`);
     }
+    if (!triple.every(isWellFormedText)) throw new RequestError("triple text must be well-formed Unicode (no lone surrogates)");
     characters += triple.reduce((n: number, part: string) => n + part.length, 0);
   }
   if (characters > MAX_PROMPT_CHARS) throw new RequestError(`triple text exceeds ${MAX_PROMPT_CHARS} characters`, 413);

@@ -97,9 +97,10 @@ RENDER_RECEIPT_PUBLIC_JWKS = '{"keys":[{"crv":"Ed25519","kty":"OKP","x":"MCzgC4f
 # id = "<paste-from-wrangler-output>"
 
 # KV — Phase E slider-render bin cache. Holds RenderResult JSON keyed
-# by sha256(sorted_triples + quantized_sliders)[:32]. TTL 24h.
-# Cache-coherent with the Python InMemorySliderCache via identical key
-# derivation (see worker/src/cache/bin_cache.ts::deriveCacheKey).
+# by render-v2:<sha256(sorted_triples + quantized_sliders)[:32]>:<provider>,
+# where <provider> is anthropic or openai on the LLM path (a cache hit there
+# keeps it), or canonical on the canonical path. TTL 24h at most. Worker-only: the key is not the
+# Python cache_key (see worker/src/cache/bin_cache.ts::deriveCacheKey).
 [[kv_namespaces]]
 binding = "RENDER_CACHE"
 id = "314f046b5e0b4c0ba6a5c8283e57b781"
