@@ -288,7 +288,7 @@ Content-Type: application/json
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `prompt` | `string` | yes | Non-empty after trim, ≤40 000 chars. |
-| `model` | `string` | no | If given, it must be the configured model (by default `claude-haiku-4-5-20251001` for Anthropic, `gpt-4o-mini` for OpenAI); any other value is a 400 (a deployment with no provider key returns its 503 first). |
+| `model` | `string` | no | If given, it must be the configured model (by default `claude-haiku-4-5-20251001` for Anthropic, `gpt-4o-mini` for OpenAI); a value that is not a string is a 400 before any other check, and any other string is a 400 after the no-provider 503. |
 
 ### 4.2 Response (200)
 

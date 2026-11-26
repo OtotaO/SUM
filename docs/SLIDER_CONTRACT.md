@@ -285,7 +285,8 @@ reliable deployment protection.
 - **Coherence:** the cache key is content-addressed. While an entry is
   cached, two callers with identical sorted triples and quantized
   sliders (and, on the Worker, the same provider) receive the same
-  RenderResult, unless a caller sets `force_render` or, on the Worker,
+  tome, triples_used, render_id and receipt (cache_status, llm_calls_made
+  and wall_clock_ms are per response), unless a caller sets `force_render` or, on the Worker,
   the entry has no receipt while signing is configured (it is rendered
   again); the Worker does not cache a render whose signing failed. No cache poisoning vector — the key IS the content.
 
