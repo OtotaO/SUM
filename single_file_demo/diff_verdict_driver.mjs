@@ -25,9 +25,9 @@ if (!mod) {
 }
 const VerifyError = mod.VerifyError;
 
-async function verify(rec, jwks, schema) {
-  if (FAMILY === "render") return mod.verifyReceipt(rec, jwks);
-  if (FAMILY === "transform") return mod.verifyTransformReceipt(rec, jwks);
+async function verify(rec, jwks, schema, opts) {
+  if (FAMILY === "render") return mod.verifyReceipt(rec, jwks, null, opts);
+  if (FAMILY === "transform") return mod.verifyTransformReceipt(rec, jwks, opts);
   return mod.verifyMeaningEnvelope(rec, jwks, schema || mod.MEANING_RISK_SCHEMA);
 }
 
@@ -43,7 +43,7 @@ for await (const line of rl) {
     continue;
   }
   try {
-    const res = await verify(obj.receipt, obj.jwks, obj.schema);
+    const res = await verify(obj.receipt, obj.jwks, obj.schema, obj.opts);
     out.push(JSON.stringify({ v: res && res.verified === true }));
   } catch (e) {
     if (VerifyError && e instanceof VerifyError) {

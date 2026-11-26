@@ -146,6 +146,11 @@ The verifier algorithm is identical to the render-receipt verifier from [`docs/R
    only, no "=", and the unused low bits of the last character zero
    (signature: 86 characters; x: 43). Otherwise → REJECT
    (malformed_jws, signature_invalid or malformed_jwks).
+   The key's other members follow one rule: no private member d;
+   key_ops, when present, an array of distinct strings that includes
+   "verify"; use, when present, "sig"; alg, when present, "EdDSA" or
+   "Ed25519". Otherwise → REJECT (malformed_jwks). Build the public key
+   from kty, crv and x alone.
 
 4. Construct the flattened JWS object:
    { protected: protected_b64, payload: <JCS bytes from step 2>, signature: signature_b64 }
@@ -187,7 +192,7 @@ The per-release URL is the durable form — it never changes once published. The
 
 The **trust-root JWKS** itself can either:
 - Live in a separate endpoint (`/.well-known/trust-root-jwks.json`) for clean separation; OR
-- Be included in the same `/.well-known/jwks.json` document under a different `kid` (with a `use` field distinguishing the keys' purpose).
+- Be included in the same `/.well-known/jwks.json` document under a different `kid`. The `kid` tells the keys apart; `use`, when present, stays `"sig"`, which verifiers require (step 3).
 
 Either is acceptable; the second is simpler operationally and is the recommended default unless an operator has a specific reason to separate.
 

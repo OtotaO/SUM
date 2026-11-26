@@ -46,7 +46,7 @@ cat <<'JSON' > /tmp/revoked_kids.json
   "revoked": [
     {
       "kid": "<compromised-kid>",
-      "effective_revocation_at": "<RFC 3339 instant with seconds, e.g. 2026-04-27T00:45:16Z: suspected first compromise>",
+      "effective_revocation_at": "<an instant in the form docs/RENDER_RECEIPT_FORMAT.md §6.1 defines, e.g. 2026-04-27T00:45:16Z: suspected first compromise>",
       "reason": "compromise"
     }
   ]

@@ -23,7 +23,6 @@ PROOF_BOUNDARY §1.8 claims still holds.
 """
 from __future__ import annotations
 
-import re
 from typing import Any
 
 from sum_engine_internal.infrastructure.jose_envelope import (
@@ -31,6 +30,7 @@ from sum_engine_internal.infrastructure.jose_envelope import (
     JoseEnvelopeError,
     JoseEnvelopeErrorClass,
     JoseEnvelopeResult,
+    _instant_ms,  # noqa: F401  (re-exported: the revocation check and its tests use it)
     verify_jose_envelope,
 )
 
@@ -69,50 +69,6 @@ class VerifyError(JoseEnvelopeError):
 
 # Type alias preserved for backwards compat with v0.9.C.
 VerifyResult = JoseEnvelopeResult
-
-
-# RFC 3339 instant, seconds required, fraction truncated to milliseconds.
-# The grammar, range checks and arithmetic are shared line for line with
-# parseInstantMs in single_file_demo/receipt_verifier.js, so Python and the
-# browser give the same revocation verdict for every input (datetime
-# parsing differed across runtimes and Python versions, and could raise
-# OverflowError). Cases: Tests/fixtures/revocation_instants.json.
-_INSTANT = re.compile(
-    r"([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})"
-    r"(?:\.([0-9]{1,9}))?(Z|([+-])([0-9]{2}):([0-9]{2}))"
-)
-
-
-def _days_from_civil(y: int, m: int, d: int) -> int:
-    y -= 1 if m <= 2 else 0
-    era = (y if y >= 0 else y - 399) // 400
-    yoe = y - era * 400
-    doy = (153 * (m + (-3 if m > 2 else 9)) + 2) // 5 + d - 1
-    doe = yoe * 365 + yoe // 4 - yoe // 100 + doy
-    return era * 146097 + doe - 719468
-
-
-def _instant_ms(value: Any) -> int | None:
-    """Epoch milliseconds for an RFC 3339 instant, or None if malformed."""
-    if not isinstance(value, str):
-        return None
-    m = _INSTANT.fullmatch(value)
-    if m is None:
-        return None
-    y, mo, d, h, mi, s = (int(m.group(i)) for i in range(1, 7))
-    ms = int((m.group(7) or "").ljust(3, "0")[:3])
-    leap = y % 4 == 0 and (y % 100 != 0 or y % 400 == 0)
-    days_in_month = (31, 29 if leap else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
-    if not (1 <= mo <= 12 and 1 <= d <= days_in_month[mo - 1]
-            and h <= 23 and mi <= 59 and s <= 59):
-        return None
-    offset = 0
-    if m.group(8) != "Z":
-        oh, om = int(m.group(10)), int(m.group(11))
-        if oh > 23 or om > 59:
-            return None
-        offset = (oh * 60 + om) * (1 if m.group(9) == "+" else -1)
-    return (((_days_from_civil(y, mo, d) * 24 + h) * 60 + mi) * 60 + s) * 1000 + ms - offset * 60000
 
 
 def _revocation_entries(revoked_kids: Any) -> list:
@@ -159,11 +115,12 @@ def _check_revoked_kid(receipt: dict, revoked_kids: Any) -> None:
 
     Per docs/RENDER_RECEIPT_FORMAT.md §6.1:
 
-    * A receipt with signed_at BEFORE effective_revocation_at retains
-      its original validity (was signed legitimately before the
-      compromise window). Continue verification normally.
-    * A receipt with signed_at AT OR AFTER effective_revocation_at is
-      rejected with the revoked_kid error class.
+    * A receipt with signed_at BEFORE the effective_revocation_at of
+      every entry for its kid retains its original validity (was signed
+      legitimately before the compromise window). Continue verification
+      normally.
+    * A receipt with signed_at AT OR AFTER the effective_revocation_at of
+      any entry for its kid is rejected with the revoked_kid error class.
 
     ``revoked_kids`` may be the entry list or the whole
     ``sum.revoked_kids.v1`` document served at
@@ -171,6 +128,8 @@ def _check_revoked_kid(receipt: dict, revoked_kids: Any) -> None:
     that is not an object, fails closed: passing the served document
     used to iterate its keys, skip them all, and verify a revoked kid.
 
+    Every entry for the kid is checked, so the earliest effective time
+    decides and a malformed duplicate fails closed whatever the list order.
     Both timestamps are parsed and compared as instants (a string
     compare put ``...16.849Z`` before ``...16Z``). The signed_at field is
     required by the receipt spec; a missing or unparseable signed_at or
@@ -211,9 +170,9 @@ def _check_revoked_kid(receipt: dict, revoked_kids: Any) -> None:
                 f"kid {kid!r} revoked effective {effective_at}; "
                 f"receipt signed at {signed_at} (>= effective time)",
             )
-        # signed_at < effective_at: legitimate historical receipt,
-        # continue verification.
-        return
+        # signed_at < this entry's effective time. Keep checking: another
+        # entry for the same kid may be earlier or malformed, and stopping
+        # here made the verdict depend on the order of the list.
 
 
 # Payload fields REQUIRED by sum.render_receipt.v1, per

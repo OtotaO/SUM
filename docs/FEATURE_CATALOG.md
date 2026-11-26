@@ -1392,7 +1392,7 @@ Result: **PASS**.
 `single_file_demo/transform_receipt_verifier.js` — third runtime in the K-matrix. Same six-step algorithm as `receipt_verifier.js` (render-receipt), differs only in `SUPPORTED_SCHEMA = "sum.transform_receipt.v1"`. Verifier-only (vendored jose bundle); accept-path proven via Python ↔ Worker probe + the fixture K-matrix.
 
 Verify: `node single_file_demo/test_transform_receipt_verify.js`
-Expected: 7 pass, 0 fail.
+Expected: 8 pass, 0 fail.
 Result: **PASS**.
 
 ### 166. Python transform-receipt verifier ✅

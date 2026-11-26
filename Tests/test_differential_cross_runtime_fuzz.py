@@ -206,10 +206,20 @@ def _mutations(env, jwks):
         k = sorted(P.keys())[0]
         e = copy.deepcopy(env); e["payload"] = dict(P); e["payload"][k] = "TAMPERED"
         yield (f"payload-tamper[{k}]", e, jwks)
+        # A lone surrogate has no UTF-8 encoding, so JCS cannot canonicalize the
+        # payload. Python rejects it as malformed_receipt; the JS verifiers must
+        # reject it the same way, not let the vendored canonicalize's plain Error
+        # escape. json.dumps sends it to Node as a \ud800 escape.
+        e = copy.deepcopy(env); e["payload"] = dict(P); e["payload"][k] = "\ud800" + str(P[k])
+        yield (f"payload-lone-surrogate-value[{k}]", e, jwks)
+        e = copy.deepcopy(env); e["payload"] = dict(P); e["payload"]["x\udc00"] = "v"
+        yield ("payload-lone-surrogate-key", e, jwks)
 
 
-def _node_verdicts(family, cases, schema):
-    lines = "\n".join(json.dumps({"receipt": r, "jwks": j, "schema": schema}) for _, r, j in cases)
+def _node_verdicts(family, cases, schema, opts=None):
+    extra = {} if opts is None else {"opts": opts}
+    lines = "\n".join(json.dumps({"receipt": r, "jwks": j, "schema": schema, **extra})
+                      for _, r, j in cases)
     res = subprocess.run([NODE, str(DRIVER), family], input=lines,
                          capture_output=True, text=True, timeout=60)
     assert res.returncode == 0, f"node driver failed: {res.stderr[:300]}"
@@ -282,6 +292,165 @@ def test_issuer_signed_noncanonical_header_rejected_by_both(family):
     assert py[0] == node[0] == ("ACCEPT", None), (py[0], node[0])
     for (tag, _, _), pv, nv in zip(cases[1:], py[1:], node[1:]):
         assert pv == nv == ("REJECT", "malformed_jws"), (family, tag, pv, nv)
+
+
+# signed_at spellings for the opt-in replay window. Each one is signed into the
+# receipt, so the signature holds and only the window decides. With
+# max_age_seconds set, both runtimes must read signed_at with the same strict
+# instant grammar that revocation uses (_instant_ms / parseInstantMs): seconds
+# required, uppercase T, Z or +-HH:MM. The window is wide enough (10**12 s) that
+# the clock never decides, only the grammar. The JS meaning verifier has no
+# window option, so this covers render and transform.
+_WINDOW_FORMS = {
+    # admitted by the instant grammar: both accept
+    "ms3": ("2026-06-06T12:00:00.000Z", True),
+    "frac1": ("2026-06-06T12:00:00.5Z", True),
+    "frac9": ("2026-06-06T12:00:00.123456789Z", True),
+    "offset": ("2026-06-06T17:30:00+05:30", True),
+    "calendar-edge": ("0001-01-01T00:00:00+01:00", True),
+    # refused by it: both reject as signed_at_out_of_window
+    "any-separator": ("2026-06-06X12:00:00Z", False),
+    "hour-only": ("2026-06-06T12Z", False),
+    "offset-seconds": ("2026-06-06T12:00:00+00:00:00", False),
+    "lowercase-t-z": ("2026-06-06t12:00:00z", False),
+    "date-only": ("2026-06-06", False),
+    "rfc2822": ("Sat, 06 Jun 2026 12:00:00 GMT", False),
+}
+_WIDE_WINDOW = 10**12
+
+
+@pytest.mark.parametrize("family", ["render", "transform"])
+def test_replay_window_timestamp_grammar_parity(family):
+    """Python once read signed_at with datetime.fromisoformat (a grammar that
+    changes between Python versions) and the JS verifiers with Date.parse, so
+    the same signed receipt got opposite window verdicts."""
+    from sum_engine_internal.infrastructure.jose_envelope import sign_jose_envelope
+
+    env, jwks, schema, pyverify = _setup(family)
+    cases = []
+    for tag, (signed_at, _) in _WINDOW_FORMS.items():
+        payload = copy.deepcopy(env["payload"])
+        payload["signed_at"] = signed_at
+        signed = sign_jose_envelope(payload, private_jwk=_SIGNING_KEYS[family], kid=env["kid"])
+        signed["schema"] = schema
+        cases.append((tag, signed, jwks))
+    py = [_py_verdict(lambda r, j: pyverify(r, j, max_age_seconds=_WIDE_WINDOW), r, j)
+          for _, r, j in cases]
+    node = _node_verdicts(family, cases, schema, opts={"maxAgeSeconds": _WIDE_WINDOW})
+    wrong = []
+    for (tag, _, _), pv, nv in zip(cases, py, node):
+        want = ("ACCEPT", None) if _WINDOW_FORMS[tag][1] else ("REJECT", "signed_at_out_of_window")
+        if not (pv == nv == want):
+            wrong.append((tag, f"py={pv}", f"node={nv}", f"want={want}"))
+    assert not wrong, f"[{family}] replay-window verdicts differ: {wrong}"
+
+
+# JWK members around the public key. WebCrypto (the JS side) refused some of these
+# at import and accepted others joserfc refused, and joserfc refused some only at
+# verify time as signature_invalid, so the runtimes split on accept/reject as well
+# as on class. Both now apply one rule before import: no private member d; key_ops,
+# when present, an array of distinct strings that includes "verify"; use, when
+# present, "sig"; alg, when present, "EdDSA" or its RFC 9864 name "Ed25519"
+# (WebCrypto writes it on export; joserfc refused it against an EdDSA header).
+# Anything else is malformed_jwks in both. ext and unknown members stay ignored.
+_JWK_MEMBERS = {
+    "baseline": ({}, True),
+    "key_ops-verify": ({"key_ops": ["verify"]}, True),
+    "key_ops-sign-verify": ({"key_ops": ["sign", "verify"]}, True),
+    "use-sig": ({"use": "sig"}, True),
+    "alg-EdDSA": ({"alg": "EdDSA"}, True),
+    "alg-Ed25519": ({"alg": "Ed25519"}, True),
+    "webcrypto-export": ({"key_ops": ["verify"], "ext": True, "alg": "Ed25519"}, True),
+    "ext-true": ({"ext": True}, True),
+    "ext-false": ({"ext": False}, True),
+    "unknown-member": ({"foo": 1}, True),
+    "d-private-scalar": (None, False),
+    "d-garbage": ({"d": "AAAA"}, False),
+    "key_ops-sign": ({"key_ops": ["sign"]}, False),
+    "key_ops-empty": ({"key_ops": []}, False),
+    "key_ops-string": ({"key_ops": "verify"}, False),
+    "key_ops-duplicate": ({"key_ops": ["verify", "verify"]}, False),
+    "key_ops-non-string": ({"key_ops": ["verify", 5]}, False),
+    "use-enc": ({"use": "enc"}, False),
+    "use-empty": ({"use": ""}, False),
+    "use-number": ({"use": 5}, False),
+    "alg-RS256": ({"alg": "RS256"}, False),
+    "alg-empty": ({"alg": ""}, False),
+    "alg-number": ({"alg": 5}, False),
+}
+
+
+@pytest.mark.parametrize("family", ["render", "transform", "meaning"])
+def test_jwk_member_rules_parity(family):
+    """A JWKS entry that carried the private key verified in Python and failed
+    in JS; a non-string key_ops entry did the reverse, and a key labelled
+    alg "Ed25519", as WebCrypto exports it, verified in JS and not in Python."""
+    env, jwks, schema, pyverify = _setup(family)
+    cases = []
+    for tag, (members, _) in _JWK_MEMBERS.items():
+        j = copy.deepcopy(jwks)
+        key = next(k for k in j["keys"] if k.get("kid") == env["kid"])
+        key.update({"d": _SIGNING_KEYS[family]["d"]} if members is None else members)
+        cases.append((tag, env, j))
+    py = [_py_verdict(pyverify, r, j) for _, r, j in cases]
+    node = _node_verdicts(family, cases, schema)
+    wrong = []
+    for (tag, _, _), pv, nv in zip(cases, py, node):
+        want = ("ACCEPT", None) if _JWK_MEMBERS[tag][1] else ("REJECT", "malformed_jwks")
+        if not (pv == nv == want):
+            wrong.append((tag, f"py={pv}", f"node={nv}", f"want={want}"))
+    assert not wrong, f"[{family}] JWK member verdicts differ: {wrong}"
+
+
+@pytest.mark.parametrize("family", ["render", "transform", "meaning"])
+def test_jwk_member_rule_runs_at_the_same_step_in_both(family):
+    """Check order decides the class when a receipt has two faults. The member
+    rule runs where the key is imported: after the protected-header checks
+    (an unknown crit name wins) and before the signature-encoding check (the
+    key fault wins), in both runtimes."""
+    env, jwks, schema, pyverify = _setup(family)
+    proto, _, sig = env["jws"].split(".")
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+    respelled = copy.deepcopy(env)
+    respelled["jws"] = f"{proto}..{sig[:-1]}{alphabet[(alphabet.index(sig[-1]) & ~3) | 1]}"
+    header = json.loads(base64.urlsafe_b64decode(proto + "=" * (-len(proto) % 4)))
+    header["crit"] = list(header.get("crit", [])) + ["zip2"]
+    header["zip2"] = 1
+    crit_edit = copy.deepcopy(env)
+    crit_edit["jws"] = (base64.urlsafe_b64encode(json.dumps(header, separators=(",", ":")).encode())
+                        .rstrip(b"=").decode() + ".." + sig)
+    cases, want = [], []
+    for member, value in (("d", _SIGNING_KEYS[family]["d"]), ("alg", "RS256")):
+        bad = copy.deepcopy(jwks)
+        next(k for k in bad["keys"] if k.get("kid") == env["kid"])[member] = value
+        cases += [(f"{member}+respelled-signature", respelled, bad), (f"{member}+unknown-crit", crit_edit, bad)]
+        want += [("REJECT", "malformed_jwks"), ("REJECT", "crit_unknown_extension")]
+    py = [_py_verdict(pyverify, r, j) for _, r, j in cases]
+    node = _node_verdicts(family, cases, schema)
+    for (tag, _, _), pv, nv, w in zip(cases, py, node, want):
+        assert pv == nv == w, (family, tag, pv, nv, w)
+
+
+@pytest.mark.parametrize("family", ["render", "transform", "meaning"])
+def test_jwks_entry_with_a_private_member_is_refused_by_both(family):
+    """joserfc imported a JWK that carries d from d alone and never compared it
+    with x. With one key's x and another key's d, Python verified the other
+    key's signatures, so a caller pinning x (sum_verify TrustPolicy) trusted a
+    key it never approved. WebCrypto refuses any JWK with d for verification."""
+    from sum_engine_internal.infrastructure.jose_envelope import sign_jose_envelope
+
+    env, jwks, schema, pyverify = _setup(family)
+    other, _, _ = _keypair()
+    by_other = sign_jose_envelope(copy.deepcopy(env["payload"]), private_jwk=other, kid=env["kid"])
+    by_other["schema"] = schema
+    foreign_d = copy.deepcopy(jwks)
+    next(k for k in foreign_d["keys"] if k.get("kid") == env["kid"])["d"] = other["d"]
+    cases = [("foreign-d/genuine-signature", env, foreign_d),
+             ("foreign-d/signed-by-the-d-key", by_other, foreign_d)]
+    py = [_py_verdict(pyverify, r, j) for _, r, j in cases]
+    node = _node_verdicts(family, cases, schema)
+    for (tag, _, _), pv, nv in zip(cases, py, node):
+        assert pv == nv == ("REJECT", "malformed_jwks"), (family, tag, pv, nv)
 
 
 # Broad garbage battery for JS-side totality: every Node verifier must throw a

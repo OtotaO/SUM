@@ -14,7 +14,8 @@
 // …this closes the cross-runtime byte-equivalence loop for
 // sum.transform_receipt.v1 across Python ↔ Node ↔ V8/Worker ↔ Browser.
 
-import { verifyTransformReceipt, ERROR_CLASSES, VerifyError } from "./transform_receipt_verifier.js";
+import { readFileSync } from "node:fs";
+import { verifyTransformReceipt, ERROR_CLASSES, VerifyError, parseInstantMs } from "./transform_receipt_verifier.js";
 
 let passes = 0;
 let fails = 0;
@@ -262,6 +263,18 @@ async function testRoundTripSignVerify() {
   }
 }
 
+// The replay window reads signed_at with this file's copy of the instant
+// parser. Run it on the table that receipt_verifier.js and the Python
+// verifier already share, so the copies cannot drift apart.
+function testSharedInstantTable() {
+  const table = JSON.parse(
+    readFileSync(new URL("../Tests/fixtures/revocation_instants.json", import.meta.url), "utf8"),
+  );
+  const mismatches = table.cases.filter((c) => parseInstantMs(c.value) !== c.expected_ms);
+  if (mismatches.length === 0) ok(`instant grammar: ${table.cases.length}/${table.cases.length} shared cases`);
+  else nope("instant grammar", JSON.stringify(mismatches.map((c) => c.value)));
+}
+
 // ─── Run all ────────────────────────────────────────────────────────
 
 
@@ -273,6 +286,7 @@ async function main() {
   await testNonObjectReceipt();
   await testMalformedJws();
   await testRoundTripSignVerify();
+  testSharedInstantTable();
   console.log("");
   console.log(`Total: ${passes} pass, ${fails} fail`);
   if (fails > 0) {

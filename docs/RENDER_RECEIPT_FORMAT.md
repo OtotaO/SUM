@@ -59,7 +59,7 @@ The four top-level keys are siblings, not nested:
 | `tome_hash` | string | `sha256-<hex>` of the tome's UTF-8 bytes. Verifier rehashes the response's `tome` field and compares. |
 | `model` | string | The model that ACTUALLY served the call, taken from the LLM API response's reported `model` field — NOT the configured-default. May be a more specific snapshot id than the requested tag (e.g., Anthropic resolves `claude-haiku-4-5-20251001` → a dated snapshot). When the API doesn't echo a model, the value is `<requested>_inferred` so the inference itself is visible. For canonical-path renders (no LLM), the value is the literal string `canonical-deterministic-v0`. |
 | `provider` | string | One of the values enumerated in §1.2. |
-| `signed_at` | string | ISO-8601 UTC timestamp at issuance time. See §1.3 for cache-HIT durability semantics. |
+| `signed_at` | string | ISO-8601 UTC timestamp at issuance time. See §1.3 for cache-HIT durability semantics. Verifiers read it in the receipt timestamp form of §6.1 (see §6.2). |
 | `digital_source_type` | string | C2PA `digitalSourceType` per spec.c2pa.org v2.4 (values unchanged 2.2→2.4). See §7. |
 
 ### 1.2 Provider taxonomy
@@ -123,6 +123,13 @@ The verifier needs three inputs:
    a respelled or padded x, and a header the issuer signed in such a
    spelling verifies, so check before decoding; SUM's Python and JS
    verifiers both do.
+   The key's other members follow one rule in both runtimes: no private
+   member d; key_ops, when present, an array of distinct strings that
+   includes "verify"; use, when present, "sig"; alg, when present,
+   "EdDSA" or "Ed25519" (its RFC 9864 name, which WebCrypto writes on
+   export). Otherwise → REJECT (malformed JWKS). Build the public key
+   from kty, crv and x alone, so no library can build it from another
+   member.
 
 4. Construct the flattened JWS object:
    { protected: protected_b64, payload: <JCS bytes from step 2>, signature: signature_b64 }
@@ -155,7 +162,8 @@ async function verifyReceipt(receipt: any): Promise<boolean> {
   const [protected_b64, middle, signature_b64] = receipt.jws.split(".");
   if (middle !== "") throw new Error("not a detached JWS");
   // Step 3: also require canonical unpadded base64url for protected_b64,
-  // signature_b64 and the key's x (omitted here for brevity).
+  // signature_b64 and the key's x, and the key member rule (omitted here
+  // for brevity).
   const result = await flattenedVerify(
     { protected: protected_b64, payload: canonicalBytes, signature: signature_b64 },
     JWKS
@@ -325,15 +333,15 @@ The revocation surface lives at `/.well-known/revoked-kids.json`:
 | Field | Meaning |
 |---|---|
 | `kid` | The render-receipt kid being revoked. |
-| `effective_revocation_at` | RFC 3339 instant with seconds, uppercase `T` and a `Z` or `±HH:MM` offset, for example `2026-04-27T00:45:16Z` (a fraction is allowed and truncated to milliseconds). Verifiers treat any other form as malformed and fail closed, so a receipt under that kid is rejected. Receipts with `signed_at` **at or after** this moment MUST be rejected. Receipts with `signed_at` **before** this moment retain their original validity (they were signed legitimately, before the compromise window). |
+| `effective_revocation_at` | An instant in the receipt timestamp form: `YYYY-MM-DDTHH:MM:SS` with uppercase `T`, a real calendar date, seconds 00 to 59, an optional fraction of 1 to 9 digits (truncated to milliseconds), then `Z` or a `±HH:MM` offset, for example `2026-04-27T00:45:16Z`. This is a strict profile of RFC 3339, which also allows lowercase `t` and `z`, longer fractions and a leap second. Verifiers treat any other form as malformed and fail closed, so a receipt under that kid is rejected. Receipts with `signed_at` **at or after** this moment, for any entry under their kid, MUST be rejected. Receipts with `signed_at` **before** the effective time of every entry under their kid retain their original validity (they were signed legitimately, before the compromise window). |
 | `reason` | One of `compromise`, `superseded`, `policy`. Audit-trail honesty; consumers can branch policy on the reason but the verifier reject decision is reason-agnostic. |
 
 **Verifier behaviour.** A verifier given a revocation list:
 
-1. Looks up `receipt.kid` in `revoked[].kid`.
-2. If found, compares `receipt.payload.signed_at` against `effective_revocation_at`.
-3. If `signed_at >= effective_revocation_at` → reject with the `revoked_kid` error class (distinct from `signature_invalid` so the operator-side distinction between "tampered" and "issued under a now-revoked key" is visible at the consumer).
-4. Otherwise (signed_at < effective_revocation_at), continue verification normally.
+1. Collects every entry in `revoked[]` whose `kid` is `receipt.kid`. A kid may appear more than once, and the order of the list does not matter.
+2. For each of them, compares `receipt.payload.signed_at` against that entry's `effective_revocation_at`, both read with the instant grammar above. If either is not such an instant → reject with `revoked_kid` (fail closed).
+3. If `signed_at >= effective_revocation_at` for any of them → reject with the `revoked_kid` error class (distinct from `signature_invalid` so the operator-side distinction between "tampered" and "issued under a now-revoked key" is visible at the consumer). The earliest effective time therefore decides.
+4. Otherwise (signed_at earlier than every listed effective time), continue verification normally.
 
 **Verifier fetch cadence.** Same as JWKS: `Cache-Control: public, max-age=3600` (default 1 h). Verifiers SHOULD treat the revocation list as fail-open on fetch failure (network error, 5xx response) — a network glitch shouldn't reject otherwise-valid receipts. But for trust-critical contexts, callers can opt into fail-closed by passing an empty `{"revoked": []}` only when fetch succeeds.
 
@@ -380,6 +388,8 @@ const r = await verifyReceipt(receipt, jwks, null, {
 When `max_age_seconds` is set, the verifier rejects with `signed_at_out_of_window` if:
 - `now − payload.signed_at > max_age_seconds` (stale), OR
 - `payload.signed_at − now > max_future_skew_seconds` (future-dated beyond skew)
+
+`signed_at` is read with the instant grammar of `effective_revocation_at` (§6.1), with integer-millisecond arithmetic, in Python and in the JS verifiers. Any other form, including a timezone-less time, is rejected with `signed_at_out_of_window`, so the reading of `signed_at` does not depend on the Python version or the machine's time zone.
 
 The error class is distinct from `signature_invalid` because the receipt is *cryptographically valid* — the caller has rejected it by policy. Operationally this matters for incident response: `signature_invalid` → tampering; `signed_at_out_of_window` → replay attempt or stale cache.
 
@@ -532,7 +542,7 @@ async function main() {
   const [proto, middle, sig] = r.jws.split(".");
   if (middle !== "") throw new Error("not a detached JWS");
   // Step 3: also require canonical unpadded base64url for proto, sig and
-  // the key's x (omitted here for brevity).
+  // the key's x, and the key member rule (omitted here for brevity).
 
   const result = await flattenedVerify(
     { protected: proto, payload: canonical, signature: sig },

@@ -1,6 +1,6 @@
 {
  "schema": "sum.test.revocation_instants.v1",
- "description": "RFC 3339 instants shared by the Python and browser revocation checks: expected epoch milliseconds, or null when the verifier must treat the value as malformed (fail closed).",
+ "description": "Instants in the receipt timestamp form (docs/RENDER_RECEIPT_FORMAT.md section 6.1, a strict profile of RFC 3339) shared by the Python and browser revocation checks: expected epoch milliseconds, or null when the verifier must treat the value as malformed (fail closed).",
  "cases": [
   {
    "value": "2026-04-27T00:45:16.849Z",

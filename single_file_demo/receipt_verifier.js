@@ -128,6 +128,29 @@ function isCanonicalB64urlSegment(s) {
   return B64URL_ALPHABET.indexOf(s[s.length - 1]) % (1 << spareBits) === 0;
 }
 
+// Why this JWK may not verify an EdDSA signature, or null if it may. The same
+// rule as _jwk_member_error in the Python verifier, applied before import so
+// both runtimes reject the same keys with the same class: WebCrypto refused a
+// private key, key_ops without "verify" and use other than "sig", while
+// joserfc accepted a private key and refused some of the others (key_ops
+// without "verify", use "enc", another alg) only at verify time.
+// alg may be "EdDSA" or its RFC 9864 name "Ed25519", which WebCrypto writes
+// when it exports an Ed25519 key; the protected header must still name EdDSA.
+function jwkMemberError(jwk) {
+  const has = (k) => Object.prototype.hasOwnProperty.call(jwk, k);
+  if (has("d")) return "carries the private key member d; a verification key set holds public keys only";
+  if (has("key_ops")) {
+    const ops = jwk.key_ops;
+    if (!Array.isArray(ops) || !ops.every((o) => typeof o === "string") ||
+        new Set(ops).size !== ops.length || !ops.includes("verify")) {
+      return 'key_ops must be an array of distinct strings that includes "verify"';
+    }
+  }
+  if (has("use") && jwk.use !== "sig") return 'use must be "sig"';
+  if (has("alg") && jwk.alg !== "EdDSA" && jwk.alg !== "Ed25519") return 'alg must be "EdDSA" or "Ed25519"';
+  return null;
+}
+
 async function importEd25519Jwk(jwk) {
   // EdDSA / Ed25519 (OKP) JWK import via SubtleCrypto. Supported in
   // Node ≥20, Chrome 113+, Firefox 129+, Safari 17+. Older
@@ -147,9 +170,15 @@ async function importEd25519Jwk(jwk) {
       "JWK x is not the canonical base64url of a 32-byte Ed25519 public key",
     );
   }
+  const memberError = jwkMemberError(jwk);
+  if (memberError !== null) {
+    throw new VerifyError(ERROR_CLASSES.MALFORMED_JWKS, `JWK ${memberError}`);
+  }
+  // Import the public key from x alone, so no implementation can build it
+  // from another member; the key that verifies is the x a pin names.
   return crypto.subtle.importKey(
     "jwk",
-    jwk,
+    { kty: "OKP", crv: "Ed25519", x: jwk.x },
     { name: "Ed25519" },
     false,
     ["verify"],
@@ -157,7 +186,9 @@ async function importEd25519Jwk(jwk) {
 }
 
 const REVOKED_KIDS_SCHEMA = "sum.revoked_kids.v1";
-// RFC 3339 instant, seconds required, fraction truncated to milliseconds.
+// The receipt timestamp form (RENDER_RECEIPT_FORMAT.md §6.1), a strict profile
+// of RFC 3339: uppercase T and Z, seconds required (00 to 59), an optional
+// fraction of 1 to 9 digits truncated to milliseconds, Z or +-HH:MM.
 // Shared line for line with _instant_ms in the Python verifier.
 const INSTANT = /^([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})(?:\.([0-9]{1,9}))?(Z|([+-])([0-9]{2}):([0-9]{2}))$/;
 
@@ -170,7 +201,7 @@ function daysFromCivil(y, m, d) {
   return era * 146097 + doe - 719468;
 }
 
-// Epoch milliseconds for an RFC 3339 instant, or null if malformed.
+// Epoch milliseconds for an instant in the receipt timestamp form, or null.
 export function parseInstantMs(value) {
   if (typeof value !== "string") return null;
   const m = INSTANT.exec(value);
@@ -236,7 +267,9 @@ function revocationEntries(revokedKids) {
 
 /**
  * Check the receipt's kid against a revocation list and reject with
- * REVOKED_KID when signed_at is at or after effective_revocation_at.
+ * REVOKED_KID when signed_at is at or after effective_revocation_at. Every
+ * entry for the kid is checked, so the earliest effective time decides and a
+ * malformed duplicate fails closed whatever the list order.
  * Mirrors sum_engine_internal.render_receipt.verifier._check_revoked_kid:
  * the same accepted input shapes, the same instant grammar and the same
  * millisecond arithmetic (cases: Tests/fixtures/revocation_instants.json).
@@ -279,9 +312,9 @@ function checkRevokedKid(receipt, revokedKids) {
           `receipt signed at ${signedAt} (>= effective time)`,
       );
     }
-    // signed_at < effective_at: legitimate historical receipt;
-    // continue verification.
-    return;
+    // signed_at < this entry's effective time. Keep checking: another entry
+    // for the same kid may be earlier or malformed, and stopping here made
+    // the verdict depend on the order of the list.
   }
 }
 
@@ -378,12 +411,20 @@ export async function verifyReceipt(receipt, jwks, revokedKids, opts) {
   }
 
   // ---- Step 2: JCS-canonicalize payload ----
-  const canonicalText = canonicalize(payload);
-  if (canonicalText === undefined || canonicalText === null) {
+  // canonicalize throws a plain Error on a lone surrogate or a non-finite
+  // number (JSON.parse reads 1e999 as Infinity). Python rejects both as
+  // malformed_receipt, so name the class here too.
+  let canonicalText;
+  try {
+    canonicalText = canonicalize(payload);
+  } catch (e) {
     throw new VerifyError(
       ERROR_CLASSES.MALFORMED_RECEIPT,
-      "payload could not be JCS-canonicalized",
+      `payload could not be JCS-canonicalized: ${e.message}`,
     );
+  }
+  if (canonicalText === undefined || canonicalText === null) {
+    throw new VerifyError(ERROR_CLASSES.MALFORMED_RECEIPT, "payload could not be JCS-canonicalized");
   }
   const canonicalBytes = new TextEncoder().encode(canonicalText);
 
@@ -554,10 +595,13 @@ export async function verifyReceipt(receipt, jwks, revokedKids, opts) {
   };
 }
 
+// The replay window reads signed_at with the revocation grammar above, the
+// same one the Python verifier uses: Date.parse also accepted naive local
+// times, date-only and RFC 2822 strings, so the runtimes disagreed.
 function parseSignedAtRender(s) {
-  const ms = Date.parse(s);
-  if (Number.isNaN(ms)) {
-    throw new Error(`signed_at ${JSON.stringify(s)} not parseable as ISO-8601`);
+  const ms = parseInstantMs(s);
+  if (ms === null) {
+    throw new Error(`signed_at ${JSON.stringify(s)} is not in the receipt timestamp form (RENDER_RECEIPT_FORMAT.md §6.1)`);
   }
   return ms;
 }

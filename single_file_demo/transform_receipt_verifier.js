@@ -120,6 +120,29 @@ function isCanonicalB64urlSegment(s) {
   return B64URL_ALPHABET.indexOf(s[s.length - 1]) % (1 << spareBits) === 0;
 }
 
+// Why this JWK may not verify an EdDSA signature, or null if it may. The same
+// rule as _jwk_member_error in the Python verifier, applied before import so
+// both runtimes reject the same keys with the same class: WebCrypto refused a
+// private key, key_ops without "verify" and use other than "sig", while
+// joserfc accepted a private key and refused some of the others (key_ops
+// without "verify", use "enc", another alg) only at verify time.
+// alg may be "EdDSA" or its RFC 9864 name "Ed25519", which WebCrypto writes
+// when it exports an Ed25519 key; the protected header must still name EdDSA.
+function jwkMemberError(jwk) {
+  const has = (k) => Object.prototype.hasOwnProperty.call(jwk, k);
+  if (has("d")) return "carries the private key member d; a verification key set holds public keys only";
+  if (has("key_ops")) {
+    const ops = jwk.key_ops;
+    if (!Array.isArray(ops) || !ops.every((o) => typeof o === "string") ||
+        new Set(ops).size !== ops.length || !ops.includes("verify")) {
+      return 'key_ops must be an array of distinct strings that includes "verify"';
+    }
+  }
+  if (has("use") && jwk.use !== "sig") return 'use must be "sig"';
+  if (has("alg") && jwk.alg !== "EdDSA" && jwk.alg !== "Ed25519") return 'alg must be "EdDSA" or "Ed25519"';
+  return null;
+}
+
 async function importEd25519Jwk(jwk) {
   if (jwk.kty !== "OKP" || jwk.crv !== "Ed25519") {
     throw new VerifyError(
@@ -133,9 +156,15 @@ async function importEd25519Jwk(jwk) {
       "JWK x is not the canonical base64url of a 32-byte Ed25519 public key",
     );
   }
+  const memberError = jwkMemberError(jwk);
+  if (memberError !== null) {
+    throw new VerifyError(ERROR_CLASSES.MALFORMED_JWKS, `JWK ${memberError}`);
+  }
+  // Import the public key from x alone, so no implementation can build it
+  // from another member; the key that verifies is the x a pin names.
   return crypto.subtle.importKey(
     "jwk",
-    jwk,
+    { kty: "OKP", crv: "Ed25519", x: jwk.x },
     { name: "Ed25519" },
     false,
     ["verify"],
@@ -219,12 +248,20 @@ export async function verifyTransformReceipt(receipt, jwks, opts) {
   }
 
   // ---- Step 2: JCS canonicalize payload ----
-  const canonicalText = canonicalize(payload);
-  if (canonicalText === undefined || canonicalText === null) {
+  // canonicalize throws a plain Error on a lone surrogate or a non-finite
+  // number (JSON.parse reads 1e999 as Infinity). Python rejects both as
+  // malformed_receipt, so name the class here too.
+  let canonicalText;
+  try {
+    canonicalText = canonicalize(payload);
+  } catch (e) {
     throw new VerifyError(
       ERROR_CLASSES.MALFORMED_RECEIPT,
-      "payload could not be JCS-canonicalized",
+      `payload could not be JCS-canonicalized: ${e.message}`,
     );
+  }
+  if (canonicalText === undefined || canonicalText === null) {
+    throw new VerifyError(ERROR_CLASSES.MALFORMED_RECEIPT, "payload could not be JCS-canonicalized");
   }
   const canonicalBytes = new TextEncoder().encode(canonicalText);
 
@@ -371,12 +408,49 @@ export async function verifyTransformReceipt(receipt, jwks, opts) {
   };
 }
 
+// The receipt timestamp form (RENDER_RECEIPT_FORMAT.md §6.1), a strict profile
+// of RFC 3339: uppercase T and Z, seconds required (00 to 59), an optional
+// fraction of 1 to 9 digits truncated to milliseconds, Z or +-HH:MM.
+// Shared line for line with _instant_ms in the Python verifier and with
+// parseInstantMs in receipt_verifier.js (kept per file, like the other helpers).
+const INSTANT = /^([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})(?:\.([0-9]{1,9}))?(Z|([+-])([0-9]{2}):([0-9]{2}))$/;
+
+function daysFromCivil(y, m, d) {
+  y -= m <= 2 ? 1 : 0;
+  const era = Math.floor((y >= 0 ? y : y - 399) / 400);
+  const yoe = y - era * 400;
+  const doy = Math.floor((153 * (m + (m > 2 ? -3 : 9)) + 2) / 5) + d - 1;
+  const doe = yoe * 365 + Math.floor(yoe / 4) - Math.floor(yoe / 100) + doy;
+  return era * 146097 + doe - 719468;
+}
+
+// Epoch milliseconds for an instant in the receipt timestamp form, or null. Exported so
+// test_transform_receipt_verify.js can run the shared instant table on this copy.
+export function parseInstantMs(value) {
+  if (typeof value !== "string") return null;
+  const m = INSTANT.exec(value);
+  if (!m) return null;
+  const [y, mo, d, h, mi, s] = [1, 2, 3, 4, 5, 6].map((i) => Number(m[i]));
+  const ms = Number((m[7] || "").padEnd(3, "0").slice(0, 3));
+  const leap = y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0);
+  const daysInMonth = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  if (!(mo >= 1 && mo <= 12 && d >= 1 && d <= daysInMonth[mo - 1] && h <= 23 && mi <= 59 && s <= 59)) {
+    return null;
+  }
+  let offset = 0;
+  if (m[8] !== "Z") {
+    const oh = Number(m[10]);
+    const om = Number(m[11]);
+    if (oh > 23 || om > 59) return null;
+    offset = (oh * 60 + om) * (m[9] === "+" ? 1 : -1);
+  }
+  return (((daysFromCivil(y, mo, d) * 24 + h) * 60 + mi) * 60 + s) * 1000 + ms - offset * 60000;
+}
+
 function parseSignedAt(s) {
-  // Parse ISO-8601 with trailing Z into UTC ms-since-epoch. JS Date
-  // handles "Z" suffix; reject if NaN.
-  const ms = Date.parse(s);
-  if (Number.isNaN(ms)) {
-    throw new Error(`signed_at ${JSON.stringify(s)} not parseable as ISO-8601`);
+  const ms = parseInstantMs(s);
+  if (ms === null) {
+    throw new Error(`signed_at ${JSON.stringify(s)} is not in the receipt timestamp form (RENDER_RECEIPT_FORMAT.md §6.1)`);
   }
   return ms;
 }

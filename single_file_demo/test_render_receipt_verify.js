@@ -114,6 +114,12 @@ for (const filename of fixtureFiles) {
     ["entry with empty kid", [{ kid: "", effective_revocation_at: "2026-01-01T00:00:00Z" }], "reject"],
     ["same second, whole-second effective", [{ ...entry, effective_revocation_at: "2026-04-27T00:45:16Z" }], "reject"],
     ["effective one second later", [{ ...entry, effective_revocation_at: "2026-04-27T00:45:17Z" }], "verify"],
+    // Every entry for the kid counts: the earliest effective time decides and a
+    // malformed duplicate fails closed, whatever the list order (Python runs the same four).
+    ["later entry for the kid listed first", [{ ...entry, effective_revocation_at: "2099-01-01T00:00:00Z" }, { ...entry, effective_revocation_at: "2026-01-01T00:00:00Z" }], "reject"],
+    ["earlier entry for the kid listed first", [{ ...entry, effective_revocation_at: "2026-01-01T00:00:00Z" }, { ...entry, effective_revocation_at: "2099-01-01T00:00:00Z" }], "reject"],
+    ["malformed duplicate entry for the kid", [{ ...entry, effective_revocation_at: "2099-01-01T00:00:00Z" }, { ...entry, effective_revocation_at: "not-an-instant" }], "reject"],
+    ["both entries for the kid after signing", [{ ...entry, effective_revocation_at: "2099-01-01T00:00:00Z" }, { ...entry, effective_revocation_at: "2098-01-01T00:00:00Z" }], "verify"],
     ["bare empty list form (spec 6.1)", { revoked: [] }, "verify"],
     ["served empty document", { schema: "sum.revoked_kids.v1", revoked: [] }, "verify"],
   ];
@@ -133,6 +139,33 @@ for (const filename of fixtureFiles) {
     else {
       fail++;
       failures.push({ name: `revokedKids: ${name}`, kind: "revocation input", expected, actual: `${outcome} ${cls || ""}` });
+    }
+  }
+}
+
+// A payload value that is not JSON-canonicalizable: a lone surrogate, or a number
+// that JSON reads as Infinity (1e999). Python rejects both as malformed_receipt;
+// this verifier used to let canonicalize throw a plain Error with no errorClass.
+{
+  const fx = JSON.parse(readFileSync(join(FIXTURES_DIR, "positive_control.json"), "utf8"));
+  for (const [name, value] of [["Infinity (1e999)", JSON.parse("1e999")], ["-Infinity", JSON.parse("-1e999")], ["lone surrogate", "a\ud800"]]) {
+    const receipt = structuredClone(fx.receipt);
+    receipt.payload = { ...receipt.payload, extra: value };
+    let outcome;
+    let cls;
+    try {
+      await verifyReceipt(receipt, fx.jwks);
+      outcome = "verify";
+    } catch (e) {
+      outcome = e instanceof VerifyError ? "reject" : `raw ${e && e.name}`;
+      cls = e && e.errorClass;
+    }
+    const ok = outcome === "reject" && cls === "malformed_receipt";
+    console.log(`  ${ok ? "✓" : "✗"} payload ${name} (${outcome}${cls ? ` ${cls}` : ""})`);
+    if (ok) pass++;
+    else {
+      fail++;
+      failures.push({ name: `payload ${name}`, kind: "canonicalization", expected: "reject malformed_receipt", actual: `${outcome} ${cls || ""}` });
     }
   }
 }

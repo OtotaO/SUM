@@ -124,6 +124,44 @@ def test_receipt_freshness_past_and_future(case, offset):
     assert exc.value.check == "signed_at_out_of_window"
 
 
+@pytest.mark.parametrize("signed_at, accepted", [
+    ("2026-06-06T12:00:00.000Z", True),
+    ("2026-06-06T12:00:00.5Z", True),
+    ("2026-06-06T17:30:00+05:30", True),
+    ("0001-01-01T00:00:00+01:00", True),
+    ("2026-06-06X12:00:00Z", False),
+    ("2026-06-06T12Z", False),
+    ("2026-06-06T12:00:00", False),
+    ("2026-06-06", False),
+    ("Sat, 06 Jun 2026 12:00:00 GMT", False),
+])
+def test_receipt_freshness_reads_signed_at_in_the_receipt_timestamp_form(signed_at, accepted):
+    """The policy window reads signed_at with the instant grammar the receipt
+    verifiers use. datetime.fromisoformat took any separator and an hour-only
+    time (and more forms from Python 3.11), and overflowed on the calendar
+    edge, so the policy verdict depended on the Python version."""
+    from joserfc.jwk import OKPKey
+
+    from sum_engine_internal.infrastructure.jose_envelope import sign_jose_envelope
+
+    fixture = _load("fixtures/render_receipts/positive_control.json")
+    key = OKPKey.generate_key("Ed25519").as_dict(private=True)
+    payload = dict(fixture["receipt"]["payload"], signed_at=signed_at)
+    receipt = sign_jose_envelope(payload, private_jwk=key, kid="policy-window-kid")
+    receipt["schema"] = fixture["receipt"]["schema"]
+    jwks = {"keys": [{"kty": "OKP", "crv": "Ed25519", "x": key["x"],
+                      "kid": "policy-window-kid", "alg": "EdDSA", "use": "sig"}]}
+    policy = TrustPolicy(max_age_seconds=10**12)
+    now = datetime(2026, 11, 25, tzinfo=timezone.utc)
+    if accepted:
+        report = verify_report(receipt, jwks, trust_policy=policy, now=now)
+        assert report.checks["receipt_freshness"]["status"] == "passed"
+        return
+    with pytest.raises(TrustPolicyError) as exc:
+        verify_report(receipt, jwks, trust_policy=policy, now=now)
+    assert exc.value.check == "signed_at_out_of_window"
+
+
 def test_archival_is_deliberately_unchecked_not_fresh(case):
     receipt, jwks = case
     report = verify_report(receipt, jwks, trust_policy=TrustPolicy(archival=True), now=_signed_at(receipt) + timedelta(days=3650))
@@ -290,3 +328,24 @@ def test_trusted_key_catalog_is_copied(case):
     policy = TrustPolicy(trusted_keys=catalog)
     catalog.clear()
     assert verify_report(receipt, jwks, trust_policy=policy).checks["trusted_key"]["status"] == "passed"
+
+
+def test_pinned_x_with_a_foreign_private_member_does_not_pass_the_pin():
+    """The JWKS a receipt arrives with is untrusted; the pin is the defence.
+    An entry carrying the pinned key's x plus another key's d made joserfc
+    verify with the key derived from d while the pin fingerprinted x, so a
+    receipt the pinned key never signed reported trusted_key: passed."""
+    from joserfc.jwk import OKPKey
+
+    from sum_engine_internal.infrastructure.jose_envelope import sign_jose_envelope
+
+    fixture = _load("fixtures/render_receipts/positive_control.json")
+    kid = fixture["receipt"]["kid"]
+    other = OKPKey.generate_key("Ed25519").as_dict(private=True)
+    receipt = sign_jose_envelope(fixture["receipt"]["payload"], private_jwk=other, kid=kid)
+    receipt["schema"] = fixture["receipt"]["schema"]
+    pinned_entry = next(k for k in fixture["jwks"]["keys"] if k["kid"] == kid)
+    jwks = {"keys": [dict(pinned_entry, d=other["d"])]}
+    with pytest.raises(SumVerifyError) as exc:
+        verify(receipt, jwks, trust_policy=TrustPolicy(trusted_keys=_pins(fixture["jwks"])))
+    assert exc.value.error_class == "malformed_jwks"
