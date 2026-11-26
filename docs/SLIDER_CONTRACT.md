@@ -275,7 +275,8 @@ reliable deployment protection.
 - **Key:** in Python, `sha256(sorted_triples + quantize(sliders))[:32]`,
   a pure function of input (`slider_renderer.cache_key`). The Worker
   stores a render under `render-v2:<key>:<provider, or canonical>`, with
-  a key of the same shape but not the same bytes (FEATURE_CATALOG 116).
+  a key of the same shape but not always the same bytes (FEATURE_CATALOG
+  116).
 - **TTL:** 24 hours by default (caller-overridable). Worker's KV-backed
   implementation enforces TTL on its side; in-memory cache for tests
   treats process lifetime as TTL.
@@ -284,8 +285,9 @@ reliable deployment protection.
 - **Coherence:** the cache key is content-addressed. While an entry is
   cached, two callers with identical sorted triples and quantized
   sliders (and, on the Worker, the same provider) receive the same
-  RenderResult; the Worker does not cache a render whose signing
-  failed. No cache poisoning vector — the key IS the content.
+  RenderResult, unless a caller sets `force_render` or, on the Worker,
+  the entry has no receipt while signing is configured (it is rendered
+  again); the Worker does not cache a render whose signing failed. No cache poisoning vector — the key IS the content.
 
 ## UX commit-vs-drag decision matrix
 

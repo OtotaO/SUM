@@ -288,7 +288,7 @@ Content-Type: application/json
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `prompt` | `string` | yes | Non-empty after trim, ≤40 000 chars. |
-| `model` | `string` | no | If given, it must be the configured model (by default `claude-haiku-4-5-20251001` for Anthropic, `gpt-4o-mini` for OpenAI); any other value is a 400. |
+| `model` | `string` | no | If given, it must be the configured model (by default `claude-haiku-4-5-20251001` for Anthropic, `gpt-4o-mini` for OpenAI); any other value is a 400 (a deployment with no provider key returns its 503 first). |
 
 ### 4.2 Response (200)
 
@@ -558,8 +558,8 @@ RENDER_RECEIPT_REVOKED_KIDS = '{"schema": "sum.revoked_kids.v1", "issued_at": ".
 
 | Variable | Type | Effect when absent |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | secret | `/api/render` (LLM path) and `/api/complete` fall back to OpenAI when `OPENAI_API_KEY` is set; an `/api/render` request that names `provider: "anthropic"` returns 503 |
-| `OPENAI_API_KEY` | secret | with Anthropic also missing, the `/api/render` LLM path and `/api/complete` return 503; an `/api/render` request that names `provider: "openai"` returns 503 |
+| `ANTHROPIC_API_KEY` | secret | `/api/render` (LLM path) and `/api/complete` fall back to OpenAI when `OPENAI_API_KEY` is set; an `/api/render` request that names `provider: "anthropic"` returns 503 unless it carries `X-Render-LLM-Key-Anthropic` |
+| `OPENAI_API_KEY` | secret | with Anthropic also missing, `/api/complete` returns 503, and so does the `/api/render` LLM path unless the request carries a BYO key header (`X-Render-LLM-Key-Anthropic` or `-OpenAI`); an `/api/render` request that names `provider: "openai"` returns 503 unless it carries `X-Render-LLM-Key-OpenAI` |
 | `RENDER_RECEIPT_SIGNING_JWK` + `RENDER_RECEIPT_SIGNING_KID` | secrets | `/api/render` returns no `render_receipt` field |
 | `RENDER_RECEIPT_PUBLIC_JWKS` | plaintext var | `/.well-known/jwks.json` returns 503 |
 | `RENDER_RECEIPT_REVOKED_KIDS` | plaintext var | `/.well-known/revoked-kids.json` returns an empty list |

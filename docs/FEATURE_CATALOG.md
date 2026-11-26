@@ -906,7 +906,7 @@ Result: **PASS**.
 Deterministic prompt extension in `build_system_prompt` (Python `tome_sliders.py`; TS mirror `worker/src/render/axis_prompts.ts`) appended when any non-density axis is at ≤ 0.3. No extra LLM cost; pure data. Eliminated the catastrophic-failure mode v0.6 surfaced: real losses 36 → 1 on the same long-doc bench; ≥5-fact-loss cells 2 → 0; min preservation 0.111 → 0.700.
 
 Verify: `pytest Tests/test_tome_sliders.py::TestFactPreservationReinforcement -q`
-Expected: `23 passed`; the tests assert the clause is present when any of the four prompt axes is at or below 0.3 (within the code's 1e-6 tolerance) and absent above it, whatever density is.
+Expected: `23 passed`; the tests assert the clause is present when any of the four prompt axes is at or below 0.3 (within the code's 1e-6 tolerance) and absent above it (at the default density, and absent at density 0 with every prompt axis neutral).
 Result: **PASS**.
 
 ### 110. `salvage_partial_triplets` (LengthFinishReasonError defence) ✅
