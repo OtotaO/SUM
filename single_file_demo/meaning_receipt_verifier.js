@@ -199,7 +199,7 @@ export async function verifyMeaningEnvelope(receipt, jwks, supportedSchema) {
   if (receipt.schema !== supportedSchema) {
     throw new VerifyError(
       ERROR_CLASSES.SCHEMA_UNKNOWN,
-      `unsupported receipt schema: ${receipt.schema} (this verifier handles ${supportedSchema})`,
+      `unsupported receipt schema: ${typeof receipt.schema === "string" ? receipt.schema : `(${typeof receipt.schema})`} (this verifier handles ${supportedSchema})`,
     );
   }
   const { kid, payload, jws } = receipt;

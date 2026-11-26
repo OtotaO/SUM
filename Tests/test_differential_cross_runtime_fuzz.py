@@ -136,6 +136,8 @@ def _mutations(env, jwks):
     e = copy.deepcopy(env); e.pop("kid", None); yield ("drop-kid", e, jwks)
     e = copy.deepcopy(env); e.pop("schema", None); yield ("drop-schema", e, jwks)
     yield ("schema-wrong", E(schema="sum.evil.v1"), jwks)
+    # An object JS cannot print without help: schema_unknown, not an unclassed TypeError.
+    yield ("schema-object", E(schema={"toString": 1, "valueOf": 1}), jwks)
     yield ("kid-unknown", E(kid="nope"), jwks)
     yield ("payload-empty-dict", E(payload={}), jwks)
     yield ("payload-is-array", E(payload=[1, 2]), jwks)
@@ -560,9 +562,9 @@ def _header_cases(env, family):
 
 # A correctly signed receipt whose header has a member outside the 12
 # registered JWS names: Python refuses it through joserfc's strict header
-# check (as signature_invalid), the JS verifiers accept it. RENDER_RECEIPT_FORMAT
-# section 1 says such a verifier "will succeed", so which runtime moves is held
-# for the operator; this pins the current split so neither side changes alone.
+# check (as signature_invalid), the JS verifiers accept it. Which runtime moves
+# is held for the operator; this pins the current split so neither side
+# changes alone.
 KNOWN_VERDICT_DIVERGENCE = {
     "header member outside the registered names": (("REJECT", "signature_invalid"), ("ACCEPT", None)),
 }

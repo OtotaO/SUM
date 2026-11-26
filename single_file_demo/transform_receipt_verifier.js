@@ -235,7 +235,7 @@ export async function verifyTransformReceipt(receipt, jwks, opts) {
   if (receipt.schema !== SUPPORTED_SCHEMA) {
     throw new VerifyError(
       ERROR_CLASSES.SCHEMA_UNKNOWN,
-      `unsupported receipt schema: ${receipt.schema} ` +
+      `unsupported receipt schema: ${typeof receipt.schema === "string" ? receipt.schema : `(${typeof receipt.schema})`} ` +
         `(this verifier handles ${SUPPORTED_SCHEMA})`,
     );
   }

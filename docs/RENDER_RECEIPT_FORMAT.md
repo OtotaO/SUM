@@ -92,7 +92,7 @@ The v1 schema is stable. Future revisions:
 - MUST bump the `schema` identifier to `sum.render_receipt.v2` (etc.) for breaking changes.
 - New protected-header fields that change verification semantics MUST land in the JWS `crit` array, forcing older verifiers to fail closed per RFC 7515 §4.1.11.
 
-A v1-aware verifier will continue to verify v1 receipts forever. A v1-aware verifier that encounters a v2 receipt will succeed if the protected header's `crit` array contains `b64` and otherwise only fields the verifier understands; otherwise it MUST fail closed.
+A v1-aware verifier will continue to verify v1 receipts forever.
 
 ---
 
