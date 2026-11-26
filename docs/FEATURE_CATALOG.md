@@ -65,7 +65,7 @@ Result (2026-04-21): **PASS** — byte-identical to Node (`verify.js` self-test 
 
 Encodes a list of axioms into a single Gödel state integer via iterative LCM. Idempotent under duplicates (fixed in commit `2c252f0` after the JS port surfaced a multiplicative-vs-LCM drift).
 
-Verify: `pytest Tests/test_semantic_arithmetic.py::TestGodelStateAlgebra::test_encode_chunk_state -q`
+Verify: `pytest Tests/test_semantic_arithmetic.py::TestGodelEncoding::test_encode_chunk_state -q`
 Expected: `1 passed`
 Result: **PASS** — within the 291-test broad batch this session.
 
@@ -283,8 +283,8 @@ Result: **PASS** in isolation (cross-file polution in full-suite runs).
 `sum_engine_internal/ensemble/tome_sliders.py` — `TomeSliders(density, length, formality, audience, perspective)`. Density slider actioned on the deterministic canonical path via lexicographic axiom subsetting; the other four axes captured as metadata headers for future LLM-gated rendering.
 
 Verify: `pytest Tests/test_tome_sliders.py -q`
-Expected: 21 passed
-Result: **PASS** — 21/21.
+Expected: 49 passed
+Result: **PASS** — 49/49.
 
 ### 30. Controlled tome generation (`generate_controlled`) ✅
 
@@ -317,7 +317,7 @@ Result: **PASS** (within broader batch).
 
 `rebuild_state(algebra, max_seq_id=N, branch="...")` replays the ledger up to tick N on branch X. Used by `/time-travel`.
 
-Verify: `pytest Tests/test_akashic_replay.py::test_time_travel -q`
+Verify: `pytest Tests/test_akashic_replay.py::TestChronosTimeTravel::test_time_travel_to_tick -q`
 Expected: pass
 Result: **PASS**.
 
@@ -862,7 +862,7 @@ Result: **PASS**.
 
 ## Layer 10 — Phase E.1 trust loop (Worker render path + render receipts)
 
-The Phase E.1 v0.4 → v0.9.A.2 arc landed the bidirectional slider as a real product feature: deterministic density on the canonical path, LLM-conditioned length / formality / audience / perspective on the Worker render path, fact-preservation verified at scale, and every render carrying its own Ed25519-signed attestation. Live at `https://sum-demo.ototao.workers.dev`.
+The Phase E.1 v0.4 → v0.9.A.2 arc landed the bidirectional slider as a real product feature: deterministic density on the canonical path, LLM-conditioned length / formality / audience / perspective on the Worker render path, fact-preservation verified at scale, and each Worker render carrying its own Ed25519-signed attestation when the Worker signs and signing succeeds. Live at `https://sum-demo.ototao.workers.dev`.
 
 ### 104. Four-layer fact-preservation substrate ✅
 
@@ -905,8 +905,8 @@ Result: **PASS**.
 
 Deterministic prompt extension in `build_system_prompt` (Python `tome_sliders.py`; TS mirror `worker/src/render/axis_prompts.ts`) appended when any non-density axis is at ≤ 0.3. No extra LLM cost; pure data. Eliminated the catastrophic-failure mode v0.6 surfaced: real losses 36 → 1 on the same long-doc bench; ≥5-fact-loss cells 2 → 0; min preservation 0.111 → 0.700.
 
-Verify: `pytest Tests/test_slider_renderer.py -q -k reinforcement`
-Expected: tests assert clause is present at axis ≤ 0.3 and absent above.
+Verify: `pytest Tests/test_tome_sliders.py::TestFactPreservationReinforcement -q`
+Expected: `23 passed`; the tests assert the clause is present when any of the four prompt axes is at or below 0.3 (within the code's 1e-6 tolerance) and absent above it (at the default density, and absent at density 0 with every prompt axis neutral).
 Result: **PASS**.
 
 ### 110. `salvage_partial_triplets` (LengthFinishReasonError defence) ✅
@@ -949,25 +949,25 @@ Result: **PASS** (live; v0.9.B browser verifier and v0.9.C Python verifier are q
 
 ### 115. TypeScript axis-prompt mirror (`worker/src/render/axis_prompts.ts`) ✅
 
-Byte-for-byte equivalent of the Python `tome_sliders.build_system_prompt` and per-axis fragment lookup tables, plus `applyDensity`, `requiresExtrapolator`, `deterministicTome` for the canonical (no-LLM) branch. A Python-rendered tome and a Worker-rendered tome from the same input are interchangeable when sliders match.
+TypeScript port of the Python `tome_sliders.build_system_prompt` and per-axis fragment lookup tables, plus `applyDensity`, `requiresExtrapolator`, `deterministicTome` for the canonical (no-LLM) branch. The system prompt is byte-for-byte equal to Python's for all 625 quantized slider combinations, and `applyDensity` keeps the same triples as Python's `apply_density`. A whole render is not the same: the Worker writes the kept triples in code-point order and counts each copy of a repeated triple, while `slider_renderer.render` keeps input order and every copy of a kept key, so for unsorted or repeated triples the two tomes can differ (three triples in the order b, a, c at density 0.67, or a, a, b at 0.5), and with them the `tome_hash` the Worker signs. The branch can differ too: `slider_renderer.render` decides canonical or LLM from the raw sliders and the Worker from the quantized ones, so when every prompt axis is in [0.4, 0.6) and one is not exactly 0.5, the render is an LLM one in Python and a canonical one in the Worker.
 
-Verify: `npm --prefix worker run typecheck`
-Expected: clean.
+Verify: `npm --prefix worker run test:prompts` (and `npm --prefix worker run test:density`)
+Expected: `ALL SYSTEM PROMPT CROSS-RUNTIME CHECKS PASSED`.
 Result: **PASS**.
 
 ### 116. Bin cache (`worker/src/cache/bin_cache.ts`) ✅
 
-Content-addressed cache key `sha256(sorted_triples + quantize(sliders))[:32]` byte-stable with the Python `slider_renderer.cache_key`. KV-backed in production (binding `RENDER_CACHE`); in-memory for local dev. Default 24 h TTL; LRU on the KV side. Cache HIT serves the original receipt verbatim including `signed_at` — see [`docs/RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) §1.3 for the durability semantics.
+Content-addressed cache key `sha256(JSON of the code-point-sorted input triples and quantized sliders)[:32]`, stored as `render-v2:<key>:<provider, or canonical>`. Same shape as Python's `slider_renderer.cache_key` but not the same bytes in general (JavaScript writes `1` for `1.0`, `0.00001` for `1e-05` and non-ASCII text unescaped), and no cache is shared between the runtimes. KV-backed (binding `RENDER_CACHE`); without the binding there is no cache and every call renders. Entries expire by TTL (24 h default, 60 s to 24 h per request). Cache HIT serves the original receipt verbatim including `signed_at` — see [`docs/RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) §1.3 for the durability semantics.
 
-Verify: TypeScript unit tests in `worker/` cover key derivation; cross-runtime byte parity is the floating-point repr concern documented inline (`1.0` Python vs `1` JS — JCS normalisation handles it on the receipt path; the bin cache excludes density from binning per Phase E.1 STATE 4).
+Verify: `npm --prefix worker run test:hardening` (run it alone: it opens many loopback connections), which covers cache hits and misses and the receipt-less render that is not cached.
 Result: **PASS**.
 
 ### 117. `/api/qid` Wikidata resolver (Phase 4a) ✅
 
-`worker/src/routes/qid.ts` — replaces the 501 stub. Batch term lookup via MediaWiki `wbsearchentities`, returns `{id, label, description, confidence, source}` per term. Up to 50 terms per request; parallel fetches; two-tier caching (edge Cache API + optional KV). Confidence scoring mirrors Wikidata's `match.type` field (`label` → 1.0, `alias` → 0.7, else → 0.5). User-Agent header per Wikidata operator-contact guidance. **SPARQL disambiguation is Priority 4 in [`docs/NEXT_SESSION_PLAYBOOK.md`](NEXT_SESSION_PLAYBOOK.md) — the current `wbsearchentities`-only path is ~80 % accurate, which Priority 4 lifts to a measured >95 % floor.**
+`worker/src/routes/qid.ts` — replaces the 501 stub. Batch term lookup via MediaWiki `wbsearchentities`, returns `text`, `id`, `label`, `description`, `confidence` and `source` per resolved term (a term that does not resolve has `id: null` and a `reason`). Up to 50 terms per request; parallel fetches; resolved terms are cached in the edge Cache API for 30 days (no KV cache; the per-IP rate limit uses the `RENDER_CACHE` KV namespace). Confidence scoring mirrors Wikidata's `match.type` field (`label` → 1.0, `alias` → 0.7, else → 0.5). User-Agent header per Wikidata operator-contact guidance. **SPARQL disambiguation is Priority 4 in [`docs/NEXT_SESSION_PLAYBOOK.md`](NEXT_SESSION_PLAYBOOK.md) — the current `wbsearchentities`-only path is ~80 % accurate, which Priority 4 lifts to a measured >95 % floor.**
 
-Verify: `curl -sS -X POST https://sum-demo.ototao.workers.dev/api/qid -H 'content-type: application/json' -d '{"terms":[{"text":"Marie Curie"}]}' | jq '.results[0] | keys'`
-Expected: `["confidence","description","id","label","source"]`
+Verify: `curl -sS -X POST https://sum-demo.ototao.workers.dev/api/qid -H 'content-type: application/json' -d '{"terms":[{"text":"Marie Curie"}]}' | jq '.resolved[0] | keys'`
+Expected: `["confidence","description","id","label","source","text"]`
 Result: **PASS** (live).
 
 ---

@@ -12,6 +12,12 @@
 // deterministic tome is built from, whose hash is a signed receipt field
 // (`tome_hash` in routes/render.ts). Same input, same sliders, two hashes.
 //
+// This pins the kept key SUBSET only. The tome can still differ from
+// slider_renderer.render: the Worker writes the subset in sorted order and
+// counts each copy of a repeated triple toward floor(N * density), while
+// Python keeps the input order and every copy of a kept key (see
+// src/render/axis_prompts.ts).
+//
 // This is the same class of leak that src/receipt/sign.ts::hashTriples was
 // fixed for in the v0.9.A.1 review pass: a JS-native string comparison that
 // looks like Python's but is not.

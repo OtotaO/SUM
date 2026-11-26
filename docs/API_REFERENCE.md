@@ -10,7 +10,7 @@ This is the second integration surface alongside [`MCP_INTEGRATION.md`](MCP_INTE
 | A web app, mobile app, server-side service, or any HTTP client | this HTTP API |
 | A Python/Node verifier needing only to check signatures on receipts produced by this API | this API for the receipt + JWKS endpoints, then a local verifier |
 
-Both surfaces produce byte-identical canonical outputs for the operations they share, so a render receipt issued by the Worker verifies under the same Python / Node / browser verifiers regardless of which surface initiated the call.
+The two surfaces do not produce the same bytes: the MCP server's `render` tool renders locally (deterministic density only) in the canonical tome format, while the Worker's canonical tome is plain sentences, and only the Worker issues render receipts. A render receipt from the Worker verifies under the Python, Node and browser verifiers.
 
 ---
 
@@ -190,7 +190,7 @@ Field semantics:
 | `wall_clock_ms` | Server-side wall clock for the render (excludes network latency). |
 | `quantized_sliders` | The sliders after binning (each non-density axis snaps to 5 bins). The signed receipt covers these, **not** the original request sliders. |
 | `render_id` | `sha256(cache_key + tome)[:16]`. Stable identifier for this exact (sliders, triples, tome) tuple. |
-| `render_receipt` | **Optional.** Present iff the operator has configured `RENDER_RECEIPT_SIGNING_JWK` + `RENDER_RECEIPT_SIGNING_KID`. Absent for self-hosted deployments without signing keys. The hosted demo always produces this field. |
+| `render_receipt` | **Optional.** Present when the operator has configured `RENDER_RECEIPT_SIGNING_JWK` + `RENDER_RECEIPT_SIGNING_KID` and signing succeeds. Absent for self-hosted deployments without signing keys. If signing fails, the render is returned without this field and is not cached. |
 
 ### 3.3 The render receipt
 
@@ -251,12 +251,19 @@ A working browser implementation is in [`single_file_demo/receipt_verifier.js`](
 
 | Status | Trigger | Body |
 |---|---|---|
-| 400 | Body is not valid JSON | `{ "error": "invalid JSON body" }` |
-| 400 | `triples` missing or empty | `{ "error": "missing or empty 'triples' array" }` |
-| 400 | `slider_position` missing | `{ "error": "missing 'slider_position'" }` |
-| 400 | Slider axis out of `[0, 1]` | `{ "error": "slider value out of [0, 1]: <value>" }` |
+| 400 | Body missing, not valid JSON or UTF-8, or not an object | `{ "error": "invalid JSON body" }` or `{ "error": "body must be an object" }` |
+| 400 | `triples` missing, empty or over 256 items | `{ "error": "triples must contain 1 to 256 items" }` |
+| 400 | A triple that is not three nonempty strings of at most 512 characters | `{ "error": "each triple must contain three nonempty strings of at most 512 characters" }` |
+| 400 | A triple string contains a lone UTF-16 surrogate (not well-formed Unicode) | `{ "error": "triple text must be well-formed Unicode (no lone surrogates)" }` |
+| 400 | `slider_position` missing or not an object | `{ "error": "sliders must be an object" }` |
+| 400 | A slider axis missing, not a finite number, or outside `[0, 1]` | `{ "error": "<axis> must be a finite number in [0, 1]" }` |
+| 400 | `provider`, `force_render` or `cache_ttl_seconds` invalid | `{ "error": "provider must be anthropic or openai" }`, `{ "error": "force_render must be boolean" }` or `{ "error": "cache_ttl_seconds must be an integer from 60 to 86400" }` |
 | 405 | Non-POST method | `{ "error": "method not allowed; use POST" }` |
-| 502 | LLM upstream failure | `{ "error": "render failed: <provider> <status>: <upstream-body-prefix>", "cache_key": "<key>" }` |
+| 408 | Body not fully received within 10 seconds | `{ "error": "JSON body read timed out" }` |
+| 413 | Body over 192 KiB (196,608 bytes), or triple text over 40,000 characters in all | `{ "error": "JSON body exceeds 196608 bytes" }` or `{ "error": "triple text exceeds 40000 characters" }` |
+| 429 | Canonical path: the per-IP limit of 100 an hour; LLM path: generation admission refused (§2.7) | `{ "error": "rate limit exceeded", ... }`, `{ "error": "shared operator daily budget exhausted", ... }` or `{ "error": "generation capacity busy; retry shortly" }` |
+| 502 | LLM provider failure | `{ "error": "render failed: <reason>", "cache_key": "<key>" }`, where the reason is, for example, `provider returned HTTP 529` |
+| 503 | LLM path with no provider key configured, or with a named `provider` whose key is missing, or generation admission unavailable | `{ "error": "render requires at least one LLM provider configured (ANTHROPIC_API_KEY or OPENAI_API_KEY)" }`, `{ "error": "no credential configured for <provider>" }` or `{ "error": "generation admission unavailable; retry later or use canonical rendering" }` |
 
 A 502 leaves the cache untouched — the next request with the same `(triples, sliders)` will retry.
 
@@ -281,7 +288,7 @@ Content-Type: application/json
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `prompt` | `string` | yes | Non-empty after trim, ≤40 000 chars. |
-| `model` | `string` | no | Provider-specific model tag. Default is `claude-haiku-4-5-20251001` for Anthropic, `gpt-4o-mini` for OpenAI. |
+| `model` | `string` | no | If given, it must be the configured model (by default `claude-haiku-4-5-20251001` for Anthropic, `gpt-4o-mini` for OpenAI); a value that is not a string is a 400, and another string is a 400 on a deployment with a provider key (one without returns the 503 in §4.3). |
 
 ### 4.2 Response (200)
 
@@ -293,16 +300,19 @@ Content-Type: application/json
 }
 ```
 
-`source` is the provider that actually answered (Anthropic takes priority if both keys are set). `model` is the model identifier the provider returned (may differ from the `model` you requested if the provider mapped it).
+`source` is the provider that actually answered (Anthropic takes priority if both keys are set). `model` is the configured model the request ran with.
 
 ### 4.3 Errors
 
 | Status | Trigger |
 |---|---|
-| 400 | Invalid JSON, missing/empty `prompt`, or `prompt` over 40 000 chars |
+| 400 | Invalid JSON or UTF-8, a body that is not an object, missing/empty `prompt`, a `prompt` containing a lone UTF-16 surrogate (not well-formed Unicode), or a `model` that is not a string or not the configured one |
+| 408 | Body not fully received within 10 seconds |
+| 413 | `prompt` over 40 000 UTF-16 code units, or a body over 192 KiB (196,608 bytes) |
+| 429 | Generation admission refused: the per-IP demo allowance, the shared daily budget, or calls in flight |
 | 405 | Non-POST method |
-| 502 | Upstream provider returned non-2xx; body includes the provider name, status, and a 500-char prefix of the upstream response |
-| 503 | Neither `ANTHROPIC_API_KEY` nor `OPENAI_API_KEY` is configured. The demo's JS detects 503 and extracts no claims; the local comparison stays usable. |
+| 502 | Upstream provider failure; the body is `{ "error": "upstream failure: <reason>" }`, where the reason is, for example, `provider returned HTTP 529` or `anthropic: empty completion` |
+| 503 | Neither `ANTHROPIC_API_KEY` nor `OPENAI_API_KEY` is configured (checked after the `prompt` checks above), or generation admission is unavailable. The demo's JS treats any non-2xx as no claims; the local comparison stays usable. |
 
 ---
 
@@ -324,7 +334,7 @@ Wikidata QID/PID resolver. Takes a list of free-text terms, returns the best Wik
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `terms` | `Array<Term>` | yes | 1–50 entries. |
-| `terms[].text` | `string` | yes | 1–200 chars after trim. |
+| `terms[].text` | `string` | yes | 1 to 200 UTF-16 code units, not trimmed. Missing, empty or well-formed longer text is a per-term result, not an error; a lone surrogate is a 400 at any length (§5.3). |
 | `terms[].kind` | `"item"` \| `"property"` | no | Default `"item"`. `"property"` searches the P-namespace (predicates). |
 | `terms[].lang` | `string` | no | Default `"en"`. Wikidata language code. |
 
@@ -358,9 +368,18 @@ Each resolved term has either an `id` (a Wikidata QID like `Q7186` or PID like `
 
 | Status | Trigger |
 |---|---|
-| 400 | Invalid JSON or missing/empty `terms` |
+| 400 | Invalid JSON or UTF-8, a body that is not an object, or missing/empty `terms` |
+| 400 | A term that is not an object (`null`, a string, a number) |
+| 400 | `kind` set, and not `null`, `"item"` or `"property"` |
+| 400 | `lang` set, and neither `null` nor shaped like a language code (2 to 8 letters with optional hyphenated subtags, such as `en` or `zh-hans`) |
+| 400 | `text` contains a lone UTF-16 surrogate (not well-formed Unicode), at any length |
 | 405 | Non-POST method |
+| 408 | Body not fully received within 10 seconds |
+| 413 | Body over 192 KiB (196,608 bytes) |
 | 413 | More than 50 terms |
+| 429 | The per-IP limit of 60 an hour (scope `qid`) |
+
+Every term is checked before any lookup, so one bad term refuses the whole request. A `kind` or `lang` of `null` means the default (`item`, `en`). A term whose `text` is missing or empty, or well-formed and over 200 UTF-16 code units, is not an error: it comes back with `id: null` and `reason` `empty-text` or `text-too-long` in a 200 response.
 
 The Worker uses Cloudflare's Cache API (not KV) to memoise resolutions for 30 days. Cache misses or Wikidata transient errors surface as `id: null` with a descriptive `reason`; the request itself still returns 200.
 
@@ -500,10 +519,15 @@ content-type: application/json
 
 | Status | When |
 |---|---|
-| `400` | invalid JSON body, missing `input`, or unknown `transform` name |
+| `400` | invalid JSON or UTF-8, a body that is not an object, a missing or unknown `transform` name, or a missing `input` (`input must be an object`) |
+| `400` | `triples` empty or over 256 items (`triples must contain 1 to 256 items`), a triple that is not three nonempty strings of at most 512 characters, `parameters` not an object or an axis that is not a finite number in [0, 1] |
+| `400` | a `source_chain` that is not an array or holds more than 256 records (`source_chain must contain at most 256 records`), a record that is not an object (`source_chain record must be an object`), a record whose `provenance` is missing or not an object (`provenance must be an object`), or a malformed record (`invalid source_chain record`) |
+| `400` | a triple, a `source_chain` claim or a `source_uri` containing a lone UTF-16 surrogate (not well-formed Unicode) |
 | `405` | non-`POST` method |
+| `408` | body not fully received within 10 seconds |
+| `413` | body over 192 KiB (196,608 bytes), or triple text over 40,000 characters in all (`triple text exceeds 40000 characters`) |
+| `429` | the per-IP limit of 100 an hour (scope `canonical`, the limit for credential-free rendering) |
 | `501` | transform recognised but the requested path is not yet wired on the Worker (e.g. `slider` with an off-centre LLM axis); the error message contains `"not yet wired"`. Use `/api/render` for that case. |
-| `429` | per-IP rate limit (see [§2.7](#27-rate-limiting)) |
 
 ---
 
@@ -534,8 +558,8 @@ RENDER_RECEIPT_REVOKED_KIDS = '{"schema": "sum.revoked_kids.v1", "issued_at": ".
 
 | Variable | Type | Effect when absent |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | secret | `/api/render` LLM path returns 502; `/api/complete` falls back to OpenAI |
-| `OPENAI_API_KEY` | secret | `/api/complete` returns 503 if Anthropic also missing |
+| `ANTHROPIC_API_KEY` | secret | `/api/render` (LLM path) and `/api/complete` fall back to OpenAI when `OPENAI_API_KEY` is set; an `/api/render` request that names `provider: "anthropic"` returns 503 unless it carries `X-Render-LLM-Key-Anthropic` |
+| `OPENAI_API_KEY` | secret | with Anthropic also missing, `/api/complete` returns 503, and so does the `/api/render` LLM path unless the request carries a BYO key header (`X-Render-LLM-Key-Anthropic` or `-OpenAI`); an `/api/render` request that names `provider: "openai"` returns 503 unless it carries `X-Render-LLM-Key-OpenAI` |
 | `RENDER_RECEIPT_SIGNING_JWK` + `RENDER_RECEIPT_SIGNING_KID` | secrets | `/api/render` returns no `render_receipt` field |
 | `RENDER_RECEIPT_PUBLIC_JWKS` | plaintext var | `/.well-known/jwks.json` returns 503 |
 | `RENDER_RECEIPT_REVOKED_KIDS` | plaintext var | `/.well-known/revoked-kids.json` returns an empty list |

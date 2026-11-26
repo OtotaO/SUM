@@ -13,7 +13,7 @@ The bar for this document: a consumer must be able to implement a working transf
 
 ## 1. Wire format
 
-Every successful `POST /api/transform` response carries a `transform_receipt` field with this shape:
+A successful `POST /api/transform` response carries a `transform_receipt` field with this shape when the Worker has signing configured and signing succeeds (otherwise the field is absent):
 
 ```json
 {

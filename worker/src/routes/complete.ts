@@ -19,7 +19,7 @@
 
 import type { Env } from "../index";
 import { admitLLM } from "../llm_budget";
-import { readBoundedJSON, requireObject, RequestError, errorResponse, MAX_PROMPT_CHARS, providerJSON } from "../request_limits";
+import { readBoundedJSON, requireObject, RequestError, errorResponse, MAX_PROMPT_CHARS, providerJSON, isWellFormedText } from "../request_limits";
 
 const ANTHROPIC_DEFAULT = "claude-haiku-4-5-20251001";
 const OPENAI_DEFAULT = "gpt-4o-mini";
@@ -104,6 +104,9 @@ export async function handleComplete(request: Request, env: Env): Promise<Respon
   }
   if (prompt.length > MAX_PROMPT_CHARS) {
     return json({ error: `prompt exceeds ${MAX_PROMPT_CHARS} chars` }, 413);
+  }
+  if (!isWellFormedText(prompt)) {
+    return json({ error: "prompt must be well-formed Unicode (no lone surrogates)" }, 400);
   }
 
   const useAnthropic = Boolean(env.ANTHROPIC_API_KEY?.trim());

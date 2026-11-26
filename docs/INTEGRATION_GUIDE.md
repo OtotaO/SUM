@@ -23,7 +23,7 @@ This document is a triage layer. It does NOT restate the wire specs, regime vali
 ### What you get
 
 - **Structured audit-log rows** — one JSONL row per CLI operation (`attest`, `verify`, `render`). Schema `sum.audit_log.v1`. Forward-compatible: consumers MUST ignore unknown keys.
-- **Signed render receipts** — every `/api/render` call emits a `sum.render_receipt.v1` receipt: detached JWS over a JCS-canonical payload, Ed25519 (RFC 8032) keys distributed via JWKS at `/.well-known/jwks.json`. Verifiable in Python, Node, or any browser — no issuer infrastructure required for verification.
+- **Signed render receipts** — a successful `/api/render` call on a Worker with signing configured emits a `sum.render_receipt.v1` receipt when signing succeeds: detached JWS over a JCS-canonical payload, Ed25519 (RFC 8032) keys distributed via JWKS at `/.well-known/jwks.json`. Verifiable in Python, Node, or any browser — no issuer infrastructure required for verification.
 - **Tampering detection** — the AkashicLedger event log is a SHA-256 Merkle hash chain; `verify_chain()` reports the first broken link. Concurrency-hardened (`BEGIN IMMEDIATE` write transactions) so the invariant holds under concurrent writers.
 
 ### Minimum recipe
@@ -88,7 +88,7 @@ Eight incident-response runbooks are documented in [`INCIDENT_RESPONSE.md`](INCI
 
 - **Cross-vendor portability.** SUM signs the semantic provenance of an LLM render at production time, with the receipt's `provider` field reflecting what actually served — `anthropic`, `openai`, `cf-ai-gateway-anthropic`, `cf-ai-gateway-openai`, or `canonical-path` for the deterministic (no-LLM) tome path. The model field carries the API's echoed `model`, never the configured-default, so silent snapshot drift is visible.
 - **MCP surface.** Any MCP-aware client (Claude Desktop, Claude Code, Cursor, Continue, custom agents) can call `extract`, `attest`, `verify`, `inspect`, `schema`, `render` as tools — see [`MCP_INTEGRATION.md`](MCP_INTEGRATION.md). Lets an AI-safety review pipeline collect attested outputs from any tool-using agent without per-agent integration.
-- **Slider product contract.** Five-axis adjustable rendering (density, length, formality, audience, perspective) with per-axis fact-preservation thresholds; in two benchmark runs (SUM's Python renderer with OpenAI gpt-4o-mini, current render prompts, 16 long documents) the NLI-audited median is 1.000 and the lowest cell 0.545, and the Worker's renders (Claude Haiku 4.5 by default, or OpenAI) are not benchmarked. See [`SLIDER_CONTRACT.md`](SLIDER_CONTRACT.md). Every render carries its slider position in the signed receipt, so the receipt records which settings produced the render; an LLM render cannot be regenerated from the receipt.
+- **Slider product contract.** Five-axis adjustable rendering (density, length, formality, audience, perspective) with per-axis fact-preservation thresholds; in two benchmark runs (SUM's Python renderer with OpenAI gpt-4o-mini, current render prompts, 16 long documents) the NLI-audited median is 1.000 and the lowest cell 0.545, and the Worker's renders (Claude Haiku 4.5 by default, or OpenAI) are not benchmarked. See [`SLIDER_CONTRACT.md`](SLIDER_CONTRACT.md). A signed render receipt carries the slider position, so the receipt records which settings produced the render; an LLM render cannot be regenerated from the receipt.
 
 ### Minimum recipe
 

@@ -44,9 +44,9 @@ Response:
 ]}
 ```
 
-Cache: Cache API, 30-day TTL, `source:"cache"` on subsequent hits.
-Optional KV second layer — uncomment `[[kv_namespaces]]` in
-`wrangler.toml` after `wrangler kv:namespace create qid-cache`.
+Cache: Cache API, 30-day TTL, `source:"cache"` on subsequent hits. No
+KV cache; the route's per-IP rate limit uses the `RENDER_CACHE` KV
+namespace.
 
 ## First deploy (one-time, user-only)
 

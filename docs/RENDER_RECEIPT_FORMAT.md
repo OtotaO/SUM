@@ -12,7 +12,7 @@ The bar for this document: a consumer should be able to implement a working rece
 
 ## 1. Wire format
 
-Every successful `/api/render` response carries a `render_receipt` field with this shape:
+A successful `/api/render` response carries a `render_receipt` field with this shape when the operator has configured signing and signing succeeds (otherwise the render comes back without it):
 
 ```json
 {

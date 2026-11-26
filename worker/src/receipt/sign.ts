@@ -1,7 +1,8 @@
 import { compareTriples } from "../unicode_order";
 // Render receipt signing — Phase E.1 v0.9.A.
 //
-// Each /api/render response carries a `render_receipt` block: a
+// A successful /api/render response carries a `render_receipt` block
+// when signing is configured and succeeds: a
 // detached JWS (RFC 7515 §A.5) with EdDSA / Ed25519 signature over
 // the JCS-canonicalised payload (RFC 8785). Consumers can:
 //
