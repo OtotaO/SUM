@@ -108,9 +108,13 @@ The verifier needs three inputs:
 ```
 1. Parse receipt.kid. Look up the matching key in jwks.keys by kid.
    If no match → REJECT (unknown key id).
+   The key MUST be an Ed25519 public key (kty "OKP", crv "Ed25519");
+   otherwise → REJECT (malformed JWKS), whatever else is wrong.
 
 2. Take receipt.payload (the object, not the string). JCS-canonicalise
    it (RFC 8785). Encode to UTF-8 bytes. This is the detached payload.
+   The bytes MUST number at most 128,000; otherwise → REJECT (malformed
+   receipt). SUM's signer refuses a larger payload.
 
 3. Split receipt.jws on "." → [protected_b64, middle, signature_b64].
    The middle segment MUST be empty (detached payload encoding).
@@ -123,6 +127,20 @@ The verifier needs three inputs:
    a respelled or padded x, and a header the issuer signed in such a
    spelling verifies, so check before decoding; SUM's Python and JS
    verifiers both do.
+   Before verifying the signature, decode the protected header and
+   apply one rule, in this order, in Python and in the JS verifiers:
+   protected_b64 at most 512 characters, its bytes UTF-8 without a BOM,
+   and a JSON object (NaN and Infinity are not JSON) → else REJECT
+   (malformed JWS); every name in crit one the verifier supports (only
+   b64) → else REJECT (unknown crit extension); alg in the algorithm
+   registry → else REJECT (unsupported alg); each registered JWS header
+   name that is present has its type (jku and x5u an http or https URL
+   string; jwk an object; kid, x5t, x5t#S256, typ and cty a string; x5c
+   and crit an array of strings; b64 a boolean) → else REJECT
+   (malformed JWS); b64 false and crit including "b64" → else REJECT
+   (header invariant). A member outside the registered names is not
+   settled: SUM's Python verifier rejects it and the JS verifiers
+   accept it.
    The key's other members follow one rule in both runtimes: no private
    member d; key_ops, when present, an array of distinct strings that
    includes "verify"; use, when present, "sig"; alg, when present,
@@ -391,7 +409,7 @@ When `max_age_seconds` is set, the verifier rejects with `signed_at_out_of_windo
 
 `signed_at` is read with the instant grammar of `effective_revocation_at` (§6.1), with integer-millisecond arithmetic, in Python and in the JS verifiers. Any other form, including a timezone-less time, is rejected with `signed_at_out_of_window`, so the reading of `signed_at` does not depend on the Python version or the machine's time zone.
 
-The error class is distinct from `signature_invalid` because the receipt is *cryptographically valid* — the caller has rejected it by policy. Operationally this matters for incident response: `signature_invalid` → tampering; `signed_at_out_of_window` → replay attempt or stale cache.
+The error class is distinct from `signature_invalid` because the receipt is *cryptographically valid* — the caller has rejected it by policy. Operationally this matters for incident response: `signature_invalid` → tampering; `signed_at_out_of_window` → replay attempt, stale cache, or a `signed_at` not in the receipt timestamp form.
 
 **Receiver-policy guidance** matches the transform-receipt contract; see [`TRANSFORM_RECEIPT_FORMAT.md`](TRANSFORM_RECEIPT_FORMAT.md) §6.2 for the per-use-case window table.
 

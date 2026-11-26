@@ -453,6 +453,221 @@ def test_jwks_entry_with_a_private_member_is_refused_by_both(family):
         assert pv == nv == ("REJECT", "malformed_jwks"), (family, tag, pv, nv)
 
 
+def _b64u(b: bytes) -> str:
+    return base64.urlsafe_b64encode(b).rstrip(b"=").decode()
+
+
+def _signed_under(env, family, header=None, raw=None, payload=None):
+    """env's payload (or a replacement) signed under a chosen protected header,
+    as an issuer would: over proto + "." + the JCS bytes when the header says
+    b64 false (or raw header bytes are given), otherwise over proto + "." +
+    base64url(JCS), the RFC 7797 default."""
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    from sum_engine_internal.infrastructure.jcs import canonicalize
+
+    out = copy.deepcopy(env)
+    if payload is not None:
+        out["payload"] = payload
+    hb = raw if raw is not None else json.dumps(header, separators=(",", ":")).encode()
+    proto, jcs = _b64u(hb), canonicalize(out["payload"])
+    unencoded = raw is not None or header.get("b64", True) is False
+    d = _SIGNING_KEYS[family]["d"]
+    sk = Ed25519PrivateKey.from_private_bytes(base64.urlsafe_b64decode(d + "=" * (-len(d) % 4)))
+    sig = sk.sign(proto.encode("ascii") + b"." + (jcs if unencoded else _b64u(jcs).encode()))
+    out["jws"] = f"{proto}..{_b64u(sig)}"
+    return out
+
+
+def _string_field(payload):
+    return next(k for k in sorted(payload) if isinstance(payload[k], str))
+
+
+def _header_cases(env, family):
+    """(tag, receipt, expected verdict) for correctly signed receipts whose
+    protected header or payload size is the only question."""
+    kid = env["kid"]
+
+    def H(**kw):
+        return {"alg": "EdDSA", "kid": kid, "b64": False, "crit": ["b64"], **kw}
+
+    def without(*names):
+        h = H()
+        for n in names:
+            h.pop(n)
+        return h
+
+    ok, mj, hiv = ("ACCEPT", None), ("REJECT", "malformed_jws"), ("REJECT", "header_invariant_violated")
+    base = json.dumps(H(), separators=(",", ":")).encode()
+    cases = [
+        ("control", _signed_under(env, family, H()), ok),
+        ("b64 missing, no crit", _signed_under(env, family, without("b64", "crit")), hiv),
+        ("b64 missing, crit [b64]", _signed_under(env, family, without("b64")), hiv),
+        ("b64 true", _signed_under(env, family, H(b64=True)), hiv),
+        ("b64 the string false", _signed_under(env, family, H(b64="false")), mj),
+        ("crit absent", _signed_under(env, family, without("crit")), hiv),
+        ("crit empty", _signed_under(env, family, H(crit=[])), hiv),
+        ("crit names b64 twice", _signed_under(env, family, H(crit=["b64", "b64"])), ok),
+        ("crit names kid", _signed_under(env, family, H(crit=["b64", "kid"])), ("REJECT", "crit_unknown_extension")),
+        ("crit as a string", _signed_under(env, family, H(crit="b64")), mj),
+        ("alg a number", _signed_under(env, family, H(alg=5)), ("REJECT", "unsupported_alg")),
+        ("jku https", _signed_under(env, family, H(jku="https://example.com/jwks")), ok),
+        ("typ a string", _signed_under(env, family, H(typ="JOSE")), ok),
+        ("BOM before the header", _signed_under(env, family, raw=b"\xef\xbb\xbf" + base), mj),
+        ("invalid UTF-8 in typ", _signed_under(env, family, raw=base[:-1] + b',"typ":"\xff"}'), mj),
+        ("NaN in the header", _signed_under(env, family, raw=base[:-1] + b',"typ":NaN}'), mj),
+        ("Infinity in the header", _signed_under(env, family, raw=base[:-1] + b',"typ":Infinity}'), mj),
+        # Python accepted NaN nested in a jwk object (joserfc checks only that
+        # jwk is an object) and JS refused it: the one shape on which Python
+        # moves, from accept to reject.
+        ("NaN inside a jwk object", _signed_under(env, family, raw=base[:-1] + b',"jwk":{"a":NaN}}'), mj),
+        ("crit holding a number", _signed_under(env, family, H(crit=["b64", 1])), ("REJECT", "crit_unknown_extension")),
+    ]
+    for name, bad in (("jku", "ftp://x"), ("jku", 5), ("jwk", "x"), ("jwk", [1]), ("kid", 5), ("x5u", "ftp://x"),
+                      ("x5c", "x"), ("x5c", [1]), ("x5t", 5), ("x5t#S256", 5), ("typ", 5), ("cty", 5)):
+        cases.append((f"{name}={bad!r}", _signed_under(env, family, H(**{name: bad})), mj))
+    nested = cur = {}
+    for _ in range(40):
+        cur["a"] = {}
+        cur = cur["a"]
+    cases.append(("jwk nested 40 deep", _signed_under(env, family, H(jwk=nested)), ok))
+    for want_len, want in ((512, ok), (514, mj)):  # base64url lengths are never 1 mod 4
+        n = 0
+        while len(_b64u(json.dumps(H(cty="a" * n), separators=(",", ":")).encode())) < want_len:
+            n += 1
+        cases.append((f"header of {want_len} base64url characters", _signed_under(env, family, H(cty="a" * n)), want))
+    if family != "meaning":  # the meaning payload has no free-text field to grow
+        from sum_engine_internal.infrastructure.jcs import canonicalize
+        k = _string_field(env["payload"])
+        for size, want in ((128_000, ok), (128_001, ("REJECT", "malformed_receipt"))):
+            p = copy.deepcopy(env["payload"])
+            p[k] = ""
+            p[k] = "a" * (size - len(canonicalize(p)))
+            assert len(canonicalize(p)) == size
+            cases.append((f"payload of {size} JCS bytes", _signed_under(env, family, H(), payload=p), want))
+    return cases
+
+
+# A correctly signed receipt whose header has a member outside the 12
+# registered JWS names: Python refuses it through joserfc's strict header
+# check (as signature_invalid), the JS verifiers accept it. RENDER_RECEIPT_FORMAT
+# section 1 says such a verifier "will succeed", so which runtime moves is held
+# for the operator; this pins the current split so neither side changes alone.
+KNOWN_VERDICT_DIVERGENCE = {
+    "header member outside the registered names": (("REJECT", "signature_invalid"), ("ACCEPT", None)),
+}
+
+
+@pytest.mark.parametrize("family", ["render", "transform", "meaning"])
+def test_correctly_signed_headers_get_one_verdict_and_never_signature_invalid(family):
+    """The protected-header rule, applied by our own code in both runtimes
+    before the signature check: header segment at most 512 base64url
+    characters, strict UTF-8 without a BOM, JSON without NaN or Infinity,
+    the type joserfc requires of each registered name, b64 false and crit
+    naming b64; JCS payload at most 128,000 bytes. Before it, Python refused
+    some of these through joserfc as signature_invalid and the JS verifiers
+    accepted them, and the b64 variants split by class. A genuine signature
+    must never be reported as signature_invalid."""
+    env, jwks, schema, pyverify = _setup(family)
+    cases = _header_cases(env, family)
+    kid = env["kid"]
+    split = _signed_under(env, family, {"alg": "EdDSA", "kid": kid, "b64": False, "crit": ["b64"], "foo": 1})
+    rows = [(tag, r, jwks) for tag, r, _ in cases] + [("header member outside the registered names", split, jwks)]
+    py = [_py_verdict(pyverify, r, j) for _, r, j in rows]
+    node = _node_verdicts(family, rows, schema)
+    for (tag, _, want), pv, nv in zip(cases, py, node):
+        assert pv == nv == want, (family, tag, pv, nv, want)
+    assert (py[-1], node[-1]) == KNOWN_VERDICT_DIVERGENCE[rows[-1][0]], (family, py[-1], node[-1])
+
+
+# One fault per verification step, in the order both runtimes check them.
+# Paired, the earlier step must decide the class in both runtimes, in every
+# family (the transform and meaning JS verifiers checked alg before crit, and
+# all three checked the key type at import rather than at the kid lookup).
+_STEP_FAULTS = [
+    ("unknown-kid", "unknown_kid"),
+    ("non-ed25519-key", "malformed_jwks"),
+    ("payload-lone-surrogate", "malformed_receipt"),
+    ("payload-over-limit", "malformed_receipt"),
+    ("two-segments", "malformed_jws"),
+    ("header-over-512", "malformed_jws"),
+    ("header-bom", "malformed_jws"),
+    ("unknown-crit", "crit_unknown_extension"),
+    ("alg-rs256", "unsupported_alg"),
+    ("typ-number", "malformed_jws"),
+    ("b64-true", "header_invariant_violated"),
+    ("jwk-with-d", "malformed_jwks"),
+    ("signature-flipped", "signature_invalid"),
+]
+
+
+def _with_faults(env, jwks, family, names):
+    e, j = copy.deepcopy(env), copy.deepcopy(jwks)
+    proto, _, sig = e["jws"].split(".")
+    header = json.loads(base64.urlsafe_b64decode(proto + "=" * (-len(proto) % 4)))
+    prefix, two_segments = b"", False
+    key = next(k for k in j["keys"] if k.get("kid") == e["kid"])
+    k = _string_field(e["payload"])
+    for name in names:
+        if name == "unknown-kid":
+            e["kid"] = "nobody"
+        elif name == "non-ed25519-key":
+            key["kty"] = "RSA"
+        elif name == "payload-lone-surrogate":
+            e["payload"][k] = "\ud800" + e["payload"][k]
+        elif name == "payload-over-limit":
+            e["payload"][k] = "a" * 128_100
+        elif name == "two-segments":
+            two_segments = True
+        elif name == "header-over-512":
+            header["cty"] = "a" * 600
+        elif name == "header-bom":
+            prefix = b"\xef\xbb\xbf"
+        elif name == "unknown-crit":
+            header["crit"] = list(header["crit"]) + ["zzz"]
+        elif name == "alg-rs256":
+            header["alg"] = "RS256"
+        elif name == "typ-number":
+            header["typ"] = 5
+        elif name == "b64-true":
+            header["b64"] = True
+        elif name == "jwk-with-d":
+            key["d"] = _SIGNING_KEYS[family]["d"]
+        elif name == "signature-flipped":
+            sig = ("B" if sig[0] == "A" else "A") + sig[1:]
+    proto = _b64u(prefix + json.dumps(header, separators=(",", ":")).encode())
+    e["jws"] = f"{proto}.{sig}" if two_segments else f"{proto}..{sig}"
+    return e, j
+
+
+@pytest.mark.parametrize("family", ["render", "transform", "meaning"])
+def test_the_earlier_step_decides_the_class_in_both(family):
+    env, jwks, schema, pyverify = _setup(family)
+    rows, want = [], []
+    for i, (a, ca) in enumerate(_STEP_FAULTS):
+        for b, _ in _STEP_FAULTS[i:]:
+            names = (a,) if a == b else (a, b)
+            r, j = _with_faults(env, jwks, family, names)
+            rows.append(("+".join(names), r, j))
+            want.append(("REJECT", ca))
+    py = [_py_verdict(pyverify, r, j) for _, r, j in rows]
+    node = _node_verdicts(family, rows, schema)
+    wrong = [(tag, pv, nv, w) for (tag, _, _), pv, nv, w in zip(rows, py, node, want) if not pv == nv == w]
+    assert not wrong, (family, len(wrong), wrong[:8])
+
+
+def test_the_signer_refuses_a_payload_the_verifiers_refuse():
+    from sum_engine_internal.infrastructure.jcs import canonicalize
+    from sum_engine_internal.infrastructure.jose_envelope import MAX_PAYLOAD_JCS_BYTES, sign_jose_envelope
+
+    pr, _, kid = _keypair()
+    payload = {"model": ""}
+    payload["model"] = "a" * (MAX_PAYLOAD_JCS_BYTES - len(canonicalize(payload)))
+    sign_jose_envelope(payload, private_jwk=pr, kid=kid)  # at the limit: signed
+    payload["model"] += "a"
+    with pytest.raises(ValueError, match="128000"):
+        sign_jose_envelope(payload, private_jwk=pr, kid=kid)
+
+
 # Broad garbage battery for JS-side totality: every Node verifier must throw a
 # structured VerifyError (-> {"v":false,"c":...}) or verify, NEVER an undeclared
 # exception (-> {"crash":...}). Complements the Python totality properties.

@@ -62,6 +62,33 @@ function checkPayloadShape(payload) {
 
 export const KNOWN_CRIT_EXTENSIONS = new Set(["b64"]);
 
+// The protected-header rule, the same in jose_envelope.py: size limits (the
+// libraries' own limits differ, joserfc's by version and jose has none), the
+// type joserfc requires of each registered JWS header name (RFC 7515 section
+// 4.1, plus b64 from RFC 7797; alg is checked against the algorithm registry
+// instead), and a strict UTF-8 decoder that keeps a BOM (ignoreBOM) so
+// JSON.parse refuses it, as Python's decode and json.loads do. The default
+// decoder dropped a BOM and turned invalid bytes into U+FFFD.
+export const MAX_PROTECTED_HEADER_B64_CHARS = 512;
+export const MAX_PAYLOAD_JCS_BYTES = 128000;
+const isString = (v) => typeof v === "string";
+const isHttpUrl = (v) => isString(v) && (v.startsWith("http://") || v.startsWith("https://"));
+const isStringArray = (v) => Array.isArray(v) && v.every(isString);
+const REGISTERED_HEADER_TYPES = [
+  ["jku", isHttpUrl, "an http or https URL string"],
+  ["jwk", (v) => v !== null && typeof v === "object" && !Array.isArray(v), "an object"],
+  ["kid", isString, "a string"],
+  ["x5u", isHttpUrl, "an http or https URL string"],
+  ["x5c", isStringArray, "an array of strings"],
+  ["x5t", isString, "a string"],
+  ["x5t#S256", isString, "a string"],
+  ["typ", isString, "a string"],
+  ["cty", isString, "a string"],
+  ["crit", isStringArray, "an array of strings"],
+  ["b64", (v) => typeof v === "boolean", "a boolean"],
+];
+const STRICT_UTF8 = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true });
+
 export const ERROR_CLASSES = Object.freeze({
   MALFORMED_RECEIPT: "malformed_receipt",
   MALFORMED_JWS: "malformed_jws",
@@ -247,6 +274,15 @@ export async function verifyTransformReceipt(receipt, jwks, opts) {
     );
   }
 
+  if (key.kty !== "OKP" || key.crv !== "Ed25519") {
+    // Checked here, at step 1, as in Python, so a key of another type is
+    // malformed_jwks whatever else is wrong with the receipt.
+    throw new VerifyError(
+      ERROR_CLASSES.MALFORMED_JWKS,
+      `expected OKP/Ed25519 JWK for kid=${kid}, got kty=${key.kty} crv=${key.crv}`,
+    );
+  }
+
   // ---- Step 2: JCS canonicalize payload ----
   // canonicalize throws a plain Error on a lone surrogate or a non-finite
   // number (JSON.parse reads 1e999 as Infinity). Python rejects both as
@@ -264,6 +300,12 @@ export async function verifyTransformReceipt(receipt, jwks, opts) {
     throw new VerifyError(ERROR_CLASSES.MALFORMED_RECEIPT, "payload could not be JCS-canonicalized");
   }
   const canonicalBytes = new TextEncoder().encode(canonicalText);
+  if (canonicalBytes.length > MAX_PAYLOAD_JCS_BYTES) {
+    throw new VerifyError(
+      ERROR_CLASSES.MALFORMED_RECEIPT,
+      `payload is ${canonicalBytes.length} bytes after JCS canonicalization; the limit is ${MAX_PAYLOAD_JCS_BYTES}`,
+    );
+  }
 
   // ---- Step 3: split detached JWS ----
   const parts = jws.split(".");
@@ -286,8 +328,14 @@ export async function verifyTransformReceipt(receipt, jwks, opts) {
   if (!isCanonicalB64urlSegment(proto)) {
     throw new VerifyError(ERROR_CLASSES.MALFORMED_JWS, "protected header is not canonical unpadded base64url");
   }
+  if (proto.length > MAX_PROTECTED_HEADER_B64_CHARS) {
+    throw new VerifyError(
+      ERROR_CLASSES.MALFORMED_JWS,
+      `protected header is ${proto.length} base64url characters; the limit is ${MAX_PROTECTED_HEADER_B64_CHARS}`,
+    );
+  }
   try {
-    const headerJson = new TextDecoder().decode(b64urlDecodeToBytes(proto));
+    const headerJson = STRICT_UTF8.decode(b64urlDecodeToBytes(proto));
     header = JSON.parse(headerJson);
   } catch (e) {
     throw new VerifyError(
@@ -304,6 +352,17 @@ export async function verifyTransformReceipt(receipt, jwks, opts) {
       "protected header is not an object",
     );
   }
+  if (Array.isArray(header.crit)) {
+    for (const ext of header.crit) {
+      if (!KNOWN_CRIT_EXTENSIONS.has(ext)) {
+        throw new VerifyError(
+          ERROR_CLASSES.CRIT_UNKNOWN_EXTENSION,
+          `unknown crit extension: ${ext} ` +
+            `(this verifier handles ${[...KNOWN_CRIT_EXTENSIONS].join(", ")})`,
+        );
+      }
+    }
+  }
   // `header.alg && …` would SKIP the registry check whenever alg is absent or
   // falsy (missing, "", 0, false, null), so the anti-downgrade control could be
   // bypassed by simply omitting the claim; those cases then failed later as
@@ -317,16 +376,29 @@ export async function verifyTransformReceipt(receipt, jwks, opts) {
       }`,
     );
   }
-  if (Array.isArray(header.crit)) {
-    for (const ext of header.crit) {
-      if (!KNOWN_CRIT_EXTENSIONS.has(ext)) {
-        throw new VerifyError(
-          ERROR_CLASSES.CRIT_UNKNOWN_EXTENSION,
-          `unknown crit extension: ${ext} ` +
-            `(this verifier handles ${[...KNOWN_CRIT_EXTENSIONS].join(", ")})`,
-        );
-      }
+
+  // ---- Step 3.7: registered header member types ----
+  for (const [name, hasType, wanted] of REGISTERED_HEADER_TYPES) {
+    if (Object.prototype.hasOwnProperty.call(header, name) && !hasType(header[name])) {
+      throw new VerifyError(ERROR_CLASSES.MALFORMED_JWS, `protected header ${name} must be ${wanted}`);
     }
+  }
+
+  // ---- Step 3.8: unencoded-payload invariants, before the signature ----
+  // The same check as step 6, made before verifying, as in Python: jose builds
+  // the signing input from b64, and this verifier always passes the raw bytes,
+  // so another b64 value would otherwise surface as signature_invalid.
+  if (header.b64 !== false) {
+    throw new VerifyError(
+      ERROR_CLASSES.HEADER_INVARIANT_VIOLATED,
+      `expected b64=false (detached payload encoding), got b64=${JSON.stringify(header.b64)}`,
+    );
+  }
+  if (!Array.isArray(header.crit) || !header.crit.includes("b64")) {
+    throw new VerifyError(
+      ERROR_CLASSES.HEADER_INVARIANT_VIOLATED,
+      `expected crit array containing "b64", got ${JSON.stringify(header.crit)}`,
+    );
   }
 
   // ---- Steps 4 + 5: verify the JWS ----

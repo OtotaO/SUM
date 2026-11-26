@@ -1,6 +1,6 @@
 {
   "schema": "sum.self_attestation.v1",
-  "issued_at": "2026-11-26T20:29:43Z",
+  "issued_at": "2026-11-26T20:56:43Z",
   "doc_count": 6,
   "docs": [
     {
@@ -14,12 +14,12 @@
     },
     {
       "path": "CHANGELOG.md",
-      "source_uri": "sha256:7436f736956c6bbcf5077510c83601983a5b92456ddf11e395ee6e5b7b9e4b74",
+      "source_uri": "sha256:a047712e74ee3eacd701733e62359ad2920552273d759d49627eb09493bddbb5",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "7436f736956c6bbcf5077510c83601983a5b92456ddf11e395ee6e5b7b9e4b74",
-      "axiom_count": 671,
-      "state_integer_digits": 12639
+      "markdown_sha256": "a047712e74ee3eacd701733e62359ad2920552273d759d49627eb09493bddbb5",
+      "axiom_count": 674,
+      "state_integer_digits": 12696
     },
     {
       "path": "docs/PROOF_BOUNDARY.md",
@@ -41,21 +41,21 @@
     },
     {
       "path": "docs/RENDER_RECEIPT_FORMAT.md",
-      "source_uri": "sha256:4d87256ed1d02f4ece3c2618a519cbd86fce18b434046459a29dbcb3995ab775",
+      "source_uri": "sha256:ce520acde9007ff6aaab21d22e7a323c2691dfc1b9d894cd1cf88e4196898a07",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "4d87256ed1d02f4ece3c2618a519cbd86fce18b434046459a29dbcb3995ab775",
-      "axiom_count": 68,
-      "state_integer_digits": 1278
+      "markdown_sha256": "ce520acde9007ff6aaab21d22e7a323c2691dfc1b9d894cd1cf88e4196898a07",
+      "axiom_count": 69,
+      "state_integer_digits": 1298
     },
     {
       "path": "docs/TRANSFORM_RECEIPT_FORMAT.md",
-      "source_uri": "sha256:7b40bb99113d70454649cad7c4994cd3e947697ad27a0252265b7bf76da946a5",
+      "source_uri": "sha256:83511680e640cf3fb0957d94c1fef22820f55f55a98ab5de0f25210d8e617aba",
       "input_format": "markdown",
       "converter": "passthrough",
-      "markdown_sha256": "7b40bb99113d70454649cad7c4994cd3e947697ad27a0252265b7bf76da946a5",
-      "axiom_count": 42,
-      "state_integer_digits": 791
+      "markdown_sha256": "83511680e640cf3fb0957d94c1fef22820f55f55a98ab5de0f25210d8e617aba",
+      "axiom_count": 44,
+      "state_integer_digits": 830
     }
   ],
   "jsonl_path": "meta/self_attestation.jsonl",

@@ -506,11 +506,20 @@ test('hostile key IDs, curves, schemas and headers cannot print the site-key sen
     assert.equal(site.split('Signed by key').length, 2);
     for (const kid of hostileKids) {
       const label = JSON.stringify(kid.slice(0, 30));
-      // The packet verifies with its own key: success path, JSON block included.
-      const shown = await checkPacket(p, await forgedPacket(kid));
-      assert.match(shown, /^Checks completed:\n/, label);
-      assert.match(shown, /"key_pin": "not-site-key"/, label);
-      assert.equal(p.$('open-packet-btn').disabled, false);
+      const packet = await forgedPacket(kid);
+      // A protected header over 512 base64url characters is refused before the
+      // signature, as malformed_jws, here and in Python. A shorter one verifies
+      // with its own key: success path, JSON block included.
+      const tooLong = packet.render.receipt.jws.split('.')[0].length > 512;
+      const shown = await checkPacket(p, packet);
+      if (tooLong) {
+        assert.match(shown, /^Verification failed: Receipt check failed: [^\n]* \(malformed_jws\)\. Key ID: "/, label);
+        assert.equal(p.$('open-packet-btn').disabled, true);
+      } else {
+        assert.match(shown, /^Checks completed:\n/, label);
+        assert.match(shown, /"key_pin": "not-site-key"/, label);
+        assert.equal(p.$('open-packet-btn').disabled, false);
+      }
       check(shown, label);
       // No key for the receipt's key ID: failure path.
       const unknown = await forgedPacket(kid); unknown.jwks.keys[0].kid = 'other-key';
