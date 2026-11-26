@@ -8,8 +8,10 @@ are the supported ``schema`` string and the surface-specific consumer
 of the verified payload. This module factors the shared core out so a
 schema-aware verifier is ~15 lines wrapping ``verify_jose_envelope``.
 
-Algorithm — exactly mirrors ``docs/RENDER_RECEIPT_FORMAT.md`` §2.1
-and ``docs/TRUST_ROOT_FORMAT.md`` §2.1:
+Algorithm — an outline of ``docs/RENDER_RECEIPT_FORMAT.md`` §2.1 and
+``docs/TRUST_ROOT_FORMAT.md`` §2.1, which give every check (the key type
+at step 1, the payload limit at step 2, the protected-header rule at
+step 3, which the code below labels Steps 3.5 to 3.8):
 
     Step 0    shape gate         — envelope is a dict; required fields present.
     Step 0.5  schema gate        — forward-compat: envelope.schema must equal

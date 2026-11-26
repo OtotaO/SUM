@@ -527,6 +527,11 @@ def _header_cases(env, family):
         ("NaN inside a jwk object", _signed_under(env, family, raw=base[:-1] + b',"jwk":{"a":NaN}}'), mj),
         ("Infinity inside a jwk object", _signed_under(env, family, raw=base[:-1] + b',"jwk":{"a":[-Infinity]}}'), mj),
         ("crit holding a number", _signed_under(env, family, H(crit=["b64", 1])), ("REJECT", "crit_unknown_extension")),
+        # An object JS cannot print without help: the message names its type,
+        # so the class is the same as Python's instead of an unclassed TypeError.
+        ("crit holding an object", _signed_under(env, family, H(crit=["b64", {"toString": 1, "valueOf": 1}])),
+         ("REJECT", "crit_unknown_extension")),
+        ("alg an object", _signed_under(env, family, H(alg={"toString": 1, "valueOf": 1})), ("REJECT", "unsupported_alg")),
     ]
     for name, bad in (("jku", "ftp://x"), ("jku", 5), ("jwk", "x"), ("jwk", [1]), ("kid", 5), ("x5u", "ftp://x"),
                       ("x5c", "x"), ("x5c", [1]), ("x5t", 5), ("x5t#S256", 5), ("typ", 5), ("cty", 5)):
@@ -541,15 +546,15 @@ def _header_cases(env, family):
         while len(_b64u(json.dumps(H(cty="a" * n), separators=(",", ":")).encode())) < want_len:
             n += 1
         cases.append((f"header of {want_len} base64url characters", _signed_under(env, family, H(cty="a" * n)), want))
-    if family != "meaning":  # the meaning payload has no free-text field to grow
-        from sum_engine_internal.infrastructure.jcs import canonicalize
-        k = _string_field(env["payload"])
-        for size, want in ((128_000, ok), (128_001, ("REJECT", "malformed_receipt"))):
-            p = copy.deepcopy(env["payload"])
-            p[k] = ""
-            p[k] = "a" * (size - len(canonicalize(p)))
-            assert len(canonicalize(p)) == size
-            cases.append((f"payload of {size} JCS bytes", _signed_under(env, family, H(), payload=p), want))
+    # Every family's payload has a string field to grow (meaning: corpus_id).
+    from sum_engine_internal.infrastructure.jcs import canonicalize
+    k = _string_field(env["payload"])
+    for size, want in ((128_000, ok), (128_001, ("REJECT", "malformed_receipt"))):
+        p = copy.deepcopy(env["payload"])
+        p[k] = ""
+        p[k] = "a" * (size - len(canonicalize(p)))
+        assert len(canonicalize(p)) == size
+        cases.append((f"payload of {size} JCS bytes", _signed_under(env, family, H(), payload=p), want))
     return cases
 
 

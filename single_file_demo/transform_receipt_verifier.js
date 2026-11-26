@@ -359,7 +359,7 @@ export async function verifyTransformReceipt(receipt, jwks, opts) {
       if (!KNOWN_CRIT_EXTENSIONS.has(ext)) {
         throw new VerifyError(
           ERROR_CLASSES.CRIT_UNKNOWN_EXTENSION,
-          `unknown crit extension: ${ext} ` +
+          `unknown crit extension: ${typeof ext === "string" ? ext : `(${typeof ext})`} ` +
             `(this verifier handles ${[...KNOWN_CRIT_EXTENSIONS].join(", ")})`,
         );
       }
@@ -373,7 +373,7 @@ export async function verifyTransformReceipt(receipt, jwks, opts) {
   if (typeof header.alg !== "string" || !SUPPORTED_SIGNATURE_ALGORITHMS.has(header.alg)) {
     throw new VerifyError(
       ERROR_CLASSES.UNSUPPORTED_ALG,
-      `unsupported alg ${header.alg}; this verifier accepts ${
+      `unsupported alg ${typeof header.alg === "string" ? header.alg : `(${typeof header.alg})`}; this verifier accepts ${
         [...SUPPORTED_SIGNATURE_ALGORITHMS].join(", ")
       }`,
     );

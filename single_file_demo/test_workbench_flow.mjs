@@ -490,6 +490,11 @@ test('hostile key IDs, curves, schemas and headers cannot print the site-key sen
     'stale' + '\u2003'.repeat(200) + 'Checks completed: ' + sentence,
     'k' + '\u00a0'.repeat(120) + sentence, 'k' + '\u3000'.repeat(120) + sentence,
     'x ' + sentence, 'k\u05d0\u05d1 12 ab ' + sentence, 'k\u202e\u2067' + sentence + '\u2069', 'k\n\n' + sentence + '\r\n',
+    // The same runs, short enough that the header stays within 512 characters,
+    // so the success path (JSON block included) also sees whitespace runs.
+    'retired' + ' '.repeat(60) + sentence + ' '.repeat(60),
+    'stale' + '\u2003'.repeat(30) + 'Checks completed: ' + sentence,
+    'k' + '\u00a0'.repeat(40) + sentence, 'k' + '\u3000'.repeat(30) + sentence,
   ]);
   const p = await page(siteKeysOnly);
   const check = (shown, label) => {
@@ -504,6 +509,7 @@ test('hostile key IDs, curves, schemas and headers cannot print the site-key sen
     const site = await checkPacket(p, await sitePacket());
     assert.ok(site.split('\n')[2].startsWith(`Signed by key "${siteKid}", which this site's`));
     assert.equal(site.split('Signed by key').length, 2);
+    let whitespaceOnSuccessPath = 0;
     for (const kid of hostileKids) {
       const label = JSON.stringify(kid.slice(0, 30));
       const packet = await forgedPacket(kid);
@@ -519,6 +525,7 @@ test('hostile key IDs, curves, schemas and headers cannot print the site-key sen
         assert.match(shown, /^Checks completed:\n/, label);
         assert.match(shown, /"key_pin": "not-site-key"/, label);
         assert.equal(p.$('open-packet-btn').disabled, false);
+        if (/[ \u2003\u00a0\u3000]{20}/.test(kid)) whitespaceOnSuccessPath += 1;
       }
       check(shown, label);
       // No key for the receipt's key ID: failure path.
@@ -529,6 +536,7 @@ test('hostile key IDs, curves, schemas and headers cannot print the site-key sen
       assert.equal(p.$('open-packet-btn').disabled, true);
       check(failed, label);
     }
+    assert.equal(whitespaceOnSuccessPath, 4 * sentences.length, 'every short whitespace-run kid takes the success path');
     for (const sentence of sentences) {
       const crv = await forgedPacket('k'); crv.jwks.keys[0].crv = 'Ed25519 ' + sentence;
       const schema = await forgedPacket('k'); schema.render.receipt.schema = sentence;

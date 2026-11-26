@@ -533,7 +533,7 @@ export async function verifyReceipt(receipt, jwks, revokedKids, opts) {
       if (!KNOWN_CRIT_EXTENSIONS.has(ext)) {
         throw new VerifyError(
           ERROR_CLASSES.CRIT_UNKNOWN_EXTENSION,
-          `protected header crit contains unsupported extension: ${ext}`,
+          `protected header crit contains unsupported extension: ${typeof ext === "string" ? ext : `(${typeof ext})`}`,
         );
       }
     }
