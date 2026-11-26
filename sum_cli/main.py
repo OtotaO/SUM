@@ -4185,7 +4185,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_list.add_argument("--db", default="akashic.db", help="SQLite ledger path. Default: ./akashic.db.")
     p_list.add_argument("--axiom", default=None, help="Filter to this exact axiom_key (e.g. 'alice||like||cat').")
-    p_list.add_argument("--since", default=None, help="Only records at or after this date or date-time, in short YYYY-MM-DD[THH:MM[:SS[.fraction]]][Z|+HH:MM|-HH:MM] (no offset = UTC).")
+    p_list.add_argument("--since", default=None, help="Only records at or after this date or date-time, for example 2026-11-25 or 2026-11-25T13:19:50-05:00 (no offset = UTC).")
     p_list.add_argument("--limit", type=int, default=0, help="Max rows to emit (0 = unlimited).")
     p_list.add_argument("--verbose", "-v", action="store_true", help="Print row count on stderr.")
     p_list.set_defaults(func=cmd_ledger_list)

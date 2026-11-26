@@ -31,9 +31,9 @@ _INSTANT = re.compile(
 def parse_instant(value: str) -> datetime:
     """A date or date-time in the one form --since reads, as an aware datetime.
 
-    The form is _INSTANT (in short
-    YYYY-MM-DD[THH:MM[:SS[.fraction]]][Z|+HH:MM|-HH:MM]); anything else,
-    such as the basic format or a week date, raises ValueError.
+    The form is _INSTANT (for example 2026-11-25, 2026-11-25T18:19:50Z or
+    2026-11-25T13:19:50.5-05:00); anything else, such as the basic format,
+    a week date or a zone after a bare date, raises ValueError.
 
     The fields are read by _INSTANT and range-checked by datetime itself, so
     the accepted set does not depend on the Python version.
