@@ -32,7 +32,22 @@ async function until(predicate) {
 const detailsDone = p => until(() => p.$('detail-summary').textContent && !p.$('detail-summary').textContent.startsWith('Checking'));
 const deferred = () => { let resolve; const promise = new Promise(r => { resolve = r; }); return { promise, resolve }; };
 
-async function page(handler = async () => new Response('{}', { status: 503 }), { worker = 'answer', url = 'https://workbench.example', markup = html } = {}) {
+// The meaning receipt box is the page's inline module script, which jsdom does not run. Its text is cut out
+// of the page, its two relative imports are pointed at this directory, and it runs as a data: URL module
+// (Node resolves absolute imports from one); the page number in it makes each page's copy a new instance.
+function meaningModule(markup) {
+  const tag = '<script type="module">';
+  const start = markup.indexOf(tag, markup.indexOf('<script type="module" src="./workbench.js">'));
+  assert.ok(start > 0, 'the meaning box script follows workbench.js');
+  let src = markup.slice(start + tag.length, markup.indexOf('</script>', start));
+  for (const file of ['meaning_receipt_verifier.js', 'review_packet.js']) {
+    assert.equal(src.split(`"./${file}"`).length, 2, `one import of ${file}`);
+    src = src.replace(`"./${file}"`, JSON.stringify(new URL(`./${file}`, import.meta.url).href));
+  }
+  return src;
+}
+
+async function page(handler = async () => new Response('{}', { status: 503 }), { worker = 'answer', url = 'https://workbench.example', markup = html, meaning = false } = {}) {
   const errors = [], requests = [], downloads = [], workers = [];
   const mockFetch = async (url, init) => {
     if (String(url).includes('altitude_rungs') || String(url).includes('tags_roundtrip_panel')) return new Response('{}', { status: 404 });
@@ -57,6 +72,7 @@ async function page(handler = async () => new Response('{}', { status: 503 }), {
   URL.createObjectURL = blob => { downloads.push(blob); return 'blob:test'; };
   URL.revokeObjectURL = () => {};
   await import(`./workbench.js?test=${++instance}`);
+  if (meaning) await import('data:text/javascript;charset=utf-8,' + encodeURIComponent(`// page ${instance}\n${meaningModule(markup)}`));
   const $ = id => window.document.getElementById(id);
   const input = (id, value) => { $(id).value = value; $(id).dispatchEvent(new window.Event('input', { bubbles: true })); };
   return { $, input, window, requests, downloads, errors, workers, close() { dom.window.close(); URL.createObjectURL = originalCreate; URL.revokeObjectURL = originalRevoke; } };
@@ -741,6 +757,117 @@ test('a browser without Ed25519 reports the signature as not checked and does no
   } finally { subtle.importKey = original; p.close(); }
 });
 
+test('the bundle box clears its verdict when the bundle is edited, and an earlier check never reports over a later one', async () => {
+  const p = await page();
+  try {
+    const good = await p.window.makeBundle([['alice', 'likes', 'cats'], ['bob', 'owns', 'dogs'], ['carol', 'reads', 'books']], 'T');
+    const forged = { ...good, canonical_tome: good.canonical_tome.replace(/^The alice likes cats\.\n/m, '') };
+    assert.notEqual(forged.canonical_tome, good.canonical_tome);
+    const verdict = () => p.$('verify-result').textContent;
+    p.input('verify-input', JSON.stringify(good)); p.$('verify').click();
+    await until(() => !/verifying/.test(verdict()));
+    assert.match(verdict(), /^✓ verified 3 axioms/);
+    p.input('verify-input', JSON.stringify(forged));
+    assert.equal(verdict(), '', 'editing the bundle clears the verdict');
+    // Two checks finish out of order: the verdict on the bundle now in the box stands.
+    const real = p.window.verifyBundle, pending = [];
+    p.window.verifyBundle = b => new Promise(resolve => pending.push(async () => resolve(await real(b))));
+    p.input('verify-input', JSON.stringify(good)); p.$('verify').click();
+    p.input('verify-input', JSON.stringify(forged)); p.$('verify').click();
+    assert.equal(pending.length, 2);
+    await pending[1](); await new Promise(r => setTimeout(r, 0));
+    assert.match(verdict(), /^✗ axiom count mismatch/);
+    await pending[0](); await new Promise(r => setTimeout(r, 0));
+    assert.match(verdict(), /^✗ axiom count mismatch/, 'the earlier check of the good bundle is dropped');
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
+// Paste a receipt and its keys into the meaning box, verify, and return what the box then shows.
+async function meaningVerify(p, receipt, jwks) {
+  p.input('meaning-receipt-input', typeof receipt === 'string' ? receipt : JSON.stringify(receipt));
+  p.input('meaning-jwks-input', typeof jwks === 'string' ? jwks : JSON.stringify(jwks));
+  p.$('meaning-verify-btn').click();
+  await until(() => !p.$('meaning-verify-btn').disabled && !p.$('meaning-verify-result').textContent.startsWith('Verifying'));
+  return p.$('meaning-verify-result').textContent;
+}
+// A meaning family receipt signed with a fresh key, as the issuers sign: detached JWS, header
+// {alg, kid, b64: false, crit: ['b64']}, Ed25519 over header + '.' + JCS(payload). The box checks it
+// against the keys pasted beside it.
+async function signedMeaningReceipt(schema, payload, kid = 'test-meaning-key') {
+  const pair = await webcrypto.subtle.generateKey({ name: 'Ed25519' }, true, ['sign', 'verify']);
+  const x = (await webcrypto.subtle.exportKey('jwk', pair.publicKey)).x;
+  const protectedHeader = Buffer.from(JSON.stringify({ alg: 'EdDSA', kid, b64: false, crit: ['b64'] })).toString('base64url');
+  const signature = await webcrypto.subtle.sign('Ed25519', pair.privateKey, new TextEncoder().encode(protectedHeader + '.' + canonicalize(payload)));
+  return { receipt: { schema, kid, payload, jws: `${protectedHeader}..${Buffer.from(signature).toString('base64url')}` },
+    jwks: { keys: [{ kty: 'OKP', crv: 'Ed25519', x, kid, alg: 'EdDSA', use: 'sig' }] } };
+}
+const demoFile = async name => readFile(new URL(name, import.meta.url), 'utf8');
+
+test('the meaning box shows a meaning receipt\'s signed upper bound rounded up, never below it', async () => {
+  const p = await page(undefined, { meaning: true });
+  try {
+    const sample = JSON.parse(await demoFile('./sample_meaning_risk_receipt.json'));
+    assert.equal(sample.payload.risk_upper_bound_micro, 645438);
+    const shown = await meaningVerify(p, sample, await demoFile('./sample_meaning_jwks.json'));
+    assert.match(shown, /^✓ Stage A verified\./);
+    assert.match(shown, /stated bound \(NOT replayed here\): ≤ 0\.6455(?!\d)/, 'the signed 0.645438, rounded up');
+    const exact = await signedMeaningReceipt(sample.schema, { ...sample.payload, risk_upper_bound_micro: 645400 });
+    assert.match(await meaningVerify(p, exact.receipt, exact.jwks), /^✓ Stage A verified\.[^]*stated bound \(NOT replayed here\): ≤ 0\.6454(?!\d)/, 'a bound with nothing past the 4th decimal is shown as signed');
+    // A perspective receipt's line is left as it was (it shows n/a); what it should show is a separate,
+    // open question.
+    const perspective = JSON.parse(await demoFile('../fixtures/perspective_receipts/perspective_risk_receipt.golden.json'));
+    assert.match(await meaningVerify(p, perspective, await demoFile('../fixtures/perspective_receipts/jwks.json')), /^✓ Stage A verified\.[^]*stated bound \(NOT replayed here\): ≤ n\/a/);
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
+test('the meaning box clears its verdict when either box is edited, and drops a check that finishes after an edit', async () => {
+  const receipt = await demoFile('./sample_meaning_risk_receipt.json'), jwks = await demoFile('./sample_meaning_jwks.json');
+  const served = { './sample_meaning_risk_receipt.json': receipt, './sample_meaning_jwks.json': jwks };
+  const p = await page(async url => Object.hasOwn(served, url) ? new Response(served[url]) : new Response('{}', { status: 404 }), { meaning: true });
+  try {
+    const out = p.$('meaning-verify-result');
+    const cleared = () => out.style.display === 'none' && out.textContent === '';
+    assert.ok(cleared(), 'the box starts hidden and empty');
+    for (const id of ['meaning-receipt-input', 'meaning-jwks-input']) {
+      assert.match(await meaningVerify(p, receipt, jwks), /^✓ Stage A verified\./);
+      p.input(id, p.$(id).value + '\n');
+      assert.ok(cleared(), `editing ${id} clears the verdict`);
+    }
+    // An edit while a check runs: its verdict, a pass or a failure, is about the text before the edit.
+    const tampered = receipt.replace('"n": 64', '"n": 65');
+    assert.notEqual(tampered, receipt);
+    assert.match(await meaningVerify(p, tampered, jwks), /^✗ Verification failed\. error class: signature_invalid/);
+    for (const text of [receipt, tampered]) {
+      p.input('meaning-receipt-input', text); p.input('meaning-jwks-input', jwks);
+      p.$('meaning-verify-btn').click();
+      assert.equal(p.$('meaning-verify-btn').disabled, true, 'the check is running');
+      p.input('meaning-receipt-input', text + '\n');
+      await until(() => !p.$('meaning-verify-btn').disabled);
+      await new Promise(r => setTimeout(r, 0));
+      assert.ok(cleared(), `a ${text === receipt ? 'passing' : 'failing'} check that finished after the edit is dropped`);
+    }
+    assert.match(await meaningVerify(p, receipt, jwks), /^✓ Stage A verified\./, 'checking again gives a verdict');
+    // Loading the sample replaces both boxes, so a check still running then is dropped too. The key import
+    // waits until the sample is in, as a slow check would.
+    const held = deferred(), subtle = webcrypto.subtle, importKey = subtle.importKey;
+    subtle.importKey = async (...args) => { await held.promise; return importKey.apply(subtle, args); };
+    try {
+      p.input('meaning-receipt-input', tampered); p.input('meaning-jwks-input', jwks);
+      p.$('meaning-verify-btn').click();
+      p.$('meaning-sample-btn').click();
+      await until(() => out.textContent.startsWith('Loaded the BillSum'));
+      held.resolve();
+      await until(() => !p.$('meaning-verify-btn').disabled);
+      await new Promise(r => setTimeout(r, 0));
+    } finally { subtle.importKey = importKey; }
+    assert.equal(p.$('meaning-receipt-input').value, receipt.trim());
+    assert.match(out.textContent, /^Loaded the BillSum/, 'the failing check of the replaced receipt is dropped');
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
 // M18: the paste boxes used maxlength="100000", which cuts a long paste off
 // silently; the page then extracted or compared a text the user never chose.
 test('text over 100,000 characters is kept and refused explicitly, never truncated (M18)', async () => {
@@ -928,6 +1055,27 @@ test('details to check name the changed number, modal and exception, select them
   } finally { p.close(); }
 });
 
+test('an opened packet with CR LF line breaks selects the passages and details it names', async () => {
+  const source = 'Pay 10 dollars.\r\nShip in 5 days.\r\nCall Dana at once.', output = 'Pay 10 dollars.\r\nShip in 7 days.\r\nCall Robin at once.';
+  const packet = await packetLib.makeReviewPacket({ source, output, review: packetLib.compareTexts(source, output) });
+  const p = await page();
+  try {
+    assert.match(await checkPacket(p, packet), /^Checks completed/);
+    p.$('open-packet-btn').click();
+    await detailsDone(p);
+    assert.equal(p.$('prose').value, source.replaceAll('\r\n', '\n'), 'the box holds each CR LF as LF');
+    const links = [...p.$('review-rows').querySelectorAll('button.link-btn')].map(b => [b, b.textContent.startsWith('Source') ? 'prose' : 'rewrite', b.nextSibling.textContent]);
+    const quotes = [...p.$('detail-list').querySelectorAll('button.link-btn')].map(b => [b, b.title.includes('original') ? 'prose' : 'rewrite', b.querySelector('q').textContent]);
+    assert.ok(links.length >= 4 && quotes.length >= 2, `${links.length} passage links, ${quotes.length} detail quotes`);
+    for (const [b, field, shown] of [...links, ...quotes]) {
+      b.click();
+      const box = p.$(field);
+      assert.equal(box.value.slice(box.selectionStart, box.selectionEnd), shown, `${field}: ${b.textContent}`);
+    }
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
 test('detail checks run on the inputs the first checker version failed on, and list at most 200 items', async () => {
   const p = await page();
   try {
@@ -1064,6 +1212,63 @@ test('a find action cannot let a keystroke wipe the review; clicking into the bo
     p.$('rewrite').focus();
     await new Promise(r => setTimeout(r, 5));
     assert.equal(p.$('prose').readOnly, false, 'moving focus elsewhere on the page makes it editable');
+    assert.deepEqual(p.errors, []);
+  } finally { p.close(); }
+});
+
+// In Chrome, a long paste leaves the box scrolled to its end, and selecting a passage does not scroll the
+// box's own text, so a passage near the top stayed out of sight. jsdom lays nothing out: this checks the
+// arithmetic and the hidden copy, not the layout, which needs a real browser.
+test('a find action scrolls the text in its box to put the passage near the middle', async () => {
+  const p = await page();
+  try {
+    // Stands in for the copy's layout: below 12 px of padding, each line of its text is 20 px.
+    const copies = [];
+    Object.defineProperty(p.window.HTMLElement.prototype, 'offsetTop', { configurable: true, get() {
+      const copy = this.parentElement;
+      if (this.tagName !== 'SPAN' || copy?.parentElement !== p.window.document.body) return 0;
+      const before = this.previousSibling?.textContent ?? '';
+      copies.push({ before, marker: this.textContent, style: copy.style, hidden: copy.getAttribute('aria-hidden') });
+      return 12 + 20 * (before.split('\n').length - 1);
+    } });
+    for (const id of ['prose', 'rewrite']) {
+      Object.defineProperty(p.$(id), 'clientHeight', { configurable: true, value: 300 });
+      Object.defineProperty(p.$(id), 'clientWidth', { configurable: true, value: 600 });
+    }
+    const lines = Array.from({ length: 40 }, (_, i) => `Line ${i + 1} of the original says one thing.`);
+    const inBody = p.window.document.body.children.length;
+    const find = (button, id, line) => {
+      const box = p.$(id);
+      box.scrollTop = 1652;
+      button.click();
+      assert.equal(box.value.slice(box.selectionStart, box.selectionEnd), lines[line - 1], `line ${line} is selected`);
+      const scrolled = box.scrollTop, copy = copies.at(-1);
+      assert.notEqual(scrolled, 1652, `finding line ${line} scrolls the ${id} box`);
+      assert.equal(copy.before, box.value.slice(0, box.selectionStart), 'the copy holds the box text before the passage');
+      assert.ok(copy.marker.startsWith(lines[line - 1]), 'and measures where the passage starts');
+      return scrolled;
+    };
+    p.input('prose', lines.join('\n'));
+    p.$('distill-btn').click();
+    toDepth(p, Number(p.$('distill-depth').max));
+    const passages = passagesIn(p);
+    assert.deepEqual([passages[0].textContent, passages.at(-1).textContent], [lines[0], lines[39]]);
+    assert.equal(find(passages[0], 'prose', 1), 0, 'line 1 starts 12 px down, above the middle: the box scrolls to its top');
+    assert.equal(find(passages.at(-1), 'prose', 40), 12 + 39 * 20 - 150, 'line 40 starts 792 px down: it sits half the 300 px box from the top');
+    p.input('rewrite', lines.join('\n'));
+    p.$('compare-btn').click();
+    await detailsDone(p);
+    const link = [...p.$('review-rows').querySelectorAll('button.link-btn')].find(b => b.textContent.startsWith('Rewrite') && b.nextSibling.textContent === lines[29]);
+    assert.equal(find(link, 'rewrite', 30), 12 + 29 * 20 - 150, 'the rewrite box scrolls the same way');
+    assert.equal(copies.length, 3, 'one measurement for each find');
+    for (const { style, hidden } of copies) {
+      assert.deepEqual(['position', 'visibility', 'white-space', 'overflow-wrap'].map(k => style.getPropertyValue(k)), ['absolute', 'hidden', 'pre-wrap', 'break-word']);
+      assert.equal(hidden, 'true');
+      assert.deepEqual(['box-sizing', 'padding-top', 'padding-left', 'border-left-width', 'border-left-style', 'font-family', 'font-size', 'line-height'].map(k => style.getPropertyValue(k)),
+        ['border-box', '12px', '12px', '1px', 'solid', 'ui-monospace, monospace', '14px', '1.45'], 'the copy has the box\'s own font, padding, border and box sizing');
+      assert.equal(style.getPropertyValue('width'), '602px', 'as a border box, the 600 px client width plus the two 1 px borders, so its text is 576 px wide, as in the box');
+    }
+    assert.equal(p.window.document.body.children.length, inBody, 'no copy is left in the page');
     assert.deepEqual(p.errors, []);
   } finally { p.close(); }
 });
