@@ -135,7 +135,7 @@ def test_receipt_freshness_past_and_future(case, offset):
     ("2026-06-06", False),
     ("Sat, 06 Jun 2026 12:00:00 GMT", False),
 ])
-def test_receipt_freshness_reads_signed_at_as_an_rfc_3339_instant(signed_at, accepted):
+def test_receipt_freshness_reads_signed_at_in_the_receipt_timestamp_form(signed_at, accepted):
     """The policy window reads signed_at with the instant grammar the receipt
     verifiers use. datetime.fromisoformat took any separator and an hour-only
     time (and more forms from Python 3.11), and overflowed on the calendar

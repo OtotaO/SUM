@@ -215,7 +215,7 @@ When present, `render_receipt` is the load-bearing field for any caller that wan
 | `tome_hash` | `string` | `sha256-{hex}` over the UTF-8 bytes of `tome`. |
 | `model` | `string` | The actual model identifier the LLM provider returned, or `"canonical-deterministic-v0"` for the no-LLM path. |
 | `provider` | `"anthropic"` \| `"openai"` \| `"cf-ai-gateway-anthropic"` \| `"canonical-path"` | Which backend produced the tome. |
-| `signed_at` | `string` | ISO 8601 UTC timestamp at the moment the JWS was produced. Verifiers read it as an RFC 3339 instant ([`RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) §6.2). |
+| `signed_at` | `string` | ISO 8601 UTC timestamp at the moment the JWS was produced. Verifiers read it in the receipt timestamp form of [`RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) §6.1 (see §6.2). |
 | `digital_source_type` | `"trainedAlgorithmicMedia"` \| `"algorithmicMedia"` | C2PA terminology. The first means LLM-generated; the second means deterministic. |
 
 The `jws` is a [detached JWS](https://www.rfc-editor.org/rfc/rfc7515#appendix-A.5) per RFC 7515, with `b64=false` per [RFC 7797](https://www.rfc-editor.org/rfc/rfc7797). Protected header:
@@ -229,7 +229,7 @@ The `jws` is a [detached JWS](https://www.rfc-editor.org/rfc/rfc7515#appendix-A.
 The full verifier algorithm is documented in [`docs/RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md). Quick reference:
 
 1. **Fetch the JWKS** from `https://sum-demo.ototao.workers.dev/.well-known/jwks.json` (or the publisher's equivalent). Pick the JWK whose `kid` matches the receipt's `kid`. Reject if not found.
-2. **Check revocation**: fetch `/.well-known/revoked-kids.json`. Reject if, for any entry whose `kid` is the receipt's `kid`, the receipt's `signed_at` ≥ that entry's `effective_revocation_at`, or either time is not an RFC 3339 instant ([`RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) §6.1).
+2. **Check revocation**: fetch `/.well-known/revoked-kids.json`. Reject if, for any entry whose `kid` is the receipt's `kid`, the receipt's `signed_at` ≥ that entry's `effective_revocation_at`, or either time is not in the receipt timestamp form ([`RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) §6.1).
 3. **JCS-canonicalise** `receipt.payload`. (Use `canonicalize` in JS, `sum_engine_internal/infrastructure/jcs.py` in Python — both are byte-identical.)
 4. **Verify the JWS** as detached over those canonical bytes. First require the protected header, the signature and the key's `x` to be canonical unpadded base64url (base64url characters only, no `=`, spare low bits of the last character zero; signature 86 characters, `x` 43): `flattenedVerify` accepts a respelled or padded signature, WebCrypto a respelled or padded `x`, and a header the issuer signed in such a spelling verifies; SUM's own verifiers reject all of them. Also require the key's other members to allow EdDSA verification (no private member `d`; `key_ops`, when present, distinct strings that include `verify`; `use`, when present, `sig`; `alg`, when present, `EdDSA` or `Ed25519`), and build the public key from `kty`, `crv` and `x` alone: some JOSE libraries build the key from `d` when it is present, without comparing it with `x`. In Node:
    ```js
@@ -565,7 +565,8 @@ The same procedure is documented in `worker/wrangler.toml` comments.
 import { flattenedVerify, importJWK } from "jose";
 import canonicalize from "canonicalize";
 import { createHash } from "node:crypto";
-// The strict RFC 3339 instant parser SUM's verifiers use: copy
+// The receipt timestamp parser SUM's verifiers use (a strict profile of
+// RFC 3339, RENDER_RECEIPT_FORMAT.md §6.1): copy
 // single_file_demo/receipt_verifier.js with its vendor/ folder.
 import { parseInstantMs } from "./receipt_verifier.js";
 
@@ -592,7 +593,7 @@ async function renderAndVerify(triples, sliders) {
   if (!jwk) throw new Error(`no JWK for kid=${kid}`);
 
   // 3. Revocation. Every entry for this kid counts, whatever the list order,
-  //    and a time that is not an RFC 3339 instant fails closed, as in SUM's
+  //    and a time not in the receipt timestamp form fails closed, as in SUM's
   //    verifiers. Compare instants, not strings ("...16.849Z" sorts before
   //    "...16Z"); Date.parse also reads timezone-less and other forms, and
   //    its NaN compares false, which would accept.

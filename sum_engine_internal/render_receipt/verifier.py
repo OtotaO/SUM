@@ -115,11 +115,12 @@ def _check_revoked_kid(receipt: dict, revoked_kids: Any) -> None:
 
     Per docs/RENDER_RECEIPT_FORMAT.md §6.1:
 
-    * A receipt with signed_at BEFORE effective_revocation_at retains
-      its original validity (was signed legitimately before the
-      compromise window). Continue verification normally.
-    * A receipt with signed_at AT OR AFTER effective_revocation_at is
-      rejected with the revoked_kid error class.
+    * A receipt with signed_at BEFORE the effective_revocation_at of
+      every entry for its kid retains its original validity (was signed
+      legitimately before the compromise window). Continue verification
+      normally.
+    * A receipt with signed_at AT OR AFTER the effective_revocation_at of
+      any entry for its kid is rejected with the revoked_kid error class.
 
     ``revoked_kids`` may be the entry list or the whole
     ``sum.revoked_kids.v1`` document served at

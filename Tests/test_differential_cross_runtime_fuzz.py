@@ -296,7 +296,7 @@ def test_issuer_signed_noncanonical_header_rejected_by_both(family):
 
 # signed_at spellings for the opt-in replay window. Each one is signed into the
 # receipt, so the signature holds and only the window decides. With
-# max_age_seconds set, both runtimes must read signed_at with the same RFC 3339
+# max_age_seconds set, both runtimes must read signed_at with the same strict
 # instant grammar that revocation uses (_instant_ms / parseInstantMs): seconds
 # required, uppercase T, Z or +-HH:MM. The window is wide enough (10**12 s) that
 # the clock never decides, only the grammar. The JS meaning verifier has no

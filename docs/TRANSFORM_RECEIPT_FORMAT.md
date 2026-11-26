@@ -56,7 +56,7 @@ The four top-level keys are siblings, not nested:
 | `output_hash` | string | `sha256-<hex>` of the output artifact's canonical-form bytes. Output shape varies by transform: tome (UTF-8 bytes), tag set (JCS-canonicalised), merged bundle (state integer ‖ canonical tome), etc. The transform pins its output canonicalisation. |
 | `model` | string | The model that ACTUALLY served the call, taken from the LLM API response's reported `model` field — NOT the configured-default. May be a more specific snapshot id than the requested tag. For non-LLM transforms (e.g. deterministic compose), the value is `canonical-deterministic-v0` or the transform's documented marker. |
 | `provider` | string | One of the values enumerated in §1.2 (inherited from `sum.render_receipt.v1`'s provider taxonomy). |
-| `signed_at` | string | ISO-8601 UTC timestamp at issuance time. See §1.3 for cache-HIT durability semantics. Verifiers read it as an RFC 3339 instant (§6.2). |
+| `signed_at` | string | ISO-8601 UTC timestamp at issuance time. See §1.3 for cache-HIT durability semantics. Verifiers read it in the receipt timestamp form of [RENDER_RECEIPT_FORMAT.md](RENDER_RECEIPT_FORMAT.md) §6.1 (see §6.2). |
 | `digital_source_type` | string | C2PA `digitalSourceType` per spec.c2pa.org v2.4 (values unchanged 2.2→2.4). `trainedAlgorithmicMedia` for LLM-served transforms; `algorithmicMedia` for deterministic ones. |
 
 ### 1.2 Transform registry (v1)
@@ -138,7 +138,9 @@ The verifier needs three inputs:
    member d; key_ops, when present, an array of distinct strings that
    includes "verify"; use, when present, "sig"; alg, when present,
    "EdDSA" or "Ed25519" (its RFC 9864 name, which WebCrypto writes on
-   export). Otherwise → REJECT (malformed JWKS).
+   export). Otherwise → REJECT (malformed JWKS). Build the public key
+   from kty, crv and x alone, so no library can build it from another
+   member.
 
 4. Construct the flattened JWS object:
    { protected: protected_b64, payload: <JCS bytes from step 2>,
@@ -278,7 +280,7 @@ When `max_age_seconds` is set, the verifier rejects with `signed_at_out_of_windo
 - `now − payload.signed_at > max_age_seconds` (stale receipt), OR
 - `payload.signed_at − now > max_future_skew_seconds` (future-dated beyond skew)
 
-`signed_at` is read with the RFC 3339 instant grammar that revocation uses for `effective_revocation_at` ([RENDER_RECEIPT_FORMAT.md](RENDER_RECEIPT_FORMAT.md) §6.1), with integer-millisecond arithmetic, in Python and in the JS verifiers. Any other form, including a timezone-less time, is rejected with `signed_at_out_of_window`, so the reading of `signed_at` does not depend on the Python version or the machine's time zone.
+`signed_at` is read with the instant grammar that revocation uses for `effective_revocation_at` ([RENDER_RECEIPT_FORMAT.md](RENDER_RECEIPT_FORMAT.md) §6.1), with integer-millisecond arithmetic, in Python and in the JS verifiers. Any other form, including a timezone-less time, is rejected with `signed_at_out_of_window`, so the reading of `signed_at` does not depend on the Python version or the machine's time zone.
 
 The error class is distinct from `signature_invalid` because the receipt is *cryptographically valid* — the caller has rejected it by policy. This matters operationally for incident response: `signature_invalid` points at tampering; `signed_at_out_of_window` points at a replay attempt OR a legitimate cache HIT served past its freshness budget.
 

@@ -502,7 +502,9 @@ def verify_jose_envelope(
     )
 
 
-# RFC 3339 instant, seconds required, fraction truncated to milliseconds.
+# The receipt timestamp form (RENDER_RECEIPT_FORMAT.md §6.1), a strict profile
+# of RFC 3339: uppercase T and Z, seconds required (00 to 59), an optional
+# fraction of 1 to 9 digits truncated to milliseconds, Z or +-HH:MM.
 # Used by the replay window here and by revocation in render_receipt.
 # The grammar, range checks and arithmetic are shared line for line with
 # parseInstantMs in single_file_demo/receipt_verifier.js, so Python and the
@@ -525,7 +527,7 @@ def _days_from_civil(y: int, m: int, d: int) -> int:
 
 
 def _instant_ms(value: Any) -> int | None:
-    """Epoch milliseconds for an RFC 3339 instant, or None if malformed."""
+    """Epoch milliseconds for an instant in the receipt timestamp form, or None."""
     if not isinstance(value, str):
         return None
     m = _INSTANT.fullmatch(value)
@@ -564,7 +566,7 @@ def _enforce_signed_at_window(
             f"payload.signed_at is missing or non-string "
             f"({signed_at_str!r}); failing closed",
         )
-    # The same RFC 3339 instant grammar and integer millisecond arithmetic as
+    # The same instant grammar and integer millisecond arithmetic as
     # parseInstantMs in the JS verifiers and the revocation check, so every
     # Python version and Node give the same verdict on the same signed_at.
     signed_ms = _instant_ms(signed_at_str)
@@ -572,8 +574,8 @@ def _enforce_signed_at_window(
         raise JoseEnvelopeError(
             JoseEnvelopeErrorClass.SIGNED_AT_OUT_OF_WINDOW,
             f"max_age_seconds={max_age_seconds} requested but "
-            f"payload.signed_at={signed_at_str!r} is not an RFC 3339 "
-            f"instant; failing closed",
+            f"payload.signed_at={signed_at_str!r} is not in the receipt "
+            f"timestamp form (RENDER_RECEIPT_FORMAT.md §6.1); failing closed",
         )
     age_seconds = (time.time_ns() // 1_000_000 - signed_ms) / 1000
     if age_seconds > max_age_seconds:

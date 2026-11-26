@@ -407,7 +407,9 @@ export async function verifyTransformReceipt(receipt, jwks, opts) {
   };
 }
 
-// RFC 3339 instant, seconds required, fraction truncated to milliseconds.
+// The receipt timestamp form (RENDER_RECEIPT_FORMAT.md §6.1), a strict profile
+// of RFC 3339: uppercase T and Z, seconds required (00 to 59), an optional
+// fraction of 1 to 9 digits truncated to milliseconds, Z or +-HH:MM.
 // Shared line for line with _instant_ms in the Python verifier and with
 // parseInstantMs in receipt_verifier.js (kept per file, like the other helpers).
 const INSTANT = /^([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})(?:\.([0-9]{1,9}))?(Z|([+-])([0-9]{2}):([0-9]{2}))$/;
@@ -421,7 +423,7 @@ function daysFromCivil(y, m, d) {
   return era * 146097 + doe - 719468;
 }
 
-// Epoch milliseconds for an RFC 3339 instant, or null if malformed. Exported so
+// Epoch milliseconds for an instant in the receipt timestamp form, or null. Exported so
 // test_transform_receipt_verify.js can run the shared instant table on this copy.
 export function parseInstantMs(value) {
   if (typeof value !== "string") return null;
@@ -447,7 +449,7 @@ export function parseInstantMs(value) {
 function parseSignedAt(s) {
   const ms = parseInstantMs(s);
   if (ms === null) {
-    throw new Error(`signed_at ${JSON.stringify(s)} is not an RFC 3339 instant`);
+    throw new Error(`signed_at ${JSON.stringify(s)} is not in the receipt timestamp form (RENDER_RECEIPT_FORMAT.md §6.1)`);
   }
   return ms;
 }
