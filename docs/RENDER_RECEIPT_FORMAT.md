@@ -109,7 +109,7 @@ The verifier needs three inputs:
 1. Parse receipt.kid. Look up the matching key in jwks.keys by kid.
    If no match → REJECT (unknown key id).
    The key MUST be an Ed25519 public key (kty "OKP", crv "Ed25519");
-   otherwise → REJECT (malformed JWKS), whatever else is wrong.
+   otherwise → REJECT (malformed JWKS), whatever is wrong in a later step.
 
 2. Take receipt.payload (the object, not the string). JCS-canonicalise
    it (RFC 8785). Encode to UTF-8 bytes. This is the detached payload.
@@ -179,7 +179,8 @@ async function verifyReceipt(receipt: any): Promise<boolean> {
   const canonicalBytes = new TextEncoder().encode(canonicalize(receipt.payload)!);
   const [protected_b64, middle, signature_b64] = receipt.jws.split(".");
   if (middle !== "") throw new Error("not a detached JWS");
-  // Step 3: also require canonical unpadded base64url for protected_b64,
+  // Steps 2 and 3: also apply the payload limit and the protected-header
+  // rule (§2.1), and require canonical unpadded base64url for protected_b64,
   // signature_b64 and the key's x, and the key member rule (omitted here
   // for brevity).
   const result = await flattenedVerify(
@@ -559,8 +560,9 @@ async function main() {
   const canonical = new TextEncoder().encode(canonicalize(r.payload)!);
   const [proto, middle, sig] = r.jws.split(".");
   if (middle !== "") throw new Error("not a detached JWS");
-  // Step 3: also require canonical unpadded base64url for proto, sig and
-  // the key's x, and the key member rule (omitted here for brevity).
+  // Steps 2 and 3: also apply the payload limit and the protected-header
+  // rule (§2.1), and require canonical unpadded base64url for proto, sig
+  // and the key's x, and the key member rule (omitted here for brevity).
 
   const result = await flattenedVerify(
     { protected: proto, payload: canonical, signature: sig },

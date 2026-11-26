@@ -120,7 +120,7 @@ The verifier needs three inputs:
 1. Parse receipt.kid. Look up the matching key in jwks.keys by kid.
    If no match → REJECT (unknown key id).
    The key MUST be an Ed25519 public key (kty "OKP", crv "Ed25519");
-   otherwise → REJECT (malformed JWKS), whatever else is wrong.
+   otherwise → REJECT (malformed JWKS), whatever is wrong in a later step.
 
 2. Take receipt.payload (the object, not the string). JCS-canonicalise
    it (RFC 8785). Encode to UTF-8 bytes. This is the detached payload.

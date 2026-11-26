@@ -521,10 +521,11 @@ def _header_cases(env, family):
         ("invalid UTF-8 in typ", _signed_under(env, family, raw=base[:-1] + b',"typ":"\xff"}'), mj),
         ("NaN in the header", _signed_under(env, family, raw=base[:-1] + b',"typ":NaN}'), mj),
         ("Infinity in the header", _signed_under(env, family, raw=base[:-1] + b',"typ":Infinity}'), mj),
-        # Python accepted NaN nested in a jwk object (joserfc checks only that
-        # jwk is an object) and JS refused it: the one shape on which Python
-        # moves, from accept to reject.
+        # Python accepted NaN or Infinity nested in a jwk object (joserfc
+        # checks only that jwk is an object) and JS refused it; Python moves
+        # from accept to reject on these.
         ("NaN inside a jwk object", _signed_under(env, family, raw=base[:-1] + b',"jwk":{"a":NaN}}'), mj),
+        ("Infinity inside a jwk object", _signed_under(env, family, raw=base[:-1] + b',"jwk":{"a":[-Infinity]}}'), mj),
         ("crit holding a number", _signed_under(env, family, H(crit=["b64", 1])), ("REJECT", "crit_unknown_extension")),
     ]
     for name, bad in (("jku", "ftp://x"), ("jku", 5), ("jwk", "x"), ("jwk", [1]), ("kid", 5), ("x5u", "ftp://x"),
