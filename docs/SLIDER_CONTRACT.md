@@ -467,13 +467,14 @@ halt Phase E and reconsider:
 ## Cross-references
 
 The slider's contract sits inside a larger trust loop the Phase E.1
-docs build out — every render that exercises this contract carries
-its own cryptographic attestation, and every release-state of the
-contract is recorded in the trust-root manifest:
+docs build out — a Worker render that exercises this contract carries
+its own cryptographic attestation when the Worker signs (Python renders
+carry none), and every release-state of the contract is recorded in
+the trust-root manifest:
 
 - [`docs/RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) — the
-  receipt an `/api/render` response carries when signing is configured;
-  binds the rendered
+  receipt an `/api/render` response carries when signing is configured
+  and succeeds; binds the rendered
   tome to the slider position this contract describes. The receipt
   proves the render attestation; this contract proves preservation
   across axes.
@@ -483,7 +484,7 @@ contract is recorded in the trust-root manifest:
   rate) this contract's headline cites.
 - [`docs/PROOF_BOUNDARY.md`](PROOF_BOUNDARY.md) §1.8 — the
   cryptographic binding (Ed25519 / JCS / detached JWS / JWKS) that
-  attests to every render exercising this contract.
+  attests to a signed Worker render exercising this contract.
 - [`docs/NLI_MODEL_REGISTRY.md`](NLI_MODEL_REGISTRY.md) — v0.9.E
   spec for the local ONNX swap target on this contract's NLI audit
   layer. Decouples the rescue path from OpenAI without changing the

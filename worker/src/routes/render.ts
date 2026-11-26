@@ -6,9 +6,9 @@
 // the render path follows sum_engine_internal.ensemble.slider_renderer
 // .render in shape (same quantization rules, same system prompt) but not
 // byte for byte. Python picks the canonical or LLM branch from the raw
-// sliders and the Worker from the quantized ones, so a prompt axis in
-// [0.4, 0.6) other than 0.5 takes Python's LLM path and the Worker's
-// canonical one; render_id, the cache key (in general) and the rules for
+// sliders and the Worker from the quantized ones, so when every prompt
+// axis is in [0.4, 0.6) and one is not exactly 0.5, Python takes the LLM
+// path and the Worker the canonical one; render_id, the cache key (in general) and the rules for
 // fact order and repeated triples differ too (see render/axis_prompts.ts
 // and cache/bin_cache.ts). Provider selection:
 //   - body.provider == "openai"    → callOpenAI (requires OPENAI_API_KEY)
@@ -319,13 +319,16 @@ export async function handleRender(
   const baseKey = await deriveCacheKey(body.triples, quantized);
   const key = `render-v2:${baseKey}:${providerChoice ?? "canonical"}`;
 
-  // Cache-first. The cached value already carries its render_receipt
-  // (signed at the time of the original miss render); HIT path
-  // re-serves the same receipt verbatim so the kid + signed_at +
-  // tome_hash all remain consistent with the issuance.
+  // Cache-first. A cached value carries the render_receipt signed at the
+  // original miss render, and a hit re-serves it verbatim, so kid,
+  // signed_at and tome_hash stay those of the issuance. With signing
+  // configured, an entry without a receipt (cached while signing was off)
+  // is not served: it is rendered again, signed, and the new entry
+  // replaces it.
+  const signingConfigured = Boolean(env.RENDER_RECEIPT_SIGNING_JWK && env.RENDER_RECEIPT_SIGNING_KID);
   if (!body.force_render) {
     const cached = await getCached(env, key);
-    if (cached) {
+    if (cached && (!signingConfigured || cached.render_receipt !== undefined)) {
       return json({
         ...cached,
         cache_status: "hit",
@@ -379,7 +382,6 @@ export async function handleRender(
   // render still returns. Lets the deploy stage roll out without
   // the receipt path being a hard dependency.
   let renderReceipt: unknown = undefined;
-  const signingConfigured = Boolean(env.RENDER_RECEIPT_SIGNING_JWK && env.RENDER_RECEIPT_SIGNING_KID);
   if (env.RENDER_RECEIPT_SIGNING_JWK && env.RENDER_RECEIPT_SIGNING_KID) {
     try {
       const signingJWK: JWK = JSON.parse(env.RENDER_RECEIPT_SIGNING_JWK);

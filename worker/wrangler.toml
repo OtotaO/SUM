@@ -91,10 +91,6 @@ SUM_DEFAULT_MODEL_OPENAI    = "gpt-4o-mini"
 #   cadence >= render cache TTL of 24h).
 RENDER_RECEIPT_PUBLIC_JWKS = '{"keys":[{"crv":"Ed25519","kty":"OKP","x":"MCzgC4fMHtU-_LSASGA7va1F-MSQwKuIiOjKTV8oWK4","alg":"EdDSA","use":"sig","kid":"sum-render-2026-04-27-1"}]}'
 
-# KV namespaces (for Phase 4a QID cache — uncomment after `wrangler kv:namespace create qid-cache`):
-# [[kv_namespaces]]
-# binding = "QID_CACHE"
-# id = "<paste-from-wrangler-output>"
 
 # KV — Phase E slider-render bin cache. Holds RenderResult JSON keyed
 # by render-v2:<sha256(sorted_triples + quantized_sliders)[:32]>:<provider>,

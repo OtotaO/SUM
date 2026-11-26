@@ -161,6 +161,29 @@ test("render that lost its receipt to a broken signing secret is not cached", as
     const again = await render(); assert.equal(again.cache_status, "hit"); assert.deepEqual(again.render_receipt, fixed.render_receipt);
   } finally { await signing.dispose(); }
 });
+test("a render cached while signing was off is signed once signing is on", async () => {
+  // Without signing configured, a canonical render is cached with no receipt.
+  // Once the operator configures signing, a hit on that entry would serve it
+  // receipt-less for up to the TTL; it is rendered again and signed instead.
+  const options = (bindings) => convertV4MiniflareOptions({ name: "test-sum-late-signing", modules: true, script, compatibilityDate: "2026-04-23",
+    durableObjects: { LLM_BUDGET: { className: "LLMBudget", useSQLite: true } }, kvNamespaces: ["RENDER_CACHE"], bindings,
+    outboundService: async (req) => { outboundHosts.push(new URL(req.url).hostname); return new Response("unexpected outbound request", { status: 599 }); } });
+  const late = new Miniflare(options({}));
+  const render = async () => {
+    const res = await late.dispatchFetch("https://sum.invalid/api/render", { method: "POST", headers: { "content-type": "application/json", "cf-connecting-ip": "192.0.2.12" }, body: JSON.stringify({ triples: RENDER.triples, slider_position: CENTER }) });
+    assert.equal(res.status, 200); return res.json();
+  };
+  try {
+    const unsigned = await render();
+    assert.equal(unsigned.render_receipt, undefined); assert.equal(unsigned.cache_status, "miss");
+    assert.equal((await render()).cache_status, "hit", "a render without signing configured is still cached");
+    await late.setOptions(options({ RENDER_RECEIPT_SIGNING_JWK: JSON.stringify(generateKeyPairSync("ed25519").privateKey.export({ format: "jwk" })), RENDER_RECEIPT_SIGNING_KID: "test-kid" }));
+    const signed = await render();
+    assert.equal(signed.cache_status, "miss", "the entry cached without a receipt was served as a hit");
+    assert.equal(signed.render_receipt?.kid, "test-kid");
+    const again = await render(); assert.equal(again.cache_status, "hit"); assert.deepEqual(again.render_receipt, signed.render_receipt);
+  } finally { await late.dispose(); }
+});
 for (const endpoint of ["render", "complete"]) {
   test(`${endpoint} fails closed with absent or unavailable admission`, async () => {
     const handler = endpoint === "render" ? handleRender : handleComplete; const body = endpoint === "render" ? RENDER : { prompt: "test" };

@@ -520,11 +520,12 @@ content-type: application/json
 | Status | When |
 |---|---|
 | `400` | invalid JSON or UTF-8, a body that is not an object, a missing or unknown `transform` name, or a missing `input` (`input must be an object`) |
-| `400` | a triple that is not three nonempty strings of at most 512 characters, a parameter that is not a finite number in [0, 1], or a malformed `source_chain` record (`invalid source_chain record`) |
+| `400` | `triples` empty or over 256 items (`triples must contain 1 to 256 items`), a triple that is not three nonempty strings of at most 512 characters, `parameters` not an object or an axis that is not a finite number in [0, 1] |
+| `400` | a `source_chain` that is not an array or holds more than 256 records (`source_chain must contain at most 256 records`), a record that is not an object (`source_chain record must be an object`), or a malformed record (`invalid source_chain record`) |
 | `400` | a triple, a `source_chain` claim or a `source_uri` containing a lone UTF-16 surrogate (not well-formed Unicode) |
 | `405` | non-`POST` method |
 | `408` | body not fully received within 10 seconds |
-| `413` | body over 192 KiB (196,608 bytes) |
+| `413` | body over 192 KiB (196,608 bytes), or triple text over 40,000 characters in all (`triple text exceeds 40000 characters`) |
 | `429` | the per-IP limit of 100 an hour (scope `canonical`, the limit for credential-free rendering) |
 | `501` | transform recognised but the requested path is not yet wired on the Worker (e.g. `slider` with an off-centre LLM axis); the error message contains `"not yet wired"`. Use `/api/render` for that case. |
 

@@ -8,8 +8,8 @@
 // Pipeline (per 2026 Wikidata best-practice research):
 //
 //   1. Cache lookup — each (text, kind, lang) key is deterministic.
-//      Cache API first (edge-local, same-colo), then KV (global, if
-//      bound). Hit rate > 95% expected once traffic stabilises.
+//      Cloudflare's edge Cache API (same colo) only; no KV cache. (The
+//      per-IP rate limit is in the RENDER_CACHE KV namespace.)
 //   2. wbsearchentities API (MediaWiki) — text/fuzzy match with a
 //      type filter (item vs property). Returns candidates ranked by
 //      prefix + exact-label matching. Take top-1; confidence mirrors

@@ -17,7 +17,8 @@ seed_long_paragraphs:
      to see if naturalistic LLM-rendered text drifts more or less
      than synthetic perturbations.
 
-Each Worker call returns a signed render_receipt.v1 — saved to the
+Each Worker call returns a signed render_receipt.v1 when the Worker
+signs and signing succeeds — saved to the
 receipt directory as durable artifacts that can later seed v3's
 harmonic-extension boundary set.
 

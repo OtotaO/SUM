@@ -23,7 +23,7 @@ This document is a triage layer. It does NOT restate the wire specs, regime vali
 ### What you get
 
 - **Structured audit-log rows** — one JSONL row per CLI operation (`attest`, `verify`, `render`). Schema `sum.audit_log.v1`. Forward-compatible: consumers MUST ignore unknown keys.
-- **Signed render receipts** — a successful `/api/render` call on a Worker with signing configured emits a `sum.render_receipt.v1` receipt: detached JWS over a JCS-canonical payload, Ed25519 (RFC 8032) keys distributed via JWKS at `/.well-known/jwks.json`. Verifiable in Python, Node, or any browser — no issuer infrastructure required for verification.
+- **Signed render receipts** — a successful `/api/render` call on a Worker with signing configured emits a `sum.render_receipt.v1` receipt when signing succeeds: detached JWS over a JCS-canonical payload, Ed25519 (RFC 8032) keys distributed via JWKS at `/.well-known/jwks.json`. Verifiable in Python, Node, or any browser — no issuer infrastructure required for verification.
 - **Tampering detection** — the AkashicLedger event log is a SHA-256 Merkle hash chain; `verify_chain()` reports the first broken link. Concurrency-hardened (`BEGIN IMMEDIATE` write transactions) so the invariant holds under concurrent writers.
 
 ### Minimum recipe

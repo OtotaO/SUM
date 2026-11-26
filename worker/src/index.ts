@@ -56,9 +56,6 @@ export interface Env {
   SUM_DEFAULT_MODEL_ANTHROPIC?: string;
   SUM_DEFAULT_MODEL_OPENAI?: string;
 
-  // KV — optional until Phase 4a goes live.
-  QID_CACHE?: KVNamespace;
-
   // KV — optional until Phase E render route goes live.
   // Stores RenderResult JSON keyed by sha256(triples + quantized sliders).
   RENDER_CACHE?: KVNamespace;
