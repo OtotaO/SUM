@@ -120,9 +120,16 @@ def test_missing_file_raises_filenotfounderror(tmp_path):
 # --------------------------------------------------------------------------
 
 
-markitdown = pytest.importorskip(
-    "markitdown",
-    reason="omni-format extra not installed; HTML/PDF/etc routing tests skipped",
+# Only the HTML tests below need markitdown. A module-level importorskip here
+# skipped the whole file without it, the plain-text tests above included.
+try:
+    import markitdown  # noqa: F401
+    _HAVE_MARKITDOWN = True
+except ImportError:
+    _HAVE_MARKITDOWN = False
+needs_markitdown = pytest.mark.skipif(
+    not _HAVE_MARKITDOWN,
+    reason="omni-format extra not installed; HTML routing tests skipped",
 )
 
 
@@ -136,6 +143,7 @@ SAMPLE_HTML = b"""\
 """
 
 
+@needs_markitdown
 def test_html_conversion_produces_markdown(tmp_path):
     p = tmp_path / "sample.html"
     p.write_bytes(SAMPLE_HTML)
@@ -156,6 +164,7 @@ def test_html_conversion_produces_markdown(tmp_path):
     assert cd.markdown_sha256 != cd.source_uri.split(":", 1)[1]
 
 
+@needs_markitdown
 def test_html_conversion_is_deterministic(tmp_path):
     """Same HTML input → byte-identical markdown across two invocations.
 

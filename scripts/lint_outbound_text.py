@@ -154,12 +154,17 @@ def _report(label: str, findings: list[Finding]) -> tuple[int, int]:
     return len(errors), len(warns)
 
 
+# Synthetic credentials for the self-test, assembled at runtime so the source
+# holds no string a secret scanner reads as a real GitHub or Stripe key.
+_FAKE_GITHUB_TOKEN = "ghp" + "_" + "0123456789ABCDEFabcdef0123456789ABCD"
+_FAKE_LIVE_SECRET = "sk" + "_live_" + "0123456789abcdef"
+
 _SELFTEST_CASES = [
     ("clean", "Good catch. The fix records the operator and replays from local files.\n", 0, 0),
     ("em dash", "This is fine — but this is not.\n", 1, 0),
     ("spaced double hyphen", "This is fine -- but this is not.\n", 1, 0),
-    ("github token", "use this: ghp_0123456789ABCDEFabcdef0123456789ABCD\n", 1, 0),
-    ("secret assignment", "api_key = sk_live_0123456789abcdef\n", 1, 0),
+    ("github token", f"use this: {_FAKE_GITHUB_TOKEN}\n", 1, 0),
+    ("secret assignment", f"api_key = {_FAKE_LIVE_SECRET}\n", 1, 0),
     ("stray command outside fence", "Thanks for the review.\ngh pr comment 382 --body hi\n", 0, 1),
     ("command inside fence is fine", "```\ngh pr comment 382 --body hi\n```\n", 0, 0),
     ("unspaced en dash range ok", "Coverage held across 2024–2025 runs.\n", 0, 0),
@@ -178,7 +183,7 @@ def selftest(cfg: dict) -> int:
 
     # A line that both leaks a credential AND trips another rule must never echo
     # the credential through the other rule's snippet.
-    leaky = "bad — ghp_0123456789ABCDEFabcdef0123456789ABCD\n"
+    leaky = f"bad — {_FAKE_GITHUB_TOKEN}\n"
     fs = lint_text(leaky, cfg)
     passed = len(fs) == 2 and all("ghp_" not in f.snippet for f in fs)
     ok = ok and passed

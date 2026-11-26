@@ -20,6 +20,14 @@ Allowed exceptions: GitHub-built-in path-style references (``./local``
 composite actions, ``docker://image:tag``). These are not third-party
 GitHub Actions and are out of scope for the SHA-pin rule.
 
+Only that one-line form is read. Any other line where ``uses`` appears
+as a key (a flow mapping such as ``- {uses: actions/checkout@v4}``, a
+quoted key, a block scalar, an anchor or alias, a complex key
+(``? uses``), ``uses:`` with no ``@ref``, or the text ``uses:`` inside a
+``run:`` script) fails too:
+the lint is stdlib-only, so it refuses spellings it cannot read instead
+of parsing YAML. Rewrite such a line in the one-line form.
+
 Run:
     python scripts/lint_workflow_pins.py
 Exit 0 on success, 1 on any tag-pinned action.
@@ -42,6 +50,15 @@ _SHA_PIN_RE = re.compile(r"@[0-9a-f]{40}(?:\s|$)")
 # (not a SHA). The regex tolerates leading whitespace + hyphens for
 # both `- uses:` and `      uses:` forms.
 _USES_LINE_RE = re.compile(r"^\s*-?\s*uses:\s*([^@\s]+)@([^\s#]+)")
+# Any other place a ``uses`` key can appear on a line. Matched lines that
+# the strict pattern above cannot read are failures (see the module doc).
+_ANY_USES_KEY_RE = re.compile(
+    r"""(?:^|[\s{,\[?-])["']?uses["']?\s*:"""   # uses: anywhere on the line
+    r"""|^\s*-?\s*\?\s*["']?uses["']?\s*$"""  # a complex key: ? uses
+)
+UNREADABLE = "<uses not in the form: - uses: owner/repo@<40-hex sha>>"
+# The one-line form with no @ref, which only a local or docker reference may use.
+_USES_PLAIN_RE = re.compile(r"^\s*-?\s*uses:\s*(\S+)\s*(?:#.*)?$")
 
 
 def _is_local_or_docker(target: str) -> bool:
@@ -66,6 +83,11 @@ def lint_workflow(path: Path) -> list[tuple[int, str, str]]:
 
             m = _USES_LINE_RE.match(line)
             if not m:
+                plain = _USES_PLAIN_RE.match(line)
+                if plain and _is_local_or_docker(plain.group(1)):
+                    continue
+                if _ANY_USES_KEY_RE.search(line):
+                    failures.append((lineno, UNREADABLE, line.strip()))
                 continue
             target, ref = m.group(1), m.group(2)
             if _is_local_or_docker(target):
@@ -101,6 +123,10 @@ def main() -> int:
             files_failed += 1
             print(f"\n✗ {path.relative_to(repo_root)}: {len(failures)} unpinned action(s)")
             for lineno, target, ref in failures:
+                if target == UNREADABLE:
+                    print(f"    line {lineno:>3}: {ref}")
+                    print(f"             ↳ {target[1:-1]}, on one line")
+                    continue
                 print(f"    line {lineno:>3}: {target}@{ref}")
                 print(f"             ↳ resolve via: "
                       f"gh api repos/{target}/git/ref/tags/{ref} | jq .object.sha")
