@@ -215,7 +215,7 @@ When present, `render_receipt` is the load-bearing field for any caller that wan
 | `tome_hash` | `string` | `sha256-{hex}` over the UTF-8 bytes of `tome`. |
 | `model` | `string` | The actual model identifier the LLM provider returned, or `"canonical-deterministic-v0"` for the no-LLM path. |
 | `provider` | `"anthropic"` \| `"openai"` \| `"cf-ai-gateway-anthropic"` \| `"canonical-path"` | Which backend produced the tome. |
-| `signed_at` | `string` | ISO 8601 UTC timestamp at the moment the JWS was produced. |
+| `signed_at` | `string` | ISO 8601 UTC timestamp at the moment the JWS was produced. Verifiers read it as an RFC 3339 instant ([`RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) §6.2). |
 | `digital_source_type` | `"trainedAlgorithmicMedia"` \| `"algorithmicMedia"` | C2PA terminology. The first means LLM-generated; the second means deterministic. |
 
 The `jws` is a [detached JWS](https://www.rfc-editor.org/rfc/rfc7515#appendix-A.5) per RFC 7515, with `b64=false` per [RFC 7797](https://www.rfc-editor.org/rfc/rfc7797). Protected header:
@@ -229,7 +229,7 @@ The `jws` is a [detached JWS](https://www.rfc-editor.org/rfc/rfc7515#appendix-A.
 The full verifier algorithm is documented in [`docs/RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md). Quick reference:
 
 1. **Fetch the JWKS** from `https://sum-demo.ototao.workers.dev/.well-known/jwks.json` (or the publisher's equivalent). Pick the JWK whose `kid` matches the receipt's `kid`. Reject if not found.
-2. **Check revocation**: fetch `/.well-known/revoked-kids.json`. If the receipt's `kid` is in `revoked` and the receipt's `signed_at` ≥ `effective_revocation_at`, reject.
+2. **Check revocation**: fetch `/.well-known/revoked-kids.json`. Reject if, for any entry whose `kid` is the receipt's `kid`, the receipt's `signed_at` ≥ that entry's `effective_revocation_at`, or either time is not an RFC 3339 instant ([`RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) §6.1).
 3. **JCS-canonicalise** `receipt.payload`. (Use `canonicalize` in JS, `sum_engine_internal/infrastructure/jcs.py` in Python — both are byte-identical.)
 4. **Verify the JWS** as detached over those canonical bytes. First require the protected header, the signature and the key's `x` to be canonical unpadded base64url (base64url characters only, no `=`, spare low bits of the last character zero; signature 86 characters, `x` 43): `flattenedVerify` accepts a respelled or padded signature, WebCrypto a respelled or padded `x`, and a header the issuer signed in such a spelling verifies; SUM's own verifiers reject all of them. In Node:
    ```js
@@ -564,6 +564,9 @@ The same procedure is documented in `worker/wrangler.toml` comments.
 import { flattenedVerify, importJWK } from "jose";
 import canonicalize from "canonicalize";
 import { createHash } from "node:crypto";
+// The strict RFC 3339 instant parser SUM's verifiers use: copy
+// single_file_demo/receipt_verifier.js with its vendor/ folder.
+import { parseInstantMs } from "./receipt_verifier.js";
 
 const BASE = "https://sum-demo.ototao.workers.dev";
 
@@ -587,21 +590,29 @@ async function renderAndVerify(triples, sliders) {
   const jwk = jwks.keys.find((k) => k.kid === kid);
   if (!jwk) throw new Error(`no JWK for kid=${kid}`);
 
-  // 3. Revocation
+  // 3. Revocation. Every entry for this kid counts, whatever the list order,
+  //    and a time that is not an RFC 3339 instant fails closed, as in SUM's
+  //    verifiers. Compare instants, not strings ("...16.849Z" sorts before
+  //    "...16Z"); Date.parse also reads timezone-less and other forms, and
+  //    its NaN compares false, which would accept.
   const revoked = await (await fetch(`${BASE}/.well-known/revoked-kids.json`)).json();
-  const hit = revoked.revoked.find((r) => r.kid === kid);
-  // Compare instants, not strings: "...16.849Z" sorts before "...16Z".
-  // (single_file_demo/receipt_verifier.js does this with a strict parser.)
-  if (hit && Date.parse(payload.signed_at) >= Date.parse(hit.effective_revocation_at)) {
-    return { tome: result.tome, verified: false, reason: "kid revoked" };
+  for (const entry of revoked.revoked.filter((r) => r.kid === kid)) {
+    const signed = parseInstantMs(payload.signed_at);
+    const effective = parseInstantMs(entry.effective_revocation_at);
+    if (signed === null || effective === null || signed >= effective) {
+      return { tome: result.tome, verified: false, reason: "kid revoked" };
+    }
   }
 
   // 4. Verify the detached JWS over the canonical payload bytes. Before this,
   //    require protectedHeader, signature and jwk.x to be canonical unpadded
-  //    base64url, as SUM's verifiers do (see the format docs, step 3).
+  //    base64url, and the key to carry no d and only key_ops, use and alg
+  //    values that allow EdDSA verification, as SUM's verifiers do (see the
+  //    format docs, step 3).
   const canonicalBytes = new TextEncoder().encode(canonicalize(payload));
   const [protectedHeader, , signature] = jws.split(".");
-  const key = await importJWK(jwk, "EdDSA");
+  // Build the key from x alone, so a d or other member cannot change it.
+  const key = await importJWK({ kty: jwk.kty, crv: jwk.crv, x: jwk.x }, "EdDSA");
   await flattenedVerify(
     { protected: protectedHeader, payload: canonicalBytes, signature },
     key,

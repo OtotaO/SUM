@@ -40,9 +40,10 @@ from __future__ import annotations
 
 import base64
 import json
+import re
+import time
 import warnings
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from typing import Any
 
 from sum_engine_internal.infrastructure.jcs import canonicalize
@@ -165,6 +166,32 @@ def _is_canonical_b64url_segment(s: object) -> bool:
         return False
     spare_bits = (0, 0, 4, 2)[len(s) % 4]
     return _B64URL_ALPHABET.index(s[-1]) % (1 << spare_bits) == 0
+
+
+def _jwk_member_error(jwk: dict) -> str | None:
+    """Why this JWK may not verify an EdDSA signature, or None if it may.
+
+    The same rule as jwkMemberError in the three JS verifiers, applied before
+    import so both runtimes reject the same keys with the same class.
+    WebCrypto refused a private key, key_ops without "verify" and use other
+    than "sig" at import, while joserfc accepted a private key and refused
+    the others only at verify time (as signature_invalid). alg may be
+    "EdDSA" or its RFC 9864 name "Ed25519", which WebCrypto writes when it
+    exports an Ed25519 key; the protected header must still name EdDSA.
+    """
+    if "d" in jwk:
+        return ("carries the private key member d; a verification key set "
+                "holds public keys only")
+    if "key_ops" in jwk:
+        ops = jwk["key_ops"]
+        if (not isinstance(ops, list) or not all(isinstance(o, str) for o in ops)
+                or len(set(ops)) != len(ops) or "verify" not in ops):
+            return 'key_ops must be an array of distinct strings that includes "verify"'
+    if "use" in jwk and jwk["use"] != "sig":
+        return 'use must be "sig"'
+    if "alg" in jwk and jwk["alg"] not in ("EdDSA", "Ed25519"):
+        return 'alg must be "EdDSA" or "Ed25519"'
+    return None
 
 
 def verify_jose_envelope(
@@ -383,8 +410,16 @@ def verify_jose_envelope(
             f"JWKS key for kid={kid}: x is not the canonical base64url of a "
             f"32-byte Ed25519 public key",
         )
+    member_error = _jwk_member_error(key_jwk)
+    if member_error is not None:
+        raise JoseEnvelopeError(
+            JoseEnvelopeErrorClass.MALFORMED_JWKS,
+            f"JWKS key for kid={kid} {member_error}",
+        )
     try:
-        key = OKPKey.import_key(key_jwk)
+        # Import the public key from x alone, so no library can build the key
+        # from another member; the key that verifies is the x a pin names.
+        key = OKPKey.import_key({"kty": "OKP", "crv": "Ed25519", "x": key_jwk["x"]})
     except Exception as e:  # noqa: BLE001
         raise JoseEnvelopeError(
             JoseEnvelopeErrorClass.MALFORMED_JWKS,
@@ -467,23 +502,49 @@ def verify_jose_envelope(
     )
 
 
-def _parse_signed_at(signed_at_str: str) -> datetime:
-    """Parse the receipt's ``signed_at`` ISO-8601 string into a
-    UTC-aware ``datetime``. Python 3.10's ``datetime.fromisoformat``
-    doesn't accept the trailing ``Z`` suffix that the receipt format
-    produces (3.11+ does), so normalise it first."""
-    normalised = signed_at_str
-    if normalised.endswith("Z"):
-        normalised = normalised[:-1] + "+00:00"
-    dt = datetime.fromisoformat(normalised)
-    if dt.tzinfo is None:
-        # ISO-8601 timestamps in the receipt format MUST carry a
-        # timezone. Treat naïve as malformed.
-        raise ValueError(
-            f"signed_at {signed_at_str!r} is timezone-naïve; "
-            f"receipt spec requires UTC with trailing Z"
-        )
-    return dt.astimezone(timezone.utc)
+# RFC 3339 instant, seconds required, fraction truncated to milliseconds.
+# Used by the replay window here and by revocation in render_receipt.
+# The grammar, range checks and arithmetic are shared line for line with
+# parseInstantMs in single_file_demo/receipt_verifier.js, so Python and the
+# browser give the same revocation verdict for every input (datetime
+# parsing differed across runtimes and Python versions, and could raise
+# OverflowError). Cases: Tests/fixtures/revocation_instants.json.
+_INSTANT = re.compile(
+    r"([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})"
+    r"(?:\.([0-9]{1,9}))?(Z|([+-])([0-9]{2}):([0-9]{2}))"
+)
+
+
+def _days_from_civil(y: int, m: int, d: int) -> int:
+    y -= 1 if m <= 2 else 0
+    era = (y if y >= 0 else y - 399) // 400
+    yoe = y - era * 400
+    doy = (153 * (m + (-3 if m > 2 else 9)) + 2) // 5 + d - 1
+    doe = yoe * 365 + yoe // 4 - yoe // 100 + doy
+    return era * 146097 + doe - 719468
+
+
+def _instant_ms(value: Any) -> int | None:
+    """Epoch milliseconds for an RFC 3339 instant, or None if malformed."""
+    if not isinstance(value, str):
+        return None
+    m = _INSTANT.fullmatch(value)
+    if m is None:
+        return None
+    y, mo, d, h, mi, s = (int(m.group(i)) for i in range(1, 7))
+    ms = int((m.group(7) or "").ljust(3, "0")[:3])
+    leap = y % 4 == 0 and (y % 100 != 0 or y % 400 == 0)
+    days_in_month = (31, 29 if leap else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+    if not (1 <= mo <= 12 and 1 <= d <= days_in_month[mo - 1]
+            and h <= 23 and mi <= 59 and s <= 59):
+        return None
+    offset = 0
+    if m.group(8) != "Z":
+        oh, om = int(m.group(10)), int(m.group(11))
+        if oh > 23 or om > 59:
+            return None
+        offset = (oh * 60 + om) * (1 if m.group(9) == "+" else -1)
+    return (((_days_from_civil(y, mo, d) * 24 + h) * 60 + mi) * 60 + s) * 1000 + ms - offset * 60000
 
 
 def _enforce_signed_at_window(
@@ -503,17 +564,18 @@ def _enforce_signed_at_window(
             f"payload.signed_at is missing or non-string "
             f"({signed_at_str!r}); failing closed",
         )
-    try:
-        signed_at = _parse_signed_at(signed_at_str)
-    except (ValueError, TypeError, OverflowError) as e:
+    # The same RFC 3339 instant grammar and integer millisecond arithmetic as
+    # parseInstantMs in the JS verifiers and the revocation check, so every
+    # Python version and Node give the same verdict on the same signed_at.
+    signed_ms = _instant_ms(signed_at_str)
+    if signed_ms is None:
         raise JoseEnvelopeError(
             JoseEnvelopeErrorClass.SIGNED_AT_OUT_OF_WINDOW,
             f"max_age_seconds={max_age_seconds} requested but "
-            f"payload.signed_at={signed_at_str!r} could not be "
-            f"parsed as ISO-8601 UTC: {e}",
-        ) from e
-    now = datetime.now(timezone.utc)
-    age_seconds = (now - signed_at).total_seconds()
+            f"payload.signed_at={signed_at_str!r} is not an RFC 3339 "
+            f"instant; failing closed",
+        )
+    age_seconds = (time.time_ns() // 1_000_000 - signed_ms) / 1000
     if age_seconds > max_age_seconds:
         raise JoseEnvelopeError(
             JoseEnvelopeErrorClass.SIGNED_AT_OUT_OF_WINDOW,

@@ -110,6 +110,28 @@ function isCanonicalB64urlSegment(s) {
   return B64URL_ALPHABET.indexOf(s[s.length - 1]) % (1 << spareBits) === 0;
 }
 
+// Why this JWK may not verify an EdDSA signature, or null if it may. The same
+// rule as _jwk_member_error in the Python verifier, applied before import so
+// both runtimes reject the same keys with the same class: WebCrypto refused a
+// private key, key_ops without "verify" and use other than "sig", while
+// joserfc accepted a private key and refused the others only at verify time.
+// alg may be "EdDSA" or its RFC 9864 name "Ed25519", which WebCrypto writes
+// when it exports an Ed25519 key; the protected header must still name EdDSA.
+function jwkMemberError(jwk) {
+  const has = (k) => Object.prototype.hasOwnProperty.call(jwk, k);
+  if (has("d")) return "carries the private key member d; a verification key set holds public keys only";
+  if (has("key_ops")) {
+    const ops = jwk.key_ops;
+    if (!Array.isArray(ops) || !ops.every((o) => typeof o === "string") ||
+        new Set(ops).size !== ops.length || !ops.includes("verify")) {
+      return 'key_ops must be an array of distinct strings that includes "verify"';
+    }
+  }
+  if (has("use") && jwk.use !== "sig") return 'use must be "sig"';
+  if (has("alg") && jwk.alg !== "EdDSA" && jwk.alg !== "Ed25519") return 'alg must be "EdDSA" or "Ed25519"';
+  return null;
+}
+
 async function importEd25519Jwk(jwk) {
   if (jwk.kty !== "OKP" || jwk.crv !== "Ed25519") {
     throw new VerifyError(
@@ -123,7 +145,13 @@ async function importEd25519Jwk(jwk) {
       "JWK x is not the canonical base64url of a 32-byte Ed25519 public key",
     );
   }
-  return crypto.subtle.importKey("jwk", jwk, { name: "Ed25519" }, false, ["verify"]);
+  const memberError = jwkMemberError(jwk);
+  if (memberError !== null) {
+    throw new VerifyError(ERROR_CLASSES.MALFORMED_JWKS, `JWK ${memberError}`);
+  }
+  // Import the public key from x alone, so no implementation can build it
+  // from another member; the key that verifies is the x a pin names.
+  return crypto.subtle.importKey("jwk", { kty: "OKP", crv: "Ed25519", x: jwk.x }, { name: "Ed25519" }, false, ["verify"]);
 }
 
 /**
@@ -170,7 +198,18 @@ export async function verifyMeaningEnvelope(receipt, jwks, supportedSchema) {
   }
 
   // ---- Step 2: JCS canonicalize ----
-  const canonicalText = canonicalize(payload);
+  // canonicalize throws a plain Error on a lone surrogate or a non-finite
+  // number (JSON.parse reads 1e999 as Infinity). Python rejects both as
+  // malformed_receipt, so name the class here too.
+  let canonicalText;
+  try {
+    canonicalText = canonicalize(payload);
+  } catch (e) {
+    throw new VerifyError(
+      ERROR_CLASSES.MALFORMED_RECEIPT,
+      `payload could not be JCS-canonicalized: ${e.message}`,
+    );
+  }
   if (canonicalText === undefined || canonicalText === null) {
     throw new VerifyError(ERROR_CLASSES.MALFORMED_RECEIPT, "payload could not be JCS-canonicalized");
   }

@@ -10,12 +10,12 @@ import copy
 import hashlib
 import re
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from types import MappingProxyType
 from typing import Any, Mapping
 
 from sum_engine_internal.infrastructure.jcs import canonicalize
-from sum_engine_internal.infrastructure.jose_envelope import SumVerifyError
+from sum_engine_internal.infrastructure.jose_envelope import SumVerifyError, _instant_ms
 
 
 class TrustPolicyError(ValueError, SumVerifyError):
@@ -249,11 +249,11 @@ def policy_checks(
     if policy.archival:
         checks["receipt_freshness"]["detail"] = "Archival mode: receipt age was deliberately not checked; this is not proof of historical existence."
     elif policy.max_age_seconds is not None:
-        try:
-            signed_at = _time(payload.get("signed_at"), "signed_at")
-        except ValueError as exc:
-            raise TrustPolicyError("signed_at_out_of_window", str(exc)) from exc
-        age = (clock - signed_at).total_seconds()
+        signed_ms = _instant_ms(payload.get("signed_at"))
+        if signed_ms is None:
+            raise TrustPolicyError("signed_at_out_of_window", "signed_at must be an RFC 3339 instant")
+        clock_ms = (clock - datetime(1970, 1, 1, tzinfo=timezone.utc)) // timedelta(milliseconds=1)
+        age = (clock_ms - signed_ms) / 1000
         if age > policy.max_age_seconds or age < -policy.max_future_skew_seconds:
             raise TrustPolicyError("signed_at_out_of_window", "Receipt timestamp is outside the caller's acceptance window")
         passed("receipt_freshness", "Signed timestamp is inside the requested age window; signer clock is still an assertion.")

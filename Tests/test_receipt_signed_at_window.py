@@ -205,12 +205,16 @@ def test_render_receipt_window_surface_exists():
 EDGE = "0001-01-01T00:00:00+01:00"  # 0000-12-31T23:00:00Z, before year 1 in UTC
 
 
-def test_replay_window_fails_closed_on_a_calendar_edge_timestamp() -> None:
-    """datetime.astimezone overflowed on this well-formed value and escaped
-    as a raw OverflowError from a validly signed receipt."""
+def test_replay_window_orders_a_calendar_edge_timestamp() -> None:
+    """datetime.astimezone overflowed on this well-formed value (a raw
+    OverflowError, later a fail-closed reject that Node did not share). The
+    window now uses the integer instant arithmetic revocation uses: the
+    instant is about 6.4e10 s old, so it is inside a 10**12 s window, as the
+    JS verifiers already said, and outside a 10**9 s one."""
     receipt, jwks = _make_receipt(EDGE)
+    assert verify_transform_receipt(receipt, jwks, max_age_seconds=10**12).verified
     with pytest.raises(VerifyError) as exc:
-        verify_transform_receipt(receipt, jwks, max_age_seconds=10**12)
+        verify_transform_receipt(receipt, jwks, max_age_seconds=10**9)
     assert exc.value.error_class == "signed_at_out_of_window"
 
 

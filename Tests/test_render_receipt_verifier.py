@@ -167,6 +167,30 @@ def test_revocation_compares_instants_not_strings() -> None:
     assert verify_receipt(receipt, jwks, revoked_kids=later).payload
 
 
+@pytest.mark.parametrize("effectives, expected", [
+    (["2099-01-01T00:00:00Z", "2026-01-01T00:00:00Z"], "revoked_kid"),
+    (["2026-01-01T00:00:00Z", "2099-01-01T00:00:00Z"], "revoked_kid"),
+    (["2099-01-01T00:00:00Z", "not-an-instant"], "revoked_kid"),
+    (["2099-01-01T00:00:00Z", "2098-01-01T00:00:00Z"], None),
+], ids=["later-entry-first", "earlier-entry-first", "malformed-duplicate", "both-after-signing"])
+def test_every_entry_for_the_kid_counts(effectives, expected) -> None:
+    """Every revocation entry for the receipt's kid is checked, so the
+    earliest effective time decides and a malformed duplicate fails closed.
+    The first matching entry used to decide, so the verdict depended on the
+    order of the list. single_file_demo/test_render_receipt_verify.js runs
+    the same four lists."""
+    from sum_engine_internal.render_receipt.verifier import VerifyError, verify_receipt
+
+    receipt, jwks, entries = _active_revocation()
+    listed = [{**entries[0], "effective_revocation_at": e} for e in effectives]
+    if expected is None:
+        assert verify_receipt(receipt, jwks, revoked_kids=listed).payload
+        return
+    with pytest.raises(VerifyError) as exc:
+        verify_receipt(receipt, jwks, revoked_kids=listed)
+    assert exc.value.error_class == expected
+
+
 def test_transform_wrapper_honours_the_served_document() -> None:
     from sum_engine_internal.transform_receipt.verifier import (
         VerifyError as TransformVerifyError,

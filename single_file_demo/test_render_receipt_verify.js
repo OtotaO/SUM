@@ -114,6 +114,12 @@ for (const filename of fixtureFiles) {
     ["entry with empty kid", [{ kid: "", effective_revocation_at: "2026-01-01T00:00:00Z" }], "reject"],
     ["same second, whole-second effective", [{ ...entry, effective_revocation_at: "2026-04-27T00:45:16Z" }], "reject"],
     ["effective one second later", [{ ...entry, effective_revocation_at: "2026-04-27T00:45:17Z" }], "verify"],
+    // Every entry for the kid counts: the earliest effective time decides and a
+    // malformed duplicate fails closed, whatever the list order (Python runs the same four).
+    ["later entry for the kid listed first", [{ ...entry, effective_revocation_at: "2099-01-01T00:00:00Z" }, { ...entry, effective_revocation_at: "2026-01-01T00:00:00Z" }], "reject"],
+    ["earlier entry for the kid listed first", [{ ...entry, effective_revocation_at: "2026-01-01T00:00:00Z" }, { ...entry, effective_revocation_at: "2099-01-01T00:00:00Z" }], "reject"],
+    ["malformed duplicate entry for the kid", [{ ...entry, effective_revocation_at: "2099-01-01T00:00:00Z" }, { ...entry, effective_revocation_at: "not-an-instant" }], "reject"],
+    ["both entries for the kid after signing", [{ ...entry, effective_revocation_at: "2099-01-01T00:00:00Z" }, { ...entry, effective_revocation_at: "2098-01-01T00:00:00Z" }], "verify"],
     ["bare empty list form (spec 6.1)", { revoked: [] }, "verify"],
     ["served empty document", { schema: "sum.revoked_kids.v1", revoked: [] }, "verify"],
   ];
