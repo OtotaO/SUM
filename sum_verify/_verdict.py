@@ -16,6 +16,9 @@ the single place that decides what a verdict may say:
   ``controls_all`` as recorded) ONLY when it was replayed from supplied
   losses. Otherwise the value is ``issuer_asserted_risk_upper_bound`` and no
   pass/fail decision is shown, because nothing on this machine checked it;
+- a meaning-risk verdict carries the unsigned ``proxy_caveat``, which says
+  whether the bound was replayed, so ``sum verify-meaning`` and ``sum
+  mint-meaning`` print it as ``python -m sum_verify`` and the MCP tools do;
 - a chain's budget is always ``issuer_asserted_budget``: it is the sum of the
   per-hop bound values, and no verify surface replays per-hop losses (hop
   envelopes confirm signatures and mirrored fields, not bound arithmetic).
@@ -107,6 +110,7 @@ def scope_fields(schema: Any, payload: Any, *, replayed: bool) -> dict[str, Any]
 
     ``replayed`` must be True only when the bound (or every cohort bound, for a
     perspective receipt) was recomputed from supplied losses on this call.
+    A meaning-risk receipt's fields end with ``proxy_caveat(replayed)``.
     Render and transform receipts carry no statistical claim and get ``{}``.
     """
     if not isinstance(payload, dict) or schema not in (
@@ -132,6 +136,7 @@ def scope_fields(schema: Any, payload: Any, *, replayed: bool) -> dict[str, Any]
         out[key] = _micro(payload, "risk_upper_bound_micro")
         if replayed and "controlled" in payload:
             out["controlled"] = payload["controlled"]
+        out["proxy_caveat"] = proxy_caveat(replayed)
         return out
     out["simultaneous"] = payload.get("simultaneous")
     out["marginal_" + key] = _micro(payload, "marginal_risk_upper_bound_micro")

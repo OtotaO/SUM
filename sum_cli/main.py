@@ -1577,55 +1577,14 @@ def _open_ledger_or_exit(db_path: str):
 def cmd_ledger_list(args: argparse.Namespace) -> int:
     """Enumerate prov_ids with their linked axiom_keys and evidence spans.
 
-    Output: NDJSON (one record per line). --limit caps output size;
-    --axiom filters to a single axiom_key; --since takes an ISO 8601
-    timestamp and emits only records at-or-after. Combined filters AND.
+    Output: NDJSON (one record per line). --axiom filters to a single
+    axiom_key; --since takes a date or date-time and keeps records
+    at or after that instant (no offset means UTC); --limit caps the rows
+    that pass both. Filters combine with AND (sum_cli/_ledger_list.py).
     """
-    import sqlite3
-
     _open_ledger_or_exit(args.db)
-    # Direct SQL — the ledger does not expose a list-all method and
-    # adding one would force an async surface we do not need here.
-    # Two-table join: axiom_provenance (axiom_key → prov_id) +
-    # provenance_records (prov_id → record_json).
-    clauses = []
-    params: list[object] = []
-    if args.axiom:
-        clauses.append("ap.axiom_key = ?")
-        params.append(args.axiom)
-    where = (" WHERE " + " AND ".join(clauses)) if clauses else ""
-    limit_clause = f" LIMIT {int(args.limit)}" if args.limit else ""
-
-    emitted = 0
-    with sqlite3.connect(args.db) as conn:
-        rows = conn.execute(
-            f"SELECT ap.prov_id, ap.axiom_key, pr.record_json "
-            f"FROM axiom_provenance AS ap "
-            f"JOIN provenance_records AS pr ON pr.prov_id = ap.prov_id"
-            f"{where}"
-            f" ORDER BY ap.prov_id{limit_clause}",
-            params,
-        ).fetchall()
-
-        for prov_id, axiom_key, record_json in rows:
-            rec = json.loads(record_json)
-            if args.since and rec.get("timestamp", "") < args.since:
-                continue
-            out = {
-                "prov_id": prov_id,
-                "axiom_key": axiom_key,
-                "source_uri": rec.get("source_uri"),
-                "byte_start": rec.get("byte_start"),
-                "byte_end": rec.get("byte_end"),
-                "timestamp": rec.get("timestamp"),
-                "extractor_id": rec.get("extractor_id"),
-            }
-            json.dump(out, sys.stdout)
-            sys.stdout.write("\n")
-            emitted += 1
-    if args.verbose:
-        print(f"sum: emitted {emitted} record(s) from {args.db}", file=sys.stderr)
-    return 0
+    from sum_cli._ledger_list import emit_rows
+    return emit_rows(args)
 
 
 def cmd_ledger_stats(args: argparse.Namespace) -> int:
@@ -1653,7 +1612,8 @@ def cmd_ledger_stats(args: argparse.Namespace) -> int:
         json.loads(r[0]).get("timestamp", "") for r in ts_rows
         if r[0]
     ]
-    timestamps = [t for t in timestamps if t]
+    from sum_cli._ledger_list import earliest_and_latest
+    earliest, latest = earliest_and_latest(timestamps)
 
     chain_tip = asyncio.run(ledger.get_chain_tip())
     branch_heads = asyncio.run(ledger.load_branch_heads())
@@ -1668,8 +1628,8 @@ def cmd_ledger_stats(args: argparse.Namespace) -> int:
         "db_path": args.db,
         "provenance_records_total": total_prov,
         "distinct_axiom_keys": distinct_axioms,
-        "earliest_timestamp": min(timestamps) if timestamps else None,
-        "latest_timestamp": max(timestamps) if timestamps else None,
+        "earliest_timestamp": earliest,
+        "latest_timestamp": latest,
         "chain_tip_hash": chain_tip,
         "branches": branches,
     }
@@ -3368,6 +3328,10 @@ def cmd_mint_meaning(args: argparse.Namespace) -> int:
         )
         return 2
 
+    # ---- alpha_target: refuse before scoring, keys or files (the builders re-check) ----
+    if args.alpha_target is not None and not 0.0 <= args.alpha_target <= 1.0:
+        print(f"sum: cannot certify: alpha_target must be a number in [0, 1]; got {args.alpha_target!r}", file=sys.stderr)
+        return 2
     # ---- score or load the per-pair losses ----
     evaluation_manifest = None
     if pair_mode:
@@ -3869,9 +3833,9 @@ def cmd_verify_meaning(args: argparse.Namespace) -> int:
         return 1
 
     from sum_verify._verdict import scope_fields
-    # Scope, n / method / delta, and the bound labelled issuer-asserted
-    # unless the losses were replayed; `controlled` / `controls_all` only
-    # ride a replayed bound.
+    # Scope, n / method / delta, the bound (issuer-asserted unless the losses
+    # were replayed; `controlled` / `controls_all` only ride a replayed bound)
+    # and, for a meaning-risk receipt, the proxy_caveat (sum_verify._verdict).
     replayed = losses is not None
     verdict = {"verified": True, "schema": schema, "replayed": replayed,
                "scorer": payload.get("scorer"),
@@ -4216,12 +4180,12 @@ def build_parser() -> argparse.ArgumentParser:
             "Emits one JSON object per line (NDJSON): {prov_id, axiom_key, "
             "source_uri, byte_start, byte_end, timestamp, extractor_id}. "
             "Filters compose with AND: --axiom (exact axiom_key match), "
-            "--since (ISO 8601, record timestamp >= since), --limit (max rows)."
+            "--since (a date or date-time; record timestamp at or after it), --limit (max rows)."
         ),
     )
     p_list.add_argument("--db", default="akashic.db", help="SQLite ledger path. Default: ./akashic.db.")
     p_list.add_argument("--axiom", default=None, help="Filter to this exact axiom_key (e.g. 'alice||like||cat').")
-    p_list.add_argument("--since", default=None, help="Only records with timestamp >= this ISO 8601 string.")
+    p_list.add_argument("--since", default=None, help="Only records at or after this date or date-time, for example 2026-11-25 or 2026-11-25T13:19:50-05:00 (no offset = UTC).")
     p_list.add_argument("--limit", type=int, default=0, help="Max rows to emit (0 = unlimited).")
     p_list.add_argument("--verbose", "-v", action="store_true", help="Print row count on stderr.")
     p_list.set_defaults(func=cmd_ledger_list)

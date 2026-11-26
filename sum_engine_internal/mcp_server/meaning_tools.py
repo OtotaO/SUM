@@ -690,6 +690,18 @@ def register_meaning_tools(mcp: Any) -> None:
                     "mint_meaning_receipt", t0, ErrorClass.SCHEMA,
                     f"unknown method {method!r}",
                 )
+            if alpha_target is not None:
+                # build_payload's rule (research/meaning/receipt.py), checked
+                # here so a bad value is a schema error, not an internal one.
+                try:
+                    alpha_ok = 0.0 <= float(alpha_target) <= 1.0
+                except (TypeError, ValueError, OverflowError):
+                    alpha_ok = False
+                if not alpha_ok:
+                    return error_result(
+                        "mint_meaning_receipt", t0, ErrorClass.SCHEMA,
+                        f"alpha_target must be a number in [0, 1]; got {alpha_target!r}",
+                    )
             rerr = _need_research_extra()
             if rerr is not None:
                 return error_result("mint_meaning_receipt", t0, *rerr)

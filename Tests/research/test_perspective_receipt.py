@@ -255,3 +255,20 @@ def test_payload_jcs_byte_identical_across_runtimes(signed):
     )
     assert proc.returncode == 0, proc.stderr.decode()
     assert proc.stdout == py
+
+
+def test_perspective_alpha_target_must_lie_in_the_unit_interval():
+    """Same rule as the meaning-risk payload: alpha_target is a risk level,
+    and it was signed unchecked as round(alpha_target * 1e6)."""
+    grouped = certify_meaning_risk_by_group(_LOSSES, _GROUPS, **_S)
+    kw = dict(grouped=grouped, losses=_LOSSES, group_ids=_GROUPS, corpus_id="c",
+              transform="t", loss_definition="d")
+    for alpha in (0.0, 1.0):  # the bounds are inclusive
+        assert build_perspective_payload(**kw, alpha_target=alpha)["alpha_target_micro"] == round(alpha * 1e6)
+    for alpha in (2**60 / 1e6, 1e10, 1.5, -0.1, float("nan"), float("inf"), 10**400):
+        try:
+            build_perspective_payload(**kw, alpha_target=alpha)
+        except ValueError as exc:
+            assert "alpha_target must be a number in [0, 1]" in str(exc), alpha
+        else:
+            pytest.fail(f"alpha_target={alpha!r} was accepted")

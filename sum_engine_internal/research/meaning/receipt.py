@@ -115,6 +115,27 @@ def _from_micro(m: int) -> float:
     return int(m) / _MICRO_SCALE
 
 
+def _check_alpha_target(alpha_target: Any) -> None:
+    """Refuse an ``alpha_target`` that is not a risk level in [0, 1].
+
+    It is signed as ``round(alpha_target * 1e6)``. Unchecked, 1e10 signed
+    ``alpha_target_micro`` = 10**16, 2**60 / 1e6 signed 2**60 (a receipt the
+    Python verifier accepted and the JavaScript verifier rejected), and
+    inf raised OverflowError. NaN and the infinities fail the comparison.
+    Shared by the meaning-risk and perspective payload builders.
+    """
+    if alpha_target is None:
+        return
+    try:
+        in_range = 0.0 <= float(alpha_target) <= 1.0
+    except (TypeError, ValueError, OverflowError):
+        in_range = False
+    if not in_range:
+        raise ValueError(
+            f"alpha_target must be a number in [0, 1]; got {alpha_target!r}"
+        )
+
+
 def _losses_micro(losses: Sequence[float]) -> list[int]:
     """Per-pair losses as integer micro-units — the vector ``losses_hash``
     commits and the certifier-replay compares. Float-free, so the anchor
@@ -169,6 +190,9 @@ def build_payload(
     exists to keep (an empty list would let a receipt silently imply it
     covers arrangement / sound / connotation / implicature).
 
+    ``alpha_target`` must lie in [0, 1]; anything else, NaN and the
+    infinities included, raises ValueError.
+
     The bound written into the payload is **(re)computed over the
     quantised committed loss vector** (``_quantized`` — the integer
     micro-units the hash commits), not the raw one. This is the
@@ -198,6 +222,7 @@ def build_payload(
             f"{len(losses)}; the certificate must be over exactly the "
             f"committed losses"
         )
+    _check_alpha_target(alpha_target)
     if signed_at is None:
         now = datetime.now(timezone.utc)
         signed_at = (

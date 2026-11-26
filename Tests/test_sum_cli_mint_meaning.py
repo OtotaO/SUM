@@ -184,6 +184,75 @@ class TestMintLossesMode:
         assert rc == 2
         assert "--scorer-name" in err.getvalue()
 
+    def test_stdout_verdict_carries_the_replayed_proxy_caveat(self, tmp_path):
+        """The stdout verdict has `sum verify-meaning`'s shape, and the MCP
+        mint tool's verdict carries the unsigned caveat; this one did not."""
+        from sum_verify._verdict import proxy_caveat
+
+        args = _mint_args(
+            tmp_path, losses=_write_losses(tmp_path, _GOOD_LOSSES), **_BYO
+        )
+        with _cap() as (out, err):
+            rc = cmd_mint_meaning(args)
+        assert rc == 0, err.getvalue()
+        assert json.loads(out.getvalue()).get("proxy_caveat") == proxy_caveat(True)
+
+    @pytest.mark.parametrize(
+        "alpha", ["1e10", "1152921504606.846976", "1.5", "-0.1", "inf", "nan"]
+    )
+    def test_alpha_target_outside_the_unit_interval_exits_2(self, tmp_path, alpha):
+        """--alpha-target was signed unchecked as round(alpha * 1e6): 1e10
+        gave alpha_target_micro = 10**16, 1152921504606.846976 gave 2**60, and
+        inf exited 1 with OverflowError. Nothing is written or generated."""
+        from sum_cli.main import main
+
+        argv = [
+            "mint-meaning", "--losses", _write_losses(tmp_path, _GOOD_LOSSES),
+            "--scorer-name", _BYO["scorer_name"],
+            "--loss-definition", _BYO["loss_definition"],
+            "--corpus-id", "c", "--transform", "t", f"--alpha-target={alpha}",
+            "--gen-key", str(tmp_path / "keys"),
+            "--out", str(tmp_path / "receipt.json"),
+        ]
+        with _cap() as (out, err):
+            rc = main(argv)
+        assert rc == 2 and out.getvalue() == ""
+        assert "alpha_target must be a number in [0, 1]" in err.getvalue()
+        assert not (tmp_path / "receipt.json").exists()
+        assert not (tmp_path / "keys").exists()
+
+
+class TestMintAlphaTargetPairMode:
+
+    @pytest.mark.parametrize("alpha", ["1.5", "inf", "nan"])
+    def test_out_of_range_alpha_is_refused_before_any_pair_is_scored(self, tmp_path, alpha):
+        """On main an out-of-range value was signed, or failed while being
+        quantised, only after every pair had been scored under the judge. The
+        CLI now refuses first: exit 2, the builder's message, no scorer
+        loaded, nothing written or generated."""
+        from sum_cli import main as cli
+
+        src, out_text = tmp_path / "a.txt", tmp_path / "b.txt"
+        src.write_text("Alice owns a cat.")
+        out_text.write_text("Alice has a cat.")
+        loaded = []
+        real = cli._load_meaning_scorer
+        cli._load_meaning_scorer = lambda *a, **k: loaded.append(a) or real(*a, **k)
+        try:
+            with _cap() as (out, err):
+                rc = cli.main([
+                    "mint-meaning", "--source", str(src), "--rendering", str(out_text),
+                    "--corpus-id", "c", "--transform", "t", f"--alpha-target={alpha}",
+                    "--gen-key", str(tmp_path / "keys"), "--out", str(tmp_path / "receipt.json"),
+                ])
+        finally:
+            cli._load_meaning_scorer = real
+        assert rc == 2 and out.getvalue() == ""
+        assert "alpha_target must be a number in [0, 1]" in err.getvalue()
+        assert loaded == []
+        assert not (tmp_path / "receipt.json").exists()
+        assert not (tmp_path / "keys").exists()
+
 
 class TestMintMalformedLosses:
 
