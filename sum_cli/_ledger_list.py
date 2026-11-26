@@ -29,14 +29,18 @@ _INSTANT = re.compile(
 
 
 def parse_instant(value: str) -> datetime:
-    """An ISO 8601 date or date-time as an aware datetime; ValueError if not.
+    """A date or date-time in the one form --since reads, as an aware datetime.
+
+    The form is _INSTANT, a profile of ISO 8601 (in short
+    YYYY-MM-DD[THH:MM[:SS[.fraction]]][Z|+HH:MM|-HH:MM]); other ISO 8601
+    forms, such as the basic format or a week date, raise ValueError.
 
     The fields are read by _INSTANT and range-checked by datetime itself, so
     the accepted set does not depend on the Python version.
     """
     m = _INSTANT.fullmatch(value.strip())
     if m is None:
-        raise ValueError(f"not an ISO 8601 date or date-time: {value!r}")
+        raise ValueError(f"not a date or date-time --since reads: {value!r}")
     year, month, day, hour, minute, second, fraction, offset = m.groups()
     tz = timezone.utc
     if offset not in (None, "Z", "z"):
@@ -83,12 +87,13 @@ def earliest_and_latest(stamps: list) -> tuple:
 def emit_rows(args: argparse.Namespace) -> int:
     """Print the matching rows as NDJSON; 0, or 2 for an unreadable --since."""
     since: Optional[datetime] = None
-    if args.since:
+    if args.since is not None:
         try:
             since = parse_instant(args.since)
         except ValueError:
             print(
-                f"sum: --since {args.since!r} is not an ISO 8601 date or date-time",
+                f"sum: --since {args.since!r} is not a date or date-time it reads "
+                "(for example 2026-11-25, 2026-11-25T18:19:50Z or 2026-11-25T13:19:50-05:00)",
                 file=sys.stderr,
             )
             return 2

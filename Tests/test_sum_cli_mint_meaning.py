@@ -226,9 +226,10 @@ class TestMintAlphaTargetPairMode:
 
     @pytest.mark.parametrize("alpha", ["1.5", "inf", "nan"])
     def test_out_of_range_alpha_is_refused_before_any_pair_is_scored(self, tmp_path, alpha):
-        """In pair mode the builder's check came only after every pair had
-        been scored under the judge. The CLI now refuses first: exit 2, the
-        builder's message, no scorer loaded, nothing written or generated."""
+        """On main an out-of-range value was signed, or failed while being
+        quantised, only after every pair had been scored under the judge. The
+        CLI now refuses first: exit 2, the builder's message, no scorer
+        loaded, nothing written or generated."""
         from sum_cli import main as cli
 
         src, out_text = tmp_path / "a.txt", tmp_path / "b.txt"

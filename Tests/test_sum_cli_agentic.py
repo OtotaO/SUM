@@ -199,12 +199,12 @@ class TestLedgerListSince:
         db, _ = _fixed_ledger(tmp_path)
         rc, rows, err = _ledger_list_cli(db, "--since", since)
         assert rc == 2 and rows == [], (since, rc, rows)
-        assert "is not an ISO 8601 date or date-time" in err
+        assert "is not a date or date-time it reads (for example" in err
 
     @pytest.mark.parametrize("since", [
         "\uff12\uff10\uff12\uff16-11-25",  # fullwidth digits
         "\u0662\u0660\u0662\u0666-11-25",  # Arabic-Indic digits
-        "202\U00016ac6-11-25",  # a Tangsa digit: Unicode 14, so Python 3.12 only
+        "202\U00016ac6-11-25",  # a Tangsa digit: Unicode 14, so Python 3.11 on
     ])
     def test_since_takes_ascii_digits_only(self, tmp_path, since):
         """\\d matches any Unicode decimal digit, and that set grows with the
@@ -212,7 +212,7 @@ class TestLedgerListSince:
         db, _ = _fixed_ledger(tmp_path)
         rc, rows, err = _ledger_list_cli(db, "--since", since)
         assert rc == 2 and rows == [], (since, rc, rows)
-        assert "is not an ISO 8601 date or date-time" in err
+        assert "is not a date or date-time it reads (for example" in err
 
     def test_since_is_compared_as_an_instant(self, tmp_path):
         db, _ = _fixed_ledger(tmp_path)
@@ -234,7 +234,9 @@ class TestLedgerListSince:
         db, _ = _fixed_ledger(tmp_path)
         rc, rows, err = _ledger_list_cli(db, "--since", "yesterday")
         assert rc == 2 and rows == []
-        assert "sum: --since 'yesterday' is not an ISO 8601 date or date-time" in err
+        assert "sum: --since 'yesterday' is not a date or date-time it reads" in err
+        rc, rows, _ = _ledger_list_cli(db, "--since", "")  # empty is not "no --since"
+        assert rc == 2 and rows == []
 
     def test_unreadable_stored_timestamp_is_left_out_under_since(self, tmp_path):
         db, _ = _fixed_ledger(tmp_path, stamps=(_OLD_1, _NEW, "not-a-time"))

@@ -1578,7 +1578,7 @@ def cmd_ledger_list(args: argparse.Namespace) -> int:
     """Enumerate prov_ids with their linked axiom_keys and evidence spans.
 
     Output: NDJSON (one record per line). --axiom filters to a single
-    axiom_key; --since takes an ISO 8601 date or date-time and keeps records
+    axiom_key; --since takes a date or date-time (an ISO 8601 profile) and keeps records
     at or after that instant (no offset means UTC); --limit caps the rows
     that pass both. Filters combine with AND (sum_cli/_ledger_list.py).
     """
@@ -4180,12 +4180,12 @@ def build_parser() -> argparse.ArgumentParser:
             "Emits one JSON object per line (NDJSON): {prov_id, axiom_key, "
             "source_uri, byte_start, byte_end, timestamp, extractor_id}. "
             "Filters compose with AND: --axiom (exact axiom_key match), "
-            "--since (ISO 8601, record timestamp at or after it), --limit (max rows)."
+            "--since (a date or date-time; record timestamp at or after it), --limit (max rows)."
         ),
     )
     p_list.add_argument("--db", default="akashic.db", help="SQLite ledger path. Default: ./akashic.db.")
     p_list.add_argument("--axiom", default=None, help="Filter to this exact axiom_key (e.g. 'alice||like||cat').")
-    p_list.add_argument("--since", default=None, help="Only records at or after this ISO 8601 date or date-time (no offset = UTC).")
+    p_list.add_argument("--since", default=None, help="Only records at or after this date or date-time, in short YYYY-MM-DD[THH:MM[:SS[.fraction]]][Z|+HH:MM|-HH:MM] (no offset = UTC).")
     p_list.add_argument("--limit", type=int, default=0, help="Max rows to emit (0 = unlimited).")
     p_list.add_argument("--verbose", "-v", action="store_true", help="Print row count on stderr.")
     p_list.set_defaults(func=cmd_ledger_list)
