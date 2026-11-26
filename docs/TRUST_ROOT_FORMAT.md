@@ -192,7 +192,7 @@ The per-release URL is the durable form — it never changes once published. The
 
 The **trust-root JWKS** itself can either:
 - Live in a separate endpoint (`/.well-known/trust-root-jwks.json`) for clean separation; OR
-- Be included in the same `/.well-known/jwks.json` document under a different `kid` (with a `use` field distinguishing the keys' purpose).
+- Be included in the same `/.well-known/jwks.json` document under a different `kid`. The `kid` tells the keys apart; `use`, when present, stays `"sig"`, which verifiers require (step 3).
 
 Either is acceptable; the second is simpler operationally and is the recommended default unless an operator has a specific reason to separate.
 

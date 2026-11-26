@@ -175,7 +175,8 @@ def _jwk_member_error(jwk: dict) -> str | None:
     import so both runtimes reject the same keys with the same class.
     WebCrypto refused a private key, key_ops without "verify" and use other
     than "sig" at import, while joserfc accepted a private key and refused
-    the others only at verify time (as signature_invalid). alg may be
+    some of the others (key_ops without "verify", use "enc", another alg)
+    only at verify time, as signature_invalid. alg may be
     "EdDSA" or its RFC 9864 name "Ed25519", which WebCrypto writes when it
     exports an Ed25519 key; the protected header must still name EdDSA.
     """

@@ -215,7 +215,7 @@ When present, `render_receipt` is the load-bearing field for any caller that wan
 | `tome_hash` | `string` | `sha256-{hex}` over the UTF-8 bytes of `tome`. |
 | `model` | `string` | The actual model identifier the LLM provider returned, or `"canonical-deterministic-v0"` for the no-LLM path. |
 | `provider` | `"anthropic"` \| `"openai"` \| `"cf-ai-gateway-anthropic"` \| `"canonical-path"` | Which backend produced the tome. |
-| `signed_at` | `string` | ISO 8601 UTC timestamp at the moment the JWS was produced. Verifiers read it in the receipt timestamp form of [`RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) §6.1 (see §6.2). |
+| `signed_at` | `string` | ISO 8601 UTC timestamp at the moment the JWS was produced. Verifiers read it in the receipt timestamp form of [`RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) §6.1 (see that file's §6.2). |
 | `digital_source_type` | `"trainedAlgorithmicMedia"` \| `"algorithmicMedia"` | C2PA terminology. The first means LLM-generated; the second means deterministic. |
 
 The `jws` is a [detached JWS](https://www.rfc-editor.org/rfc/rfc7515#appendix-A.5) per RFC 7515, with `b64=false` per [RFC 7797](https://www.rfc-editor.org/rfc/rfc7797). Protected header:

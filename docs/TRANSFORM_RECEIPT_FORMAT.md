@@ -226,7 +226,7 @@ effective-time behavior as the render verifier: a matching key is rejected
 with `revoked_kid` when `signed_at >= effective_revocation_at` for any entry
 under that kid ([RENDER_RECEIPT_FORMAT.md](RENDER_RECEIPT_FORMAT.md) §6.1). `None` skips
 the check; an explicitly supplied empty list checks an empty snapshot.
-Historical receipts before the effective time retain legacy acceptance.
+Historical receipts signed before the effective time of every entry for their kid retain legacy acceptance.
 
 For relying applications, `sum_verify.verify(..., trust_policy=TrustPolicy(...))`
 and `verify_report()` provide explicit offline policy across render, transform,

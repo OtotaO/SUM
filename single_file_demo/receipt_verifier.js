@@ -132,7 +132,8 @@ function isCanonicalB64urlSegment(s) {
 // rule as _jwk_member_error in the Python verifier, applied before import so
 // both runtimes reject the same keys with the same class: WebCrypto refused a
 // private key, key_ops without "verify" and use other than "sig", while
-// joserfc accepted a private key and refused the others only at verify time.
+// joserfc accepted a private key and refused some of the others (key_ops
+// without "verify", use "enc", another alg) only at verify time.
 // alg may be "EdDSA" or its RFC 9864 name "Ed25519", which WebCrypto writes
 // when it exports an Ed25519 key; the protected header must still name EdDSA.
 function jwkMemberError(jwk) {
