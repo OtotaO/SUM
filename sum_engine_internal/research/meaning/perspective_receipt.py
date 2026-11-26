@@ -52,6 +52,7 @@ from sum_engine_internal.research.meaning.receipt import (
     MeaningReceiptDisclosureError,
     MeaningReceiptReplayError,
     _DEFAULT_DISCLOSURE,
+    _check_alpha_target,
     _check_payload_shape,
     _has_visible_text,
     _quantized,
@@ -116,6 +117,7 @@ def build_perspective_payload(
     method, simultaneous); the bounds are **(re)certified over the quantised
     committed losses** — exactly as the marginal receipt does — so producer
     and verifier compute over byte-identical inputs and replay is exact.
+    ``alpha_target`` must lie in [0, 1], as for the marginal receipt.
     """
     if not not_covered:
         raise ValueError(
@@ -126,6 +128,7 @@ def build_perspective_payload(
             f"losses ({len(losses)}), group_ids ({len(group_ids)}) and "
             f"grouped.marginal.n ({grouped.marginal.n}) must all agree"
         )
+    _check_alpha_target(alpha_target)
     if signed_at is None:
         now = datetime.now(timezone.utc)
         signed_at = (

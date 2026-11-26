@@ -268,3 +268,24 @@ def test_build_payload_rejects_n_mismatch(guarantee, losses):
             transform="t",
             loss_definition="d",
         )
+
+
+# alpha_target is a risk level. Unchecked, 2**60 / 1e6 signed
+# alpha_target_micro = 2**60 (the Python verifier accepted that receipt and
+# the JavaScript verifier rejected it), 1e10 signed 10**16, and inf raised
+# OverflowError while quantising.
+_ALPHA_OUT_OF_RANGE = (2**60 / 1e6, 1e10, 1.5, -0.1, float("nan"), float("inf"))
+
+
+def test_build_payload_alpha_target_must_lie_in_the_unit_interval(guarantee, losses):
+    kw = dict(guarantee=guarantee, losses=losses, corpus_id="x", transform="t",
+              loss_definition="d")
+    for alpha in (0.0, 1.0):  # the bounds are inclusive
+        assert build_payload(**kw, alpha_target=alpha)["alpha_target_micro"] == round(alpha * 1e6)
+    for alpha in _ALPHA_OUT_OF_RANGE:
+        try:
+            build_payload(**kw, alpha_target=alpha)
+        except ValueError as exc:
+            assert "alpha_target must be a number in [0, 1]" in str(exc), alpha
+        else:
+            pytest.fail(f"alpha_target={alpha!r} was accepted")

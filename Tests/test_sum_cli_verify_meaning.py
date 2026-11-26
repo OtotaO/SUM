@@ -181,3 +181,20 @@ def test_committed_golden_replays_via_wrapped_losses_file(fdir, bound_micro):
     assert round(v["risk_upper_bound"] * 1e6) == bound_micro
     assert v["controlled"] is True  # the decision rides a replayed bound
     assert "issuer_asserted_risk_upper_bound" not in v
+
+
+@pytest.mark.parametrize("with_losses", [False, True])
+def test_meaning_risk_verdict_carries_the_proxy_caveat(with_losses):
+    """`python -m sum_verify` and the MCP tools print the unsigned proxy_caveat
+    on every verified meaning-risk verdict; `sum verify-meaning` did not. Its
+    text names what ran (signature only, or signature and replay), so both
+    branches are checked."""
+    from sum_verify._verdict import proxy_caveat
+
+    base = _REPO / "fixtures" / "meaning_receipts_billsum"
+    extra = ["--losses", str(base / "losses_billsum.json")] if with_losses else []
+    rc, out, _ = run(["verify-meaning", str(base / "meaning_risk_receipt.billsum.golden.json"),
+                      "--jwks", str(base / "jwks.json"), *extra])
+    v = json.loads(out)
+    assert rc == 0 and v["verified"] is True and v["replayed"] is with_losses
+    assert v.get("proxy_caveat") == proxy_caveat(with_losses)

@@ -123,6 +123,127 @@ class TestLedgerList:
         assert exc.value.code == 2
 
 
+# Seven records with fixed timestamps (four older, three at _NEW), so the
+# prov_ids, which set the listing order, are the same on every run.
+_OLD_1 = "2026-11-25T18:19:23.332787+00:00"
+_OLD_2 = "2026-11-25T18:19:27.896308+00:00"
+_NEW = "2026-11-25T18:19:55.844239+00:00"
+
+
+def _fixed_ledger(tmp_path, stamps=(_OLD_1, _OLD_1, _OLD_2, _OLD_2, _NEW, _NEW, _NEW)):
+    """A ledger holding one record per stamp; returns (db, [(prov_id, stamp)])."""
+    import asyncio
+
+    from sum_engine_internal.infrastructure.akashic_ledger import AkashicLedger
+    from sum_engine_internal.infrastructure.provenance import ProvenanceRecord
+
+    db = str(tmp_path / "fixed.db")
+    ledger = AkashicLedger(db_path=db)
+
+    async def _fill():
+        out = []
+        for i, stamp in enumerate(stamps):
+            rec = ProvenanceRecord(
+                source_uri="sha256:" + "ab" * 32, byte_start=10 * i,
+                byte_end=10 * i + 9, extractor_id="sum.sieve:deterministic_v1",
+                timestamp=stamp, text_excerpt=f"sentence {i}",
+            )
+            out.append((await ledger.record_provenance(rec, axiom_key=f"s{i}||p||o"), stamp))
+        return out
+
+    return db, asyncio.run(_fill())
+
+
+def _ledger_list_cli(db, *extra) -> tuple[int, list, str]:
+    """`sum ledger list --db DB ...` through main(): (rc, rows, stderr)."""
+    from contextlib import redirect_stderr, redirect_stdout
+
+    from sum_cli.main import main
+
+    out, err = io.StringIO(), io.StringIO()
+    with redirect_stdout(out), redirect_stderr(err):
+        rc = main(["ledger", "list", "--db", db, *extra])
+    rows = [json.loads(ln) for ln in out.getvalue().splitlines() if ln.strip()]
+    return rc, rows, err.getvalue()
+
+
+class TestLedgerListSince:
+    """--since is compared as an instant, not as text, and --limit counts the
+    rows that pass it (it was an SQL LIMIT applied before the --since filter)."""
+
+    def test_limit_counts_rows_that_pass_since(self, tmp_path):
+        db, recs = _fixed_ledger(tmp_path)
+        # The first row in listing order is older than _NEW, so a LIMIT taken
+        # before the --since filter fetches a row the filter then drops.
+        assert min(recs)[1] != _NEW
+        for limit, want in (("1", 1), ("2", 2), ("3", 3), ("0", 3), ("-1", 3)):
+            rc, rows, _ = _ledger_list_cli(db, "--since", _NEW, f"--limit={limit}")
+            assert rc == 0 and len(rows) == want, f"--limit {limit}: {len(rows)} rows"
+            assert {r["timestamp"] for r in rows} == {_NEW}
+        rc, rows, _ = _ledger_list_cli(db, "--limit=-1")  # <= 0 stays unlimited
+        assert rc == 0 and len(rows) == 7
+
+    @pytest.mark.parametrize("since", [
+        "2026-11-25T18:19:50-0500",
+        "2026-11-25T18:19:50+00",
+        "20261125T181950Z",
+        "2026-11-25T18:19:50,5Z",
+        "2026-W48-3",
+        "2026-11-25T24:00:00Z",
+        "2026-02-30",
+    ])
+    def test_since_reads_the_same_forms_on_every_python(self, tmp_path, since):
+        """datetime.fromisoformat reads these from Python 3.11 on and refuses
+        them on 3.10, so the same command listed rows on one interpreter and
+        exited 2 on the other. --since now has one grammar: all exit 2."""
+        db, _ = _fixed_ledger(tmp_path)
+        rc, rows, err = _ledger_list_cli(db, "--since", since)
+        assert rc == 2 and rows == [], (since, rc, rows)
+        assert "is not an ISO 8601 date or date-time" in err
+
+    @pytest.mark.parametrize("since", [
+        "\uff12\uff10\uff12\uff16-11-25",  # fullwidth digits
+        "\u0662\u0660\u0662\u0666-11-25",  # Arabic-Indic digits
+        "202\U00016ac6-11-25",  # a Tangsa digit: Unicode 14, so Python 3.12 only
+    ])
+    def test_since_takes_ascii_digits_only(self, tmp_path, since):
+        """\\d matches any Unicode decimal digit, and that set grows with the
+        Python version, so the grammar names 0 to 9."""
+        db, _ = _fixed_ledger(tmp_path)
+        rc, rows, err = _ledger_list_cli(db, "--since", since)
+        assert rc == 2 and rows == [], (since, rc, rows)
+        assert "is not an ISO 8601 date or date-time" in err
+
+    def test_since_is_compared_as_an_instant(self, tmp_path):
+        db, _ = _fixed_ledger(tmp_path)
+        for since in (
+            "2026-11-25T18:19:50+00:00",
+            "2026-11-25T13:19:50-05:00",  # the same instant, another offset
+            "2026-11-25T18:19:50Z",
+            "2026-11-25T18:19:50.5Z",  # one fraction digit: 3.10 fromisoformat refuses it as is
+            "2026-11-25T18:19:55Z",  # 0.84 s before the _NEW records
+            "2026-11-25T18:19:50",  # no offset: UTC
+        ):
+            rc, rows, _ = _ledger_list_cli(db, "--since", since)
+            assert rc == 0, since
+            assert sorted(r["timestamp"] for r in rows) == [_NEW] * 3, since
+        rc, rows, _ = _ledger_list_cli(db, "--since", "2026-11-25")  # midnight UTC
+        assert rc == 0 and len(rows) == 7
+
+    def test_unreadable_since_is_a_usage_error(self, tmp_path):
+        db, _ = _fixed_ledger(tmp_path)
+        rc, rows, err = _ledger_list_cli(db, "--since", "yesterday")
+        assert rc == 2 and rows == []
+        assert "sum: --since 'yesterday' is not an ISO 8601 date or date-time" in err
+
+    def test_unreadable_stored_timestamp_is_left_out_under_since(self, tmp_path):
+        db, _ = _fixed_ledger(tmp_path, stamps=(_OLD_1, _NEW, "not-a-time"))
+        rc, rows, _ = _ledger_list_cli(db)
+        assert rc == 0 and len(rows) == 3  # listed when there is no --since
+        rc, rows, _ = _ledger_list_cli(db, "--since", "2026-11-25T18:19:50Z")
+        assert rc == 0 and [r["timestamp"] for r in rows] == [_NEW]
+
+
 # ─── 2. sum ledger stats ────────────────────────────────────────────
 
 

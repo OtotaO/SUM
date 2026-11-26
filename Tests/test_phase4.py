@@ -58,45 +58,39 @@ async def test_temporal_crud():
 # ─── 2. Akashic Fidelity ──────────────────────────────────────────────
 
 @pytest.mark.asyncio
-async def test_akashic_fidelity():
+async def test_akashic_fidelity(tmp_path):
     """Event trace faithfully rebuilds global state after simulated crash."""
-    db_path = "test_akashic.db"
-    if os.path.exists(db_path):
-        os.remove(db_path)
+    # In pytest's tmp_path: a WAL-mode ledger also writes -wal and -shm files
+    # beside the .db, which a path in the working directory left in the repo.
+    db_path = str(tmp_path / "test_akashic.db")
+    algebra = GodelStateAlgebra()
+    ledger = AkashicLedger(db_path)
 
-    try:
-        algebra = GodelStateAlgebra()
-        ledger = AkashicLedger(db_path)
+    # MINT + MUL Alice as Engineer
+    p_alice = algebra.get_or_mint_prime("Alice", "job", "Engineer")
+    await ledger.append_event("MINT", p_alice, "alice||job||engineer")
 
-        # MINT + MUL Alice as Engineer
-        p_alice = algebra.get_or_mint_prime("Alice", "job", "Engineer")
-        await ledger.append_event("MINT", p_alice, "alice||job||engineer")
+    global_state = p_alice
+    await ledger.append_event("MUL", p_alice)
 
-        global_state = p_alice
-        await ledger.append_event("MUL", p_alice)
+    # UPDATE: Engineer → Director (traces: MINT new, DIV old, MUL new)
+    global_state = algebra.update_axiom(
+        global_state, "alice||job||engineer", "alice||job||Director"
+    )
+    p_new = algebra.axiom_to_prime["alice||job||director"]
+    await ledger.append_event("MINT", p_new, "alice||job||director")
+    await ledger.append_event("DIV", p_alice)
+    await ledger.append_event("MUL", p_new)
 
-        # UPDATE: Engineer → Director (traces: MINT new, DIV old, MUL new)
-        global_state = algebra.update_axiom(
-            global_state, "alice||job||engineer", "alice||job||Director"
-        )
-        p_new = algebra.axiom_to_prime["alice||job||director"]
-        await ledger.append_event("MINT", p_new, "alice||job||director")
-        await ledger.append_event("DIV", p_alice)
-        await ledger.append_event("MUL", p_new)
+    # ── Simulate crash & recovery ──
+    recovered_algebra = GodelStateAlgebra()
+    recovered_state = await ledger.rebuild_state(recovered_algebra)
 
-        # ── Simulate crash & recovery ──
-        recovered_algebra = GodelStateAlgebra()
-        recovered_state = await ledger.rebuild_state(recovered_algebra)
-
-        assert recovered_state == global_state, (
-            f"Recovered {recovered_state} ≠ live {global_state}"
-        )
-        assert recovered_state % p_alice != 0, "Old prime should not divide state"
-        assert recovered_state % p_new == 0, "New prime should divide state"
-
-    finally:
-        if os.path.exists(db_path):
-            os.remove(db_path)
+    assert recovered_state == global_state, (
+        f"Recovered {recovered_state} ≠ live {global_state}"
+    )
+    assert recovered_state % p_alice != 0, "Old prime should not divide state"
+    assert recovered_state % p_new == 0, "New prime should divide state"
 
 
 # ─── 3. Vector Bridge ─────────────────────────────────────────────────

@@ -595,6 +595,22 @@ def test_mint_meaning_rejects_non_string_scorer_fields(server, keypair):
     assert out["error_class"] == "schema"
 
 
+@pytest.mark.parametrize("alpha", [1e10, 1.5, -0.1, float("inf"), float("nan")])
+def test_mint_meaning_refuses_alpha_target_outside_the_unit_interval(server, keypair, alpha):
+    """1e10, 1.5 and -0.1 were signed (1e10 as alpha_target_micro = 10**16),
+    and inf and nan came back as internal errors naming only OverflowError or
+    ValueError. Each is now a schema error naming alpha_target."""
+    mint = _tool(server, "mint_meaning_receipt")
+    out = asyncio.run(mint(
+        private_jwk=keypair, kid="mcp-test-key-1", corpus_id="c", transform="t",
+        loss_definition="d", losses=[0.1, 0.2, 0.15, 0.05, 0.3, 0.25, 0.1, 0.2],
+        scorer_name="s", scorer_version="1", method="hoeffding", alpha_target=alpha,
+    ))
+    assert out.get("error_class") == "schema", out
+    assert "alpha_target must be a number in [0, 1]" in out["errors"][0]
+    assert "receipt" not in out
+
+
 def test_verify_receipt_rejects_perspective_with_named_schemas(server):
     """#12: the research-tier perspective schema is not in the offline SDK path;
     verify_receipt must reject it cleanly and name the four supported schemas
