@@ -288,7 +288,7 @@ Content-Type: application/json
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `prompt` | `string` | yes | Non-empty after trim, ≤40 000 chars. |
-| `model` | `string` | no | If given, it must be the configured model (by default `claude-haiku-4-5-20251001` for Anthropic, `gpt-4o-mini` for OpenAI); a value that is not a string is a 400 before any other check, and any other string is a 400 after the no-provider 503. |
+| `model` | `string` | no | If given, it must be the configured model (by default `claude-haiku-4-5-20251001` for Anthropic, `gpt-4o-mini` for OpenAI); a value that is not a string is a 400, and another string is a 400 on a deployment with a provider key (one without returns the 503 in §4.3). |
 
 ### 4.2 Response (200)
 
@@ -306,7 +306,7 @@ Content-Type: application/json
 
 | Status | Trigger |
 |---|---|
-| 400 | Invalid JSON or UTF-8, a body that is not an object, missing/empty `prompt`, a `prompt` containing a lone UTF-16 surrogate (not well-formed Unicode), or a `model` other than the configured one |
+| 400 | Invalid JSON or UTF-8, a body that is not an object, missing/empty `prompt`, a `prompt` containing a lone UTF-16 surrogate (not well-formed Unicode), or a `model` that is not a string or not the configured one |
 | 408 | Body not fully received within 10 seconds |
 | 413 | `prompt` over 40 000 UTF-16 code units, or a body over 192 KiB (196,608 bytes) |
 | 429 | Generation admission refused: the per-IP demo allowance, the shared daily budget, or calls in flight |
