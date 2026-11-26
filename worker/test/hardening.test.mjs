@@ -100,11 +100,13 @@ for (const [name, body, endpoint, expected] of [
   ["transform triple shape", { transform: "slider", input: { triples: [["a", 2, "b"]] } }, "transform", 400],
   ["transform axis", { transform: "slider", input: { triples: RENDER.triples }, parameters: { density: null } }, "transform", 400],
   ["source offsets", { transform: "slider", input: { triples: RENDER.triples }, parameters: CENTER, source_chain: [{ claim: "a", provenance: { source_uri: "local", byte_start: 2, byte_end: 1 } }] }, "transform", 400],
-  // A lone UTF-16 surrogate has no UTF-8 encoding. Render used to spend a provider call on it; transform threw into a 500.
+  // A lone UTF-16 surrogate has no UTF-8 encoding. Render (this LLM-path body) used to spend a provider call on it,
+  // transform (canonical path) threw into a 500, and a completion prompt went to the provider.
   ["lone surrogate in a render triple", { ...RENDER, triples: [["a\ud800", "b", "c"]] }, "render", 400],
   ["lone surrogate in a transform triple", { transform: "slider", input: { triples: [["a\ud800", "b", "c"]] }, parameters: CENTER }, "transform", 400],
   ["lone surrogate in a source claim", { transform: "slider", input: { triples: RENDER.triples }, parameters: CENTER, source_chain: [{ claim: "a\ud800", provenance: { source_uri: "local", byte_start: 0, byte_end: 1 } }] }, "transform", 400],
   ["lone surrogate in a source URI", { transform: "slider", input: { triples: RENDER.triples }, parameters: CENTER, source_chain: [{ claim: "a", provenance: { source_uri: "local:\ud800", byte_start: 0, byte_end: 1 } }] }, "transform", 400],
+  ["lone surrogate in a complete prompt", { prompt: "a\ud800" }, "complete", 400],
   // /api/qid bounds its body like the other routes and checks every term before any Wikidata lookup.
   ["qid null term", { terms: [null] }, "qid", 400],
   ["qid term that is not an object", { terms: ["abc"] }, "qid", 400],
@@ -112,6 +114,7 @@ for (const [name, body, endpoint, expected] of [
   ["qid unknown kind", { terms: [{ text: "x", kind: "bogus" }] }, "qid", 400],
   ["qid lang that is not a language code", { terms: [{ text: "x", lang: "en/../x" }] }, "qid", 400],
   ["qid lone surrogate in text", { terms: [{ text: "a\ud800" }] }, "qid", 400],
+  ["qid lone surrogate in text over 200 code units", { terms: [{ text: "a\ud800" + "x".repeat(250) }] }, "qid", 400],
 ]) {
   test(`${name} rejected before provider dispatch`, async () => {
     const beforeCalls = providerCalls.length, beforeOutbound = outboundHosts.length; const response = await dispatch(request(body, endpoint));
@@ -127,6 +130,14 @@ test("qid term with missing or empty text stays a per-term soft failure", async 
 test("qid kind and lang of null still mean the defaults", async () => {
   const response = await dispatch(request({ terms: [{ text: "x", kind: null, lang: null }] }, "qid"));
   assert.equal(response.status, 200);
+});
+test("request errors are no-store with the routes' content type", async () => {
+  for (const endpoint of ["render", "transform", "qid", "complete"]) {
+    const response = await mf.dispatchFetch(`https://sum.invalid/api/${endpoint}`, { method: "POST", headers: { "content-type": "application/json", "cf-connecting-ip": "192.0.2.11" }, body: "{" });
+    assert.equal(response.status, 400, `${endpoint}: ${await response.text()}`);
+    assert.equal(response.headers.get("cache-control"), "no-store", endpoint);
+    assert.equal(response.headers.get("content-type"), "application/json; charset=utf-8", endpoint);
+  }
 });
 test("render that lost its receipt to a broken signing secret is not cached", async () => {
   // A cached receipt-less render would be replayed without a receipt for up to

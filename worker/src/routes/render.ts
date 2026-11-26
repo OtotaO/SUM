@@ -5,8 +5,8 @@
 // call only on cache miss. Anthropic and OpenAI are both supported;
 // the render path follows sum_engine_internal.ensemble.slider_renderer
 // .render in shape (same canonical-vs-LLM branch, same quantization
-// rules, same system prompt) but not byte for byte: the cache key,
-// render_id, fact order and handling of repeated triples differ (see
+// rules, same system prompt) but not byte for byte: render_id, the cache
+// key (in general) and the rules for fact order and repeated triples differ (see
 // render/axis_prompts.ts and cache/bin_cache.ts). Provider selection:
 //   - body.provider == "openai"    → callOpenAI (requires OPENAI_API_KEY)
 //   - body.provider == "anthropic" → callAnthropic (requires ANTHROPIC_API_KEY)

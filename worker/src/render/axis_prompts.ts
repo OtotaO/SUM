@@ -6,9 +6,11 @@ import { compareUnicodeCodepoints } from "../unicode_order";
 // tome and the LLM user prompt from applyDensity's code-point-sorted list
 // and keeps exactly floor(N * density) entries, so each copy of a repeated
 // triple counts. Python keeps the input order and every copy of a kept key.
-// For unsorted or repeated triples the two runtimes sign different
-// tome_hash (and, with repeats, triples_hash) values, and render_id never
-// matches (routes/render.ts).
+// So for unsorted or repeated triples the two tomes can differ (three
+// triples in the order b, a, c at density 0.67, or a, a, b at 0.5), and with
+// them the tome_hash the Worker signs; with repeats the kept triples, and
+// so triples_hash, can differ too. render_id never matches
+// (routes/render.ts). Only the Worker signs render receipts.
 
 const SLIDER_BINS_PER_AXIS = 5;
 

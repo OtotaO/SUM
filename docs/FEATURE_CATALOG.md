@@ -949,7 +949,7 @@ Result: **PASS** (live; v0.9.B browser verifier and v0.9.C Python verifier are q
 
 ### 115. TypeScript axis-prompt mirror (`worker/src/render/axis_prompts.ts`) ✅
 
-TypeScript port of the Python `tome_sliders.build_system_prompt` and per-axis fragment lookup tables, plus `applyDensity`, `requiresExtrapolator`, `deterministicTome` for the canonical (no-LLM) branch. The system prompt is byte-for-byte equal to Python's for all 625 quantized slider combinations, and `applyDensity` keeps the same triples. A whole render is not: the Worker writes the kept triples in code-point order and counts each copy of a repeated triple, while `slider_renderer.render` keeps input order and every copy of a kept key, so for unsorted or repeated triples the two tomes (and `tome_hash`) differ.
+TypeScript port of the Python `tome_sliders.build_system_prompt` and per-axis fragment lookup tables, plus `applyDensity`, `requiresExtrapolator`, `deterministicTome` for the canonical (no-LLM) branch. The system prompt is byte-for-byte equal to Python's for all 625 quantized slider combinations, and `applyDensity` keeps the same triples as Python's `apply_density`. A whole render is not the same: the Worker writes the kept triples in code-point order and counts each copy of a repeated triple, while `slider_renderer.render` keeps input order and every copy of a kept key, so for unsorted or repeated triples the two tomes can differ (three triples in the order b, a, c at density 0.67, or a, a, b at 0.5), and with them the `tome_hash` the Worker signs.
 
 Verify: `npm --prefix worker run test:prompts` (and `npm --prefix worker run test:density`)
 Expected: `ALL SYSTEM PROMPT CROSS-RUNTIME CHECKS PASSED`.

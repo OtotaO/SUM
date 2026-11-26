@@ -225,8 +225,9 @@ export async function handleQid(
 
   // Same bounded reader as the other POST routes. Each term is checked before
   // any lookup: kind and lang go unencoded into the cache-key URL, and a lone
-  // surrogate in text makes encodeURIComponent throw. Text that is missing,
-  // empty or too long stays a per-term soft failure (reason, HTTP 200).
+  // surrogate in text makes encodeURIComponent throw, so text holding one is
+  // refused at any length. Text that is missing or empty, or well-formed and
+  // over 200 code units, stays a per-term soft failure (reason, HTTP 200).
   let terms: TermRequest[];
   try {
     const value = await readBoundedJSON(request);
@@ -240,7 +241,7 @@ export async function handleQid(
     }
     for (const term of raw) {
       requireObject(term, "each term");
-      // null means absent, as the ?? defaults in lookupTerm already read it.
+      // null means absent, as the ?? defaults in resolveTerm already read it.
       if (term.kind != null && term.kind !== "item" && term.kind !== "property") {
         throw new RequestError("term kind must be item or property");
       }

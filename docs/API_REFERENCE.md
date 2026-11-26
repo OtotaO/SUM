@@ -300,10 +300,13 @@ Content-Type: application/json
 
 | Status | Trigger |
 |---|---|
-| 400 | Invalid JSON, missing/empty `prompt`, or `prompt` over 40 000 chars |
+| 400 | Invalid JSON or UTF-8, a body that is not an object, missing/empty `prompt`, a `prompt` containing a lone UTF-16 surrogate (not well-formed Unicode), or a `model` other than the configured one |
+| 408 | Body not fully received within 10 seconds |
+| 413 | `prompt` over 40 000 UTF-16 code units, or a body over 192 KiB (196,608 bytes) |
+| 429 | Generation admission refused: the per-IP demo allowance, the shared daily budget, or calls in flight |
 | 405 | Non-POST method |
 | 502 | Upstream provider returned non-2xx; body includes the provider name, status, and a 500-char prefix of the upstream response |
-| 503 | Neither `ANTHROPIC_API_KEY` nor `OPENAI_API_KEY` is configured. The demo's JS detects 503 and extracts no claims; the local comparison stays usable. |
+| 503 | Neither `ANTHROPIC_API_KEY` nor `OPENAI_API_KEY` is configured (checked after the `prompt` checks above), or generation admission is unavailable. The demo's JS treats any non-2xx as no claims; the local comparison stays usable. |
 
 ---
 
@@ -325,7 +328,7 @@ Wikidata QID/PID resolver. Takes a list of free-text terms, returns the best Wik
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `terms` | `Array<Term>` | yes | 1–50 entries. |
-| `terms[].text` | `string` | yes | 1 to 200 UTF-16 code units, not trimmed. |
+| `terms[].text` | `string` | yes | 1 to 200 UTF-16 code units, not trimmed. Missing, empty or longer text is a per-term result, not an error (§5.3). |
 | `terms[].kind` | `"item"` \| `"property"` | no | Default `"item"`. `"property"` searches the P-namespace (predicates). |
 | `terms[].lang` | `string` | no | Default `"en"`. Wikidata language code. |
 
@@ -363,13 +366,13 @@ Each resolved term has either an `id` (a Wikidata QID like `Q7186` or PID like `
 | 400 | A term that is not an object (`null`, a string, a number) |
 | 400 | `kind` set, and not `null`, `"item"` or `"property"` |
 | 400 | `lang` set, and neither `null` nor shaped like a language code (2 to 8 letters with optional hyphenated subtags, such as `en` or `zh-hans`) |
-| 400 | `text` contains a lone UTF-16 surrogate (not well-formed Unicode) |
+| 400 | `text` contains a lone UTF-16 surrogate (not well-formed Unicode), at any length |
 | 405 | Non-POST method |
 | 408 | Body not fully received within 10 seconds |
 | 413 | Body over 192 KiB (196,608 bytes) |
 | 413 | More than 50 terms |
 
-Every term is checked before any lookup, so one bad term refuses the whole request. A `kind` or `lang` of `null` means the default (`item`, `en`). A term whose `text` is missing, empty or over 200 UTF-16 code units is not an error: it comes back with `id: null` and `reason` `empty-text` or `text-too-long` in a 200 response.
+Every term is checked before any lookup, so one bad term refuses the whole request. A `kind` or `lang` of `null` means the default (`item`, `en`). A term whose `text` is missing or empty, or well-formed and over 200 UTF-16 code units, is not an error: it comes back with `id: null` and `reason` `empty-text` or `text-too-long` in a 200 response.
 
 The Worker uses Cloudflare's Cache API (not KV) to memoise resolutions for 30 days. Cache misses or Wikidata transient errors surface as `id: null` with a descriptive `reason`; the request itself still returns 200.
 
