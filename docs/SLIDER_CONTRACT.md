@@ -272,17 +272,20 @@ reliable deployment protection.
 
 ## Cache semantics
 
-- **Key:** `sha256(sorted_triples + quantize(sliders))[:32]`. Pure
-  function of input. See `slider_renderer.cache_key`.
+- **Key:** in Python, `sha256(sorted_triples + quantize(sliders))[:32]`,
+  a pure function of input (`slider_renderer.cache_key`). The Worker
+  stores a render under `render-v2:<key>:<provider, or canonical>`, with
+  a key of the same shape but not the same bytes (FEATURE_CATALOG 116).
 - **TTL:** 24 hours by default (caller-overridable). Worker's KV-backed
   implementation enforces TTL on its side; in-memory cache for tests
   treats process lifetime as TTL.
 - **Eviction:** Worker entries expire by KV TTL; KV does not evict by
   recency. In-memory cache is unbounded (tests must be small).
-- **Coherence:** cache key is content-addressed. Two callers with
-  identical sorted triples + quantized sliders MUST receive
-  byte-identical RenderResult. No cache poisoning vector — the key
-  IS the content.
+- **Coherence:** the cache key is content-addressed. While an entry is
+  cached, two callers with identical sorted triples and quantized
+  sliders (and, on the Worker, the same provider) receive the same
+  RenderResult; the Worker does not cache a render whose signing
+  failed. No cache poisoning vector — the key IS the content.
 
 ## UX commit-vs-drag decision matrix
 
@@ -467,10 +470,11 @@ halt Phase E and reconsider:
 ## Cross-references
 
 The slider's contract sits inside a larger trust loop the Phase E.1
-docs build out — a Worker render that exercises this contract carries
-its own cryptographic attestation when the Worker signs (Python renders
-carry none), and every release-state of the contract is recorded in
-the trust-root manifest:
+docs build out — a render that exercises this contract can carry its
+own cryptographic attestation (a render receipt from the Worker when it
+signs and signing succeeds, or a transform receipt from `sum transform
+apply slider` when a signing key is set), and every release-state of
+the contract is recorded in the trust-root manifest:
 
 - [`docs/RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) — the
   receipt an `/api/render` response carries when signing is configured

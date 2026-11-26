@@ -10,7 +10,7 @@ This is the second integration surface alongside [`MCP_INTEGRATION.md`](MCP_INTE
 | A web app, mobile app, server-side service, or any HTTP client | this HTTP API |
 | A Python/Node verifier needing only to check signatures on receipts produced by this API | this API for the receipt + JWKS endpoints, then a local verifier |
 
-Both surfaces produce byte-identical canonical outputs for the operations they share, so a render receipt issued by the Worker verifies under the same Python / Node / browser verifiers regardless of which surface initiated the call.
+The two surfaces do not produce the same bytes: the MCP server's `render` tool renders locally (deterministic density only) in the canonical tome format, while the Worker's canonical tome is plain sentences, and only the Worker issues render receipts. A render receipt from the Worker verifies under the Python, Node and browser verifiers.
 
 ---
 
@@ -521,7 +521,7 @@ content-type: application/json
 |---|---|
 | `400` | invalid JSON or UTF-8, a body that is not an object, a missing or unknown `transform` name, or a missing `input` (`input must be an object`) |
 | `400` | `triples` empty or over 256 items (`triples must contain 1 to 256 items`), a triple that is not three nonempty strings of at most 512 characters, `parameters` not an object or an axis that is not a finite number in [0, 1] |
-| `400` | a `source_chain` that is not an array or holds more than 256 records (`source_chain must contain at most 256 records`), a record that is not an object (`source_chain record must be an object`), or a malformed record (`invalid source_chain record`) |
+| `400` | a `source_chain` that is not an array or holds more than 256 records (`source_chain must contain at most 256 records`), a record that is not an object (`source_chain record must be an object`), a record whose `provenance` is missing or not an object (`provenance must be an object`), or a malformed record (`invalid source_chain record`) |
 | `400` | a triple, a `source_chain` claim or a `source_uri` containing a lone UTF-16 surrogate (not well-formed Unicode) |
 | `405` | non-`POST` method |
 | `408` | body not fully received within 10 seconds |
@@ -558,8 +558,8 @@ RENDER_RECEIPT_REVOKED_KIDS = '{"schema": "sum.revoked_kids.v1", "issued_at": ".
 
 | Variable | Type | Effect when absent |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | secret | `/api/render` LLM path returns 502; `/api/complete` falls back to OpenAI |
-| `OPENAI_API_KEY` | secret | `/api/complete` returns 503 if Anthropic also missing |
+| `ANTHROPIC_API_KEY` | secret | `/api/render` (LLM path) and `/api/complete` fall back to OpenAI when `OPENAI_API_KEY` is set; an `/api/render` request that names `provider: "anthropic"` returns 503 |
+| `OPENAI_API_KEY` | secret | with Anthropic also missing, the `/api/render` LLM path and `/api/complete` return 503; an `/api/render` request that names `provider: "openai"` returns 503 |
 | `RENDER_RECEIPT_SIGNING_JWK` + `RENDER_RECEIPT_SIGNING_KID` | secrets | `/api/render` returns no `render_receipt` field |
 | `RENDER_RECEIPT_PUBLIC_JWKS` | plaintext var | `/.well-known/jwks.json` returns 503 |
 | `RENDER_RECEIPT_REVOKED_KIDS` | plaintext var | `/.well-known/revoked-kids.json` returns an empty list |

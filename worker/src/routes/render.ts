@@ -323,8 +323,8 @@ export async function handleRender(
   // original miss render, and a hit re-serves it verbatim, so kid,
   // signed_at and tome_hash stay those of the issuance. With signing
   // configured, an entry without a receipt (cached while signing was off)
-  // is not served: it is rendered again, signed, and the new entry
-  // replaces it.
+  // is not served: it is rendered again, and once signing succeeds the
+  // signed render replaces it.
   const signingConfigured = Boolean(env.RENDER_RECEIPT_SIGNING_JWK && env.RENDER_RECEIPT_SIGNING_KID);
   if (!body.force_render) {
     const cached = await getCached(env, key);
