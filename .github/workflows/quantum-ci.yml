@@ -239,7 +239,7 @@ jobs:
       # markitdown (already installed in this job).
       run: python -m scripts.attest_repo_docs --check
 
-    - name: Format pivot tests (markitdown and the spaCy model are installed only here)
+    - name: Format pivot tests (markitdown is installed only in this job)
       # FEATURE_CATALOG entries 130 and 131 name these files as their checks.
       # The whole-suite job has no markitdown, so without this step their
       # markitdown tests ran in no CI job. pytest comes from requirements-prod.

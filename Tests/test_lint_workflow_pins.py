@@ -1,6 +1,7 @@
 """scripts/lint_workflow_pins.py reads only the one-line `- uses: owner/repo@ref`
-form; every other spelling of a `uses` key fails, so a tag pin cannot pass by
-being written another way (a flow mapping, an anchor, a block scalar)."""
+form; any other line holding the word `uses` outside a comment fails, so a tag
+pin cannot pass by being written another way (a flow mapping, an anchor, a
+block scalar, a complex key). A key spelled with a YAML escape is not seen."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -24,7 +25,7 @@ def _lint(tmp_path: Path, body: str):
     "    - uses: ./local-action",
     "    - uses: docker://alpine:3.20",
     "    # - uses: actions/checkout@v4",
-    "    - name: plain step without a uses key",
+    "    - name: plain step",
 ])
 def test_lines_that_pass(tmp_path, line):
     assert _lint(tmp_path, line + "\n") == []
@@ -50,6 +51,11 @@ def test_a_tag_pin_in_the_one_line_form_fails(tmp_path, line):
     '    - "uses": "actions/checkout@v4"',                                # quoted key
     "    ? uses",                                                         # complex key
     "    - ? uses",                                                       # complex key in a list
+    "    ? uses # a comment",                                             # complex key, commented
+    "    - { ? uses",                                                     # explicit key in a flow mapping
+    "    ? &k uses",                                                      # anchor on a complex key
+    "    ? !!str uses",                                                   # tag on a complex key
+    "    x: &k uses",                                                     # the anchor an alias key reads
 ])
 def test_other_spellings_of_a_uses_key_fail(tmp_path, line):
     failures = _lint(tmp_path, line + "\n")
@@ -64,6 +70,7 @@ def test_a_complex_key_fails_on_its_key_line(tmp_path):
 @pytest.mark.parametrize("line", [
     f"    - uses: 'actions/checkout@{SHA}'",       # quoted SHA: refused, write it unquoted
     '      run: echo "uses: x"',                   # the text uses: inside a run script
+    "    - name: a step that uses a cache",         # the word in a name
 ])
 def test_spellings_refused_by_design(tmp_path, line):
     assert _lint(tmp_path, line + "\n") != []

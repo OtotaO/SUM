@@ -20,13 +20,14 @@ Allowed exceptions: GitHub-built-in path-style references (``./local``
 composite actions, ``docker://image:tag``). These are not third-party
 GitHub Actions and are out of scope for the SHA-pin rule.
 
-Only that one-line form is read. Any other line where ``uses`` appears
-as a key (a flow mapping such as ``- {uses: actions/checkout@v4}``, a
-quoted key, a block scalar, an anchor or alias, a complex key
-(``? uses``), ``uses:`` with no ``@ref``, or the text ``uses:`` inside a
-``run:`` script) fails too:
-the lint is stdlib-only, so it refuses spellings it cannot read instead
-of parsing YAML. Rewrite such a line in the one-line form.
+Only that one-line form is read. Any other line holding the word ``uses``
+outside a trailing ``#`` comment fails too: a flow mapping such as
+``- {uses: actions/checkout@v4}``, a quoted key, a block scalar, an anchor,
+a tag, a complex key (``? uses``, with or without a comment), ``uses:`` with
+no ``@ref``, and the word in a ``run:`` script or a ``name:``. The lint is
+stdlib-only, so it refuses lines it cannot read instead of parsing YAML;
+rewrite such a line in the one-line form. A key spelled with a YAML escape
+sequence (``"u\x73es"``) is not seen, since only a YAML parser decodes it.
 
 Run:
     python scripts/lint_workflow_pins.py
@@ -50,12 +51,11 @@ _SHA_PIN_RE = re.compile(r"@[0-9a-f]{40}(?:\s|$)")
 # (not a SHA). The regex tolerates leading whitespace + hyphens for
 # both `- uses:` and `      uses:` forms.
 _USES_LINE_RE = re.compile(r"^\s*-?\s*uses:\s*([^@\s]+)@([^\s#]+)")
-# Any other place a ``uses`` key can appear on a line. Matched lines that
-# the strict pattern above cannot read are failures (see the module doc).
-_ANY_USES_KEY_RE = re.compile(
-    r"""(?:^|[\s{,\[?-])["']?uses["']?\s*:"""   # uses: anywhere on the line
-    r"""|^\s*-?\s*\?\s*["']?uses["']?\s*$"""  # a complex key: ? uses
-)
+# The word ``uses`` anywhere on a line, outside a trailing comment. A line
+# the strict pattern above cannot read that holds it is a failure (see the
+# module doc).
+_ANY_USES_WORD_RE = re.compile(r"\buses\b")
+_TRAILING_COMMENT_RE = re.compile(r"\s#.*$")
 UNREADABLE = "<uses not in the form: - uses: owner/repo@<40-hex sha>>"
 # The one-line form with no @ref, which only a local or docker reference may use.
 _USES_PLAIN_RE = re.compile(r"^\s*-?\s*uses:\s*(\S+)\s*(?:#.*)?$")
@@ -86,7 +86,7 @@ def lint_workflow(path: Path) -> list[tuple[int, str, str]]:
                 plain = _USES_PLAIN_RE.match(line)
                 if plain and _is_local_or_docker(plain.group(1)):
                     continue
-                if _ANY_USES_KEY_RE.search(line):
+                if _ANY_USES_WORD_RE.search(_TRAILING_COMMENT_RE.sub("", line)):
                     failures.append((lineno, UNREADABLE, line.strip()))
                 continue
             target, ref = m.group(1), m.group(2)
